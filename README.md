@@ -6,7 +6,7 @@ NEURON IIoT System for Industry 4.0
 
 ## Build Requirements
 
-- nng: https://github.com/nanomsg/nng
+- [nng](https://github.com/nanomsg/nng)
 
   ```shell
   $ git clone git@github.com:nanomsg/nng.git
@@ -19,7 +19,7 @@ NEURON IIoT System for Industry 4.0
   $ ninja install
   ```
 
-- jansson: https://github.com/akheron/jansson
+- [jansson](https://github.com/akheron/jansson)
 
   ```shell
   $ git clone git@github.com:akheron/jansson.git
@@ -31,7 +31,7 @@ NEURON IIoT System for Industry 4.0
   $ ninja install
   ```
 
-- jwt: https://github.com/benmcollins/libjwt
+- [jwt](https://github.com/benmcollins/libjwt)
 
   ```shell
   $ git clone git@github.com:benmcollins/libjwt.git
