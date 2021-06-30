@@ -21,7 +21,7 @@ NEURON IIoT System for Industry 4.0
 
 - jansson: https://github.com/akheron/jansson
 
-  ```
+  ```shell
   $ git clone git@github.com:akheron/jansson.git
   $ cd jansson
   $ mkdir build
@@ -33,12 +33,12 @@ NEURON IIoT System for Industry 4.0
 
 - jwt: https://github.com/benmcollins/libjwt
 
-  ```
+  ```shell
   $ git clone git@github.com:benmcollins/libjwt.git
   $ cd libjwt
   $ mkdir build
   $ cd build
-  $ cmake -G Ninja  -DOPENSSL_ROOT_DIR=/usr/local/opt/openssl@1.1/lib -DOPENSSL_INCLUDE_DIR=/usr/local/opt/openssl@1.1/include     -DBUILD_EXAMPLES=OFF ..
+  $ cmake -G Ninja -DBUILD_EXAMPLES=OFF -DOPENSSL_ROOT_DIR={YOUR_OPENSSL_ROOT_DIR} -DOPENSSL_INCLUDE_DIR={YOUR_OPENSSL_INCLUDE_DIR} ..
   $ ninja
   $ ninja install
   ```
