@@ -21,17 +21,17 @@
 #include <errorcodes.h>
 
 typedef struct {
-    np_errorcode_t code;
+    neu_errorcode_t code;
     const char *name;
-} np_errorcodename_t;
+} neu_errorcodename_t;
 
 static const size_t errorcodeDescriptionsSize = 2;
-static const np_errorcodename_t errorcodeDescriptions[2] = {
-    {NP_ERRORCODE_NONE, "None"},
-    {NP_ERRORCODE_OUTOFMEMORY, "ErrorCodeOutOfMemory"}
+static const neu_errorcodename_t errorcodeDescriptions[2] = {
+    {NEU_ERRORCODE_NONE, "None"},
+    {NEU_ERRORCODE_OUTOFMEMORY, "ErrorCodeOutOfMemory"}
 };
 
-const char * np_errorcode_getName(np_errorcode_t code) {
+const char * neu_errorcode_getName(neu_errorcode_t code) {
     for (size_t i = 0; i < errorcodeDescriptionsSize; ++i) {
         if (errorcodeDescriptions[i].code == code)
             return errorcodeDescriptions[i].name;

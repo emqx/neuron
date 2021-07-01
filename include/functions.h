@@ -29,9 +29,9 @@ extern "C" {
  * Signal handling function
  */
 
-typedef void (*np_signalStopHandler)(void);
-void np_setSignalHandler(np_signalStopHandler stopHandler, np_boolean_t *Running);
-void np_setSignalIgnore(np_word_t status);
+typedef void (*neu_signalStopHandler)(void);
+void neu_setSignalHandler(neu_signalStopHandler stopHandler, neu_boolean_t *Running);
+void neu_setSignalIgnore(neu_word_t status);
        
 
 

@@ -36,12 +36,12 @@
 #include <types.h>
 #include <functions.h>
 
-static np_boolean_t *running;
+static neu_boolean_t *running;
 static void (*stophandler)(void);
 static void sigcatch(int sig);
 
 void 
-np_setSignalHandler(np_signalStopHandler stopHandler, np_boolean_t *Running) {
+neu_setSignalHandler(neu_signalStopHandler stopHandler, neu_boolean_t *Running) {
     running = Running;
     stophandler = stopHandler;
     signal(SIGHUP, sigcatch);
@@ -61,7 +61,7 @@ np_setSignalHandler(np_signalStopHandler stopHandler, np_boolean_t *Running) {
 
 void 
 sigcatch(int signal) {
-    np_setSignalIgnore(NP_ON);
+    neu_setSignalIgnore(NEU_ON);
     if (stophandler)
 	    stophandler();
     if (running)
@@ -85,7 +85,7 @@ sigcatch(int signal) {
  * when the ignore counter goes from 1 to 0. */
 
 void 
-np_setSignalIgnore(np_word_t status) {
+neu_setSignalIgnore(neu_word_t status) {
     static int sigigndone = 0;
     static void (*savesighup)();
     static void (*savesigint)();
