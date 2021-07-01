@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
-#define NP_ERRORCODE_NONE                            0x00000000
-#define NP_ERRORCODE_OUTOFMEMORY                     0xA0000000
+#define NEU_ERRORCODE_NONE                            0x00000000
+#define NEU_ERRORCODE_OUTOFMEMORY                     0xA0000000
 
 #ifdef __cplusplus
 }
