@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef NEURON_TYPES_H
+#define NEURON_TYPES_H
 
 #ifdef __cplusplus
 extern "C" {
