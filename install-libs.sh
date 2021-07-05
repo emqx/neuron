@@ -1,4 +1,9 @@
-#!/bin/sh
+#!/bin/bash
+
+if [ `whoami` != "root" ];then
+	echo "please use root access"
+  exit 2
+fi
 
 lib_list=(nng jansson jwt paho)
 list_str=""
@@ -9,17 +14,12 @@ done
 function usage() {
     echo "Usage: $0 "
     echo "  -a \tBuild all dependencies"
-    echo "  -i \tSpecify the  dependence (opts: $list_str)"
+    echo "  -i \tSpecify installation options (opts: $list_str)"
 }
 
 if [ $# -eq 0 ];then
 usage
 exit
-fi
-
-if [ `whoami` != "root" ];then
-	echo "please use root access"
-  exit 2
 fi
 
 # nng
@@ -141,7 +141,6 @@ while getopts "a-:i:h" OPT; do
         ;;
     esac
 done
-
 
 echo "leaving $extends"
 cd $current
