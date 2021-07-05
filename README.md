@@ -6,10 +6,12 @@ NEURON IIoT System for Industry 4.0
 
 ## Build Requirements
 
-- [nng](https://github.com/nanomsg/nng)
+- [openssl](https://github.com/openssl/openssl)
+
+- [nng](https://github.com/nanomsg/nng/tree/v1.4.0)
 
   ```shell
-  $ git clone git@github.com:nanomsg/nng.git
+  $ git clone -b v1.4.0 git@github.com:nanomsg/nng.git
   $ cd nng
   $ mkdir build
   $ cd build
@@ -38,10 +40,22 @@ NEURON IIoT System for Industry 4.0
   $ cd libjwt
   $ mkdir build
   $ cd build
-  $ cmake -G Ninja -DBUILD_EXAMPLES=OFF -DOPENSSL_ROOT_DIR={YOUR_OPENSSL_ROOT_DIR} -DOPENSSL_INCLUDE_DIR={YOUR_OPENSSL_INCLUDE_DIR} ..
+  $ cmake -G Ninja -DBUILD_EXAMPLES=OFF -DOPENSSL_ROOT_DIR={YOUR_OPENSSL_ROOT_DIR} ..
   $ ninja
   $ ninja install
   ```
 
+- [paho-mqtt.c](https://github.com/eclipse/paho.mqtt.c/tree/v1.3.9)
 
+  ```shell
+  $ git clone -b v1.3.9 git@github.com:eclipse/paho.mqtt.c.git
+  $ cd paho.mqtt.c
+  $ mkdir build
+  $ cd build
+  $ cmake -G Ninja -DPAHO_BUILD_SAMPLES=FALSE  -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_SHARED=FALSE  -DPAHO_BUILD_STATIC=TRUE -DOPENSSL_ROOT_DIR={YOUR_OPENSSL_ROOT_DIR} -DPAHO_HIGH_PERFORMANCE=TRUE -DCMAKE_BUILD_TYPE=Release  ..
+  $ ninja
+  $ ninja install
+  ```
+
+  
 
