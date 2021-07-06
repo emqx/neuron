@@ -8,6 +8,19 @@ NEURON IIoT System for Industry 4.0
 
 - [openssl](https://github.com/openssl/openssl)
 
+  ```shell
+  # Ubuntu
+  $ apt-get install libssl-dev
+  
+  # CentOS
+  $ yum install openssl-devel
+  
+  # MacOS
+  $ brew install openssl
+  ```
+
+  
+
 - [nng](https://github.com/nanomsg/nng/tree/v1.4.0)
 
   ```shell
@@ -56,6 +69,16 @@ NEURON IIoT System for Industry 4.0
   $ ninja
   $ ninja install
   ```
-
   
+- uuid
+  ```shell
+  # Ubuntu
+  $ apt-get install uuid-dev
+  
+  # CentOS
+  $ yum install libuuid-devel
+   
+  # MacOS
+  $ brew install ossp-uuid
+  ```
 

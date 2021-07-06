@@ -1,11 +1,17 @@
 #!/bin/bash
 
-if [ `whoami` != "root" ];then
-	echo "please use root access"
-  exit 2
+system=`uname`
+echo "System: $system"
+
+if [ $system == 'Linux' ];then
+    if [ `whoami` != "root" ];then
+        echo "Please use root access"
+    exit 2
+    fi
 fi
 
-lib_list=(nng jansson jwt paho)
+lib_list=(nng jansson jwt paho uuid openssl)
+
 list_str=""
 for var in ${lib_list[*]};do
     list_str+=$var" "
@@ -13,8 +19,8 @@ done
 
 function usage() {
     echo "Usage: $0 "
-    echo "  -a \tBuild all dependencies"
-    echo "  -i \tSpecify installation options (opts: $list_str)"
+    echo "  -a  Build all dependencies"
+    echo "  -i  Specify installation options (opts: $list_str)"
 }
 
 if [ $# -eq 0 ];then
@@ -25,7 +31,7 @@ fi
 # nng
 function build_nng()
 {
-    echo "building nng (v1.4.0)"
+    echo "Building nng (v1.4.0)"
     if [ ! -d nng ];then
         git clone -b v1.4.0 https://github.com/nanomsg/nng.git
     fi
@@ -36,14 +42,14 @@ function build_nng()
     ninja
     ninja install
 
-    echo "leaving nng "
+    echo "Leaving nng "
     cd ../../
 }
 
 # jansson
 function build_jansson()
 {
-    echo "building jansson"
+    echo "Building jansson"
     if [ ! -d jansson ];then
         git clone https://github.com/akheron/jansson.git
     fi
@@ -55,14 +61,14 @@ function build_jansson()
     ninja
     ninja install
 
-    echo "leaving jansson "
+    echo "Leaving jansson "
     cd ../../
 }
 
 # jwt
 function build_jwt()
 {
-    echo "building libjwt"
+    echo "Building libjwt"
     if [ ! -d libjwt ];then
         git clone https://github.com/benmcollins/libjwt.git
     fi
@@ -74,14 +80,14 @@ function build_jwt()
     ninja
     ninja install
 
-    echo "leaving libjwt "
+    echo "Leaving libjwt "
     cd ../../
 }
 
 # paho.mqtt.c
 function build_paho()
 {
-    echo "building paho.mqtt.c (v1.3.9)"
+    echo "Building paho.mqtt.c (v1.3.9)"
     if [ ! -d paho.mqtt.c ];then
         git clone -b v1.3.9 https://github.com/eclipse/paho.mqtt.c.git
     fi
@@ -92,8 +98,49 @@ function build_paho()
     cmake -G Ninja -DPAHO_BUILD_SAMPLES=FALSE  -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_SHARED=FALSE  -DPAHO_BUILD_STATIC=TRUE $ssl_lib_flag -DPAHO_HIGH_PERFORMANCE=TRUE -DCMAKE_BUILD_TYPE=Release  ..
     ninja
     ninja install
-    echo "leaving paho.mqtt.c "
+    echo "Leaving paho.mqtt.c "
     cd ../../
+}
+
+function install_tool() 
+{
+    ubuntu=$1
+    centos=$2
+    darwin=$3
+    
+    case "$system" in
+    "Linux") release=`awk -F= '/^NAME/{print $2}' /etc/os-release`
+        case "$release" in
+        "\"Ubuntu\"") 
+        apt-get -y install $ubuntu
+        ;;
+        "\"CentOS Linux\"")
+        yum install -y $centos
+        ;;
+        esac
+    ;;
+
+    "Darwin") 
+    brew install $darwin
+    ;;
+
+    *)
+    echo "Unsupported System!"
+    echo "Please install library manually!"
+    ;;
+    esac
+}
+
+function build_uuid()
+{
+    echo "Installing uuid"
+    install_tool uuid-dev libuuid-devel ossp-uuid
+}
+
+function build_openssl()
+{  
+    echo "Installing openssl"
+    install_tool libssl-dev openssl-devel openssl
 }
 
 current=`pwd`
@@ -103,11 +150,8 @@ if [ ! -d $externs ];then
     mkdir $externs
 fi
 
-echo "entering $externs"
+echo "Entering $externs"
 cd $externs
-
-system=`uname`
-echo "System: $system"
 
 ssl_lib_flag=""
 case "$system" in
@@ -122,7 +166,7 @@ esac
 while getopts "a-:i:h" OPT; do
     case ${OPT} in
     a) 
-        echo "build ${list_str}"
+        echo "Build ${list_str}"
         for var in ${lib_list[*]};do
             build_$var
         done
@@ -142,6 +186,6 @@ while getopts "a-:i:h" OPT; do
     esac
 done
 
-echo "leaving $extends"
+echo "Leaving $externs"
 cd $current
 
