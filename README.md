@@ -21,10 +21,10 @@ NEURON IIoT System for Industry 4.0
 
   
 
-- [nng](https://github.com/nanomsg/nng/tree/v1.4.0)
+- [nng](https://github.com/nanomsg/nng/tree/v1.5.1)
 
   ```shell
-  $ git clone -b v1.4.0 git@github.com:nanomsg/nng.git
+  $ git clone -b v1.5.1 git@github.com:nanomsg/nng.git
   $ cd nng
   $ mkdir build
   $ cd build

@@ -31,9 +31,9 @@ fi
 # nng
 function build_nng()
 {
-    echo "Building nng (v1.4.0)"
+    echo "Building nng (v1.5.1)"
     if [ ! -d nng ];then
-        git clone -b v1.4.0 https://github.com/nanomsg/nng.git
+        git clone -b v1.5.1 https://github.com/nanomsg/nng.git
     fi
     cd nng
     mkdir build
