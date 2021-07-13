@@ -28,9 +28,15 @@ struct neu_plugin {
 	neu_plugin_common_t common;
 };
 
-static neu_plugin_t* sample_plugin_open(neu_adapter_t* adapter)
+static neu_plugin_t* sample_plugin_open(neu_adapter_t* adapter,
+										const adapter_callbacks_t* callbacks)
 {
 	neu_plugin_t* plugin;
+
+	if (adapter == NULL) {
+		log_error("Open plugin with NULL adapter");
+		return NULL;
+	}
 
 	plugin = (neu_plugin_t*)malloc(sizeof(neu_plugin_t));
 	if (plugin == NULL) {
@@ -39,6 +45,8 @@ static neu_plugin_t* sample_plugin_open(neu_adapter_t* adapter)
 		return NULL;
 	}
 
+	plugin->common.adapter = adapter;
+	plugin->common.adapter_callbacks = callbacks;
 	log_info("Success to create plugin: %s", neu_plugin_module.module_name);
 	return plugin;
 }
@@ -77,16 +85,30 @@ static int sample_plugin_config(neu_plugin_t* plugin, neu_config_t* configs)
 }
 
 static int sample_plugin_request(neu_plugin_t* plugin,
-				   neu_request_t* req)
+				   				 neu_request_t* req)
 {
 	int rv = 0;
 
+	if (plugin == NULL) {
+		log_warn("The plugin pointer is NULL");
+		return (-1);
+	}
+
 	log_info("send request to plugin: %s", neu_plugin_module.module_name);
+	const adapter_callbacks_t* adapter_callbacks;
+	adapter_callbacks = plugin->common.adapter_callbacks;
+	if (adapter_callbacks != NULL) {
+		neu_response_t resp;
+
+		memset(&resp, 0, sizeof(resp));
+		resp.req_id = req->req_id;
+		rv = adapter_callbacks->response(plugin->common.adapter, &resp);
+	}
 	return rv;
 }
 
-static int sample_plugin_event_reply(neu_adapter_t* adapter,
- 					   neu_event_reply_t* reply)
+static int sample_plugin_event_reply(neu_plugin_t* plugin,
+ 					   				 neu_event_reply_t* reply)
 {
 	int rv = 0;
 

@@ -17,30 +17,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef ADAPTER_INTERNAL_H
-#define ADAPTER_INTERNAL_H
+#ifndef _DATABUF_H_
+#define _DATABUF_H_
 
-#include "core/neu_manager.h"
+typedef struct core_databuf core_databuf_t;
 
-typedef enum adapter_type {
-	ADAPTER_TYPE_UNKNOW,
-	ADAPTER_TYPE_WEBSERVER,
-	ADAPTER_TYPE_MQTT,
-	ADAPTER_TYPE_STREAM_PROCESSOR,
-	ADAPTER_TYPE_APP,
-	ADAPTER_TYPE_DRIVER,
-} adapter_type_e;
+/**
+ * Get a shared databuf, it will increase reference count of databuf
+ */
+core_databuf_t* core_databuf_get(core_databuf_t* databuf);
 
-typedef struct neu_adapter_info {
-	uint32_t	    id;
-	adapter_type_e	type;
-	char*			name;
-	char*			plugin_lib_name;
-} neu_adapter_info_t;
+/**
+ * Put a shared databuf, it will decrease reference count of databuf
+ */
+void core_databuf_put(core_databuf_t* databuf);
 
-neu_adapter_t* neu_adapter_create(neu_adapter_info_t* info);
-void neu_adapter_destroy(neu_adapter_t* adapter);
-int neu_adapter_start(neu_adapter_t* adapter, neu_manager_t* manager);
-int neu_adapter_stop(neu_adapter_t* adapter, neu_manager_t* manager);
+size_t core_databuf_get_len(core_databuf_t* databuf);
+void* core_databuf_peek_ptr(core_databuf_t* databuf);
 
 #endif

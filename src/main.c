@@ -68,7 +68,7 @@ static void uninit()
 
 static void usage()
 {
-	log_info("Usage: neuron [--help] [--daemon]");
+	log_info("neuron [--help] [--daemon]");
 }
 
 int main(int argc, char* argv[])
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 
 	char* opts = "h:d:";
 	struct option long_options[] = {
-		{"help", required_argument, NULL, 'h'},
+		{"help", no_argument, NULL, 'h'},
 		{"daemon", required_argument, NULL, 'd'},
 	};
 	char c;

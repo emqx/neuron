@@ -33,19 +33,22 @@ typedef enum neu_plugin_state {
 
 typedef struct neu_plugin_common {
 	neu_plugin_state_e state;
+	neu_adapter_t*	   adapter;
+	const adapter_callbacks_t* adapter_callbacks;
 } neu_plugin_common_t;
 
 typedef struct neu_plugin neu_plugin_t;
 
 typedef struct neu_plugin_intf_funs {
-	neu_plugin_t* (*open)(neu_adapter_t* adapter);
+	neu_plugin_t* (*open)(neu_adapter_t* adapter,
+						  const adapter_callbacks_t* callbacks);
 	int (*close)(neu_plugin_t* plugin);
 	int (*init)(neu_plugin_t* plugin);
 	int (*uninit)(neu_plugin_t* plugin);
 	int (*config)(neu_plugin_t* plugin, neu_config_t* configs);
 	int (*request)(neu_plugin_t* plugin,
 				   neu_request_t* req);
-	int (*event_reply)(neu_adapter_t* adapter,
+	int (*event_reply)(neu_plugin_t* plugin,
 					   neu_event_reply_t* reply);
 } neu_plugin_intf_funs_t;
 

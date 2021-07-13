@@ -46,6 +46,7 @@ void neu_show_backtrace(void)
 		for (int i = 1; i < nframes; i++) {
 			log_fatal(lines[i]);
 		}
+		free(lines);
 	}
 #endif
 }

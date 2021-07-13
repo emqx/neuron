@@ -11,6 +11,8 @@ find_package(Threads)
 
 # define neuron executalbe program
 set(NEURON_SOURCES src/main.c
+		   src/core/message.c
+		   src/core/databuf.c
 		   src/core/neu_manager.c
 		   src/adapter/adapter.c)
 set(NEURON_INCLUDE_DIRECTORIES include src deps)
@@ -28,6 +30,7 @@ target_link_libraries(neuron ${CMAKE_THREAD_LIBS_INIT} )
 
 # define neuron base library
 set(NEURON_BASE_SOURCES   deps/cJSON.c
+	           	  src/utils/atomic_data.c
 	           	  src/utils/panic.c
 		   	  src/utils/log.c)
 set(NEURON_BASE_INCLUDE_DIRECTORIES include deps)
