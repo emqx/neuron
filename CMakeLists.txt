@@ -24,7 +24,7 @@ target_include_directories(neuron
 if (APPLE)
     target_link_libraries(neuron nng::nng neuron-base)
 else()
-    target_link_libraries(neuron nng neuron-base)
+    target_link_libraries(neuron dl nng neuron-base)
 endif()
 target_link_libraries(neuron ${CMAKE_THREAD_LIBS_INIT} )
 
