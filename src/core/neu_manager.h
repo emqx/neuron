@@ -28,8 +28,6 @@ typedef struct neu_manager neu_manager_t;
 neu_manager_t* neu_manager_create();
 void neu_manager_destroy(neu_manager_t* manager);
 
-int neu_manager_bind_adapter(neu_manager_t* manager, neu_adapter_t* adapter);
-int neu_manager_unbind_adapter(neu_manager_t* manager, neu_adapter_t* adapter);
 const char* neu_manager_get_url(neu_manager_t* manager);
 
 #endif

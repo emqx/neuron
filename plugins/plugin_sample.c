@@ -33,8 +33,8 @@ static neu_plugin_t* sample_plugin_open(neu_adapter_t* adapter,
 {
 	neu_plugin_t* plugin;
 
-	if (adapter == NULL) {
-		log_error("Open plugin with NULL adapter");
+	if (adapter == NULL || callbacks == NULL) {
+		log_error("Open plugin with NULL adapter or callbacks");
 		return NULL;
 	}
 
@@ -89,20 +89,35 @@ static int sample_plugin_request(neu_plugin_t* plugin,
 {
 	int rv = 0;
 
-	if (plugin == NULL) {
-		log_warn("The plugin pointer is NULL");
+	if (plugin == NULL || req == NULL) {
+		log_warn("The plugin pointer or request is NULL");
 		return (-1);
 	}
 
 	log_info("send request to plugin: %s", neu_plugin_module.module_name);
 	const adapter_callbacks_t* adapter_callbacks;
 	adapter_callbacks = plugin->common.adapter_callbacks;
-	if (adapter_callbacks != NULL) {
-		neu_response_t resp;
 
-		memset(&resp, 0, sizeof(resp));
-		resp.req_id = req->req_id;
-		rv = adapter_callbacks->response(plugin->common.adapter, &resp);
+	switch (req->req_type) {
+		case NEU_REQRESP_READ:
+		{
+			neu_response_t resp;
+			static const char* resp_str = "Sample plugin read response";
+
+			char* resp_buf;
+			resp_buf = strdup(resp_str);
+
+			memset(&resp, 0, sizeof(resp));
+			resp.req_id    = req->req_id;
+			resp.resp_type = NEU_REQRESP_MOVE_BUF;
+			resp.buf_len   = sizeof(strlen(resp_buf) + 1);
+			resp.buf       = resp_buf;
+			rv = adapter_callbacks->response(plugin->common.adapter, &resp);
+			break;
+		}
+
+		default:
+			break;
 	}
 	return rv;
 }

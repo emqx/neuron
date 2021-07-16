@@ -31,8 +31,12 @@ typedef struct neu_adapter neu_adapter_t;
 
 typedef enum neu_reqresp_type {
 	NEU_REQRESP_NOP,
+	NEU_REQRESP_START_PERIODIC_READ,
+	NEU_REQRESP_STOP_PERIODIC_READ,
 	NEU_REQRESP_READ,
 	NEU_REQRESP_WRITE,
+	// The ownership of buffer will move into reqresp.
+	NEU_REQRESP_MOVE_BUF,
 } neu_reqresp_type_e;
 
 typedef struct neu_request {

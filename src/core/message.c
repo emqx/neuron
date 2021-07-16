@@ -37,7 +37,6 @@ struct message {
     union {
 		msg_inplace_buf_t    inp_buf;
 		// The external buffer pointer to a core_databuf_t.
-		// The one core_databuf_t is get from a buffer pool.
 		core_databuf_t*      ext_buf;
     };
 
@@ -144,7 +143,7 @@ void* msg_get_buf_ptr(message_t* msg)
 	}
 
 	if ((msg->type & MSG_DATABUF_KIND_MASK) == MSG_DATABUF_EXTERNAL) {
-		return core_databuf_peek_ptr(msg->ext_buf);
+		return core_databuf_get_ptr(msg->ext_buf);
 	} else {
 		return msg->inp_buf.buf_ptr;
 	}
