@@ -5,6 +5,8 @@ project (neuron)
 
 ENABLE_LANGUAGE(C)
 
+add_subdirectory(extern/vector)
+
 # Call this from your own project's makefile.
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
@@ -39,7 +41,7 @@ target_sources(neuron-base
 	PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base
 	PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
-target_link_libraries(neuron-base ${CMAKE_THREAD_LIBS_INIT} )
+target_link_libraries(neuron-base vector-static ${CMAKE_THREAD_LIBS_INIT} )
 
 # define for plugins
 set(SAMPLE_PLUGIN_SOURCES plugins/plugin_sample.c)

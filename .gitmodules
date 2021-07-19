@@ -1,0 +1,3 @@
+[submodule "extern/vector"]
+	path = extern/vector
+	url = https://github.com/goldsborough/vector.git
