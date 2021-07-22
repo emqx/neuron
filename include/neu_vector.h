@@ -17,14 +17,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEURON_H_
-#define _NEURON_H_
+#ifndef NEU_VECTOR_H
+#define NEU_VECTOR_H
 
-#include "neu_vector.h"
-#include "neu_types.h"
-#include "neu_log.h"
-#include "neu_panic.h"
-#include "neu_adapter.h"
-#include "neu_plugin.h"
+#include "vector.h"
+
+typedef struct Vector   vector_t;
+typedef struct Iterator iterator_t;
 
 #endif

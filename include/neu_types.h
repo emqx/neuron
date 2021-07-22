@@ -478,11 +478,16 @@ typedef enum {
 } neu_attributetype_t;  
 
 typedef struct {
+	uint32_t  idVal;
+} neu_datatag_id_t;
+
+typedef struct {
+	neu_datatag_id_t    id;
     neu_attributetype_t type;
     neu_word_t readInterval;
     neu_datatype_t dataType;
-    neu_address_t address;
-} neu_tag_t;
+    neu_address_t  address;
+} neu_datatag_t;
 
 /**
  * Parameter

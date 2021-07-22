@@ -87,6 +87,42 @@ static neu_adapter_info_t sample_adapter_info = {
 neu_adapter_t* sample_adapter;
 #endif
 
+#define ADAPTER_NAME_MAX_LEN	50
+#define PLUGIN_LIB_NAME_MAX_LEN	50
+
+typedef struct adapter_add_cmd {
+	adapter_type_e	type;
+	char 			name[ADAPTER_NAME_MAX_LEN+1];
+	char 			plugin_lib_name[PLUGIN_LIB_NAME_MAX_LEN+1];
+} adapter_add_cmd_t;
+
+static const adapter_add_cmd_t builtin_adapter_add_cmds[] = {
+#ifdef NEU_HAS_SAMPLE_ADAPTER
+	{
+		.type			 = ADAPTER_TYPE_DRIVER,
+		.name			 = "sample-adapter",
+		.plugin_lib_name = SAMPLE_PLUGIN_LIB_NAME
+	},
+#endif
+/*
+	{
+		.type			 = ADAPTER_TYPE_WEBSERVER,
+		.name			 = "webserver-adapter",
+		.plugin_lib_name = WEBSERVER_PLUGIN_LIB_NAME
+	},
+	{
+		.type			 = ADAPTER_TYPE_MQTT,
+		.name			 = "mqtt-adapter",
+		.plugin_lib_name = MQTT_PLUGIN_LIB_NAME
+	},
+	{
+		.type			 = ADAPTER_TYPE_DRIVER,
+		.name			 = "modbus-adapter",
+		.plugin_lib_name = MODBUS_PLUGIN_LIB_NAME
+	},
+*/
+};
+
 static int init_bind_info(manager_bind_info_t* mng_bind_info)
 {
 	int rv, rv1;
@@ -163,7 +199,7 @@ static void manager_unbind_adapter(nng_pipe p,
 }
 
 static int manager_add_adapter(neu_manager_t* manager,
-	   						   neu_adapter_t* adapter)
+	   						   adapter_add_cmd_t* cmd)
 {
 	int rv = 0;
 
@@ -179,13 +215,17 @@ static int manager_remove_adapter(neu_manager_t* manager,
 }
 
 static int manager_start_adapter(neu_manager_t* manager,
-								neu_adapter_t* adapter)
+								 neu_adapter_t* adapter)
 {
 	int rv = 0;
 
 	rv = nng_pipe_notify(neu_adapter_get_sock(adapter),
 						 NNG_PIPE_EV_ADD_POST,
 						 manager_bind_adapter,
+						 adapter);
+	rv = nng_pipe_notify(neu_adapter_get_sock(adapter),
+						 NNG_PIPE_EV_REM_POST,
+						 manager_unbind_adapter,
 						 adapter);
 	neu_adapter_start(adapter, manager);
 	return rv;

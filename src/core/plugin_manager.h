@@ -17,14 +17,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEURON_H_
-#define _NEURON_H_
+#ifndef _PLUGIN_MANAGER_H
+#define _PLUGIN_MANAGER_H
 
-#include "neu_vector.h"
-#include "neu_types.h"
-#include "neu_log.h"
-#include "neu_panic.h"
-#include "neu_adapter.h"
-#include "neu_plugin.h"
+typedef struct plugin_id {
+    uint32_t id;
+} plugin_id_t;
+
+typedef struct plugin_manager plugin_manager_t;
 
 #endif

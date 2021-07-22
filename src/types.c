@@ -17,8 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <types.h>
-#include <errorcodes.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "neu_types.h"
+#include "errorcodes.h"
 
 /*****************/
 /* Decimal Types */
@@ -108,7 +111,7 @@ neu_string_fromChars(const char *src) {
         return s;
     s.length = strlen(src);
     if(s.length > 0) {
-        s.charstr = (neu_ubyte_t*)malloc(s.length);
+        s.charstr = (char*)malloc(s.length);
         if(!s.charstr) {
             s.length = 0;
             return s;

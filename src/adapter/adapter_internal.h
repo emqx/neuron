@@ -30,6 +30,7 @@ typedef enum adapter_type {
 	ADAPTER_TYPE_STREAM_PROCESSOR,
 	ADAPTER_TYPE_APP,
 	ADAPTER_TYPE_DRIVER,
+	ADAPTER_TYPE_MAX,
 } adapter_type_e;
 
 typedef struct neu_adapter_info {

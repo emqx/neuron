@@ -71,6 +71,14 @@ static void usage()
 	log_info("neuron [--help] [--daemon]");
 }
 
+static int read_neuron_config()
+{
+	int rv = 0;
+
+	// TODO: read configuration from config file.
+	return rv;
+}
+
 int main(int argc, char* argv[])
 {
 	int  rv = 0;
@@ -99,8 +107,12 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	neu_manager_t* manager;
+	if ((rv = read_neuron_config()) < 0) {
+		log_error("Failed to get neuron configuration.");
+		goto main_end;
+	}
 
+	neu_manager_t* manager;
 	log_info("running neuron main process");
 	manager = neu_manager_create();
 	if (manager == NULL) {

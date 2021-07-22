@@ -6,6 +6,7 @@ project (neuron)
 ENABLE_LANGUAGE(C)
 
 add_subdirectory(extern/vector)
+configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h COPYONLY)
 
 # Call this from your own project's makefile.
 find_package(nng CONFIG REQUIRED)
@@ -16,6 +17,7 @@ set(NEURON_SOURCES src/main.c
 		   src/core/message.c
 		   src/core/databuf.c
 		   src/core/neu_manager.c
+		   src/core/plugin_manager.c
 		   src/adapter/adapter.c)
 set(NEURON_INCLUDE_DIRECTORIES include src deps)
 add_executable(neuron)
@@ -32,6 +34,7 @@ target_link_libraries(neuron ${CMAKE_THREAD_LIBS_INIT} )
 
 # define neuron base library
 set(NEURON_BASE_SOURCES   deps/cJSON.c
+	           	  src/types.c
 	           	  src/utils/atomic_data.c
 	           	  src/utils/panic.c
 		   	  src/utils/log.c)
