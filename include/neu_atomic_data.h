@@ -20,14 +20,14 @@
 #ifndef NEURON_ATOMIC_H_
 #define NEURON_ATOMIC_H_
 
-#include <stdbool.h>
 #include <stdatomic.h>
+#include <stdbool.h>
 
 // neu_atomic_flag supports only test-and-set and reset operations.
 // This can be implemented without locks on any reasonable system, and
 // it corresponds to C11 atomic flag.
 struct neu_atomic_flag {
-	atomic_flag f;
+    atomic_flag f;
 };
 typedef struct neu_atomic_flag neu_atomic_flag;
 
@@ -37,7 +37,7 @@ extern void neu_atomic_flag_reset(neu_atomic_flag *);
 // neu_atomic_bool is for boolean flags that need to be checked without
 // changing their value.  This might require a lock on some systems.
 struct neu_atomic_bool {
-	atomic_bool v;
+    atomic_bool v;
 };
 typedef struct neu_atomic_bool neu_atomic_bool;
 
@@ -52,7 +52,7 @@ extern bool neu_atomic_swap_bool(neu_atomic_bool *, bool);
 // unless larger bit sizes are truly needed.  They will be more efficient
 // on many platforms.
 struct neu_atomic_int {
-	atomic_int v;
+    atomic_int v;
 };
 typedef struct neu_atomic_int neu_atomic_int;
 

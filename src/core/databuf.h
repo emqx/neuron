@@ -27,33 +27,33 @@ typedef struct core_databuf core_databuf_t;
  * move into shared databuf.
  * The caller don't free the buffer.
  */
-core_databuf_t* core_databuf_new_with_buf(void* buf, size_t len);
+core_databuf_t *core_databuf_new_with_buf(void *buf, size_t len);
 
 /**
  * Get a shared databuf, it will increase reference count of databuf
  */
-core_databuf_t* core_databuf_get(core_databuf_t* databuf);
+core_databuf_t *core_databuf_get(core_databuf_t *databuf);
 
 /**
  * Put a shared databuf, it will decrease reference count of databuf.
  * If the reference count of databuf is 0, then free databuf and buffer in it.
  */
-core_databuf_t* core_databuf_put(core_databuf_t* databuf);
+core_databuf_t *core_databuf_put(core_databuf_t *databuf);
 
 /**
  * Get length of the buffer in databuf
  */
-size_t core_databuf_get_len(core_databuf_t* databuf);
+size_t core_databuf_get_len(core_databuf_t *databuf);
 
 /**
  * Replace original buffer pointer in databuf with new buffer pointer, the
  * original buffer should be free.
  */
-core_databuf_t* core_databuf_set_buf(core_databuf_t* databuf,
-									 void* buf, size_t len);
+core_databuf_t *core_databuf_set_buf(
+    core_databuf_t *databuf, void *buf, size_t len);
 /**
  * Get a buffer pointer in databuf
  */
-void* core_databuf_get_ptr(core_databuf_t* databuf);
+void *core_databuf_get_ptr(core_databuf_t *databuf);
 
 #endif

@@ -21,28 +21,29 @@
  * Common Signals Handler
  * ----------------------
  * This routine sets the action from the signals that could lead to an aboration
- * of the program to instead call a common routine that call the external 
+ * of the program to instead call a common routine that call the external
  * routine stopHandler() and then exit.
- * 
- * NOTE! The external routine stopHandler() should not exit, it should just make a 
- * return. 
+ *
+ * NOTE! The external routine stopHandler() should not exit, it should just make
+ *a return.
  **/
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <errno.h>
 #include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-#include <types.h>
 #include <functions.h>
+#include <types.h>
 
 static neu_boolean_t *running;
 static void (*stophandler)(void);
 static void sigcatch(int sig);
 
-void 
-neu_setSignalHandler(neu_signalStopHandler stopHandler, neu_boolean_t *Running) {
-    running = Running;
+void neu_setSignalHandler(
+    neu_signalStopHandler stopHandler, neu_boolean_t *Running)
+{
+    running     = Running;
     stophandler = stopHandler;
     signal(SIGHUP, sigcatch);
     signal(SIGINT, sigcatch);
@@ -59,11 +60,11 @@ neu_setSignalHandler(neu_signalStopHandler stopHandler, neu_boolean_t *Running) 
     signal(SIGTERM, sigcatch);
 }
 
-void 
-sigcatch(int signal) {
+void sigcatch(int signal)
+{
     neu_setSignalIgnore(NEU_ON);
     if (stophandler)
-	    stophandler();
+        stophandler();
     if (running)
         *running = false;
 }
@@ -71,21 +72,21 @@ sigcatch(int signal) {
 /**
  * SET SIGNAL IGNORE ON/OFF
  * ------------------------
- * This routine sets the action from the signals that could lead to an abortion 
- * of the program (except failures) to instead be ignored or to take the 
+ * This routine sets the action from the signals that could lead to an abortion
+ * of the program (except failures) to instead be ignored or to take the
  * previous value.
  *
- * The routine take actions depending on the value of 'status'. If status is 
- * NH_ON = 1 (or non-zero) the signals are ignored. If the status is NH_OFF = 0 
+ * The routine take actions depending on the value of 'status'. If status is
+ * NH_ON = 1 (or non-zero) the signals are ignored. If the status is NH_OFF = 0
  * the signals will take the previous action.
  *
- * The routine can be called several times with IGNON and afterwards be called 
- * the same amount of times with NH_OFF. Signals are ignored only when the 
- * ignore counter goes from 0 to 1, and they receive their previous values only 
+ * The routine can be called several times with IGNON and afterwards be called
+ * the same amount of times with NH_OFF. Signals are ignored only when the
+ * ignore counter goes from 0 to 1, and they receive their previous values only
  * when the ignore counter goes from 1 to 0. */
 
-void 
-neu_setSignalIgnore(neu_word_t status) {
+void neu_setSignalIgnore(neu_word_t status)
+{
     static int sigigndone = 0;
     static void (*savesighup)();
     static void (*savesigint)();
@@ -95,19 +96,18 @@ neu_setSignalIgnore(neu_word_t status) {
 
     if (status) {
         if (!sigigndone++) {
-            savesighup = signal(SIGHUP, SIG_IGN);
-            savesigint = signal(SIGINT, SIG_IGN);
+            savesighup  = signal(SIGHUP, SIG_IGN);
+            savesigint  = signal(SIGINT, SIG_IGN);
             savesigquit = signal(SIGQUIT, SIG_IGN);
             savesigalrm = signal(SIGALRM, SIG_IGN);
             savesigterm = signal(SIGTERM, SIG_IGN);
         }
-    } else
-        if (!--sigigndone) {
-            signal(SIGHUP, savesighup);
-            signal(SIGINT, savesigint);
-            signal(SIGQUIT, savesigquit);
-            signal(SIGALRM, savesigalrm);
-            signal(SIGTERM, savesigterm);
-        } else if (sigigndone < 0)
-            sigigndone = 0;
+    } else if (!--sigigndone) {
+        signal(SIGHUP, savesighup);
+        signal(SIGINT, savesigint);
+        signal(SIGQUIT, savesigquit);
+        signal(SIGALRM, savesigalrm);
+        signal(SIGTERM, savesigterm);
+    } else if (sigigndone < 0)
+        sigigndone = 0;
 }

@@ -36,8 +36,7 @@ struct plugin_manager {
 // Add builtin plugins
 //
 
-plugin_manager_t *
-plugin_manager_create()
+plugin_manager_t *plugin_manager_create()
 {
     plugin_manager_t *plugin_mng;
 
@@ -49,8 +48,7 @@ plugin_manager_create()
     return plugin_mng;
 }
 
-void
-plugin_manager_destroy(plugin_manager_t *plugin_mng)
+void plugin_manager_destroy(plugin_manager_t *plugin_mng)
 {
     if (plugin_mng == NULL) {
         return;
@@ -59,16 +57,16 @@ plugin_manager_destroy(plugin_manager_t *plugin_mng)
     free(plugin_mng);
 }
 
-plugin_id_t
-plugin_manager_reg_plugin(plugin_manager_t *plugin_mng, plugin_reg_info_t *info)
+plugin_id_t plugin_manager_reg_plugin(
+    plugin_manager_t *plugin_mng, plugin_reg_info_t *info)
 {
     plugin_id_t plugin_id;
 
     return plugin_id;
 }
 
-int
-plugin_manager_unreg_plugin(plugin_manager_t *plugin_mng, plugin_id_t plugin_id)
+int plugin_manager_unreg_plugin(
+    plugin_manager_t *plugin_mng, plugin_id_t plugin_id)
 {
     int rv = 0;
 

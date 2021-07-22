@@ -17,13 +17,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
 
-#define NEU_HAVE_BACKTRACE	1
+#define NEU_HAVE_BACKTRACE 1
 #if NEU_HAVE_BACKTRACE
 #include <execinfo.h>
 #endif
@@ -34,20 +34,20 @@
 void neu_show_backtrace(void)
 {
 #if NEU_HAVE_BACKTRACE
-	void *frames[50];
-	int   nframes;
+    void *frames[50];
+    int   nframes;
 
-	nframes = backtrace(frames, sizeof(frames) / sizeof(frames[0]));
-	if (nframes > 1) {
-		char **lines = backtrace_symbols(frames, nframes);
-		if (lines == NULL) {
-			return;
-		}
-		for (int i = 1; i < nframes; i++) {
-			log_fatal(lines[i]);
-		}
-		free(lines);
-	}
+    nframes = backtrace(frames, sizeof(frames) / sizeof(frames[0]));
+    if (nframes > 1) {
+        char **lines = backtrace_symbols(frames, nframes);
+        if (lines == NULL) {
+            return;
+        }
+        for (int i = 1; i < nframes; i++) {
+            log_fatal(lines[i]);
+        }
+        free(lines);
+    }
 #endif
 }
 
@@ -60,21 +60,20 @@ void neu_show_backtrace(void)
  */
 void neu_panic(const char *fmt, ...)
 {
-	char    buf[100];
-	char    fbuf[93]; // 7 bytes of "panic: "
-	va_list va;
+    char    buf[100];
+    char    fbuf[93]; // 7 bytes of "panic: "
+    va_list va;
 
-	va_start(va, fmt);
-	(void) vsnprintf(fbuf, sizeof(fbuf), fmt, va);
-	va_end(va);
+    va_start(va, fmt);
+    (void) vsnprintf(fbuf, sizeof(fbuf), fmt, va);
+    va_end(va);
 
-	(void) snprintf(buf, sizeof(buf), "panic: %s", fbuf);
+    (void) snprintf(buf, sizeof(buf), "panic: %s", fbuf);
 
-	log_fatal(buf);
-	log_fatal("This message is indicative of a BUG.");
-	log_fatal("Report this at https://github.com/emqx/neuronlite/issues");
+    log_fatal(buf);
+    log_fatal("This message is indicative of a BUG.");
+    log_fatal("Report this at https://github.com/emqx/neuronlite/issues");
 
-	neu_show_backtrace();
-	abort();
+    neu_show_backtrace();
+    abort();
 }
-

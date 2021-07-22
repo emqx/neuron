@@ -26,12 +26,12 @@
  */
 bool neu_atomic_flag_test_and_set(neu_atomic_flag *f)
 {
-	return (atomic_flag_test_and_set(&f->f));
+    return (atomic_flag_test_and_set(&f->f));
 }
 
 void neu_atomic_flag_reset(neu_atomic_flag *f)
 {
-	atomic_flag_clear(&f->f);
+    atomic_flag_clear(&f->f);
 }
 
 /*
@@ -39,22 +39,22 @@ void neu_atomic_flag_reset(neu_atomic_flag *f)
  */
 void neu_atomic_set_bool(neu_atomic_bool *v, bool b)
 {
-	atomic_store(&v->v, b);
+    atomic_store(&v->v, b);
 }
 
 bool neu_atomic_get_bool(neu_atomic_bool *v)
 {
-	return (atomic_load(&v->v));
+    return (atomic_load(&v->v));
 }
 
 bool neu_atomic_swap_bool(neu_atomic_bool *v, bool b)
 {
-	return (atomic_exchange(&v->v, b));
+    return (atomic_exchange(&v->v, b));
 }
 
 void neu_atomic_init_bool(neu_atomic_bool *v)
 {
-	atomic_init(&v->v, false);
+    atomic_init(&v->v, false);
 }
 
 /*
@@ -62,51 +62,50 @@ void neu_atomic_init_bool(neu_atomic_bool *v)
  */
 void neu_atomic_init(neu_atomic_int *v)
 {
-	atomic_init(&v->v, 0);
+    atomic_init(&v->v, 0);
 }
 
 void neu_atomic_add(neu_atomic_int *v, int bump)
 {
-	(void) atomic_fetch_add_explicit(&v->v, bump, memory_order_relaxed);
+    (void) atomic_fetch_add_explicit(&v->v, bump, memory_order_relaxed);
 }
 
 void neu_atomic_sub(neu_atomic_int *v, int bump)
 {
-	(void) atomic_fetch_sub_explicit(&v->v, bump, memory_order_relaxed);
+    (void) atomic_fetch_sub_explicit(&v->v, bump, memory_order_relaxed);
 }
 
 int neu_atomic_get(neu_atomic_int *v)
 {
-	return (atomic_load(&v->v));
+    return (atomic_load(&v->v));
 }
 
 void neu_atomic_set(neu_atomic_int *v, int i)
 {
-	return (atomic_store(&v->v, i));
+    return (atomic_store(&v->v, i));
 }
 
 int neu_atomic_swap(neu_atomic_int *v, int i)
 {
-	return (atomic_exchange(&v->v, i));
+    return (atomic_exchange(&v->v, i));
 }
 
 void neu_atomic_inc(neu_atomic_int *v)
 {
-	atomic_fetch_add(&v->v, 1);
+    atomic_fetch_add(&v->v, 1);
 }
 
 void neu_atomic_dec(neu_atomic_int *v)
 {
-	atomic_fetch_sub(&v->v, 1);
+    atomic_fetch_sub(&v->v, 1);
 }
 
 int neu_atomic_dec_nv(neu_atomic_int *v)
 {
-	return (atomic_fetch_sub(&v->v, 1) - 1);
+    return (atomic_fetch_sub(&v->v, 1) - 1);
 }
 
 bool neu_atomic_cas(neu_atomic_int *v, int comp, int new)
 {
-	return (atomic_compare_exchange_strong(&v->v, &comp, new));
+    return (atomic_compare_exchange_strong(&v->v, &comp, new));
 }
-

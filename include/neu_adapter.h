@@ -30,70 +30,68 @@ typedef struct neu_adapter neu_adapter_t;
  */
 
 typedef enum neu_reqresp_type {
-	NEU_REQRESP_NOP,
-	NEU_REQRESP_START_PERIODIC_READ,
-	NEU_REQRESP_STOP_PERIODIC_READ,
-	NEU_REQRESP_READ,
-	NEU_REQRESP_WRITE,
-	// The ownership of buffer will move into reqresp.
-	NEU_REQRESP_MOVE_BUF,
+    NEU_REQRESP_NOP,
+    NEU_REQRESP_START_PERIODIC_READ,
+    NEU_REQRESP_STOP_PERIODIC_READ,
+    NEU_REQRESP_READ,
+    NEU_REQRESP_WRITE,
+    // The ownership of buffer will move into reqresp.
+    NEU_REQRESP_MOVE_BUF,
 } neu_reqresp_type_e;
 
 typedef struct neu_request {
-   uint32_t       req_id;
-   neu_reqresp_type_e  req_type;
-   uint32_t       buf_len;
-   char*          buf;
+    uint32_t           req_id;
+    neu_reqresp_type_e req_type;
+    uint32_t           buf_len;
+    char *             buf;
 } neu_request_t;
 
 typedef struct neu_response {
-    uint32_t   req_id;
-    neu_reqresp_type_e  resp_type;
-    uint32_t   buf_len;
-    char*      buf;
+    uint32_t           req_id;
+    neu_reqresp_type_e resp_type;
+    uint32_t           buf_len;
+    char *             buf;
 } neu_response_t;
 
 /**
  * definition enum and structure for neuron event
  */
 typedef enum neu_event_type {
-	NEU_EVENT_NOP,
-	NEU_EVENT_STATUS,
+    NEU_EVENT_NOP,
+    NEU_EVENT_STATUS,
 } neu_event_type_e;
 
 typedef struct neu_event_notify {
-	uint32_t              event_id;
-	neu_event_type_e      type;
-    uint32_t              buf_len;
-    char*                 buf;
+    uint32_t         event_id;
+    neu_event_type_e type;
+    uint32_t         buf_len;
+    char *           buf;
 } neu_event_notify_t;
 
 typedef struct neu_event_reply {
-    uint32_t              event_id;
-	neu_event_type_e      type;
-    uint32_t              buf_len;
-    char*                 buf;
+    uint32_t         event_id;
+    neu_event_type_e type;
+    uint32_t         buf_len;
+    char *           buf;
 } neu_event_reply_t;
 
 /**
  * definition enum and structure for neuron config
  */
 typedef enum neu_config_type {
-	NEU_CONFIG_UNKNOW,
-	NEU_CONFIG_ADDRESS,
+    NEU_CONFIG_UNKNOW,
+    NEU_CONFIG_ADDRESS,
 } neu_config_type_e;
 
 typedef struct neu_config {
-	neu_config_type_e     type;
-    uint32_t              buf_len;
-    char*                 buf;
-}  neu_config_t;
+    neu_config_type_e type;
+    uint32_t          buf_len;
+    char *            buf;
+} neu_config_t;
 
 typedef struct adapter_callbacks {
-	int (*response)(neu_adapter_t* adapter,
-					neu_response_t* resp);
-	int (*event_notify)(neu_adapter_t* adapter,
-						neu_event_notify_t* event);
+    int (*response)(neu_adapter_t *adapter, neu_response_t *resp);
+    int (*event_notify)(neu_adapter_t *adapter, neu_event_notify_t *event);
 } adapter_callbacks_t;
 
 #endif

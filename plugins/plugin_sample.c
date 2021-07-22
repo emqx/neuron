@@ -17,137 +17,132 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "neuron.h"
 
 const neu_plugin_module_t neu_plugin_module;
 
 struct neu_plugin {
-	neu_plugin_common_t common;
+    neu_plugin_common_t common;
 };
 
-static neu_plugin_t* sample_plugin_open(neu_adapter_t* adapter,
-										const adapter_callbacks_t* callbacks)
+static neu_plugin_t *sample_plugin_open(
+    neu_adapter_t *adapter, const adapter_callbacks_t *callbacks)
 {
-	neu_plugin_t* plugin;
+    neu_plugin_t *plugin;
 
-	if (adapter == NULL || callbacks == NULL) {
-		log_error("Open plugin with NULL adapter or callbacks");
-		return NULL;
-	}
+    if (adapter == NULL || callbacks == NULL) {
+        log_error("Open plugin with NULL adapter or callbacks");
+        return NULL;
+    }
 
-	plugin = (neu_plugin_t*)malloc(sizeof(neu_plugin_t));
-	if (plugin == NULL) {
-		log_error("Failed to allocate plugin %s",
-			   	neu_plugin_module.module_name);
-		return NULL;
-	}
+    plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
+    if (plugin == NULL) {
+        log_error(
+            "Failed to allocate plugin %s", neu_plugin_module.module_name);
+        return NULL;
+    }
 
-	plugin->common.adapter = adapter;
-	plugin->common.adapter_callbacks = callbacks;
-	log_info("Success to create plugin: %s", neu_plugin_module.module_name);
-	return plugin;
+    plugin->common.adapter           = adapter;
+    plugin->common.adapter_callbacks = callbacks;
+    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    return plugin;
 }
 
-static int sample_plugin_close(neu_plugin_t* plugin)
+static int sample_plugin_close(neu_plugin_t *plugin)
 {
-	int rv = 0;
+    int rv = 0;
 
-	free(plugin);
-	log_info("Success to free plugin: %s", neu_plugin_module.module_name);
-	return rv;
+    free(plugin);
+    log_info("Success to free plugin: %s", neu_plugin_module.module_name);
+    return rv;
 }
 
-static int sample_plugin_init(neu_plugin_t* plugin)
+static int sample_plugin_init(neu_plugin_t *plugin)
 {
-	int rv = 0;
+    int rv = 0;
 
-	log_info("Initialize plugin: %s", neu_plugin_module.module_name);
-	return rv;
+    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    return rv;
 }
 
-static int sample_plugin_uninit(neu_plugin_t* plugin)
+static int sample_plugin_uninit(neu_plugin_t *plugin)
 {
-	int rv = 0;
+    int rv = 0;
 
-	log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
-	return rv;
+    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    return rv;
 }
 
-static int sample_plugin_config(neu_plugin_t* plugin, neu_config_t* configs)
+static int sample_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-	int rv = 0;
+    int rv = 0;
 
-	log_info("config plugin: %s", neu_plugin_module.module_name);
-	return rv;
+    log_info("config plugin: %s", neu_plugin_module.module_name);
+    return rv;
 }
 
-static int sample_plugin_request(neu_plugin_t* plugin,
-				   				 neu_request_t* req)
+static int sample_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
-	int rv = 0;
+    int rv = 0;
 
-	if (plugin == NULL || req == NULL) {
-		log_warn("The plugin pointer or request is NULL");
-		return (-1);
-	}
+    if (plugin == NULL || req == NULL) {
+        log_warn("The plugin pointer or request is NULL");
+        return (-1);
+    }
 
-	log_info("send request to plugin: %s", neu_plugin_module.module_name);
-	const adapter_callbacks_t* adapter_callbacks;
-	adapter_callbacks = plugin->common.adapter_callbacks;
+    log_info("send request to plugin: %s", neu_plugin_module.module_name);
+    const adapter_callbacks_t *adapter_callbacks;
+    adapter_callbacks = plugin->common.adapter_callbacks;
 
-	switch (req->req_type) {
-		case NEU_REQRESP_READ:
-		{
-			neu_response_t resp;
-			static const char* resp_str = "Sample plugin read response";
+    switch (req->req_type) {
+    case NEU_REQRESP_READ: {
+        neu_response_t     resp;
+        static const char *resp_str = "Sample plugin read response";
 
-			char* resp_buf;
-			resp_buf = strdup(resp_str);
+        char *resp_buf;
+        resp_buf = strdup(resp_str);
 
-			memset(&resp, 0, sizeof(resp));
-			resp.req_id    = req->req_id;
-			resp.resp_type = NEU_REQRESP_MOVE_BUF;
-			resp.buf_len   = sizeof(strlen(resp_buf) + 1);
-			resp.buf       = resp_buf;
-			rv = adapter_callbacks->response(plugin->common.adapter, &resp);
-			break;
-		}
+        memset(&resp, 0, sizeof(resp));
+        resp.req_id    = req->req_id;
+        resp.resp_type = NEU_REQRESP_MOVE_BUF;
+        resp.buf_len   = sizeof(strlen(resp_buf) + 1);
+        resp.buf       = resp_buf;
+        rv = adapter_callbacks->response(plugin->common.adapter, &resp);
+        break;
+    }
 
-		default:
-			break;
-	}
-	return rv;
+    default:
+        break;
+    }
+    return rv;
 }
 
-static int sample_plugin_event_reply(neu_plugin_t* plugin,
- 					   				 neu_event_reply_t* reply)
+static int sample_plugin_event_reply(
+    neu_plugin_t *plugin, neu_event_reply_t *reply)
 {
-	int rv = 0;
+    int rv = 0;
 
-	log_info("reply event to plugin: %s", neu_plugin_module.module_name);
-	return rv;
+    log_info("reply event to plugin: %s", neu_plugin_module.module_name);
+    return rv;
 }
 
-static const neu_plugin_intf_funs_t plugin_intf_funs = {
-	.open   = sample_plugin_open,
-	.close  = sample_plugin_close,
-	.init   = sample_plugin_init,
-	.uninit = sample_plugin_uninit,
-	.config = sample_plugin_config,
-	.request     = sample_plugin_request,
-	.event_reply = sample_plugin_event_reply
-};
+static const neu_plugin_intf_funs_t plugin_intf_funs = { .open =
+                                                             sample_plugin_open,
+    .close       = sample_plugin_close,
+    .init        = sample_plugin_init,
+    .uninit      = sample_plugin_uninit,
+    .config      = sample_plugin_config,
+    .request     = sample_plugin_request,
+    .event_reply = sample_plugin_event_reply };
 
-static const char* const sample_plugin_descr =
-		"A sample plugin for demonstrate how to write a neuron plugin";
+static const char *const sample_plugin_descr =
+    "A sample plugin for demonstrate how to write a neuron plugin";
 
-const neu_plugin_module_t neu_plugin_module = {
-	.version 	  = NEURON_PLUGIN_VER_1_0,
-	.module_name  = "neuron-sample-plugin",
-	.module_descr = sample_plugin_descr,
-	.intf_funs    = &plugin_intf_funs
-};
-
+const neu_plugin_module_t neu_plugin_module = { .version =
+                                                    NEURON_PLUGIN_VER_1_0,
+    .module_name  = "neuron-sample-plugin",
+    .module_descr = sample_plugin_descr,
+    .intf_funs    = &plugin_intf_funs };

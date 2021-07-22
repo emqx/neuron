@@ -29,14 +29,14 @@
 #define LOG_VERSION "0.1.0"
 
 typedef struct {
-	va_list     ap;
-	const char *fmt;
-	const char *file;
-	const char *func;
-	struct tm * time;
-	void *      udata;
-	int         line;
-	int         level;
+    va_list     ap;
+    const char *fmt;
+    const char *file;
+    const char *func;
+    struct tm * time;
+    void *      udata;
+    int         line;
+    int         level;
 } log_Event;
 
 typedef void (*log_LogFn)(log_Event *ev);
@@ -55,23 +55,23 @@ extern void log_log(int level, const char *file, int line, const char *func,
 
 /*
 #define fatal(msg, rv)                             \
-	{                                              \
-		log_fatal("%s:%s", msg, strerror(rv)); \
-		exit(1);                                   \
-	}
+    {                                              \
+        log_fatal("%s:%s", msg, strerror(rv)); \
+        exit(1);                                   \
+    }
 */
 
 #define log_trace(...) \
-	log_log(LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+    log_log(LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define log_debug(...) \
-	log_log(LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+    log_log(LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define log_info(...) \
-	log_log(LOG_INFO, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+    log_log(LOG_INFO, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define log_warn(...) \
-	log_log(LOG_WARN, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+    log_log(LOG_WARN, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define log_error(...) \
-	log_log(LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+    log_log(LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define log_fatal(...) \
-	log_log(LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+    log_log(LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 
 #endif

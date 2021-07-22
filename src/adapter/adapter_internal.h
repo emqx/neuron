@@ -24,28 +24,28 @@
 #include "core/neu_manager.h"
 
 typedef enum adapter_type {
-	ADAPTER_TYPE_UNKNOW,
-	ADAPTER_TYPE_WEBSERVER,
-	ADAPTER_TYPE_MQTT,
-	ADAPTER_TYPE_STREAM_PROCESSOR,
-	ADAPTER_TYPE_APP,
-	ADAPTER_TYPE_DRIVER,
-	ADAPTER_TYPE_MAX,
+    ADAPTER_TYPE_UNKNOW,
+    ADAPTER_TYPE_WEBSERVER,
+    ADAPTER_TYPE_MQTT,
+    ADAPTER_TYPE_STREAM_PROCESSOR,
+    ADAPTER_TYPE_APP,
+    ADAPTER_TYPE_DRIVER,
+    ADAPTER_TYPE_MAX,
 } adapter_type_e;
 
 typedef struct neu_adapter_info {
-	uint32_t	    id;
-	adapter_type_e	type;
-	char*			name;
-	char*			plugin_lib_name;
+    uint32_t       id;
+    adapter_type_e type;
+    char *         name;
+    char *         plugin_lib_name;
 } neu_adapter_info_t;
 
-neu_adapter_t* neu_adapter_create(neu_adapter_info_t* info);
-void neu_adapter_destroy(neu_adapter_t* adapter);
-int neu_adapter_start(neu_adapter_t* adapter, neu_manager_t* manager);
-int neu_adapter_stop(neu_adapter_t* adapter, neu_manager_t* manager);
-const char* neu_adapter_get_name(neu_adapter_t* adapter);
-neu_manager_t* neu_adapter_get_manager(neu_adapter_t* adapter);
-nng_socket neu_adapter_get_sock(neu_adapter_t* adapter);
+neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info);
+void           neu_adapter_destroy(neu_adapter_t *adapter);
+int         neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager);
+int         neu_adapter_stop(neu_adapter_t *adapter, neu_manager_t *manager);
+const char *neu_adapter_get_name(neu_adapter_t *adapter);
+neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter);
+nng_socket     neu_adapter_get_sock(neu_adapter_t *adapter);
 
 #endif

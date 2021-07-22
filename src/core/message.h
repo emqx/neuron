@@ -22,48 +22,48 @@
 
 #include <assert.h>
 
-#include "neu_log.h"
 #include "databuf.h"
+#include "neu_log.h"
 
 typedef enum msg_type {
-	MSG_TYPE_CMD_START = 0,
-	MSG_CMD_NOP = MSG_TYPE_CMD_START,
-	MSG_CMD_START_READ,
-	MSG_CMD_STOP_READ,
-	MSG_CMD_EXIT_LOOP,
-	MSG_TYPE_CMD_END,
+    MSG_TYPE_CMD_START = 0,
+    MSG_CMD_NOP        = MSG_TYPE_CMD_START,
+    MSG_CMD_START_READ,
+    MSG_CMD_STOP_READ,
+    MSG_CMD_EXIT_LOOP,
+    MSG_TYPE_CMD_END,
 
-	MSG_TYPE_CONFIG_START = 0x1000,
-	MSG_CONFIG_INFO_STRING= MSG_TYPE_CONFIG_START,
-	MSG_CONFIG_REGISTER_ADAPTER,
-	MSG_CONFIG_UNREGISTER_ADAPTER,
-	MSG_CONFIG_SUBSCRIBE_ADAPTER,
-	// for adapter
-	MSG_CONFIG_READ_ADDR_RANGE,
-	MSG_TYPE_CONFIG_END,
+    MSG_TYPE_CONFIG_START  = 0x1000,
+    MSG_CONFIG_INFO_STRING = MSG_TYPE_CONFIG_START,
+    MSG_CONFIG_REGISTER_ADAPTER,
+    MSG_CONFIG_UNREGISTER_ADAPTER,
+    MSG_CONFIG_SUBSCRIBE_ADAPTER,
+    // for adapter
+    MSG_CONFIG_READ_ADDR_RANGE,
+    MSG_TYPE_CONFIG_END,
 
-	MSG_TYPE_EVENT_START = 0x2000,
-	MSG_EVENT_DRIVER_STATUS = MSG_TYPE_EVENT_START,
-	MSG_EVENT_STATUS_STRING,
-	MSG_TYPE_EVENT_END,
+    MSG_TYPE_EVENT_START    = 0x2000,
+    MSG_EVENT_DRIVER_STATUS = MSG_TYPE_EVENT_START,
+    MSG_EVENT_STATUS_STRING,
+    MSG_TYPE_EVENT_END,
 
-	MSG_TYPE_DATA_START = 0x3000,
-	MSG_DATA_NEURON_DATABUF = MSG_TYPE_DATA_START,
-	MSG_TYPE_DATA_END,
+    MSG_TYPE_DATA_START     = 0x3000,
+    MSG_DATA_NEURON_DATABUF = MSG_TYPE_DATA_START,
+    MSG_TYPE_DATA_END,
 
-	// User customer message types
-	MSG_TYPE_VENDOR_START = 0x100000,
-	MSG_TYPE_VENDOR_END,
+    // User customer message types
+    MSG_TYPE_VENDOR_START = 0x100000,
+    MSG_TYPE_VENDOR_END,
 
-	MSG_TYPE_END = MSG_TYPE_VENDOR_END,
+    MSG_TYPE_END = MSG_TYPE_VENDOR_END,
 
-	MSG_DATABUF_KIND_MASK = (0xf << 28),
-	MSG_DATABUF_INPLACE   = (0x0 << 28),
-	MSG_DATABUF_EXTERNAL  = (0x1 << 28)
+    MSG_DATABUF_KIND_MASK = (0xf << 28),
+    MSG_DATABUF_INPLACE   = (0x0 << 28),
+    MSG_DATABUF_EXTERNAL  = (0x1 << 28)
 } msg_type_e;
 
 static_assert(MSG_TYPE_END >= MSG_DATABUF_KIND_MASK,
-			  "Too many massage type exceed MSG_DATABUF_KIND_MASK");
+    "Too many massage type exceed MSG_DATABUF_KIND_MASK");
 
 typedef struct message message_t;
 
@@ -81,24 +81,24 @@ size_t msg_external_data_get_size();
  * buffer of struct_ptr had also been allocated by caller. The initialization
  * function will copy contents in struct_ptr to internal buffer pointer.
  */
-void msg_with_struct_init(message_t* msg, msg_type_e type,
-						  void* struct_ptr, size_t struct_size);
-void msg_inplace_data_init(message_t* msg, msg_type_e type, size_t data_len);
+void msg_with_struct_init(
+    message_t *msg, msg_type_e type, void *struct_ptr, size_t struct_size);
+void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len);
 
 /**
  * Initialize the message that has external data buffer. Just set pointer of
  * external buffer to message, and get a strong reference of external buffer.
  */
-void msg_external_data_init(message_t* msg, msg_type_e type,
-	   						core_databuf_t* data_buf);
+void msg_external_data_init(
+    message_t *msg, msg_type_e type, core_databuf_t *data_buf);
 
 /**
  *  Uninitialize the message that has external data buffer. Just return strong
  *  reference of external buffer.
  */
-void msg_external_data_uninit(message_t* msg);
+void msg_external_data_uninit(message_t *msg);
 
-msg_type_e msg_get_type(message_t* msg);
-size_t msg_get_buf_len(message_t* msg);
-void* msg_get_buf_ptr(message_t* msg);
+msg_type_e msg_get_type(message_t *msg);
+size_t     msg_get_buf_len(message_t *msg);
+void *     msg_get_buf_ptr(message_t *msg);
 #endif

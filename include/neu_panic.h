@@ -20,8 +20,8 @@
 #ifndef NEURON_PANIC_H
 #define NEURON_PANIC_H
 
-#include <stdarg.h>
 #include "neu_log.h"
+#include <stdarg.h>
 
 void neu_show_backtrace(void);
 void neu_panic(const char *fmt, ...);

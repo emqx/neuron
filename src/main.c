@@ -17,113 +17,113 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <getopt.h>
 
 #include <nng/nng.h>
 #include <nng/protocol/bus0/bus.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "core/neu_manager.h"
 #include "neu_log.h"
 #include "neu_panic.h"
-#include "core/neu_manager.h"
 
-static nng_mtx* log_mtx;
-FILE* g_logfile;
+static nng_mtx *log_mtx;
+FILE *          g_logfile;
 
-static void
-log_lock(bool lock, void *udata)
+static void log_lock(bool lock, void *udata)
 {
-	nng_mtx* mutex = (nng_mtx *) (udata);
-	if (lock) {
-		nng_mtx_lock(mutex);
-	} else {
-		nng_mtx_unlock(mutex);
-	}
+    nng_mtx *mutex = (nng_mtx *) (udata);
+    if (lock) {
+        nng_mtx_lock(mutex);
+    } else {
+        nng_mtx_unlock(mutex);
+    }
 }
 
 static void init()
 {
-	nng_mtx_alloc(&log_mtx);
-	log_set_lock(log_lock, log_mtx);
-	log_set_level(LOG_DEBUG);
-	FILE* g_logfile = fopen("rest-server.log", "w");
-	if (g_logfile == NULL) {
-		fprintf(stderr, "Failed to open logfile when"
-			           "initialize neuron main process");
-		abort();
-	}
-	// log_set_quiet(true);
-	log_add_fp(g_logfile, LOG_DEBUG);
+    nng_mtx_alloc(&log_mtx);
+    log_set_lock(log_lock, log_mtx);
+    log_set_level(LOG_DEBUG);
+    FILE *g_logfile = fopen("rest-server.log", "w");
+    if (g_logfile == NULL) {
+        fprintf(stderr,
+            "Failed to open logfile when"
+            "initialize neuron main process");
+        abort();
+    }
+    // log_set_quiet(true);
+    log_add_fp(g_logfile, LOG_DEBUG);
 }
 
 static void uninit()
 {
-	fclose(g_logfile);
-	nng_mtx_free(log_mtx);
+    fclose(g_logfile);
+    nng_mtx_free(log_mtx);
 }
 
 static void usage()
 {
-	log_info("neuron [--help] [--daemon]");
+    log_info("neuron [--help] [--daemon]");
 }
 
 static int read_neuron_config()
 {
-	int rv = 0;
+    int rv = 0;
 
-	// TODO: read configuration from config file.
-	return rv;
+    // TODO: read configuration from config file.
+    return rv;
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
-	int  rv = 0;
-	bool is_daemon = false;
+    int  rv        = 0;
+    bool is_daemon = false;
 
-	init();
+    init();
 
-	char* opts = "h:d:";
-	struct option long_options[] = {
-		{"help", no_argument, NULL, 'h'},
-		{"daemon", required_argument, NULL, 'd'},
-	};
-	char c;
+    char *        opts           = "h:d:";
+    struct option long_options[] = {
+        { "help", no_argument, NULL, 'h' },
+        { "daemon", required_argument, NULL, 'd' },
+    };
+    char c;
 
     while ((c = getopt_long(argc, argv, opts, long_options, NULL)) != EOF) {
         switch (c) {
-            case 'h':
-				usage();
-				exit(0);
-			case 'd':
-				is_daemon = true;
-				break;
-			default:
-				log_warn("The arg %c is not supported!", c);
-				break;
-		}
-	}
+        case 'h':
+            usage();
+            exit(0);
+        case 'd':
+            is_daemon = true;
+            break;
+        default:
+            log_warn("The arg %c is not supported!", c);
+            break;
+        }
+    }
 
-	if ((rv = read_neuron_config()) < 0) {
-		log_error("Failed to get neuron configuration.");
-		goto main_end;
-	}
+    if ((rv = read_neuron_config()) < 0) {
+        log_error("Failed to get neuron configuration.");
+        goto main_end;
+    }
 
-	neu_manager_t* manager;
-	log_info("running neuron main process");
-	manager = neu_manager_create();
-	if (manager == NULL) {
-		log_error("Failed to create neuron manager, exit!");
-		rv = -1;
-		goto main_end;
-	}
+    neu_manager_t *manager;
+    log_info("running neuron main process");
+    manager = neu_manager_create();
+    if (manager == NULL) {
+        log_error("Failed to create neuron manager, exit!");
+        rv = -1;
+        goto main_end;
+    }
 
-	neu_manager_destroy(manager);
+    neu_manager_destroy(manager);
 
 main_end:
-	uninit();
-	return rv;
+    uninit();
+    return rv;
 }

@@ -17,9 +17,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -27,126 +27,125 @@
 #include "core/message.h"
 
 typedef struct msg_inplace_buf {
-	size_t	buf_len;
-	// The buf_ptr pointer to msg_buf
-	void*	buf_ptr;
+    size_t buf_len;
+    // The buf_ptr pointer to msg_buf
+    void *buf_ptr;
 } msg_inplace_buf_t;
 
 struct message {
-    msg_type_e  type;
-    uint32_t    msg_id;
+    msg_type_e type;
+    uint32_t   msg_id;
     union {
-		msg_inplace_buf_t    inp_buf;
-		// The external buffer pointer to a core_databuf_t.
-		core_databuf_t*      ext_buf;
+        msg_inplace_buf_t inp_buf;
+        // The external buffer pointer to a core_databuf_t.
+        core_databuf_t *ext_buf;
     };
 
-	// For align with 4 bytes
-	uint32_t		msg_buf[0];
+    // For align with 4 bytes
+    uint32_t msg_buf[0];
     // Don’t add any member after here
 };
 
 // get size of message
 size_t msg_with_struct_get_size(size_t struct_size)
 {
-	return sizeof(message_t) + struct_size;
+    return sizeof(message_t) + struct_size;
 }
 
 // get size of message
 size_t msg_inplace_data_get_size(size_t data_len)
 {
-	return sizeof(message_t) + data_len;
+    return sizeof(message_t) + data_len;
 }
 
 // get size of message
 size_t msg_external_data_get_size()
 {
-	return sizeof(message_t);
+    return sizeof(message_t);
 }
 
-void msg_with_struct_init(message_t* msg, msg_type_e type,
-						  void* struct_ptr, size_t struct_size)
+void msg_with_struct_init(
+    message_t *msg, msg_type_e type, void *struct_ptr, size_t struct_size)
 {
-	if (!(msg != NULL && struct_ptr != NULL)) {
-		log_error("msg_with_struct_init called with NULL pointr");
-		return;
-	}
-	
-	msg->type = type;
-	msg->inp_buf.buf_len = struct_size;
-	msg->inp_buf.buf_ptr = msg->msg_buf;
-	memcpy(msg->msg_buf, struct_ptr, struct_size);
-	return;
+    if (!(msg != NULL && struct_ptr != NULL)) {
+        log_error("msg_with_struct_init called with NULL pointr");
+        return;
+    }
+
+    msg->type            = type;
+    msg->inp_buf.buf_len = struct_size;
+    msg->inp_buf.buf_ptr = msg->msg_buf;
+    memcpy(msg->msg_buf, struct_ptr, struct_size);
+    return;
 }
 
-void msg_inplace_data_init(message_t* msg, msg_type_e type, size_t data_len)
+void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len)
 {
-	if (msg == NULL) {
-		log_error("msg_inplace_data_init called with NULL pointr");
-		return;
-	}
-	
-	msg->type = type;
-	msg->inp_buf.buf_len = data_len;
-	msg->inp_buf.buf_ptr = msg->msg_buf;
+    if (msg == NULL) {
+        log_error("msg_inplace_data_init called with NULL pointr");
+        return;
+    }
+
+    msg->type            = type;
+    msg->inp_buf.buf_len = data_len;
+    msg->inp_buf.buf_ptr = msg->msg_buf;
 }
 
-void msg_external_data_init(message_t* msg, msg_type_e type,
-	   						core_databuf_t* data_buf)
+void msg_external_data_init(
+    message_t *msg, msg_type_e type, core_databuf_t *data_buf)
 {
-	if (msg == NULL) {
-		log_error("msg_external_data_init called with NULL pointr");
-		return;
-	}
-	
-	msg->type = type;
-	msg->ext_buf = core_databuf_get(data_buf);
-	return;
+    if (msg == NULL) {
+        log_error("msg_external_data_init called with NULL pointr");
+        return;
+    }
+
+    msg->type    = type;
+    msg->ext_buf = core_databuf_get(data_buf);
+    return;
 }
 
-void msg_external_data_uninit(message_t* msg)
+void msg_external_data_uninit(message_t *msg)
 {
-	if (!(msg != NULL && msg->ext_buf != NULL)) {
-		log_error("msg_external_data_uninit called with NULL pointr");
-		return;
-	}
-	
-	core_databuf_put(msg->ext_buf);
-	msg->ext_buf = NULL;
+    if (!(msg != NULL && msg->ext_buf != NULL)) {
+        log_error("msg_external_data_uninit called with NULL pointr");
+        return;
+    }
+
+    core_databuf_put(msg->ext_buf);
+    msg->ext_buf = NULL;
 }
 
-msg_type_e msg_get_type(message_t* msg)
+msg_type_e msg_get_type(message_t *msg)
 {
-	if (msg == NULL) {
-		return MSG_CMD_NOP;
-	}
+    if (msg == NULL) {
+        return MSG_CMD_NOP;
+    }
 
-	return msg->type;
+    return msg->type;
 }
 
-size_t msg_get_buf_len(message_t* msg)
+size_t msg_get_buf_len(message_t *msg)
 {
-	if (msg == NULL) {
-		return 0;
-	}
+    if (msg == NULL) {
+        return 0;
+    }
 
-	if ((msg->type & MSG_DATABUF_KIND_MASK) == MSG_DATABUF_EXTERNAL) {
-		return core_databuf_get_len(msg->ext_buf);
-	} else {
-		return msg->inp_buf.buf_len;
-	}
+    if ((msg->type & MSG_DATABUF_KIND_MASK) == MSG_DATABUF_EXTERNAL) {
+        return core_databuf_get_len(msg->ext_buf);
+    } else {
+        return msg->inp_buf.buf_len;
+    }
 }
 
-void* msg_get_buf_ptr(message_t* msg)
+void *msg_get_buf_ptr(message_t *msg)
 {
-	if (msg == NULL) {
-		return NULL;
-	}
+    if (msg == NULL) {
+        return NULL;
+    }
 
-	if ((msg->type & MSG_DATABUF_KIND_MASK) == MSG_DATABUF_EXTERNAL) {
-		return core_databuf_get_ptr(msg->ext_buf);
-	} else {
-		return msg->inp_buf.buf_ptr;
-	}
+    if ((msg->type & MSG_DATABUF_KIND_MASK) == MSG_DATABUF_EXTERNAL) {
+        return core_databuf_get_ptr(msg->ext_buf);
+    } else {
+        return msg->inp_buf.buf_ptr;
+    }
 }
-

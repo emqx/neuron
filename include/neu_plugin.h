@@ -22,41 +22,39 @@
 
 #include "neu_adapter.h"
 
-#define NEURON_PLUGIN_VER_1_0	100
-#define NEURON_PLUGIN_VER_2_0	200
+#define NEURON_PLUGIN_VER_1_0 100
+#define NEURON_PLUGIN_VER_2_0 200
 
 typedef enum neu_plugin_state {
-	NEURON_PLUGIN_STATE_NULL,
-	NEURON_PLUGIN_STATE_IDLE,
-	NEURON_PLUGIN_STATE_READY,
+    NEURON_PLUGIN_STATE_NULL,
+    NEURON_PLUGIN_STATE_IDLE,
+    NEURON_PLUGIN_STATE_READY,
 } neu_plugin_state_e;
 
 typedef struct neu_plugin_common {
-	neu_plugin_state_e state;
-	neu_adapter_t*	   adapter;
-	const adapter_callbacks_t* adapter_callbacks;
+    neu_plugin_state_e         state;
+    neu_adapter_t *            adapter;
+    const adapter_callbacks_t *adapter_callbacks;
 } neu_plugin_common_t;
 
 typedef struct neu_plugin neu_plugin_t;
 
 typedef struct neu_plugin_intf_funs {
-	neu_plugin_t* (*open)(neu_adapter_t* adapter,
-						  const adapter_callbacks_t* callbacks);
-	int (*close)(neu_plugin_t* plugin);
-	int (*init)(neu_plugin_t* plugin);
-	int (*uninit)(neu_plugin_t* plugin);
-	int (*config)(neu_plugin_t* plugin, neu_config_t* configs);
-	int (*request)(neu_plugin_t* plugin,
-				   neu_request_t* req);
-	int (*event_reply)(neu_plugin_t* plugin,
-					   neu_event_reply_t* reply);
+    neu_plugin_t *(*open)(
+        neu_adapter_t *adapter, const adapter_callbacks_t *callbacks);
+    int (*close)(neu_plugin_t *plugin);
+    int (*init)(neu_plugin_t *plugin);
+    int (*uninit)(neu_plugin_t *plugin);
+    int (*config)(neu_plugin_t *plugin, neu_config_t *configs);
+    int (*request)(neu_plugin_t *plugin, neu_request_t *req);
+    int (*event_reply)(neu_plugin_t *plugin, neu_event_reply_t *reply);
 } neu_plugin_intf_funs_t;
 
 typedef struct neu_plugin_module {
-	const uint32_t version;
-	const char*    module_name;
-	const char*    module_descr;
-	const neu_plugin_intf_funs_t* intf_funs;
+    const uint32_t                version;
+    const char *                  module_name;
+    const char *                  module_descr;
+    const neu_plugin_intf_funs_t *intf_funs;
 } neu_plugin_module_t;
 
 #endif

@@ -24,27 +24,27 @@
 extern "C" {
 #endif
 
-#include <stdio.h>    
-#include <stdbool.h>    
+#include <stdbool.h>
 #include <stdint.h>
-#include <time.h>    
-    
+#include <stdio.h>
+#include <time.h>
+
 /**
  * Order
  * -----
- * The Order enum is used to establish an absolute ordering between 
+ * The Order enum is used to establish an absolute ordering between
  * elements.
  **/
 typedef enum {
     NEU_ORDER_LESS = -1,
-    NEU_ORDER_EQ = 0,
+    NEU_ORDER_EQ   = 0,
     NEU_ORDER_MORE = 1
 } neu_order_t;
 
 /**
  * Boolean
  * -------
- * A logical value (true or false). 
+ * A logical value (true or false).
  **/
 typedef bool neu_boolean_t;
 #define NEU_TRUE true
@@ -53,7 +53,7 @@ typedef bool neu_boolean_t;
 /**
  * State
  * -----
- * A state value (on or off). 
+ * A state value (on or off).
  **/
 typedef bool neu_state_t;
 #define NEU_ON true
@@ -62,7 +62,7 @@ typedef bool neu_state_t;
 /**
  * Byte
  * ----
- * An integer value between -128 and 127. 
+ * An integer value between -128 and 127.
  **/
 typedef int8_t neu_byte_t;
 #define NEU_BYTE_MIN (-128)
@@ -71,7 +71,7 @@ typedef int8_t neu_byte_t;
 /**
  * Unsigned-Byte
  * -------------
- * An integer value between 0 and 255. 
+ * An integer value between 0 and 255.
  **/
 typedef uint8_t neu_ubyte_t;
 #define NEU_UBYTE_MIN 0
@@ -80,7 +80,7 @@ typedef uint8_t neu_ubyte_t;
 /**
  * Word
  * ----
- * An integer value between -32 768 and 32 767. 
+ * An integer value between -32 768 and 32 767.
  **/
 typedef int16_t neu_word_t;
 #define NEU_WORD_MIN (-32768)
@@ -89,7 +89,7 @@ typedef int16_t neu_word_t;
 /**
  * Unsigned-Word
  * -------------
- * An integer value between 0 and 65 535. 
+ * An integer value between 0 and 65 535.
  **/
 typedef uint16_t neu_uword_t;
 #define NEU_UWORD_MIN 0
@@ -98,7 +98,7 @@ typedef uint16_t neu_uword_t;
 /**
  * Double Word
  * -----------
- * An integer value between -2 147 483 648 and 2 147 483 647. 
+ * An integer value between -2 147 483 648 and 2 147 483 647.
  **/
 typedef int32_t neu_dword_t;
 #define NEU_DWORD_MIN (-2147483648)
@@ -107,7 +107,7 @@ typedef int32_t neu_dword_t;
 /**
  * Unsigned Double Word
  * --------------------
- * An integer value between 0 and 4 294 967 295. 
+ * An integer value between 0 and 4 294 967 295.
  **/
 typedef uint32_t neu_udword_t;
 #define NEU_UDWORD_MIN 0
@@ -117,7 +117,7 @@ typedef uint32_t neu_udword_t;
  * Quarter Word
  * ------------
  * An integer value between -9 223 372 036 854 775 808 and
- * 9 223 372 036 854 775 807. 
+ * 9 223 372 036 854 775 807.
  **/
 typedef int64_t neu_qword_t;
 #define NEU_QWORD_MIN (-9223372036854775808)
@@ -126,7 +126,7 @@ typedef int64_t neu_qword_t;
 /**
  * Unsigned Quarter Word
  * ---------------------
- * An integer value between 0 and 18 446 744 073 709 551 615. 
+ * An integer value between 0 and 18 446 744 073 709 551 615.
  **/
 typedef uint64_t neu_uqword_t;
 #define NEU_UQWORD_MIN 0
@@ -135,14 +135,14 @@ typedef uint64_t neu_uqword_t;
 /**
  * Float
  * -----
- * An IEEE single precision (32 bit) floating point value. 
+ * An IEEE single precision (32 bit) floating point value.
  **/
 typedef float neu_float_t;
 
 /**
  * Double
  * ------
- * An IEEE double precision (64 bit) floating point value. 
+ * An IEEE double precision (64 bit) floating point value.
  **/
 typedef double neu_double_t;
 
@@ -153,11 +153,11 @@ typedef double neu_double_t;
 /**
  * Byte (decimal)
  * --------------
- * An integer value between -128 and 127 with decimal position. 
+ * An integer value between -128 and 127 with decimal position.
  **/
 typedef struct {
     neu_byte_t value;
-    uint8_t decimal;
+    uint8_t    decimal;
 } neu_bytedec_t;
 
 neu_double_t neu_bytedec_toDouble(neu_bytedec_t b);
@@ -165,11 +165,11 @@ neu_double_t neu_bytedec_toDouble(neu_bytedec_t b);
 /**
  * Unsigned-Byte (decimal)
  * -----------------------
- * An integer value between 0 and 255 with decimal position. 
+ * An integer value between 0 and 255 with decimal position.
  **/
 typedef struct {
     neu_ubyte_t value;
-    uint8_t decimal;
+    uint8_t     decimal;
 } neu_ubytedec_t;
 
 neu_double_t neu_ubytedec_toDouble(neu_ubytedec_t ub);
@@ -177,11 +177,11 @@ neu_double_t neu_ubytedec_toDouble(neu_ubytedec_t ub);
 /**
  * Word
  * ----
- * An integer value between -32 768 and 32 767 with decimal position. 
+ * An integer value between -32 768 and 32 767 with decimal position.
  **/
 typedef struct {
     neu_word_t value;
-    uint8_t decimal;
+    uint8_t    decimal;
 } neu_worddec_t;
 
 neu_double_t neu_worddec_toDouble(neu_worddec_t w);
@@ -189,11 +189,11 @@ neu_double_t neu_worddec_toDouble(neu_worddec_t w);
 /**
  * Unsigned-Word
  * -------------
- * An integer value between 0 and 65 535 with decimal position. 
+ * An integer value between 0 and 65 535 with decimal position.
  **/
 typedef struct {
     neu_uword_t value;
-    uint8_t decimal;
+    uint8_t     decimal;
 } neu_uworddec_t;
 
 neu_double_t neu_uworddec_toDouble(neu_uworddec_t uw);
@@ -201,11 +201,12 @@ neu_double_t neu_uworddec_toDouble(neu_uworddec_t uw);
 /**
  * Double Word
  * -----------
- * An integer value between -2 147 483 648 and 2 147 483 647 with decimal position. 
+ * An integer value between -2 147 483 648 and 2 147 483 647 with decimal
+ *position.
  **/
 typedef struct {
     neu_dword_t value;
-    uint8_t decimal;
+    uint8_t     decimal;
 } neu_dworddec_t;
 
 neu_double_t neu_dworddec_toDouble(neu_dworddec_t dw);
@@ -213,11 +214,11 @@ neu_double_t neu_dworddec_toDouble(neu_dworddec_t dw);
 /**
  * Unsigned Double Word
  * --------------------
- * An integer value between 0 and 4 294 967 295 with decimal position. 
+ * An integer value between 0 and 4 294 967 295 with decimal position.
  **/
 typedef struct {
     neu_udword_t value;
-    uint8_t decimal;
+    uint8_t      decimal;
 } neu_udworddec_t;
 
 neu_double_t neu_udworddec_toDouble(neu_udworddec_t udw);
@@ -226,11 +227,11 @@ neu_double_t neu_udworddec_toDouble(neu_udworddec_t udw);
  * Quarter Word
  * ------------
  * An integer value between -9 223 372 036 854 775 808 and
- * 9 223 372 036 854 775 807 with decimal position. 
+ * 9 223 372 036 854 775 807 with decimal position.
  **/
 typedef struct {
     neu_qword_t value;
-    uint8_t decimal;
+    uint8_t     decimal;
 } neu_qworddec_t;
 
 neu_double_t neu_qworddec_toDouble(neu_qworddec_t qw);
@@ -238,11 +239,12 @@ neu_double_t neu_qworddec_toDouble(neu_qworddec_t qw);
 /**
  * Unsigned Quarter Word
  * ---------------------
- * An integer value between 0 and 18 446 744 073 709 551 615 with decimal position. 
+ * An integer value between 0 and 18 446 744 073 709 551 615 with decimal
+ *position.
  **/
 typedef struct {
     neu_uqword_t value;
-    uint8_t decimal;
+    uint8_t      decimal;
 } neu_uqworddec_t;
 
 neu_double_t neu_uqworddec_toDouble(neu_uqworddec_t uqw);
@@ -250,11 +252,11 @@ neu_double_t neu_uqworddec_toDouble(neu_uqworddec_t uqw);
 /**
  * String
  * ------
- * A sequence of unicode characters. Strings are just an array of char. 
+ * A sequence of unicode characters. Strings are just an array of char.
  **/
 typedef struct {
     size_t length;
-    char *charstr;
+    char * charstr;
 } neu_string_t;
 
 /* returns a string pointing to the original character array. */
@@ -269,40 +271,44 @@ neu_order_t neu_string_isEqual(const neu_string_t *s1, const neu_string_t *s2);
 extern const neu_string_t NEU_STRING_NULL;
 
 /* Define strings at compile time */
-#define neu_string_fromStatic(CHARS) {sizeof(CHARS)-1, (char*)CHARS}
+#define neu_string_fromStatic(CHARS)      \
+    {                                     \
+        sizeof(CHARS) - 1, (char *) CHARS \
+    }
 
 /**
  * Localized Text
  * --------------
- * Human readable text with an optional locale identifier. 
+ * Human readable text with an optional locale identifier.
  **/
 typedef struct {
     neu_string_t locale;
     neu_string_t text;
 } neu_text_t;
 
-static inline neu_text_t
-neu_text_fromArray(char *locale, char *array) {
-    neu_text_t t; 
+static inline neu_text_t neu_text_fromArray(char *locale, char *array)
+{
+    neu_text_t t;
     t.locale = neu_string_fromArray(locale);
-    t.text = neu_string_fromArray(array); 
+    t.text   = neu_string_fromArray(array);
     return t;
 }
 
-static inline neu_text_t
-neu_text_fromChars(const char *locale, const char *chars) {
-    neu_text_t t; 
+static inline neu_text_t neu_text_fromChars(
+    const char *locale, const char *chars)
+{
+    neu_text_t t;
     t.locale = neu_string_fromChars(locale);
-    t.text = neu_string_fromChars(chars); 
+    t.text   = neu_string_fromChars(chars);
     return t;
 }
 
 /**
  * ErrorCode
  * ---------
- * A numeric identifier for an error or condition that is associated with a value
- * or an operation. See the section :ref:`statuscodes` for the meaning of a
- * specific code. 
+ * A numeric identifier for an error or condition that is associated with a
+ *value or an operation. See the section :ref:`statuscodes` for the meaning of a
+ * specific code.
  **/
 typedef uint32_t neu_errorcode_t;
 
@@ -334,13 +340,13 @@ neu_time_t neu_time_fromDateTime(neu_datetime_t d);
 /**
  * Uuid
  * ----
- * A 16 byte value that can be used as a universal unique identifier. 
+ * A 16 byte value that can be used as a universal unique identifier.
  **/
 typedef struct {
     neu_udword_t data1;
-    neu_uword_t data2;
-    neu_uword_t data3;
-    neu_ubyte_t data4[8];
+    neu_uword_t  data2;
+    neu_uword_t  data3;
+    neu_ubyte_t  data4[8];
 } neu_uuid_t;
 
 /* Parse the uuid format defined in Part 6, 5.1.3.
@@ -354,10 +360,10 @@ extern const neu_uuid_t NEU_UUID_NULL;
 /**
  * NodeId
  * ^^^^^^
- * An identifier for a node to be located in the list. 
+ * An identifier for a node to be located in the list.
  **/
 typedef struct {
-    neu_text_t nodeName;
+    neu_text_t   nodeName;
     neu_string_t identifier;
 } neu_nodeid_t;
 
@@ -368,7 +374,7 @@ neu_order_t neu_nodeid_order(const neu_nodeid_t *n1, const neu_nodeid_t *n2);
 /**
  * Data Type
  * ---------
- * A list of data type 
+ * A list of data type
  **/
 typedef enum {
     NEU_DATATYPE_BOOLEAN,
@@ -408,19 +414,18 @@ typedef enum {
 
 /* Test if the data type is a numeric builtin data type. This includes Boolean,
  * integers and floating point numbers. Not included are Time and ErrorCode. */
-neu_boolean_t
-neu_datatype_isNumeric(const neu_datatype_t *type);
+neu_boolean_t neu_datatype_isNumeric(const neu_datatype_t *type);
 
 struct neu_variabletype {
-    neu_text_t *typeName;
-    neu_datatype_t typeId;                /* The nodeid of the type */
-    neu_uword_t memSize;               /* Size of the struct in memory */
+    neu_text_t *   typeName;
+    neu_datatype_t typeId;  /* The nodeid of the type */
+    neu_uword_t    memSize; /* Size of the struct in memory */
 };
 
 /**
  * Address Element
  * ---------------
- * An address element is a basic information unit that represent partly address 
+ * An address element is a basic information unit that represent partly address
  * location.
  **/
 typedef enum {
@@ -440,14 +445,14 @@ typedef enum {
 
 typedef struct {
     neu_addresselementtype_t type;
-    neu_boolean_t isNumeric;
-    neu_string_t element;
+    neu_boolean_t            isNumeric;
+    neu_string_t             element;
 } neu_addresselement_t;
 
 /**
  * Address
  * -------
- * An address is a combination of address element in an order format to locate 
+ * An address is a combination of address element in an order format to locate
  * the data storage in external device.
  **/
 typedef enum {
@@ -458,10 +463,10 @@ typedef enum {
 } neu_addresstype_t;
 
 typedef struct {
-    neu_addresstype_t type;
-    neu_datatype_t dataType;
-    neu_byte_t delimiter;
-    size_t elementSize;
+    neu_addresstype_t     type;
+    neu_datatype_t        dataType;
+    neu_byte_t            delimiter;
+    size_t                elementSize;
     neu_addresselement_t *elements;
 } neu_address_t;
 
@@ -469,34 +474,34 @@ typedef struct {
  * Tag
  * ---
  * An attribute is a basic communicatoin element that describe how to interact
- * with external device. 
+ * with external device.
  **/
 typedef enum {
     NEU_ATTRIBUTETYPE_READ,
     NEU_ATTRIBUTETYPE_WRITE,
     NEU_ATTRIBUTETYPE_SUBSCRIBE
-} neu_attributetype_t;  
+} neu_attributetype_t;
 
 typedef struct {
-	uint32_t  idVal;
+    uint32_t idVal;
 } neu_datatag_id_t;
 
 typedef struct {
-	neu_datatag_id_t    id;
+    neu_datatag_id_t    id;
     neu_attributetype_t type;
-    neu_word_t readInterval;
-    neu_datatype_t dataType;
-    neu_address_t  address;
+    neu_word_t          readInterval;
+    neu_datatype_t      dataType;
+    neu_address_t       address;
 } neu_datatag_t;
 
 /**
  * Parameter
  * ---------
- * A paramter is a communicaton details for connection setup and data format 
+ * A paramter is a communicaton details for connection setup and data format
  * description.
  **/
 typedef struct {
-    neu_text_t paramDesc;
+    neu_text_t   paramDesc;
     neu_string_t paramName;
     neu_string_t paramData;
 } neu_parameter_t;
@@ -504,17 +509,17 @@ typedef struct {
 /**
  * Module
  * ------
- * A module is a communication dynamic library. It may contains many paramters 
- * used for communication setup. Each module can be used to create more than one 
+ * A module is a communication dynamic library. It may contains many paramters
+ * used for communication setup. Each module can be used to create more than one
  * communication channel.
  **/
 typedef struct {
-    neu_ubyte_t version;
-    neu_string_t moduleName;
-    neu_text_t moduleDesc;
-    size_t sizeParam;
+    neu_ubyte_t      version;
+    neu_string_t     moduleName;
+    neu_text_t       moduleDesc;
+    size_t           sizeParam;
     neu_parameter_t *param;
-    neu_string_t path;
+    neu_string_t     path;
 } neu_module_t;
 
 /**
@@ -522,88 +527,84 @@ typedef struct {
  * --------
  *
  * Variable may contain values of any type together with a description of the
- * content. The standard mandates that variable contain built-in data types only.
+ * content. The standard mandates that variable contain built-in data types
+ *only.
  *
  * Variable may contain a scalar value or an array. Array variable can have
- * an additional dimensionality defined in an array of dimension lengths. The 
+ * an additional dimensionality defined in an array of dimension lengths. The
  * actual values are kept in an array of dimensions one.
  **/
 struct neu_variabletype;
 typedef struct neu_variabletype neu_variabletype_t;
 
 typedef struct {
-    const neu_variabletype_t *type;      /* The data type description */
-    size_t arrayLength;           /* The number of elements in the data array */
-    size_t arrayDimensionsSize;   /* The number of dimensions */
-    neu_udword_t *arrayDimensions;   /* The length of each dimension */
-    void *data;                   /* Points to the scalar or array data */
+    const neu_variabletype_t *type; /* The data type description */
+    size_t        arrayLength; /* The number of elements in the data array */
+    size_t        arrayDimensionsSize; /* The number of dimensions */
+    neu_udword_t *arrayDimensions;     /* The length of each dimension */
+    void *        data;                /* Points to the scalar or array data */
 } neu_variable_t;
 
 /* Returns true if the variable has no value defined (contains neither an array
  * nor a scalar value). */
-static inline neu_boolean_t
-neu_variable_isEmpty(const neu_variable_t *var) {
+static inline neu_boolean_t neu_variable_isEmpty(const neu_variable_t *var)
+{
     return var->type == NULL;
 }
 
-/* Returns true if the variable contains a scalar value. Note that empty variable
- * contain an array of length -1 (undefined). */
-static inline neu_boolean_t
-neu_variable_isScalar(const neu_variable_t *var) {
+/* Returns true if the variable contains a scalar value. Note that empty
+ * variable contain an array of length -1 (undefined). */
+static inline neu_boolean_t neu_variable_isScalar(const neu_variable_t *var)
+{
     return (var->arrayLength == 0 && var->data != NULL);
 }
 
 /* Returns true if the variant contains a scalar value of the given type. */
-static inline neu_boolean_t
-neu_variable_hasScalarType(const neu_variable_t *var, const neu_variabletype_t *type) {
+static inline neu_boolean_t neu_variable_hasScalarType(
+    const neu_variable_t *var, const neu_variabletype_t *type)
+{
     return neu_variable_isScalar(var) && type == var->type;
 }
 
 /* Returns true if the variable contains an array of the given type. */
-static inline neu_boolean_t
-neu_variable_hasArrayType(const neu_variable_t *var, const neu_variabletype_t *type) {
+static inline neu_boolean_t neu_variable_hasArrayType(
+    const neu_variable_t *var, const neu_variabletype_t *type)
+{
     return (!neu_variable_isScalar(var)) && type == var->type;
 }
 
 /* Set the variable to a scalar value that already resides in memory. The value
  * takes on the lifecycle of the variable and is deleted with it. */
-void
-neu_variable_setScalar(neu_variable_t *var, void *p, 
-                            const neu_variabletype_t *type);
+void neu_variable_setScalar(
+    neu_variable_t *var, void *p, const neu_variabletype_t *type);
 
-/* Set the variable to a scalar value that is copied from an existing variable. */
-neu_errorcode_t
-neu_variable_setScalarCopy(neu_variable_t *var, const void *p,
-                            const neu_variabletype_t *type);
+/* Set the variable to a scalar value that is copied from an existing variable.
+ */
+neu_errorcode_t neu_variable_setScalarCopy(
+    neu_variable_t *var, const void *p, const neu_variabletype_t *type);
 
 /* Set the variable to an array that already resides in memory. The array takes
  * on the lifecycle of the variant and is deleted with it. */
-void
-neu_variable_setArray(neu_variable_t *var, void *array,
-                    size_t arraySize, const neu_variabletype_t *type);
+void neu_variable_setArray(neu_variable_t *var, void *array, size_t arraySize,
+    const neu_variabletype_t *type);
 
 /* Set the variable to an array that is copied from an existing array. */
-neu_errorcode_t
-neu_variable_setArrayCopy(neu_variable_t *var, const void *array,
-                        size_t arraySize, const  neu_variabletype_t *type);
-
+neu_errorcode_t neu_variable_setArrayCopy(neu_variable_t *var,
+    const void *array, size_t arraySize, const neu_variabletype_t *type);
 
 /**
  * Variable Node
  * -------------
- * A variable node is a variable with node id that can be managed in a list. All 
+ * A variable node is a variable with node id that can be managed in a list. All
  * variables are mandated to have node id to identify itself for the adaptors.
  **/
 typedef struct {
-    neu_nodeid_t nodeid;
+    neu_nodeid_t   nodeid;
     neu_variable_t variable;
 } neu_varaiblenode_t;
-
-
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* TYPES_H */
-
