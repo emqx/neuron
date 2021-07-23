@@ -22,7 +22,8 @@
 
 #include "neuron.h"
 
-#define SAMPLE_PLUGIN_DESCR "A sample plugin for demonstrate how to write a neuron plugin"
+#define SAMPLE_PLUGIN_DESCR \
+    "A sample plugin for demonstrate how to write a neuron plugin"
 
 const neu_plugin_module_t neu_plugin_module;
 
@@ -139,7 +140,6 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = { .open =
     .config      = sample_plugin_config,
     .request     = sample_plugin_request,
     .event_reply = sample_plugin_event_reply };
-
 
 const neu_plugin_module_t neu_plugin_module = { .version =
                                                     NEURON_PLUGIN_VER_1_0,
