@@ -20,6 +20,8 @@
 #ifndef _PLUGIN_MANAGER_H
 #define _PLUGIN_MANAGER_H
 
+#include <stdint.h>
+
 typedef struct plugin_id {
     uint32_t id;
 } plugin_id_t;

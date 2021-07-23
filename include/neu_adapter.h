@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <unistd.h>
+#include <stdint.h>
 
 typedef struct neu_adapter neu_adapter_t;
 
