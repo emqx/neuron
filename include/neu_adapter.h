@@ -20,6 +20,7 @@
 #ifndef NEURON_ADAPTER_H
 #define NEURON_ADAPTER_H
 
+#include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 
