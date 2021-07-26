@@ -3,3 +3,5 @@
 *.swp
 tags
 build
+compile_commands.json
+.vscode
