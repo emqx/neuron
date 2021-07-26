@@ -5,6 +5,8 @@ project (neuron)
 
 ENABLE_LANGUAGE(C)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_subdirectory(extern/vector)
 configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h COPYONLY)
 
