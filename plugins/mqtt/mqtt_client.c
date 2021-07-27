@@ -1,13 +1,33 @@
-#include "neuron.h"
 #include <MQTTAsync.h>
 #include <stdlib.h>
 
+#include "neuron.h"
+
 const neu_plugin_module_t neu_plugin_module;
+
+struct neu_plugin {
+    neu_plugin_common_t common;
+};
 
 static neu_plugin_t *mqtt_plugin_open(
     neu_adapter_t *adapter, const adapter_callbacks_t *callbacks)
 {
-    return NULL;
+    if (NULL == adapter || NULL == callbacks) {
+        return NULL;
+    }
+
+    neu_plugin_t *plugin;
+    plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
+    if (NULL == plugin) {
+        log_error(
+            "Failed to allocate plugin %s", neu_plugin_module.module_name);
+        return NULL;
+    }
+
+    plugin->common.adapter           = adapter;
+    plugin->common.adapter_callbacks = callbacks;
+    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    return plugin;
 }
 
 static int mqtt_plugin_close(neu_plugin_t *plugin)

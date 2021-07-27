@@ -85,6 +85,21 @@ static neu_adapter_info_t sample_adapter_info = { .type = ADAPTER_TYPE_DRIVER,
 neu_adapter_t *sample_adapter;
 #endif
 
+#define NEU_HAS_MQTT_ADAPTER 1
+#ifdef NEU_HAS_MQTT_ADAPTER
+#if defined(__APPLE__)
+#define MQTT_PLUGIN_LIB_NAME "libmqtt-plugin.dylib"
+#else
+#define MQTT_PLUGIN_LIB_NAME "libmqtt-plugin.so"
+#endif
+
+static neu_adapter_info_t mqtt_adapter_info = { .type = ADAPTER_TYPE_MQTT,
+    .name                                             = "mqtt-adapter",
+    .plugin_lib_name                                  = MQTT_PLUGIN_LIB_NAME };
+
+neu_adapter_t *mqtt_adapter;
+#endif
+
 #define ADAPTER_NAME_MAX_LEN 50
 #define PLUGIN_LIB_NAME_MAX_LEN 50
 
@@ -267,6 +282,12 @@ static void manager_loop(void *arg)
     sample_adapter_info.id = manager_get_adapter_id(manager);
     sample_adapter         = neu_adapter_create(&sample_adapter_info);
     manager_start_adapter(manager, sample_adapter);
+#endif
+
+#ifdef NEU_HAS_MQTT_ADAPTER
+    mqtt_adapter_info.id = manager_get_adapter_id(manager);
+    mqtt_adapter         = neu_adapter_create(&mqtt_adapter_info);
+    manager_start_adapter(manager, mqtt_adapter);
 #endif
 
     while (1) {
