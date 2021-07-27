@@ -59,3 +59,4 @@ target_include_directories(sample-plugin
 target_link_libraries(sample-plugin neuron-base)
 target_link_libraries(sample-plugin ${CMAKE_THREAD_LIBS_INIT} )
 
+add_subdirectory(plugins)
