@@ -30,6 +30,7 @@
 #include "core/neu_manager.h"
 #include "neu_log.h"
 #include "neu_panic.h"
+#include "utils/idhash.h"
 
 static nng_mtx *log_mtx;
 FILE *          g_logfile;
@@ -49,7 +50,7 @@ static void init()
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
     log_set_level(LOG_DEBUG);
-    FILE *g_logfile = fopen("rest-server.log", "w");
+    FILE *g_logfile = fopen("neuron.log", "w");
     if (g_logfile == NULL) {
         fprintf(stderr,
             "Failed to open logfile when"

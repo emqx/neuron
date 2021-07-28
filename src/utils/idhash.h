@@ -20,7 +20,6 @@
 #ifndef __NEU_IDHASH_H__
 #define __NEU_IDHASH_H__
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -51,7 +50,7 @@ struct neu_id_map {
     neu_id_entry *id_entries;
 };
 
-extern void  neu_id_map_init(neu_id_map *, uint32_t, uint32_t, bool);
+extern void  neu_id_map_init(neu_id_map *, uint32_t, uint32_t);
 extern void  neu_id_map_fini(neu_id_map *);
 extern void *neu_id_get(neu_id_map *, uint32_t);
 extern int   neu_id_set(neu_id_map *, uint32_t, void *);

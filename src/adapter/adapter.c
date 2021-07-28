@@ -18,6 +18,7 @@
  **/
 
 #include <dlfcn.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -68,6 +69,9 @@ static void *load_plugin_library(
 
     lib_handle = dlopen(plugin_lib_name, RTLD_NOW);
     if (lib_handle == NULL) {
+        log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
+            strerror(errno));
+
         return NULL;
     }
 
