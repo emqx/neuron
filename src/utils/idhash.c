@@ -26,7 +26,7 @@ struct neu_id_entry {
     void *   val;
 };
 
-void neu_id_map_init(neu_id_map *m, uint32_t lo, uint32_t hi, bool randomize)
+void neu_id_map_init(neu_id_map *m, uint32_t lo, uint32_t hi)
 {
     if (lo == 0) {
         lo = 1;

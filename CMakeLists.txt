@@ -7,6 +7,10 @@ enable_language(C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_BUILD_TYPE "Debug")
+# set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb -fsanitize=address -fsanitize=leak") 
+set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb")
+
 add_subdirectory(extern/vector)
 add_subdirectory(extern/libcsptr)
 configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
