@@ -17,21 +17,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PANIC_H
-#define NEURON_PANIC_H
+#ifndef __MEM_ALLOC_H__
+#define __MEM_ALLOC_H__
 
-#include "neu_log.h"
-#include <stdarg.h>
+#include "neu_panic.h"
+#include <stdlib.h>
 
-void neu_show_backtrace(void);
-void neu_panic(const char *fmt, ...);
+#define NEU_ARG_UNUSED(x) ((void) x)
 
-#ifndef NDEBUG
-#define NEU_ASSERT(x) \
-	if (!(x))     \
-	neu_panic("%s: %d: assert err: %s", __FILE__, __LINE__, #x)
-#else
-#define NEU_ASSERT(x) (0)
-#endif
+void *neu_alloc(size_t sz);
+void *neu_zalloc(size_t sz);
+void  neu_free(void *b, size_t z);
+
+#define NNI_ALLOC_STRUCT(s) neu_zalloc(sizeof(*s))
+#define NNI_FREE_STRUCT(s) neu_free((s), sizeof(*s))
+#define NEU_ALLOC_STRUCTS(s, n) neu_zalloc(sizeof(*s) * n)
+#define NEU_FREE_STRUCTS(s, n) neu_free(s, sizeof(*s) * n)
 
 #endif
