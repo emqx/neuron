@@ -482,9 +482,7 @@ typedef enum {
     NEU_ATTRIBUTETYPE_SUBSCRIBE
 } neu_attributetype_t;
 
-typedef struct {
-    uint32_t idVal;
-} neu_datatag_id_t;
+typedef uint32_t neu_datatag_id_t;
 
 typedef struct {
     neu_datatag_id_t    id;
