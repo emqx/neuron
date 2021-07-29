@@ -8,7 +8,8 @@ enable_language(C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_BUILD_TYPE "Debug")
-# set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb -fsanitize=address -fsanitize=leak") 
+# set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb -fsanitize=address
+# -fsanitize=leak")
 set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb")
 
 add_subdirectory(extern/vector)
@@ -22,8 +23,14 @@ find_package(Threads)
 
 # define neuron executalbe program
 set(NEURON_SOURCES
-    src/main.c src/core/message.c src/core/databuf.c src/core/neu_manager.c
-    src/core/plugin_manager.c src/adapter/adapter.c)
+    src/main.c
+    src/core/message.c
+    src/core/databuf.c
+    src/core/neu_manager.c
+    src/core/plugin_manager.c
+    src/core/datatag_table.c
+    src/adapter/adapter.c)
+
 set(NEURON_INCLUDE_DIRECTORIES include src deps)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES})
