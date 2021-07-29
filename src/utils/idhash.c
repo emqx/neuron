@@ -127,7 +127,7 @@ static int id_resize(neu_id_map *m)
     old_entries = m->id_entries;
     new_entries = NEU_ALLOC_STRUCTS(new_entries, new_cap);
     if (new_entries == NULL) {
-        return 2;
+        return -2;
     }
 
     m->id_entries = new_entries;
@@ -176,7 +176,7 @@ int neu_id_remove(neu_id_map *m, uint32_t id)
     size_t probe;
 
     if ((index = id_find(m, id)) == (size_t) -1) {
-        return 2;
+        return -2;
     }
 
     // Now we have found the index where the object exists.  We are going
@@ -216,7 +216,7 @@ int neu_id_set(neu_id_map *m, uint32_t id, void *val)
 
     // Try to resize -- if we don't need to, this will be a no-op.
     if (id_resize(m) != 0) {
-        return 2;
+        return -2;
     }
 
     // If it already exists, just overwrite the old value.
@@ -259,7 +259,7 @@ int neu_id_alloc(neu_id_map *m, uint32_t *idp, void *val)
     // range is inclusive, so > to get +1 effect.
     if (m->id_count > (m->id_max_val - m->id_min_val)) {
         // Really more like ENOSPC.. the table is filled to max.
-        return 2;
+        return -2;
     }
 
     for (;;) {

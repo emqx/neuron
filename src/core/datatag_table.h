@@ -23,11 +23,13 @@
 #include "neu_types.h"
 #include "utils/idhash.h"
 
-void           datatag_tbl_create(neu_id_map *);
-void           datatag_tbl_destroy(neu_id_map *);
-neu_datatag_t *datatag_tbl_id_get(neu_id_map *, uint32_t);
-int            datatag_tbl_id_remove(neu_id_map *, uint32_t);
-int            datatag_tbl_id_update(neu_id_map *, uint32_t, neu_datatag_t *);
-int            datatag_tbl_id_add(neu_id_map *, neu_datatag_t *);
+typedef struct datatag_table_t datatag_table_t;
+
+datatag_table_t *datatag_tbl_create(void);
+void             datatag_tbl_destroy(datatag_table_t *);
+neu_datatag_t *  datatag_tbl_id_get(datatag_table_t *, uint32_t);
+int              datatag_tbl_id_remove(datatag_table_t *, uint32_t);
+int datatag_tbl_id_update(datatag_table_t *, uint32_t, neu_datatag_t *);
+int datatag_tbl_id_add(datatag_table_t *, neu_datatag_t *);
 
 #endif //__DATATAG_TABLE_H__

@@ -18,34 +18,51 @@
  **/
 
 #include "datatag_table.h"
+#include "utils/mem_alloc.h"
 
-void datatag_tbl_create(neu_id_map *tag_tbl)
+struct datatag_table_t {
+    neu_id_map datatag_table;
+};
+
+datatag_table_t *datatag_tbl_create(void)
 {
-    neu_id_map_init(tag_tbl, 0, 0);
+    datatag_table_t *tag_tbl;
+    tag_tbl = NEU_ALLOC_STRUCT(tag_tbl);
+
+    if (tag_tbl != NULL) {
+        neu_id_map_init(&tag_tbl->datatag_table, 0, 0);
+    }
+
+    return tag_tbl;
 }
 
-void datatag_tbl_destroy(neu_id_map *tag_tbl)
+void datatag_tbl_destroy(datatag_table_t *tag_tbl)
 {
-    neu_id_map_fini(tag_tbl);
+    neu_id_map_fini(&tag_tbl->datatag_table);
+    NEU_FREE_STRUCT(tag_tbl);
 }
 
-neu_datatag_t *datatag_tbl_id_get(neu_id_map *tag_tbl, uint32_t tag_id)
+neu_datatag_t *datatag_tbl_id_get(datatag_table_t *tag_tbl, uint32_t tag_id)
 {
-    return neu_id_get(tag_tbl, tag_id);
+    return neu_id_get(&tag_tbl->datatag_table, tag_id);
 }
 
 int datatag_tbl_id_update(
-    neu_id_map *tag_tbl, uint32_t tag_id, neu_datatag_t *datatag)
+    datatag_table_t *tag_tbl, uint32_t tag_id, neu_datatag_t *datatag)
 {
-    return neu_id_set(tag_tbl, tag_id, datatag);
+    return neu_id_set(&tag_tbl->datatag_table, tag_id, datatag);
 }
 
-int datatag_tbl_id_add(neu_id_map *tag_tbl, neu_datatag_t *datatag)
+int datatag_tbl_id_add(datatag_table_t *tag_tbl, neu_datatag_t *datatag)
 {
-    return neu_id_alloc(tag_tbl, &datatag->id, datatag);
+    if (neu_id_alloc(&tag_tbl->datatag_table, &datatag->id, datatag) == 0) {
+        return datatag->id;
+    } else {
+        return 0;
+    }
 }
 
-int datatag_tbl_id_remove(neu_id_map *tag_tbl, uint32_t tag_id)
+int datatag_tbl_id_remove(datatag_table_t *tag_tbl, uint32_t tag_id)
 {
-    return neu_id_remove(tag_tbl, tag_id);
+    return neu_id_remove(&tag_tbl->datatag_table, tag_id);
 }
