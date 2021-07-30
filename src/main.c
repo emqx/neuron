@@ -50,7 +50,7 @@ static void init()
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
     log_set_level(LOG_DEBUG);
-    FILE *g_logfile = fopen("rest-server.log", "a");
+    FILE *g_logfile = fopen("neuron.log", "a");
     if (g_logfile == NULL) {
         fprintf(stderr,
                 "Failed to open logfile when"

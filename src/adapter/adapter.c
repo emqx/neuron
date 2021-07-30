@@ -161,7 +161,7 @@ static void adapter_loop(void *arg)
         case MSG_CONFIG_INFO_STRING: {
             char *buf_ptr;
             buf_ptr = msg_get_buf_ptr(pay_msg);
-            log_info("Recieve string: %s", buf_ptr);
+            log_info("Received string: %s", buf_ptr);
             break;
         }
 
