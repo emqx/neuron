@@ -22,10 +22,50 @@
 
 #include <stdint.h>
 
-typedef struct plugin_id {
-    uint32_t id;
-} plugin_id_t;
+#include "adapter/adapter_internal.h"
+#include "core/plugin_info.h"
+
+typedef enum plugin_kind {
+    PLUGIN_KIND_SYSTEM,
+    PLUGIN_KIND_CUSTOM
+} plugin_kind_e;
+
+typedef struct plugin_reg_param {
+    plugin_kind_e  plugin_kind;
+    adapter_type_e adapter_type;
+    // The buffer should be move to plugin manager, don't free it
+    const char *plugin_name;
+    // The buffer should be move to plugin manager, don't free it
+    const char *plugin_lib_name;
+} plugin_reg_param_t;
+
+typedef struct plugin_reg_info {
+    plugin_id_t    plugin_id;
+    plugin_kind_e  plugin_kind;
+    adapter_type_e adapter_type;
+    // The buffer is reference from plugin entity of register table,
+    // don't free it
+    const char *plugin_name;
+    // The buffer is reference from plugin entity of register table,
+    // don't free it
+    const char *plugin_lib_name;
+} plugin_reg_info_t;
 
 typedef struct plugin_manager plugin_manager_t;
 
+plugin_manager_t *plugin_manager_create();
+void              plugin_manager_destroy(plugin_manager_t *plugin_mng);
+plugin_id_t       plugin_manager_reg_plugin(
+          plugin_manager_t *plugin_mng, const plugin_reg_param_t *param);
+int plugin_manager_unreg_plugin(
+    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param);
+int plugin_manager_update_plugin(
+    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param);
+int plugin_manager_get_reg_info(plugin_manager_t *plugin_mng,
+    plugin_id_t plugin_id, plugin_reg_info_t *reg_info);
+int plugin_manager_get_reg_info_by_name(plugin_manager_t *plugin_mng,
+    const char *plugin_name, plugin_reg_info_t *reg_info);
+
+void plugin_manager_unreg_all_plugins(plugin_manager_t *plugin_mng);
+void plugin_manager_dump(plugin_manager_t *plugin_mng);
 #endif

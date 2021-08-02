@@ -55,6 +55,7 @@ struct neu_adapter {
     nng_socket           sock;
     nng_thread *         thrd;
     uint32_t             new_req_id;
+    plugin_id_t          plugin_id;
     char *               plugin_lib_name;
     void *               plugin_lib; // handle of dynamic lib
     neu_plugin_module_t *plugin_module;
@@ -168,13 +169,15 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             uint32_t                      req_code;
-            intf_funs    = adapter->plugin_module->intf_funs;
-            req.req_id   = adapter_get_req_id(adapter);
-            req.req_type = NEU_REQRESP_READ;
-            req.buf_len  = sizeof(uint32_t);
-            req_code     = 1;
-            req.buf      = (char *) &req_code;
-            intf_funs->request(adapter->plugin, &req);
+            if (adapter->plugin_module) {
+                intf_funs    = adapter->plugin_module->intf_funs;
+                req.req_id   = adapter_get_req_id(adapter);
+                req.req_type = NEU_REQRESP_READ;
+                req.buf_len  = sizeof(uint32_t);
+                req_code     = 1;
+                req.buf      = (char *) &req_code;
+                intf_funs->request(adapter->plugin, &req);
+            }
             break;
         }
 
@@ -276,12 +279,21 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         return NULL;
     }
 
-    adapter->id              = info->id;
-    adapter->type            = info->type;
-    adapter->name            = strdup(info->name);
-    adapter->plugin_lib_name = strdup(info->plugin_lib_name);
-    adapter->new_req_id      = 0;
+    adapter->id         = info->id;
+    adapter->type       = info->type;
+    adapter->name       = strdup(info->name);
+    adapter->new_req_id = 0;
+    adapter->plugin_id  = info->plugin_id;
+    if (adapter->plugin_id.id_val == 0) {
+        adapter->plugin_lib_name = NULL;
+        adapter->plugin_lib      = NULL;
+        adapter->plugin_module   = NULL;
+        adapter->plugin          = NULL;
+        log_info("Create a adapter without plugin");
+        goto open_pipe;
+    }
 
+    adapter->plugin_lib_name = strdup(info->plugin_lib_name);
     if (adapter->name == NULL || adapter->plugin_lib_name == NULL) {
         if (adapter->name != NULL) {
             free(adapter->name);
@@ -303,21 +315,21 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
             adapter->plugin_lib_name, adapter->name);
     }
 
+    neu_plugin_t *plugin;
     adapter->plugin_lib    = handle;
     adapter->plugin_module = plugin_module;
-    neu_plugin_t *plugin;
-    plugin_module = adapter->plugin_module;
-    plugin        = plugin_module->intf_funs->open(adapter, &callback_funs);
+    plugin = plugin_module->intf_funs->open(adapter, &callback_funs);
     if (plugin == NULL) {
         neu_panic("Can't to open plugin(%s)", plugin_module->module_name);
     }
+    adapter->plugin = plugin;
 
+open_pipe:
     rv = nng_pair1_open(&adapter->sock);
     if (rv != 0) {
         neu_panic("The adapter(%s) can't open pipe", adapter->name);
     }
 
-    adapter->plugin = plugin;
     return adapter;
 }
 
@@ -328,8 +340,12 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     }
 
     nng_close(adapter->sock);
-    adapter->plugin_module->intf_funs->close(adapter->plugin);
-    unload_plugin_library(adapter->plugin_lib);
+    if (adapter->plugin_module != NULL) {
+        adapter->plugin_module->intf_funs->close(adapter->plugin);
+    }
+    if (adapter->plugin_lib != NULL) {
+        unload_plugin_library(adapter->plugin_lib);
+    }
     if (adapter->name != NULL) {
         free(adapter->name);
     }
@@ -350,9 +366,11 @@ int neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager)
         return (-1);
     }
 
-    const neu_plugin_intf_funs_t *intf_funs;
-    intf_funs = adapter->plugin_module->intf_funs;
-    intf_funs->init(adapter->plugin);
+    if (adapter->plugin_module != NULL) {
+        const neu_plugin_intf_funs_t *intf_funs;
+        intf_funs = adapter->plugin_module->intf_funs;
+        intf_funs->init(adapter->plugin);
+    }
 
     adapter->manager = manager;
     nng_thread_create(&adapter->thrd, adapter_loop, adapter);
@@ -369,9 +387,11 @@ int neu_adapter_stop(neu_adapter_t *adapter, neu_manager_t *manager)
     nng_mtx_unlock(adapter->mtx);
     nng_thread_destroy(adapter->thrd);
 
-    const neu_plugin_intf_funs_t *intf_funs;
-    intf_funs = adapter->plugin_module->intf_funs;
-    intf_funs->uninit(adapter->plugin);
+    if (adapter->plugin_module != NULL) {
+        const neu_plugin_intf_funs_t *intf_funs;
+        intf_funs = adapter->plugin_module->intf_funs;
+        intf_funs->uninit(adapter->plugin);
+    }
 
     return rv;
 }

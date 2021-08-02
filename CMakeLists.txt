@@ -61,8 +61,8 @@ target_link_libraries(neuron-base vector-static ${CMAKE_THREAD_LIBS_INIT})
 
 # define for plugins
 set(SAMPLE_PLUGIN_SOURCES plugins/plugin_sample.c)
-add_library(sample-plugin SHARED)
-target_sources(sample-plugin PRIVATE ${SAMPLE_PLUGIN_SOURCES})
-target_include_directories(sample-plugin PRIVATE include)
-target_link_libraries(sample-plugin neuron-base)
-target_link_libraries(sample-plugin ${CMAKE_THREAD_LIBS_INIT})
+add_library(plugin-sample SHARED)
+target_sources(plugin-sample PRIVATE ${SAMPLE_PLUGIN_SOURCES})
+target_include_directories(plugin-sample PRIVATE include)
+target_link_libraries(plugin-sample neuron-base)
+target_link_libraries(plugin-sample ${CMAKE_THREAD_LIBS_INIT})
