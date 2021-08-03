@@ -1,13 +1,23 @@
 #include <MQTTAsync.h>
+#include <pthread.h>
 #include <stdlib.h>
 
 #include "neuron.h"
+
+#define CLIENTID "neuron-lite-mqtt-plugin"
+#define TOPIC "MQTT Examples"
+#define PAYLOAD "Hello World!"
+#define QOS 1
 
 const neu_plugin_module_t neu_plugin_module;
 
 struct neu_plugin {
     neu_plugin_common_t common;
     MQTTAsync           client;
+    vector_t            publish_list;
+    vector_t            arrived_list;
+    pthread_mutex_t     publish_mutext;
+    pthread_mutex_t     arrived_mutext;
 };
 
 static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
@@ -103,29 +113,30 @@ void on_connect(void *context, MQTTAsync_successData *response)
 {
     MQTTAsync                 client = (MQTTAsync) context;
     MQTTAsync_responseOptions opts   = MQTTAsync_responseOptions_initializer;
-    int                       rc;
 
     printf("Successful connection\n");
 
     // printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n" "Press
     // Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
+
     opts.onSuccess = on_subscribe;
     opts.onFailure = on_subscribe_failure;
     opts.context   = client;
-    // if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) !=
-    //     MQTTASYNC_SUCCESS) {
-    //     printf("Failed to start subscribe, return code %d\n", rc);
-    //     // finished = 1;
-    // }
+    int rc;
+    if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) !=
+        MQTTASYNC_SUCCESS) {
+        printf("Failed to start subscribe, return code %d\n", rc);
+        // finished = 1;
+    }
 }
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-    MQTTAsync_message        pub_msg   = MQTTAsync_message_initializer;
+    // MQTTAsync_message        pub_msg   = MQTTAsync_message_initializer;
 
     int rc;
-    rc = MQTTAsync_create(&plugin->client, "tcp://broker.emqx.io:1883",
+    rc = MQTTAsync_create(&plugin->client, "tcp://192.168.50.165:1883",
                           "neuron-lite-mqtt-plugin",
                           MQTTCLIENT_PERSISTENCE_NONE, NULL);
     if (MQTTASYNC_SUCCESS != rc) {
@@ -159,6 +170,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
+    MQTTAsync_destroy(&plugin->client);
     return 0;
 }
 
@@ -180,6 +192,7 @@ static int mqtt_plugin_event_reply(neu_plugin_t *     plugin,
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .open        = mqtt_plugin_open,
+    .close       = mqtt_plugin_close,
     .init        = mqtt_plugin_init,
     .uninit      = mqtt_plugin_uninit,
     .config      = mqtt_plugin_config,
@@ -193,13 +206,3 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_descr = "Neuron northbound MQTT communication plugin",
     .intf_funs    = &plugin_intf_funs
 };
-
-int test()
-{
-    MQTTAsync                client;
-    MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-
-    int rc;
-    int ch;
-    return 0;
-}
