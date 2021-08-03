@@ -44,7 +44,7 @@ typedef enum adapter_state {
 } adapter_state_e;
 
 struct neu_adapter {
-    uint32_t             id;
+    adapter_id_t         id;
     adapter_type_e       type;
     nng_mtx *            mtx;
     adapter_state_e      state;
@@ -361,8 +361,8 @@ int neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager)
 {
     int rv = 0;
 
-    if (manager == NULL) {
-        log_error("Start adapter with NULL manager");
+    if (adapter == NULL || manager == NULL) {
+        log_error("Start adapter with NULL adapter or manager");
         return (-1);
     }
 
@@ -381,6 +381,11 @@ int neu_adapter_stop(neu_adapter_t *adapter, neu_manager_t *manager)
 {
     int rv = 0;
 
+    if (adapter == NULL || manager == NULL) {
+        log_error("Stop adapter with NULL adapter or manager");
+        return -1;
+    }
+
     log_info("Stop the adapter(%s)", adapter->name);
     nng_mtx_lock(adapter->mtx);
     adapter->stop = true;
@@ -398,15 +403,39 @@ int neu_adapter_stop(neu_adapter_t *adapter, neu_manager_t *manager)
 
 const char *neu_adapter_get_name(neu_adapter_t *adapter)
 {
+    if (adapter == NULL) {
+        return NULL;
+    }
+
     return (const char *) adapter->name;
 }
 
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
 {
+    if (adapter == NULL) {
+        return NULL;
+    }
+
     return (neu_manager_t *) adapter->manager;
 }
 
 nng_socket neu_adapter_get_sock(neu_adapter_t *adapter)
 {
+    if (adapter == NULL) {
+        nng_socket sock;
+
+        sock.id = 0;
+        return sock;
+    }
+
     return adapter->sock;
+}
+
+adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
+{
+    if (adapter == NULL) {
+        return 0;
+    }
+
+    return adapter->id;
 }

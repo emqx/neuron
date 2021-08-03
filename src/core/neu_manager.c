@@ -46,7 +46,6 @@ typedef struct adapter_reg_entity {
 typedef struct manager_bind_info {
     nng_mtx *  mtx;
     nng_cv *   cv;
-    nng_pipe   mng_pipe;
     nng_socket mng_sock;
     int        bind_count;
 } manager_bind_info_t;
@@ -66,6 +65,7 @@ struct neu_manager {
     uint32_t            new_adapter_id;
     manager_bind_info_t bind_info;
     plugin_manager_t *  plugin_manager;
+    nng_mtx *           adapters_mtx;
     vector_t            reg_adapters;
 };
 
@@ -208,7 +208,7 @@ static int init_bind_info(manager_bind_info_t *mng_bind_info)
 
     rv  = nng_mtx_alloc(&mng_bind_info->mtx);
     rv1 = nng_cv_alloc(&mng_bind_info->cv, mng_bind_info->mtx);
-    if (rv || rv1) {
+    if (rv != 0 || rv1 != 0) {
         neu_panic("Failed to initialize mutex and cv in manager_bind_info");
     }
 
@@ -228,45 +228,9 @@ static int uninit_bind_info(manager_bind_info_t *mng_bind_info)
     return 0;
 }
 
-static int manager_add_config(neu_manager_t *manager)
-{
-    int rv = 0;
-
-    return rv;
-}
-
-static uint32_t manager_get_adapter_id(neu_manager_t *manager)
-{
-    adapter_id_t adapter_id;
-
-    adapter_id = manager->new_adapter_id++;
-    return adapter_id;
-}
-
-static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
-{
-    neu_adapter_t *adapter;
-
-    adapter = (neu_adapter_t *) arg;
-    log_info(
-        "The manager will bind adapter(%s)", neu_adapter_get_name(adapter));
-
-    return;
-}
-
-static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
-{
-    neu_adapter_t *adapter;
-
-    adapter = (neu_adapter_t *) arg;
-    log_info(
-        "The manager will unbind adapter(%s)", neu_adapter_get_name(adapter));
-
-    return;
-}
-
 // Return SIZE_MAX if can't find a adapter
-static size_t find_adapter_by_id(vector_t *adapters, adapter_id_t id)
+static size_t find_reg_adapter_index_by_id(vector_t *adapters,
+         adapter_id_t id)
 {
     size_t                index = SIZE_MAX;
     adapter_reg_entity_t *reg_entity;
@@ -281,6 +245,92 @@ static size_t find_adapter_by_id(vector_t *adapters, adapter_id_t id)
     }
 
     return index;
+}
+
+static adapter_reg_entity_t* find_reg_adapter_by_id(vector_t *adapters,
+         adapter_id_t id)
+{
+    adapter_reg_entity_t *reg_entity;
+
+    VECTOR_FOR_EACH(adapters, iter)
+    {
+        reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
+        if (reg_entity->adapter_id == id) {
+            return reg_entity;
+        }
+    }
+
+    return NULL;
+}
+
+static uint32_t manager_get_adapter_id(neu_manager_t *manager)
+{
+    adapter_id_t adapter_id;
+
+    nng_mtx_lock(manager->adapters_mtx);
+    adapter_id = manager->new_adapter_id++;
+    nng_mtx_unlock(manager->adapters_mtx);
+    return adapter_id;
+}
+
+static int manager_add_config(neu_manager_t *manager)
+{
+    int rv = 0;
+
+    return rv;
+}
+
+static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
+{
+    adapter_id_t   adapter_id;
+    neu_adapter_t *adapter;
+    neu_manager_t *manager;
+    adapter_reg_entity_t* reg_entity;
+
+    adapter = (neu_adapter_t *) arg;
+    manager = neu_adapter_get_manager(adapter);
+    nng_mtx_lock(manager->adapters_mtx);
+    adapter_id  = neu_adapter_get_id(adapter);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    nng_mtx_unlock(manager->adapters_mtx);
+    if (reg_entity != NULL) {
+        nng_mtx_lock(manager->bind_info.mtx);
+        reg_entity->adapter_pipe = p;
+        reg_entity->bind_count = 1;
+        manager->bind_info.bind_count++;
+        nng_mtx_unlock(manager->bind_info.mtx);
+        log_info("The manager bind the adapter(%s)",
+                neu_adapter_get_name(adapter));
+    }
+
+    return;
+}
+
+static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
+{
+    adapter_id_t   adapter_id;
+    neu_adapter_t *adapter;
+    neu_manager_t *manager;
+    adapter_reg_entity_t* reg_entity;
+
+    adapter = (neu_adapter_t *) arg;
+    manager = neu_adapter_get_manager(adapter);
+    nng_mtx_lock(manager->adapters_mtx);
+    adapter_id  = neu_adapter_get_id(adapter);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    nng_mtx_unlock(manager->adapters_mtx);
+    if (reg_entity != NULL) {
+        manager = neu_adapter_get_manager(adapter);
+        nng_mtx_lock(manager->bind_info.mtx);
+        reg_entity->adapter_pipe = p;
+        reg_entity->bind_count = 1;
+        manager->bind_info.bind_count++;
+        nng_mtx_unlock(manager->bind_info.mtx);
+        log_info("The manager unbind adapter(%s)",
+                neu_adapter_get_name(adapter));
+    }
+
+    return;
 }
 
 // The output parameter p_adapter hold a new adapter
@@ -314,7 +364,9 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *manager,
         reg_entity.adapter_id = adapter_info.id;
         reg_entity.adapter    = adapter;
         reg_entity.bind_count = 0;
+        nng_mtx_lock(manager->adapters_mtx);
         vector_push_back(&manager->reg_adapters, &reg_entity);
+        nng_mtx_unlock(manager->adapters_mtx);
         if (p_adapter != NULL) {
             *p_adapter = adapter;
         }
@@ -331,14 +383,17 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
 
     adapter      = NULL;
     reg_adapters = &manager->reg_adapters;
-    index        = find_adapter_by_id(reg_adapters, id);
+
+    nng_mtx_lock(manager->adapters_mtx);
+    index = find_reg_adapter_index_by_id(reg_adapters, id);
     if (index != SIZE_MAX) {
         adapter_reg_entity_t *reg_entity;
 
-        reg_entity = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
+        reg_entity = (adapter_reg_entity_t*)vector_get(reg_adapters, index);
         adapter    = reg_entity->adapter;
         vector_erase(reg_adapters, index);
     }
+    nng_mtx_unlock(manager->adapters_mtx);
 
     if (adapter != NULL) {
         neu_adapter_destroy(adapter);
@@ -590,19 +645,18 @@ neu_manager_t *neu_manager_create()
 
     manager = malloc(sizeof(neu_manager_t));
     if (manager == NULL) {
-        log_error("Out of memeory for create neuron manager");
-        return NULL;
+        neu_panic("Out of memeory for create neuron manager");
     }
 
     manager->state          = MANAGER_STATE_NULL;
     manager->stop           = false;
     manager->listen_url     = manager_url;
     manager->new_adapter_id = 1;
-    int rv;
-    if ((rv = nng_mtx_alloc(&manager->mtx)) != 0) {
-        log_error("Can't allocate mutex for manager");
-        free(manager);
-        return NULL;
+    int rv, rv1;
+    rv  = nng_mtx_alloc(&manager->mtx);
+    rv1 = nng_mtx_alloc(&manager->adapters_mtx);
+    if (rv != 0 || rv1 != 0) {
+        neu_panic("Can't allocate mutex for manager");
     }
 
     rv = vector_setup(&manager->reg_adapters, DEFAULT_ADAPTER_REG_COUNT,
@@ -627,6 +681,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     plugin_manager_destroy(manager->plugin_manager);
     uninit_bind_info(&manager->bind_info);
     vector_destroy(&manager->reg_adapters);
+    nng_mtx_free(manager->adapters_mtx);
     nng_mtx_free(manager->mtx);
     free(manager);
     return;

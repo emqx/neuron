@@ -373,20 +373,20 @@ int plugin_manager_get_reg_info(plugin_manager_t *plugin_mng,
         return -1;
     }
 
-    plugins = &plugin_mng->system_plugins;
-    index   = find_plugin_by_id(plugins, plugin_id);
-    if (index != SIZE_MAX) {
-        reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
-        reg_info_from_reg_entity(reg_info, reg_entity);
-        return 0;
-    }
-
-    plugins = &plugin_mng->custom_plugins;
-    index   = find_plugin_by_id(plugins, plugin_id);
-    if (index != SIZE_MAX) {
-        reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
-        reg_info_from_reg_entity(reg_info, reg_entity);
-        return 0;
+    int i;
+    vector_t * plugins_array[2] = { &plugin_mng->system_plugins,
+                                    &plugin_mng->custom_plugins };
+    for (i=0; i<2; i++) {
+        plugins = plugins_array[i];
+        nng_mtx_lock(plugin_mng->mtx);
+        index   = find_plugin_by_id(plugins, plugin_id);
+        if (index != SIZE_MAX) {
+            reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
+            reg_info_from_reg_entity(reg_info, reg_entity);
+            nng_mtx_unlock(plugin_mng->mtx);
+            return 0;
+        }
+        nng_mtx_unlock(plugin_mng->mtx);
     }
 
     return -1;
@@ -403,20 +403,20 @@ int plugin_manager_get_reg_info_by_name(plugin_manager_t *plugin_mng,
         return -1;
     }
 
-    plugins = &plugin_mng->system_plugins;
-    index   = find_plugin_by_name(plugins, plugin_name);
-    if (index != SIZE_MAX) {
-        reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
-        reg_info_from_reg_entity(reg_info, reg_entity);
-        return 0;
-    }
-
-    plugins = &plugin_mng->custom_plugins;
-    index   = find_plugin_by_name(plugins, plugin_name);
-    if (index != SIZE_MAX) {
-        reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
-        reg_info_from_reg_entity(reg_info, reg_entity);
-        return 0;
+    int i;
+    vector_t * plugins_array[2] = { &plugin_mng->system_plugins,
+                                    &plugin_mng->custom_plugins };
+    for (i=0; i<2; i++) {
+        plugins = plugins_array[i];
+        nng_mtx_lock(plugin_mng->mtx);
+        index   = find_plugin_by_name(plugins, plugin_name);
+        if (index != SIZE_MAX) {
+            reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
+            reg_info_from_reg_entity(reg_info, reg_entity);
+            nng_mtx_unlock(plugin_mng->mtx);
+            return 0;
+        }
+        nng_mtx_unlock(plugin_mng->mtx);
     }
 
     return -1;
