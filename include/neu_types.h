@@ -294,8 +294,8 @@ static inline neu_text_t neu_text_fromArray(char *locale, char *array)
     return t;
 }
 
-static inline neu_text_t neu_text_fromChars(
-    const char *locale, const char *chars)
+static inline neu_text_t neu_text_fromChars(const char *locale,
+                                            const char *chars)
 {
     neu_text_t t;
     t.locale = neu_string_fromChars(locale);
@@ -558,37 +558,40 @@ static inline neu_boolean_t neu_variable_isScalar(const neu_variable_t *var)
 }
 
 /* Returns true if the variant contains a scalar value of the given type. */
-static inline neu_boolean_t neu_variable_hasScalarType(
-    const neu_variable_t *var, const neu_variabletype_t *type)
+static inline neu_boolean_t
+neu_variable_hasScalarType(const neu_variable_t *    var,
+                           const neu_variabletype_t *type)
 {
     return neu_variable_isScalar(var) && type == var->type;
 }
 
 /* Returns true if the variable contains an array of the given type. */
-static inline neu_boolean_t neu_variable_hasArrayType(
-    const neu_variable_t *var, const neu_variabletype_t *type)
+static inline neu_boolean_t
+neu_variable_hasArrayType(const neu_variable_t *    var,
+                          const neu_variabletype_t *type)
 {
     return (!neu_variable_isScalar(var)) && type == var->type;
 }
 
 /* Set the variable to a scalar value that already resides in memory. The value
  * takes on the lifecycle of the variable and is deleted with it. */
-void neu_variable_setScalar(
-    neu_variable_t *var, void *p, const neu_variabletype_t *type);
+void neu_variable_setScalar(neu_variable_t *var, void *p,
+                            const neu_variabletype_t *type);
 
 /* Set the variable to a scalar value that is copied from an existing variable.
  */
-neu_errorcode_t neu_variable_setScalarCopy(
-    neu_variable_t *var, const void *p, const neu_variabletype_t *type);
+neu_errorcode_t neu_variable_setScalarCopy(neu_variable_t *var, const void *p,
+                                           const neu_variabletype_t *type);
 
 /* Set the variable to an array that already resides in memory. The array takes
  * on the lifecycle of the variant and is deleted with it. */
 void neu_variable_setArray(neu_variable_t *var, void *array, size_t arraySize,
-    const neu_variabletype_t *type);
+                           const neu_variabletype_t *type);
 
 /* Set the variable to an array that is copied from an existing array. */
 neu_errorcode_t neu_variable_setArrayCopy(neu_variable_t *var,
-    const void *array, size_t arraySize, const neu_variabletype_t *type);
+                                          const void *array, size_t arraySize,
+                                          const neu_variabletype_t *type);
 
 /**
  * Variable Node

@@ -49,8 +49,8 @@ size_t core_databuf_get_len(core_databuf_t *databuf);
  * Replace original buffer pointer in databuf with new buffer pointer, the
  * original buffer should be free.
  */
-core_databuf_t *core_databuf_set_buf(
-    core_databuf_t *databuf, void *buf, size_t len);
+core_databuf_t *core_databuf_set_buf(core_databuf_t *databuf, void *buf,
+                                     size_t len);
 /**
  * Get a buffer pointer in databuf
  */

@@ -53,8 +53,8 @@ static void init()
     FILE *g_logfile = fopen("rest-server.log", "a");
     if (g_logfile == NULL) {
         fprintf(stderr,
-            "Failed to open logfile when"
-            "initialize neuron main process");
+                "Failed to open logfile when"
+                "initialize neuron main process");
         abort();
     }
     // log_set_quiet(true);

@@ -63,15 +63,15 @@ struct neu_adapter {
     adapter_callbacks_t  cb_funs;
 };
 
-static void *load_plugin_library(
-    char *plugin_lib_name, neu_plugin_module_t **plugin_module)
+static void *load_plugin_library(char *                plugin_lib_name,
+                                 neu_plugin_module_t **plugin_module)
 {
     void *lib_handle;
 
     lib_handle = dlopen(plugin_lib_name, RTLD_NOW);
     if (lib_handle == NULL) {
         log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
-            strerror(errno));
+                  strerror(errno));
 
         return NULL;
     }
@@ -190,7 +190,7 @@ static void adapter_loop(void *arg)
 
             exit_code = *(uint32_t *) msg_get_buf_ptr(pay_msg);
             log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
-                exit_code);
+                     exit_code);
             nng_mtx_lock(adapter->mtx);
             adapter->state = ADAPTER_STATE_NULL;
             adapter->stop  = true;
@@ -200,7 +200,7 @@ static void adapter_loop(void *arg)
 
         default:
             log_warn("Receive a not supported message(type: %d)",
-                msg_get_type(pay_msg));
+                     msg_get_type(pay_msg));
             break;
         }
 
@@ -248,8 +248,8 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
     return rv;
 }
 
-static int adapter_event_notify(
-    neu_adapter_t *adapter, neu_event_notify_t *event)
+static int adapter_event_notify(neu_adapter_t *     adapter,
+                                neu_event_notify_t *event)
 {
     int rv = 0;
 
@@ -258,7 +258,8 @@ static int adapter_event_notify(
 }
 
 static const adapter_callbacks_t callback_funs = { .response = adapter_response,
-    .event_notify = adapter_event_notify };
+                                                   .event_notify =
+                                                       adapter_event_notify };
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
@@ -312,7 +313,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     handle = load_plugin_library(adapter->plugin_lib_name, &plugin_module);
     if (handle == NULL) {
         neu_panic("Can't to load library(%s) for plugin(%s)",
-            adapter->plugin_lib_name, adapter->name);
+                  adapter->plugin_lib_name, adapter->name);
     }
 
     neu_plugin_t *plugin;

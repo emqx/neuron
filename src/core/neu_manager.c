@@ -229,8 +229,7 @@ static int uninit_bind_info(manager_bind_info_t *mng_bind_info)
 }
 
 // Return SIZE_MAX if can't find a adapter
-static size_t find_reg_adapter_index_by_id(vector_t *adapters,
-         adapter_id_t id)
+static size_t find_reg_adapter_index_by_id(vector_t *adapters, adapter_id_t id)
 {
     size_t                index = SIZE_MAX;
     adapter_reg_entity_t *reg_entity;
@@ -247,8 +246,8 @@ static size_t find_reg_adapter_index_by_id(vector_t *adapters,
     return index;
 }
 
-static adapter_reg_entity_t* find_reg_adapter_by_id(vector_t *adapters,
-         adapter_id_t id)
+static adapter_reg_entity_t *find_reg_adapter_by_id(vector_t *   adapters,
+                                                    adapter_id_t id)
 {
     adapter_reg_entity_t *reg_entity;
 
@@ -282,25 +281,25 @@ static int manager_add_config(neu_manager_t *manager)
 
 static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
-    adapter_id_t   adapter_id;
-    neu_adapter_t *adapter;
-    neu_manager_t *manager;
-    adapter_reg_entity_t* reg_entity;
+    adapter_id_t          adapter_id;
+    neu_adapter_t *       adapter;
+    neu_manager_t *       manager;
+    adapter_reg_entity_t *reg_entity;
 
     adapter = (neu_adapter_t *) arg;
     manager = neu_adapter_get_manager(adapter);
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id  = neu_adapter_get_id(adapter);
+    adapter_id = neu_adapter_get_id(adapter);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     nng_mtx_unlock(manager->adapters_mtx);
     if (reg_entity != NULL) {
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->adapter_pipe = p;
-        reg_entity->bind_count = 1;
+        reg_entity->bind_count   = 1;
         manager->bind_info.bind_count++;
         nng_mtx_unlock(manager->bind_info.mtx);
         log_info("The manager bind the adapter(%s)",
-                neu_adapter_get_name(adapter));
+                 neu_adapter_get_name(adapter));
     }
 
     return;
@@ -308,34 +307,35 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 
 static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
-    adapter_id_t   adapter_id;
-    neu_adapter_t *adapter;
-    neu_manager_t *manager;
-    adapter_reg_entity_t* reg_entity;
+    adapter_id_t          adapter_id;
+    neu_adapter_t *       adapter;
+    neu_manager_t *       manager;
+    adapter_reg_entity_t *reg_entity;
 
     adapter = (neu_adapter_t *) arg;
     manager = neu_adapter_get_manager(adapter);
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id  = neu_adapter_get_id(adapter);
+    adapter_id = neu_adapter_get_id(adapter);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     nng_mtx_unlock(manager->adapters_mtx);
     if (reg_entity != NULL) {
         manager = neu_adapter_get_manager(adapter);
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->adapter_pipe = p;
-        reg_entity->bind_count = 1;
+        reg_entity->bind_count   = 1;
         manager->bind_info.bind_count++;
         nng_mtx_unlock(manager->bind_info.mtx);
         log_info("The manager unbind adapter(%s)",
-                neu_adapter_get_name(adapter));
+                 neu_adapter_get_name(adapter));
     }
 
     return;
 }
 
 // The output parameter p_adapter hold a new adapter
-static adapter_id_t manager_reg_adapter(neu_manager_t *manager,
-    adapter_reg_param_t *reg_param, neu_adapter_t **p_adapter)
+static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
+                                        adapter_reg_param_t *reg_param,
+                                        neu_adapter_t **     p_adapter)
 {
     adapter_id_t       adapter_id;
     neu_adapter_t *    adapter;
@@ -343,8 +343,8 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *manager,
     plugin_reg_info_t  plugin_reg_info;
 
     if (reg_param->plugin_id.id_val != 0) {
-        plugin_manager_get_reg_info(
-            manager->plugin_manager, reg_param->plugin_id, &plugin_reg_info);
+        plugin_manager_get_reg_info(manager->plugin_manager,
+                                    reg_param->plugin_id, &plugin_reg_info);
     } else {
         plugin_manager_get_reg_info_by_name(
             manager->plugin_manager, reg_param->plugin_name, &plugin_reg_info);
@@ -389,7 +389,7 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
     if (index != SIZE_MAX) {
         adapter_reg_entity_t *reg_entity;
 
-        reg_entity = (adapter_reg_entity_t*)vector_get(reg_adapters, index);
+        reg_entity = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
         adapter    = reg_entity->adapter;
         vector_erase(reg_adapters, index);
     }
@@ -406,9 +406,9 @@ static int manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     int rv = 0;
 
     rv = nng_pipe_notify(neu_adapter_get_sock(adapter), NNG_PIPE_EV_ADD_POST,
-        manager_bind_adapter, adapter);
+                         manager_bind_adapter, adapter);
     rv = nng_pipe_notify(neu_adapter_get_sock(adapter), NNG_PIPE_EV_REM_POST,
-        manager_unbind_adapter, adapter);
+                         manager_unbind_adapter, adapter);
     neu_adapter_start(adapter, manager);
     return rv;
 }
@@ -423,7 +423,7 @@ static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     rv       = nng_msg_alloc(&msg, msg_size);
     if (rv != 0) {
         neu_panic("Can't allocate msg for stop adapter(%s)",
-            neu_adapter_get_name(adapter));
+                  neu_adapter_get_name(adapter));
     }
 
     void *     buf_ptr;
@@ -450,7 +450,7 @@ static int register_default_plugins(neu_manager_t *manager)
         plugin_id.id_val = 0;
         for (j = 0; j < SYSTEM_PLUGIN_INFO_SIZE; j++) {
             if (strcmp(system_plugin_infos[j].plugin_lib_name,
-                    default_plugin_lib_names[i]) == 0) {
+                       default_plugin_lib_names[i]) == 0) {
                 break;
             }
         }
@@ -460,8 +460,8 @@ static int register_default_plugins(neu_manager_t *manager)
             plugin_id =
                 plugin_manager_reg_plugin(manager->plugin_manager, reg_param);
             if (plugin_id.id_val == 0) {
-                log_warn(
-                    "Failed to register plugin: %s", reg_param->plugin_name);
+                log_warn("Failed to register plugin: %s",
+                         reg_param->plugin_name);
             }
         }
     }
@@ -484,8 +484,9 @@ static void add_and_start_default_adapters(neu_manager_t *manager)
     neu_adapter_t *p_adapter;
 
     for (i = 0; i < DEFAULT_ADAPTER_ADD_INFO_SIZE; i++) {
-        id = manager_reg_adapter(manager,
-            (adapter_reg_param_t *) &default_adapter_reg_params[i], &p_adapter);
+        id = manager_reg_adapter(
+            manager, (adapter_reg_param_t *) &default_adapter_reg_params[i],
+            &p_adapter);
         if (id != 0 && p_adapter != NULL) {
             manager_start_adapter(manager, p_adapter);
         }
@@ -572,8 +573,8 @@ static void manager_loop(void *arg)
                 message_t *msg_ptr;
                 char *     buf_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
-                msg_inplace_data_init(
-                    msg_ptr, MSG_CONFIG_INFO_STRING, strlen(adapter_str) + 1);
+                msg_inplace_data_init(msg_ptr, MSG_CONFIG_INFO_STRING,
+                                      strlen(adapter_str) + 1);
                 buf_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(buf_ptr, adapter_str, strlen(adapter_str));
                 buf_ptr[strlen(adapter_str)] = 0;
@@ -590,8 +591,8 @@ static void manager_loop(void *arg)
                 void *     buf_ptr;
 
                 msg_ptr = (message_t *) nng_msg_body(read_msg);
-                msg_inplace_data_init(
-                    msg_ptr, MSG_CMD_START_READ, sizeof(uint32_t));
+                msg_inplace_data_init(msg_ptr, MSG_CMD_START_READ,
+                                      sizeof(uint32_t));
                 buf_ptr               = msg_get_buf_ptr(msg_ptr);
                 *(uint32_t *) buf_ptr = 3;
                 nng_sendmsg(manager_bind->mng_sock, read_msg, 0);
@@ -625,7 +626,7 @@ static void manager_loop(void *arg)
 
         default:
             log_warn("Receive a not supported message(type: %d)",
-                msg_get_type(pay_msg));
+                     msg_get_type(pay_msg));
             break;
         }
 
@@ -660,7 +661,7 @@ neu_manager_t *neu_manager_create()
     }
 
     rv = vector_setup(&manager->reg_adapters, DEFAULT_ADAPTER_REG_COUNT,
-        sizeof(adapter_reg_entity_t));
+                      sizeof(adapter_reg_entity_t));
     if (rv != 0) {
         neu_panic("Failed to create vector of registered adapters");
     }

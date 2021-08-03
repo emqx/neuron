@@ -47,8 +47,8 @@ neu_datatag_t *datatag_tbl_id_get(datatag_table_t *tag_tbl, uint32_t tag_id)
     return neu_id_get(&tag_tbl->datatag_table, tag_id);
 }
 
-int datatag_tbl_id_update(
-    datatag_table_t *tag_tbl, uint32_t tag_id, neu_datatag_t *datatag)
+int datatag_tbl_id_update(datatag_table_t *tag_tbl, uint32_t tag_id,
+                          neu_datatag_t *datatag)
 {
     return neu_id_set(&tag_tbl->datatag_table, tag_id, datatag);
 }

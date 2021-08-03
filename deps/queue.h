@@ -398,18 +398,18 @@
         (listelm)->field.sqx_next = XSIMPLEQ_XOR(head, (elm));             \
     } while (0)
 
-#define XSIMPLEQ_REMOVE_HEAD(head, field)                                     \
-    do {                                                                      \
-        if (((head)->sqx_first =                                              \
-                    XSIMPLEQ_XOR(head, (head)->sqx_first)->field.sqx_next) == \
-            XSIMPLEQ_XOR(head, NULL))                                         \
-            (head)->sqx_last = XSIMPLEQ_XOR(head, &(head)->sqx_first);        \
+#define XSIMPLEQ_REMOVE_HEAD(head, field)                                  \
+    do {                                                                   \
+        if (((head)->sqx_first =                                           \
+                 XSIMPLEQ_XOR(head, (head)->sqx_first)->field.sqx_next) == \
+            XSIMPLEQ_XOR(head, NULL))                                      \
+            (head)->sqx_last = XSIMPLEQ_XOR(head, &(head)->sqx_first);     \
     } while (0)
 
 #define XSIMPLEQ_REMOVE_AFTER(head, elm, field)                                \
     do {                                                                       \
-        if (((elm)->field.sqx_next = XSIMPLEQ_XOR(head, (elm)->field.sqx_next) \
-                                         ->field.sqx_next) ==                  \
+        if (((elm)->field.sqx_next =                                           \
+                 XSIMPLEQ_XOR(head, (elm)->field.sqx_next)->field.sqx_next) == \
             XSIMPLEQ_XOR(head, NULL))                                          \
             (head)->sqx_last = XSIMPLEQ_XOR(head, &(elm)->field.sqx_next);     \
     } while (0)

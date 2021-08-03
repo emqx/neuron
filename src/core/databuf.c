@@ -81,8 +81,8 @@ size_t core_databuf_get_len(core_databuf_t *databuf)
     return databuf->len;
 }
 
-core_databuf_t *core_databuf_set_buf(
-    core_databuf_t *databuf, void *buf, size_t len)
+core_databuf_t *core_databuf_set_buf(core_databuf_t *databuf, void *buf,
+                                     size_t len)
 {
     if (databuf == NULL) {
         return NULL;

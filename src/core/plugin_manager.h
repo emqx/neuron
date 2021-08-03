@@ -55,16 +55,18 @@ typedef struct plugin_manager plugin_manager_t;
 
 plugin_manager_t *plugin_manager_create();
 void              plugin_manager_destroy(plugin_manager_t *plugin_mng);
-plugin_id_t       plugin_manager_reg_plugin(
-          plugin_manager_t *plugin_mng, const plugin_reg_param_t *param);
-int plugin_manager_unreg_plugin(
-    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param);
-int plugin_manager_update_plugin(
-    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param);
-int plugin_manager_get_reg_info(plugin_manager_t *plugin_mng,
-    plugin_id_t plugin_id, plugin_reg_info_t *reg_info);
-int plugin_manager_get_reg_info_by_name(plugin_manager_t *plugin_mng,
-    const char *plugin_name, plugin_reg_info_t *reg_info);
+plugin_id_t       plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
+                                            const plugin_reg_param_t *param);
+int               plugin_manager_unreg_plugin(plugin_manager_t *        plugin_mng,
+                                              const plugin_reg_param_t *param);
+int               plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
+                                               const plugin_reg_param_t *param);
+int               plugin_manager_get_reg_info(plugin_manager_t * plugin_mng,
+                                              plugin_id_t        plugin_id,
+                                              plugin_reg_info_t *reg_info);
+int plugin_manager_get_reg_info_by_name(plugin_manager_t * plugin_mng,
+                                        const char *       plugin_name,
+                                        plugin_reg_info_t *reg_info);
 
 void plugin_manager_unreg_all_plugins(plugin_manager_t *plugin_mng);
 void plugin_manager_dump(plugin_manager_t *plugin_mng);

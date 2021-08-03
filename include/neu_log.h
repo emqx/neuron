@@ -51,7 +51,7 @@ extern void        log_set_quiet(bool enable);
 extern int         log_add_callback(log_LogFn fn, void *udata, int level);
 extern int         log_add_fp(FILE *fp, int level);
 extern void log_log(int level, const char *file, int line, const char *func,
-    const char *fmt, ...);
+                    const char *fmt, ...);
 
 /*
 #define fatal(msg, rv)                             \

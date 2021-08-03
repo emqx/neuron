@@ -63,7 +63,7 @@ typedef enum msg_type {
 } msg_type_e;
 
 static_assert(MSG_TYPE_END >= MSG_DATABUF_KIND_MASK,
-    "Too many massage type exceed MSG_DATABUF_KIND_MASK");
+              "Too many massage type exceed MSG_DATABUF_KIND_MASK");
 
 typedef struct message message_t;
 
@@ -81,16 +81,16 @@ size_t msg_external_data_get_size();
  * buffer of struct_ptr had also been allocated by caller. The initialization
  * function will copy contents in struct_ptr to internal buffer pointer.
  */
-void msg_with_struct_init(
-    message_t *msg, msg_type_e type, void *struct_ptr, size_t struct_size);
+void msg_with_struct_init(message_t *msg, msg_type_e type, void *struct_ptr,
+                          size_t struct_size);
 void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len);
 
 /**
  * Initialize the message that has external data buffer. Just set pointer of
  * external buffer to message, and get a strong reference of external buffer.
  */
-void msg_external_data_init(
-    message_t *msg, msg_type_e type, core_databuf_t *data_buf);
+void msg_external_data_init(message_t *msg, msg_type_e type,
+                            core_databuf_t *data_buf);
 
 /**
  *  Uninitialize the message that has external data buffer. Just return strong

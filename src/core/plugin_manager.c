@@ -52,8 +52,8 @@ static int init_system_plugins(vector_t *plugins_vec)
 {
     int rv = 0;
 
-    rv = vector_setup(
-        plugins_vec, SYSTEM_PLUGIN_COUNT_DEFAULT, sizeof(plugin_reg_entity_t));
+    rv = vector_setup(plugins_vec, SYSTEM_PLUGIN_COUNT_DEFAULT,
+                      sizeof(plugin_reg_entity_t));
     return rv;
 }
 
@@ -67,8 +67,8 @@ static int init_custom_plugins(vector_t *plugins_vec)
 {
     int rv = 0;
 
-    rv = vector_setup(
-        plugins_vec, CUSTOM_PLUGIN_COUNT_DEFAULT, sizeof(plugin_reg_entity_t));
+    rv = vector_setup(plugins_vec, CUSTOM_PLUGIN_COUNT_DEFAULT,
+                      sizeof(plugin_reg_entity_t));
     return rv;
 }
 
@@ -121,8 +121,8 @@ static size_t find_plugin_by_name(vector_t *plugins, const char *plugin_name)
     return index;
 }
 
-static plugin_id_t plugin_manager_get_plugin_id(
-    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param)
+static plugin_id_t plugin_manager_get_plugin_id(plugin_manager_t *plugin_mng,
+                                                const plugin_reg_param_t *param)
 {
     size_t      index;
     plugin_id_t plugin_id;
@@ -151,8 +151,9 @@ static plugin_id_t plugin_manager_get_plugin_id(
     return plugin_id;
 }
 
-static void reg_entity_init(plugin_reg_entity_t *reg_entity,
-    plugin_id_t plugin_id, const plugin_reg_param_t *param)
+static void reg_entity_init(plugin_reg_entity_t *     reg_entity,
+                            plugin_id_t               plugin_id,
+                            const plugin_reg_param_t *param)
 {
     reg_entity->plugin_id       = plugin_id;
     reg_entity->plugin_kind     = param->plugin_kind;
@@ -199,7 +200,7 @@ plugin_manager_t *plugin_manager_create()
     }
 
     rv = vector_setup(&plugin_mng->available_ids, CUSTOM_PLUGIN_COUNT_DEFAULT,
-        sizeof(plugin_id_t));
+                      sizeof(plugin_id_t));
     if (rv != 0) {
         log_error("Failed to initialize vector of available ids");
         return NULL;
@@ -223,8 +224,8 @@ void plugin_manager_destroy(plugin_manager_t *plugin_mng)
 
 /* If there already has same plugin registered, then return 0
  */
-plugin_id_t plugin_manager_reg_plugin(
-    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param)
+plugin_id_t plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
+                                      const plugin_reg_param_t *param)
 {
     int                 rv;
     int                 retry_count;
@@ -265,8 +266,8 @@ plugin_id_t plugin_manager_reg_plugin(
     return plugin_id;
 }
 
-int plugin_manager_unreg_plugin(
-    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param)
+int plugin_manager_unreg_plugin(plugin_manager_t *        plugin_mng,
+                                const plugin_reg_param_t *param)
 {
     int                  rv = 0;
     size_t               index;
@@ -317,8 +318,8 @@ void plugin_manager_unreg_all_plugins(plugin_manager_t *plugin_mng)
     return;
 }
 
-int plugin_manager_update_plugin(
-    plugin_manager_t *plugin_mng, const plugin_reg_param_t *param)
+int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
+                                 const plugin_reg_param_t *param)
 {
     int       rv = 0;
     size_t    index;
@@ -351,8 +352,8 @@ int plugin_manager_update_plugin(
     return rv;
 }
 
-void reg_info_from_reg_entity(
-    plugin_reg_info_t *reg_info, plugin_reg_entity_t *reg_entity)
+void reg_info_from_reg_entity(plugin_reg_info_t *  reg_info,
+                              plugin_reg_entity_t *reg_entity)
 {
     reg_info->plugin_id       = reg_entity->plugin_id;
     reg_info->plugin_kind     = reg_entity->plugin_kind;
@@ -362,8 +363,9 @@ void reg_info_from_reg_entity(
     return;
 }
 
-int plugin_manager_get_reg_info(plugin_manager_t *plugin_mng,
-    plugin_id_t plugin_id, plugin_reg_info_t *reg_info)
+int plugin_manager_get_reg_info(plugin_manager_t * plugin_mng,
+                                plugin_id_t        plugin_id,
+                                plugin_reg_info_t *reg_info)
 {
     size_t               index;
     vector_t *           plugins;
@@ -373,13 +375,13 @@ int plugin_manager_get_reg_info(plugin_manager_t *plugin_mng,
         return -1;
     }
 
-    int i;
-    vector_t * plugins_array[2] = { &plugin_mng->system_plugins,
-                                    &plugin_mng->custom_plugins };
-    for (i=0; i<2; i++) {
+    int       i;
+    vector_t *plugins_array[2] = { &plugin_mng->system_plugins,
+                                   &plugin_mng->custom_plugins };
+    for (i = 0; i < 2; i++) {
         plugins = plugins_array[i];
         nng_mtx_lock(plugin_mng->mtx);
-        index   = find_plugin_by_id(plugins, plugin_id);
+        index = find_plugin_by_id(plugins, plugin_id);
         if (index != SIZE_MAX) {
             reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
             reg_info_from_reg_entity(reg_info, reg_entity);
@@ -392,8 +394,9 @@ int plugin_manager_get_reg_info(plugin_manager_t *plugin_mng,
     return -1;
 }
 
-int plugin_manager_get_reg_info_by_name(plugin_manager_t *plugin_mng,
-    const char *plugin_name, plugin_reg_info_t *reg_info)
+int plugin_manager_get_reg_info_by_name(plugin_manager_t * plugin_mng,
+                                        const char *       plugin_name,
+                                        plugin_reg_info_t *reg_info)
 {
     size_t               index;
     vector_t *           plugins;
@@ -403,13 +406,13 @@ int plugin_manager_get_reg_info_by_name(plugin_manager_t *plugin_mng,
         return -1;
     }
 
-    int i;
-    vector_t * plugins_array[2] = { &plugin_mng->system_plugins,
-                                    &plugin_mng->custom_plugins };
-    for (i=0; i<2; i++) {
+    int       i;
+    vector_t *plugins_array[2] = { &plugin_mng->system_plugins,
+                                   &plugin_mng->custom_plugins };
+    for (i = 0; i < 2; i++) {
         plugins = plugins_array[i];
         nng_mtx_lock(plugin_mng->mtx);
-        index   = find_plugin_by_name(plugins, plugin_name);
+        index = find_plugin_by_name(plugins, plugin_name);
         if (index != SIZE_MAX) {
             reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
             reg_info_from_reg_entity(reg_info, reg_entity);

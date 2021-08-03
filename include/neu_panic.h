@@ -28,8 +28,8 @@ void neu_panic(const char *fmt, ...);
 
 #ifndef NDEBUG
 #define NEU_ASSERT(x) \
-	if (!(x))     \
-	neu_panic("%s: %d: assert err: %s", __FILE__, __LINE__, #x)
+    if (!(x))         \
+    neu_panic("%s: %d: assert err: %s", __FILE__, __LINE__, #x)
 #else
 #define NEU_ASSERT(x) (0)
 #endif

@@ -64,8 +64,8 @@ size_t msg_external_data_get_size()
     return sizeof(message_t);
 }
 
-void msg_with_struct_init(
-    message_t *msg, msg_type_e type, void *struct_ptr, size_t struct_size)
+void msg_with_struct_init(message_t *msg, msg_type_e type, void *struct_ptr,
+                          size_t struct_size)
 {
     if (!(msg != NULL && struct_ptr != NULL)) {
         log_error("msg_with_struct_init called with NULL pointr");
@@ -91,8 +91,8 @@ void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len)
     msg->inp_buf.buf_ptr = msg->msg_buf;
 }
 
-void msg_external_data_init(
-    message_t *msg, msg_type_e type, core_databuf_t *data_buf)
+void msg_external_data_init(message_t *msg, msg_type_e type,
+                            core_databuf_t *data_buf)
 {
     if (msg == NULL) {
         log_error("msg_external_data_init called with NULL pointr");
