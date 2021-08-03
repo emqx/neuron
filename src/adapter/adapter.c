@@ -18,6 +18,7 @@
  **/
 
 #include <dlfcn.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +44,7 @@ typedef enum adapter_state {
 } adapter_state_e;
 
 struct neu_adapter {
-    uint32_t             id;
+    adapter_id_t         id;
     adapter_type_e       type;
     nng_mtx *            mtx;
     adapter_state_e      state;
@@ -54,6 +55,7 @@ struct neu_adapter {
     nng_socket           sock;
     nng_thread *         thrd;
     uint32_t             new_req_id;
+    plugin_id_t          plugin_id;
     char *               plugin_lib_name;
     void *               plugin_lib; // handle of dynamic lib
     neu_plugin_module_t *plugin_module;
@@ -61,13 +63,16 @@ struct neu_adapter {
     adapter_callbacks_t  cb_funs;
 };
 
-static void *load_plugin_library(
-    char *plugin_lib_name, neu_plugin_module_t **plugin_module)
+static void *load_plugin_library(char *                plugin_lib_name,
+                                 neu_plugin_module_t **plugin_module)
 {
     void *lib_handle;
 
     lib_handle = dlopen(plugin_lib_name, RTLD_NOW);
     if (lib_handle == NULL) {
+        log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
+                  strerror(errno));
+
         return NULL;
     }
 
@@ -164,13 +169,15 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             uint32_t                      req_code;
-            intf_funs    = adapter->plugin_module->intf_funs;
-            req.req_id   = adapter_get_req_id(adapter);
-            req.req_type = NEU_REQRESP_READ;
-            req.buf_len  = sizeof(uint32_t);
-            req_code     = 1;
-            req.buf      = (char *) &req_code;
-            intf_funs->request(adapter->plugin, &req);
+            if (adapter->plugin_module) {
+                intf_funs    = adapter->plugin_module->intf_funs;
+                req.req_id   = adapter_get_req_id(adapter);
+                req.req_type = NEU_REQRESP_READ;
+                req.buf_len  = sizeof(uint32_t);
+                req_code     = 1;
+                req.buf      = (char *) &req_code;
+                intf_funs->request(adapter->plugin, &req);
+            }
             break;
         }
 
@@ -183,7 +190,7 @@ static void adapter_loop(void *arg)
 
             exit_code = *(uint32_t *) msg_get_buf_ptr(pay_msg);
             log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
-                exit_code);
+                     exit_code);
             nng_mtx_lock(adapter->mtx);
             adapter->state = ADAPTER_STATE_NULL;
             adapter->stop  = true;
@@ -193,7 +200,7 @@ static void adapter_loop(void *arg)
 
         default:
             log_warn("Receive a not supported message(type: %d)",
-                msg_get_type(pay_msg));
+                     msg_get_type(pay_msg));
             break;
         }
 
@@ -241,8 +248,8 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
     return rv;
 }
 
-static int adapter_event_notify(
-    neu_adapter_t *adapter, neu_event_notify_t *event)
+static int adapter_event_notify(neu_adapter_t *     adapter,
+                                neu_event_notify_t *event)
 {
     int rv = 0;
 
@@ -251,7 +258,8 @@ static int adapter_event_notify(
 }
 
 static const adapter_callbacks_t callback_funs = { .response = adapter_response,
-    .event_notify = adapter_event_notify };
+                                                   .event_notify =
+                                                       adapter_event_notify };
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
@@ -272,12 +280,21 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         return NULL;
     }
 
-    adapter->id              = info->id;
-    adapter->type            = info->type;
-    adapter->name            = strdup(info->name);
-    adapter->plugin_lib_name = strdup(info->plugin_lib_name);
-    adapter->new_req_id      = 0;
+    adapter->id         = info->id;
+    adapter->type       = info->type;
+    adapter->name       = strdup(info->name);
+    adapter->new_req_id = 0;
+    adapter->plugin_id  = info->plugin_id;
+    if (adapter->plugin_id.id_val == 0) {
+        adapter->plugin_lib_name = NULL;
+        adapter->plugin_lib      = NULL;
+        adapter->plugin_module   = NULL;
+        adapter->plugin          = NULL;
+        log_info("Create a adapter without plugin");
+        goto open_pipe;
+    }
 
+    adapter->plugin_lib_name = strdup(info->plugin_lib_name);
     if (adapter->name == NULL || adapter->plugin_lib_name == NULL) {
         if (adapter->name != NULL) {
             free(adapter->name);
@@ -296,24 +313,24 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     handle = load_plugin_library(adapter->plugin_lib_name, &plugin_module);
     if (handle == NULL) {
         neu_panic("Can't to load library(%s) for plugin(%s)",
-            adapter->plugin_lib_name, adapter->name);
+                  adapter->plugin_lib_name, adapter->name);
     }
 
+    neu_plugin_t *plugin;
     adapter->plugin_lib    = handle;
     adapter->plugin_module = plugin_module;
-    neu_plugin_t *plugin;
-    plugin_module = adapter->plugin_module;
-    plugin        = plugin_module->intf_funs->open(adapter, &callback_funs);
+    plugin = plugin_module->intf_funs->open(adapter, &callback_funs);
     if (plugin == NULL) {
         neu_panic("Can't to open plugin(%s)", plugin_module->module_name);
     }
+    adapter->plugin = plugin;
 
+open_pipe:
     rv = nng_pair1_open(&adapter->sock);
     if (rv != 0) {
         neu_panic("The adapter(%s) can't open pipe", adapter->name);
     }
 
-    adapter->plugin = plugin;
     return adapter;
 }
 
@@ -324,8 +341,12 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     }
 
     nng_close(adapter->sock);
-    adapter->plugin_module->intf_funs->close(adapter->plugin);
-    unload_plugin_library(adapter->plugin_lib);
+    if (adapter->plugin_module != NULL) {
+        adapter->plugin_module->intf_funs->close(adapter->plugin);
+    }
+    if (adapter->plugin_lib != NULL) {
+        unload_plugin_library(adapter->plugin_lib);
+    }
     if (adapter->name != NULL) {
         free(adapter->name);
     }
@@ -341,14 +362,16 @@ int neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager)
 {
     int rv = 0;
 
-    if (manager == NULL) {
-        log_error("Start adapter with NULL manager");
+    if (adapter == NULL || manager == NULL) {
+        log_error("Start adapter with NULL adapter or manager");
         return (-1);
     }
 
-    const neu_plugin_intf_funs_t *intf_funs;
-    intf_funs = adapter->plugin_module->intf_funs;
-    intf_funs->init(adapter->plugin);
+    if (adapter->plugin_module != NULL) {
+        const neu_plugin_intf_funs_t *intf_funs;
+        intf_funs = adapter->plugin_module->intf_funs;
+        intf_funs->init(adapter->plugin);
+    }
 
     adapter->manager = manager;
     nng_thread_create(&adapter->thrd, adapter_loop, adapter);
@@ -359,30 +382,61 @@ int neu_adapter_stop(neu_adapter_t *adapter, neu_manager_t *manager)
 {
     int rv = 0;
 
+    if (adapter == NULL || manager == NULL) {
+        log_error("Stop adapter with NULL adapter or manager");
+        return -1;
+    }
+
     log_info("Stop the adapter(%s)", adapter->name);
     nng_mtx_lock(adapter->mtx);
     adapter->stop = true;
     nng_mtx_unlock(adapter->mtx);
     nng_thread_destroy(adapter->thrd);
 
-    const neu_plugin_intf_funs_t *intf_funs;
-    intf_funs = adapter->plugin_module->intf_funs;
-    intf_funs->uninit(adapter->plugin);
+    if (adapter->plugin_module != NULL) {
+        const neu_plugin_intf_funs_t *intf_funs;
+        intf_funs = adapter->plugin_module->intf_funs;
+        intf_funs->uninit(adapter->plugin);
+    }
 
     return rv;
 }
 
 const char *neu_adapter_get_name(neu_adapter_t *adapter)
 {
+    if (adapter == NULL) {
+        return NULL;
+    }
+
     return (const char *) adapter->name;
 }
 
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
 {
+    if (adapter == NULL) {
+        return NULL;
+    }
+
     return (neu_manager_t *) adapter->manager;
 }
 
 nng_socket neu_adapter_get_sock(neu_adapter_t *adapter)
 {
+    if (adapter == NULL) {
+        nng_socket sock;
+
+        sock.id = 0;
+        return sock;
+    }
+
     return adapter->sock;
+}
+
+adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
+{
+    if (adapter == NULL) {
+        return 0;
+    }
+
+    return adapter->id;
 }

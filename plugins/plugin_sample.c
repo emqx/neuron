@@ -31,8 +31,8 @@ struct neu_plugin {
     neu_plugin_common_t common;
 };
 
-static neu_plugin_t *sample_plugin_open(
-    neu_adapter_t *adapter, const adapter_callbacks_t *callbacks)
+static neu_plugin_t *sample_plugin_open(neu_adapter_t *            adapter,
+                                        const adapter_callbacks_t *callbacks)
 {
     neu_plugin_t *plugin;
 
@@ -43,8 +43,8 @@ static neu_plugin_t *sample_plugin_open(
 
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        log_error(
-            "Failed to allocate plugin %s", neu_plugin_module.module_name);
+        log_error("Failed to allocate plugin %s",
+                  neu_plugin_module.module_name);
         return NULL;
     }
 
@@ -123,8 +123,8 @@ static int sample_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     return rv;
 }
 
-static int sample_plugin_event_reply(
-    neu_plugin_t *plugin, neu_event_reply_t *reply)
+static int sample_plugin_event_reply(neu_plugin_t *     plugin,
+                                     neu_event_reply_t *reply)
 {
     int rv = 0;
 
@@ -132,17 +132,19 @@ static int sample_plugin_event_reply(
     return rv;
 }
 
-static const neu_plugin_intf_funs_t plugin_intf_funs = { .open =
-                                                             sample_plugin_open,
+static const neu_plugin_intf_funs_t plugin_intf_funs = {
+    .open        = sample_plugin_open,
     .close       = sample_plugin_close,
     .init        = sample_plugin_init,
     .uninit      = sample_plugin_uninit,
     .config      = sample_plugin_config,
     .request     = sample_plugin_request,
-    .event_reply = sample_plugin_event_reply };
+    .event_reply = sample_plugin_event_reply
+};
 
-const neu_plugin_module_t neu_plugin_module = { .version =
-                                                    NEURON_PLUGIN_VER_1_0,
+const neu_plugin_module_t neu_plugin_module = {
+    .version      = NEURON_PLUGIN_VER_1_0,
     .module_name  = "neuron-sample-plugin",
     .module_descr = SAMPLE_PLUGIN_DESCR,
-    .intf_funs    = &plugin_intf_funs };
+    .intf_funs    = &plugin_intf_funs
+};

@@ -17,21 +17,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PANIC_H
-#define NEURON_PANIC_H
+#ifndef __DATATAG_TABLE_H__
+#define __DATATAG_TABLE_H__
 
-#include "neu_log.h"
-#include <stdarg.h>
+#include "neu_types.h"
+#include "utils/idhash.h"
 
-void neu_show_backtrace(void);
-void neu_panic(const char *fmt, ...);
+typedef struct datatag_table_t datatag_table_t;
 
-#ifndef NDEBUG
-#define NEU_ASSERT(x) \
-    if (!(x))         \
-    neu_panic("%s: %d: assert err: %s", __FILE__, __LINE__, #x)
-#else
-#define NEU_ASSERT(x) (0)
-#endif
+datatag_table_t *datatag_tbl_create(void);
+void             datatag_tbl_destroy(datatag_table_t *);
+neu_datatag_t *  datatag_tbl_id_get(datatag_table_t *, uint32_t);
+int              datatag_tbl_id_remove(datatag_table_t *, uint32_t);
+int datatag_tbl_id_update(datatag_table_t *, uint32_t, neu_datatag_t *);
+int datatag_tbl_id_add(datatag_table_t *, neu_datatag_t *);
 
-#endif
+#endif //__DATATAG_TABLE_H__

@@ -40,8 +40,8 @@ typedef struct neu_plugin_common {
 typedef struct neu_plugin neu_plugin_t;
 
 typedef struct neu_plugin_intf_funs {
-    neu_plugin_t *(*open)(
-        neu_adapter_t *adapter, const adapter_callbacks_t *callbacks);
+    neu_plugin_t *(*open)(neu_adapter_t *            adapter,
+                          const adapter_callbacks_t *callbacks);
     int (*close)(neu_plugin_t *plugin);
     int (*init)(neu_plugin_t *plugin);
     int (*uninit)(neu_plugin_t *plugin);

@@ -134,8 +134,8 @@ neu_order_t neu_string_isEqual(const neu_string_t *s1, const neu_string_t *s2)
         return false;
     if (s1->length == 0)
         return true;
-    neu_dword_t is = memcmp(
-        (char const *) s1->charstr, (char const *) s2->charstr, s1->length);
+    neu_dword_t is = memcmp((char const *) s1->charstr,
+                            (char const *) s2->charstr, s1->length);
     return (is == 0) ? NEU_ORDER_EQ
                      : ((is > 0) ? NEU_ORDER_MORE : NEU_ORDER_LESS);
 }
@@ -207,7 +207,7 @@ neu_time_t neu_time_fromDateTime(neu_datetime_t dt)
         { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335 },
     };
     neu_word_t   leap = ((dt.tm_year) % 4 == 0 &&
-        ((dt.tm_year) % 100 != 0 || (dt.tm_year) % 400 == 0));
+                       ((dt.tm_year) % 100 != 0 || (dt.tm_year) % 400 == 0));
     neu_udword_t ret  = (dt.tm_year - 1970) * 365 * 24 * 3600;
     ret += (mon_yday[leap][dt.tm_mon] + dt.tm_mday - 1) * 24 * 3600;
     ret += dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
@@ -254,14 +254,14 @@ neu_order_t neu_nodeid_order(const neu_nodeid_t *n1, const neu_nodeid_t *n2)
 }
 
 const neu_nodeid_t NEU_NODEID_NULL = { { { 0, NULL }, { 0, NULL } },
-    { 0, NULL } };
+                                       { 0, NULL } };
 
 /******************/
 /* Variable Types */
 /******************/
 
-void neu_variable_setScalar(
-    neu_variable_t *v, void *p, const neu_variabletype_t *type)
+void neu_variable_setScalar(neu_variable_t *v, void *p,
+                            const neu_variabletype_t *type)
 {
     // init(v) to memset 0;
     v->type        = type;
@@ -270,7 +270,7 @@ void neu_variable_setScalar(
 }
 
 void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
-    const neu_variabletype_t *type)
+                           const neu_variabletype_t *type)
 {
     // init(v) to memset 0;
     v->data        = array;

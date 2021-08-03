@@ -29,8 +29,8 @@ extern "C" {
  */
 
 typedef void (*neu_signalStopHandler)(void);
-void neu_setSignalHandler(
-    neu_signalStopHandler stopHandler, neu_boolean_t *Running);
+void neu_setSignalHandler(neu_signalStopHandler stopHandler,
+                          neu_boolean_t *       Running);
 void neu_setSignalIgnore(neu_word_t status);
 
 #ifdef __cplusplus

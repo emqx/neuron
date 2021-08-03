@@ -174,7 +174,7 @@ CJSON_PUBLIC(cJSON *) cJSON_Parse(const char *value);
  * cJSON_GetErrorPtr(). */
 CJSON_PUBLIC(cJSON *)
 cJSON_ParseWithOpts(const char *value, const char **return_parse_end,
-    cJSON_bool require_null_terminated);
+                    cJSON_bool require_null_terminated);
 
 /* Render a cJSON entity to text for transfer/storage. */
 CJSON_PUBLIC(char *) cJSON_Print(const cJSON *item);
@@ -190,8 +190,8 @@ cJSON_PrintBuffered(const cJSON *item, int prebuffer, cJSON_bool fmt);
 /* NOTE: cJSON is not always 100% accurate in estimating how much memory it will
  * use, so to be safe allocate 5 bytes more than you actually need */
 CJSON_PUBLIC(cJSON_bool)
-cJSON_PrintPreallocated(
-    cJSON *item, char *buffer, const int length, const cJSON_bool format);
+cJSON_PrintPreallocated(cJSON *item, char *buffer, const int length,
+                        const cJSON_bool format);
 /* Delete a cJSON entity and all subentities. */
 CJSON_PUBLIC(void) cJSON_Delete(cJSON *item);
 
@@ -204,8 +204,8 @@ CJSON_PUBLIC(cJSON *) cJSON_GetArrayItem(const cJSON *array, int index);
 CJSON_PUBLIC(cJSON *)
 cJSON_GetObjectItem(const cJSON *const object, const char *const string);
 CJSON_PUBLIC(cJSON *)
-cJSON_GetObjectItemCaseSensitive(
-    const cJSON *const object, const char *const string);
+cJSON_GetObjectItemCaseSensitive(const cJSON *const object,
+                                 const char *const  string);
 CJSON_PUBLIC(cJSON_bool)
 cJSON_HasObjectItem(const cJSON *object, const char *string);
 /* For analysing failed parses. This returns a pointer to the parse error.
@@ -290,18 +290,19 @@ cJSON_DeleteItemFromObjectCaseSensitive(cJSON *object, const char *string);
 
 /* Update array items. */
 CJSON_PUBLIC(void)
-cJSON_InsertItemInArray(cJSON *array, int which,
+cJSON_InsertItemInArray(
+    cJSON *array, int which,
     cJSON *newitem); /* Shifts pre-existing items to the right. */
 CJSON_PUBLIC(cJSON_bool)
-cJSON_ReplaceItemViaPointer(
-    cJSON *const parent, cJSON *const item, cJSON *replacement);
+cJSON_ReplaceItemViaPointer(cJSON *const parent, cJSON *const item,
+                            cJSON *replacement);
 CJSON_PUBLIC(void)
 cJSON_ReplaceItemInArray(cJSON *array, int which, cJSON *newitem);
 CJSON_PUBLIC(void)
 cJSON_ReplaceItemInObject(cJSON *object, const char *string, cJSON *newitem);
 CJSON_PUBLIC(void)
-cJSON_ReplaceItemInObjectCaseSensitive(
-    cJSON *object, const char *string, cJSON *newitem);
+cJSON_ReplaceItemInObjectCaseSensitive(cJSON *object, const char *string,
+                                       cJSON *newitem);
 
 /* Duplicate a cJSON item */
 CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_bool recurse);
@@ -316,7 +317,7 @@ CJSON_PUBLIC(cJSON *) cJSON_Duplicate(const cJSON *item, cJSON_bool recurse);
  * case insensitive (0) */
 CJSON_PUBLIC(cJSON_bool)
 cJSON_Compare(const cJSON *const a, const cJSON *const b,
-    const cJSON_bool case_sensitive);
+              const cJSON_bool case_sensitive);
 
 /* Minify a strings, remove blank characters(such as ' ', '\t', '\r', '\n') from
  * strings. The input pointer json cannot point to a read-only address area,
@@ -333,17 +334,17 @@ cJSON_AddTrueToObject(cJSON *const object, const char *const name);
 CJSON_PUBLIC(cJSON *)
 cJSON_AddFalseToObject(cJSON *const object, const char *const name);
 CJSON_PUBLIC(cJSON *)
-cJSON_AddBoolToObject(
-    cJSON *const object, const char *const name, const cJSON_bool boolean);
+cJSON_AddBoolToObject(cJSON *const object, const char *const name,
+                      const cJSON_bool boolean);
 CJSON_PUBLIC(cJSON *)
-cJSON_AddNumberToObject(
-    cJSON *const object, const char *const name, const double number);
+cJSON_AddNumberToObject(cJSON *const object, const char *const name,
+                        const double number);
 CJSON_PUBLIC(cJSON *)
-cJSON_AddStringToObject(
-    cJSON *const object, const char *const name, const char *const string);
+cJSON_AddStringToObject(cJSON *const object, const char *const name,
+                        const char *const string);
 CJSON_PUBLIC(cJSON *)
-cJSON_AddRawToObject(
-    cJSON *const object, const char *const name, const char *const raw);
+cJSON_AddRawToObject(cJSON *const object, const char *const name,
+                     const char *const raw);
 CJSON_PUBLIC(cJSON *)
 cJSON_AddObjectToObject(cJSON *const object, const char *const name);
 CJSON_PUBLIC(cJSON *)

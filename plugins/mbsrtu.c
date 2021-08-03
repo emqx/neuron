@@ -87,8 +87,8 @@ void csmain(void) { }
  *    success the return value is 0 else the return value is -1.
  */
 
-int csrdword(
-    char **addr, u_int *dtype, int naddr, int woffs, int nword, long *data)
+int csrdword(char **addr, u_int *dtype, int naddr, int woffs, int nword,
+             long *data)
 {
     int     i, j, reqin;
     short   val;
@@ -195,8 +195,8 @@ int csrdword(
  *    success the return value is 0 else the return value is -1.
  */
 
-int cswrword(
-    char **addr, u_int *dtype, int naddr, int woffs, int nword, long *data)
+int cswrword(char **addr, u_int *dtype, int naddr, int woffs, int nword,
+             long *data)
 {
     int     i, reqin, val, bit;
     u_char *pbuf, *pbuf2, *ps;

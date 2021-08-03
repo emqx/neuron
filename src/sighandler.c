@@ -40,8 +40,8 @@ static neu_boolean_t *running;
 static void (*stophandler)(void);
 static void sigcatch(int sig);
 
-void neu_setSignalHandler(
-    neu_signalStopHandler stopHandler, neu_boolean_t *Running)
+void neu_setSignalHandler(neu_signalStopHandler stopHandler,
+                          neu_boolean_t *       Running)
 {
     running     = Running;
     stophandler = stopHandler;
