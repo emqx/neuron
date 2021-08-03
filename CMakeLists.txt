@@ -7,10 +7,14 @@ enable_language(C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_BUILD_TYPE "Debug")
-# set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb -fsanitize=address
-# -fsanitize=leak")
-set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking")
+
 
 add_subdirectory(extern/vector)
 add_subdirectory(extern/libcsptr)
