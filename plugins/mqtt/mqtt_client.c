@@ -10,8 +10,8 @@ struct neu_plugin {
     MQTTAsync           client;
 };
 
-static neu_plugin_t *mqtt_plugin_open(
-    neu_adapter_t *adapter, const adapter_callbacks_t *callbacks)
+static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
+                                      const adapter_callbacks_t *callbacks)
 {
     if (NULL == adapter || NULL == callbacks) {
         return NULL;
@@ -20,8 +20,8 @@ static neu_plugin_t *mqtt_plugin_open(
     neu_plugin_t *plugin;
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (NULL == plugin) {
-        log_error(
-            "Failed to allocate plugin %s", neu_plugin_module.module_name);
+        log_error("Failed to allocate plugin %s",
+                  neu_plugin_module.module_name);
         return NULL;
     }
 
@@ -57,13 +57,13 @@ static void connection_lost_callback(void *context, char *cause)
     }
 }
 
-static int message_arrived_callback(
-    void *context, char *topicName, int topicLen, MQTTAsync_message *message)
+static int message_arrived_callback(void *context, char *topicName,
+                                    int topicLen, MQTTAsync_message *message)
 {
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
-    printf(
-        "   message: %.*s\n", message->payloadlen, (char *) message->payload);
+    printf("   message: %.*s\n", message->payloadlen,
+           (char *) message->payload);
     MQTTAsync_freeMessage(&message);
     MQTTAsync_free(topicName);
     return 1;
@@ -93,7 +93,7 @@ void on_subscribe_failure(void *context, MQTTAsync_failureData *response)
     // finished = 1;
 }
 
-void on_connectFailure(void *context, MQTTAsync_failureData *response)
+void on_connect_failure(void *context, MQTTAsync_failureData *response)
 {
     printf("Connect failed, rc %d\n", response->code);
     // finished = 1;
@@ -126,14 +126,16 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
     int rc;
     rc = MQTTAsync_create(&plugin->client, "tcp://broker.emqx.io:1883",
-        "neuron-lite-mqtt-plugin", MQTTCLIENT_PERSISTENCE_NONE, NULL);
+                          "neuron-lite-mqtt-plugin",
+                          MQTTCLIENT_PERSISTENCE_NONE, NULL);
     if (MQTTASYNC_SUCCESS != rc) {
         log_error("Failed to create client object, return code %d", rc);
         return -1;
     }
 
     rc = MQTTAsync_setCallbacks(plugin->client, plugin->client,
-        connection_lost_callback, message_arrived_callback, NULL);
+                                connection_lost_callback,
+                                message_arrived_callback, NULL);
     if (MQTTASYNC_SUCCESS != rc) {
         log_error("Failed to set callback, return code %d", rc);
         return -1;
@@ -142,7 +144,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     conn_opts.keepAliveInterval = 20;
     conn_opts.cleansession      = 1;
     conn_opts.onSuccess         = on_connect;
-    conn_opts.onFailure         = on_connectFailure;
+    conn_opts.onFailure         = on_connect_failure;
     conn_opts.context           = plugin->client;
 
     rc = MQTTAsync_connect(plugin->client, &conn_opts);
@@ -170,25 +172,27 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     return 0;
 }
 
-static int mqtt_plugin_event_reply(
-    neu_plugin_t *plugin, neu_event_reply_t *reply)
+static int mqtt_plugin_event_reply(neu_plugin_t *     plugin,
+                                   neu_event_reply_t *reply)
 {
     return 0;
 }
 
-static const neu_plugin_intf_funs_t plugin_intf_funs = { .open =
-                                                             mqtt_plugin_open,
+static const neu_plugin_intf_funs_t plugin_intf_funs = {
+    .open        = mqtt_plugin_open,
     .init        = mqtt_plugin_init,
     .uninit      = mqtt_plugin_uninit,
     .config      = mqtt_plugin_config,
     .request     = mqtt_plugin_request,
-    .event_reply = mqtt_plugin_event_reply };
+    .event_reply = mqtt_plugin_event_reply
+};
 
-const neu_plugin_module_t neu_plugin_module = { .version =
-                                                    NEURON_PLUGIN_VER_1_0,
+const neu_plugin_module_t neu_plugin_module = {
+    .version      = NEURON_PLUGIN_VER_1_0,
     .module_name  = "neuron-mqtt-plugin",
     .module_descr = "Neuron northbound MQTT communication plugin",
-    .intf_funs    = &plugin_intf_funs };
+    .intf_funs    = &plugin_intf_funs
+};
 
 int test()
 {
