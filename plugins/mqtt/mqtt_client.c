@@ -16,8 +16,11 @@ struct neu_plugin {
     MQTTAsync           client;
     vector_t            publish_list;
     vector_t            arrived_list;
-    pthread_mutex_t     publish_mutext;
-    pthread_mutex_t     arrived_mutext;
+    pthread_mutex_t     publish_mutex;
+    pthread_mutex_t     work_mutex;
+    pthread_t           publish_thread_id;
+    pthread_t           work_thread_id;
+    int                 finished;
 };
 
 static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
@@ -130,12 +133,51 @@ void on_connect(void *context, MQTTAsync_successData *response)
     }
 }
 
+static void publish_thread(neu_plugin_t *plugin)
+{
+    while (0 == plugin->finished) {
+        pthread_mutex_lock(&plugin->publish_mutex);
+        sleep(1);
+        pthread_mutex_unlock(&plugin->publish_mutex);
+    }
+}
+
+static void work_thread(neu_plugin_t *plugin)
+{
+    while (0 == plugin->finished) {
+        pthread_mutex_lock(&plugin->work_mutex);
+        sleep(1);
+        pthread_mutex_unlock(&plugin->work_mutex);
+    }
+}
+
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
+    plugin->finished = 0;
+    pthread_mutex_init(&plugin->publish_mutex, NULL);
+    pthread_mutex_init(&plugin->work_mutex, NULL);
+
+    // Publish thread create
+    int rc = pthread_create(&plugin->publish_thread_id, NULL,
+                            (void *) publish_thread, plugin);
+    if (0 != rc) {
+        log_error("Create publish thread faild.");
+        return -1;
+    }
+    pthread_detach(plugin->publish_thread_id);
+
+    // Work thread create
+    rc = pthread_create(&plugin->work_thread_id, NULL, (void *) work_thread,
+                        plugin);
+    if (0 != rc) {
+        log_error("Create work thread faild.");
+        return -1;
+    }
+    pthread_detach(plugin->work_thread_id);
+
+    // MQTT setup
     MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
     // MQTTAsync_message        pub_msg   = MQTTAsync_message_initializer;
-
-    int rc;
     rc = MQTTAsync_create(&plugin->client, "tcp://192.168.50.165:1883",
                           "neuron-lite-mqtt-plugin",
                           MQTTCLIENT_PERSISTENCE_NONE, NULL);
@@ -170,6 +212,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
+    plugin->finished = 1;
     MQTTAsync_destroy(&plugin->client);
     return 0;
 }
