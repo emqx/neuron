@@ -27,13 +27,16 @@
 #include <nng/protocol/bus0/bus.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "adapter/web_server.h"
 #include "core/neu_manager.h"
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "utils/idhash.h"
+#include "adapter/web_server.h"
 
-static nng_mtx *log_mtx;
-FILE *          g_logfile;
+static nng_thread *web_thread;
+static nng_mtx *   log_mtx;
+FILE *             g_logfile;
 
 static void log_lock(bool lock, void *udata)
 {
@@ -59,6 +62,7 @@ static void init()
     }
     // log_set_quiet(true);
     log_add_fp(g_logfile, LOG_DEBUG);
+
 }
 
 static void uninit()
@@ -113,6 +117,13 @@ int main(int argc, char *argv[])
         goto main_end;
     }
 
+    rv = nng_thread_create(&web_thread, web_server, NULL);
+    if (rv != 0) {
+        neu_panic("Cannot start web server: %s", nng_strerror(rv));
+    }
+    log_debug(REST_URL, DEFAULT_PORT);
+    rest_start(DEFAULT_PORT);
+
     neu_manager_t *manager;
     log_info("running neuron main process");
     manager = neu_manager_create();
@@ -122,6 +133,7 @@ int main(int argc, char *argv[])
         goto main_end;
     }
 
+    nng_thread_destroy(web_thread);
     neu_manager_destroy(manager);
 
 main_end:

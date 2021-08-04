@@ -20,5 +20,10 @@
 #ifndef __WEB_SERVER_H__
 #define __WEB_SERVER_H__
 
+#define REST_URL "http://0.0.0.0:%u/api/v2"
+#define DEFAULT_PORT 7000
+
+void web_server(void *arg);
+void rest_start(uint16_t port);
 
 #endif // __WEB_SERVER_H__
