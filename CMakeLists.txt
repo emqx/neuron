@@ -37,7 +37,7 @@ set(NEURON_SOURCES
     src/adapter/web_server.c
     )
 
-set(NEURON_INCLUDE_DIRECTORIES include src deps)
+set(NEURON_INCLUDE_DIRECTORIES include src)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
@@ -50,7 +50,6 @@ target_link_libraries(neuron ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
-    deps/cJSON.c
     src/types.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
@@ -58,7 +57,7 @@ set(NEURON_BASE_SOURCES
     src/utils/panic.c
     src/utils/log.c)
 
-set(NEURON_BASE_INCLUDE_DIRECTORIES include deps)
+set(NEURON_BASE_INCLUDE_DIRECTORIES include)
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base
