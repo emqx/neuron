@@ -32,35 +32,31 @@ static void connection_lost_callback(void *context, char *cause)
     log_info("Connection lost.");
 }
 
-static int message_arrived_callback(void *context, char *topicName,
-                                    int topicLen, MQTTAsync_message *message)
+static int message_arrived_callback(void *context, char *topic, int len,
+                                    MQTTAsync_message *message)
 {
-    printf("Message arrived\n");
-    printf("     topic: %s\n", topicName);
-    printf("   message: %.*s\n", message->payloadlen,
-           (char *) message->payload);
+    log_debug("Message arrived topic:%s, message:%*s", topic,
+              message->payloadlen, (char *) message->payload);
     MQTTAsync_freeMessage(&message);
-    MQTTAsync_free(topicName);
+    MQTTAsync_free(topic);
     return 1;
 }
 
 static void delivery_complete(void *context, MQTTAsync_token token)
 {
-    printf("Message with token value %d delivery confirmed\n", token);
+    log_info("Message with token value %d delivery confirmed", token);
     return;
 }
 
 static void on_disconnect_failure(void *                 context,
                                   MQTTAsync_failureData *response)
 {
-    log_info("Disconnect failed, rc %d\n", response->code);
-    // disc_finished = 1;
+    log_info("Disconnect failed, rc %d", response->code);
 }
 
 static void on_disconnect(void *context, MQTTAsync_successData *response)
 {
-    log_info("Successful disconnection\n");
-    // disc_finished = 1;
+    log_info("Successful disconnection");
 }
 
 static void on_subscribe(void *context, MQTTAsync_successData *response)
@@ -70,53 +66,28 @@ static void on_subscribe(void *context, MQTTAsync_successData *response)
 
 static void on_subscribe_failure(void *context, MQTTAsync_failureData *response)
 {
-    log_info("Subscribe failed, rc %d\n", response->code);
-    // finished = 1;
+    log_info("Subscribe failed, rc %d", response->code);
 }
 
 static void on_connect_failure(void *context, MQTTAsync_failureData *response)
 {
-    log_info("Connect failed, rc %d\n", response->code);
-    // finished = 1;
+    log_info("Connect failed, rc %d", response->code);
 }
 
 void on_send_failure(void *context, MQTTAsync_failureData *response)
 {
-    // MQTTAsync                   client = (MQTTAsync) context;
-    // MQTTAsync_disconnectOptions opts =
-    // MQTTAsync_disconnectOptions_initializer;
-
-    printf("Message send failed token %d error code %d\n", response->token,
-           response->code);
+    log_info("Message send failed token %d error code %d", response->token,
+             response->code);
 }
 
 void on_send(void *context, MQTTAsync_successData *response)
 {
-    // MQTTAsync                   client = (MQTTAsync) context;
-    // MQTTAsync_disconnectOptions opts =
-    // MQTTAsync_disconnectOptions_initializer;
-    printf("Message with token value %d delivery confirmed\n", response->token);
+    log_info("Message with token value %d delivery confirmed", response->token);
 }
 
 static void on_connect(void *context, MQTTAsync_successData *response)
 {
-    // MQTTAsync                 client = (MQTTAsync) context;
-    // MQTTAsync_responseOptions opts   = MQTTAsync_responseOptions_initializer;
-
-    printf("Successful connection\n");
-
-    // printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n" "Press
-    // Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
-
-    // opts.onSuccess = on_subscribe;
-    // opts.onFailure = on_subscribe_failure;
-    // opts.context   = client;
-    // int rc         = MQTTAsync_subscribe(client, extern_option->topic,
-    //                              extern_option->qos, &opts);
-    // if (rc != MQTTASYNC_SUCCESS) {
-    //     printf("Failed to start subscribe, return code %d\n", rc);
-    //     // finished = 1;
-    // }
+    log_info("Successful connection");
 }
 
 static void on_connected(void *context, char *cause)
