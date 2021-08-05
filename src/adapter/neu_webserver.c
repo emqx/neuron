@@ -264,9 +264,7 @@ void rest_start(uint16_t port)
     int               rv;
 
     char source[256] = {0};
-
     getcwd(source, 256);
-
     strcat(source, "/dist");
 
     log_debug("source dir: %s", source);
