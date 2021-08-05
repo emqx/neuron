@@ -119,6 +119,12 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
         .plugin_name  = SAMPLE_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
+    {
+        .adapter_type = ADAPTER_TYPE_MQTT,
+        .adapter_name = "mqtt-adapter",
+        .plugin_name  = MQTT_PLUGIN_NAME,
+        .plugin_id    = { 0 } // The plugin_id is nothing
+    },
 #endif
     /*
     {
@@ -134,12 +140,6 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
         .plugin_id       = { 0 }    // The plugin_id is nothing
     },
     {
-        .adapter_type    = ADAPTER_TYPE_MQTT,
-        .adapter_name    = "mqtt-adapter",
-        .plugin_name     = MQTT_PLUGIN_NAME,
-        .plugin_id       = { 0 }    // The plugin_id is nothing
-    },
-    {
         .adapter_type    = ADAPTER_TYPE_DRIVER,
         .adapter_name    = "modbus-adapter",
         .plugin_name     = MODBUS_PLUGIN_NAME,
@@ -152,11 +152,10 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
 
 static const char *default_plugin_lib_names[] = {
 #ifdef NEU_HAS_SAMPLE_ADAPTER
-    SAMPLE_PLUGIN_LIB_NAME,
+    SAMPLE_PLUGIN_LIB_NAME, MQTT_PLUGIN_LIB_NAME,
 #endif
     /*
     WEBSERVER_PLUGIN_LIB_NAME,
-    MQTT_PLUGIN_LIB_NAME,
     MODBUS_PLUGIN_LIB_NAME,
      */
 };
@@ -172,6 +171,12 @@ static const plugin_reg_param_t system_plugin_infos[] = {
         .plugin_name     = SAMPLE_PLUGIN_NAME,
         .plugin_lib_name = SAMPLE_PLUGIN_LIB_NAME
     },
+    {
+        .plugin_kind     = PLUGIN_KIND_SYSTEM,
+        .adapter_type    = ADAPTER_TYPE_MQTT,
+        .plugin_name     = MQTT_PLUGIN_NAME,
+        .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
+    },
 #endif
     /*
     {
@@ -179,12 +184,6 @@ static const plugin_reg_param_t system_plugin_infos[] = {
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
         .plugin_name     = WEBSERVER_PLUGIN_NAME,
         .plugin_lib_name = WEBSERVER_PLUGIN_LIB_NAME
-    },
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_MQTT,
-        .plugin_name     = MQTT_PLUGIN_NAME,
-        .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
     },
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
