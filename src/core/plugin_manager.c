@@ -428,5 +428,6 @@ int plugin_manager_get_reg_info_by_name(plugin_manager_t * plugin_mng,
 void plugin_manager_dump(plugin_manager_t *plugin_mng)
 {
     // TODO: dump system plugins and custom plugins
+    (void) plugin_mng;
     return;
 }

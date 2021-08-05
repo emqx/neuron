@@ -169,8 +169,8 @@ static void rest_job_cb(void *arg)
         job->msg = nng_aio_get_msg(aio);
 
         // We got a reply, so give it back to the server.
-        rv = nng_http_res_copy_data(
-            job->http_res, nng_msg_body(job->msg), nng_msg_len(job->msg));
+        rv = nng_http_res_copy_data(job->http_res, nng_msg_body(job->msg),
+                                    nng_msg_len(job->msg));
         if (rv != 0) {
             rest_http_fatal(job, "nng_http_res_copy_data: %s", rv);
             return;
@@ -195,11 +195,8 @@ static void rest_job_cb(void *arg)
 void rest_handle(nng_aio *aio)
 {
     struct rest_job *job;
-    nng_http_req *   req  = nng_aio_get_input(aio, 0);
-    nng_http_conn *  conn = nng_aio_get_input(aio, 2);
-    const char *     clen;
+    nng_http_req *   req = nng_aio_get_input(aio, 0);
     size_t           sz;
-    nng_iov          iov;
     int              rv;
     void *           data;
 
@@ -214,17 +211,13 @@ void rest_handle(nng_aio *aio)
         return;
     }
 
-    const char *uri = nng_http_req_get_uri(req);
-    log_debug("get http uri: %s", uri);
-
+    const char *uri    = nng_http_req_get_uri(req);
     const char *method = nng_http_req_get_method(req);
-    log_debug("get http method: %s", method);
-
     const char *header = nng_http_req_get_header(req, "Content-Type");
-    log_debug("get http header: Content-Type: %s", header);
-
-    const char *token = nng_http_req_get_header(req, "Authorization");
-    log_debug("get http header: Authorization: %s", token);
+    const char *token  = nng_http_req_get_header(req, "Authorization");
+    log_debug(
+        "get http uri: %s, method: %s, Content-type: %s, Authorization: %s",
+        uri, method, header, token);
 
     nng_http_req_get_data(req, &data, &sz);
     job->http_aio = aio;
@@ -359,6 +352,8 @@ void web_server(void *arg)
     int        rv;
     nng_msg *  msg;
 
+    (void) arg;
+
     if (((rv = nng_rep0_open(&s)) != 0) ||
         ((rv = nng_listen(s, INPROC_URL, NULL, 0)) != 0)) {
         fatal("unable to set up inproc", rv);
@@ -439,7 +434,6 @@ void web_server(void *arg)
 //     neu_plugin_t *       plugin;
 //     adapter_callbacks_t  cb_funs;
 // };
-
 
 // static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
 // {
@@ -553,7 +547,6 @@ void web_server(void *arg)
 //     return;
 // }
 
-
 // static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
 // {
 //     int rv = 0;
@@ -579,8 +572,8 @@ void web_server(void *arg)
 //             message_t *pay_msg;
 
 //             pay_msg = (message_t *) nng_msg_body(msg);
-//             msg_external_data_init(pay_msg, MSG_DATA_NEURON_DATABUF, databuf);
-//             nng_sendmsg(adapter->sock, msg, 0);
+//             msg_external_data_init(pay_msg, MSG_DATA_NEURON_DATABUF,
+//             databuf); nng_sendmsg(adapter->sock, msg, 0);
 //         }
 //         core_databuf_put(databuf);
 //         break;
@@ -601,7 +594,8 @@ void web_server(void *arg)
 //     return rv;
 // }
 
-// static const adapter_callbacks_t callback_funs = { .response = adapter_response,
+// static const adapter_callbacks_t callback_funs = { .response =
+// adapter_response,
 //     .event_notify = adapter_event_notify };
 
 // neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
@@ -652,8 +646,8 @@ void web_server(void *arg)
 //     /** no need plugin
 //         void *               handle;
 //         neu_plugin_module_t *plugin_module;
-//         handle = load_plugin_library(adapter->plugin_lib_name, &plugin_module);
-//         if (handle == NULL) {
+//         handle = load_plugin_library(adapter->plugin_lib_name,
+//         &plugin_module); if (handle == NULL) {
 //             neu_panic("Can't to load library(%s) for plugin(%s)",
 //                 adapter->plugin_lib_name, adapter->name);
 //         }
@@ -662,9 +656,10 @@ void web_server(void *arg)
 //         adapter->plugin_module = plugin_module;
 //         neu_plugin_t *plugin;
 //         plugin_module = adapter->plugin_module;
-//         plugin        = plugin_module->intf_funs->open(adapter, &callback_funs);
-//         if (plugin == NULL) {
-//             neu_panic("Can't to open plugin(%s)", plugin_module->module_name);
+//         plugin        = plugin_module->intf_funs->open(adapter,
+//         &callback_funs); if (plugin == NULL) {
+//             neu_panic("Can't to open plugin(%s)",
+//             plugin_module->module_name);
 //         }
 //     */
 

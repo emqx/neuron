@@ -276,6 +276,8 @@ static int manager_add_config(neu_manager_t *manager)
 {
     int rv = 0;
 
+    (void) manager;
+
     return rv;
 }
 
@@ -285,6 +287,8 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_adapter_t *       adapter;
     neu_manager_t *       manager;
     adapter_reg_entity_t *reg_entity;
+
+    (void) ev;
 
     adapter = (neu_adapter_t *) arg;
     manager = neu_adapter_get_manager(adapter);
@@ -311,6 +315,8 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_adapter_t *       adapter;
     neu_manager_t *       manager;
     adapter_reg_entity_t *reg_entity;
+
+    (void) ev;
 
     adapter = (neu_adapter_t *) arg;
     manager = neu_adapter_get_manager(adapter);
@@ -442,7 +448,7 @@ static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 static int register_default_plugins(neu_manager_t *manager)
 {
     int                       rv = 0;
-    int                       i, j;
+    uint                      i, j;
     plugin_id_t               plugin_id;
     const plugin_reg_param_t *reg_param;
 
@@ -479,7 +485,7 @@ static void unregister_all_reg_plugins(neu_manager_t *manager)
 // Call this function before start manager loop, so it don't need lock
 static void add_and_start_default_adapters(neu_manager_t *manager)
 {
-    int            i;
+    uint           i;
     adapter_id_t   id;
     neu_adapter_t *p_adapter;
 

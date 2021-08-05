@@ -253,6 +253,9 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 {
     int rv = 0;
 
+    (void) adapter;
+    (void) event;
+
     log_info("Get event notify from plugin");
     return rv;
 }

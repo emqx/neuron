@@ -15,6 +15,9 @@ set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking")
 
+if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
+     set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "No dev warnings")
+endif()
 
 add_subdirectory(extern/vector)
 add_subdirectory(extern/libcsptr)
@@ -22,6 +25,7 @@ configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
                COPYONLY)
 
 # Call this from your own project's makefile.
+
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
 
@@ -55,7 +59,8 @@ set(NEURON_BASE_SOURCES
     src/utils/mem_alloc.c
     src/utils/idhash.c
     src/utils/panic.c
-    src/utils/log.c)
+    src/utils/log.c
+    src/utils/json.c)
 
 set(NEURON_BASE_INCLUDE_DIRECTORIES include)
 add_library(neuron-base SHARED)
