@@ -13,6 +13,7 @@ set(CMAKE_BUILD_TYPE "Debug")
 set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb")
 
 add_subdirectory(extern/vector)
+set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(extern/libcsptr)
 configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
                COPYONLY)
