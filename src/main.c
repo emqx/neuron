@@ -32,7 +32,6 @@
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "utils/idhash.h"
-#include "adapter/web_server.h"
 
 static nng_thread *web_thread;
 static nng_mtx *   log_mtx;
@@ -62,7 +61,6 @@ static void init()
     }
     // log_set_quiet(true);
     log_add_fp(g_logfile, LOG_DEBUG);
-
 }
 
 static void uninit()
@@ -125,7 +123,7 @@ int main(int argc, char *argv[])
     rest_start(DEFAULT_PORT);
 
     neu_manager_t *manager;
-    log_info("running neuron main process");
+    log_info("running neuron main process, daemon: %d", is_daemon);
     manager = neu_manager_create();
     if (manager == NULL) {
         log_error("Failed to create neuron manager, exit!");
