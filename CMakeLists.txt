@@ -13,12 +13,16 @@ endif()
 
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
+set(CMAKE_C_FLAGS_DEBUG
+    "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
   -fsanitize-recover=address -fsanitize-address-use-after-scope \
-  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libasan")
+  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libasan"
+)
 
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
-     set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "No dev warnings")
+  set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS
+      1
+      CACHE INTERNAL "No dev warnings")
 endif()
 
 add_subdirectory(extern/vector)
@@ -30,6 +34,17 @@ configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
 
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+  add_definitions(-DNEU_PLATFORM_LINUX)
+
+elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  add_definitions(-DNEU_PLATFORM_DARWIN)
+
+elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+  add_definitions(-DNEU_PLATFORM_WINDOWS)
+
+endif()
 
 # define neuron executalbe program
 set(NEURON_SOURCES
@@ -61,7 +76,8 @@ set(NEURON_BASE_SOURCES
     src/utils/idhash.c
     src/utils/panic.c
     src/utils/log.c
-    src/utils/json.c)
+    src/utils/json.c
+    src/utils/common.c)
 
 set(NEURON_BASE_INCLUDE_DIRECTORIES include)
 add_library(neuron-base SHARED)

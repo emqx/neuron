@@ -38,6 +38,7 @@
 #include "neu_panic.h"
 #include "neu_plugin.h"
 #include "neu_webserver.h"
+#include "utils/common.h"
 
 // utility function
 
@@ -263,9 +264,9 @@ void rest_start(uint16_t port)
     nng_url *         url;
     int               rv;
 
-    char source[256] = {0};
-    getcwd(source, 256);
-    strcat(source, "/dist");
+    char source[MAX_PATH_SZ + 5] = { 0 };
+    get_self_path(source);
+    strcat(source, DASHBOARD_PATH);
 
     log_debug("source dir: %s", source);
 
