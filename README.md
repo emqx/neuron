@@ -82,3 +82,10 @@ NEURON IIoT System for Industry 4.0
   $ brew install ossp-uuid
   ```
 
+- [neuron-dashboard](https://github.com/neugates/neuron-dashboard-src/releases)
+  ```shell
+  # Download lastest neuron-dashboard release from https://github.com/neugates/neuron-dashboard-src/releases
+  # Unzip and move to "build"
+
+  $ unzip neuron-dashboard.zip -d build
+  ```

@@ -37,7 +37,7 @@
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "neu_plugin.h"
-#include "web_server.h"
+#include "neu_webserver.h"
 
 // utility function
 
@@ -263,6 +263,14 @@ void rest_start(uint16_t port)
     nng_url *         url;
     int               rv;
 
+    char source[256] = {0};
+
+    getcwd(source, 256);
+
+    strcat(source, "/dist");
+
+    log_debug("source dir: %s", source);
+
     if ((rv = nng_mtx_alloc(&job_lock)) != 0) {
         fatal("nng_mtx_alloc", rv);
     }
@@ -311,7 +319,7 @@ void rest_start(uint16_t port)
     }
 
     // Specify local directory for root url "/"
-    rv = nng_http_handler_alloc_directory(&handler_file, "", "./dist");
+    rv = nng_http_handler_alloc_directory(&handler_file, "", source);
     if (rv != 0) {
         fatal("nng_http_handler_alloc_file", rv);
     }

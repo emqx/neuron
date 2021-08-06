@@ -40,8 +40,7 @@ set(NEURON_SOURCES
     src/core/plugin_manager.c
     src/core/datatag_table.c
     src/adapter/adapter.c
-    src/adapter/web_server.c
-    )
+    src/adapter/neu_webserver.c)
 
 set(NEURON_INCLUDE_DIRECTORIES include src)
 add_executable(neuron)

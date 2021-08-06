@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef __WEB_SERVER_H__
-#define __WEB_SERVER_H__
+#ifndef __NEU_WEB_SERVER_H__
+#define __NEU_WEB_SERVER_H__
 
 #define REST_URL "http://0.0.0.0:%u/api/v2"
 #define DEFAULT_PORT 7000
