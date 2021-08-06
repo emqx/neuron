@@ -13,11 +13,19 @@ endif()
 
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
+if(APPLE)
+set(CMAKE_C_FLAGS_DEBUG
+    "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
+  -fsanitize-recover=address -fsanitize-address-use-after-scope \
+  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libsan"
+)
+else()
 set(CMAKE_C_FLAGS_DEBUG
     "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
   -fsanitize-recover=address -fsanitize-address-use-after-scope \
   -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libasan"
 )
+endif()
 
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
   set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS
@@ -53,7 +61,8 @@ set(NEURON_SOURCES
     src/core/databuf.c
     src/core/neu_manager.c
     src/core/plugin_manager.c
-    src/core/datatag_table.c
+    src/core/neu_datatag_manager.c
+    src/core/neu_datatag_table.c
     src/adapter/adapter.c
     src/adapter/neu_webserver.c)
 

@@ -25,4 +25,28 @@
 typedef struct Vector   vector_t;
 typedef struct Iterator iterator_t;
 
+#define vector_init vector_setup
+#define vector_uninit vector_destroy
+
+static inline vector_t *vector_new(size_t capacity, size_t elem_size)
+{
+    vector_t *vec;
+
+    vec = (vector_t *) malloc(sizeof(vector_t));
+    if (vec != NULL) {
+        vector_setup(vec, capacity, elem_size);
+    }
+
+    return vec;
+}
+
+static inline void vector_free(vector_t *vec)
+{
+    if (vec != NULL) {
+        vector_destroy(vec);
+        free(vec);
+    }
+    return;
+}
+
 #endif

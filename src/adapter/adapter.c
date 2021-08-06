@@ -260,9 +260,12 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
     return rv;
 }
 
-static const adapter_callbacks_t callback_funs = { .response = adapter_response,
-                                                   .event_notify =
-                                                       adapter_event_notify };
+// clang-format off
+static const adapter_callbacks_t callback_funs = {
+    .response     = adapter_response,
+    .event_notify = adapter_event_notify
+};
+// clang-format on
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
@@ -288,7 +291,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->name       = strdup(info->name);
     adapter->new_req_id = 0;
     adapter->plugin_id  = info->plugin_id;
-    if (adapter->plugin_id.id_val == 0) {
+    if (info->plugin_lib_name == NULL) {
         adapter->plugin_lib_name = NULL;
         adapter->plugin_lib      = NULL;
         adapter->plugin_module   = NULL;

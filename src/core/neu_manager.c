@@ -28,6 +28,7 @@
 
 #include "adapter/adapter_internal.h"
 #include "neu_adapter.h"
+#include "neu_datatag_manager.h"
 #include "neu_log.h"
 #include "neu_manager.h"
 #include "neu_panic.h"
@@ -198,6 +199,24 @@ static const plugin_reg_param_t system_plugin_infos[] = {
 #define SYSTEM_PLUGIN_INFO_SIZE \
     (sizeof(system_plugin_infos) / sizeof(system_plugin_infos[0]))
 
+typedef struct config_add_param {
+    char *               config_name;
+    char *               src_adapter_name;
+    char *               dst_adapter_name;
+    uint32_t             read_interval;
+    neu_taggrp_config_t *config;
+} config_add_param_t;
+
+static int manager_add_config(neu_manager_t *manager, config_add_param_t *param)
+{
+    int rv = 0;
+
+    (void) manager;
+    (void) param;
+
+    return rv;
+}
+
 static int init_bind_info(manager_bind_info_t *mng_bind_info)
 {
     int rv, rv1;
@@ -270,15 +289,6 @@ static uint32_t manager_get_adapter_id(neu_manager_t *manager)
     adapter_id = manager->new_adapter_id++;
     nng_mtx_unlock(manager->adapters_mtx);
     return adapter_id;
-}
-
-static int manager_add_config(neu_manager_t *manager)
-{
-    int rv = 0;
-
-    (void) manager;
-
-    return rv;
 }
 
 static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
@@ -448,7 +458,7 @@ static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 static int register_default_plugins(neu_manager_t *manager)
 {
     int                       rv = 0;
-    uint                      i, j;
+    uint32_t                  i, j;
     plugin_id_t               plugin_id;
     const plugin_reg_param_t *reg_param;
 
@@ -483,9 +493,9 @@ static void unregister_all_reg_plugins(neu_manager_t *manager)
 }
 
 // Call this function before start manager loop, so it don't need lock
-static void add_and_start_default_adapters(neu_manager_t *manager)
+static void reg_and_start_default_adapters(neu_manager_t *manager)
 {
-    uint           i;
+    uint32_t       i;
     adapter_id_t   id;
     neu_adapter_t *p_adapter;
 
@@ -501,7 +511,7 @@ static void add_and_start_default_adapters(neu_manager_t *manager)
 }
 
 // Call this function after quit manager loop, so it don't need lock
-static void stop_and_destroy_bind_adapters(neu_manager_t *manager)
+static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
 {
     vector_t *            adapters;
     adapter_reg_entity_t *reg_entity;
@@ -542,7 +552,7 @@ static void manager_loop(void *arg)
     nng_mtx_unlock(manager->mtx);
 
     register_default_plugins(manager);
-    add_and_start_default_adapters(manager);
+    reg_and_start_default_adapters(manager);
     log_info("Start message loop of neu_manager");
     while (1) {
         nng_msg *msg;
@@ -640,7 +650,7 @@ static void manager_loop(void *arg)
     }
 
     log_info("End message loop of neu_manager");
-    stop_and_destroy_bind_adapters(manager);
+    stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
     nng_close(manager_bind->mng_sock);
     return;
