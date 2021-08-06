@@ -68,3 +68,6 @@ target_include_directories(plugin-sample PRIVATE include)
 target_link_libraries(plugin-sample neuron-base)
 target_link_libraries(plugin-sample ${CMAKE_THREAD_LIBS_INIT})
 add_subdirectory(plugins)
+
+enable_testing()
+add_subdirectory(tests)
