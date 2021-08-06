@@ -17,13 +17,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef __WEB_SERVER_H__
-#define __WEB_SERVER_H__
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
-#define REST_URL "http://0.0.0.0:%u/api/v2"
-#define DEFAULT_PORT 7000
+#define MAX_PATH_SZ 1024
+#define DASHBOARD_PATH "/dist"
 
-void web_server(void *arg);
-void rest_start(uint16_t port);
+extern char *get_self_path(char *dest);
 
-#endif // __WEB_SERVER_H__
+#endif

@@ -27,11 +27,11 @@
 #include <nng/protocol/bus0/bus.h>
 #include <nng/supplemental/util/platform.h>
 
-#include "adapter/web_server.h"
 #include "core/neu_manager.h"
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "utils/idhash.h"
+#include "adapter/neu_webserver.h"
 
 static nng_thread *web_thread;
 static nng_mtx *   log_mtx;
