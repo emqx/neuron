@@ -13,7 +13,9 @@ endif()
 
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
+  -fsanitize-recover=address -fsanitize-address-use-after-scope \
+  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libasan")
 
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
      set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS 1 CACHE INTERNAL "No dev warnings")
