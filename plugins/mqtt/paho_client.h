@@ -12,6 +12,7 @@ typedef struct paho_client paho_client_t;
 
 typedef enum {
     ClientSuccess = 0,
+    ClientIsNULL,
     ClientConnectTimeout,
     ClientSubscribeListInitialFailure,
     ClientSubscribeFailure,
