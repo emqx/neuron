@@ -37,9 +37,17 @@ struct paho_client {
 
 static void connection_lost_callback(void *context, char *cause)
 {
-    UNUSED(context);
-    UNUSED(cause);
-    log_info("Connection lost");
+    log_info("Connection lost, reconnecting");
+
+    paho_client_t *client = (paho_client_t *) context;
+    if (NULL == client) {
+        return;
+    }
+
+    int rc = MQTTAsync_connect(client->async, &client->conn_options);
+    if (rc != MQTTASYNC_SUCCESS) {
+        printf("Failed to start connect, return code %d\n", rc);
+    }
 }
 
 static int message_arrived_callback(void *context, char *topic, int len,
@@ -406,14 +414,6 @@ client_error paho_client_subscribe(paho_client_t *client, const char *topic,
         return rc;
     }
 
-    // int count = 10 * 1000 * 1000; // 10 second
-    // int i;
-    // for (i = 0; i < count; i++) {
-    //     if (0 == is_subscribed(topic, subscribe_token)) {
-    //         return MQTTASYNC_SUCCESS;
-    //     }
-    //     usleep(1);
-    // }
     return ClientSubscribeTimeout;
 }
 
