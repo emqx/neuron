@@ -339,7 +339,8 @@ client_error paho_client_open(option_t *option, paho_client_t **client_point)
 
 client_error paho_client_is_connection(paho_client_t *client)
 {
-    return ClientSuccess;
+    int rc = MQTTAsync_isConnected(client->async);
+    return 0 != rc ? ClientSuccess : ClientConnectFailure;
 }
 
 // static int is_subscribed(const char *topic, const int token)
