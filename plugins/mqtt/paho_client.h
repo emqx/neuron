@@ -13,7 +13,7 @@ typedef struct paho_client paho_client_t;
 typedef enum {
     ClientSuccess = 0,
     ClientIsNULL,
-    ClientConnectTimeout,
+    ClientConnectFailure,
     ClientSubscribeTimeout,
     ClientSubscribeListInitialFailure,
     ClientSubscribeFailure,
@@ -24,7 +24,10 @@ typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
                                  void *payload, const size_t len,
                                  void *context);
 
-client_error paho_client_open(option_t *option, paho_client_t **client);
+paho_client_t *paho_client_create(option_t *option);
+client_error   paho_client_connect(paho_client_t *client);
+client_error   paho_client_open(option_t *option, paho_client_t **client);
+client_error   paho_client_is_connection(paho_client_t *client);
 
 client_error paho_client_subscribe(paho_client_t *client, const char *topic,
                                    const int qos, subscribe_handle handle,

@@ -6,8 +6,9 @@
 #include "option.h"
 #include "paho_client.h"
 
-static option_t option;
+#define UNUSED(x) (void) (x)
 
+static option_t           option;
 const neu_plugin_module_t neu_plugin_module;
 
 struct neu_plugin {
@@ -75,7 +76,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     option.topic              = "MQTT Examples";
     option.qos                = 1;
     option.connection         = "tcp://";
-    option.host               = "192.168.50.165";
+    option.host               = "broker.emq.io";
     option.port               = "1883";
     option.keepalive_interval = 20;
     option.clean_session      = 1;
@@ -120,17 +121,23 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
 static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
+    UNUSED(plugin);
+    UNUSED(configs);
     return 0;
 }
 
 static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
+    UNUSED(plugin);
+    UNUSED(req);
     return 0;
 }
 
 static int mqtt_plugin_event_reply(neu_plugin_t *     plugin,
                                    neu_event_reply_t *reply)
 {
+    UNUSED(plugin);
+    UNUSED(reply);
     return 0;
 }
 

@@ -55,45 +55,46 @@ TEST_F(PahoClientTest, paho_client_open)
     EXPECT_NE(paho, nullptr);
 }
 
-TEST_F(PahoClientTest, paho_client_subscribe)
-{
-    EXPECT_EQ(paho_client_open(&option, &paho), 0);
-    EXPECT_NE(paho, nullptr);
-    EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL), 0);
-}
+// TEST_F(PahoClientTest, paho_client_subscribe)
+// {
+//     EXPECT_EQ(paho_client_open(&option, &paho), 0);
+//     EXPECT_NE(paho, nullptr);
+//     EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL),
+//     0);
+// }
 
-TEST_F(PahoClientTest, paho_client_publish)
-{
-    EXPECT_EQ(paho_client_open(&option, &paho), 0);
-    EXPECT_NE(paho, nullptr);
-    EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL), 0);
-    EXPECT_EQ(paho_client_publish(paho, topic.c_str(), qos,
-                                  (unsigned char *) payload.c_str(),
-                                  strlen(payload.c_str())),
-              0);
-    EXPECT_EQ(paho_client_publish(paho, topic.c_str(), qos,
-                                  (unsigned char *) payload.c_str(),
-                                  strlen(payload.c_str())),
-              0);
-    EXPECT_EQ(paho_client_publish(paho, topic.c_str(), qos,
-                                  (unsigned char *) payload.c_str(),
-                                  strlen(payload.c_str())),
-              0);
-}
+// TEST_F(PahoClientTest, paho_client_publish)
+// {
+//     EXPECT_EQ(paho_client_open(&option, &paho), 0);
+//     EXPECT_NE(paho, nullptr);
+//     EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL),
+//     0); EXPECT_EQ(paho_client_publish(paho, topic.c_str(), qos,
+//                                   (unsigned char *) payload.c_str(),
+//                                   strlen(payload.c_str())),
+//               0);
+//     EXPECT_EQ(paho_client_publish(paho, topic.c_str(), qos,
+//                                   (unsigned char *) payload.c_str(),
+//                                   strlen(payload.c_str())),
+//               0);
+//     EXPECT_EQ(paho_client_publish(paho, topic.c_str(), qos,
+//                                   (unsigned char *) payload.c_str(),
+//                                   strlen(payload.c_str())),
+//               0);
+// }
 
-TEST_F(PahoClientTest, paho_client_unsubscribe)
-{
-    EXPECT_EQ(paho_client_open(&option, &paho), 0);
-    EXPECT_NE(paho, nullptr);
-    EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL), 0);
-    EXPECT_EQ(paho_client_unsubscribe(paho, topic.c_str()), 0);
-}
+// TEST_F(PahoClientTest, paho_client_unsubscribe)
+// {
+//     EXPECT_EQ(paho_client_open(&option, &paho), 0);
+//     EXPECT_NE(paho, nullptr);
+//     EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL),
+//     0); EXPECT_EQ(paho_client_unsubscribe(paho, topic.c_str()), 0);
+// }
 
-TEST_F(PahoClientTest, paho_client_close)
-{
-    EXPECT_EQ(paho_client_open(&option, &paho), 0);
-    EXPECT_NE(paho, nullptr);
-    EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL), 0);
-    EXPECT_EQ(paho_client_unsubscribe(paho, topic.c_str()), 0);
-    EXPECT_EQ(paho_client_close(paho), 0);
-}
+// TEST_F(PahoClientTest, paho_client_close)
+// {
+//     EXPECT_EQ(paho_client_open(&option, &paho), 0);
+//     EXPECT_NE(paho, nullptr);
+//     EXPECT_EQ(paho_client_subscribe(paho, topic.c_str(), qos, NULL, NULL),
+//     0); EXPECT_EQ(paho_client_unsubscribe(paho, topic.c_str()), 0);
+//     EXPECT_EQ(paho_client_close(paho), 0);
+// }
