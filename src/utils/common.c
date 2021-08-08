@@ -86,5 +86,4 @@ char *get_self_path(char *dest)
     return dest;
 }
 
-
 #endif

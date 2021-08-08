@@ -55,7 +55,7 @@ void neu_datatag_tbl_destroy(neu_datatag_table_t *tag_tbl)
 }
 
 neu_datatag_t *neu_datatag_tbl_get(neu_datatag_table_t *tag_tbl,
-                                   uint32_t             tag_id)
+                                   datatag_id_t         tag_id)
 {
     neu_datatag_t *datatag;
 
@@ -65,7 +65,7 @@ neu_datatag_t *neu_datatag_tbl_get(neu_datatag_table_t *tag_tbl,
     return datatag;
 }
 
-int neu_datatag_tbl_update(neu_datatag_table_t *tag_tbl, uint32_t tag_id,
+int neu_datatag_tbl_update(neu_datatag_table_t *tag_tbl, datatag_id_t tag_id,
                            neu_datatag_t *datatag)
 {
     int rv;
@@ -76,9 +76,10 @@ int neu_datatag_tbl_update(neu_datatag_table_t *tag_tbl, uint32_t tag_id,
     return rv;
 }
 
-int neu_datatag_tbl_add(neu_datatag_table_t *tag_tbl, neu_datatag_t *datatag)
+datatag_id_t neu_datatag_tbl_add(neu_datatag_table_t *tag_tbl,
+                                 neu_datatag_t *      datatag)
 {
-    int id = 0;
+    datatag_id_t id = 0;
 
     nng_mtx_lock(tag_tbl->mtx);
     if (neu_id_alloc(&tag_tbl->neu_datatag_table, &datatag->id, datatag) == 0) {
@@ -88,7 +89,7 @@ int neu_datatag_tbl_add(neu_datatag_table_t *tag_tbl, neu_datatag_t *datatag)
     return id;
 }
 
-int neu_datatag_tbl_remove(neu_datatag_table_t *tag_tbl, uint32_t tag_id)
+int neu_datatag_tbl_remove(neu_datatag_table_t *tag_tbl, datatag_id_t tag_id)
 {
     int rv;
 

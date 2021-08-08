@@ -34,17 +34,18 @@
 
 #define DEFAULT_TAG_GROUP_COUNT 8
 
+#define DEFAULT_SUB_PIPE_COUNT 4
+#define DEFAULT_DATATAG_IDS_COUNT 16
+
 /**
  * A datatag group configuration
  */
-// TODO: sub_pipes and datatag_ids must use shared pointer for prevent error
-//       of use after free in multithread environment.
 struct neu_taggrp_config {
     neu_atomic_int ref_count;
     char *         config_name;
     uint32_t       read_interval;
-    vector_t *     sub_pipes;
-    vector_t *     datatag_ids;
+    vector_t       sub_pipes;
+    vector_t       datatag_ids;
 };
 
 struct neu_datatag_manager {
@@ -201,65 +202,58 @@ int neu_datatag_mng_update_grp_config(neu_datatag_manager_t *datatag_manager,
     return rv;
 }
 
-int neu_datatag_mng_ref_grp_config(neu_datatag_manager_t *datatag_manager,
-                                   const char *           config_name,
-                                   neu_taggrp_config_t ** p_grp_config)
+const neu_taggrp_config_t *
+neu_datatag_mng_ref_grp_config(neu_datatag_manager_t *datatag_manager,
+                               const char *           config_name)
 {
-    int                  rv = -1;
-    size_t               index;
-    neu_taggrp_config_t *grp_config;
+    int                        rv = -1;
+    size_t                     index;
+    neu_taggrp_config_t *      grp_config;
+    const neu_taggrp_config_t *ref_grp_config = NULL;
 
     nng_mtx_lock(datatag_manager->mtx);
     index = find_taggrp_config(&datatag_manager->p_configs, config_name);
     if (index != SIZE_MAX) {
         grp_config = *(neu_taggrp_config_t **) vector_get(
             &datatag_manager->p_configs, index);
-        if (p_grp_config != NULL) {
-            *p_grp_config = neu_taggrp_cfg_ref(grp_config);
-        }
-        rv = 0;
+        ref_grp_config = neu_taggrp_cfg_ref(grp_config);
+        rv             = 0;
     }
     nng_mtx_unlock(datatag_manager->mtx);
-    return rv;
+    return ref_grp_config;
 }
 
-int neu_datatag_mng_get_grp_config(neu_datatag_manager_t *datatag_manager,
-                                   const char *           config_name,
-                                   neu_taggrp_config_t ** p_grp_config)
+neu_taggrp_config_t *
+neu_datatag_mng_get_grp_config(neu_datatag_manager_t *datatag_manager,
+                               const char *           config_name)
 {
-    int                  rv = -1;
     size_t               index;
-    neu_taggrp_config_t *tmp_grp_config;
-    neu_taggrp_config_t *grp_config = NULL;
+    neu_taggrp_config_t *grp_config     = NULL;
+    neu_taggrp_config_t *ret_grp_config = NULL;
 
     nng_mtx_lock(datatag_manager->mtx);
     index = find_taggrp_config(&datatag_manager->p_configs, config_name);
     if (index != SIZE_MAX) {
         grp_config = *(neu_taggrp_config_t **) vector_get(
             &datatag_manager->p_configs, index);
-        grp_config = neu_taggrp_cfg_ref(grp_config);
+        neu_taggrp_cfg_ref(grp_config);
     }
     nng_mtx_unlock(datatag_manager->mtx);
 
-    if (grp_config != NULL && p_grp_config != NULL) {
-        tmp_grp_config = neu_taggrp_cfg_clone(grp_config);
-        if (tmp_grp_config != NULL) {
-            *p_grp_config = tmp_grp_config;
-            rv            = 0;
-        } else {
-            log_error("No memory to clone datatag group config");
-            rv = -1;
-        }
-    }
-
     if (grp_config != NULL) {
+        ret_grp_config = neu_taggrp_cfg_clone(grp_config);
+        if (ret_grp_config == NULL) {
+            log_error("No memory to clone datatag group config");
+        }
         neu_taggrp_cfg_free(grp_config);
     }
-    return rv;
+
+    return ret_grp_config;
 }
 
 neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)
 {
+    int                  rv;
     neu_taggrp_config_t *grp_config;
 
     grp_config = (neu_taggrp_config_t *) malloc(sizeof(neu_taggrp_config_t));
@@ -276,38 +270,32 @@ neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)
 
     neu_atomic_init(&grp_config->ref_count);
     neu_atomic_set(&grp_config->ref_count, 1);
-    grp_config->sub_pipes   = NULL;
-    grp_config->datatag_ids = NULL;
-    /*
     rv = vector_init(&grp_config->sub_pipes, DEFAULT_SUB_PIPE_COUNT,
-                      sizeof(nng_pipe));
+                     sizeof(nng_pipe));
     if (rv != 0) {
         log_error("Failed to initialize subscribe pipes in tag group config");
         goto init_sub_pipes_fail;
     }
 
-    rv = vector_init(&grp_config->datatag_ids, DEFAULT_SUB_PIPE_COUNT,
-                      sizeof(nng_pipe));
+    rv = vector_init(&grp_config->datatag_ids, DEFAULT_DATATAG_IDS_COUNT,
+                     sizeof(datatag_id_t));
     if (rv != 0) {
         log_error("Failed to initialize datatag ids in tag group config");
         goto init_datatag_ids_fail;
     }
-    */
 
     return grp_config;
 
-/*
 init_datatag_ids_fail:
     vector_uninit(&grp_config->sub_pipes);
 init_sub_pipes_fail:
     free(grp_config->config_name);
-*/
 set_config_name_fail:
     free(grp_config);
     return NULL;
 }
 
-neu_taggrp_config_t *neu_taggrp_cfg_ref(neu_taggrp_config_t *grp_config)
+const neu_taggrp_config_t *neu_taggrp_cfg_ref(neu_taggrp_config_t *grp_config)
 {
     if (grp_config == NULL) {
         return NULL;
@@ -319,18 +307,8 @@ neu_taggrp_config_t *neu_taggrp_cfg_ref(neu_taggrp_config_t *grp_config)
 
 static void do_free_taggrp_cfg(neu_taggrp_config_t *grp_config)
 {
-    if (grp_config == NULL) {
-        return;
-    }
-
-    if (grp_config->sub_pipes != NULL) {
-        vector_free(grp_config->sub_pipes);
-    }
-
-    if (grp_config->datatag_ids != NULL) {
-        vector_free(grp_config->datatag_ids);
-    }
-
+    vector_uninit(&grp_config->sub_pipes);
+    vector_uninit(&grp_config->datatag_ids);
     if (grp_config->config_name != NULL) {
         free(grp_config->config_name);
     }
@@ -365,48 +343,43 @@ neu_taggrp_config_t *neu_taggrp_cfg_clone(neu_taggrp_config_t *src_config)
     }
 
     dst_config->read_interval = src_config->read_interval;
-    dst_config->sub_pipes     = (vector_t *) calloc(1, sizeof(vector_t));
-    if (dst_config->sub_pipes == NULL) {
-        goto alloc_sub_pipes_fail;
-    }
-    rv = vector_copy(dst_config->sub_pipes, src_config->sub_pipes);
+    rv = vector_copy_assign(&dst_config->sub_pipes, &src_config->sub_pipes);
     if (rv != 0) {
         goto copy_sub_pipes_fail;
     }
 
-    if (dst_config->datatag_ids == NULL) {
-        goto alloc_datatag_ids_fail;
-    }
-    rv = vector_copy(dst_config->datatag_ids, src_config->datatag_ids);
+    rv = vector_copy_assign(&dst_config->datatag_ids, &src_config->datatag_ids);
     if (rv != 0) {
         goto copy_datatag_ids_fail;
     }
     return dst_config;
 
 copy_datatag_ids_fail:
-    vector_free(dst_config->datatag_ids);
-alloc_datatag_ids_fail:
+    vector_uninit(&dst_config->datatag_ids);
 copy_sub_pipes_fail:
-    vector_free(dst_config->sub_pipes);
-alloc_sub_pipes_fail:
+    vector_uninit(&dst_config->sub_pipes);
     neu_taggrp_cfg_free(dst_config);
     return NULL;
 }
 
-int neu_taggrp_cfg_set_subpipes(neu_taggrp_config_t *grp_config,
-                                vector_t *           sub_pipes)
+uint32_t neu_taggrp_cfg_get_interval(neu_taggrp_config_t *grp_config)
 {
-    int rv = 0;
+    if (grp_config == NULL) {
+        return 0;
+    }
 
-    if (grp_config == NULL || sub_pipes == NULL) {
+    return grp_config->read_interval;
+}
+
+int neu_taggrp_cfg_set_interval(neu_taggrp_config_t *grp_config,
+                                uint32_t             interval)
+{
+    if (grp_config == NULL) {
         return -1;
     }
 
-    if (grp_config->sub_pipes != NULL) {
-        vector_free(grp_config->sub_pipes);
-    }
-    grp_config->sub_pipes = sub_pipes;
-    return rv;
+    grp_config->read_interval = interval;
+    return 0;
 }
 
 vector_t *neu_taggrp_cfg_get_subpipes(neu_taggrp_config_t *grp_config)
@@ -415,23 +388,16 @@ vector_t *neu_taggrp_cfg_get_subpipes(neu_taggrp_config_t *grp_config)
         return NULL;
     }
 
-    return grp_config->sub_pipes;
+    return &grp_config->sub_pipes;
 }
 
-int neu_taggrp_cfg_set_datatag_ids(neu_taggrp_config_t *grp_config,
-                                   vector_t *           datatag_ids)
+const vector_t *neu_taggrp_cfg_ref_subpipes(neu_taggrp_config_t *grp_config)
 {
-    int rv = 0;
-
-    if (grp_config == NULL || datatag_ids == NULL) {
-        return -1;
+    if (grp_config == NULL) {
+        return NULL;
     }
 
-    if (grp_config->sub_pipes != NULL) {
-        vector_free(grp_config->datatag_ids);
-    }
-    grp_config->datatag_ids = datatag_ids;
-    return rv;
+    return &grp_config->sub_pipes;
 }
 
 vector_t *neu_taggrp_cfg_get_datatag_ids(neu_taggrp_config_t *grp_config)
@@ -440,5 +406,14 @@ vector_t *neu_taggrp_cfg_get_datatag_ids(neu_taggrp_config_t *grp_config)
         return NULL;
     }
 
-    return grp_config->datatag_ids;
+    return &grp_config->datatag_ids;
+}
+
+const vector_t *neu_taggrp_cfg_ref_datatag_ids(neu_taggrp_config_t *grp_config)
+{
+    if (grp_config == NULL) {
+        return NULL;
+    }
+
+    return &grp_config->datatag_ids;
 }
