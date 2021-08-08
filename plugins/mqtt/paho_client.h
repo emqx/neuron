@@ -8,7 +8,8 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-typedef struct paho_client paho_client_t;
+typedef struct paho_client     paho_client_t;
+typedef struct subscribe_tuple subscribe_tuple_t;
 
 typedef enum {
     ClientSuccess = 0,
@@ -31,6 +32,14 @@ client_error   paho_client_connect(paho_client_t *client);
 client_error   paho_client_open(option_t *option, paho_client_t **client);
 client_error   paho_client_is_connection(paho_client_t *client);
 
+subscribe_tuple_t *paho_client_subscribe_create(paho_client_t *        client,
+                                                const char *           topic,
+                                                const int              qos,
+                                                const subscribe_handle handle);
+client_error       paho_client_subscribe_add(paho_client_t *    client,
+                                             subscribe_tuple_t *tuple);
+client_error       paho_client_subscribe_send(paho_client_t *    client,
+                                              subscribe_tuple_t *tuple);
 client_error paho_client_subscribe(paho_client_t *client, const char *topic,
                                    const int qos, subscribe_handle handle,
                                    void *context);
