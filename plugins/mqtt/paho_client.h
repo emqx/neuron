@@ -17,6 +17,8 @@ typedef enum {
     ClientSubscribeTimeout,
     ClientSubscribeListInitialFailure,
     ClientSubscribeFailure,
+    ClientSubscribeAddListRepeat,
+    ClientSubscribeAddListFailure,
     ClientPublishFailure,
 } client_error;
 
