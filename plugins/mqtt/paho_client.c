@@ -145,25 +145,18 @@ static void on_connect(void *context, MQTTAsync_successData *response)
 static void on_connected(void *context, char *cause)
 {
     paho_client_t *client = (paho_client_t *) context;
-    UNUSED(client);
 
     if (NULL != cause) {
         log_info("%s", cause);
     }
 
-    // Unsubscribe all topic
-    // iterator_t iterator = vector_begin(&subscribe_list);
-    // iterator_t last     = vector_end(&subscribe_list);
-    // for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator))
-    // {
-    //     subscribe_tuple_t *item = iterator_get(&iterator);
-    //     int                rc   = paho_client_unsubscribe(paho, item->topic);
-    //     if (0 == rc) {
-    //         item->subscribed = false;
-    //     }
-    // }
-
-    // TODO: Subscribe all topic
+    // Subscribe all topic
+    iterator_t iterator = vector_begin(&client->subscribe_vector);
+    iterator_t last     = vector_end(&client->subscribe_vector);
+    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
+        subscribe_tuple_t *item = iterator_get(&iterator);
+        paho_client_subscribe_send(client, item);
+    }
 }
 
 static void on_disconnected(void *context, MQTTProperties *properties,
