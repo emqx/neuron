@@ -43,8 +43,7 @@ client_error       paho_client_subscribe_add(paho_client_t *    client,
 client_error       paho_client_subscribe_send(paho_client_t *    client,
                                               subscribe_tuple_t *tuple);
 client_error paho_client_subscribe(paho_client_t *client, const char *topic,
-                                   const int qos, subscribe_handle handle,
-                                   void *context);
+                                   const int qos, subscribe_handle handle);
 
 subscribe_tuple_t *paho_client_unsubscribe_create(paho_client_t *client,
                                                   const char *   topic);

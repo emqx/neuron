@@ -105,8 +105,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
     client_error error = paho_client_open(&option, &plugin->paho);
     if (ClientSuccess == error) {
-        error =
-            paho_client_subscribe(plugin->paho, "MQTT Examples", 0, NULL, NULL);
+        error = paho_client_subscribe(plugin->paho, "MQTT Examples", 0, NULL);
     }
 
     return 0;

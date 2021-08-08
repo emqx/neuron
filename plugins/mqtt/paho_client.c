@@ -45,6 +45,8 @@ static void connection_lost_callback(void *context, char *cause)
     if (rc != MQTTASYNC_SUCCESS) {
         printf("Failed to start connect, return code %d\n", rc);
     }
+
+    UNUSED(cause);
 }
 
 static int message_arrived_callback(void *context, char *topic, int len,
@@ -95,6 +97,7 @@ static void on_disconnect(void *context, MQTTAsync_successData *response)
 static void on_subscribe(void *context, MQTTAsync_successData *response)
 {
     UNUSED(context);
+    UNUSED(response);
 }
 
 static void on_subscribe_failure(void *context, MQTTAsync_failureData *response)
@@ -442,8 +445,7 @@ client_error paho_client_subscribe_remove(paho_client_t *client,
 }
 
 client_error paho_client_subscribe(paho_client_t *client, const char *topic,
-                                   const int qos, subscribe_handle handle,
-                                   void *context)
+                                   const int qos, subscribe_handle handle)
 {
     if (NULL == client) {
         return ClientIsNULL;
