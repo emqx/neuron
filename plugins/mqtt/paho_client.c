@@ -15,6 +15,7 @@ static vector_t subscribe_list;
 
 struct subscribe_tuple {
     MQTTAsync_responseOptions subscribe_option;
+    MQTTAsync_responseOptions unsubscribe_option;
     char *                    topic;
     int                       qos;
     int                       token;
@@ -110,6 +111,28 @@ static void on_subscribe_failure(void *context, MQTTAsync_failureData *response)
 {
     UNUSED(context);
     log_info("Subscribe failed, rc %d", response->code);
+}
+
+static void on_unsubscribe(void *context, MQTTAsync_successData *response)
+{
+    UNUSED(context);
+    log_info("Unsubscribe succeeded, token:%d", response->token);
+
+    iterator_t iterator = vector_begin(&subscribe_list);
+    iterator_t last     = vector_end(&subscribe_list);
+    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
+        subscribe_tuple_t *item = iterator_get(&iterator);
+        if (response->token == item->token) {
+            item->subscribed = true;
+        }
+    }
+}
+
+static void on_unsubscribe_failure(void *                 context,
+                                   MQTTAsync_failureData *response)
+{
+    UNUSED(context);
+    log_info("Unsubscribe failed, rc %d", response->code);
 }
 
 static void on_connect_failure(void *context, MQTTAsync_failureData *response)
@@ -446,6 +469,8 @@ client_error paho_client_subscribe(paho_client_t *client, const char *topic,
                                    const int qos, subscribe_handle handle,
                                    void *context)
 {
+    log_info("Subscribing to topic %s for using QoS%d", topic, qos);
+
     subscribe_tuple_t *tuple =
         paho_client_subscribe_create(client, topic, qos, handle);
     if (NULL == tuple) {
@@ -511,21 +536,72 @@ client_error paho_client_subscribe(paho_client_t *client, const char *topic,
 //     return ClientSubscribeTimeout;
 // }
 
-client_error paho_client_unsubscribe_create(paho_client_t *client,
-                                            const char *   topic);
+static client_error
+paho_client_unsubscribe_option_bind(subscribe_tuple_t *tuple)
+{
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    opts.onSuccess                 = on_unsubscribe;
+    opts.onFailure                 = on_unsubscribe_failure;
+    opts.context                   = tuple->client;
+    opts.token                     = tuple->token;
+    tuple->unsubscribe_option      = opts;
+    return ClientSuccess;
+}
 
-client_error paho_client_unsubscribe_send(paho_client_t *client,
-                                          const char *   topic);
+subscribe_tuple_t *paho_client_unsubscribe_create(paho_client_t *client,
+                                                  const char *   topic)
+{
+    iterator_t iterator = vector_begin(&client->subscribe_vector);
+    iterator_t last     = vector_end(&client->subscribe_vector);
+    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
+        subscribe_tuple_t *item = iterator_get(&iterator);
+        if (0 == strcmp(topic, item->topic)) {
+            paho_client_unsubscribe_option_bind(item);
+            return item;
+        }
+    }
+
+    log_error("Cant find topic %s", topic);
+    return NULL;
+}
+
+client_error paho_client_unsubscribe_send(paho_client_t *    client,
+                                          subscribe_tuple_t *tuple)
+{
+    return MQTTAsync_unsubscribe(client->async, tuple->topic,
+                                 &tuple->unsubscribe_option);
+}
 
 client_error paho_client_unsubscribe(paho_client_t *client, const char *topic)
 {
-    int                       rc;
-    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-    opts.token                     = 0;
-    rc = MQTTAsync_unsubscribe(client->async, topic, &opts);
-    // TODO: delete from susbcribe_list
-    return rc;
+    subscribe_tuple_t *tuple = paho_client_unsubscribe_create(client, topic);
+    if (NULL == tuple) {
+        return ClientUnsubscribeFailure;
+    }
+
+    client_error rc = paho_client_unsubscribe_send(client, tuple);
+    // if (ClientSuccess != rc) {
+    //     return rc;
+    // }
+
+    rc = paho_client_subscribe_remove(client, topic);
+    if (ClientSuccess != rc) {
+        return rc;
+    }
+
+    return ClientSuccess;
 }
+
+// client_error paho_client_unsubscribe2(paho_client_t *client, const char
+// *topic)
+// {
+//     int                       rc;
+//     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+//     opts.token                     = 0;
+//     rc = MQTTAsync_unsubscribe(client->async, topic, &opts);
+//     // TODO: delete from susbcribe_list
+//     return rc;
+// }
 
 client_error paho_client_publish(paho_client_t *client, const char *topic,
                                  int qos, unsigned char *payload, size_t len)

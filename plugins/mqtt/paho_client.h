@@ -20,6 +20,7 @@ typedef enum {
     ClientSubscribeFailure,
     ClientSubscribeAddListRepeat,
     ClientSubscribeAddListFailure,
+    ClientUnsubscribeFailure,
     ClientPublishFailure,
 } client_error;
 
@@ -44,6 +45,10 @@ client_error paho_client_subscribe(paho_client_t *client, const char *topic,
                                    const int qos, subscribe_handle handle,
                                    void *context);
 
+subscribe_tuple_t *paho_client_unsubscribe_create(paho_client_t *client,
+                                                  const char *   topic);
+client_error       paho_client_unsubscribe_send(paho_client_t *    client,
+                                                subscribe_tuple_t *tuple);
 client_error paho_client_unsubscribe(paho_client_t *client, const char *topic);
 
 client_error paho_client_publish(paho_client_t *client, const char *topic,
