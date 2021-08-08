@@ -1,3 +1,5 @@
+
+include_directories(../../../include/)
 include_directories(../../../plugins/mqtt)
 file(GLOB MQTT_SRC "../../../plugins/mqtt/*.c")
 set(src ${MQTT_SRC} paho_client_test.cc)
