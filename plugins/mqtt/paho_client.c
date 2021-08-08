@@ -9,7 +9,7 @@
 #include "paho_client.h"
 
 #define UNUSED(x) (void) (x)
-#define DEBUG
+// #define DEBUG
 
 struct subscribe_tuple {
     MQTTAsync_responseOptions subscribe_option;
@@ -95,17 +95,6 @@ static void on_disconnect(void *context, MQTTAsync_successData *response)
 static void on_subscribe(void *context, MQTTAsync_successData *response)
 {
     UNUSED(context);
-    // log_info("Subscribe succeeded, token:%d", response->token);
-
-    // iterator_t iterator = vector_begin(&subscribe_list);
-    // iterator_t last     = vector_end(&subscribe_list);
-    // for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator))
-    // {
-    //     subscribe_tuple_t *item = iterator_get(&iterator);
-    //     if (response->token == item->token) {
-    //         item->subscribed = true;
-    //     }
-    // }
 }
 
 static void on_subscribe_failure(void *context, MQTTAsync_failureData *response)
@@ -118,16 +107,6 @@ static void on_unsubscribe(void *context, MQTTAsync_successData *response)
 {
     UNUSED(context);
     log_info("Unsubscribe succeeded, token:%d", response->token);
-
-    // iterator_t iterator = vector_begin(&subscribe_list);
-    // iterator_t last     = vector_end(&subscribe_list);
-    // for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator))
-    // {
-    //     subscribe_tuple_t *item = iterator_get(&iterator);
-    //     if (response->token == item->token) {
-    //         item->subscribed = true;
-    //     }
-    // }
 }
 
 static void on_unsubscribe_failure(void *                 context,
@@ -498,52 +477,6 @@ client_error paho_client_subscribe(paho_client_t *client, const char *topic,
     return ClientSuccess;
 }
 
-// client_error paho_client_subscribe2(paho_client_t *client, const char *topic,
-//                                     const int qos, subscribe_handle handle,
-//                                     void *context)
-// {
-//     UNUSED(context);
-
-//     if (NULL == client) {
-//         return ClientIsNULL;
-//     }
-
-//     subscribe_token++;
-//     subscribe_tuple_t *tuple =
-//         (subscribe_tuple_t *) malloc(sizeof(subscribe_tuple_t));
-//     tuple->topic      = strdup(topic);
-//     tuple->qos        = qos;
-//     tuple->token      = subscribe_token;
-//     tuple->handle     = handle;
-//     tuple->subscribed = false;
-//     vector_push_back(&subscribe_list, tuple);
-
-//     log_info("Subscribing to topic %s for using QoS%d", topic, qos);
-//     MQTTAsync paho = client->async;
-
-//     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-
-//     opts.onSuccess = on_subscribe;
-//     opts.onFailure = on_subscribe_failure;
-//     opts.context   = paho;
-//     opts.token     = subscribe_token;
-//     int rc = MQTTAsync_subscribe(paho, extern_option->topic,
-//     extern_option->qos,
-//                                  &opts);
-//     if (rc != MQTTASYNC_SUCCESS) {
-//         log_error("Failed to start subscribe, return code %d", rc);
-//         vector_pop_back(&subscribe_list);
-
-//         if (NULL != tuple) {
-//             free(tuple->topic);
-//             free(tuple);
-//         }
-//         return rc;
-//     }
-
-//     return ClientSubscribeTimeout;
-// }
-
 static client_error
 paho_client_unsubscribe_option_bind(subscribe_tuple_t *tuple)
 {
@@ -604,17 +537,6 @@ client_error paho_client_unsubscribe(paho_client_t *client, const char *topic)
     return ClientSuccess;
 }
 
-// client_error paho_client_unsubscribe2(paho_client_t *client, const char
-// *topic)
-// {
-//     int                       rc;
-//     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-//     opts.token                     = 0;
-//     rc = MQTTAsync_unsubscribe(client->async, topic, &opts);
-//     // TODO: delete from susbcribe_list
-//     return rc;
-// }
-
 client_error paho_client_publish(paho_client_t *client, const char *topic,
                                  int qos, unsigned char *payload, size_t len)
 {
@@ -651,27 +573,5 @@ client_error paho_client_close(paho_client_t *client)
 
     client_error rc = paho_client_disconnect(client);
     rc              = paho_client_destroy(client);
-
-    // MQTTAsync_disconnectOptions opts =
-    // MQTTAsync_disconnectOptions_initializer; opts.onSuccess = on_disconnect;
-    // opts.onFailure                   = on_disconnect_failure;
-
-    // Unsubscribe all topic
-    // VECTOR_FOR_EACH(&subscribe_list, i)
-    // {
-    //     subscribe_tuple_t tuple = ITERATOR_GET_AS(subscribe_tuple_t, &i);
-    //     paho_client_unsubscribe(client, tuple.topic);
-    // }
-
-    // if (vector_is_initialized(&subscribe_list)) {
-    //     vector_clear(&subscribe_list);
-    //     vector_destroy(&subscribe_list);
-    // }
-
-    // if (NULL != client) {
-    //     MQTTAsync_disconnect(client->async, &opts);
-    //     MQTTAsync_destroy(&client->async);
-    //     free(client);
-    // }
     return rc;
 }
