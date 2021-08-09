@@ -56,4 +56,9 @@ core_databuf_t *core_databuf_set_buf(core_databuf_t *databuf, void *buf,
  */
 void *core_databuf_get_ptr(core_databuf_t *databuf);
 
+/**
+ * Print buf content in hex.
+ */
+char *core_databuf_dump(core_databuf_t *databuf);
+
 #endif
