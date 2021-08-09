@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -104,4 +105,18 @@ void *core_databuf_get_ptr(core_databuf_t *databuf)
     }
 
     return (void *) databuf->buf;
+}
+
+char *core_databuf_dump(core_databuf_t *databuf)
+{
+    static char buf_content[2048] = { 0 };
+    char *      buf               = databuf->buf;
+
+    memset(buf_content, 0, sizeof(buf_content));
+
+    for (size_t i = 0; i < databuf->len && i < sizeof(buf_content); i++) {
+        snprintf(buf_content + i, sizeof(buf_content) - i, "%02X ", buf[i]);
+    }
+
+    return buf_content;
 }

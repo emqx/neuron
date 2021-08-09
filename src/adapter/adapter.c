@@ -225,7 +225,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
         core_databuf_t *databuf;
         databuf = core_databuf_new_with_buf(resp->buf, resp->buf_len);
         // for debug
-        log_debug("Get respose buf: %p", core_databuf_get_ptr(databuf));
+        log_debug("Get respose buf: %s", core_databuf_dump(databuf));
 
         nng_msg *msg;
         size_t   msg_size;
