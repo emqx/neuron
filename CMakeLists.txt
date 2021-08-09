@@ -34,6 +34,7 @@ if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
 endif()
 
 add_subdirectory(extern/vector)
+set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(extern/libcsptr)
 configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
                COPYONLY)
@@ -102,3 +103,7 @@ target_sources(plugin-sample PRIVATE ${SAMPLE_PLUGIN_SOURCES})
 target_include_directories(plugin-sample PRIVATE include)
 target_link_libraries(plugin-sample neuron-base)
 target_link_libraries(plugin-sample ${CMAKE_THREAD_LIBS_INIT})
+add_subdirectory(plugins/mqtt)
+
+enable_testing()
+add_subdirectory(tests/plugins/mqtt)

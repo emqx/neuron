@@ -74,6 +74,7 @@ struct neu_manager {
 static const char *const manager_url = "inproc://neu_manager";
 
 #define NEU_HAS_SAMPLE_ADAPTER 1
+#define NEU_HAS_MQTT_ADAPTER 1
 
 #if defined(__APPLE__)
 
@@ -100,7 +101,11 @@ static const char *const manager_url = "inproc://neu_manager";
 #define SAMPLE_APP_PLUGIN_NAME "sample-plugin"
 #endif
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
+
+#ifdef NEU_HAS_MQTT_ADAPTER
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
+#endif
+
 #define MODBUS_PLUGIN_NAME "modbus-plugin"
 
 #ifdef NEU_HAS_SAMPLE_ADAPTER
@@ -134,6 +139,15 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
 #endif
+
+#ifdef NEU_HAS_MQTT_ADAPTER
+    {
+        .adapter_type = ADAPTER_TYPE_MQTT,
+        .adapter_name = "mqtt-adapter",
+        .plugin_name  = MQTT_PLUGIN_NAME,
+        .plugin_id    = { 0 } // The plugin_id is nothing
+    },
+#endif
     /*
     {
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
@@ -145,12 +159,6 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
         .adapter_name    = "webserver-adapter",
         .plugin_name     = WEBSERVER_PLUGIN_NAME,
-        .plugin_id       = { 0 }    // The plugin_id is nothing
-    },
-    {
-        .adapter_type    = ADAPTER_TYPE_MQTT,
-        .adapter_name    = "mqtt-adapter",
-        .plugin_name     = MQTT_PLUGIN_NAME,
         .plugin_id       = { 0 }    // The plugin_id is nothing
     },
     {
@@ -168,9 +176,12 @@ static const char *default_plugin_lib_names[] = {
 #ifdef NEU_HAS_SAMPLE_ADAPTER
     SAMPLE_PLUGIN_LIB_NAME,
 #endif
+
+#ifdef NEU_HAS_MQTT_ADAPTER
+    MQTT_PLUGIN_LIB_NAME,
+#endif
     /*
     WEBSERVER_PLUGIN_LIB_NAME,
-    MQTT_PLUGIN_LIB_NAME,
     MODBUS_PLUGIN_LIB_NAME,
      */
 };
@@ -193,18 +204,21 @@ static const plugin_reg_param_t system_plugin_infos[] = {
         .plugin_lib_name = SAMPLE_PLUGIN_LIB_NAME
     },
 #endif
+
+#ifdef NEU_HAS_MQTT_ADAPTER
+    {
+        .plugin_kind     = PLUGIN_KIND_SYSTEM,
+        .adapter_type    = ADAPTER_TYPE_MQTT,
+        .plugin_name     = MQTT_PLUGIN_NAME,
+        .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
+    },
+#endif
     /*
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
         .plugin_name     = WEBSERVER_PLUGIN_NAME,
         .plugin_lib_name = WEBSERVER_PLUGIN_LIB_NAME
-    },
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_MQTT,
-        .plugin_name     = MQTT_PLUGIN_NAME,
-        .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
     },
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
