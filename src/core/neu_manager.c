@@ -562,10 +562,11 @@ static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 // Call this function before start manager loop, so it don't need lock
 static int register_default_plugins(neu_manager_t *manager)
 {
-    int                       rv = 0;
-    uint32_t                  i, j;
-    plugin_id_t               plugin_id;
-    const plugin_reg_param_t *reg_param;
+    int                rv = 0;
+    uint32_t           i, j;
+    plugin_id_t        plugin_id;
+    plugin_reg_param_t reg_param;
+    int                path_len = 64;
 
     for (i = 0; i < DEFAULT_PLUGIN_COUNT; i++) {
         plugin_id.id_val = 0;
@@ -577,13 +578,19 @@ static int register_default_plugins(neu_manager_t *manager)
         }
 
         if (j < SYSTEM_PLUGIN_INFO_SIZE) {
-            reg_param = &system_plugin_infos[j];
+            reg_param                 = system_plugin_infos[j];
+            reg_param.plugin_lib_name = calloc(1, path_len);
+
+            snprintf(reg_param.plugin_lib_name, path_len, "./%s",
+                     system_plugin_infos[j].plugin_lib_name);
             plugin_id =
-                plugin_manager_reg_plugin(manager->plugin_manager, reg_param);
+                plugin_manager_reg_plugin(manager->plugin_manager, &reg_param);
             if (plugin_id.id_val == 0) {
                 log_warn("Failed to register plugin: %s",
-                         reg_param->plugin_name);
+                         reg_param.plugin_name);
             }
+
+            free(reg_param.plugin_lib_name);
         }
     }
 

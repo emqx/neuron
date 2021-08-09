@@ -4,7 +4,7 @@ include_directories(../../../plugins/mqtt)
 file(GLOB MQTT_SRC "../../../plugins/mqtt/*.c")
 set(src ${MQTT_SRC} paho_client_test.cc)
 add_executable(paho_client_test ${src})
-target_link_libraries(paho_client_test neuron-base paho-mqtt3as gtest gtest_main pthread)
+target_link_libraries(paho_client_test neuron-base gtest gtest_main)
 
 # add_test(
 #     NAME 

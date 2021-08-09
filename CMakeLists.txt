@@ -13,19 +13,16 @@ endif()
 
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
-if(APPLE)
 set(CMAKE_C_FLAGS_DEBUG
     "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
   -fsanitize-recover=address -fsanitize-address-use-after-scope \
-  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libsan"
+  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
 )
-else()
 set(CMAKE_CXX_FLAGS_DEBUG
     "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
   -fsanitize-recover=address -fsanitize-address-use-after-scope \
-  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libasan"
+  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
 )
-endif()
 
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
   set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS
@@ -94,7 +91,7 @@ add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
-target_link_libraries(neuron-base vector-static jansson ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron-base paho-mqtt3as vector-static jansson ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
 # define for plugins
 set(SAMPLE_PLUGIN_SOURCES plugins/plugin_sample.c)
