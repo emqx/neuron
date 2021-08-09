@@ -52,14 +52,14 @@ static int init_system_plugins(vector_t *plugins_vec)
 {
     int rv = 0;
 
-    rv = vector_setup(plugins_vec, SYSTEM_PLUGIN_COUNT_DEFAULT,
-                      sizeof(plugin_reg_entity_t));
+    rv = vector_init(plugins_vec, SYSTEM_PLUGIN_COUNT_DEFAULT,
+                     sizeof(plugin_reg_entity_t));
     return rv;
 }
 
 static void uninit_system_plugins(vector_t *plugins_vec)
 {
-    vector_destroy(plugins_vec);
+    vector_uninit(plugins_vec);
 }
 
 #define CUSTOM_PLUGIN_COUNT_DEFAULT 16
@@ -67,8 +67,8 @@ static int init_custom_plugins(vector_t *plugins_vec)
 {
     int rv = 0;
 
-    rv = vector_setup(plugins_vec, CUSTOM_PLUGIN_COUNT_DEFAULT,
-                      sizeof(plugin_reg_entity_t));
+    rv = vector_init(plugins_vec, CUSTOM_PLUGIN_COUNT_DEFAULT,
+                     sizeof(plugin_reg_entity_t));
     return rv;
 }
 
@@ -82,7 +82,7 @@ static void uninit_custom_plugins(vector_t *plugins_vec)
         free((void *) reg_entity->plugin_name);
         free((void *) reg_entity->plugin_lib_name);
     }
-    vector_destroy(plugins_vec);
+    vector_uninit(plugins_vec);
 }
 
 // Return SIZE_MAX if can't find a plugin
@@ -199,8 +199,8 @@ plugin_manager_t *plugin_manager_create()
         return NULL;
     }
 
-    rv = vector_setup(&plugin_mng->available_ids, CUSTOM_PLUGIN_COUNT_DEFAULT,
-                      sizeof(plugin_id_t));
+    rv = vector_init(&plugin_mng->available_ids, CUSTOM_PLUGIN_COUNT_DEFAULT,
+                     sizeof(plugin_id_t));
     if (rv != 0) {
         log_error("Failed to initialize vector of available ids");
         return NULL;
@@ -215,7 +215,7 @@ void plugin_manager_destroy(plugin_manager_t *plugin_mng)
         return;
     }
 
-    vector_destroy(&plugin_mng->available_ids);
+    vector_uninit(&plugin_mng->available_ids);
     uninit_custom_plugins(&plugin_mng->custom_plugins);
     uninit_system_plugins(&plugin_mng->system_plugins);
     nng_mtx_free(plugin_mng->mtx);
@@ -428,5 +428,6 @@ int plugin_manager_get_reg_info_by_name(plugin_manager_t * plugin_mng,
 void plugin_manager_dump(plugin_manager_t *plugin_mng)
 {
     // TODO: dump system plugins and custom plugins
+    (void) plugin_mng;
     return;
 }

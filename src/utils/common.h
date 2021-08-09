@@ -17,19 +17,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef __DATATAG_TABLE_H__
-#define __DATATAG_TABLE_H__
+#ifndef __COMMON_H__
+#define __COMMON_H__
 
-#include "neu_types.h"
-#include "utils/idhash.h"
+#define MAX_PATH_SZ 1024
+#define DASHBOARD_PATH "/dist"
 
-typedef struct datatag_table_t datatag_table_t;
+extern char *get_self_path(char *dest);
 
-datatag_table_t *datatag_tbl_create(void);
-void             datatag_tbl_destroy(datatag_table_t *);
-neu_datatag_t *  datatag_tbl_id_get(datatag_table_t *, uint32_t);
-int              datatag_tbl_id_remove(datatag_table_t *, uint32_t);
-int datatag_tbl_id_update(datatag_table_t *, uint32_t, neu_datatag_t *);
-int datatag_tbl_id_add(datatag_table_t *, neu_datatag_t *);
-
-#endif //__DATATAG_TABLE_H__
+#endif

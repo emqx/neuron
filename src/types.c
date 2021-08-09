@@ -153,10 +153,10 @@ neu_time_t neu_time_now(void)
 
 neu_datetime_t neu_time_getDateTime(neu_time_t t)
 {
-    const char     days[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    uint32_t       days[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
     neu_datetime_t dt     = { 0 };
     neu_udword_t   pass4year;
-    neu_dword_t    yearhours;
+    neu_udword_t   yearhours;
 
     dt.tm_sec = (int) (t % 60);
     t /= 60;

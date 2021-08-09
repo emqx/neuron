@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- **/
+config_ **/
 
 #ifndef NEURON_TYPES_H
 #define NEURON_TYPES_H
@@ -487,9 +487,10 @@ typedef uint32_t neu_datatag_id_t;
 typedef struct {
     neu_datatag_id_t    id;
     neu_attributetype_t type;
-    neu_word_t          readInterval;
-    neu_datatype_t      dataType;
-    neu_address_t       address;
+    // The readInterval move to datatag group
+    // neu_udword_t     readInterval;
+    neu_datatype_t dataType;
+    neu_address_t  address;
 } neu_datatag_t;
 
 /**

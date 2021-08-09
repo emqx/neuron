@@ -7,10 +7,31 @@ enable_language(C)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_BUILD_TYPE "Debug")
-# set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb -fsanitize=address
-# -fsanitize=leak")
-set(CMAKE_C_FLAGS_DEBUG "$ENV{CFLAGS} -O0 -Wall -g -ggdb")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Debug")
+endif()
+
+set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
+if(APPLE)
+set(CMAKE_C_FLAGS_DEBUG
+    "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
+  -fsanitize-recover=address -fsanitize-address-use-after-scope \
+  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libsan"
+)
+else()
+set(CMAKE_C_FLAGS_DEBUG
+    "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
+  -fsanitize-recover=address -fsanitize-address-use-after-scope \
+  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libasan"
+)
+endif()
+
+if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
+  set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS
+      1
+      CACHE INTERNAL "No dev warnings")
+endif()
 
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -19,8 +40,20 @@ configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
                COPYONLY)
 
 # Call this from your own project's makefile.
+
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
+
+if(CMAKE_SYSTEM_NAME MATCHES "Linux")
+  add_definitions(-DNEU_PLATFORM_LINUX)
+
+elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  add_definitions(-DNEU_PLATFORM_DARWIN)
+
+elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+  add_definitions(-DNEU_PLATFORM_WINDOWS)
+
+endif()
 
 # define neuron executalbe program
 set(NEURON_SOURCES
@@ -29,10 +62,12 @@ set(NEURON_SOURCES
     src/core/databuf.c
     src/core/neu_manager.c
     src/core/plugin_manager.c
-    src/core/datatag_table.c
-    src/adapter/adapter.c)
+    src/core/neu_datatag_manager.c
+    src/core/neu_datatag_table.c
+    src/adapter/adapter.c
+    src/adapter/neu_webserver.c)
 
-set(NEURON_INCLUDE_DIRECTORIES include src deps)
+set(NEURON_INCLUDE_DIRECTORIES include src)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
@@ -45,15 +80,16 @@ target_link_libraries(neuron ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
-    deps/cJSON.c
     src/types.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
     src/utils/idhash.c
     src/utils/panic.c
-    src/utils/log.c)
+    src/utils/log.c
+    src/utils/json.c
+    src/utils/common.c)
 
-set(NEURON_BASE_INCLUDE_DIRECTORIES include deps)
+set(NEURON_BASE_INCLUDE_DIRECTORIES include)
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base

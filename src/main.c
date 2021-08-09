@@ -27,13 +27,15 @@
 #include <nng/protocol/bus0/bus.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "adapter/neu_webserver.h"
 #include "core/neu_manager.h"
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "utils/idhash.h"
 
-static nng_mtx *log_mtx;
-FILE *          g_logfile;
+static nng_thread *web_thread;
+static nng_mtx *   log_mtx;
+FILE *             g_logfile;
 
 static void log_lock(bool lock, void *udata)
 {
@@ -50,7 +52,7 @@ static void init()
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
     log_set_level(LOG_DEBUG);
-    FILE *g_logfile = fopen("rest-server.log", "a");
+    FILE *g_logfile = fopen("neuron.log", "a");
     if (g_logfile == NULL) {
         fprintf(stderr,
                 "Failed to open logfile when"
@@ -113,8 +115,15 @@ int main(int argc, char *argv[])
         goto main_end;
     }
 
+    rv = nng_thread_create(&web_thread, web_server, NULL);
+    if (rv != 0) {
+        neu_panic("Cannot start web server: %s", nng_strerror(rv));
+    }
+    log_debug(REST_URL, DEFAULT_PORT);
+    rest_start(DEFAULT_PORT);
+
     neu_manager_t *manager;
-    log_info("running neuron main process");
+    log_info("running neuron main process, daemon: %d", is_daemon);
     manager = neu_manager_create();
     if (manager == NULL) {
         log_error("Failed to create neuron manager, exit!");
@@ -122,6 +131,7 @@ int main(int argc, char *argv[])
         goto main_end;
     }
 
+    nng_thread_destroy(web_thread);
     neu_manager_destroy(manager);
 
 main_end:

@@ -28,6 +28,7 @@
 
 #include "adapter/adapter_internal.h"
 #include "neu_adapter.h"
+#include "neu_datatag_manager.h"
 #include "neu_log.h"
 #include "neu_manager.h"
 #include "neu_panic.h"
@@ -37,10 +38,11 @@
 #define DEFAULT_ADAPTER_REG_COUNT 8
 
 typedef struct adapter_reg_entity {
-    adapter_id_t   adapter_id;
-    neu_adapter_t *adapter;
-    nng_pipe       adapter_pipe;
-    int            bind_count;
+    adapter_id_t           adapter_id;
+    neu_adapter_t *        adapter;
+    neu_datatag_manager_t *datatag_manager;
+    nng_pipe               adapter_pipe;
+    int                    bind_count;
 } adapter_reg_entity_t;
 
 typedef struct manager_bind_info {
@@ -94,11 +96,17 @@ static const char *const manager_url = "inproc://neu_manager";
 #endif
 
 #ifdef NEU_HAS_SAMPLE_ADAPTER
-#define SAMPLE_PLUGIN_NAME "sample-plugin"
+#define SAMPLE_DRV_PLUGIN_NAME "sample-plugin"
+#define SAMPLE_APP_PLUGIN_NAME "sample-plugin"
 #endif
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
 #define MODBUS_PLUGIN_NAME "modbus-plugin"
+
+#ifdef NEU_HAS_SAMPLE_ADAPTER
+#define SAMPLE_DRV_ADAPTER_NAME "sample-driver-adapter"
+#define SAMPLE_APP_ADAPTER_NAME "sample-app-adapter"
+#endif
 
 #define ADAPTER_NAME_MAX_LEN 50
 #define PLUGIN_LIB_NAME_MAX_LEN 50
@@ -115,8 +123,14 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
 #ifdef NEU_HAS_SAMPLE_ADAPTER
     {
         .adapter_type = ADAPTER_TYPE_DRIVER,
-        .adapter_name = "sample-adapter",
-        .plugin_name  = SAMPLE_PLUGIN_NAME,
+        .adapter_name = SAMPLE_DRV_ADAPTER_NAME,
+        .plugin_name  = SAMPLE_DRV_PLUGIN_NAME,
+        .plugin_id    = { 0 } // The plugin_id is nothing
+    },
+    {
+        .adapter_type = ADAPTER_TYPE_APP,
+        .adapter_name = SAMPLE_APP_ADAPTER_NAME,
+        .plugin_name  = SAMPLE_APP_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
     {
@@ -168,7 +182,13 @@ static const plugin_reg_param_t system_plugin_infos[] = {
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
         .adapter_type    = ADAPTER_TYPE_DRIVER,
-        .plugin_name     = SAMPLE_PLUGIN_NAME,
+        .plugin_name     = SAMPLE_DRV_PLUGIN_NAME,
+        .plugin_lib_name = SAMPLE_PLUGIN_LIB_NAME
+    },
+    {
+        .plugin_kind     = PLUGIN_KIND_SYSTEM,
+        .adapter_type    = ADAPTER_TYPE_APP,
+        .plugin_name     = SAMPLE_APP_PLUGIN_NAME,
         .plugin_lib_name = SAMPLE_PLUGIN_LIB_NAME
     },
     {
@@ -196,6 +216,24 @@ static const plugin_reg_param_t system_plugin_infos[] = {
 // clang-format on
 #define SYSTEM_PLUGIN_INFO_SIZE \
     (sizeof(system_plugin_infos) / sizeof(system_plugin_infos[0]))
+
+typedef struct config_add_param {
+    char *               config_name;
+    char *               src_adapter_name;
+    char *               dst_adapter_name;
+    uint32_t             read_interval;
+    neu_taggrp_config_t *grp_config;
+} config_add_param_t;
+
+static config_add_param_t default_config_add_params[] = {
+    {
+        .config_name      = "config_sample",
+        .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
+        .dst_adapter_name = SAMPLE_APP_ADAPTER_NAME,
+        .read_interval    = 2000,
+        .grp_config       = NULL,
+    },
+};
 
 static int init_bind_info(manager_bind_info_t *mng_bind_info)
 {
@@ -261,6 +299,62 @@ static adapter_reg_entity_t *find_reg_adapter_by_id(vector_t *   adapters,
     return NULL;
 }
 
+static adapter_reg_entity_t *find_reg_adapter_by_name(vector_t *  adapters,
+                                                      const char *name)
+{
+    adapter_reg_entity_t *reg_entity;
+    const char *          adapter_name;
+
+    VECTOR_FOR_EACH(adapters, iter)
+    {
+        reg_entity   = (adapter_reg_entity_t *) iterator_get(&iter);
+        adapter_name = neu_adapter_get_name(reg_entity->adapter);
+        if (strcmp(adapter_name, name) == 0) {
+            return reg_entity;
+        }
+    }
+
+    return NULL;
+}
+
+static int manager_add_config(neu_manager_t *manager, config_add_param_t *param)
+{
+    int                   rv = 0;
+    adapter_reg_entity_t *src_reg_entity;
+    adapter_reg_entity_t *dst_reg_entity;
+
+    if (param->grp_config == NULL) {
+        return -1;
+    }
+
+    src_reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+                                              param->src_adapter_name);
+    dst_reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+                                              param->src_adapter_name);
+    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
+        log_error("Can't find matched src or dst registered adapter");
+        return -1;
+    }
+
+    vector_t *sub_pipes;
+    sub_pipes = neu_taggrp_cfg_get_subpipes(param->grp_config);
+    // TODO: It's need to check if the adapter pipe is unique pipe in sub_pipes
+    rv = vector_push_back(sub_pipes, &dst_reg_entity->adapter_pipe);
+    if (rv != 0) {
+        log_error("Can't add pipe to vector of subscribe pipes");
+        return -1;
+    }
+
+    neu_taggrp_cfg_set_interval(param->grp_config, param->read_interval);
+    rv = neu_datatag_mng_add_grp_config(src_reg_entity->datatag_manager,
+                                        param->grp_config);
+    if (rv != 0) {
+        log_error("Can't add pipe to vector of subscribe pipes");
+        neu_taggrp_cfg_free(param->grp_config);
+    }
+    return rv;
+}
+
 static uint32_t manager_get_adapter_id(neu_manager_t *manager)
 {
     adapter_id_t adapter_id;
@@ -271,19 +365,14 @@ static uint32_t manager_get_adapter_id(neu_manager_t *manager)
     return adapter_id;
 }
 
-static int manager_add_config(neu_manager_t *manager)
-{
-    int rv = 0;
-
-    return rv;
-}
-
 static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     adapter_id_t          adapter_id;
     neu_adapter_t *       adapter;
     neu_manager_t *       manager;
     adapter_reg_entity_t *reg_entity;
+
+    (void) ev;
 
     adapter = (neu_adapter_t *) arg;
     manager = neu_adapter_get_manager(adapter);
@@ -310,6 +399,8 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_adapter_t *       adapter;
     neu_manager_t *       manager;
     adapter_reg_entity_t *reg_entity;
+
+    (void) ev;
 
     adapter = (neu_adapter_t *) arg;
     manager = neu_adapter_get_manager(adapter);
@@ -356,31 +447,42 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
     adapter_info.plugin_id       = plugin_reg_info.plugin_id;
     adapter_info.plugin_lib_name = plugin_reg_info.plugin_lib_name;
     adapter                      = neu_adapter_create(&adapter_info);
-    if (adapter != NULL) {
-        adapter_reg_entity_t reg_entity;
+    if (adapter == NULL) {
+        return 0;
+    }
 
-        adapter_id            = adapter_info.id;
-        reg_entity.adapter_id = adapter_info.id;
-        reg_entity.adapter    = adapter;
-        reg_entity.bind_count = 0;
-        nng_mtx_lock(manager->adapters_mtx);
-        vector_push_back(&manager->reg_adapters, &reg_entity);
-        nng_mtx_unlock(manager->adapters_mtx);
-        if (p_adapter != NULL) {
-            *p_adapter = adapter;
-        }
+    neu_datatag_manager_t *datatag_manager;
+    datatag_manager = neu_datatag_mng_create(adapter);
+    if (datatag_manager == NULL) {
+        neu_adapter_destroy(adapter);
+        return 0;
+    }
+
+    adapter_reg_entity_t reg_entity;
+    adapter_id                 = adapter_info.id;
+    reg_entity.adapter_id      = adapter_info.id;
+    reg_entity.adapter         = adapter;
+    reg_entity.datatag_manager = datatag_manager;
+    reg_entity.bind_count      = 0;
+    nng_mtx_lock(manager->adapters_mtx);
+    vector_push_back(&manager->reg_adapters, &reg_entity);
+    nng_mtx_unlock(manager->adapters_mtx);
+    if (p_adapter != NULL) {
+        *p_adapter = adapter;
     }
     return adapter_id;
 }
 
 static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
 {
-    int            rv = 0;
-    size_t         index;
-    vector_t *     reg_adapters;
-    neu_adapter_t *adapter;
+    int                    rv = 0;
+    size_t                 index;
+    vector_t *             reg_adapters;
+    neu_adapter_t *        adapter;
+    neu_datatag_manager_t *datatag_mng;
 
     adapter      = NULL;
+    datatag_mng  = NULL;
     reg_adapters = &manager->reg_adapters;
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -388,11 +490,16 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
     if (index != SIZE_MAX) {
         adapter_reg_entity_t *reg_entity;
 
-        reg_entity = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
-        adapter    = reg_entity->adapter;
+        reg_entity  = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
+        adapter     = reg_entity->adapter;
+        datatag_mng = reg_entity->datatag_manager;
         vector_erase(reg_adapters, index);
     }
     nng_mtx_unlock(manager->adapters_mtx);
+
+    if (datatag_mng != NULL) {
+        neu_datatag_mng_destroy(datatag_mng);
+    }
 
     if (adapter != NULL) {
         neu_adapter_destroy(adapter);
@@ -441,7 +548,7 @@ static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 static int register_default_plugins(neu_manager_t *manager)
 {
     int                       rv = 0;
-    int                       i, j;
+    uint32_t                  i, j;
     plugin_id_t               plugin_id;
     const plugin_reg_param_t *reg_param;
 
@@ -476,9 +583,9 @@ static void unregister_all_reg_plugins(neu_manager_t *manager)
 }
 
 // Call this function before start manager loop, so it don't need lock
-static void add_and_start_default_adapters(neu_manager_t *manager)
+static void reg_and_start_default_adapters(neu_manager_t *manager)
 {
-    int            i;
+    uint32_t       i;
     adapter_id_t   id;
     neu_adapter_t *p_adapter;
 
@@ -494,7 +601,7 @@ static void add_and_start_default_adapters(neu_manager_t *manager)
 }
 
 // Call this function after quit manager loop, so it don't need lock
-static void stop_and_destroy_bind_adapters(neu_manager_t *manager)
+static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
 {
     vector_t *            adapters;
     adapter_reg_entity_t *reg_entity;
@@ -535,7 +642,15 @@ static void manager_loop(void *arg)
     nng_mtx_unlock(manager->mtx);
 
     register_default_plugins(manager);
-    add_and_start_default_adapters(manager);
+    reg_and_start_default_adapters(manager);
+
+    config_add_param_t * config_add_param;
+    neu_taggrp_config_t *grp_config;
+    config_add_param = &default_config_add_params[0];
+    grp_config       = neu_taggrp_cfg_new(config_add_param->config_name);
+    neu_taggrp_cfg_set_interval(grp_config, config_add_param->read_interval);
+    config_add_param->grp_config = grp_config;
+    manager_add_config(manager, config_add_param);
     log_info("Start message loop of neu_manager");
     while (1) {
         nng_msg *msg;
@@ -633,7 +748,7 @@ static void manager_loop(void *arg)
     }
 
     log_info("End message loop of neu_manager");
-    stop_and_destroy_bind_adapters(manager);
+    stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
     nng_close(manager_bind->mng_sock);
     return;
@@ -659,10 +774,10 @@ neu_manager_t *neu_manager_create()
         neu_panic("Can't allocate mutex for manager");
     }
 
-    rv = vector_setup(&manager->reg_adapters, DEFAULT_ADAPTER_REG_COUNT,
-                      sizeof(adapter_reg_entity_t));
+    rv = vector_init(&manager->reg_adapters, DEFAULT_ADAPTER_REG_COUNT,
+                     sizeof(adapter_reg_entity_t));
     if (rv != 0) {
-        neu_panic("Failed to create vector of registered adapters");
+        neu_panic("Failed to initialize vector of registered adapters");
     }
 
     init_bind_info(&manager->bind_info);
@@ -680,7 +795,8 @@ void neu_manager_destroy(neu_manager_t *manager)
     nng_thread_destroy(manager->thrd);
     plugin_manager_destroy(manager->plugin_manager);
     uninit_bind_info(&manager->bind_info);
-    vector_destroy(&manager->reg_adapters);
+    vector_uninit(&manager->reg_adapters);
+
     nng_mtx_free(manager->adapters_mtx);
     nng_mtx_free(manager->mtx);
     free(manager);

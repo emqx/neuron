@@ -161,7 +161,7 @@ static void adapter_loop(void *arg)
         case MSG_CONFIG_INFO_STRING: {
             char *buf_ptr;
             buf_ptr = msg_get_buf_ptr(pay_msg);
-            log_info("Recieve string: %s", buf_ptr);
+            log_info("Received string: %s", buf_ptr);
             break;
         }
 
@@ -253,13 +253,19 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 {
     int rv = 0;
 
+    (void) adapter;
+    (void) event;
+
     log_info("Get event notify from plugin");
     return rv;
 }
 
-static const adapter_callbacks_t callback_funs = { .response = adapter_response,
-                                                   .event_notify =
-                                                       adapter_event_notify };
+// clang-format off
+static const adapter_callbacks_t callback_funs = {
+    .response     = adapter_response,
+    .event_notify = adapter_event_notify
+};
+// clang-format on
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
@@ -285,7 +291,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->name       = strdup(info->name);
     adapter->new_req_id = 0;
     adapter->plugin_id  = info->plugin_id;
-    if (adapter->plugin_id.id_val == 0) {
+    if (info->plugin_lib_name == NULL) {
         adapter->plugin_lib_name = NULL;
         adapter->plugin_lib      = NULL;
         adapter->plugin_module   = NULL;

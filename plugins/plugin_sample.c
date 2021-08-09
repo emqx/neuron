@@ -67,6 +67,8 @@ static int sample_plugin_init(neu_plugin_t *plugin)
 {
     int rv = 0;
 
+    (void) plugin;
+
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
@@ -75,6 +77,8 @@ static int sample_plugin_uninit(neu_plugin_t *plugin)
 {
     int rv = 0;
 
+    (void) plugin;
+
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
@@ -82,6 +86,9 @@ static int sample_plugin_uninit(neu_plugin_t *plugin)
 static int sample_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
     int rv = 0;
+
+    (void) plugin;
+    (void) configs;
 
     log_info("config plugin: %s", neu_plugin_module.module_name);
     return rv;
@@ -127,6 +134,9 @@ static int sample_plugin_event_reply(neu_plugin_t *     plugin,
                                      neu_event_reply_t *reply)
 {
     int rv = 0;
+
+    (void) plugin;
+    (void) reply;
 
     log_info("reply event to plugin: %s", neu_plugin_module.module_name);
     return rv;
