@@ -20,7 +20,7 @@ set(CMAKE_C_FLAGS_DEBUG
   -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libsan"
 )
 else()
-set(CMAKE_C_FLAGS_DEBUG
+set(CMAKE_CXX_FLAGS_DEBUG
     "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
   -fsanitize-recover=address -fsanitize-address-use-after-scope \
   -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking -static-libasan"
@@ -73,7 +73,7 @@ target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 if(APPLE)
   target_link_libraries(neuron nng::nng neuron-base)
 else()
-  target_link_libraries(neuron dl nng neuron-base)
+  target_link_libraries(neuron dl nng jansson neuron-base)
 endif()
 target_link_libraries(neuron ${CMAKE_THREAD_LIBS_INIT})
 
@@ -93,7 +93,7 @@ add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
-target_link_libraries(neuron-base vector-static ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron-base vector-static jansson ${CMAKE_THREAD_LIBS_INIT})
 
 # define for plugins
 set(SAMPLE_PLUGIN_SOURCES plugins/plugin_sample.c)

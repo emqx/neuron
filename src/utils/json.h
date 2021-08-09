@@ -18,6 +18,45 @@
  **/
 
 #ifndef _NEU_JSON__H_
-#define _NEU_JSON_H_
+#define _NEU_JSON__H_
 
+#include <stdbool.h>
+#include <stdint.h>
+
+enum neu_json_type {
+    NEU_JSON_INT = 0,
+    NEU_JSON_STR,
+    NEU_JSON_DOUBLE,
+    NEU_JSON_BOOL,
+    NEU_JSON_OBJECT
+};
+
+union neu_json_value {
+    int64_t val_int;
+    char *  val_str;
+    double  val_double;
+    bool    val_bool;
+    void *  object;
+};
+
+typedef struct neu_json_elem {
+    char *               name;
+    enum neu_json_type   t;
+    union neu_json_value v;
+} neu_json_elem_t;
+
+int neu_json_decode(char *buf, int size, neu_json_elem_t *t, ...);
+
+typedef struct neu_json_ctx neu_json_ctx_t;
+
+int             neu_json_decode_array_size(char *buf, char *child);
+void            neu_json_decode_ctx_free(neu_json_ctx_t *t);
+neu_json_ctx_t *neu_json_decode_object_get(char *buf, char *child);
+neu_json_ctx_t *neu_json_decode_object_get_next(neu_json_ctx_t *iter,
+                                                char *          child);
+neu_json_ctx_t *neu_json_decode_array_next(neu_json_ctx_t *iter, int size,
+                                           neu_json_elem_t *t, ...);
+
+void *neu_json_encode_array(neu_json_elem_t **t, int n_x, int n_y);
+int   neu_json_encode(neu_json_elem_t *t, int n, char **str);
 #endif

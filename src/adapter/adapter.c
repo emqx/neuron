@@ -71,7 +71,7 @@ static void *load_plugin_library(char *                plugin_lib_name,
     lib_handle = dlopen(plugin_lib_name, RTLD_NOW);
     if (lib_handle == NULL) {
         log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
-                  strerror(errno));
+                  dlerror());
 
         return NULL;
     }
@@ -225,7 +225,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
         core_databuf_t *databuf;
         databuf = core_databuf_new_with_buf(resp->buf, resp->buf_len);
         // for debug
-        log_debug("Get respose buf: %s", core_databuf_get_ptr(databuf));
+        log_debug("Get respose buf: %p", core_databuf_get_ptr(databuf));
 
         nng_msg *msg;
         size_t   msg_size;
