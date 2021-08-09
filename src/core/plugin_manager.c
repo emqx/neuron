@@ -167,8 +167,10 @@ static void reg_entity_uninit(plugin_reg_entity_t *reg_entity)
 {
     reg_entity->plugin_id.id_val = 0;
     reg_entity->adapter_type     = 0;
-    if (reg_entity->plugin_kind == PLUGIN_KIND_CUSTOM) {
+    if (reg_entity->plugin_name != NULL) {
         free((void *) reg_entity->plugin_name);
+    }
+    if (reg_entity->plugin_lib_name != NULL) {
         free((void *) reg_entity->plugin_lib_name);
     }
     return;
