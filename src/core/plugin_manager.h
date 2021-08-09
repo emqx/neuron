@@ -36,7 +36,7 @@ typedef struct plugin_reg_param {
     // The buffer should be move to plugin manager, don't free it
     const char *plugin_name;
     // The buffer should be move to plugin manager, don't free it
-    const char *plugin_lib_name;
+    char *plugin_lib_name;
 } plugin_reg_param_t;
 
 typedef struct plugin_reg_info {

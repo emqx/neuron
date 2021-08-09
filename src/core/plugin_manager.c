@@ -158,8 +158,8 @@ static void reg_entity_init(plugin_reg_entity_t *     reg_entity,
     reg_entity->plugin_id       = plugin_id;
     reg_entity->plugin_kind     = param->plugin_kind;
     reg_entity->adapter_type    = param->adapter_type;
-    reg_entity->plugin_name     = param->plugin_name;
-    reg_entity->plugin_lib_name = param->plugin_lib_name;
+    reg_entity->plugin_name     = strdup(param->plugin_name);
+    reg_entity->plugin_lib_name = strdup(param->plugin_lib_name);
     return;
 }
 
