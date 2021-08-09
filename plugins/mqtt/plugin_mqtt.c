@@ -76,7 +76,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     option.topic              = "MQTT Examples";
     option.qos                = 1;
     option.connection         = "tcp://";
-    option.host               = "broker.emq.io";
+    option.host               = "broker.emqx.io";
     option.port               = "1883";
     option.keepalive_interval = 20;
     option.clean_session      = 1;
