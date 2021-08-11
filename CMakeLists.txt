@@ -73,7 +73,7 @@ if(APPLE)
 else()
   target_link_libraries(neuron dl nng jansson neuron-base)
 endif()
-target_link_libraries(neuron ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
@@ -91,7 +91,7 @@ add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
-target_link_libraries(neuron-base paho-mqtt3as vector-static jansson ssl crypto ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron-base vector-static jansson ${CMAKE_THREAD_LIBS_INIT})
 
 # define for plugins
 set(SAMPLE_PLUGIN_SOURCES plugins/plugin_sample.c)
@@ -100,6 +100,7 @@ target_sources(plugin-sample PRIVATE ${SAMPLE_PLUGIN_SOURCES})
 target_include_directories(plugin-sample PRIVATE include)
 target_link_libraries(plugin-sample neuron-base)
 target_link_libraries(plugin-sample ${CMAKE_THREAD_LIBS_INIT})
+
 add_subdirectory(plugins/mqtt)
 
 enable_testing()
