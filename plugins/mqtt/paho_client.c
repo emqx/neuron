@@ -52,10 +52,6 @@ static void connection_lost_callback(void *context, char *cause)
 static int message_arrived_callback(void *context, char *topic, int len,
                                     MQTTAsync_message *message)
 {
-
-    log_debug("Message arrived topic:%s, message:%*s", topic,
-              message->payloadlen, (char *) message->payload);
-
     paho_client_t *client = (paho_client_t *) context;
 
     iterator_t iterator = vector_begin(&client->subscribe_vector);
@@ -64,7 +60,7 @@ static int message_arrived_callback(void *context, char *topic, int len,
         subscribe_tuple_t *item = iterator_get(&iterator);
         if (0 == strcmp(item->topic, topic) && NULL != item->handle) {
             item->handle(topic, len, message->payload, message->payloadlen,
-                         context);
+                         client->user_data);
         }
     }
 
@@ -125,40 +121,49 @@ static void on_connect_failure(void *context, MQTTAsync_failureData *response)
     log_info("Connect failed, rc %d", response->code);
 }
 
-void on_send_failure(void *context, MQTTAsync_failureData *response)
+static void on_send_failure(void *context, MQTTAsync_failureData *response)
 {
     UNUSED(context);
     log_info("Message send failed token %d error code %d", response->token,
              response->code);
 }
 
-void on_send(void *context, MQTTAsync_successData *response)
+static void on_send(void *context, MQTTAsync_successData *response)
 {
     UNUSED(context);
     log_info("Message with token value %d delivery confirmed", response->token);
 }
 
+static void on_connect_subscribe_all_topic(void *context)
+{
+    paho_client_t *client   = (paho_client_t *) context;
+    iterator_t     iterator = vector_begin(&client->subscribe_vector);
+    iterator_t     last     = vector_end(&client->subscribe_vector);
+    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
+        subscribe_tuple_t *item = iterator_get(&iterator);
+        paho_client_subscribe_send(client, item);
+    }
+}
+
 static void on_connect(void *context, MQTTAsync_successData *response)
 {
-    UNUSED(context);
     UNUSED(response);
     log_info("Successful connection");
+    on_connect_subscribe_all_topic(context);
 }
 
 static void on_connected(void *context, char *cause)
 {
-    paho_client_t *client = (paho_client_t *) context;
-
-    if (NULL != cause) {
-        log_info("%s", cause);
+    if (NULL == cause) {
+        return;
     }
 
-    // Subscribe all topic
-    iterator_t iterator = vector_begin(&client->subscribe_vector);
-    iterator_t last     = vector_end(&client->subscribe_vector);
-    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
-        subscribe_tuple_t *item = iterator_get(&iterator);
-        paho_client_subscribe_send(client, item);
+    log_info("%s", cause);
+
+    if (0 == strcmp(cause, "connect onSuccess called")) { }
+
+    if (0 == strcmp(cause, "automatic reconnect")) {
+        on_connect_subscribe_all_topic((paho_client_t *) context);
     }
 }
 
@@ -178,7 +183,7 @@ static client_error paho_client_connect_option_bind(paho_client_t *client)
     conn_opts.cleansession             = client->option->clean_session;
     conn_opts.onSuccess                = on_connect;
     conn_opts.onFailure                = on_connect_failure;
-    conn_opts.context                  = client->async;
+    conn_opts.context                  = client;
     conn_opts.automaticReconnect       = 1;
     conn_opts.minRetryInterval         = 2;
     conn_opts.maxRetryInterval         = 365 * 24 * 60 * 60;
@@ -211,7 +216,7 @@ static client_error paho_client_field_init(paho_client_t *client)
     return ClientSuccess;
 }
 
-paho_client_t *paho_client_create(option_t *option)
+paho_client_t *paho_client_create(option_t *option, void *context)
 {
     paho_client_t *client = (paho_client_t *) malloc(sizeof(paho_client_t));
     if (NULL == client) {
@@ -219,7 +224,8 @@ paho_client_t *paho_client_create(option_t *option)
         return NULL;
     }
 
-    client->option = option;
+    client->option    = option;
+    client->user_data = context;
 
     memset(client->server_url, 0x00, sizeof(client->server_url));
     sprintf(client->server_url, "%s%s:%s", client->option->connection,
@@ -285,11 +291,6 @@ client_error paho_client_connect(paho_client_t *client)
 
 client_error paho_client_disconnect(paho_client_t *client)
 {
-    // if (NULL == client) {
-    //     log_error("The client is not initialized");
-    //     return ClientIsNULL;
-    // }
-
     MQTTAsync_disconnectOptions opts = MQTTAsync_disconnectOptions_initializer;
     opts.onSuccess                   = on_disconnect;
     opts.onFailure                   = on_disconnect_failure;
@@ -310,11 +311,6 @@ client_error paho_client_disconnect(paho_client_t *client)
 
 client_error paho_client_destroy(paho_client_t *client)
 {
-    // if (NULL == client) {
-    //     log_error("The client is not initialized");
-    //     return ClientIsNULL;
-    // }
-
     if (vector_is_initialized(&client->subscribe_vector)) {
         vector_clear(&client->subscribe_vector);
         vector_destroy(&client->subscribe_vector);
@@ -324,9 +320,10 @@ client_error paho_client_destroy(paho_client_t *client)
     return ClientSuccess;
 }
 
-client_error paho_client_open(option_t *option, paho_client_t **client_point)
+client_error paho_client_open(option_t *option, void *context,
+                              paho_client_t **client_point)
 {
-    paho_client_t *client = paho_client_create(option);
+    paho_client_t *client = paho_client_create(option, context);
     if (NULL == client) {
         return ClientIsNULL;
     }
@@ -464,6 +461,11 @@ client_error paho_client_subscribe(paho_client_t *client, const char *topic,
         return rc;
     }
 
+    rc = paho_client_is_connected(client);
+    if (ClientSuccess != rc) {
+        return rc;
+    }
+
     rc = paho_client_subscribe_send(client, tuple);
     if (ClientSuccess != rc) {
         return rc;
@@ -519,10 +521,12 @@ client_error paho_client_unsubscribe(paho_client_t *client, const char *topic)
         return ClientUnsubscribeFailure;
     }
 
-    client_error rc = paho_client_unsubscribe_send(client, tuple);
-    // if (ClientSuccess != rc) {
-    //     return rc;
-    // }
+    client_error rc = paho_client_is_connected(client);
+    if (ClientSuccess != rc) {
+        return rc;
+    }
+
+    paho_client_unsubscribe_send(client, tuple);
 
     rc = paho_client_subscribe_remove(client, topic);
     if (ClientSuccess != rc) {
@@ -539,9 +543,13 @@ client_error paho_client_publish(paho_client_t *client, const char *topic,
         return ClientIsNULL;
     }
 
+    client_error error = paho_client_is_connected(client);
+    if (ClientSuccess != error) {
+        return error;
+    }
+
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
     MQTTAsync_message         msg  = MQTTAsync_message_initializer;
-    int                       rc;
 
     opts.onSuccess = on_send;
     opts.onFailure = on_send_failure;
@@ -552,10 +560,10 @@ client_error paho_client_publish(paho_client_t *client, const char *topic,
     msg.qos        = qos;
     msg.retained   = 0;
 
-    rc = MQTTAsync_sendMessage(client->async, topic, &msg, &opts);
-    if (MQTTASYNC_SUCCESS != rc) {
-        log_error("Failed to start sendMessage, return code %d", rc);
-        return rc;
+    error = MQTTAsync_sendMessage(client->async, topic, &msg, &opts);
+    if (MQTTASYNC_SUCCESS != error) {
+        log_error("Failed to start sendMessage, return code %d", error);
+        return error;
     }
     return ClientSuccess;
 }

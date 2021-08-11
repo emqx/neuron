@@ -51,7 +51,7 @@ protected:
 
 TEST_F(PahoClientTest, paho_client_open)
 {
-    EXPECT_EQ(paho_client_open(&option, &paho), 0);
+    EXPECT_EQ(paho_client_open(&option, NULL, &paho), 0);
     EXPECT_NE(paho, nullptr);
 }
 
