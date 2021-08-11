@@ -11,6 +11,7 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
 set(CMAKE_C_FLAGS_DEBUG
@@ -37,6 +38,11 @@ configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
                COPYONLY)
 
 # Call this from your own project's makefile.
+
+if(APPLE)
+include_directories(/usr/local/include)
+link_directories(/usr/local/lib /usr/local/opt/openssl/lib)
+endif()
 
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
@@ -69,7 +75,7 @@ add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 if(APPLE)
-  target_link_libraries(neuron nng::nng neuron-base)
+  target_link_libraries(neuron nng::nng jansson neuron-base)
 else()
   target_link_libraries(neuron dl nng jansson neuron-base)
 endif()
