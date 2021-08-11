@@ -83,15 +83,21 @@ static int plugin_adapter_response(neu_plugin_t *plugin, send_task_t *task)
     adapter_callbacks = plugin->common.adapter_callbacks;
 
     neu_response_t     resp;
+    neu_reqresp_data_t neu_data;
+    neu_variable_t     data_var;
     static const char *resp_str = "MQTT plugin read response";
 
-    char *resp_buf;
-    resp_buf = strdup(resp_str);
+    data_var.var_type.typeId = NEU_DATATYPE_STRING;
+    data_var.data            = (void *) resp_str;
+
+    neu_data.grp_config = NULL;
+    neu_data.data_var   = &data_var;
+
     memset(&resp, 0, sizeof(resp));
     resp.req_id    = task->task_id;
-    resp.resp_type = NEU_REQRESP_MOVE_BUF;
-    resp.buf_len   = sizeof(strlen(resp_buf) + 1);
-    resp.buf       = resp_buf;
+    resp.resp_type = NEU_REQRESP_TRANS_DATA;
+    resp.buf_len   = sizeof(neu_reqresp_data_t);
+    resp.buf       = &neu_data;
 
     return adapter_callbacks->response(plugin->common.adapter, &resp);
 }
@@ -103,15 +109,21 @@ static int plugin_adapter_response_error(neu_plugin_t *plugin,
     adapter_callbacks = plugin->common.adapter_callbacks;
 
     neu_response_t     resp;
+    neu_reqresp_data_t neu_data;
+    neu_variable_t     data_var;
     static const char *resp_str = "MQTT plugin read response";
 
-    char *resp_buf;
-    resp_buf = strdup(resp_str);
+    data_var.var_type.typeId = NEU_DATATYPE_STRING;
+    data_var.data            = (void *) resp_str;
+
+    neu_data.grp_config = NULL;
+    neu_data.data_var   = &data_var;
+
     memset(&resp, 0, sizeof(resp));
     resp.req_id    = task->task_id;
-    resp.resp_type = NEU_REQRESP_MOVE_BUF;
-    resp.buf_len   = sizeof(strlen(resp_buf) + 1);
-    resp.buf       = resp_buf;
+    resp.resp_type = NEU_REQRESP_TRANS_DATA;
+    resp.buf_len   = sizeof(neu_reqresp_data_t);
+    resp.buf       = &neu_data;
 
     return adapter_callbacks->response(plugin->common.adapter, &resp);
 }

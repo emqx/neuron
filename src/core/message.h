@@ -25,17 +25,19 @@
 #include "databuf.h"
 #include "neu_log.h"
 
+#include "neu_datatag_manager.h"
+
 typedef enum msg_type {
     MSG_TYPE_CMD_START = 0,
     MSG_CMD_NOP        = MSG_TYPE_CMD_START,
     MSG_CMD_START_READ,
     MSG_CMD_STOP_READ,
     MSG_CMD_EXIT_LOOP,
+    MSG_CMD_RESP_PONG, // response pong for ping
     MSG_TYPE_CMD_END,
 
-    MSG_TYPE_CONFIG_START  = 0x1000,
-    MSG_CONFIG_INFO_STRING = MSG_TYPE_CONFIG_START,
-    MSG_CONFIG_REGISTER_ADAPTER,
+    MSG_TYPE_CONFIG_START       = 0x1000,
+    MSG_CONFIG_REGISTER_ADAPTER = MSG_TYPE_CONFIG_START,
     MSG_CONFIG_UNREGISTER_ADAPTER,
     MSG_CONFIG_SUBSCRIBE_ADAPTER,
     // for adapter
@@ -44,7 +46,7 @@ typedef enum msg_type {
 
     MSG_TYPE_EVENT_START    = 0x2000,
     MSG_EVENT_DRIVER_STATUS = MSG_TYPE_EVENT_START,
-    MSG_EVENT_STATUS_STRING,
+    MSG_EVENT_NODE_PING,
     MSG_TYPE_EVENT_END,
 
     MSG_TYPE_DATA_START     = 0x3000,
@@ -64,6 +66,19 @@ typedef enum msg_type {
 
 static_assert(MSG_TYPE_END >= MSG_DATABUF_KIND_MASK,
               "Too many massage type exceed MSG_DATABUF_KIND_MASK");
+
+/* MSG_CMD_START_READ */
+typedef struct start_read_cmd {
+    neu_taggrp_config_t *grp_config;
+    // TODO: use neu_variable_t to hold address information
+    uint32_t addr;
+} start_read_cmd_t;
+
+/* MSG_DATA_NEURON_DATABUF */
+typedef struct neuron_databuf {
+    neu_taggrp_config_t *grp_config;
+    core_databuf_t *     databuf;
+} neuron_databuf_t;
 
 typedef struct message message_t;
 

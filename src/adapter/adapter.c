@@ -100,7 +100,12 @@ static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
 {
     uint32_t req_id;
 
-    req_id = adapter->new_req_id++;
+    adapter->new_req_id++;
+    if (adapter->new_req_id == 0) {
+        adapter->new_req_id = 1;
+    }
+
+    req_id = adapter->new_req_id;
     return req_id;
 }
 
@@ -130,7 +135,7 @@ static void adapter_loop(void *arg)
         message_t *msg_ptr;
         char *     buf_ptr;
         msg_ptr = (message_t *) nng_msg_body(out_msg);
-        msg_inplace_data_init(msg_ptr, MSG_EVENT_STATUS_STRING, msg_size);
+        msg_inplace_data_init(msg_ptr, MSG_EVENT_NODE_PING, msg_size);
         buf_ptr = msg_get_buf_ptr(msg_ptr);
         memcpy(buf_ptr, adapter_str, strlen(adapter_str));
         buf_ptr[strlen(adapter_str)] = 0;
@@ -158,10 +163,10 @@ static void adapter_loop(void *arg)
         message_t *pay_msg;
         pay_msg = nng_msg_body(msg);
         switch (msg_get_type(pay_msg)) {
-        case MSG_CONFIG_INFO_STRING: {
+        case MSG_CMD_RESP_PONG: {
             char *buf_ptr;
             buf_ptr = msg_get_buf_ptr(pay_msg);
-            log_info("Received string: %s", buf_ptr);
+            log_info("Adapter(%s) received pong: %s", adapter->name, buf_ptr);
             break;
         }
 
@@ -221,24 +226,34 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
 
     log_info("Get response from plugin");
     switch (resp->resp_type) {
-    case NEU_REQRESP_MOVE_BUF: {
-        core_databuf_t *databuf;
-        databuf = core_databuf_new_with_buf(resp->buf, resp->buf_len);
-        // for debug
-        log_debug("Get respose buf: %s", core_databuf_dump(databuf));
+    case NEU_REQRESP_TRANS_DATA: {
+        size_t              msg_size;
+        nng_msg *           read_msg;
+        void *              buf;
+        size_t              buf_len;
+        neu_reqresp_data_t *neu_data;
+        core_databuf_t *    databuf;
 
-        nng_msg *msg;
-        size_t   msg_size;
-        msg_size = msg_external_data_get_size();
-        rv       = nng_msg_alloc(&msg, msg_size);
+        assert(resp->buf_len == sizeof(neu_reqresp_data_t));
+        neu_data = (neu_reqresp_data_t *) resp->buf;
+        buf_len  = neu_variable_serialize(neu_data->data_var, &buf);
+        databuf  = core_databuf_new_with_buf(buf, buf_len);
+        log_debug("Get respose buf: %s", core_databuf_get_ptr(databuf));
+
+        msg_size = msg_inplace_data_get_size(sizeof(neuron_databuf_t));
+        rv       = nng_msg_alloc(&read_msg, msg_size);
         if (rv == 0) {
-            message_t *pay_msg;
+            message_t *       pay_msg;
+            neuron_databuf_t *neu_databuf;
 
-            pay_msg = (message_t *) nng_msg_body(msg);
-            msg_external_data_init(pay_msg, MSG_DATA_NEURON_DATABUF, databuf);
-            nng_sendmsg(adapter->sock, msg, 0);
+            pay_msg = (message_t *) nng_msg_body(read_msg);
+            msg_inplace_data_init(pay_msg, MSG_DATA_NEURON_DATABUF,
+                                  sizeof(neuron_databuf_t));
+            neu_databuf = (neuron_databuf_t *) msg_get_buf_ptr(pay_msg);
+            neu_databuf->grp_config = neu_data->grp_config;
+            neu_databuf->databuf    = databuf;
+            nng_sendmsg(adapter->sock, read_msg, 0);
         }
-        core_databuf_put(databuf);
         break;
     }
 
@@ -253,10 +268,40 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 {
     int rv = 0;
 
-    (void) adapter;
-    (void) event;
+    if (adapter == NULL || event == NULL) {
+        log_warn("The adapter or event is NULL");
+        return (-1);
+    }
 
     log_info("Get event notify from plugin");
+    switch (event->type) {
+    case NEU_EVENT_READ: {
+        size_t   msg_size;
+        nng_msg *read_msg;
+        msg_size = msg_inplace_data_get_size(sizeof(start_read_cmd_t));
+        rv       = nng_msg_alloc(&read_msg, msg_size);
+        if (rv == 0) {
+            message_t *       msg_ptr;
+            start_read_cmd_t *cmd_ptr;
+            neu_event_read_t *evt_read;
+
+            assert(event->buf_len == sizeof(neu_event_read_t));
+            evt_read = (neu_event_read_t *) event->buf;
+            msg_ptr  = (message_t *) nng_msg_body(read_msg);
+            msg_inplace_data_init(msg_ptr, MSG_CMD_START_READ,
+                                  sizeof(start_read_cmd_t));
+            cmd_ptr             = (start_read_cmd_t *) msg_get_buf_ptr(msg_ptr);
+            cmd_ptr->grp_config = evt_read->grp_config;
+            cmd_ptr->addr       = evt_read->addr;
+            nng_sendmsg(adapter->sock, read_msg, 0);
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
+
     return rv;
 }
 
@@ -289,7 +334,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->id         = info->id;
     adapter->type       = info->type;
     adapter->name       = strdup(info->name);
-    adapter->new_req_id = 0;
+    adapter->new_req_id = 1;
     adapter->plugin_id  = info->plugin_id;
     if (info->plugin_lib_name == NULL) {
         adapter->plugin_lib_name = NULL;
@@ -337,6 +382,7 @@ open_pipe:
         neu_panic("The adapter(%s) can't open pipe", adapter->name);
     }
 
+    log_info("Success to create adapter: %s", adapter->name);
     return adapter;
 }
 

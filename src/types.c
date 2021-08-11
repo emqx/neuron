@@ -277,3 +277,62 @@ void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
     v->arrayLength = arraySize;
     v->type        = type;
 }
+
+size_t neu_variable_serialize(neu_variable_t *v, void **buf)
+{
+    size_t len;
+    void * ser_buf;
+
+    len     = 0;
+    ser_buf = NULL;
+    if (v == NULL) {
+        return 0;
+    }
+
+    if (v->var_type.typeId == NEU_DATATYPE_STRING) {
+        len     = strlen((const char *) v->data);
+        ser_buf = strdup((const char *) v->data);
+    }
+
+    if (buf != NULL) {
+        *buf = ser_buf;
+    }
+
+    return len;
+}
+
+neu_variable_t *neu_variable_deserialize(void *buf, size_t buf_len)
+{
+    neu_variable_t *neu_var;
+
+    if (buf == NULL || buf_len == 0) {
+        return NULL;
+    }
+
+    neu_var = (neu_variable_t *) malloc(sizeof(neu_variable_t));
+    if (neu_var == NULL) {
+        return NULL;
+    }
+
+    neu_var->var_type.typeId = NEU_DATATYPE_STRING;
+    neu_var->data            = strdup(buf);
+
+    return neu_var;
+}
+
+const char *neu_variable_get_str(neu_variable_t *v)
+{
+    const char *str_buf;
+
+    str_buf = NULL;
+    if (v == NULL) {
+        return NULL;
+    }
+
+    if (v->var_type.typeId == NEU_DATATYPE_STRING) {
+        // len = strlen((const char*)v->data);
+        str_buf = (const char *) v->data;
+    }
+
+    return str_buf;
+}

@@ -41,8 +41,8 @@ struct message {
         core_databuf_t *ext_buf;
     };
 
-    // For align with 4 bytes
-    uint32_t msg_buf[0];
+    // For align with 8 bytes
+    uint64_t msg_buf[0];
     // Don’t add any member after here
 };
 

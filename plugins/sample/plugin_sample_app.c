@@ -17,22 +17,65 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "neuron.h"
 
-#define SAMPLE_PLUGIN_DESCR \
-    "A sample plugin for demonstrate how to write a neuron plugin"
+#define SAMPLE_APP_PLUGIN_DESCR \
+    "A sample plugin for demonstrate how to write a neuron application plugin"
 
 const neu_plugin_module_t neu_plugin_module;
 
 struct neu_plugin {
     neu_plugin_common_t common;
+    pthread_t           work_tid;
+    uint32_t            new_event_id;
 };
 
-static neu_plugin_t *sample_plugin_open(neu_adapter_t *            adapter,
-                                        const adapter_callbacks_t *callbacks)
+static uint32_t plugin_get_event_id(neu_plugin_t *plugin)
+{
+    uint32_t req_id;
+
+    plugin->new_event_id++;
+    if (plugin->new_event_id == 0) {
+        plugin->new_event_id = 1;
+    }
+
+    req_id = plugin->new_event_id;
+    return req_id;
+}
+
+static void *sample_app_work_loop(void *arg)
+{
+    neu_plugin_t *plugin;
+
+    plugin = (neu_plugin_t *) arg;
+    usleep(10000);
+
+    const adapter_callbacks_t *adapter_callbacks;
+    adapter_callbacks = plugin->common.adapter_callbacks;
+
+    neu_event_notify_t event;
+    neu_event_read_t   evt_read;
+
+    evt_read.grp_config = NULL;
+    evt_read.addr       = 3;
+    event.type          = NEU_EVENT_READ;
+    event.event_id      = plugin_get_event_id(plugin);
+    event.buf           = (void *) &evt_read;
+    event.buf_len       = sizeof(neu_event_read_t);
+    log_info("Send a read event");
+    adapter_callbacks->event_notify(plugin->common.adapter, &event);
+    return NULL;
+}
+
+static neu_plugin_t *
+sample_app_plugin_open(neu_adapter_t *            adapter,
+                       const adapter_callbacks_t *callbacks)
 {
     neu_plugin_t *plugin;
 
@@ -50,20 +93,30 @@ static neu_plugin_t *sample_plugin_open(neu_adapter_t *            adapter,
 
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
+    plugin->new_event_id             = 1;
+
+    int rv;
+    rv = pthread_create(&plugin->work_tid, NULL, sample_app_work_loop, plugin);
+    if (rv != 0) {
+        log_error("Failed to create work thread for sample app plugin");
+        free(plugin);
+        return NULL;
+    }
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
 
-static int sample_plugin_close(neu_plugin_t *plugin)
+static int sample_app_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
+    pthread_join(plugin->work_tid, NULL);
     free(plugin);
     log_info("Success to free plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
-static int sample_plugin_init(neu_plugin_t *plugin)
+static int sample_app_plugin_init(neu_plugin_t *plugin)
 {
     int rv = 0;
 
@@ -73,7 +126,7 @@ static int sample_plugin_init(neu_plugin_t *plugin)
     return rv;
 }
 
-static int sample_plugin_uninit(neu_plugin_t *plugin)
+static int sample_app_plugin_uninit(neu_plugin_t *plugin)
 {
     int rv = 0;
 
@@ -83,7 +136,7 @@ static int sample_plugin_uninit(neu_plugin_t *plugin)
     return rv;
 }
 
-static int sample_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
+static int sample_app_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
     int rv = 0;
 
@@ -94,7 +147,7 @@ static int sample_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return rv;
 }
 
-static int sample_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
+static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
     int rv = 0;
 
@@ -108,19 +161,14 @@ static int sample_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     adapter_callbacks = plugin->common.adapter_callbacks;
 
     switch (req->req_type) {
-    case NEU_REQRESP_READ: {
-        neu_response_t     resp;
-        static const char *resp_str = "Sample plugin read response";
+    case NEU_REQRESP_TRANS_DATA: {
+        neu_reqresp_data_t *neu_data;
+        const char *        req_str;
 
-        char *resp_buf;
-        resp_buf = strdup(resp_str);
-
-        memset(&resp, 0, sizeof(resp));
-        resp.req_id    = req->req_id;
-        resp.resp_type = NEU_REQRESP_MOVE_BUF;
-        resp.buf_len   = sizeof(strlen(resp_buf) + 1);
-        resp.buf       = resp_buf;
-        rv = adapter_callbacks->response(plugin->common.adapter, &resp);
+        assert(req->buf_len == sizeof(neu_reqresp_data_t));
+        neu_data = (neu_reqresp_data_t *) req->buf;
+        req_str  = neu_variable_get_str(neu_data->data_var);
+        log_debug("recevied str: %s", req_str);
         break;
     }
 
@@ -130,8 +178,8 @@ static int sample_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     return rv;
 }
 
-static int sample_plugin_event_reply(neu_plugin_t *     plugin,
-                                     neu_event_reply_t *reply)
+static int sample_app_plugin_event_reply(neu_plugin_t *     plugin,
+                                         neu_event_reply_t *reply)
 {
     int rv = 0;
 
@@ -143,18 +191,18 @@ static int sample_plugin_event_reply(neu_plugin_t *     plugin,
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = sample_plugin_open,
-    .close       = sample_plugin_close,
-    .init        = sample_plugin_init,
-    .uninit      = sample_plugin_uninit,
-    .config      = sample_plugin_config,
-    .request     = sample_plugin_request,
-    .event_reply = sample_plugin_event_reply
+    .open        = sample_app_plugin_open,
+    .close       = sample_app_plugin_close,
+    .init        = sample_app_plugin_init,
+    .uninit      = sample_app_plugin_uninit,
+    .config      = sample_app_plugin_config,
+    .request     = sample_app_plugin_request,
+    .event_reply = sample_app_plugin_event_reply
 };
 
 const neu_plugin_module_t neu_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,
-    .module_name  = "neuron-sample-plugin",
-    .module_descr = SAMPLE_PLUGIN_DESCR,
+    .module_name  = "neuron-sample-app-plugin",
+    .module_descr = SAMPLE_APP_PLUGIN_DESCR,
     .intf_funs    = &plugin_intf_funs
 };

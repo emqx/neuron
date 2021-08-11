@@ -24,6 +24,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "neu_tag_group_config.h"
+#include "neu_types.h"
+
 typedef struct neu_adapter neu_adapter_t;
 
 /**
@@ -32,26 +35,29 @@ typedef struct neu_adapter neu_adapter_t;
 
 typedef enum neu_reqresp_type {
     NEU_REQRESP_NOP,
-    NEU_REQRESP_START_PERIODIC_READ,
-    NEU_REQRESP_STOP_PERIODIC_READ,
     NEU_REQRESP_READ,
     NEU_REQRESP_WRITE,
-    // The ownership of buffer will move into reqresp.
-    NEU_REQRESP_MOVE_BUF,
+    NEU_REQRESP_TRANS_DATA,
 } neu_reqresp_type_e;
+
+/* NEU_REQRESP_TRANS_DATA */
+typedef struct neu_reqresp_data {
+    neu_taggrp_config_t *grp_config;
+    neu_variable_t *     data_var;
+} neu_reqresp_data_t;
 
 typedef struct neu_request {
     uint32_t           req_id;
     neu_reqresp_type_e req_type;
     uint32_t           buf_len;
-    char *             buf;
+    void *             buf;
 } neu_request_t;
 
 typedef struct neu_response {
     uint32_t           req_id;
     neu_reqresp_type_e resp_type;
     uint32_t           buf_len;
-    char *             buf;
+    void *             buf;
 } neu_response_t;
 
 /**
@@ -60,20 +66,28 @@ typedef struct neu_response {
 typedef enum neu_event_type {
     NEU_EVENT_NOP,
     NEU_EVENT_STATUS,
+    NEU_EVENT_READ,
 } neu_event_type_e;
+
+/* NEU_EVENT_READ */
+typedef struct neu_event_read {
+    neu_taggrp_config_t *grp_config;
+    // TODO: use neu_variable_t to hold address information
+    uint32_t addr;
+} neu_event_read_t;
 
 typedef struct neu_event_notify {
     uint32_t         event_id;
     neu_event_type_e type;
     uint32_t         buf_len;
-    char *           buf;
+    void *           buf;
 } neu_event_notify_t;
 
 typedef struct neu_event_reply {
     uint32_t         event_id;
     neu_event_type_e type;
     uint32_t         buf_len;
-    char *           buf;
+    void *           buf;
 } neu_event_reply_t;
 
 /**
@@ -87,7 +101,7 @@ typedef enum neu_config_type {
 typedef struct neu_config {
     neu_config_type_e type;
     uint32_t          buf_len;
-    char *            buf;
+    void *            buf;
 } neu_config_t;
 
 typedef struct adapter_callbacks {

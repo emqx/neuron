@@ -99,15 +99,25 @@ target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
 target_link_libraries(neuron-base vector-static jansson ${CMAKE_THREAD_LIBS_INIT})
 
+
 # define for plugins
-set(SAMPLE_PLUGIN_SOURCES plugins/plugin_sample.c)
-add_library(plugin-sample SHARED)
-target_sources(plugin-sample PRIVATE ${SAMPLE_PLUGIN_SOURCES})
-target_include_directories(plugin-sample PRIVATE include)
-target_link_libraries(plugin-sample neuron-base)
-target_link_libraries(plugin-sample ${CMAKE_THREAD_LIBS_INIT})
+# sample driver plugin
+set(SAMPLE_PLUGIN_SOURCES plugins/sample/plugin_sample_drv.c)
+add_library(plugin-sample-drv SHARED)
+target_sources(plugin-sample-drv PRIVATE ${SAMPLE_PLUGIN_SOURCES})
+target_include_directories(plugin-sample-drv PRIVATE include)
+target_link_libraries(plugin-sample-drv neuron-base)
+target_link_libraries(plugin-sample-drv ${CMAKE_THREAD_LIBS_INIT})
 
+# sample application plugin
+set(SAMPLE_PLUGIN_SOURCES plugins/sample/plugin_sample_app.c)
+add_library(plugin-sample-app SHARED)
+target_sources(plugin-sample-app PRIVATE ${SAMPLE_PLUGIN_SOURCES})
+target_include_directories(plugin-sample-app PRIVATE include)
+target_link_libraries(plugin-sample-app neuron-base)
+target_link_libraries(plugin-sample-app ${CMAKE_THREAD_LIBS_INIT})
+
+# mqtt plugin
 add_subdirectory(plugins/mqtt)
-
 enable_testing()
 add_subdirectory(tests/plugins/mqtt)

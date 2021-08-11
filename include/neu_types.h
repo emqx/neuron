@@ -538,6 +538,7 @@ typedef struct neu_variabletype neu_variabletype_t;
 
 typedef struct {
     const neu_variabletype_t *type; /* The data type description */
+    neu_variabletype_t        var_type;
     size_t        arrayLength; /* The number of elements in the data array */
     size_t        arrayDimensionsSize; /* The number of dimensions */
     neu_udword_t *arrayDimensions;     /* The length of each dimension */
@@ -594,6 +595,14 @@ neu_errorcode_t neu_variable_setArrayCopy(neu_variable_t *var,
                                           const void *array, size_t arraySize,
                                           const neu_variabletype_t *type);
 
+size_t neu_variable_serialize(neu_variable_t *v, void **buf);
+
+void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
+                           const neu_variabletype_t *type);
+
+size_t          neu_variable_serialize(neu_variable_t *v, void **buf);
+neu_variable_t *neu_variable_deserialize(void *buf, size_t buf_len);
+const char *    neu_variable_get_str(neu_variable_t *v);
 /**
  * Variable Node
  * -------------
