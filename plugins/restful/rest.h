@@ -1,3 +1,4 @@
+
 /**
  * NEURON IIoT System for Industry 4.0
  * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
@@ -17,13 +18,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef __NEU_WEB_SERVER_H__
-#define __NEU_WEB_SERVER_H__
+#ifndef _NEU_PLUGIN_REST_H_
+#define _NEU_PLUGIN_REST_H_
 
-#define REST_URL "http://0.0.0.0:%u/api/v2"
-#define DEFAULT_PORT 7000
+typedef struct neu_rest_context neu_rest_context_t;
 
-void web_server(void *arg);
-void rest_start(uint16_t port);
+neu_rest_context_t *neu_rest_start(void);
+void                neu_rest_stop(neu_rest_context_t *ctx);
 
-#endif // __WEB_SERVER_H__
+#endif

@@ -62,9 +62,10 @@ set(NEURON_SOURCES
     src/core/neu_datatag_manager.c
     src/core/neu_datatag_table.c
     src/adapter/adapter.c
-    src/adapter/neu_webserver.c)
+    plugins/restful/handle.c
+    plugins/restful/rest.c)
 
-set(NEURON_INCLUDE_DIRECTORIES include src)
+set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
