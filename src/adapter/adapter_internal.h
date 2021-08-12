@@ -51,5 +51,6 @@ const char *neu_adapter_get_name(neu_adapter_t *adapter);
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter);
 nng_socket     neu_adapter_get_sock(neu_adapter_t *adapter);
 adapter_id_t   neu_adapter_get_id(neu_adapter_t *adapter);
+adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter);
 
 #endif

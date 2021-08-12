@@ -367,11 +367,11 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     log_info("send request to plugin: %s", neu_plugin_module.module_name);
 
     switch (req->req_type) {
-    case NEU_REQRESP_READ: {
+    case NEU_REQRESP_READ_DATA: {
         send_task_t *task = (send_task_t *) malloc(sizeof(send_task_t));
         task->task_id     = req->req_id;
         task->buffer      = (unsigned char *) malloc(req->buf_len);
-        task->task_type   = NEU_REQRESP_READ;
+        task->task_type   = NEU_REQRESP_READ_DATA;
         memcpy(task->buffer, req->buf, req->buf_len);
         plugin_add_send_task(plugin, task);
         break;

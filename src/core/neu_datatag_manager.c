@@ -32,8 +32,6 @@
 #include "neu_datatag_manager.h"
 #include "neu_datatag_table.h"
 
-#define DEFAULT_TAG_GROUP_COUNT 8
-
 #define DEFAULT_SUB_PIPE_COUNT 4
 #define DEFAULT_DATATAG_IDS_COUNT 16
 
@@ -59,12 +57,12 @@ struct neu_datatag_manager {
 static size_t find_taggrp_config(vector_t *p_configs, const char *config_name)
 {
     size_t               index = SIZE_MAX;
-    neu_taggrp_config_t *p_grp_config;
+    neu_taggrp_config_t *grp_config;
 
     VECTOR_FOR_EACH(p_configs, iter)
     {
-        p_grp_config = (neu_taggrp_config_t *) iterator_get(&iter);
-        if (strcmp(p_grp_config->config_name, config_name) == 0) {
+        grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (strcmp(grp_config->config_name, config_name) == 0) {
             index = iterator_index(p_configs, &iter);
             break;
         }
@@ -75,12 +73,12 @@ static size_t find_taggrp_config(vector_t *p_configs, const char *config_name)
 
 static void free_all_taggrp_config(vector_t *p_configs)
 {
-    neu_taggrp_config_t *p_grp_config;
+    neu_taggrp_config_t *grp_config;
 
     VECTOR_FOR_EACH(p_configs, iter)
     {
-        p_grp_config = (neu_taggrp_config_t *) iterator_get(&iter);
-        neu_taggrp_cfg_free(p_grp_config);
+        grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        neu_taggrp_cfg_free(grp_config);
     }
 
     return;
@@ -148,7 +146,7 @@ int neu_datatag_mng_add_grp_config(neu_datatag_manager_t *datatag_manager,
                                grp_config->config_name);
     if (index == SIZE_MAX) {
         // neu_taggrp_cfg_anchor(grp_config);
-        rv = vector_push_back(&datatag_manager->p_configs, grp_config);
+        rv = vector_push_back(&datatag_manager->p_configs, &grp_config);
     }
     nng_mtx_unlock(datatag_manager->mtx);
 
@@ -261,6 +259,24 @@ neu_datatag_mng_get_grp_config(neu_datatag_manager_t *datatag_manager,
     }
 
     return ret_grp_config;
+}
+
+int neu_datatag_mng_ref_all_grp_configs(neu_datatag_manager_t *datatag_manager,
+                                        vector_t *             grp_configs)
+{
+    int                        rv = 0;
+    neu_taggrp_config_t *      grp_config;
+    const neu_taggrp_config_t *ref_grp_config;
+
+    nng_mtx_lock(datatag_manager->mtx);
+    VECTOR_FOR_EACH(&datatag_manager->p_configs, iter)
+    {
+        grp_config     = *(neu_taggrp_config_t **) iterator_get(&iter);
+        ref_grp_config = neu_taggrp_cfg_ref(grp_config);
+        vector_push_back(grp_configs, &ref_grp_config);
+    }
+    nng_mtx_unlock(datatag_manager->mtx);
+    return rv;
 }
 
 neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)

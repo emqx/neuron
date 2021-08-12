@@ -30,8 +30,8 @@
 typedef enum msg_type {
     MSG_TYPE_CMD_START = 0,
     MSG_CMD_NOP        = MSG_TYPE_CMD_START,
-    MSG_CMD_START_READ,
-    MSG_CMD_STOP_READ,
+    MSG_CMD_READ_DATA,
+    MSG_CMD_WRITE_DATA,
     MSG_CMD_EXIT_LOOP,
     MSG_CMD_RESP_PONG, // response pong for ping
     MSG_TYPE_CMD_END,
@@ -67,12 +67,20 @@ typedef enum msg_type {
 static_assert(MSG_TYPE_END >= MSG_DATABUF_KIND_MASK,
               "Too many massage type exceed MSG_DATABUF_KIND_MASK");
 
-/* MSG_CMD_START_READ */
-typedef struct start_read_cmd {
+/* MSG_CMD_READ_DATA */
+typedef struct read_data_cmd {
     neu_taggrp_config_t *grp_config;
-    // TODO: use neu_variable_t to hold address information
-    uint32_t addr;
-} start_read_cmd_t;
+    neu_node_id_t        node_id;
+    uint32_t             addr;
+} read_data_cmd_t;
+
+/* MSG_CMD_WRITE_DATA */
+typedef struct write_data_cmd {
+    neu_taggrp_config_t *grp_config;
+    neu_node_id_t        node_id;
+    uint32_t             addr;
+    core_databuf_t *     databuf;
+} write_data_cmd_t;
 
 /* MSG_DATA_NEURON_DATABUF */
 typedef struct neuron_databuf {

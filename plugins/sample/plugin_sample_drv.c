@@ -109,23 +109,23 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     adapter_callbacks = plugin->common.adapter_callbacks;
 
     switch (req->req_type) {
-    case NEU_REQRESP_READ: {
+    case NEU_REQRESP_READ_DATA: {
         neu_response_t     resp;
-        neu_reqresp_data_t neu_data;
+        neu_reqresp_data_t data_resp;
         neu_variable_t     data_var;
         static const char *resp_str = "Sample plugin read response";
 
         data_var.var_type.typeId = NEU_DATATYPE_STRING;
         data_var.data            = (void *) resp_str;
 
-        neu_data.grp_config = NULL;
-        neu_data.data_var   = &data_var;
+        data_resp.grp_config = NULL;
+        data_resp.data_var   = &data_var;
 
         memset(&resp, 0, sizeof(resp));
         resp.req_id    = req->req_id;
         resp.resp_type = NEU_REQRESP_TRANS_DATA;
         resp.buf_len   = sizeof(neu_reqresp_data_t);
-        resp.buf       = &neu_data;
+        resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
         break;
     }

@@ -37,7 +37,9 @@ const neu_taggrp_config_t *
 neu_datatag_mng_ref_grp_config(neu_datatag_manager_t *datatag_manager,
                                const char *           config_name);
 neu_taggrp_config_t *
-neu_datatag_mng_get_grp_config(neu_datatag_manager_t *datatag_manager,
-                               const char *           config_name);
+    neu_datatag_mng_get_grp_config(neu_datatag_manager_t *datatag_manager,
+                                   const char *           config_name);
+int neu_datatag_mng_ref_all_grp_configs(neu_datatag_manager_t *datatag_manager,
+                                        vector_t *             grp_configs);
 
 #endif

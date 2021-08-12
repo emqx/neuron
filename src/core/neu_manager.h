@@ -23,6 +23,8 @@
 #include "message.h"
 #include "neu_adapter.h"
 
+#define DEFAULT_ADAPTER_REG_COUNT 8
+
 typedef struct neu_manager neu_manager_t;
 
 neu_manager_t *neu_manager_create();
@@ -30,4 +32,8 @@ void           neu_manager_destroy(neu_manager_t *manager);
 
 const char *neu_manager_get_url(neu_manager_t *manager);
 
+int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
+                          vector_t *result_nodes);
+int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
+                                vector_t *result_grp_configs);
 #endif

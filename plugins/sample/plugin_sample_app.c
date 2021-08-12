@@ -59,17 +59,18 @@ static void *sample_app_work_loop(void *arg)
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
 
-    neu_event_notify_t event;
-    neu_event_read_t   evt_read;
+    neu_request_t      cmd;
+    neu_reqresp_read_t read_req;
 
-    evt_read.grp_config = NULL;
-    evt_read.addr       = 3;
-    event.type          = NEU_EVENT_READ;
-    event.event_id      = plugin_get_event_id(plugin);
-    event.buf           = (void *) &evt_read;
-    event.buf_len       = sizeof(neu_event_read_t);
-    log_info("Send a read event");
-    adapter_callbacks->event_notify(plugin->common.adapter, &event);
+    read_req.grp_config = NULL;
+    read_req.node_id    = 1;
+    read_req.addr       = 3;
+    cmd.req_type        = NEU_REQRESP_READ_DATA;
+    cmd.req_id          = plugin_get_event_id(plugin);
+    cmd.buf             = (void *) &read_req;
+    cmd.buf_len         = sizeof(neu_reqresp_read_t);
+    log_info("Send a read command");
+    adapter_callbacks->command(plugin->common.adapter, &cmd, NULL);
     return NULL;
 }
 

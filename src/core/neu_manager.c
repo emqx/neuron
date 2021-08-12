@@ -35,8 +35,6 @@
 #include "neu_vector.h"
 #include "plugin_manager.h"
 
-#define DEFAULT_ADAPTER_REG_COUNT 8
-
 typedef struct adapter_reg_entity {
     adapter_id_t           adapter_id;
     neu_adapter_t *        adapter;
@@ -692,7 +690,7 @@ static int dispatch_databuf_to_adapters(manager_bind_info_t *manager_bind,
             message_t *       msg_ptr;
             neuron_databuf_t *out_neu_databuf;
             msg_ptr = (message_t *) nng_msg_body(out_msg);
-            msg_inplace_data_init(msg_ptr, MSG_CMD_START_READ,
+            msg_inplace_data_init(msg_ptr, MSG_DATA_NEURON_DATABUF,
                                   sizeof(neuron_databuf_t));
             out_neu_databuf = msg_get_buf_ptr(msg_ptr);
             out_neu_databuf->grp_config =
@@ -792,38 +790,30 @@ static void manager_loop(void *arg)
             break;
         }
 
-        case MSG_CMD_START_READ: {
-            start_read_cmd_t *cmd_ptr;
-            cmd_ptr = (start_read_cmd_t *) msg_get_buf_ptr(pay_msg);
-            if (cmd_ptr->grp_config == NULL) {
-                log_warn("Read command with NULL pointer of group config");
-                break;
-            }
+        case MSG_CMD_READ_DATA: {
+            size_t                msg_size;
+            nng_msg *             out_msg;
+            nng_pipe              msg_pipe;
+            read_data_cmd_t *     cmd_ptr;
+            adapter_reg_entity_t *reg_entity;
 
-            vector_t *sub_pipes;
             log_info("Foward read command to driver");
-            sub_pipes =
-                (vector_t *) neu_taggrp_cfg_ref_subpipes(cmd_ptr->grp_config);
-            VECTOR_FOR_EACH(sub_pipes, iter)
-            {
-                size_t   msg_size;
-                nng_msg *out_msg;
-                nng_pipe msg_pipe;
-
-                msg_pipe = *(nng_pipe *) iterator_get(&iter);
-                msg_size = msg_inplace_data_get_size(sizeof(start_read_cmd_t));
-                rv       = nng_msg_alloc(&out_msg, msg_size);
-                if (rv == 0) {
-                    message_t *       msg_ptr;
-                    start_read_cmd_t *out_cmd_ptr;
-                    msg_ptr = (message_t *) nng_msg_body(out_msg);
-                    msg_inplace_data_init(msg_ptr, MSG_CMD_START_READ,
-                                          sizeof(start_read_cmd_t));
-                    out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
-                    memcpy(out_cmd_ptr, cmd_ptr, sizeof(start_read_cmd_t));
-                    nng_msg_set_pipe(out_msg, msg_pipe);
-                    nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
-                }
+            cmd_ptr    = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+            reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+                                                  SAMPLE_DRV_ADAPTER_NAME);
+            msg_pipe   = reg_entity->adapter_pipe;
+            msg_size   = msg_inplace_data_get_size(sizeof(read_data_cmd_t));
+            rv         = nng_msg_alloc(&out_msg, msg_size);
+            if (rv == 0) {
+                message_t *      msg_ptr;
+                read_data_cmd_t *out_cmd_ptr;
+                msg_ptr = (message_t *) nng_msg_body(out_msg);
+                msg_inplace_data_init(msg_ptr, MSG_CMD_READ_DATA,
+                                      sizeof(read_data_cmd_t));
+                out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
+                memcpy(out_cmd_ptr, cmd_ptr, sizeof(read_data_cmd_t));
+                nng_msg_set_pipe(out_msg, msg_pipe);
+                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
         }
@@ -916,4 +906,68 @@ const char *neu_manager_get_url(neu_manager_t *manager)
     }
 
     return manager->listen_url;
+}
+
+static bool adapter_match_node_type(neu_adapter_t * adapter,
+                                    neu_node_type_e node_type)
+{
+    if (node_type == NEU_NODE_TYPE_UNKNOW) {
+        return true;
+    } else if (node_type == NEU_NODE_TYPE_DRIVER) {
+        return ADAPTER_TYPE_DRIVER == neu_adapter_get_type(adapter);
+    } else {
+        return ADAPTER_TYPE_DRIVER != neu_adapter_get_type(adapter);
+    }
+}
+
+int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
+                          vector_t *result_nodes)
+{
+    int                   rv = 0;
+    adapter_reg_entity_t *reg_entity;
+
+    if (manager == NULL || result_nodes == NULL) {
+        log_error("get nodes with NULL manager or result_nodes");
+        return -1;
+    }
+
+    VECTOR_FOR_EACH(&manager->reg_adapters, iter)
+    {
+        reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
+        if (adapter_match_node_type(reg_entity->adapter, node_type)) {
+            neu_node_info_t node_info;
+            const char *    adapter_name;
+
+            adapter_name        = neu_adapter_get_name(reg_entity->adapter);
+            node_info.node_name = strdup(adapter_name);
+            vector_push_back(result_nodes, &node_info);
+        }
+    }
+
+    return rv;
+}
+
+int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
+                                vector_t *result_grp_configs)
+{
+    int                   rv = 0;
+    adapter_reg_entity_t *reg_entity;
+    adapter_id_t          adapter_id;
+
+    if (manager == NULL || result_grp_configs == NULL) {
+        log_error("get nodes with NULL manager or result_nodes");
+        return -1;
+    }
+
+    adapter_id = node_id;
+    VECTOR_FOR_EACH(&manager->reg_adapters, iter)
+    {
+        reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
+        if (reg_entity->adapter_id == adapter_id) {
+            rv = neu_datatag_mng_ref_all_grp_configs(
+                reg_entity->datatag_manager, result_grp_configs);
+        }
+    }
+
+    return rv;
 }

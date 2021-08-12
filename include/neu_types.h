@@ -595,8 +595,6 @@ neu_errorcode_t neu_variable_setArrayCopy(neu_variable_t *var,
                                           const void *array, size_t arraySize,
                                           const neu_variabletype_t *type);
 
-size_t neu_variable_serialize(neu_variable_t *v, void **buf);
-
 void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
                            const neu_variabletype_t *type);
 

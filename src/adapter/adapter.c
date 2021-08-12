@@ -170,23 +170,83 @@ static void adapter_loop(void *arg)
             break;
         }
 
-        case MSG_CMD_START_READ: {
+        case MSG_DATA_NEURON_DATABUF: {
+            neuron_databuf_t *databuf_ptr;
+            databuf_ptr = (neuron_databuf_t *) msg_get_buf_ptr(pay_msg);
+
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
-            uint32_t                      req_code;
             if (adapter->plugin_module) {
+                neu_reqresp_data_t data_req;
+                data_req.grp_config = databuf_ptr->grp_config;
+                void * buf        = core_databuf_get_ptr(databuf_ptr->databuf);
+                size_t buf_len    = core_databuf_get_len(databuf_ptr->databuf);
+                data_req.data_var = neu_variable_deserialize(buf, buf_len);
+
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);
-                req.req_type = NEU_REQRESP_READ;
-                req.buf_len  = sizeof(uint32_t);
-                req_code     = 1;
-                req.buf      = (char *) &req_code;
+                req.req_type = NEU_REQRESP_TRANS_DATA;
+                req.buf_len  = sizeof(neu_reqresp_data_t);
+                req.buf      = (void *) &data_req;
                 intf_funs->request(adapter->plugin, &req);
+                // TODO: free the data_var of neu_variable_t
+            } else {
+                neu_taggrp_cfg_free(databuf_ptr->grp_config);
+            }
+            core_databuf_put(databuf_ptr->databuf);
+            break;
+        }
+
+        case MSG_CMD_READ_DATA: {
+            read_data_cmd_t *cmd_ptr;
+            cmd_ptr = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+
+            const neu_plugin_intf_funs_t *intf_funs;
+            neu_request_t                 req;
+            if (adapter->plugin_module) {
+                neu_reqresp_read_t read_req;
+                read_req.grp_config = cmd_ptr->grp_config;
+                read_req.node_id    = cmd_ptr->node_id;
+                read_req.addr       = cmd_ptr->addr;
+
+                intf_funs    = adapter->plugin_module->intf_funs;
+                req.req_id   = adapter_get_req_id(adapter);
+                req.req_type = NEU_REQRESP_READ_DATA;
+                req.buf_len  = sizeof(neu_reqresp_read_t);
+                req.buf      = (void *) &read_req;
+                intf_funs->request(adapter->plugin, &req);
+            } else {
+                neu_taggrp_cfg_free(cmd_ptr->grp_config);
             }
             break;
         }
 
-        case MSG_CMD_STOP_READ: {
+        case MSG_CMD_WRITE_DATA: {
+            write_data_cmd_t *cmd_ptr;
+            cmd_ptr = (write_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+
+            const neu_plugin_intf_funs_t *intf_funs;
+            neu_request_t                 req;
+            if (adapter->plugin_module) {
+                neu_reqresp_write_t write_req;
+                write_req.grp_config = cmd_ptr->grp_config;
+                write_req.node_id    = cmd_ptr->node_id;
+                write_req.addr       = cmd_ptr->addr;
+                void * buf           = core_databuf_get_ptr(cmd_ptr->databuf);
+                size_t buf_len       = core_databuf_get_len(cmd_ptr->databuf);
+                write_req.data_var   = neu_variable_deserialize(buf, buf_len);
+
+                intf_funs    = adapter->plugin_module->intf_funs;
+                req.req_id   = adapter_get_req_id(adapter);
+                req.req_type = NEU_REQRESP_WRITE_DATA;
+                req.buf_len  = sizeof(neu_reqresp_write_t);
+                req.buf      = (void *) &write_req;
+                intf_funs->request(adapter->plugin, &req);
+                // TODO: free the data_var of neu_variable_t
+            } else {
+                neu_taggrp_cfg_free(cmd_ptr->grp_config);
+            }
+            core_databuf_put(cmd_ptr->databuf);
             break;
         }
 
@@ -213,6 +273,119 @@ static void adapter_loop(void *arg)
     }
 
     return;
+}
+
+static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
+                           neu_response_t **p_result)
+{
+    int rv = 0;
+
+    if (adapter == NULL || cmd == NULL) {
+        log_warn("The adapter or command is NULL");
+        return (-1);
+    }
+
+    log_info("Get command from plugin");
+    switch (cmd->req_type) {
+    case NEU_REQRESP_READ_DATA: {
+        size_t   msg_size;
+        nng_msg *read_msg;
+        msg_size = msg_inplace_data_get_size(sizeof(read_data_cmd_t));
+        rv       = nng_msg_alloc(&read_msg, msg_size);
+        if (rv == 0) {
+            message_t *         msg_ptr;
+            read_data_cmd_t *   cmd_ptr;
+            neu_reqresp_read_t *read_cmd;
+
+            assert(cmd->buf_len == sizeof(neu_reqresp_read_t));
+            read_cmd = (neu_reqresp_read_t *) cmd->buf;
+            msg_ptr  = (message_t *) nng_msg_body(read_msg);
+            msg_inplace_data_init(msg_ptr, MSG_CMD_READ_DATA,
+                                  sizeof(read_data_cmd_t));
+            cmd_ptr             = (read_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
+            cmd_ptr->grp_config = read_cmd->grp_config;
+            cmd_ptr->addr       = read_cmd->addr;
+            nng_sendmsg(adapter->sock, read_msg, 0);
+        }
+        break;
+    }
+
+    case NEU_REQRESP_GET_NODES: {
+        neu_response_t *     result;
+        neu_reqresp_nodes_t *resp_nodes;
+
+        assert(cmd->buf_len == sizeof(neu_cmd_get_nodes_t));
+        resp_nodes = malloc(sizeof(neu_reqresp_nodes_t));
+        if (resp_nodes == NULL) {
+            log_error("Failed to allocate result of group configs");
+            rv = -1;
+            break;
+        }
+        result = malloc(sizeof(neu_response_t));
+        if (result == NULL) {
+            log_error("Failed to allocate result for get nodes");
+            free(resp_nodes);
+            rv = -1;
+            break;
+        }
+
+        neu_cmd_get_nodes_t *nodes_cmd;
+        nodes_cmd = (neu_cmd_get_nodes_t *) cmd->buf;
+        vector_init(&resp_nodes->nodes, DEFAULT_ADAPTER_REG_COUNT,
+                    sizeof(neu_node_info_t));
+        rv = neu_manager_get_nodes(adapter->manager, nodes_cmd->node_type,
+                                   &resp_nodes->nodes);
+        result->resp_type = NEU_REQRESP_NODES;
+        result->req_id    = cmd->req_id;
+        result->buf_len   = sizeof(neu_reqresp_nodes_t);
+        result->buf       = resp_nodes;
+        if (p_result != NULL) {
+            *p_result = result;
+        }
+        break;
+    }
+
+    case NEU_REQRESP_GET_GRP_CONFIGS: {
+        neu_response_t *           result;
+        neu_reqresp_grp_configs_t *resp_grp_configs;
+
+        assert(cmd->buf_len == sizeof(neu_cmd_get_grp_configs_t));
+        resp_grp_configs = malloc(sizeof(neu_reqresp_grp_configs_t));
+        if (resp_grp_configs == NULL) {
+            log_error("Failed to allocate result of group configs");
+            rv = -1;
+            break;
+        }
+        result = malloc(sizeof(neu_response_t));
+        if (result == NULL) {
+            log_error("Failed to allocate result for get group configs");
+            free(resp_grp_configs);
+            rv = -1;
+            break;
+        }
+
+        neu_cmd_get_grp_configs_t *configs_cmd;
+        configs_cmd = (neu_cmd_get_grp_configs_t *) cmd->buf;
+        vector_init(&resp_grp_configs->grp_configs, DEFAULT_TAG_GROUP_COUNT,
+                    sizeof(neu_taggrp_config_t *));
+        rv = neu_manager_get_grp_configs(adapter->manager, configs_cmd->node_id,
+                                         &resp_grp_configs->grp_configs);
+        result->resp_type = NEU_REQRESP_GRP_CONFIGS;
+        result->req_id    = cmd->req_id;
+        result->buf_len   = sizeof(neu_reqresp_grp_configs_t);
+        result->buf       = resp_grp_configs;
+        if (p_result != NULL) {
+            *p_result = result;
+        }
+        break;
+    }
+
+    default:
+        rv = -1;
+        break;
+    }
+
+    return rv;
 }
 
 static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
@@ -275,29 +448,6 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 
     log_info("Get event notify from plugin");
     switch (event->type) {
-    case NEU_EVENT_READ: {
-        size_t   msg_size;
-        nng_msg *read_msg;
-        msg_size = msg_inplace_data_get_size(sizeof(start_read_cmd_t));
-        rv       = nng_msg_alloc(&read_msg, msg_size);
-        if (rv == 0) {
-            message_t *       msg_ptr;
-            start_read_cmd_t *cmd_ptr;
-            neu_event_read_t *evt_read;
-
-            assert(event->buf_len == sizeof(neu_event_read_t));
-            evt_read = (neu_event_read_t *) event->buf;
-            msg_ptr  = (message_t *) nng_msg_body(read_msg);
-            msg_inplace_data_init(msg_ptr, MSG_CMD_START_READ,
-                                  sizeof(start_read_cmd_t));
-            cmd_ptr             = (start_read_cmd_t *) msg_get_buf_ptr(msg_ptr);
-            cmd_ptr->grp_config = evt_read->grp_config;
-            cmd_ptr->addr       = evt_read->addr;
-            nng_sendmsg(adapter->sock, read_msg, 0);
-        }
-        break;
-    }
-
     default:
         break;
     }
@@ -307,6 +457,7 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 
 // clang-format off
 static const adapter_callbacks_t callback_funs = {
+    .command      = adapter_command,
     .response     = adapter_response,
     .event_notify = adapter_event_notify
 };
@@ -491,4 +642,13 @@ adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
     }
 
     return adapter->id;
+}
+
+adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter)
+{
+    if (adapter == NULL) {
+        return 0;
+    }
+
+    return adapter->type;
 }
