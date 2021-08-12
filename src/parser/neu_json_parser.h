@@ -16,30 +16,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-#ifndef _NEU_JSON_API_WRITE_H_
-#define _NEU_JSON_API_WRITE_H_
 
-#include "neu_json_api_parser.h"
+#ifndef _NEU_JSON_API_PARSE_H
+#define _NEU_JSON_API_PARSE_H
 
-struct neu_parse_write_req_tag {
-    char * name;
-    double db;
-};
+#include <stdint.h>
 
-struct neu_parse_write_req {
-    struct neu_parse_op             op;
-    char *                          uuid;
-    char *                          group;
-    int                             n_tag;
-    struct neu_parse_write_req_tag *tags;
-};
+#define NEU_PARSE_FUNCTION "function"
+#define NEU_PARSE_UUID "uuid"
+#define NEU_PARSE_ERROR "error"
 
-struct neu_parse_write_res {
-    struct neu_parse_op op;
-    char *              uuid;
-    int                 error;
-};
+enum neu_parse_function { NEU_PARSE_OP_READ = 50, NEU_PARSE_OP_WRITE = 51 };
 
-int neu_json_decode_write_req(char *buf, struct neu_parse_write_req **req);
-int neu_json_encode_write_res(struct neu_parse_write_res *res, char **buf);
+int  neu_parse_decode(char *buf, void **result);
+void neu_parse_decode_free(void *result);
+int  neu_parse_encode(void *result, char **buf);
+
 #endif

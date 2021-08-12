@@ -20,7 +20,7 @@ set(CMAKE_C_FLAGS_DEBUG
   -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
 )
 set(CMAKE_CXX_FLAGS_DEBUG
-    "${CMAKE_C_FLAGS} -g -O0 -fsanitize=address \
+    "-g -O0 -fsanitize=address \
   -fsanitize-recover=address -fsanitize-address-use-after-scope \
   -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
 )
@@ -68,9 +68,9 @@ set(NEURON_SOURCES
     src/core/neu_datatag_manager.c
     src/core/neu_datatag_table.c
     src/adapter/adapter.c
-    src/parser/neu_json_api_parser.c
-    src/parser/neu_json_api_read.c
-    src/parser/neu_json_api_write.c
+    src/parser/neu_json_parser.c
+    src/parser/neu_json_read.c
+    src/parser/neu_json_write.c
     plugins/restful/handle.c
     plugins/restful/rest.c)
 
@@ -124,4 +124,5 @@ target_link_libraries(plugin-sample-app ${CMAKE_THREAD_LIBS_INIT})
 # mqtt plugin
 add_subdirectory(plugins/mqtt)
 enable_testing()
-add_subdirectory(tests/plugins/mqtt)
+add_subdirectory(tests)
+#add_subdirectory(tests/plugins/mqtt)
