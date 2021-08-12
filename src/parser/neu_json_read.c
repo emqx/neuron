@@ -21,41 +21,48 @@
 
 #include "utils/json.h"
 
-#include "neu_json_api_read.h"
+#include "neu_json_read.h"
 
-int neu_json_decode_read_req(char *buf, struct neu_parse_read_req **result)
+#define GROUP "group"
+#define NAMES "names"
+#define NAME "name"
+#define TYPE "type"
+#define TIMESTAMP "timestamp"
+#define VALUE "value"
+#define TAGS "tags"
+
+int neu_parse_decode_read_req(char *buf, struct neu_parse_read_req **result)
 {
     struct neu_parse_read_req *req =
         calloc(1, sizeof(struct neu_parse_read_req));
-    neu_json_elem_t uuid = {
-        .name = "uuid",
-        .t    = NEU_JSON_STR,
-    };
-    neu_json_elem_t group = {
-        .name = "group",
-        .t    = NEU_JSON_STR,
-    };
-    neu_json_elem_t names = {
-        .name = "names",
-        .t    = NEU_JSON_OBJECT,
+    neu_json_elem_t elem[] = { {
+                                   .name = NEU_PARSE_UUID,
+                                   .t    = NEU_JSON_STR,
+                               },
+                               {
+                                   .name = GROUP,
+                                   .t    = NEU_JSON_STR,
+                               }
+
     };
 
-    int ret = neu_json_decode(buf, 3, &uuid, &group, &names);
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
     if (ret != 0) {
+        free(req);
         return -1;
     }
-    req->op.function = NEU_PARSE_OP_READ;
-    req->uuid        = uuid.v.val_str;
-    req->group       = group.v.val_str;
+    req->function = NEU_PARSE_OP_READ;
+    req->uuid     = elem[0].v.val_str;
+    req->group    = elem[1].v.val_str;
 
-    req->n_name = neu_json_decode_array_size(buf, "names");
+    req->n_name = neu_json_decode_array_size(buf, NAMES);
     req->names  = calloc(req->n_name, sizeof(struct neu_parse_read_req_name));
     for (int i = 0; i < req->n_name; i++) {
         neu_json_elem_t name = {
             .name = NULL,
             .t    = NEU_JSON_STR,
         };
-        neu_json_decode_array(names.v.object, i, 1, &name);
+        neu_json_decode_array(buf, NAMES, i, 1, &name);
         req->names[i].name = name.v.val_str;
     }
 
@@ -63,50 +70,50 @@ int neu_json_decode_read_req(char *buf, struct neu_parse_read_req **result)
 
     return 0;
 }
-int neu_json_encode_read_res(struct neu_parse_read_res *res, char **buf)
+int neu_parse_encode_read_res(struct neu_parse_read_res *res, char **buf)
 {
     void *array = NULL;
     for (int i = 0; i < res->n_tag; i++) {
         neu_json_elem_t tag[] = { {
-                                      .name      = "name",
+                                      .name      = NAME,
                                       .t         = NEU_JSON_STR,
                                       .v.val_str = res->tags[i].name,
                                   },
                                   {
-                                      .name      = "type",
+                                      .name      = TYPE,
                                       .t         = NEU_JSON_INT,
                                       .v.val_int = res->tags[i].type,
 
                                   },
                                   {
-                                      .name         = "timestamp",
+                                      .name         = TIMESTAMP,
                                       .t            = NEU_JSON_DOUBLE,
                                       .v.val_double = res->tags[i].timestamp,
                                   },
                                   {
-                                      .name         = "value",
+                                      .name         = VALUE,
                                       .t            = NEU_JSON_DOUBLE,
                                       .v.val_double = res->tags[i].value,
                                   } };
         array                 = neu_json_encode_array(array, tag, 4);
     }
     neu_json_elem_t elems[] = { {
-                                    .name      = "function",
+                                    .name      = NEU_PARSE_FUNCTION,
                                     .t         = NEU_JSON_INT,
                                     .v.val_int = NEU_PARSE_OP_WRITE,
                                 },
                                 {
-                                    .name      = "uuid",
+                                    .name      = NEU_PARSE_UUID,
                                     .t         = NEU_JSON_STR,
                                     .v.val_str = res->uuid,
                                 },
                                 {
-                                    .name      = "error",
+                                    .name      = NEU_PARSE_ERROR,
                                     .t         = NEU_JSON_INT,
                                     .v.val_int = res->error,
                                 },
                                 {
-                                    .name     = "tags",
+                                    .name     = TAGS,
                                     .t        = NEU_JSON_OBJECT,
                                     .v.object = array,
                                 } };

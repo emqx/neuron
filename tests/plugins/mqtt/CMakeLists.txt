@@ -1,4 +1,3 @@
-
 include_directories(../../../include/)
 include_directories(../../../plugins/mqtt)
 file(GLOB MQTT_SRC "../../../plugins/mqtt/*.c")

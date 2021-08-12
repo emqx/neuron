@@ -17,7 +17,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -73,7 +72,7 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
             ele->t = NEU_JSON_STR;
         } else if (json_is_real(ob)) {
             ele->t = NEU_JSON_DOUBLE;
-        } else if (json_is_true(ob)) {
+        } else if (json_is_boolean(ob)) {
             ele->t = NEU_JSON_BOOL;
         } else if (json_is_integer(ob)) {
             ele->t = NEU_JSON_INT;
@@ -104,11 +103,10 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     return 0;
 }
 
-int neu_json_decode(char *buf, int size, neu_json_elem_t *ele, ...)
+int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
 {
-    json_error_t     error;
-    json_t *         root = json_loads(buf, 0, &error);
-    neu_json_elem_t *tmp  = NULL;
+    json_error_t error;
+    json_t *     root = json_loads(buf, 0, &error);
 
     if (root == NULL) {
         log_error(
@@ -117,51 +115,52 @@ int neu_json_decode(char *buf, int size, neu_json_elem_t *ele, ...)
         return -1;
     }
 
-    if (decode_object(root, ele) == -1) {
-        json_decref(root);
-        return -1;
-    }
-
-    va_list vl;
-    va_start(vl, ele);
-    for (int i = 0; i < size - 1; i++) {
-        tmp = va_arg(vl, neu_json_elem_t *);
-        if (decode_object(root, tmp) == -1) {
+    for (int i = 0; i < size; i++) {
+        if (decode_object(root, &ele[i]) == -1) {
             json_decref(root);
             return -1;
         }
     }
-    va_end(vl);
 
     json_decref(root);
     return 0;
 }
 
-int neu_json_decode_array(void *object, int index, int size,
-                          neu_json_elem_t *ele, ...)
+int neu_json_decode_array(char *buf, char *name, int index, int size,
+                          neu_json_elem_t *ele)
 {
-    json_t *         child = NULL;
-    neu_json_elem_t *tmp;
+    json_t *     child  = NULL;
+    json_t *     object = NULL;
+    json_error_t error;
+    json_t *     root = json_loads(buf, 0, &error);
+
+    if (root == NULL) {
+        log_error(
+            "json load error, line: %d, column: %d, position: %d, info: %s",
+            error.line, error.column, error.position, error.text);
+        return -1;
+    }
+
+    object = json_object_get(root, name);
+    if (object == NULL) {
+        json_decref(root);
+        return -1;
+    }
 
     child = json_array_get(object, index);
     if (child == NULL) {
+        json_decref(root);
         return -1;
     }
 
-    if (decode_object(child, ele) == -1) {
-        return -1;
-    }
-
-    va_list vl;
-    va_start(vl, ele);
-    for (int i = 0; i < size - 1; i++) {
-        tmp = va_arg(vl, neu_json_elem_t *);
-        if (decode_object(child, tmp) == -1) {
+    for (int i = 0; i < size; i++) {
+        if (decode_object(child, &ele[i]) == -1) {
+            json_decref(root);
             return -1;
         }
     }
-    va_end(vl);
 
+    json_decref(root);
     return 0;
 }
 

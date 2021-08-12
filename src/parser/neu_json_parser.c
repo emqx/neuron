@@ -23,9 +23,9 @@
 #include "neu_log.h"
 #include "utils/json.h"
 
-#include "neu_json_api_parser.h"
-#include "neu_json_api_read.h"
-#include "neu_json_api_write.h"
+#include "neu_json_parser.h"
+#include "neu_json_read.h"
+#include "neu_json_write.h"
 
 int neu_parse_decode(char *buf, void **result)
 {
@@ -40,12 +40,12 @@ int neu_parse_decode(char *buf, void **result)
 
     switch (func_code.v.val_int) {
     case NEU_PARSE_OP_READ:
-        ret = neu_json_decode_read_req(buf,
-                                       (struct neu_parse_read_req **) result);
+        ret = neu_parse_decode_read_req(buf,
+                                        (struct neu_parse_read_req **) result);
         break;
     case NEU_PARSE_OP_WRITE:
-        ret = neu_json_decode_write_req(buf,
-                                        (struct neu_parse_write_req **) result);
+        ret = neu_parse_decode_write_req(
+            buf, (struct neu_parse_write_req **) result);
         break;
     }
 
@@ -54,14 +54,14 @@ int neu_parse_decode(char *buf, void **result)
 
 int neu_parse_encode(void *result, char **buf)
 {
-    struct neu_parse_op *op = result;
+    enum neu_parse_function *function = result;
 
-    switch (op->function) {
+    switch (*function) {
     case NEU_PARSE_OP_READ:
-        neu_json_encode_read_res((struct neu_parse_read_res *) result, buf);
+        neu_parse_encode_read_res((struct neu_parse_read_res *) result, buf);
         break;
     case NEU_PARSE_OP_WRITE:
-        neu_json_encode_write_res((struct neu_parse_write_res *) result, buf);
+        neu_parse_encode_write_res((struct neu_parse_write_res *) result, buf);
         break;
     }
 
@@ -70,9 +70,9 @@ int neu_parse_encode(void *result, char **buf)
 
 void neu_parse_decode_free(void *result)
 {
-    struct neu_parse_op *op = result;
+    enum neu_parse_function *function = result;
 
-    switch (op->function) {
+    switch (*function) {
     case NEU_PARSE_OP_READ: {
         struct neu_parse_read_req *req = result;
 

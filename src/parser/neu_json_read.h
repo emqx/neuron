@@ -21,14 +21,14 @@
 
 #include <stdint.h>
 
-#include "neu_json_api_parser.h"
+#include "neu_json_parser.h"
 
 struct neu_parse_read_req_name {
     char *name;
 };
 
 struct neu_parse_read_req {
-    struct neu_parse_op             op;
+    enum neu_parse_function         function;
     char *                          uuid;
     char *                          group;
     int                             n_name;
@@ -42,14 +42,14 @@ struct neu_parse_read_res_tag {
     double  value;
 };
 struct neu_parse_read_res {
-    struct neu_parse_op            op;
+    enum neu_parse_function        function;
     char *                         uuid;
     int                            error;
     int                            n_tag;
     struct neu_parse_read_res_tag *tags;
 };
 
-int neu_json_decode_read_req(char *buf, struct neu_parse_read_req **req);
-int neu_json_encode_read_res(struct neu_parse_read_res *res, char **buf);
+int neu_parse_decode_read_req(char *buf, struct neu_parse_read_req **req);
+int neu_parse_encode_read_res(struct neu_parse_read_res *res, char **buf);
 
 #endif

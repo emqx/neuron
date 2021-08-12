@@ -20,69 +20,76 @@
 
 #include "utils/json.h"
 
-#include "neu_json_api_write.h"
+#include "neu_json_write.h"
 
-int neu_json_decode_write_req(char *buf, struct neu_parse_write_req **result)
+#define GROUP "group"
+#define TAGS "tags"
+#define NAME "name"
+#define VALUE "value"
+
+int neu_parse_decode_write_req(char *buf, struct neu_parse_write_req **result)
 {
     struct neu_parse_write_req *req =
         calloc(1, sizeof(struct neu_parse_write_req));
+    neu_json_elem_t elem[] = { {
+                                   .name = NEU_PARSE_UUID,
+                                   .t    = NEU_JSON_STR,
 
-    neu_json_elem_t uuid = {
-        .name = "uuid",
-        .t    = NEU_JSON_STR,
-    };
-    neu_json_elem_t group = {
-        .name = "group",
-        .t    = NEU_JSON_STR,
-    };
-    neu_json_elem_t tags = {
-        .name = "tags",
-        .t    = NEU_JSON_OBJECT,
+                               },
+                               {
+                                   .name = GROUP,
+                                   .t    = NEU_JSON_STR,
+
+                               }
+
     };
 
-    int ret = neu_json_decode(buf, 3, &uuid, &group, &tags);
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
     if (ret != 0) {
+        free(req);
         return -1;
     }
-    req->op.function = NEU_PARSE_OP_WRITE;
-    req->uuid        = uuid.v.val_str;
-    req->group       = group.v.val_str;
+    req->function = NEU_PARSE_OP_WRITE;
+    req->uuid     = elem[0].v.val_str;
+    req->group    = elem[1].v.val_str;
 
-    req->n_tag = neu_json_decode_array_size(buf, "tags");
+    req->n_tag = neu_json_decode_array_size(buf, TAGS);
     req->tags  = calloc(req->n_tag, sizeof(struct neu_parse_write_req_tag));
     for (int i = 0; i < req->n_tag; i++) {
-        neu_json_elem_t name = {
-            .name = "name",
-            .t    = NEU_JSON_STR,
-        };
-        neu_json_elem_t value = {
-            .name = "value",
-            .t    = NEU_JSON_UNDEFINE,
+        neu_json_elem_t celem[] = { {
+                                        .name = NAME,
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = VALUE,
+                                        .t    = NEU_JSON_UNDEFINE,
+                                    }
+
         };
 
-        neu_json_decode_array(tags.v.object, i, 2, &name, &value);
-        req->tags[i].name = name.v.val_str;
-        req->tags[i].db   = value.v.val_double;
+        neu_json_decode_array(buf, TAGS, i, NEU_JSON_ELEM_SIZE(celem), celem);
+        req->tags[i].name = celem[0].v.val_str;
+        req->tags[i].db   = celem[1].v.val_double;
     }
 
     *result = req;
 
     return 0;
 }
-int neu_json_encode_write_res(struct neu_parse_write_res *res, char **buf)
+int neu_parse_encode_write_res(struct neu_parse_write_res *res, char **buf)
 {
     neu_json_elem_t elems[] = { {
-                                    .name      = "function",
+                                    .name      = NEU_PARSE_FUNCTION,
                                     .t         = NEU_JSON_INT,
                                     .v.val_int = NEU_PARSE_OP_READ,
                                 },
                                 {
-                                    .name      = "uuid",
+                                    .name      = NEU_PARSE_UUID,
                                     .t         = NEU_JSON_STR,
                                     .v.val_str = res->uuid,
                                 },
                                 {
-                                    .name      = "error",
+                                    .name      = NEU_PARSE_ERROR,
                                     .t         = NEU_JSON_INT,
                                     .v.val_int = res->error,
                                 } };

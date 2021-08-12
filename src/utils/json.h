@@ -20,6 +20,10 @@
 #ifndef _NEU_JSON__H_
 #define _NEU_JSON__H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -46,11 +50,18 @@ typedef struct neu_json_elem {
     union neu_json_value v;
 } neu_json_elem_t;
 
-int neu_json_decode(char *buf, int size, neu_json_elem_t *ele, ...);
+#define NEU_JSON_ELEM_SIZE(elems) sizeof(elems) / sizeof(neu_json_elem_t)
+
+int neu_json_decode(char *buf, int size, neu_json_elem_t *ele);
 int neu_json_decode_array_size(char *buf, char *child);
-int neu_json_decode_array(void *object, int index, int size,
-                          neu_json_elem_t *ele, ...);
+int neu_json_decode_array(char *buf, char *name, int index, int size,
+                          neu_json_elem_t *ele);
 
 void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n);
 int   neu_json_encode(neu_json_elem_t *t, int n, char **str);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
