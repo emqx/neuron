@@ -25,6 +25,8 @@
 #include "handle.h"
 
 static void ping(nng_aio *aio);
+static void read(nng_aio *aio);
+static void write(nng_aio *aio);
 
 struct neu_rest_handler rest_handlers[] = {
     {
@@ -39,6 +41,18 @@ struct neu_rest_handler rest_handlers[] = {
         .url           = "/api/v2/ping",
         .value.handler = ping,
     },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/read",
+        .value.handler = read,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/write",
+        .value.handler = write,
+    }
 };
 
 void neu_rest_all_handler(const struct neu_rest_handler **handlers,
@@ -61,4 +75,14 @@ static void ping(nng_aio *aio)
 
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
+}
+
+static void read(nng_aio *aio)
+{
+    (void) aio;
+}
+
+static void write(nng_aio *aio)
+{
+    (void) aio;
 }
