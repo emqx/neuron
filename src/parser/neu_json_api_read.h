@@ -16,41 +16,40 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#ifndef _NEU_JSON_API_READ_H_
+#define _NEU_JSON_API_READ_H_
 
-#ifndef _NEU_JSON__H_
-#define _NEU_JSON__H_
-
-#include <stdbool.h>
 #include <stdint.h>
 
-enum neu_json_type {
-    NEU_JSON_UNDEFINE = 0,
-    NEU_JSON_INT      = 1,
-    NEU_JSON_STR,
-    NEU_JSON_DOUBLE,
-    NEU_JSON_BOOL,
-    NEU_JSON_OBJECT
+#include "neu_json_api_parser.h"
+
+struct neu_parse_read_req_name {
+    char *name;
 };
 
-union neu_json_value {
-    int64_t val_int;
-    double  val_double;
-    bool    val_bool;
-    char *  val_str;
-    void *  object;
+struct neu_parse_read_req {
+    struct neu_parse_op             op;
+    char *                          uuid;
+    char *                          group;
+    int                             n_name;
+    struct neu_parse_read_req_name *names;
 };
 
-typedef struct neu_json_elem {
-    char *               name;
-    enum neu_json_type   t;
-    union neu_json_value v;
-} neu_json_elem_t;
+struct neu_parse_read_res_tag {
+    char *  name;
+    uint8_t type;
+    int64_t timestamp;
+    double  value;
+};
+struct neu_parse_read_res {
+    struct neu_parse_op            op;
+    char *                         uuid;
+    int                            error;
+    int                            n_tag;
+    struct neu_parse_read_res_tag *tags;
+};
 
-int neu_json_decode(char *buf, int size, neu_json_elem_t *ele, ...);
-int neu_json_decode_array_size(char *buf, char *child);
-int neu_json_decode_array(void *object, int index, int size,
-                          neu_json_elem_t *ele, ...);
+int neu_json_decode_read_req(char *buf, struct neu_parse_read_req **req);
+int neu_json_encode_read_res(struct neu_parse_read_res *res, char **buf);
 
-void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n);
-int   neu_json_encode(neu_json_elem_t *t, int n, char **str);
 #endif

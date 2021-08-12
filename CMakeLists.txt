@@ -68,6 +68,9 @@ set(NEURON_SOURCES
     src/core/neu_datatag_manager.c
     src/core/neu_datatag_table.c
     src/adapter/adapter.c
+    src/parser/neu_json_api_parser.c
+    src/parser/neu_json_api_read.c
+    src/parser/neu_json_api_write.c
     plugins/restful/handle.c
     plugins/restful/rest.c)
 

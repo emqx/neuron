@@ -17,40 +17,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_JSON__H_
-#define _NEU_JSON__H_
+#ifndef _NEU_JSON_API_PARSE_H
+#define _NEU_JSON_API_PARSE_H
 
-#include <stdbool.h>
 #include <stdint.h>
 
-enum neu_json_type {
-    NEU_JSON_UNDEFINE = 0,
-    NEU_JSON_INT      = 1,
-    NEU_JSON_STR,
-    NEU_JSON_DOUBLE,
-    NEU_JSON_BOOL,
-    NEU_JSON_OBJECT
+enum neu_parse_function { NEU_PARSE_OP_READ = 50, NEU_PARSE_OP_WRITE = 51 };
+
+struct neu_parse_op {
+    enum neu_parse_function function;
 };
 
-union neu_json_value {
-    int64_t val_int;
-    double  val_double;
-    bool    val_bool;
-    char *  val_str;
-    void *  object;
-};
+int  neu_parse_decode(char *buf, void **result);
+void neu_parse_decode_free(void *result);
+int  neu_parse_encode(void *result, char **buf);
 
-typedef struct neu_json_elem {
-    char *               name;
-    enum neu_json_type   t;
-    union neu_json_value v;
-} neu_json_elem_t;
-
-int neu_json_decode(char *buf, int size, neu_json_elem_t *ele, ...);
-int neu_json_decode_array_size(char *buf, char *child);
-int neu_json_decode_array(void *object, int index, int size,
-                          neu_json_elem_t *ele, ...);
-
-void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n);
-int   neu_json_encode(neu_json_elem_t *t, int n, char **str);
 #endif
