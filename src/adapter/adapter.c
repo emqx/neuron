@@ -442,7 +442,6 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
         neu_data = (neu_reqresp_data_t *) resp->buf;
         buf_len  = neu_variable_serialize(neu_data->data_var, &buf);
         databuf  = core_databuf_new_with_buf(buf, buf_len);
-        log_debug("Get respose buf: %s", core_databuf_get_ptr(databuf));
 
         msg_size = msg_inplace_data_get_size(sizeof(neuron_databuf_t));
         rv       = nng_msg_alloc(&read_msg, msg_size);

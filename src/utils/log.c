@@ -132,12 +132,22 @@ static void init_event(log_Event *ev, void *udata)
     ev->udata = udata;
 }
 
+#ifdef PROJECT_ROOT_DIR
+#define PRJ_ROOT_DIR_LEN sizeof(PROJECT_ROOT_DIR);
+#else
+#define PRJ_ROOT_DIR_LEN 0
+#endif
+
 void log_log(int level, const char *file, int line, const char *func,
              const char *fmt, ...)
 {
-    log_Event ev = {
-        .fmt = fmt, .file = file, .line = line, .level = level, .func = func
-    };
+    const char *file_name = file + PRJ_ROOT_DIR_LEN;
+
+    log_Event ev = { .fmt   = fmt,
+                     .file  = file_name,
+                     .line  = line,
+                     .level = level,
+                     .func  = func };
 
     lock();
 

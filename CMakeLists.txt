@@ -47,6 +47,7 @@ endif()
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
 
+add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
   add_definitions(-DNEU_PLATFORM_LINUX)
 
