@@ -49,7 +49,7 @@ int neu_parse_decode(char *buf, void **result)
         break;
     }
 
-    return 0;
+    return ret;
 }
 
 int neu_parse_encode(void *result, char **buf)
@@ -92,8 +92,14 @@ void neu_parse_decode_free(void *result)
         free(req->group);
         for (int i = 0; i < req->n_tag; i++) {
             free(req->tags[i].name);
+            if (req->tags[i].t == NEU_JSON_STR) {
+                free(req->tags[i].value.val_str);
+            }
         }
+        free(req->tags);
         break;
     }
     }
+
+    free(result);
 }

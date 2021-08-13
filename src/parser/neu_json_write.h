@@ -19,11 +19,14 @@
 #ifndef _NEU_JSON_API_WRITE_H_
 #define _NEU_JSON_API_WRITE_H_
 
+#include "utils/json.h"
+
 #include "neu_json_parser.h"
 
 struct neu_parse_write_req_tag {
-    char * name;
-    double db;
+    char *             name;
+    enum neu_json_type t;
+    union neu_json_value value;
 };
 
 struct neu_parse_write_req {

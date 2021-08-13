@@ -69,7 +69,23 @@ int neu_parse_decode_write_req(char *buf, struct neu_parse_write_req **result)
 
         neu_json_decode_array(buf, TAGS, i, NEU_JSON_ELEM_SIZE(celem), celem);
         req->tags[i].name = celem[0].v.val_str;
-        req->tags[i].db   = celem[1].v.val_double;
+        switch (celem[1].t) {
+        case NEU_JSON_INT:
+            req->tags[i].value.val_int = celem[1].v.val_int;
+            break;
+        case NEU_JSON_BOOL:
+            req->tags[i].value.val_bool = celem[1].v.val_bool;
+            break;
+        case NEU_JSON_DOUBLE:
+            req->tags[i].value.val_double = celem[1].v.val_double;
+            break;
+        case NEU_JSON_STR:
+            req->tags[i].value.val_str = celem[1].v.val_str;
+            break;
+        default:
+            break;
+        }
+        req->tags[i].t = celem[1].t;
     }
 
     *result = req;

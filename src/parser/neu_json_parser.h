@@ -20,6 +20,10 @@
 #ifndef _NEU_JSON_API_PARSE_H
 #define _NEU_JSON_API_PARSE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 #define NEU_PARSE_FUNCTION "function"
@@ -31,5 +35,9 @@ enum neu_parse_function { NEU_PARSE_OP_READ = 50, NEU_PARSE_OP_WRITE = 51 };
 int  neu_parse_decode(char *buf, void **result);
 void neu_parse_decode_free(void *result);
 int  neu_parse_encode(void *result, char **buf);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
