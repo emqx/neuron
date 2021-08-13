@@ -58,6 +58,7 @@ int neu_json_decode_array(char *buf, char *name, int index, int size,
                           neu_json_elem_t *ele);
 
 void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n);
+void *neu_json_encode_array_value(void *array, neu_json_elem_t *t, int n);
 int   neu_json_encode(neu_json_elem_t *t, int n, char **str);
 
 #ifdef __cplusplus
