@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 
+#include <list.h>
 #include <neuron.h>
 
 #include "option.h"
@@ -14,8 +15,8 @@ struct neu_plugin {
     neu_plugin_common_t common;
     option_t            option;
     paho_client_t *     paho;
-    vector_t            send_vector;
-    vector_t            arrived_vector;
+    neu_list            send_list;
+    neu_list            arrived_list;
     pthread_mutex_t     send_mutex;
     pthread_mutex_t     arrived_mutex;
     pthread_t           send_thread_id;
@@ -24,9 +25,12 @@ struct neu_plugin {
 };
 
 typedef struct {
+    neu_list_node node;
+    char          uuid[36 + 1];
 } arrived_task_t;
 
 typedef struct {
+    neu_list_node      node;
     unsigned char *    buffer;
     size_t             buffer_size;
     int                task_id;
@@ -35,44 +39,40 @@ typedef struct {
 
 static void plugin_send_task_destroy(send_task_t *task)
 {
-    if (NULL != task) {
-        if (NULL != task->buffer) {
-            free(task->buffer);
-        }
-
-        free(task);
+    if (NULL == task) {
+        return;
     }
+
+    if (NULL != task->buffer) {
+        free(task->buffer);
+    }
+
+    free(task);
 }
 
 static void plugin_arrived_task_destroy(arrived_task_t *task)
 {
-    if (NULL != task) {
-        free(task);
+    if (NULL == task) {
+        return;
     }
+
+    free(task);
 }
 
 static int plugin_add_arrived_task(neu_plugin_t *plugin, arrived_task_t *task)
 {
     pthread_mutex_lock(&plugin->arrived_mutex);
-    int rc = vector_push_back(&plugin->arrived_vector, task);
-    if (0 != rc) {
-        pthread_mutex_unlock(&plugin->arrived_mutex);
-        log_error("Push back task failed");
-        return -1;
-    }
+    NEU_LIST_NODE_INIT(&task->node);
+    neu_list_append(&plugin->arrived_list, task);
     pthread_mutex_unlock(&plugin->arrived_mutex);
     return 0;
 }
 
-static int plugin_add_send_task(neu_plugin_t *plugin, send_task_t *send_task)
+static int plugin_add_send_task(neu_plugin_t *plugin, send_task_t *task)
 {
     pthread_mutex_lock(&plugin->send_mutex);
-    int rc = vector_push_back(&plugin->send_vector, send_task);
-    if (0 != rc) {
-        pthread_mutex_unlock(&plugin->send_mutex);
-        log_error("Push back task failed");
-        return -1;
-    }
+    NEU_LIST_NODE_INIT(&task->node);
+    neu_list_append(&plugin->send_list, task);
     pthread_mutex_unlock(&plugin->send_mutex);
     return 0;
 }
@@ -137,6 +137,23 @@ static int plugin_adapter_event_notify(neu_plugin_t *  plugin,
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
 
+    neu_variable_t     data_var;
+    static const char *resp_str = "MQTT plugin read response";
+
+    data_var.var_type.typeId = NEU_DATATYPE_STRING;
+    data_var.data            = (void *) resp_str;
+
+    void *          buffer;
+    size_t          buffer_len   = neu_variable_serialize(&data_var, &buffer);
+    neu_variable_t *new_data_var = neu_variable_deserialize(buffer, buffer_len);
+    if (NULL != new_data_var) {
+        if (NULL != new_data_var->data) {
+            log_info("%s", (char *) new_data_var->data);
+            free(new_data_var->data);
+        }
+        free(new_data_var);
+    }
+
     neu_event_notify_t *event =
         (neu_event_notify_t *) malloc(sizeof(neu_event_notify_t));
     adapter_callbacks->event_notify(plugin->common.adapter, event);
@@ -150,18 +167,20 @@ static void plugin_send_loop(neu_plugin_t *plugin)
         usleep(10 * 1000);
         pthread_mutex_lock(&plugin->send_mutex);
 
-        if (vector_is_empty(&plugin->send_vector)) {
+        if (neu_list_empty(&plugin->send_list)) {
             pthread_mutex_unlock(&plugin->send_mutex);
             continue;
         }
 
-        send_task_t *task = (send_task_t *) vector_front(&plugin->send_vector);
+        send_task_t *task = neu_list_last(&plugin->send_list);
         if (NULL == task) {
             pthread_mutex_unlock(&plugin->send_mutex);
             continue;
         }
 
-        // Process task
+        // TODO: neu_variable_t deserialize
+        // TODO: JSON serialize
+
         client_error error = paho_client_publish(
             plugin->paho, "MQTT Examples", 0, task->buffer, task->buffer_size);
         if (ClientSuccess != error) {
@@ -169,10 +188,8 @@ static void plugin_send_loop(neu_plugin_t *plugin)
         }
 
         plugin_adapter_response(plugin, task);
-
-        vector_pop_front(&plugin->send_vector);
+        neu_list_remove(&plugin->send_list, task);
         plugin_send_task_destroy(task);
-
         pthread_mutex_unlock(&plugin->send_mutex);
     }
 }
@@ -183,23 +200,23 @@ static void plugin_arrived_loop(neu_plugin_t *plugin)
         usleep(10 * 1000);
         pthread_mutex_lock(&plugin->arrived_mutex);
 
-        if (vector_is_empty(&plugin->arrived_vector)) {
+        if (neu_list_empty(&plugin->arrived_list)) {
             pthread_mutex_unlock(&plugin->arrived_mutex);
             continue;
         }
 
-        arrived_task_t *task =
-            (arrived_task_t *) vector_front(&plugin->arrived_vector);
+        arrived_task_t *task = neu_list_last(&plugin->arrived_list);
         if (NULL == task) {
             pthread_mutex_unlock(&plugin->arrived_mutex);
             continue;
         }
 
+        // TODO: JSON deserailize
+        // TODO: create neu_variable_t;
+
         plugin_adapter_event_notify(plugin, task);
-
-        vector_pop_front(&plugin->arrived_vector);
+        neu_list_remove(&plugin->arrived_list, task);
         plugin_arrived_task_destroy(task);
-
         pthread_mutex_unlock(&plugin->arrived_mutex);
     }
 }
@@ -209,12 +226,9 @@ static int plugin_subscribe(neu_plugin_t *plugin, const char *topic,
 {
     client_error error =
         paho_client_subscribe(plugin->paho, topic, qos, handle);
-    if (0 > error) {
-        // Do nothing
-    }
     if (ClientSubscribeFailure == error ||
         ClientSubscribeAddListFailure == error) {
-        // TODO: error handle -Panic?
+        neu_panic("Subscribe Failure");
     }
     return 0;
 }
@@ -238,6 +252,10 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
 {
     neu_plugin_t *  plugin = (neu_plugin_t *) context;
     arrived_task_t *task   = (arrived_task_t *) malloc(sizeof(arrived_task_t));
+
+    memset(task, 0x00, sizeof(arrived_task_t));
+    const char *uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
+    memcpy(task->uuid, uuid, strlen(uuid));
 
     // TODO: generate task
     UNUSED(topic_name);
@@ -291,19 +309,10 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     plugin->option.clean_session      = 1;
 
     // Work list init
-    vector_setup(&plugin->send_vector, 128, sizeof(send_task_t));
-    if (!vector_is_initialized(&plugin->send_vector)) {
-        log_error("Failed to initialize send vector");
-        return -1;
-    }
+    NEU_LIST_INIT(&plugin->arrived_list, arrived_task_t, node);
+    NEU_LIST_INIT(&plugin->send_list, send_task_t, node);
 
-    vector_setup(&plugin->arrived_vector, 128, sizeof(arrived_task_t));
-    if (!vector_is_initialized(&plugin->arrived_vector)) {
-        log_error("Failed to initialize arrived vector");
-        return -1;
-    }
-
-    // Publish thread create
+    // Work thread create
     plugin->finished = 0;
     pthread_mutex_init(&plugin->send_mutex, NULL);
     pthread_mutex_init(&plugin->arrived_mutex, NULL);
@@ -316,7 +325,6 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     }
     pthread_detach(plugin->send_thread_id);
 
-    // Work thread create
     rc = pthread_create(&plugin->arrived_thread_id, NULL,
                         (void *) plugin_arrived_loop, plugin);
     if (0 != rc) {
@@ -325,7 +333,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     }
     pthread_detach(plugin->arrived_thread_id);
 
-    // paho mqtt client setup
+    // Paho mqtt client setup
     client_error error =
         paho_client_open(&plugin->option, plugin, &plugin->paho);
     if (ClientIsNULL == error) {
@@ -342,6 +350,18 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
     plugin->finished = 1;
     paho_client_close(plugin->paho);
+
+    // Work list cleanup
+    while (!neu_list_empty(&plugin->arrived_list)) {
+        arrived_task_t *task = neu_list_first(&plugin->arrived_list);
+        neu_list_remove(&plugin->arrived_list, task);
+        plugin_arrived_task_destroy(task);
+    }
+    while (neu_list_empty(&plugin->send_list)) {
+        send_task_t *task = neu_list_first(&plugin->send_list);
+        neu_list_remove(&plugin->send_list, task);
+        plugin_send_task_destroy(task);
+    }
     return 0;
 }
 

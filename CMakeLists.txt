@@ -91,6 +91,7 @@ set(NEURON_BASE_SOURCES
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
     src/utils/idhash.c
+    src/utils/list.c
     src/utils/panic.c
     src/utils/log.c
     src/utils/json.c

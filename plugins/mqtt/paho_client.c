@@ -23,11 +23,11 @@ struct subscribe_tuple {
 };
 
 struct paho_client {
+    MQTTAsync_connectOptions conn_options;
     char                     server_url[200];
     option_t *               option;
     vector_t                 subscribe_vector;
     int                      subscribe_token;
-    MQTTAsync_connectOptions conn_options;
     MQTTAsync                async;
     void *                   user_data;
 };
@@ -321,7 +321,7 @@ client_error paho_client_destroy(paho_client_t *client)
 }
 
 client_error paho_client_open(option_t *option, void *context,
-                              paho_client_t **client_point)
+                              paho_client_t **p_client)
 {
     paho_client_t *client = paho_client_create(option, context);
     if (NULL == client) {
@@ -329,7 +329,7 @@ client_error paho_client_open(option_t *option, void *context,
     }
 
     client_error rc = paho_client_connect(client);
-    *client_point   = client;
+    *p_client       = client;
     return rc;
 }
 

@@ -1,6 +1,7 @@
 find_package(eclipse-paho-mqtt-c 1.3.9 REQUIRED)
 
 include_directories(../../include/)
+include_directories(../../src/utils/)
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 set(src plugin_mqtt.c paho_client.c)
 add_library(plugin-mqtt SHARED ${src})
