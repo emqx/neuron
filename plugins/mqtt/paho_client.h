@@ -31,7 +31,7 @@ typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
 paho_client_t *paho_client_create(option_t *option, void *context);
 client_error   paho_client_connect(paho_client_t *client);
 client_error   paho_client_open(option_t *option, void *context,
-                                paho_client_t **client);
+                                paho_client_t **p_client);
 
 client_error paho_client_is_connected(paho_client_t *client);
 

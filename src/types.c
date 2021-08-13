@@ -278,6 +278,28 @@ void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
     v->type        = type;
 }
 
+static int serialize_join(size_t *size, void *thing, const size_t size_thing,
+                          void **data)
+{
+    if (0 == *size) {
+        *data = malloc(size_thing);
+        if (NULL == data) {
+            return -1; // panic
+        }
+    }
+
+    if (0 != *size) {
+        *data = realloc(*data, *size + size_thing);
+        if (NULL == data) {
+            return -2; // panic
+        }
+    }
+
+    memcpy(*data + *size, thing, size_thing);
+    *size += size_thing;
+    return 0;
+}
+
 size_t neu_variable_serialize(neu_variable_t *v, void **buf)
 {
     size_t len;
@@ -289,16 +311,83 @@ size_t neu_variable_serialize(neu_variable_t *v, void **buf)
         return 0;
     }
 
-    if (v->var_type.typeId == NEU_DATATYPE_STRING) {
-        len     = strlen((const char *) v->data);
-        ser_buf = strdup((const char *) v->data);
+    // neu_variabletype_t
+    size_t size_thing = sizeof(v->var_type.typeName);
+    serialize_join(&len, &v->var_type.typeName, size_thing, &ser_buf);
+
+    size_thing = sizeof(v->var_type.typeId);
+    serialize_join(&len, &v->var_type.typeId, size_thing, &ser_buf);
+
+    size_thing = sizeof(v->var_type.memSize);
+    serialize_join(&len, &v->var_type.memSize, size_thing, &ser_buf);
+
+    // arrayLength
+    size_thing = sizeof(v->arrayLength);
+    serialize_join(&len, &v->arrayLength, size_thing, &ser_buf);
+
+    // arrayDimensionsSize
+    size_thing = sizeof(v->arrayDimensionsSize);
+    serialize_join(&len, &v->arrayDimensionsSize, size_thing, &ser_buf);
+
+    // arrayDimensions
+    size_thing = sizeof(v->arrayDimensions);
+    serialize_join(&len, &v->arrayDimensions, size_thing, &ser_buf);
+
+    // data
+    switch (v->var_type.typeId) {
+    case NEU_DATATYPE_BYTE:
+        size_thing = sizeof(int8_t);
+        break;
+    case NEU_DATATYPE_UBYTE:
+        size_thing = sizeof(uint8_t);
+        break;
+    case NEU_DATATYPE_BOOLEAN:
+        size_thing = sizeof(bool);
+        break;
+    case NEU_DATATYPE_WORD:
+        size_thing = sizeof(int16_t);
+        break;
+    case NEU_DATATYPE_UWORD:
+        size_thing = sizeof(uint16_t);
+        break;
+    case NEU_DATATYPE_DWORD:
+        size_thing = sizeof(int32_t);
+        break;
+    case NEU_DATATYPE_UDWORD:
+        size_thing = sizeof(uint32_t);
+        break;
+    case NEU_DATATYPE_QWORD:
+        size_thing = sizeof(int64_t);
+        break;
+    case NEU_DATATYPE_UQWORD:
+        size_thing = sizeof(uint64_t);
+        break;
+    case NEU_DATATYPE_FLOAT:
+        size_thing = sizeof(float);
+        break;
+    case NEU_DATATYPE_DOUBLE:
+        size_thing = sizeof(double);
+        break;
+    case NEU_DATATYPE_STRING:
+        size_thing = strlen((const char *) v->data) + 1;
+        break;
+    default:
+        size_thing = 0;
+        break;
     }
 
-    if (buf != NULL) {
-        *buf = ser_buf;
-    }
-
+    serialize_join(&len, v->data, size_thing, &ser_buf);
+    *buf = ser_buf;
     return len;
+}
+
+static size_t deserialize_join(size_t *size, const void *data, void *thing,
+                               size_t size_thing)
+{
+    memcpy(thing, data + *size, size_thing);
+    *size += size_thing;
+
+    return *size;
 }
 
 neu_variable_t *neu_variable_deserialize(void *buf, size_t buf_len)
@@ -314,9 +403,76 @@ neu_variable_t *neu_variable_deserialize(void *buf, size_t buf_len)
         return NULL;
     }
 
-    neu_var->var_type.typeId = NEU_DATATYPE_STRING;
-    neu_var->data            = strdup(buf);
+    size_t len = 0;
 
+    // neu_variabletype_t
+    size_t size_thing = sizeof(neu_var->var_type.typeName);
+    deserialize_join(&len, buf, &neu_var->var_type.typeName, size_thing);
+
+    size_thing = sizeof(neu_var->var_type.typeId);
+    deserialize_join(&len, buf, &neu_var->var_type.typeId, size_thing);
+
+    size_thing = sizeof(neu_var->var_type.memSize);
+    deserialize_join(&len, buf, &neu_var->var_type.memSize, size_thing);
+
+    // arrayLength
+    size_thing = sizeof(neu_var->arrayLength);
+    deserialize_join(&len, buf, &neu_var->arrayLength, size_thing);
+
+    // arrayDimensionsSize
+    size_thing = sizeof(neu_var->arrayDimensionsSize);
+    deserialize_join(&len, buf, &neu_var->arrayDimensionsSize, size_thing);
+
+    // arrayDimensions
+    size_thing = sizeof(neu_var->arrayDimensions);
+    deserialize_join(&len, buf, &neu_var->arrayDimensions, size_thing);
+
+    // data
+    switch (neu_var->var_type.typeId) {
+    case NEU_DATATYPE_BYTE:
+        size_thing = sizeof(int8_t);
+        break;
+    case NEU_DATATYPE_UBYTE:
+        size_thing = sizeof(uint8_t);
+        break;
+    case NEU_DATATYPE_BOOLEAN:
+        size_thing = sizeof(bool);
+        break;
+    case NEU_DATATYPE_WORD:
+        size_thing = sizeof(int16_t);
+        break;
+    case NEU_DATATYPE_UWORD:
+        size_thing = sizeof(uint16_t);
+        break;
+    case NEU_DATATYPE_DWORD:
+        size_thing = sizeof(int32_t);
+        break;
+    case NEU_DATATYPE_UDWORD:
+        size_thing = sizeof(uint32_t);
+        break;
+    case NEU_DATATYPE_QWORD:
+        size_thing = sizeof(int64_t);
+        break;
+    case NEU_DATATYPE_UQWORD:
+        size_thing = sizeof(uint64_t);
+        break;
+    case NEU_DATATYPE_FLOAT:
+        size_thing = sizeof(float);
+        break;
+    case NEU_DATATYPE_DOUBLE:
+        size_thing = sizeof(double);
+        break;
+    case NEU_DATATYPE_STRING:
+        size_thing = strlen((char *) (buf + len)) + 1;
+        break;
+    default:
+        size_thing = 0;
+        break;
+    }
+
+    neu_var->data = malloc(size_thing);
+    memset(neu_var->data, 0x00, size_thing);
+    deserialize_join(&len, buf, neu_var->data, size_thing);
     return neu_var;
 }
 
