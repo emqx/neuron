@@ -302,10 +302,41 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             msg_ptr  = (message_t *) nng_msg_body(read_msg);
             msg_inplace_data_init(msg_ptr, MSG_CMD_READ_DATA,
                                   sizeof(read_data_cmd_t));
+
             cmd_ptr             = (read_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
             cmd_ptr->grp_config = read_cmd->grp_config;
             cmd_ptr->addr       = read_cmd->addr;
             nng_sendmsg(adapter->sock, read_msg, 0);
+        }
+        break;
+    }
+
+    case NEU_REQRESP_WRITE_DATA: {
+        size_t   msg_size;
+        nng_msg *write_msg;
+        msg_size = msg_inplace_data_get_size(sizeof(write_data_cmd_t));
+        rv       = nng_msg_alloc(&write_msg, msg_size);
+        if (rv == 0) {
+            message_t *          msg_ptr;
+            write_data_cmd_t *   cmd_ptr;
+            neu_reqresp_write_t *write_cmd;
+            void *               buf;
+            size_t               buf_len;
+            core_databuf_t *     databuf;
+
+            assert(cmd->buf_len == sizeof(neu_reqresp_write_t));
+            write_cmd = (neu_reqresp_write_t *) cmd->buf;
+            buf_len   = neu_variable_serialize(write_cmd->data_var, &buf);
+            databuf   = core_databuf_new_with_buf(buf, buf_len);
+            msg_ptr   = (message_t *) nng_msg_body(write_msg);
+            msg_inplace_data_init(msg_ptr, MSG_CMD_WRITE_DATA,
+                                  sizeof(write_data_cmd_t));
+
+            cmd_ptr             = (write_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
+            cmd_ptr->grp_config = write_cmd->grp_config;
+            cmd_ptr->addr       = write_cmd->addr;
+            cmd_ptr->databuf    = databuf;
+            nng_sendmsg(adapter->sock, write_msg, 0);
         }
         break;
     }

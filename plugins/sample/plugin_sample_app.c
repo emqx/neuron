@@ -54,7 +54,7 @@ static void *sample_app_work_loop(void *arg)
     neu_plugin_t *plugin;
 
     plugin = (neu_plugin_t *) arg;
-    usleep(10000);
+    usleep(1000000);
 
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
@@ -71,6 +71,26 @@ static void *sample_app_work_loop(void *arg)
     cmd.buf_len         = sizeof(neu_reqresp_read_t);
     log_info("Send a read command");
     adapter_callbacks->command(plugin->common.adapter, &cmd, NULL);
+
+    neu_request_t       cmd1;
+    neu_reqresp_write_t write_req;
+    neu_variable_t      data_var;
+    static const char * data_str = "Sample app writing";
+
+    usleep(100000);
+    data_var.var_type.typeId = NEU_DATATYPE_STRING;
+    data_var.data            = (void *) data_str;
+
+    write_req.grp_config = NULL;
+    write_req.node_id    = 1;
+    write_req.addr       = 3;
+    write_req.data_var   = &data_var;
+    cmd1.req_type        = NEU_REQRESP_WRITE_DATA;
+    cmd1.req_id          = plugin_get_event_id(plugin);
+    cmd1.buf             = (void *) &write_req;
+    cmd1.buf_len         = sizeof(neu_reqresp_write_t);
+    log_info("Send a write command");
+    adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
     return NULL;
 }
 
@@ -169,7 +189,7 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         assert(req->buf_len == sizeof(neu_reqresp_data_t));
         neu_data = (neu_reqresp_data_t *) req->buf;
         req_str  = neu_variable_get_str(neu_data->data_var);
-        log_debug("recevied str: %s", req_str);
+        log_debug("get trans data str: %s", req_str);
         break;
     }
 

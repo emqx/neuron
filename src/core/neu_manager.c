@@ -72,8 +72,8 @@ struct neu_manager {
 static const char *const manager_url = "inproc://neu_manager";
 
 #define NEU_HAS_SAMPLE_ADAPTER 1
-#define NEU_HAS_MQTT_ADAPTER 1
 
+// definition for plugin lib names
 #if defined(__APPLE__)
 
 #ifdef NEU_HAS_SAMPLE_ADAPTER
@@ -96,22 +96,21 @@ static const char *const manager_url = "inproc://neu_manager";
 
 #endif
 
+// definition for plugin names
 #ifdef NEU_HAS_SAMPLE_ADAPTER
 #define SAMPLE_DRV_PLUGIN_NAME "sample-drv-plugin"
 #define SAMPLE_APP_PLUGIN_NAME "sample-app-plugin"
 #endif
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
-
-#ifdef NEU_HAS_MQTT_ADAPTER
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
-#endif
-
 #define MODBUS_PLUGIN_NAME "modbus-plugin"
 
+// definition for adapter names
 #ifdef NEU_HAS_SAMPLE_ADAPTER
 #define SAMPLE_DRV_ADAPTER_NAME "sample-driver-adapter"
 #define SAMPLE_APP_ADAPTER_NAME "sample-app-adapter"
 #endif
+#define MQTT_ADAPTER_NAME "mqtt-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 50
 #define PLUGIN_LIB_NAME_MAX_LEN 50
@@ -140,14 +139,12 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
     },
 #endif
 
-#ifdef NEU_HAS_MQTT_ADAPTER
     {
         .adapter_type = ADAPTER_TYPE_MQTT,
-        .adapter_name = "mqtt-adapter",
+        .adapter_name = MQTT_ADAPTER_NAME,
         .plugin_name  = MQTT_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
-#endif
     /*
     {
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
@@ -177,9 +174,7 @@ static const char *default_plugin_lib_names[] = {
     SAMPLE_DRV_PLUGIN_LIB_NAME, SAMPLE_APP_PLUGIN_LIB_NAME,
 #endif
 
-#ifdef NEU_HAS_MQTT_ADAPTER
     MQTT_PLUGIN_LIB_NAME,
-#endif
     /*
     WEBSERVER_PLUGIN_LIB_NAME,
     MODBUS_PLUGIN_LIB_NAME,
@@ -205,14 +200,12 @@ static const plugin_reg_param_t system_plugin_infos[] = {
     },
 #endif
 
-#ifdef NEU_HAS_MQTT_ADAPTER
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
         .adapter_type    = ADAPTER_TYPE_MQTT,
         .plugin_name     = MQTT_PLUGIN_NAME,
         .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
     },
-#endif
     /*
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
@@ -241,6 +234,7 @@ typedef struct config_add_param {
 } config_add_param_t;
 
 static config_add_param_t default_config_add_params[] = {
+#ifdef NEU_HAS_SAMPLE_ADAPTER
     {
         .config_name      = "config_drv_sample",
         .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
@@ -255,6 +249,14 @@ static config_add_param_t default_config_add_params[] = {
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
+    {
+        .config_name      = "config_mqtt_sample",
+        .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
+        .dst_adapter_name = MQTT_ADAPTER_NAME,
+        .read_interval    = 2000,
+        .grp_config       = NULL,
+    },
+#endif
 };
 #define DEFAULT_GROUP_CONFIG_COUNT \
     (sizeof(default_config_add_params) / sizeof(default_config_add_params[0]))
@@ -412,7 +414,7 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         manager->bind_info.bind_count++;
         nng_mtx_unlock(manager->bind_info.mtx);
         log_debug("The manager bind the adapter(%s) with pipe(%d)",
-                 neu_adapter_get_name(adapter), p);
+                  neu_adapter_get_name(adapter), p);
     }
 
     return;
@@ -670,14 +672,33 @@ static void add_default_grp_configs(neu_manager_t *manager)
     return;
 }
 
-static int dispatch_databuf_to_adapters(manager_bind_info_t *manager_bind,
-                                        neuron_databuf_t *   neu_databuf)
+static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
+                                        neuron_databuf_t *neu_databuf)
 {
     int       rv = 0;
     vector_t *sub_pipes;
-    log_info("dispatch databuf to subscribes");
-    sub_pipes =
-        (vector_t *) neu_taggrp_cfg_ref_subpipes(neu_databuf->grp_config);
+
+    manager_bind_info_t *manager_bind = &manager->bind_info;
+    if (neu_databuf->grp_config == NULL) {
+        nng_pipe              msg_pipe;
+        adapter_reg_entity_t *reg_entity;
+
+        sub_pipes  = vector_new(DEFAULT_ADAPTER_REG_COUNT, sizeof(nng_pipe));
+        reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+                                              SAMPLE_APP_ADAPTER_NAME);
+        msg_pipe   = reg_entity->adapter_pipe;
+        vector_push_back(sub_pipes, &msg_pipe);
+
+        reg_entity =
+            find_reg_adapter_by_name(&manager->reg_adapters, MQTT_ADAPTER_NAME);
+        msg_pipe = reg_entity->adapter_pipe;
+        vector_push_back(sub_pipes, &msg_pipe);
+    } else {
+        sub_pipes =
+            (vector_t *) neu_taggrp_cfg_ref_subpipes(neu_databuf->grp_config);
+    }
+
+    log_info("dispatch databuf to subscribes in sub_pies(%p)", sub_pipes);
     VECTOR_FOR_EACH(sub_pipes, iter)
     {
         size_t   msg_size;
@@ -703,6 +724,9 @@ static int dispatch_databuf_to_adapters(manager_bind_info_t *manager_bind,
         }
     }
 
+    if (neu_databuf->grp_config == NULL) {
+        vector_free(sub_pipes);
+    }
     return rv;
 }
 
@@ -820,16 +844,39 @@ static void manager_loop(void *arg)
             break;
         }
 
+        case MSG_CMD_WRITE_DATA: {
+            size_t                msg_size;
+            nng_msg *             out_msg;
+            nng_pipe              msg_pipe;
+            write_data_cmd_t *    cmd_ptr;
+            adapter_reg_entity_t *reg_entity;
+
+            cmd_ptr    = (write_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+            reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+                                                  SAMPLE_DRV_ADAPTER_NAME);
+            msg_pipe   = reg_entity->adapter_pipe;
+            msg_size   = msg_inplace_data_get_size(sizeof(write_data_cmd_t));
+            rv         = nng_msg_alloc(&out_msg, msg_size);
+            if (rv == 0) {
+                message_t *       msg_ptr;
+                write_data_cmd_t *out_cmd_ptr;
+                msg_ptr = (message_t *) nng_msg_body(out_msg);
+                msg_inplace_data_init(msg_ptr, MSG_CMD_WRITE_DATA,
+                                      sizeof(write_data_cmd_t));
+                out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
+                memcpy(out_cmd_ptr, cmd_ptr, sizeof(write_data_cmd_t));
+                nng_msg_set_pipe(out_msg, msg_pipe);
+                log_info("Foward write command to driver pipe: %d", msg_pipe);
+                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
+            }
+            break;
+        }
+
         case MSG_DATA_NEURON_DATABUF: {
             neuron_databuf_t *neu_databuf;
 
             neu_databuf = (neuron_databuf_t *) msg_get_buf_ptr(pay_msg);
-            if (neu_databuf->grp_config == NULL) {
-                core_databuf_put(neu_databuf->databuf);
-                log_warn("Forward databuf with NULL pointer of group config");
-                break;
-            }
-            rv = dispatch_databuf_to_adapters(manager_bind, neu_databuf);
+            rv          = dispatch_databuf_to_adapters(manager, neu_databuf);
 
             neu_taggrp_cfg_free(neu_databuf->grp_config);
             core_databuf_put(neu_databuf->databuf);

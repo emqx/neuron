@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -110,15 +111,21 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_DATA: {
-        neu_response_t     resp;
-        neu_reqresp_data_t data_resp;
-        neu_variable_t     data_var;
+        neu_reqresp_read_t *read_req;
+        neu_response_t      resp;
+        neu_reqresp_data_t  data_resp;
+        neu_variable_t      data_var;
+
+        assert(req->buf_len == sizeof(neu_reqresp_read_t));
+        read_req = (neu_reqresp_read_t *) req->buf;
+        log_info("Read data from addr(%d) with group config(%p)",
+                 read_req->addr, read_req->grp_config);
+
         static const char *resp_str = "Sample plugin read response";
+        data_var.var_type.typeId    = NEU_DATATYPE_STRING;
+        data_var.data               = (void *) resp_str;
 
-        data_var.var_type.typeId = NEU_DATATYPE_STRING;
-        data_var.data            = (void *) resp_str;
-
-        data_resp.grp_config = NULL;
+        data_resp.grp_config = read_req->grp_config;
         data_resp.data_var   = &data_var;
 
         memset(&resp, 0, sizeof(resp));
@@ -127,6 +134,18 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         resp.buf_len   = sizeof(neu_reqresp_data_t);
         resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
+        break;
+    }
+
+    case NEU_REQRESP_WRITE_DATA: {
+        neu_reqresp_write_t *write_req;
+        const char *         data_str;
+
+        assert(req->buf_len == sizeof(neu_reqresp_write_t));
+        write_req = (neu_reqresp_write_t *) req->buf;
+        data_str  = neu_variable_get_str(write_req->data_var);
+        log_info("Write %s \n\tto addr(%d) with group config(%p)", data_str,
+                 write_req->addr, write_req->grp_config);
         break;
     }
 
