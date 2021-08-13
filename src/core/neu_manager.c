@@ -348,7 +348,7 @@ static int manager_add_config(neu_manager_t *manager, config_add_param_t *param)
     adapter_reg_entity_t *dst_reg_entity;
 
     if (param->grp_config == NULL) {
-        log_debug("Error: group config is NULL");
+        log_error("group config is NULL");
         return -1;
     }
 
@@ -411,8 +411,8 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         reg_entity->bind_count   = 1;
         manager->bind_info.bind_count++;
         nng_mtx_unlock(manager->bind_info.mtx);
-        log_info("The manager bind the adapter(%s)",
-                 neu_adapter_get_name(adapter));
+        log_debug("The manager bind the adapter(%s) with pipe(%d)",
+                 neu_adapter_get_name(adapter), p);
     }
 
     return;
@@ -437,7 +437,7 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         manager = neu_adapter_get_manager(adapter);
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->adapter_pipe = p;
-        reg_entity->bind_count   = 1;
+        reg_entity->bind_count   = 0;
         manager->bind_info.bind_count++;
         nng_mtx_unlock(manager->bind_info.mtx);
         log_info("The manager unbind the adapter(%s)",
@@ -536,9 +536,9 @@ static int manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
     int rv = 0;
 
-    rv = nng_pipe_notify(neu_adapter_get_sock(adapter), NNG_PIPE_EV_ADD_POST,
+    rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_ADD_POST,
                          manager_bind_adapter, adapter);
-    rv = nng_pipe_notify(neu_adapter_get_sock(adapter), NNG_PIPE_EV_REM_POST,
+    rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_REM_POST,
                          manager_unbind_adapter, adapter);
     neu_adapter_start(adapter, manager);
     return rv;
@@ -561,6 +561,7 @@ static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     message_t *pay_msg;
     pay_msg = (message_t *) nng_msg_body(msg);
     msg_inplace_data_init(pay_msg, MSG_CMD_EXIT_LOOP, sizeof(uint32_t));
+
     buf_ptr                           = msg_get_buf_ptr(pay_msg);
     *(uint32_t *) buf_ptr             = 0; // exit_code is 0
     manager_bind_info_t *manager_bind = &manager->bind_info;
@@ -754,7 +755,7 @@ static void manager_loop(void *arg)
         case MSG_EVENT_NODE_PING: {
             char *buf_ptr;
             buf_ptr = msg_get_buf_ptr(pay_msg);
-            log_info("Recieve ping: %s", buf_ptr);
+            log_debug("Recieve ping: %s", buf_ptr);
 
             const char *adapter_str = "manager recv reply";
             nng_msg *   out_msg;
@@ -773,6 +774,7 @@ static void manager_loop(void *arg)
                 memcpy(buf_ptr, adapter_str, strlen(adapter_str));
                 buf_ptr[strlen(adapter_str)] = 0;
                 nng_msg_set_pipe(out_msg, msg_pipe);
+                log_info("Reply pong to pipe: %d", msg_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -797,7 +799,6 @@ static void manager_loop(void *arg)
             read_data_cmd_t *     cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
-            log_info("Foward read command to driver");
             cmd_ptr    = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
             reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
                                                   SAMPLE_DRV_ADAPTER_NAME);
@@ -813,6 +814,7 @@ static void manager_loop(void *arg)
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_cmd_ptr, cmd_ptr, sizeof(read_data_cmd_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
+                log_info("Foward read command to driver pipe: %d", msg_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
