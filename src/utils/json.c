@@ -25,25 +25,49 @@
 #include "json.h"
 #include "neu_log.h"
 
+static json_t *encode_object_value(neu_json_elem_t *ele)
+{
+    json_t *ob = NULL;
+
+    switch (ele->t) {
+    case NEU_JSON_INT:
+        ob = json_integer(ele->v.val_int);
+        break;
+    case NEU_JSON_STR:
+        ob = json_string(ele->v.val_str);
+        break;
+    case NEU_JSON_DOUBLE:
+        ob = json_real(ele->v.val_double);
+        break;
+    case NEU_JSON_BOOL:
+        ob = json_boolean(ele->v.val_bool);
+        break;
+    default:
+        break;
+    }
+
+    return ob;
+}
+
 static json_t *encode_object(json_t *object, neu_json_elem_t ele)
 {
     json_t *ob = object;
 
     switch (ele.t) {
     case NEU_JSON_INT:
-        json_object_set(ob, ele.name, json_integer(ele.v.val_int));
+        json_object_set_new(ob, ele.name, json_integer(ele.v.val_int));
         break;
     case NEU_JSON_STR:
-        json_object_set(ob, ele.name, json_string(ele.v.val_str));
+        json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
         break;
     case NEU_JSON_DOUBLE:
-        json_object_set(ob, ele.name, json_real(ele.v.val_double));
+        json_object_set_new(ob, ele.name, json_real(ele.v.val_double));
         break;
     case NEU_JSON_BOOL:
-        json_object_set(ob, ele.name, json_boolean(ele.v.val_bool));
+        json_object_set_new(ob, ele.name, json_boolean(ele.v.val_bool));
         break;
     case NEU_JSON_OBJECT:
-        json_object_set(ob, ele.name, ele.v.object);
+        json_object_set_new(ob, ele.name, ele.v.object);
         break;
     default:
         break;
@@ -187,6 +211,20 @@ int neu_json_decode_array_size(char *buf, char *child)
 
     json_decref(root);
     return ret;
+}
+
+void *neu_json_encode_array_value(void *array, neu_json_elem_t *t, int n)
+{
+
+    if (array == NULL) {
+        array = json_array();
+    }
+
+    for (int i = 0; i < n; i++) {
+        json_array_append_new(array, encode_object_value(&t[i]));
+    }
+
+    return array;
 }
 
 void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n)
