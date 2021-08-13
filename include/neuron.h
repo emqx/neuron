@@ -21,6 +21,7 @@
 #define _NEURON_H_
 
 #include "neu_adapter.h"
+#include "neu_list.h"
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "neu_plugin.h"
