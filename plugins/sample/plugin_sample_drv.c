@@ -28,6 +28,10 @@
 
 const neu_plugin_module_t neu_plugin_module;
 
+static int64_t tag001;
+static double  tag002;
+static char    tag003[100];
+
 struct neu_plugin {
     neu_plugin_common_t common;
 };
@@ -121,9 +125,30 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         log_info("Read data from addr(%d) with group config(%p)",
                  read_req->addr, read_req->grp_config);
 
-        static const char *resp_str = "Sample plugin read response";
-        data_var.var_type.typeId    = NEU_DATATYPE_STRING;
-        data_var.data               = (void *) resp_str;
+        if (3 == read_req->addr) {
+            // NEU_DATATYPE_STRING
+            data_var.var_type.typeId = NEU_DATATYPE_STRING;
+            data_var.data            = (void *) tag003;
+            log_info("NEU_REQRESP_READ_DATA string:%s", (char *) data_var.data);
+        }
+        if (4 == read_req->addr) {
+            // NEU_DATATYPE_DOUBLE
+            data_var.var_type.typeId = NEU_DATATYPE_DOUBLE;
+            data_var.data            = (void *) &tag002;
+            log_info("NEU_REQRESP_READ_DATA double:%lf",
+                     *(double *) data_var.data);
+        }
+        if (5 == read_req->addr) {
+            // NEU_DATATYPE_QWORD
+            data_var.var_type.typeId = NEU_DATATYPE_QWORD;
+            data_var.data            = (void *) &tag001;
+            log_info("NEU_REQRESP_READ_DATA qword:%ld",
+                     *(int64_t *) data_var.data);
+        }
+
+        // static const char *resp_str = "Sample plugin read response";
+        // data_var.var_type.typeId    = NEU_DATATYPE_STRING;
+        // data_var.data               = (void *) resp_str;
 
         data_resp.grp_config = read_req->grp_config;
         data_resp.data_var   = &data_var;
@@ -139,13 +164,30 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     case NEU_REQRESP_WRITE_DATA: {
         neu_reqresp_write_t *write_req;
-        const char *         data_str;
 
         assert(req->buf_len == sizeof(neu_reqresp_write_t));
         write_req = (neu_reqresp_write_t *) req->buf;
-        data_str  = neu_variable_get_str(write_req->data_var);
-        log_info("Write %s \n\tto addr(%d) with group config(%p)", data_str,
-                 write_req->addr, write_req->grp_config);
+
+        int type = write_req->data_var->var_type.typeId;
+        if (type == NEU_DATATYPE_STRING) {
+            const char *data_str;
+            data_str = neu_variable_get_str(write_req->data_var);
+            memset(tag003, 0x00, sizeof(tag003));
+            memcpy(tag003, data_str, strlen(data_str));
+
+            // log_info("Write %s \n\tto addr(%d) with group config(%p)",
+            // data_str,
+            //          write_req->addr, write_req->grp_config);
+            log_info("Write NEU_DATATYPE_STRING value: %s", data_str);
+        }
+        if (type == NEU_DATATYPE_QWORD) {
+            tag001 = *(int64_t *) write_req->data_var->data;
+            log_info("Write NEU_DATATYPE_QWORD value: %ld", tag001);
+        }
+        if (type == NEU_DATATYPE_DOUBLE) {
+            tag002 = *(double *) write_req->data_var->data;
+            log_info("Write NEU_DATATYPE_DOUBLE value: %lf", tag002);
+        }
         break;
     }
 
