@@ -1,7 +1,12 @@
+#include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
 
 #include <neuron.h>
+
+#include "parser/neu_json_parser.h"
+#include "parser/neu_json_read.h"
+#include "parser/neu_json_write.h"
 
 #include "option.h"
 #include "paho_client.h"
@@ -21,11 +26,27 @@ struct neu_plugin {
     pthread_t           send_thread_id;
     pthread_t           arrived_thread_id;
     int                 finished;
+    uint32_t            new_event_id;
 };
+
+static uint32_t plugin_get_event_id(neu_plugin_t *plugin)
+{
+    uint32_t req_id;
+
+    plugin->new_event_id++;
+    if (plugin->new_event_id == 0) {
+        plugin->new_event_id = 1;
+    }
+
+    req_id = plugin->new_event_id;
+    return req_id;
+}
 
 typedef struct {
     neu_list_node node;
-    char          uuid[36 + 1];
+    char *        topic;
+    char *        json_str;
+    int           error;
 } arrived_task_t;
 
 typedef struct {
@@ -55,6 +76,14 @@ static void plugin_arrived_task_destroy(arrived_task_t *task)
         return;
     }
 
+    if (NULL != task->json_str) {
+        free(task->json_str);
+    }
+
+    if (NULL != task->topic) {
+        free(task->topic);
+    }
+
     free(task);
 }
 
@@ -67,14 +96,14 @@ static int plugin_add_arrived_task(neu_plugin_t *plugin, arrived_task_t *task)
     return 0;
 }
 
-static int plugin_add_send_task(neu_plugin_t *plugin, send_task_t *task)
-{
-    pthread_mutex_lock(&plugin->send_mutex);
-    NEU_LIST_NODE_INIT(&task->node);
-    neu_list_append(&plugin->send_list, task);
-    pthread_mutex_unlock(&plugin->send_mutex);
-    return 0;
-}
+// static int plugin_add_send_task(neu_plugin_t *plugin, send_task_t *task)
+// {
+//     pthread_mutex_lock(&plugin->send_mutex);
+//     NEU_LIST_NODE_INIT(&task->node);
+//     neu_list_append(&plugin->send_list, task);
+//     pthread_mutex_unlock(&plugin->send_mutex);
+//     return 0;
+// }
 
 static int plugin_adapter_response(neu_plugin_t *plugin, send_task_t *task)
 {
@@ -101,63 +130,83 @@ static int plugin_adapter_response(neu_plugin_t *plugin, send_task_t *task)
     return adapter_callbacks->response(plugin->common.adapter, &resp);
 }
 
-static int plugin_adapter_response_error(neu_plugin_t *plugin,
-                                         send_task_t * task)
+static int plugin_adapter_read_command(neu_plugin_t *plugin, const char *tag)
 {
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
 
-    neu_response_t     resp;
-    neu_reqresp_data_t neu_data;
-    neu_variable_t     data_var;
-    static const char *resp_str = "MQTT plugin read response";
+    neu_request_t      cmd;
+    neu_reqresp_read_t read_req;
 
-    data_var.var_type.typeId = NEU_DATATYPE_STRING;
-    data_var.data            = (void *) resp_str;
+    read_req.grp_config = NULL;
+    read_req.node_id    = 1;
 
-    neu_data.grp_config = NULL;
-    neu_data.data_var   = &data_var;
-
-    memset(&resp, 0, sizeof(resp));
-    resp.req_id    = task->task_id;
-    resp.resp_type = NEU_REQRESP_TRANS_DATA;
-    resp.buf_len   = sizeof(neu_reqresp_data_t);
-    resp.buf       = &neu_data;
-
-    return adapter_callbacks->response(plugin->common.adapter, &resp);
-}
-
-static int plugin_adapter_event_notify(neu_plugin_t *  plugin,
-                                       arrived_task_t *task)
-{
-    UNUSED(plugin);
-    UNUSED(task);
-
-    const adapter_callbacks_t *adapter_callbacks;
-    adapter_callbacks = plugin->common.adapter_callbacks;
-
-    neu_variable_t     data_var;
-    static const char *resp_str = "MQTT plugin read response";
-
-    data_var.var_type.typeId = NEU_DATATYPE_STRING;
-    data_var.data            = (void *) resp_str;
-
-    void *          buffer;
-    size_t          buffer_len   = neu_variable_serialize(&data_var, &buffer);
-    neu_variable_t *new_data_var = neu_variable_deserialize(buffer, buffer_len);
-    if (NULL != new_data_var) {
-        if (NULL != new_data_var->data) {
-            log_info("%s", (char *) new_data_var->data);
-            free(new_data_var->data);
-        }
-        free(new_data_var);
+    if (0 == strcmp("tag001", tag)) {
+        read_req.addr = 5;
     }
 
-    neu_event_notify_t *event =
-        (neu_event_notify_t *) malloc(sizeof(neu_event_notify_t));
-    adapter_callbacks->event_notify(plugin->common.adapter, event);
+    if (0 == strcmp("tag002", tag)) {
+        read_req.addr = 4;
+    }
 
+    if (0 == strcmp("tag003", tag)) {
+        read_req.addr = 3;
+    }
+
+    cmd.req_type = NEU_REQRESP_READ_DATA;
+    cmd.req_id   = plugin_get_event_id(plugin);
+    cmd.buf      = (void *) &read_req;
+    cmd.buf_len  = sizeof(neu_reqresp_read_t);
+    log_info("Send a read command");
+
+    adapter_callbacks->command(plugin->common.adapter, &cmd, NULL);
     return 0;
+}
+
+static int plugin_adapter_write_command(neu_plugin_t *       plugin,
+                                        enum neu_json_type   type,
+                                        union neu_json_value value)
+{
+    const adapter_callbacks_t *adapter_callbacks;
+    adapter_callbacks = plugin->common.adapter_callbacks;
+
+    neu_request_t       cmd1;
+    neu_reqresp_write_t write_req;
+    neu_variable_t      data_var;
+    // static const char * data_str = "Sample app writing";
+
+    if (NEU_JSON_INT == type) {
+        data_var.var_type.typeId = NEU_DATATYPE_QWORD;
+        data_var.data            = (void *) &value.val_int;
+    }
+
+    if (NEU_JSON_STR == type) {
+        data_var.var_type.typeId = NEU_DATATYPE_STRING;
+        data_var.data            = (void *) value.val_str;
+    }
+    if (NEU_JSON_DOUBLE == type) {
+        data_var.var_type.typeId = NEU_DATATYPE_DOUBLE;
+        data_var.data            = (void *) &value.val_double;
+    }
+
+    write_req.grp_config = NULL;
+    write_req.node_id    = 1;
+    write_req.addr       = 3;
+    write_req.data_var   = &data_var;
+    cmd1.req_type        = NEU_REQRESP_WRITE_DATA;
+    cmd1.req_id          = plugin_get_event_id(plugin);
+    cmd1.buf             = (void *) &write_req;
+    cmd1.buf_len         = sizeof(neu_reqresp_write_t);
+    log_info("Send a write command");
+    adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
+    return 0;
+}
+
+static int plugin_send(neu_plugin_t *plugin, char *buff, const size_t len)
+{
+    client_error error = paho_client_publish(
+        plugin->paho, "neuronlite/response", 0, (unsigned char *) buff, len);
+    return error;
 }
 
 static void plugin_send_loop(neu_plugin_t *plugin)
@@ -175,15 +224,6 @@ static void plugin_send_loop(neu_plugin_t *plugin)
         if (NULL == task) {
             pthread_mutex_unlock(&plugin->send_mutex);
             continue;
-        }
-
-        // TODO: neu_variable_t deserialize
-        // TODO: JSON serialize
-
-        client_error error = paho_client_publish(
-            plugin->paho, "MQTT Examples", 0, task->buffer, task->buffer_size);
-        if (ClientSuccess != error) {
-            plugin_adapter_response_error(plugin, task);
         }
 
         plugin_adapter_response(plugin, task);
@@ -210,10 +250,52 @@ static void plugin_arrived_loop(neu_plugin_t *plugin)
             continue;
         }
 
-        // TODO: JSON deserailize
-        // TODO: create neu_variable_t;
+        if (NULL == task->json_str) {
+            pthread_mutex_unlock(&plugin->arrived_mutex);
+            continue;
+        }
 
-        plugin_adapter_event_notify(plugin, task);
+        // JSON deserailize
+        void *                     result = NULL;
+        struct neu_parse_read_req *req    = NULL;
+        int rc = neu_parse_decode(task->json_str, &result);
+        if (0 != rc) {
+            task->error = 1;
+        }
+        req = (struct neu_parse_read_req *) result;
+
+        if (NEU_PARSE_OP_READ == req->function) {
+            log_info("READ uuid:%s, group:%s", req->uuid, req->group);
+            for (int i = 0; i < req->n_name; i++) {
+                plugin_adapter_read_command(plugin, req->names[i].name);
+            }
+        }
+
+        if (NEU_PARSE_OP_WRITE == req->function) {
+            log_info("WRITE uuid:%s, group:%s", req->uuid, req->group);
+            struct neu_parse_write_req *write_req;
+            write_req = (struct neu_parse_write_req *) result;
+            for (int i = 0; i < write_req->n_tag; i++) {
+                plugin_adapter_write_command(plugin, write_req->tags[i].t,
+                                             write_req->tags[i].value);
+            }
+
+            // Response status
+            char *                     result = NULL;
+            struct neu_parse_write_res res    = {
+                .function = NEU_PARSE_OP_WRITE,
+                .uuid     = req->uuid,
+                .error    = 0,
+            };
+
+            rc = neu_parse_encode(&res, &result);
+            if (0 == rc) {
+                plugin_send(plugin, result, strlen(result));
+                free(result);
+            }
+        }
+
+        neu_parse_decode_free(result);
         neu_list_remove(&plugin->arrived_list, task);
         plugin_arrived_task_destroy(task);
         pthread_mutex_unlock(&plugin->arrived_mutex);
@@ -232,35 +314,24 @@ static int plugin_subscribe(neu_plugin_t *plugin, const char *topic,
     return 0;
 }
 
-static void plugin_mqtt_examples_handle(const char *topic_name,
-                                        size_t topic_len, void *payload,
-                                        const size_t len, void *context)
-{
-    char payload_string[128] = { '\0' };
-    memcpy(payload_string, payload, len);
-    log_info("topic name:%s, topic len:%ld, payload:%s, payload "
-             "len:%ld, paho "
-             "plugin address:%x",
-             topic_name, topic_len, payload_string, len, context);
-    return;
-}
-
 static void plugin_response_handle(const char *topic_name, size_t topic_len,
                                    void *payload, const size_t len,
                                    void *context)
 {
+    if (NULL == topic_name || NULL == payload) {
+        return;
+    }
+
     neu_plugin_t *  plugin = (neu_plugin_t *) context;
     arrived_task_t *task   = (arrived_task_t *) malloc(sizeof(arrived_task_t));
-
     memset(task, 0x00, sizeof(arrived_task_t));
-    const char *uuid = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx";
-    memcpy(task->uuid, uuid, strlen(uuid));
 
-    // TODO: generate task
-    UNUSED(topic_name);
+    task->topic    = strdup(topic_name);
+    task->json_str = malloc(len + 1);
+    memset(task->json_str, 0x00, len + 1);
+    memcpy(task->json_str, payload, len);
+
     UNUSED(topic_len);
-    UNUSED(payload);
-    UNUSED(len);
 
     plugin_add_arrived_task(plugin, task);
     return;
@@ -296,10 +367,12 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
+    plugin->new_event_id = 1;
+
     // MQTT option
     plugin->option.clientid           = "neuron-lite-mqtt-plugin";
     plugin->option.MQTT_version       = 4;
-    plugin->option.topic              = "MQTT Examples";
+    plugin->option.topic              = "neuronlite/response";
     plugin->option.qos                = 1;
     plugin->option.connection         = "tcp://";
     plugin->option.host               = "broker.emqx.io";
@@ -339,9 +412,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
         return -1;
     }
 
-    plugin_subscribe(plugin, "MQTT Examples", 0, plugin_mqtt_examples_handle);
-    plugin_subscribe(plugin, "neuronlite/response", 0, plugin_response_handle);
-
+    plugin_subscribe(plugin, "neuronlite/request", 0, plugin_response_handle);
     return 0;
 }
 
@@ -373,9 +444,6 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 
 static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
-    UNUSED(plugin);
-    UNUSED(req);
-
     int rv = 0;
 
     if (plugin == NULL || req == NULL) {
@@ -384,15 +452,82 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     }
 
     log_info("send request to plugin: %s", neu_plugin_module.module_name);
+    // const adapter_callbacks_t *adapter_callbacks;
+    // adapter_callbacks = plugin->common.adapter_callbacks;
 
     switch (req->req_type) {
-    case NEU_REQRESP_READ_DATA: {
-        send_task_t *task = (send_task_t *) malloc(sizeof(send_task_t));
-        task->task_id     = req->req_id;
-        task->buffer      = (unsigned char *) malloc(req->buf_len);
-        task->task_type   = NEU_REQRESP_READ_DATA;
-        memcpy(task->buffer, req->buf, req->buf_len);
-        plugin_add_send_task(plugin, task);
+    case NEU_REQRESP_TRANS_DATA: {
+        neu_reqresp_data_t *neu_data;
+        // const char *        req_str;
+
+        assert(req->buf_len == sizeof(neu_reqresp_data_t));
+        neu_data = (neu_reqresp_data_t *) req->buf;
+
+        char *                    result = NULL;
+        struct neu_parse_read_res res    = {
+            .function = NEU_PARSE_OP_READ,
+            .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
+            .error    = 0,
+            .n_tag    = 1,
+        };
+
+        res.tags = (struct neu_parse_read_res_tag *) calloc(
+            1, sizeof(struct neu_parse_read_res_tag));
+
+        int type = neu_data->data_var->var_type.typeId;
+        if (type == NEU_DATATYPE_STRING) {
+            const char *data_str;
+            data_str              = neu_variable_get_str(neu_data->data_var);
+            res.tags[0].name      = strdup((char *) "tag003");
+            res.tags[0].type      = NEU_JSON_STR;
+            res.tags[0].timestamp = 0;
+            res.tags[0].value     = 0;
+            int rc                = neu_parse_encode(&res, &result);
+            if (0 == rc) {
+                plugin_send(plugin, result, strlen(result));
+            }
+
+            free(res.tags[0].name);
+            free(res.tags);
+            free(result);
+
+            log_info("MQTT plug-in read NEU_DATATYPE_STRING value: %s",
+                     data_str);
+        }
+        if (type == NEU_DATATYPE_DOUBLE) {
+            double data_d         = *(double *) neu_data->data_var->data;
+            res.tags[0].name      = strdup((char *) "tag002");
+            res.tags[0].type      = NEU_JSON_DOUBLE;
+            res.tags[0].timestamp = 0;
+            res.tags[0].value     = data_d;
+            int rc                = neu_parse_encode(&res, &result);
+            if (0 == rc) {
+                plugin_send(plugin, result, strlen(result));
+            }
+
+            free(res.tags[0].name);
+            free(res.tags);
+            free(result);
+
+            log_info("MQTT plug-in NEU_DATATYPE_DOUBLE value: %lf", data_d);
+        }
+        if (type == NEU_DATATYPE_QWORD) {
+            int64_t data_i64      = *(int64_t *) neu_data->data_var->data;
+            res.tags[0].name      = strdup((char *) "tag001");
+            res.tags[0].type      = NEU_JSON_INT;
+            res.tags[0].timestamp = 0;
+            res.tags[0].value     = data_i64;
+            int rc                = neu_parse_encode(&res, &result);
+            if (0 == rc) {
+                plugin_send(plugin, result, strlen(result));
+            }
+            free(res.tags[0].name);
+            free(res.tags);
+            free(result);
+
+            log_info("MQTT plug-in read NEU_DATATYPE_QWORD value: %ld",
+                     data_i64);
+        }
         break;
     }
 
