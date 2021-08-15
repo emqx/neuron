@@ -1,0 +1,39 @@
+name: EMQX Neuron-lite ci workflow
+
+on: [ push, pull_request ]
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04 ]
+        name: [ release ]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # checkout
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Run clang-format style check for C/C++ programs.
+        uses: DoozyX/clang-format-lint-action@v0.12
+        with:
+          source: 'src'
+          clangFormatVersion: 10
+          style: file
+
+      # build
+      - run: |
+          git submodule update --init --remote
+          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
+          sudo ./install-libs.sh -a
+          cmake .
+          make
+
+      # package
+
+      # unit test
+
+      # create or update release
