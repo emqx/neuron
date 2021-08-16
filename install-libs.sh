@@ -10,7 +10,7 @@ if [ $system == 'Linux' ];then
     fi
 fi
 
-lib_list=(nng jansson jwt paho uuid openssl)
+lib_list=(nng jansson jwt paho uuid openssl gtest)
 
 list_str=""
 for var in ${lib_list[*]};do
@@ -141,6 +141,12 @@ function build_openssl()
 {  
     echo "Installing openssl"
     install_tool libssl-dev openssl-devel openssl
+}
+
+function build_gtest()
+{
+    echo "Install gtest"
+    install_tool libgtest-dev gtest-devel googletest
 }
 
 current=`pwd`
