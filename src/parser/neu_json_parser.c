@@ -23,6 +23,7 @@
 #include "neu_log.h"
 #include "utils/json.h"
 
+#include "neu_json_login.h"
 #include "neu_json_parser.h"
 #include "neu_json_read.h"
 #include "neu_json_write.h"
@@ -47,6 +48,12 @@ int neu_parse_decode(char *buf, void **result)
         ret = neu_parse_decode_write_req(
             buf, (struct neu_parse_write_req **) result);
         break;
+    case NEU_PARSE_OP_LOGIN:
+        ret = neu_parse_decode_login_req(
+            buf, (struct neu_parse_login_req **) result);
+        break;
+    case NEU_PARSE_OP_LOGOUT:
+        break;
     }
 
     return ret;
@@ -62,6 +69,11 @@ int neu_parse_encode(void *result, char **buf)
         break;
     case NEU_PARSE_OP_WRITE:
         neu_parse_encode_write_res((struct neu_parse_write_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_LOGIN:
+        neu_parse_encode_login_res((struct neu_parse_login_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_LOGOUT:
         break;
     }
 
@@ -97,6 +109,18 @@ void neu_parse_decode_free(void *result)
             }
         }
         free(req->tags);
+        break;
+    }
+
+    case NEU_PARSE_OP_LOGIN: {
+        struct neu_parse_login_req *req = result;
+
+        free(req->uuid);
+        free(req->user);
+        free(req->password);
+        break;
+    }
+    case NEU_PARSE_OP_LOGOUT: {
         break;
     }
     }
