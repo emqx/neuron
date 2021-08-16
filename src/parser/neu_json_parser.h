@@ -30,7 +30,12 @@ extern "C" {
 #define NEU_PARSE_UUID "uuid"
 #define NEU_PARSE_ERROR "error"
 
-enum neu_parse_function { NEU_PARSE_OP_READ = 50, NEU_PARSE_OP_WRITE = 51 };
+enum neu_parse_function {
+    NEU_PARSE_OP_READ   = 50,
+    NEU_PARSE_OP_WRITE  = 51,
+    NEU_PARSE_OP_LOGIN  = 10,
+    NEU_PARSE_OP_LOGOUT = 11
+};
 
 int  neu_parse_decode(char *buf, void **result);
 void neu_parse_decode_free(void *result);

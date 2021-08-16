@@ -17,16 +17,24 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "parser/neu_json_login.h"
+#include "parser/neu_json_parser.h"
+
 #include "handle.h"
 
+static void bad_request(nng_aio *aio, char *error);
 static void ping(nng_aio *aio);
 static void read(nng_aio *aio);
 static void write(nng_aio *aio);
+static void login(nng_aio *aio);
+static void logout(nng_aio *aio);
 
 struct neu_rest_handler rest_handlers[] = {
     {
@@ -52,6 +60,18 @@ struct neu_rest_handler rest_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/write",
         .value.handler = write,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/login",
+        .value.handler = login,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/logout",
+        .value.handler = logout,
     }
 };
 
@@ -85,4 +105,73 @@ static void read(nng_aio *aio)
 static void write(nng_aio *aio)
 {
     (void) aio;
+}
+
+static void login(nng_aio *aio)
+{
+    int                         ret             = -1;
+    nng_http_res *              res             = NULL;
+    char *                      res_data        = NULL;
+    char *                      req_data        = NULL;
+    char                        req_cdata[1024] = { 0 };
+    size_t                      req_data_size   = 0;
+    nng_http_req *              req             = nng_aio_get_input(aio, 0);
+    struct neu_parse_login_req *login_req       = NULL;
+    struct neu_parse_login_res  login_res       = {
+        .function = NEU_PARSE_OP_LOGIN,
+        .error    = 1,
+        .token    = "fake token",
+    };
+
+    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
+    if (req_data_size <= 0) {
+        neu_parse_encode(&login_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    memcpy(req_cdata, req_data, req_data_size);
+    ret = neu_parse_decode(req_cdata, (void **) &login_req);
+    if (ret != 0) {
+        neu_parse_encode(&login_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    login_res.error = 0;
+    login_res.uuid  = login_req->uuid;
+
+    neu_parse_encode(&login_res, &res_data);
+    nng_http_res_alloc(&res);
+
+    nng_http_res_copy_data(res, res_data, strlen(res_data));
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
+    nng_http_res_set_header(res, "Content-Type", "application/json");
+
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+    free(res_data);
+    neu_parse_decode_free(login_req);
+}
+
+static void logout(nng_aio *aio)
+{
+    (void) aio;
+}
+
+static void bad_request(nng_aio *aio, char *error)
+{
+
+    nng_http_res *res = NULL;
+
+    nng_http_res_alloc(&res);
+
+    nng_http_res_copy_data(res, error, strlen(error));
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_BAD_REQUEST);
+    nng_http_res_set_header(res, "Content-Type", "application/json");
+
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
 }

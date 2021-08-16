@@ -60,6 +60,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 endif()
 
 # define neuron executalbe program
+aux_source_directory(src/parser NEURON_SRC_PARSE)
 set(NEURON_SOURCES
     src/main.c
     src/core/message.c
@@ -69,15 +70,12 @@ set(NEURON_SOURCES
     src/core/neu_datatag_manager.c
     src/core/neu_datatag_table.c
     src/adapter/adapter.c
-    src/parser/neu_json_parser.c
-    src/parser/neu_json_read.c
-    src/parser/neu_json_write.c
     plugins/restful/handle.c
     plugins/restful/rest.c)
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
-target_sources(neuron PRIVATE ${NEURON_SOURCES})
+target_sources(neuron PRIVATE ${NEURON_SOURCES} ${NEURON_SRC_PARSE})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 if(APPLE)
   target_link_libraries(neuron nng::nng jansson neuron-base)
