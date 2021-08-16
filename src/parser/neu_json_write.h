@@ -24,8 +24,8 @@
 #include "neu_json_parser.h"
 
 struct neu_parse_write_req_tag {
-    char *             name;
-    enum neu_json_type t;
+    char *               name;
+    enum neu_json_type   t;
     union neu_json_value value;
 };
 
