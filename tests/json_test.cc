@@ -144,7 +144,7 @@ TEST(JsonTest, EncodeField)
 {
     char *buf =
         (char *) "{\"field1\": true, \"field2\": false, \"field3\": 12345, "
-                 "\"field4\": 11.223000000000001, \"field5\": \"hello world\"}";
+                 "\"field4\": 11.223, \"field5\": \"hello world\"}";
     char *result = NULL;
 
     neu_json_elem_t elems[] = { {

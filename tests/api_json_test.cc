@@ -36,8 +36,8 @@ TEST(JsonAPITest, ReadResEncode)
              *) "{\"function\": 51, \"uuid\": "
                 "\"554f5fd8-f437-11eb-975c-7704b9e17821\", \"error\": 0, "
                 "\"tags\": [{\"name\": \"tag001\", \"type\": 0, \"timestamp\": "
-                "1122334455.0, \"value\": 123.0}, {\"name\": \"tag002\", "
-                "\"type\": 1, \"timestamp\": 4445555.0, \"value\": 11233.0}]}";
+                "1122334455, \"value\": 123.0}, {\"name\": \"tag002\", "
+                "\"type\": 1, \"timestamp\": 4445555, \"value\": 11233.0}]}";
     char *                    result = NULL;
     struct neu_parse_read_res res    = {
         .function = NEU_PARSE_OP_READ,

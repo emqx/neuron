@@ -86,9 +86,9 @@ int neu_parse_encode_read_res(struct neu_parse_read_res *res, char **buf)
 
                                   },
                                   {
-                                      .name         = TIMESTAMP,
-                                      .t            = NEU_JSON_DOUBLE,
-                                      .v.val_double = res->tags[i].timestamp,
+                                      .name      = TIMESTAMP,
+                                      .t         = NEU_JSON_INT,
+                                      .v.val_int = res->tags[i].timestamp,
                                   },
                                   {
                                       .name         = VALUE,
