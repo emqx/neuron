@@ -24,9 +24,4 @@
 
 const neu_plugin_module_t default_dashboard_plugin_module;
 
-typedef struct neu_rest_context neu_rest_context_t;
-
-neu_rest_context_t *neu_rest_start(void);
-void                neu_rest_stop(neu_rest_context_t *ctx);
-
 #endif

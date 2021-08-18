@@ -110,6 +110,8 @@ static const char *const manager_url = "inproc://neu_manager";
 #define SAMPLE_DRV_ADAPTER_NAME "sample-driver-adapter"
 #define SAMPLE_APP_ADAPTER_NAME "sample-app-adapter"
 #endif
+#define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
+#define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 #define MQTT_ADAPTER_NAME "mqtt-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 50
@@ -145,16 +147,16 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
         .plugin_name  = MQTT_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
-    /*
     {
-        .adapter_type    = ADAPTER_TYPE_WEBSERVER,
-        .adapter_name    = "builtin-webserver",
-        .plugin_name     = NULL,    // The builtin webserver has'nt plugin
-        .plugin_id       = { 0 }    // The plugin_id is nothing
+        .adapter_type = ADAPTER_TYPE_WEBSERVER,
+        .adapter_name = DEFAULT_DASHBOARD_ADAPTER_NAME,
+        .plugin_name  = DEFAULT_DASHBOARD_PLUGIN_NAME,
+        .plugin_id    = { 0 } // The plugin_id is nothing
     },
+    /*
     {   // for remote customize webserver by user, the plugin is a proxy
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
-        .adapter_name    = "webserver-adapter",
+        .adapter_name    = WEBSERVER_ADAPTER_NAME,
         .plugin_name     = WEBSERVER_PLUGIN_NAME,
         .plugin_id       = { 0 }    // The plugin_id is nothing
     },
@@ -184,7 +186,7 @@ static const char *default_plugin_lib_names[] = {
     (sizeof(default_plugin_lib_names) / sizeof(default_plugin_lib_names[0]))
 
 // clang-format off
-static const plugin_reg_param_t system_plugin_infos[] = {
+static const plugin_reg_param_t default_plugin_infos[] = {
 #ifdef NEU_HAS_SAMPLE_ADAPTER
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
@@ -206,6 +208,12 @@ static const plugin_reg_param_t system_plugin_infos[] = {
         .plugin_name     = MQTT_PLUGIN_NAME,
         .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
     },
+    {
+        .plugin_kind     = PLUGIN_KIND_STATIC,
+        .adapter_type    = ADAPTER_TYPE_WEBSERVER,
+        .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
+        .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME
+    },
     /*
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
@@ -222,8 +230,8 @@ static const plugin_reg_param_t system_plugin_infos[] = {
     */
 };
 // clang-format on
-#define SYSTEM_PLUGIN_INFO_SIZE \
-    (sizeof(system_plugin_infos) / sizeof(system_plugin_infos[0]))
+#define DEFAULT_PLUGIN_INFO_SIZE \
+    (sizeof(default_plugin_infos) / sizeof(default_plugin_infos[0]))
 
 typedef struct config_add_param {
     char *               config_name;
@@ -584,19 +592,19 @@ static int register_default_plugins(neu_manager_t *manager)
 
     for (i = 0; i < DEFAULT_PLUGIN_COUNT; i++) {
         plugin_id.id_val = 0;
-        for (j = 0; j < SYSTEM_PLUGIN_INFO_SIZE; j++) {
-            if (strcmp(system_plugin_infos[j].plugin_lib_name,
+        for (j = 0; j < DEFAULT_PLUGIN_INFO_SIZE; j++) {
+            if (strcmp(default_plugin_infos[j].plugin_lib_name,
                        default_plugin_lib_names[i]) == 0) {
                 break;
             }
         }
 
-        if (j < SYSTEM_PLUGIN_INFO_SIZE) {
-            reg_param                 = system_plugin_infos[j];
+        if (j < DEFAULT_PLUGIN_INFO_SIZE) {
+            reg_param                 = default_plugin_infos[j];
             reg_param.plugin_lib_name = calloc(1, path_len);
 
             snprintf(reg_param.plugin_lib_name, path_len, "./%s",
-                     system_plugin_infos[j].plugin_lib_name);
+                     default_plugin_infos[j].plugin_lib_name);
             plugin_id =
                 plugin_manager_reg_plugin(manager->plugin_manager, &reg_param);
             if (plugin_id.id_val == 0) {

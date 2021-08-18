@@ -75,8 +75,8 @@ struct neu_rest_handler rest_handlers[] = {
     }
 };
 
-void neu_rest_all_handler(const struct neu_rest_handler **handlers,
-                          uint32_t *                      size)
+void neu_rest_init_all_handler(const struct neu_rest_handler **handlers,
+                               uint32_t *                      size)
 {
     *handlers = rest_handlers;
     *size     = sizeof(rest_handlers) / sizeof(struct neu_rest_handler);

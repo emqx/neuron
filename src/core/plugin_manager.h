@@ -26,6 +26,9 @@
 #include "core/plugin_info.h"
 #include "neu_plugin.h"
 
+#define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard-plugin"
+#define DEFAULT_DASHBOARD_PLUGIN_LIB_NAME "libplugin_default_dashboard"
+
 typedef struct plugin_reg_param {
     plugin_kind_e  plugin_kind;
     adapter_type_e adapter_type;

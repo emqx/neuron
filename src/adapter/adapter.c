@@ -486,14 +486,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->new_req_id  = 1;
     adapter->plugin_id   = info->plugin_id;
     adapter->plugin_kind = info->plugin_kind;
-    if (info->plugin_lib_name == NULL) {
-        adapter->plugin_lib_name = NULL;
-        adapter->plugin_lib      = NULL;
-        adapter->plugin_module   = NULL;
-        adapter->plugin          = NULL;
-        log_info("Create a adapter without plugin");
-        goto open_pipe;
-    }
 
     adapter->plugin_lib_name = strdup(info->plugin_lib_name);
     if (adapter->name == NULL || adapter->plugin_lib_name == NULL) {
@@ -527,7 +519,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     }
     adapter->plugin = plugin;
 
-open_pipe:
     rv = nng_pair1_open(&adapter->sock);
     if (rv != 0) {
         neu_panic("The adapter(%s) can't open pipe", adapter->name);

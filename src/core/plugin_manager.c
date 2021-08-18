@@ -49,7 +49,6 @@ struct plugin_manager {
     vector_t custom_plugins;
 };
 
-#define DEFAULT_DASHBOARD_PLUGIN_LIB_NAME "libplugin_default_dashboard"
 /*
  * manage builtin static plugins
  */
@@ -58,7 +57,7 @@ static const plugin_reg_entity_t builtin_static_plugins[] = {
         .plugin_id       = { 1 },
         .plugin_kind     = PLUGIN_KIND_STATIC,
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
-        .plugin_name     = "default_dashboard_plugin",
+        .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
     },
 };
@@ -626,7 +625,7 @@ static void *load_static_plugin(char *                plugin_lib_name,
                 *p_plugin_module =
                     (neu_plugin_module_t *) plugin_module_maps[i].plugin_module;
             }
-            return (void *) i;
+            return (void *) (i + 1); // the pointer must not be NULL
         }
     }
     return NULL;

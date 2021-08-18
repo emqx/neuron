@@ -42,7 +42,7 @@ struct neu_rest_handler {
     } value;
 };
 
-void neu_rest_all_handler(const struct neu_rest_handler **handlers,
-                          uint32_t *                      size);
+void neu_rest_init_all_handler(const struct neu_rest_handler **handlers,
+                               uint32_t *                      size);
 
 #endif

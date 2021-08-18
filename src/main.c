@@ -115,8 +115,6 @@ int main(int argc, char *argv[])
         goto main_end;
     }
 
-    neu_rest_start();
-
     neu_manager_t *manager;
     log_info("running neuron main process, daemon: %d", is_daemon);
     manager = neu_manager_create();
