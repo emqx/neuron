@@ -17,7 +17,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <dlfcn.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,6 +29,7 @@
 
 #include "adapter_internal.h"
 #include "core/neu_manager.h"
+#include "core/plugin_manager.h"
 #include "neu_adapter.h"
 #include "neu_log.h"
 #include "neu_panic.h"
@@ -56,45 +56,13 @@ struct neu_adapter {
     nng_thread *         thrd;
     uint32_t             new_req_id;
     plugin_id_t          plugin_id;
+    plugin_kind_e        plugin_kind;
     char *               plugin_lib_name;
     void *               plugin_lib; // handle of dynamic lib
     neu_plugin_module_t *plugin_module;
     neu_plugin_t *       plugin;
     adapter_callbacks_t  cb_funs;
 };
-
-static void *load_plugin_library(char *                plugin_lib_name,
-                                 neu_plugin_module_t **plugin_module)
-{
-    void *lib_handle;
-
-    lib_handle = dlopen(plugin_lib_name, RTLD_NOW);
-    if (lib_handle == NULL) {
-        log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
-                  dlerror());
-
-        return NULL;
-    }
-
-    void *module_info;
-    module_info = dlsym(lib_handle, "neu_plugin_module");
-    if (module_info == NULL) {
-        dlclose(lib_handle);
-        log_error("Failed to get neu_plugin_module from %s", plugin_lib_name);
-        return NULL;
-    }
-
-    *plugin_module = (neu_plugin_module_t *) module_info;
-    return lib_handle;
-}
-
-static int unload_plugin_library(void *lib_handle)
-{
-    int rv = 0;
-
-    dlclose(lib_handle);
-    return rv;
-}
 
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
 {
@@ -512,11 +480,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         return NULL;
     }
 
-    adapter->id         = info->id;
-    adapter->type       = info->type;
-    adapter->name       = strdup(info->name);
-    adapter->new_req_id = 1;
-    adapter->plugin_id  = info->plugin_id;
+    adapter->id          = info->id;
+    adapter->type        = info->type;
+    adapter->name        = strdup(info->name);
+    adapter->new_req_id  = 1;
+    adapter->plugin_id   = info->plugin_id;
+    adapter->plugin_kind = info->plugin_kind;
     if (info->plugin_lib_name == NULL) {
         adapter->plugin_lib_name = NULL;
         adapter->plugin_lib      = NULL;
@@ -542,7 +511,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     void *               handle;
     neu_plugin_module_t *plugin_module;
-    handle = load_plugin_library(adapter->plugin_lib_name, &plugin_module);
+    handle = load_plugin_library(adapter->plugin_lib_name, adapter->plugin_kind,
+                                 &plugin_module);
     if (handle == NULL) {
         neu_panic("Can't to load library(%s) for plugin(%s)",
                   adapter->plugin_lib_name, adapter->name);
@@ -578,7 +548,7 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
         adapter->plugin_module->intf_funs->close(adapter->plugin);
     }
     if (adapter->plugin_lib != NULL) {
-        unload_plugin_library(adapter->plugin_lib);
+        unload_plugin_library(adapter->plugin_lib, adapter->plugin_kind);
     }
     if (adapter->name != NULL) {
         free(adapter->name);

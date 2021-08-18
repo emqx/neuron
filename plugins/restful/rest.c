@@ -130,3 +130,25 @@ neu_rest_context_t *neu_rest_start(void)
 
     return context;
 }
+
+static const neu_plugin_intf_funs_t plugin_intf_funs = {
+    /*
+    .open        = default_dashb_plugin_open,
+    .close       = default_dashb_plugin_close,
+    .init        = default_dashb_plugin_init,
+    .uninit      = default_dashb_plugin_uninit,
+    .config      = default_dashb_plugin_config,
+    .request     = default_dashb_plugin_request,
+    .event_reply = default_dashb_plugin_event_reply
+    */
+};
+
+#define DEFAULT_DASHBOARD_PLUGIN_DESCR \
+    "A restful plugin for dashboard webserver"
+
+const neu_plugin_module_t default_dashboard_plugin_module = {
+    .version      = NEURON_PLUGIN_VER_1_0,
+    .module_name  = "neuron-default-dashboard",
+    .module_descr = DEFAULT_DASHBOARD_PLUGIN_DESCR,
+    .intf_funs    = &plugin_intf_funs
+};

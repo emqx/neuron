@@ -40,6 +40,7 @@ typedef struct neu_adapter_info {
     adapter_type_e type;
     plugin_id_t    plugin_id;
     const char *   name;
+    plugin_kind_e  plugin_kind;
     const char *   plugin_lib_name;
 } neu_adapter_info_t;
 

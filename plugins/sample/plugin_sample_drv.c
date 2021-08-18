@@ -23,9 +23,6 @@
 
 #include "neuron.h"
 
-#define SAMPLE_DRV_PLUGIN_DESCR \
-    "A sample plugin for demonstrate how to write a neuron driver plugin"
-
 const neu_plugin_module_t neu_plugin_module;
 
 static int64_t tag001;
@@ -218,6 +215,9 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .request     = sample_drv_plugin_request,
     .event_reply = sample_drv_plugin_event_reply
 };
+
+#define SAMPLE_DRV_PLUGIN_DESCR \
+    "A sample plugin for demonstrate how to write a neuron driver plugin"
 
 const neu_plugin_module_t neu_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,

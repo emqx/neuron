@@ -24,4 +24,10 @@ typedef struct plugin_id {
     uint32_t id_val;
 } plugin_id_t;
 
+typedef enum plugin_kind {
+    PLUGIN_KIND_STATIC,
+    PLUGIN_KIND_SYSTEM,
+    PLUGIN_KIND_CUSTOM
+} plugin_kind_e;
+
 #endif

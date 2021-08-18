@@ -25,9 +25,6 @@
 
 #include "neuron.h"
 
-#define SAMPLE_APP_PLUGIN_DESCR \
-    "A sample plugin for demonstrate how to write a neuron application plugin"
-
 const neu_plugin_module_t neu_plugin_module;
 
 struct neu_plugin {
@@ -220,6 +217,9 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .request     = sample_app_plugin_request,
     .event_reply = sample_app_plugin_event_reply
 };
+
+#define SAMPLE_APP_PLUGIN_DESCR \
+    "A sample plugin for demonstrate how to write a neuron application plugin"
 
 const neu_plugin_module_t neu_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,

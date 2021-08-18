@@ -20,6 +20,10 @@
 #ifndef _NEU_PLUGIN_REST_H_
 #define _NEU_PLUGIN_REST_H_
 
+#include "neu_plugin.h"
+
+const neu_plugin_module_t default_dashboard_plugin_module;
+
 typedef struct neu_rest_context neu_rest_context_t;
 
 neu_rest_context_t *neu_rest_start(void);

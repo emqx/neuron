@@ -24,11 +24,7 @@
 
 #include "adapter/adapter_internal.h"
 #include "core/plugin_info.h"
-
-typedef enum plugin_kind {
-    PLUGIN_KIND_SYSTEM,
-    PLUGIN_KIND_CUSTOM
-} plugin_kind_e;
+#include "neu_plugin.h"
 
 typedef struct plugin_reg_param {
     plugin_kind_e  plugin_kind;
@@ -70,4 +66,8 @@ int plugin_manager_get_reg_info_by_name(plugin_manager_t * plugin_mng,
 
 void plugin_manager_unreg_all_plugins(plugin_manager_t *plugin_mng);
 void plugin_manager_dump(plugin_manager_t *plugin_mng);
+
+void *load_plugin_library(char *plugin_lib_name, plugin_kind_e plugin_kind,
+                          neu_plugin_module_t **p_plugin_module);
+int   unload_plugin_library(void *lib_handle, plugin_kind_e plugin_kind);
 #endif

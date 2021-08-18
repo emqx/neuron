@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,6 +30,7 @@
 #include "neu_panic.h"
 #include "neu_vector.h"
 #include "plugin_manager.h"
+#include "restful/rest.h"
 
 typedef struct plugin_reg_entity {
     plugin_id_t    plugin_id;
@@ -47,6 +49,27 @@ struct plugin_manager {
     vector_t custom_plugins;
 };
 
+#define DEFAULT_DASHBOARD_PLUGIN_LIB_NAME "libplugin_default_dashboard"
+/*
+ * manage builtin static plugins
+ */
+static const plugin_reg_entity_t builtin_static_plugins[] = {
+    {
+        .plugin_id       = { 1 },
+        .plugin_kind     = PLUGIN_KIND_STATIC,
+        .adapter_type    = ADAPTER_TYPE_WEBSERVER,
+        .plugin_name     = "default_dashboard_plugin",
+        .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
+    },
+};
+#define BUILTIN_STATIC_PLUGIN_COUNT \
+    (sizeof(builtin_static_plugins) / sizeof(builtin_static_plugins[0]))
+
+#define MIN_DYNAMIC_PLUGIN_ID (BUILTIN_STATIC_PLUGIN_COUNT + 1)
+
+/*
+ * manage dynamic plugins
+ */
 #define SYSTEM_PLUGIN_COUNT_DEFAULT 8
 static int init_system_plugins(vector_t *plugins_vec)
 {
@@ -104,6 +127,22 @@ static size_t find_plugin_by_id(vector_t *plugins, plugin_id_t id)
 }
 
 // Return SIZE_MAX if can't find a plugin
+static size_t find_static_plugin_by_id(plugin_id_t id)
+{
+    size_t               i;
+    plugin_reg_entity_t *reg_entity;
+
+    for (i = 0; i < BUILTIN_STATIC_PLUGIN_COUNT; i++) {
+        reg_entity = (plugin_reg_entity_t *) &builtin_static_plugins[i];
+        if (reg_entity->plugin_id.id_val == id.id_val) {
+            return i;
+        }
+    }
+
+    return SIZE_MAX;
+}
+
+// Return SIZE_MAX if can't find a plugin
 static size_t find_plugin_by_name(vector_t *plugins, const char *plugin_name)
 {
     size_t               index = SIZE_MAX;
@@ -119,6 +158,22 @@ static size_t find_plugin_by_name(vector_t *plugins, const char *plugin_name)
     }
 
     return index;
+}
+
+// Return SIZE_MAX if can't find a plugin
+static size_t find_static_plugin_by_name(const char *plugin_name)
+{
+    size_t               i;
+    plugin_reg_entity_t *reg_entity;
+
+    for (i = 0; i < BUILTIN_STATIC_PLUGIN_COUNT; i++) {
+        reg_entity = (plugin_reg_entity_t *) &builtin_static_plugins[i];
+        if (strcmp(reg_entity->plugin_name, plugin_name) == 0) {
+            return i;
+        }
+    }
+
+    return SIZE_MAX;
 }
 
 static plugin_id_t plugin_manager_get_plugin_id(plugin_manager_t *plugin_mng,
@@ -193,7 +248,7 @@ plugin_manager_t *plugin_manager_create()
         return NULL;
     }
 
-    plugin_mng->new_plugin_id.id_val = 1;
+    plugin_mng->new_plugin_id.id_val = MIN_DYNAMIC_PLUGIN_ID;
     rv  = init_system_plugins(&plugin_mng->system_plugins);
     rv1 = init_custom_plugins(&plugin_mng->custom_plugins);
     if (rv != 0 || rv1 != 0) {
@@ -234,6 +289,17 @@ plugin_id_t plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
     vector_t *          plugins;
     plugin_id_t         plugin_id;
     plugin_reg_entity_t reg_entity;
+
+    if (param->plugin_kind == PLUGIN_KIND_STATIC) {
+        size_t index;
+        /* static plugin had already been registered */
+        plugin_id.id_val = 0;
+        index            = find_static_plugin_by_name(param->plugin_name);
+        if (index != SIZE_MAX) {
+            plugin_id = builtin_static_plugins[index].plugin_id;
+        }
+        return plugin_id;
+    }
 
     plugins = &plugin_mng->system_plugins;
     if (param->plugin_kind == PLUGIN_KIND_CUSTOM) {
@@ -276,6 +342,11 @@ int plugin_manager_unreg_plugin(plugin_manager_t *        plugin_mng,
     vector_t *           plugins;
     plugin_reg_entity_t *reg_entity;
 
+    if (param->plugin_kind == PLUGIN_KIND_STATIC) {
+        /* Don't to unregister the static plugin */
+        return 0;
+    }
+
     plugins = &plugin_mng->system_plugins;
     if (param->plugin_kind == PLUGIN_KIND_CUSTOM) {
         plugins = &plugin_mng->custom_plugins;
@@ -299,24 +370,20 @@ void plugin_manager_unreg_all_plugins(plugin_manager_t *plugin_mng)
 {
     vector_t *           plugins;
     plugin_reg_entity_t *reg_entity;
+    int                  i;
 
-    plugins = &plugin_mng->system_plugins;
-    VECTOR_FOR_EACH(plugins, iter)
-    {
-        reg_entity = (plugin_reg_entity_t *) iterator_get(&iter);
-        reg_entity_uninit(reg_entity);
-        break;
+    vector_t *plugins_array[2] = { &plugin_mng->system_plugins,
+                                   &plugin_mng->custom_plugins };
+    for (i = 0; i < 2; i++) {
+        plugins = plugins_array[i];
+        VECTOR_FOR_EACH(plugins, iter)
+        {
+            reg_entity = (plugin_reg_entity_t *) iterator_get(&iter);
+            reg_entity_uninit(reg_entity);
+        }
+        vector_clear(plugins);
     }
-    vector_clear(plugins);
 
-    plugins = &plugin_mng->custom_plugins;
-    VECTOR_FOR_EACH(plugins, iter)
-    {
-        reg_entity = (plugin_reg_entity_t *) iterator_get(&iter);
-        reg_entity_uninit(reg_entity);
-        break;
-    }
-    vector_clear(plugins);
     return;
 }
 
@@ -326,6 +393,11 @@ int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
     int       rv = 0;
     size_t    index;
     vector_t *plugins;
+
+    if (param->plugin_kind == PLUGIN_KIND_STATIC) {
+        /* Can't to be updated for static plugin */
+        return -1;
+    }
 
     plugins = &plugin_mng->system_plugins;
     if (param->plugin_kind == PLUGIN_KIND_CUSTOM) {
@@ -345,7 +417,6 @@ int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
 
         reg_entity_init(&reg_entity, plugin_id, param);
         vector_assign(plugins, index, &reg_entity);
-        reg_entity_uninit(&reg_entity);
     } else {
         // Nothing to update
         rv = -1;
@@ -375,6 +446,13 @@ int plugin_manager_get_reg_info(plugin_manager_t * plugin_mng,
 
     if (plugin_mng == NULL || reg_info == NULL) {
         return -1;
+    }
+
+    index = find_static_plugin_by_id(plugin_id);
+    if (index != SIZE_MAX) {
+        reg_entity = (plugin_reg_entity_t *) &builtin_static_plugins[index];
+        reg_info_from_reg_entity(reg_info, reg_entity);
+        return 0;
     }
 
     int       i;
@@ -408,6 +486,13 @@ int plugin_manager_get_reg_info_by_name(plugin_manager_t * plugin_mng,
         return -1;
     }
 
+    index = find_static_plugin_by_name(plugin_name);
+    if (index != SIZE_MAX) {
+        reg_entity = (plugin_reg_entity_t *) &builtin_static_plugins[index];
+        reg_info_from_reg_entity(reg_info, reg_entity);
+        return 0;
+    }
+
     int       i;
     vector_t *plugins_array[2] = { &plugin_mng->system_plugins,
                                    &plugin_mng->custom_plugins };
@@ -427,9 +512,149 @@ int plugin_manager_get_reg_info_by_name(plugin_manager_t * plugin_mng,
     return -1;
 }
 
+vector_t *plugin_manager_get_all_plugins(plugin_manager_t *plugin_mng)
+{
+    size_t               count;
+    vector_t *           plugin_info_vec;
+    vector_t *           plugins;
+    plugin_reg_info_t    reg_info;
+    plugin_reg_entity_t *reg_entity;
+
+    if (plugin_mng == NULL) {
+        return NULL;
+    }
+
+    count = BUILTIN_STATIC_PLUGIN_COUNT;
+    count = plugin_mng->system_plugins.size + plugin_mng->custom_plugins.size;
+    plugin_info_vec = vector_new(count, sizeof(plugin_reg_info_t));
+    if (plugin_info_vec == NULL) {
+        log_error("No memory to new vector of plugin infos");
+        return NULL;
+    }
+
+    size_t i;
+    for (i = 0; i < BUILTIN_STATIC_PLUGIN_COUNT; i++) {
+        reg_entity = (plugin_reg_entity_t *) &builtin_static_plugins[i];
+        reg_info_from_reg_entity(&reg_info, reg_entity);
+        vector_push_back(plugin_info_vec, &reg_info);
+    }
+
+    vector_t *plugins_array[2] = { &plugin_mng->system_plugins,
+                                   &plugin_mng->custom_plugins };
+    for (i = 0; i < 2; i++) {
+        plugins = plugins_array[i];
+        nng_mtx_lock(plugin_mng->mtx);
+        VECTOR_FOR_EACH(plugins, iter)
+        {
+            reg_entity = (plugin_reg_entity_t *) iterator_get(&iter);
+            reg_info_from_reg_entity(&reg_info, reg_entity);
+            vector_push_back(plugin_info_vec, &reg_info);
+        }
+        nng_mtx_unlock(plugin_mng->mtx);
+    }
+
+    return plugin_info_vec;
+}
+
 void plugin_manager_dump(plugin_manager_t *plugin_mng)
 {
     // TODO: dump system plugins and custom plugins
     (void) plugin_mng;
     return;
+}
+
+/*
+ * load plugin and unload plugin
+ */
+
+static void *load_dyn_plugin_library(char *                plugin_lib_name,
+                                     neu_plugin_module_t **p_plugin_module)
+{
+    void *lib_handle;
+
+    lib_handle = dlopen(plugin_lib_name, RTLD_NOW);
+    if (lib_handle == NULL) {
+        log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
+                  dlerror());
+
+        return NULL;
+    }
+
+    void *module_info;
+    module_info = dlsym(lib_handle, "neu_plugin_module");
+    if (module_info == NULL) {
+        dlclose(lib_handle);
+        log_error("Failed to get neu_plugin_module from %s", plugin_lib_name);
+        return NULL;
+    }
+
+    if (p_plugin_module != NULL) {
+        *p_plugin_module = (neu_plugin_module_t *) module_info;
+    }
+    return lib_handle;
+}
+
+static int unload_dyn_plugin_library(void *lib_handle)
+{
+    return dlclose(lib_handle);
+}
+
+typedef struct plugin_module_map {
+    const char *               plugin_lib_name;
+    const neu_plugin_module_t *plugin_module;
+} plugin_module_map_t;
+
+static const plugin_module_map_t plugin_module_maps[] = {
+    {
+        DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
+        &default_dashboard_plugin_module,
+    },
+};
+#define PLUGIN_MODULE_MAPS_COUNT \
+    (sizeof(plugin_module_maps) / sizeof(plugin_module_maps[0]))
+
+// return index of plugin in static plugin list
+static void *load_static_plugin(char *                plugin_lib_name,
+                                neu_plugin_module_t **p_plugin_module)
+{
+    size_t i;
+
+    for (i = 0; i < PLUGIN_MODULE_MAPS_COUNT; i++) {
+        if (strcmp(plugin_lib_name, plugin_module_maps[i].plugin_lib_name) ==
+            0) {
+            if (p_plugin_module != NULL) {
+                *p_plugin_module =
+                    (neu_plugin_module_t *) plugin_module_maps[i].plugin_module;
+            }
+            return (void *) i;
+        }
+    }
+    return NULL;
+}
+
+static int unload_static_plugin(void *lib_handle)
+{
+    /* do nothing */
+    (void) lib_handle;
+    return 0;
+}
+
+// if plugin is static plugin then return index of plugin in static plugin list
+void *load_plugin_library(char *plugin_lib_name, plugin_kind_e plugin_kind,
+                          neu_plugin_module_t **p_plugin_module)
+{
+    if (plugin_kind == PLUGIN_KIND_STATIC) {
+        return load_static_plugin(plugin_lib_name, p_plugin_module);
+    } else {
+        return load_dyn_plugin_library(plugin_lib_name, p_plugin_module);
+    }
+}
+
+int unload_plugin_library(void *lib_handle, plugin_kind_e plugin_kind)
+{
+    if (plugin_kind == PLUGIN_KIND_STATIC) {
+        return unload_static_plugin(lib_handle);
+    } else {
+        return unload_dyn_plugin_library(lib_handle);
+    }
 }
