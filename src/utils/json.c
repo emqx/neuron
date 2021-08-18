@@ -250,7 +250,7 @@ int neu_json_encode(neu_json_elem_t *t, int n, char **str)
         encode_object(root, t[i]);
     }
 
-    *str = json_dumps(root, 0);
+    *str = json_dumps(root, JSON_REAL_PRECISION(16));
 
     json_decref(root);
 
