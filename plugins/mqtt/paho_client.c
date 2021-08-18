@@ -12,6 +12,7 @@
 // #define DEBUG
 
 struct subscribe_tuple {
+    neu_list_node             node;
     MQTTAsync_responseOptions subscribe_option;
     MQTTAsync_responseOptions unsubscribe_option;
     char *                    topic;
@@ -26,7 +27,7 @@ struct paho_client {
     MQTTAsync_connectOptions conn_options;
     char                     server_url[200];
     option_t *               option;
-    vector_t                 subscribe_vector;
+    neu_list                 subscribe_list;
     int                      subscribe_token;
     MQTTAsync                async;
     void *                   user_data;
@@ -37,27 +38,17 @@ static void connection_lost_callback(void *context, char *cause)
     log_info("Connection lost, reconnecting");
 
     paho_client_t *client = (paho_client_t *) context;
-    if (NULL == client) {
-        return;
-    }
-
-    int rc = MQTTAsync_connect(client->async, &client->conn_options);
-    if (rc != MQTTASYNC_SUCCESS) {
-        printf("Failed to start connect, return code %d\n", rc);
-    }
-
+    paho_client_connect(client);
     UNUSED(cause);
 }
 
 static int message_arrived_callback(void *context, char *topic, int len,
                                     MQTTAsync_message *message)
 {
-    paho_client_t *client = (paho_client_t *) context;
-
-    iterator_t iterator = vector_begin(&client->subscribe_vector);
-    iterator_t last     = vector_end(&client->subscribe_vector);
-    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
-        subscribe_tuple_t *item = iterator_get(&iterator);
+    paho_client_t *    client = (paho_client_t *) context;
+    subscribe_tuple_t *item;
+    NEU_LIST_FOREACH(&client->subscribe_list, item)
+    {
         if (0 == strcmp(item->topic, topic) && NULL != item->handle) {
             item->handle(topic, len, message->payload, message->payloadlen,
                          client->user_data);
@@ -73,7 +64,6 @@ static void delivery_complete(void *context, MQTTAsync_token token)
 {
     UNUSED(context);
     log_info("Message with token value %d delivery confirmed", token);
-    return;
 }
 
 static void on_disconnect_failure(void *                 context,
@@ -136,11 +126,10 @@ static void on_send(void *context, MQTTAsync_successData *response)
 
 static void on_connect_subscribe_all_topic(void *context)
 {
-    paho_client_t *client   = (paho_client_t *) context;
-    iterator_t     iterator = vector_begin(&client->subscribe_vector);
-    iterator_t     last     = vector_end(&client->subscribe_vector);
-    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
-        subscribe_tuple_t *item = iterator_get(&iterator);
+    paho_client_t *    client = (paho_client_t *) context;
+    subscribe_tuple_t *item;
+    NEU_LIST_FOREACH(&client->subscribe_list, item)
+    {
         paho_client_subscribe_send(client, item);
     }
 }
@@ -191,6 +180,18 @@ static client_error paho_client_connect_option_bind(paho_client_t *client)
     return ClientSuccess;
 }
 
+static client_error paho_client_will_option_bind(paho_client_t *client)
+{
+    UNUSED(client);
+    return ClientSuccess;
+}
+
+static client_error paho_client_ssl_option_bind(paho_client_t *client)
+{
+    UNUSED(client);
+    return ClientSuccess;
+}
+
 void paho_client_connect_option_bind_debug(paho_client_t *client)
 {
     log_debug("MQTTVersion %d", client->conn_options.MQTTVersion);
@@ -208,11 +209,7 @@ static client_error paho_client_field_init(paho_client_t *client)
 {
     client->subscribe_token = 0;
 
-    vector_setup(&client->subscribe_vector, 64, sizeof(subscribe_tuple_t));
-    if (!vector_is_initialized(&client->subscribe_vector)) {
-        log_error("Failed to initialize subscribe vector");
-        return ClientSubscribeListInitialFailure;
-    }
+    NEU_LIST_INIT(&client->subscribe_list, subscribe_tuple_t, node);
     return ClientSuccess;
 }
 
@@ -255,17 +252,32 @@ paho_client_t *paho_client_create(option_t *option, void *context)
         goto error;
     }
 
+    rc = paho_client_ssl_option_bind(client);
+
+    rc = paho_client_will_option_bind(client);
+
     rc = paho_client_field_init(client);
     if (ClientSuccess != rc) {
         log_error("Failed to init client %d", rc);
         goto error;
     }
-
     return client;
 
 error:
     free(client);
     return NULL;
+}
+
+static client_error paho_client_connect_set_callback(paho_client_t *client)
+{
+    if (NULL == client) {
+        log_error("The client is not initialized");
+        return ClientIsNULL;
+    }
+
+    MQTTAsync_setConnected(client->async, (void *) client, on_connected);
+    MQTTAsync_setDisconnected(client->async, (void *) client, on_disconnected);
+    return MQTTASYNC_SUCCESS;
 }
 
 client_error paho_client_connect(paho_client_t *client)
@@ -277,10 +289,6 @@ client_error paho_client_connect(paho_client_t *client)
 
     int rc = MQTTAsync_connect(client->async, &client->conn_options);
     if (MQTTASYNC_SUCCESS == rc) {
-        rc = MQTTAsync_setConnected(client->async, (void *) client,
-                                    on_connected);
-        rc = MQTTAsync_setDisconnected(client->async, (void *) client,
-                                       on_disconnected);
         log_info("Successfully start the request of connect.");
         return MQTTASYNC_SUCCESS;
     }
@@ -295,11 +303,10 @@ client_error paho_client_disconnect(paho_client_t *client)
     opts.onSuccess                   = on_disconnect;
     opts.onFailure                   = on_disconnect_failure;
 
-    // Unsubscribe all topic
-    VECTOR_FOR_EACH(&client->subscribe_vector, i)
+    subscribe_tuple_t *item;
+    NEU_LIST_FOREACH(&client->subscribe_list, item)
     {
-        subscribe_tuple_t tuple = ITERATOR_GET_AS(subscribe_tuple_t, &i);
-        paho_client_unsubscribe(client, tuple.topic);
+        paho_client_unsubscribe(client, item->topic);
     }
 
     if (NULL != client) {
@@ -311,9 +318,9 @@ client_error paho_client_disconnect(paho_client_t *client)
 
 client_error paho_client_destroy(paho_client_t *client)
 {
-    if (vector_is_initialized(&client->subscribe_vector)) {
-        vector_clear(&client->subscribe_vector);
-        vector_destroy(&client->subscribe_vector);
+    while (!neu_list_empty(&client->subscribe_list)) {
+        subscribe_tuple_t *tuple = neu_list_first(&client->subscribe_list);
+        neu_list_remove(&client->subscribe_list, tuple);
     }
 
     free(client);
@@ -329,7 +336,8 @@ client_error paho_client_open(option_t *option, void *context,
     }
 
     client_error rc = paho_client_connect(client);
-    *p_client       = client;
+    paho_client_connect_set_callback(client);
+    *p_client = client;
     return rc;
 }
 
@@ -404,40 +412,23 @@ client_error paho_client_subscribe_send(paho_client_t *    client,
 client_error paho_client_subscribe_add(paho_client_t *    client,
                                        subscribe_tuple_t *tuple)
 {
-    iterator_t iterator = vector_begin(&client->subscribe_vector);
-    iterator_t last     = vector_end(&client->subscribe_vector);
-    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
-        subscribe_tuple_t *item = iterator_get(&iterator);
-        if (0 == strcmp(tuple->topic, item->topic)) {
-            log_error("Failed to add subscribe to vector, topic existed");
-            return ClientSubscribeAddListRepeat;
-        }
-    }
-
-    int rc = vector_push_back(&client->subscribe_vector, tuple);
-    if (0 != rc) {
-        log_error("Failed to add subscribe to vector, vector exception");
-        return ClientSubscribeAddListFailure;
-    }
+    NEU_LIST_NODE_INIT(&tuple->node);
+    neu_list_append(&client->subscribe_list, tuple);
     return ClientSuccess;
 }
 
 client_error paho_client_subscribe_remove(paho_client_t *client,
                                           const char *   topic)
 {
-    int i = 0;
-
-    iterator_t iterator = vector_begin(&client->subscribe_vector);
-    iterator_t last     = vector_end(&client->subscribe_vector);
-    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
-        subscribe_tuple_t *item = iterator_get(&iterator);
-        if (0 == strcmp(topic, item->topic)) {
-            vector_erase(&client->subscribe_vector, i);
-            paho_client_subscribe_destroy(item);
-            break;
+    subscribe_tuple_t *item;
+    subscribe_tuple_t *tuple;
+    NEU_LIST_FOREACH(&client->subscribe_list, item)
+    {
+        if (0 == strcmp(item->topic, topic)) {
+            tuple = item;
         }
-        i++;
     }
+    neu_list_remove(&client->subscribe_list, tuple);
     return ClientSuccess;
 }
 
@@ -470,7 +461,6 @@ client_error paho_client_subscribe(paho_client_t *client, const char *topic,
     if (ClientSuccess != rc) {
         return rc;
     }
-
     return ClientSuccess;
 }
 
@@ -489,14 +479,13 @@ paho_client_unsubscribe_option_bind(subscribe_tuple_t *tuple)
 subscribe_tuple_t *paho_client_unsubscribe_create(paho_client_t *client,
                                                   const char *   topic)
 {
-    iterator_t iterator = vector_begin(&client->subscribe_vector);
-    iterator_t last     = vector_end(&client->subscribe_vector);
-    for (; !iterator_equals(&iterator, &last); iterator_increment(&iterator)) {
-        subscribe_tuple_t *item = iterator_get(&iterator);
-        if (0 == strcmp(topic, item->topic)) {
+    subscribe_tuple_t *item;
+    NEU_LIST_FOREACH(&client->subscribe_list, item)
+    {
+        if (0 == strcmp(item->topic, topic)) {
             paho_client_unsubscribe_option_bind(item);
-            return item;
         }
+        return item;
     }
 
     log_error("Cant find topic %s", topic);
@@ -545,6 +534,7 @@ client_error paho_client_publish(paho_client_t *client, const char *topic,
 
     client_error error = paho_client_is_connected(client);
     if (ClientSuccess != error) {
+        paho_client_connect(client);
         return error;
     }
 
