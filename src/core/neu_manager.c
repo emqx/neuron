@@ -406,10 +406,12 @@ static adapter_id_t adapter_id_from_node_id(neu_node_id_t node_id)
     return node_id;
 }
 
+/*
 static neu_node_id_t adapter_id_to_node_id(adapter_id_t adapter_id)
 {
     return adapter_id;
 }
+*/
 
 static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
@@ -1039,4 +1041,30 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
     }
 
     return rv;
+}
+
+neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
+                                                 neu_node_id_t  node_id)
+{
+    adapter_reg_entity_t *reg_entity;
+    neu_datatag_table_t * tag_table;
+    adapter_id_t          adapter_id;
+
+    if (manager == NULL) {
+        log_error("get datatag table with NULL manager");
+        return NULL;
+    }
+
+    tag_table  = NULL;
+    adapter_id = adapter_id_from_node_id(node_id);
+    VECTOR_FOR_EACH(&manager->reg_adapters, iter)
+    {
+        reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
+        if (reg_entity->adapter_id == adapter_id) {
+            tag_table =
+                neu_datatag_mng_get_datatag_tbl(reg_entity->datatag_manager);
+        }
+    }
+
+    return tag_table;
 }

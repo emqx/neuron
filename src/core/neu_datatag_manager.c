@@ -108,6 +108,14 @@ neu_datatag_manager_t *neu_datatag_mng_create(neu_adapter_t *adapter)
         goto init_p_configs_fail;
     }
 
+    neu_datatag_table_t *tag_table;
+    tag_table = neu_datatag_tbl_create();
+    if (tag_table == NULL) {
+        log_error("Failed to create datatag table in datatag manager");
+        goto create_tag_table_fail;
+    }
+    datatag_manager->tag_table = tag_table;
+
     datatag_manager->adapter = adapter;
     if (nng_mtx_alloc(&datatag_manager->mtx) != 0) {
         log_error("Failed to initialize mutex in datatag manager");
@@ -116,6 +124,8 @@ neu_datatag_manager_t *neu_datatag_mng_create(neu_adapter_t *adapter)
     return datatag_manager;
 
 alloc_mtx_fail:
+    neu_datatag_tbl_destroy(tag_table);
+create_tag_table_fail:
     vector_uninit(&datatag_manager->p_configs);
 init_p_configs_fail:
     free(datatag_manager);
@@ -129,6 +139,7 @@ void neu_datatag_mng_destroy(neu_datatag_manager_t *datatag_manager)
     }
 
     nng_mtx_free(datatag_manager->mtx);
+    neu_datatag_tbl_destroy(datatag_manager->tag_table);
     free_all_taggrp_config(&datatag_manager->p_configs);
     vector_uninit(&datatag_manager->p_configs);
     free(datatag_manager);
@@ -279,6 +290,19 @@ int neu_datatag_mng_ref_all_grp_configs(neu_datatag_manager_t *datatag_manager,
     return rv;
 }
 
+neu_datatag_table_t *
+neu_datatag_mng_get_datatag_tbl(neu_datatag_manager_t *datatag_manager)
+{
+    if (datatag_manager == NULL) {
+        return NULL;
+    }
+
+    return datatag_manager->tag_table;
+}
+
+/*
+ * Functions for datatag group config
+ */
 neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)
 {
     int                  rv;

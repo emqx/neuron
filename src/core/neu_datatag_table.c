@@ -18,6 +18,7 @@
  **/
 
 #include "neu_datatag_table.h"
+#include "utils/idhash.h"
 #include "utils/mem_alloc.h"
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>

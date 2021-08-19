@@ -41,5 +41,7 @@ neu_taggrp_config_t *
                                    const char *           config_name);
 int neu_datatag_mng_ref_all_grp_configs(neu_datatag_manager_t *datatag_manager,
                                         vector_t *             grp_configs);
+neu_datatag_table_t *
+neu_datatag_mng_get_datatag_tbl(neu_datatag_manager_t *datatag_manager);
 
 #endif

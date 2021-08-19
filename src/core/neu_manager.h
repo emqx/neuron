@@ -35,4 +35,6 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
                           vector_t *result_nodes);
 int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
                                 vector_t *result_grp_configs);
+neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
+                                                 neu_node_id_t  node_id);
 #endif

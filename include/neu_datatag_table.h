@@ -21,7 +21,6 @@
 #define __DATATAG_TABLE_H__
 
 #include "neu_types.h"
-#include "utils/idhash.h"
 
 typedef uint32_t                 datatag_id_t;
 typedef struct neu_datatag_table neu_datatag_table_t;

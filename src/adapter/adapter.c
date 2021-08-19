@@ -303,10 +303,12 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             msg_inplace_data_init(msg_ptr, MSG_CMD_WRITE_DATA,
                                   sizeof(write_data_cmd_t));
 
-            cmd_ptr             = (write_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
-            cmd_ptr->grp_config = write_cmd->grp_config;
-            cmd_ptr->addr       = write_cmd->addr;
-            cmd_ptr->databuf    = databuf;
+            cmd_ptr            = (write_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
+            cmd_ptr->sender_id = adapter->id;
+            cmd_ptr->dst_node_id = write_cmd->dst_node_id;
+            cmd_ptr->grp_config  = write_cmd->grp_config;
+            cmd_ptr->addr        = write_cmd->addr;
+            cmd_ptr->databuf     = databuf;
             nng_sendmsg(adapter->sock, write_msg, 0);
         }
         break;
@@ -376,6 +378,42 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         result->req_id    = cmd->req_id;
         result->buf_len   = sizeof(neu_reqresp_grp_configs_t);
         result->buf       = resp_grp_configs;
+        if (p_result != NULL) {
+            *p_result = result;
+        }
+        break;
+    }
+
+    case NEU_REQRESP_GET_DATATAGS: {
+        neu_response_t *        result;
+        neu_reqresp_datatags_t *resp_datatags;
+
+        assert(cmd->buf_len == sizeof(neu_cmd_get_datatags_t));
+        resp_datatags = malloc(sizeof(neu_reqresp_datatags_t));
+        if (resp_datatags == NULL) {
+            log_error("Failed to allocate result of datatags");
+            rv = -1;
+            break;
+        }
+        result = malloc(sizeof(neu_response_t));
+        if (result == NULL) {
+            log_error("Failed to allocate result for get datatags");
+            free(resp_datatags);
+            rv = -1;
+            break;
+        }
+
+        neu_cmd_get_datatags_t *datatags_cmd;
+        neu_datatag_table_t *   tag_table;
+        datatags_cmd = (neu_cmd_get_datatags_t *) cmd->buf;
+        tag_table    = neu_manager_get_datatag_tbl(adapter->manager,
+                                                datatags_cmd->node_id);
+        resp_datatags->datatag_tbl = tag_table;
+
+        result->resp_type = NEU_REQRESP_DATATAGS;
+        result->req_id    = cmd->req_id;
+        result->buf_len   = sizeof(neu_reqresp_datatags_t);
+        result->buf       = resp_datatags;
         if (p_result != NULL) {
             *p_result = result;
         }
