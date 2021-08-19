@@ -28,6 +28,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "adapter_internal.h"
+#include "core/message.h"
 #include "core/neu_manager.h"
 #include "core/plugin_manager.h"
 #include "neu_adapter.h"
@@ -173,9 +174,9 @@ static void adapter_loop(void *arg)
             neu_request_t                 req;
             if (adapter->plugin_module) {
                 neu_reqresp_read_t read_req;
-                read_req.grp_config = cmd_ptr->grp_config;
-                read_req.node_id    = cmd_ptr->node_id;
-                read_req.addr       = cmd_ptr->addr;
+                read_req.grp_config  = cmd_ptr->grp_config;
+                read_req.dst_node_id = cmd_ptr->dst_node_id;
+                read_req.addr        = cmd_ptr->addr;
 
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);
@@ -197,12 +198,12 @@ static void adapter_loop(void *arg)
             neu_request_t                 req;
             if (adapter->plugin_module) {
                 neu_reqresp_write_t write_req;
-                write_req.grp_config = cmd_ptr->grp_config;
-                write_req.node_id    = cmd_ptr->node_id;
-                write_req.addr       = cmd_ptr->addr;
-                void * buf           = core_databuf_get_ptr(cmd_ptr->databuf);
-                size_t buf_len       = core_databuf_get_len(cmd_ptr->databuf);
-                write_req.data_var   = neu_variable_deserialize(buf, buf_len);
+                write_req.grp_config  = cmd_ptr->grp_config;
+                write_req.dst_node_id = cmd_ptr->dst_node_id;
+                write_req.addr        = cmd_ptr->addr;
+                void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
+                size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
+                write_req.data_var    = neu_variable_deserialize(buf, buf_len);
 
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);
@@ -271,9 +272,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             msg_inplace_data_init(msg_ptr, MSG_CMD_READ_DATA,
                                   sizeof(read_data_cmd_t));
 
-            cmd_ptr             = (read_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
-            cmd_ptr->grp_config = read_cmd->grp_config;
-            cmd_ptr->addr       = read_cmd->addr;
+            cmd_ptr              = (read_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
+            cmd_ptr->sender_id   = adapter->id;
+            cmd_ptr->dst_node_id = read_cmd->dst_node_id;
+            cmd_ptr->grp_config  = read_cmd->grp_config;
+            cmd_ptr->addr        = read_cmd->addr;
             nng_sendmsg(adapter->sock, read_msg, 0);
         }
         break;

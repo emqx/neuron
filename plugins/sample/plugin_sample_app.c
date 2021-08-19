@@ -59,13 +59,13 @@ static void *sample_app_work_loop(void *arg)
     neu_request_t      cmd;
     neu_reqresp_read_t read_req;
 
-    read_req.grp_config = NULL;
-    read_req.node_id    = 1;
-    read_req.addr       = 3;
-    cmd.req_type        = NEU_REQRESP_READ_DATA;
-    cmd.req_id          = plugin_get_event_id(plugin);
-    cmd.buf             = (void *) &read_req;
-    cmd.buf_len         = sizeof(neu_reqresp_read_t);
+    read_req.grp_config  = NULL;
+    read_req.dst_node_id = 1;
+    read_req.addr        = 3;
+    cmd.req_type         = NEU_REQRESP_READ_DATA;
+    cmd.req_id           = plugin_get_event_id(plugin);
+    cmd.buf              = (void *) &read_req;
+    cmd.buf_len          = sizeof(neu_reqresp_read_t);
     log_info("Send a read command");
     adapter_callbacks->command(plugin->common.adapter, &cmd, NULL);
 
@@ -78,14 +78,14 @@ static void *sample_app_work_loop(void *arg)
     data_var.var_type.typeId = NEU_DATATYPE_STRING;
     data_var.data            = (void *) data_str;
 
-    write_req.grp_config = NULL;
-    write_req.node_id    = 1;
-    write_req.addr       = 3;
-    write_req.data_var   = &data_var;
-    cmd1.req_type        = NEU_REQRESP_WRITE_DATA;
-    cmd1.req_id          = plugin_get_event_id(plugin);
-    cmd1.buf             = (void *) &write_req;
-    cmd1.buf_len         = sizeof(neu_reqresp_write_t);
+    write_req.grp_config  = NULL;
+    write_req.dst_node_id = 1;
+    write_req.addr        = 3;
+    write_req.data_var    = &data_var;
+    cmd1.req_type         = NEU_REQRESP_WRITE_DATA;
+    cmd1.req_id           = plugin_get_event_id(plugin);
+    cmd1.buf              = (void *) &write_req;
+    cmd1.buf_len          = sizeof(neu_reqresp_write_t);
     log_info("Send a write command");
     adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
     return NULL;

@@ -20,6 +20,8 @@
 #ifndef ADAPTER_INTERNAL_H
 #define ADAPTER_INTERNAL_H
 
+#include <nng/nng.h>
+
 #include "core/databuf.h"
 #include "core/neu_manager.h"
 #include "core/plugin_info.h"

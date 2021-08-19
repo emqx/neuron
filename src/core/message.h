@@ -25,6 +25,7 @@
 #include "databuf.h"
 #include "neu_log.h"
 
+#include "adapter/adapter_internal.h"
 #include "neu_datatag_manager.h"
 
 typedef enum msg_type {
@@ -70,14 +71,16 @@ static_assert(MSG_TYPE_END >= MSG_DATABUF_KIND_MASK,
 /* MSG_CMD_READ_DATA */
 typedef struct read_data_cmd {
     neu_taggrp_config_t *grp_config;
-    neu_node_id_t        node_id;
+    adapter_id_t         sender_id; // adapter_id of sender
+    neu_node_id_t        dst_node_id;
     uint32_t             addr;
 } read_data_cmd_t;
 
 /* MSG_CMD_WRITE_DATA */
 typedef struct write_data_cmd {
     neu_taggrp_config_t *grp_config;
-    neu_node_id_t        node_id;
+    adapter_id_t         sender_id; // adapter_id of sender
+    neu_node_id_t        dst_node_id;
     uint32_t             addr;
     core_databuf_t *     databuf;
 } write_data_cmd_t;

@@ -20,7 +20,6 @@
 #ifndef NEURON_MANAGER_H
 #define NEURON_MANAGER_H
 
-#include "message.h"
 #include "neu_adapter.h"
 
 #define DEFAULT_ADAPTER_REG_COUNT 8

@@ -27,6 +27,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "adapter/adapter_internal.h"
+#include "message.h"
 #include "neu_adapter.h"
 #include "neu_datatag_manager.h"
 #include "neu_log.h"
@@ -390,13 +391,23 @@ static int manager_add_config(neu_manager_t *manager, config_add_param_t *param)
     return rv;
 }
 
-static uint32_t manager_get_adapter_id(neu_manager_t *manager)
+static adapter_id_t manager_get_adapter_id(neu_manager_t *manager)
 {
     adapter_id_t adapter_id;
 
     nng_mtx_lock(manager->adapters_mtx);
     adapter_id = manager->new_adapter_id++;
     nng_mtx_unlock(manager->adapters_mtx);
+    return adapter_id;
+}
+
+static adapter_id_t adapter_id_from_node_id(neu_node_id_t node_id)
+{
+    return node_id;
+}
+
+static neu_node_id_t adapter_id_to_node_id(adapter_id_t adapter_id)
+{
     return adapter_id;
 }
 
@@ -1017,7 +1028,7 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
         return -1;
     }
 
-    adapter_id = node_id;
+    adapter_id = adapter_id_from_node_id(node_id);
     VECTOR_FOR_EACH(&manager->reg_adapters, iter)
     {
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);

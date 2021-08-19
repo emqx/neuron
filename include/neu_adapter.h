@@ -52,14 +52,14 @@ typedef uint32_t neu_node_id_t;
 typedef struct neu_reqresp_read {
     neu_taggrp_config_t *grp_config;
     // TODO: use neu_variable_t to hold address information
-    neu_node_id_t node_id;
+    neu_node_id_t dst_node_id;
     uint32_t      addr;
 } neu_reqresp_read_t;
 
 /* NEU_REQRESP_WRITE_DATA */
 typedef struct neu_reqresp_write {
     neu_taggrp_config_t *grp_config;
-    neu_node_id_t        node_id;
+    neu_node_id_t        dst_node_id;
     uint32_t             addr;
     neu_variable_t *     data_var;
 } neu_reqresp_write_t;
