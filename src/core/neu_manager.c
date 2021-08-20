@@ -406,12 +406,10 @@ static adapter_id_t adapter_id_from_node_id(neu_node_id_t node_id)
     return node_id;
 }
 
-/*
 static neu_node_id_t adapter_id_to_node_id(adapter_id_t adapter_id)
 {
     return adapter_id;
 }
-*/
 
 static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
@@ -475,7 +473,6 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
                                         adapter_reg_param_t *reg_param,
                                         neu_adapter_t **     p_adapter)
 {
-    adapter_id_t       adapter_id;
     neu_adapter_t *    adapter;
     neu_adapter_info_t adapter_info;
     plugin_reg_info_t  plugin_reg_info;
@@ -488,7 +485,6 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
             manager->plugin_manager, reg_param->plugin_name, &plugin_reg_info);
     }
 
-    adapter_id                   = 0;
     adapter_info.id              = manager_get_adapter_id(manager);
     adapter_info.type            = reg_param->adapter_type;
     adapter_info.name            = reg_param->adapter_name;
@@ -508,7 +504,6 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
     }
 
     adapter_reg_entity_t reg_entity;
-    adapter_id                 = adapter_info.id;
     reg_entity.adapter_id      = adapter_info.id;
     reg_entity.adapter         = adapter;
     reg_entity.datatag_manager = datatag_manager;
@@ -519,7 +514,9 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
     if (p_adapter != NULL) {
         *p_adapter = adapter;
     }
-    return adapter_id;
+    log_debug("register adapter id: %d, type: %d, name: %s",
+              reg_entity.adapter_id, adapter_info.type, adapter_info.name);
+    return reg_entity.adapter_id;
 }
 
 static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
@@ -842,15 +839,17 @@ static void manager_loop(void *arg)
             size_t                msg_size;
             nng_msg *             out_msg;
             nng_pipe              msg_pipe;
+            adapter_id_t          adapter_id;
             read_data_cmd_t *     cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
             cmd_ptr    = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
-            reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
-                                                  SAMPLE_DRV_ADAPTER_NAME);
-            msg_pipe   = reg_entity->adapter_pipe;
-            msg_size   = msg_inplace_data_get_size(sizeof(read_data_cmd_t));
-            rv         = nng_msg_alloc(&out_msg, msg_size);
+            adapter_id = adapter_id_from_node_id(cmd_ptr->dst_node_id);
+            reg_entity =
+                find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+            msg_pipe = reg_entity->adapter_pipe;
+            msg_size = msg_inplace_data_get_size(sizeof(read_data_cmd_t));
+            rv       = nng_msg_alloc(&out_msg, msg_size);
             if (rv == 0) {
                 message_t *      msg_ptr;
                 read_data_cmd_t *out_cmd_ptr;
@@ -870,15 +869,17 @@ static void manager_loop(void *arg)
             size_t                msg_size;
             nng_msg *             out_msg;
             nng_pipe              msg_pipe;
+            adapter_id_t          adapter_id;
             write_data_cmd_t *    cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
             cmd_ptr    = (write_data_cmd_t *) msg_get_buf_ptr(pay_msg);
-            reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
-                                                  SAMPLE_DRV_ADAPTER_NAME);
-            msg_pipe   = reg_entity->adapter_pipe;
-            msg_size   = msg_inplace_data_get_size(sizeof(write_data_cmd_t));
-            rv         = nng_msg_alloc(&out_msg, msg_size);
+            adapter_id = adapter_id_from_node_id(cmd_ptr->dst_node_id);
+            reg_entity =
+                find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+            msg_pipe = reg_entity->adapter_pipe;
+            msg_size = msg_inplace_data_get_size(sizeof(write_data_cmd_t));
+            rv       = nng_msg_alloc(&out_msg, msg_size);
             if (rv == 0) {
                 message_t *       msg_ptr;
                 write_data_cmd_t *out_cmd_ptr;
@@ -1007,9 +1008,12 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
         if (adapter_match_node_type(reg_entity->adapter, node_type)) {
             neu_node_info_t node_info;
+            adapter_id_t    adapter_id;
             const char *    adapter_name;
 
             adapter_name        = neu_adapter_get_name(reg_entity->adapter);
+            adapter_id          = neu_adapter_get_id(reg_entity->adapter);
+            node_info.node_id   = adapter_id_to_node_id(adapter_id);
             node_info.node_name = strdup(adapter_name);
             vector_push_back(result_nodes, &node_info);
         }

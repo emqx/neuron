@@ -432,6 +432,8 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
         neu_list_remove(&plugin->send_list, task);
         plugin_send_task_destroy(task);
     }
+    pthread_mutex_destroy(&plugin->send_mutex);
+    pthread_mutex_destroy(&plugin->arrived_mutex);
     return 0;
 }
 

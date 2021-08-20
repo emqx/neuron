@@ -29,6 +29,7 @@ const neu_taggrp_config_t *neu_taggrp_cfg_ref(neu_taggrp_config_t *grp_config);
 neu_taggrp_config_t *neu_taggrp_cfg_clone(neu_taggrp_config_t *src_config);
 void                 neu_taggrp_cfg_free(neu_taggrp_config_t *grp_config);
 
+const char *    neu_taggrp_cfg_get_name(neu_taggrp_config_t *grp_config);
 uint32_t        neu_taggrp_cfg_get_interval(neu_taggrp_config_t *grp_config);
 int             neu_taggrp_cfg_set_interval(neu_taggrp_config_t *grp_config,
                                             uint32_t             interval);

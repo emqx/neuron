@@ -28,10 +28,10 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "core/neu_manager.h"
+#include "idhash.h"
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "restful/rest.h"
-#include "utils/idhash.h"
 
 static nng_mtx *log_mtx;
 FILE *          g_logfile;

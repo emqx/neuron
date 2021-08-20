@@ -68,7 +68,6 @@ set(NEURON_SOURCES
     src/core/neu_manager.c
     src/core/plugin_manager.c
     src/core/neu_datatag_manager.c
-    src/core/neu_datatag_table.c
     src/adapter/adapter.c
     plugins/restful/handle.c
     plugins/restful/rest.c)
@@ -87,6 +86,8 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 # define neuron base library
 set(NEURON_BASE_SOURCES
     src/types.c
+    src/base/neu_datatag_table.c
+    src/base/neu_tag_group_config.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
     src/utils/idhash.c

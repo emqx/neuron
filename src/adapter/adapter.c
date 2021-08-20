@@ -339,6 +339,12 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     sizeof(neu_node_info_t));
         rv = neu_manager_get_nodes(adapter->manager, nodes_cmd->node_type,
                                    &resp_nodes->nodes);
+        if (rv < 0) {
+            free(result);
+            free(resp_nodes);
+            rv = -1;
+            break;
+        }
         result->resp_type = NEU_REQRESP_NODES;
         result->req_id    = cmd->req_id;
         result->buf_len   = sizeof(neu_reqresp_nodes_t);
@@ -374,6 +380,12 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     sizeof(neu_taggrp_config_t *));
         rv = neu_manager_get_grp_configs(adapter->manager, configs_cmd->node_id,
                                          &resp_grp_configs->grp_configs);
+        if (rv < 0) {
+            free(result);
+            free(resp_grp_configs);
+            rv = -1;
+            break;
+        }
         result->resp_type = NEU_REQRESP_GRP_CONFIGS;
         result->req_id    = cmd->req_id;
         result->buf_len   = sizeof(neu_reqresp_grp_configs_t);
@@ -408,6 +420,12 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         datatags_cmd = (neu_cmd_get_datatags_t *) cmd->buf;
         tag_table    = neu_manager_get_datatag_tbl(adapter->manager,
                                                 datatags_cmd->node_id);
+        if (tag_table == NULL) {
+            free(result);
+            free(resp_datatags);
+            rv = -1;
+            break;
+        }
         resp_datatags->datatag_tbl = tag_table;
 
         result->resp_type = NEU_REQRESP_DATATAGS;
