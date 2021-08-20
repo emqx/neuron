@@ -491,7 +491,7 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
     adapter_info.plugin_id       = plugin_reg_info.plugin_id;
     adapter_info.plugin_kind     = plugin_reg_info.plugin_kind;
     adapter_info.plugin_lib_name = plugin_reg_info.plugin_lib_name;
-    adapter                      = neu_adapter_create(&adapter_info);
+    adapter                      = neu_adapter_create(&adapter_info, manager);
     if (adapter == NULL) {
         return 0;
     }

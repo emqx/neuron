@@ -520,7 +520,8 @@ static const adapter_callbacks_t callback_funs = {
 };
 // clang-format on
 
-neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
+neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
+                                  neu_manager_t *     manager)
 {
     neu_adapter_t *adapter;
 
@@ -545,6 +546,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->new_req_id  = 1;
     adapter->plugin_id   = info->plugin_id;
     adapter->plugin_kind = info->plugin_kind;
+    adapter->manager     = manager;
 
     adapter->plugin_lib_name = strdup(info->plugin_lib_name);
     if (adapter->name == NULL || adapter->plugin_lib_name == NULL) {
@@ -626,7 +628,6 @@ int neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager)
         intf_funs->init(adapter->plugin);
     }
 
-    adapter->manager = manager;
     nng_thread_create(&adapter->thrd, adapter_loop, adapter);
     return rv;
 }
