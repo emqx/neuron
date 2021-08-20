@@ -561,7 +561,7 @@ static int manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
                          manager_bind_adapter, adapter);
     rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_REM_POST,
                          manager_unbind_adapter, adapter);
-    neu_adapter_start(adapter, manager);
+    neu_adapter_start(adapter);
     return rv;
 }
 
@@ -587,7 +587,7 @@ static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     *(uint32_t *) buf_ptr             = 0; // exit_code is 0
     manager_bind_info_t *manager_bind = &manager->bind_info;
     nng_sendmsg(manager_bind->mng_sock, msg, 0);
-    neu_adapter_stop(adapter, manager);
+    neu_adapter_stop(adapter);
     return rv;
 }
 

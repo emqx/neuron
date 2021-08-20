@@ -49,8 +49,8 @@ typedef struct neu_adapter_info {
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
                                   neu_manager_t *     manager);
 void           neu_adapter_destroy(neu_adapter_t *adapter);
-int         neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager);
-int         neu_adapter_stop(neu_adapter_t *adapter, neu_manager_t *manager);
+int         neu_adapter_start(neu_adapter_t *adapter);
+int         neu_adapter_stop(neu_adapter_t *adapter);
 const char *neu_adapter_get_name(neu_adapter_t *adapter);
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter);
 nng_socket     neu_adapter_get_sock(neu_adapter_t *adapter);

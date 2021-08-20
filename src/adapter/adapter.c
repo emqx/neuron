@@ -525,6 +525,11 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
 {
     neu_adapter_t *adapter;
 
+    if (manager == NULL) {
+        log_error("Create adapter with NULL manager");
+        return NULL;
+    }
+
     adapter = malloc(sizeof(neu_adapter_t));
     if (adapter == NULL) {
         log_error("Out of memeory for create adapter");
@@ -613,12 +618,12 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     return;
 }
 
-int neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager)
+int neu_adapter_start(neu_adapter_t *adapter)
 {
     int rv = 0;
 
-    if (adapter == NULL || manager == NULL) {
-        log_error("Start adapter with NULL adapter or manager");
+    if (adapter == NULL) {
+        log_error("Start adapter with NULL adapter");
         return (-1);
     }
 
@@ -632,12 +637,12 @@ int neu_adapter_start(neu_adapter_t *adapter, neu_manager_t *manager)
     return rv;
 }
 
-int neu_adapter_stop(neu_adapter_t *adapter, neu_manager_t *manager)
+int neu_adapter_stop(neu_adapter_t *adapter)
 {
     int rv = 0;
 
-    if (adapter == NULL || manager == NULL) {
-        log_error("Stop adapter with NULL adapter or manager");
+    if (adapter == NULL) {
+        log_error("Stop adapter with NULL adapter");
         return -1;
     }
 
