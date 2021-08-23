@@ -88,6 +88,7 @@ set(NEURON_BASE_SOURCES
     src/types.c
     src/base/neu_datatag_table.c
     src/base/neu_tag_group_config.c
+    src/connection/tcp_client.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
     src/utils/idhash.c
@@ -121,6 +122,8 @@ target_sources(plugin-sample-app PRIVATE ${SAMPLE_PLUGIN_SOURCES})
 target_include_directories(plugin-sample-app PRIVATE include)
 target_link_libraries(plugin-sample-app neuron-base)
 target_link_libraries(plugin-sample-app ${CMAKE_THREAD_LIBS_INIT})
+
+add_subdirectory(plugins/modbus)
 
 # mqtt plugin
 add_subdirectory(plugins/mqtt)

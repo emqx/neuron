@@ -491,6 +491,7 @@ typedef struct {
     // neu_udword_t     readInterval;
     neu_datatype_t dataType;
     neu_address_t  address;
+    char *         str_addr;
 } neu_datatag_t;
 
 /**
