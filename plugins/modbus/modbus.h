@@ -20,7 +20,9 @@
 #ifndef _NEU_MODBUS_H_
 #define _NEU_MODBUS_H_
 
+#include <stdbool.h>
 #include <stdint.h>
+#include <sys/queue.h>
 
 typedef enum modbus_function {
     MODBUS_READ_COIL          = 0x1,  // bit
@@ -33,11 +35,20 @@ typedef enum modbus_function {
     MODBUS_WRITE_M_COIL       = 0x0F  // word
 } modbus_function_e;
 
+typedef enum modbus_area {
+    MODBUS_AREA_UNDEFINE       = -1,
+    MODBUS_AREA_COIL           = 0,
+    MODBUS_AREA_INPUT          = 1,
+    MODBUS_AREA_INPUT_REGISTER = 3,
+    MODBUS_AREA_HOLD_REGISTER  = 4,
+} modbus_area_e;
+
 typedef enum modbus_endian {
-    MODBUS_BIG4321    = 0,
-    MODBUS_BIG3412    = 1,
-    MODBUS_LITTLE1234 = 2,
-    MODBUS_LITTLE2143 = 3
+    MODBUS_ENDIAN_UNDEFINE   = -1,
+    MODBUS_ENDIAN_BIG4321    = 0,
+    MODBUS_ENDIAN_BIG3412    = 1,
+    MODBUS_ENDIAN_LITTLE1234 = 2,
+    MODBUS_ENDIAN_LITTLE2143 = 3
 } modbus_endian_e;
 
 struct modbus_header {
@@ -78,22 +89,42 @@ struct modbus_pdu_write_response {
     uint16_t n_reg;
 } __attribute__((packed));
 
-enum modbus_data_type {
+typedef enum modbus_data_type {
     MODBUS_B8  = 1,
     MODBUS_B16 = 2,
     MODBUS_B32 = 4,
-};
+} modbus_data_type_t;
 
-struct modbus_data {
+typedef struct modbus_data {
     enum modbus_data_type type;
     union {
         uint8_t  val_8;
         uint16_t val_16;
         uint32_t val_32;
     } val;
-};
+} modbus_data_t;
 
-int modbus_read_req_with_head(char *buf, uint8_t device_address,
+typedef enum modbus_point_addr_order {
+    MODBUS_POINT_ADDR_HEAD = 0,
+    MODBUS_POINT_ADDR_SAME,
+    MODBUS_POINT_ADDR_NEXT,
+} modbus_point_addr_order_e;
+
+typedef struct modbus_point {
+    modbus_area_e     area;
+    uint8_t           device;
+    uint16_t          addr;
+    uint8_t           bit;
+    modbus_endian_e   endian;
+    modbus_function_e function;
+    modbus_data_t     value;
+
+    uint16_t                  id;
+    modbus_point_addr_order_e order;
+    TAILQ_ENTRY(modbus_point) node;
+} modbus_point_t;
+
+int modbus_read_req_with_head(char *buf, uint16_t id, uint8_t device,
                               modbus_function_e function_code, uint16_t addr,
                               uint16_t n_reg);
 
@@ -117,7 +148,10 @@ int modbus_m_write_req(char *buf, uint8_t device_address,
                        modbus_function_e function_code, uint16_t addr,
                        uint16_t n_reg, struct modbus_data *mdata);
 
-int modbus_address_parse(char *str_addr, uint8_t *device, uint64_t *addr,
-                         uint8_t *bit, modbus_endian_e *endian);
+int modbus_address_parse(char *str_addr, modbus_point_t *e);
+
+int modbus_point_cmp(modbus_point_t *e1, modbus_point_t *e2);
+
+void modbus_point_pre_process(bool init, modbus_point_t *point);
 
 #endif

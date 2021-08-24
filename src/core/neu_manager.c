@@ -83,7 +83,7 @@ static const char *const manager_url = "inproc://neu_manager";
 #endif
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.dylib"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.dylib"
-#define MODBUS_PLUGIN_LIB_NAME "libplugin-modbus.dylib"
+#define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.dylib"
 
 #else
 
@@ -93,7 +93,7 @@ static const char *const manager_url = "inproc://neu_manager";
 #endif
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.so"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.so"
-#define MODBUS_PLUGIN_LIB_NAME "libplugin-modbus.so"
+#define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.so"
 
 #endif
 
@@ -104,7 +104,7 @@ static const char *const manager_url = "inproc://neu_manager";
 #endif
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
-#define MODBUS_PLUGIN_NAME "modbus-plugin"
+#define MODBUS_TCP_PLUGIN_NAME "modbus-plugin-tcp"
 
 // definition for adapter names
 #ifdef NEU_HAS_SAMPLE_ADAPTER
@@ -114,6 +114,7 @@ static const char *const manager_url = "inproc://neu_manager";
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 #define MQTT_ADAPTER_NAME "mqtt-adapter"
+#define MODBUS_TCP_ADAPTER_NAME "modbus-tcp-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 90
 #define GRP_CONFIG_NAME_MAX_LEN 90
@@ -150,6 +151,12 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
     {
+        .adapter_type = ADAPTER_TYPE_DRIVER,
+        .adapter_name = "modbus-tcp-adapter",
+        .plugin_name  = MODBUS_TCP_PLUGIN_NAME,
+        .plugin_id    = { 0 } // The plugin_id is nothing
+    },
+    {
         .adapter_type = ADAPTER_TYPE_WEBSERVER,
         .adapter_name = DEFAULT_DASHBOARD_ADAPTER_NAME,
         .plugin_name  = DEFAULT_DASHBOARD_PLUGIN_NAME,
@@ -162,12 +169,6 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .plugin_name     = WEBSERVER_PLUGIN_NAME,
         .plugin_id       = { 0 }    // The plugin_id is nothing
     },
-    {
-        .adapter_type    = ADAPTER_TYPE_DRIVER,
-        .adapter_name    = "modbus-adapter",
-        .plugin_name     = MODBUS_PLUGIN_NAME,
-        .plugin_id       = { 0 }    // The plugin_id is nothing
-    },
     */
 };
 #define DEFAULT_ADAPTER_ADD_INFO_SIZE \
@@ -178,7 +179,7 @@ static const char *default_plugin_lib_names[] = {
     SAMPLE_DRV_PLUGIN_LIB_NAME, SAMPLE_APP_PLUGIN_LIB_NAME,
 #endif
 
-    MQTT_PLUGIN_LIB_NAME,
+    MQTT_PLUGIN_LIB_NAME, MODBUS_TCP_PLUGIN_LIB_NAME,
     /*
     WEBSERVER_PLUGIN_LIB_NAME,
     MODBUS_PLUGIN_LIB_NAME,
@@ -211,6 +212,12 @@ static const plugin_reg_param_t default_plugin_infos[] = {
         .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
     },
     {
+        .plugin_kind     = PLUGIN_KIND_SYSTEM,
+        .adapter_type    = ADAPTER_TYPE_DRIVER,
+        .plugin_name     = MODBUS_TCP_PLUGIN_NAME,
+        .plugin_lib_name = MODBUS_TCP_PLUGIN_LIB_NAME
+    },
+    {
         .plugin_kind     = PLUGIN_KIND_STATIC,
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
         .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
@@ -222,12 +229,6 @@ static const plugin_reg_param_t default_plugin_infos[] = {
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
         .plugin_name     = WEBSERVER_PLUGIN_NAME,
         .plugin_lib_name = WEBSERVER_PLUGIN_LIB_NAME
-    },
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_DRIVER,
-        .plugin_name     = MODBUS_PLUGIN_NAME,
-        .plugin_lib_name = MODBUS_PLUGIN_LIB_NAME
     },
     */
 };
@@ -263,6 +264,13 @@ static config_add_cmd_t default_config_add_cmds[] = {
         .config_name      = "config_mqtt_sample",
         .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
         .dst_adapter_name = MQTT_ADAPTER_NAME,
+        .read_interval    = 2000,
+        .grp_config       = NULL,
+    },
+    {
+        .config_name      = "config_modbus_tcp_sample",
+        .src_adapter_name = SAMPLE_APP_ADAPTER_NAME,
+        .dst_adapter_name = MODBUS_TCP_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
