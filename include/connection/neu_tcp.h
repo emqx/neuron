@@ -18,24 +18,11 @@
  **/
 
 #include <stdint.h>
-#include <unistd.h>
 
-typedef int (*neu_tcp_process_response)(char *buf, ssize_t len);
-typedef struct neu_tcp_server_context neu_tcp_server_context_t;
-typedef struct neu_tcp_client_context neu_tcp_client_context_t;
-typedef struct neu_tcp_client_id      neu_tcp_client_id_t;
+typedef struct neu_tcp_client neu_tcp_client_t;
 
-neu_tcp_server_context_t *
-     neu_tcp_server_init(char *host, uint16_t port,
-                         neu_tcp_process_response *callback);
-int  neu_tcp_server_send(neu_tcp_server_context_t *, char *buf, ssize_t len);
-void neu_tcp_server_close(neu_tcp_server_context_t *);
-
-neu_tcp_client_context_t *neu_tcp_client_init();
-neu_tcp_client_id_t *     neu_tcp_client_add(neu_tcp_client_context_t *,
-                                             char *server, uint16_t port,
-                                             neu_tcp_process_response callback);
-void neu_tcp_client_remove(neu_tcp_client_context_t *, neu_tcp_client_id_t *);
-int  neu_tcp_client_send(neu_tcp_client_context_t *, neu_tcp_client_id_t *,
-                         char *buf, ssize_t len);
-void neu_tcp_client_free(neu_tcp_client_context_t *);
+neu_tcp_client_t *neu_tcp_client_create(char *server, uint16_t port);
+void              neu_tcp_client_close(neu_tcp_client_t *client);
+ssize_t neu_tcp_client_send_recv(neu_tcp_client_t *client, char *send_buf,
+                                 ssize_t send_len, char *recv_buf,
+                                 ssize_t recv_len);

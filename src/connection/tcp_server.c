@@ -18,23 +18,3 @@
  **/
 
 #include "connection/neu_tcp.h"
-
-struct neu_tcp_server_context {
-};
-
-neu_tcp_server_context_t *
-neu_tcp_server_init(char *host, uint16_t port,
-                    neu_tcp_process_response *callback)
-{
-    return NULL;
-}
-
-int neu_tcp_server_send(neu_tcp_server_context_t *, char *buf, ssize_t len)
-{
-    return 0;
-}
-
-void neu_tcp_server_close(neu_tcp_server_context_t *)
-{
-    return;
-}
