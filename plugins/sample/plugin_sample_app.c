@@ -57,12 +57,34 @@ static void *sample_app_work_loop(void *arg)
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
 
+    /* example of add node */
+    neu_request_t      sync_cmd;
+    neu_cmd_add_node_t node_add_cmd;
+    neu_response_t *   result = NULL;
+
+    node_add_cmd.node_type        = NEU_NODE_TYPE_DRIVER;
+    node_add_cmd.adapter_name     = "sample-driver-adapter";
+    node_add_cmd.plugin_name      = "sample-drv-plugin";
+    node_add_cmd.plugin_id.id_val = 0;
+
+    sync_cmd.req_type = NEU_REQRESP_ADD_NODE;
+    sync_cmd.req_id   = plugin_get_event_id(plugin);
+    sync_cmd.buf      = (void *) &node_add_cmd;
+    sync_cmd.buf_len  = sizeof(neu_cmd_add_node_t);
+    log_info("Add a new node");
+    rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
+    if (rv < 0) {
+        log_error("Failed to add node with adapter: %s, plugin: %s",
+                  node_add_cmd.adapter_name, node_add_cmd.plugin_name);
+    }
+    log_info("Result of add command is %d", (intptr_t) result->buf);
+    free(result);
+
     /* example of get nodes */
-    neu_request_t        sync_cmd;
     neu_cmd_get_nodes_t  get_nodes_cmd;
-    neu_response_t *     result = NULL;
     neu_reqresp_nodes_t *resp_nodes;
 
+    result                  = NULL;
     get_nodes_cmd.node_type = NEU_NODE_TYPE_DRIVER;
     sync_cmd.req_type       = NEU_REQRESP_GET_NODES;
     sync_cmd.req_id         = plugin_get_event_id(plugin);

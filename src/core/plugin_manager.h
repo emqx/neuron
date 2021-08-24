@@ -23,8 +23,8 @@
 #include <stdint.h>
 
 #include "adapter/adapter_internal.h"
-#include "core/plugin_info.h"
 #include "neu_plugin.h"
+#include "neu_plugin_info.h"
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard-plugin"
 #define DEFAULT_DASHBOARD_PLUGIN_LIB_NAME "libplugin_default_dashboard"

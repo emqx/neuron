@@ -20,11 +20,17 @@
 #ifndef NEURON_ADAPTER_H
 #define NEURON_ADAPTER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "neu_datatag_table.h"
+#include "neu_errcodes.h"
+#include "neu_plugin_info.h"
 #include "neu_tag_group_config.h"
 #include "neu_types.h"
 
@@ -38,11 +44,18 @@ typedef struct neu_adapter neu_adapter_t;
 
 typedef enum neu_reqresp_type {
     NEU_REQRESP_NOP,
+    NEU_REQRESP_ERR_CODE, // result code of command
     NEU_REQRESP_READ_DATA,
     NEU_REQRESP_WRITE_DATA,
     NEU_REQRESP_TRANS_DATA,
+    NEU_REQRESP_ADD_NODE,
+    NEU_REQRESP_DEL_NODE,
+    NEU_REQRESP_UPDATE_NODE,
     NEU_REQRESP_GET_NODES,
     NEU_REQRESP_NODES,
+    NEU_REQRESP_ADD_GRP_CONFIG,
+    NEU_REQRESP_DEL_GRP_CONFIG,
+    NEU_REQRESP_UPDATE_GRP_CONFIG,
     NEU_REQRESP_GET_GRP_CONFIGS,
     NEU_REQRESP_GRP_CONFIGS,
     NEU_REQRESP_GET_DATATAGS,
@@ -75,8 +88,12 @@ typedef struct neu_reqresp_data {
 
 typedef enum neu_node_type {
     NEU_NODE_TYPE_UNKNOW,
-    NEU_NODE_TYPE_DRIVER,  // all downstream driver adapter
-    NEU_NODE_TYPE_SERVICE, // all upstream service adapter
+    NEU_NODE_TYPE_DRIVER,
+    NEU_NODE_TYPE_WEBSERVER,
+    NEU_NODE_TYPE_MQTT,
+    NEU_NODE_TYPE_STREAM_PROCESSOR,
+    NEU_NODE_TYPE_APP,
+    NEU_NODE_TYPE_MAX,
 } neu_node_type_e;
 
 typedef struct neu_node_info {
@@ -84,6 +101,29 @@ typedef struct neu_node_info {
     char *        node_name;
     // TODO: add node attribute
 } neu_node_info_t;
+
+/* NEU_REQRESP_ADD_NODE */
+typedef struct neu_cmd_add_node {
+    neu_node_type_e node_type;
+    const char *    adapter_name;
+    const char *    plugin_name;
+    // optional value, it is nothing when set to 0
+    plugin_id_t plugin_id;
+} neu_cmd_add_node_t;
+
+/* NEU_REQRESP_DEL_NODE */
+typedef struct neu_cmd_del_node {
+    neu_node_id_t node_id;
+} neu_cmd_del_node_t;
+
+/* NEU_REQRESP_UPDATE_NODE */
+typedef struct neu_cmd_update_node {
+    neu_node_type_e node_type;
+    const char *    adapter_name;
+    const char *    plugin_name;
+    // optional value, it is nothing when set to 0
+    plugin_id_t plugin_id;
+} neu_cmd_update_node_t;
 
 /* NEU_REQRESP_GET_NODES */
 typedef struct neu_cmd_get_nodes {
@@ -94,6 +134,26 @@ typedef struct neu_cmd_get_nodes {
 typedef struct neu_reqresp_nodes {
     vector_t nodes; // vector of neu_node_info_t
 } neu_reqresp_nodes_t;
+
+/* NEU_REQRESP_ADD_GRP_CONFIG */
+typedef struct neu_cmd_add_grp_config {
+    neu_node_id_t        src_node_id;
+    neu_node_id_t        dst_node_id;
+    neu_taggrp_config_t *grp_config;
+} neu_cmd_add_grp_config_t;
+
+/* NEU_REQRESP_DEL_GRP_CONFIG */
+typedef struct neu_cmd_del_grp_config {
+    neu_node_id_t node_id;
+    char *        config_name;
+} neu_cmd_del_grp_config_t;
+
+/* NEU_REQRESP_UPDATE_GRP_CONFIG */
+typedef struct neu_cmd_update_grp_config {
+    neu_node_id_t        src_node_id;
+    neu_node_id_t        dst_node_id;
+    neu_taggrp_config_t *grp_config;
+} neu_cmd_update_grp_config_t;
 
 /* NEU_REQRESP_GET_GRP_CONFIGS */
 typedef struct neu_cmd_get_grp_configs {
@@ -107,7 +167,7 @@ typedef struct neu_reqresp_grp_configs {
 
 /* NEU_REQRESP_GET_DATATAGS */
 typedef struct neu_cmd_get_datatags {
-    neu_node_id_t node_id; // get datatags of this node
+    neu_node_id_t node_id; // get datatag table of this node
 } neu_cmd_get_datatags_t;
 
 /* NEU_REQRESP_DATATAGS */
@@ -171,5 +231,9 @@ typedef struct adapter_callbacks {
     int (*response)(neu_adapter_t *adapter, neu_response_t *resp);
     int (*event_notify)(neu_adapter_t *adapter, neu_event_notify_t *event);
 } adapter_callbacks_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

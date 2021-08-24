@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "errorcodes.h"
+#include "neu_errcodes.h"
 #include "neu_types.h"
 
 /*****************/

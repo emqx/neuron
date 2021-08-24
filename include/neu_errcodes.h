@@ -17,17 +17,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _PLUGIN_INFO_H
-#define _PLUGIN_INFO_H
+#ifndef ERRORCODES_H
+#define ERRORCODES_H
 
-typedef struct plugin_id {
-    uint32_t id_val;
-} plugin_id_t;
-
-typedef enum plugin_kind {
-    PLUGIN_KIND_STATIC,
-    PLUGIN_KIND_SYSTEM,
-    PLUGIN_KIND_CUSTOM
-} plugin_kind_e;
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#define NEU_ERRORCODE_NONE 0x00000000
+#define NEU_ERRORCODE_OUTOFMEMORY 0xA0000000
+
+typedef enum {
+    NEU_ERR_SUCCESS = 0,
+    NEU_ERR_FAILURE = -1,
+} neu_err_code_e;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* ERRORCODES_H */

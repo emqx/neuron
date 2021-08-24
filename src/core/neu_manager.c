@@ -115,18 +115,19 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 #define MQTT_ADAPTER_NAME "mqtt-adapter"
 
-#define ADAPTER_NAME_MAX_LEN 50
-#define PLUGIN_LIB_NAME_MAX_LEN 50
+#define ADAPTER_NAME_MAX_LEN 90
+#define GRP_CONFIG_NAME_MAX_LEN 90
+#define PLUGIN_LIB_NAME_MAX_LEN 90
 
-typedef struct adapter_reg_param {
+typedef struct adapter_reg_cmd {
     adapter_type_e adapter_type;
     const char *   adapter_name;
     const char *   plugin_name;
     // optional value, it is nothing when set to 0
     plugin_id_t plugin_id;
-} adapter_reg_param_t;
+} adapter_reg_cmd_t;
 
-static const adapter_reg_param_t default_adapter_reg_params[] = {
+static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
 #ifdef NEU_HAS_SAMPLE_ADAPTER
     {
         .adapter_type = ADAPTER_TYPE_DRIVER,
@@ -170,7 +171,7 @@ static const adapter_reg_param_t default_adapter_reg_params[] = {
     */
 };
 #define DEFAULT_ADAPTER_ADD_INFO_SIZE \
-    (sizeof(default_adapter_reg_params) / sizeof(default_adapter_reg_params[0]))
+    (sizeof(default_adapter_reg_cmds) / sizeof(default_adapter_reg_cmds[0]))
 
 static const char *default_plugin_lib_names[] = {
 #ifdef NEU_HAS_SAMPLE_ADAPTER
@@ -234,15 +235,15 @@ static const plugin_reg_param_t default_plugin_infos[] = {
 #define DEFAULT_PLUGIN_INFO_SIZE \
     (sizeof(default_plugin_infos) / sizeof(default_plugin_infos[0]))
 
-typedef struct config_add_param {
+typedef struct config_add_cmd {
     char *               config_name;
     char *               src_adapter_name;
     char *               dst_adapter_name;
     uint32_t             read_interval;
     neu_taggrp_config_t *grp_config;
-} config_add_param_t;
+} config_add_cmd_t;
 
-static config_add_param_t default_config_add_params[] = {
+static config_add_cmd_t default_config_add_cmds[] = {
 #ifdef NEU_HAS_SAMPLE_ADAPTER
     {
         .config_name      = "config_drv_sample",
@@ -268,7 +269,7 @@ static config_add_param_t default_config_add_params[] = {
 #endif
 };
 #define DEFAULT_GROUP_CONFIG_COUNT \
-    (sizeof(default_config_add_params) / sizeof(default_config_add_params[0]))
+    (sizeof(default_config_add_cmds) / sizeof(default_config_add_cmds[0]))
 
 static int init_bind_info(manager_bind_info_t *mng_bind_info)
 {
@@ -352,45 +353,6 @@ static adapter_reg_entity_t *find_reg_adapter_by_name(vector_t *  adapters,
     return NULL;
 }
 
-static int manager_add_config(neu_manager_t *manager, config_add_param_t *param)
-{
-    int                   rv = 0;
-    adapter_reg_entity_t *src_reg_entity;
-    adapter_reg_entity_t *dst_reg_entity;
-
-    if (param->grp_config == NULL) {
-        log_error("group config is NULL");
-        return -1;
-    }
-
-    src_reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
-                                              param->src_adapter_name);
-    dst_reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
-                                              param->src_adapter_name);
-    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
-        log_error("Can't find matched src or dst registered adapter");
-        return -1;
-    }
-
-    vector_t *sub_pipes;
-    sub_pipes = neu_taggrp_cfg_get_subpipes(param->grp_config);
-    // TODO: It's need to check if the adapter pipe is unique pipe in sub_pipes
-    rv = vector_push_back(sub_pipes, &dst_reg_entity->adapter_pipe);
-    if (rv != 0) {
-        log_error("Can't add pipe to vector of subscribe pipes");
-        return -1;
-    }
-
-    neu_taggrp_cfg_set_interval(param->grp_config, param->read_interval);
-    rv = neu_datatag_mng_add_grp_config(src_reg_entity->datatag_manager,
-                                        param->grp_config);
-    if (rv != 0) {
-        log_error("Can't add pipe to vector of subscribe pipes");
-        neu_taggrp_cfg_free(param->grp_config);
-    }
-    return rv;
-}
-
 static adapter_id_t manager_get_adapter_id(neu_manager_t *manager)
 {
     adapter_id_t adapter_id;
@@ -469,9 +431,9 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 }
 
 // The output parameter p_adapter hold a new adapter
-static adapter_id_t manager_reg_adapter(neu_manager_t *      manager,
-                                        adapter_reg_param_t *reg_param,
-                                        neu_adapter_t **     p_adapter)
+static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
+                                        adapter_reg_cmd_t *reg_param,
+                                        neu_adapter_t **   p_adapter)
 {
     neu_adapter_t *    adapter;
     neu_adapter_info_t adapter_info;
@@ -644,8 +606,9 @@ static void reg_and_start_default_adapters(neu_manager_t *manager)
     neu_adapter_t *p_adapter;
 
     for (i = 0; i < DEFAULT_ADAPTER_ADD_INFO_SIZE; i++) {
-        id = manager_reg_adapter(
-            manager, (adapter_reg_param_t *) &default_adapter_reg_params[i],
+        p_adapter = NULL;
+        id        = manager_reg_adapter(
+            manager, (adapter_reg_cmd_t *) &default_adapter_reg_cmds[i],
             &p_adapter);
         if (id != 0 && p_adapter != NULL) {
             manager_start_adapter(manager, p_adapter);
@@ -674,19 +637,69 @@ static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
     }
 }
 
+static int add_grp_config_with_pipe(neu_datatag_manager_t *datatag_mng,
+                                    nng_pipe *             dst_pipe,
+                                    neu_taggrp_config_t *  grp_config)
+{
+    int       rv = 0;
+    vector_t *sub_pipes;
+
+    sub_pipes = neu_taggrp_cfg_get_subpipes(grp_config);
+    // TODO: It's need to check if the adapter pipe is unique pipe in sub_pipes
+    rv = vector_push_back(sub_pipes, dst_pipe);
+    if (rv != 0) {
+        log_error("Can't add pipe to vector of subscribe pipes");
+        return -1;
+    }
+
+    rv = neu_datatag_mng_add_grp_config(datatag_mng, grp_config);
+    if (rv != 0) {
+        log_error("Failed to add datatag group config: %s",
+                  neu_taggrp_cfg_get_name(grp_config));
+        neu_taggrp_cfg_free(grp_config);
+        return rv;
+    }
+    return rv;
+}
+
+static int manager_add_config_by_name(neu_manager_t *   manager,
+                                      config_add_cmd_t *cmd)
+{
+    int                   rv = 0;
+    adapter_reg_entity_t *src_reg_entity;
+    adapter_reg_entity_t *dst_reg_entity;
+
+    nng_mtx_lock(manager->adapters_mtx);
+    src_reg_entity =
+        find_reg_adapter_by_name(&manager->reg_adapters, cmd->src_adapter_name);
+    dst_reg_entity =
+        find_reg_adapter_by_name(&manager->reg_adapters, cmd->dst_adapter_name);
+    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
+        log_error("Can't find matched src or dst registered adapter");
+        rv = -1;
+        goto add_config_by_name_exit;
+    }
+
+    rv = add_grp_config_with_pipe(src_reg_entity->datatag_manager,
+                                  &dst_reg_entity->adapter_pipe,
+                                  cmd->grp_config);
+add_config_by_name_exit:
+    nng_mtx_unlock(manager->adapters_mtx);
+    return rv;
+}
+
 static void add_default_grp_configs(neu_manager_t *manager)
 {
     uint32_t             i;
-    config_add_param_t * config_add_param;
+    config_add_cmd_t *   config_add_cmd;
     neu_taggrp_config_t *grp_config;
 
     for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
-        config_add_param = &default_config_add_params[i];
-        grp_config       = neu_taggrp_cfg_new(config_add_param->config_name);
-        neu_taggrp_cfg_set_interval(grp_config,
-                                    config_add_param->read_interval);
-        config_add_param->grp_config = grp_config;
-        manager_add_config(manager, config_add_param);
+        config_add_cmd = &default_config_add_cmds[i];
+        grp_config     = neu_taggrp_cfg_new(config_add_cmd->config_name);
+        neu_taggrp_cfg_set_interval(grp_config, config_add_cmd->read_interval);
+        config_add_cmd->grp_config = grp_config;
+        manager_add_config_by_name(manager, config_add_cmd);
     }
     return;
 }
@@ -702,7 +715,9 @@ static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
         nng_pipe              msg_pipe;
         adapter_reg_entity_t *reg_entity;
 
-        sub_pipes  = vector_new(DEFAULT_ADAPTER_REG_COUNT, sizeof(nng_pipe));
+        sub_pipes = vector_new(DEFAULT_ADAPTER_REG_COUNT, sizeof(nng_pipe));
+
+        nng_mtx_lock(manager->adapters_mtx);
         reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
                                               SAMPLE_APP_ADAPTER_NAME);
         msg_pipe   = reg_entity->adapter_pipe;
@@ -712,6 +727,7 @@ static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
             find_reg_adapter_by_name(&manager->reg_adapters, MQTT_ADAPTER_NAME);
         msg_pipe = reg_entity->adapter_pipe;
         vector_push_back(sub_pipes, &msg_pipe);
+        nng_mtx_unlock(manager->adapters_mtx);
     } else {
         sub_pipes =
             (vector_t *) neu_taggrp_cfg_ref_subpipes(neu_databuf->grp_config);
@@ -843,11 +859,13 @@ static void manager_loop(void *arg)
             read_data_cmd_t *     cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
-            cmd_ptr    = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+            cmd_ptr = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+            nng_mtx_lock(manager->adapters_mtx);
             adapter_id = adapter_id_from_node_id(cmd_ptr->dst_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             msg_pipe = reg_entity->adapter_pipe;
+            nng_mtx_unlock(manager->adapters_mtx);
             msg_size = msg_inplace_data_get_size(sizeof(read_data_cmd_t));
             rv       = nng_msg_alloc(&out_msg, msg_size);
             if (rv == 0) {
@@ -873,11 +891,13 @@ static void manager_loop(void *arg)
             write_data_cmd_t *    cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
-            cmd_ptr    = (write_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+            cmd_ptr = (write_data_cmd_t *) msg_get_buf_ptr(pay_msg);
+            nng_mtx_lock(manager->adapters_mtx);
             adapter_id = adapter_id_from_node_id(cmd_ptr->dst_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             msg_pipe = reg_entity->adapter_pipe;
+            nng_mtx_unlock(manager->adapters_mtx);
             msg_size = msg_inplace_data_get_size(sizeof(write_data_cmd_t));
             rv       = nng_msg_alloc(&out_msg, msg_size);
             if (rv == 0) {
@@ -980,6 +1000,103 @@ const char *neu_manager_get_url(neu_manager_t *manager)
     return manager->listen_url;
 }
 
+static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
+{
+    adapter_type_e adapter_type;
+
+    switch (node_type) {
+    case NEU_NODE_TYPE_DRIVER:
+        adapter_type = ADAPTER_TYPE_DRIVER;
+        break;
+
+    case NEU_NODE_TYPE_WEBSERVER:
+        adapter_type = ADAPTER_TYPE_WEBSERVER;
+        break;
+
+    case NEU_NODE_TYPE_MQTT:
+        adapter_type = ADAPTER_TYPE_MQTT;
+        break;
+    case NEU_NODE_TYPE_STREAM_PROCESSOR:
+        adapter_type = ADAPTER_TYPE_STREAM_PROCESSOR;
+        break;
+    case NEU_NODE_TYPE_APP:
+        adapter_type = ADAPTER_TYPE_APP;
+        break;
+
+    default:
+        adapter_type = ADAPTER_TYPE_UNKNOW;
+        break;
+    }
+
+    return adapter_type;
+}
+
+/*
+static neu_node_type_e adapter_type_to_node_type(adapter_type_e adapter_type)
+{
+    neu_node_type_e node_type;
+
+    switch (adapter_type) {
+        case ADAPTER_TYPE_DRIVER:
+            node_type = NEU_NODE_TYPE_DRIVER;
+            break;
+
+        case ADAPTER_TYPE_WEBSERVER:
+            node_type = NEU_NODE_TYPE_WEBSERVER;
+            break;
+
+        case ADAPTER_TYPE_MQTT:
+            node_type = NEU_NODE_TYPE_MQTT;
+            break;
+        case ADAPTER_TYPE_STREAM_PROCESSOR:
+            node_type = NEU_NODE_TYPE_STREAM_PROCESSOR;
+            break;
+        case ADAPTER_TYPE_APP:
+            node_type = NEU_NODE_TYPE_APP;
+            break;
+
+        default:
+            node_type = NEU_NODE_TYPE_UNKNOW;
+            break;
+    }
+
+    return node_type;
+}
+*/
+
+neu_node_id_t neu_manager_add_node(neu_manager_t *     manager,
+                                   neu_cmd_add_node_t *cmd)
+{
+    adapter_id_t      adapter_id;
+    adapter_reg_cmd_t reg_cmd;
+
+    reg_cmd.adapter_type = adapter_type_from_node_type(cmd->node_type);
+    reg_cmd.adapter_name = cmd->adapter_name;
+    reg_cmd.plugin_name  = cmd->plugin_name;
+    reg_cmd.plugin_id    = cmd->plugin_id;
+    adapter_id           = manager_reg_adapter(manager, &reg_cmd, NULL);
+    return adapter_id_to_node_id(adapter_id);
+}
+
+int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
+{
+    int          rv = 0;
+    adapter_id_t adapter_id;
+
+    adapter_id = adapter_id_from_node_id(node_id);
+    rv         = manager_unreg_adapter(manager, adapter_id);
+    return rv;
+}
+
+int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd)
+{
+    int rv = 0;
+
+    (void) manager;
+    (void) cmd;
+    return rv;
+}
+
 static bool adapter_match_node_type(neu_adapter_t * adapter,
                                     neu_node_type_e node_type)
 {
@@ -1003,6 +1120,7 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
         return -1;
     }
 
+    nng_mtx_lock(manager->adapters_mtx);
     VECTOR_FOR_EACH(&manager->reg_adapters, iter)
     {
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
@@ -1018,7 +1136,134 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
             vector_push_back(result_nodes, &node_info);
         }
     }
+    nng_mtx_unlock(manager->adapters_mtx);
 
+    return rv;
+}
+
+int neu_manager_add_grp_config(neu_manager_t *           manager,
+                               neu_cmd_add_grp_config_t *cmd)
+{
+    int                   rv = 0;
+    adapter_id_t          src_adapter_id;
+    adapter_id_t          dst_adapter_id;
+    adapter_reg_entity_t *src_reg_entity;
+    adapter_reg_entity_t *dst_reg_entity;
+
+    if (manager == NULL || cmd == NULL) {
+        log_error("Add group config with NULL manager or command");
+        return -1;
+    }
+
+    if (cmd->grp_config == NULL) {
+        log_error("group config is NULL");
+        return -1;
+    }
+
+    nng_mtx_lock(manager->adapters_mtx);
+    src_adapter_id = adapter_id_from_node_id(cmd->src_node_id);
+    dst_adapter_id = adapter_id_from_node_id(cmd->dst_node_id);
+    src_reg_entity =
+        find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
+    dst_reg_entity =
+        find_reg_adapter_by_id(&manager->reg_adapters, dst_adapter_id);
+    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
+        log_error("Can't find matched src or dst registered adapter");
+        rv = -1;
+        goto add_grp_config_exit;
+    }
+
+    rv = add_grp_config_with_pipe(src_reg_entity->datatag_manager,
+                                  &dst_reg_entity->adapter_pipe,
+                                  cmd->grp_config);
+add_grp_config_exit:
+    nng_mtx_unlock(manager->adapters_mtx);
+    return rv;
+}
+
+int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
+                               const char *config_name)
+{
+    int                   rv = 0;
+    adapter_id_t          adapter_id;
+    adapter_reg_entity_t *reg_entity;
+
+    if (manager == NULL || config_name == NULL) {
+        log_error("Delete group config NULL manager or config_name");
+        return -1;
+    }
+
+    nng_mtx_lock(manager->adapters_mtx);
+    adapter_id = adapter_id_from_node_id(node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (reg_entity == NULL) {
+        log_error("Can't find matched registered adapter");
+        rv = -1;
+        goto del_grp_config_exit;
+    }
+
+    rv = neu_datatag_mng_del_grp_config(reg_entity->datatag_manager,
+                                        config_name);
+    if (rv != 0) {
+        log_error("Failed to delete datatag group config: %s", config_name);
+    }
+del_grp_config_exit:
+    nng_mtx_unlock(manager->adapters_mtx);
+    return rv;
+}
+
+int neu_manager_update_grp_config(neu_manager_t *              manager,
+                                  neu_cmd_update_grp_config_t *cmd)
+{
+    int                   rv = 0;
+    adapter_id_t          src_adapter_id;
+    adapter_id_t          dst_adapter_id;
+    adapter_reg_entity_t *src_reg_entity;
+    adapter_reg_entity_t *dst_reg_entity;
+
+    if (manager == NULL || cmd == NULL) {
+        log_error("Update group config with NULL manager or command");
+        return -1;
+    }
+
+    if (cmd->grp_config == NULL) {
+        log_error("group config is NULL");
+        return -1;
+    }
+
+    nng_mtx_lock(manager->adapters_mtx);
+    src_adapter_id = adapter_id_from_node_id(cmd->src_node_id);
+    dst_adapter_id = adapter_id_from_node_id(cmd->dst_node_id);
+    src_reg_entity =
+        find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
+    dst_reg_entity =
+        find_reg_adapter_by_id(&manager->reg_adapters, dst_adapter_id);
+    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
+        log_error("Can't find matched src or dst registered adapter");
+        rv = -1;
+        goto update_grp_config_exit;
+    }
+
+    vector_t *sub_pipes;
+    sub_pipes = neu_taggrp_cfg_get_subpipes(cmd->grp_config);
+    // TODO: It's need to check if the adapter pipe is unique pipe in sub_pipes
+    rv = vector_push_back(sub_pipes, &dst_reg_entity->adapter_pipe);
+    if (rv != 0) {
+        log_error("Can't add pipe to vector of subscribe pipes");
+        rv = -1;
+        goto update_grp_config_exit;
+    }
+
+    rv = neu_datatag_mng_update_grp_config(src_reg_entity->datatag_manager,
+                                           cmd->grp_config);
+    if (rv != 0) {
+        log_error("Failed to update datatag group config: %s",
+                  neu_taggrp_cfg_get_name(cmd->grp_config));
+        neu_taggrp_cfg_free(cmd->grp_config);
+    }
+
+update_grp_config_exit:
+    nng_mtx_unlock(manager->adapters_mtx);
     return rv;
 }
 
@@ -1034,6 +1279,7 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
         return -1;
     }
 
+    nng_mtx_lock(manager->adapters_mtx);
     adapter_id = adapter_id_from_node_id(node_id);
     VECTOR_FOR_EACH(&manager->reg_adapters, iter)
     {
@@ -1043,6 +1289,7 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
                 reg_entity->datatag_manager, result_grp_configs);
         }
     }
+    nng_mtx_unlock(manager->adapters_mtx);
 
     return rv;
 }
@@ -1059,7 +1306,8 @@ neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
         return NULL;
     }
 
-    tag_table  = NULL;
+    tag_table = NULL;
+    nng_mtx_lock(manager->adapters_mtx);
     adapter_id = adapter_id_from_node_id(node_id);
     VECTOR_FOR_EACH(&manager->reg_adapters, iter)
     {
@@ -1069,6 +1317,7 @@ neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
                 neu_datatag_mng_get_datatag_tbl(reg_entity->datatag_manager);
         }
     }
+    nng_mtx_unlock(manager->adapters_mtx);
 
     return tag_table;
 }
