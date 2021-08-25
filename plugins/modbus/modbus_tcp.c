@@ -21,9 +21,12 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdlib.h>
+#if defined(__APPLE__)
+#else
 #include <sys/epoll.h>
 #include <sys/queue.h>
 #include <sys/timerfd.h>
+#endif
 
 #include "connection/neu_tcp.h"
 #include "neu_datatag_table.h"
@@ -102,6 +105,8 @@ static int send_recv_reqrsp(neu_plugin_t *plugin)
                     struct modbus_pdu_read_response *pdu =
                         (struct modbus_pdu_read_response *) &code[1];
                     char *data = (char *) &pdu[1];
+                    (void) pdu;
+                    (void) data;
 
                     printf("process_no: %hd, flag: %hd, len: %hd, device: "
                            "%hhd, function: %hhd\n",
@@ -188,6 +193,29 @@ static void insert_point(neu_plugin_t *plugin, modbus_point_t *point)
     pthread_mutex_unlock(&plugin->mtx);
 }
 
+#if defined(__APPLE__)
+static void del_timer(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return;
+}
+
+static void add_timer(neu_plugin_t *plugin, uint32_t interval)
+{
+    (void) plugin;
+    (void) interval;
+    return;
+}
+
+static void *loop(void *arg)
+{
+    neu_plugin_t *plugin = (neu_plugin_t *) arg;
+    // TODO: call this function in a while loop
+    send_recv_reqrsp(plugin);
+    return NULL;
+}
+
+#else
 static void del_timer(neu_plugin_t *plugin)
 {
     if (plugin->timer_fd > 0) {
@@ -195,6 +223,7 @@ static void del_timer(neu_plugin_t *plugin)
         close(plugin->timer_fd);
         plugin->timer_fd = 0;
     }
+    return;
 }
 
 static void add_timer(neu_plugin_t *plugin, uint32_t interval)
@@ -254,6 +283,7 @@ static void *loop(void *arg)
 
     return NULL;
 }
+#endif
 
 static int           modbus_tcp_init(neu_plugin_t *plugin);
 static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
@@ -291,9 +321,12 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
 {
 
     pthread_mutex_init(&plugin->mtx, NULL);
+#if defined(__APPLE__)
+#else
     plugin->epoll_fd = epoll_create(1);
-    plugin->status   = RUNNING;
     plugin->timer_fd = -1;
+#endif
+    plugin->status = RUNNING;
     TAILQ_INIT(&plugin->point_list);
 
     pthread_create(&plugin->loop, NULL, loop, plugin);
@@ -336,8 +369,11 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
     neu_tcp_client_close(plugin->client);
 
     pthread_mutex_destroy(&plugin->mtx);
+#if defined(__APPLE__)
+#else
     close(plugin->timer_fd);
     close(plugin->epoll_fd);
+#endif
 
     return 0;
 }

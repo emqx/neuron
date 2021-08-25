@@ -296,7 +296,6 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     switch (req->req_type) {
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_data_t *neu_data;
-        char *              req_str;
 
         assert(req->buf_len == sizeof(neu_reqresp_data_t));
         neu_data = (neu_reqresp_data_t *) req->buf;
