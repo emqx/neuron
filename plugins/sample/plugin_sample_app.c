@@ -102,7 +102,8 @@ static void *sample_app_work_loop(void *arg)
     resp_nodes  = (neu_reqresp_nodes_t *) result->buf;
     node_info   = (neu_node_info_t *) vector_get(&resp_nodes->nodes, 0);
     dst_node_id = node_info->node_id;
-    log_info("The first node(%d) of driver nodes list", dst_node_id);
+    log_info("The first node(%d) of driver nodes list, name:%s", dst_node_id,
+             node_info->node_name);
     vector_uninit(&resp_nodes->nodes);
     free(resp_nodes);
     free(result);
@@ -185,23 +186,21 @@ static void *sample_app_work_loop(void *arg)
     /* example of send write command */
     neu_request_t       cmd1;
     neu_reqresp_write_t write_req;
-    neu_variable_t      data_var;
-    static const char * data_str = "Sample app writing";
-
-    data_var.var_type.typeId = NEU_DATATYPE_STRING;
-    data_var.data            = (void *) data_str;
+    neu_variable_t *    data_var = neu_variable_create();
+    neu_variable_set_string(data_var, "Sample app writing");
 
     write_req.grp_config =
         (neu_taggrp_config_t *) neu_taggrp_cfg_ref(grp_config);
     write_req.dst_node_id = dst_node_id;
     write_req.addr        = 3;
-    write_req.data_var    = &data_var;
+    write_req.data_var    = data_var;
     cmd1.req_type         = NEU_REQRESP_WRITE_DATA;
     cmd1.req_id           = plugin_get_event_id(plugin);
     cmd1.buf              = (void *) &write_req;
     cmd1.buf_len          = sizeof(neu_reqresp_write_t);
     log_info("Send a write command");
     adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
+    neu_variable_destroy(data_var);
 
     neu_taggrp_cfg_free(grp_config);
     return NULL;
@@ -297,12 +296,13 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     switch (req->req_type) {
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_data_t *neu_data;
-        const char *        req_str;
+        char *              req_str;
 
         assert(req->buf_len == sizeof(neu_reqresp_data_t));
         neu_data = (neu_reqresp_data_t *) req->buf;
-        req_str  = neu_variable_get_str(neu_data->data_var);
-        log_debug("get trans data str: %s", req_str);
+
+        size_t count = neu_variable_count(neu_data->data_var);
+        log_debug("variable count: %ld", count);
         break;
     }
 
