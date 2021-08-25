@@ -1,6 +1,6 @@
 # modbus tcp driver plugin
 set(MODBUS_TCP_PLUGIN plugin-modbus-tcp)
-set(MODBUS_TCP_PLUGIN_SOURCES modbus.c modbus_tcp.c)
+set(MODBUS_TCP_PLUGIN_SOURCES modbus.c modbus_tcp.c modbus_point.c)
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 add_library(${MODBUS_TCP_PLUGIN} SHARED)
 target_sources(${MODBUS_TCP_PLUGIN} PRIVATE ${MODBUS_TCP_PLUGIN_SOURCES})

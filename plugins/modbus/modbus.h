@@ -36,7 +36,6 @@ typedef enum modbus_function {
 } modbus_function_e;
 
 typedef enum modbus_area {
-    MODBUS_AREA_UNDEFINE       = -1,
     MODBUS_AREA_COIL           = 0,
     MODBUS_AREA_INPUT          = 1,
     MODBUS_AREA_INPUT_REGISTER = 3,
@@ -102,27 +101,8 @@ typedef struct modbus_data {
         uint16_t val_16;
         uint32_t val_32;
     } val;
+    modbus_endian_e endian;
 } modbus_data_t;
-
-typedef enum modbus_point_addr_order {
-    MODBUS_POINT_ADDR_HEAD = 0,
-    MODBUS_POINT_ADDR_SAME,
-    MODBUS_POINT_ADDR_NEXT,
-} modbus_point_addr_order_e;
-
-typedef struct modbus_point {
-    modbus_area_e     area;
-    uint8_t           device;
-    uint16_t          addr;
-    uint8_t           bit;
-    modbus_endian_e   endian;
-    modbus_function_e function;
-    modbus_data_t     value;
-
-    uint16_t                  id;
-    modbus_point_addr_order_e order;
-    TAILQ_ENTRY(modbus_point) node;
-} modbus_point_t;
 
 int modbus_read_req_with_head(char *buf, uint16_t id, uint8_t device,
                               modbus_function_e function_code, uint16_t addr,
@@ -147,11 +127,5 @@ int modbus_m_write_req_with_head(char *buf, uint8_t device_address,
 int modbus_m_write_req(char *buf, uint8_t device_address,
                        modbus_function_e function_code, uint16_t addr,
                        uint16_t n_reg, struct modbus_data *mdata);
-
-int modbus_address_parse(char *str_addr, modbus_point_t *e);
-
-int modbus_point_cmp(modbus_point_t *e1, modbus_point_t *e2);
-
-void modbus_point_pre_process(bool init, modbus_point_t *point);
 
 #endif
