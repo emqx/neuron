@@ -20,6 +20,10 @@
 #ifndef __DATATAG_TABLE_H__
 #define __DATATAG_TABLE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "neu_types.h"
 
 typedef uint32_t                 datatag_id_t;
@@ -33,4 +37,7 @@ int          neu_datatag_tbl_update(neu_datatag_table_t *, datatag_id_t,
                                     neu_datatag_t *);
 datatag_id_t neu_datatag_tbl_add(neu_datatag_table_t *, neu_datatag_t *);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //__DATATAG_TABLE_H__
