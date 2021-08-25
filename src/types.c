@@ -278,6 +278,212 @@ void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
     v->type        = type;
 }
 
+neu_datatype_t neu_variable_get_type(neu_variable_t *v)
+{
+    return NULL == v ? NEU_DATATYPE_ERROR : v->v_type;
+}
+
+neu_variable_t *neu_variable_create()
+{
+    neu_variable_t *v = (neu_variable_t *) malloc(sizeof(neu_variable_t));
+    if (NULL == v) {
+        return NULL;
+    }
+
+    memset(v, 0, sizeof(neu_variable_t));
+    return v;
+}
+
+void neu_variable_set_error(neu_variable_t *v, const int code)
+{
+    if (NULL == v) {
+        return;
+    }
+    v->error = code;
+}
+
+int neu_variable_get_error(neu_variable_t *v)
+{
+    if (NULL == v) {
+        return -1;
+    }
+    return v->error;
+}
+
+static int neu_variable_set_value(neu_variable_t *v, neu_datatype_t v_type,
+                                  void *data, size_t len)
+{
+    if (NULL == v) {
+        return -1;
+    }
+    if (NULL == data || 0 == len) {
+        return -2;
+    }
+
+    v->v_type = v_type;
+    v->data   = malloc(len);
+    if (NULL == v->data) {
+        return -3;
+    }
+
+    memset(v->data, 0, len);
+    memcpy(v->data, data, len);
+    v->data_len = len;
+    return 0;
+}
+
+int neu_variable_set_byte(neu_variable_t *v, const int8_t value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_BYTE, (void *) &value,
+                                  sizeof(int8_t));
+}
+
+int neu_variable_get_byte(neu_variable_t *v, int8_t *value)
+{
+    if (NULL == v) {
+        return -1;
+    }
+    *value = *((int8_t *) (v->data));
+    return 0;
+}
+
+int neu_variable_set_ubyte(neu_variable_t *v, const uint8_t value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_UBYTE, (void *) &value,
+                                  sizeof(uint8_t));
+}
+
+int neu_variable_set_boolean(neu_variable_t *v, const bool value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_BOOLEAN, (void *) &value,
+                                  sizeof(bool));
+}
+
+int neu_variable_set_word(neu_variable_t *v, const int16_t value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_WORD, (void *) &value,
+                                  sizeof(int16_t));
+}
+
+int neu_variable_set_uword(neu_variable_t *v, const uint16_t value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_UWORD, (void *) &value,
+                                  sizeof(uint16_t));
+}
+
+int neu_variable_set_qword(neu_variable_t *v, const int64_t value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_QWORD, (void *) &value,
+                                  sizeof(int64_t));
+}
+
+int neu_variable_get_qword(neu_variable_t *v, int64_t *value)
+{
+    if (NULL == v) {
+        return -1;
+    }
+    *value = *((int64_t *) (v->data));
+    return 0;
+}
+
+int neu_variable_set_double(neu_variable_t *v, const double value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_DOUBLE, (void *) &value,
+                                  sizeof(double));
+}
+
+int neu_variable_get_double(neu_variable_t *v, double *value)
+{
+    if (NULL == v) {
+        return -1;
+    }
+    *value = *((double *) (v->data));
+    return 0;
+}
+
+int neu_variable_set_string(neu_variable_t *v, const char *value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_STRING, (void *) value,
+                                  strlen(value) + 1);
+}
+
+int neu_variable_get_string(neu_variable_t *v, char **value, size_t *len)
+{
+    if (NULL == v) {
+        return -1;
+    }
+    *value = (char *) v->data;
+    *len   = v->data_len;
+    return 0;
+}
+
+int neu_variable_set_bytes(neu_variable_t *v, const unsigned char *value,
+                           size_t len)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_BYTES, (void *) value, len);
+}
+
+void neu_variable_destroy(neu_variable_t *v)
+{
+    if (NULL == v) {
+        return;
+    }
+
+    if (NULL != v->next) {
+        neu_variable_destroy(v->next);
+    }
+
+    if (NULL != v->data) {
+        free(v->data);
+    }
+    free(v);
+    return;
+}
+
+int neu_variable_add_item(neu_variable_t *v_array, neu_variable_t *v_item)
+{
+    if (NULL == v_array || NULL == v_item) {
+        return -1;
+    }
+
+    neu_variable_t *cursor = NULL;
+    for (cursor = v_array; NULL != cursor->next; cursor = cursor->next) { }
+
+    cursor->next = v_item;
+    v_item->prev = cursor;
+    return 0;
+}
+
+int neu_variable_get_item(neu_variable_t *v_array, const int index,
+                          neu_variable_t **v_item)
+{
+    int             i = 0;
+    neu_variable_t *cursor;
+    for (cursor = v_array; NULL != cursor; cursor = cursor->next) {
+        if (i == index) {
+            *v_item = cursor;
+            return 0;
+        }
+        i++;
+    }
+    return -1;
+}
+
+size_t neu_variable_count(neu_variable_t *v_array)
+{
+    if (NULL == v_array) {
+        return 0;
+    }
+
+    neu_variable_t *cursor = NULL;
+    size_t          index  = 0;
+    for (cursor = v_array; NULL != cursor; cursor = cursor->next) {
+        index++;
+    }
+
+    return index;
+}
+
 static int serialize_join(size_t *size, void *thing, const size_t size_thing,
                           void **data)
 {
@@ -300,85 +506,51 @@ static int serialize_join(size_t *size, void *thing, const size_t size_thing,
     return 0;
 }
 
-size_t neu_variable_serialize(neu_variable_t *v, void **buf)
+static size_t neu_variable_serialize_inner(neu_variable_t *v, void **buf,
+                                           size_t *len)
 {
-    size_t len;
-    void * ser_buf;
-
-    len     = 0;
-    ser_buf = NULL;
     if (v == NULL) {
         return 0;
     }
 
-    // neu_variabletype_t
-    size_t size_thing = sizeof(v->var_type.typeName);
-    serialize_join(&len, &v->var_type.typeName, size_thing, &ser_buf);
+    uint32_t object_len = 0;
+    size_t   size_thing = sizeof(uint32_t);
+    serialize_join(len, &object_len, size_thing, buf);
 
-    size_thing = sizeof(v->var_type.typeId);
-    serialize_join(&len, &v->var_type.typeId, size_thing, &ser_buf);
+    size_thing = sizeof(v->error);
+    serialize_join(len, &v->error, size_thing, buf);
 
-    size_thing = sizeof(v->var_type.memSize);
-    serialize_join(&len, &v->var_type.memSize, size_thing, &ser_buf);
+    size_thing = sizeof(v->v_type);
+    serialize_join(len, &v->v_type, size_thing, buf);
 
-    // arrayLength
-    size_thing = sizeof(v->arrayLength);
-    serialize_join(&len, &v->arrayLength, size_thing, &ser_buf);
+    size_t s_size_thing = sizeof(uint32_t);
+    serialize_join(len, &v->data_len, s_size_thing, buf);
 
-    // arrayDimensionsSize
-    size_thing = sizeof(v->arrayDimensionsSize);
-    serialize_join(&len, &v->arrayDimensionsSize, size_thing, &ser_buf);
+    serialize_join(len, v->data, v->data_len, buf);
 
-    // arrayDimensions
-    size_thing = sizeof(v->arrayDimensions);
-    serialize_join(&len, &v->arrayDimensions, size_thing, &ser_buf);
+    uint32_t l = *len;
+    memcpy(*buf, &l, sizeof(uint32_t));
+    return *len;
+}
 
-    // data
-    switch (v->var_type.typeId) {
-    case NEU_DATATYPE_BYTE:
-        size_thing = sizeof(int8_t);
-        break;
-    case NEU_DATATYPE_UBYTE:
-        size_thing = sizeof(uint8_t);
-        break;
-    case NEU_DATATYPE_BOOLEAN:
-        size_thing = sizeof(bool);
-        break;
-    case NEU_DATATYPE_WORD:
-        size_thing = sizeof(int16_t);
-        break;
-    case NEU_DATATYPE_UWORD:
-        size_thing = sizeof(uint16_t);
-        break;
-    case NEU_DATATYPE_DWORD:
-        size_thing = sizeof(int32_t);
-        break;
-    case NEU_DATATYPE_UDWORD:
-        size_thing = sizeof(uint32_t);
-        break;
-    case NEU_DATATYPE_QWORD:
-        size_thing = sizeof(int64_t);
-        break;
-    case NEU_DATATYPE_UQWORD:
-        size_thing = sizeof(uint64_t);
-        break;
-    case NEU_DATATYPE_FLOAT:
-        size_thing = sizeof(float);
-        break;
-    case NEU_DATATYPE_DOUBLE:
-        size_thing = sizeof(double);
-        break;
-    case NEU_DATATYPE_STRING:
-        size_thing = strlen((const char *) v->data) + 1;
-        break;
-    default:
-        size_thing = 0;
-        break;
+size_t neu_variable_serialize(neu_variable_t *v, void **buf)
+{
+    neu_variable_t *cursor  = NULL;
+    size_t          len     = 0;
+    void *          ser_buf = NULL;
+    for (cursor = v; NULL != cursor; cursor = cursor->next) {
+        neu_variable_serialize_inner(cursor, &ser_buf, &len);
     }
 
-    serialize_join(&len, v->data, size_thing, &ser_buf);
     *buf = ser_buf;
     return len;
+}
+
+void neu_variable_serialize_free(void *buf)
+{
+    if (NULL != buf) {
+        free(buf);
+    }
 }
 
 static size_t deserialize_join(size_t *size, const void *data, void *thing,
@@ -390,90 +562,59 @@ static size_t deserialize_join(size_t *size, const void *data, void *thing,
     return *size;
 }
 
+static neu_variable_t *neu_variable_deserialize_inner(void *buf, size_t *len)
+{
+    neu_variable_t *v = (neu_variable_t *) malloc(sizeof(neu_variable_t));
+    if (NULL == v) {
+        return NULL;
+    }
+    memset(v, 0, sizeof(neu_variable_t));
+
+    size_t   size_thing = sizeof(uint32_t);
+    uint32_t object_len = 0;
+    deserialize_join(len, buf, &object_len, size_thing);
+
+    size_thing = sizeof(v->error);
+    deserialize_join(len, buf, &v->error, size_thing);
+
+    size_thing = sizeof(v->v_type);
+    deserialize_join(len, buf, &v->v_type, size_thing);
+
+    size_thing = sizeof(uint32_t);
+    deserialize_join(len, buf, &v->data_len, size_thing);
+
+    size_thing = v->data_len;
+    v->data    = malloc(v->data_len);
+    if (NULL == v->data) {
+        return NULL;
+    }
+    deserialize_join(len, buf, v->data, size_thing);
+
+    return v;
+}
+
 neu_variable_t *neu_variable_deserialize(void *buf, size_t buf_len)
 {
-    neu_variable_t *neu_var;
-
-    if (buf == NULL || buf_len == 0) {
+    if (NULL == buf) {
         return NULL;
     }
 
-    neu_var = (neu_variable_t *) malloc(sizeof(neu_variable_t));
-    if (neu_var == NULL) {
+    if (16 > buf_len) {
         return NULL;
     }
 
-    size_t len = 0;
-
-    // neu_variabletype_t
-    size_t size_thing = sizeof(neu_var->var_type.typeName);
-    deserialize_join(&len, buf, &neu_var->var_type.typeName, size_thing);
-
-    size_thing = sizeof(neu_var->var_type.typeId);
-    deserialize_join(&len, buf, &neu_var->var_type.typeId, size_thing);
-
-    size_thing = sizeof(neu_var->var_type.memSize);
-    deserialize_join(&len, buf, &neu_var->var_type.memSize, size_thing);
-
-    // arrayLength
-    size_thing = sizeof(neu_var->arrayLength);
-    deserialize_join(&len, buf, &neu_var->arrayLength, size_thing);
-
-    // arrayDimensionsSize
-    size_thing = sizeof(neu_var->arrayDimensionsSize);
-    deserialize_join(&len, buf, &neu_var->arrayDimensionsSize, size_thing);
-
-    // arrayDimensions
-    size_thing = sizeof(neu_var->arrayDimensions);
-    deserialize_join(&len, buf, &neu_var->arrayDimensions, size_thing);
-
-    // data
-    switch (neu_var->var_type.typeId) {
-    case NEU_DATATYPE_BYTE:
-        size_thing = sizeof(int8_t);
-        break;
-    case NEU_DATATYPE_UBYTE:
-        size_thing = sizeof(uint8_t);
-        break;
-    case NEU_DATATYPE_BOOLEAN:
-        size_thing = sizeof(bool);
-        break;
-    case NEU_DATATYPE_WORD:
-        size_thing = sizeof(int16_t);
-        break;
-    case NEU_DATATYPE_UWORD:
-        size_thing = sizeof(uint16_t);
-        break;
-    case NEU_DATATYPE_DWORD:
-        size_thing = sizeof(int32_t);
-        break;
-    case NEU_DATATYPE_UDWORD:
-        size_thing = sizeof(uint32_t);
-        break;
-    case NEU_DATATYPE_QWORD:
-        size_thing = sizeof(int64_t);
-        break;
-    case NEU_DATATYPE_UQWORD:
-        size_thing = sizeof(uint64_t);
-        break;
-    case NEU_DATATYPE_FLOAT:
-        size_thing = sizeof(float);
-        break;
-    case NEU_DATATYPE_DOUBLE:
-        size_thing = sizeof(double);
-        break;
-    case NEU_DATATYPE_STRING:
-        size_thing = strlen((char *) (buf + len)) + 1;
-        break;
-    default:
-        size_thing = 0;
-        break;
+    neu_variable_t *head = NULL;
+    size_t          len  = 0;
+    head                 = neu_variable_deserialize_inner(buf, &len);
+    if (NULL == head) {
+        return NULL;
     }
 
-    neu_var->data = malloc(size_thing);
-    memset(neu_var->data, 0x00, size_thing);
-    deserialize_join(&len, buf, neu_var->data, size_thing);
-    return neu_var;
+    while (0 != (buf_len - len)) {
+        neu_variable_t *v = neu_variable_deserialize_inner(buf, &len);
+        neu_variable_add_item(head, v);
+    }
+    return head;
 }
 
 const char *neu_variable_get_str(neu_variable_t *v)

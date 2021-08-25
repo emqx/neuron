@@ -13,6 +13,14 @@ target_include_directories(api_json_test PRIVATE
 )
 target_link_libraries(api_json_test neuron-base gtest_main gtest pthread jansson)
 
+add_executable(variable_test variable_test.cc)
+target_include_directories(variable_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(variable_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(api_json_test)
+gtest_discover_tests(variable_test)

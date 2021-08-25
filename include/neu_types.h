@@ -377,6 +377,8 @@ neu_order_t neu_nodeid_order(const neu_nodeid_t *n1, const neu_nodeid_t *n2);
  * A list of data type
  **/
 typedef enum {
+    NEU_DATATYPE_ERROR,
+    NEU_DATATYPE_ARRAY,
     NEU_DATATYPE_BOOLEAN,
     NEU_DATATYPE_STATE,
     NEU_DATATYPE_BYTE,
@@ -398,6 +400,7 @@ typedef enum {
     NEU_DATATYPE_QWORD_DECI,
     NEU_DATATYPE_UQWORD_DECI,
     NEU_DATATYPE_STRING,
+    NEU_DATATYPE_BYTES,
     NEU_DATATYPE_LOCALIZEDTEXT,
     NEU_DATATYPE_ERRORCODE,
     NEU_DATATYPE_DATETIME,
@@ -537,13 +540,18 @@ typedef struct {
 struct neu_variabletype;
 typedef struct neu_variabletype neu_variabletype_t;
 
-typedef struct {
+typedef struct neu_variable_t {
+    struct neu_variable_t *   next;
+    struct neu_variable_t *   prev;
+    int                       error;
+    neu_datatype_t            v_type;
+    size_t                    data_len;
+    void *                    data; /* Points to the scalar or array data */
     const neu_variabletype_t *type; /* The data type description */
     neu_variabletype_t        var_type;
     size_t        arrayLength; /* The number of elements in the data array */
     size_t        arrayDimensionsSize; /* The number of dimensions */
     neu_udword_t *arrayDimensions;     /* The length of each dimension */
-    void *        data;                /* Points to the scalar or array data */
 } neu_variable_t;
 
 /* Returns true if the variable has no value defined (contains neither an array
@@ -599,7 +607,26 @@ neu_errorcode_t neu_variable_setArrayCopy(neu_variable_t *var,
 void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
                            const neu_variabletype_t *type);
 
+neu_variable_t *neu_variable_create();
+neu_datatype_t  neu_variable_get_type(neu_variable_t *v);
+void            neu_variable_set_error(neu_variable_t *v, const int code);
+int             neu_variable_get_error(neu_variable_t *v);
+int             neu_variable_set_byte(neu_variable_t *v, const int8_t value);
+int             neu_variable_get_byte(neu_variable_t *v, int8_t *value);
+int             neu_variable_set_qword(neu_variable_t *v, const int64_t value);
+int             neu_variable_get_qword(neu_variable_t *v, int64_t *value);
+int             neu_variable_set_double(neu_variable_t *v, const double value);
+int             neu_variable_get_double(neu_variable_t *v, double *value);
+int             neu_variable_set_string(neu_variable_t *v, const char *value);
+int    neu_variable_get_string(neu_variable_t *v, char **value, size_t *len);
+int    neu_variable_add_item(neu_variable_t *v_array, neu_variable_t *v_item);
+int    neu_variable_get_item(neu_variable_t *v_array, const int index,
+                             neu_variable_t **v_item);
+size_t neu_variable_count(neu_variable_t *v_array);
+void   neu_variable_destroy(neu_variable_t *v);
+
 size_t          neu_variable_serialize(neu_variable_t *v, void **buf);
+void            neu_variable_serialize_free(void *buf);
 neu_variable_t *neu_variable_deserialize(void *buf, size_t buf_len);
 const char *    neu_variable_get_str(neu_variable_t *v);
 /**
