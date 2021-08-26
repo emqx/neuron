@@ -66,6 +66,8 @@ static void insert_cmd(modbus_point_context_t *ctx, modbus_point_t *point);
 static int  address_parse(char *addr, modbus_point_t *e);
 static int  point_cmp(modbus_point_t *e1, modbus_point_t *e2);
 static int  process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len);
+static int  process_write_res(modbus_point_t *point, modbus_function_e function,
+                              uint16_t n_reg, char *buf, ssize_t len);
 
 modbus_point_context_t *modbus_point_init(void *arg)
 {
@@ -177,11 +179,42 @@ int modbus_point_find(modbus_point_context_t *ctx, char *addr,
     return ret;
 }
 
-int modbus_point_write(char *addr, modbus_data_t *data)
+int modbus_point_write(modbus_point_context_t *ctx, char *addr,
+                       modbus_data_t *data, modbus_point_send_recv callback)
 {
-    (void) addr;
-    (void) data;
-    return 0;
+    char              send_buf[64] = { 0 };
+    char              recv_buf[64] = { 0 };
+    ssize_t           send_len     = 0;
+    ssize_t           recv_len     = 0;
+    modbus_point_t    point        = { 0 };
+    modbus_function_e function;
+    int               ret = address_parse(addr, &point);
+
+    if (ret != 0) {
+        return -1;
+    }
+
+    switch (point.area) {
+    case MODBUS_AREA_COIL:
+        function = MODBUS_WRITE_M_COIL;
+        break;
+    case MODBUS_AREA_HOLD_REGISTER:
+        function = MODBUS_WRITE_M_HOLD_REG;
+        break;
+    default:
+        return -1;
+    }
+
+    send_len = modbus_m_write_req_with_head(send_buf, point.device, function,
+                                            point.addr, data->type, data);
+
+    recv_len =
+        callback(ctx->arg, send_buf, send_len, recv_buf, sizeof(recv_buf));
+    if (recv_len <= 0) {
+        return -1;
+    }
+
+    return process_write_res(&point, function, data->type, recv_buf, recv_len);
 }
 
 int modbus_point_all_search(modbus_point_context_t *ctx, bool with_head,
@@ -382,6 +415,16 @@ static void insert_cmd(modbus_point_context_t *ctx, modbus_point_t *point)
                 ctx->cmds[i].points[ctx->cmds[i].n_point - 1] = point;
                 return;
             }
+            if (ctx->cmds[i].start_addr < point->addr &&
+                ctx->cmds[i].start_addr + ctx->cmds[i].n_reg > point->addr) {
+                ctx->cmds[i].n_point += 1;
+                ctx->cmds[i].points = (modbus_point_t **) realloc(
+                    ctx->cmds[i].points,
+                    ctx->cmds[i].n_point * sizeof(modbus_point_t *));
+
+                ctx->cmds[i].points[ctx->cmds[i].n_point - 1] = point;
+                return;
+            }
         }
     }
 
@@ -423,6 +466,10 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
         return -1;
     }
 
+    if (ntohs(header->len) != len - sizeof(struct modbus_header)) {
+        return -1;
+    }
+
     if (code->device_address != cmd->device) {
         return -1;
     }
@@ -439,6 +486,9 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
                              (cmd->points[i]->addr - cmd->start_addr) / 8);
             cmd->points[i]->value.val.val_8 =
                 (((*ptr) >> cmd->points[i]->addr % 8) & 1) > 0;
+            log_info("get result bit.... %d, %d %d",
+                     cmd->points[i]->value.val.val_8, cmd->start_addr,
+                     cmd->points[i]->addr);
         }
     }
 
@@ -450,15 +500,22 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
                 uint16_t *ptr = (uint16_t *) (data + cmd->points[i]->addr -
                                               cmd->start_addr);
                 cmd->points[i]->value.val.val_16 = ntohs(*ptr);
-                log_info("get result.... %d, %d %d",
+                log_info("get result16.... %d, %d %d",
                          cmd->points[i]->value.val.val_16, cmd->start_addr,
                          cmd->points[i]->addr);
                 break;
             }
             case MODBUS_B32: {
-                uint32_t *ptr = (uint32_t *) (data + cmd->points[i]->addr -
-                                              cmd->start_addr);
-                cmd->points[i]->value.val.val_32 = ntohl(*ptr);
+                uint16_t *ptrl = (uint16_t *) (data + cmd->points[i]->addr -
+                                               cmd->start_addr);
+                uint16_t *ptrh = (uint16_t *) (data + cmd->points[i]->addr -
+                                               cmd->start_addr + 2);
+                cmd->points[i]->value.val.val_32 =
+                    ntohs(*ptrl) << 16 | ntohs(*ptrh);
+
+                log_info("get result32.... %f, %d %d",
+                         cmd->points[i]->value.val.val_f, cmd->start_addr,
+                         cmd->points[i]->addr);
                 break;
             }
             default:
@@ -466,6 +523,47 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
             }
         }
     }
+
+    return 0;
+}
+
+static int process_write_res(modbus_point_t *point, modbus_function_e function,
+                             uint16_t n_reg, char *buf, ssize_t len)
+{
+    struct modbus_header *            header = (struct modbus_header *) buf;
+    struct modbus_code *              code = (struct modbus_code *) &header[1];
+    struct modbus_pdu_write_response *pdu =
+        (struct modbus_pdu_write_response *) &code[1];
+
+    if (ntohs(header->process_no) != 0x0000) {
+        return -1;
+    }
+
+    if (header->flag != 0x0000) {
+        return -1;
+    }
+
+    if (ntohs(header->len) != len - sizeof(struct modbus_header)) {
+        return -1;
+    }
+
+    if (code->device_address != point->device) {
+        return -1;
+    }
+
+    if (code->function_code != function) {
+        return -1;
+    }
+
+    if (ntohs(pdu->start_addr) != point->addr) {
+        return -1;
+    }
+
+    if (ntohs(pdu->n_reg) != n_reg) {
+        return -1;
+    }
+
+    log_info("write success.....");
 
     return 0;
 }
