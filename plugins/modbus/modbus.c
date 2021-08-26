@@ -161,10 +161,10 @@ int modbus_m_write_req_with_head(char *buf, uint8_t device_address,
         *data8 = mdata->val.val_8;
         break;
     case MODBUS_B16:
-        *data16 = mdata->val.val_16;
+        *data16 = htons(mdata->val.val_16);
         break;
     case MODBUS_B32:
-        *data32 = mdata->val.val_32;
+        *data32 = htonl(mdata->val.val_32);
         break;
     }
 
@@ -200,11 +200,11 @@ int modbus_m_write_req(char *buf, uint8_t device_address,
         crc    = (uint16_t *) &data8[1];
         break;
     case MODBUS_B16:
-        *data16 = mdata->val.val_16;
+        *data16 = htons(mdata->val.val_16);
         crc     = (uint16_t *) &data16[1];
         break;
     case MODBUS_B32:
-        *data32 = mdata->val.val_32;
+        *data32 = htonl(mdata->val.val_32);
         crc     = (uint16_t *) &data32[1];
         break;
     }

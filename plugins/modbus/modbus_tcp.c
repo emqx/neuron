@@ -36,6 +36,7 @@ const neu_plugin_module_t neu_plugin_module;
 enum process_status {
     STOP    = 0,
     RUNNING = 1,
+    WAIT    = 2,
 };
 
 enum device_connect_status {
@@ -73,18 +74,29 @@ static void *loop(void *arg)
 
     while (1) {
         uint32_t interval = 0;
+        bool     wait     = false;
 
         pthread_mutex_lock(&plugin->mtx);
-        if (plugin->status != RUNNING) {
+        if (plugin->status == STOP) {
             pthread_mutex_unlock(&plugin->mtx);
             break;
         }
         interval = plugin->interval;
         pthread_mutex_unlock(&plugin->mtx);
 
-        usleep(interval * 1000);
+        pthread_mutex_lock(&plugin->mtx);
+        wait = plugin->status == WAIT;
+        pthread_mutex_unlock(&plugin->mtx);
 
-        modbus_point_all_search(plugin->point_ctx, true, send_recv_callback);
+        if (!wait) {
+            modbus_point_all_search(plugin->point_ctx, true,
+                                    send_recv_callback);
+            modbus_data_t data = { .type = MODBUS_B8, .val.val_8 = 1 };
+            modbus_point_write(plugin->point_ctx, "1!000003", &data,
+                               send_recv_callback);
+        }
+
+        usleep(interval * 1000);
     }
 
     return NULL;
@@ -123,10 +135,17 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
 {
 
     pthread_mutex_init(&plugin->mtx, NULL);
-    plugin->status    = RUNNING;
+    plugin->status    = WAIT;
     plugin->point_ctx = modbus_point_init(plugin);
 
     modbus_point_add(plugin->point_ctx, "1!400001", MODBUS_B16);
+    modbus_point_add(plugin->point_ctx, "1!400003", MODBUS_B32);
+    modbus_point_add(plugin->point_ctx, "1!00001", MODBUS_B8);
+    modbus_point_add(plugin->point_ctx, "1!00002", MODBUS_B8);
+    modbus_point_add(plugin->point_ctx, "1!00003", MODBUS_B8);
+    modbus_point_add(plugin->point_ctx, "1!00003", MODBUS_B8);
+    modbus_point_add(plugin->point_ctx, "1!000033", MODBUS_B8);
+    modbus_point_add(plugin->point_ctx, "1!000034", MODBUS_B8);
 
     modbus_point_new_cmd(plugin->point_ctx);
     plugin->client   = neu_tcp_client_create("192.168.50.17", 502);
@@ -201,27 +220,188 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
         uint32_t  interval = neu_taggrp_cfg_get_interval(data->grp_config);
         vector_t *tagv     = neu_taggrp_cfg_get_datatag_ids(data->grp_config);
 
-        VECTOR_FOR_EACH(tagv, iter)
-        {
-            datatag_id_t * id  = (datatag_id_t *) iterator_get(&iter);
-            neu_datatag_t *tag = neu_datatag_tbl_get(plugin->tag_table, *id);
-            printf("%p\n", tag);
+        neu_response_t     resp = { 0 };
+        neu_reqresp_data_t data_resp;
+        neu_variable_t *   head = neu_variable_create();
+
+        if (interval > 0) {
+            pthread_mutex_lock(&plugin->mtx);
+            plugin->interval = interval;
+            plugin->status   = WAIT;
+            pthread_mutex_unlock(&plugin->mtx);
+
+            modbus_point_clean(plugin->point_ctx);
+            VECTOR_FOR_EACH(tagv, iter)
+            {
+                datatag_id_t * id = (datatag_id_t *) iterator_get(&iter);
+                neu_datatag_t *tag =
+                    neu_datatag_tbl_get(plugin->tag_table, *id);
+                modbus_data_type_t type;
+                int                ret = 0;
+
+                switch (tag->dataType) {
+                case NEU_DATATYPE_BOOLEAN:
+                    type = MODBUS_B8;
+                    break;
+                case NEU_DATATYPE_WORD:
+                case NEU_DATATYPE_UWORD:
+                    type = MODBUS_B16;
+                    break;
+                case NEU_DATATYPE_DWORD:
+                case NEU_DATATYPE_UDWORD:
+                case NEU_DATATYPE_FLOAT:
+                    type = MODBUS_B32;
+                    break;
+                default: {
+                    ret = -1;
+                    break;
+                }
+                }
+
+                if (ret == -1) {
+                    neu_variable_t *err = neu_variable_create();
+                    neu_variable_set_error(err, 1);
+                    neu_variable_add_item(head, err);
+                    continue;
+                }
+
+                ret = modbus_point_add(plugin->point_ctx, tag->str_addr, type);
+                if (ret != 0) {
+                    neu_variable_t *err = neu_variable_create();
+                    neu_variable_set_error(err, 1);
+                    neu_variable_add_item(head, err);
+                } else {
+                    neu_variable_t *err = neu_variable_create();
+                    neu_variable_set_error(err, 0);
+                    neu_variable_add_item(head, err);
+                }
+            }
+            modbus_point_new_cmd(plugin->point_ctx);
+            pthread_mutex_lock(&plugin->mtx);
+            plugin->status = RUNNING;
+            pthread_mutex_unlock(&plugin->mtx);
+        } else {
+            VECTOR_FOR_EACH(tagv, iter)
+            {
+                datatag_id_t * id = (datatag_id_t *) iterator_get(&iter);
+                neu_datatag_t *tag =
+                    neu_datatag_tbl_get(plugin->tag_table, *id);
+                int           ret   = 0;
+                modbus_data_t mdata = { 0 };
+
+                ret =
+                    modbus_point_find(plugin->point_ctx, tag->str_addr, &mdata);
+                if (ret != 0) {
+                    neu_variable_t *err = neu_variable_create();
+                    neu_variable_set_error(err, 1);
+                    neu_variable_add_item(head, err);
+                } else {
+                    neu_variable_t *v = neu_variable_create();
+                    switch (tag->dataType) {
+                    case NEU_DATATYPE_BOOLEAN:
+                        neu_variable_set_byte(v, mdata.val.val_8);
+                        break;
+                    case NEU_DATATYPE_WORD:
+                    case NEU_DATATYPE_UWORD:
+                        neu_variable_set_qword(v, mdata.val.val_16);
+                        break;
+                    case NEU_DATATYPE_DWORD:
+                    case NEU_DATATYPE_UDWORD:
+                        neu_variable_set_qword(v, mdata.val.val_32);
+                        break;
+                    case NEU_DATATYPE_FLOAT:
+                        neu_variable_set_double(v, mdata.val.val_f);
+                        break;
+                    default: {
+                        ret = -1;
+                        break;
+                    }
+                    }
+
+                    neu_variable_add_item(head, v);
+                }
+            }
         }
 
+        data_resp.grp_config = data->grp_config;
+        data_resp.data_var   = head;
+        resp.req_id          = req->req_id;
+        resp.resp_type       = NEU_REQRESP_TRANS_DATA;
+        resp.buf_len         = sizeof(neu_reqresp_data_t);
+        resp.buf             = &data_resp;
+        plugin->common.adapter_callbacks->response(plugin->common.adapter,
+                                                   &resp);
+
+        neu_variable_destroy(head);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {
         neu_reqresp_write_t *data = (neu_reqresp_write_t *) req->buf;
         vector_t *tagv = neu_taggrp_cfg_get_datatag_ids(data->grp_config);
 
+        neu_response_t     resp = { 0 };
+        neu_reqresp_data_t data_resp;
+        neu_variable_t *   head = neu_variable_create();
+        int                i    = 0;
+
         VECTOR_FOR_EACH(tagv, iter)
         {
             datatag_id_t * id  = (datatag_id_t *) iterator_get(&iter);
             neu_datatag_t *tag = neu_datatag_tbl_get(plugin->tag_table, *id);
+            modbus_data_t  mdata;
+            int            ret = 0;
 
-            (void) tag;
+            switch (tag->dataType) {
+            case NEU_DATATYPE_BOOLEAN:
+                mdata.type      = MODBUS_B8;
+                mdata.val.val_8 = *(uint8_t *) data->data_var[i].data;
+                break;
+            case NEU_DATATYPE_WORD:
+            case NEU_DATATYPE_UWORD:
+                mdata.type       = MODBUS_B16;
+                mdata.val.val_16 = *(uint16_t *) data->data_var[i].data;
+                break;
+            case NEU_DATATYPE_DWORD:
+            case NEU_DATATYPE_UDWORD:
+            case NEU_DATATYPE_FLOAT:
+                mdata.type       = MODBUS_B32;
+                mdata.val.val_32 = *(uint32_t *) data->data_var[i].data;
+                break;
+            default: {
+                neu_variable_t *err = neu_variable_create();
+                neu_variable_set_error(err, 1);
+                neu_variable_add_item(head, err);
+                ret = -1;
+                break;
+            }
+            }
+            if (ret == 0) {
+                ret = modbus_point_write(plugin->point_ctx, tag->str_addr,
+                                         &mdata, send_recv_callback);
+                if (ret != 0) {
+                    neu_variable_t *err = neu_variable_create();
+                    neu_variable_set_error(err, 2);
+                    neu_variable_add_item(head, err);
+                } else {
+                    neu_variable_t *ok = neu_variable_create();
+                    neu_variable_set_error(ok, 0);
+                    neu_variable_add_item(head, ok);
+                }
+            }
+
+            i++;
         }
 
+        data_resp.grp_config = data->grp_config;
+        data_resp.data_var   = head;
+        resp.req_id          = req->req_id;
+        resp.resp_type       = NEU_REQRESP_TRANS_DATA;
+        resp.buf_len         = sizeof(neu_reqresp_data_t);
+        resp.buf             = &data_resp;
+        plugin->common.adapter_callbacks->response(plugin->common.adapter,
+                                                   &resp);
+
+        neu_variable_destroy(head);
         break;
     }
     default:

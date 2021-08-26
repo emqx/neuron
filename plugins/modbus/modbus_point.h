@@ -40,6 +40,7 @@ void modbus_point_new_cmd(modbus_point_context_t *ctx);
 void modbus_point_clean(modbus_point_context_t *ctx);
 int  modbus_point_find(modbus_point_context_t *ctx, char *addr,
                        modbus_data_t *data);
-int  modbus_point_write(char *addr, modbus_data_t *data);
+int  modbus_point_write(modbus_point_context_t *ctx, char *addr,
+                        modbus_data_t *data, modbus_point_send_recv callback);
 
 #endif

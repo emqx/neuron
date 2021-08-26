@@ -100,6 +100,7 @@ typedef struct modbus_data {
         uint8_t  val_8;
         uint16_t val_16;
         uint32_t val_32;
+        float    val_f;
     } val;
     modbus_endian_e endian;
 } modbus_data_t;
