@@ -369,7 +369,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     plugin->option.topic              = "neuronlite/response";
     plugin->option.qos                = 1;
     plugin->option.connection         = "tcp://";
-    plugin->option.host               = "localhost";
+    plugin->option.host               = "broker.emqx.io";
     plugin->option.port               = "1883";
     plugin->option.keepalive_interval = 20;
     plugin->option.clean_session      = 1;

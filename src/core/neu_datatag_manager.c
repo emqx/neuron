@@ -217,7 +217,6 @@ const neu_taggrp_config_t *
 neu_datatag_mng_ref_grp_config(neu_datatag_manager_t *datatag_manager,
                                const char *           config_name)
 {
-    int                        rv = -1;
     size_t                     index;
     neu_taggrp_config_t *      grp_config;
     const neu_taggrp_config_t *ref_grp_config = NULL;
@@ -228,7 +227,6 @@ neu_datatag_mng_ref_grp_config(neu_datatag_manager_t *datatag_manager,
         grp_config = *(neu_taggrp_config_t **) vector_get(
             &datatag_manager->p_configs, index);
         ref_grp_config = neu_taggrp_cfg_ref(grp_config);
-        rv             = 0;
     }
     pthread_mutex_unlock(&datatag_manager->mtx);
     return ref_grp_config;

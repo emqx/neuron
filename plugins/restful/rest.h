@@ -22,6 +22,6 @@
 
 #include "neu_plugin.h"
 
-const neu_plugin_module_t default_dashboard_plugin_module;
+extern const neu_plugin_module_t default_dashboard_plugin_module;
 
 #endif

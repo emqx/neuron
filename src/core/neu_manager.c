@@ -40,13 +40,13 @@ typedef struct adapter_reg_entity {
     adapter_id_t           adapter_id;
     neu_adapter_t *        adapter;
     neu_datatag_manager_t *datatag_manager;
+    nng_cv *               cv;
     nng_pipe               adapter_pipe;
     int                    bind_count;
 } adapter_reg_entity_t;
 
 typedef struct manager_bind_info {
     nng_mtx *  mtx;
-    nng_cv *   cv;
     nng_socket mng_sock;
     int        bind_count;
 } manager_bind_info_t;
@@ -281,16 +281,15 @@ static config_add_cmd_t default_config_add_cmds[] = {
 
 static int init_bind_info(manager_bind_info_t *mng_bind_info)
 {
-    int rv, rv1;
+    int rv;
 
     if (mng_bind_info == NULL) {
         return (-1);
     }
 
-    rv  = nng_mtx_alloc(&mng_bind_info->mtx);
-    rv1 = nng_cv_alloc(&mng_bind_info->cv, mng_bind_info->mtx);
-    if (rv != 0 || rv1 != 0) {
-        neu_panic("Failed to initialize mutex and cv in manager_bind_info");
+    rv = nng_mtx_alloc(&mng_bind_info->mtx);
+    if (rv != 0) {
+        neu_panic("Failed to initialize mutex in manager_bind_info");
     }
 
     mng_bind_info->bind_count = 0;
@@ -303,7 +302,6 @@ static int uninit_bind_info(manager_bind_info_t *mng_bind_info)
         log_warn("It has some bound adapter in manager");
     }
 
-    nng_cv_free(mng_bind_info->cv);
     nng_mtx_free(mng_bind_info->mtx);
     mng_bind_info->bind_count = 0;
     return 0;
@@ -400,6 +398,7 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->adapter_pipe = p;
         reg_entity->bind_count   = 1;
+        nng_cv_wake(reg_entity->cv);
         manager->bind_info.bind_count++;
         nng_mtx_unlock(manager->bind_info.mtx);
         log_debug("The manager bind the adapter(%s) with pipe(%d)",
@@ -473,7 +472,18 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
         return 0;
     }
 
+    int                  rv;
     adapter_reg_entity_t reg_entity;
+    manager_bind_info_t *mng_bind_info;
+    mng_bind_info = &manager->bind_info;
+    rv            = nng_cv_alloc(&reg_entity.cv, mng_bind_info->mtx);
+    if (rv != 0) {
+        log_error("Failed to new cv for register adapter");
+        neu_datatag_mng_destroy(datatag_manager);
+        neu_adapter_destroy(adapter);
+        return 0;
+    }
+
     reg_entity.adapter_id      = adapter_info.id;
     reg_entity.adapter         = adapter;
     reg_entity.datatag_manager = datatag_manager;
@@ -494,11 +504,13 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
     int                    rv = 0;
     size_t                 index;
     vector_t *             reg_adapters;
+    nng_cv *               cv;
     neu_adapter_t *        adapter;
     neu_datatag_manager_t *datatag_mng;
 
     adapter      = NULL;
     datatag_mng  = NULL;
+    cv           = NULL;
     reg_adapters = &manager->reg_adapters;
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -509,10 +521,14 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
         reg_entity  = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
         adapter     = reg_entity->adapter;
         datatag_mng = reg_entity->datatag_manager;
+        cv          = reg_entity->cv;
         vector_erase(reg_adapters, index);
     }
     nng_mtx_unlock(manager->adapters_mtx);
 
+    if (cv != NULL) {
+        nng_cv_free(cv);
+    }
     if (datatag_mng != NULL) {
         neu_datatag_mng_destroy(datatag_mng);
     }
@@ -645,22 +661,33 @@ static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
     }
 }
 
-static int add_grp_config_with_pipe(neu_datatag_manager_t *datatag_mng,
-                                    nng_pipe *             dst_pipe,
-                                    neu_taggrp_config_t *  grp_config)
+static int add_grp_config_wait_bind(neu_manager_t *       manager,
+                                    adapter_reg_entity_t *src_reg_entity,
+                                    adapter_reg_entity_t *dst_reg_entity,
+                                    neu_taggrp_config_t * grp_config)
 {
-    int       rv = 0;
-    vector_t *sub_pipes;
+    int                  rv = 0;
+    manager_bind_info_t *bind_info;
+    vector_t *           sub_pipes;
+
+    bind_info = &manager->bind_info;
+    nng_mtx_lock(bind_info->mtx);
+    while (dst_reg_entity->bind_count == 0) {
+        nng_cv_wait(dst_reg_entity->cv);
+    }
+    nng_mtx_unlock(bind_info->mtx);
 
     sub_pipes = neu_taggrp_cfg_get_subpipes(grp_config);
     // TODO: It's need to check if the adapter pipe is unique pipe in sub_pipes
-    rv = vector_push_back(sub_pipes, dst_pipe);
+    rv = vector_push_back(sub_pipes, &dst_reg_entity->adapter_pipe);
     if (rv != 0) {
         log_error("Can't add pipe to vector of subscribe pipes");
         return -1;
     }
 
-    rv = neu_datatag_mng_add_grp_config(datatag_mng, grp_config);
+    neu_datatag_manager_t *datatag_mng;
+    datatag_mng = src_reg_entity->datatag_manager;
+    rv          = neu_datatag_mng_add_grp_config(datatag_mng, grp_config);
     if (rv != 0) {
         log_error("Failed to add datatag group config: %s",
                   neu_taggrp_cfg_get_name(grp_config));
@@ -688,8 +715,7 @@ static int manager_add_config_by_name(neu_manager_t *   manager,
         goto add_config_by_name_exit;
     }
 
-    rv = add_grp_config_with_pipe(src_reg_entity->datatag_manager,
-                                  &dst_reg_entity->adapter_pipe,
+    rv = add_grp_config_wait_bind(manager, src_reg_entity, dst_reg_entity,
                                   cmd->grp_config);
 add_config_by_name_exit:
     nng_mtx_unlock(manager->adapters_mtx);
@@ -741,7 +767,7 @@ static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
             (vector_t *) neu_taggrp_cfg_ref_subpipes(neu_databuf->grp_config);
     }
 
-    log_info("dispatch databuf to subscribes in sub_pies(%p)", sub_pipes);
+    log_info("dispatch databuf to %d subscribes in sub_pipes", sub_pipes->size);
     VECTOR_FOR_EACH(sub_pipes, iter)
     {
         size_t   msg_size;
@@ -763,6 +789,7 @@ static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
                     neu_databuf->grp_config);
             out_neu_databuf->databuf = core_databuf_get(neu_databuf->databuf);
             nng_msg_set_pipe(out_msg, msg_pipe);
+            log_debug("Forward databuf to pipe: %d", msg_pipe);
             nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
         }
     }
@@ -885,7 +912,7 @@ static void manager_loop(void *arg)
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_cmd_ptr, cmd_ptr, sizeof(read_data_cmd_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Foward read command to driver pipe: %d", msg_pipe);
+                log_info("Forward read command to driver pipe: %d", msg_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -917,7 +944,7 @@ static void manager_loop(void *arg)
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_cmd_ptr, cmd_ptr, sizeof(write_data_cmd_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Foward write command to driver pipe: %d", msg_pipe);
+                log_info("Forward write command to driver pipe: %d", msg_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -1181,8 +1208,7 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
         goto add_grp_config_exit;
     }
 
-    rv = add_grp_config_with_pipe(src_reg_entity->datatag_manager,
-                                  &dst_reg_entity->adapter_pipe,
+    rv = add_grp_config_wait_bind(manager, src_reg_entity, dst_reg_entity,
                                   cmd->grp_config);
 add_grp_config_exit:
     nng_mtx_unlock(manager->adapters_mtx);

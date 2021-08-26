@@ -212,6 +212,7 @@ static int dashb_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     log_info("send request to plugin: %s", neu_plugin_module.module_name);
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
+    (void) adapter_callbacks;
 
     switch (req->req_type) {
     default:

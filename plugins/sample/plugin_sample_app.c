@@ -178,7 +178,7 @@ static void *sample_app_work_loop(void *arg)
     cmd.req_id           = plugin_get_event_id(plugin);
     cmd.buf              = (void *) &read_req;
     cmd.buf_len          = sizeof(neu_reqresp_read_t);
-    log_info("Send a read command");
+    log_info("Send a read command to node: %d", dst_node_id);
     adapter_callbacks->command(plugin->common.adapter, &cmd, NULL);
 
     usleep(100000);
@@ -198,7 +198,7 @@ static void *sample_app_work_loop(void *arg)
     cmd1.req_id           = plugin_get_event_id(plugin);
     cmd1.buf              = (void *) &write_req;
     cmd1.buf_len          = sizeof(neu_reqresp_write_t);
-    log_info("Send a write command");
+    log_info("Send a write command to node: %d", dst_node_id);
     adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
     neu_variable_destroy(data_var);
 
@@ -292,6 +292,7 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     log_info("send request to plugin: %s", neu_plugin_module.module_name);
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
+    (void) adapter_callbacks;
 
     switch (req->req_type) {
     case NEU_REQRESP_TRANS_DATA: {
