@@ -1,0 +1,33 @@
+name: EMQX Neuron release workflow
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  compile_x86_64:
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04 ]
+        name: [ release ]
+        system:
+        - [gcc-7, x86_64]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      # checkout
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Compile
+        run: |
+          git submodule update --init --remote
+          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
+          sudo ./install-libs.sh -a
+          mkdir build && cd build && cmake .. && make
+
+      - name: Run unit test
+        run: cd build && ctest --output-on-failure
