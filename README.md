@@ -1,4 +1,4 @@
-# neuron-lite
+# neuron
 
 NEURON IIoT System for Industry 4.0
 
