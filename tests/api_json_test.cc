@@ -119,9 +119,3 @@ TEST(JsonAPITest, WriteReqDecode)
 
     neu_parse_decode_free(result);
 }
-
-int main(int argc, char **argv)
-{
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
-}

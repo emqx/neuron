@@ -97,10 +97,10 @@ typedef enum modbus_data_type {
 typedef struct modbus_data {
     enum modbus_data_type type;
     union {
-        uint8_t  val_8;
-        uint16_t val_16;
-        uint32_t val_32;
-        float    val_f;
+        uint8_t  val_u8;
+        uint16_t val_u16;
+        uint32_t val_u32;
+        float    val_f32;
     } val;
     modbus_endian_e endian;
 } modbus_data_t;

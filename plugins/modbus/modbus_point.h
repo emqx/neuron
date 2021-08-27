@@ -20,6 +20,10 @@
 #ifndef _NEU_MODBUS_POINT_H_
 #define _NEU_MODBUS_POINT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <sys/queue.h>
 
@@ -34,13 +38,19 @@ typedef struct modbus_point_context modbus_point_context_t;
 modbus_point_context_t *modbus_point_init(void *arg);
 int  modbus_point_add(modbus_point_context_t *ctx, char *addr,
                       modbus_data_type_t type);
-int  modbus_point_all_search(modbus_point_context_t *ctx, bool with_head,
-                             modbus_point_send_recv callback);
+int  modbus_point_all_read(modbus_point_context_t *ctx, bool with_head,
+                           modbus_point_send_recv callback);
 void modbus_point_new_cmd(modbus_point_context_t *ctx);
+int  modbus_point_get_cmd_size(modbus_point_context_t *ctx);
 void modbus_point_clean(modbus_point_context_t *ctx);
+void modbus_point_destory(modbus_point_context_t *ctx);
 int  modbus_point_find(modbus_point_context_t *ctx, char *addr,
                        modbus_data_t *data);
 int  modbus_point_write(modbus_point_context_t *ctx, char *addr,
                         modbus_data_t *data, modbus_point_send_recv callback);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
