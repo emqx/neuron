@@ -145,9 +145,6 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
     modbus_point_add(plugin->point_ctx, "1!00001", MODBUS_B8);
     modbus_point_add(plugin->point_ctx, "1!00002", MODBUS_B8);
     modbus_point_add(plugin->point_ctx, "1!00003", MODBUS_B8);
-    modbus_point_add(plugin->point_ctx, "1!00003", MODBUS_B8);
-    modbus_point_add(plugin->point_ctx, "1!000033", MODBUS_B8);
-    modbus_point_add(plugin->point_ctx, "1!000034", MODBUS_B8);
 
     modbus_point_new_cmd(plugin->point_ctx);
     plugin->client   = neu_tcp_client_create("192.168.50.17", 502);
@@ -305,11 +302,11 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
                         break;
                     case NEU_DATATYPE_WORD:
                     case NEU_DATATYPE_UWORD:
-                        neu_variable_set_qword(v, mdata.val.val_u16);
+                        neu_variable_set_word(v, mdata.val.val_u16);
                         break;
                     case NEU_DATATYPE_DWORD:
                     case NEU_DATATYPE_UDWORD:
-                        neu_variable_set_qword(v, mdata.val.val_u32);
+                        neu_variable_set_dword(v, mdata.val.val_u32);
                         break;
                     case NEU_DATATYPE_FLOAT:
                         neu_variable_set_double(v, mdata.val.val_f32);
