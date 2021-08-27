@@ -111,6 +111,7 @@ static void *sample_app_work_loop(void *arg)
     /* example of get group configs */
     neu_cmd_get_grp_configs_t  get_grps_cmd;
     neu_reqresp_grp_configs_t *resp_grps;
+    neu_taggrp_config_t *      grp_config;
     result = NULL;
 
     get_grps_cmd.node_id = dst_node_id;
@@ -119,14 +120,21 @@ static void *sample_app_work_loop(void *arg)
     sync_cmd.buf         = (void *) &get_grps_cmd;
     sync_cmd.buf_len     = sizeof(neu_cmd_get_grp_configs_t);
     log_info("Get list of group configs");
+get_grp_configs_retry:
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
         return NULL;
     }
 
-    neu_taggrp_config_t *grp_config;
     assert(result->buf_len == sizeof(neu_reqresp_grp_configs_t));
     resp_grps = (neu_reqresp_grp_configs_t *) result->buf;
+    if (resp_grps->grp_configs.size == 0) {
+        vector_uninit(&resp_grps->grp_configs);
+        free(resp_grps);
+        usleep(300000);
+        goto get_grp_configs_retry;
+    }
+
     grp_config =
         *(neu_taggrp_config_t **) vector_get(&resp_grps->grp_configs, 0);
     neu_taggrp_cfg_ref(grp_config);

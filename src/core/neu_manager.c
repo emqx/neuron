@@ -442,16 +442,21 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
                                         adapter_reg_cmd_t *reg_param,
                                         neu_adapter_t **   p_adapter)
 {
+    int                rv;
     neu_adapter_t *    adapter;
     neu_adapter_info_t adapter_info;
     plugin_reg_info_t  plugin_reg_info;
 
     if (reg_param->plugin_id.id_val != 0) {
-        plugin_manager_get_reg_info(manager->plugin_manager,
-                                    reg_param->plugin_id, &plugin_reg_info);
+        rv = plugin_manager_get_reg_info(
+            manager->plugin_manager, reg_param->plugin_id, &plugin_reg_info);
     } else {
-        plugin_manager_get_reg_info_by_name(
+        rv = plugin_manager_get_reg_info_by_name(
             manager->plugin_manager, reg_param->plugin_name, &plugin_reg_info);
+    }
+    if (rv != 0) {
+        log_error("Can't find plugin: %s", reg_param->plugin_name);
+        return 0;
     }
 
     adapter_info.id              = manager_get_adapter_id(manager);
@@ -472,7 +477,6 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
         return 0;
     }
 
-    int                  rv;
     adapter_reg_entity_t reg_entity;
     manager_bind_info_t *mng_bind_info;
     mng_bind_info = &manager->bind_info;
