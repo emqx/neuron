@@ -89,10 +89,12 @@ static void *loop(void *arg)
         pthread_mutex_unlock(&plugin->mtx);
 
         if (!wait) {
-            modbus_point_all_search(plugin->point_ctx, true,
-                                    send_recv_callback);
-            modbus_data_t data = { .type = MODBUS_B8, .val.val_8 = 1 };
-            modbus_point_write(plugin->point_ctx, "1!000003", &data,
+            modbus_point_all_read(plugin->point_ctx, true, send_recv_callback);
+            modbus_data_t data = { .type = MODBUS_B16, .val.val_u16 = 0x5678 };
+            modbus_point_write(plugin->point_ctx, "1!400008", &data,
+                               send_recv_callback);
+            modbus_data_t data1 = { .type = MODBUS_B16, .val.val_u16 = 0x1234 };
+            modbus_point_write(plugin->point_ctx, "1!400007", &data1,
                                send_recv_callback);
         }
 
@@ -299,18 +301,18 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
                     neu_variable_t *v = neu_variable_create();
                     switch (tag->dataType) {
                     case NEU_DATATYPE_BOOLEAN:
-                        neu_variable_set_byte(v, mdata.val.val_8);
+                        neu_variable_set_byte(v, mdata.val.val_u8);
                         break;
                     case NEU_DATATYPE_WORD:
                     case NEU_DATATYPE_UWORD:
-                        neu_variable_set_qword(v, mdata.val.val_16);
+                        neu_variable_set_qword(v, mdata.val.val_u16);
                         break;
                     case NEU_DATATYPE_DWORD:
                     case NEU_DATATYPE_UDWORD:
-                        neu_variable_set_qword(v, mdata.val.val_32);
+                        neu_variable_set_qword(v, mdata.val.val_u32);
                         break;
                     case NEU_DATATYPE_FLOAT:
-                        neu_variable_set_double(v, mdata.val.val_f);
+                        neu_variable_set_double(v, mdata.val.val_f32);
                         break;
                     default: {
                         ret = -1;
@@ -353,19 +355,19 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
 
             switch (tag->dataType) {
             case NEU_DATATYPE_BOOLEAN:
-                mdata.type      = MODBUS_B8;
-                mdata.val.val_8 = *(uint8_t *) data->data_var[i].data;
+                mdata.type       = MODBUS_B8;
+                mdata.val.val_u8 = *(uint8_t *) data->data_var[i].data;
                 break;
             case NEU_DATATYPE_WORD:
             case NEU_DATATYPE_UWORD:
-                mdata.type       = MODBUS_B16;
-                mdata.val.val_16 = *(uint16_t *) data->data_var[i].data;
+                mdata.type        = MODBUS_B16;
+                mdata.val.val_u16 = *(uint16_t *) data->data_var[i].data;
                 break;
             case NEU_DATATYPE_DWORD:
             case NEU_DATATYPE_UDWORD:
             case NEU_DATATYPE_FLOAT:
-                mdata.type       = MODBUS_B32;
-                mdata.val.val_32 = *(uint32_t *) data->data_var[i].data;
+                mdata.type        = MODBUS_B32;
+                mdata.val.val_u32 = *(uint32_t *) data->data_var[i].data;
                 break;
             default: {
                 neu_variable_t *err = neu_variable_create();

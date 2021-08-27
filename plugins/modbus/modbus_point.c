@@ -90,6 +90,22 @@ int modbus_point_add(modbus_point_context_t *ctx, char *addr,
         (modbus_point_t *) calloc(1, sizeof(modbus_point_t));
 
     if (address_parse(addr, point) == 0) {
+        switch (point->area) {
+        case MODBUS_AREA_INPUT:
+        case MODBUS_AREA_COIL:
+            if (type != MODBUS_B8) {
+                free(point);
+                return -1;
+            }
+            break;
+        case MODBUS_AREA_HOLD_REGISTER:
+        case MODBUS_AREA_INPUT_REGISTER:
+            if (type == MODBUS_B8) {
+                free(point);
+                return -1;
+            }
+            break;
+        }
         point->value.type = type;
         insert_point(ctx, point);
     } else {
@@ -116,6 +132,17 @@ void modbus_point_new_cmd(modbus_point_context_t *ctx)
     pthread_mutex_unlock(&ctx->mtx);
 }
 
+int modbus_point_get_cmd_size(modbus_point_context_t *ctx)
+{
+    int result = 0;
+
+    pthread_mutex_lock(&ctx->mtx);
+    result = ctx->n_cmd;
+    pthread_mutex_unlock(&ctx->mtx);
+
+    return result;
+}
+
 void modbus_point_clean(modbus_point_context_t *ctx)
 {
     modbus_point_t *point = NULL;
@@ -125,6 +152,7 @@ void modbus_point_clean(modbus_point_context_t *ctx)
     point = TAILQ_FIRST(&ctx->points);
 
     while (point != NULL) {
+        TAILQ_REMOVE(&ctx->points, point, node);
         free(point);
         point = TAILQ_FIRST(&ctx->points);
     }
@@ -133,11 +161,20 @@ void modbus_point_clean(modbus_point_context_t *ctx)
         free(ctx->cmds[i].points);
     }
 
-    free(ctx->cmds);
+    if (ctx->cmds != NULL) {
+        free(ctx->cmds);
+        ctx->cmds = NULL;
+    }
 
     ctx->n_cmd = 0;
 
     pthread_mutex_unlock(&ctx->mtx);
+}
+
+void modbus_point_destory(modbus_point_context_t *ctx)
+{
+    modbus_point_clean(ctx);
+    free(ctx);
 }
 
 int modbus_point_find(modbus_point_context_t *ctx, char *addr,
@@ -161,13 +198,13 @@ int modbus_point_find(modbus_point_context_t *ctx, char *addr,
         if (point_cmp(point_p, &point) == 0) {
             switch (data->type) {
             case MODBUS_B8:
-                data->val.val_8 = point_p->value.val.val_8;
+                data->val.val_u8 = point_p->value.val.val_u8;
                 break;
             case MODBUS_B16:
-                data->val.val_16 = point_p->value.val.val_16;
+                data->val.val_u16 = point_p->value.val.val_u16;
                 break;
             case MODBUS_B32:
-                data->val.val_32 = point_p->value.val.val_32;
+                data->val.val_u32 = point_p->value.val.val_u32;
                 break;
             }
             ret = 0;
@@ -205,8 +242,9 @@ int modbus_point_write(modbus_point_context_t *ctx, char *addr,
         return -1;
     }
 
-    send_len = modbus_m_write_req_with_head(send_buf, point.device, function,
-                                            point.addr, data->type, data);
+    send_len = modbus_m_write_req_with_head(
+        send_buf, point.device, function, point.addr,
+        data->type == MODBUS_B32 ? 2 : 1, data);
 
     recv_len =
         callback(ctx->arg, send_buf, send_len, recv_buf, sizeof(recv_buf));
@@ -214,11 +252,12 @@ int modbus_point_write(modbus_point_context_t *ctx, char *addr,
         return -1;
     }
 
-    return process_write_res(&point, function, data->type, recv_buf, recv_len);
+    return process_write_res(&point, function, data->type == MODBUS_B32 ? 2 : 1,
+                             recv_buf, recv_len);
 }
 
-int modbus_point_all_search(modbus_point_context_t *ctx, bool with_head,
-                            modbus_point_send_recv callback)
+int modbus_point_all_read(modbus_point_context_t *ctx, bool with_head,
+                          modbus_point_send_recv callback)
 {
     char    send_buf[1500] = { 0 };
     char    recv_buf[1500] = { 0 };
@@ -484,10 +523,10 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
             uint8_t *ptr =
                 (uint8_t *) (data +
                              (cmd->points[i]->addr - cmd->start_addr) / 8);
-            cmd->points[i]->value.val.val_8 =
+            cmd->points[i]->value.val.val_u8 =
                 (((*ptr) >> cmd->points[i]->addr % 8) & 1) > 0;
             log_info("get result bit.... %d, %d %d",
-                     cmd->points[i]->value.val.val_8, cmd->start_addr,
+                     cmd->points[i]->value.val.val_u8, cmd->start_addr,
                      cmd->points[i]->addr);
         }
     }
@@ -499,9 +538,9 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
             case MODBUS_B16: {
                 uint16_t *ptr = (uint16_t *) (data + cmd->points[i]->addr -
                                               cmd->start_addr);
-                cmd->points[i]->value.val.val_16 = ntohs(*ptr);
+                cmd->points[i]->value.val.val_u16 = ntohs(*ptr);
                 log_info("get result16.... %d, %d %d",
-                         cmd->points[i]->value.val.val_16, cmd->start_addr,
+                         cmd->points[i]->value.val.val_u16, cmd->start_addr,
                          cmd->points[i]->addr);
                 break;
             }
@@ -510,11 +549,11 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
                                                cmd->start_addr);
                 uint16_t *ptrh = (uint16_t *) (data + cmd->points[i]->addr -
                                                cmd->start_addr + 2);
-                cmd->points[i]->value.val.val_32 =
+                cmd->points[i]->value.val.val_u32 =
                     ntohs(*ptrl) << 16 | ntohs(*ptrh);
 
                 log_info("get result32.... %f, %d %d",
-                         cmd->points[i]->value.val.val_f, cmd->start_addr,
+                         cmd->points[i]->value.val.val_f32, cmd->start_addr,
                          cmd->points[i]->addr);
                 break;
             }
