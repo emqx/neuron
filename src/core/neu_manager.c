@@ -274,6 +274,13 @@ static config_add_cmd_t default_config_add_cmds[] = {
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
+    {
+        .config_name      = "config_modbus_tcp_sample_2",
+        .src_adapter_name = MODBUS_TCP_ADAPTER_NAME,
+        .dst_adapter_name = MQTT_ADAPTER_NAME,
+        .read_interval    = 2000,
+        .grp_config       = NULL,
+    },
 #endif
 };
 #define DEFAULT_GROUP_CONFIG_COUNT \

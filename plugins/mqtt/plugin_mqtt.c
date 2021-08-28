@@ -33,6 +33,9 @@ typedef struct {
     int             n_completed;
 } context_t;
 
+const char tags[5][20] = { "1!400001", "1!400003", "1!00001", "1!00002",
+                           "1!00003" };
+
 static uint32_t plugin_get_event_id(neu_plugin_t *plugin)
 {
     uint32_t req_id;
@@ -73,7 +76,7 @@ static uint32_t plugin_get_nodes(neu_plugin_t *plugin)
     neu_node_id_t    dst_node_id;
     assert(result->buf_len == sizeof(neu_reqresp_nodes_t));
     resp_nodes = (neu_reqresp_nodes_t *) result->buf;
-    node_info  = (neu_node_info_t *) vector_get(&resp_nodes->nodes, 0);
+    node_info  = (neu_node_info_t *) vector_get(&resp_nodes->nodes, 1);
 
     // neu_node_info_t *n;
     // VECTOR_FOR_EACH(&resp_nodes->nodes, iter)
@@ -121,7 +124,7 @@ static neu_taggrp_config_t *plugin_get_group(neu_plugin_t *plugin,
     assert(result->buf_len == sizeof(neu_reqresp_grp_configs_t));
     resp_grps = (neu_reqresp_grp_configs_t *) result->buf;
     grp_config =
-        *(neu_taggrp_config_t **) vector_get(&resp_grps->grp_configs, 1);
+        *(neu_taggrp_config_t **) vector_get(&resp_grps->grp_configs, 0);
 
     // neu_taggrp_config_t *c;
     // VECTOR_FOR_EACH(&resp_grps->grp_configs, iter)
@@ -173,30 +176,21 @@ static int plugin_adapter_read_command(neu_plugin_t *plugin, const char *group)
     return cmd.req_id;
 }
 
-static int plugin_adapter_write_command(neu_plugin_t *       plugin,
-                                        enum neu_json_type   type,
-                                        union neu_json_value value)
+static int plugin_adapter_write_command(neu_plugin_t *  plugin,
+                                        neu_variable_t *data_var)
 {
+    uint32_t             dest_node_id = plugin_get_nodes(plugin);
+    neu_taggrp_config_t *group_config = plugin_get_group(plugin, dest_node_id);
+
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
 
     neu_request_t       cmd1;
     neu_reqresp_write_t write_req;
-    neu_variable_t *    data_var = neu_variable_create();
 
-    if (NEU_JSON_INT == type) {
-        neu_variable_set_qword(data_var, value.val_int);
-    }
-
-    if (NEU_JSON_STR == type) {
-        neu_variable_set_string(data_var, value.val_str);
-    }
-    if (NEU_JSON_DOUBLE == type) {
-        neu_variable_set_double(data_var, value.val_double);
-    }
-
-    write_req.grp_config  = NULL;
-    write_req.dst_node_id = 1;
+    write_req.grp_config =
+        (neu_taggrp_config_t *) neu_taggrp_cfg_ref(group_config);
+    write_req.dst_node_id = dest_node_id;
     write_req.addr        = 3;
     write_req.data_var    = data_var;
     cmd1.req_type         = NEU_REQRESP_WRITE_DATA;
@@ -205,7 +199,6 @@ static int plugin_adapter_write_command(neu_plugin_t *       plugin,
     cmd1.buf_len          = sizeof(neu_reqresp_write_t);
     log_info("Send a write command");
     adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
-    neu_variable_destroy(data_var);
     return cmd1.req_id;
 }
 
@@ -269,24 +262,46 @@ static void plugin_write_handle(neu_plugin_t *              plugin,
 {
     log_info("WRITE uuid:%s, group:%s", write_req->uuid, write_req->group);
 
+    neu_variable_t *head = NULL;
+    head                 = neu_variable_create();
+    neu_variable_set_error(head, 0);
     for (int i = 0; i < write_req->n_tag; i++) {
-        plugin_adapter_write_command(plugin, write_req->tags[i].t,
-                                     write_req->tags[i].value);
+        // enum neu_json_type   type  = write_req->tags[i].t;
+        union neu_json_value value = write_req->tags[i].value;
+        neu_variable_t *     v     = neu_variable_create();
+
+        // if (NEU_JSON_INT == type) {
+        //     neu_variable_set_qword(v, value.val_int);
+        // }
+        // if (NEU_JSON_STR == type) {
+        //     neu_variable_set_string(v, value.val_str);
+        // }
+        // if (NEU_JSON_DOUBLE == type) {
+        //     neu_variable_set_double(v, value.val_double);
+        // }
+        if (0 == i) {
+            neu_variable_set_word(v, value.val_int);
+        }
+
+        if (1 == i) {
+            neu_variable_set_double(v, value.val_double);
+        }
+        if (2 == i) {
+            neu_variable_set_byte(v, value.val_int);
+        }
+        if (3 == i) {
+            neu_variable_set_byte(v, value.val_int);
+        }
+        if (4 == i) {
+            neu_variable_set_byte(v, value.val_int);
+        }
+
+        neu_variable_add_item(head, v);
     }
 
-    // Response status
-    char *                     result = NULL;
-    struct neu_parse_write_res res    = {
-        .function = NEU_PARSE_OP_WRITE,
-        .uuid     = write_req->uuid,
-        .error    = 0,
-    };
-
-    int rc = neu_parse_encode(&res, &result);
-    if (0 == rc) {
-        plugin_send(plugin, result, strlen(result));
-        free(result);
-    }
+    plugin_adapter_write_command(plugin, head->next);
+    neu_variable_destroy(head);
+    UNUSED(plugin);
 }
 
 static void plugin_response_handle(const char *topic_name, size_t topic_len,
@@ -399,6 +414,164 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return 0;
 }
 
+static void plugin_read_result_handle(neu_plugin_t *  plugin,
+                                      neu_variable_t *variable)
+{
+    if (NULL == variable) {
+        return;
+    }
+
+    char *                    result = NULL;
+    struct neu_parse_read_res res    = {
+        .function = NEU_PARSE_OP_READ,
+        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
+        .error    = 0,
+        .n_tag    = 0,
+    };
+
+    size_t count = neu_variable_count(variable);
+    if (0 == count) {
+        return;
+    }
+
+    int n_tag = count - 1;
+    res.tags  = (struct neu_parse_read_res_tag *) calloc(
+        n_tag, sizeof(struct neu_parse_read_res_tag));
+
+    int             index = 0;
+    neu_variable_t *head  = variable;
+    res.error             = neu_variable_get_error(head);
+    res.n_tag             = count - 1;
+    neu_variable_t *v     = NULL;
+    for (v = variable->next; NULL != v; v = neu_variable_next(v)) {
+
+        int type = neu_variable_get_type(v);
+
+        if (NEU_DATATYPE_STRING == type) { }
+        if (NEU_DATATYPE_BOOLEAN == type) {
+            bool value;
+            neu_variable_get_boolean(v, &value);
+
+            res.tags[index].name      = strdup(tags[index]);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
+        }
+        if (NEU_DATATYPE_WORD == type) {
+            int16_t value;
+            neu_variable_get_word(v, &value);
+
+            res.tags[index].name      = strdup(tags[index]);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
+        }
+        if (NEU_DATATYPE_UWORD == type) {
+            uint16_t value;
+            neu_variable_get_uword(v, &value);
+
+            res.tags[index].name      = strdup(tags[index]);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
+        }
+        if (NEU_DATATYPE_DOUBLE == type) {
+            double value;
+            neu_variable_get_double(v, &value);
+
+            res.tags[index].name      = strdup(tags[index]);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
+        }
+        if (NEU_DATATYPE_BYTE == type) {
+            int8_t value;
+            neu_variable_get_byte(v, &value);
+
+            res.tags[index].name      = strdup(tags[index]);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
+        }
+        index++;
+
+        // word
+        // double
+        // byte
+        // byte
+        // byte
+    }
+
+    int rc = neu_parse_encode(&res, &result);
+    if (0 == rc) {
+        plugin_send(plugin, result, strlen(result));
+    }
+
+    int i;
+    for (i = 0; i < n_tag; i++) {
+        free(res.tags[i].name);
+    }
+    free(res.tags);
+    free(result);
+}
+
+static void plugin_write_result_handle(neu_plugin_t *  plugin,
+                                       neu_variable_t *variable)
+{
+    if (NULL == variable) {
+        return;
+    }
+
+    char *                    result = NULL;
+    struct neu_parse_read_res res    = {
+        .function = NEU_PARSE_OP_WRITE,
+        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
+        .error    = 0,
+        .n_tag    = 0,
+    };
+
+    size_t count = neu_variable_count(variable);
+    if (0 == count) {
+        return;
+    }
+
+    int n_tag = count - 1;
+    res.tags  = (struct neu_parse_read_res_tag *) calloc(
+        n_tag, sizeof(struct neu_parse_read_res_tag));
+
+    int             index = 0;
+    neu_variable_t *head  = variable;
+    res.error             = head->error;
+    res.n_tag             = count - 1;
+    neu_variable_t *v     = NULL;
+    for (v = variable->next; NULL != v; v = neu_variable_next(v)) {
+
+        if (NEU_DATATYPE_STRING == v->v_type) { }
+        if (NEU_DATATYPE_BOOLEAN == v->v_type) {
+            bool value;
+            neu_variable_get_boolean(v, &value);
+
+            res.tags[index].name      = strdup(tags[index]);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
+        }
+        index++;
+    }
+
+    int rc = neu_parse_encode(&res, &result);
+    if (0 == rc) {
+        plugin_send(plugin, result, strlen(result));
+    }
+
+    int i;
+    for (i = 0; i < n_tag; i++) {
+        free(res.tags[i].name);
+    }
+    free(res.tags);
+    free(result);
+}
+
 static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
     int rv = 0;
@@ -418,11 +591,21 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_variable_t *variable = neu_data->data_var;
         size_t          count    = neu_variable_count(variable);
         log_debug("variable count: %ld", count);
-
+        if (0 < count) {
+            plugin_read_result_handle(plugin, variable);
+        }
         break;
     }
 
     case NEU_REQRESP_WRITE_DATA: {
+        neu_reqresp_data_t *neu_data;
+        assert(req->buf_len == sizeof(neu_reqresp_data_t));
+        neu_data                 = (neu_reqresp_data_t *) req->buf;
+        neu_variable_t *variable = neu_data->data_var;
+        size_t          count    = neu_variable_count(variable);
+        if (0 < count) {
+            // plugin_write_result_handle(plugin, variable);
+        }
         break;
     }
 
