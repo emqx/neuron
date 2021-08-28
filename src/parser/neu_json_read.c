@@ -100,7 +100,7 @@ int neu_parse_encode_read_res(struct neu_parse_read_res *res, char **buf)
     neu_json_elem_t elems[] = { {
                                     .name      = NEU_PARSE_FUNCTION,
                                     .t         = NEU_JSON_INT,
-                                    .v.val_int = NEU_PARSE_OP_WRITE,
+                                    .v.val_int = NEU_PARSE_OP_READ,
                                 },
                                 {
                                     .name      = NEU_PARSE_UUID,

@@ -33,7 +33,7 @@ TEST(JsonAPITest, ReadResEncode)
 {
     char *buf =
         (char
-             *) "{\"function\": 51, \"uuid\": "
+             *) "{\"function\": 50, \"uuid\": "
                 "\"554f5fd8-f437-11eb-975c-7704b9e17821\", \"error\": 0, "
                 "\"tags\": [{\"name\": \"tag001\", \"type\": 0, \"timestamp\": "
                 "1122334455, \"value\": 123.0}, {\"name\": \"tag002\", "
@@ -70,7 +70,7 @@ TEST(JsonAPITest, ReadResEncode)
 TEST(JsonAPITest, WriteResEncode)
 {
     char *buf =
-        (char *) "{\"function\": 50, \"uuid\": "
+        (char *) "{\"function\": 51, \"uuid\": "
                  "\"554f5fd8-f437-11eb-975c-7704b9e17821\", \"error\": 0}";
     char *                     result = NULL;
     struct neu_parse_write_res res    = {
