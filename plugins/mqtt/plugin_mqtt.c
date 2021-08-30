@@ -243,7 +243,7 @@ static void plugin_read_tag_group_list_handle(neu_plugin_t *             plugin,
     sync_cmd.buf_len        = sizeof(neu_cmd_get_nodes_t);
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
-        return 0;
+        return;
     }
 
     neu_node_info_t *node_info;
@@ -278,7 +278,7 @@ static void plugin_read_tag_group_list_handle(neu_plugin_t *             plugin,
         rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd,
                                         &result);
         if (rv < 0) {
-            return NULL;
+            continue;
         }
 
         assert(result->buf_len == sizeof(neu_reqresp_grp_configs_t));
