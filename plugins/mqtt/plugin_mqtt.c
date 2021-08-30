@@ -397,6 +397,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     }
 
     plugin_subscribe(plugin, "neuronlite/request", 0, plugin_response_handle);
+    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 
@@ -404,6 +405,7 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
     paho_client_close(plugin->paho);
 
+    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 
@@ -411,6 +413,8 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
     UNUSED(plugin);
     UNUSED(configs);
+
+    log_info("config plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 

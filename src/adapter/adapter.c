@@ -133,9 +133,29 @@ static void adapter_loop(void *arg)
         pay_msg = nng_msg_body(msg);
         switch (msg_get_type(pay_msg)) {
         case MSG_CMD_RESP_PONG: {
+            bool  need_config;
             char *buf_ptr;
-            buf_ptr = msg_get_buf_ptr(pay_msg);
+
+            need_config = false;
+            buf_ptr     = msg_get_buf_ptr(pay_msg);
             log_info("Adapter(%s) received pong: %s", adapter->name, buf_ptr);
+            nng_mtx_lock(adapter->mtx);
+            if (adapter->state == ADAPTER_STATE_IDLE) {
+                need_config    = true;
+                adapter->state = ADAPTER_STATE_RUNNING;
+            }
+            nng_mtx_unlock(adapter->mtx);
+
+            if (need_config) {
+                const neu_plugin_intf_funs_t *intf_funs;
+                neu_config_t                  config;
+
+                config.type    = NEU_CONFIG_UNKNOW;
+                config.buf_len = 0;
+                config.buf     = NULL;
+                intf_funs      = adapter->plugin_module->intf_funs;
+                intf_funs->config(adapter->plugin, &config);
+            }
             break;
         }
 
