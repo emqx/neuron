@@ -23,9 +23,13 @@
 #include "neu_log.h"
 #include "utils/json.h"
 
+#include "neu_json_add_tag.h"
+#include "neu_json_delete_tag.h"
+#include "neu_json_get_tag.h"
 #include "neu_json_login.h"
 #include "neu_json_parser.h"
 #include "neu_json_read.h"
+#include "neu_json_updata_tag.h"
 #include "neu_json_write.h"
 
 int neu_parse_decode(char *buf, void **result)
@@ -54,6 +58,22 @@ int neu_parse_decode(char *buf, void **result)
         break;
     case NEU_PARSE_OP_LOGOUT:
         break;
+    case NEU_PARSE_OP_ADD_TAGS:
+        ret = neu_parse_decode_add_tags_req(
+            buf, (struct neu_parse_add_tags_req **) result);
+        break;
+    case NEU_PARSE_OP_GET_TAGS:
+        ret = neu_parse_decode_get_tags_req(
+            buf, (struct neu_parse_get_tags_req **) result);
+        break;
+    case NEU_PARSE_OP_DELETE_TAGS:
+        ret = neu_parse_decode_delete_tags_req(
+            buf, (struct neu_parse_delete_tags_req **) result);
+        break;
+    case NEU_PARSE_OP_UPDATA_TAGS:
+        ret = neu_parse_decode_updata_tags_req(
+            buf, (struct neu_parse_updata_tags_req **) result);
+        break;
     }
 
     return ret;
@@ -74,6 +94,22 @@ int neu_parse_encode(void *result, char **buf)
         neu_parse_encode_login_res((struct neu_parse_login_res *) result, buf);
         break;
     case NEU_PARSE_OP_LOGOUT:
+        break;
+    case NEU_PARSE_OP_ADD_TAGS:
+        neu_parse_encode_add_tags_res((struct neu_parse_add_tags_res *) result,
+                                      buf);
+        break;
+    case NEU_PARSE_OP_GET_TAGS:
+        neu_parse_encode_get_tags_res((struct neu_parse_get_tags_res *) result,
+                                      buf);
+        break;
+    case NEU_PARSE_OP_DELETE_TAGS:
+        neu_parse_encode_delete_tags_res(
+            (struct neu_parse_delete_tags_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_UPDATA_TAGS:
+        neu_parse_encode_updata_tags_res(
+            (struct neu_parse_updata_tags_res *) result, buf);
         break;
     }
 
@@ -121,6 +157,40 @@ void neu_parse_decode_free(void *result)
         break;
     }
     case NEU_PARSE_OP_LOGOUT: {
+        break;
+    }
+    case NEU_PARSE_OP_ADD_TAGS: {
+        struct neu_parse_add_tags_req *req = result;
+
+        free(req->uuid);
+        for (int i = 0; i < req->n_tag; i++) {
+            free(req->tags[i].name);
+            free(req->tags[i].address);
+        }
+        free(req->tags);
+        break;
+    }
+    case NEU_PARSE_OP_GET_TAGS: {
+        struct neu_parse_get_tags_req *req = result;
+
+        free(req->uuid);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_TAGS: {
+        struct neu_parse_delete_tags_req *req = result;
+
+        free(req->uuid);
+        break;
+    }
+    case NEU_PARSE_OP_UPDATA_TAGS: {
+        struct neu_parse_updata_tags_req *req = result;
+
+        free(req->uuid);
+        for (int i = 0; i < req->n_tag; i++) {
+            free(req->tags[i].name);
+            free(req->tags[i].address);
+        }
+        free(req->tags);
         break;
     }
     }
