@@ -221,6 +221,117 @@ static int plugin_send(neu_plugin_t *plugin, char *buff, const size_t len)
     return error;
 }
 
+static void plugin_read_tag_group_list_handle(neu_plugin_t *             plugin,
+                                              struct neu_parse_read_req *req)
+{
+    log_info("READ uuid:%s, group:%s", req->uuid, req->group);
+
+    int                        rv;
+    const adapter_callbacks_t *adapter_callbacks;
+    adapter_callbacks = plugin->common.adapter_callbacks;
+
+    /* get nodes */
+    neu_request_t        sync_cmd;
+    neu_cmd_get_nodes_t  get_nodes_cmd;
+    neu_response_t *     result = NULL;
+    neu_reqresp_nodes_t *resp_nodes;
+
+    get_nodes_cmd.node_type = NEU_NODE_TYPE_DRIVER;
+    sync_cmd.req_type       = NEU_REQRESP_GET_NODES;
+    sync_cmd.req_id         = plugin_get_event_id(plugin);
+    sync_cmd.buf            = (void *) &get_nodes_cmd;
+    sync_cmd.buf_len        = sizeof(neu_cmd_get_nodes_t);
+    rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
+    if (rv < 0) {
+        return 0;
+    }
+
+    neu_node_info_t *node_info;
+    assert(result->buf_len == sizeof(neu_reqresp_nodes_t));
+    resp_nodes = (neu_reqresp_nodes_t *) result->buf;
+
+    char *                                   json_str = NULL;
+    struct neu_paser_read_tag_group_list_res res      = {
+        .function = NEU_PARSE_OP_READ_TAG_GROUP_LIST,
+        .uuid     = (char *) "1d892fe8-f37e-11eb-9a34-932aa06a28f3",
+        .error    = 0,
+        .n_group  = 3,
+        .names    = NULL
+    };
+
+    int              count = 0;
+    neu_node_info_t *n;
+    VECTOR_FOR_EACH(&resp_nodes->nodes, iter)
+    {
+        n = (neu_node_info_t *) iterator_get(&iter);
+
+        neu_request_t              sync_cmd;
+        neu_response_t *           result = NULL;
+        neu_cmd_get_grp_configs_t  get_grps_cmd;
+        neu_reqresp_grp_configs_t *resp_grps;
+        result               = NULL;
+        get_grps_cmd.node_id = n->node_id;
+        sync_cmd.req_type    = NEU_REQRESP_GET_GRP_CONFIGS;
+        sync_cmd.req_id      = plugin_get_event_id(plugin);
+        sync_cmd.buf         = (void *) &get_grps_cmd;
+        sync_cmd.buf_len     = sizeof(neu_cmd_get_grp_configs_t);
+        rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd,
+                                        &result);
+        if (rv < 0) {
+            return NULL;
+        }
+
+        assert(result->buf_len == sizeof(neu_reqresp_grp_configs_t));
+        resp_grps = (neu_reqresp_grp_configs_t *) result->buf;
+        neu_taggrp_config_t *c;
+        VECTOR_FOR_EACH(&resp_grps->grp_configs, iter)
+        {
+            c = *(neu_taggrp_config_t **) iterator_get(&iter);
+            if (NULL == res.names) {
+                res.names =
+                    (struct neu_paser_read_tag_group_list_name *) malloc(
+                        sizeof(struct neu_paser_read_tag_group_list_name));
+            }
+            if (NULL != res.names) {
+                res.names = realloc(
+                    res.names,
+                    (count + 1) *
+                        sizeof(struct neu_paser_read_tag_group_list_name));
+            }
+
+            res.names[count].name = strdup((char *) neu_taggrp_cfg_get_name(c));
+            count++;
+        }
+        res.n_group = count;
+
+        VECTOR_FOR_EACH(&resp_grps->grp_configs, iter)
+        {
+            neu_taggrp_config_t *cur_grp_config;
+            cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
+            neu_taggrp_cfg_free(cur_grp_config);
+        }
+        vector_uninit(&resp_grps->grp_configs);
+        free(resp_grps);
+        free(result);
+    }
+
+    int rc = neu_parse_encode(&res, &json_str);
+    if (0 == rc) {
+        plugin_send(plugin, json_str, strlen(json_str));
+    }
+
+    int i;
+    for (i = 0; i < count; i++) {
+        free(res.names[i].name);
+    }
+    free(res.names);
+    free(json_str);
+
+    vector_uninit(&resp_nodes->nodes);
+    free(resp_nodes);
+    free(result);
+}
+
 static void plugin_read_handle(neu_plugin_t *             plugin,
                                struct neu_parse_read_req *req)
 {
@@ -328,6 +439,11 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
     if (0 != rc) {
         log_error("JSON parsing failed");
         return;
+    }
+
+    if (NEU_PARSE_OP_READ_TAG_GROUP_LIST == req->function) {
+        plugin_read_tag_group_list_handle(
+            plugin, (struct neu_paser_read_tag_group_list_req *) result);
     }
 
     if (NEU_PARSE_OP_READ == req->function) {
@@ -498,12 +614,6 @@ static void plugin_read_result_handle(neu_plugin_t *  plugin,
             res.tags[index].value     = value;
         }
         index++;
-
-        // word
-        // double
-        // byte
-        // byte
-        // byte
     }
 
     int rc = neu_parse_encode(&res, &result);

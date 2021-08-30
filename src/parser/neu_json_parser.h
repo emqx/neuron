@@ -31,14 +31,15 @@ extern "C" {
 #define NEU_PARSE_ERROR "error"
 
 enum neu_parse_function {
-    NEU_PARSE_OP_READ        = 50,
-    NEU_PARSE_OP_WRITE       = 51,
-    NEU_PARSE_OP_LOGIN       = 10,
-    NEU_PARSE_OP_LOGOUT      = 11,
-    NEU_PARSE_OP_ADD_TAGS    = 31,
-    NEU_PARSE_OP_GET_TAGS    = 32,
-    NEU_PARSE_OP_DELETE_TAGS = 33,
-    NEU_PARSE_OP_UPDATA_TAGS = 34
+    NEU_PARSE_OP_READ_TAG_GROUP_LIST = 29,
+    NEU_PARSE_OP_READ                = 50,
+    NEU_PARSE_OP_WRITE               = 51,
+    NEU_PARSE_OP_LOGIN               = 10,
+    NEU_PARSE_OP_LOGOUT              = 11,
+    NEU_PARSE_OP_ADD_TAGS            = 31,
+    NEU_PARSE_OP_GET_TAGS            = 32,
+    NEU_PARSE_OP_DELETE_TAGS         = 33,
+    NEU_PARSE_OP_UPDATA_TAGS         = 34
 };
 
 int  neu_parse_decode(char *buf, void **result);

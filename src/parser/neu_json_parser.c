@@ -44,6 +44,11 @@ int neu_parse_decode(char *buf, void **result)
     }
 
     switch (func_code.v.val_int) {
+    case NEU_PARSE_OP_READ_TAG_GROUP_LIST: {
+        ret = neu_paser_decode_read_tag_group_list_req(
+            buf, (struct neu_paser_read_tag_group_list_req **) result);
+        break;
+    }
     case NEU_PARSE_OP_READ:
         ret = neu_parse_decode_read_req(buf,
                                         (struct neu_parse_read_req **) result);
@@ -84,6 +89,11 @@ int neu_parse_encode(void *result, char **buf)
     enum neu_parse_function *function = result;
 
     switch (*function) {
+    case NEU_PARSE_OP_READ_TAG_GROUP_LIST: {
+        neu_parse_encode_read_tag_group_list_res(
+            (struct neu_paser_read_tag_group_list_res *) result, buf);
+        break;
+    }
     case NEU_PARSE_OP_READ:
         neu_parse_encode_read_res((struct neu_parse_read_res *) result, buf);
         break;
@@ -121,6 +131,12 @@ void neu_parse_decode_free(void *result)
     enum neu_parse_function *function = result;
 
     switch (*function) {
+    case NEU_PARSE_OP_READ_TAG_GROUP_LIST: {
+        struct neu_paser_read_tag_group_list_req *req = result;
+        free(req->uuid);
+        free(req->config);
+        break;
+    }
     case NEU_PARSE_OP_READ: {
         struct neu_parse_read_req *req = result;
 
