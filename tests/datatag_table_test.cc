@@ -1,167 +1,200 @@
-#include <gtest/gtest.h>
 #include "neu_datatag_table.h"
 #include "neu_types.h"
 #include "pthread.h"
 #include <bits/pthreadtypes.h>
+#include <gtest/gtest.h>
 
-#define NUM_DatatagTable_Modify 100
+#define NUM_DATATAGTABLE_MODIFY 100
 
-TEST(DatatageTableTest,DatatagTableAdd)
+TEST(DatatageTableTest, DatatagTableAdd)
 {
-    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
-    neu_address_t address_t;
-    neu_datatag_t datatag_t_1 = {123,NEU_ATTRIBUTETYPE_READ,NEU_DATATYPE_BYTE,address_t};
-    neu_datatag_t datatag_t_2 = {456,NEU_ATTRIBUTETYPE_WRITE,NEU_DATATYPE_WORD,address_t};
-    neu_datatag_t datatag_t_3 = {789,NEU_ATTRIBUTETYPE_SUBSCRIBE,NEU_DATATYPE_UWORD,address_t};
-  
-    datatag_id_t  datatag_add_1,datatag_add_2,datatag_add_3;
-    neu_datatag_t *datatag_get_1 = NULL;
-    neu_datatag_t *datatag_get_2 = NULL;
-    neu_datatag_t *datatag_get_3 = NULL;
-       
-    datatag_add_1 = neu_datatag_tbl_add(datatag_table, &datatag_t_1);
-    datatag_add_2 = neu_datatag_tbl_add(datatag_table, &datatag_t_2);
-    datatag_add_3 = neu_datatag_tbl_add(datatag_table, &datatag_t_3);
+    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
+    neu_datatag_id_t     id;
+    neu_address_t        datatag_address;
+    char *               str_addr;
+    neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
+                               datatag_address, str_addr };
+    neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
+                               datatag_address, str_addr };
+    neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
+                               NEU_DATATYPE_UWORD, datatag_address, str_addr };
 
-    datatag_get_1 = neu_datatag_tbl_get(datatag_table, datatag_add_1);
-    datatag_get_2 = neu_datatag_tbl_get(datatag_table, datatag_add_2);
-    datatag_get_3 = neu_datatag_tbl_get(datatag_table, datatag_add_3);
+    datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
+    neu_datatag_t *datatag_id_return1 = NULL;
+    neu_datatag_t *datatag_id_return2 = NULL;
+    neu_datatag_t *datatag_id_return3 = NULL;
 
-    EXPECT_EQ(datatag_get_1->id,datatag_t_1.id);
-    EXPECT_EQ(datatag_get_1->dataType,datatag_t_1.dataType);
-    EXPECT_EQ(datatag_get_1->type,datatag_t_1.type);
+    datatag_id1 = neu_datatag_tbl_add(datatag_table_create, &datatag1);
+    datatag_id2 = neu_datatag_tbl_add(datatag_table_create, &datatag2);
+    datatag_id3 = neu_datatag_tbl_add(datatag_table_create, &datatag3);
 
-    EXPECT_EQ(datatag_get_2->id,datatag_t_2.id);
-    EXPECT_EQ(datatag_get_2->dataType,datatag_t_2.dataType);
-    EXPECT_EQ(datatag_get_2->type,datatag_t_2.type);
+    datatag_id_return1 = neu_datatag_tbl_get(datatag_table_create, datatag_id1);
+    datatag_id_return2 = neu_datatag_tbl_get(datatag_table_create, datatag_id2);
+    datatag_id_return3 = neu_datatag_tbl_get(datatag_table_create, datatag_id3);
 
-    EXPECT_EQ(datatag_get_3->id,datatag_t_3.id);
-    EXPECT_EQ(datatag_get_3->dataType,datatag_t_3.dataType);
-    EXPECT_EQ(datatag_get_3->type,datatag_t_3.type);
+    EXPECT_EQ(datatag_id_return1->id, datatag1.id);
+    EXPECT_EQ(datatag_id_return1->dataType, datatag1.dataType);
+    EXPECT_EQ(datatag_id_return1->type, datatag1.type);
+    EXPECT_EQ(datatag_id_return1->str_addr, datatag1.str_addr);
 
-    neu_datatag_tbl_destroy(datatag_table);
+    EXPECT_EQ(datatag_id_return2->id, datatag2.id);
+    EXPECT_EQ(datatag_id_return2->dataType, datatag2.dataType);
+    EXPECT_EQ(datatag_id_return2->type, datatag2.type);
+    EXPECT_EQ(datatag_id_return2->str_addr, datatag2.str_addr);
+
+    EXPECT_EQ(datatag_id_return3->id, datatag3.id);
+    EXPECT_EQ(datatag_id_return3->dataType, datatag3.dataType);
+    EXPECT_EQ(datatag_id_return3->type, datatag3.type);
+    EXPECT_EQ(datatag_id_return3->str_addr, datatag3.str_addr);
+
+    neu_datatag_tbl_destroy(datatag_table_create);
 }
 
-TEST(DatatageTableTest,DatatagTableRemove)
+TEST(DatatageTableTest, DatatagTableRemove)
 {
-    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
-    neu_address_t address_t;
-    neu_datatag_t datatag_t_1 = {123,NEU_ATTRIBUTETYPE_READ,NEU_DATATYPE_BYTE,address_t};
-    neu_datatag_t datatag_t_2 = {456,NEU_ATTRIBUTETYPE_WRITE,NEU_DATATYPE_WORD,address_t};
-    neu_datatag_t datatag_t_3 = {789,NEU_ATTRIBUTETYPE_SUBSCRIBE,NEU_DATATYPE_UWORD,address_t};
+    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
+    neu_address_t        datatag_address;
+    neu_datatag_id_t     id;
+    char *               str_addr;
+    neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
+                               datatag_address, str_addr };
+    neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
+                               datatag_address, str_addr };
+    neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
+                               NEU_DATATYPE_UWORD, datatag_address, str_addr };
 
-    datatag_id_t  datatag_add_1,datatag_add_2,datatag_add_3;
-    neu_datatag_t *datatag_get_1 = NULL;
-    neu_datatag_t *datatag_get_2 = NULL;
-    neu_datatag_t *datatag_get_3 = NULL;  
+    datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
+    neu_datatag_t *datatag_id_return1 = NULL;
+    neu_datatag_t *datatag_id_return2 = NULL;
+    neu_datatag_t *datatag_id_return3 = NULL;
 
-    datatag_add_1 = neu_datatag_tbl_add(datatag_table, &datatag_t_1);
-    datatag_add_2 = neu_datatag_tbl_add(datatag_table, &datatag_t_2);
-    datatag_add_3 = neu_datatag_tbl_add(datatag_table, &datatag_t_3);
+    datatag_id1 = neu_datatag_tbl_add(datatag_table_create, &datatag1);
+    datatag_id2 = neu_datatag_tbl_add(datatag_table_create, &datatag2);
+    datatag_id3 = neu_datatag_tbl_add(datatag_table_create, &datatag3);
 
-    EXPECT_EQ(0,neu_datatag_tbl_remove(datatag_table, datatag_add_1));
+    EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table_create, datatag_id1));
 
-    datatag_get_1 = neu_datatag_tbl_get(datatag_table, datatag_add_1);
-    datatag_get_2 = neu_datatag_tbl_get(datatag_table, datatag_add_2);
-    datatag_get_3 = neu_datatag_tbl_get(datatag_table, datatag_add_3);
+    datatag_id_return1 = neu_datatag_tbl_get(datatag_table_create, datatag_id1);
+    datatag_id_return2 = neu_datatag_tbl_get(datatag_table_create, datatag_id2);
+    datatag_id_return3 = neu_datatag_tbl_get(datatag_table_create, datatag_id3);
 
-    EXPECT_EQ(NULL,datatag_get_1);
-   
-    EXPECT_EQ(datatag_get_2->id,datatag_t_2.id);
-    EXPECT_EQ(datatag_get_2->dataType,datatag_t_2.dataType);
-    EXPECT_EQ(datatag_get_2->type,datatag_t_2.type);
+    EXPECT_EQ(NULL, datatag_id_return1);
 
-    EXPECT_EQ(datatag_get_3->id,datatag_t_3.id);
-    EXPECT_EQ(datatag_get_3->dataType,datatag_t_3.dataType);
-    EXPECT_EQ(datatag_get_3->type,datatag_t_3.type);
+    EXPECT_EQ(datatag_id_return2->id, datatag2.id);
+    EXPECT_EQ(datatag_id_return2->dataType, datatag2.dataType);
+    EXPECT_EQ(datatag_id_return2->type, datatag2.type);
+    EXPECT_EQ(datatag_id_return2->str_addr, datatag2.str_addr);
 
-    neu_datatag_tbl_destroy(datatag_table);
+    EXPECT_EQ(datatag_id_return3->id, datatag3.id);
+    EXPECT_EQ(datatag_id_return3->dataType, datatag3.dataType);
+    EXPECT_EQ(datatag_id_return3->type, datatag3.type);
+    EXPECT_EQ(datatag_id_return3->str_addr, datatag3.str_addr);
+
+    neu_datatag_tbl_destroy(datatag_table_create);
 }
 
-TEST(DatatageTableTest,DatatagTableUpdate)
+TEST(DatatageTableTest, DatatagTableUpdate)
 {
-    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
-    neu_address_t address_t;
-    neu_datatag_t datatag_t = {123,NEU_ATTRIBUTETYPE_READ,NEU_DATATYPE_BYTE,address_t};
+    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
+    neu_address_t        datatag_address;
+    neu_datatag_id_t     id;
+    char *               str_addr;
+    neu_datatag_t datatag = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
+                              datatag_address, str_addr };
 
-    datatag_id_t  datatag_add;
-    neu_datatag_t *datatag_get = NULL;
+    datatag_id_t   datatag_id;
+    neu_datatag_t *datatag_id_return = NULL;
 
-    datatag_add = neu_datatag_tbl_add(datatag_table, &datatag_t);
-    datatag_t.id = 456;
-    EXPECT_EQ(0,neu_datatag_tbl_update(datatag_table,datatag_add,&datatag_t));
-    datatag_get = neu_datatag_tbl_get(datatag_table, datatag_add);
+    datatag_id = neu_datatag_tbl_add(datatag_table_create, &datatag);
 
-    EXPECT_EQ(456,datatag_get->id);
+    datatag.type     = NEU_ATTRIBUTETYPE_WRITE;
+    datatag.dataType = NEU_DATATYPE_BOOLEAN;
+    EXPECT_EQ(
+        0, neu_datatag_tbl_update(datatag_table_create, datatag_id, &datatag));
 
-    neu_datatag_tbl_destroy(datatag_table);
+    datatag_id_return = neu_datatag_tbl_get(datatag_table_create, datatag_id);
+
+    EXPECT_EQ(datatag_id_return->type, NEU_ATTRIBUTETYPE_WRITE);
+    EXPECT_EQ(datatag_id_return->dataType, NEU_DATATYPE_BOOLEAN);
+    EXPECT_EQ(datatag_id_return->id, datatag.id);
+    EXPECT_EQ(datatag_id_return->str_addr, datatag.str_addr);
+
+    neu_datatag_tbl_destroy(datatag_table_create);
 }
 
-void * datatag_table_thread(void * arg)
+void *datatag_table_thread(void *arg)
 {
-    neu_datatag_table_t *datatag_table = (neu_datatag_table_t *)arg;
-    neu_address_t address_t;
-    neu_datatag_t datatag_t_1 = {123,NEU_ATTRIBUTETYPE_READ,NEU_DATATYPE_BYTE,address_t};
-    neu_datatag_t datatag_t_2 = {456,NEU_ATTRIBUTETYPE_WRITE,NEU_DATATYPE_WORD,address_t};
-    neu_datatag_t datatag_t_3 = {789,NEU_ATTRIBUTETYPE_SUBSCRIBE,NEU_DATATYPE_UWORD,address_t};
-  
-    datatag_id_t  datatag_add_1,datatag_add_2,datatag_add_3,datatag_add_4;
-    neu_datatag_t *datatag_get_1 = NULL;
-    neu_datatag_t *datatag_get_2 = NULL;
-    neu_datatag_t *datatag_get_3 = NULL;
+    neu_datatag_table_t *datatag_table_create = (neu_datatag_table_t *) arg;
+    neu_address_t        address;
+    datatag_id_t         id;
+    char *               str_addr;
+    neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
+                               address, str_addr };
+    neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
+                               address, str_addr };
+    neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
+                               NEU_DATATYPE_UWORD, address, str_addr };
 
-    for(int i = 0; i < NUM_DatatagTable_Modify; ++i )
-    {
-      datatag_add_1 = neu_datatag_tbl_add(datatag_table, &datatag_t_1);
-      datatag_add_2 = neu_datatag_tbl_add(datatag_table, &datatag_t_2);
-      datatag_add_3 = neu_datatag_tbl_add(datatag_table, &datatag_t_3);
+    datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
+    neu_datatag_t *datatag_id_return1 = NULL;
+    neu_datatag_t *datatag_id_return2 = NULL;
+    neu_datatag_t *datatag_id_return3 = NULL;
 
-      EXPECT_EQ(0,neu_datatag_tbl_remove(datatag_table, datatag_add_1));
+    for (int i = 0; i < NUM_DATATAGTABLE_MODIFY; ++i) {
+        datatag_id1 = neu_datatag_tbl_add(datatag_table_create, &datatag1);
+        datatag_id2 = neu_datatag_tbl_add(datatag_table_create, &datatag2);
+        datatag_id3 = neu_datatag_tbl_add(datatag_table_create, &datatag3);
 
-      datatag_get_1 = neu_datatag_tbl_get(datatag_table, datatag_add_1);
-      datatag_get_2 = neu_datatag_tbl_get(datatag_table, datatag_add_2);
-      datatag_get_3 = neu_datatag_tbl_get(datatag_table, datatag_add_3);
-      
-      datatag_t_2.id = 123;
-      datatag_t_3.type = NEU_ATTRIBUTETYPE_WRITE;
-      EXPECT_EQ(0,neu_datatag_tbl_update(datatag_table,datatag_add_2,&datatag_t_2));
-      EXPECT_EQ(0,neu_datatag_tbl_update(datatag_table,datatag_add_3,&datatag_t_3));
+        EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table_create, datatag_id1));
 
-      datatag_get_1 = neu_datatag_tbl_get(datatag_table, datatag_add_1);
-      datatag_get_2 = neu_datatag_tbl_get(datatag_table, datatag_add_2);
-      datatag_get_3 = neu_datatag_tbl_get(datatag_table, datatag_add_3);
+        datatag2.type     = NEU_ATTRIBUTETYPE_WRITE;
+        datatag3.dataType = NEU_DATATYPE_BOOLEAN;
+        EXPECT_EQ(0,
+                  neu_datatag_tbl_update(datatag_table_create, datatag_id2,
+                                         &datatag2));
+        EXPECT_EQ(0,
+                  neu_datatag_tbl_update(datatag_table_create, datatag_id3,
+                                         &datatag3));
 
-      EXPECT_EQ(NULL,datatag_get_1);
+        datatag_id_return1 =
+            neu_datatag_tbl_get(datatag_table_create, datatag_id1);
+        datatag_id_return2 =
+            neu_datatag_tbl_get(datatag_table_create, datatag_id2);
+        datatag_id_return3 =
+            neu_datatag_tbl_get(datatag_table_create, datatag_id3);
 
-      EXPECT_EQ(datatag_get_2->id,123);
-      EXPECT_EQ(datatag_get_2->dataType,datatag_t_2.dataType);
-      EXPECT_EQ(datatag_get_2->type,datatag_t_2.type);
+        EXPECT_EQ(NULL, datatag_id_return1);
 
-      EXPECT_EQ(datatag_get_3->id,datatag_t_3.id);
-      EXPECT_EQ(datatag_get_3->dataType,datatag_t_3.dataType);
-      EXPECT_EQ(datatag_get_3->type,NEU_ATTRIBUTETYPE_WRITE);
+        EXPECT_EQ(datatag_id_return2->id, datatag2.id);
+        EXPECT_EQ(datatag_id_return2->type, NEU_ATTRIBUTETYPE_WRITE);
+        EXPECT_EQ(datatag_id_return2->dataType, datatag2.dataType);
+        EXPECT_EQ(datatag_id_return2->str_addr, datatag2.str_addr);
 
+        EXPECT_EQ(datatag_id_return3->id, datatag3.id);
+        EXPECT_EQ(datatag_id_return3->dataType, NEU_DATATYPE_BOOLEAN);
+        EXPECT_EQ(datatag_id_return3->type, datatag3.type);
+        EXPECT_EQ(datatag_id_return3->str_addr, datatag3.str_addr);
     }
     return 0;
 }
 
-
-TEST(DatatageTableTest,DatatagTablePthread)
+TEST(DatatageTableTest, DatatagTablePthread)
 {
-    pthread_t tids[2];
-    int ret1,ret2;
-    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
+    pthread_t            tids[2];
+    int                  ret1, ret2;
+    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
+    ret1 = pthread_create(&tids[0], NULL, datatag_table_thread,
+                          (void *) datatag_table_create);
+    ret2 = pthread_create(&tids[1], NULL, datatag_table_thread,
+                          (void *) datatag_table_create);
 
-    ret1 = pthread_create(&tids[0],NULL,datatag_table_thread,(void*)datatag_table);
-    ret2 = pthread_create(&tids[1],NULL,datatag_table_thread,(void*)datatag_table);
-    
-    pthread_join(tids[0],NULL);
-    pthread_join(tids[1],NULL);
+    pthread_join(tids[0], NULL);
+    pthread_join(tids[1], NULL);
 
-    EXPECT_EQ(0,ret1);
-    EXPECT_EQ(0,ret2);
+    EXPECT_EQ(0, ret1);
+    EXPECT_EQ(0, ret2);
 
-    neu_datatag_tbl_destroy(datatag_table);
+    neu_datatag_tbl_destroy(datatag_table_create);
 }
 
 int main(int argc, char **argv)
@@ -169,4 +202,3 @@ int main(int argc, char **argv)
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
-

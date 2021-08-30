@@ -24,8 +24,12 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "parser/neu_json_add_tag.h"
+#include "parser/neu_json_delete_tag.h"
+#include "parser/neu_json_get_tag.h"
 #include "parser/neu_json_login.h"
 #include "parser/neu_json_parser.h"
+#include "parser/neu_json_updata_tag.h"
 
 #include "handle.h"
 
@@ -35,6 +39,9 @@ static void read(nng_aio *aio);
 static void write(nng_aio *aio);
 static void login(nng_aio *aio);
 static void logout(nng_aio *aio);
+static void get_tags(nng_aio *aio);
+static void add_tags(nng_aio *aio);
+static void delete_tags(nng_aio *aio);
 
 struct neu_rest_handler rest_handlers[] = {
     {
@@ -72,6 +79,25 @@ struct neu_rest_handler rest_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/logout",
         .value.handler = logout,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/tags",
+        .value.handler = add_tags,
+
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/tags",
+        .value.handler = get_tags,
+    },
+    {
+        .method        = NEU_REST_METHOD_DELETE,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/tags",
+        .value.handler = delete_tags,
     }
 };
 
@@ -159,6 +185,156 @@ static void login(nng_aio *aio)
 static void logout(nng_aio *aio)
 {
     (void) aio;
+}
+
+static void add_tags(nng_aio *aio)
+{
+    int           ret             = -1;
+    nng_http_res *res             = NULL;
+    char *        res_data        = NULL;
+    char *        req_data        = NULL;
+    char          req_cdata[1024] = { 0 };
+    size_t        req_data_size   = 0;
+
+    nng_http_req *req = nng_aio_get_input(aio, 0);
+
+    struct neu_parse_add_tags_req *add_tags_req = NULL;
+    struct neu_parse_add_tags_res  add_tags_res = {
+        .function = NEU_PARSE_OP_ADD_TAGS,
+        .error    = 1,
+    };
+
+    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
+    if (req_data_size <= 0) {
+        neu_parse_encode(&add_tags_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    memcpy(req_cdata, req_data, req_data_size);
+    ret = neu_parse_decode(req_cdata, (void **) &add_tags_req);
+    if (ret != 0) {
+        neu_parse_encode(&add_tags_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    add_tags_res.error = 0;
+    add_tags_res.uuid  = add_tags_req->uuid;
+
+    neu_parse_encode(&add_tags_res, &res_data);
+    nng_http_res_alloc(&res);
+
+    nng_http_res_copy_data(res, res_data, strlen(res_data));
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
+    nng_http_res_set_header(res, "Content-Type", "application/json");
+
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+    free(res_data);
+    neu_parse_decode_free(add_tags_req);
+}
+
+static void get_tags(nng_aio *aio)
+{
+    int           ret             = -1;
+    nng_http_res *res             = NULL;
+    char *        res_data        = NULL;
+    char *        req_data        = NULL;
+    char          req_cdata[1024] = { 0 };
+    size_t        req_data_size   = 0;
+
+    nng_http_req *req = nng_aio_get_input(aio, 0);
+
+    struct neu_parse_get_tags_req *get_tags_req = NULL;
+    struct neu_parse_get_tags_res  get_tags_res = {
+        .function = NEU_PARSE_OP_GET_TAGS,
+        .error    = 1,
+    };
+
+    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
+    if (req_data_size <= 0) {
+        neu_parse_encode(&get_tags_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    memcpy(req_cdata, req_data, req_data_size);
+    ret = neu_parse_decode(req_cdata, (void **) &get_tags_req);
+    if (ret != 0) {
+        neu_parse_encode(&get_tags_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    get_tags_res.error = 0;
+    get_tags_res.uuid  = get_tags_req->uuid;
+
+    neu_parse_encode(&get_tags_res, &res_data);
+    nng_http_res_alloc(&res);
+
+    nng_http_res_copy_data(res, res_data, strlen(res_data));
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
+    nng_http_res_set_header(res, "Content-Type", "application/json");
+
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+    free(res_data);
+    neu_parse_decode_free(get_tags_req);
+}
+
+static void delete_tags(nng_aio *aio)
+{
+    int           ret             = -1;
+    nng_http_res *res             = NULL;
+    char *        res_data        = NULL;
+    char *        req_data        = NULL;
+    char          req_cdata[1024] = { 0 };
+    size_t        req_data_size   = 0;
+
+    nng_http_req *req = nng_aio_get_input(aio, 0);
+
+    struct neu_parse_delete_tags_req *delete_tags_req = NULL;
+    struct neu_parse_delete_tags_res  delete_tags_res = {
+        .function = NEU_PARSE_OP_DELETE_TAGS,
+        .error    = 1,
+    };
+
+    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
+    if (req_data_size <= 0) {
+        neu_parse_encode(&delete_tags_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    memcpy(req_cdata, req_data, req_data_size);
+    ret = neu_parse_decode(req_cdata, (void **) &delete_tags_res);
+    if (ret != 0) {
+        neu_parse_encode(&delete_tags_res, &res_data);
+        bad_request(aio, res_data);
+        free(res_data);
+        return;
+    }
+
+    delete_tags_res.error = 0;
+    delete_tags_res.uuid  = delete_tags_req->uuid;
+
+    neu_parse_encode(&delete_tags_res, &res_data);
+    nng_http_res_alloc(&res);
+
+    nng_http_res_copy_data(res, res_data, strlen(res_data));
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
+    nng_http_res_set_header(res, "Content-Type", "application/json");
+
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
+    free(res_data);
+    neu_parse_decode_free(delete_tags_req);
 }
 
 static void bad_request(nng_aio *aio, char *error)

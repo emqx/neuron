@@ -29,12 +29,19 @@ target_include_directories(modbus_point_test PRIVATE
 )
 target_link_libraries(modbus_point_test neuron-base gtest_main gtest pthread)
 
-add_executable(datatag_table_test datatag_table_test.cc ${CMAKE_SOURCE_DIR}/src/core/neu_datatag_table.c)
+add_executable(datatag_table_test datatag_table_test.cc ${CMAKE_SOURCE_DIR}/src/base/neu_datatag_table.c)
 target_include_directories(datatag_table_test PRIVATE
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include       
 )
 target_link_libraries(datatag_table_test nng neuron-base gtest_main gtest pthread jansson)
+
+add_executable(json_datatag_table_test json_datatag_table_test.cc ${SRC_PARSER})
+target_include_directories(json_datatag_table_test PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(json_datatag_table_test neuron-base gtest_main gtest pthread jansson)
 
 include(GoogleTest)
 gtest_discover_tests(json_test)
@@ -42,4 +49,4 @@ gtest_discover_tests(api_json_test)
 gtest_discover_tests(variable_test)
 gtest_discover_tests(modbus_point_test)
 gtest_discover_tests(datatag_table_test)
-
+gtest_discover_tests(json_datatag_table_test)
