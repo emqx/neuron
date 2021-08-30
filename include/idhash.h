@@ -20,6 +20,10 @@
 #ifndef __NEU_IDHASH_H__
 #define __NEU_IDHASH_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include <string.h>
 
@@ -56,5 +60,9 @@ extern void *neu_id_get(neu_id_map *, uint32_t);
 extern int   neu_id_set(neu_id_map *, uint32_t, void *);
 extern int   neu_id_alloc(neu_id_map *, uint32_t *, void *);
 extern int   neu_id_remove(neu_id_map *, uint32_t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __NEU_IDHASH_H__

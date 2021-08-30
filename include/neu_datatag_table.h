@@ -40,4 +40,5 @@ datatag_id_t neu_datatag_tbl_add(neu_datatag_table_t *, neu_datatag_t *);
 #ifdef __cplusplus
 }
 #endif
+
 #endif //__DATATAG_TABLE_H__

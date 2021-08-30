@@ -20,6 +20,10 @@
 #ifndef NEURON_PLUGIN_H
 #define NEURON_PLUGIN_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "neu_adapter.h"
 
 #define NEURON_PLUGIN_VER_1_0 100
@@ -56,5 +60,9 @@ typedef struct neu_plugin_module {
     const char *                  module_descr;
     const neu_plugin_intf_funs_t *intf_funs;
 } neu_plugin_module_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

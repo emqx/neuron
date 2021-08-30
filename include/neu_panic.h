@@ -20,6 +20,10 @@
 #ifndef NEURON_PANIC_H
 #define NEURON_PANIC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "neu_log.h"
 #include <stdarg.h>
 
@@ -32,6 +36,10 @@ void neu_panic(const char *fmt, ...);
     neu_panic("%s: %d: assert err: %s", __FILE__, __LINE__, #x)
 #else
 #define NEU_ASSERT(x) (0)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

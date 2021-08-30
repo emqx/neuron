@@ -20,6 +20,10 @@
 #ifndef NEURON_LOG_H
 #define NEURON_LOG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -73,5 +77,9 @@ extern void log_log(int level, const char *file, int line, const char *func,
     log_log(LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
 #define log_fatal(...) \
     log_log(LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -20,6 +20,10 @@
 #ifndef __NEU_LIST_H__
 #define __NEU_LIST_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 
 // In order to make life easy, we just define the list structures
@@ -60,5 +64,9 @@ extern void  neu_list_node_remove(neu_list_node *);
 
 #define NEU_LIST_FOREACH(l, it) \
     for (it = neu_list_first(l); it != NULL; it = neu_list_next(l, it))
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __NEU_LIST_H__

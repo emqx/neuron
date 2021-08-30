@@ -20,6 +20,10 @@
 #ifndef NEURON_TAG_GROUP_CONFIG_H
 #define NEURON_TAG_GROUP_CONFIG_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "neu_vector.h"
 
 typedef struct neu_taggrp_config neu_taggrp_config_t;
@@ -37,5 +41,9 @@ vector_t *      neu_taggrp_cfg_get_subpipes(neu_taggrp_config_t *grp_config);
 const vector_t *neu_taggrp_cfg_ref_subpipes(neu_taggrp_config_t *grp_config);
 vector_t *      neu_taggrp_cfg_get_datatag_ids(neu_taggrp_config_t *grp_config);
 const vector_t *neu_taggrp_cfg_ref_datatag_ids(neu_taggrp_config_t *grp_config);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

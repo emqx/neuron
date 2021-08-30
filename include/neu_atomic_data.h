@@ -20,6 +20,10 @@
 #ifndef NEURON_ATOMIC_H_
 #define NEURON_ATOMIC_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdatomic.h>
 #include <stdbool.h>
 
@@ -70,5 +74,9 @@ extern void neu_atomic_inc(neu_atomic_int *);
 // value to compare against, and the third is the new value. Returns
 // true if the value was set.
 extern bool neu_atomic_cas(neu_atomic_int *, int, int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -23,6 +23,10 @@
 #include "neu_panic.h"
 #include <stdlib.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define NEU_ARG_UNUSED(x) ((void) x)
 
 void *neu_alloc(size_t sz);
@@ -33,5 +37,9 @@ void  neu_free(void *b, size_t z);
 #define NEU_FREE_STRUCT(s) neu_free((s), sizeof(*s))
 #define NEU_ALLOC_STRUCTS(s, n) neu_zalloc(sizeof(*s) * n)
 #define NEU_FREE_STRUCTS(s, n) neu_free(s, sizeof(*s) * n)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

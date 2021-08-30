@@ -20,6 +20,10 @@
 #ifndef _NEURON_H_
 #define _NEURON_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "neu_adapter.h"
 #include "neu_list.h"
 #include "neu_log.h"
@@ -27,5 +31,9 @@
 #include "neu_plugin.h"
 #include "neu_types.h"
 #include "neu_vector.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

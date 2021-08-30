@@ -20,6 +20,10 @@
 #ifndef NEU_VECTOR_H
 #define NEU_VECTOR_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "vector.h"
 
 typedef struct Vector   vector_t;
@@ -48,5 +52,9 @@ static inline void vector_free(vector_t *vec)
     }
     return;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
