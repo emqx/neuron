@@ -70,7 +70,8 @@ set(NEURON_SOURCES
     src/core/neu_datatag_manager.c
     src/adapter/adapter.c
     plugins/restful/handle.c
-    plugins/restful/rest.c)
+    plugins/restful/rest.c
+    plugins/restful/http.c)
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
@@ -96,7 +97,8 @@ set(NEURON_BASE_SOURCES
     src/utils/panic.c
     src/utils/log.c
     src/utils/json.c
-    src/utils/common.c)
+    src/utils/common.c
+    src/utils/neu_jwt.c)
 
 set(NEURON_BASE_INCLUDE_DIRECTORIES include)
 add_library(neuron-base SHARED)

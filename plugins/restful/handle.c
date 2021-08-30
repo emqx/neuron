@@ -32,6 +32,7 @@
 #include "parser/neu_json_updata_tag.h"
 
 #include "handle.h"
+#include "http.h"
 
 static void bad_request(nng_aio *aio, char *error);
 static void ping(nng_aio *aio);
@@ -110,17 +111,16 @@ void neu_rest_init_all_handler(const struct neu_rest_handler **handlers,
 
 static void ping(nng_aio *aio)
 {
-    nng_http_res *res      = NULL;
-    char *        res_data = "{\"status\":\"OK\"}";
+    http_header_kv_t headers;
+    HTTP_HEADER_ADD_JSON(headers);
+    http_response_t res = {
+        .aio         = aio,
+        .content     = "{\"status\": \"OK\"}",
+        .header_size = 1,
+        .headers     = &headers,
+    };
 
-    nng_http_res_alloc(&res);
-
-    nng_http_res_copy_data(res, res_data, strlen(res_data));
-    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
-    nng_http_res_set_header(res, "Content-Type", "application/json");
-
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
+    http_ok(&res);
 }
 
 static void read(nng_aio *aio)
@@ -135,50 +135,32 @@ static void write(nng_aio *aio)
 
 static void login(nng_aio *aio)
 {
-    int                         ret             = -1;
-    nng_http_res *              res             = NULL;
-    char *                      res_data        = NULL;
-    char *                      req_data        = NULL;
-    char                        req_cdata[1024] = { 0 };
-    size_t                      req_data_size   = 0;
-    nng_http_req *              req             = nng_aio_get_input(aio, 0);
-    struct neu_parse_login_req *login_req       = NULL;
-    struct neu_parse_login_res  login_res       = {
-        .function = NEU_PARSE_OP_LOGIN,
-        .error    = 1,
-        .token    = "fake token",
+    int                         ret           = 0;
+    char *                      req_data      = NULL;
+    size_t                      req_data_size = 0;
+    struct neu_parse_login_req *login_req     = NULL;
+    http_header_kv_t            headers       = { 0 };
+
+    HTTP_HEADER_ADD_JSON(headers);
+    http_response_t response = {
+        .aio         = aio,
+        .header_size = 1,
+        .headers     = &headers,
     };
 
-    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
-    if (req_data_size <= 0) {
-        neu_parse_encode(&login_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
+    ret = http_get_body(aio, (void **) &req_data, &req_data_size);
+
+    if (ret != 0 || neu_parse_decode(req_data, (void **) &login_req) != 0) {
+        response.content = "request body error";
+        http_bad_request(&response);
+        if (req_data != NULL)
+            free(req_data);
         return;
     }
 
-    memcpy(req_cdata, req_data, req_data_size);
-    ret = neu_parse_decode(req_cdata, (void **) &login_req);
-    if (ret != 0) {
-        neu_parse_encode(&login_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
-        return;
-    }
+    response.content = "ok";
 
-    login_res.error = 0;
-    login_res.uuid  = login_req->uuid;
-
-    neu_parse_encode(&login_res, &res_data);
-    nng_http_res_alloc(&res);
-
-    nng_http_res_copy_data(res, res_data, strlen(res_data));
-    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
-    nng_http_res_set_header(res, "Content-Type", "application/json");
-
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
-    free(res_data);
+    http_ok(&response);
     neu_parse_decode_free(login_req);
 }
 
@@ -189,165 +171,15 @@ static void logout(nng_aio *aio)
 
 static void add_tags(nng_aio *aio)
 {
-    int           ret             = -1;
-    nng_http_res *res             = NULL;
-    char *        res_data        = NULL;
-    char *        req_data        = NULL;
-    char          req_cdata[1024] = { 0 };
-    size_t        req_data_size   = 0;
-
-    nng_http_req *req = nng_aio_get_input(aio, 0);
-
-    struct neu_parse_add_tags_req *add_tags_req = NULL;
-    struct neu_parse_add_tags_res  add_tags_res = {
-        .function = NEU_PARSE_OP_ADD_TAGS,
-        .error    = 1,
-    };
-
-    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
-    if (req_data_size <= 0) {
-        neu_parse_encode(&add_tags_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
-        return;
-    }
-
-    memcpy(req_cdata, req_data, req_data_size);
-    ret = neu_parse_decode(req_cdata, (void **) &add_tags_req);
-    if (ret != 0) {
-        neu_parse_encode(&add_tags_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
-        return;
-    }
-
-    add_tags_res.error = 0;
-    add_tags_res.uuid  = add_tags_req->uuid;
-
-    neu_parse_encode(&add_tags_res, &res_data);
-    nng_http_res_alloc(&res);
-
-    nng_http_res_copy_data(res, res_data, strlen(res_data));
-    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
-    nng_http_res_set_header(res, "Content-Type", "application/json");
-
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
-    free(res_data);
-    neu_parse_decode_free(add_tags_req);
+    (void) aio;
 }
 
 static void get_tags(nng_aio *aio)
 {
-    int           ret             = -1;
-    nng_http_res *res             = NULL;
-    char *        res_data        = NULL;
-    char *        req_data        = NULL;
-    char          req_cdata[1024] = { 0 };
-    size_t        req_data_size   = 0;
-
-    nng_http_req *req = nng_aio_get_input(aio, 0);
-
-    struct neu_parse_get_tags_req *get_tags_req = NULL;
-    struct neu_parse_get_tags_res  get_tags_res = {
-        .function = NEU_PARSE_OP_GET_TAGS,
-        .error    = 1,
-    };
-
-    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
-    if (req_data_size <= 0) {
-        neu_parse_encode(&get_tags_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
-        return;
-    }
-
-    memcpy(req_cdata, req_data, req_data_size);
-    ret = neu_parse_decode(req_cdata, (void **) &get_tags_req);
-    if (ret != 0) {
-        neu_parse_encode(&get_tags_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
-        return;
-    }
-
-    get_tags_res.error = 0;
-    get_tags_res.uuid  = get_tags_req->uuid;
-
-    neu_parse_encode(&get_tags_res, &res_data);
-    nng_http_res_alloc(&res);
-
-    nng_http_res_copy_data(res, res_data, strlen(res_data));
-    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
-    nng_http_res_set_header(res, "Content-Type", "application/json");
-
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
-    free(res_data);
-    neu_parse_decode_free(get_tags_req);
+    (void) aio;
 }
 
 static void delete_tags(nng_aio *aio)
 {
-    int           ret             = -1;
-    nng_http_res *res             = NULL;
-    char *        res_data        = NULL;
-    char *        req_data        = NULL;
-    char          req_cdata[1024] = { 0 };
-    size_t        req_data_size   = 0;
-
-    nng_http_req *req = nng_aio_get_input(aio, 0);
-
-    struct neu_parse_delete_tags_req *delete_tags_req = NULL;
-    struct neu_parse_delete_tags_res  delete_tags_res = {
-        .function = NEU_PARSE_OP_DELETE_TAGS,
-        .error    = 1,
-    };
-
-    nng_http_req_get_data(req, (void **) &req_data, &req_data_size);
-    if (req_data_size <= 0) {
-        neu_parse_encode(&delete_tags_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
-        return;
-    }
-
-    memcpy(req_cdata, req_data, req_data_size);
-    ret = neu_parse_decode(req_cdata, (void **) &delete_tags_res);
-    if (ret != 0) {
-        neu_parse_encode(&delete_tags_res, &res_data);
-        bad_request(aio, res_data);
-        free(res_data);
-        return;
-    }
-
-    delete_tags_res.error = 0;
-    delete_tags_res.uuid  = delete_tags_req->uuid;
-
-    neu_parse_encode(&delete_tags_res, &res_data);
-    nng_http_res_alloc(&res);
-
-    nng_http_res_copy_data(res, res_data, strlen(res_data));
-    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
-    nng_http_res_set_header(res, "Content-Type", "application/json");
-
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
-    free(res_data);
-    neu_parse_decode_free(delete_tags_req);
-}
-
-static void bad_request(nng_aio *aio, char *error)
-{
-
-    nng_http_res *res = NULL;
-
-    nng_http_res_alloc(&res);
-
-    nng_http_res_copy_data(res, error, strlen(error));
-    nng_http_res_set_status(res, NNG_HTTP_STATUS_BAD_REQUEST);
-    nng_http_res_set_header(res, "Content-Type", "application/json");
-
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
+    (void) aio;
 }
