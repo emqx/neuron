@@ -23,6 +23,24 @@
 
 #include "neu_json_parser.h"
 
+struct neu_paser_read_tag_group_list_req {
+    enum neu_parse_function function;
+    char *                  uuid;
+    char *                  config;
+};
+
+struct neu_paser_read_tag_group_list_name {
+    char *name;
+};
+
+struct neu_paser_read_tag_group_list_res {
+    enum neu_parse_function                    function;
+    char *                                     uuid;
+    int                                        error;
+    int                                        n_group;
+    struct neu_paser_read_tag_group_list_name *names;
+};
+
 struct neu_parse_read_req_name {
     char *name;
 };
@@ -48,6 +66,11 @@ struct neu_parse_read_res {
     int                            n_tag;
     struct neu_parse_read_res_tag *tags;
 };
+
+int neu_paser_decode_read_tag_group_list_req(
+    char *buf, struct neu_paser_read_tag_group_list_req **result);
+int neu_parse_encode_read_tag_group_list_res(
+    struct neu_paser_read_tag_group_list_res *res, char **buf);
 
 int neu_parse_decode_read_req(char *buf, struct neu_parse_read_req **req);
 int neu_parse_encode_read_res(struct neu_parse_read_res *res, char **buf);
