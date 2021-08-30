@@ -1,7 +1,6 @@
 #include "neu_datatag_table.h"
 #include "neu_types.h"
 #include "pthread.h"
-#include <bits/pthreadtypes.h>
 #include <gtest/gtest.h>
 
 #define NUM_DATATAGTABLE_MODIFY 100
