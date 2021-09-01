@@ -123,6 +123,8 @@ static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
+    neu_plugin_common_init(&plugin->common);
+
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
 
@@ -235,7 +237,7 @@ static void read_data_process(neu_plugin_t *plugin, neu_request_t *req)
         int            ret   = 0;
         modbus_data_t  mdata = { 0 };
 
-        ret = modbus_point_find(plugin->point_ctx, tag->str_addr, &mdata);
+        ret = modbus_point_find(plugin->point_ctx, tag->addr_str, &mdata);
         if (ret != 0) {
             neu_variable_t *err = neu_variable_create();
             neu_variable_set_error(err, 1);
@@ -399,7 +401,7 @@ static void write_data_process(neu_plugin_t *plugin, neu_request_t *req)
             break;
         }
         }
-        ret = modbus_point_write(plugin->point_ctx, tag->str_addr, &mdata,
+        ret = modbus_point_write(plugin->point_ctx, tag->addr_str, &mdata,
                                  send_recv_callback);
         if (ret != 0) {
             neu_variable_t *err = neu_variable_create();

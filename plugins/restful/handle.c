@@ -34,7 +34,6 @@
 #include "handle.h"
 #include "http.h"
 
-static void bad_request(nng_aio *aio, char *error);
 static void ping(nng_aio *aio);
 static void read(nng_aio *aio);
 static void write(nng_aio *aio);

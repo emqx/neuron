@@ -486,10 +486,10 @@ static void plugin_get_tag_list_handle(neu_plugin_t *                 plugin,
             continue;
         }
 
-        res.tags[i].name    = strdup(ret->str_addr);
+        res.tags[i].name    = strdup(ret->addr_str);
         res.tags[i].type    = 0;
         res.tags[i].decimal = 1;
-        res.tags[i].address = strdup(ret->str_addr);
+        res.tags[i].address = strdup(ret->addr_str);
         res.tags[i].flag    = 0;
     }
 
@@ -527,7 +527,7 @@ static void plugin_add_tag_handle(neu_plugin_t *                 plugin,
     datatag0->type          = NEU_ATTRIBUTETYPE_READ;
     datatag0->dataType      = NEU_DATATYPE_BYTE;
     datatag0->address       = datatag_address;
-    datatag0->str_addr      = str_addr;
+    datatag0->addr_str      = str_addr;
     ids[3]                  = neu_datatag_tbl_add(data_tag, datatag0);
 
     str_addr = (char *) tags[4];
@@ -538,7 +538,7 @@ static void plugin_add_tag_handle(neu_plugin_t *                 plugin,
     datatag1->type          = NEU_ATTRIBUTETYPE_READ;
     datatag1->dataType      = NEU_DATATYPE_BYTE;
     datatag1->address       = datatag_address;
-    datatag1->str_addr      = str_addr;
+    datatag1->addr_str      = str_addr;
     ids[4]                  = neu_datatag_tbl_add(data_tag, datatag1);
 
     char *                        result = NULL;
@@ -627,6 +627,7 @@ static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
+    neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
@@ -695,7 +696,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     datatag0->type          = NEU_ATTRIBUTETYPE_READ;
     datatag0->dataType      = NEU_DATATYPE_WORD;
     datatag0->address       = datatag_address;
-    datatag0->str_addr      = str_addr;
+    datatag0->addr_str      = str_addr;
     ids[0]                  = neu_datatag_tbl_add(data_tag, datatag0);
 
     str_addr                = (char *) tags[1];
@@ -705,7 +706,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     datatag1->type          = NEU_ATTRIBUTETYPE_READ;
     datatag1->dataType      = NEU_DATATYPE_UWORD;
     datatag1->address       = datatag_address;
-    datatag1->str_addr      = str_addr;
+    datatag1->addr_str      = str_addr;
     ids[1]                  = neu_datatag_tbl_add(data_tag, datatag1);
 
     str_addr                = (char *) tags[2];
@@ -715,7 +716,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     datatag2->type          = NEU_ATTRIBUTETYPE_READ;
     datatag2->dataType      = NEU_DATATYPE_BYTE;
     datatag2->address       = datatag_address;
-    datatag2->str_addr      = str_addr;
+    datatag2->addr_str      = str_addr;
     ids[2]                  = neu_datatag_tbl_add(data_tag, datatag2);
 
     // str_addr                = (char *) tags[3];

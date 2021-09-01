@@ -10,13 +10,13 @@ TEST(DatatageTableTest, DatatagTableAdd)
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
     neu_datatag_id_t     id;
     neu_address_t        datatag_address;
-    char *               str_addr;
+    char *               addr_str;
     neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                               datatag_address, str_addr };
+                               datatag_address, addr_str };
     neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
-                               datatag_address, str_addr };
+                               datatag_address, addr_str };
     neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DATATYPE_UWORD, datatag_address, str_addr };
+                               NEU_DATATYPE_UWORD, datatag_address, addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
@@ -34,17 +34,17 @@ TEST(DatatageTableTest, DatatagTableAdd)
     EXPECT_EQ(datatag_id_return1->id, datatag1.id);
     EXPECT_EQ(datatag_id_return1->dataType, datatag1.dataType);
     EXPECT_EQ(datatag_id_return1->type, datatag1.type);
-    EXPECT_EQ(datatag_id_return1->str_addr, datatag1.str_addr);
+    EXPECT_EQ(datatag_id_return1->addr_str, datatag1.addr_str);
 
     EXPECT_EQ(datatag_id_return2->id, datatag2.id);
     EXPECT_EQ(datatag_id_return2->dataType, datatag2.dataType);
     EXPECT_EQ(datatag_id_return2->type, datatag2.type);
-    EXPECT_EQ(datatag_id_return2->str_addr, datatag2.str_addr);
+    EXPECT_EQ(datatag_id_return2->addr_str, datatag2.addr_str);
 
     EXPECT_EQ(datatag_id_return3->id, datatag3.id);
     EXPECT_EQ(datatag_id_return3->dataType, datatag3.dataType);
     EXPECT_EQ(datatag_id_return3->type, datatag3.type);
-    EXPECT_EQ(datatag_id_return3->str_addr, datatag3.str_addr);
+    EXPECT_EQ(datatag_id_return3->addr_str, datatag3.addr_str);
 
     neu_datatag_tbl_destroy(datatag_table_create);
 }
@@ -54,13 +54,13 @@ TEST(DatatageTableTest, DatatagTableRemove)
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
     neu_address_t        datatag_address;
     neu_datatag_id_t     id;
-    char *               str_addr;
+    char *               addr_str;
     neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                               datatag_address, str_addr };
+                               datatag_address, addr_str };
     neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
-                               datatag_address, str_addr };
+                               datatag_address, addr_str };
     neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DATATYPE_UWORD, datatag_address, str_addr };
+                               NEU_DATATYPE_UWORD, datatag_address, addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
@@ -82,12 +82,12 @@ TEST(DatatageTableTest, DatatagTableRemove)
     EXPECT_EQ(datatag_id_return2->id, datatag2.id);
     EXPECT_EQ(datatag_id_return2->dataType, datatag2.dataType);
     EXPECT_EQ(datatag_id_return2->type, datatag2.type);
-    EXPECT_EQ(datatag_id_return2->str_addr, datatag2.str_addr);
+    EXPECT_EQ(datatag_id_return2->addr_str, datatag2.addr_str);
 
     EXPECT_EQ(datatag_id_return3->id, datatag3.id);
     EXPECT_EQ(datatag_id_return3->dataType, datatag3.dataType);
     EXPECT_EQ(datatag_id_return3->type, datatag3.type);
-    EXPECT_EQ(datatag_id_return3->str_addr, datatag3.str_addr);
+    EXPECT_EQ(datatag_id_return3->addr_str, datatag3.addr_str);
 
     neu_datatag_tbl_destroy(datatag_table_create);
 }
@@ -97,9 +97,9 @@ TEST(DatatageTableTest, DatatagTableUpdate)
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
     neu_address_t        datatag_address;
     neu_datatag_id_t     id;
-    char *               str_addr;
+    char *               addr_str;
     neu_datatag_t datatag = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                              datatag_address, str_addr };
+                              datatag_address, addr_str };
 
     datatag_id_t   datatag_id;
     neu_datatag_t *datatag_id_return = NULL;
@@ -116,7 +116,7 @@ TEST(DatatageTableTest, DatatagTableUpdate)
     EXPECT_EQ(datatag_id_return->type, NEU_ATTRIBUTETYPE_WRITE);
     EXPECT_EQ(datatag_id_return->dataType, NEU_DATATYPE_BOOLEAN);
     EXPECT_EQ(datatag_id_return->id, datatag.id);
-    EXPECT_EQ(datatag_id_return->str_addr, datatag.str_addr);
+    EXPECT_EQ(datatag_id_return->addr_str, datatag.addr_str);
 
     neu_datatag_tbl_destroy(datatag_table_create);
 }
@@ -126,13 +126,13 @@ void *datatag_table_thread(void *arg)
     neu_datatag_table_t *datatag_table_create = (neu_datatag_table_t *) arg;
     neu_address_t        address;
     datatag_id_t         id;
-    char *               str_addr;
+    char *               addr_str;
     neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                               address, str_addr };
+                               address, addr_str };
     neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
-                               address, str_addr };
+                               address, addr_str };
     neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DATATYPE_UWORD, address, str_addr };
+                               NEU_DATATYPE_UWORD, address, addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
@@ -167,12 +167,12 @@ void *datatag_table_thread(void *arg)
         EXPECT_EQ(datatag_id_return2->id, datatag2.id);
         EXPECT_EQ(datatag_id_return2->type, NEU_ATTRIBUTETYPE_WRITE);
         EXPECT_EQ(datatag_id_return2->dataType, datatag2.dataType);
-        EXPECT_EQ(datatag_id_return2->str_addr, datatag2.str_addr);
+        EXPECT_EQ(datatag_id_return2->addr_str, datatag2.addr_str);
 
         EXPECT_EQ(datatag_id_return3->id, datatag3.id);
         EXPECT_EQ(datatag_id_return3->dataType, NEU_DATATYPE_BOOLEAN);
         EXPECT_EQ(datatag_id_return3->type, datatag3.type);
-        EXPECT_EQ(datatag_id_return3->str_addr, datatag3.str_addr);
+        EXPECT_EQ(datatag_id_return3->addr_str, datatag3.addr_str);
     }
     return 0;
 }

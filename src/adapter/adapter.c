@@ -641,6 +641,38 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_SELF_NODE_ID: {
+        neu_response_t *       result;
+        neu_reqresp_node_id_t *resp_node_id;
+
+        assert(cmd->buf_len == sizeof(neu_cmd_self_node_id_t));
+        resp_node_id = malloc(sizeof(neu_reqresp_node_id_t));
+        if (resp_node_id == NULL) {
+            log_error("Failed to allocate result of node id");
+            rv = -1;
+            break;
+        }
+        result = malloc(sizeof(neu_response_t));
+        if (result == NULL) {
+            log_error("Failed to allocate result for get node id");
+            free(resp_node_id);
+            rv = -1;
+            break;
+        }
+
+        resp_node_id->node_id =
+            neu_manager_adapter_id_to_node_id(adapter->manager, adapter->id);
+
+        result->resp_type = NEU_REQRESP_SELF_NODE_ID;
+        result->req_id    = cmd->req_id;
+        result->buf_len   = sizeof(neu_reqresp_node_id_t);
+        result->buf       = resp_node_id;
+        if (p_result != NULL) {
+            *p_result = result;
+        }
+        break;
+    }
+
     default:
         rv = -1;
         break;
@@ -786,6 +818,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     if (plugin == NULL) {
         neu_panic("Can't to open plugin(%s)", plugin_module->module_name);
     }
+
+    if (neu_plugin_common_check(plugin) != 0) {
+        neu_panic("Check plugin common magic error, %s",
+                  plugin_module->module_name);
+    }
+
     adapter->plugin = plugin;
 
     rv = nng_pair1_open(&adapter->sock);

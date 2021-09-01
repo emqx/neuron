@@ -51,6 +51,7 @@ sample_drv_plugin_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
+    neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);

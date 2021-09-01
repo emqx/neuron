@@ -128,6 +128,7 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
+    neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
     plugin->new_event_id             = 1;

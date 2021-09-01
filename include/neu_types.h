@@ -486,6 +486,7 @@ typedef enum {
 } neu_attributetype_t;
 
 typedef uint32_t neu_datatag_id_t;
+typedef char *   neu_addr_str_t;
 
 typedef struct {
     neu_datatag_id_t    id;
@@ -494,7 +495,7 @@ typedef struct {
     // neu_udword_t     readInterval;
     neu_datatype_t dataType;
     neu_address_t  address;
-    char *         str_addr;
+    neu_addr_str_t addr_str;
 } neu_datatag_t;
 
 /**

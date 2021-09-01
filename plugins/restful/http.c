@@ -46,6 +46,7 @@ static int response(http_response_t *response, enum nng_http_status status)
     nng_aio_finish(response->aio, 0);
 
     nng_http_res_free(res);
+    return 0;
 }
 
 int http_get_body(nng_aio *aio, void **data, size_t *data_size)

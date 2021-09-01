@@ -17,25 +17,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef ADAPTER_INTERNAL_H
-#define ADAPTER_INTERNAL_H
+#ifndef ADAPTER_INFO_H
+#define ADAPTER_INFO_H
 
-#include <nng/nng.h>
+#include <stdint.h>
 
-#include "adapter_info.h"
-#include "core/databuf.h"
-#include "core/neu_manager.h"
 #include "neu_plugin_info.h"
 
-neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
-                                  neu_manager_t *     manager);
-void           neu_adapter_destroy(neu_adapter_t *adapter);
-int            neu_adapter_start(neu_adapter_t *adapter);
-int            neu_adapter_stop(neu_adapter_t *adapter);
-const char *   neu_adapter_get_name(neu_adapter_t *adapter);
-neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter);
-nng_socket     neu_adapter_get_sock(neu_adapter_t *adapter);
-adapter_id_t   neu_adapter_get_id(neu_adapter_t *adapter);
-adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter);
+typedef enum adapter_type {
+    ADAPTER_TYPE_UNKNOW,
+    ADAPTER_TYPE_WEBSERVER,
+    ADAPTER_TYPE_MQTT,
+    ADAPTER_TYPE_STREAM_PROCESSOR,
+    ADAPTER_TYPE_APP,
+    ADAPTER_TYPE_DRIVER,
+    ADAPTER_TYPE_MAX,
+} adapter_type_e;
+
+typedef uint32_t adapter_id_t;
+typedef struct neu_adapter_info {
+    adapter_id_t   id;
+    adapter_type_e type;
+    plugin_id_t    plugin_id;
+    const char *   name;
+    plugin_kind_e  plugin_kind;
+    const char *   plugin_lib_name;
+} neu_adapter_info_t;
 
 #endif
