@@ -36,9 +36,11 @@ typedef enum neu_plugin_state {
 } neu_plugin_state_e;
 
 typedef struct neu_plugin_common {
+    uint32_t                   magic;
     neu_plugin_state_e         state;
     neu_adapter_t *            adapter;
     const adapter_callbacks_t *adapter_callbacks;
+    uint32_t                   event_id;
 } neu_plugin_common_t;
 
 typedef struct neu_plugin neu_plugin_t;
@@ -60,6 +62,21 @@ typedef struct neu_plugin_module {
     const char *                  module_descr;
     const neu_plugin_intf_funs_t *intf_funs;
 } neu_plugin_module_t;
+
+inline static neu_plugin_common_t *
+neu_plugin_to_plugin_common(neu_plugin_t *plugin)
+{
+    return (neu_plugin_common_t *) plugin;
+}
+
+void neu_plugin_common_init(neu_plugin_common_t *common);
+int  neu_plugin_common_check(neu_plugin_t *plugin);
+
+neu_datatag_table_t *neu_plugin_get_datatags_table(neu_plugin_t *plugin,
+                                                   neu_node_id_t ndoe_id);
+intptr_t  neu_plugin_add_node(neu_plugin_t *plugin, neu_node_type_e node_type,
+                              const char *adapter_name, const char *plugin_name);
+vector_t *neu_plugin_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
 
 #ifdef __cplusplus
 }

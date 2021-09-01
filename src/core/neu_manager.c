@@ -375,15 +375,17 @@ static adapter_id_t manager_get_adapter_id(neu_manager_t *manager)
     nng_mtx_unlock(manager->adapters_mtx);
     return adapter_id;
 }
-
-static adapter_id_t adapter_id_from_node_id(neu_node_id_t node_id)
+neu_node_id_t neu_manager_adapter_id_to_node_id(neu_manager_t *manager,
+                                                adapter_id_t   adapter_id)
 {
-    return node_id;
-}
-
-static neu_node_id_t adapter_id_to_node_id(adapter_id_t adapter_id)
-{
+    (void) manager;
     return adapter_id;
+}
+adapter_id_t neu_manager_adapter_id_from_node_id(neu_manager_t *manager,
+                                                 neu_node_id_t  node_id)
+{
+    (void) manager;
+    return node_id;
 }
 
 static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
@@ -907,7 +909,8 @@ static void manager_loop(void *arg)
 
             cmd_ptr = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
-            adapter_id = adapter_id_from_node_id(cmd_ptr->dst_node_id);
+            adapter_id = neu_manager_adapter_id_from_node_id(
+                manager, cmd_ptr->dst_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             msg_pipe = reg_entity->adapter_pipe;
@@ -939,7 +942,8 @@ static void manager_loop(void *arg)
 
             cmd_ptr = (write_data_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
-            adapter_id = adapter_id_from_node_id(cmd_ptr->dst_node_id);
+            adapter_id = neu_manager_adapter_id_from_node_id(
+                manager, cmd_ptr->dst_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             msg_pipe = reg_entity->adapter_pipe;
@@ -1121,7 +1125,7 @@ neu_node_id_t neu_manager_add_node(neu_manager_t *     manager,
     reg_cmd.plugin_name  = cmd->plugin_name;
     reg_cmd.plugin_id    = cmd->plugin_id;
     adapter_id           = manager_reg_adapter(manager, &reg_cmd, NULL);
-    return adapter_id_to_node_id(adapter_id);
+    return neu_manager_adapter_id_to_node_id(manager, adapter_id);
 }
 
 int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
@@ -1129,7 +1133,7 @@ int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
     int          rv = 0;
     adapter_id_t adapter_id;
 
-    adapter_id = adapter_id_from_node_id(node_id);
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
     rv         = manager_unreg_adapter(manager, adapter_id);
     return rv;
 }
@@ -1175,9 +1179,10 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
             adapter_id_t    adapter_id;
             const char *    adapter_name;
 
-            adapter_name        = neu_adapter_get_name(reg_entity->adapter);
-            adapter_id          = neu_adapter_get_id(reg_entity->adapter);
-            node_info.node_id   = adapter_id_to_node_id(adapter_id);
+            adapter_name = neu_adapter_get_name(reg_entity->adapter);
+            adapter_id   = neu_adapter_get_id(reg_entity->adapter);
+            node_info.node_id =
+                neu_manager_adapter_id_to_node_id(manager, adapter_id);
             node_info.node_name = strdup(adapter_name);
             vector_push_back(result_nodes, &node_info);
         }
@@ -1207,8 +1212,10 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    src_adapter_id = adapter_id_from_node_id(cmd->src_node_id);
-    dst_adapter_id = adapter_id_from_node_id(cmd->dst_node_id);
+    src_adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
+    dst_adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, cmd->dst_node_id);
     src_reg_entity =
         find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
     dst_reg_entity =
@@ -1239,7 +1246,7 @@ int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id = adapter_id_from_node_id(node_id);
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
         log_error("Can't find matched registered adapter");
@@ -1277,8 +1284,10 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    src_adapter_id = adapter_id_from_node_id(cmd->src_node_id);
-    dst_adapter_id = adapter_id_from_node_id(cmd->dst_node_id);
+    src_adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
+    dst_adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, cmd->dst_node_id);
     src_reg_entity =
         find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
     dst_reg_entity =
@@ -1325,7 +1334,7 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id = adapter_id_from_node_id(node_id);
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
     VECTOR_FOR_EACH(&manager->reg_adapters, iter)
     {
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
@@ -1353,7 +1362,7 @@ neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
 
     tag_table = NULL;
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id = adapter_id_from_node_id(node_id);
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
     VECTOR_FOR_EACH(&manager->reg_adapters, iter)
     {
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);

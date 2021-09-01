@@ -20,6 +20,7 @@
 #ifndef NEURON_MANAGER_H
 #define NEURON_MANAGER_H
 
+#include "adapter/adapter_info.h"
 #include "neu_adapter.h"
 
 #define DEFAULT_ADAPTER_REG_COUNT 8
@@ -49,4 +50,8 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
 
 neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
                                                  neu_node_id_t  node_id);
+neu_node_id_t        neu_manager_adapter_id_to_node_id(neu_manager_t *manager,
+                                                       adapter_id_t   adapter_id);
+adapter_id_t         neu_manager_adapter_id_from_node_id(neu_manager_t *manager,
+                                                         neu_node_id_t  node_id);
 #endif
