@@ -16,40 +16,34 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-#ifndef _NEU_JSON_API_READ_H_
-#define _NEU_JSON_API_READ_H_
+#ifndef _NEU_JSON_API_TAG_GROUP_H_
+#define _NEU_JSON_API_TAG_GROUP_H_
 
 #include <stdint.h>
 
 #include "neu_json_parser.h"
 
-struct neu_parse_read_req_name {
+struct neu_paser_read_tag_group_list_req {
+    enum neu_parse_function function;
+    char *                  uuid;
+    char *                  config;
+};
+
+struct neu_paser_read_tag_group_list_name {
     char *name;
 };
 
-struct neu_parse_read_req {
-    enum neu_parse_function         function;
-    char *                          uuid;
-    char *                          group;
-    int                             n_name;
-    struct neu_parse_read_req_name *names;
+struct neu_paser_read_tag_group_list_res {
+    enum neu_parse_function                    function;
+    char *                                     uuid;
+    int                                        error;
+    int                                        n_group;
+    struct neu_paser_read_tag_group_list_name *names;
 };
 
-struct neu_parse_read_res_tag {
-    char *  name;
-    uint8_t type;
-    int64_t timestamp;
-    double  value;
-};
-struct neu_parse_read_res {
-    enum neu_parse_function        function;
-    char *                         uuid;
-    int                            error;
-    int                            n_tag;
-    struct neu_parse_read_res_tag *tags;
-};
-
-int neu_parse_decode_read_req(char *buf, struct neu_parse_read_req **req);
-int neu_parse_encode_read_res(struct neu_parse_read_res *res, char **buf);
+int neu_paser_decode_read_tag_group_list_req(
+    char *buf, struct neu_paser_read_tag_group_list_req **result);
+int neu_parse_encode_read_tag_group_list_res(
+    struct neu_paser_read_tag_group_list_res *res, char **buf);
 
 #endif

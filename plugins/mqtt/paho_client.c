@@ -1,3 +1,22 @@
+/**
+ * NEURON IIoT System for Industry 4.0
+ * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -551,6 +570,34 @@ client_error paho_client_publish(paho_client_t *client, const char *topic,
     msg.retained   = 0;
 
     error = MQTTAsync_sendMessage(client->async, topic, &msg, &opts);
+    if (MQTTASYNC_SUCCESS != error) {
+        log_error("Failed to start sendMessage, return code %d", error);
+        return error;
+    }
+    return ClientSuccess;
+}
+
+client_error paho_client_publish2(paho_client_t *client, const char *topic,
+                                  int qos, unsigned char *payload, size_t len)
+{
+    if (NULL == client) {
+        return ClientIsNULL;
+    }
+
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message         msg  = MQTTAsync_message_initializer;
+
+    opts.onSuccess = on_send;
+    opts.onFailure = on_send_failure;
+    opts.context   = client;
+
+    msg.payload    = payload;
+    msg.payloadlen = len;
+    msg.qos        = qos;
+    msg.retained   = 0;
+
+    client_error error =
+        MQTTAsync_sendMessage(client->async, topic, &msg, &opts);
     if (MQTTASYNC_SUCCESS != error) {
         log_error("Failed to start sendMessage, return code %d", error);
         return error;
