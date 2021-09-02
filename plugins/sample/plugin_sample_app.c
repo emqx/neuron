@@ -181,7 +181,6 @@ get_grp_configs_retry:
     read_req.grp_config =
         (neu_taggrp_config_t *) neu_taggrp_cfg_ref(grp_config);
     read_req.dst_node_id = dst_node_id;
-    read_req.addr        = 3;
     cmd.req_type         = NEU_REQRESP_READ_DATA;
     cmd.req_id           = plugin_get_event_id(plugin);
     cmd.buf              = (void *) &read_req;
@@ -200,7 +199,6 @@ get_grp_configs_retry:
     write_req.grp_config =
         (neu_taggrp_config_t *) neu_taggrp_cfg_ref(grp_config);
     write_req.dst_node_id = dst_node_id;
-    write_req.addr        = 3;
     write_req.data_var    = data_var;
     cmd1.req_type         = NEU_REQRESP_WRITE_DATA;
     cmd1.req_id           = plugin_get_event_id(plugin);
