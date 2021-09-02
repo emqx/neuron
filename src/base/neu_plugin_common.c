@@ -25,6 +25,8 @@
 
 static uint32_t plugin_get_event_id(neu_plugin_common_t *common);
 
+#define NEU_PLUGIN_MAGIC_NUMBER 0x43474d50 // a string "PMGC"
+
 #define PLUGIN_CALL_CMD(plugin, type, req_buff, resp_struct, func)            \
     {                                                                         \
         neu_request_t        cmd    = { 0 };                                  \
@@ -50,18 +52,21 @@ static uint32_t plugin_get_event_id(neu_plugin_common_t *common);
 
 static uint32_t plugin_get_event_id(neu_plugin_common_t *common)
 {
-    common->event_id += 3;
+    common->event_id += 3; // for avoid check event_id == 0
     return common->event_id;
 }
 
 void neu_plugin_common_init(neu_plugin_common_t *common)
 {
-    common->magic = 0xffffffff;
+    common->event_id = 1;
+    common->magic    = NEU_PLUGIN_MAGIC_NUMBER;
 }
 
-int neu_plugin_common_check(neu_plugin_t *plugin)
+bool neu_plugin_common_check(neu_plugin_t *plugin)
 {
-    return neu_plugin_to_plugin_common(plugin)->magic == 0xffffffff ? 0 : -1;
+    return neu_plugin_to_plugin_common(plugin)->magic == NEU_PLUGIN_MAGIC_NUMBER
+        ? true
+        : false;
 }
 
 neu_datatag_table_t *neu_plugin_get_datatags_table(neu_plugin_t *plugin,

@@ -70,7 +70,7 @@ neu_plugin_to_plugin_common(neu_plugin_t *plugin)
 }
 
 void neu_plugin_common_init(neu_plugin_common_t *common);
-int  neu_plugin_common_check(neu_plugin_t *plugin);
+bool neu_plugin_common_check(neu_plugin_t *plugin);
 
 neu_datatag_table_t *neu_plugin_get_datatags_table(neu_plugin_t *plugin,
                                                    neu_node_id_t ndoe_id);

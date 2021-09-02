@@ -819,8 +819,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
         neu_panic("Can't to open plugin(%s)", plugin_module->module_name);
     }
 
-    if (neu_plugin_common_check(plugin) != 0) {
-        neu_panic("Check plugin common magic error, %s",
+    if (!neu_plugin_common_check(plugin)) {
+        neu_panic("Failed to check if plugin is valid, %s",
                   plugin_module->module_name);
     }
 
