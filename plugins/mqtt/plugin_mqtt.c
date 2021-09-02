@@ -230,7 +230,6 @@ static int plugin_adapter_write_command(neu_plugin_t *  plugin,
     write_req.grp_config =
         (neu_taggrp_config_t *) neu_taggrp_cfg_ref(group_config);
     write_req.dst_node_id = dest_node_id;
-    write_req.addr        = 3;
     write_req.data_var    = data_var;
     cmd1.req_type         = NEU_REQRESP_WRITE_DATA;
     cmd1.req_id           = plugin_get_event_id(plugin);

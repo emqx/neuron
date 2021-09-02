@@ -196,7 +196,6 @@ static void adapter_loop(void *arg)
                 neu_reqresp_read_t read_req;
                 read_req.grp_config  = cmd_ptr->grp_config;
                 read_req.dst_node_id = cmd_ptr->dst_node_id;
-                read_req.addr        = cmd_ptr->addr;
 
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);
@@ -220,7 +219,6 @@ static void adapter_loop(void *arg)
                 neu_reqresp_write_t write_req;
                 write_req.grp_config  = cmd_ptr->grp_config;
                 write_req.dst_node_id = cmd_ptr->dst_node_id;
-                write_req.addr        = cmd_ptr->addr;
                 void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
                 size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
                 write_req.data_var    = neu_variable_deserialize(buf, buf_len);
@@ -296,7 +294,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             cmd_ptr->sender_id   = adapter->id;
             cmd_ptr->dst_node_id = read_cmd->dst_node_id;
             cmd_ptr->grp_config  = read_cmd->grp_config;
-            cmd_ptr->addr        = read_cmd->addr;
             nng_sendmsg(adapter->sock, read_msg, 0);
         }
         break;
@@ -327,7 +324,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             cmd_ptr->sender_id = adapter->id;
             cmd_ptr->dst_node_id = write_cmd->dst_node_id;
             cmd_ptr->grp_config  = write_cmd->grp_config;
-            cmd_ptr->addr        = write_cmd->addr;
             cmd_ptr->databuf     = databuf;
             nng_sendmsg(adapter->sock, write_msg, 0);
         }
@@ -663,7 +659,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         resp_node_id->node_id =
             neu_manager_adapter_id_to_node_id(adapter->manager, adapter->id);
 
-        result->resp_type = NEU_REQRESP_SELF_NODE_ID;
+        result->resp_type = NEU_REQRESP_NODE_ID;
         result->req_id    = cmd->req_id;
         result->buf_len   = sizeof(neu_reqresp_node_id_t);
         result->buf       = resp_node_id;
