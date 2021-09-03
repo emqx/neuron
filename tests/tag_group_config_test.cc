@@ -2,8 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "parser/neu_json_parser.h"
-#include "parser/neu_json_read.h"
-#include "parser/neu_json_write.h"
+#include "parser/neu_json_tag_group.h"
 
 TEST(TagGroupConfigTest, neu_paser_decode_read_tag_group_list_req)
 {

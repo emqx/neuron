@@ -29,6 +29,7 @@
 #include "neu_json_login.h"
 #include "neu_json_parser.h"
 #include "neu_json_read.h"
+#include "neu_json_tag_group.h"
 #include "neu_json_updata_tag.h"
 #include "neu_json_write.h"
 
