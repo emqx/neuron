@@ -22,28 +22,12 @@
 
 #include <nng/nng.h>
 
-typedef struct {
-    char *key;
-    char *value;
-} http_header_kv_t;
-
-#define HTTP_HEADER_ADD_JSON(kv) \
-    (kv).key   = "Content-Type"; \
-    (kv).value = "application/json";
-
-typedef struct {
-    nng_aio *         aio;
-    char *            content;
-    http_header_kv_t *headers;
-    int               header_size;
-} http_response_t;
-
 int http_get_body(nng_aio *aio, void **data, size_t *data_size);
-int http_ok(http_response_t *response);
-int http_created(http_response_t *response);
-int http_bad_request(http_response_t *response);
-int http_unauthorized(http_response_t *response);
-int http_not_found(http_response_t *response);
-int http_conflict(http_response_t *response);
+int http_ok(nng_aio *aio, char *content);
+int http_created(nng_aio *aio, char *content);
+int http_bad_request(nng_aio *aio, char *content);
+int http_unauthorized(nng_aio *aio, char *content);
+int http_not_found(nng_aio *aio, char *content);
+int http_conflict(nng_aio *aio, char *content);
 
 #endif

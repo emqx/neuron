@@ -24,26 +24,22 @@
 
 #include "http.h"
 
-static int response(http_response_t *response, enum nng_http_status status)
+static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {
     nng_http_res *res = NULL;
 
     nng_http_res_alloc(&res);
 
-    for (int i = 0; i < response->header_size; i++) {
-        nng_http_res_set_header(res, response->headers[i].key,
-                                response->headers[i].value);
-    }
+    nng_http_res_set_header(res, "Content-Type", "application/json");
 
-    if (strlen(response->content) > 0) {
-        nng_http_res_copy_data(res, response->content,
-                               strlen(response->content));
+    if (content != NULL && strlen(content) > 0) {
+        nng_http_res_copy_data(res, content, strlen(content));
     }
 
     nng_http_res_set_status(res, status);
 
-    nng_aio_set_output(response->aio, 0, res);
-    nng_aio_finish(response->aio, 0);
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
 
     nng_http_res_free(res);
     return 0;
@@ -61,32 +57,32 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     }
 }
 
-int http_ok(http_response_t *res)
+int http_ok(nng_aio *aio, char *content)
 {
-    return response(res, NNG_HTTP_STATUS_OK);
+    return response(aio, content, NNG_HTTP_STATUS_OK);
 }
 
-int http_created(http_response_t *res)
+int http_created(nng_aio *aio, char *content)
 {
-    return response(res, NNG_HTTP_STATUS_CREATED);
+    return response(aio, content, NNG_HTTP_STATUS_CREATED);
 }
 
-int http_bad_request(http_response_t *res)
+int http_bad_request(nng_aio *aio, char *content)
 {
-    return response(res, NNG_HTTP_STATUS_BAD_GATEWAY);
+    return response(aio, content, NNG_HTTP_STATUS_BAD_GATEWAY);
 }
 
-int http_unauthorized(http_response_t *res)
+int http_unauthorized(nng_aio *aio, char *content)
 {
-    return response(res, NNG_HTTP_STATUS_UNAUTHORIZED);
+    return response(aio, content, NNG_HTTP_STATUS_UNAUTHORIZED);
 }
 
-int http_not_found(http_response_t *res)
+int http_not_found(nng_aio *aio, char *content)
 {
-    return response(res, NNG_HTTP_STATUS_NOT_FOUND);
+    return response(aio, content, NNG_HTTP_STATUS_NOT_FOUND);
 }
 
-int http_conflict(http_response_t *res)
+int http_conflict(nng_aio *aio, char *content)
 {
-    return response(res, NNG_HTTP_STATUS_CONFLICT);
+    return response(aio, content, NNG_HTTP_STATUS_CONFLICT);
 }

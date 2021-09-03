@@ -33,7 +33,6 @@
 struct neu_plugin {
     neu_plugin_common_t common;
     nng_http_server *   server;
-    uint32_t            new_event_id;
 };
 
 /*
@@ -131,7 +130,6 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
-    plugin->new_event_id             = 1;
 
     int ret = nng_url_parse(&url, "http://0.0.0.0:7000");
     if (ret != 0) {
@@ -143,7 +141,7 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
-    neu_rest_init_all_handler(&rest_handlers, &n_handler);
+    neu_rest_init_all_handler(&rest_handlers, &n_handler, plugin);
     for (uint32_t i = 0; i < n_handler; i++) {
         rest_add_handler(server, &rest_handlers[i]);
     }
