@@ -36,6 +36,68 @@
 #include "neu_panic.h"
 #include "neu_plugin.h"
 
+#define ADAPTER_SEND_MSG(adapter, cmd, rv, msg_type, cmd_type, reqresp_type, \
+                         func)                                               \
+    {                                                                        \
+        size_t   msg_size = 0;                                               \
+        nng_msg *msg      = NULL;                                            \
+        msg_size          = msg_inplace_data_get_size(sizeof(cmd_type));     \
+        (rv)              = nng_msg_alloc(&msg, msg_size);                   \
+        if ((rv) == 0) {                                                     \
+            message_t *   msg_ptr;                                           \
+            cmd_type *    cmd_ptr;                                           \
+            reqresp_type *reqresp_cmd;                                       \
+            assert((cmd)->buf_len == sizeof(sizeof(reqresp_type)));          \
+            reqresp_cmd = (reqresp_type *) (cmd)->buf;                       \
+            msg_ptr     = (message_t *) nng_msg_body(msg);                   \
+            msg_inplace_data_init(msg_ptr, (msg_type), sizeof(cmd_type));    \
+            cmd_ptr              = (cmd_type *) msg_get_buf_ptr(msg_ptr);    \
+            cmd_ptr->sender_id   = (adapter)->id;                            \
+            cmd_ptr->dst_node_id = reqresp_cmd->dst_node_id;                 \
+            cmd_ptr->grp_config  = reqresp_cmd->grp_config;                  \
+            { func };                                                        \
+            nng_sendmsg((adapter)->sock, msg, 0);                            \
+        }                                                                    \
+    }
+
+#define _ADAPTER_RESP(cmd, ret_type, req_type, rv, resp_type_code, p_result, \
+                      func)                                                  \
+    {                                                                        \
+        neu_response_t *result;                                              \
+        assert((cmd)->buf_len == sizeof(req_type));                          \
+        result = malloc(sizeof(neu_response_t));                             \
+        if (result == NULL) {                                                \
+            log_error("Failed to allocate result for resp cmd");             \
+            rv = -1;                                                         \
+        } else {                                                             \
+            req_type *req_cmd = (req_type *) (cmd)->buf;                     \
+            { func };                                                        \
+            result->resp_type = (resp_type_code);                            \
+            result->req_id    = (cmd)->req_id;                               \
+            result->buf_len   = sizeof(ret_type);                            \
+            result->buf       = (void *) ret;                                \
+            if ((p_result) != NULL) {                                        \
+                *(p_result) = result;                                        \
+            }                                                                \
+        }                                                                    \
+    }
+
+#define ADAPTER_RESP_CODE(cmd, ret_type, req_type, rv, resp_type_code,       \
+                          p_result, func)                                    \
+    {                                                                        \
+        ret_type ret;                                                        \
+        _ADAPTER_RESP(cmd, ret_type, req_type, rv, resp_type_code, p_result, \
+                      func)                                                  \
+    }
+
+#define ADAPTER_RESP_CMD(cmd, ret_type, req_type, rv, resp_type_code,        \
+                         p_result, func)                                     \
+    {                                                                        \
+        ret_type *ret;                                                       \
+        _ADAPTER_RESP(cmd, ret_type, req_type, rv, resp_type_code, p_result, \
+                      func)                                                  \
+    }
+
 typedef enum adapter_state {
     ADAPTER_STATE_NULL,
     ADAPTER_STATE_IDLE,
@@ -275,397 +337,197 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     log_info("Get command from plugin");
     switch (cmd->req_type) {
     case NEU_REQRESP_READ_DATA: {
-        size_t   msg_size;
-        nng_msg *read_msg;
-        msg_size = msg_inplace_data_get_size(sizeof(read_data_cmd_t));
-        rv       = nng_msg_alloc(&read_msg, msg_size);
-        if (rv == 0) {
-            message_t *         msg_ptr;
-            read_data_cmd_t *   cmd_ptr;
-            neu_reqresp_read_t *read_cmd;
-
-            assert(cmd->buf_len == sizeof(neu_reqresp_read_t));
-            read_cmd = (neu_reqresp_read_t *) cmd->buf;
-            msg_ptr  = (message_t *) nng_msg_body(read_msg);
-            msg_inplace_data_init(msg_ptr, MSG_CMD_READ_DATA,
-                                  sizeof(read_data_cmd_t));
-
-            cmd_ptr              = (read_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
-            cmd_ptr->sender_id   = adapter->id;
-            cmd_ptr->dst_node_id = read_cmd->dst_node_id;
-            cmd_ptr->grp_config  = read_cmd->grp_config;
-            nng_sendmsg(adapter->sock, read_msg, 0);
-        }
+        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_READ_DATA, read_data_cmd_t,
+                         neu_reqresp_read_t, {});
         break;
     }
 
     case NEU_REQRESP_WRITE_DATA: {
-        size_t   msg_size;
-        nng_msg *write_msg;
-        msg_size = msg_inplace_data_get_size(sizeof(write_data_cmd_t));
-        rv       = nng_msg_alloc(&write_msg, msg_size);
-        if (rv == 0) {
-            message_t *          msg_ptr;
-            write_data_cmd_t *   cmd_ptr;
-            neu_reqresp_write_t *write_cmd;
-            void *               buf;
-            size_t               buf_len;
-            core_databuf_t *     databuf;
+        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_WRITE_DATA, write_data_cmd_t,
+                         neu_reqresp_write_t, {
+                             void *          buf;
+                             size_t          buf_len;
+                             core_databuf_t *databuf;
 
-            assert(cmd->buf_len == sizeof(neu_reqresp_write_t));
-            write_cmd = (neu_reqresp_write_t *) cmd->buf;
-            buf_len   = neu_variable_serialize(write_cmd->data_var, &buf);
-            databuf   = core_databuf_new_with_buf(buf, buf_len);
-            msg_ptr   = (message_t *) nng_msg_body(write_msg);
-            msg_inplace_data_init(msg_ptr, MSG_CMD_WRITE_DATA,
-                                  sizeof(write_data_cmd_t));
-
-            cmd_ptr            = (write_data_cmd_t *) msg_get_buf_ptr(msg_ptr);
-            cmd_ptr->sender_id = adapter->id;
-            cmd_ptr->dst_node_id = write_cmd->dst_node_id;
-            cmd_ptr->grp_config  = write_cmd->grp_config;
-            cmd_ptr->databuf     = databuf;
-            nng_sendmsg(adapter->sock, write_msg, 0);
-        }
+                             buf_len = neu_variable_serialize(
+                                 reqresp_cmd->data_var, &buf);
+                             databuf = core_databuf_new_with_buf(buf, buf_len);
+                             cmd_ptr->databuf = databuf;
+                         })
         break;
     }
 
     case NEU_REQRESP_ADD_NODE: {
-        intptr_t        ret_code;
-        neu_node_id_t   node_id;
-        neu_response_t *result;
-
-        assert(cmd->buf_len == sizeof(neu_cmd_add_node_t));
-        ret_code = NEU_ERR_SUCCESS;
-        result   = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for add nodes");
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_add_node_t *node_add_cmd;
-        node_add_cmd = (neu_cmd_add_node_t *) cmd->buf;
-        node_id      = neu_manager_add_node(adapter->manager, node_add_cmd);
-        if (node_id == 0) {
-            ret_code = NEU_ERR_FAILURE;
-        }
-
-        result->resp_type = NEU_REQRESP_ERR_CODE;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(intptr_t);
-        result->buf       = (void *) ret_code;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+        ADAPTER_RESP_CODE(
+            cmd, intptr_t, neu_cmd_add_node_t, rv, NEU_REQRESP_ERR_CODE,
+            p_result, {
+                ret = NEU_ERR_SUCCESS;
+                if (neu_manager_add_node(adapter->manager, req_cmd) == 0) {
+                    ret = NEU_ERR_FAILURE;
+                }
+            });
         break;
     }
 
     case NEU_REQRESP_DEL_NODE: {
-        intptr_t        ret_code;
-        neu_response_t *result;
-
-        assert(cmd->buf_len == sizeof(neu_cmd_del_node_t));
-        ret_code = NEU_ERR_SUCCESS;
-        result   = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for add nodes");
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_del_node_t *node_del_cmd;
-        node_del_cmd = (neu_cmd_del_node_t *) cmd->buf;
-        rv = neu_manager_del_node(adapter->manager, node_del_cmd->node_id);
-        if (rv != 0) {
-            ret_code = NEU_ERR_FAILURE;
-        }
-
-        result->resp_type = NEU_REQRESP_ERR_CODE;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(intptr_t);
-        result->buf       = (void *) ret_code;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_del_node_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = NEU_ERR_SUCCESS;
+                              rv  = neu_manager_del_node(adapter->manager,
+                                                        req_cmd->node_id);
+                              if (rv != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
         break;
     }
 
     case NEU_REQRESP_UPDATE_NODE: {
-        intptr_t        ret_code;
-        neu_response_t *result;
-
-        assert(cmd->buf_len == sizeof(neu_cmd_update_node_t));
-        ret_code = NEU_ERR_SUCCESS;
-        result   = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for update nodes");
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_update_node_t *node_update_cmd;
-        node_update_cmd = (neu_cmd_update_node_t *) cmd->buf;
-        rv = neu_manager_update_node(adapter->manager, node_update_cmd);
-        if (rv != 0) {
-            ret_code = NEU_ERR_FAILURE;
-        }
-
-        result->resp_type = NEU_REQRESP_ERR_CODE;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(intptr_t);
-        result->buf       = (void *) ret_code;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_update_node_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = NEU_ERR_SUCCESS;
+                              rv  = neu_manager_update_node(adapter->manager,
+                                                           req_cmd);
+                              if (rv != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
         break;
     }
 
     case NEU_REQRESP_GET_NODES: {
-        neu_response_t *     result;
-        neu_reqresp_nodes_t *resp_nodes;
+        ADAPTER_RESP_CMD(
+            cmd, neu_reqresp_nodes_t, neu_cmd_get_nodes_t, rv,
+            NEU_REQRESP_NODES, p_result, {
+                ret = malloc(sizeof(neu_reqresp_nodes_t));
+                if (ret == NULL) {
+                    log_error("Failed to allocate result of get nodes");
+                    rv = -1;
+                    free(result);
+                    break;
+                }
 
-        assert(cmd->buf_len == sizeof(neu_cmd_get_nodes_t));
-        resp_nodes = malloc(sizeof(neu_reqresp_nodes_t));
-        if (resp_nodes == NULL) {
-            log_error("Failed to allocate result of group configs");
-            rv = -1;
-            break;
-        }
-        result = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for get nodes");
-            free(resp_nodes);
-            rv = -1;
-            break;
-        }
+                vector_init(&ret->nodes, DEFAULT_ADAPTER_REG_COUNT,
+                            sizeof(neu_node_info_t));
+                rv = neu_manager_get_nodes(adapter->manager, req_cmd->node_type,
+                                           &ret->nodes);
+                if (rv < 0) {
+                    free(result);
+                    free(ret);
+                    rv = -1;
+                    break;
+                }
+            });
 
-        neu_cmd_get_nodes_t *nodes_cmd;
-        nodes_cmd = (neu_cmd_get_nodes_t *) cmd->buf;
-        vector_init(&resp_nodes->nodes, DEFAULT_ADAPTER_REG_COUNT,
-                    sizeof(neu_node_info_t));
-        rv = neu_manager_get_nodes(adapter->manager, nodes_cmd->node_type,
-                                   &resp_nodes->nodes);
-        if (rv < 0) {
-            free(result);
-            free(resp_nodes);
-            rv = -1;
-            break;
-        }
-        result->resp_type = NEU_REQRESP_NODES;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(neu_reqresp_nodes_t);
-        result->buf       = resp_nodes;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
         break;
     }
 
     case NEU_REQRESP_ADD_GRP_CONFIG: {
-        intptr_t        ret_code;
-        neu_response_t *result;
-
-        assert(cmd->buf_len == sizeof(neu_cmd_add_grp_config_t));
-        ret_code = NEU_ERR_SUCCESS;
-        result   = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for add group config");
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_add_grp_config_t *config_add_cmd;
-        config_add_cmd = (neu_cmd_add_grp_config_t *) cmd->buf;
-        rv = neu_manager_add_grp_config(adapter->manager, config_add_cmd);
-        if (rv != 0) {
-            ret_code = NEU_ERR_FAILURE;
-        }
-
-        result->resp_type = NEU_REQRESP_ERR_CODE;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(intptr_t);
-        result->buf       = (void *) ret_code;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_add_grp_config_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = NEU_ERR_SUCCESS;
+                              rv  = neu_manager_add_grp_config(adapter->manager,
+                                                              req_cmd);
+                              if (rv != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
         break;
     }
 
     case NEU_REQRESP_DEL_GRP_CONFIG: {
-        intptr_t        ret_code;
-        neu_response_t *result;
-
-        assert(cmd->buf_len == sizeof(neu_cmd_del_grp_config_t));
-        ret_code = NEU_ERR_SUCCESS;
-        result   = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for del group config");
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_del_grp_config_t *config_del_cmd;
-        config_del_cmd = (neu_cmd_del_grp_config_t *) cmd->buf;
-        rv             = neu_manager_del_grp_config(adapter->manager,
-                                        config_del_cmd->node_id,
-                                        config_del_cmd->config_name);
-        if (rv != 0) {
-            ret_code = NEU_ERR_FAILURE;
-        }
-
-        result->resp_type = NEU_REQRESP_ERR_CODE;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(intptr_t);
-        result->buf       = (void *) ret_code;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_del_grp_config_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = NEU_ERR_SUCCESS;
+                              rv  = neu_manager_del_grp_config(
+                                  adapter->manager, req_cmd->node_id,
+                                  req_cmd->config_name);
+                              if (rv != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
         break;
     }
 
     case NEU_REQRESP_UPDATE_GRP_CONFIG: {
-        intptr_t        ret_code;
-        neu_response_t *result;
-
-        assert(cmd->buf_len == sizeof(neu_cmd_update_grp_config_t));
-        ret_code = NEU_ERR_SUCCESS;
-        result   = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for update group config");
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_update_grp_config_t *config_update_cmd;
-        config_update_cmd = (neu_cmd_update_grp_config_t *) cmd->buf;
-        rv = neu_manager_update_grp_config(adapter->manager, config_update_cmd);
-        if (rv != 0) {
-            ret_code = NEU_ERR_FAILURE;
-        }
-
-        result->resp_type = NEU_REQRESP_ERR_CODE;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(intptr_t);
-        result->buf       = (void *) ret_code;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_update_grp_config_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = NEU_ERR_SUCCESS;
+                              rv  = neu_manager_update_grp_config(
+                                  adapter->manager, req_cmd);
+                              if (rv != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
         break;
     }
 
     case NEU_REQRESP_GET_GRP_CONFIGS: {
-        neu_response_t *           result;
-        neu_reqresp_grp_configs_t *resp_grp_configs;
+        ADAPTER_RESP_CMD(
+            cmd, neu_reqresp_grp_configs_t, neu_cmd_get_grp_configs_t, rv,
+            NEU_REQRESP_GRP_CONFIGS, p_result, {
+                ret = malloc(sizeof(neu_reqresp_grp_configs_t));
+                if (ret == NULL) {
+                    log_error("Failed to allocate result of get grp configs");
+                    rv = -1;
+                    free(result);
+                    break;
+                }
 
-        assert(cmd->buf_len == sizeof(neu_cmd_get_grp_configs_t));
-        resp_grp_configs = malloc(sizeof(neu_reqresp_grp_configs_t));
-        if (resp_grp_configs == NULL) {
-            log_error("Failed to allocate result of group configs");
-            rv = -1;
-            break;
-        }
-        result = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for get group configs");
-            free(resp_grp_configs);
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_get_grp_configs_t *configs_cmd;
-        configs_cmd = (neu_cmd_get_grp_configs_t *) cmd->buf;
-        vector_init(&resp_grp_configs->grp_configs, DEFAULT_TAG_GROUP_COUNT,
-                    sizeof(neu_taggrp_config_t *));
-        rv = neu_manager_get_grp_configs(adapter->manager, configs_cmd->node_id,
-                                         &resp_grp_configs->grp_configs);
-        if (rv < 0) {
-            free(result);
-            free(resp_grp_configs);
-            rv = -1;
-            break;
-        }
-        result->resp_type = NEU_REQRESP_GRP_CONFIGS;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(neu_reqresp_grp_configs_t);
-        result->buf       = resp_grp_configs;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+                vector_init(&ret->grp_configs, DEFAULT_TAG_GROUP_COUNT,
+                            sizeof(neu_taggrp_config_t *));
+                rv = neu_manager_get_grp_configs(
+                    adapter->manager, req_cmd->node_id, &ret->grp_configs);
+                if (rv < 0) {
+                    free(result);
+                    free(ret);
+                    rv = -1;
+                    break;
+                }
+            });
         break;
     }
 
     case NEU_REQRESP_GET_DATATAGS: {
-        neu_response_t *        result;
-        neu_reqresp_datatags_t *resp_datatags;
+        ADAPTER_RESP_CMD(
+            cmd, neu_reqresp_datatags_t, neu_cmd_get_datatags_t, rv,
+            NEU_REQRESP_DATATAGS, p_result, {
+                ret = malloc(sizeof(neu_reqresp_datatags_t));
+                if (ret == NULL) {
+                    log_error("Failed to allocate result of get datatags");
+                    rv = -1;
+                    free(result);
+                    break;
+                }
+                neu_datatag_table_t *tag_table = neu_manager_get_datatag_tbl(
+                    adapter->manager, req_cmd->node_id);
 
-        assert(cmd->buf_len == sizeof(neu_cmd_get_datatags_t));
-        resp_datatags = malloc(sizeof(neu_reqresp_datatags_t));
-        if (resp_datatags == NULL) {
-            log_error("Failed to allocate result of datatags");
-            rv = -1;
-            break;
-        }
-        result = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for get datatags");
-            free(resp_datatags);
-            rv = -1;
-            break;
-        }
-
-        neu_cmd_get_datatags_t *datatags_cmd;
-        neu_datatag_table_t *   tag_table;
-        datatags_cmd = (neu_cmd_get_datatags_t *) cmd->buf;
-        tag_table    = neu_manager_get_datatag_tbl(adapter->manager,
-                                                datatags_cmd->node_id);
-        if (tag_table == NULL) {
-            free(result);
-            free(resp_datatags);
-            rv = -1;
-            break;
-        }
-        resp_datatags->datatag_tbl = tag_table;
-
-        result->resp_type = NEU_REQRESP_DATATAGS;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(neu_reqresp_datatags_t);
-        result->buf       = resp_datatags;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+                if (tag_table == NULL) {
+                    free(result);
+                    free(ret);
+                    rv = -1;
+                    break;
+                }
+            });
         break;
     }
 
     case NEU_REQRESP_SELF_NODE_ID: {
-        neu_response_t *       result;
-        neu_reqresp_node_id_t *resp_node_id;
+        ADAPTER_RESP_CMD(
+            cmd, neu_reqresp_node_id_t, neu_cmd_self_node_id_t, rv,
+            NEU_REQRESP_NODE_ID, p_result, {
+                (void) req_cmd;
+                ret = malloc(sizeof(neu_reqresp_node_id_t));
+                if (ret == NULL) {
+                    log_error("Failed to allocate result of get node id");
+                    rv = -1;
+                    free(result);
+                    break;
+                }
 
-        assert(cmd->buf_len == sizeof(neu_cmd_self_node_id_t));
-        resp_node_id = malloc(sizeof(neu_reqresp_node_id_t));
-        if (resp_node_id == NULL) {
-            log_error("Failed to allocate result of node id");
-            rv = -1;
-            break;
-        }
-        result = malloc(sizeof(neu_response_t));
-        if (result == NULL) {
-            log_error("Failed to allocate result for get node id");
-            free(resp_node_id);
-            rv = -1;
-            break;
-        }
-
-        resp_node_id->node_id =
-            neu_manager_adapter_id_to_node_id(adapter->manager, adapter->id);
-
-        result->resp_type = NEU_REQRESP_NODE_ID;
-        result->req_id    = cmd->req_id;
-        result->buf_len   = sizeof(neu_reqresp_node_id_t);
-        result->buf       = resp_node_id;
-        if (p_result != NULL) {
-            *p_result = result;
-        }
+                ret->node_id = neu_manager_adapter_id_to_node_id(
+                    adapter->manager, adapter->id);
+            });
         break;
     }
 
