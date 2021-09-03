@@ -47,7 +47,7 @@
             message_t *   msg_ptr;                                           \
             cmd_type *    cmd_ptr;                                           \
             reqresp_type *reqresp_cmd;                                       \
-            assert((cmd)->buf_len == sizeof(sizeof(reqresp_type)));          \
+            assert((cmd)->buf_len == sizeof(reqresp_type));                  \
             reqresp_cmd = (reqresp_type *) (cmd)->buf;                       \
             msg_ptr     = (message_t *) nng_msg_body(msg);                   \
             msg_inplace_data_init(msg_ptr, (msg_type), sizeof(cmd_type));    \
