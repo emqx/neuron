@@ -58,6 +58,11 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_UPDATE_GRP_CONFIG,
     NEU_REQRESP_GET_GRP_CONFIGS,
     NEU_REQRESP_GRP_CONFIGS,
+    NEU_REQRESP_ADD_PLUGIN_LIB,
+    NEU_REQRESP_DEL_PLUGIN_LIB,
+    NEU_REQRESP_UPDATE_PLUGIN_LIB,
+    NEU_REQRESP_GET_PLUGIN_LIBS,
+    NEU_REQRESP_PLUGIN_LIBS,
     NEU_REQRESP_GET_DATATAGS,
     NEU_REQRESP_DATATAGS,
     NEU_REQRESP_SELF_NODE_ID,
@@ -164,6 +169,49 @@ typedef struct neu_cmd_get_grp_configs {
 typedef struct neu_reqresp_grp_configs {
     vector_t grp_configs; // vector of neu_taggrp_config_t pointer
 } neu_reqresp_grp_configs_t;
+
+typedef struct plugin_lib_info {
+    plugin_id_t     plugin_id;
+    plugin_kind_e   plugin_kind;
+    neu_node_type_e node_type;
+    // The buffer is reference from plugin entity of register table,
+    // don't free it
+    const char *plugin_name;
+    // The buffer is reference from plugin entity of register table,
+    // don't free it
+    const char *plugin_lib_name;
+} plugin_lib_info_t;
+
+/* NEU_REQRESP_ADD_PLUGIN_LIB */
+typedef struct neu_cmd_add_plugin_lib_t {
+    plugin_kind_e   plugin_kind;
+    neu_node_type_e node_type;
+    const char *    plugin_name;
+    const char *    plugin_lib_name;
+} neu_cmd_add_plugin_lib_t;
+
+/* NEU_REQRESP_DEL_PLUGIN_LIB */
+typedef struct neu_cmd_del_plugin_lib {
+    plugin_id_t plugin_id;
+} neu_cmd_del_plugin_lib_t;
+
+/* NEU_REQRESP_UPDATE_PLUGIN_LIB */
+typedef struct neu_cmd_update_plugin_lib {
+    plugin_kind_e   plugin_kind;
+    neu_node_type_e node_type;
+    const char *    plugin_name;
+    const char *    plugin_lib_name;
+} neu_cmd_update_plugin_lib_t;
+
+/* NEU_REQRESP_GET_PLUGIN_LIBS */
+typedef struct neu_cmd_get_plugin_libs {
+    uint32_t reserved;
+} neu_cmd_get_plugin_libs_t;
+
+/* NEU_REQRESP_PLUGIN_LIBS */
+typedef struct neu_reqresp_plugin_libs {
+    vector_t plugin_libs; // vector of neu_plugin_lib_info_t
+} neu_reqresp_plugin_libs_t;
 
 /* NEU_REQRESP_GET_DATATAGS */
 typedef struct neu_cmd_get_datatags {

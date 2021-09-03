@@ -57,11 +57,61 @@ static void *sample_app_work_loop(void *arg)
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
 
-    /* example of add node */
-    neu_request_t      sync_cmd;
-    neu_cmd_add_node_t node_add_cmd;
-    neu_response_t *   result = NULL;
+    /* example of add plugin lib */
+    neu_request_t            sync_cmd;
+    neu_response_t *         result = NULL;
+    neu_cmd_add_plugin_lib_t plugin_add_cmd;
 
+    plugin_add_cmd.plugin_kind     = PLUGIN_KIND_SYSTEM;
+    plugin_add_cmd.node_type       = NEU_NODE_TYPE_DRIVER;
+    plugin_add_cmd.plugin_name     = "sample-drv-plugin";
+    plugin_add_cmd.plugin_lib_name = "libplugin-sample-drv.so";
+
+    sync_cmd.req_type = NEU_REQRESP_ADD_PLUGIN_LIB;
+    sync_cmd.req_id   = plugin_get_event_id(plugin);
+    sync_cmd.buf      = (void *) &plugin_add_cmd;
+    sync_cmd.buf_len  = sizeof(neu_cmd_add_plugin_lib_t);
+    log_info("Add a new plugin lib");
+    rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
+    if (rv < 0) {
+        log_error("Failed to add plugin lib with name: %s",
+                  plugin_add_cmd.plugin_name);
+    }
+    log_info("Result of add command is %d", (intptr_t) result->buf);
+    free(result);
+
+    /* example of get plugin libs */
+    neu_cmd_get_plugin_libs_t  get_plugins_cmd;
+    neu_reqresp_plugin_libs_t *resp_plugins;
+
+    result            = NULL;
+    sync_cmd.req_type = NEU_REQRESP_GET_PLUGIN_LIBS;
+    sync_cmd.req_id   = plugin_get_event_id(plugin);
+    sync_cmd.buf      = (void *) &get_plugins_cmd;
+    sync_cmd.buf_len  = sizeof(neu_cmd_get_plugin_libs_t);
+    log_info("Get list of driver plugins");
+    rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
+    if (rv < 0) {
+        return NULL;
+    }
+
+    plugin_lib_info_t *plugin_info;
+    plugin_id_t        plugin_id;
+    assert(result->buf_len == sizeof(neu_reqresp_plugin_libs_t));
+    resp_plugins = (neu_reqresp_plugin_libs_t *) result->buf;
+    plugin_info =
+        (plugin_lib_info_t *) vector_get(&resp_plugins->plugin_libs, 0);
+    plugin_id = plugin_info->plugin_id;
+    log_info("The first plugin(%d) of plugin list, name:%s", plugin_id,
+             plugin_info->plugin_name);
+    vector_uninit(&resp_plugins->plugin_libs);
+    free(resp_plugins);
+    free(result);
+
+    /* example of add node */
+    neu_cmd_add_node_t node_add_cmd;
+
+    result                        = NULL;
     node_add_cmd.node_type        = NEU_NODE_TYPE_DRIVER;
     node_add_cmd.adapter_name     = "sample-driver-adapter";
     node_add_cmd.plugin_name      = "sample-drv-plugin";

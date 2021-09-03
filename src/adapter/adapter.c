@@ -358,14 +358,16 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_ADD_NODE: {
-        ADAPTER_RESP_CODE(
-            cmd, intptr_t, neu_cmd_add_node_t, rv, NEU_REQRESP_ERR_CODE,
-            p_result, {
-                ret = NEU_ERR_SUCCESS;
-                if (neu_manager_add_node(adapter->manager, req_cmd) == 0) {
-                    ret = NEU_ERR_FAILURE;
-                }
-            });
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_add_node_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              neu_node_id_t node_id;
+                              ret = NEU_ERR_SUCCESS;
+                              if (neu_manager_add_node(adapter->manager,
+                                                       req_cmd,
+                                                       &node_id) != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
         break;
     }
 
@@ -485,6 +487,74 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     break;
                 }
             });
+        break;
+    }
+
+    case NEU_REQRESP_ADD_PLUGIN_LIB: {
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_add_plugin_lib_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              plugin_id_t plugin_id;
+                              ret = NEU_ERR_SUCCESS;
+                              if (neu_manager_add_plugin_lib(adapter->manager,
+                                                             req_cmd,
+                                                             &plugin_id) != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
+        break;
+    }
+
+    case NEU_REQRESP_DEL_PLUGIN_LIB: {
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_del_plugin_lib_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = NEU_ERR_SUCCESS;
+                              rv  = neu_manager_del_plugin_lib(
+                                  adapter->manager, req_cmd->plugin_id);
+                              if (rv != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
+        break;
+    }
+
+    case NEU_REQRESP_UPDATE_PLUGIN_LIB: {
+        ADAPTER_RESP_CODE(cmd, intptr_t, neu_cmd_update_plugin_lib_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = NEU_ERR_SUCCESS;
+                              rv  = neu_manager_update_plugin_lib(
+                                  adapter->manager, req_cmd);
+                              if (rv != 0) {
+                                  ret = NEU_ERR_FAILURE;
+                              }
+                          });
+        break;
+    }
+
+    case NEU_REQRESP_GET_PLUGIN_LIBS: {
+        ADAPTER_RESP_CMD(
+            cmd, neu_reqresp_plugin_libs_t, neu_cmd_get_plugin_libs_t, rv,
+            NEU_REQRESP_PLUGIN_LIBS, p_result, {
+                (void) req_cmd;
+                ret = malloc(sizeof(neu_reqresp_plugin_libs_t));
+                if (ret == NULL) {
+                    log_error("Failed to allocate result of get nodes");
+                    rv = -1;
+                    free(result);
+                    break;
+                }
+
+                vector_init(&ret->plugin_libs, DEFAULT_ADAPTER_REG_COUNT,
+                            sizeof(plugin_lib_info_t));
+                rv = neu_manager_get_plugin_libs(adapter->manager,
+                                                 &ret->plugin_libs);
+                if (rv < 0) {
+                    free(result);
+                    free(ret);
+                    rv = -1;
+                    break;
+                }
+            });
+
         break;
     }
 

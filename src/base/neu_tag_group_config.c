@@ -17,9 +17,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_TAG_GROUP_CONFIG_H
-#define NEURON_TAG_GROUP_CONFIG_H
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -223,4 +220,3 @@ const vector_t *neu_taggrp_cfg_ref_datatag_ids(neu_taggrp_config_t *grp_config)
 
     return &grp_config->datatag_ids;
 }
-#endif

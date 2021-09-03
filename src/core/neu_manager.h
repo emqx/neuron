@@ -32,8 +32,8 @@ void           neu_manager_destroy(neu_manager_t *manager);
 
 const char *neu_manager_get_url(neu_manager_t *manager);
 
-neu_node_id_t neu_manager_add_node(neu_manager_t *     manager,
-                                   neu_cmd_add_node_t *cmd);
+int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
+                         neu_node_id_t *p_node_id);
 int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id);
 int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd);
 int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
@@ -47,6 +47,15 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
                                   neu_cmd_update_grp_config_t *cmd);
 int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
                                 vector_t *result_grp_configs);
+
+int neu_manager_add_plugin_lib(neu_manager_t *           manager,
+                               neu_cmd_add_plugin_lib_t *cmd,
+                               plugin_id_t *             p_plugin_id);
+int neu_manager_del_plugin_lib(neu_manager_t *manager, plugin_id_t plugin_id);
+int neu_manager_update_plugin_lib(neu_manager_t *              manager,
+                                  neu_cmd_update_plugin_lib_t *cmd);
+int neu_manager_get_plugin_libs(neu_manager_t *manager,
+                                vector_t *     plugin_lib_infos);
 
 neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
                                                  neu_node_id_t  node_id);

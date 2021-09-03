@@ -197,6 +197,7 @@ static plugin_id_t plugin_manager_get_plugin_id(plugin_manager_t *plugin_mng,
     index = find_plugin_by_name(plugins, param->plugin_name);
     if (index != SIZE_MAX) {
         plugin_id.id_val = 0;
+        nng_mtx_unlock(plugin_mng->mtx);
         return plugin_id;
     }
     nng_mtx_unlock(plugin_mng->mtx);
@@ -280,24 +281,29 @@ void plugin_manager_destroy(plugin_manager_t *plugin_mng)
 
 /* If there already has same plugin registered, then return 0
  */
-plugin_id_t plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
-                                      const plugin_reg_param_t *param)
+int plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
+                              const plugin_reg_param_t *param,
+                              plugin_id_t *             p_plugin_id)
 {
     int                 rv;
     int                 retry_count;
     vector_t *          plugins;
-    plugin_id_t         plugin_id;
     plugin_reg_entity_t reg_entity;
+
+    if (plugin_mng == NULL || param == NULL || p_plugin_id == NULL) {
+        log_error("Register plugin with NULL pointer");
+        return -1;
+    }
 
     if (param->plugin_kind == PLUGIN_KIND_STATIC) {
         size_t index;
         /* static plugin had already been registered */
-        plugin_id.id_val = 0;
-        index            = find_static_plugin_by_name(param->plugin_name);
+        p_plugin_id->id_val = 0;
+        index               = find_static_plugin_by_name(param->plugin_name);
         if (index != SIZE_MAX) {
-            plugin_id = builtin_static_plugins[index].plugin_id;
+            *p_plugin_id = builtin_static_plugins[index].plugin_id;
         }
-        return plugin_id;
+        return 0;
     }
 
     plugins = &plugin_mng->system_plugins;
@@ -305,15 +311,14 @@ plugin_id_t plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
         plugins = &plugin_mng->custom_plugins;
     }
 
-    plugin_id = plugin_manager_get_plugin_id(plugin_mng, param);
-    if (plugin_id.id_val == 0) {
+    *p_plugin_id = plugin_manager_get_plugin_id(plugin_mng, param);
+    if (p_plugin_id->id_val == 0) {
         // There has same registered plugin
         log_warn("A plugin with same name has already been registered");
-        return plugin_id;
+        return -1;
     }
 
-    reg_entity_init(&reg_entity, plugin_id, param);
-    log_info("Register the plugin: %s", reg_entity.plugin_name);
+    reg_entity_init(&reg_entity, *p_plugin_id, param);
 
     rv                    = -1;
     retry_count           = 3;
@@ -327,42 +332,46 @@ plugin_id_t plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
             sleep_time *= 2;
         }
     }
-    if (rv != 0) {
-        neu_panic("Failed to register plugin");
+    if (rv == 0) {
+        log_info("Register the plugin: %s", reg_entity.plugin_name);
+    } else {
+        log_error("Failed to register plugin: %s", reg_entity.plugin_name);
     }
-    return plugin_id;
+    return rv;
 }
 
-int plugin_manager_unreg_plugin(plugin_manager_t *        plugin_mng,
-                                const plugin_reg_param_t *param)
+int plugin_manager_unreg_plugin(plugin_manager_t *plugin_mng,
+                                plugin_id_t       plugin_id)
 {
-    int                  rv = 0;
     size_t               index;
     vector_t *           plugins;
     plugin_reg_entity_t *reg_entity;
 
-    if (param->plugin_kind == PLUGIN_KIND_STATIC) {
+    if (plugin_id.id_val <= BUILTIN_STATIC_PLUGIN_COUNT) {
         /* Don't to unregister the static plugin */
         return 0;
     }
 
-    plugins = &plugin_mng->system_plugins;
-    if (param->plugin_kind == PLUGIN_KIND_CUSTOM) {
-        plugins = &plugin_mng->custom_plugins;
+    int       i;
+    vector_t *plugins_array[2] = { &plugin_mng->system_plugins,
+                                   &plugin_mng->custom_plugins };
+    for (i = 0; i < 2; i++) {
+        plugins = plugins_array[i];
+        nng_mtx_lock(plugin_mng->mtx);
+        index = find_plugin_by_id(plugins, plugin_id);
+        if (index != SIZE_MAX) {
+            reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
+            log_info("Unregister the plugin: %s", reg_entity->plugin_name);
+            reg_entity_uninit(reg_entity);
+            vector_erase(plugins, index);
+            nng_mtx_unlock(plugin_mng->mtx);
+            return 0;
+        }
+        nng_mtx_unlock(plugin_mng->mtx);
     }
 
-    nng_mtx_lock(plugin_mng->mtx);
-    index = find_plugin_by_name(plugins, (const char *) param->plugin_name);
-    if (index == SIZE_MAX) {
-        reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
-        reg_entity_uninit(reg_entity);
-        vector_erase(plugins, index);
-    }
-    nng_mtx_unlock(plugin_mng->mtx);
-    if (index == SIZE_MAX) {
-        log_info("Unregister the plugin: %s", reg_entity->plugin_name);
-    }
-    return rv;
+    log_warn("Can't find plugin with plugin_id: %d", plugin_id.id_val);
+    return -1;
 }
 
 void plugin_manager_unreg_all_plugins(plugin_manager_t *plugin_mng)
@@ -416,8 +425,10 @@ int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
 
         reg_entity_init(&reg_entity, plugin_id, param);
         vector_assign(plugins, index, &reg_entity);
+        log_info("Update the plugin: %s", reg_entity.plugin_name);
     } else {
         // Nothing to update
+        log_error("Failed to update the plugin: %s", param->plugin_name);
         rv = -1;
     }
     nng_mtx_unlock(plugin_mng->mtx);
