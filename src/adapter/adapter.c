@@ -499,10 +499,10 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     free(result);
                     break;
                 }
-                neu_datatag_table_t *tag_table = neu_manager_get_datatag_tbl(
+                ret->datatag_tbl = neu_manager_get_datatag_tbl(
                     adapter->manager, req_cmd->node_id);
 
-                if (tag_table == NULL) {
+                if (ret->datatag_tbl == NULL) {
                     free(result);
                     free(ret);
                     rv = -1;
