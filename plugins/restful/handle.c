@@ -34,14 +34,33 @@
 #include "handle.h"
 #include "http.h"
 
+#define PROCESS_HTTP_REQUEST(aio, req_type, func)                             \
+    {                                                                         \
+        char *    req_data      = NULL;                                       \
+        size_t    req_data_size = 0;                                          \
+        req_type *req           = NULL;                                       \
+        if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
+            neu_parse_decode(req_data, (void **) &req)) {                     \
+            { func };                                                         \
+            neu_parse_decode_free(req);                                       \
+        } else {                                                              \
+            http_bad_request(aio, "{\"error\": \"request body is wrong\"}");  \
+        }                                                                     \
+        if (req_data != NULL) {                                               \
+            free(req_data);                                                   \
+        }                                                                     \
+    }
+
 static void ping(nng_aio *aio);
-static void read(nng_aio *aio);
-static void write(nng_aio *aio);
+static void read_tag(nng_aio *aio);
+static void write_tag(nng_aio *aio);
 static void login(nng_aio *aio);
 static void logout(nng_aio *aio);
 static void get_tags(nng_aio *aio);
 static void add_tags(nng_aio *aio);
 static void delete_tags(nng_aio *aio);
+
+static neu_plugin_t *api_plugin = NULL;
 
 struct neu_rest_handler rest_handlers[] = {
     {
@@ -60,13 +79,13 @@ struct neu_rest_handler rest_handlers[] = {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/read",
-        .value.handler = read,
+        .value.handler = read_tag,
     },
     {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/write",
-        .value.handler = write,
+        .value.handler = write_tag,
     },
     {
         .method        = NEU_REST_METHOD_POST,
@@ -102,65 +121,33 @@ struct neu_rest_handler rest_handlers[] = {
 };
 
 void neu_rest_init_all_handler(const struct neu_rest_handler **handlers,
-                               uint32_t *                      size)
+                               uint32_t *size, neu_plugin_t *plugin)
 {
     *handlers = rest_handlers;
     *size     = sizeof(rest_handlers) / sizeof(struct neu_rest_handler);
+
+    api_plugin = plugin;
 }
 
 static void ping(nng_aio *aio)
 {
-    http_header_kv_t headers;
-    HTTP_HEADER_ADD_JSON(headers);
-    http_response_t res = {
-        .aio         = aio,
-        .content     = "{\"status\": \"OK\"}",
-        .header_size = 1,
-        .headers     = &headers,
-    };
-
-    http_ok(&res);
+    http_ok(aio, "{\"status\": \"OK\"}");
 }
 
-static void read(nng_aio *aio)
+static void read_tag(nng_aio *aio)
 {
     (void) aio;
 }
 
-static void write(nng_aio *aio)
+static void write_tag(nng_aio *aio)
 {
     (void) aio;
 }
 
 static void login(nng_aio *aio)
 {
-    int                         ret           = 0;
-    char *                      req_data      = NULL;
-    size_t                      req_data_size = 0;
-    struct neu_parse_login_req *login_req     = NULL;
-    http_header_kv_t            headers       = { 0 };
-
-    HTTP_HEADER_ADD_JSON(headers);
-    http_response_t response = {
-        .aio         = aio,
-        .header_size = 1,
-        .headers     = &headers,
-    };
-
-    ret = http_get_body(aio, (void **) &req_data, &req_data_size);
-
-    if (ret != 0 || neu_parse_decode(req_data, (void **) &login_req) != 0) {
-        response.content = "request body error";
-        http_bad_request(&response);
-        if (req_data != NULL)
-            free(req_data);
-        return;
-    }
-
-    response.content = "ok";
-
-    http_ok(&response);
-    neu_parse_decode_free(login_req);
+    PROCESS_HTTP_REQUEST(aio, struct neu_parse_login_req,
+                         { http_ok(aio, "{\"status\": \"ok\"}"); })
 }
 
 static void logout(nng_aio *aio)

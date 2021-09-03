@@ -20,6 +20,8 @@
 #ifndef _NEU_PLUGIN_REST_HANDLE_H_
 #define _NEU_PLUGIN_REST_HANDLE_H_
 
+#include "neu_plugin.h"
+
 enum neu_rest_method {
     NEU_REST_METHOD_GET = 0x0,
     NEU_REST_METHOD_POST,
@@ -43,6 +45,6 @@ struct neu_rest_handler {
 };
 
 void neu_rest_init_all_handler(const struct neu_rest_handler **handlers,
-                               uint32_t *                      size);
+                               uint32_t *size, neu_plugin_t *plugin);
 
 #endif
