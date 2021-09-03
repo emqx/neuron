@@ -572,6 +572,34 @@ client_error paho_client_publish(paho_client_t *client, const char *topic,
     return ClientSuccess;
 }
 
+client_error paho_client_publish2(paho_client_t *client, const char *topic,
+                                  int qos, unsigned char *payload, size_t len)
+{
+    if (NULL == client) {
+        return ClientIsNULL;
+    }
+
+    MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
+    MQTTAsync_message         msg  = MQTTAsync_message_initializer;
+
+    opts.onSuccess = on_send;
+    opts.onFailure = on_send_failure;
+    opts.context   = client;
+
+    msg.payload    = payload;
+    msg.payloadlen = len;
+    msg.qos        = qos;
+    msg.retained   = 0;
+
+    client_error error =
+        MQTTAsync_sendMessage(client->async, topic, &msg, &opts);
+    if (MQTTASYNC_SUCCESS != error) {
+        log_error("Failed to start sendMessage, return code %d", error);
+        return error;
+    }
+    return ClientSuccess;
+}
+
 client_error paho_client_close(paho_client_t *client)
 {
     if (NULL == client) {
