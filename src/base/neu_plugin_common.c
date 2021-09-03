@@ -166,15 +166,15 @@ intptr_t neu_system_update_node(neu_plugin_t *plugin, neu_node_type_e node_type,
     return errorcode;
 }
 
-vector_t *neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type)
+vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type)
 {
-    vector_t *          nodes         = NULL;
+    vector_t            nodes         = { 0 };
     neu_cmd_get_nodes_t get_nodes_cmd = { 0 };
 
     get_nodes_cmd.node_type = node_type;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_NODES, get_nodes_cmd,
-                    neu_reqresp_nodes_t, { nodes = &resp->nodes; })
+                    neu_reqresp_nodes_t, { nodes = resp->nodes; })
 
     return nodes;
 }
@@ -231,17 +231,17 @@ intptr_t neu_system_update_group_config(neu_plugin_t *       plugin,
     return errorcode;
 }
 
-vector_t *neu_system_get_group_configs(neu_plugin_t *plugin,
-                                       neu_node_id_t node_id)
+vector_t neu_system_get_group_configs(neu_plugin_t *plugin,
+                                      neu_node_id_t node_id)
 {
-    vector_t *                group_configs = NULL;
+    vector_t                  group_configs = { 0 };
     neu_cmd_get_grp_configs_t get_grps_cmd  = { 0 };
 
     get_grps_cmd.node_id = node_id;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_GRP_CONFIGS, get_grps_cmd,
                     neu_reqresp_grp_configs_t,
-                    { group_configs = &resp->grp_configs; })
+                    { group_configs = resp->grp_configs; })
 
     return group_configs;
 }

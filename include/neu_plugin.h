@@ -80,27 +80,29 @@ intptr_t neu_system_del_node(neu_plugin_t *plugin, neu_node_id_t node_id);
 intptr_t neu_system_update_node(neu_plugin_t *plugin, neu_node_type_e node_type,
                                 const char *adapter_name,
                                 const char *plugin_name);
-vector_t *neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
-intptr_t  neu_system_add_group_config(neu_plugin_t *       plugin,
-                                      neu_node_id_t        src_node_id,
-                                      neu_node_id_t        dst_node_id,
-                                      neu_taggrp_config_t *grp_config);
-intptr_t  neu_system_del_group_config(neu_plugin_t *plugin,
-                                      neu_node_id_t node_id, char *config_name);
-intptr_t  neu_system_update_group_config(neu_plugin_t *       plugin,
-                                         neu_node_id_t        src_node_id,
-                                         neu_node_id_t        dst_node_id,
-                                         neu_taggrp_config_t *grp_config);
-vector_t *neu_system_get_group_configs(neu_plugin_t *plugin,
-                                       neu_node_id_t node_id);
-uint32_t  neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                   neu_taggrp_config_t *grp_configs);
-uint32_t  neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                    neu_taggrp_config_t *grp_configs,
-                                    neu_variable_t *     data);
-void      neu_plugin_response_trans_data(neu_plugin_t *       plugin,
-                                         neu_taggrp_config_t *grp_config,
-                                         neu_variable_t *data, uint32_t event_id);
+// uninit vector
+vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
+intptr_t neu_system_add_group_config(neu_plugin_t *       plugin,
+                                     neu_node_id_t        src_node_id,
+                                     neu_node_id_t        dst_node_id,
+                                     neu_taggrp_config_t *grp_config);
+intptr_t neu_system_del_group_config(neu_plugin_t *plugin,
+                                     neu_node_id_t node_id, char *config_name);
+intptr_t neu_system_update_group_config(neu_plugin_t *       plugin,
+                                        neu_node_id_t        src_node_id,
+                                        neu_node_id_t        dst_node_id,
+                                        neu_taggrp_config_t *grp_config);
+// uninit vector
+vector_t neu_system_get_group_configs(neu_plugin_t *plugin,
+                                      neu_node_id_t node_id);
+uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                  neu_taggrp_config_t *grp_configs);
+uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                   neu_taggrp_config_t *grp_configs,
+                                   neu_variable_t *     data);
+void     neu_plugin_response_trans_data(neu_plugin_t *       plugin,
+                                        neu_taggrp_config_t *grp_config,
+                                        neu_variable_t *data, uint32_t event_id);
 neu_node_id_t neu_plugin_self_node_id(neu_plugin_t *plugin);
 
 #ifdef __cplusplus
