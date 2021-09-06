@@ -26,10 +26,10 @@
 #include "neu_json_add_tag.h"
 #include "neu_json_delete_tag.h"
 #include "neu_json_get_tag.h"
+#include "neu_json_group_config.h"
 #include "neu_json_login.h"
 #include "neu_json_parser.h"
 #include "neu_json_read.h"
-#include "neu_json_tag_group.h"
 #include "neu_json_updata_tag.h"
 #include "neu_json_write.h"
 
@@ -45,9 +45,24 @@ int neu_parse_decode(char *buf, void **result)
     }
 
     switch (func_code.v.val_int) {
-    case NEU_PARSE_OP_READ_TAG_GROUP_LIST: {
-        ret = neu_paser_decode_read_tag_group_list_req(
-            buf, (struct neu_paser_read_tag_group_list_req **) result);
+    case NEU_PARSE_OP_GET_GROUP_CONFIG: {
+        ret = neu_paser_decode_get_group_config_req(
+            buf, (struct neu_paser_get_group_config_req **) result);
+        break;
+    }
+    case NEU_PARSE_OP_ADD_GROUP_CONFIG: {
+        ret = neu_paser_decode_add_group_config_req(
+            buf, (struct neu_paser_add_group_config_req **) result);
+        break;
+    }
+    case NEU_PARSE_OP_UPDATE_GROUP_CONFIG: {
+        ret = neu_paser_decode_update_group_config_req(
+            buf, (struct neu_paser_update_group_config_req **) result);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_GROUP_CONFIG: {
+        ret = neu_paser_decode_delete_group_config_req(
+            buf, (struct neu_paser_delete_group_config_req **) result);
         break;
     }
     case NEU_PARSE_OP_READ:
@@ -90,9 +105,24 @@ int neu_parse_encode(void *result, char **buf)
     enum neu_parse_function *function = result;
 
     switch (*function) {
-    case NEU_PARSE_OP_READ_TAG_GROUP_LIST: {
-        neu_parse_encode_read_tag_group_list_res(
-            (struct neu_paser_read_tag_group_list_res *) result, buf);
+    case NEU_PARSE_OP_GET_GROUP_CONFIG: {
+        neu_parse_encode_get_group_config_res(
+            (struct neu_paser_get_group_config_res *) result, buf);
+        break;
+    }
+    case NEU_PARSE_OP_ADD_GROUP_CONFIG: {
+        neu_parse_encode_add_group_config_res(
+            (struct neu_paser_group_config_res *) result, buf);
+        break;
+    }
+    case NEU_PARSE_OP_UPDATE_GROUP_CONFIG: {
+        neu_parse_encode_update_group_config_res(
+            (struct neu_paser_group_config_res *) result, buf);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_GROUP_CONFIG: {
+        neu_parse_encode_delete_group_config_res(
+            (struct neu_paser_group_config_res *) result, buf);
         break;
     }
     case NEU_PARSE_OP_READ:
@@ -132,10 +162,32 @@ void neu_parse_decode_free(void *result)
     enum neu_parse_function *function = result;
 
     switch (*function) {
-    case NEU_PARSE_OP_READ_TAG_GROUP_LIST: {
-        struct neu_paser_read_tag_group_list_req *req = result;
+    case NEU_PARSE_OP_GET_GROUP_CONFIG: {
+        struct neu_paser_get_group_config_req *req = result;
         free(req->uuid);
         free(req->config);
+        break;
+    }
+    case NEU_PARSE_OP_ADD_GROUP_CONFIG: {
+        struct neu_paser_add_group_config_req *req = result;
+        free(req->uuid);
+        free(req->group);
+        free(req->config);
+        break;
+    }
+    case NEU_PARSE_OP_UPDATE_GROUP_CONFIG: {
+        struct neu_paser_update_group_config_req *req = result;
+        free(req->uuid);
+        free(req->group);
+        free(req->config);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_GROUP_CONFIG: {
+        struct neu_paser_delete_group_config_req *req = result;
+        free(req->uuid);
+        free(req->group);
+        free(req->config);
+        break;
         break;
     }
     case NEU_PARSE_OP_READ: {

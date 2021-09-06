@@ -175,8 +175,7 @@ int neu_datatag_mng_del_grp_config(neu_datatag_manager_t *datatag_manager,
     pthread_mutex_unlock(&datatag_manager->mtx);
 
     if (rv == 0) {
-        log_info("Delete group config: %s",
-                 neu_taggrp_cfg_get_name(grp_config));
+        log_info("Delete group config: %s", config_name);
     }
     return rv;
 }
@@ -201,14 +200,14 @@ int neu_datatag_mng_update_grp_config(neu_datatag_manager_t *datatag_manager,
         // neu_taggrp_cfg_unanchor(grp_config);
         neu_taggrp_cfg_free(grp_config);
         // neu_taggrp_cfg_anchor(new_grp_config);
-        vector_assign(&datatag_manager->p_configs, index, new_grp_config);
+        vector_assign(&datatag_manager->p_configs, index, &new_grp_config);
         rv = 0;
     }
     pthread_mutex_unlock(&datatag_manager->mtx);
 
     if (rv == 0) {
         log_info("Update group config: %s",
-                 neu_taggrp_cfg_get_name(grp_config));
+                 neu_taggrp_cfg_get_name(new_grp_config));
     }
     return rv;
 }
