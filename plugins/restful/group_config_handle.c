@@ -17,18 +17,33 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_PLUGIN_HTTP_H_
-#define _NEU_PLUGIN_HTTP_H_
+#include <stdlib.h>
 
-#include <nng/nng.h>
+#include "neu_plugin.h"
 
-int   http_get_body(nng_aio *aio, void **data, size_t *data_size);
-char *http_get_param(nng_aio *aio, const char *name);
-int   http_ok(nng_aio *aio, char *content);
-int   http_created(nng_aio *aio, char *content);
-int   http_bad_request(nng_aio *aio, char *content);
-int   http_unauthorized(nng_aio *aio, char *content);
-int   http_not_found(nng_aio *aio, char *content);
-int   http_conflict(nng_aio *aio, char *content);
+#include "parser/neu_json_parser.h"
 
-#endif
+#include "handle.h"
+#include "http.h"
+
+#include "group_config_handle.h"
+
+void handle_add_group_config(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_del_group_config(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_update_group_config(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_get_group_config(nng_aio *aio)
+{
+    (void) aio;
+}

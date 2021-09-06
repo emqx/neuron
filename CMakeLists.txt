@@ -70,6 +70,10 @@ set(NEURON_SOURCES
     src/core/neu_datatag_manager.c
     src/adapter/adapter.c
     plugins/restful/handle.c
+    plugins/restful/adapter_handle.c
+    plugins/restful/datatag_handle.c
+    plugins/restful/group_config_handle.c
+    plugins/restful/plugin_handle.c
     plugins/restful/rest.c
     plugins/restful/http.c)
 

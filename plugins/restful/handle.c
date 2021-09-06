@@ -16,76 +16,47 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdint.h>
 
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
-#include "parser/neu_json_add_tag.h"
-#include "parser/neu_json_delete_tag.h"
-#include "parser/neu_json_get_tag.h"
 #include "parser/neu_json_login.h"
 #include "parser/neu_json_parser.h"
-#include "parser/neu_json_updata_tag.h"
+
+#include "adapter_handle.h"
+#include "datatag_handle.h"
+#include "group_config_handle.h"
+#include "http.h"
+#include "plugin_handle.h"
 
 #include "handle.h"
-#include "http.h"
-
-#define PROCESS_HTTP_REQUEST(aio, req_type, func)                             \
-    {                                                                         \
-        char *    req_data      = NULL;                                       \
-        size_t    req_data_size = 0;                                          \
-        req_type *req           = NULL;                                       \
-        if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
-            neu_parse_decode(req_data, (void **) &req)) {                     \
-            { func };                                                         \
-            neu_parse_decode_free(req);                                       \
-        } else {                                                              \
-            http_bad_request(aio, "{\"error\": \"request body is wrong\"}");  \
-        }                                                                     \
-        if (req_data != NULL) {                                               \
-            free(req_data);                                                   \
-        }                                                                     \
-    }
 
 static void ping(nng_aio *aio);
-static void read_tag(nng_aio *aio);
-static void write_tag(nng_aio *aio);
 static void login(nng_aio *aio);
 static void logout(nng_aio *aio);
-static void get_tags(nng_aio *aio);
-static void add_tags(nng_aio *aio);
-static void delete_tags(nng_aio *aio);
 
-static neu_plugin_t *api_plugin = NULL;
+struct neu_rest_handle_ctx {
+    void *plugin;
+};
 
-struct neu_rest_handler rest_handlers[] = {
+struct neu_rest_handle_ctx *rest_ctx = NULL;
+
+struct neu_rest_handler web_handlers[] = {
     {
         .method     = NEU_REST_METHOD_GET,
         .type       = NEU_REST_HANDLER_DIRECTORY,
         .url        = "",
         .value.path = "./dist",
     },
+};
+
+struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/ping",
         .value.handler = ping,
-    },
-    {
-        .method        = NEU_REST_METHOD_POST,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/read",
-        .value.handler = read_tag,
-    },
-    {
-        .method        = NEU_REST_METHOD_POST,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/write",
-        .value.handler = write_tag,
     },
     {
         .method        = NEU_REST_METHOD_POST,
@@ -103,30 +74,114 @@ struct neu_rest_handler rest_handlers[] = {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
-        .value.handler = add_tags,
+        .value.handler = handle_add_tags,
+
+    },
+    {
+        .method        = NEU_REST_METHOD_PUT,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/tags",
+        .value.handler = handle_update_tags,
 
     },
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
-        .value.handler = get_tags,
+        .value.handler = handle_get_tags,
     },
     {
         .method        = NEU_REST_METHOD_DELETE,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
-        .value.handler = delete_tags,
-    }
+        .value.handler = handle_del_tags,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/gconfig",
+        .value.handler = handle_add_group_config,
+    },
+    {
+        .method        = NEU_REST_METHOD_PUT,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/gconfig",
+        .value.handler = handle_update_group_config,
+    },
+    {
+        .method        = NEU_REST_METHOD_DELETE,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/gconfig",
+        .value.handler = handle_del_group_config,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/gconfig",
+        .value.handler = handle_get_group_config,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/node",
+        .value.handler = handle_add_adapter,
+    },
+    {
+        .method        = NEU_REST_METHOD_PUT,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/node",
+        .value.handler = handle_update_adapter,
+    },
+    {
+        .method        = NEU_REST_METHOD_DELETE,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/node",
+        .value.handler = handle_del_adapter,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/node",
+        .value.handler = handle_get_adapter,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/plugin",
+        .value.handler = handle_add_plugin,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/plugin",
+        .value.handler = handle_get_plugin,
+    },
+    {
+        .method        = NEU_REST_METHOD_PUT,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/plugin",
+        .value.handler = handle_update_plugin,
+    },
+    {
+        .method        = NEU_REST_METHOD_DELETE,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/plugin",
+        .value.handler = handle_del_plugin,
+    },
 };
 
-void neu_rest_init_all_handler(const struct neu_rest_handler **handlers,
-                               uint32_t *size, neu_plugin_t *plugin)
+void neu_rest_web_handler(const struct neu_rest_handler **handlers,
+                          uint32_t *                      size)
 {
-    *handlers = rest_handlers;
-    *size     = sizeof(rest_handlers) / sizeof(struct neu_rest_handler);
+    *handlers = web_handlers;
+    *size     = sizeof(web_handlers) / sizeof(struct neu_rest_handler);
+}
 
-    api_plugin = plugin;
+void neu_rest_api_handler(const struct neu_rest_handler **handlers,
+                          uint32_t *                      size)
+{
+    *handlers = api_handlers;
+    *size     = sizeof(api_handlers) / sizeof(struct neu_rest_handler);
 }
 
 static void ping(nng_aio *aio)
@@ -134,20 +189,10 @@ static void ping(nng_aio *aio)
     http_ok(aio, "{\"status\": \"OK\"}");
 }
 
-static void read_tag(nng_aio *aio)
-{
-    (void) aio;
-}
-
-static void write_tag(nng_aio *aio)
-{
-    (void) aio;
-}
-
 static void login(nng_aio *aio)
 {
-    PROCESS_HTTP_REQUEST(aio, struct neu_parse_login_req,
-                         { http_ok(aio, "{\"status\": \"ok\"}"); })
+    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_login_req,
+                              { http_ok(aio, "{\"status\": \"ok\"}"); })
 }
 
 static void logout(nng_aio *aio)
@@ -155,17 +200,20 @@ static void logout(nng_aio *aio)
     (void) aio;
 }
 
-static void add_tags(nng_aio *aio)
+neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin)
 {
-    (void) aio;
+    rest_ctx         = calloc(1, sizeof(neu_rest_handle_ctx_t));
+    rest_ctx->plugin = plugin;
+
+    return rest_ctx;
 }
 
-static void get_tags(nng_aio *aio)
+void neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx)
 {
-    (void) aio;
+    free(ctx);
 }
 
-static void delete_tags(nng_aio *aio)
+void *neu_rest_get_plugin()
 {
-    (void) aio;
+    return rest_ctx->plugin;
 }

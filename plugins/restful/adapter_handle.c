@@ -16,37 +16,25 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-#ifndef _NEU_JSON_API_DELETE_TAG_H_
-#define _NEU_JSON_API_DELETE_TAG_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "adapter_handle.h"
 
-#include <stdint.h>
-
-#include "neu_json_parser.h"
-
-struct neu_parse_delete_tags_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    uint32_t                node_id;
-    uint32_t                tag_id;
-};
-
-struct neu_parse_delete_tags_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int                     error;
-};
-
-int neu_parse_decode_delete_tags_req(char *                             buf,
-                                     struct neu_parse_delete_tags_req **req);
-int neu_parse_encode_delete_tags_res(struct neu_parse_delete_tags_res *res,
-                                     char **                           buf);
-
-#ifdef __cplusplus
+void handle_add_adapter(nng_aio *aio)
+{
+    (void) aio;
 }
-#endif
 
-#endif
+void handle_del_adapter(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_update_adapter(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_get_adapter(nng_aio *aio)
+{
+    (void) aio;
+}

@@ -141,8 +141,8 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
 {
 
     pthread_mutex_init(&plugin->mtx, NULL);
-    // plugin->status    = WAIT;
-    plugin->status    = RUNNING;
+    plugin->status = WAIT;
+    // plugin->status    = RUNNING;
     plugin->point_ctx = modbus_point_init(plugin);
 
     modbus_point_add(plugin->point_ctx, "1!400001", MODBUS_B16);
@@ -244,7 +244,7 @@ static void read_data_process(neu_plugin_t *plugin, neu_request_t *req)
             neu_variable_add_item(head, err);
         } else {
             neu_variable_t *v = neu_variable_create();
-            switch (tag->dataType) {
+            switch (tag->type) {
             case NEU_DATATYPE_BOOLEAN:
                 neu_variable_set_byte(v, mdata.val.val_u8);
                 break;
@@ -377,7 +377,7 @@ static void write_data_process(neu_plugin_t *plugin, neu_request_t *req)
         modbus_data_t  mdata;
         int            ret = 0;
 
-        switch (tag->dataType) {
+        switch (tag->type) {
         case NEU_DATATYPE_BOOLEAN:
             mdata.type = MODBUS_B8;
             neu_variable_get_byte(var, (int8_t *) &mdata.val.val_u8);

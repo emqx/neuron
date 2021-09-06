@@ -23,15 +23,11 @@
 #include "neu_log.h"
 #include "utils/json.h"
 
-#include "neu_json_add_tag.h"
-#include "neu_json_delete_tag.h"
-#include "neu_json_get_tag.h"
-#include "neu_json_group_config.h"
 #include "neu_json_login.h"
 #include "neu_json_parser.h"
-#include "neu_json_read.h"
-#include "neu_json_updata_tag.h"
-#include "neu_json_write.h"
+#include "neu_json_rw.h"
+#include "neu_json_tag.h"
+#include "neu_json_group_config.h"
 
 int neu_parse_decode(char *buf, void **result)
 {
@@ -91,9 +87,9 @@ int neu_parse_decode(char *buf, void **result)
         ret = neu_parse_decode_delete_tags_req(
             buf, (struct neu_parse_delete_tags_req **) result);
         break;
-    case NEU_PARSE_OP_UPDATA_TAGS:
-        ret = neu_parse_decode_updata_tags_req(
-            buf, (struct neu_parse_updata_tags_req **) result);
+    case NEU_PARSE_OP_UPDATE_TAGS:
+        ret = neu_parse_decode_update_tags_req(
+            buf, (struct neu_parse_update_tags_req **) result);
         break;
     }
 
@@ -148,9 +144,9 @@ int neu_parse_encode(void *result, char **buf)
         neu_parse_encode_delete_tags_res(
             (struct neu_parse_delete_tags_res *) result, buf);
         break;
-    case NEU_PARSE_OP_UPDATA_TAGS:
-        neu_parse_encode_updata_tags_res(
-            (struct neu_parse_updata_tags_res *) result, buf);
+    case NEU_PARSE_OP_UPDATE_TAGS:
+        neu_parse_encode_update_tags_res(
+            (struct neu_parse_update_tags_res *) result, buf);
         break;
     }
 
@@ -193,27 +189,13 @@ void neu_parse_decode_free(void *result)
     case NEU_PARSE_OP_READ: {
         struct neu_parse_read_req *req = result;
 
-        free(req->uuid);
-        free(req->group);
-        for (int i = 0; i < req->n_name; i++) {
-            free(req->names[i].name);
-        }
-        free(req->names);
-
+        neu_parse_decode_read_free(req);
         break;
     }
     case NEU_PARSE_OP_WRITE: {
         struct neu_parse_write_req *req = result;
 
-        free(req->uuid);
-        free(req->group);
-        for (int i = 0; i < req->n_tag; i++) {
-            free(req->tags[i].name);
-            if (req->tags[i].t == NEU_JSON_STR) {
-                free(req->tags[i].value.val_str);
-            }
-        }
-        free(req->tags);
+        neu_parse_decode_write_free(req);
         break;
     }
 
@@ -231,35 +213,25 @@ void neu_parse_decode_free(void *result)
     case NEU_PARSE_OP_ADD_TAGS: {
         struct neu_parse_add_tags_req *req = result;
 
-        free(req->uuid);
-        for (int i = 0; i < req->n_tag; i++) {
-            free(req->tags[i].name);
-            free(req->tags[i].address);
-        }
-        free(req->tags);
+        neu_parse_decode_add_tags_free(req);
         break;
     }
     case NEU_PARSE_OP_GET_TAGS: {
         struct neu_parse_get_tags_req *req = result;
 
-        free(req->uuid);
+        neu_parse_decode_get_tags_free(req);
         break;
     }
     case NEU_PARSE_OP_DELETE_TAGS: {
         struct neu_parse_delete_tags_req *req = result;
 
-        free(req->uuid);
+        neu_parse_decode_delete_tags_free(req);
         break;
     }
-    case NEU_PARSE_OP_UPDATA_TAGS: {
-        struct neu_parse_updata_tags_req *req = result;
+    case NEU_PARSE_OP_UPDATE_TAGS: {
+        struct neu_parse_update_tags_req *req = result;
 
-        free(req->uuid);
-        for (int i = 0; i < req->n_tag; i++) {
-            free(req->tags[i].name);
-            free(req->tags[i].address);
-        }
-        free(req->tags);
+        neu_parse_decode_update_tags_free(req);
         break;
     }
     }

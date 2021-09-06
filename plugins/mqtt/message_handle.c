@@ -61,8 +61,8 @@ void message_handle_init_tags(neu_plugin_t *plugin)
     id                      = 0;
     neu_datatag_t *datatag0 = malloc(sizeof(neu_datatag_t));
     datatag0->id            = id;
-    datatag0->type          = NEU_ATTRIBUTETYPE_READ;
-    datatag0->dataType      = NEU_DATATYPE_WORD;
+    datatag0->attribute     = NEU_ATTRIBUTETYPE_READ;
+    datatag0->type          = NEU_DATATYPE_WORD;
     datatag0->address       = datatag_address;
     datatag0->addr_str      = str_addr;
     ids[0]                  = neu_datatag_tbl_add(table, datatag0);
@@ -71,8 +71,8 @@ void message_handle_init_tags(neu_plugin_t *plugin)
     id                      = 1;
     neu_datatag_t *datatag1 = malloc(sizeof(neu_datatag_t));
     datatag1->id            = id;
-    datatag1->type          = NEU_ATTRIBUTETYPE_READ;
-    datatag1->dataType      = NEU_DATATYPE_UWORD;
+    datatag1->attribute     = NEU_ATTRIBUTETYPE_READ;
+    datatag1->type          = NEU_DATATYPE_UWORD;
     datatag1->address       = datatag_address;
     datatag1->addr_str      = str_addr;
     ids[1]                  = neu_datatag_tbl_add(table, datatag1);
@@ -81,8 +81,8 @@ void message_handle_init_tags(neu_plugin_t *plugin)
     id                      = 2;
     neu_datatag_t *datatag2 = malloc(sizeof(neu_datatag_t));
     datatag2->id            = id;
-    datatag2->type          = NEU_ATTRIBUTETYPE_READ;
-    datatag2->dataType      = NEU_DATATYPE_BYTE;
+    datatag2->attribute     = NEU_ATTRIBUTETYPE_READ;
+    datatag2->type          = NEU_DATATYPE_BYTE;
     datatag2->address       = datatag_address;
     datatag2->addr_str      = str_addr;
     ids[2]                  = neu_datatag_tbl_add(table, datatag2);
@@ -90,9 +90,9 @@ void message_handle_init_tags(neu_plugin_t *plugin)
 
 void message_handle_read(neu_plugin_t *plugin, struct neu_parse_read_req *req)
 {
-    log_info("READ uuid:%s, group:%s", req->uuid, req->group);
+    log_info("READ uuid:%s", req->uuid);
 
-    if (0 >= req->n_name) {
+    if (0 >= req->n_group) {
         return;
     }
 
@@ -244,7 +244,7 @@ static int plugin_adapter_write_command(neu_plugin_t *  plugin,
 void message_handle_write(neu_plugin_t *              plugin,
                           struct neu_parse_write_req *write_req)
 {
-    log_info("WRITE uuid:%s, group:%s", write_req->uuid, write_req->group);
+    log_info("WRITE uuid:%s", write_req->uuid);
 
     neu_variable_t *head = NULL;
     head                 = neu_variable_create();
@@ -316,11 +316,10 @@ void message_handle_get_tag_list(neu_plugin_t *                 plugin,
             continue;
         }
 
-        res.tags[i].name    = strdup(ret->addr_str);
-        res.tags[i].type    = 0;
-        res.tags[i].decimal = 1;
-        res.tags[i].address = strdup(ret->addr_str);
-        res.tags[i].flag    = 0;
+        res.tags[i].name      = strdup(ret->addr_str);
+        res.tags[i].type      = 0;
+        res.tags[i].address   = strdup(ret->addr_str);
+        res.tags[i].attribute = 0;
     }
 
     int rc = neu_parse_encode(&res, &result);
@@ -360,8 +359,8 @@ void message_handle_add_tag(neu_plugin_t *                 plugin,
 
     neu_datatag_t *datatag0 = malloc(sizeof(neu_datatag_t));
     datatag0->id            = id;
-    datatag0->type          = NEU_ATTRIBUTETYPE_READ;
-    datatag0->dataType      = NEU_DATATYPE_BYTE;
+    datatag0->attribute     = NEU_ATTRIBUTETYPE_READ;
+    datatag0->type          = NEU_DATATYPE_BYTE;
     datatag0->address       = datatag_address;
     datatag0->addr_str      = str_addr;
     ids[3]                  = neu_datatag_tbl_add(table, datatag0);
@@ -371,8 +370,8 @@ void message_handle_add_tag(neu_plugin_t *                 plugin,
 
     neu_datatag_t *datatag1 = malloc(sizeof(neu_datatag_t));
     datatag1->id            = id;
-    datatag1->type          = NEU_ATTRIBUTETYPE_READ;
-    datatag1->dataType      = NEU_DATATYPE_BYTE;
+    datatag1->attribute     = NEU_ATTRIBUTETYPE_READ;
+    datatag1->type          = NEU_DATATYPE_BYTE;
     datatag1->address       = datatag_address;
     datatag1->addr_str      = str_addr;
     ids[4]                  = neu_datatag_tbl_add(table, datatag1);

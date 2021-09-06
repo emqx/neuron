@@ -33,7 +33,7 @@ struct neu_parse_login_req {
 struct neu_parse_login_res {
     enum neu_parse_function function;
     char *                  uuid;
-    int                     error;
+    int64_t                 error;
     char *                  token;
 };
 
