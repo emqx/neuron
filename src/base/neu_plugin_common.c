@@ -298,3 +298,66 @@ neu_node_id_t neu_plugin_self_node_id(neu_plugin_t *plugin)
 
     return node_id;
 }
+
+intptr_t neu_system_add_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
+                               neu_node_type_e node_type,
+                               const char *    plugin_name,
+                               const char *    plugin_lib_name)
+{
+    intptr_t                 errorcode      = -1;
+    neu_cmd_add_plugin_lib_t add_plugin_cmd = { 0 };
+
+    add_plugin_cmd.plugin_kind     = kind;
+    add_plugin_cmd.node_type       = node_type;
+    add_plugin_cmd.plugin_name     = plugin_name;
+    add_plugin_cmd.plugin_lib_name = plugin_lib_name;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_ADD_PLUGIN_LIB, add_plugin_cmd,
+                    intptr_t, { errorcode = (intptr_t) resp; })
+
+    return errorcode;
+}
+
+intptr_t neu_system_del_plugin(neu_plugin_t *plugin, plugin_id_t plugin_id)
+{
+    intptr_t                 errorcode      = -1;
+    neu_cmd_del_plugin_lib_t del_plugin_cmd = { 0 };
+
+    del_plugin_cmd.plugin_id = plugin_id;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_DEL_PLUGIN_LIB, del_plugin_cmd,
+                    intptr_t, { errorcode = (intptr_t) resp; })
+
+    return errorcode;
+}
+
+intptr_t neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
+                                  neu_node_type_e node_type,
+                                  const char *    plugin_name,
+                                  const char *    plugin_lib_name)
+{
+    intptr_t                    errorcode         = -1;
+    neu_cmd_update_plugin_lib_t update_plugin_cmd = { 0 };
+
+    update_plugin_cmd.plugin_kind     = kind;
+    update_plugin_cmd.node_type       = node_type;
+    update_plugin_cmd.plugin_name     = plugin_name;
+    update_plugin_cmd.plugin_lib_name = plugin_lib_name;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_UPDATE_PLUGIN_LIB, update_plugin_cmd,
+                    intptr_t, { errorcode = (intptr_t) resp; })
+
+    return errorcode;
+}
+// uninit vector
+vector_t neu_system_get_plugin(neu_plugin_t *plugin)
+{
+    vector_t                  plugin_libs    = { 0 };
+    neu_cmd_get_plugin_libs_t get_plugin_cmd = { 0 };
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_PLUGIN_LIBS, get_plugin_cmd,
+                    neu_reqresp_plugin_libs_t,
+                    { plugin_libs = resp->plugin_libs; })
+
+    return plugin_libs;
+}
