@@ -30,8 +30,8 @@ extern "C" {
 #include "paho_client.h"
 #include "parser/neu_json_add_tag.h"
 #include "parser/neu_json_get_tag.h"
+#include "parser/neu_json_group_config.h"
 #include "parser/neu_json_read.h"
-#include "parser/neu_json_tag_group.h"
 #include "parser/neu_json_write.h"
 
 void message_handle_set_paho_client(paho_client_t *paho);
@@ -46,8 +46,14 @@ void message_handle_get_tag_list(neu_plugin_t *                 plugin,
                                  struct neu_parse_get_tags_req *req);
 void message_handle_add_tag(neu_plugin_t *                 plugin,
                             struct neu_parse_add_tags_req *req);
-void message_handle_read_tag_group_list(
-    neu_plugin_t *plugin, struct neu_paser_read_tag_group_list_req *req);
+void message_handle_get_group_config(
+    neu_plugin_t *plugin, struct neu_paser_get_group_config_req *req);
+void message_handle_add_group_config(
+    neu_plugin_t *plugin, struct neu_paser_add_group_config_req *req);
+void message_handle_update_group_config(
+    neu_plugin_t *plugin, struct neu_paser_update_group_config_req *req);
+void message_handle_delete_group_config(
+    neu_plugin_t *plugin, struct neu_paser_delete_group_config_req *req);
 
 #ifdef __cplusplus
 }

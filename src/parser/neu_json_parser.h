@@ -31,7 +31,10 @@ extern "C" {
 #define NEU_PARSE_ERROR "error"
 
 enum neu_parse_function {
-    NEU_PARSE_OP_READ_TAG_GROUP_LIST = 29,
+    NEU_PARSE_OP_GET_GROUP_CONFIG    = 29,
+    NEU_PARSE_OP_ADD_GROUP_CONFIG    = 90,
+    NEU_PARSE_OP_UPDATE_GROUP_CONFIG = 91,
+    NEU_PARSE_OP_DELETE_GROUP_CONFIG = 92,
     NEU_PARSE_OP_READ                = 50,
     NEU_PARSE_OP_WRITE               = 51,
     NEU_PARSE_OP_LOGIN               = 10,
