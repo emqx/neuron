@@ -17,18 +17,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_PLUGIN_HTTP_H_
-#define _NEU_PLUGIN_HTTP_H_
+#ifndef _NEU_PLUGIN_REST_DATATAG_HANDLE_H_
+#define _NEU_PLUGIN_REST_DATATAG_HANDLE_H_
 
 #include <nng/nng.h>
 
-int   http_get_body(nng_aio *aio, void **data, size_t *data_size);
-char *http_get_param(nng_aio *aio, const char *name);
-int   http_ok(nng_aio *aio, char *content);
-int   http_created(nng_aio *aio, char *content);
-int   http_bad_request(nng_aio *aio, char *content);
-int   http_unauthorized(nng_aio *aio, char *content);
-int   http_not_found(nng_aio *aio, char *content);
-int   http_conflict(nng_aio *aio, char *content);
+void handle_add_tags(nng_aio *aio);
+void handle_del_tags(nng_aio *aio);
+void handle_update_tags(nng_aio *aio);
+void handle_get_tags(nng_aio *aio);
 
 #endif

@@ -3,15 +3,14 @@
 #include <gtest/gtest.h>
 
 #include "parser/neu_json_parser.h"
-#include "parser/neu_json_read.h"
-#include "parser/neu_json_write.h"
+#include "parser/neu_json_rw.h"
 
 TEST(JsonAPITest, ReadReqDecode)
 {
     char *buf = (char *) "{\"function\":50, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"group\":\"Group0\", \"names\": [\"tag001\", "
-                         "\"tag002\", \"tag003\"]}";
+                         "\"group_names\": [\"group001\", "
+                         "\"group002\", \"group003\"]}";
     void *                     result = NULL;
     struct neu_parse_read_req *req    = NULL;
 
@@ -20,11 +19,10 @@ TEST(JsonAPITest, ReadReqDecode)
     req = (struct neu_parse_read_req *) result;
     EXPECT_EQ(NEU_PARSE_OP_READ, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
-    EXPECT_STREQ("Group0", req->group);
-    EXPECT_EQ(3, req->n_name);
-    EXPECT_STREQ("tag001", req->names[0].name);
-    EXPECT_STREQ("tag002", req->names[1].name);
-    EXPECT_STREQ("tag003", req->names[2].name);
+    EXPECT_EQ(3, req->n_group);
+    EXPECT_STREQ("group001", req->group_names[0].name);
+    EXPECT_STREQ("group002", req->group_names[1].name);
+    EXPECT_STREQ("group003", req->group_names[2].name);
 
     neu_parse_decode_free(result);
 }
@@ -87,13 +85,12 @@ TEST(JsonAPITest, WriteResEncode)
 
 TEST(JsonAPITest, WriteReqDecode)
 {
-    char *buf =
-        (char *) "{\"function\":51, "
-                 "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                 "\"group\":\"Group0\", \"tags\": "
-                 "[{\"name\":\"name1\", \"value\":8877},{\"name\":\"name2\", "
-                 "\"value\":11.22},{\"name\":\"name3\", \"value\": \"hello "
-                 "world\"}]}";
+    char *buf = (char *) "{\"function\":51, "
+                         "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
+                         "\"node_id\": 123, \"tags\": "
+                         "[{\"tag_id\":1, \"value\":8877},{\"tag_id\":2, "
+                         "\"value\":11.22},{\"tag_id\":3, \"value\": \"hello "
+                         "world\"}]}";
     void *                      result = NULL;
     struct neu_parse_write_req *req    = NULL;
 
@@ -102,18 +99,18 @@ TEST(JsonAPITest, WriteReqDecode)
     req = (struct neu_parse_write_req *) result;
     EXPECT_EQ(NEU_PARSE_OP_WRITE, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
-    EXPECT_STREQ("Group0", req->group);
     EXPECT_EQ(3, req->n_tag);
+    EXPECT_EQ(123, req->node_id);
 
-    EXPECT_STREQ("name1", req->tags[0].name);
+    EXPECT_EQ(1, req->tags[0].tag_id);
     EXPECT_EQ(NEU_JSON_INT, req->tags[0].t);
     EXPECT_EQ(8877, req->tags[0].value.val_int);
 
-    EXPECT_STREQ("name2", req->tags[1].name);
+    EXPECT_EQ(2, req->tags[1].tag_id);
     EXPECT_EQ(NEU_JSON_DOUBLE, req->tags[1].t);
     EXPECT_EQ(11.22, req->tags[1].value.val_double);
 
-    EXPECT_STREQ("name3", req->tags[2].name);
+    EXPECT_EQ(3, req->tags[2].tag_id);
     EXPECT_EQ(NEU_JSON_STR, req->tags[2].t);
     EXPECT_STREQ("hello world", req->tags[2].value.val_str);
 

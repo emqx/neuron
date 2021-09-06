@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdio.h>
 #include <string.h>
 
 #include <nng/nng.h>
@@ -41,7 +42,6 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
 
-    nng_http_res_free(res);
     return 0;
 }
 
@@ -55,6 +55,45 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     } else {
         return 0;
     }
+}
+
+static char *get_param(const char *url, const char *name)
+{
+    char        param[32]   = { 0 };
+    static char s_value[64] = { 0 };
+    int         len         = snprintf(param, sizeof(param), "%s=", name);
+
+    const char *find = strstr(url, param);
+    if (find == NULL) {
+        return NULL;
+    }
+
+    for (uint8_t i = 0; i < 64 && i < strlen(find); i++) {
+        if (*(find + len + i) == '&' || *(find + len + i) == '\0') {
+            break;
+        }
+        s_value[i] = *(find + len + i);
+    }
+
+    return s_value;
+}
+
+char *http_get_param(nng_aio *aio, const char *name)
+{
+    nng_url *     nn_url         = NULL;
+    char          parse_url[256] = { 0 };
+    nng_http_req *nng_req        = nng_aio_get_input(aio, 0);
+    int           ret            = -1;
+
+    snprintf(parse_url, sizeof(parse_url), "http://127.0.0.1:7000/%s",
+             nng_http_req_get_uri(nng_req));
+
+    ret = nng_url_parse(&nn_url, parse_url);
+    if (ret != 0 || nn_url->u_query == NULL) {
+        return NULL;
+    }
+
+    return get_param(nn_url->u_query, name);
 }
 
 int http_ok(nng_aio *aio, char *content)

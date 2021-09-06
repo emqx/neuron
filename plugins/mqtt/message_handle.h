@@ -28,11 +28,9 @@ extern "C" {
 
 #include "option.h"
 #include "paho_client.h"
-#include "parser/neu_json_add_tag.h"
-#include "parser/neu_json_get_tag.h"
 #include "parser/neu_json_group_config.h"
-#include "parser/neu_json_read.h"
-#include "parser/neu_json_write.h"
+#include "parser/neu_json_rw.h"
+#include "parser/neu_json_tag.h"
 
 void message_handle_set_paho_client(paho_client_t *paho);
 

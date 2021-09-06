@@ -480,22 +480,24 @@ typedef struct {
  * with external device.
  **/
 typedef enum {
-    NEU_ATTRIBUTETYPE_READ,
+    NEU_ATTRIBUTETYPE_READ = 0,
     NEU_ATTRIBUTETYPE_WRITE,
     NEU_ATTRIBUTETYPE_SUBSCRIBE
 } neu_attributetype_t;
 
 typedef uint32_t neu_datatag_id_t;
 typedef char *   neu_addr_str_t;
+typedef char *   neu_tag_name;
 
 typedef struct {
     neu_datatag_id_t    id;
-    neu_attributetype_t type;
+    neu_attributetype_t attribute;
     // The readInterval move to datatag group
     // neu_udword_t     readInterval;
-    neu_datatype_t dataType;
+    neu_datatype_t type;
     neu_address_t  address;
     neu_addr_str_t addr_str;
+    neu_tag_name   name;
 } neu_datatag_t;
 
 /**

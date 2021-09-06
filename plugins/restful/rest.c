@@ -31,24 +31,11 @@
 #define neu_plugin_module default_dashboard_plugin_module
 
 struct neu_plugin {
-    neu_plugin_common_t common;
-    nng_http_server *   server;
+    neu_plugin_common_t    common;
+    nng_http_server *      api_server;
+    nng_http_server *      web_server;
+    neu_rest_handle_ctx_t *handle_ctx;
 };
-
-/*
-static uint32_t plugin_get_event_id(neu_plugin_t *plugin)
-{
-    uint32_t req_id;
-
-    plugin->new_event_id++;
-    if (plugin->new_event_id == 0) {
-        plugin->new_event_id = 1;
-    }
-
-    req_id = plugin->new_event_id;
-    return req_id;
-}
-*/
 
 static int rest_add_handler(nng_http_server *              server,
                             const struct neu_rest_handler *rest_handler)
@@ -100,8 +87,8 @@ static int rest_add_handler(nng_http_server *              server,
     }
 
     ret = nng_http_server_add_handler(server, handler);
-    log_info("rest add handler, method: %s, url: %s", method,
-             rest_handler->url);
+    log_info("rest add handler, method: %s, url: %s, ret: %d", method,
+             rest_handler->url, ret);
 
     return ret;
 }
@@ -110,8 +97,10 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
                                        const adapter_callbacks_t *callbacks)
 {
     neu_plugin_t *                 plugin;
-    nng_http_server *              server;
-    nng_url *                      url;
+    nng_http_server *              api_server;
+    nng_http_server *              web_server;
+    nng_url *                      api_url;
+    nng_url *                      web_url;
     uint32_t                       n_handler     = 0;
     const struct neu_rest_handler *rest_handlers = NULL;
 
@@ -131,28 +120,53 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
 
-    int ret = nng_url_parse(&url, "http://0.0.0.0:7000");
+    plugin->handle_ctx = neu_rest_init_ctx(plugin);
+
+    int ret = nng_url_parse(&web_url, "http://0.0.0.0:7000");
     if (ret != 0) {
         return NULL;
     }
 
-    ret = nng_http_server_hold(&server, url);
+    ret = nng_url_parse(&api_url, "http://0.0.0.0:7001");
     if (ret != 0) {
         return NULL;
     }
 
-    neu_rest_init_all_handler(&rest_handlers, &n_handler, plugin);
+    ret = nng_http_server_hold(&web_server, web_url);
+    if (ret != 0) {
+        return NULL;
+    }
+
+    ret = nng_http_server_hold(&api_server, api_url);
+    if (ret != 0) {
+        return NULL;
+    }
+
+    neu_rest_api_handler(&rest_handlers, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        rest_add_handler(server, &rest_handlers[i]);
+        rest_add_handler(api_server, &rest_handlers[i]);
     }
 
-    ret = nng_http_server_start(server);
+    neu_rest_web_handler(&rest_handlers, &n_handler);
+    for (uint32_t i = 0; i < n_handler; i++) {
+        rest_add_handler(web_server, &rest_handlers[i]);
+    }
+
+    ret = nng_http_server_start(web_server);
     if (ret != 0) {
         return NULL;
     }
 
-    plugin->server = server;
-    nng_url_free(url);
+    ret = nng_http_server_start(api_server);
+    if (ret != 0) {
+        return NULL;
+    }
+
+    plugin->web_server = web_server;
+    plugin->api_server = api_server;
+    nng_url_free(web_url);
+    nng_url_free(api_url);
+
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
@@ -161,8 +175,13 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    nng_http_server_stop(plugin->server);
-    nng_http_server_release(plugin->server);
+    nng_http_server_stop(plugin->api_server);
+    nng_http_server_release(plugin->api_server);
+    nng_http_server_stop(plugin->web_server);
+    nng_http_server_release(plugin->web_server);
+
+    neu_rest_free_ctx(plugin->handle_ctx);
+
     free(plugin);
     log_info("Success to free plugin: %s", neu_plugin_module.module_name);
     return rv;

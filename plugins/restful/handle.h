@@ -20,7 +20,24 @@
 #ifndef _NEU_PLUGIN_REST_HANDLE_H_
 #define _NEU_PLUGIN_REST_HANDLE_H_
 
-#include "neu_plugin.h"
+#include <stdlib.h>
+
+#define REST_PROCESS_HTTP_REQUEST(aio, req_type, func)                        \
+    {                                                                         \
+        char *    req_data      = NULL;                                       \
+        size_t    req_data_size = 0;                                          \
+        req_type *req           = NULL;                                       \
+        if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
+            neu_parse_decode(req_data, (void **) &req)) {                     \
+            { func };                                                         \
+            neu_parse_decode_free(req);                                       \
+        } else {                                                              \
+            http_bad_request(aio, "{\"error\": \"request body is wrong\"}");  \
+        }                                                                     \
+        if (req_data != NULL) {                                               \
+            free(req_data);                                                   \
+        }                                                                     \
+    }
 
 enum neu_rest_method {
     NEU_REST_METHOD_GET = 0x0,
@@ -44,7 +61,15 @@ struct neu_rest_handler {
     } value;
 };
 
-void neu_rest_init_all_handler(const struct neu_rest_handler **handlers,
-                               uint32_t *size, neu_plugin_t *plugin);
+typedef struct neu_rest_handle_ctx neu_rest_handle_ctx_t;
+
+neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin);
+void                   neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx);
+void *                 neu_rest_get_plugin();
+
+void neu_rest_web_handler(const struct neu_rest_handler **handlers,
+                          uint32_t *                      size);
+void neu_rest_api_handler(const struct neu_rest_handler **handlers,
+                          uint32_t *                      size);
 
 #endif

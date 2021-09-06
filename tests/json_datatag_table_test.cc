@@ -2,17 +2,14 @@
 
 #include <gtest/gtest.h>
 
-#include "parser/neu_json_add_tag.h"
-#include "parser/neu_json_delete_tag.h"
-#include "parser/neu_json_get_tag.h"
 #include "parser/neu_json_parser.h"
-#include "parser/neu_json_updata_tag.h"
+#include "parser/neu_json_tag.h"
 
 TEST(JsonDatatagTableTest, AddTagDecode)
 {
     char *buf = (char *) "{\"function\":31, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"node_id\":123456, "
+                         "\"node_id\":123456, \"group_config_name\": \"name\","
                          "\"tags\": "
                          "[{\"name\":\"name1\", \"type\":0,\"decimal\":1, "
                          "\"address\":\"1!400001\",\"flag\":0}, "
@@ -28,18 +25,17 @@ TEST(JsonDatatagTableTest, AddTagDecode)
     EXPECT_EQ(NEU_PARSE_OP_ADD_TAGS, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(123456, req->node_id);
+    EXPECT_STREQ("name", req->group_config_name);
 
     EXPECT_STREQ("name1", req->tags[0].name);
     EXPECT_EQ(0, req->tags[0].type);
-    EXPECT_EQ(1, req->tags[0].decimal);
     EXPECT_STREQ("1!400001", req->tags[0].address);
-    EXPECT_EQ(0, req->tags[0].flag);
+    EXPECT_EQ(0, req->tags[0].attribute);
 
     EXPECT_STREQ("name2", req->tags[1].name);
     EXPECT_EQ(1, req->tags[1].type);
-    EXPECT_EQ(1, req->tags[1].decimal);
     EXPECT_STREQ("1!400002", req->tags[1].address);
-    EXPECT_EQ(0, req->tags[1].flag);
+    EXPECT_EQ(0, req->tags[1].attribute);
 
     neu_parse_decode_free(result);
 }
@@ -83,14 +79,12 @@ TEST(JsonDatatagTableTest, GetTagDecode)
 
 TEST(JsonDatatagTableTest, GetTagEncode)
 {
-    char *buf = (char *) "{\"function\": 32, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"error\": 0, "
-                         "\"tags\": "
-                         "[{\"name\": \"Tag0001\", \"type\": 0, \"decimal\": "
-                         "1, \"address\": \"1!400001\", \"flag\": 0}, "
-                         "{\"name\": \"Tag0002\", \"type\": 1, \"decimal\": 1, "
-                         "\"address\": \"1!400002\", \"flag\": 0}]}";
+    char *buf =
+        (char *) "{\"function\": 32, \"uuid\": "
+                 "\"554f5fd8-f437-11eb-975c-7704b9e17821\", \"error\": 0, "
+                 "\"tags\": [{\"name\": \"Tag0001\", \"type\": 0, \"address\": "
+                 "\"1!400001\", \"attribute\": 0}, {\"name\": \"Tag0002\", "
+                 "\"type\": 1, \"address\": \"1!400002\", \"attribute\": 0}]}";
     char *                        result = NULL;
     struct neu_parse_get_tags_res res    = {
         .function = NEU_PARSE_OP_GET_TAGS,
@@ -101,17 +95,15 @@ TEST(JsonDatatagTableTest, GetTagEncode)
 
     res.tags = (struct neu_parse_get_tags_res_tag *) calloc(
         2, sizeof(struct neu_parse_get_tags_res_tag));
-    res.tags[0].name    = strdup((char *) "Tag0001");
-    res.tags[0].type    = 0;
-    res.tags[0].decimal = 1;
-    res.tags[0].address = strdup((char *) "1!400001");
-    res.tags[0].flag    = 0;
+    res.tags[0].name      = strdup((char *) "Tag0001");
+    res.tags[0].type      = 0;
+    res.tags[0].address   = strdup((char *) "1!400001");
+    res.tags[0].attribute = 0;
 
-    res.tags[1].name    = strdup((char *) "Tag0002");
-    res.tags[1].type    = 1;
-    res.tags[1].decimal = 1;
-    res.tags[1].address = strdup((char *) "1!400002");
-    res.tags[1].flag    = 0;
+    res.tags[1].name      = strdup((char *) "Tag0002");
+    res.tags[1].type      = 1;
+    res.tags[1].address   = strdup((char *) "1!400002");
+    res.tags[1].attribute = 0;
 
     EXPECT_EQ(0, neu_parse_encode(&res, &result));
     EXPECT_STREQ(buf, result);
@@ -126,10 +118,11 @@ TEST(JsonDatatagTableTest, GetTagEncode)
 
 TEST(JsonDatatagTableTest, DeleteTagDecode)
 {
-    char *buf = (char *) "{\"function\": 33, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"node_id\": 123456, "
-                         "\"tag_id\": 123}";
+    char *buf =
+        (char *) "{\"function\": 33, "
+                 "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
+                 "\"node_id\": 123456, \"group_config_name\": \"name\", "
+                 "\"tag_ids\": [123, 456]}";
     void *                            result = NULL;
     struct neu_parse_delete_tags_req *req    = NULL;
 
@@ -140,7 +133,10 @@ TEST(JsonDatatagTableTest, DeleteTagDecode)
     EXPECT_EQ(NEU_PARSE_OP_DELETE_TAGS, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(123456, req->node_id);
-    EXPECT_EQ(123, req->tag_id);
+    EXPECT_STREQ("name", req->group_config_name);
+    EXPECT_EQ(2, req->n_tag_id);
+    EXPECT_EQ(123, req->tag_ids[0]);
+    EXPECT_EQ(456, req->tag_ids[1]);
 
     neu_parse_decode_free(result);
 }
@@ -163,7 +159,7 @@ TEST(JsonDatatagTableTest, DeleteTagEncode)
     free(result);
 }
 
-TEST(JsonDatatagTableTest, UpdataTaDecode)
+TEST(JsonDatatagTableTest, UpdateTaDecode)
 {
     char *buf = (char *) "{\"function\":34, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
@@ -175,40 +171,37 @@ TEST(JsonDatatagTableTest, UpdataTaDecode)
                          "{\"name\":\"name2\", \"type\":1,\"decimal\":1, "
                          "\"address\":\"1!400003\",\"flag\":0} ] }";
     void *                            result = NULL;
-    struct neu_parse_updata_tags_req *req    = NULL;
+    struct neu_parse_update_tags_req *req    = NULL;
 
     EXPECT_EQ(0, neu_parse_decode(buf, &result));
 
-    req = (struct neu_parse_updata_tags_req *) result;
+    req = (struct neu_parse_update_tags_req *) result;
 
-    EXPECT_EQ(NEU_PARSE_OP_UPDATA_TAGS, req->function);
+    EXPECT_EQ(NEU_PARSE_OP_UPDATE_TAGS, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(123456, req->node_id);
-    EXPECT_EQ(123, req->tag_id);
 
     EXPECT_STREQ("name1", req->tags[0].name);
     EXPECT_EQ(0, req->tags[0].type);
-    EXPECT_EQ(1, req->tags[0].decimal);
     EXPECT_STREQ("1!400001", req->tags[0].address);
-    EXPECT_EQ(0, req->tags[0].flag);
+    EXPECT_EQ(0, req->tags[0].attribute);
 
     EXPECT_STREQ("name2", req->tags[1].name);
     EXPECT_EQ(1, req->tags[1].type);
-    EXPECT_EQ(1, req->tags[1].decimal);
     EXPECT_STREQ("1!400003", req->tags[1].address);
-    EXPECT_EQ(0, req->tags[1].flag);
+    EXPECT_EQ(0, req->tags[1].attribute);
 
     neu_parse_decode_free(result);
 }
 
-TEST(JsonDatatagTableTest, UpdataTagEncode)
+TEST(JsonDatatagTableTest, UpdateTagEncode)
 {
     char *buf = (char *) "{\"function\": 34, "
                          "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
                          "\"error\": 0}";
     char *                           result = NULL;
-    struct neu_parse_updata_tags_res res    = {
-        .function = NEU_PARSE_OP_UPDATA_TAGS,
+    struct neu_parse_update_tags_res res    = {
+        .function = NEU_PARSE_OP_UPDATE_TAGS,
         .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
         .error    = 0,
     };
