@@ -32,7 +32,6 @@ struct neu_paser_get_group_config_req {
 
 struct neu_paser_get_group_config_res_row {
     char *name;
-    char *group;
     int   node_id;
     int   read_interval;
     int   pipe_count;
@@ -58,7 +57,6 @@ struct neu_paser_group_config_row {
 struct neu_paser_add_group_config_req {
     enum neu_parse_function function;
     char *                  uuid;
-    char *                  group;
     char *                  config;
     uint32_t                src_node_id;
     uint32_t                dst_node_id;
@@ -68,7 +66,6 @@ struct neu_paser_add_group_config_req {
 struct neu_paser_update_group_config_req {
     enum neu_parse_function function;
     char *                  uuid;
-    char *                  group;
     char *                  config;
     uint32_t                src_node_id;
     uint32_t                dst_node_id;
@@ -78,7 +75,6 @@ struct neu_paser_update_group_config_req {
 struct neu_paser_delete_group_config_req {
     enum neu_parse_function function;
     char *                  uuid;
-    char *                  group;
     char *                  config;
     uint32_t                node_id;
 };
@@ -93,6 +89,8 @@ int neu_paser_decode_get_group_config_req(
     char *buf, struct neu_paser_get_group_config_req **result);
 int neu_parse_encode_get_group_config_res(
     struct neu_paser_get_group_config_res *res, char **buf);
+void neu_parse_encode_get_group_config_free(
+    struct neu_paser_get_group_config_req *req);
 
 int neu_paser_decode_add_group_config_req(
     char *buf, struct neu_paser_add_group_config_req **result);
@@ -107,5 +105,12 @@ int neu_parse_encode_update_group_config_res(
     struct neu_paser_group_config_res *res, char **buf);
 int neu_parse_encode_delete_group_config_res(
     struct neu_paser_group_config_res *res, char **buf);
+
+void neu_paser_decode_add_group_config_free(
+    struct neu_paser_add_group_config_req *req);
+void neu_paser_decode_update_group_config_free(
+    struct neu_paser_update_group_config_req *req);
+void neu_paser_decode_delete_group_config_free(
+    struct neu_paser_delete_group_config_req *req);
 
 #endif
