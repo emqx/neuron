@@ -42,7 +42,11 @@ enum neu_parse_function {
     NEU_PARSE_OP_ADD_TAGS            = 31,
     NEU_PARSE_OP_GET_TAGS            = 32,
     NEU_PARSE_OP_DELETE_TAGS         = 33,
-    NEU_PARSE_OP_UPDATE_TAGS         = 34
+    NEU_PARSE_OP_UPDATE_TAGS         = 34,
+    NEU_PARSE_OP_ADD_NODES           = 35,
+    NEU_PARSE_OP_GET_NODES           = 36,
+    NEU_PARSE_OP_DELETE_NODES        = 37,
+    NEU_PARSE_OP_UPDATE_NODES        = 38,
 };
 
 int  neu_parse_decode(char *buf, void **result);
