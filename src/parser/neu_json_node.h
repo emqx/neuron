@@ -65,7 +65,7 @@ struct neu_parse_delete_nodes_req {
     enum neu_parse_function function;
     char *                  uuid;
     uint32_t                node_id;
-}; 
+};
 
 struct neu_parse_delete_nodes_res {
     enum neu_parse_function function;
