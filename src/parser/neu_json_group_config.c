@@ -48,7 +48,7 @@ int neu_paser_decode_get_group_config_req(
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "config",
+                                   .name = "groupConfig",
                                    .t    = NEU_JSON_STR,
                                }
 
@@ -79,11 +79,6 @@ int neu_parse_encode_get_group_config_res(
                                         .v.val_str = res->rows[i].name,
                                     },
                                     {
-                                        .name      = "group",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = res->rows[i].group,
-                                    },
-                                    {
                                         .name      = "nodeID",
                                         .t         = NEU_JSON_INT,
                                         .v.val_int = res->rows[i].node_id,
@@ -103,7 +98,7 @@ int neu_parse_encode_get_group_config_res(
                                         .t         = NEU_JSON_INT,
                                         .v.val_int = res->rows[i].tag_count,
                                     } };
-        array                   = neu_json_encode_array(array, group, 4);
+        array                   = neu_json_encode_array(array, group, 5);
     }
     neu_json_elem_t elems[] = { {
                                     .name      = NEU_PARSE_FUNCTION,
@@ -121,11 +116,20 @@ int neu_parse_encode_get_group_config_res(
                                     .v.val_int = res->error,
                                 },
                                 {
-                                    .name     = "groups",
+                                    .name     = "groupConfigs",
                                     .t        = NEU_JSON_OBJECT,
                                     .v.object = array,
                                 } };
     return neu_json_encode(elems, 4, buf);
+}
+
+void neu_parse_encode_get_group_config_free(
+    struct neu_paser_get_group_config_req *req)
+{
+    if (NULL != req) {
+        free(req->uuid);
+        free(req->config);
+    }
 }
 
 int neu_paser_decode_add_group_config_req(
@@ -140,11 +144,7 @@ int neu_paser_decode_add_group_config_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "group",
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = "config",
+                                   .name = "groupConfig",
                                    .t    = NEU_JSON_STR,
                                },
                                {
@@ -167,11 +167,10 @@ int neu_paser_decode_add_group_config_req(
     }
     req->function      = NEU_PARSE_OP_ADD_GROUP_CONFIG;
     req->uuid          = elem[0].v.val_str;
-    req->group         = elem[1].v.val_str;
-    req->config        = elem[2].v.val_str;
-    req->src_node_id   = elem[3].v.val_int;
-    req->dst_node_id   = elem[4].v.val_int;
-    req->read_interval = elem[5].v.val_int;
+    req->config        = elem[1].v.val_str;
+    req->src_node_id   = elem[2].v.val_int;
+    req->dst_node_id   = elem[3].v.val_int;
+    req->read_interval = elem[4].v.val_int;
 
     *result = req;
     return 0;
@@ -211,11 +210,7 @@ int neu_paser_decode_update_group_config_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "group",
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = "config",
+                                   .name = "groupConfig",
                                    .t    = NEU_JSON_STR,
                                },
                                {
@@ -238,11 +233,10 @@ int neu_paser_decode_update_group_config_req(
     }
     req->function      = NEU_PARSE_OP_UPDATE_GROUP_CONFIG;
     req->uuid          = elem[0].v.val_str;
-    req->group         = elem[1].v.val_str;
-    req->config        = elem[2].v.val_str;
-    req->src_node_id   = elem[3].v.val_int;
-    req->dst_node_id   = elem[4].v.val_int;
-    req->read_interval = elem[5].v.val_int;
+    req->config        = elem[1].v.val_str;
+    req->src_node_id   = elem[2].v.val_int;
+    req->dst_node_id   = elem[3].v.val_int;
+    req->read_interval = elem[4].v.val_int;
 
     *result = req;
     return 0;
@@ -283,11 +277,7 @@ int neu_paser_decode_delete_group_config_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "group",
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = "config",
+                                   .name = "groupConfig",
                                    .t    = NEU_JSON_STR,
                                },
                                {
@@ -304,9 +294,8 @@ int neu_paser_decode_delete_group_config_req(
     }
     req->function = NEU_PARSE_OP_DELETE_GROUP_CONFIG;
     req->uuid     = elem[0].v.val_str;
-    req->group    = elem[1].v.val_str;
-    req->config   = elem[2].v.val_str;
-    req->node_id  = elem[3].v.val_int;
+    req->config   = elem[1].v.val_str;
+    req->node_id  = elem[2].v.val_int;
 
     *result = req;
     return 0;
@@ -333,4 +322,31 @@ int neu_parse_encode_delete_group_config_res(
                                 } };
 
     return neu_json_encode(elems, 3, buf);
+}
+
+void neu_paser_decode_add_group_config_free(
+    struct neu_paser_add_group_config_req *req)
+{
+    if (NULL != req) {
+        free(req->uuid);
+        free(req->config);
+    }
+}
+
+void neu_paser_decode_update_group_config_free(
+    struct neu_paser_update_group_config_req *req)
+{
+    if (NULL != req) {
+        free(req->uuid);
+        free(req->config);
+    }
+}
+
+void neu_paser_decode_delete_group_config_free(
+    struct neu_paser_delete_group_config_req *req)
+{
+    if (NULL != req) {
+        free(req->uuid);
+        free(req->config);
+    }
 }

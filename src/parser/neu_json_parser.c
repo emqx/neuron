@@ -193,30 +193,26 @@ void neu_parse_decode_free(void *result)
     switch (*function) {
     case NEU_PARSE_OP_GET_GROUP_CONFIG: {
         struct neu_paser_get_group_config_req *req = result;
-        free(req->uuid);
-        free(req->config);
+
+        neu_parse_encode_get_group_config_free(req);
         break;
     }
     case NEU_PARSE_OP_ADD_GROUP_CONFIG: {
         struct neu_paser_add_group_config_req *req = result;
-        free(req->uuid);
-        free(req->group);
-        free(req->config);
+
+        neu_paser_decode_add_group_config_free(req);
         break;
     }
     case NEU_PARSE_OP_UPDATE_GROUP_CONFIG: {
         struct neu_paser_update_group_config_req *req = result;
-        free(req->uuid);
-        free(req->group);
-        free(req->config);
+
+        neu_paser_decode_update_group_config_free(req);
         break;
     }
     case NEU_PARSE_OP_DELETE_GROUP_CONFIG: {
         struct neu_paser_delete_group_config_req *req = result;
-        free(req->uuid);
-        free(req->group);
-        free(req->config);
-        break;
+
+        neu_paser_decode_delete_group_config_free(req);
         break;
     }
     case NEU_PARSE_OP_READ: {

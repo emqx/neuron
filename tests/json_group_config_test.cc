@@ -9,7 +9,7 @@ TEST(TagGroupConfigTest, neu_paser_decode_get_group_config_req)
     char *json = (char *) "{ \"function\": 29, \"uuid\": "
                           "\"1d892fe8-f37e-11eb-9a34-932aa06a28f3\", "
                           "\"nodeId\": 123456, "
-                          "\"config\": \"Config0\" }";
+                          "\"groupConfig\": \"Config0\" }";
 
     void *                                 result = NULL;
     struct neu_paser_get_group_config_req *req    = NULL;
@@ -26,12 +26,15 @@ TEST(TagGroupConfigTest, neu_paser_decode_get_group_config_req)
 
 TEST(TagGroupConfigTest, neu_paser_decode_get_group_config_res)
 {
-    char *buf = (char *) "{\"function\": 29, \"uuid\": "
-                         "\"1d892fe8-f37e-11eb-9a34-932aa06a28f3\", \"error\": "
-                         "0, \"groups\": [{\"name\": \"config0\", \"nodeID\": "
-                         "0, \"readInterval\": 0}, {\"name\": \"config1\", "
-                         "\"nodeID\": 0, \"readInterval\": 0}, {\"name\": "
-                         "\"config2\", \"nodeID\": 0, \"readInterval\": 0}]}";
+    char *buf =
+        (char *) "{\"function\": 29, \"uuid\": "
+                 "\"1d892fe8-f37e-11eb-9a34-932aa06a28f3\", \"error\": 0, "
+                 "\"groupConfigs\": [{\"name\": \"config0\", \"nodeID\": 0, "
+                 "\"readInterval\": 0, \"pipeCount\": 0, \"tagCount\": 0}, "
+                 "{\"name\": \"config1\", \"nodeID\": 0, \"readInterval\": 0, "
+                 "\"pipeCount\": 0, \"tagCount\": 0}, {\"name\": \"config2\", "
+                 "\"nodeID\": 0, \"readInterval\": 0, \"pipeCount\": 0, "
+                 "\"tagCount\": 0}]}";
     char *                                result = NULL;
     struct neu_paser_get_group_config_res res    = {
         .function = NEU_PARSE_OP_GET_GROUP_CONFIG,
@@ -61,8 +64,7 @@ TEST(TagGroupConfigTest, neu_paser_decode_add_group_config_req)
 {
     char *buf = (char *) "{\"function\":90, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"group\":\"Group0\", "
-                         "\"config\":\"Config0\", "
+                         "\"groupConfig\":\"Config0\", "
                          "\"srcNodeId\":123456, "
                          "\"dstNodeId\":654321, "
                          "\"readInterval\": 2000 "
@@ -77,6 +79,7 @@ TEST(TagGroupConfigTest, neu_paser_decode_add_group_config_req)
 
     EXPECT_EQ(NEU_PARSE_OP_ADD_GROUP_CONFIG, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
+    EXPECT_STREQ("Config0", req->config);
     EXPECT_EQ(123456, req->src_node_id);
     EXPECT_EQ(654321, req->dst_node_id);
     EXPECT_EQ(2000, req->read_interval);
@@ -106,8 +109,7 @@ TEST(TagGroupConfigTest, neu_parse_encode_update_group_config_req)
 {
     char *buf = (char *) "{\"function\":91, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"group\":\"Group0\", "
-                         "\"config\":\"Config0\", "
+                         "\"groupConfig\":\"Config0\", "
                          "\"srcNodeId\":123456, "
                          "\"dstNodeId\":654321, "
                          "\"readInterval\": 2000 "
@@ -122,6 +124,7 @@ TEST(TagGroupConfigTest, neu_parse_encode_update_group_config_req)
 
     EXPECT_EQ(NEU_PARSE_OP_UPDATE_GROUP_CONFIG, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
+    EXPECT_STREQ("Config0", req->config);
     EXPECT_EQ(123456, req->src_node_id);
     EXPECT_EQ(654321, req->dst_node_id);
     EXPECT_EQ(2000, req->read_interval);
@@ -151,8 +154,7 @@ TEST(TagGroupConfigTest, neu_parse_encode_delete_group_config_req)
 {
     char *buf = (char *) "{\"function\":92, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"group\":\"Group0\", "
-                         "\"config\":\"Config0\", "
+                         "\"groupConfig\":\"Config0\", "
                          "\"nodeId\":123456 "
                          "}";
 
@@ -165,6 +167,7 @@ TEST(TagGroupConfigTest, neu_parse_encode_delete_group_config_req)
 
     EXPECT_EQ(NEU_PARSE_OP_DELETE_GROUP_CONFIG, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
+    EXPECT_STREQ("Config0", req->config);
     EXPECT_EQ(123456, req->node_id);
 
     neu_parse_decode_free(result);
