@@ -25,6 +25,7 @@
 
 #include "neu_json_group_config.h"
 #include "neu_json_login.h"
+#include "neu_json_node.h"
 #include "neu_json_parser.h"
 #include "neu_json_rw.h"
 #include "neu_json_tag.h"
@@ -91,6 +92,22 @@ int neu_parse_decode(char *buf, void **result)
         ret = neu_parse_decode_update_tags_req(
             buf, (struct neu_parse_update_tags_req **) result);
         break;
+    case NEU_PARSE_OP_ADD_NODES:
+        ret = neu_parse_decode_add_nodes_req(
+            buf, (struct neu_parse_add_nodes_req **) result);
+        break;
+    case NEU_PARSE_OP_GET_NODES:
+        ret = neu_parse_decode_get_nodes_req(
+            buf, (struct neu_parse_get_nodes_req **) result);
+        break;
+    case NEU_PARSE_OP_DELETE_NODES:
+        ret = neu_parse_decode_delete_nodes_req(
+            buf, (struct neu_parse_delete_nodes_req **) result);
+        break;
+    case NEU_PARSE_OP_UPDATE_NODES:
+        ret = neu_parse_decode_update_nodes_req(
+            buf, (struct neu_parse_update_nodes_req **) result);
+        break;
     }
 
     return ret;
@@ -147,6 +164,22 @@ int neu_parse_encode(void *result, char **buf)
     case NEU_PARSE_OP_UPDATE_TAGS:
         neu_parse_encode_update_tags_res(
             (struct neu_parse_update_tags_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_ADD_NODES:
+        neu_parse_encode_add_nodes_res(
+            (struct neu_parse_add_nodes_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_GET_NODES:
+        neu_parse_encode_get_nodes_res(
+            (struct neu_parse_get_nodes_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_DELETE_NODES:
+        neu_parse_encode_delete_nodes_res(
+            (struct neu_parse_delete_nodes_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_UPDATE_NODES:
+        neu_parse_encode_update_nodes_res(
+            (struct neu_parse_update_nodes_res *) result, buf);
         break;
     }
 
@@ -232,6 +265,36 @@ void neu_parse_decode_free(void *result)
         struct neu_parse_update_tags_req *req = result;
 
         neu_parse_decode_update_tags_free(req);
+        break;
+    }
+
+    case NEU_PARSE_OP_ADD_NODES: {
+        struct neu_parse_add_nodes_req *req = result;
+
+        free(req->uuid);
+        free(req->adapter_name);
+        free(req->plugin_name);
+        break;
+    }
+    case NEU_PARSE_OP_GET_NODES: {
+        struct neu_parse_get_nodes_req *req = result;
+
+        free(req->uuid);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_NODES: {
+        struct neu_parse_delete_nodes_req *req = result;
+
+        free(req->uuid);
+        break;
+    }
+    case NEU_PARSE_OP_UPDATE_NODES: {
+        struct neu_parse_update_nodes_req *req = result;
+
+        free(req->adapter_name);
+        free(req->plugin_name);
+        free(req->uuid);
+
         break;
     }
     }

@@ -92,7 +92,7 @@ typedef struct neu_reqresp_data {
 } neu_reqresp_data_t;
 
 typedef enum neu_node_type {
-    NEU_NODE_TYPE_UNKNOW,
+    NEU_NODE_TYPE_UNKNOW = 0,
     NEU_NODE_TYPE_DRIVER,
     NEU_NODE_TYPE_WEBSERVER,
     NEU_NODE_TYPE_MQTT,
