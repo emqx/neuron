@@ -23,11 +23,11 @@
 #include "neu_log.h"
 #include "utils/json.h"
 
+#include "neu_json_group_config.h"
 #include "neu_json_login.h"
 #include "neu_json_parser.h"
 #include "neu_json_rw.h"
 #include "neu_json_tag.h"
-#include "neu_json_group_config.h"
 
 int neu_parse_decode(char *buf, void **result)
 {
