@@ -23,94 +23,138 @@
 
 #include "neu_json_parser.h"
 
-struct neu_paser_get_group_config_req {
+struct neu_parse_get_group_config_req {
     enum neu_parse_function function;
     char *                  uuid;
     char *                  config;
     int                     node_id;
 };
 
-struct neu_paser_get_group_config_res_row {
-    char *name;
-    int   node_id;
-    int   read_interval;
-    int   pipe_count;
-    int   tag_count;
+struct neu_parse_get_group_config_res_row {
+    char *   name;
+    uint32_t read_interval;
+    int      pipe_count;
+    int      tag_count;
 };
 
-struct neu_paser_get_group_config_res {
+struct neu_parse_get_group_config_res {
     enum neu_parse_function                    function;
     char *                                     uuid;
     int                                        error;
     int                                        n_config;
-    struct neu_paser_get_group_config_res_row *rows;
+    struct neu_parse_get_group_config_res_row *rows;
 };
 
-struct neu_paser_group_config_row {
-    char *name;
-    int   type;
-    int   decimal;
-    char *address;
-    int   flag;
-};
-
-struct neu_paser_add_group_config_req {
+struct neu_parse_add_group_config_req {
     enum neu_parse_function function;
     char *                  uuid;
     char *                  config;
     uint32_t                src_node_id;
     uint32_t                dst_node_id;
-    int                     read_interval;
+    uint32_t                read_interval;
 };
 
-struct neu_paser_update_group_config_req {
+struct neu_parse_update_group_config_req {
     enum neu_parse_function function;
     char *                  uuid;
     char *                  config;
     uint32_t                src_node_id;
     uint32_t                dst_node_id;
-    int                     read_interval;
+    uint32_t                read_interval;
 };
 
-struct neu_paser_delete_group_config_req {
+struct neu_parse_delete_group_config_req {
     enum neu_parse_function function;
     char *                  uuid;
     char *                  config;
     uint32_t                node_id;
 };
 
-struct neu_paser_group_config_res {
+struct neu_parse_group_config_res {
     enum neu_parse_function function;
     char *                  uuid;
     int                     error;
 };
 
-int neu_paser_decode_get_group_config_req(
-    char *buf, struct neu_paser_get_group_config_req **result);
+struct neu_parse_add_tag_ids_req_row {
+    char *   datatag_name;
+    uint32_t datatag_id;
+};
+
+struct neu_parse_add_tag_ids_req {
+    enum neu_parse_function               function;
+    char *                                uuid;
+    char *                                config;
+    int                                   node_id;
+    int                                   n_id;
+    struct neu_parse_add_tag_ids_req_row *rows;
+};
+
+struct neu_parse_add_tag_ids_res {
+    enum neu_parse_function function;
+    char *                  uuid;
+    int                     error;
+};
+
+struct neu_parse_delete_tag_ids_req_row {
+    char *   datatag_name;
+    uint32_t datatag_id;
+};
+
+struct neu_parse_delete_tag_ids_req {
+    enum neu_parse_function                  function;
+    char *                                   uuid;
+    char *                                   config;
+    int                                      node_id;
+    int                                      n_id;
+    struct neu_parse_delete_tag_ids_req_row *rows;
+};
+
+struct neu_parse_delete_tag_ids_res {
+    enum neu_parse_function function;
+    char *                  uuid;
+    int                     error;
+};
+
+int neu_parse_decode_get_group_config_req(
+    char *buf, struct neu_parse_get_group_config_req **result);
+int neu_parse_decode_add_group_config_req(
+    char *buf, struct neu_parse_add_group_config_req **result);
+int neu_parse_decode_update_group_config_req(
+    char *buf, struct neu_parse_update_group_config_req **result);
+int neu_parse_decode_delete_group_config_req(
+    char *buf, struct neu_parse_delete_group_config_req **result);
+
 int neu_parse_encode_get_group_config_res(
-    struct neu_paser_get_group_config_res *res, char **buf);
-void neu_parse_encode_get_group_config_free(
-    struct neu_paser_get_group_config_req *req);
-
-int neu_paser_decode_add_group_config_req(
-    char *buf, struct neu_paser_add_group_config_req **result);
-int neu_paser_decode_update_group_config_req(
-    char *buf, struct neu_paser_update_group_config_req **result);
-int neu_paser_decode_delete_group_config_req(
-    char *buf, struct neu_paser_delete_group_config_req **result);
-
+    struct neu_parse_get_group_config_res *res, char **buf);
 int neu_parse_encode_add_group_config_res(
-    struct neu_paser_group_config_res *res, char **buf);
+    struct neu_parse_group_config_res *res, char **buf);
 int neu_parse_encode_update_group_config_res(
-    struct neu_paser_group_config_res *res, char **buf);
+    struct neu_parse_group_config_res *res, char **buf);
 int neu_parse_encode_delete_group_config_res(
-    struct neu_paser_group_config_res *res, char **buf);
+    struct neu_parse_group_config_res *res, char **buf);
 
-void neu_paser_decode_add_group_config_free(
-    struct neu_paser_add_group_config_req *req);
-void neu_paser_decode_update_group_config_free(
-    struct neu_paser_update_group_config_req *req);
-void neu_paser_decode_delete_group_config_free(
-    struct neu_paser_delete_group_config_req *req);
+void neu_parse_encode_get_group_config_free(
+    struct neu_parse_get_group_config_req *req);
+void neu_parse_decode_add_group_config_free(
+    struct neu_parse_add_group_config_req *req);
+void neu_parse_decode_update_group_config_free(
+    struct neu_parse_update_group_config_req *req);
+void neu_parse_decode_delete_group_config_free(
+    struct neu_parse_delete_group_config_req *req);
+
+int neu_parse_decode_add_tag_ids_req(char *                             buf,
+                                     struct neu_parse_add_tag_ids_req **result);
+int neu_parse_decode_delete_tag_ids_req(
+    char *buf, struct neu_parse_delete_tag_ids_req **result);
+
+int neu_parse_encode_add_tag_ids_res(struct neu_parse_add_tag_ids_res *res,
+                                     char **                           buf);
+int neu_parse_encode_delete_tag_ids_res(
+    struct neu_parse_delete_tag_ids_res *res, char **buf);
+
+void neu_parse_decode_add_tag_ids_free(struct neu_parse_add_tag_ids_req *req);
+void neu_parse_decode_delete_tag_ids_free(
+    struct neu_parse_delete_tag_ids_req *req);
 
 #endif

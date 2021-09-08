@@ -82,19 +82,27 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
     switch (req->function) {
     case NEU_PARSE_OP_GET_GROUP_CONFIG:
         message_handle_get_group_config(
-            plugin, (struct neu_paser_get_group_config_req *) result);
+            plugin, (struct neu_parse_get_group_config_req *) result);
         break;
     case NEU_PARSE_OP_ADD_GROUP_CONFIG:
         message_handle_add_group_config(
-            plugin, (struct neu_paser_add_group_config_req *) result);
+            plugin, (struct neu_parse_add_group_config_req *) result);
         break;
     case NEU_PARSE_OP_UPDATE_GROUP_CONFIG:
         message_handle_update_group_config(
-            plugin, (struct neu_paser_update_group_config_req *) result);
+            plugin, (struct neu_parse_update_group_config_req *) result);
         break;
     case NEU_PARSE_OP_DELETE_GROUP_CONFIG:
         message_handle_delete_group_config(
-            plugin, (struct neu_paser_delete_group_config_req *) result);
+            plugin, (struct neu_parse_delete_group_config_req *) result);
+        break;
+    case NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG:
+        message_handle_add_datatag_ids(
+            plugin, (struct neu_parse_add_tag_ids_req *) result);
+        break;
+    case NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG:
+        message_handle_delete_datatag_ids(
+            plugin, (struct neu_parse_delete_tag_ids_req *) result);
         break;
     case NEU_PARSE_OP_READ:
         message_handle_read(plugin, (struct neu_parse_read_req *) result);

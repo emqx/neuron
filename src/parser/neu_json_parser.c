@@ -44,23 +44,33 @@ int neu_parse_decode(char *buf, void **result)
 
     switch (func_code.v.val_int) {
     case NEU_PARSE_OP_GET_GROUP_CONFIG: {
-        ret = neu_paser_decode_get_group_config_req(
-            buf, (struct neu_paser_get_group_config_req **) result);
+        ret = neu_parse_decode_get_group_config_req(
+            buf, (struct neu_parse_get_group_config_req **) result);
         break;
     }
     case NEU_PARSE_OP_ADD_GROUP_CONFIG: {
-        ret = neu_paser_decode_add_group_config_req(
-            buf, (struct neu_paser_add_group_config_req **) result);
+        ret = neu_parse_decode_add_group_config_req(
+            buf, (struct neu_parse_add_group_config_req **) result);
         break;
     }
     case NEU_PARSE_OP_UPDATE_GROUP_CONFIG: {
-        ret = neu_paser_decode_update_group_config_req(
-            buf, (struct neu_paser_update_group_config_req **) result);
+        ret = neu_parse_decode_update_group_config_req(
+            buf, (struct neu_parse_update_group_config_req **) result);
         break;
     }
     case NEU_PARSE_OP_DELETE_GROUP_CONFIG: {
-        ret = neu_paser_decode_delete_group_config_req(
-            buf, (struct neu_paser_delete_group_config_req **) result);
+        ret = neu_parse_decode_delete_group_config_req(
+            buf, (struct neu_parse_delete_group_config_req **) result);
+        break;
+    }
+    case NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG: {
+        ret = neu_parse_decode_add_tag_ids_req(
+            buf, (struct neu_parse_add_tag_ids_req **) result);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG: {
+        neu_parse_decode_delete_tag_ids_req(
+            buf, (struct neu_parse_delete_tag_ids_req **) result);
         break;
     }
     case NEU_PARSE_OP_READ:
@@ -137,22 +147,32 @@ int neu_parse_encode(void *result, char **buf)
     switch (*function) {
     case NEU_PARSE_OP_GET_GROUP_CONFIG: {
         neu_parse_encode_get_group_config_res(
-            (struct neu_paser_get_group_config_res *) result, buf);
+            (struct neu_parse_get_group_config_res *) result, buf);
         break;
     }
     case NEU_PARSE_OP_ADD_GROUP_CONFIG: {
         neu_parse_encode_add_group_config_res(
-            (struct neu_paser_group_config_res *) result, buf);
+            (struct neu_parse_group_config_res *) result, buf);
         break;
     }
     case NEU_PARSE_OP_UPDATE_GROUP_CONFIG: {
         neu_parse_encode_update_group_config_res(
-            (struct neu_paser_group_config_res *) result, buf);
+            (struct neu_parse_group_config_res *) result, buf);
         break;
     }
     case NEU_PARSE_OP_DELETE_GROUP_CONFIG: {
         neu_parse_encode_delete_group_config_res(
-            (struct neu_paser_group_config_res *) result, buf);
+            (struct neu_parse_group_config_res *) result, buf);
+        break;
+    }
+    case NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG: {
+        neu_parse_encode_add_tag_ids_res(
+            (struct neu_parse_add_tag_ids_res *) result, buf);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG: {
+        neu_parse_encode_delete_tag_ids_res(
+            (struct neu_parse_delete_tag_ids_res *) result, buf);
         break;
     }
     case NEU_PARSE_OP_READ:
@@ -225,27 +245,39 @@ void neu_parse_decode_free(void *result)
 
     switch (*function) {
     case NEU_PARSE_OP_GET_GROUP_CONFIG: {
-        struct neu_paser_get_group_config_req *req = result;
+        struct neu_parse_get_group_config_req *req = result;
 
         neu_parse_encode_get_group_config_free(req);
         break;
     }
     case NEU_PARSE_OP_ADD_GROUP_CONFIG: {
-        struct neu_paser_add_group_config_req *req = result;
+        struct neu_parse_add_group_config_req *req = result;
 
-        neu_paser_decode_add_group_config_free(req);
+        neu_parse_decode_add_group_config_free(req);
         break;
     }
     case NEU_PARSE_OP_UPDATE_GROUP_CONFIG: {
-        struct neu_paser_update_group_config_req *req = result;
+        struct neu_parse_update_group_config_req *req = result;
 
-        neu_paser_decode_update_group_config_free(req);
+        neu_parse_decode_update_group_config_free(req);
         break;
     }
     case NEU_PARSE_OP_DELETE_GROUP_CONFIG: {
-        struct neu_paser_delete_group_config_req *req = result;
+        struct neu_parse_delete_group_config_req *req = result;
 
-        neu_paser_decode_delete_group_config_free(req);
+        neu_parse_decode_delete_group_config_free(req);
+        break;
+    }
+    case NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG: {
+        struct neu_parse_add_tag_ids_req *req = result;
+
+        neu_parse_decode_add_tag_ids_free(req);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG: {
+        struct neu_parse_delete_tag_ids_req *req = result;
+
+        neu_parse_decode_delete_tag_ids_free(req);
         break;
     }
     case NEU_PARSE_OP_READ: {
