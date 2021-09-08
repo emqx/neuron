@@ -42,13 +42,15 @@ typedef struct adapter_reg_entity {
     neu_datatag_manager_t *datatag_manager;
     nng_cv *               cv;
     nng_pipe               adapter_pipe;
-    int                    bind_count;
+    uint32_t               bind_count;
 } adapter_reg_entity_t;
 
 typedef struct manager_bind_info {
     nng_mtx *  mtx;
+    nng_cv *   cv;
     nng_socket mng_sock;
-    int        bind_count;
+    uint32_t   bind_count;
+    uint32_t   expect_bind_count;
 } manager_bind_info_t;
 
 typedef enum manager_state {
@@ -299,7 +301,13 @@ static int init_bind_info(manager_bind_info_t *mng_bind_info)
         neu_panic("Failed to initialize mutex in manager_bind_info");
     }
 
-    mng_bind_info->bind_count = 0;
+    rv = nng_cv_alloc(&mng_bind_info->cv, mng_bind_info->mtx);
+    if (rv != 0) {
+        neu_panic("Failed to initialize condition(cv) in manager_bind_info");
+    }
+
+    mng_bind_info->bind_count        = 0;
+    mng_bind_info->expect_bind_count = 0;
     return 0;
 }
 
@@ -309,8 +317,10 @@ static int uninit_bind_info(manager_bind_info_t *mng_bind_info)
         log_warn("It has some bound adapter in manager");
     }
 
+    nng_cv_free(mng_bind_info->cv);
     nng_mtx_free(mng_bind_info->mtx);
-    mng_bind_info->bind_count = 0;
+    mng_bind_info->bind_count        = 0;
+    mng_bind_info->expect_bind_count = 0;
     return 0;
 }
 
@@ -407,8 +417,9 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->adapter_pipe = p;
         reg_entity->bind_count   = 1;
-        nng_cv_wake(reg_entity->cv);
         manager->bind_info.bind_count++;
+        nng_cv_wake(reg_entity->cv);
+        nng_cv_wake(manager->bind_info.cv);
         nng_mtx_unlock(manager->bind_info.mtx);
         log_debug("The manager bind the adapter(%s) with pipe(%d)",
                   neu_adapter_get_name(adapter), p);
@@ -437,7 +448,8 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->adapter_pipe = p;
         reg_entity->bind_count   = 0;
-        manager->bind_info.bind_count++;
+        manager->bind_info.bind_count--;
+        manager->bind_info.expect_bind_count--;
         nng_mtx_unlock(manager->bind_info.mtx);
         log_info("The manager unbind the adapter(%s)",
                  neu_adapter_get_name(adapter));
@@ -563,6 +575,18 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
 static int manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
     int rv = 0;
+
+    manager_bind_info_t *bind_info;
+
+    bind_info = &manager->bind_info;
+    nng_mtx_lock(bind_info->mtx);
+    while (bind_info->bind_count != bind_info->expect_bind_count) {
+        nng_cv_wait(bind_info->cv);
+    }
+
+    // A new adapter will to be bind
+    bind_info->expect_bind_count++;
+    nng_mtx_unlock(bind_info->mtx);
 
     rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_ADD_POST,
                          manager_bind_adapter, adapter);
