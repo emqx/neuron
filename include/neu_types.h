@@ -377,7 +377,7 @@ neu_order_t neu_nodeid_order(const neu_nodeid_t *n1, const neu_nodeid_t *n2);
  * A list of data type
  **/
 typedef enum {
-    NEU_DATATYPE_ERROR,
+    NEU_DATATYPE_ERROR = 0,
     NEU_DATATYPE_ARRAY,
     NEU_DATATYPE_BOOLEAN,
     NEU_DATATYPE_STATE,

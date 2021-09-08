@@ -83,8 +83,9 @@ TEST(JsonDatatagTableTest, GetTagEncode)
         (char *) "{\"function\": 32, \"uuid\": "
                  "\"554f5fd8-f437-11eb-975c-7704b9e17821\", \"error\": 0, "
                  "\"tags\": [{\"name\": \"Tag0001\", \"type\": 0, \"address\": "
-                 "\"1!400001\", \"attribute\": 0}, {\"name\": \"Tag0002\", "
-                 "\"type\": 1, \"address\": \"1!400002\", \"attribute\": 0}]}";
+                 "\"1!400001\", \"attribute\": 0, \"tag_id\": 0}, {\"name\": "
+                 "\"Tag0002\", \"type\": 1, \"address\": \"1!400002\", "
+                 "\"attribute\": 0, \"tag_id\": 0}]}";
     char *                        result = NULL;
     struct neu_parse_get_tags_res res    = {
         .function = NEU_PARSE_OP_GET_TAGS,

@@ -8,8 +8,8 @@ TEST(TagGroupConfigTest, neu_parse_decode_get_group_config_req)
 {
     char *json = (char *) "{ \"function\": 29, \"uuid\": "
                           "\"1d892fe8-f37e-11eb-9a34-932aa06a28f3\", "
-                          "\"nodeId\": 123456, "
-                          "\"groupConfig\": \"Config0\" }";
+                          "\"node_id\": 123456, "
+                          "\"group_config\": \"Config0\" }";
 
     void *                                 result = NULL;
     struct neu_parse_get_group_config_req *req    = NULL;
@@ -27,13 +27,14 @@ TEST(TagGroupConfigTest, neu_parse_decode_get_group_config_req)
 TEST(TagGroupConfigTest, neu_parse_encode_get_group_config_res)
 {
     char *buf =
-        (char *) "{\"function\": 29, \"uuid\": "
-                 "\"1d892fe8-f37e-11eb-9a34-932aa06a28f3\", \"error\": 0, "
-                 "\"groupConfigs\": [{\"name\": \"config0\", \"readInterval\": "
-                 "0, \"pipeCount\": 0, \"tagCount\": 0}, {\"name\": "
-                 "\"config1\", \"readInterval\": 0, \"pipeCount\": 0, "
-                 "\"tagCount\": 0}, {\"name\": \"config2\", \"readInterval\": "
-                 "0, \"pipeCount\": 0, \"tagCount\": 0}]}";
+        (char
+             *) "{\"function\": 29, \"uuid\": "
+                "\"1d892fe8-f37e-11eb-9a34-932aa06a28f3\", \"error\": 0, "
+                "\"group_configs\": [{\"name\": \"config0\", "
+                "\"read_interval\": 0, \"pipe_count\": 0, \"tag_count\": 0}, "
+                "{\"name\": \"config1\", \"read_interval\": 0, \"pipe_count\": "
+                "0, \"tag_count\": 0}, {\"name\": \"config2\", "
+                "\"read_interval\": 0, \"pipe_count\": 0, \"tag_count\": 0}]}";
     char *                                result = NULL;
     struct neu_parse_get_group_config_res res    = {
         .function = NEU_PARSE_OP_GET_GROUP_CONFIG,
@@ -63,10 +64,10 @@ TEST(TagGroupConfigTest, neu_parse_decode_add_group_config_req)
 {
     char *buf = (char *) "{\"function\":90, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"groupConfig\":\"Config0\", "
-                         "\"srcNodeId\":123456, "
-                         "\"dstNodeId\":654321, "
-                         "\"readInterval\": 2000 "
+                         "\"group_config\":\"Config0\", "
+                         "\"src_node_id\":123456, "
+                         "\"dst_node_id\":654321, "
+                         "\"read_interval\": 2000 "
                          " }";
 
     void *                                 result = NULL;
@@ -108,10 +109,10 @@ TEST(TagGroupConfigTest, neu_parse_decode_update_group_config_req)
 {
     char *buf = (char *) "{\"function\":91, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"groupConfig\":\"Config0\", "
-                         "\"srcNodeId\":123456, "
-                         "\"dstNodeId\":654321, "
-                         "\"readInterval\": 2000 "
+                         "\"group_config\":\"Config0\", "
+                         "\"src_node_id\":123456, "
+                         "\"dst_node_id\":654321, "
+                         "\"read_interval\": 2000 "
                          " }";
 
     void *                                    result = NULL;
@@ -153,8 +154,8 @@ TEST(TagGroupConfigTest, neu_parse_decode_delete_group_config_req)
 {
     char *buf = (char *) "{\"function\":92, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"groupConfig\":\"Config0\", "
-                         "\"nodeId\":123456 "
+                         "\"group_config\":\"Config0\", "
+                         "\"node_id\":123456 "
                          "}";
 
     void *                                    result = NULL;
@@ -193,10 +194,10 @@ TEST(TagGroupConfigTest, neu_parse_encode_delete_group_config_res)
 TEST(TagGroupConfigTest, neu_parse_decode_add_tag_ids_req)
 {
     char *buf = (char *) "{\"function\":93,\"uuid\":\"554f5fd8-f437-11eb-975c-"
-                         "7704b9e17821\",\"groupConfig\":"
-                         "\"Config0\",\"nodeId\":123456,\"dataTagIds\":[{"
-                         "\"dataTagName\":\"123\",\"dataTagId\":123},{"
-                         "\"dataTagName\":\"321\",\"dataTagId\":321}]}";
+                         "7704b9e17821\",\"group_config\":"
+                         "\"Config0\",\"node_id\":123456,\"data_tag_ids\":[{"
+                         "\"name\":\"123\",\"id\":123},{"
+                         "\"name\":\"321\",\"id\":321}]}";
 
     void *                            result = NULL;
     struct neu_parse_add_tag_ids_req *req    = NULL;
@@ -240,10 +241,10 @@ TEST(TagGroupConfigTest, neu_parse_encode_add_tag_ids_res)
 TEST(TagGroupConfigTest, neu_paser_decode_delete_tag_ids_req)
 {
     char *buf = (char *) "{\"function\":94,\"uuid\":\"554f5fd8-f437-11eb-975c-"
-                         "7704b9e17821\",\"groupConfig\":"
-                         "\"Config0\",\"nodeId\":123456,\"dataTagIds\":[{"
-                         "\"dataTagName\":\"123\",\"dataTagId\":123},{"
-                         "\"dataTagName\":\"321\",\"dataTagId\":321}]}";
+                         "7704b9e17821\",\"group_config\":"
+                         "\"Config0\",\"node_id\":123456,\"data_tag_ids\":[{"
+                         "\"name\":\"123\",\"id\":123},{"
+                         "\"name\":\"321\",\"id\":321}]}";
 
     void *                               result = NULL;
     struct neu_parse_delete_tag_ids_req *req    = NULL;

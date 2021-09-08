@@ -22,20 +22,19 @@
 
 #include <stdlib.h>
 
+#include "neu_plugin.h"
+
 #define REST_PROCESS_HTTP_REQUEST(aio, req_type, func)                        \
     {                                                                         \
         char *    req_data      = NULL;                                       \
         size_t    req_data_size = 0;                                          \
         req_type *req           = NULL;                                       \
         if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
-            neu_parse_decode(req_data, (void **) &req)) {                     \
+            neu_parse_decode(req_data, (void **) &req) == 0) {                \
             { func };                                                         \
             neu_parse_decode_free(req);                                       \
         } else {                                                              \
             http_bad_request(aio, "{\"error\": \"request body is wrong\"}");  \
-        }                                                                     \
-        if (req_data != NULL) {                                               \
-            free(req_data);                                                   \
         }                                                                     \
     }
 
@@ -72,4 +71,7 @@ void neu_rest_web_handler(const struct neu_rest_handler **handlers,
 void neu_rest_api_handler(const struct neu_rest_handler **handlers,
                           uint32_t *                      size);
 
+neu_taggrp_config_t *neu_rest_find_config(neu_plugin_t *plugin,
+                                          neu_node_id_t node_id,
+                                          const char *  name);
 #endif
