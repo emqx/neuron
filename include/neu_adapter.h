@@ -210,7 +210,7 @@ typedef struct neu_cmd_get_plugin_libs {
 
 /* NEU_REQRESP_PLUGIN_LIBS */
 typedef struct neu_reqresp_plugin_libs {
-    vector_t plugin_libs; // vector of neu_plugin_lib_info_t
+    vector_t plugin_libs; // vector of plugin_lib_info_t
 } neu_reqresp_plugin_libs_t;
 
 /* NEU_REQRESP_GET_DATATAGS */
