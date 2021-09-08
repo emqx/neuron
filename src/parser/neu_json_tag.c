@@ -256,7 +256,7 @@ int neu_parse_encode_get_tags_res(struct neu_parse_get_tags_res *res,
                 .v.val_int = res->tags[i].id,
             },
         };
-        array = neu_json_encode_array(array, tag, 5);
+        array = neu_json_encode_array(array, tag, 6);
     }
     neu_json_elem_t elems[] = { {
                                     .name      = NEU_PARSE_FUNCTION,

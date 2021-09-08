@@ -334,7 +334,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         return (-1);
     }
 
-    log_info("Get command from plugin");
+    log_info("Get command from plugin %d", cmd->req_type);
     switch (cmd->req_type) {
     case NEU_REQRESP_READ_DATA: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_READ_DATA, read_data_cmd_t,

@@ -43,7 +43,7 @@ typedef struct neu_adapter neu_adapter_t;
  */
 
 typedef enum neu_reqresp_type {
-    NEU_REQRESP_NOP,
+    NEU_REQRESP_NOP = 0,
     NEU_REQRESP_ERR_CODE, // result code of command
     NEU_REQRESP_READ_DATA,
     NEU_REQRESP_WRITE_DATA,

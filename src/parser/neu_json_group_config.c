@@ -44,11 +44,11 @@ int neu_parse_decode_get_group_config_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "nodeId",
+                                   .name = "node_id",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "groupConfig",
+                                   .name = "group_config",
                                    .t    = NEU_JSON_STR,
                                }
 
@@ -79,17 +79,17 @@ int neu_parse_encode_get_group_config_res(
                                         .v.val_str = res->rows[i].name,
                                     },
                                     {
-                                        .name      = "readInterval",
+                                        .name      = "read_interval",
                                         .t         = NEU_JSON_INT,
                                         .v.val_int = res->rows[i].read_interval,
                                     },
                                     {
-                                        .name      = "pipeCount",
+                                        .name      = "pipe_count",
                                         .t         = NEU_JSON_INT,
                                         .v.val_int = res->rows[i].pipe_count,
                                     },
                                     {
-                                        .name      = "tagCount",
+                                        .name      = "tag_count",
                                         .t         = NEU_JSON_INT,
                                         .v.val_int = res->rows[i].tag_count,
                                     } };
@@ -111,7 +111,7 @@ int neu_parse_encode_get_group_config_res(
                                     .v.val_int = res->error,
                                 },
                                 {
-                                    .name     = "groupConfigs",
+                                    .name     = "group_configs",
                                     .t        = NEU_JSON_OBJECT,
                                     .v.object = array,
                                 } };
@@ -139,19 +139,19 @@ int neu_parse_decode_add_group_config_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "groupConfig",
+                                   .name = "group_config",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "srcNodeId",
+                                   .name = "src_node_id",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "dstNodeId",
+                                   .name = "dst_node_id",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "readInterval",
+                                   .name = "read_interval",
                                    .t    = NEU_JSON_INT,
                                } };
 
@@ -205,19 +205,19 @@ int neu_parse_decode_update_group_config_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "groupConfig",
+                                   .name = "group_config",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "srcNodeId",
+                                   .name = "src_node_id",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "dstNodeId",
+                                   .name = "dst_node_id",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "readInterval",
+                                   .name = "read_interval",
                                    .t    = NEU_JSON_INT,
                                } };
 
@@ -272,11 +272,11 @@ int neu_parse_decode_delete_group_config_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "groupConfig",
+                                   .name = "group_config",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "nodeId",
+                                   .name = "node_id",
                                    .t    = NEU_JSON_INT,
                                }
 
@@ -358,11 +358,11 @@ int neu_parse_decode_add_tag_ids_req(char *                             buf,
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "groupConfig",
+                                   .name = "group_config",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "nodeId",
+                                   .name = "node_id",
                                    .t    = NEU_JSON_INT,
                                } };
 
@@ -376,19 +376,19 @@ int neu_parse_decode_add_tag_ids_req(char *                             buf,
     req->config   = elem[1].v.val_str;
     req->node_id  = elem[2].v.val_int;
 
-    req->n_id = neu_json_decode_array_size(buf, "dataTagIds");
+    req->n_id = neu_json_decode_array_size(buf, "data_tag_ids");
     req->rows = calloc(req->n_id, sizeof(struct neu_parse_add_tag_ids_req_row));
     for (int i = 0; i < req->n_id; i++) {
         neu_json_elem_t celem[] = { {
-                                        .name = "dataTagName",
+                                        .name = "name",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "dataTagId",
+                                        .name = "id",
                                         .t    = NEU_JSON_INT,
                                     } };
 
-        neu_json_decode_array(buf, "dataTagIds", i, NEU_JSON_ELEM_SIZE(celem),
+        neu_json_decode_array(buf, "data_tag_ids", i, NEU_JSON_ELEM_SIZE(celem),
                               celem);
         req->rows[i].datatag_name = celem[0].v.val_str;
         req->rows[i].datatag_id   = celem[1].v.val_int;
@@ -432,11 +432,11 @@ int neu_parse_decode_delete_tag_ids_req(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "groupConfig",
+                                   .name = "group_config",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "nodeId",
+                                   .name = "node_id",
                                    .t    = NEU_JSON_INT,
                                } };
 
@@ -450,20 +450,20 @@ int neu_parse_decode_delete_tag_ids_req(
     req->config   = elem[1].v.val_str;
     req->node_id  = elem[2].v.val_int;
 
-    req->n_id = neu_json_decode_array_size(buf, "dataTagIds");
+    req->n_id = neu_json_decode_array_size(buf, "data_tag_ids");
     req->rows =
         calloc(req->n_id, sizeof(struct neu_parse_delete_tag_ids_req_row));
     for (int i = 0; i < req->n_id; i++) {
         neu_json_elem_t celem[] = { {
-                                        .name = "dataTagName",
+                                        .name = "name",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "dataTagId",
+                                        .name = "id",
                                         .t    = NEU_JSON_INT,
                                     } };
 
-        neu_json_decode_array(buf, "dataTagIds", i, NEU_JSON_ELEM_SIZE(celem),
+        neu_json_decode_array(buf, "data_tag_ids", i, NEU_JSON_ELEM_SIZE(celem),
                               celem);
         req->rows[i].datatag_name = celem[0].v.val_str;
         req->rows[i].datatag_id   = celem[1].v.val_int;

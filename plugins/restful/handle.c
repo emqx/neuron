@@ -17,9 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <stdint.h>
+#include <stdlib.h>
 
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
+
+#include "vector.h"
+
+#include "neu_datatag_table.h"
+#include "neu_log.h"
+#include "neu_plugin.h"
 
 #include "parser/neu_json_login.h"
 #include "parser/neu_json_parser.h"
@@ -53,7 +60,7 @@ struct neu_rest_handler web_handlers[] = {
 
 struct neu_rest_handler api_handlers[] = {
     {
-        .method        = NEU_REST_METHOD_GET,
+        .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/ping",
         .value.handler = ping,
@@ -216,4 +223,26 @@ void neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx)
 void *neu_rest_get_plugin()
 {
     return rest_ctx->plugin;
+}
+
+neu_taggrp_config_t *neu_rest_find_config(neu_plugin_t *plugin,
+                                          neu_node_id_t node_id,
+                                          const char *  name)
+{
+    vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
+    neu_taggrp_config_t *find_config = NULL;
+
+    VECTOR_FOR_EACH(&grp_configs, iter)
+    {
+        neu_taggrp_config_t *config =
+            *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (strncmp(neu_taggrp_cfg_get_name(config), name, strlen(name)) == 0) {
+            find_config = config;
+            break;
+        }
+    }
+
+    vector_uninit(&grp_configs);
+
+    return find_config;
 }
