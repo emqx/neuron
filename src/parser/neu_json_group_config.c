@@ -32,12 +32,12 @@
 #define VALUE "value"
 #define TAGS "tags"
 
-int neu_paser_decode_get_group_config_req(
-    char *buf, struct neu_paser_get_group_config_req **result)
+int neu_parse_decode_get_group_config_req(
+    char *buf, struct neu_parse_get_group_config_req **result)
 {
-    struct neu_paser_get_group_config_req *req =
-        malloc(sizeof(struct neu_paser_get_group_config_req));
-    memset(req, 0, sizeof(struct neu_paser_get_group_config_req));
+    struct neu_parse_get_group_config_req *req =
+        malloc(sizeof(struct neu_parse_get_group_config_req));
+    memset(req, 0, sizeof(struct neu_parse_get_group_config_req));
 
     neu_json_elem_t elem[] = { {
                                    .name = NEU_PARSE_UUID,
@@ -69,7 +69,7 @@ int neu_paser_decode_get_group_config_req(
 }
 
 int neu_parse_encode_get_group_config_res(
-    struct neu_paser_get_group_config_res *res, char **buf)
+    struct neu_parse_get_group_config_res *res, char **buf)
 {
     void *array = NULL;
     for (int i = 0; i < res->n_config; i++) {
@@ -77,11 +77,6 @@ int neu_parse_encode_get_group_config_res(
                                         .name      = NAME,
                                         .t         = NEU_JSON_STR,
                                         .v.val_str = res->rows[i].name,
-                                    },
-                                    {
-                                        .name      = "nodeID",
-                                        .t         = NEU_JSON_INT,
-                                        .v.val_int = res->rows[i].node_id,
                                     },
                                     {
                                         .name      = "readInterval",
@@ -98,7 +93,7 @@ int neu_parse_encode_get_group_config_res(
                                         .t         = NEU_JSON_INT,
                                         .v.val_int = res->rows[i].tag_count,
                                     } };
-        array                   = neu_json_encode_array(array, group, 5);
+        array                   = neu_json_encode_array(array, group, 4);
     }
     neu_json_elem_t elems[] = { {
                                     .name      = NEU_PARSE_FUNCTION,
@@ -124,7 +119,7 @@ int neu_parse_encode_get_group_config_res(
 }
 
 void neu_parse_encode_get_group_config_free(
-    struct neu_paser_get_group_config_req *req)
+    struct neu_parse_get_group_config_req *req)
 {
     if (NULL != req) {
         free(req->uuid);
@@ -132,12 +127,12 @@ void neu_parse_encode_get_group_config_free(
     }
 }
 
-int neu_paser_decode_add_group_config_req(
-    char *buf, struct neu_paser_add_group_config_req **result)
+int neu_parse_decode_add_group_config_req(
+    char *buf, struct neu_parse_add_group_config_req **result)
 {
-    struct neu_paser_add_group_config_req *req =
-        malloc(sizeof(struct neu_paser_add_group_config_req));
-    memset(req, 0, sizeof(struct neu_paser_add_group_config_req));
+    struct neu_parse_add_group_config_req *req =
+        malloc(sizeof(struct neu_parse_add_group_config_req));
+    memset(req, 0, sizeof(struct neu_parse_add_group_config_req));
 
     neu_json_elem_t elem[] = { {
                                    .name = NEU_PARSE_UUID,
@@ -177,7 +172,7 @@ int neu_paser_decode_add_group_config_req(
 }
 
 int neu_parse_encode_add_group_config_res(
-    struct neu_paser_group_config_res *res, char **buf)
+    struct neu_parse_group_config_res *res, char **buf)
 {
     neu_json_elem_t elems[] = { {
                                     .name      = NEU_PARSE_FUNCTION,
@@ -198,12 +193,12 @@ int neu_parse_encode_add_group_config_res(
     return neu_json_encode(elems, 3, buf);
 }
 
-int neu_paser_decode_update_group_config_req(
-    char *buf, struct neu_paser_update_group_config_req **result)
+int neu_parse_decode_update_group_config_req(
+    char *buf, struct neu_parse_update_group_config_req **result)
 {
-    struct neu_paser_update_group_config_req *req =
-        malloc(sizeof(struct neu_paser_update_group_config_req));
-    memset(req, 0, sizeof(struct neu_paser_update_group_config_req));
+    struct neu_parse_update_group_config_req *req =
+        malloc(sizeof(struct neu_parse_update_group_config_req));
+    memset(req, 0, sizeof(struct neu_parse_update_group_config_req));
 
     neu_json_elem_t elem[] = { {
                                    .name = NEU_PARSE_UUID,
@@ -243,7 +238,7 @@ int neu_paser_decode_update_group_config_req(
 }
 
 int neu_parse_encode_update_group_config_res(
-    struct neu_paser_group_config_res *res, char **buf)
+    struct neu_parse_group_config_res *res, char **buf)
 {
     neu_json_elem_t elems[] = { {
                                     .name = NEU_PARSE_FUNCTION,
@@ -265,12 +260,12 @@ int neu_parse_encode_update_group_config_res(
     return neu_json_encode(elems, 3, buf);
 }
 
-int neu_paser_decode_delete_group_config_req(
-    char *buf, struct neu_paser_delete_group_config_req **result)
+int neu_parse_decode_delete_group_config_req(
+    char *buf, struct neu_parse_delete_group_config_req **result)
 {
-    struct neu_paser_delete_group_config_req *req =
-        malloc(sizeof(struct neu_paser_delete_group_config_req));
-    memset(req, 0, sizeof(struct neu_paser_delete_group_config_req));
+    struct neu_parse_delete_group_config_req *req =
+        malloc(sizeof(struct neu_parse_delete_group_config_req));
+    memset(req, 0, sizeof(struct neu_parse_delete_group_config_req));
 
     neu_json_elem_t elem[] = { {
                                    .name = NEU_PARSE_UUID,
@@ -302,7 +297,7 @@ int neu_paser_decode_delete_group_config_req(
 }
 
 int neu_parse_encode_delete_group_config_res(
-    struct neu_paser_group_config_res *res, char **buf)
+    struct neu_parse_group_config_res *res, char **buf)
 {
     neu_json_elem_t elems[] = { {
                                     .name = NEU_PARSE_FUNCTION,
@@ -324,8 +319,8 @@ int neu_parse_encode_delete_group_config_res(
     return neu_json_encode(elems, 3, buf);
 }
 
-void neu_paser_decode_add_group_config_free(
-    struct neu_paser_add_group_config_req *req)
+void neu_parse_decode_add_group_config_free(
+    struct neu_parse_add_group_config_req *req)
 {
     if (NULL != req) {
         free(req->uuid);
@@ -333,8 +328,8 @@ void neu_paser_decode_add_group_config_free(
     }
 }
 
-void neu_paser_decode_update_group_config_free(
-    struct neu_paser_update_group_config_req *req)
+void neu_parse_decode_update_group_config_free(
+    struct neu_parse_update_group_config_req *req)
 {
     if (NULL != req) {
         free(req->uuid);
@@ -342,11 +337,187 @@ void neu_paser_decode_update_group_config_free(
     }
 }
 
-void neu_paser_decode_delete_group_config_free(
-    struct neu_paser_delete_group_config_req *req)
+void neu_parse_decode_delete_group_config_free(
+    struct neu_parse_delete_group_config_req *req)
 {
     if (NULL != req) {
         free(req->uuid);
         free(req->config);
+    }
+}
+
+int neu_parse_decode_add_tag_ids_req(char *                             buf,
+                                     struct neu_parse_add_tag_ids_req **result)
+{
+    struct neu_parse_add_tag_ids_req *req =
+        malloc(sizeof(struct neu_parse_add_tag_ids_req));
+    memset(req, 0, sizeof(struct neu_parse_add_tag_ids_req));
+
+    neu_json_elem_t elem[] = { {
+                                   .name = NEU_PARSE_UUID,
+                                   .t    = NEU_JSON_STR,
+                               },
+                               {
+                                   .name = "groupConfig",
+                                   .t    = NEU_JSON_STR,
+                               },
+                               {
+                                   .name = "nodeId",
+                                   .t    = NEU_JSON_INT,
+                               } };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+    req->function = NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG;
+    req->uuid     = elem[0].v.val_str;
+    req->config   = elem[1].v.val_str;
+    req->node_id  = elem[2].v.val_int;
+
+    req->n_id = neu_json_decode_array_size(buf, "dataTagIds");
+    req->rows = calloc(req->n_id, sizeof(struct neu_parse_add_tag_ids_req_row));
+    for (int i = 0; i < req->n_id; i++) {
+        neu_json_elem_t celem[] = { {
+                                        .name = "dataTagName",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "dataTagId",
+                                        .t    = NEU_JSON_INT,
+                                    } };
+
+        neu_json_decode_array(buf, "dataTagIds", i, NEU_JSON_ELEM_SIZE(celem),
+                              celem);
+        req->rows[i].datatag_name = celem[0].v.val_str;
+        req->rows[i].datatag_id   = celem[1].v.val_int;
+    }
+
+    *result = req;
+    return 0;
+}
+
+int neu_parse_encode_add_tag_ids_res(struct neu_parse_add_tag_ids_res *res,
+                                     char **                           buf)
+{
+    neu_json_elem_t elems[] = { {
+                                    .name = NEU_PARSE_FUNCTION,
+                                    .t    = NEU_JSON_INT,
+                                    .v.val_int =
+                                        NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG,
+                                },
+                                {
+                                    .name      = NEU_PARSE_UUID,
+                                    .t         = NEU_JSON_STR,
+                                    .v.val_str = res->uuid,
+                                },
+                                {
+                                    .name      = "error",
+                                    .t         = NEU_JSON_INT,
+                                    .v.val_int = res->error,
+                                } };
+    return neu_json_encode(elems, 3, buf);
+}
+
+int neu_parse_decode_delete_tag_ids_req(
+    char *buf, struct neu_parse_delete_tag_ids_req **result)
+{
+    struct neu_parse_delete_tag_ids_req *req =
+        malloc(sizeof(struct neu_parse_delete_tag_ids_req));
+    memset(req, 0, sizeof(struct neu_parse_delete_tag_ids_req));
+
+    neu_json_elem_t elem[] = { {
+                                   .name = NEU_PARSE_UUID,
+                                   .t    = NEU_JSON_STR,
+                               },
+                               {
+                                   .name = "groupConfig",
+                                   .t    = NEU_JSON_STR,
+                               },
+                               {
+                                   .name = "nodeId",
+                                   .t    = NEU_JSON_INT,
+                               } };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+    req->function = NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG;
+    req->uuid     = elem[0].v.val_str;
+    req->config   = elem[1].v.val_str;
+    req->node_id  = elem[2].v.val_int;
+
+    req->n_id = neu_json_decode_array_size(buf, "dataTagIds");
+    req->rows =
+        calloc(req->n_id, sizeof(struct neu_parse_delete_tag_ids_req_row));
+    for (int i = 0; i < req->n_id; i++) {
+        neu_json_elem_t celem[] = { {
+                                        .name = "dataTagName",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "dataTagId",
+                                        .t    = NEU_JSON_INT,
+                                    } };
+
+        neu_json_decode_array(buf, "dataTagIds", i, NEU_JSON_ELEM_SIZE(celem),
+                              celem);
+        req->rows[i].datatag_name = celem[0].v.val_str;
+        req->rows[i].datatag_id   = celem[1].v.val_int;
+    }
+
+    *result = req;
+    return 0;
+}
+
+int neu_parse_encode_delete_tag_ids_res(
+    struct neu_parse_delete_tag_ids_res *res, char **buf)
+{
+    neu_json_elem_t elems[] = { {
+                                    .name = NEU_PARSE_FUNCTION,
+                                    .t    = NEU_JSON_INT,
+                                    .v.val_int =
+                                        NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG,
+                                },
+                                {
+                                    .name      = NEU_PARSE_UUID,
+                                    .t         = NEU_JSON_STR,
+                                    .v.val_str = res->uuid,
+                                },
+                                {
+                                    .name      = "error",
+                                    .t         = NEU_JSON_INT,
+                                    .v.val_int = res->error,
+                                } };
+    return neu_json_encode(elems, 3, buf);
+}
+
+void neu_parse_decode_add_tag_ids_free(struct neu_parse_add_tag_ids_req *req)
+{
+    if (NULL != req) {
+        free(req->uuid);
+        free(req->config);
+
+        for (int i = 0; i < req->n_id; i++) {
+            free(req->rows[i].datatag_name);
+        }
+        free(req->rows);
+    }
+}
+
+void neu_parse_decode_delete_tag_ids_free(
+    struct neu_parse_delete_tag_ids_req *req)
+{
+    if (NULL != req) {
+        free(req->uuid);
+        free(req->config);
+
+        for (int i = 0; i < req->n_id; i++) {
+            free(req->rows[i].datatag_name);
+        }
+        free(req->rows);
     }
 }

@@ -23,6 +23,17 @@
 #include "message_handle.h"
 
 #define UNUSED(x) (void) (x)
+#define GROUP_CONFIGS_UINIT(configs)                                        \
+    {                                                                       \
+        VECTOR_FOR_EACH(&configs, iter)                                     \
+        {                                                                   \
+            neu_taggrp_config_t *cur_grp_config;                            \
+            cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter); \
+            neu_taggrp_cfg_free(cur_grp_config);                            \
+        }                                                                   \
+        vector_uninit(&configs);                                            \
+    }
+
 static paho_client_t *g_paho;
 
 static const char tags[5][20] = { "1!400001", "1!400003", "1!00001", "1!00002",
@@ -390,177 +401,6 @@ void message_handle_add_tag(neu_plugin_t *                 plugin,
     free(result);
 }
 
-static void get_group_config_by_name(neu_plugin_t * plugin,
-                                     const uint32_t node_id,
-                                     const char *   config_name,
-                                     struct neu_paser_get_group_config_res *res)
-{
-    vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    neu_node_info_t *node_info;
-    int              count = 0;
-    VECTOR_FOR_EACH(&nodes, iter)
-    {
-        node_info = (neu_node_info_t *) iterator_get(&iter);
-        if (0 != node_id && node_id != node_info->node_id) {
-            continue;
-        }
-
-        vector_t configs =
-            neu_system_get_group_configs(plugin, node_info->node_id);
-        neu_taggrp_config_t *config;
-        VECTOR_FOR_EACH(&configs, iter)
-        {
-            config = *(neu_taggrp_config_t **) iterator_get(&iter);
-            if (NULL == config) {
-                continue;
-            }
-            if (0 != strcmp(config_name, neu_taggrp_cfg_get_name(config))) {
-                continue;
-            }
-
-            if (NULL == res->rows) {
-                res->rows =
-                    (struct neu_paser_get_group_config_res_row *) malloc(
-                        sizeof(struct neu_paser_get_group_config_res_row));
-            }
-            if (NULL != res->rows) {
-                res->rows = realloc(
-                    res->rows,
-                    (count + 1) *
-                        sizeof(struct neu_paser_get_group_config_res_row));
-            }
-
-            res->rows[count].name =
-                strdup((char *) neu_taggrp_cfg_get_name(config));
-            res->rows[count].node_id = node_info->node_id;
-            res->rows[count].read_interval =
-                neu_taggrp_cfg_get_interval(config);
-
-            vector_t *pipes = neu_taggrp_cfg_get_subpipes(config);
-            if (NULL != pipes) {
-                res->rows[count].pipe_count = pipes->size;
-            }
-
-            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
-            if (NULL != ids) {
-                res->rows[count].tag_count = ids->size;
-            }
-
-            count++;
-        }
-        res->n_config = count;
-
-        VECTOR_FOR_EACH(&configs, iter)
-        {
-            neu_taggrp_config_t *cur_grp_config;
-            cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
-            neu_taggrp_cfg_free(cur_grp_config);
-        }
-        vector_uninit(&configs);
-    }
-    vector_uninit(&nodes);
-}
-
-static void get_group_config_all(neu_plugin_t *plugin, const uint32_t node_id,
-                                 struct neu_paser_get_group_config_res *res)
-{
-    vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    neu_node_info_t *node_info;
-    int              count = 0;
-    VECTOR_FOR_EACH(&nodes, iter)
-    {
-        node_info = (neu_node_info_t *) iterator_get(&iter);
-        if (0 != node_id && node_id != node_info->node_id) {
-            continue;
-        }
-
-        vector_t configs =
-            neu_system_get_group_configs(plugin, node_info->node_id);
-        neu_taggrp_config_t *config;
-        VECTOR_FOR_EACH(&configs, iter)
-        {
-            config = *(neu_taggrp_config_t **) iterator_get(&iter);
-            if (NULL == config) {
-                continue;
-            }
-
-            if (NULL == res->rows) {
-                res->rows =
-                    (struct neu_paser_get_group_config_res_row *) malloc(
-                        sizeof(struct neu_paser_get_group_config_res_row));
-            }
-            if (NULL != res->rows) {
-                res->rows = realloc(
-                    res->rows,
-                    (count + 1) *
-                        sizeof(struct neu_paser_get_group_config_res_row));
-            }
-
-            res->rows[count].name =
-                strdup((char *) neu_taggrp_cfg_get_name(config));
-            res->rows[count].node_id = node_info->node_id;
-            res->rows[count].read_interval =
-                neu_taggrp_cfg_get_interval(config);
-
-            vector_t *pipes = neu_taggrp_cfg_get_subpipes(config);
-            if (NULL != pipes) {
-                res->rows[count].pipe_count = pipes->size;
-            }
-
-            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
-            if (NULL != ids) {
-                res->rows[count].tag_count = ids->size;
-            }
-
-            count++;
-        }
-        res->n_config = count;
-
-        VECTOR_FOR_EACH(&configs, iter)
-        {
-            neu_taggrp_config_t *cur_grp_config;
-            cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
-            neu_taggrp_cfg_free(cur_grp_config);
-        }
-        vector_uninit(&configs);
-    }
-    vector_uninit(&nodes);
-}
-
-void message_handle_get_group_config(neu_plugin_t *plugin,
-                                     struct neu_paser_get_group_config_req *req)
-{
-    log_debug("uuid:%s, node id:%d, config:%s", req->uuid, req->node_id,
-              req->config);
-
-    char *                                json_str = NULL;
-    struct neu_paser_get_group_config_res res      = {
-        .function = NEU_PARSE_OP_GET_GROUP_CONFIG,
-        .uuid     = (char *) req->uuid,
-        .error    = 0,
-        .n_config = 0,
-        .rows     = NULL
-    };
-
-    if (NULL != req->config && 0 != strlen(req->config)) {
-        get_group_config_by_name(plugin, req->node_id, req->config, &res);
-    } else {
-        get_group_config_all(plugin, req->node_id, &res);
-    }
-
-    int rc = neu_parse_encode(&res, &json_str);
-    if (0 == rc) {
-        send_mqtt_response(json_str, strlen(json_str));
-    }
-
-    int i;
-    for (i = 0; i < res.n_config; i++) {
-        free(res.rows[i].name);
-    }
-    free(res.rows);
-    free(json_str);
-}
-
 static int node_id_exist(vector_t *v, const uint32_t node_id)
 {
     neu_node_info_t *node_info;
@@ -590,6 +430,162 @@ static int config_exist(vector_t *v, const char *config_name)
         }
     }
     return -1;
+}
+
+static void get_group_config_by_name(neu_plugin_t * plugin,
+                                     const uint32_t node_id,
+                                     const char *   config_name,
+                                     struct neu_parse_get_group_config_res *res)
+{
+    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc    = node_id_exist(&nodes, node_id);
+    if (0 != rc) {
+        res->error = -1;
+        vector_uninit(&nodes);
+        return;
+    }
+
+    int      count   = 0;
+    vector_t configs = neu_system_get_group_configs(plugin, node_id);
+    if (0 == configs.size) {
+        res->error = -2;
+        GROUP_CONFIGS_UINIT(configs);
+        return;
+    }
+
+    neu_taggrp_config_t *config;
+    VECTOR_FOR_EACH(&configs, iter)
+    {
+        config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (NULL == config) {
+            continue;
+        }
+        if (0 != strcmp(config_name, neu_taggrp_cfg_get_name(config))) {
+            continue;
+        }
+
+        if (NULL == res->rows) {
+            res->rows = (struct neu_parse_get_group_config_res_row *) malloc(
+                sizeof(struct neu_parse_get_group_config_res_row));
+        }
+        if (NULL != res->rows) {
+            res->rows =
+                realloc(res->rows,
+                        (count + 1) *
+                            sizeof(struct neu_parse_get_group_config_res_row));
+        }
+
+        res->rows[count].name =
+            strdup((char *) neu_taggrp_cfg_get_name(config));
+        res->rows[count].read_interval = neu_taggrp_cfg_get_interval(config);
+
+        vector_t *pipes = neu_taggrp_cfg_get_subpipes(config);
+        if (NULL != pipes) {
+            res->rows[count].pipe_count = pipes->size;
+        }
+
+        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+        if (NULL != ids) {
+            res->rows[count].tag_count = ids->size;
+        }
+
+        count++;
+    }
+    res->n_config = count;
+
+    GROUP_CONFIGS_UINIT(configs);
+}
+
+static void get_group_config_all(neu_plugin_t *plugin, const uint32_t node_id,
+                                 struct neu_parse_get_group_config_res *res)
+{
+    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc    = node_id_exist(&nodes, node_id);
+    if (0 != rc) {
+        res->error = -1;
+        vector_uninit(&nodes);
+        return;
+    }
+
+    int      count   = 0;
+    vector_t configs = neu_system_get_group_configs(plugin, node_id);
+    if (0 == configs.size) {
+        res->error = -2;
+        GROUP_CONFIGS_UINIT(configs);
+        return;
+    }
+
+    neu_taggrp_config_t *config;
+    VECTOR_FOR_EACH(&configs, iter)
+    {
+        config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (NULL == config) {
+            continue;
+        }
+
+        if (NULL == res->rows) {
+            res->rows = (struct neu_parse_get_group_config_res_row *) malloc(
+                sizeof(struct neu_parse_get_group_config_res_row));
+        }
+        if (NULL != res->rows) {
+            res->rows =
+                realloc(res->rows,
+                        (count + 1) *
+                            sizeof(struct neu_parse_get_group_config_res_row));
+        }
+
+        res->rows[count].name =
+            strdup((char *) neu_taggrp_cfg_get_name(config));
+        res->rows[count].read_interval = neu_taggrp_cfg_get_interval(config);
+
+        vector_t *pipes = neu_taggrp_cfg_get_subpipes(config);
+        if (NULL != pipes) {
+            res->rows[count].pipe_count = pipes->size;
+        }
+
+        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+        if (NULL != ids) {
+            res->rows[count].tag_count = ids->size;
+        }
+
+        count++;
+    }
+    res->n_config = count;
+    GROUP_CONFIGS_UINIT(configs);
+}
+
+void message_handle_get_group_config(neu_plugin_t *plugin,
+                                     struct neu_parse_get_group_config_req *req)
+{
+    log_debug("uuid:%s, node id:%d, config:%s", req->uuid, req->node_id,
+              req->config);
+
+    char *                                json_str = NULL;
+    struct neu_parse_get_group_config_res res      = {
+        .function = NEU_PARSE_OP_GET_GROUP_CONFIG,
+        .uuid     = (char *) req->uuid,
+        .error    = 0,
+        .n_config = 0,
+        .rows     = NULL
+    };
+
+    if (NULL != req->config && 0 != strlen(req->config)) {
+        get_group_config_by_name(plugin, req->node_id, req->config, &res);
+    } else {
+        get_group_config_all(plugin, req->node_id, &res);
+    }
+
+    int rc = neu_parse_encode(&res, &json_str);
+    if (0 == rc) {
+        send_mqtt_response(json_str, strlen(json_str));
+    }
+
+    int i;
+    for (i = 0; i < res.n_config; i++) {
+        free(res.rows[i].name);
+    }
+    free(res.rows);
+    free(json_str);
 }
 
 static int add_config(neu_plugin_t *plugin, const char *config_name,
@@ -641,7 +637,7 @@ static int add_config(neu_plugin_t *plugin, const char *config_name,
 }
 
 void message_handle_add_group_config(neu_plugin_t *plugin,
-                                     struct neu_paser_add_group_config_req *req)
+                                     struct neu_parse_add_group_config_req *req)
 {
     log_debug("uuid:%s, config:%s, src node id:%d, dst node id:%d, "
               "read interval:%d",
@@ -652,7 +648,7 @@ void message_handle_add_group_config(neu_plugin_t *plugin,
                         req->read_interval);
 
     char *                            json_str = NULL;
-    struct neu_paser_group_config_res res      = {
+    struct neu_parse_group_config_res res      = {
         .function = NEU_PARSE_OP_ADD_GROUP_CONFIG,
         .uuid     = (char *) req->uuid,
         .error    = rc,
@@ -716,7 +712,7 @@ static int update_config(neu_plugin_t *plugin, const char *config_name,
 }
 
 void message_handle_update_group_config(
-    neu_plugin_t *plugin, struct neu_paser_update_group_config_req *req)
+    neu_plugin_t *plugin, struct neu_parse_update_group_config_req *req)
 {
     log_debug("uuid:%s, config:%s, src node id:%d, dst node id:%d, "
               "read interval:%d",
@@ -727,7 +723,7 @@ void message_handle_update_group_config(
                            req->dst_node_id, req->read_interval);
 
     char *                            json_str = NULL;
-    struct neu_paser_group_config_res res      = {
+    struct neu_parse_group_config_res res      = {
         .function = NEU_PARSE_OP_UPDATE_GROUP_CONFIG,
         .uuid     = (char *) req->uuid,
         .error    = rc,
@@ -784,7 +780,7 @@ static int delete_config(neu_plugin_t *plugin, const char *config_name,
 }
 
 void message_handle_delete_group_config(
-    neu_plugin_t *plugin, struct neu_paser_delete_group_config_req *req)
+    neu_plugin_t *plugin, struct neu_parse_delete_group_config_req *req)
 {
     log_debug("uuid:%s, config:%s, src node id:%d", req->uuid, req->config,
               req->node_id);
@@ -792,7 +788,7 @@ void message_handle_delete_group_config(
     int rc = delete_config(plugin, req->config, req->node_id);
 
     char *                            json_str = NULL;
-    struct neu_paser_group_config_res res      = {
+    struct neu_parse_group_config_res res      = {
         .function = NEU_PARSE_OP_DELETE_GROUP_CONFIG,
         .uuid     = (char *) req->uuid,
         .error    = rc,
@@ -804,4 +800,163 @@ void message_handle_delete_group_config(
     }
 
     free(json_str);
+}
+
+static neu_taggrp_config_t *get_group_config(vector_t *  v,
+                                             const char *config_name)
+{
+    neu_taggrp_config_t *config;
+
+    VECTOR_FOR_EACH(v, iter)
+    {
+        config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (NULL == config) {
+            continue;
+        }
+
+        if (0 == strcmp(config_name, neu_taggrp_cfg_get_name(config))) {
+            return config;
+        }
+    }
+    return NULL;
+}
+
+static int datatag_id_exist(vector_t *v, const uint32_t id, int *index)
+{
+    *index = 0;
+    datatag_id_t *datatag_id;
+    VECTOR_FOR_EACH(v, iter)
+    {
+        datatag_id = (datatag_id_t *) iterator_get(&iter);
+        if (id == *datatag_id) {
+            return 0;
+        }
+        (*index)++;
+    }
+
+    *index = -1;
+    return -1;
+}
+
+static int add_datatag_ids(neu_plugin_t *                    plugin,
+                           struct neu_parse_add_tag_ids_req *req)
+{
+    if (0 == req->node_id) {
+        return -1;
+    }
+
+    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc    = node_id_exist(&nodes, req->node_id);
+    if (0 != rc) {
+        vector_uninit(&nodes);
+        return -2;
+    }
+    vector_uninit(&nodes);
+
+    vector_t configs = neu_system_get_group_configs(plugin, req->node_id);
+    neu_taggrp_config_t *config = get_group_config(&configs, req->config);
+    if (NULL == config) {
+        GROUP_CONFIGS_UINIT(configs);
+        return -3;
+    }
+
+    vector_t *v = neu_taggrp_cfg_get_datatag_ids(config);
+    if (NULL == v) {
+        GROUP_CONFIGS_UINIT(configs);
+        return -4;
+    }
+
+    int exist;
+    for (int i = 0; i < req->n_id; i++) {
+        int index;
+        exist = datatag_id_exist(v, req->rows[i].datatag_id, &index);
+        if (0 == exist) {
+            continue;
+        }
+        uint32_t *new_datatag_id = malloc(sizeof(uint32_t));
+        *new_datatag_id          = req->rows[i].datatag_id;
+        vector_push_back(v, new_datatag_id);
+    }
+
+    GROUP_CONFIGS_UINIT(configs);
+    return 0;
+}
+
+void message_handle_add_datatag_ids(neu_plugin_t *                    plugin,
+                                    struct neu_parse_add_tag_ids_req *req)
+{
+    char *                           json_str = NULL;
+    struct neu_parse_add_tag_ids_res res      = {
+        .function = NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG,
+        .uuid     = req->uuid,
+    };
+
+    int error = add_datatag_ids(plugin, req);
+    res.error = error;
+
+    int rc = neu_parse_encode(&res, &json_str);
+    if (0 == rc) {
+        send_mqtt_response(json_str, strlen(json_str));
+        free(json_str);
+    }
+}
+
+static int delete_datatag_ids(neu_plugin_t *                       plugin,
+                              struct neu_parse_delete_tag_ids_req *req)
+{
+    if (0 == req->node_id) {
+        return -1;
+    }
+
+    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc    = node_id_exist(&nodes, req->node_id);
+    if (0 != rc) {
+        vector_uninit(&nodes);
+        return -2;
+    }
+    vector_uninit(&nodes);
+
+    vector_t configs = neu_system_get_group_configs(plugin, req->node_id);
+    neu_taggrp_config_t *config = get_group_config(&configs, req->config);
+    if (NULL == config) {
+        GROUP_CONFIGS_UINIT(configs);
+        return -3;
+    }
+
+    vector_t *v = neu_taggrp_cfg_get_datatag_ids(config);
+    if (NULL == v) {
+        GROUP_CONFIGS_UINIT(configs);
+        return -4;
+    }
+
+    int exist = 0;
+    for (int i = 0; i < req->n_id; i++) {
+        int index;
+        exist = datatag_id_exist(v, req->rows[i].datatag_id, &index);
+        if (0 == exist) {
+            vector_erase(v, index);
+        }
+    }
+
+    GROUP_CONFIGS_UINIT(configs);
+    return 0;
+}
+
+void message_handle_delete_datatag_ids(neu_plugin_t *plugin,
+                                       struct neu_parse_delete_tag_ids_req *req)
+{
+    char *                              json_str = NULL;
+    struct neu_parse_delete_tag_ids_res res      = {
+        .function = NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG,
+        .uuid     = req->uuid,
+    };
+
+    int error = delete_datatag_ids(plugin, req);
+    res.error = error;
+
+    int rc = neu_parse_encode(&res, &json_str);
+    if (0 == rc) {
+        send_mqtt_response(json_str, strlen(json_str));
+        free(json_str);
+    }
 }

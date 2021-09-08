@@ -45,13 +45,17 @@ void message_handle_get_tag_list(neu_plugin_t *                 plugin,
 void message_handle_add_tag(neu_plugin_t *                 plugin,
                             struct neu_parse_add_tags_req *req);
 void message_handle_get_group_config(
-    neu_plugin_t *plugin, struct neu_paser_get_group_config_req *req);
+    neu_plugin_t *plugin, struct neu_parse_get_group_config_req *req);
 void message_handle_add_group_config(
-    neu_plugin_t *plugin, struct neu_paser_add_group_config_req *req);
+    neu_plugin_t *plugin, struct neu_parse_add_group_config_req *req);
 void message_handle_update_group_config(
-    neu_plugin_t *plugin, struct neu_paser_update_group_config_req *req);
+    neu_plugin_t *plugin, struct neu_parse_update_group_config_req *req);
 void message_handle_delete_group_config(
-    neu_plugin_t *plugin, struct neu_paser_delete_group_config_req *req);
+    neu_plugin_t *plugin, struct neu_parse_delete_group_config_req *req);
+void message_handle_add_datatag_ids(neu_plugin_t *                    plugin,
+                                    struct neu_parse_add_tag_ids_req *req);
+void message_handle_delete_datatag_ids(
+    neu_plugin_t *plugin, struct neu_parse_delete_tag_ids_req *req);
 
 #ifdef __cplusplus
 }
