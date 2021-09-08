@@ -47,6 +47,10 @@ enum neu_parse_function {
     NEU_PARSE_OP_GET_NODES           = 36,
     NEU_PARSE_OP_DELETE_NODES        = 37,
     NEU_PARSE_OP_UPDATE_NODES        = 38,
+    NEU_PARSE_OP_ADD_PLUGIN          = 39,
+    NEU_PARSE_OP_GET_PLUGIN          = 40,
+    NEU_PARSE_OP_DELETE_PLUGIN       = 41,
+    NEU_PARSE_OP_UPDATE_PLUGIN       = 42,
 };
 
 int  neu_parse_decode(char *buf, void **result);

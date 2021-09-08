@@ -27,6 +27,7 @@
 #include "neu_json_login.h"
 #include "neu_json_node.h"
 #include "neu_json_parser.h"
+#include "neu_json_plugin.h"
 #include "neu_json_rw.h"
 #include "neu_json_tag.h"
 
@@ -108,6 +109,22 @@ int neu_parse_decode(char *buf, void **result)
         ret = neu_parse_decode_update_nodes_req(
             buf, (struct neu_parse_update_nodes_req **) result);
         break;
+    case NEU_PARSE_OP_ADD_PLUGIN:
+        ret = neu_parse_decode_add_plugin_req(
+            buf, (struct neu_parse_add_plugin_req **) result);
+        break;
+    case NEU_PARSE_OP_DELETE_PLUGIN:
+        ret = neu_parse_decode_delete_plugin_req(
+            buf, (struct neu_parse_delete_plugin_req **) result);
+        break;
+    case NEU_PARSE_OP_UPDATE_PLUGIN:
+        ret = neu_parse_decode_update_plugin_req(
+            buf, (struct neu_parse_update_plugin_req **) result);
+        break;
+    case NEU_PARSE_OP_GET_PLUGIN:
+        ret = neu_parse_decode_get_plugin_req(
+            buf, (struct neu_parse_get_plugin_req **) result);
+        break;
     }
 
     return ret;
@@ -180,6 +197,22 @@ int neu_parse_encode(void *result, char **buf)
     case NEU_PARSE_OP_UPDATE_NODES:
         neu_parse_encode_update_nodes_res(
             (struct neu_parse_update_nodes_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_ADD_PLUGIN:
+        neu_parse_encode_add_plugin_res(
+            (struct neu_parse_add_plugin_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_DELETE_PLUGIN:
+        neu_parse_encode_delete_plugin_res(
+            (struct neu_parse_delete_plugin_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_UPDATE_PLUGIN:
+        neu_parse_encode_update_plugin_res(
+            (struct neu_parese_update_plugin_res *) result, buf);
+        break;
+    case NEU_PARSE_OP_GET_PLUGIN:
+        neu_parse_encode_get_plugin_res(
+            (struct neu_parse_get_plugin_res *) result, buf);
         break;
     }
 
@@ -291,6 +324,29 @@ void neu_parse_decode_free(void *result)
         free(req->plugin_name);
         free(req->uuid);
 
+        break;
+    }
+    case NEU_PARSE_OP_ADD_PLUGIN: {
+        struct neu_parse_add_plugin_req *req = result;
+
+        neu_parse_decode_add_plugin_free(req);
+        break;
+    }
+    case NEU_PARSE_OP_DELETE_PLUGIN: {
+        struct neu_parse_delete_plugin_req *req = result;
+
+        neu_parse_decode_delete_plugin_free(req);
+        break;
+    }
+    case NEU_PARSE_OP_UPDATE_PLUGIN: {
+        struct neu_parse_update_plugin_req *req = result;
+        neu_parse_decode_update_plugin_free(req);
+        break;
+    }
+    case NEU_PARSE_OP_GET_PLUGIN: {
+        struct neu_parse_get_plugin_req *req = result;
+
+        neu_parse_decode_get_plugin_free(req);
         break;
     }
     }

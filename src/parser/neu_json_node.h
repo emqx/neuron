@@ -32,7 +32,7 @@ extern "C" {
 struct neu_parse_add_nodes_req {
     enum neu_parse_function function;
     char *                  uuid;
-    enum neu_node_type      node_type;
+    neu_node_type_e         node_type;
     char *                  adapter_name;
     char *                  plugin_name;
 };
