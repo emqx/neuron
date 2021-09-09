@@ -24,7 +24,6 @@
 
 #define KIND "kind"
 #define NODE_TYPE "node_type"
-#define PLUGIN_NAME "plugin_type"
 #define PLUGIN_LIB_NAME "plugin_lib_name"
 #define PLUGIN_ID "plugin_id"
 #define PLUGIN_NAME "plugin_name"

@@ -186,17 +186,18 @@ int neu_parse_decode_delete_nodes_req(
 int neu_parse_encode_delete_nodes_res(struct neu_parse_delete_nodes_res *res,
                                       char **                            buf)
 {
-    neu_json_elem_t elems[] = { {
-                                    .name = NEU_PARSE_FUNCTION,
-                                    .t    = NEU_JSON_INT,
+    neu_json_elem_t elems[] = { { .name      = NEU_PARSE_FUNCTION,
+                                  .t         = NEU_JSON_INT,
+                                  .v.val_int = res->function },
+                                {
+                                    .name      = NEU_PARSE_UUID,
+                                    .t         = NEU_JSON_STR,
+                                    .v.val_str = res->uuid,
                                 },
                                 {
-                                    .name = NEU_PARSE_UUID,
-                                    .t    = NEU_JSON_STR,
-                                },
-                                {
-                                    .name = NEU_PARSE_ERROR,
-                                    .t    = res->error,
+                                    .name      = NEU_PARSE_ERROR,
+                                    .t         = NEU_JSON_INT,
+                                    .v.val_int = res->error,
                                 } };
 
     return neu_json_encode(elems, 3, buf);

@@ -121,6 +121,24 @@ TEST(JsonNodesTest, DeleteNodesDecode)
     neu_parse_decode_free(result);
 }
 
+TEST(JsonNodesTest, DeleteNodesEncode)
+{
+    char *buf = (char *) "{\"function\": 37, "
+                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
+                         "\"error\": 0}";
+    char *                            result = NULL;
+    struct neu_parse_delete_nodes_res res    = {
+        .function = NEU_PARSE_OP_DELETE_NODES,
+        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
+        .error    = 0,
+    };
+
+    EXPECT_EQ(0, neu_parse_encode(&res, &result));
+    EXPECT_STREQ(buf, result);
+
+    free(result);
+}
+
 TEST(JsonNodesTest, UpdateNodesDecode)
 {
     char *buf = (char *) "{\"function\": 38, "

@@ -208,7 +208,7 @@ int neu_parse_encode(void *result, char **buf)
         break;
     case NEU_PARSE_OP_UPDATE_PLUGIN:
         neu_parse_encode_update_plugin_res(
-            (struct neu_parese_update_plugin_res *) result, buf);
+            (struct neu_parse_update_plugin_res *) result, buf);
         break;
     case NEU_PARSE_OP_GET_PLUGIN:
         neu_parse_encode_get_plugin_res(
