@@ -137,6 +137,7 @@ add_subdirectory(plugins/modbus)
 
 # mqtt plugin
 add_subdirectory(plugins/mqtt)
+add_subdirectory(plugins/opcua)
 enable_testing()
 add_subdirectory(tests)
 # add_subdirectory(tests/plugins/mqtt)

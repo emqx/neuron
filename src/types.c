@@ -294,6 +294,33 @@ neu_variable_t *neu_variable_create()
     return v;
 }
 
+void neu_variable_set_key(neu_variable_t *v, const char *key)
+{
+    if (NULL == v || NULL == key || 0 == strlen(key)) {
+        return;
+    }
+
+    v->key = strdup(key);
+    if (NULL != v->key) {
+        v->key_len = strlen(key);
+    }
+}
+
+int neu_variable_get_key(neu_variable_t *v, char **p_key)
+{
+    if (NULL == v) {
+        return -1;
+    }
+
+    if (0 < v->key_len) {
+        *p_key = v->key;
+    } else {
+        *p_key = NULL;
+    }
+
+    return 0;
+}
+
 void neu_variable_set_error(neu_variable_t *v, const int code)
 {
     if (NULL == v) {
@@ -467,6 +494,21 @@ int neu_variable_get_uqword(neu_variable_t *v, uint64_t *value)
     return 0;
 }
 
+int neu_variable_set_float(neu_variable_t *v, const float value)
+{
+    return neu_variable_set_value(v, NEU_DATATYPE_FLOAT, (void *) &value,
+                                  sizeof(float));
+}
+
+int neu_variable_get_float(neu_variable_t *v, float *value)
+{
+    if (NULL == v) {
+        return -1;
+    }
+    *value = *((float *) (v->data));
+    return 0;
+}
+
 int neu_variable_set_double(neu_variable_t *v, const double value)
 {
     return neu_variable_set_value(v, NEU_DATATYPE_DOUBLE, (void *) &value,
@@ -512,6 +554,10 @@ void neu_variable_destroy(neu_variable_t *v)
 
     if (NULL != v->next) {
         neu_variable_destroy(v->next);
+    }
+
+    if (NULL != v->key) {
+        free(v->key);
     }
 
     if (NULL != v->data) {
@@ -615,6 +661,12 @@ static size_t neu_variable_serialize_inner(neu_variable_t *v, void **buf,
     size_thing = sizeof(v->v_type);
     serialize_join(len, &v->v_type, size_thing, buf);
 
+    size_thing = sizeof(v->key_len);
+    serialize_join(len, &v->key_len, size_thing, buf);
+
+    size_thing = v->key_len;
+    serialize_join(len, v->key, size_thing, buf);
+
     size_t s_size_thing = sizeof(uint32_t);
     serialize_join(len, &v->data_len, s_size_thing, buf);
 
@@ -671,6 +723,14 @@ static neu_variable_t *neu_variable_deserialize_inner(void *buf, size_t *len)
 
     size_thing = sizeof(v->v_type);
     deserialize_join(len, buf, &v->v_type, size_thing);
+
+    size_thing = sizeof(v->key_len);
+    deserialize_join(len, buf, &v->key_len, size_thing);
+    if (0 < v->key_len) {
+        v->key = (char *) malloc(v->key_len + 1);
+        memset(v->key, 0, v->key_len + 1);
+        deserialize_join(len, buf, v->key, v->key_len);
+    }
 
     size_thing = sizeof(uint32_t);
     deserialize_join(len, buf, &v->data_len, size_thing);

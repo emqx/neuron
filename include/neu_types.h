@@ -548,6 +548,8 @@ typedef struct neu_variable_t {
     struct neu_variable_t *   prev;
     int                       error;
     neu_datatype_t            v_type;
+    size_t                    key_len;
+    char *                    key;
     size_t                    data_len;
     void *                    data; /* Points to the scalar or array data */
     const neu_variabletype_t *type; /* The data type description */
@@ -612,6 +614,8 @@ void neu_variable_setArray(neu_variable_t *v, void *array, size_t arraySize,
 
 neu_variable_t *neu_variable_create();
 neu_datatype_t  neu_variable_get_type(neu_variable_t *v);
+void            neu_variable_set_key(neu_variable_t *v, const char *key);
+int             neu_variable_get_key(neu_variable_t *v, char **key);
 void            neu_variable_set_error(neu_variable_t *v, const int code);
 int             neu_variable_get_error(neu_variable_t *v);
 int             neu_variable_set_byte(neu_variable_t *v, const int8_t value);
@@ -632,6 +636,8 @@ int    neu_variable_set_qword(neu_variable_t *v, const int64_t value);
 int    neu_variable_get_qword(neu_variable_t *v, int64_t *value);
 int    neu_variable_set_uqword(neu_variable_t *v, const uint64_t value);
 int    neu_variable_get_uqword(neu_variable_t *v, uint64_t *value);
+int    neu_variable_set_float(neu_variable_t *v, const float value);
+int    neu_variable_get_float(neu_variable_t *v, float *value);
 int    neu_variable_set_double(neu_variable_t *v, const double value);
 int    neu_variable_get_double(neu_variable_t *v, double *value);
 int    neu_variable_set_string(neu_variable_t *v, const char *value);

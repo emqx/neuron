@@ -18,6 +18,7 @@
  **/
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "message_handle.h"
@@ -50,6 +51,39 @@ static int send_mqtt_response(char *buff, const size_t len)
     client_error error = paho_client_publish(g_paho, "neuronlite/response", 0,
                                              (unsigned char *) buff, len);
     return error;
+}
+
+static int node_id_exist(vector_t *v, const uint32_t node_id)
+{
+    neu_node_info_t *node_info;
+    VECTOR_FOR_EACH(v, iter)
+    {
+        node_info = (neu_node_info_t *) iterator_get(&iter);
+        log_info("node info id:%ld, name:%s", node_info->node_id,
+                 node_info->node_name);
+        if (node_id == node_info->node_id) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int config_exist(vector_t *v, const char *config_name)
+{
+    neu_taggrp_config_t *config;
+
+    VECTOR_FOR_EACH(v, iter)
+    {
+        config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (NULL == config) {
+            continue;
+        }
+
+        if (0 == strcmp(config_name, neu_taggrp_cfg_get_name(config))) {
+            return 0;
+        }
+    }
+    return -1;
 }
 
 void message_handle_init_tags(neu_plugin_t *plugin)
@@ -109,8 +143,7 @@ void message_handle_read(neu_plugin_t *plugin, struct neu_parse_read_req *req)
 
     vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
     neu_node_info_t *node_info;
-    node_info =
-        (neu_node_info_t *) vector_get(&nodes, 1); // modbus nodeid uint32_t
+    node_info = (neu_node_info_t *) vector_get(&nodes, 2); // modbus-1, opcua-2
     neu_node_id_t dest_node_id = node_info->node_id;
     vector_t      configs = neu_system_get_group_configs(plugin, dest_node_id);
 
@@ -120,13 +153,8 @@ void message_handle_read(neu_plugin_t *plugin, struct neu_parse_read_req *req)
     c               = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
     uint32_t req_id = neu_plugin_send_read_cmd(plugin, dest_node_id, c);
 
-    VECTOR_FOR_EACH(&configs, iter)
-    {
-        neu_taggrp_config_t *cur_grp_config;
-        cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
-        neu_taggrp_cfg_free(cur_grp_config);
-    }
-    vector_uninit(&configs);
+    GROUP_CONFIGS_UINIT(configs);
+    vector_uninit(&nodes);
     UNUSED(req_id);
 }
 
@@ -224,15 +252,18 @@ void message_handle_read_result(neu_variable_t *variable)
     free(result);
 }
 
-static int write_command(neu_plugin_t *plugin, neu_variable_t *data_var)
+static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
+                         neu_variable_t *data_var)
 {
-    vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    neu_node_info_t *node_info;
-    node_info =
-        (neu_node_info_t *) vector_get(&nodes, 1); // modbus nodeid uint32_t
-    neu_node_id_t dest_node_id = node_info->node_id;
-    vector_t      configs = neu_system_get_group_configs(plugin, dest_node_id);
+    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc    = node_id_exist(&nodes, dest_node_id);
+    vector_uninit(&nodes);
 
+    if (0 != rc) {
+        return -1;
+    }
+
+    vector_t configs = neu_system_get_group_configs(plugin, dest_node_id);
     neu_taggrp_config_t *config;
     neu_taggrp_config_t *c;
     config = *(neu_taggrp_config_t **) vector_get(&configs, 0);
@@ -241,13 +272,7 @@ static int write_command(neu_plugin_t *plugin, neu_variable_t *data_var)
     uint32_t req_id =
         neu_plugin_send_write_cmd(plugin, dest_node_id, c, data_var);
 
-    VECTOR_FOR_EACH(&configs, iter)
-    {
-        neu_taggrp_config_t *cur_grp_config;
-        cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
-        neu_taggrp_cfg_free(cur_grp_config);
-    }
-    vector_uninit(&configs);
+    GROUP_CONFIGS_UINIT(configs);
     return req_id;
 }
 
@@ -260,31 +285,34 @@ void message_handle_write(neu_plugin_t *              plugin,
     head                 = neu_variable_create();
     neu_variable_set_error(head, 0);
     for (int i = 0; i < write_req->n_tag; i++) {
-        // enum neu_json_type   type  = write_req->tags[i].t;
+        enum neu_json_type   type  = write_req->tags[i].t;
         union neu_json_value value = write_req->tags[i].value;
         neu_variable_t *     v     = neu_variable_create();
 
-        if (0 == i) {
-            neu_variable_set_uword(v, value.val_int);
-        }
+        char key[16] = { 0 };
+        sprintf(key, "%d", write_req->tags[i].tag_id);
+        neu_variable_set_key(v, key);
 
-        if (1 == i) {
-            neu_variable_set_uword(v, value.val_int);
-        }
-        if (2 == i) {
-            neu_variable_set_byte(v, value.val_int);
-        }
-        if (3 == i) {
-            neu_variable_set_byte(v, value.val_int);
-        }
-        if (4 == i) {
-            neu_variable_set_byte(v, value.val_int);
-        }
+        switch (type) {
+        case NEU_JSON_INT:
+            neu_variable_set_dword(v, value.val_int);
+            break;
+        case NEU_JSON_STR:
+            neu_variable_set_string(v, value.val_str);
+            break;
+        case NEU_JSON_DOUBLE:
+            neu_variable_set_double(v, value.val_double);
+            break;
+        case NEU_JSON_BOOL:
+            neu_variable_set_boolean(v, value.val_bool);
+            break;
 
+        default:
+            break;
+        }
         neu_variable_add_item(head, v);
     }
-
-    write_command(plugin, head->next);
+    write_command(plugin, write_req->node_id, head->next);
     neu_variable_destroy(head);
 }
 
@@ -292,27 +320,37 @@ void message_handle_get_tag_list(neu_plugin_t *                 plugin,
                                  struct neu_parse_get_tags_req *req)
 {
     log_info("Get tag list uuid:%s", req->uuid);
+    char *                        result = NULL;
+    struct neu_parse_get_tags_res res    = { .function = NEU_PARSE_OP_GET_TAGS,
+                                          .uuid     = req->uuid,
+                                          .error    = 0,
+                                          .n_tag    = 0,
+                                          .tags     = NULL };
 
-    vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    neu_node_info_t *node_info;
-    node_info =
-        (neu_node_info_t *) vector_get(&nodes, 1); // modbus nodeid uint32_t
-    neu_node_id_t dest_node_id = node_info->node_id;
+    uint32_t dest_node_id = req->node_id;
+    vector_t nodes        = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc           = node_id_exist(&nodes, dest_node_id);
+    vector_uninit(&nodes);
+
+    if (0 != rc) {
+        res.error = -1;
+        rc        = neu_parse_encode(&res, &result);
+        if (0 == rc) {
+            send_mqtt_response(result, strlen(result));
+        }
+        return;
+    }
 
     neu_datatag_table_t *table =
         neu_system_get_datatags_table(plugin, dest_node_id);
     if (NULL == table) {
+        res.error = -2;
+        rc        = neu_parse_encode(&res, &result);
+        if (0 == rc) {
+            send_mqtt_response(result, strlen(result));
+        }
         return;
     }
-
-    char *                        result = NULL;
-    struct neu_parse_get_tags_res res    = {
-        .function = NEU_PARSE_OP_GET_TAGS,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-        .n_tag    = 5,
-        .tags     = NULL
-    };
 
     res.tags = (struct neu_parse_get_tags_res_tag *) calloc(
         5, sizeof(struct neu_parse_get_tags_res_tag));
@@ -332,7 +370,7 @@ void message_handle_get_tag_list(neu_plugin_t *                 plugin,
         res.tags[i].attribute = 0;
     }
 
-    int rc = neu_parse_encode(&res, &result);
+    rc = neu_parse_encode(&res, &result);
     if (0 == rc) {
         send_mqtt_response(result, strlen(result));
     }
@@ -348,88 +386,56 @@ void message_handle_get_tag_list(neu_plugin_t *                 plugin,
 void message_handle_add_tag(neu_plugin_t *                 plugin,
                             struct neu_parse_add_tags_req *req)
 {
-    UNUSED(req);
-    vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    neu_node_info_t *node_info;
-    node_info =
-        (neu_node_info_t *) vector_get(&nodes, 1); // modbus nodeid uint32_t
-    neu_node_id_t dest_node_id = node_info->node_id;
+    char *                        result = NULL;
+    struct neu_parse_add_tags_res res    = {
+        .function = NEU_PARSE_OP_ADD_TAGS,
+        .uuid     = req->uuid,
+        .error    = 0,
+    };
+
+    uint32_t dest_node_id = req->node_id;
+    vector_t nodes        = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc           = node_id_exist(&nodes, dest_node_id);
+    vector_uninit(&nodes);
+
+    if (0 != rc) {
+        res.error = -1;
+        rc        = neu_parse_encode(&res, &result);
+        if (0 == rc) {
+            send_mqtt_response(result, strlen(result));
+        }
+        free(result);
+        return;
+    }
 
     neu_datatag_table_t *table =
         neu_system_get_datatags_table(plugin, dest_node_id);
     if (NULL == table) {
+        res.error = -1;
+        rc        = neu_parse_encode(&res, &result);
+        if (0 == rc) {
+            send_mqtt_response(result, strlen(result));
+        }
+        free(result);
         return;
     }
 
-    neu_datatag_id_t id;
-    neu_address_t    datatag_address;
-    memset(&datatag_address, 0, sizeof(neu_address_t));
-    char *str_addr = (char *) tags[3];
-    id             = 3;
+    for (int i = 0; i < req->n_tag; i++) {
+        neu_datatag_t *datatag = malloc(sizeof(neu_datatag_t));
+        datatag->name          = strdup(req->tags[i].name);
+        datatag->attribute     = req->tags[i].attribute;
+        datatag->type          = req->tags[i].type;
+        datatag->addr_str      = strdup(req->tags[i].address);
+        datatag_id_t id        = neu_datatag_tbl_add(table, datatag);
 
-    neu_datatag_t *datatag0 = malloc(sizeof(neu_datatag_t));
-    datatag0->id            = id;
-    datatag0->attribute     = NEU_ATTRIBUTETYPE_READ;
-    datatag0->type          = NEU_DATATYPE_BYTE;
-    datatag0->address       = datatag_address;
-    datatag0->addr_str      = str_addr;
-    ids[3]                  = neu_datatag_tbl_add(table, datatag0);
+        log_info("Add datatag to the datatag table, id:%ld", id);
+    }
 
-    str_addr = (char *) tags[4];
-    id       = 4;
-
-    neu_datatag_t *datatag1 = malloc(sizeof(neu_datatag_t));
-    datatag1->id            = id;
-    datatag1->attribute     = NEU_ATTRIBUTETYPE_READ;
-    datatag1->type          = NEU_DATATYPE_BYTE;
-    datatag1->address       = datatag_address;
-    datatag1->addr_str      = str_addr;
-    ids[4]                  = neu_datatag_tbl_add(table, datatag1);
-
-    char *                        result = NULL;
-    struct neu_parse_add_tags_res res    = {
-        .function = NEU_PARSE_OP_ADD_TAGS,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    int rc = neu_parse_encode(&res, &result);
+    rc = neu_parse_encode(&res, &result);
     if (0 == rc) {
         send_mqtt_response(result, strlen(result));
     }
-
     free(result);
-}
-
-static int node_id_exist(vector_t *v, const uint32_t node_id)
-{
-    neu_node_info_t *node_info;
-    VECTOR_FOR_EACH(v, iter)
-    {
-        node_info = (neu_node_info_t *) iterator_get(&iter);
-        if (node_id == node_info->node_id) {
-            return 0;
-        }
-    }
-    return -1;
-}
-
-static int config_exist(vector_t *v, const char *config_name)
-{
-    neu_taggrp_config_t *config;
-
-    VECTOR_FOR_EACH(v, iter)
-    {
-        config = *(neu_taggrp_config_t **) iterator_get(&iter);
-        if (NULL == config) {
-            continue;
-        }
-
-        if (0 == strcmp(config_name, neu_taggrp_cfg_get_name(config))) {
-            return 0;
-        }
-    }
-    return -1;
 }
 
 static void get_group_config_by_name(neu_plugin_t * plugin,
