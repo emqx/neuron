@@ -10,7 +10,7 @@ if [ $system == 'Linux' ];then
     fi
 fi
 
-lib_list=(nng jansson jwt paho uuid openssl gtest yaml)
+lib_list=(nng jansson jwt paho uuid openssl gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]};do
@@ -158,6 +158,24 @@ function build_gtest()
 {
     echo "Install gtest"
     install_tool libgtest-dev gtest-devel googletest
+}
+
+function build_open62541() {
+    echo "Install open62541 (v1.2.2)"
+
+    if [ ! -d open62541 ];then
+        git clone -b v1.2.2 https://github.com/open62541/open62541.git
+    fi
+    cd open62541 
+    rm -rf build
+    mkdir build
+    cd build
+    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DUA_ENABLE_AMALGAMATION=ON -DUA_ENABLE_ENCRYPTION=ON -DUA_ENABLE_ENCRYPTION_OPENSSL=ON ..
+    ninja
+    ninja install
+
+    echo "Leaving open62541"
+    cd ../../
 }
 
 current=`pwd`

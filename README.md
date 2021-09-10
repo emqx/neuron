@@ -97,3 +97,12 @@ NEURON IIoT System for Industry 4.0
 
   $ unzip neuron-dashboard.zip -d build
   ```
+- [open62541](https://open62541.org/)
+  ```shell
+  $ git clone -b v1.2.2 https://github.com/open62541/open62541.git
+  $ cd open62541
+  $ mkdir build
+  $ cd build
+  $ cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DUA_ENABLE_AMALGAMATION=ON -DUA_ENABLE_ENCRYPTION=ON -DUA_ENABLE_ENCRYPTION_OPENSSL=ON ..
+  $ ninja && ninja install
+  ```
