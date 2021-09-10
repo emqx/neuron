@@ -25,7 +25,7 @@
 #include "neu_plugin_info.h"
 
 typedef enum adapter_type {
-    ADAPTER_TYPE_UNKNOW,
+    ADAPTER_TYPE_UNKNOW = 0,
     ADAPTER_TYPE_WEBSERVER,
     ADAPTER_TYPE_MQTT,
     ADAPTER_TYPE_STREAM_PROCESSOR,
