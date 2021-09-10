@@ -147,25 +147,57 @@ TEST(JsonPluginTest, GetPluginDecode)
 
 TEST(JsonPluginTest, GetPluginEncode)
 {
-    char *buf = (char *) "{\"function\": 40, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"plugin_id\": 123, "
-                         "\"kind\": 1, "
-                         "\"node_type\": 1, "
-                         "\"plugin_name\": \"plugin1\", "
-                         "\"plugin_lib_name\": \"lib1\"}";
-    char *                          result = NULL;
-    struct neu_parse_get_plugin_res res;
-    res.function        = NEU_PARSE_OP_GET_PLUGIN;
-    res.uuid            = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821";
-    res.plugin_id       = 123;
-    res.kind            = PLUGIN_KIND_SYSTEM;
-    res.node_type       = NEU_NODE_TYPE_DRIVER;
-    res.plugin_name     = (char *) "plugin1";
-    res.plugin_lib_name = (char *) "lib1";
+    char *buf =
+        (char
+             *) "{\"function\": 40, "
+                "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
+                "\"plugin_libs\": "
+                "[{\"plugin_id\": 123, \"kind\": 1, \"node_type\": 1, "
+                "\"plugin_name\": \"plugin1\", \"plugin_lib_name\": \"lib1\"}, "
+                "{\"plugin_id\": 456, \"kind\": 1, \"node_type\": 1, "
+                "\"plugin_name\": \"plugin2\", \"plugin_lib_name\": \"lib2\"}, "
+                "{\"plugin_id\": 789, \"kind\": 1, \"node_type\": 1, "
+                "\"plugin_name\": \"plugin3\", \"plugin_lib_name\": "
+                "\"lib3\"}]}";
+    char *result = NULL;
+
+    struct neu_parse_get_plugin_res res = {
+        .function = NEU_PARSE_OP_GET_PLUGIN,
+        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
+        .n_plugin = 3,
+    };
+
+    res.plugin_libs = (struct neu_parse_get_plugin_res_libs *) calloc(
+        3, sizeof(struct neu_parse_get_plugin_res_libs));
+
+    res.plugin_libs[0].plugin_id       = 123;
+    res.plugin_libs[0].kind            = PLUGIN_KIND_SYSTEM;
+    res.plugin_libs[0].node_type       = NEU_NODE_TYPE_DRIVER;
+    res.plugin_libs[0].plugin_name     = strdup((char *) "plugin1");
+    res.plugin_libs[0].plugin_lib_name = strdup((char *) "lib1");
+
+    res.plugin_libs[1].plugin_id       = 456;
+    res.plugin_libs[1].kind            = PLUGIN_KIND_SYSTEM;
+    res.plugin_libs[1].node_type       = NEU_NODE_TYPE_DRIVER;
+    res.plugin_libs[1].plugin_name     = strdup((char *) "plugin2");
+    res.plugin_libs[1].plugin_lib_name = strdup((char *) "lib2");
+
+    res.plugin_libs[2].plugin_id       = 789;
+    res.plugin_libs[2].kind            = PLUGIN_KIND_SYSTEM;
+    res.plugin_libs[2].node_type       = NEU_NODE_TYPE_DRIVER;
+    res.plugin_libs[2].plugin_name     = strdup((char *) "plugin3");
+    res.plugin_libs[2].plugin_lib_name = strdup((char *) "lib3");
 
     EXPECT_EQ(0, neu_parse_encode(&res, &result));
     EXPECT_STREQ(buf, result);
+
+    free(res.plugin_libs[0].plugin_name);
+    free(res.plugin_libs[0].plugin_lib_name);
+    free(res.plugin_libs[1].plugin_name);
+    free(res.plugin_libs[1].plugin_lib_name);
+    free(res.plugin_libs[2].plugin_name);
+    free(res.plugin_libs[2].plugin_lib_name);
+    free(res.plugin_libs);
 
     free(result);
 }

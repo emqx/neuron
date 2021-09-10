@@ -78,15 +78,21 @@ struct neu_parse_get_plugin_req {
     char *                  uuid;
 };
 
-struct neu_parse_get_plugin_res {
-    enum neu_parse_function function;
-    char *                  uuid;
 
+struct neu_parse_get_plugin_res_libs
+{
     uint32_t        plugin_id;
     plugin_kind_e   kind;
     neu_node_type_e node_type;
     char *          plugin_name;
     char *          plugin_lib_name;
+};
+
+struct neu_parse_get_plugin_res {
+    enum neu_parse_function function;
+    char *                  uuid;
+    uint16_t                n_plugin;
+    struct neu_parse_get_plugin_res_libs *plugin_libs;
 };
 
 int neu_parse_decode_add_plugin_req(char *                            buf,
