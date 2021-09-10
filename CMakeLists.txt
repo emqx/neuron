@@ -36,6 +36,14 @@ set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(extern/libcsptr)
 configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
                COPYONLY)
+#configure_file(extern/libcsptr/include/csptr/smart_ptr.h ${CMAKE_SOURCE_DIR}/include/smart_ptr.h
+#               COPYONLY)
+#configure_file(extern/libcsptr/include/csptr/common.h ${CMAKE_SOURCE_DIR}/include/common.h
+#               COPYONLY)
+#configure_file(extern/libcsptr/include/csptr/smalloc.h ${CMAKE_SOURCE_DIR}/include/smalloc.h
+#               COPYONLY)
+#configure_file(extern/libcsptr/include/csptr/config.h ${CMAKE_SOURCE_DIR}/include/config.h
+#               COPYONLY)
 
 # Call this from your own project's makefile.
 
@@ -95,6 +103,7 @@ set(NEURON_BASE_SOURCES
     src/base/neu_datatag_table.c
     src/base/neu_tag_group_config.c
     src/base/neu_plugin_common.c
+    src/base/neu_data_expr.c
     src/connection/tcp_client.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
@@ -111,7 +120,8 @@ add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
-target_link_libraries(neuron-base vector-static jansson ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron-base vector-static csptr jansson
+                      ${CMAKE_THREAD_LIBS_INIT})
 
 #copy yaml to build
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR})

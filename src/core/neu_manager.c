@@ -445,8 +445,8 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         nng_cv_wake(reg_entity->cv);
         nng_cv_wake(manager->bind_info.cv);
         nng_mtx_unlock(manager->bind_info.mtx);
-        log_debug("The manager bind the adapter(%s) with pipe(%d)",
-                  neu_adapter_get_name(adapter), p);
+        log_info("The manager bind the adapter(%s) with pipe(%d)",
+                 neu_adapter_get_name(adapter), p);
     }
 
     return;

@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "neu_errcodes.h"
+#include "neu_panic.h"
 #include "neu_types.h"
 
 /*****************/
@@ -32,7 +33,7 @@ neu_double_t neu_bytedec_toDouble(neu_bytedec_t b)
     neu_word_t dec = 1;
     for (int m = 0; m < b.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(b.value % dec)) / dec + b.value / dec);
+    return (((neu_double_t) (b.value % dec)) / dec + b.value / dec);
 }
 
 neu_double_t neu_ubytedec_toDouble(neu_ubytedec_t ub)
@@ -40,7 +41,7 @@ neu_double_t neu_ubytedec_toDouble(neu_ubytedec_t ub)
     neu_word_t dec = 1;
     for (int m = 0; m < ub.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(ub.value % dec)) / dec + ub.value / dec);
+    return (((neu_double_t) (ub.value % dec)) / dec + ub.value / dec);
 }
 
 neu_double_t neu_worddec_toDouble(neu_worddec_t w)
@@ -48,7 +49,7 @@ neu_double_t neu_worddec_toDouble(neu_worddec_t w)
     neu_word_t dec = 1;
     for (int m = 0; m < w.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(w.value % dec)) / dec + w.value / dec);
+    return (((neu_double_t) (w.value % dec)) / dec + w.value / dec);
 }
 
 neu_double_t neu_uworddec_toDouble(neu_uworddec_t uw)
@@ -56,7 +57,7 @@ neu_double_t neu_uworddec_toDouble(neu_uworddec_t uw)
     neu_word_t dec = 1;
     for (int m = 0; m < uw.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(uw.value % dec)) / dec + uw.value / dec);
+    return (((neu_double_t) (uw.value % dec)) / dec + uw.value / dec);
 }
 
 neu_double_t neu_dworddec_toDouble(neu_dworddec_t dw)
@@ -64,7 +65,7 @@ neu_double_t neu_dworddec_toDouble(neu_dworddec_t dw)
     neu_word_t dec = 1;
     for (int m = 0; m < dw.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(dw.value % dec)) / dec + dw.value / dec);
+    return (((neu_double_t) (dw.value % dec)) / dec + dw.value / dec);
 }
 
 neu_double_t neu_udworddec_toDouble(neu_udworddec_t udw)
@@ -72,7 +73,7 @@ neu_double_t neu_udworddec_toDouble(neu_udworddec_t udw)
     neu_word_t dec = 1;
     for (int m = 0; m < udw.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(udw.value % dec)) / dec + udw.value / dec);
+    return (((neu_double_t) (udw.value % dec)) / dec + udw.value / dec);
 }
 
 neu_double_t neu_qworddec_toDouble(neu_qworddec_t qw)
@@ -80,7 +81,7 @@ neu_double_t neu_qworddec_toDouble(neu_qworddec_t qw)
     neu_word_t dec = 1;
     for (int m = 0; m < qw.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(qw.value % dec)) / dec + qw.value / dec);
+    return (((neu_double_t) (qw.value % dec)) / dec + qw.value / dec);
 }
 
 neu_double_t neu_uqworddec_toDouble(neu_uqworddec_t uqw)
@@ -88,7 +89,7 @@ neu_double_t neu_uqworddec_toDouble(neu_uqworddec_t uqw)
     neu_word_t dec = 1;
     for (int m = 0; m < uqw.decimal; m++)
         dec *= 10;
-    return (((neu_double_t)(uqw.value % dec)) / dec + uqw.value / dec);
+    return (((neu_double_t) (uqw.value % dec)) / dec + uqw.value / dec);
 }
 
 /****************/
@@ -784,4 +785,64 @@ const char *neu_variable_get_str(neu_variable_t *v)
     }
 
     return str_buf;
+}
+
+/*
+ * Fixed length array
+ */
+/* New a fixed length array, the esize must less then 64K Byte */
+neu_fixed_array_t *neu_fixed_array_new(size_t length, size_t esize)
+{
+    size_t             size;
+    neu_fixed_array_t *array;
+
+    if (esize > FIXED_ARRAY_ESIZE_MAX) {
+        neu_panic("The length of fixed array is not less then 64K Byte");
+        return NULL;
+    }
+
+    size  = length * esize + 2 * sizeof(size_t);
+    array = (neu_fixed_array_t *) malloc(size);
+    if (array == NULL) {
+        return NULL;
+    }
+
+    array->length = length;
+    array->esize  = esize;
+    return array;
+}
+
+/* shallow free */
+void neu_fixed_array_free(neu_fixed_array_t *array)
+{
+    free(array);
+    return;
+}
+
+/* shallow copy */
+void neu_fixed_array_copy(neu_fixed_array_t *dst, neu_fixed_array_t *src)
+{
+    size_t size;
+
+    size = neu_fixed_array_size(dst);
+    memcpy(dst, src, size);
+    return;
+}
+
+/* shallow clone */
+neu_fixed_array_t *neu_fixed_array_clone(neu_fixed_array_t *array)
+{
+    neu_fixed_array_t *new_array;
+    size_t             size;
+
+    size      = neu_fixed_array_size(array);
+    new_array = (neu_fixed_array_t *) malloc(size);
+    if (new_array == NULL) {
+        return NULL;
+    }
+
+    new_array->length = array->length;
+    new_array->esize  = array->esize;
+    memcpy(new_array->buf, array->buf, new_array->length * new_array->esize);
+    return new_array;
 }

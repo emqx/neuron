@@ -27,7 +27,11 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+#include "neu_log.h"
 
 /**
  * Order
@@ -302,6 +306,129 @@ static inline neu_text_t neu_text_fromChars(const char *locale,
     t.text   = neu_string_fromChars(chars);
     return t;
 }
+
+/**
+ * Bytes
+ * ------
+ * A sequence of byte. Bytes are just an array of byte(uint8_t).
+ **/
+typedef struct {
+    size_t  length;
+    uint8_t buf[0];
+} neu_bytes_t;
+
+/**
+ * memory size of the fixed array
+ */
+static inline size_t neu_bytes_size(neu_bytes_t *bytes)
+{
+    return sizeof(size_t) + bytes->length;
+}
+
+/**
+ * New a fixed array by length
+ */
+static inline neu_bytes_t *neu_bytes_new(size_t length)
+{
+    size_t size;
+
+    size = sizeof(size_t) + length;
+    return (neu_bytes_t *) malloc(size);
+}
+
+/**
+ * shallow free
+ */
+static inline void neu_bytes_free(neu_bytes_t *bytes)
+{
+    free(bytes);
+}
+
+/**
+ * shallow copy
+ */
+static inline void neu_bytes_copy(neu_bytes_t *dst, neu_bytes_t *src)
+{
+    memcpy(dst, src, dst->length + sizeof(size_t));
+    return;
+}
+
+/**
+ * shallow clone
+ */
+static inline neu_bytes_t *neu_bytes_clone(neu_bytes_t *bytes)
+{
+    neu_bytes_t *new_bytes;
+    size_t       size;
+
+    size      = neu_bytes_size(bytes);
+    new_bytes = (neu_bytes_t *) malloc(size);
+    if (new_bytes == NULL) {
+        return NULL;
+    }
+
+    new_bytes->length = bytes->length;
+    memcpy(new_bytes->buf, bytes->buf, new_bytes->length);
+    return new_bytes;
+}
+
+/**
+ * Fixed Array
+ * ------
+ * A sequence of structure element.
+ **/
+#define FIXED_ARRAY_ESIZE_MAX ((1 << 16) - 1)
+
+struct neu_fixed_array {
+    size_t length;
+    size_t esize; ///< element size
+
+    // For align with 8 bytes
+    uint64_t buf[0];
+    // Don’t add any member after here
+};
+
+typedef struct neu_fixed_array neu_fixed_array_t;
+
+/**
+ * memory size of the fixed array
+ */
+static inline size_t neu_fixed_array_size(neu_fixed_array_t *array)
+{
+    size_t size;
+
+    size = array->length * array->esize + 2 * sizeof(size_t);
+    return size;
+}
+
+/**
+ * New a fixed array by length and element size.
+ * NOTE: the esize must less then 64K Byte
+ */
+neu_fixed_array_t *neu_fixed_array_new(size_t length, size_t esize);
+
+/**
+ * New a fixed array by length and element size
+ */
+static inline void *neu_fixed_array_get(neu_fixed_array_t *array, size_t index)
+{
+    return (char *) array->buf + array->esize * index;
+}
+
+/**
+ * shallow free
+ */
+void neu_fixed_array_free(neu_fixed_array_t *array);
+
+/**
+ * shallow copy
+ */
+void neu_fixed_array_copy(neu_fixed_array_t *dst, neu_fixed_array_t *src);
+
+/**
+ * shallow clone
+ */
+neu_fixed_array_t *neu_fixed_array_clone(neu_fixed_array_t *array);
 
 /**
  * ErrorCode

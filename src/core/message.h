@@ -64,12 +64,12 @@ typedef enum msg_type {
 
     MSG_TYPE_END = MSG_TYPE_VENDOR_END,
 
-    MSG_DATABUF_KIND_MASK = (0xf << 28),
-    MSG_DATABUF_INPLACE   = (0x0 << 28),
-    MSG_DATABUF_EXTERNAL  = (0x1 << 28)
+    MSG_DATABUF_KIND_MASK = (0x3 << 29),
+    MSG_DATABUF_INPLACE   = (0x0 << 29),
+    MSG_DATABUF_EXTERNAL  = (0x1 << 29)
 } msg_type_e;
 
-static_assert(MSG_TYPE_END >= MSG_DATABUF_KIND_MASK,
+static_assert(MSG_TYPE_END < MSG_DATABUF_KIND_MASK,
               "Too many massage type exceed MSG_DATABUF_KIND_MASK");
 
 /* MSG_CMD_READ_DATA */

@@ -53,6 +53,20 @@ static inline void vector_free(vector_t *vec)
     return;
 }
 
+static inline vector_t *vector_clone(vector_t *vec)
+{
+    vector_t *new_vec;
+
+    new_vec = (vector_t *) malloc(sizeof(vector_t));
+    if (new_vec == NULL) {
+        return NULL;
+    }
+
+    new_vec->data = NULL;
+    vector_copy(new_vec, vec);
+    return new_vec;
+}
+
 #ifdef __cplusplus
 }
 #endif
