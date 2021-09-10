@@ -27,6 +27,7 @@
 #include <nng/protocol/bus0/bus.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "config.h"
 #include "core/neu_manager.h"
 #include "idhash.h"
 #include "neu_log.h"
@@ -75,10 +76,7 @@ static void usage()
 
 static int read_neuron_config()
 {
-    int rv = 0;
-
-    // TODO: read configuration from config file.
-    return rv;
+    return neu_config_init("./neuron.yaml");
 }
 
 int main(int argc, char *argv[])

@@ -63,6 +63,7 @@ endif()
 aux_source_directory(src/parser NEURON_SRC_PARSE)
 set(NEURON_SOURCES
     src/main.c
+    src/config.c
     src/core/message.c
     src/core/databuf.c
     src/core/neu_manager.c
@@ -82,9 +83,9 @@ add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES} ${NEURON_SRC_PARSE})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 if(APPLE)
-  target_link_libraries(neuron nng::nng jansson neuron-base)
+  target_link_libraries(neuron nng::nng jansson yaml neuron-base)
 else()
-  target_link_libraries(neuron dl nng jansson neuron-base)
+  target_link_libraries(neuron dl nng jansson yaml neuron-base)
 endif()
 target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
@@ -112,6 +113,8 @@ target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
 target_link_libraries(neuron-base vector-static jansson ${CMAKE_THREAD_LIBS_INIT})
 
+#copy yaml to build
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR})
 
 # define for plugins
 # sample driver plugin

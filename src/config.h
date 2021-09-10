@@ -17,25 +17,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <errorcodes.h>
-#include <types.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-typedef struct {
-    neu_errorcode_t code;
-    const char *    name;
-} neu_errorcodename_t;
+int neu_config_init(char *config_file);
+// need free value
+char *neu_config_get_value(char *config_file, int n_key, char *key, ...);
 
-static const size_t              errorcodeDescriptionsSize = 2;
-static const neu_errorcodename_t errorcodeDescriptions[2]  = {
-    { NEU_ERRORCODE_NONE, "None" },
-    { NEU_ERRORCODE_OUTOFMEMORY, "ErrorCodeOutOfMemory" }
-};
-
-const char *neu_errorcode_getName(neu_errorcode_t code)
-{
-    for (size_t i = 0; i < errorcodeDescriptionsSize; ++i) {
-        if (errorcodeDescriptions[i].code == code)
-            return errorcodeDescriptions[i].name;
-    }
-    return errorcodeDescriptions[errorcodeDescriptionsSize - 1].name;
+#ifdef __cplusplus
 }
+#endif

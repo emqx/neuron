@@ -10,7 +10,7 @@ if [ $system == 'Linux' ];then
     fi
 fi
 
-lib_list=(nng jansson jwt paho uuid openssl gtest)
+lib_list=(nng jansson jwt paho uuid openssl gtest yaml)
 
 list_str=""
 for var in ${lib_list[*]};do
@@ -99,6 +99,17 @@ function build_paho()
     ninja
     ninja install
     echo "Leaving paho.mqtt.c "
+    cd ../../
+}
+
+function build_yaml()
+{   
+    git clone https://github.com/yaml/libyaml.git
+    cd libyaml
+    rm -rf build
+    mkdir build && cd build && cmake .. && make
+    make install
+
     cd ../../
 }
 
