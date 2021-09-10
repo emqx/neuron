@@ -414,7 +414,7 @@ int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
 
     nng_mtx_lock(plugin_mng->mtx);
     index = find_plugin_by_name(plugins, (const char *) param->plugin_name);
-    if (index == SIZE_MAX) {
+    if (index != SIZE_MAX) {
         plugin_id_t          plugin_id;
         plugin_reg_entity_t *old_reg_entity;
         plugin_reg_entity_t  reg_entity;

@@ -1440,6 +1440,7 @@ int neu_manager_get_plugin_libs(neu_manager_t *manager,
         plugin_reg_info             = (plugin_reg_info_t *) iterator_get(&iter);
         adapter_type                = plugin_reg_info->adapter_type;
         plugin_lib_info.plugin_id   = plugin_reg_info->plugin_id;
+        plugin_lib_info.plugin_kind = plugin_reg_info->plugin_kind;
         plugin_lib_info.node_type   = adapter_type_to_node_type(adapter_type);
         plugin_lib_info.plugin_name = plugin_reg_info->plugin_name;
         plugin_lib_info.plugin_lib_name = plugin_reg_info->plugin_lib_name;
