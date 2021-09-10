@@ -1,0 +1,11 @@
+lib_path: ./
+mqtt:
+  broker:
+    host: 127.0.0.1
+    port: 1883
+web:
+  host: 0.0.0.0
+  port: 7000
+api:
+  host: 0.0.0.0
+  port: 7001

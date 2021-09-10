@@ -64,6 +64,15 @@ target_include_directories(json_plugin_test PRIVATE
 )
 target_link_libraries(json_plugin_test neuron-base gtest_main gtest pthread jansson)
 
+add_executable(config_test config_test.cc ${CMAKE_SOURCE_DIR}/src/config.c)
+target_include_directories(config_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(config_test neuron-base gtest_main gtest pthread yaml)
+#copy yaml for test
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR}/tests)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(api_json_test)
@@ -74,3 +83,4 @@ gtest_discover_tests(datatag_table_test)
 gtest_discover_tests(json_datatag_table_test)
 gtest_discover_tests(json_nodes_test)
 gtest_discover_tests(json_plugin_test)
+gtest_discover_tests(config_test)

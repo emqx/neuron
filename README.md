@@ -82,6 +82,14 @@ NEURON IIoT System for Industry 4.0
   $ brew install ossp-uuid
   ```
 
+- [yaml](https://github.com/yaml/libyaml.git)
+  ```shell
+  $ git clone https://github.com/yaml/libyaml.git
+  $ cd libyaml
+  $ mkdir build && cd build && cmake .. && make
+  $ make install
+  ```
+
 - [neuron-dashboard](https://github.com/neugates/neuron-dashboard-src/releases)
   ```shell
   # Download lastest neuron-dashboard release from https://github.com/neugates/neuron-dashboard-src/releases
