@@ -36,6 +36,7 @@
     }
 
 static paho_client_t *g_paho;
+static uint32_t       req_node_id;
 
 static const char tags[5][20] = { "1!400001", "1!400003", "1!00001", "1!00002",
                                   "1!00003" };
@@ -141,6 +142,7 @@ void message_handle_read(neu_plugin_t *plugin, struct neu_parse_read_req *req)
         return;
     }
 
+    req_node_id            = req->node_id;
     vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
     neu_node_info_t *node_info;
     node_info = (neu_node_info_t *) vector_get(&nodes, 2); // modbus-1, opcua-2
@@ -158,8 +160,23 @@ void message_handle_read(neu_plugin_t *plugin, struct neu_parse_read_req *req)
     UNUSED(req_id);
 }
 
-void message_handle_read_result(neu_variable_t *variable)
+static neu_datatag_t *get_datatag_by_id(neu_plugin_t *plugin, datatag_id_t id)
 {
+    neu_datatag_table_t *table =
+        neu_system_get_datatags_table(plugin, req_node_id);
+    if (NULL == table) {
+        return NULL;
+    }
+
+    return neu_datatag_tbl_get(table, id);
+}
+
+void message_handle_read_result(neu_plugin_t *       plugin,
+                                neu_taggrp_config_t *grp_config,
+                                neu_variable_t *     variable)
+{
+    log_info("Group config name:%s", neu_taggrp_cfg_get_name(grp_config));
+
     if (NULL == variable) {
         return;
     }
@@ -172,70 +189,69 @@ void message_handle_read_result(neu_variable_t *variable)
         .n_tag    = 0,
     };
 
-    size_t count = neu_variable_count(variable);
-    if (0 == count) {
+    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    if (NULL == ids) {
         return;
     }
 
-    int n_tag = count - 1;
-    res.tags  = (struct neu_parse_read_res_tag *) calloc(
-        n_tag, sizeof(struct neu_parse_read_res_tag));
+    res.error         = neu_variable_get_error(variable);
+    res.n_tag         = ids->size;
+    neu_variable_t *v = neu_variable_next(variable);
 
-    int             index = 0;
-    neu_variable_t *head  = variable;
-    res.error             = neu_variable_get_error(head);
-    res.n_tag             = count - 1;
-    neu_variable_t *v     = NULL;
-    for (v = variable->next; NULL != v; v = neu_variable_next(v)) {
+    res.tags = (struct neu_parse_read_res_tag *) calloc(
+        res.n_tag, sizeof(struct neu_parse_read_res_tag));
 
-        int type = neu_variable_get_type(v);
+    datatag_id_t tag_id;
+    int          index = 0;
+    VECTOR_FOR_EACH(ids, iter)
+    {
+        tag_id                 = *(datatag_id_t *) iterator_get(&iter);
+        neu_datatag_t *datatag = get_datatag_by_id(plugin, tag_id);
+        if (NULL == datatag) {
+            continue;
+        }
 
-        if (NEU_DATATYPE_STRING == type) { }
-        if (NEU_DATATYPE_BOOLEAN == type) {
+        if (NULL == v) {
+            continue;
+        }
+
+        int type             = neu_variable_get_type(v);
+        res.tags[index].name = strdup(datatag->name);
+
+        switch (type) {
+        case NEU_DATATYPE_BOOLEAN: {
             bool value;
             neu_variable_get_boolean(v, &value);
-
-            res.tags[index].name      = strdup(tags[index]);
             res.tags[index].type      = 1;
             res.tags[index].timestamp = 0;
             res.tags[index].value     = value;
-        }
-        if (NEU_DATATYPE_WORD == type) {
-            int16_t value;
-            neu_variable_get_word(v, &value);
 
-            res.tags[index].name      = strdup(tags[index]);
+            break;
+        }
+        case NEU_DATATYPE_DWORD: {
+            int32_t value;
+            neu_variable_get_dword(v, &value);
             res.tags[index].type      = 1;
             res.tags[index].timestamp = 0;
             res.tags[index].value     = value;
+            break;
         }
-        if (NEU_DATATYPE_UWORD == type) {
-            uint16_t value;
-            neu_variable_get_uword(v, &value);
-
-            res.tags[index].name      = strdup(tags[index]);
+        case NEU_DATATYPE_STRING:
+            break;
+        case NEU_DATATYPE_FLOAT: {
+            float value;
+            neu_variable_get_float(v, &value);
             res.tags[index].type      = 1;
             res.tags[index].timestamp = 0;
             res.tags[index].value     = value;
+            break;
         }
-        if (NEU_DATATYPE_DOUBLE == type) {
-            double value;
-            neu_variable_get_double(v, &value);
 
-            res.tags[index].name      = strdup(tags[index]);
-            res.tags[index].type      = 1;
-            res.tags[index].timestamp = 0;
-            res.tags[index].value     = value;
+        default:
+            break;
         }
-        if (NEU_DATATYPE_BYTE == type) {
-            int8_t value;
-            neu_variable_get_byte(v, &value);
 
-            res.tags[index].name      = strdup(tags[index]);
-            res.tags[index].type      = 1;
-            res.tags[index].timestamp = 0;
-            res.tags[index].value     = value;
-        }
+        v = neu_variable_next(v);
         index++;
     }
 
@@ -245,7 +261,7 @@ void message_handle_read_result(neu_variable_t *variable)
     }
 
     int i;
-    for (i = 0; i < n_tag; i++) {
+    for (i = 0; i < res.n_tag; i++) {
         free(res.tags[i].name);
     }
     free(res.tags);
@@ -281,6 +297,7 @@ void message_handle_write(neu_plugin_t *              plugin,
 {
     log_info("WRITE uuid:%s", write_req->uuid);
 
+    req_node_id          = write_req->node_id;
     neu_variable_t *head = NULL;
     head                 = neu_variable_create();
     neu_variable_set_error(head, 0);
@@ -314,6 +331,20 @@ void message_handle_write(neu_plugin_t *              plugin,
     }
     write_command(plugin, write_req->node_id, head->next);
     neu_variable_destroy(head);
+
+    char *                     json_str = NULL;
+    struct neu_parse_write_res res      = {
+        .function = NEU_PARSE_OP_WRITE,
+        .uuid     = write_req->uuid,
+        .error    = 0,
+    };
+
+    int rc = neu_parse_encode(&res, &json_str);
+    if (0 == rc) {
+        send_mqtt_response(json_str, strlen(json_str));
+    }
+
+    free(json_str);
 }
 
 void message_handle_get_tag_list(neu_plugin_t *                 plugin,

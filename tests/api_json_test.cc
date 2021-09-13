@@ -9,6 +9,7 @@ TEST(JsonAPITest, ReadReqDecode)
 {
     char *buf = (char *) "{\"function\":50, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
+                         "\"node_id\": 123 ,"
                          "\"group_names\": [\"group001\", "
                          "\"group002\", \"group003\"]}";
     void *                     result = NULL;
@@ -19,6 +20,7 @@ TEST(JsonAPITest, ReadReqDecode)
     req = (struct neu_parse_read_req *) result;
     EXPECT_EQ(NEU_PARSE_OP_READ, req->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
+    EXPECT_EQ(123, req->node_id);
     EXPECT_EQ(3, req->n_group);
     EXPECT_STREQ("group001", req->group_names[0].name);
     EXPECT_STREQ("group002", req->group_names[1].name);
