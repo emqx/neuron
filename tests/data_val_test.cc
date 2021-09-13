@@ -3,7 +3,7 @@
 #include "neu_data_expr.h"
 #include "neu_types.h"
 
-TEST(DataValueTest, neu_dvalue_set_int8)
+TEST(DataValueTest, neu_dvalue_set_get_int8)
 {
     neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_INT8);
     int             rc  = neu_dvalue_set_int8(val, 16);
@@ -15,7 +15,7 @@ TEST(DataValueTest, neu_dvalue_set_int8)
     neu_dvalue_free(val);
 }
 
-TEST(DataValueTest, neu_dvalue_set_int64)
+TEST(DataValueTest, neu_dvalue_set_get_int64)
 {
     neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_INT64);
     int             rc  = neu_dvalue_set_int64(val, 100010111010);
@@ -27,7 +27,7 @@ TEST(DataValueTest, neu_dvalue_set_int64)
     neu_dvalue_free(val);
 }
 
-TEST(DataValueTest, neu_dvalue_set_double)
+TEST(DataValueTest, neu_dvalue_set_get_double)
 {
     neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
     int             rc  = neu_dvalue_set_double(val, 100010111010.010603);
@@ -39,7 +39,7 @@ TEST(DataValueTest, neu_dvalue_set_double)
     neu_dvalue_free(val);
 }
 
-TEST(DataValueTest, neu_dvalue_set_cstr)
+TEST(DataValueTest, neu_dvalue_set_get_cstr)
 {
     neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_CSTR);
     int             rc  = neu_dvalue_set_cstr(val, (char *) "Hello, Neuron!");
@@ -51,7 +51,7 @@ TEST(DataValueTest, neu_dvalue_set_cstr)
     neu_dvalue_free(val);
 }
 
-TEST(DataValueTest, neu_dvalue_set_array)
+TEST(DataValueTest, neu_dvalue_set_get_array)
 {
     int             rc;
     neu_data_val_t *val =
@@ -68,7 +68,7 @@ TEST(DataValueTest, neu_dvalue_set_array)
     neu_dvalue_free(val);
 }
 
-TEST(DataValueTest, neu_dvalue_set_vec)
+TEST(DataValueTest, neu_dvalue_set_get_vec)
 {
     int             rc;
     neu_data_val_t *val = neu_dvalue_vec_new(NEU_DTYPE_INT8, 4, sizeof(int8_t));
@@ -84,7 +84,7 @@ TEST(DataValueTest, neu_dvalue_set_vec)
     neu_dvalue_free(val);
 }
 
-TEST(DataValueTest, neu_dvalue_base_deser)
+TEST(DataValueTest, neu_dvalue_prim_val_deser)
 {
     int      rc;
     uint8_t *buf;
