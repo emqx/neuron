@@ -37,7 +37,9 @@ void message_handle_set_paho_client(paho_client_t *paho);
 void message_handle_init_tags(neu_plugin_t *plugin);
 
 void message_handle_read(neu_plugin_t *plugin, struct neu_parse_read_req *req);
-void message_handle_read_result(neu_variable_t *variable);
+void message_handle_read_result(neu_plugin_t *       plugin,
+                                neu_taggrp_config_t *grp_config,
+                                neu_variable_t *     variable);
 void message_handle_write(neu_plugin_t *              plugin,
                           struct neu_parse_write_req *write_req);
 void message_handle_get_tag_list(neu_plugin_t *                 plugin,

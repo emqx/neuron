@@ -231,7 +231,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         size_t          count    = neu_variable_count(variable);
         log_debug("variable count: %ld", count);
         if (0 < count) {
-            message_handle_read_result(variable);
+            message_handle_read_result(plugin, neu_data->grp_config, variable);
         }
         break;
     }

@@ -137,6 +137,8 @@ static int fix_address(const char *address, int *identifier_type,
         memcpy(namespace_str, address, offset);
         strcpy(identifier_str, sub_str + 1);
     }
+    log_info("address:%s, namespace_str:%s, identifier_str:%s", address,
+             namespace_str, identifier_str);
     return 0;
 }
 
@@ -185,11 +187,11 @@ static void read_variable_array(vector_t *data, neu_variable_t *array)
 static void read_data_vector(neu_plugin_t *       plugin,
                              neu_taggrp_config_t *grp_config, vector_t *data)
 {
+    log_info("Group config name:%s", neu_taggrp_cfg_get_name(grp_config));
     vector_t *ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
     if (NULL == ids) {
         return;
     }
-
     datatag_id_t tag_id;
     VECTOR_FOR_EACH(ids, iter)
     {
@@ -198,6 +200,9 @@ static void read_data_vector(neu_plugin_t *       plugin,
         if (NULL == datatag) {
             continue;
         }
+
+        log_info("Datatag in group config, name:%s, id:%u", datatag->name,
+                 datatag->id);
 
         char namespace_str[16]  = { 0 };
         char identifier_str[32] = { 0 };

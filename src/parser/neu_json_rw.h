@@ -32,6 +32,7 @@ struct neu_parse_read_req_name {
 struct neu_parse_read_req {
     enum neu_parse_function         function;
     char *                          uuid;
+    uint32_t                        node_id;
     int                             n_group;
     struct neu_parse_read_req_name *group_names;
 };

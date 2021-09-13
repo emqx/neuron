@@ -42,6 +42,10 @@ int neu_parse_decode_read_req(char *buf, struct neu_parse_read_req **result)
             .name = NEU_PARSE_UUID,
             .t    = NEU_JSON_STR,
         },
+        {
+            .name = NODEID,
+            .t    = NEU_JSON_INT,
+        },
     };
 
     int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
@@ -51,6 +55,7 @@ int neu_parse_decode_read_req(char *buf, struct neu_parse_read_req **result)
     }
     req->function = NEU_PARSE_OP_READ;
     req->uuid     = elem[0].v.val_str;
+    req->node_id  = elem[1].v.val_int;
 
     req->n_group = neu_json_decode_array_size(buf, GROUPNAMES);
     req->group_names =
