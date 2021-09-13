@@ -1132,6 +1132,7 @@ int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
 
     size = do_dvalue_serialize(val, out_buf);
     if (size == 0) {
+        free(out_buf);
         return -1;
     }
 
