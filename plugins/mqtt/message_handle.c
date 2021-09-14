@@ -136,27 +136,28 @@ void message_handle_init_tags(neu_plugin_t *plugin)
 
 void message_handle_read(neu_plugin_t *plugin, struct neu_parse_read_req *req)
 {
-    log_info("READ uuid:%s", req->uuid);
+    log_info("READ uuid:%s, node id:%u", req->uuid, req->node_id);
 
     if (0 >= req->n_group) {
         return;
     }
 
-    req_node_id            = req->node_id;
-    vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    neu_node_info_t *node_info;
-    node_info = (neu_node_info_t *) vector_get(&nodes, 2); // modbus-1, opcua-2
-    neu_node_id_t dest_node_id = node_info->node_id;
-    vector_t      configs = neu_system_get_group_configs(plugin, dest_node_id);
+    req_node_id    = req->node_id;
+    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc    = node_id_exist(&nodes, req->node_id);
+    vector_uninit(&nodes);
+    if (0 != rc) {
+        return;
+    }
 
+    vector_t configs = neu_system_get_group_configs(plugin, req->node_id);
     neu_taggrp_config_t *config;
     neu_taggrp_config_t *c;
     config          = *(neu_taggrp_config_t **) vector_get(&configs, 0);
     c               = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
-    uint32_t req_id = neu_plugin_send_read_cmd(plugin, dest_node_id, c);
+    uint32_t req_id = neu_plugin_send_read_cmd(plugin, req->node_id, c);
 
     GROUP_CONFIGS_UINIT(configs);
-    vector_uninit(&nodes);
     UNUSED(req_id);
 }
 
@@ -219,13 +220,28 @@ void message_handle_read_result(neu_plugin_t *       plugin,
         res.tags[index].name = strdup(datatag->name);
 
         switch (type) {
+        case NEU_DATATYPE_BYTE: {
+            int8_t value;
+            neu_variable_get_byte(v, &value);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
+            break;
+        }
         case NEU_DATATYPE_BOOLEAN: {
             bool value;
             neu_variable_get_boolean(v, &value);
             res.tags[index].type      = 1;
             res.tags[index].timestamp = 0;
             res.tags[index].value     = value;
-
+            break;
+        }
+        case NEU_DATATYPE_WORD: {
+            int16_t value;
+            neu_variable_get_word(v, &value);
+            res.tags[index].type      = 1;
+            res.tags[index].timestamp = 0;
+            res.tags[index].value     = value;
             break;
         }
         case NEU_DATATYPE_DWORD: {

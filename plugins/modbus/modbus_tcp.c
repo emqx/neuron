@@ -159,7 +159,7 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
 
     modbus_point_new_cmd(plugin->point_ctx);
     // plugin->client   = neu_tcp_client_create("192.168.50.17", 502);
-    plugin->client   = neu_tcp_client_create("192.168.8.177", 502);
+    plugin->client   = neu_tcp_client_create("192.168.8.27", 502);
     plugin->interval = 10000;
     pthread_create(&plugin->loop, NULL, loop, plugin);
 
@@ -457,7 +457,7 @@ static void write_data_process_demo(neu_plugin_t *plugin, neu_request_t *req)
     modbus_point_write(plugin->point_ctx, "1!00001", &mdata,
                        send_recv_callback);
 
-    var        = neu_variable_next(data->data_var);
+    var        = neu_variable_next(var);
     mdata.type = MODBUS_B8;
     neu_variable_get_byte(var, (int8_t *) &mdata.val.val_u8);
     modbus_point_write(plugin->point_ctx, "1!00002", &mdata,
