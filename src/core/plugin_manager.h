@@ -20,6 +20,10 @@
 #ifndef _PLUGIN_MANAGER_H
 #define _PLUGIN_MANAGER_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 #include "adapter/adapter_internal.h"
@@ -75,4 +79,9 @@ void plugin_manager_dump(plugin_manager_t *plugin_mng);
 void *load_plugin_library(char *plugin_lib_name, plugin_kind_e plugin_kind,
                           neu_plugin_module_t **p_plugin_module);
 int   unload_plugin_library(void *lib_handle, plugin_kind_e plugin_kind);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
