@@ -258,27 +258,25 @@ neu_double_t neu_uqworddec_toDouble(neu_uqworddec_t uqw);
  * ------
  * A sequence of unicode characters. Strings are just an array of char.
  **/
-typedef struct {
-    size_t length;
-    char * charstr;
-} neu_string_t;
+typedef struct neu_string neu_string_t;
 
-/* returns a string pointing to the original character array. */
-neu_string_t neu_string_fromArray(char *array);
+/**
+ * memory size of the string
+ */
+size_t        neu_string_size(neu_string_t *string);
+neu_string_t *neu_string_new(size_t length);
+void          neu_string_free(neu_string_t *string);
+void          neu_string_copy(neu_string_t *dst, neu_string_t *src);
+neu_string_t *neu_string_clone(neu_string_t *string);
 
-/* returns a copy of the character array content on the heap. */
-neu_string_t neu_string_fromChars(const char *chars);
+/* returns a string from cstr with '\0' */
+neu_string_t *neu_string_from_cstr(char *cstr);
+
+/* Get a reference of cstr in string */
+char *neu_string_get_ref_cstr(neu_string_t *string);
 
 /* returns order type by comparing of two character arrays content. */
-neu_order_t neu_string_isEqual(const neu_string_t *s1, const neu_string_t *s2);
-
-extern const neu_string_t NEU_STRING_NULL;
-
-/* Define strings at compile time */
-#define neu_string_fromStatic(CHARS)      \
-    {                                     \
-        sizeof(CHARS) - 1, (char *) CHARS \
-    }
+neu_order_t neu_string_cmp(const neu_string_t *s1, const neu_string_t *s2);
 
 /**
  * Localized Text
@@ -286,24 +284,15 @@ extern const neu_string_t NEU_STRING_NULL;
  * Human readable text with an optional locale identifier.
  **/
 typedef struct {
-    neu_string_t locale;
-    neu_string_t text;
+    neu_string_t *locale;
+    neu_string_t *text;
 } neu_text_t;
 
-static inline neu_text_t neu_text_fromArray(char *locale, char *array)
+static inline neu_text_t neu_text_from_cstr(char *locale, char *cstr)
 {
     neu_text_t t;
-    t.locale = neu_string_fromArray(locale);
-    t.text   = neu_string_fromArray(array);
-    return t;
-}
-
-static inline neu_text_t neu_text_fromChars(const char *locale,
-                                            const char *chars)
-{
-    neu_text_t t;
-    t.locale = neu_string_fromChars(locale);
-    t.text   = neu_string_fromChars(chars);
+    t.locale = neu_string_from_cstr(locale);
+    t.text   = neu_string_from_cstr(cstr);
     return t;
 }
 
@@ -318,7 +307,7 @@ typedef struct {
 } neu_bytes_t;
 
 /**
- * memory size of the fixed array
+ * memory size of the bytes
  */
 static inline size_t neu_bytes_size(neu_bytes_t *bytes)
 {
@@ -326,7 +315,7 @@ static inline size_t neu_bytes_size(neu_bytes_t *bytes)
 }
 
 /**
- * New a fixed array by length
+ * New a bytes by length
  */
 static inline neu_bytes_t *neu_bytes_new(size_t length)
 {
@@ -344,18 +333,15 @@ static inline void neu_bytes_free(neu_bytes_t *bytes)
     free(bytes);
 }
 
-/**
- * shallow copy
- */
 static inline void neu_bytes_copy(neu_bytes_t *dst, neu_bytes_t *src)
 {
-    memcpy(dst, src, dst->length + sizeof(size_t));
+    size_t size;
+
+    size = neu_bytes_size(src);
+    memcpy(dst, src, size);
     return;
 }
 
-/**
- * shallow clone
- */
 static inline neu_bytes_t *neu_bytes_clone(neu_bytes_t *bytes)
 {
     neu_bytes_t *new_bytes;
@@ -490,8 +476,8 @@ extern const neu_uuid_t NEU_UUID_NULL;
  * An identifier for a node to be located in the list.
  **/
 typedef struct {
-    neu_text_t   nodeName;
-    neu_string_t identifier;
+    neu_text_t    nodeName;
+    neu_string_t *identifier;
 } neu_nodeid_t;
 
 neu_boolean_t neu_nodeid_isNull(const neu_nodeid_t *p);
@@ -558,6 +544,7 @@ struct neu_variabletype {
  * An address element is a basic information unit that represent partly address
  * location.
  **/
+/*
 typedef enum {
     NEU_ADDRESSELEMENTTYPE_HEADER,
     NEU_ADDRESSELEMENTTYPE_UUID,
@@ -578,6 +565,7 @@ typedef struct {
     neu_boolean_t            isNumeric;
     neu_string_t             element;
 } neu_addresselement_t;
+*/
 
 /**
  * Address
@@ -585,6 +573,7 @@ typedef struct {
  * An address is a combination of address element in an order format to locate
  * the data storage in external device.
  **/
+/*
 typedef enum {
     NEU_ADDRESSTYPE_REGISTER,
     NEU_ADDRESSTYPE_SYMBOLIC,
@@ -599,6 +588,7 @@ typedef struct {
     size_t                elementSize;
     neu_addresselement_t *elements;
 } neu_address_t;
+*/
 
 /**
  * Tag
@@ -622,7 +612,7 @@ typedef struct {
     // The readInterval move to datatag group
     // neu_udword_t     readInterval;
     neu_datatype_t type;
-    neu_address_t  address;
+    // neu_address_t  address;
     neu_addr_str_t addr_str;
     neu_tag_name   name;
 } neu_datatag_t;
@@ -633,11 +623,13 @@ typedef struct {
  * A paramter is a communicaton details for connection setup and data format
  * description.
  **/
+/*
 typedef struct {
     neu_text_t   paramDesc;
     neu_string_t paramName;
     neu_string_t paramData;
 } neu_parameter_t;
+*/
 
 /**
  * Module
@@ -646,6 +638,7 @@ typedef struct {
  * used for communication setup. Each module can be used to create more than one
  * communication channel.
  **/
+/*
 typedef struct {
     neu_ubyte_t      version;
     neu_string_t     moduleName;
@@ -654,6 +647,7 @@ typedef struct {
     neu_parameter_t *param;
     neu_string_t     path;
 } neu_module_t;
+*/
 
 /**
  * Variable

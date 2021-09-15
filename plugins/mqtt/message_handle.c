@@ -101,36 +101,31 @@ void message_handle_init_tags(neu_plugin_t *plugin)
     }
 
     neu_datatag_id_t id;
-    neu_address_t    datatag_address;
-    memset(&datatag_address, 0, sizeof(neu_address_t));
-    char *str_addr          = (char *) tags[0];
+    neu_addr_str_t addr_str = (char *) tags[0];
     id                      = 0;
     neu_datatag_t *datatag0 = malloc(sizeof(neu_datatag_t));
     datatag0->id            = id;
     datatag0->attribute     = NEU_ATTRIBUTETYPE_READ;
     datatag0->type          = NEU_DATATYPE_WORD;
-    datatag0->address       = datatag_address;
-    datatag0->addr_str      = str_addr;
+    datatag0->addr_str      = addr_str;
     ids[0]                  = neu_datatag_tbl_add(table, datatag0);
 
-    str_addr                = (char *) tags[1];
+    addr_str                = (char *) tags[1];
     id                      = 1;
     neu_datatag_t *datatag1 = malloc(sizeof(neu_datatag_t));
     datatag1->id            = id;
     datatag1->attribute     = NEU_ATTRIBUTETYPE_READ;
     datatag1->type          = NEU_DATATYPE_UWORD;
-    datatag1->address       = datatag_address;
-    datatag1->addr_str      = str_addr;
+    datatag1->addr_str      = addr_str;
     ids[1]                  = neu_datatag_tbl_add(table, datatag1);
 
-    str_addr                = (char *) tags[2];
+    addr_str                = (char *) tags[2];
     id                      = 2;
     neu_datatag_t *datatag2 = malloc(sizeof(neu_datatag_t));
     datatag2->id            = id;
     datatag2->attribute     = NEU_ATTRIBUTETYPE_READ;
     datatag2->type          = NEU_DATATYPE_BYTE;
-    datatag2->address       = datatag_address;
-    datatag2->addr_str      = str_addr;
+    datatag2->addr_str      = addr_str;
     ids[2]                  = neu_datatag_tbl_add(table, datatag2);
 }
 

@@ -9,14 +9,13 @@
 TEST(DatatageTableTest, DatatagTableAdd)
 {
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
-    neu_address_t        datatag_address;
     char *               addr_str;
     neu_datatag_t datatag1 = { 0, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                               datatag_address, addr_str };
+                               addr_str };
     neu_datatag_t datatag2 = { 0, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
-                               datatag_address, addr_str };
+                               addr_str };
     neu_datatag_t datatag3 = { 0, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DATATYPE_UWORD, datatag_address, addr_str };
+                               NEU_DATATYPE_UWORD, addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
@@ -52,15 +51,14 @@ TEST(DatatageTableTest, DatatagTableAdd)
 TEST(DatatageTableTest, DatatagTableRemove)
 {
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
-    neu_address_t        datatag_address;
     neu_datatag_id_t     id;
     char *               addr_str;
     neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                               datatag_address, addr_str };
+                               addr_str };
     neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
-                               datatag_address, addr_str };
+                               addr_str };
     neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DATATYPE_UWORD, datatag_address, addr_str };
+                               NEU_DATATYPE_UWORD, addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
@@ -95,11 +93,10 @@ TEST(DatatageTableTest, DatatagTableRemove)
 TEST(DatatageTableTest, DatatagTableUpdate)
 {
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
-    neu_address_t        datatag_address;
     neu_datatag_id_t     id;
     char *               addr_str;
     neu_datatag_t datatag = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                              datatag_address, addr_str };
+                              addr_str };
 
     datatag_id_t   datatag_id;
     neu_datatag_t *datatag_id_return = NULL;
@@ -124,15 +121,14 @@ TEST(DatatageTableTest, DatatagTableUpdate)
 void *datatag_table_thread(void *arg)
 {
     neu_datatag_table_t *datatag_table_create = (neu_datatag_table_t *) arg;
-    neu_address_t        address;
     datatag_id_t         id;
     char *               addr_str;
     neu_datatag_t datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DATATYPE_BYTE,
-                               address, addr_str };
+                               addr_str };
     neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DATATYPE_WORD,
-                               address, addr_str };
+                               addr_str };
     neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DATATYPE_UWORD, address, addr_str };
+                               NEU_DATATYPE_UWORD, addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;

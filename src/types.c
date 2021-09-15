@@ -96,52 +96,91 @@ neu_double_t neu_uqworddec_toDouble(neu_uqworddec_t uqw)
 /* String Types */
 /****************/
 
-neu_string_t neu_string_fromArray(char *array)
+struct neu_string {
+    size_t length;  ///< length is strlen(str) + 1
+    char   cstr[0]; ///< include character '\0'
+};
+
+size_t neu_string_size(neu_string_t *string)
 {
-    neu_string_t s;
-    s.length  = 0;
-    s.charstr = NULL;
-    if (!array)
-        return s;
-    s.length  = strlen(array);
-    s.charstr = (char *) array;
-    return s;
+    return sizeof(size_t) + string->length;
 }
 
-neu_string_t neu_string_fromChars(const char *src)
+neu_string_t *neu_string_new(size_t length)
 {
-    neu_string_t s;
-    s.length  = 0;
-    s.charstr = NULL;
-    if (!src)
-        return s;
-    s.length = strlen(src);
-    if (s.length > 0) {
-        s.charstr = (char *) malloc(s.length);
-        if (!s.charstr) {
-            s.length = 0;
-            return s;
-        }
-        memcpy(s.charstr, src, s.length);
-    } else {
-        s.charstr = NULL;
+    size_t size;
+
+    size = sizeof(neu_string_t) + length;
+    return (neu_string_t *) malloc(size);
+}
+
+void neu_string_free(neu_string_t *string)
+{
+    free(string);
+    return;
+}
+
+void neu_string_copy(neu_string_t *dst, neu_string_t *src)
+{
+    size_t size;
+    size = sizeof(neu_string_t) + src->length;
+    memcpy(dst, src, size);
+}
+
+neu_string_t *neu_string_clone(neu_string_t *string)
+{
+    neu_string_t *new_string;
+    size_t        size;
+
+    size       = neu_string_size(string);
+    new_string = (neu_string_t *) malloc(size);
+    if (new_string == NULL) {
+        return NULL;
     }
-    return s;
+
+    memcpy(new_string->cstr, string->cstr, size);
+    return new_string;
 }
 
-neu_order_t neu_string_isEqual(const neu_string_t *s1, const neu_string_t *s2)
+neu_string_t *neu_string_from_cstr(char *cstr)
 {
-    if (s1->length != s2->length)
-        return false;
-    if (s1->length == 0)
-        return true;
-    neu_dword_t is = memcmp((char const *) s1->charstr,
-                            (char const *) s2->charstr, s1->length);
+    size_t        length, size;
+    neu_string_t *string;
+
+    if (cstr == NULL) {
+        return NULL;
+    }
+
+    length = strlen(cstr) + 1;
+    size   = sizeof(neu_string_t) + length;
+    string = (neu_string_t *) malloc(size);
+    if (string == NULL) {
+        return NULL;
+    }
+
+    string->length = length;
+    memcpy(string->cstr, cstr, string->length);
+    return string;
+}
+
+char *neu_string_get_ref_cstr(neu_string_t *string)
+{
+    return string->cstr;
+}
+
+neu_order_t neu_string_cmp(const neu_string_t *str1, const neu_string_t *str2)
+{
+    if (str1->length != str2->length) {
+        return str1->length > str2->length ? NEU_ORDER_MORE : NEU_ORDER_LESS;
+    }
+    if (str1->length == 0) {
+        return NEU_ORDER_EQ;
+    }
+    neu_dword_t is = memcmp((char const *) &str1->cstr,
+                            (char const *) &str2->cstr, str1->length);
     return (is == 0) ? NEU_ORDER_EQ
                      : ((is > 0) ? NEU_ORDER_MORE : NEU_ORDER_LESS);
 }
-
-const neu_string_t NEU_STRING_NULL = { 0, NULL };
 
 /**************/
 /* Time Types */
@@ -240,15 +279,17 @@ const neu_uuid_t NEU_UUID_NULL = { 0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 } };
 /****************/
 /* NodeId Types */
 /****************/
-
+/*
 neu_boolean_t neu_nodeid_isNull(const neu_nodeid_t *n)
 {
-    if (neu_string_isEqual(&n->identifier, &NEU_STRING_NULL) == 0)
+    if (neu_string_cmp(&n->identifier, &NEU_STRING_NULL) == 0)
         return true;
     return false;
 }
+*/
 
 /* Ordering for NodeIds */
+/*
 neu_order_t neu_nodeid_order(const neu_nodeid_t *n1, const neu_nodeid_t *n2)
 {
     return (neu_string_isEqual(&n1->identifier, &n2->identifier));
@@ -256,6 +297,7 @@ neu_order_t neu_nodeid_order(const neu_nodeid_t *n1, const neu_nodeid_t *n2)
 
 const neu_nodeid_t NEU_NODEID_NULL = { { { 0, NULL }, { 0, NULL } },
                                        { 0, NULL } };
+*/
 
 /******************/
 /* Variable Types */
@@ -824,7 +866,7 @@ void neu_fixed_array_copy(neu_fixed_array_t *dst, neu_fixed_array_t *src)
 {
     size_t size;
 
-    size = neu_fixed_array_size(dst);
+    size = neu_fixed_array_size(src);
     memcpy(dst, src, size);
     return;
 }
