@@ -21,6 +21,9 @@
 #include <netinet/in.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <sys/queue.h>
+
+#include <nng/nng.h>
 
 #include "connection/neu_tcp.h"
 #include "neu_datatag_table.h"
@@ -31,34 +34,31 @@
 #include "modbus.h"
 #include "modbus_point.h"
 
-#define DEMO
-
 const neu_plugin_module_t neu_plugin_module;
 
-enum process_status {
-    STOP    = 0,
-    RUNNING = 1,
-    WAIT    = 2,
-};
+struct reg_group_config {
+    neu_taggrp_config_t *   configs;
+    modbus_point_context_t *point_ctx;
+    nng_aio *               aio;
+    neu_plugin_t *          plugin;
 
-enum device_connect_status {
-    DISCONNECTED = 0,
-    CONNECTED    = 1,
+    TAILQ_ENTRY(reg_group_config) node;
 };
 
 struct neu_plugin {
-    neu_plugin_common_t        common;
-    pthread_mutex_t            mtx;
-    pthread_t                  loop;
-    neu_tcp_client_t *         client;
-    uint32_t                   interval;
-    enum process_status        status;
-    enum device_connect_status connect_status;
-    neu_datatag_table_t *      tag_table;
-    modbus_point_context_t *   point_ctx;
+    neu_plugin_common_t  common;
+    pthread_mutex_t      mtx;
+    neu_tcp_client_t *   client;
+    neu_datatag_table_t *tag_table;
+    TAILQ_HEAD(, reg_group_config) grp_configs;
 };
 
-static void *  loop(void *arg);
+static void    start_cycle_read(neu_plugin_t *       plugin,
+                                neu_taggrp_config_t *grp_config);
+static void    stop_cycle_read(neu_plugin_t *       plugin,
+                               neu_taggrp_config_t *grp_config);
+static void    tags_read(neu_plugin_t *plugin, neu_taggrp_config_t *grp_config);
+static void    tags_cycle_read(nng_aio *aio, void *arg, int code);
 static ssize_t send_recv_callback(void *arg, char *send_buf, ssize_t send_len,
                                   char *recv_buf, ssize_t recv_len);
 
@@ -70,42 +70,139 @@ static ssize_t send_recv_callback(void *arg, char *send_buf, ssize_t send_len,
                                     recv_buf, recv_len);
 }
 
-static void *loop(void *arg)
+static void start_cycle_read(neu_plugin_t *       plugin,
+                             neu_taggrp_config_t *grp_config)
 {
-    neu_plugin_t *plugin = (neu_plugin_t *) arg;
 
-    while (1) {
-        uint32_t interval = 0;
-        bool     wait     = false;
+    struct reg_group_config *gc  = calloc(1, sizeof(struct reg_group_config));
+    vector_t *               ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    nng_aio *                aio = NULL;
+    uint32_t                 interval = neu_taggrp_cfg_get_interval(grp_config);
 
-        pthread_mutex_lock(&plugin->mtx);
-        if (plugin->status == STOP) {
-            pthread_mutex_unlock(&plugin->mtx);
-            break;
+    nng_aio_alloc(&aio, NULL, NULL);
+    nng_aio_set_timeout(aio, interval != 0 ? interval : 10000);
+
+    gc->configs   = grp_config;
+    gc->point_ctx = modbus_point_init(plugin);
+    gc->aio       = aio;
+    gc->plugin    = plugin;
+
+    VECTOR_FOR_EACH(ids, iter)
+    {
+        neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter);
+        neu_datatag_t *   tag = neu_datatag_tbl_get(plugin->tag_table, *id);
+
+        if ((tag->attribute & NEU_ATTRIBUTETYPE_READ) ==
+            NEU_ATTRIBUTETYPE_READ) {
+            switch (tag->type) {
+            case NEU_DATATYPE_WORD:
+                modbus_point_add(gc->point_ctx, tag->addr_str, MODBUS_B16);
+                break;
+            case NEU_DATATYPE_DWORD:
+                modbus_point_add(gc->point_ctx, tag->addr_str, MODBUS_B32);
+                break;
+            case NEU_DATATYPE_BOOLEAN:
+                modbus_point_add(gc->point_ctx, tag->addr_str, MODBUS_B8);
+                break;
+            default:
+                break;
+            }
         }
-        interval = plugin->interval;
-        pthread_mutex_unlock(&plugin->mtx);
-
-        pthread_mutex_lock(&plugin->mtx);
-        wait = plugin->status == WAIT;
-        pthread_mutex_unlock(&plugin->mtx);
-
-        if (!wait) {
-            modbus_point_all_read(plugin->point_ctx, true, send_recv_callback);
-            //     modbus_data_t data = { .type = MODBUS_B16, .val.val_u16 =
-            //     0x5678 }; modbus_point_write(plugin->point_ctx, "1!400008",
-            //     &data,
-            //                        send_recv_callback);
-            //     modbus_data_t data1 = { .type = MODBUS_B16, .val.val_u16 =
-            //     0x1234 }; modbus_point_write(plugin->point_ctx, "1!400007",
-            //     &data1,
-            //                        send_recv_callback);
-        }
-
-        usleep(interval * 1000);
     }
 
-    return NULL;
+    modbus_point_new_cmd(gc->point_ctx);
+
+    pthread_mutex_lock(&plugin->mtx);
+    TAILQ_INSERT_TAIL(&plugin->grp_configs, gc, node);
+    pthread_mutex_unlock(&plugin->mtx);
+
+    log_info("start cycle read, grp: %p, interval: %d", grp_config, interval);
+    nng_aio_defer(aio, tags_cycle_read, gc);
+}
+
+static void stop_cycle_read(neu_plugin_t *       plugin,
+                            neu_taggrp_config_t *grp_config)
+{
+    struct reg_group_config *gc = NULL;
+
+    pthread_mutex_lock(&plugin->mtx);
+    TAILQ_FOREACH(gc, &plugin->grp_configs, node)
+    {
+        if (gc->configs == grp_config) {
+            TAILQ_REMOVE(&plugin->grp_configs, gc, node);
+            nng_aio_cancel(gc->aio);
+            modbus_point_destory(gc->point_ctx);
+            free(gc);
+            log_info("stop cycle read, grp: %p", grp_config);
+            break;
+        }
+    }
+    pthread_mutex_unlock(&plugin->mtx);
+}
+
+static void tags_read(neu_plugin_t *plugin, neu_taggrp_config_t *grp_config)
+{
+    struct reg_group_config *gc = NULL;
+
+    pthread_mutex_lock(&plugin->mtx);
+
+    TAILQ_FOREACH(gc, &plugin->grp_configs, node)
+    {
+        if (gc->configs == grp_config) {
+            // todo modbus_point_find
+            neu_response_t     resp      = { 0 };
+            neu_reqresp_data_t data_resp = { 0 };
+
+            data_resp.grp_config = grp_config;
+            // data_resp.data_var
+            resp.req_id    = 1;
+            resp.resp_type = NEU_REQRESP_TRANS_DATA;
+            resp.buf       = &data_resp;
+            resp.buf_len   = sizeof(neu_reqresp_data_t);
+
+            plugin->common.adapter_callbacks->response(plugin->common.adapter,
+                                                       &resp);
+            log_info("find read grp: %p", grp_config);
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&plugin->mtx);
+
+    return;
+}
+
+static void tags_cycle_read(nng_aio *aio, void *arg, int code)
+{
+    switch (code) {
+    case NNG_ETIMEDOUT: {
+        struct reg_group_config *gc        = (struct reg_group_config *) arg;
+        neu_response_t           resp      = { 0 };
+        neu_reqresp_data_t       data_resp = { 0 };
+
+        // todo check group config update
+        modbus_point_all_read(gc->point_ctx, true, send_recv_callback);
+        // todo modbus point find;
+        data_resp.grp_config = gc->configs;
+        // data_resp.data_var
+        resp.req_id    = 1;
+        resp.resp_type = NEU_REQRESP_TRANS_DATA;
+        resp.buf       = &data_resp;
+        resp.buf_len   = sizeof(neu_reqresp_data_t);
+
+        gc->plugin->common.adapter_callbacks->response(
+            gc->plugin->common.adapter, &resp);
+
+        nng_aio_defer(aio, tags_cycle_read, arg);
+        break;
+    }
+    case NNG_ECANCELED:
+        log_warn("aio: %p cancel", aio);
+        break;
+    default:
+        log_warn("aio: %p, skip error: %d", aio, code);
+        break;
+    }
 }
 
 static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
@@ -129,6 +226,7 @@ static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
 
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
+    plugin->common.state             = NEURON_PLUGIN_STATE_NULL;
 
     return plugin;
 }
@@ -141,40 +239,31 @@ static int modbus_tcp_close(neu_plugin_t *plugin)
 
 static int modbus_tcp_init(neu_plugin_t *plugin)
 {
-
     pthread_mutex_init(&plugin->mtx, NULL);
-    // plugin->status = WAIT;
-    plugin->status    = RUNNING;
-    plugin->point_ctx = modbus_point_init(plugin);
+    plugin->client = neu_tcp_client_create("192.168.8.27", 502);
 
-    modbus_point_add(plugin->point_ctx, "1!400001", MODBUS_B16);
-    modbus_point_add(plugin->point_ctx, "1!400003", MODBUS_B16);
-    modbus_point_add(plugin->point_ctx, "1!400005", MODBUS_B16);
-    modbus_point_add(plugin->point_ctx, "1!400007", MODBUS_B16);
-    modbus_point_add(plugin->point_ctx, "1!400009", MODBUS_B16);
-    modbus_point_add(plugin->point_ctx, "1!400011", MODBUS_B16);
-    modbus_point_add(plugin->point_ctx, "1!00001", MODBUS_B8);
-    modbus_point_add(plugin->point_ctx, "1!00002", MODBUS_B8);
-    modbus_point_add(plugin->point_ctx, "1!00003", MODBUS_B8);
-
-    modbus_point_new_cmd(plugin->point_ctx);
-    // plugin->client   = neu_tcp_client_create("192.168.50.17", 502);
-    plugin->client   = neu_tcp_client_create("192.168.8.27", 502);
-    plugin->interval = 10000;
-    pthread_create(&plugin->loop, NULL, loop, plugin);
-
+    plugin->common.state = NEURON_PLUGIN_STATE_READY;
     log_info("modbus tcp init.....");
     return 0;
 }
 
 static int modbus_tcp_uninit(neu_plugin_t *plugin)
 {
+    struct reg_group_config *gc = NULL;
 
     pthread_mutex_lock(&plugin->mtx);
-    plugin->status = STOP;
-    pthread_mutex_unlock(&plugin->mtx);
+    gc = TAILQ_FIRST(&plugin->grp_configs);
 
-    modbus_point_clean(plugin->point_ctx);
+    while (gc != NULL) {
+        TAILQ_REMOVE(&plugin->grp_configs, gc, node);
+
+        nng_aio_cancel(gc->aio);
+        modbus_point_destory(gc->point_ctx);
+        free(gc);
+
+        gc = TAILQ_FIRST(&plugin->grp_configs);
+    }
+    pthread_mutex_unlock(&plugin->mtx);
 
     neu_tcp_client_close(plugin->client);
 
@@ -183,304 +272,36 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
     return 0;
 }
 
-static int get_datatags_table(neu_plugin_t *plugin)
-{
-    int                     ret = 0;
-    neu_request_t           cmd;
-    neu_cmd_get_datatags_t  get_datatags_cmd;
-    neu_response_t *        datatags_result = NULL;
-    neu_reqresp_datatags_t *resp_datatags;
-
-    cmd.req_type = NEU_REQRESP_GET_DATATAGS;
-    cmd.req_id   = 2;
-    cmd.buf      = (void *) &get_datatags_cmd;
-    cmd.buf_len  = sizeof(neu_cmd_get_datatags_t);
-
-    ret = plugin->common.adapter_callbacks->command(plugin->common.adapter,
-                                                    &cmd, &datatags_result);
-
-    if (ret < 0) {
-        return -1;
-    }
-    resp_datatags     = (neu_reqresp_datatags_t *) datatags_result->buf;
-    plugin->tag_table = resp_datatags->datatag_tbl;
-
-    free(resp_datatags);
-    free(datatags_result);
-    return 0;
-}
-
 static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
     (void) configs;
+    (void) plugin;
     int ret = 0;
 
-    // plugin->client = neu_tcp_client_create("192.168.50.17", 502);
     log_info("modbus config.............");
-
-    ret = get_datatags_table(plugin);
 
     return ret;
 }
 
-static void read_data_process(neu_plugin_t *plugin, neu_request_t *req)
-{
-    neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
-    vector_t *          tagv = neu_taggrp_cfg_get_datatag_ids(data->grp_config);
-
-    neu_response_t     resp = { 0 };
-    neu_reqresp_data_t data_resp;
-    neu_variable_t *   head = neu_variable_create();
-
-    VECTOR_FOR_EACH(tagv, iter)
-    {
-        datatag_id_t * id    = (datatag_id_t *) iterator_get(&iter);
-        neu_datatag_t *tag   = neu_datatag_tbl_get(plugin->tag_table, *id);
-        int            ret   = 0;
-        modbus_data_t  mdata = { 0 };
-
-        ret = modbus_point_find(plugin->point_ctx, tag->addr_str, &mdata);
-        if (ret != 0) {
-            neu_variable_t *err = neu_variable_create();
-            neu_variable_set_error(err, 1);
-            neu_variable_add_item(head, err);
-        } else {
-            neu_variable_t *v = neu_variable_create();
-            switch (tag->type) {
-            case NEU_DATATYPE_BOOLEAN:
-                neu_variable_set_byte(v, mdata.val.val_u8);
-                break;
-            case NEU_DATATYPE_WORD:
-            case NEU_DATATYPE_UWORD:
-                neu_variable_set_word(v, mdata.val.val_u16);
-                break;
-            case NEU_DATATYPE_DWORD:
-            case NEU_DATATYPE_UDWORD:
-                neu_variable_set_qword(v, mdata.val.val_u32);
-                break;
-            case NEU_DATATYPE_FLOAT:
-                neu_variable_set_double(v, mdata.val.val_f32);
-                break;
-            default: {
-                ret = -1;
-                break;
-            }
-            }
-
-            neu_variable_add_item(head, v);
-        }
-    }
-
-    data_resp.grp_config = data->grp_config;
-    data_resp.data_var   = head;
-    resp.req_id          = req->req_id;
-    resp.resp_type       = NEU_REQRESP_TRANS_DATA;
-    resp.buf_len         = sizeof(neu_reqresp_data_t);
-    resp.buf             = &data_resp;
-    plugin->common.adapter_callbacks->response(plugin->common.adapter, &resp);
-
-    neu_variable_destroy(head);
-};
-
-static void read_data_process_demo(neu_plugin_t *plugin, neu_request_t *req)
-{
-    neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
-    neu_response_t      resp = { 0 };
-    neu_reqresp_data_t  data_resp;
-    neu_variable_t *    head  = neu_variable_create();
-    int                 ret   = 0;
-    modbus_data_t       mdata = { 0 };
-
-    mdata.type = MODBUS_B16;
-    ret        = modbus_point_find(plugin->point_ctx, "1!400001", &mdata);
-    if (ret != 0) {
-        neu_variable_t *err = neu_variable_create();
-        neu_variable_set_error(err, 1);
-        neu_variable_add_item(head, err);
-    } else {
-        neu_variable_t *v = neu_variable_create();
-        neu_variable_set_word(v, mdata.val.val_u16);
-        neu_variable_add_item(head, v);
-    }
-
-    mdata.type = MODBUS_B16;
-    ret        = modbus_point_find(plugin->point_ctx, "1!400003", &mdata);
-    if (ret != 0) {
-        neu_variable_t *err = neu_variable_create();
-        neu_variable_set_error(err, 1);
-        neu_variable_add_item(head, err);
-    } else {
-        neu_variable_t *v = neu_variable_create();
-        neu_variable_set_word(v, mdata.val.val_u16);
-        neu_variable_add_item(head, v);
-    }
-
-    mdata.type = MODBUS_B16;
-    ret        = modbus_point_find(plugin->point_ctx, "1!400005", &mdata);
-    if (ret != 0) {
-        neu_variable_t *err = neu_variable_create();
-        neu_variable_set_error(err, 1);
-        neu_variable_add_item(head, err);
-    } else {
-        neu_variable_t *v = neu_variable_create();
-        neu_variable_set_word(v, mdata.val.val_u16);
-        neu_variable_add_item(head, v);
-    }
-
-    mdata.type = MODBUS_B8;
-    ret        = modbus_point_find(plugin->point_ctx, "1!00001", &mdata);
-    if (ret != 0) {
-        neu_variable_t *err = neu_variable_create();
-        neu_variable_set_error(err, 1);
-        neu_variable_add_item(head, err);
-    } else {
-        neu_variable_t *v = neu_variable_create();
-        neu_variable_set_byte(v, mdata.val.val_u8);
-        neu_variable_add_item(head, v);
-    }
-
-    mdata.type = MODBUS_B8;
-    ret        = modbus_point_find(plugin->point_ctx, "1!00002", &mdata);
-    if (ret != 0) {
-        neu_variable_t *err = neu_variable_create();
-        neu_variable_set_error(err, 1);
-        neu_variable_add_item(head, err);
-    } else {
-        neu_variable_t *v = neu_variable_create();
-        neu_variable_set_byte(v, mdata.val.val_u8);
-        neu_variable_add_item(head, v);
-    }
-
-    data_resp.grp_config = data->grp_config;
-    data_resp.data_var   = head;
-    resp.req_id          = req->req_id;
-    resp.resp_type       = NEU_REQRESP_TRANS_DATA;
-    resp.buf_len         = sizeof(neu_reqresp_data_t);
-    resp.buf             = &data_resp;
-
-    plugin->common.adapter_callbacks->response(plugin->common.adapter, &resp);
-    neu_variable_destroy(head);
-}
-
-static void write_data_process(neu_plugin_t *plugin, neu_request_t *req)
-{
-    neu_reqresp_write_t *data = (neu_reqresp_write_t *) req->buf;
-    vector_t *tagv = neu_taggrp_cfg_get_datatag_ids(data->grp_config);
-
-    neu_response_t     resp = { 0 };
-    neu_reqresp_data_t data_resp;
-    neu_variable_t *   head = neu_variable_create();
-    neu_variable_t *   var  = data->data_var;
-
-    VECTOR_FOR_EACH(tagv, iter)
-    {
-        datatag_id_t * id  = (datatag_id_t *) iterator_get(&iter);
-        neu_datatag_t *tag = neu_datatag_tbl_get(plugin->tag_table, *id);
-        modbus_data_t  mdata;
-        int            ret = 0;
-
-        switch (tag->type) {
-        case NEU_DATATYPE_BOOLEAN:
-            mdata.type = MODBUS_B8;
-            neu_variable_get_byte(var, (int8_t *) &mdata.val.val_u8);
-            break;
-        case NEU_DATATYPE_WORD:
-        case NEU_DATATYPE_UWORD:
-            mdata.type = MODBUS_B16;
-            neu_variable_get_uword(var, &mdata.val.val_u16);
-            break;
-        case NEU_DATATYPE_DWORD:
-        case NEU_DATATYPE_UDWORD:
-        case NEU_DATATYPE_FLOAT:
-            mdata.type = MODBUS_B32;
-            neu_variable_get_udword(var, &mdata.val.val_u32);
-            break;
-        default: {
-            neu_variable_t *err = neu_variable_create();
-            neu_variable_set_error(err, 1);
-            neu_variable_add_item(head, err);
-            ret = -1;
-            break;
-        }
-        }
-        ret = modbus_point_write(plugin->point_ctx, tag->addr_str, &mdata,
-                                 send_recv_callback);
-        if (ret != 0) {
-            neu_variable_t *err = neu_variable_create();
-            neu_variable_set_error(err, 2);
-            neu_variable_add_item(head, err);
-        } else {
-            neu_variable_t *ok = neu_variable_create();
-            neu_variable_set_error(ok, 0);
-            neu_variable_add_item(head, ok);
-        }
-
-        var = neu_variable_next(var);
-    }
-
-    data_resp.grp_config = data->grp_config;
-    data_resp.data_var   = head;
-    resp.req_id          = req->req_id;
-    resp.resp_type       = NEU_REQRESP_TRANS_DATA;
-    resp.buf_len         = sizeof(neu_reqresp_data_t);
-    resp.buf             = &data_resp;
-    plugin->common.adapter_callbacks->response(plugin->common.adapter, &resp);
-
-    neu_variable_destroy(head);
-}
-
-static void write_data_process_demo(neu_plugin_t *plugin, neu_request_t *req)
-{
-    neu_reqresp_write_t *data  = (neu_reqresp_write_t *) req->buf;
-    modbus_data_t        mdata = { 0 };
-
-    mdata.type = MODBUS_B16;
-    neu_variable_get_uword(data->data_var, &mdata.val.val_u16);
-    modbus_point_write(plugin->point_ctx, "1!400001", &mdata,
-                       send_recv_callback);
-
-    mdata.type          = MODBUS_B16;
-    neu_variable_t *var = neu_variable_next(data->data_var);
-    neu_variable_get_uword(var, &mdata.val.val_u16);
-    modbus_point_write(plugin->point_ctx, "1!400003", &mdata,
-                       send_recv_callback);
-
-    mdata.type = MODBUS_B16;
-    var        = neu_variable_next(var);
-    neu_variable_get_uword(var, &mdata.val.val_u16);
-    modbus_point_write(plugin->point_ctx, "1!400005", &mdata,
-                       send_recv_callback);
-
-    var        = neu_variable_next(var);
-    mdata.type = MODBUS_B8;
-    neu_variable_get_byte(var, (int8_t *) &mdata.val.val_u8);
-    modbus_point_write(plugin->point_ctx, "1!00001", &mdata,
-                       send_recv_callback);
-
-    var        = neu_variable_next(var);
-    mdata.type = MODBUS_B8;
-    neu_variable_get_byte(var, (int8_t *) &mdata.val.val_u8);
-    modbus_point_write(plugin->point_ctx, "1!00002", &mdata,
-                       send_recv_callback);
-}
-
 static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
 {
+    if (plugin->tag_table == NULL) {
+        plugin->tag_table = neu_system_get_datatags_table(
+            plugin, neu_plugin_self_node_id(plugin));
+    }
+
     switch (req->req_type) {
-    case NEU_REQRESP_READ_DATA:
-#ifdef DEMO
-        read_data_process_demo(plugin, req);
-#else
-        read_data_process(plugin, req);
-#endif
+    case NEU_REQRESP_READ_DATA: {
+        neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
+
+        tags_read(plugin, data->grp_config);
         break;
-    case NEU_REQRESP_WRITE_DATA:
-#ifdef DEMO
-        write_data_process_demo(plugin, req);
-#else
-        write_data_process(plugin, req);
-#endif
+    }
+    case NEU_REQRESP_WRITE_DATA: {
+        neu_reqresp_write_t *data = (neu_reqresp_write_t *) req->buf;
+
         break;
+    }
     default:
         break;
     }

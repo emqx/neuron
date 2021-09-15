@@ -153,7 +153,7 @@ TEST(ModbusPointTest, WriteCoilPoint)
     data.val.val_u8 = 1;
 
     EXPECT_EQ(
-        0, modbus_point_write(ctx, (char *) "1!00001", &data, write_coil_ok));
+        0, modbus_point_write((char *) "1!00001", &data, write_coil_ok, NULL));
 
     modbus_point_destory(ctx);
 }
@@ -208,7 +208,8 @@ TEST(ModbusPointTest, WriteHold16Point)
     data.val.val_u16 = 1;
 
     EXPECT_EQ(
-        0, modbus_point_write(ctx, (char *) "1!40001", &data, write_hold16_ok));
+        0,
+        modbus_point_write((char *) "1!40001", &data, write_hold16_ok, NULL));
 
     modbus_point_destory(ctx);
 }
@@ -264,7 +265,8 @@ TEST(ModbusPointTest, WriteHold32Point)
     data.val.val_u32 = 1;
 
     EXPECT_EQ(
-        0, modbus_point_write(ctx, (char *) "1!40001", &data, write_hold32_ok));
+        0,
+        modbus_point_write((char *) "1!40001", &data, write_hold32_ok, NULL));
 
     modbus_point_destory(ctx);
 }
