@@ -216,8 +216,8 @@ int modbus_point_find(modbus_point_context_t *ctx, char *addr,
     return ret;
 }
 
-int modbus_point_write(modbus_point_context_t *ctx, char *addr,
-                       modbus_data_t *data, modbus_point_send_recv callback)
+int modbus_point_write(char *addr, modbus_data_t *data,
+                       modbus_point_send_recv callback, void *arg)
 {
     char              send_buf[64] = { 0 };
     char              recv_buf[64] = { 0 };
@@ -246,8 +246,7 @@ int modbus_point_write(modbus_point_context_t *ctx, char *addr,
         send_buf, point.device, function, point.addr,
         data->type == MODBUS_B32 ? 2 : 1, data);
 
-    recv_len =
-        callback(ctx->arg, send_buf, send_len, recv_buf, sizeof(recv_buf));
+    recv_len = callback(arg, send_buf, send_len, recv_buf, sizeof(recv_buf));
     if (recv_len <= 0) {
         return -1;
     }

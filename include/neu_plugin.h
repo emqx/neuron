@@ -33,6 +33,7 @@ typedef enum neu_plugin_state {
     NEURON_PLUGIN_STATE_NULL,
     NEURON_PLUGIN_STATE_IDLE,
     NEURON_PLUGIN_STATE_READY,
+    NEURON_PLUGIN_STATE_RUNNING,
 } neu_plugin_state_e;
 
 typedef struct neu_plugin_common {

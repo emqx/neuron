@@ -607,9 +607,9 @@ typedef struct {
  * with external device.
  **/
 typedef enum {
-    NEU_ATTRIBUTETYPE_READ = 0,
-    NEU_ATTRIBUTETYPE_WRITE,
-    NEU_ATTRIBUTETYPE_SUBSCRIBE
+    NEU_ATTRIBUTETYPE_READ      = 1,
+    NEU_ATTRIBUTETYPE_WRITE     = 2,
+    NEU_ATTRIBUTETYPE_SUBSCRIBE = 4,
 } neu_attributetype_t;
 
 typedef uint32_t neu_datatag_id_t;
