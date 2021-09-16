@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <config.h>
 #include <neuron.h>
 
 #include "option.h"
@@ -73,15 +74,31 @@ static int opcua_plugin_close(neu_plugin_t *plugin)
 
 static int opcua_plugin_init(neu_plugin_t *plugin)
 {
+    const char *default_cert_file =
+        neu_config_get_value("./neuron.yaml", 2, "opcua", "default_cert_file");
+    const char *default_key_file =
+        neu_config_get_value("./neuron.yaml", 2, "opcua", "default_key_file");
+    const char *host =
+        neu_config_get_value("./neuron.yaml", 2, "opcua", "host");
+    const char *port = neu_config_get_value("neuron.yaml", 2, "opcua", "port");
+    const char *username =
+        neu_config_get_value("./neuron.yaml", 2, "opcua", "username");
+    const char *password =
+        neu_config_get_value("./neuron.yaml", 2, "opcua", "password");
+    const char *cert_file =
+        neu_config_get_value("./neuron.yaml", 2, "opcua", "cert_file");
+    const char *key_file =
+        neu_config_get_value("./neuron.yaml", 2, "opcua", "key_file");
+
     // OPC-UA option
-    plugin->option.default_cert_file = "./opcua-default-cert.der";
-    plugin->option.default_key_file  = "./opcua-default-key.der";
-    plugin->option.host              = "localhost";
-    plugin->option.port              = 4840;
-    plugin->option.username          = "gaoc01";
-    plugin->option.password          = "123456";
-    plugin->option.cert_file         = "";
-    plugin->option.key_file          = "";
+    plugin->option.default_cert_file = strdup(default_cert_file);
+    plugin->option.default_key_file  = strdup(default_key_file);
+    plugin->option.host              = strdup(host);
+    plugin->option.port              = atoi(port);
+    plugin->option.username          = strdup(username);
+    plugin->option.password          = strdup(password);
+    plugin->option.cert_file         = strdup(cert_file);
+    plugin->option.key_file          = strdup(key_file);
 
     int rc = open62541_client_open(&plugin->option, plugin, &plugin->client);
     if (0 != rc) {
