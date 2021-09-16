@@ -180,6 +180,24 @@ TEST(PluginManagerTest, UpdatePluginManagerTest)
 
     EXPECT_EQ(0, plugin_manager_update_plugin(plugin_mng, &param_update));
 
+    plugin_info_vec = plugin_manager_get_all_plugins(plugin_mng);
+    VECTOR_FOR_EACH(plugin_info_vec, iter)
+    {
+        plugin_reg_info_t *info = (plugin_reg_info_t *) iterator_get(&iter);
+
+        switch (index) {
+        case 3:
+            EXPECT_EQ(param_update.adapter_type, info->adapter_type);
+            EXPECT_EQ(param_update.plugin_kind, info->plugin_kind);
+            EXPECT_STREQ(param_update.plugin_name, info->plugin_name);
+            EXPECT_STREQ(param_update.plugin_lib_name, info->plugin_lib_name);
+            break;
+        default:
+            break;
+        }
+        index += 1;
+    }
+
     vector_free(plugin_info_vec);
     plugin_manager_unreg_all_plugins(plugin_mng);
     plugin_manager_destroy(plugin_mng);
@@ -215,6 +233,9 @@ void *plugin_manager_thread(void *arg)
     EXPECT_EQ(0, plugin_manager_reg_plugin(plugin_mng, &param2, &p_plugin_id));
     EXPECT_EQ(0, plugin_manager_reg_plugin(plugin_mng, &param3, &p_plugin_id));
 
+    /**plugin_manager_update_plugin**/
+    EXPECT_EQ(0, plugin_manager_update_plugin(plugin_mng, &param_update));
+
     /**plugin_manager_get_all_plugins**/
     plugin_info_vec = plugin_manager_get_all_plugins(plugin_mng);
     VECTOR_FOR_EACH(plugin_info_vec, iter)
@@ -242,10 +263,10 @@ void *plugin_manager_thread(void *arg)
         case 3:
             plugin_id3 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
-            EXPECT_EQ(1, info->plugin_kind);
-            EXPECT_STREQ("plugin3", info->plugin_name);
-            EXPECT_STREQ("lib3", info->plugin_lib_name);
+            EXPECT_EQ(param_update.adapter_type, info->adapter_type);
+            EXPECT_EQ(param_update.plugin_kind, info->plugin_kind);
+            EXPECT_STREQ(param_update.plugin_name, info->plugin_name);
+            EXPECT_STREQ(param_update.plugin_lib_name, info->plugin_lib_name);
             break;
         default:
             break;
@@ -271,9 +292,6 @@ void *plugin_manager_thread(void *arg)
     EXPECT_EQ(0,
               plugin_manager_get_reg_info_by_name(
                   plugin_mng, (char *) "plugin3", &reg_info));
-
-    /**plugin_manager_update_plugin**/
-    EXPECT_EQ(0, plugin_manager_update_plugin(plugin_mng, &param_update));
 
     /**plugin_manager_unreg_plugin**/
     plugin_manager_unreg_plugin(plugin_mng, plugin_id1);
