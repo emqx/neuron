@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
+
 #include "vector.h"
 
 typedef struct Vector   vector_t;
