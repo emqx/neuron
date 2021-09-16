@@ -1,7 +1,14 @@
 lib_path: ./
 mqtt:
+  id: neuron-lite-mqtt-plugin-10012
+  mqtt_version: 4
+  topic: neuronlite/response
+  qos: 1
+  keepalive_interval: 20
+  clean_session: 1
   broker:
-    host: 127.0.0.1
+    connection: tcp://
+    host: localhost
     port: 1883
 web:
   host: 0.0.0.0
@@ -9,3 +16,12 @@ web:
 api:
   host: 0.0.0.0
   port: 7001
+opcua:
+  default_cert_file: ./opcua-default-cert.der
+  default_key_file: ./opcua-default-key.der
+  host: localhost
+  port: 4840
+  username: gaoc01
+  password: 123456
+  cert_file: ""
+  key_file: ""

@@ -21,6 +21,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 
+#include <config.h>
 #include <neuron.h>
 
 #include "message_handle.h"
@@ -36,7 +37,6 @@ struct neu_plugin {
     neu_plugin_common_t common;
     option_t            option;
     paho_client_t *     paho;
-    uint32_t            new_event_id;
     neu_list            context_list;
 };
 
@@ -163,19 +163,34 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
-    plugin->new_event_id = 1;
+    const char *clientid =
+        neu_config_get_value("./neuron.yaml", 2, "mqtt", "id");
+    const char *mqtt_version =
+        neu_config_get_value("./neuron.yaml", 2, "mqtt", "mqtt_version");
+    const char *topic =
+        neu_config_get_value("./neuron.yaml", 2, "mqtt", "topic");
+    const char *qos = neu_config_get_value("./neuron.yaml", 2, "mqtt", "qos");
+    const char *keepalive_interval =
+        neu_config_get_value("./neuron.yaml", 2, "mqtt", "keepalive_interval");
+    const char *clean_session =
+        neu_config_get_value("./neuron.yaml", 2, "mqtt", "clean_session");
+    const char *connection = neu_config_get_value("./neuron.yaml", 3, "mqtt",
+                                                  "broker", "connection");
+    const char *host =
+        neu_config_get_value("./neuron.yaml", 3, "mqtt", "broker", "host");
+    const char *port =
+        neu_config_get_value("./neuron.yaml", 3, "mqtt", "broker", "port");
 
     // MQTT option
-    plugin->option.clientid     = "neuron-lite-mqtt-plugin-10012";
-    plugin->option.MQTT_version = 4;
-    plugin->option.topic        = "neuronlite/response";
-    plugin->option.qos          = 1;
-    plugin->option.connection   = "tcp://";
-    // plugin->option.host               = "broker.emqx.io";
-    plugin->option.host               = "localhost";
-    plugin->option.port               = "1883";
-    plugin->option.keepalive_interval = 20;
-    plugin->option.clean_session      = 1;
+    plugin->option.clientid           = strdup(clientid);
+    plugin->option.MQTT_version       = atoi(mqtt_version);
+    plugin->option.topic              = strdup(topic);
+    plugin->option.qos                = atoi(qos);
+    plugin->option.connection         = strdup(connection);
+    plugin->option.host               = strdup(host);
+    plugin->option.port               = strdup(port);
+    plugin->option.keepalive_interval = atoi(keepalive_interval);
+    plugin->option.clean_session      = atoi(clean_session);
 
     // Paho mqtt client setup
     client_error error =
