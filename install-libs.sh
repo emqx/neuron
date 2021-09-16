@@ -38,7 +38,7 @@ function build_nng()
     cd nng
     mkdir build
     cd build
-    cmake -G Ninja ..
+    cmake -G Ninja -DBUILD_SHARED_LIBS=1 ..
     ninja
     ninja install
 

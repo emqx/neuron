@@ -28,6 +28,7 @@ target_include_directories(modbus_point_test PRIVATE
 	${CMAKE_SOURCE_DIR}/plugins
 )
 target_link_libraries(modbus_point_test neuron-base gtest_main gtest pthread nng)
+target_link_directories(modbus_point_test PRIVATE /usr/local/lib)
 
 add_executable(json_group_config_test json_group_config_test.cc ${SRC_PARSER})
 target_include_directories(json_group_config_test PRIVATE 

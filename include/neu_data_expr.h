@@ -144,13 +144,13 @@ neu_data_val_t *neu_dvalue_new(neu_dtype_e type);
  * New a void data value, because the void data value hasn't a value, so this
  * function should be panic. Call this function when an exception occurred.
  */
-neu_data_val_t *neu_dvalue_void_new(neu_dtype_e type);
+neu_data_val_t *neu_dvalue_void_new();
 
 /**
  * New a unit data value, the value is empty, it will translate to other type
  * data value.
  */
-neu_data_val_t *neu_dvalue_unit_new(neu_dtype_e type);
+neu_data_val_t *neu_dvalue_unit_new();
 
 /**
  * new a neu_data_val_t with inplace buffer
