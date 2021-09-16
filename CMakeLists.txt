@@ -128,27 +128,12 @@ target_link_libraries(neuron-base vector-static csptr jansson
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR})
 
 # define for plugins
-# sample driver plugin
-set(SAMPLE_PLUGIN_SOURCES plugins/sample/plugin_sample_drv.c)
-add_library(plugin-sample-drv SHARED)
-target_sources(plugin-sample-drv PRIVATE ${SAMPLE_PLUGIN_SOURCES})
-target_include_directories(plugin-sample-drv PRIVATE include)
-target_link_libraries(plugin-sample-drv neuron-base)
-target_link_libraries(plugin-sample-drv ${CMAKE_THREAD_LIBS_INIT})
-
-# sample application plugin
-set(SAMPLE_PLUGIN_SOURCES plugins/sample/plugin_sample_app.c)
-add_library(plugin-sample-app SHARED)
-target_sources(plugin-sample-app PRIVATE ${SAMPLE_PLUGIN_SOURCES})
-target_include_directories(plugin-sample-app PRIVATE include)
-target_link_libraries(plugin-sample-app neuron-base)
-target_link_libraries(plugin-sample-app ${CMAKE_THREAD_LIBS_INIT})
-
+add_subdirectory(plugins/sample)
 add_subdirectory(plugins/modbus)
-
-# mqtt plugin
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/opcua)
+
+# define for tests
 enable_testing()
 add_subdirectory(tests)
 # add_subdirectory(tests/plugins/mqtt)
