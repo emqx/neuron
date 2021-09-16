@@ -48,6 +48,7 @@ TEST(DataValueTest, neu_dvalue_set_get_cstr)
     rc        = neu_dvalue_get_cstr(val, &ret);
     EXPECT_EQ(0, rc);
     EXPECT_STREQ("Hello, Neuron!", ret);
+    free(ret);
     neu_dvalue_free(val);
 }
 
@@ -65,6 +66,7 @@ TEST(DataValueTest, neu_dvalue_set_get_array)
     // TODO: assert two array is equal
 
     neu_fixed_array_free(array_set);
+    neu_fixed_array_free(array_get);
     neu_dvalue_free(val);
 }
 
@@ -81,6 +83,7 @@ TEST(DataValueTest, neu_dvalue_set_get_vec)
     // TODO: assert two vector is equal
 
     vector_free(vec_set);
+    vector_free(vec_get);
     neu_dvalue_free(val);
 }
 
@@ -130,6 +133,7 @@ TEST(DataValueTest, neu_dvalue_array_deser)
 
     free(buf);
     neu_fixed_array_free(array_set);
+    neu_fixed_array_free(array_get);
     neu_dvalue_free(val);
     neu_dvalue_free(val1);
 }
@@ -156,6 +160,7 @@ TEST(DataValueTest, neu_dvalue_vec_deser)
 
     free(buf);
     vector_free(vec_set);
+    vector_free(vec_get);
     neu_dvalue_free(val);
     neu_dvalue_free(val1);
 }

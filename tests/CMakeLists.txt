@@ -42,7 +42,7 @@ target_include_directories(datatag_table_test PRIVATE
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include       
 )
-target_link_libraries(datatag_table_test nng neuron-base gtest_main gtest pthread jansson)
+target_link_libraries(datatag_table_test neuron-base gtest_main gtest pthread jansson)
 
 add_executable(json_datatag_table_test json_datatag_table_test.cc ${SRC_PARSER})
 target_include_directories(json_datatag_table_test PRIVATE

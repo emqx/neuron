@@ -1343,7 +1343,7 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
         }
     } else if ((type & NEU_DTYPE_ARRAY) == NEU_DTYPE_ARRAY) {
         neu_fixed_array_t *array;
-        rv = neu_dvalue_get_array(val, &array);
+        rv = neu_dvalue_get_ref_array(val, &array);
         if (rv != 0) {
             size = 0;
         } else if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(val->type)) {
@@ -1360,7 +1360,7 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
         }
     } else if ((type & NEU_DTYPE_VEC) == NEU_DTYPE_VEC) {
         vector_t *vec;
-        rv = neu_dvalue_get_vec(val, &vec);
+        rv = neu_dvalue_get_ref_vec(val, &vec);
         if (rv != 0) {
             size = 0;
         } else if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(val->type)) {
