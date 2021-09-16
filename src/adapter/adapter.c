@@ -342,6 +342,13 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_START_PERIODIC_READ: {
+        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_START_PERIODIC_READ,
+                         start_periodic_read_cmd_t,
+                         neu_reqresp_start_periodic_rd_t, {});
+        break;
+    }
+
     case NEU_REQRESP_WRITE_DATA: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_WRITE_DATA, write_data_cmd_t,
                          neu_reqresp_write_t, {
