@@ -101,14 +101,14 @@ void message_handle_init_tags(neu_plugin_t *plugin)
     }
 
     neu_datatag_id_t id;
-    neu_addr_str_t addr_str = (char *) tags[0];
-    id                      = 0;
-    neu_datatag_t *datatag0 = malloc(sizeof(neu_datatag_t));
-    datatag0->id            = id;
-    datatag0->attribute     = NEU_ATTRIBUTETYPE_READ;
-    datatag0->type          = NEU_DATATYPE_WORD;
-    datatag0->addr_str      = addr_str;
-    ids[0]                  = neu_datatag_tbl_add(table, datatag0);
+    neu_addr_str_t   addr_str = (char *) tags[0];
+    id                        = 0;
+    neu_datatag_t *datatag0   = malloc(sizeof(neu_datatag_t));
+    datatag0->id              = id;
+    datatag0->attribute       = NEU_ATTRIBUTETYPE_READ;
+    datatag0->type            = NEU_DATATYPE_WORD;
+    datatag0->addr_str        = addr_str;
+    ids[0]                    = neu_datatag_tbl_add(table, datatag0);
 
     addr_str                = (char *) tags[1];
     id                      = 1;

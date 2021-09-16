@@ -28,7 +28,7 @@ NEURON IIoT System for Industry 4.0
   $ cd nng
   $ mkdir build
   $ cd build
-  $ cmake -G Ninja ..
+  $ cmake -G Ninja -DBUILD_SHARED_LIBS=1 ..
   $ ninja
   $ ninja test
   $ ninja install

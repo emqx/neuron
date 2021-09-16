@@ -96,6 +96,7 @@ else()
   target_link_libraries(neuron dl nng jansson yaml neuron-base)
 endif()
 target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
+target_link_directories(neuron PRIVATE /usr/local/lib)
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
