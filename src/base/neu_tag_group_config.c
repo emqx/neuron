@@ -38,11 +38,12 @@
 typedef struct neu_taggrp_config neu_taggrp_config_t;
 
 struct neu_taggrp_config {
-    neu_atomic_int ref_count;
-    char *         config_name;
-    uint32_t       read_interval;
-    vector_t       sub_pipes;
-    vector_t       datatag_ids;
+    neu_atomic_int  ref_count;
+    neu_atomic_bool is_anchored;
+    char *          config_name;
+    uint32_t        read_interval;
+    vector_t        sub_pipes;
+    vector_t        datatag_ids;
 };
 
 neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)
@@ -64,6 +65,8 @@ neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)
 
     neu_atomic_init(&grp_config->ref_count);
     neu_atomic_set(&grp_config->ref_count, 1);
+    neu_atomic_init_bool(&grp_config->is_anchored);
+    neu_atomic_set_bool(&grp_config->is_anchored, false);
     rv = vector_init(&grp_config->sub_pipes, DEFAULT_SUB_PIPE_COUNT,
                      sizeof(nng_pipe));
     if (rv != 0) {
@@ -154,6 +157,33 @@ copy_sub_pipes_fail:
     vector_uninit(&dst_config->sub_pipes);
     neu_taggrp_cfg_free(dst_config);
     return NULL;
+}
+
+void neu_taggrp_cfg_anchor(neu_taggrp_config_t *grp_config)
+{
+    if (grp_config == NULL) {
+        return;
+    }
+
+    neu_atomic_set_bool(&grp_config->is_anchored, true);
+}
+
+void neu_taggrp_cfg_unanchor(neu_taggrp_config_t *grp_config)
+{
+    if (grp_config == NULL) {
+        return;
+    }
+
+    neu_atomic_set_bool(&grp_config->is_anchored, false);
+}
+
+bool neu_taggrp_cfg_is_anchored(neu_taggrp_config_t *grp_config)
+{
+    if (grp_config == NULL) {
+        return false;
+    }
+
+    return neu_atomic_get_bool(&grp_config->is_anchored);
 }
 
 const char *neu_taggrp_cfg_get_name(neu_taggrp_config_t *grp_config)

@@ -144,7 +144,7 @@ int neu_datatag_mng_add_grp_config(neu_datatag_manager_t *datatag_manager,
     index = find_taggrp_config(&datatag_manager->p_configs,
                                neu_taggrp_cfg_get_name(grp_config));
     if (index == SIZE_MAX) {
-        // neu_taggrp_cfg_anchor(grp_config);
+        neu_taggrp_cfg_anchor(grp_config);
         rv = vector_push_back(&datatag_manager->p_configs, &grp_config);
     }
     pthread_mutex_unlock(&datatag_manager->mtx);
@@ -167,7 +167,7 @@ int neu_datatag_mng_del_grp_config(neu_datatag_manager_t *datatag_manager,
     if (index != SIZE_MAX) {
         grp_config = *(neu_taggrp_config_t **) vector_get(
             &datatag_manager->p_configs, index);
-        // neu_taggrp_cfg_unanchor(grp_config);
+        neu_taggrp_cfg_unanchor(grp_config);
         neu_taggrp_cfg_free(grp_config);
         vector_erase(&datatag_manager->p_configs, index);
         rv = 0;
@@ -197,9 +197,9 @@ int neu_datatag_mng_update_grp_config(neu_datatag_manager_t *datatag_manager,
     if (index != SIZE_MAX) {
         grp_config = *(neu_taggrp_config_t **) vector_get(
             &datatag_manager->p_configs, index);
-        // neu_taggrp_cfg_unanchor(grp_config);
+        neu_taggrp_cfg_unanchor(grp_config);
         neu_taggrp_cfg_free(grp_config);
-        // neu_taggrp_cfg_anchor(new_grp_config);
+        neu_taggrp_cfg_anchor(new_grp_config);
         vector_assign(&datatag_manager->p_configs, index, &new_grp_config);
         rv = 0;
     }
