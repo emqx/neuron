@@ -54,7 +54,7 @@ void handle_del_group_config(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_delete_group_config_req, {
         neu_taggrp_config_t *config =
-            neu_rest_find_config(plugin, req->node_id, req->config);
+            neu_system_find_group_config(plugin, req->node_id, req->config);
         neu_datatag_table_t *table =
             neu_system_get_datatags_table(plugin, req->node_id);
         intptr_t err = 0;
@@ -87,7 +87,7 @@ void handle_update_group_config(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_update_group_config_req, {
         neu_taggrp_config_t *config =
-            neu_rest_find_config(plugin, req->src_node_id, req->config);
+            neu_system_find_group_config(plugin, req->src_node_id, req->config);
 
         if (config == NULL) {
             http_not_found(aio, "{\"error\": 1}");

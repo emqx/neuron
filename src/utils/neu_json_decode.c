@@ -57,7 +57,7 @@ static int decode_object(json_t *root, neu_fixed_array_t *kv)
 
     switch (neu_dvalue_get_type(v_value)) {
     case NEU_DTYPE_CSTR:
-        neu_dvalue_init_copy_cstr(v_value, json_string_value(ob));
+        neu_dvalue_init_copy_cstr(v_value, (char *) json_string_value(ob));
         break;
     case NEU_DTYPE_FLOAT:
         neu_dvalue_init_float(v_value, json_real_value(ob));
@@ -121,7 +121,7 @@ int neu_jsonx_decode(char *buf, neu_data_val_t *val)
 
     assert(ret == 0);
 
-    for (int i = 0; i < array->length; i++) {
+    for (uint32_t i = 0; i < array->length; i++) {
         neu_fixed_array_t *kv = NULL;
         neu_data_val_t *ele = (neu_data_val_t *) neu_fixed_array_get(array, i);
         ret                 = neu_dvalue_get_ref_array(ele, &kv);
@@ -195,7 +195,7 @@ int neu_jsonx_decode_array(char *buf, char *name, int index,
         return -1;
     }
 
-    for (int i = 0; i < array->length; i++) {
+    for (uint32_t i = 0; i < array->length; i++) {
         neu_fixed_array_t *kv = NULL;
         neu_data_val_t *ele = (neu_data_val_t *) neu_fixed_array_get(array, i);
         ret                 = neu_dvalue_get_ref_array(ele, &kv);

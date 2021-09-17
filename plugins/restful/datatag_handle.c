@@ -36,8 +36,8 @@ void handle_add_tags(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_add_tags_req, {
-        neu_taggrp_config_t *config =
-            neu_rest_find_config(plugin, req->node_id, req->group_config_name);
+        neu_taggrp_config_t *config = neu_system_find_group_config(
+            plugin, req->node_id, req->group_config_name);
         neu_datatag_table_t *table =
             neu_system_get_datatags_table(plugin, req->node_id);
         if (config == NULL || table == NULL) {
@@ -67,8 +67,8 @@ void handle_del_tags(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_delete_tags_req, {
-        neu_taggrp_config_t *config =
-            neu_rest_find_config(plugin, req->node_id, req->group_config_name);
+        neu_taggrp_config_t *config = neu_system_find_group_config(
+            plugin, req->node_id, req->group_config_name);
         neu_datatag_table_t *table =
             neu_system_get_datatags_table(plugin, req->node_id);
         if (config == NULL || table == NULL) {
