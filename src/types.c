@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -937,4 +938,22 @@ neu_fixed_array_t *neu_fixed_array_clone(neu_fixed_array_t *array)
     new_array->esize  = array->esize;
     memcpy(new_array->buf, array->buf, new_array->length * new_array->esize);
     return new_array;
+}
+
+/*String converted test*/
+int string_is_number(char *s)
+{
+    if (*s == '\0') {
+        return 1;
+    }
+
+    while (*s) {
+        if (isdigit(*s)) {
+            s++;
+        } else {
+            return 1;
+        }
+    }
+
+    return 0;
 }

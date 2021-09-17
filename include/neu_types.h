@@ -895,6 +895,8 @@ typedef struct {
     neu_variable_t variable;
 } neu_varaiblenode_t;
 
+int string_is_number(char *s);
+
 #ifdef __cplusplus
 }
 #endif

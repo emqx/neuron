@@ -24,9 +24,17 @@
 extern "C" {
 #endif
 
-void plugin_handle_set_open62541_client(open62541_client_t *client);
-int  plugin_handle_read(neu_plugin_t *plugin, vector_t *v);
-int  plugin_handle_write(neu_plugin_t *plguin, vector_t *v);
+typedef struct {
+    neu_plugin_t *       plugin;
+    open62541_client_t * client;
+    neu_datatag_table_t *table;
+    neu_node_id_t        self_node_id;
+} opc_handle_context_t;
+
+int plugin_handle_read_once(opc_handle_context_t *context,
+                            neu_taggrp_config_t *config, neu_variable_t *array);
+int plugin_handle_write_value(opc_handle_context_t *context,
+                              neu_variable_t *array, vector_t *data);
 
 #ifdef __cplusplus
 }
