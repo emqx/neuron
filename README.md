@@ -86,7 +86,7 @@ NEURON IIoT System for Industry 4.0
   ```shell
   $ git clone https://github.com/yaml/libyaml.git
   $ cd libyaml
-  $ mkdir build && cd build && cmake .. && make
+  $ mkdir build && cd build && cmake DBUILD_SHARED_LIBS=1 .. && make
   $ make install
   ```
 

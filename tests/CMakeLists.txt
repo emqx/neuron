@@ -1,3 +1,5 @@
+link_directories(/usr/local/lib)
+
 add_executable(json_test json_test.cc)
 target_include_directories(json_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
@@ -89,7 +91,6 @@ target_include_directories(plugin_manager_test PRIVATE
 	${CMAKE_SOURCE_DIR}/plugins
 )
 target_link_libraries(plugin_manager_test neuron-base gtest_main gtest pthread jansson dl nng yaml)
-target_link_directories(plugin_manager_test PRIVATE /usr/local/lib)
 
 include(GoogleTest)
 gtest_discover_tests(json_test)

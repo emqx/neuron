@@ -175,6 +175,8 @@ static inline void neu_string_val_move(neu_string_val_t *dst,
 
 neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type);
 
+neu_dtype_e neu_dvalue_get_type(neu_data_val_t *val);
+
 /*
  * declare all basic function for neu_data_val_t
  */
@@ -221,6 +223,7 @@ void *neu_dvalue_get_ptr(neu_data_val_t *val);
 /*
  * declare all value initialize functions
  */
+void neu_dvalue_init_bool(neu_data_val_t *val, bool b);
 void neu_dvalue_init_int8(neu_data_val_t *val, int8_t i8);
 void neu_dvalue_init_int16(neu_data_val_t *val, int16_t i16);
 void neu_dvalue_init_int32(neu_data_val_t *val, int32_t i32);
@@ -234,6 +237,7 @@ void neu_dvalue_init_double(neu_data_val_t *val, double f64);
 void neu_dvalue_init_int_val(neu_data_val_t *val, neu_int_val_t int_val);
 void neu_dvalue_init_string_val(neu_data_val_t * val,
                                 neu_string_val_t string_val);
+void neu_dvalue_init_data_val(neu_data_val_t *val, void *data);
 
 /* The parameter cstr/bytes/array/vec is copy to neu_data_val_t
  */
@@ -264,6 +268,7 @@ void neu_dvalue_init_move_vec(neu_data_val_t *val, neu_dtype_e type,
 /*
  * declare all value set functions
  */
+int neu_dvalue_set_bool(neu_data_val_t *val, bool b);
 int neu_dvalue_set_int8(neu_data_val_t *val, int8_t i8);
 int neu_dvalue_set_int16(neu_data_val_t *val, int16_t i16);
 int neu_dvalue_set_int32(neu_data_val_t *val, int32_t i32);
@@ -305,6 +310,7 @@ int neu_dvalue_set_move_vec(neu_data_val_t *val, vector_t *vec);
 /*
  * declare all value get functions
  */
+int neu_dvalue_get_bool(neu_data_val_t *val, bool *p_b);
 int neu_dvalue_get_int8(neu_data_val_t *val, int8_t *p_i8);
 int neu_dvalue_get_int16(neu_data_val_t *val, int16_t *p_i16);
 int neu_dvalue_get_int32(neu_data_val_t *val, int32_t *p_i32);
@@ -318,6 +324,7 @@ int neu_dvalue_get_double(neu_data_val_t *val, double *p_f64);
 int neu_dvalue_get_int_val(neu_data_val_t *val, neu_int_val_t *p_int_val);
 int neu_dvalue_get_string_val(neu_data_val_t *  val,
                               neu_string_val_t *p_string_val);
+int neu_dvalue_get_data_val(neu_data_val_t *val, void **p_data);
 
 /* The parameter cstr/bytes/array/vec is copy from neu_data_val_t
  */

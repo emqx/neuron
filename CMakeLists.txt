@@ -50,6 +50,8 @@ configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
 if(APPLE)
 include_directories(/usr/local/include)
 link_directories(/usr/local/lib /usr/local/opt/openssl/lib)
+else()
+link_directories(/usr/local/lib)
 endif()
 
 find_package(nng CONFIG REQUIRED)
@@ -69,6 +71,7 @@ endif()
 
 # define neuron executalbe program
 aux_source_directory(src/parser NEURON_SRC_PARSE)
+aux_source_directory(src/json NEURON_SRC_JSON)
 set(NEURON_SOURCES
     src/main.c
     src/config.c
@@ -88,7 +91,7 @@ set(NEURON_SOURCES
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
-target_sources(neuron PRIVATE ${NEURON_SOURCES} ${NEURON_SRC_PARSE})
+target_sources(neuron PRIVATE ${NEURON_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_JSON})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 if(APPLE)
   target_link_libraries(neuron nng::nng jansson yaml neuron-base)
@@ -96,7 +99,6 @@ else()
   target_link_libraries(neuron dl nng jansson yaml neuron-base)
 endif()
 target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
-target_link_directories(neuron PRIVATE /usr/local/lib)
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
@@ -113,6 +115,8 @@ set(NEURON_BASE_SOURCES
     src/utils/panic.c
     src/utils/log.c
     src/utils/json.c
+    src/utils/neu_json_encode.c
+    src/utils/neu_json_decode.c
     src/utils/common.c
     src/utils/neu_jwt.c)
 
