@@ -182,6 +182,56 @@ neu_order_t neu_string_cmp(const neu_string_t *str1, const neu_string_t *str2)
                      : ((is > 0) ? NEU_ORDER_MORE : NEU_ORDER_LESS);
 }
 
+size_t neu_string_serialized_size(neu_string_t *string)
+{
+    return sizeof(size_t) + string->length;
+}
+
+size_t neu_string_serialize(neu_string_t *string, uint8_t *buf)
+{
+    uint8_t *cur_ptr;
+    size_t   size = 0;
+
+    if (string == NULL || buf == NULL) {
+        return 0;
+    }
+
+    cur_ptr             = buf;
+    *(size_t *) cur_ptr = string->length;
+    cur_ptr += sizeof(size_t);
+    size += sizeof(size_t);
+    memcpy(cur_ptr, string->cstr, string->length);
+    size += string->length;
+    return size;
+}
+
+size_t neu_string_deserialize(uint8_t *buf, neu_string_t **p_string)
+{
+    uint8_t *     cur_ptr;
+    size_t        length;
+    size_t        size = 0;
+    neu_string_t *string;
+
+    if (p_string == NULL || buf == NULL) {
+        return 0;
+    }
+
+    cur_ptr = buf;
+    length  = *(size_t *) cur_ptr;
+    cur_ptr += sizeof(size_t);
+    size += sizeof(size_t);
+    string = neu_string_new(length);
+    if (string == NULL) {
+        return 0;
+    }
+
+    string->length = length;
+    memcpy(string->cstr, cur_ptr, length);
+    size += length;
+    *p_string = string;
+    return size;
+}
+
 /**************/
 /* Time Types */
 /**************/

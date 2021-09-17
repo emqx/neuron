@@ -264,6 +264,7 @@ typedef struct neu_string neu_string_t;
  * memory size of the string
  */
 size_t        neu_string_size(neu_string_t *string);
+size_t        neu_string_serialized_size(neu_string_t *string);
 neu_string_t *neu_string_new(size_t length);
 void          neu_string_free(neu_string_t *string);
 void          neu_string_copy(neu_string_t *dst, neu_string_t *src);
@@ -277,6 +278,14 @@ char *neu_string_get_ref_cstr(neu_string_t *string);
 
 /* returns order type by comparing of two character arrays content. */
 neu_order_t neu_string_cmp(const neu_string_t *s1, const neu_string_t *s2);
+
+size_t neu_string_serialized_size(neu_string_t *string);
+
+/* serialize the neu_sting_t to bytes buffer */
+size_t neu_string_serialize(neu_string_t *string, uint8_t *buf);
+
+/* deserialize the neu_sting_t from bytes buffer */
+size_t neu_string_deserialize(uint8_t *buf, neu_string_t **p_string);
 
 /**
  * Localized Text

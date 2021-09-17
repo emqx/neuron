@@ -72,6 +72,16 @@ typedef enum {
      * followed data value.
      */
     NEU_DTYPE_KEY,
+
+    /**
+     * A int-value pair for IntMap
+     */
+    NEU_DTYPE_INT_VAL,
+
+    /**
+     * A string-value pair for StringMap
+     */
+    NEU_DTYPE_STRING_VAL,
     NEU_VALUE_TYPE_END,
 
     /* recursive type definition */
@@ -118,19 +128,52 @@ static_assert(NEU_VALUE_TYPE_END < NEU_RECURSIVE_TYPE_START,
 static_assert(NEU_DTYPE_CUSTOM_END < NEU_DTYPE_FLAGS_START,
               "Too many custom types");
 
-/* NEU_DTYPE_VOID */
-typedef struct neu_void neu_void_t;
-
-/* NEU_DTYPE_UNIT */
-typedef struct neu_dtype_unit {
-} neu_dtype_unit_t;
-
-neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type);
-
 /**
  * A generic neuron data value
  */
 typedef struct neu_data_val neu_data_val_t;
+
+/* NEU_DTYPE_VOID */
+typedef struct neu_void neu_void_t;
+
+/* NEU_DTYPE_UNIT */
+typedef struct neu_unit {
+} neu_unit_t;
+
+/* NEU_DTYPE_INT_VAL */
+typedef struct neu_int_val {
+    uint32_t        key;
+    neu_data_val_t *val;
+} neu_int_val_t;
+
+/* NEU_DTYPE_STRING_VAL */
+typedef struct neu_string_val {
+    neu_string_t *  key;
+    neu_data_val_t *val;
+} neu_string_val_t;
+
+static inline void neu_int_val_move(neu_int_val_t *dst, neu_int_val_t *src)
+{
+    dst->key = src->key;
+    // the data value move to destination
+    dst->val = src->val;
+    src->val = NULL;
+    return;
+}
+
+static inline void neu_string_val_move(neu_string_val_t *dst,
+                                       neu_string_val_t *src)
+{
+    // the string key move to destination
+    dst->key = src->key;
+    src->key = NULL;
+    // the data value move to destination
+    dst->val = src->val;
+    src->val = NULL;
+    return;
+}
+
+neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type);
 
 /*
  * declare all basic function for neu_data_val_t
@@ -188,6 +231,9 @@ void neu_dvalue_init_uint32(neu_data_val_t *val, uint32_t u32);
 void neu_dvalue_init_uint64(neu_data_val_t *val, uint64_t u64);
 void neu_dvalue_init_float(neu_data_val_t *val, float f32);
 void neu_dvalue_init_double(neu_data_val_t *val, double f64);
+void neu_dvalue_init_int_val(neu_data_val_t *val, neu_int_val_t int_val);
+void neu_dvalue_init_string_val(neu_data_val_t * val,
+                                neu_string_val_t string_val);
 
 /* The parameter cstr/bytes/array/vec is copy to neu_data_val_t
  */
@@ -228,10 +274,13 @@ int neu_dvalue_set_uint32(neu_data_val_t *val, uint32_t u32);
 int neu_dvalue_set_uint64(neu_data_val_t *val, uint64_t u64);
 int neu_dvalue_set_float(neu_data_val_t *val, float f32);
 int neu_dvalue_set_double(neu_data_val_t *val, double f64);
+int neu_dvalue_set_int_val(neu_data_val_t *val, neu_int_val_t int_val);
+int neu_dvalue_set_string_val(neu_data_val_t *val, neu_string_val_t string_val);
 
 /* The parameter cstr/bytes/array/vec is copy to neu_data_val_t
  */
 int neu_dvalue_set_cstr(neu_data_val_t *val, char *cstr);
+int neu_dvalue_set_string(neu_data_val_t *val, neu_string_t *string);
 int neu_dvalue_set_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
 int neu_dvalue_set_array(neu_data_val_t *val, neu_fixed_array_t *array);
 int neu_dvalue_set_vec(neu_data_val_t *val, vector_t *vec);
@@ -240,6 +289,7 @@ int neu_dvalue_set_vec(neu_data_val_t *val, vector_t *vec);
  * So the lifetime of neu_data_val_t must less than parameter.
  */
 int neu_dvalue_set_ref_cstr(neu_data_val_t *val, char *cstr);
+int neu_dvalue_set_ref_string(neu_data_val_t *val, neu_string_t *string);
 int neu_dvalue_set_ref_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
 int neu_dvalue_set_ref_array(neu_data_val_t *val, neu_fixed_array_t *array);
 int neu_dvalue_set_ref_vec(neu_data_val_t *val, vector_t *vec);
@@ -247,6 +297,7 @@ int neu_dvalue_set_ref_vec(neu_data_val_t *val, vector_t *vec);
 /* The owership of parameter cstr/bytes/array/vec is move to neu_data_val_t
  */
 int neu_dvalue_set_move_cstr(neu_data_val_t *val, char *cstr);
+int neu_dvalue_set_move_string(neu_data_val_t *val, neu_string_t *string);
 int neu_dvalue_set_move_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
 int neu_dvalue_set_move_array(neu_data_val_t *val, neu_fixed_array_t *array);
 int neu_dvalue_set_move_vec(neu_data_val_t *val, vector_t *vec);
@@ -264,10 +315,14 @@ int neu_dvalue_get_uint32(neu_data_val_t *val, uint32_t *p_u32);
 int neu_dvalue_get_uint64(neu_data_val_t *val, uint64_t *p_u64);
 int neu_dvalue_get_float(neu_data_val_t *val, float *p_f32);
 int neu_dvalue_get_double(neu_data_val_t *val, double *p_f64);
+int neu_dvalue_get_int_val(neu_data_val_t *val, neu_int_val_t *p_int_val);
+int neu_dvalue_get_string_val(neu_data_val_t *  val,
+                              neu_string_val_t *p_string_val);
 
 /* The parameter cstr/bytes/array/vec is copy from neu_data_val_t
  */
 int neu_dvalue_get_cstr(neu_data_val_t *val, char **p_cstr);
+int neu_dvalue_get_string(neu_data_val_t *val, neu_string_t **p_string);
 int neu_dvalue_get_bytes(neu_data_val_t *val, neu_bytes_t **p_bytes);
 int neu_dvalue_get_array(neu_data_val_t *val, neu_fixed_array_t **p_array);
 int neu_dvalue_get_vec(neu_data_val_t *val, vector_t **p_vec);
@@ -276,6 +331,7 @@ int neu_dvalue_get_vec(neu_data_val_t *val, vector_t **p_vec);
  * So the lifetime of parameter must less than neu_data_val_t.
  */
 int neu_dvalue_get_ref_cstr(neu_data_val_t *val, char **p_cstr);
+int neu_dvalue_get_ref_string(neu_data_val_t *val, neu_string_t **p_string);
 int neu_dvalue_get_ref_bytes(neu_data_val_t *val, neu_bytes_t **p_bytes);
 int neu_dvalue_get_ref_array(neu_data_val_t *val, neu_fixed_array_t **p_array);
 int neu_dvalue_get_ref_vec(neu_data_val_t *val, vector_t **p_vec);
@@ -283,6 +339,7 @@ int neu_dvalue_get_ref_vec(neu_data_val_t *val, vector_t **p_vec);
 /* The owership of parameter cstr/bytes/array/vec is move from neu_data_val_t
  */
 int neu_dvalue_get_move_cstr(neu_data_val_t *val, char **p_cstr);
+int neu_dvalue_get_move_string(neu_data_val_t *val, neu_string_t **p_string);
 int neu_dvalue_get_move_bytes(neu_data_val_t *val, neu_bytes_t **p_bytes);
 int neu_dvalue_get_move_array(neu_data_val_t *val, neu_fixed_array_t **p_array);
 int neu_dvalue_get_move_vec(neu_data_val_t *val, vector_t **p_vec);
@@ -292,6 +349,42 @@ int neu_dvalue_get_move_vec(neu_data_val_t *val, vector_t **p_vec);
  */
 int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf);
 int neu_dvalue_desialize(uint8_t *buf, neu_data_val_t **p_val);
+
+/*
+ * declare functions for int-value and string-value pair
+ */
+static inline void neu_int_val_uninit(neu_int_val_t *int_val)
+{
+    if (int_val->val != NULL) {
+        neu_dvalue_free(int_val->val);
+    }
+    return;
+}
+
+static inline void neu_int_val_free(neu_int_val_t *int_val)
+{
+    neu_int_val_uninit(int_val);
+    free(int_val);
+    return;
+}
+
+static inline void neu_string_val_uninit(neu_string_val_t *string_val)
+{
+    if (string_val->key != NULL) {
+        neu_string_free(string_val->key);
+    }
+    if (string_val->val != NULL) {
+        neu_dvalue_free(string_val->val);
+    }
+    return;
+}
+
+static inline void neu_string_val_free(neu_string_val_t *string_val)
+{
+    neu_string_val_uninit(string_val);
+    free(string_val);
+    return;
+}
 
 #ifdef __cplusplus
 }

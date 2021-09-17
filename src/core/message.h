@@ -35,8 +35,8 @@ typedef enum msg_type {
     MSG_CMD_WRITE_DATA,
     MSG_CMD_START_PERIODIC_READ,
     MSG_CMD_STOP_PERIODIC_READ,
-    MSG_CMD_SUBSCRIBE_DRIVER,
-    MSG_CMD_UNSUBSCRIBE_DRIVER,
+    MSG_CMD_SUBSCRIBE_NODE,
+    MSG_CMD_UNSUBSCRIBE_NODE,
     MSG_CMD_GROUP_CONFIG_CHANGED,
     MSG_CMD_EXIT_LOOP,
     MSG_CMD_RESP_PONG, // response pong for ping
@@ -112,14 +112,14 @@ typedef struct subscribe_driver_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
     neu_node_id_t        dst_node_id;
-} subscribe_driver_cmd_t;
+} subscribe_node_cmd_t;
 
 /* MSG_CMD_UNSUBSCRIBE_DRIVER */
 typedef struct unsubscribe_driver_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
     neu_node_id_t        dst_node_id;
-} unsubscribe_driver_cmd_t;
+} unsubscribe_node_cmd_t;
 
 /* MSG_CMD_GROUP_CONFIG_CHANGED */
 typedef struct grp_config_changed_cmd {

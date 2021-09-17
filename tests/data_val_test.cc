@@ -39,6 +39,60 @@ TEST(DataValueTest, neu_dvalue_set_get_double)
     neu_dvalue_free(val);
 }
 
+#define INT_VAL_TEST_STR "hello int-val"
+#define STRING_KEY_TEST_STR "string-key"
+#define STRING_VAL_TEST_STR "hello string-val"
+TEST(DataValueTest, neu_dvalue_set_get_keyvalue)
+{
+    /* teset set/get int_val */
+    neu_int_val_t int_val;
+    int_val.key = 21;
+    int_val.val = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(int_val.val, (char*)INT_VAL_TEST_STR);
+
+    neu_data_val_t *val;
+    int             rc;
+    val = neu_dvalue_new(NEU_DTYPE_INT_VAL);
+    rc = neu_dvalue_set_int_val(val, int_val);
+    EXPECT_EQ(0, rc);
+    
+    neu_int_val_t int_val_get;
+    char* cstr;
+    rc        = neu_dvalue_get_int_val(val, &int_val_get);
+    EXPECT_EQ(0, rc);
+    rc        = neu_dvalue_get_ref_cstr(int_val_get.val, &cstr);
+    EXPECT_EQ(0, rc);
+    EXPECT_STREQ((char*)INT_VAL_TEST_STR, cstr);
+    neu_int_val_uninit(&int_val_get);
+    neu_dvalue_free(val);
+
+    /* teset set/get string_val */
+    neu_string_t* test_string;
+    neu_string_val_t string_val;
+    string_val.key = neu_string_from_cstr((char*)STRING_KEY_TEST_STR);
+    test_string = neu_string_from_cstr((char*)STRING_VAL_TEST_STR);
+    string_val.val = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(string_val.val, test_string);
+
+    val = neu_dvalue_new(NEU_DTYPE_STRING_VAL);
+    rc = neu_dvalue_set_string_val(val, string_val);
+    EXPECT_EQ(0, rc);
+    
+    neu_string_val_t string_val_get;
+    char* key_cstr;
+    char* val_cstr;
+    neu_string_t* string_get;
+    rc        = neu_dvalue_get_string_val(val, &string_val_get);
+    EXPECT_EQ(0, rc);
+    key_cstr  = neu_string_get_ref_cstr(string_val_get.key);
+    EXPECT_STREQ((char*)STRING_KEY_TEST_STR, key_cstr);
+    rc        = neu_dvalue_get_ref_string(string_val_get.val, &string_get);
+    EXPECT_EQ(0, rc);
+    EXPECT_STREQ((char*)STRING_VAL_TEST_STR, neu_string_get_ref_cstr(string_get));
+    neu_string_val_uninit(&string_val_get);
+    neu_dvalue_free(val);
+}
+
 TEST(DataValueTest, neu_dvalue_set_get_cstr)
 {
     neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_CSTR);

@@ -1090,16 +1090,16 @@ static void manager_loop(void *arg)
             break;
         }
 
-        case MSG_CMD_SUBSCRIBE_DRIVER: {
+        case MSG_CMD_SUBSCRIBE_NODE: {
             size_t       msg_size;
             nng_msg *    out_msg;
             nng_pipe     msg_pipe;
             adapter_id_t adapter_id;
 
-            subscribe_driver_cmd_t *cmd_ptr;
-            adapter_reg_entity_t *  reg_entity;
+            subscribe_node_cmd_t *cmd_ptr;
+            adapter_reg_entity_t *reg_entity;
 
-            cmd_ptr = (subscribe_driver_cmd_t *) msg_get_buf_ptr(pay_msg);
+            cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
             adapter_id = neu_manager_adapter_id_from_node_id(
                 manager, cmd_ptr->dst_node_id);
@@ -1107,17 +1107,16 @@ static void manager_loop(void *arg)
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             msg_pipe = reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
-            msg_size =
-                msg_inplace_data_get_size(sizeof(subscribe_driver_cmd_t));
-            rv = nng_msg_alloc(&out_msg, msg_size);
+            msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
+            rv       = nng_msg_alloc(&out_msg, msg_size);
             if (rv == 0) {
-                message_t *             msg_ptr;
-                subscribe_driver_cmd_t *out_cmd_ptr;
+                message_t *           msg_ptr;
+                subscribe_node_cmd_t *out_cmd_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
-                msg_inplace_data_init(msg_ptr, MSG_CMD_SUBSCRIBE_DRIVER,
-                                      sizeof(subscribe_driver_cmd_t));
+                msg_inplace_data_init(msg_ptr, MSG_CMD_SUBSCRIBE_NODE,
+                                      sizeof(subscribe_node_cmd_t));
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
-                memcpy(out_cmd_ptr, cmd_ptr, sizeof(subscribe_driver_cmd_t));
+                memcpy(out_cmd_ptr, cmd_ptr, sizeof(subscribe_node_cmd_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
                 log_info("Forward subscribe driver command to driver pipe: %d",
                          msg_pipe);
@@ -1126,16 +1125,16 @@ static void manager_loop(void *arg)
             break;
         }
 
-        case MSG_CMD_UNSUBSCRIBE_DRIVER: {
+        case MSG_CMD_UNSUBSCRIBE_NODE: {
             size_t       msg_size;
             nng_msg *    out_msg;
             nng_pipe     msg_pipe;
             adapter_id_t adapter_id;
 
-            unsubscribe_driver_cmd_t *cmd_ptr;
-            adapter_reg_entity_t *    reg_entity;
+            unsubscribe_node_cmd_t *cmd_ptr;
+            adapter_reg_entity_t *  reg_entity;
 
-            cmd_ptr = (unsubscribe_driver_cmd_t *) msg_get_buf_ptr(pay_msg);
+            cmd_ptr = (unsubscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
             adapter_id = neu_manager_adapter_id_from_node_id(
                 manager, cmd_ptr->dst_node_id);
@@ -1144,16 +1143,16 @@ static void manager_loop(void *arg)
             msg_pipe = reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size =
-                msg_inplace_data_get_size(sizeof(unsubscribe_driver_cmd_t));
+                msg_inplace_data_get_size(sizeof(unsubscribe_node_cmd_t));
             rv = nng_msg_alloc(&out_msg, msg_size);
             if (rv == 0) {
-                message_t *               msg_ptr;
-                unsubscribe_driver_cmd_t *out_cmd_ptr;
+                message_t *             msg_ptr;
+                unsubscribe_node_cmd_t *out_cmd_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
-                msg_inplace_data_init(msg_ptr, MSG_CMD_UNSUBSCRIBE_DRIVER,
-                                      sizeof(unsubscribe_driver_cmd_t));
+                msg_inplace_data_init(msg_ptr, MSG_CMD_UNSUBSCRIBE_NODE,
+                                      sizeof(unsubscribe_node_cmd_t));
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
-                memcpy(out_cmd_ptr, cmd_ptr, sizeof(unsubscribe_driver_cmd_t));
+                memcpy(out_cmd_ptr, cmd_ptr, sizeof(unsubscribe_node_cmd_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
                 log_info(
                     "Forward unsubscribe driver command to driver pipe: %d",
