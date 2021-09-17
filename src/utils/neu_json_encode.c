@@ -145,7 +145,7 @@ static json_t *encode_object_value(neu_data_val_t *v_value)
     return object;
 }
 
-static void encode_object(json_t *object, neu_fixed_array_t *kv)
+static int encode_object(json_t *object, neu_fixed_array_t *kv)
 {
     char *          name    = NULL;
     neu_data_val_t *v_name  = (neu_data_val_t *) neu_fixed_array_get(kv, 0);
@@ -276,8 +276,10 @@ static void encode_object(json_t *object, neu_fixed_array_t *kv)
     }
     default:
         log_error("json encode unknown type: %d", neu_dvalue_get_type(v_value));
-        return 0;
+        return -1;
     }
+
+    return 0;
 }
 
 void *neu_jsonx_encode_array(void *array, neu_data_val_t *val)
@@ -292,7 +294,7 @@ void *neu_jsonx_encode_array(void *array, neu_data_val_t *val)
     assert(ret == 0);
 
     json_t *ob = json_object();
-    for (int i = 0; i < v_array->length; i++) {
+    for (uint32_t i = 0; i < v_array->length; i++) {
         neu_fixed_array_t *kv = NULL;
         neu_data_val_t *   ele =
             (neu_data_val_t *) neu_fixed_array_get(v_array, i);
@@ -319,7 +321,7 @@ void *neu_jsonx_encode_array_value(void *array, neu_data_val_t *val)
 
     assert(ret == 0);
 
-    for (int i = 0; i < v_array->length; i++) {
+    for (uint32_t i = 0; i < v_array->length; i++) {
         neu_data_val_t *ele =
             (neu_data_val_t *) neu_fixed_array_get(v_array, i);
 
@@ -342,7 +344,7 @@ int neu_jsonx_encode(void *object, neu_data_val_t *val, char **result)
 
     assert(ret == 0);
 
-    for (int i = 0; i < v_array->length; i++) {
+    for (uint32_t i = 0; i < v_array->length; i++) {
         neu_fixed_array_t *kv = NULL;
         neu_data_val_t *   ele =
             (neu_data_val_t *) neu_fixed_array_get(v_array, i);
@@ -362,5 +364,5 @@ int neu_jsonx_encode(void *object, neu_data_val_t *val, char **result)
 
 int neu_jsonx_encode_field(void *json_object, neu_fixed_array_t *kv)
 {
-    encode_object(json_object, kv);
+    return encode_object(json_object, kv);
 }

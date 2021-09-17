@@ -36,29 +36,31 @@
 
 const neu_plugin_module_t neu_plugin_module;
 
-struct reg_group_config {
-    neu_taggrp_config_t *   configs;
+struct subscribe_instance {
+    neu_taggrp_config_t *   grp_configs;
+    char *                  name;
     modbus_point_context_t *point_ctx;
     nng_aio *               aio;
     neu_plugin_t *          plugin;
 
-    TAILQ_ENTRY(reg_group_config) node;
+    TAILQ_ENTRY(subscribe_instance) node;
 };
 
 struct neu_plugin {
     neu_plugin_common_t  common;
     pthread_mutex_t      mtx;
     neu_tcp_client_t *   client;
+    neu_node_id_t        node_id;
     neu_datatag_table_t *tag_table;
-    TAILQ_HEAD(, reg_group_config) grp_configs;
+    TAILQ_HEAD(, subscribe_instance) sub_instances;
 };
 
-static void    start_cycle_read(neu_plugin_t *       plugin,
-                                neu_taggrp_config_t *grp_config);
-static void    stop_cycle_read(neu_plugin_t *       plugin,
-                               neu_taggrp_config_t *grp_config);
+static void    start_periodic_read(neu_plugin_t *       plugin,
+                                   neu_taggrp_config_t *grp_config);
+static void    stop_periodic_read(neu_plugin_t *       plugin,
+                                  neu_taggrp_config_t *grp_config);
 static void    tags_read(neu_plugin_t *plugin, neu_taggrp_config_t *grp_config);
-static void    tags_cycle_read(nng_aio *aio, void *arg, int code);
+static void    tags_periodic_read(nng_aio *aio, void *arg, int code);
 static ssize_t send_recv_callback(void *arg, char *send_buf, ssize_t send_len,
                                   char *recv_buf, ssize_t recv_len);
 
@@ -70,22 +72,24 @@ static ssize_t send_recv_callback(void *arg, char *send_buf, ssize_t send_len,
                                     recv_buf, recv_len);
 }
 
-static void start_cycle_read(neu_plugin_t *       plugin,
-                             neu_taggrp_config_t *grp_config)
+static void start_periodic_read(neu_plugin_t *       plugin,
+                                neu_taggrp_config_t *grp_config)
 {
 
-    struct reg_group_config *gc  = calloc(1, sizeof(struct reg_group_config));
-    vector_t *               ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
-    nng_aio *                aio = NULL;
-    uint32_t                 interval = neu_taggrp_cfg_get_interval(grp_config);
+    struct subscribe_instance *sub_inst =
+        calloc(1, sizeof(struct subscribe_instance));
+    vector_t *ids      = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    nng_aio * aio      = NULL;
+    uint32_t  interval = neu_taggrp_cfg_get_interval(grp_config);
 
     nng_aio_alloc(&aio, NULL, NULL);
     nng_aio_set_timeout(aio, interval != 0 ? interval : 10000);
 
-    gc->configs   = grp_config;
-    gc->point_ctx = modbus_point_init(plugin);
-    gc->aio       = aio;
-    gc->plugin    = plugin;
+    sub_inst->grp_configs = grp_config;
+    sub_inst->point_ctx   = modbus_point_init(plugin);
+    sub_inst->aio         = aio;
+    sub_inst->plugin      = plugin;
+    sub_inst->name        = strdup(neu_taggrp_cfg_get_name(grp_config));
 
     VECTOR_FOR_EACH(ids, iter)
     {
@@ -96,13 +100,15 @@ static void start_cycle_read(neu_plugin_t *       plugin,
             NEU_ATTRIBUTETYPE_READ) {
             switch (tag->type) {
             case NEU_DATATYPE_WORD:
-                modbus_point_add(gc->point_ctx, tag->addr_str, MODBUS_B16);
+                modbus_point_add(sub_inst->point_ctx, tag->addr_str,
+                                 MODBUS_B16);
                 break;
             case NEU_DATATYPE_DWORD:
-                modbus_point_add(gc->point_ctx, tag->addr_str, MODBUS_B32);
+                modbus_point_add(sub_inst->point_ctx, tag->addr_str,
+                                 MODBUS_B32);
                 break;
             case NEU_DATATYPE_BOOLEAN:
-                modbus_point_add(gc->point_ctx, tag->addr_str, MODBUS_B8);
+                modbus_point_add(sub_inst->point_ctx, tag->addr_str, MODBUS_B8);
                 break;
             default:
                 break;
@@ -110,30 +116,33 @@ static void start_cycle_read(neu_plugin_t *       plugin,
         }
     }
 
-    modbus_point_new_cmd(gc->point_ctx);
+    modbus_point_new_cmd(sub_inst->point_ctx);
 
     pthread_mutex_lock(&plugin->mtx);
-    TAILQ_INSERT_TAIL(&plugin->grp_configs, gc, node);
+    TAILQ_INSERT_TAIL(&plugin->sub_instances, sub_inst, node);
     pthread_mutex_unlock(&plugin->mtx);
 
-    log_info("start cycle read, grp: %p, interval: %d", grp_config, interval);
-    nng_aio_defer(aio, tags_cycle_read, gc);
+    log_info("start periodic read, grp: %s(%p), interval: %d", sub_inst->name,
+             grp_config, interval);
+    nng_aio_defer(aio, tags_periodic_read, sub_inst);
 }
 
-static void stop_cycle_read(neu_plugin_t *       plugin,
-                            neu_taggrp_config_t *grp_config)
+static void stop_periodic_read(neu_plugin_t *       plugin,
+                               neu_taggrp_config_t *grp_config)
 {
-    struct reg_group_config *gc = NULL;
+    struct subscribe_instance *sub_inst = NULL;
 
     pthread_mutex_lock(&plugin->mtx);
-    TAILQ_FOREACH(gc, &plugin->grp_configs, node)
+    TAILQ_FOREACH(sub_inst, &plugin->sub_instances, node)
     {
-        if (gc->configs == grp_config) {
-            TAILQ_REMOVE(&plugin->grp_configs, gc, node);
-            nng_aio_cancel(gc->aio);
-            modbus_point_destory(gc->point_ctx);
-            free(gc);
-            log_info("stop cycle read, grp: %p", grp_config);
+        if (sub_inst->grp_configs == grp_config) {
+            TAILQ_REMOVE(&plugin->sub_instances, sub_inst, node);
+            nng_aio_cancel(sub_inst->aio);
+            modbus_point_destory(sub_inst->point_ctx);
+            free(sub_inst->name);
+            free(sub_inst);
+            log_info("stop periodic read, grp: %s(%p)", sub_inst->name,
+                     grp_config);
             break;
         }
     }
@@ -142,13 +151,13 @@ static void stop_cycle_read(neu_plugin_t *       plugin,
 
 static void tags_read(neu_plugin_t *plugin, neu_taggrp_config_t *grp_config)
 {
-    struct reg_group_config *gc = NULL;
+    struct subscribe_instance *sub_inst = NULL;
 
     pthread_mutex_lock(&plugin->mtx);
 
-    TAILQ_FOREACH(gc, &plugin->grp_configs, node)
+    TAILQ_FOREACH(sub_inst, &plugin->sub_instances, node)
     {
-        if (gc->configs == grp_config) {
+        if (sub_inst->grp_configs == grp_config) {
             // todo modbus_point_find
             neu_response_t     resp      = { 0 };
             neu_reqresp_data_t data_resp = { 0 };
@@ -172,28 +181,41 @@ static void tags_read(neu_plugin_t *plugin, neu_taggrp_config_t *grp_config)
     return;
 }
 
-static void tags_cycle_read(nng_aio *aio, void *arg, int code)
+static void tags_periodic_read(nng_aio *aio, void *arg, int code)
 {
     switch (code) {
     case NNG_ETIMEDOUT: {
-        struct reg_group_config *gc        = (struct reg_group_config *) arg;
-        neu_response_t           resp      = { 0 };
-        neu_reqresp_data_t       data_resp = { 0 };
+        struct subscribe_instance *sub_inst = (struct subscribe_instance *) arg;
 
-        // todo check group config update
-        modbus_point_all_read(gc->point_ctx, true, send_recv_callback);
-        // todo modbus point find;
-        data_resp.grp_config = gc->configs;
-        // data_resp.data_var
-        resp.req_id    = 1;
-        resp.resp_type = NEU_REQRESP_TRANS_DATA;
-        resp.buf       = &data_resp;
-        resp.buf_len   = sizeof(neu_reqresp_data_t);
+        if (neu_taggrp_cfg_is_anchored(sub_inst->grp_configs)) {
+            neu_response_t     resp      = { 0 };
+            neu_reqresp_data_t data_resp = { 0 };
 
-        gc->plugin->common.adapter_callbacks->response(
-            gc->plugin->common.adapter, &resp);
+            modbus_point_all_read(sub_inst->point_ctx, true,
+                                  send_recv_callback);
+            // todo modbus point find;
+            data_resp.grp_config = sub_inst->grp_configs;
+            // data_resp.data_var
+            resp.req_id    = 1;
+            resp.resp_type = NEU_REQRESP_TRANS_DATA;
+            resp.buf       = &data_resp;
+            resp.buf_len   = sizeof(neu_reqresp_data_t);
 
-        nng_aio_defer(aio, tags_cycle_read, arg);
+            sub_inst->plugin->common.adapter_callbacks->response(
+                sub_inst->plugin->common.adapter, &resp);
+
+            nng_aio_defer(aio, tags_periodic_read, arg);
+        } else {
+            neu_taggrp_config_t *new_config = neu_system_find_group_config(
+                sub_inst->plugin, sub_inst->plugin->node_id, sub_inst->name);
+
+            stop_periodic_read(sub_inst->plugin, sub_inst->grp_configs);
+
+            if (new_config != NULL) {
+                start_periodic_read(sub_inst->plugin, new_config);
+            }
+        }
+
         break;
     }
     case NNG_ECANCELED:
@@ -249,19 +271,20 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
 
 static int modbus_tcp_uninit(neu_plugin_t *plugin)
 {
-    struct reg_group_config *gc = NULL;
+    struct subscribe_instance *sub_inst = NULL;
 
     pthread_mutex_lock(&plugin->mtx);
-    gc = TAILQ_FIRST(&plugin->grp_configs);
+    sub_inst = TAILQ_FIRST(&plugin->sub_instances);
 
-    while (gc != NULL) {
-        TAILQ_REMOVE(&plugin->grp_configs, gc, node);
+    while (sub_inst != NULL) {
+        TAILQ_REMOVE(&plugin->sub_instances, sub_inst, node);
 
-        nng_aio_cancel(gc->aio);
-        modbus_point_destory(gc->point_ctx);
-        free(gc);
+        nng_aio_cancel(sub_inst->aio);
+        modbus_point_destory(sub_inst->point_ctx);
+        free(sub_inst->name);
+        free(sub_inst);
 
-        gc = TAILQ_FIRST(&plugin->grp_configs);
+        sub_inst = TAILQ_FIRST(&plugin->sub_instances);
     }
     pthread_mutex_unlock(&plugin->mtx);
 
@@ -286,8 +309,9 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
 static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
 {
     if (plugin->tag_table == NULL) {
-        plugin->tag_table = neu_system_get_datatags_table(
-            plugin, neu_plugin_self_node_id(plugin));
+        plugin->node_id = neu_plugin_self_node_id(plugin);
+        plugin->tag_table =
+            neu_system_get_datatags_table(plugin, plugin->node_id);
     }
 
     switch (req->req_type) {
@@ -300,6 +324,19 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
     case NEU_REQRESP_WRITE_DATA: {
         neu_reqresp_write_t *data = (neu_reqresp_write_t *) req->buf;
 
+        (void) data;
+        break;
+    }
+    case NEU_REQRESP_SUBSCRIBE_NODE: {
+        neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
+
+        start_periodic_read(plugin, data->grp_config);
+        break;
+    }
+    case NEU_REQRESP_UNSUBSCRIBE_NODE: {
+        neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
+
+        stop_periodic_read(plugin, data->grp_config);
         break;
     }
     default:

@@ -71,7 +71,4 @@ void neu_rest_web_handler(const struct neu_rest_handler **handlers,
 void neu_rest_api_handler(const struct neu_rest_handler **handlers,
                           uint32_t *                      size);
 
-neu_taggrp_config_t *neu_rest_find_config(neu_plugin_t *plugin,
-                                          neu_node_id_t node_id,
-                                          const char *  name);
 #endif

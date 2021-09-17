@@ -224,25 +224,3 @@ void *neu_rest_get_plugin()
 {
     return rest_ctx->plugin;
 }
-
-neu_taggrp_config_t *neu_rest_find_config(neu_plugin_t *plugin,
-                                          neu_node_id_t node_id,
-                                          const char *  name)
-{
-    vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
-    neu_taggrp_config_t *find_config = NULL;
-
-    VECTOR_FOR_EACH(&grp_configs, iter)
-    {
-        neu_taggrp_config_t *config =
-            *(neu_taggrp_config_t **) iterator_get(&iter);
-        if (strncmp(neu_taggrp_cfg_get_name(config), name, strlen(name)) == 0) {
-            find_config = config;
-            break;
-        }
-    }
-
-    vector_uninit(&grp_configs);
-
-    return find_config;
-}
