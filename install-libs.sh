@@ -107,7 +107,7 @@ function build_yaml()
     git clone https://github.com/yaml/libyaml.git
     cd libyaml
     rm -rf build
-    mkdir build && cd build && cmake .. && make
+    mkdir build && cd build && cmake DBUILD_SHARED_LIBS=1 .. && make
     make install
 
     cd ../../

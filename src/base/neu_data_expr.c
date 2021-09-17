@@ -110,6 +110,11 @@ neu_dtype_e neu_flags_type_in_dtype(neu_dtype_e type)
     return type & ~(NEU_DTYPE_FLAGS_START - 1);
 }
 
+neu_dtype_e neu_dvalue_get_type(neu_data_val_t *val)
+{
+    return val->type;
+}
+
 /* new a normal neu_data_val_t with external buffer */
 neu_data_val_t *neu_dvalue_new(neu_dtype_e type)
 {
@@ -260,6 +265,12 @@ void *neu_dvalue_get_ptr(neu_data_val_t *val)
 /*
  * define all value initialize functions
  */
+void neu_dvalue_init_bool(neu_data_val_t *val, bool b)
+{
+    val->type     = NEU_DTYPE_BOOL;
+    val->val_bool = b;
+}
+
 void neu_dvalue_init_int8(neu_data_val_t *val, int8_t i8)
 {
     val->type     = NEU_DTYPE_INT8;
@@ -347,6 +358,12 @@ void neu_dvalue_init_string_val(neu_data_val_t * val,
     if (val->val_data != NULL) {
         neu_string_val_move((neu_string_val_t *) val->val_data, &string_val);
     }
+}
+
+void neu_dvalue_init_data_val(neu_data_val_t *val, void *data)
+{
+    val->type     = NEU_DTYPE_DATA_VAL;
+    val->val_data = data;
 }
 
 void neu_dvalue_init_copy_cstr(neu_data_val_t *val, char *cstr)
@@ -491,6 +508,17 @@ void neu_dvalue_init_move_vec(neu_data_val_t *val, neu_dtype_e type,
 /*
  * define all value set functions
  */
+int neu_dvalue_set_bool(neu_data_val_t *val, bool b)
+{
+    assert(val->type == NEU_DTYPE_BOOL);
+    if (val->type == NEU_DTYPE_BOOL) {
+        val->val_bool = b;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 int neu_dvalue_set_int8(neu_data_val_t *val, int8_t i8)
 {
     assert(val->type == NEU_DTYPE_INT8);
@@ -963,6 +991,17 @@ int neu_dvalue_set_move_vec(neu_data_val_t *val, vector_t *vec)
 /*
  * define all value get functions
  */
+int neu_dvalue_get_bool(neu_data_val_t *val, bool *p_b)
+{
+    assert(val->type == NEU_DTYPE_BOOL);
+    if (val->type == NEU_DTYPE_BOOL) {
+        *p_b = val->val_bool;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 int neu_dvalue_get_int8(neu_data_val_t *val, int8_t *p_i8)
 {
     assert(val->type == NEU_DTYPE_INT8);
@@ -1104,6 +1143,17 @@ int neu_dvalue_get_string_val(neu_data_val_t *  val,
     assert(val_type == type);
     if (val_type == type) {
         neu_string_val_move(p_string_val, (neu_string_val_t *) val->val_data);
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+int neu_dvalue_get_data_val(neu_data_val_t *val, void **p_data)
+{
+    assert(val->type == NEU_DTYPE_DATA_VAL);
+    if (val->type == NEU_DTYPE_DATA_VAL) {
+        *p_data = val->val_data;
         return 0;
     } else {
         return -1;
