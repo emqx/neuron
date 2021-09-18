@@ -1439,6 +1439,7 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
 
     size = sizeof(neu_dtype_e);
     type = val->type;
+    type &= ~(NEU_DTYPE_PTR_MASK | NEU_DTYPE_ATTR_MASK);
     if (type == neu_value_type_in_dtype(type)) {
         switch (type) {
             prim_val_ser_size_case_t(INT8, int8);
@@ -1452,7 +1453,7 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
             prim_val_ser_size_case_t(UINT64, uint64);
 
             prim_val_ser_size_case(FLOAT, float, float);
-            prim_val_ser_size_case(DOUBLE, float, double);
+            prim_val_ser_size_case(DOUBLE, double, double);
 
         case NEU_DTYPE_INT_VAL: {
             neu_int_val_t *int_val;
@@ -1490,7 +1491,7 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
         }
 
         default:
-            log_error("Not support type(%d) of data value", type);
+            log_error("Not support base type(%d) of data value", type);
             size = 0;
             break;
         }
@@ -1566,7 +1567,7 @@ static size_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
             prim_val_serial_case_t(UINT64, uint64);
 
             prim_val_serial_case(FLOAT, float, float);
-            prim_val_serial_case(DOUBLE, float, double);
+            prim_val_serial_case(DOUBLE, double, double);
 
         case NEU_DTYPE_INT_VAL: {
             neu_int_val_t *int_val;
@@ -1721,7 +1722,7 @@ int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
     size_t   size;
 
     size = dvalue_get_serialized_size(val);
-    log_debug("serialized size is %d", size);
+    log_debug("type(0x%x) serialized size is %d", val->type, size);
     out_buf = (uint8_t *) malloc(size);
     if (out_buf == NULL) {
         log_error("Failed to allocate buffer for serialize value");
@@ -1773,7 +1774,7 @@ static int do_dvalue_deserialize(uint8_t *buf, neu_data_val_t *val,
             prim_val_deserial_case_t(UINT64, uint64);
 
             prim_val_deserial_case(FLOAT, float, float);
-            prim_val_deserial_case(DOUBLE, float, double);
+            prim_val_deserial_case(DOUBLE, double, double);
 
         case NEU_DTYPE_INT_VAL: {
             neu_data_val_t *sub_val;
@@ -1785,7 +1786,7 @@ static int do_dvalue_deserialize(uint8_t *buf, neu_data_val_t *val,
             sub_val     = (neu_data_val_t *) malloc(sizeof(neu_data_val_t));
             rv          = do_dvalue_deserialize(cur_ptr, sub_val, &rem_buf);
             int_val.val = sub_val;
-            neu_dvalue_init_int_val(sub_val, int_val);
+            neu_dvalue_init_int_val(val, int_val);
             cur_ptr    = rem_buf;
             *p_rem_buf = cur_ptr;
             break;
@@ -1801,7 +1802,7 @@ static int do_dvalue_deserialize(uint8_t *buf, neu_data_val_t *val,
             sub_val        = (neu_data_val_t *) malloc(sizeof(neu_data_val_t));
             rv             = do_dvalue_deserialize(cur_ptr, sub_val, &rem_buf);
             string_val.val = sub_val;
-            neu_dvalue_init_string_val(sub_val, string_val);
+            neu_dvalue_init_string_val(val, string_val);
             cur_ptr    = rem_buf;
             *p_rem_buf = cur_ptr;
             break;

@@ -328,10 +328,30 @@ static inline size_t neu_bytes_size(neu_bytes_t *bytes)
  */
 static inline neu_bytes_t *neu_bytes_new(size_t length)
 {
-    size_t size;
+    size_t       size;
+    neu_bytes_t *bytes;
 
-    size = sizeof(size_t) + length;
-    return (neu_bytes_t *) malloc(size);
+    size  = sizeof(size_t) + length;
+    bytes = (neu_bytes_t *) malloc(size);
+    if (bytes == NULL) {
+        return NULL;
+    }
+
+    bytes->length = length;
+    return bytes;
+}
+
+static inline neu_bytes_t *neu_bytes_from_buf(uint8_t *buf, size_t length)
+{
+    neu_bytes_t *bytes;
+
+    bytes = neu_bytes_new(length);
+    if (bytes == NULL) {
+        return NULL;
+    }
+
+    memcpy(bytes->buf, buf, length);
+    return bytes;
 }
 
 /**
@@ -403,11 +423,24 @@ static inline size_t neu_fixed_array_size(neu_fixed_array_t *array)
 neu_fixed_array_t *neu_fixed_array_new(size_t length, size_t esize);
 
 /**
- * New a fixed array by length and element size
+ * Get a element in fixed array, return a pointer of element
  */
 static inline void *neu_fixed_array_get(neu_fixed_array_t *array, size_t index)
 {
-    return (char *) array->buf + array->esize * index;
+    return (uint8_t *) array->buf + array->esize * index;
+}
+
+/**
+ * Set a element into fixed array, parameter is a pointer of element
+ */
+static inline void neu_fixed_array_set(neu_fixed_array_t *array, size_t index,
+                                       void *elem)
+{
+    uint8_t *elem_ptr;
+
+    elem_ptr = (uint8_t *) array->buf + array->esize * index;
+    memcpy(elem_ptr, elem, array->esize);
+    return;
 }
 
 /**

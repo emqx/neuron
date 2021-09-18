@@ -353,6 +353,33 @@ int neu_dvalue_desialize(uint8_t *buf, neu_data_val_t **p_val);
 /*
  * declare functions for int-value and string-value pair
  */
+/* The ownership of val is move into int_val, so don't free val after call
+ * neu_int_val_init function
+ */
+static inline void neu_int_val_init(neu_int_val_t *int_val, uint32_t key,
+                                    neu_data_val_t *val)
+{
+    int_val->key = key;
+    int_val->val = val;
+    return;
+}
+
+/* The ownership of val is move into int_val, so don't free val after call
+ * neu_int_val_new function
+ */
+static inline neu_int_val_t *neu_int_val_new(uint32_t key, neu_data_val_t *val)
+{
+    neu_int_val_t *int_val;
+
+    int_val = (neu_int_val_t *) malloc(sizeof(neu_int_val_t));
+    if (int_val == NULL) {
+        return NULL;
+    }
+
+    neu_int_val_init(int_val, key, val);
+    return int_val;
+}
+
 static inline void neu_int_val_uninit(neu_int_val_t *int_val)
 {
     if (int_val->val != NULL) {
@@ -366,6 +393,34 @@ static inline void neu_int_val_free(neu_int_val_t *int_val)
     neu_int_val_uninit(int_val);
     free(int_val);
     return;
+}
+
+/* The ownership of val is move into string_val, so don't free val after call
+ * neu_string_val_init function
+ */
+static inline void neu_string_val_init(neu_string_val_t *string_val,
+                                       neu_string_t *key, neu_data_val_t *val)
+{
+    string_val->key = key;
+    string_val->val = val;
+    return;
+}
+
+/* The ownership of val is move into string_val, so don't free val after call
+ * neu_string_val_new function
+ */
+static inline neu_string_val_t *neu_string_val_new(neu_string_t *  key,
+                                                   neu_data_val_t *val)
+{
+    neu_string_val_t *string_val;
+
+    string_val = (neu_string_val_t *) malloc(sizeof(neu_string_val_t));
+    if (string_val == NULL) {
+        return NULL;
+    }
+
+    neu_string_val_init(string_val, key, val);
+    return string_val;
 }
 
 static inline void neu_string_val_uninit(neu_string_val_t *string_val)
