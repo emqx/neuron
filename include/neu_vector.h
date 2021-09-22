@@ -26,9 +26,11 @@ extern "C" {
 
 #include <stdlib.h>
 
+#include "neu_types.h"
 #include "vector.h"
 
 typedef struct Vector   vector_t;
+typedef struct Vector   neu_vector_t;
 typedef struct Iterator iterator_t;
 
 #define vector_init vector_setup
@@ -67,6 +69,54 @@ static inline vector_t *vector_clone(vector_t *vec)
     new_vec->data = NULL;
     vector_copy(new_vec, vec);
     return new_vec;
+}
+
+static inline size_t vector_find_index(vector_t *vec, const void *key,
+                                       neu_key_match_func match_func)
+{
+    const void *item;
+
+    VECTOR_FOR_EACH(vec, iter)
+    {
+        item = (const void *) iterator_get(&iter);
+        if (match_func(key, item)) {
+            return iterator_index(vec, &iter);
+        }
+    }
+
+    return SIZE_MAX;
+}
+
+static inline void *vector_find_item(vector_t *vec, const void *key,
+                                     neu_key_match_func match_func)
+{
+    const void *item;
+
+    VECTOR_FOR_EACH(vec, iter)
+    {
+        item = (const void *) iterator_get(&iter);
+        if (match_func(key, item)) {
+            return (void *) item;
+        }
+    }
+
+    return NULL;
+}
+
+static inline bool vector_has_elem(vector_t *vec, const void *elem,
+                                   neu_equal_func equ_func)
+{
+    const void *item;
+
+    VECTOR_FOR_EACH(vec, iter)
+    {
+        item = (const void *) iterator_get(&iter);
+        if (equ_func(elem, item)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 #ifdef __cplusplus

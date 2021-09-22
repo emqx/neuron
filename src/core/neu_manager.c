@@ -348,59 +348,38 @@ static int uninit_bind_info(manager_bind_info_t *mng_bind_info)
     return 0;
 }
 
+static bool match_id_reg_adapter(const void *key, const void *item)
+{
+    return *(adapter_id_t *) key == ((adapter_reg_entity_t *) item)->adapter_id;
+}
+
+static bool match_name_reg_adapter(const void *key, const void *item)
+{
+    neu_adapter_t *adapter;
+
+    adapter = ((adapter_reg_entity_t *) item)->adapter;
+    return strcmp((const char *) key, neu_adapter_get_name(adapter)) == 0;
+}
+
 // Return SIZE_MAX if can't find a adapter
 static size_t find_reg_adapter_index_by_id(vector_t *adapters, adapter_id_t id)
 {
-    size_t                index = SIZE_MAX;
-    adapter_reg_entity_t *reg_entity;
-
-    VECTOR_FOR_EACH(adapters, iter)
-    {
-        reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
-        if (reg_entity->adapter_id == id) {
-            index = iterator_index(adapters, &iter);
-            break;
-        }
-    }
-
-    return index;
+    return vector_find_index(adapters, &id, match_id_reg_adapter);
 }
 
 static adapter_reg_entity_t *find_reg_adapter_by_id(vector_t *   adapters,
                                                     adapter_id_t id)
 {
-    adapter_reg_entity_t *reg_entity;
-
-    VECTOR_FOR_EACH(adapters, iter)
-    {
-        reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
-        if (reg_entity->adapter_id == id) {
-            return reg_entity;
-        }
-    }
-
-    return NULL;
+    return vector_find_item(adapters, &id, match_id_reg_adapter);
 }
 
 static adapter_reg_entity_t *find_reg_adapter_by_name(vector_t *  adapters,
                                                       const char *name)
 {
-    adapter_reg_entity_t *reg_entity;
-    const char *          adapter_name;
-
-    VECTOR_FOR_EACH(adapters, iter)
-    {
-        reg_entity   = (adapter_reg_entity_t *) iterator_get(&iter);
-        adapter_name = neu_adapter_get_name(reg_entity->adapter);
-        if (strcmp(adapter_name, name) == 0) {
-            return reg_entity;
-        }
-    }
-
-    return NULL;
+    return vector_find_item(adapters, name, match_name_reg_adapter);
 }
 
-static adapter_id_t manager_get_adapter_id(neu_manager_t *manager)
+static adapter_id_t manager_new_adapter_id(neu_manager_t *manager)
 {
     adapter_id_t adapter_id;
 
@@ -512,7 +491,7 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
         return 0;
     }
 
-    adapter_info.id              = manager_get_adapter_id(manager);
+    adapter_info.id              = manager_new_adapter_id(manager);
     adapter_info.type            = reg_param->adapter_type;
     adapter_info.name            = reg_param->adapter_name;
     adapter_info.plugin_id       = plugin_reg_info.plugin_id;
@@ -725,32 +704,97 @@ static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
     }
 }
 
-static int add_grp_config_wait_bind(neu_manager_t *       manager,
-                                    adapter_reg_entity_t *src_reg_entity,
-                                    adapter_reg_entity_t *dst_reg_entity,
-                                    neu_taggrp_config_t * grp_config)
+static bool pipe_equal(const void *a, const void *b)
 {
-    int                  rv = 0;
-    manager_bind_info_t *bind_info;
-    vector_t *           sub_pipes;
+    return *(uint32_t *) a == *(uint32_t *) b;
+}
 
-    bind_info = &manager->bind_info;
-    nng_mtx_lock(bind_info->mtx);
-    while (dst_reg_entity->bind_count == 0) {
-        nng_cv_wait(dst_reg_entity->cv);
-    }
-    nng_mtx_unlock(bind_info->mtx);
+static int sub_grp_config_with_pipe(neu_taggrp_config_t *grp_config,
+                                    nng_pipe             sub_pipe)
+
+{
+    int       rv = 0;
+    vector_t *sub_pipes;
 
     sub_pipes = neu_taggrp_cfg_get_subpipes(grp_config);
-    // TODO: It's need to check if the adapter pipe is unique pipe in sub_pipes
-    rv = vector_push_back(sub_pipes, &dst_reg_entity->adapter_pipe);
+    if (vector_has_elem(sub_pipes, &sub_pipe, pipe_equal)) {
+        return 0;
+    }
+
+    rv = vector_push_back(sub_pipes, &sub_pipe);
     if (rv != 0) {
         log_error("Can't add pipe to vector of subscribe pipes");
         return -1;
     }
 
+    // if we add first one pipe, then need forward subscribe message
+    return sub_pipes->size == 1 ? 1 : 0;
+}
+
+static int sub_grp_config_with_adapter(neu_manager_t *       manager,
+                                       neu_taggrp_config_t * grp_config,
+                                       adapter_reg_entity_t *reg_entity)
+{
+    manager_bind_info_t *bind_info;
+
+    bind_info = &manager->bind_info;
+    nng_mtx_lock(bind_info->mtx);
+    // wait manage bind the adapter
+    while (reg_entity->bind_count == 0) {
+        nng_cv_wait(reg_entity->cv);
+    }
+    nng_mtx_unlock(bind_info->mtx);
+
+    return sub_grp_config_with_pipe(grp_config, reg_entity->adapter_pipe);
+}
+
+static int unsub_grp_config_with_pipe(neu_taggrp_config_t *grp_config,
+                                      nng_pipe             sub_pipe)
+{
+    int       rv = 0;
+    size_t    index;
+    vector_t *sub_pipes;
+
+    sub_pipes = neu_taggrp_cfg_get_subpipes(grp_config);
+    index     = vector_find_index(sub_pipes, &sub_pipe, pipe_equal);
+    if (index == SIZE_MAX) {
+        return 0;
+    }
+
+    rv = vector_erase(sub_pipes, index);
+    if (rv != 0) {
+        log_error("Can't remove pipe from vector of subscribe pipes");
+        return -1;
+    }
+
+    // if we remove last one pipe, then need forward unsubscribe message
+    return sub_pipes->size == 0 ? 1 : 0;
+}
+
+static int unsub_grp_config_with_adapter(neu_manager_t *       manager,
+                                         neu_taggrp_config_t * grp_config,
+                                         adapter_reg_entity_t *reg_entity)
+{
+    manager_bind_info_t *bind_info;
+
+    bind_info = &manager->bind_info;
+    nng_mtx_lock(bind_info->mtx);
+    // wait manage bind the adapter
+    while (reg_entity->bind_count == 0) {
+        nng_cv_wait(reg_entity->cv);
+    }
+    nng_mtx_unlock(bind_info->mtx);
+
+    return unsub_grp_config_with_pipe(grp_config, reg_entity->adapter_pipe);
+}
+
+static int add_grp_config_to_adapter(adapter_reg_entity_t *reg_entity,
+                                     neu_taggrp_config_t * grp_config)
+{
+    int rv = 0;
+
     neu_datatag_manager_t *datatag_mng;
-    datatag_mng = src_reg_entity->datatag_manager;
+    datatag_mng = reg_entity->datatag_manager;
     rv          = neu_datatag_mng_add_grp_config(datatag_mng, grp_config);
     if (rv != 0) {
         log_error("Failed to add datatag group config: %s",
@@ -765,22 +809,18 @@ static int manager_add_config_by_name(neu_manager_t *   manager,
                                       config_add_cmd_t *cmd)
 {
     int                   rv = 0;
-    adapter_reg_entity_t *src_reg_entity;
-    adapter_reg_entity_t *dst_reg_entity;
+    adapter_reg_entity_t *reg_entity;
 
     nng_mtx_lock(manager->adapters_mtx);
-    src_reg_entity =
+    reg_entity =
         find_reg_adapter_by_name(&manager->reg_adapters, cmd->src_adapter_name);
-    dst_reg_entity =
-        find_reg_adapter_by_name(&manager->reg_adapters, cmd->dst_adapter_name);
-    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
-        log_error("Can't find matched src or dst registered adapter");
+    if (reg_entity == NULL) {
+        log_error("Can't find matched src registered adapter");
         rv = -1;
         goto add_config_by_name_exit;
     }
 
-    rv = add_grp_config_wait_bind(manager, src_reg_entity, dst_reg_entity,
-                                  cmd->grp_config);
+    rv = add_grp_config_to_adapter(reg_entity, cmd->grp_config);
 add_config_by_name_exit:
     nng_mtx_unlock(manager->adapters_mtx);
     return rv;
@@ -1016,6 +1056,7 @@ static void manager_loop(void *arg)
             break;
         }
 
+            /* clang-format off
         case MSG_CMD_START_PERIODIC_READ: {
             size_t       msg_size;
             nng_msg *    out_msg;
@@ -1089,11 +1130,13 @@ static void manager_loop(void *arg)
             }
             break;
         }
+        clang-format on */
 
         case MSG_CMD_SUBSCRIBE_NODE: {
             size_t       msg_size;
             nng_msg *    out_msg;
             nng_pipe     msg_pipe;
+            int          need_forward;
             adapter_id_t adapter_id;
 
             subscribe_node_cmd_t *cmd_ptr;
@@ -1109,7 +1152,9 @@ static void manager_loop(void *arg)
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
             rv       = nng_msg_alloc(&out_msg, msg_size);
-            if (rv == 0) {
+            need_forward = sub_grp_config_with_pipe(cmd_ptr->grp_config,
+                                                    nng_msg_get_pipe(msg));
+            if (rv == 0 && need_forward == 1) {
                 message_t *           msg_ptr;
                 subscribe_node_cmd_t *out_cmd_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
@@ -1129,6 +1174,7 @@ static void manager_loop(void *arg)
             size_t       msg_size;
             nng_msg *    out_msg;
             nng_pipe     msg_pipe;
+            int          need_forward;
             adapter_id_t adapter_id;
 
             unsubscribe_node_cmd_t *cmd_ptr;
@@ -1144,8 +1190,10 @@ static void manager_loop(void *arg)
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size =
                 msg_inplace_data_get_size(sizeof(unsubscribe_node_cmd_t));
-            rv = nng_msg_alloc(&out_msg, msg_size);
-            if (rv == 0) {
+            rv           = nng_msg_alloc(&out_msg, msg_size);
+            need_forward = unsub_grp_config_with_pipe(cmd_ptr->grp_config,
+                                                      nng_msg_get_pipe(msg));
+            if (rv == 0 || need_forward == 1) {
                 message_t *             msg_ptr;
                 unsubscribe_node_cmd_t *out_cmd_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
@@ -1436,10 +1484,8 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd)
 {
     int                   rv = 0;
-    adapter_id_t          src_adapter_id;
-    adapter_id_t          dst_adapter_id;
-    adapter_reg_entity_t *src_reg_entity;
-    adapter_reg_entity_t *dst_reg_entity;
+    adapter_id_t          adapter_id;
+    adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
         log_error("Add group config with NULL manager or command");
@@ -1452,22 +1498,15 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    src_adapter_id =
-        neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
-    dst_adapter_id =
-        neu_manager_adapter_id_from_node_id(manager, cmd->dst_node_id);
-    src_reg_entity =
-        find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
-    dst_reg_entity =
-        find_reg_adapter_by_id(&manager->reg_adapters, dst_adapter_id);
-    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
-        log_error("Can't find matched src or dst registered adapter");
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (reg_entity == NULL) {
+        log_error("Can't find matched src registered adapter");
         rv = -1;
         goto add_grp_config_exit;
     }
 
-    rv = add_grp_config_wait_bind(manager, src_reg_entity, dst_reg_entity,
-                                  cmd->grp_config);
+    rv = add_grp_config_to_adapter(reg_entity, cmd->grp_config);
 add_grp_config_exit:
     nng_mtx_unlock(manager->adapters_mtx);
     return rv;
@@ -1508,10 +1547,8 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
                                   neu_cmd_update_grp_config_t *cmd)
 {
     int                   rv = 0;
-    adapter_id_t          src_adapter_id;
-    adapter_id_t          dst_adapter_id;
-    adapter_reg_entity_t *src_reg_entity;
-    adapter_reg_entity_t *dst_reg_entity;
+    adapter_id_t          adapter_id;
+    adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
         log_error("Update group config with NULL manager or command");
@@ -1524,31 +1561,15 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    src_adapter_id =
-        neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
-    dst_adapter_id =
-        neu_manager_adapter_id_from_node_id(manager, cmd->dst_node_id);
-    src_reg_entity =
-        find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
-    dst_reg_entity =
-        find_reg_adapter_by_id(&manager->reg_adapters, dst_adapter_id);
-    if (src_reg_entity == NULL || dst_reg_entity == NULL) {
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (reg_entity == NULL) {
         log_error("Can't find matched src or dst registered adapter");
         rv = -1;
         goto update_grp_config_exit;
     }
 
-    vector_t *sub_pipes;
-    sub_pipes = neu_taggrp_cfg_get_subpipes(cmd->grp_config);
-    // TODO: It's need to check if the adapter pipe is unique pipe in sub_pipes
-    rv = vector_push_back(sub_pipes, &dst_reg_entity->adapter_pipe);
-    if (rv != 0) {
-        log_error("Can't add pipe to vector of subscribe pipes");
-        rv = -1;
-        goto update_grp_config_exit;
-    }
-
-    rv = neu_datatag_mng_update_grp_config(src_reg_entity->datatag_manager,
+    rv = neu_datatag_mng_update_grp_config(reg_entity->datatag_manager,
                                            cmd->grp_config);
     if (rv != 0) {
         log_error("Failed to update datatag group config: %s",

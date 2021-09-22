@@ -46,6 +46,46 @@ typedef enum {
 } neu_order_t;
 
 /**
+ * Check if two value is equal.
+ */
+typedef bool (*neu_equal_func)(const void *a, const void *b);
+
+/**
+ * Compare two value.
+ */
+typedef neu_order_t (*neu_compare_func)(const void *a, const void *b);
+
+/**
+ * Check if the key is match the item
+ */
+typedef bool (*neu_key_match_func)(const void *key, const void *item);
+
+/*
+ * define functions for implement equal function for primitive value
+ */
+#define prim_val_equal(locase_type, locase_type_t)                       \
+    static inline bool locase_type##_equal(const void *a, const void *b) \
+    {                                                                    \
+        return *(locase_type_t *) (a) == *(locase_type_t *) (b);         \
+    }
+
+#define prim_val_equal_t(locase_type) \
+    prim_val_equal(locase_type, locase_type##_t)
+
+prim_val_equal_t(int8);
+prim_val_equal_t(int16);
+prim_val_equal_t(int32);
+prim_val_equal_t(int64);
+
+prim_val_equal_t(uint8);
+prim_val_equal_t(uint16);
+prim_val_equal_t(uint32);
+prim_val_equal_t(uint64);
+
+prim_val_equal(float, float);
+prim_val_equal(double, double);
+
+/**
  * Boolean
  * -------
  * A logical value (true or false).
