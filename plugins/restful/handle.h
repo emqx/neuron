@@ -24,15 +24,15 @@
 
 #include "neu_plugin.h"
 
-#define REST_PROCESS_HTTP_REQUEST(aio, req_type, func)                        \
+#define REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)            \
     {                                                                         \
         char *    req_data      = NULL;                                       \
         size_t    req_data_size = 0;                                          \
         req_type *req           = NULL;                                       \
         if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
-            neu_parse_decode(req_data, (void **) &req) == 0) {                \
+            decode_fun(req_data, &req) == 0) {                                \
             { func };                                                         \
-            neu_parse_decode_free(req);                                       \
+            decode_fun##_free(req);                                           \
         } else {                                                              \
             http_bad_request(aio, "{\"error\": \"request body is wrong\"}");  \
         }                                                                     \

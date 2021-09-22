@@ -19,142 +19,71 @@
 #ifndef _NEU_JSON_API_GROUP_CONFIG_H_
 #define _NEU_JSON_API_GROUP_CONFIG_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
-#include "neu_json_parser.h"
+typedef struct {
+    char *name;
+    int   node_id;
+} neu_parse_get_group_config_req_t;
 
-struct neu_parse_get_group_config_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    char *                  config;
-    int                     node_id;
-};
-
-struct neu_parse_get_group_config_res_row {
+typedef struct {
     char *   name;
-    uint32_t read_interval;
+    uint32_t interval;
     int      pipe_count;
     int      tag_count;
-};
+} neu_parse_get_group_config_res_row_t;
 
-struct neu_parse_get_group_config_res {
-    enum neu_parse_function                    function;
-    char *                                     uuid;
-    int                                        error;
-    int                                        n_config;
-    struct neu_parse_get_group_config_res_row *rows;
-};
+typedef struct {
+    int                                   n_config;
+    neu_parse_get_group_config_res_row_t *rows;
+} neu_parse_get_group_config_res_t;
 
-struct neu_parse_add_group_config_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    char *                  config;
-    uint32_t                src_node_id;
-    uint32_t                dst_node_id;
-    uint32_t                read_interval;
-};
+int neu_parse_decode_get_group_config(
+    char *buf, neu_parse_get_group_config_req_t **result);
+void neu_parse_decode_get_group_config_free(
+    neu_parse_get_group_config_req_t *req);
+int neu_parse_encode_get_group_config(void *json_object, void *param);
 
-struct neu_parse_update_group_config_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    char *                  config;
-    uint32_t                src_node_id;
-    uint32_t                dst_node_id;
-    uint32_t                read_interval;
-};
+typedef struct {
+    char *   name;
+    uint32_t src_node_id;
+    uint32_t dst_node_id;
+    uint32_t interval;
+} neu_parse_add_group_config_req_t;
 
-struct neu_parse_delete_group_config_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    char *                  config;
-    uint32_t                node_id;
-};
-
-struct neu_parse_group_config_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int                     error;
-};
-
-struct neu_parse_add_tag_ids_req_row {
-    char *   datatag_name;
-    uint32_t datatag_id;
-};
-
-struct neu_parse_add_tag_ids_req {
-    enum neu_parse_function               function;
-    char *                                uuid;
-    char *                                config;
-    int                                   node_id;
-    int                                   n_id;
-    struct neu_parse_add_tag_ids_req_row *rows;
-};
-
-struct neu_parse_add_tag_ids_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int                     error;
-};
-
-struct neu_parse_delete_tag_ids_req_row {
-    char *   datatag_name;
-    uint32_t datatag_id;
-};
-
-struct neu_parse_delete_tag_ids_req {
-    enum neu_parse_function                  function;
-    char *                                   uuid;
-    char *                                   config;
-    int                                      node_id;
-    int                                      n_id;
-    struct neu_parse_delete_tag_ids_req_row *rows;
-};
-
-struct neu_parse_delete_tag_ids_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int                     error;
-};
-
-int neu_parse_decode_get_group_config_req(
-    char *buf, struct neu_parse_get_group_config_req **result);
-int neu_parse_decode_add_group_config_req(
-    char *buf, struct neu_parse_add_group_config_req **result);
-int neu_parse_decode_update_group_config_req(
-    char *buf, struct neu_parse_update_group_config_req **result);
-int neu_parse_decode_delete_group_config_req(
-    char *buf, struct neu_parse_delete_group_config_req **result);
-
-int neu_parse_encode_get_group_config_res(
-    struct neu_parse_get_group_config_res *res, char **buf);
-int neu_parse_encode_add_group_config_res(
-    struct neu_parse_group_config_res *res, char **buf);
-int neu_parse_encode_update_group_config_res(
-    struct neu_parse_group_config_res *res, char **buf);
-int neu_parse_encode_delete_group_config_res(
-    struct neu_parse_group_config_res *res, char **buf);
-
-void neu_parse_encode_get_group_config_free(
-    struct neu_parse_get_group_config_req *req);
+int neu_parse_decode_add_group_config(
+    char *buf, neu_parse_add_group_config_req_t **result);
 void neu_parse_decode_add_group_config_free(
-    struct neu_parse_add_group_config_req *req);
+    neu_parse_add_group_config_req_t *req);
+
+typedef struct {
+    char *   name;
+    uint32_t src_node_id;
+    uint32_t dst_node_id;
+    uint32_t interval;
+} neu_parse_update_group_config_req_t;
+
+int neu_parse_decode_update_group_config(
+    char *buf, neu_parse_update_group_config_req_t **result);
 void neu_parse_decode_update_group_config_free(
-    struct neu_parse_update_group_config_req *req);
-void neu_parse_decode_delete_group_config_free(
-    struct neu_parse_delete_group_config_req *req);
+    neu_parse_update_group_config_req_t *req);
 
-int neu_parse_decode_add_tag_ids_req(char *                             buf,
-                                     struct neu_parse_add_tag_ids_req **result);
-int neu_parse_decode_delete_tag_ids_req(
-    char *buf, struct neu_parse_delete_tag_ids_req **result);
+typedef struct {
+    char *   name;
+    uint32_t node_id;
+} neu_parse_del_group_config_req_t;
 
-int neu_parse_encode_add_tag_ids_res(struct neu_parse_add_tag_ids_res *res,
-                                     char **                           buf);
-int neu_parse_encode_delete_tag_ids_res(
-    struct neu_parse_delete_tag_ids_res *res, char **buf);
+int neu_parse_decode_del_group_config(
+    char *buf, neu_parse_del_group_config_req_t **result);
+void neu_parse_decode_del_group_config_free(
+    neu_parse_del_group_config_req_t *req);
 
-void neu_parse_decode_add_tag_ids_free(struct neu_parse_add_tag_ids_req *req);
-void neu_parse_decode_delete_tag_ids_free(
-    struct neu_parse_delete_tag_ids_req *req);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

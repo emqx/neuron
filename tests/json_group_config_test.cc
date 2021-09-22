@@ -2,7 +2,6 @@
 #include <gtest/gtest.h>
 
 #include "parser/neu_json_group_config.h"
-#include "parser/neu_json_parser.h"
 
 TEST(TagGroupConfigTest, neu_parse_decode_get_group_config_req)
 {

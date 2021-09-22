@@ -30,6 +30,9 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
     json_t *ob = NULL;
 
     switch (ele->t) {
+    case NEU_JSON_BIT:
+        ob = json_integer(ele->v.val_bit);
+        break;
     case NEU_JSON_INT:
         ob = json_integer(ele->v.val_int);
         break;
@@ -38,6 +41,9 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
         break;
     case NEU_JSON_DOUBLE:
         ob = json_real(ele->v.val_double);
+        break;
+    case NEU_JSON_FLOAT:
+        ob = json_real(ele->v.val_float);
         break;
     case NEU_JSON_BOOL:
         ob = json_boolean(ele->v.val_bool);
@@ -54,11 +60,17 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     json_t *ob = object;
 
     switch (ele.t) {
+    case NEU_JSON_BIT:
+        json_object_set_new(ob, ele.name, json_integer(ele.v.val_bit));
+        break;
     case NEU_JSON_INT:
         json_object_set_new(ob, ele.name, json_integer(ele.v.val_int));
         break;
     case NEU_JSON_STR:
         json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
+        break;
+    case NEU_JSON_FLOAT:
+        json_object_set_new(ob, ele.name, json_real(ele.v.val_float));
         break;
     case NEU_JSON_DOUBLE:
         json_object_set_new(ob, ele.name, json_real(ele.v.val_double));
@@ -104,11 +116,17 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     }
 
     switch (ele->t) {
+    case NEU_JSON_BIT:
+        ele->v.val_bit = json_integer_value(ob);
+        break;
     case NEU_JSON_INT:
         ele->v.val_int = json_integer_value(ob);
         break;
     case NEU_JSON_STR:
         ele->v.val_str = strdup(json_string_value(ob));
+        break;
+    case NEU_JSON_FLOAT:
+        ele->v.val_float = json_real_value(ob);
         break;
     case NEU_JSON_DOUBLE:
         ele->v.val_double = json_real_value(ob);
@@ -242,17 +260,30 @@ void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n)
     return array;
 }
 
-int neu_json_encode(neu_json_elem_t *t, int n, char **str)
+void *neu_json_encode_new()
 {
-    json_t *root = json_object();
+    return json_object();
+}
 
+void neu_json_encode_free(void *json_object)
+{
+    free(json_object);
+}
+
+int neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n)
+{
     for (int i = 0; i < n; i++) {
-        encode_object(root, t[i]);
+        encode_object(json_object, elem[i]);
     }
 
-    *str = json_dumps(root, JSON_REAL_PRECISION(16));
+    return 0;
+}
 
-    json_decref(root);
+int neu_json_encode(void *json_object, char **str)
+{
+    *str = json_dumps(json_object, JSON_REAL_PRECISION(16));
+
+    json_decref(json_object);
 
     return 0;
 }

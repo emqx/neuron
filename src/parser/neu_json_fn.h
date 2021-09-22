@@ -17,25 +17,33 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_NEU_JSON__H_
-#define _NEU_NEU_JSON__H_
+#ifndef _NEU_JSON_FN_H
+#define _NEU_JSON_FN_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "neu_data_expr.h"
+#include <stdint.h>
 
-int neu_jsonx_decode(char *buf, neu_data_val_t *val);
-int neu_jsonx_decode_array_size(char *buf, char *child);
-int neu_jsonx_decode_array(char *buf, char *name, int index,
-                           neu_data_val_t *val);
+typedef int (*neu_json_encode_fn)(void *object, void *param);
 
-void *neu_jsonx_new();
-void *neu_jsonx_encode_array(void *array, neu_data_val_t *val);
-void *neu_jsonx_encode_array_value(void *array, neu_data_val_t *val);
-int   neu_jsonx_encode_field(void *json_object, neu_fixed_array_t *kv);
-int   neu_jsonx_encode(void *object, neu_data_val_t *val, char **result);
+int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result);
+
+int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
+                              void *mqtt_param, neu_json_encode_fn mqtt_fn,
+                              char **result);
+
+typedef struct neu_parse_errors {
+    int      n_error;
+    int64_t *errors;
+} neu_parse_errors_t;
+
+typedef struct neu_parse_error {
+    int64_t error;
+} neu_parse_error_t;
+
+int neu_parse_encode_error(void *json_object, void *param);
 
 #ifdef __cplusplus
 }

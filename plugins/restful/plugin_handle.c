@@ -22,7 +22,7 @@
 #include "vector.h"
 
 #include "neu_plugin.h"
-#include "parser/neu_json_parser.h"
+#include "parser/neu_json_fn.h"
 #include "parser/neu_json_plugin.h"
 
 #include "handle.h"
@@ -34,62 +34,65 @@ void handle_add_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_add_plugin_req, {
-        intptr_t err =
-            neu_system_add_plugin(plugin, req->kind, req->node_type,
-                                  req->plugin_name, req->plugin_lib_name);
-        if (err != 0) {
-            http_bad_request(aio, "{\"error\": 1}");
-        } else {
-            http_ok(aio, "{\"error\": 0}");
-        }
-    })
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_add_plugin_req_t, neu_parse_decode_add_plugin, {
+            intptr_t err =
+                neu_system_add_plugin(plugin, req->kind, req->node_type,
+                                      req->plugin_name, req->plugin_lib_name);
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
 }
 
 void handle_del_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_delete_plugin_req, {
-        plugin_id_t id;
-        id.id_val    = req->plugin_id;
-        intptr_t err = neu_system_del_plugin(plugin, id);
-        if (err != 0) {
-            http_bad_request(aio, "{\"error\": 1}");
-        } else {
-            http_ok(aio, "{\"error\": 0}");
-        }
-    })
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_del_plugin_req_t, neu_parse_decode_del_plugin, {
+            plugin_id_t id;
+            id.id_val    = req->plugin_id;
+            intptr_t err = neu_system_del_plugin(plugin, id);
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
 }
 
 void handle_update_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_update_plugin_req, {
-        intptr_t err =
-            neu_system_update_plugin(plugin, req->kind, req->node_type,
-                                     req->plugin_name, req->plugin_lib_name);
-        if (err != 0) {
-            http_bad_request(aio, "{\"error\": 1}");
-        } else {
-            http_ok(aio, "{\"error\": 0}");
-        }
-    })
+    REST_PROCESS_HTTP_REQUEST(aio, neu_parse_update_plugin_req_t,
+                              neu_parse_decode_update_plugin, {
+                                  intptr_t err = neu_system_update_plugin(
+                                      plugin, req->kind, req->node_type,
+                                      req->plugin_name, req->plugin_lib_name);
+                                  if (err != 0) {
+                                      http_bad_request(aio, "{\"error\": 1}");
+                                  } else {
+                                      http_ok(aio, "{\"error\": 0}");
+                                  }
+                              })
 }
 
 void handle_get_plugin(nng_aio *aio)
 {
-    neu_plugin_t *                  plugin     = neu_rest_get_plugin();
-    char *                          result     = NULL;
-    struct neu_parse_get_plugin_res plugin_res = { 0 };
-    int                             index      = 0;
+    neu_plugin_t *              plugin     = neu_rest_get_plugin();
+    char *                      result     = NULL;
+    neu_parse_get_plugins_res_t plugin_res = { 0 };
+    int                         index      = 0;
 
     vector_t plugin_libs = neu_system_get_plugin(plugin);
 
-    plugin_res.n_plugin    = plugin_libs.size;
-    plugin_res.plugin_libs = calloc(
-        plugin_res.n_plugin, sizeof(struct neu_parse_get_plugin_res_libs));
+    plugin_res.n_plugin = plugin_libs.size;
+    plugin_res.plugin_libs =
+        calloc(plugin_res.n_plugin, sizeof(neu_parse_get_plugins_res_lib_t));
 
     VECTOR_FOR_EACH(&plugin_libs, iter)
     {
@@ -105,7 +108,8 @@ void handle_get_plugin(nng_aio *aio)
         index += 1;
     }
 
-    neu_parse_encode_get_plugin_res(&plugin_res, &result);
+    neu_json_encode_by_fn(&plugin_res, neu_parse_encode_get_plugins, &result);
+
     http_ok(aio, result);
     free(result);
     free(plugin_res.plugin_libs);

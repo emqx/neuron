@@ -25,110 +25,72 @@ extern "C" {
 
 #include <stdint.h>
 
-#include "neu_json_parser.h"
-
-struct neu_parse_add_tags_req_tag {
+typedef struct {
     char *name;
     char *address;
     int   type;
     int   attribute;
-};
+} neu_parse_add_tags_req_tag_t;
 
-struct neu_parse_add_tags_req {
-    enum neu_parse_function            function;
-    char *                             uuid;
-    uint32_t                           node_id;
-    char *                             group_config_name;
-    int                                n_tag;
-    struct neu_parse_add_tags_req_tag *tags;
-};
+typedef struct {
+    uint32_t                      node_id;
+    char *                        group_config_name;
+    int                           n_tag;
+    neu_parse_add_tags_req_tag_t *tags;
+} neu_parse_add_tags_req_t;
 
-struct neu_parse_add_tags_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+int  neu_parse_decode_add_tags(char *buf, neu_parse_add_tags_req_t **req);
+void neu_parse_decode_add_tags_free(neu_parse_add_tags_req_t *req);
 
-struct neu_parse_delete_tags_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    char *                  group_config_name;
-    uint32_t                node_id;
-    int                     n_tag_id;
-    uint32_t *              tag_ids;
-};
+typedef struct {
+    char *    group_config_name;
+    uint32_t  node_id;
+    int       n_tag_id;
+    uint32_t *tag_ids;
+} neu_parse_del_tags_req_t;
 
-struct neu_parse_delete_tags_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+int  neu_parse_decode_del_tags(char *buf, neu_parse_del_tags_req_t **req);
+void neu_parse_decode_del_tags_free(neu_parse_del_tags_req_t *req);
 
-struct neu_parse_update_tags_req_tag {
+typedef struct {
     uint32_t tag_id;
     char *   name;
     int      type;
     char *   address;
     int      attribute;
-};
+} neu_parse_update_tags_req_tag_t;
 
-struct neu_parse_update_tags_req {
-    enum neu_parse_function               function;
-    char *                                uuid;
-    uint32_t                              node_id;
-    int                                   n_tag;
-    struct neu_parse_update_tags_req_tag *tags;
-};
+typedef struct {
+    uint32_t                         node_id;
+    int                              n_tag;
+    neu_parse_update_tags_req_tag_t *tags;
+} neu_parse_update_tags_req_t;
 
-struct neu_parse_update_tags_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+int  neu_parse_decode_update_tags(char *buf, neu_parse_update_tags_req_t **req);
+void neu_parse_decode_update_tags_free(neu_parse_update_tags_req_t *req);
 
-struct neu_parse_get_tags_res_tag {
+typedef struct {
     uint32_t id;
     char *   name;
     char *   group_config_name;
     char *   address;
     int      type;
     int      attribute;
-};
+} neu_parse_get_tags_res_tag_t;
 
-struct neu_parse_get_tags_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    uint32_t                node_id;
-};
+typedef struct {
+    uint32_t node_id;
+} neu_parse_get_tags_req_t;
 
-struct neu_parse_get_tags_res {
-    enum neu_parse_function            function;
-    char *                             uuid;
-    int                                error;
-    int                                n_tag;
-    struct neu_parse_get_tags_res_tag *tags;
-};
+typedef struct {
+    int                           n_tag;
+    neu_parse_get_tags_res_tag_t *tags;
+} neu_parse_get_tags_res_t;
 
-int  neu_parse_decode_get_tags_req(char *                          buf,
-                                   struct neu_parse_get_tags_req **req);
-int  neu_parse_encode_get_tags_res(struct neu_parse_get_tags_res *res,
-                                   char **                        buf);
-int  neu_parse_decode_update_tags_req(char *                             buf,
-                                      struct neu_parse_update_tags_req **req);
-int  neu_parse_encode_update_tags_res(struct neu_parse_update_tags_res *res,
-                                      char **                           buf);
-int  neu_parse_decode_add_tags_req(char *                          buf,
-                                   struct neu_parse_add_tags_req **req);
-int  neu_parse_encode_add_tags_res(struct neu_parse_add_tags_res *res,
-                                   char **                        buf);
-int  neu_parse_decode_delete_tags_req(char *                             buf,
-                                      struct neu_parse_delete_tags_req **req);
-int  neu_parse_encode_delete_tags_res(struct neu_parse_delete_tags_res *res,
-                                      char **                           buf);
-void neu_parse_decode_get_tags_free(struct neu_parse_get_tags_req *req);
-void neu_parse_decode_update_tags_free(struct neu_parse_update_tags_req *req);
-void neu_parse_decode_add_tags_free(struct neu_parse_add_tags_req *req);
-void neu_parse_decode_delete_tags_free(struct neu_parse_delete_tags_req *req);
+int  neu_parse_decode_get_tags(char *buf, neu_parse_get_tags_req_t **req);
+void neu_parse_decode_get_tags_free(neu_parse_get_tags_req_t *req);
+int  neu_parse_encode_get_tags(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif

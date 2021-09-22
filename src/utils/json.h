@@ -27,22 +27,26 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
-enum neu_json_type {
+typedef enum neu_json_type {
     NEU_JSON_UNDEFINE = 0,
     NEU_JSON_INT      = 1,
+    NEU_JSON_BIT,
     NEU_JSON_STR,
     NEU_JSON_DOUBLE,
+    NEU_JSON_FLOAT,
     NEU_JSON_BOOL,
     NEU_JSON_OBJECT
-};
+} neu_json_type_e;
 
-union neu_json_value {
+typedef union neu_json_value {
     int64_t val_int;
+    uint8_t val_bit;
+    float   val_float;
     double  val_double;
     bool    val_bool;
     char *  val_str;
     void *  object;
-};
+} neu_json_value_u;
 
 typedef struct neu_json_elem {
     char *               name;
@@ -57,9 +61,12 @@ int neu_json_decode_array_size(char *buf, char *child);
 int neu_json_decode_array(char *buf, char *name, int index, int size,
                           neu_json_elem_t *ele);
 
+void *neu_json_encode_new();
+void  neu_json_encode_free(void *json_object);
 void *neu_json_encode_array(void *array, neu_json_elem_t *t, int n);
 void *neu_json_encode_array_value(void *array, neu_json_elem_t *t, int n);
-int   neu_json_encode(neu_json_elem_t *t, int n, char **str);
+int   neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n);
+int   neu_json_encode(void *json_object, char **str);
 
 #ifdef __cplusplus
 }

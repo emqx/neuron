@@ -28,9 +28,6 @@
 #include "neu_log.h"
 #include "neu_plugin.h"
 
-#include "parser/neu_json_login.h"
-#include "parser/neu_json_parser.h"
-
 #include "adapter_handle.h"
 #include "datatag_handle.h"
 #include "group_config_handle.h"
@@ -198,8 +195,7 @@ static void ping(nng_aio *aio)
 
 static void login(nng_aio *aio)
 {
-    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_login_req,
-                              { http_ok(aio, "{\"status\": \"ok\"}"); })
+    (void) aio;
 }
 
 static void logout(nng_aio *aio)

@@ -2,63 +2,54 @@
 
 #include <gtest/gtest.h>
 
-#include "parser/neu_json_parser.h"
+#include "parser/neu_json_fn.h"
+#include "parser/neu_json_mqtt.h"
 #include "parser/neu_json_rw.h"
 
 TEST(JsonAPITest, ReadReqDecode)
 {
-    char *buf = (char *) "{\"function\":50, "
+    char *buf = (char *) "{\"function\":3, "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
                          "\"node_id\": 123 ,"
-                         "\"group_names\": [\"group001\", "
-                         "\"group002\", \"group003\"]}";
-    void *                     result = NULL;
-    struct neu_parse_read_req *req    = NULL;
+                         "\"group_config_name\": \"group1\"}";
+    neu_parse_read_req_t *req  = NULL;
+    neu_parse_mqtt_t *    mqtt = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_mqtt_param(buf, &mqtt));
+    EXPECT_EQ(0, neu_parse_decode_read(buf, &req));
 
-    req = (struct neu_parse_read_req *) result;
-    EXPECT_EQ(NEU_PARSE_OP_READ, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
+    EXPECT_EQ(NEU_MQTT_OP_READ, mqtt->function);
+    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", mqtt->uuid);
     EXPECT_EQ(123, req->node_id);
-    EXPECT_EQ(3, req->n_group);
-    EXPECT_STREQ("group001", req->group_names[0].name);
-    EXPECT_STREQ("group002", req->group_names[1].name);
-    EXPECT_STREQ("group003", req->group_names[2].name);
+    EXPECT_STREQ("group1", req->group_config_name);
 
-    neu_parse_decode_free(result);
+    neu_parse_decode_mqtt_param_free(mqtt);
+    neu_parse_decode_read_free(req);
 }
 
 TEST(JsonAPITest, ReadResEncode)
 {
-    char *buf =
-        (char
-             *) "{\"function\": 50, \"uuid\": "
-                "\"554f5fd8-f437-11eb-975c-7704b9e17821\", \"error\": 0, "
-                "\"tags\": [{\"name\": \"tag001\", \"type\": 0, \"timestamp\": "
-                "1122334455, \"value\": 123.0}, {\"name\": \"tag002\", "
-                "\"type\": 1, \"timestamp\": 4445555, \"value\": 11233.0}]}";
-    char *                    result = NULL;
-    struct neu_parse_read_res res    = {
-        .function = NEU_PARSE_OP_READ,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-        .n_tag    = 2,
+    char *buf = (char *) "{\"tags\": [{\"name\": \"tag001\", \"tag_id\": 1, "
+                         "\"value\": 123}, {\"name\": \"tag002\", \"tag_id\": "
+                         "2, \"value\": 11.123456789}]}";
+    char *               result = NULL;
+    neu_parse_read_res_t res    = {
+        .n_tag = 2,
     };
 
-    res.tags = (struct neu_parse_read_res_tag *) calloc(
-        2, sizeof(struct neu_parse_read_res_tag));
-    res.tags[0].name      = strdup((char *) "tag001");
-    res.tags[0].type      = 0;
-    res.tags[0].timestamp = 1122334455;
-    res.tags[0].value     = 123;
+    res.tags = (neu_parse_read_res_tag_t *) calloc(
+        2, sizeof(neu_parse_read_res_tag_t));
+    res.tags[0].name          = strdup((char *) "tag001");
+    res.tags[0].tag_id        = 1;
+    res.tags[0].t             = NEU_JSON_INT;
+    res.tags[0].value.val_int = 123;
 
-    res.tags[1].name      = strdup((char *) "tag002");
-    res.tags[1].type      = 1;
-    res.tags[1].timestamp = 4445555;
-    res.tags[1].value     = 11233;
+    res.tags[1].name             = strdup((char *) "tag002");
+    res.tags[1].tag_id           = 2;
+    res.tags[1].t                = NEU_JSON_DOUBLE;
+    res.tags[1].value.val_double = 11.123456789;
 
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
+    EXPECT_EQ(0, neu_json_encode_by_fn(&res, neu_parse_encode_read, &result));
     EXPECT_STREQ(buf, result);
 
     free(res.tags[0].name);
@@ -67,40 +58,16 @@ TEST(JsonAPITest, ReadResEncode)
     free(result);
 }
 
-TEST(JsonAPITest, WriteResEncode)
-{
-    char *buf =
-        (char *) "{\"function\": 51, \"uuid\": "
-                 "\"554f5fd8-f437-11eb-975c-7704b9e17821\", \"error\": 0}";
-    char *                     result = NULL;
-    struct neu_parse_write_res res    = {
-        .function = NEU_PARSE_OP_WRITE,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
-    EXPECT_STREQ(buf, result);
-
-    free(result);
-}
-
 TEST(JsonAPITest, WriteReqDecode)
 {
-    char *buf = (char *) "{\"function\":51, "
-                         "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"node_id\": 123, \"tags\": "
+    char *buf = (char *) "{\"node_id\": 123, \"tags\": "
                          "[{\"tag_id\":1, \"value\":8877},{\"tag_id\":2, "
                          "\"value\":11.22},{\"tag_id\":3, \"value\": \"hello "
                          "world\"}]}";
-    void *                      result = NULL;
-    struct neu_parse_write_req *req    = NULL;
+    neu_parse_write_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_write(buf, &req));
 
-    req = (struct neu_parse_write_req *) result;
-    EXPECT_EQ(NEU_PARSE_OP_WRITE, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(3, req->n_tag);
     EXPECT_EQ(123, req->node_id);
 
@@ -116,5 +83,5 @@ TEST(JsonAPITest, WriteReqDecode)
     EXPECT_EQ(NEU_JSON_STR, req->tags[2].t);
     EXPECT_STREQ("hello world", req->tags[2].value.val_str);
 
-    neu_parse_decode_free(result);
+    neu_parse_decode_write_free(req);
 }

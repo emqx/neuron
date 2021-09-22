@@ -174,7 +174,9 @@ TEST(JsonTest, EncodeField)
     elems[4].v.val_str      = (char *) "hello world";
     EXPECT_EQ(5, sizeof(elems) / sizeof(neu_json_elem_t));
     EXPECT_EQ(5, NEU_JSON_ELEM_SIZE(elems));
-    EXPECT_EQ(0, neu_json_encode(elems, NEU_JSON_ELEM_SIZE(elems), &result));
+    void *ob = neu_json_encode_new();
+    EXPECT_EQ(0, neu_json_encode_field(ob, elems, NEU_JSON_ELEM_SIZE(elems)));
+    EXPECT_EQ(0, neu_json_encode(ob, &result));
     EXPECT_STREQ(result, buf);
 
     free(result);
@@ -249,7 +251,9 @@ TEST(JsonTest, EncodeArray)
     elems[1].v.object  = json_array1;
     elems[2].v.object  = json_array2;
     EXPECT_EQ(3, NEU_JSON_ELEM_SIZE(elems));
-    EXPECT_EQ(0, neu_json_encode(elems, NEU_JSON_ELEM_SIZE(elems), &result));
+    void *ob = neu_json_encode_new();
+    EXPECT_EQ(0, neu_json_encode_field(ob, elems, NEU_JSON_ELEM_SIZE(elems)));
+    EXPECT_EQ(0, neu_json_encode(ob, &result));
     EXPECT_STREQ(result, buf);
 
     free(result);
