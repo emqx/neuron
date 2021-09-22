@@ -149,7 +149,7 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         resp.buf_len   = sizeof(neu_reqresp_data_t);
         resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
-        neu_variable_destroy(head);
+        // neu_variable_destroy(head);
         break;
     }
 

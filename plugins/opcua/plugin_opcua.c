@@ -112,7 +112,11 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
     memset(plugin->handle_context, 0, sizeof(opc_handle_context_t));
     plugin->handle_context->plugin       = plugin;
     plugin->handle_context->client       = plugin->client;
+    plugin->handle_context->table        = NULL;
     plugin->handle_context->self_node_id = neu_plugin_self_node_id(plugin);
+
+    NEU_LIST_INIT(&plugin->handle_context->subscribe_list,
+                  opc_subscribe_tuple_t, node);
 
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
@@ -135,6 +139,27 @@ static int opcua_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 
     log_info("config plugin: %s", neu_plugin_module.module_name);
     return rv;
+}
+
+static void periodic_response(neu_plugin_t *plugin, neu_taggrp_config_t *config,
+                              neu_variable_t *array)
+{
+    UNUSED(plugin);
+    UNUSED(config);
+    UNUSED(array);
+    // neu_variable_t *head = neu_variable_create();
+    // neu_plugin_response_trans_data(plugin, config, head, 0);
+    // neu_variable_destroy(head);
+}
+
+static void subscribe_response(neu_plugin_t *       plugin,
+                               neu_taggrp_config_t *config,
+                               neu_variable_t *     array)
+{
+    UNUSED(plugin);
+    UNUSED(config);
+    UNUSED(array);
+    // TODO: return subscription data
 }
 
 static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
@@ -161,7 +186,6 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
                                 head);
         neu_plugin_response_trans_data(plugin, read_req->grp_config, head,
                                        req->req_id);
-        neu_variable_destroy(head);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {
@@ -171,6 +195,19 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         vector_init(&v, 10, sizeof(opcua_data_t));
         plugin_handle_write_value(plugin->handle_context, data_var, &v);
         vector_uninit(&v);
+        break;
+    }
+    case NEU_REQRESP_SUBSCRIBE_NODE: {
+        neu_reqresp_read_t *subscribe_req = (neu_reqresp_read_t *) req->buf;
+        plugin_handle_subscribe(plugin->handle_context,
+                                subscribe_req->grp_config, periodic_response,
+                                subscribe_response);
+        break;
+    }
+    case NEU_REQRESP_UNSUBSCRIBE_NODE: {
+        neu_reqresp_read_t *unsubscribe_req = (neu_reqresp_read_t *) req->buf;
+        plugin_handle_unsubscribe(plugin->handle_context,
+                                  unsubscribe_req->grp_config);
         break;
     }
 

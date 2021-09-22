@@ -361,7 +361,7 @@ int open62541_client_read(open62541_client_t *client, vector_t *data)
     UA_ReadResponse resp = UA_Client_Service_read(client->ua_client, req);
     uint32_t        status_code = resp.responseHeader.serviceResult;
     if (UA_STATUSCODE_GOOD != status_code || count != (int) resp.resultsSize) {
-        log_error("Respons status code:%d", status_code);
+        log_error("Respons status code:%x", status_code);
         return -4;
     }
 
