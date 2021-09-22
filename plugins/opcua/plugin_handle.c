@@ -26,6 +26,9 @@
 
 #define UNUSED(x) (void) (x)
 
+static void start_periodic_read(opc_subscribe_tuple_t *tuple);
+static void stop_periodic_read(opc_subscribe_tuple_t *tuple);
+
 static neu_datatag_t *get_datatag_by_id(neu_datatag_table_t *table,
                                         datatag_id_t         id)
 {
@@ -232,6 +235,7 @@ int plugin_handle_read_once(opc_handle_context_t *context,
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
+        log_error("open62541 client offline");
         vector_uninit(&data);
         return -1;
     }
@@ -249,9 +253,149 @@ int plugin_handle_write_value(opc_handle_context_t *context,
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
+        log_error("open62541 client offline");
         return -1;
     }
 
     rc = open62541_client_write(context->client, data);
+    return 0;
+}
+
+static void periodic_read(nng_aio *aio, void *arg, int code)
+{
+    switch (code) {
+    case NNG_ETIMEDOUT: {
+        opc_subscribe_tuple_t *tuple = (opc_subscribe_tuple_t *) arg;
+        if (neu_taggrp_cfg_is_anchored(tuple->config)) {
+            neu_variable_t *head = neu_variable_create();
+            plugin_handle_read_once(tuple->context, tuple->config, head);
+            if (NULL != tuple->periodic_cb) {
+                tuple->periodic_cb(tuple->plugin, tuple->config, head);
+            }
+            neu_variable_destroy(head);
+
+            nng_aio_defer(aio, periodic_read, arg);
+        } else {
+            neu_taggrp_config_t *new_config = neu_system_find_group_config(
+                tuple->plugin, tuple->node_id, tuple->name);
+
+            stop_periodic_read(tuple);
+
+            if (new_config != NULL) {
+                neu_taggrp_cfg_free(tuple->config);
+                tuple->config = new_config;
+                start_periodic_read(tuple);
+            }
+        }
+
+        break;
+    }
+    case NNG_ECANCELED:
+        log_warn("aio: %p cancel", aio);
+        break;
+    default:
+        log_warn("aio: %p, skip error: %d", aio, code);
+        break;
+    }
+}
+
+static opc_subscribe_tuple_t *add_subscribe(opc_handle_context_t *context,
+                                            neu_taggrp_config_t * config)
+{
+    opc_subscribe_tuple_t *opc_subscribe =
+        malloc(sizeof(opc_subscribe_tuple_t));
+
+    opc_subscribe->plugin  = context->plugin;
+    opc_subscribe->node_id = context->self_node_id;
+    opc_subscribe->name    = strdup(neu_taggrp_cfg_get_name(config));
+    opc_subscribe->config  = config;
+
+    NEU_LIST_NODE_INIT(&opc_subscribe->node);
+    neu_list_append(&context->subscribe_list, opc_subscribe);
+    return opc_subscribe;
+}
+
+static void start_periodic_read(opc_subscribe_tuple_t *tuple)
+{
+    uint32_t interval = neu_taggrp_cfg_get_interval(tuple->config);
+    nng_aio_alloc(&tuple->aio, NULL, NULL);
+    nng_aio_set_timeout(tuple->aio, interval != 0 ? interval : 10000);
+
+    nng_aio_defer(tuple->aio, periodic_read, tuple);
+}
+
+static void start_opc_subscribe(opc_handle_context_t *context,
+                                neu_taggrp_config_t * config)
+{
+    UNUSED(config);
+    open62541_client_subscribe(context->client, NULL);
+}
+
+int plugin_handle_subscribe(opc_handle_context_t *      context,
+                            neu_taggrp_config_t *       config,
+                            periodic_response_callback  periodic_cb,
+                            subscribe_response_callback subscribe_cb)
+{
+    opc_subscribe_tuple_t *tuple = add_subscribe(context, config);
+    if (NULL == tuple) {
+        return -1;
+    }
+
+    tuple->periodic_cb  = periodic_cb;
+    tuple->subscribe_cb = subscribe_cb;
+
+    start_periodic_read(tuple);
+    start_opc_subscribe(context, config);
+    return 0;
+}
+
+static opc_subscribe_tuple_t *find_subscribe(opc_handle_context_t *context,
+                                             neu_taggrp_config_t * config)
+{
+    opc_subscribe_tuple_t *item;
+    opc_subscribe_tuple_t *tuple = NULL;
+    NEU_LIST_FOREACH(&context->subscribe_list, item)
+    {
+        if (item->config == config) {
+            tuple = item;
+        }
+    }
+    return tuple;
+}
+
+static void stop_periodic_read(opc_subscribe_tuple_t *tuple)
+{
+    nng_aio_cancel(tuple->aio);
+    nng_aio_free(tuple->aio);
+}
+
+static void remove_subscribe(opc_subscribe_tuple_t *tuple)
+{
+    if (NULL == tuple) {
+        return;
+    }
+
+    if (NULL != tuple->name) {
+        free(tuple->name);
+    }
+
+    stop_periodic_read(tuple);
+    neu_list_remove(&tuple->context->subscribe_list, tuple);
+}
+
+static void stop_opc_subscribe(opc_handle_context_t *context,
+                               neu_taggrp_config_t * config)
+{
+    UNUSED(config);
+    open62541_client_unsubscribe(context->client, NULL);
+}
+
+int plugin_handle_unsubscribe(opc_handle_context_t *context,
+                              neu_taggrp_config_t * config)
+{
+    opc_subscribe_tuple_t *tuple = find_subscribe(context, config);
+    stop_periodic_read(tuple);
+    stop_opc_subscribe(context, config);
+    remove_subscribe(tuple);
     return 0;
 }
