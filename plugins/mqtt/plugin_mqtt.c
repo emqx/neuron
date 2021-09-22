@@ -70,63 +70,114 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
     memset(json_str, 0x00, len + 1);
     memcpy(json_str, payload, len);
 
-    void *                     result = NULL;
-    struct neu_parse_read_req *req    = NULL;
-    int                        rc     = neu_parse_decode(json_str, &result);
-    req                               = (struct neu_parse_read_req *) result;
+    void *            result = NULL;
+    neu_parse_mqtt_t *mqtt   = NULL;
+    int               rc     = neu_parse_decode_mqtt_param(json_str, &mqtt);
+
     if (0 != rc) {
-        log_error("JSON parsing failed");
+        log_error("JSON parsing matt failed");
         return;
     }
 
-    switch (req->function) {
-    case NEU_PARSE_OP_GET_GROUP_CONFIG:
+    switch (mqtt->function) {
+    case NEU_MQTT_OP_GET_GROUP_CONFIG:
+        rc = neu_parse_decode_get_group_config(
+            json_str, (neu_parse_get_group_config_req_t **) &result);
+        break;
+    case NEU_MQTT_OP_ADD_GROUP_CONFIG:
+        rc = neu_parse_decode_add_group_config(
+            json_str, (neu_parse_add_group_config_req_t **) &result);
+        break;
+    case NEU_MQTT_OP_UPDATE_GROUP_CONFIG:
+        rc = neu_parse_decode_update_group_config(
+            json_str, (neu_parse_update_group_config_req_t **) &result);
+        break;
+    case NEU_MQTT_OP_DELETE_GROUP_CONFIG:
+        rc = neu_parse_decode_del_group_config(
+            json_str, (neu_parse_del_group_config_req_t **) &result);
+        break;
+    case NEU_MQTT_OP_ADD_DATATAG_IDS_CONFIG:
+        rc = -1;
+        break;
+    case NEU_MQTT_OP_DELETE_DATATAG_IDS_CONFIG:
+        rc = -1;
+        break;
+    case NEU_MQTT_OP_READ:
+        rc = neu_parse_decode_read(json_str, (neu_parse_read_req_t **) &result);
+        break;
+    case NEU_MQTT_OP_WRITE:
+        rc = neu_parse_decode_write(json_str,
+                                    (neu_parse_write_req_t **) &result);
+        break;
+    case NEU_MQTT_OP_GET_TAGS:
+        rc = neu_parse_decode_get_tags(json_str,
+                                       (neu_parse_get_tags_req_t **) &result);
+        break;
+    case NEU_MQTT_OP_ADD_TAGS:
+        rc = neu_parse_decode_add_tags(json_str,
+                                       (neu_parse_add_tags_req_t **) &result);
+        break;
+    default:
+        rc = -1;
+        break;
+    }
+
+    if (0 != rc) {
+        log_error("JSON parsing matt failed");
+        return;
+    }
+
+    switch (mqtt->function) {
+    case NEU_MQTT_OP_GET_GROUP_CONFIG:
         message_handle_get_group_config(
-            plugin, (struct neu_parse_get_group_config_req *) result);
+            plugin, mqtt, (neu_parse_get_group_config_req_t *) result);
+        neu_parse_decode_get_group_config_free(result);
         break;
-    case NEU_PARSE_OP_ADD_GROUP_CONFIG:
+    case NEU_MQTT_OP_ADD_GROUP_CONFIG:
         message_handle_add_group_config(
-            plugin, (struct neu_parse_add_group_config_req *) result);
+            plugin, mqtt, (neu_parse_add_group_config_req_t *) result);
+        neu_parse_decode_add_group_config_free(result);
         break;
-    case NEU_PARSE_OP_UPDATE_GROUP_CONFIG:
+    case NEU_MQTT_OP_UPDATE_GROUP_CONFIG:
         message_handle_update_group_config(
-            plugin, (struct neu_parse_update_group_config_req *) result);
+            plugin, mqtt, (neu_parse_update_group_config_req_t *) result);
+        neu_parse_decode_update_group_config_free(result);
         break;
-    case NEU_PARSE_OP_DELETE_GROUP_CONFIG:
+    case NEU_MQTT_OP_DELETE_GROUP_CONFIG:
         message_handle_delete_group_config(
-            plugin, (struct neu_parse_delete_group_config_req *) result);
+            plugin, mqtt, (neu_parse_del_group_config_req_t *) result);
+        neu_parse_decode_del_group_config_free(result);
         break;
-    case NEU_PARSE_OP_ADD_DATATAG_IDS_CONFIG:
-        message_handle_add_datatag_ids(
-            plugin, (struct neu_parse_add_tag_ids_req *) result);
+    case NEU_MQTT_OP_ADD_DATATAG_IDS_CONFIG:
+        // message_handle_add_datatag_ids(
+        // plugin, (neu_parse_add_tag_ids_req_t *) result);
         break;
-    case NEU_PARSE_OP_DELETE_DATATAG_IDS_CONFIG:
-        message_handle_delete_datatag_ids(
-            plugin, (struct neu_parse_delete_tag_ids_req *) result);
+    case NEU_MQTT_OP_DELETE_DATATAG_IDS_CONFIG:
+        // message_handle_delete_datatag_ids(
+        // plugin, (struct neu_parse_delete_tag_ids_req *) result);
         break;
-    case NEU_PARSE_OP_READ:
-        message_handle_read(plugin, (struct neu_parse_read_req *) result);
+    case NEU_MQTT_OP_READ:
+        message_handle_read(plugin, mqtt, (neu_parse_read_req_t *) result);
+        neu_parse_decode_read_free(result);
         break;
-
-    case NEU_PARSE_OP_WRITE:
-        message_handle_write(plugin, (struct neu_parse_write_req *) result);
+    case NEU_MQTT_OP_WRITE:
+        message_handle_write(plugin, mqtt, (neu_parse_write_req_t *) result);
+        neu_parse_decode_write_free(result);
         break;
-
-    case NEU_PARSE_OP_GET_TAGS:
-        message_handle_get_tag_list(plugin,
-                                    (struct neu_parse_get_tags_req *) result);
+    case NEU_MQTT_OP_GET_TAGS:
+        message_handle_get_tag_list(plugin, mqtt,
+                                    (neu_parse_get_tags_req_t *) result);
+        neu_parse_decode_get_tags_free(result);
         break;
-
-    case NEU_PARSE_OP_ADD_TAGS:
-        message_handle_add_tag(plugin,
-                               (struct neu_parse_add_tags_req *) result);
+    case NEU_MQTT_OP_ADD_TAGS:
+        message_handle_add_tag(plugin, mqtt,
+                               (neu_parse_add_tags_req_t *) result);
+        neu_parse_decode_add_tags_free(result);
         break;
-
     default:
         break;
     }
 
-    neu_parse_decode_free(result);
     free(json_str);
 
     UNUSED(topic_len);

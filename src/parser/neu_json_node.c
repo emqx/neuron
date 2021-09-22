@@ -22,33 +22,19 @@
 #include "neu_json_node.h"
 #include "utils/json.h"
 
-#define NODE_TYPE "node_type"
-#define ADAPTER_NAME "adapter_name"
-#define PLUGIN_NAME "plugin_name"
-#define NDOE_ID "node_id"
-#define ID "id"
-#define NAME "name"
-#define NODES "nodes"
-
-int neu_parse_decode_add_nodes_req(char *                           buf,
-                                   struct neu_parse_add_nodes_req **result)
+int neu_parse_decode_add_node(char *buf, neu_parse_add_node_req_t **result)
 {
-    struct neu_parse_add_nodes_req *req =
-        calloc(1, sizeof(struct neu_parse_add_nodes_req));
-    neu_json_elem_t elem[] = { {
-                                   .name = NEU_PARSE_UUID,
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = NODE_TYPE,
+    neu_parse_add_node_req_t *req = calloc(1, sizeof(neu_parse_add_node_req_t));
+    neu_json_elem_t           elem[] = { {
+                                   .name = "node_type",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = ADAPTER_NAME,
+                                   .name = "node_name",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = PLUGIN_NAME,
+                                   .name = "plugin_name",
                                    .t    = NEU_JSON_STR,
                                } };
 
@@ -57,52 +43,29 @@ int neu_parse_decode_add_nodes_req(char *                           buf,
         free(req);
         return -1;
     }
-    req->function     = NEU_PARSE_OP_ADD_NODES;
-    req->uuid         = elem[0].v.val_str;
-    req->node_type    = elem[1].v.val_int;
-    req->adapter_name = elem[2].v.val_str;
-    req->plugin_name  = elem[3].v.val_str;
+    req->node_type   = elem[0].v.val_int;
+    req->node_name   = elem[1].v.val_str;
+    req->plugin_name = elem[2].v.val_str;
 
     *result = req;
 
     return 0;
 }
 
-int neu_parse_encode_add_nodes_res(struct neu_parse_add_nodes_res *res,
-                                   char **                         buf)
+void neu_parse_decode_add_node_free(neu_parse_add_node_req_t *req)
 {
-    neu_json_elem_t elems[] = { {
-                                    .name      = NEU_PARSE_FUNCTION,
-                                    .t         = NEU_JSON_INT,
-                                    .v.val_int = NEU_PARSE_OP_ADD_NODES,
-                                },
-                                {
-                                    .name      = NEU_PARSE_UUID,
-                                    .t         = NEU_JSON_STR,
-                                    .v.val_str = res->uuid,
-                                },
-                                {
-                                    .name      = NEU_PARSE_ERROR,
-                                    .t         = NEU_JSON_INT,
-                                    .v.val_int = res->error,
-                                } };
-
-    return neu_json_encode(elems, 3, buf);
+    free(req->node_name);
+    free(req->plugin_name);
+    free(req);
 }
 
-int neu_parse_decode_get_nodes_req(char *                           buf,
-                                   struct neu_parse_get_nodes_req **result)
+int neu_parse_decode_del_node(char *buf, neu_parse_del_node_req_t **result)
 {
-    struct neu_parse_get_nodes_req *req =
-        calloc(1, sizeof(struct neu_parse_get_nodes_req));
-    neu_json_elem_t elem[] = { {
-                                   .name = NEU_PARSE_UUID,
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = NODE_TYPE,
-                                   .t    = NEU_JSON_INT,
-                               } };
+    neu_parse_del_node_req_t *req = calloc(1, sizeof(neu_parse_del_node_req_t));
+    neu_json_elem_t           elem[] = { {
+        .name = "node_id",
+        .t    = NEU_JSON_INT,
+    } };
 
     int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
     if (ret != 0) {
@@ -110,153 +73,107 @@ int neu_parse_decode_get_nodes_req(char *                           buf,
         return -1;
     }
 
-    req->function  = NEU_PARSE_OP_GET_NODES;
-    req->uuid      = elem[0].v.val_str;
-    req->node_type = elem[1].v.val_int;
+    req->node_id = elem[0].v.val_int;
 
     *result = req;
 
     return 0;
 }
 
-int neu_parse_encode_get_nodes_res(struct neu_parse_get_nodes_res *res,
-                                   char **                         buf)
+void neu_parse_decode_del_node_free(neu_parse_del_node_req_t *req)
 {
-    void *array = NULL;
+    free(req);
+}
+
+int neu_parse_decode_update_node(char *                        buf,
+                                 neu_parse_update_node_req_t **result)
+{
+    neu_parse_update_node_req_t *req =
+        calloc(1, sizeof(neu_parse_update_node_req_t));
+    neu_json_elem_t elem[] = { {
+                                   .name = "node_type",
+                                   .t    = NEU_JSON_INT,
+                               },
+                               {
+                                   .name = "node_name",
+                                   .t    = NEU_JSON_STR,
+                               },
+                               {
+                                   .name = "plugin_name",
+                                   .t    = NEU_JSON_STR,
+                               } };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+    req->node_type   = elem[0].v.val_int;
+    req->node_name   = elem[1].v.val_str;
+    req->plugin_name = elem[2].v.val_str;
+
+    *result = req;
+
+    return 0;
+}
+
+void neu_parse_decode_update_node_free(neu_parse_update_node_req_t *req)
+{
+    free(req->node_name);
+    free(req->plugin_name);
+    free(req);
+}
+
+int neu_parse_decode_get_nodes(char *buf, neu_parse_get_nodes_req_t **result)
+{
+    neu_parse_get_nodes_req_t *req =
+        calloc(1, sizeof(neu_parse_get_nodes_req_t));
+    neu_json_elem_t elem[] = { {
+        .name = "node_type",
+        .t    = NEU_JSON_INT,
+    } };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+
+    req->node_type = elem[0].v.val_int;
+
+    *result = req;
+
+    return 0;
+}
+
+void neu_parse_decode_get_nodes_free(neu_parse_get_nodes_req_t *req)
+{
+    free(req);
+}
+
+int neu_parse_encode_get_nodes(void *json_object, void *param)
+{
+    neu_parse_get_nodes_res_t *res   = (neu_parse_get_nodes_res_t *) param;
+    void *                     array = NULL;
+
     for (int i = 0; i < res->n_node; i++) {
         neu_json_elem_t nodes[] = { {
-                                        .name      = NAME,
+                                        .name      = "name",
                                         .t         = NEU_JSON_STR,
                                         .v.val_str = res->nodes[i].name,
                                     },
                                     {
-                                        .name      = ID,
+                                        .name      = "id",
                                         .t         = NEU_JSON_INT,
                                         .v.val_int = res->nodes[i].id,
                                     } };
         array                   = neu_json_encode_array(array, nodes, 2);
     }
     neu_json_elem_t elems[] = { {
-                                    .name      = NEU_PARSE_FUNCTION,
-                                    .t         = NEU_JSON_INT,
-                                    .v.val_int = NEU_PARSE_OP_GET_NODES,
-                                },
-                                {
-                                    .name      = NEU_PARSE_UUID,
-                                    .t         = NEU_JSON_STR,
-                                    .v.val_str = res->uuid,
-                                },
-                                {
-                                    .name     = NODES,
-                                    .t        = NEU_JSON_OBJECT,
-                                    .v.object = array,
-                                } };
-    return neu_json_encode(elems, 3, buf);
-}
+        .name     = "nodes",
+        .t        = NEU_JSON_OBJECT,
+        .v.object = array,
+    } };
 
-int neu_parse_decode_delete_nodes_req(
-    char *buf, struct neu_parse_delete_nodes_req **result)
-{
-    struct neu_parse_delete_nodes_req *req =
-        calloc(1, sizeof(struct neu_parse_delete_nodes_req));
-    neu_json_elem_t elem[] = { {
-                                   .name = NEU_PARSE_UUID,
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = NDOE_ID,
-                                   .t    = NEU_JSON_INT,
-                               } };
-
-    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
-    if (ret != 0) {
-        free(req);
-        return -1;
-    }
-
-    req->function = NEU_PARSE_OP_DELETE_NODES;
-    req->uuid     = elem[0].v.val_str;
-    req->node_id  = elem[1].v.val_int;
-
-    *result = req;
-
-    return 0;
-}
-
-int neu_parse_encode_delete_nodes_res(struct neu_parse_delete_nodes_res *res,
-                                      char **                            buf)
-{
-    neu_json_elem_t elems[] = { { .name      = NEU_PARSE_FUNCTION,
-                                  .t         = NEU_JSON_INT,
-                                  .v.val_int = res->function },
-                                {
-                                    .name      = NEU_PARSE_UUID,
-                                    .t         = NEU_JSON_STR,
-                                    .v.val_str = res->uuid,
-                                },
-                                {
-                                    .name      = NEU_PARSE_ERROR,
-                                    .t         = NEU_JSON_INT,
-                                    .v.val_int = res->error,
-                                } };
-
-    return neu_json_encode(elems, 3, buf);
-}
-
-int neu_parse_decode_update_nodes_req(
-    char *buf, struct neu_parse_update_nodes_req **result)
-{
-    struct neu_parse_update_nodes_req *req =
-        calloc(1, sizeof(struct neu_parse_update_nodes_req));
-    neu_json_elem_t elem[] = { {
-                                   .name = NEU_PARSE_UUID,
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = NODE_TYPE,
-                                   .t    = NEU_JSON_INT,
-                               },
-                               {
-                                   .name = ADAPTER_NAME,
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = PLUGIN_NAME,
-                                   .t    = NEU_JSON_STR,
-                               } };
-
-    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
-    if (ret != 0) {
-        free(req);
-        return -1;
-    }
-    req->function     = NEU_PARSE_OP_UPDATE_NODES;
-    req->uuid         = elem[0].v.val_str;
-    req->node_type    = elem[1].v.val_int;
-    req->adapter_name = elem[2].v.val_str;
-    req->plugin_name  = elem[3].v.val_str;
-
-    *result = req;
-
-    return 0;
-}
-
-int neu_parse_encode_update_nodes_res(struct neu_parse_update_nodes_res *res,
-                                      char **                            buf)
-{
-    neu_json_elem_t elems[] = {
-        {
-            .name      = NEU_PARSE_FUNCTION,
-            .t         = NEU_JSON_INT,
-            .v.val_int = NEU_PARSE_OP_UPDATE_NODES,
-        },
-        { .name = NEU_PARSE_UUID, .t = NEU_JSON_STR, .v.val_str = res->uuid },
-        {
-            .name      = NEU_PARSE_ERROR,
-            .t         = NEU_JSON_INT,
-            .v.val_int = res->error,
-        }
-    };
-
-    return neu_json_encode(elems, 3, buf);
+    return neu_json_encode_field(json_object, elems, 1);
 }

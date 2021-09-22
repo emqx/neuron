@@ -27,82 +27,50 @@ extern "C" {
 #include <stdint.h>
 
 #include "neu_adapter.h"
-#include "neu_json_parser.h"
 
-struct neu_parse_add_nodes_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    neu_node_type_e         node_type;
-    char *                  adapter_name;
-    char *                  plugin_name;
-};
+typedef struct {
+    neu_node_type_e node_type;
+    char *          node_name;
+    char *          plugin_name;
+} neu_parse_add_node_req_t;
 
-struct neu_parse_add_nodes_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+int  neu_parse_decode_add_node(char *buf, neu_parse_add_node_req_t **result);
+void neu_parse_decode_add_node_free(neu_parse_add_node_req_t *req);
 
-struct neu_parse_get_nodes_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    neu_node_type_e         node_type;
-};
+typedef struct {
+    neu_node_type_e node_type;
+} neu_parse_get_nodes_req_t;
 
-struct neu_parse_get_nodes_res_nodes {
+typedef struct {
     uint32_t id;
     char *   name;
-};
+} neu_parse_get_nodes_res_node_t;
 
-struct neu_parse_get_nodes_res {
-    enum neu_parse_function               function;
-    char *                                uuid;
-    uint16_t                              n_node;
-    struct neu_parse_get_nodes_res_nodes *nodes;
-};
+typedef struct {
+    uint16_t                        n_node;
+    neu_parse_get_nodes_res_node_t *nodes;
+} neu_parse_get_nodes_res_t;
 
-struct neu_parse_delete_nodes_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    uint32_t                node_id;
-};
+int  neu_parse_decode_get_nodes(char *buf, neu_parse_get_nodes_req_t **result);
+void neu_parse_decode_get_nodes_free(neu_parse_get_nodes_req_t *req);
+int  neu_parse_encode_get_nodes(void *json_object, void *param);
 
-struct neu_parse_delete_nodes_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+typedef struct {
+    uint32_t node_id;
+} neu_parse_del_node_req_t;
 
-struct neu_parse_update_nodes_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    neu_node_type_e         node_type;
-    char *                  adapter_name;
-    char *                  plugin_name;
-};
+int  neu_parse_decode_del_node(char *buf, neu_parse_del_node_req_t **result);
+void neu_parse_decode_del_node_free(neu_parse_del_node_req_t *req);
 
-struct neu_parse_update_nodes_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+typedef struct {
+    neu_node_type_e node_type;
+    char *          node_name;
+    char *          plugin_name;
+} neu_parse_update_node_req_t;
 
-int neu_parse_decode_add_nodes_req(char *                           buf,
-                                   struct neu_parse_add_nodes_req **req);
-int neu_parse_encode_add_nodes_res(struct neu_parse_add_nodes_res *res,
-                                   char **                         buf);
-int neu_parse_decode_get_nodes_req(char *                           buf,
-                                   struct neu_parse_get_nodes_req **req);
-int neu_parse_encode_get_nodes_res(struct neu_parse_get_nodes_res *res,
-                                   char **                         buf);
-int neu_parse_decode_delete_nodes_req(char *                              buf,
-                                      struct neu_parse_delete_nodes_req **req);
-int neu_parse_encode_delete_nodes_res(struct neu_parse_delete_nodes_res *res,
-                                      char **                            buf);
-int neu_parse_decode_update_nodes_req(char *                              buf,
-                                      struct neu_parse_update_nodes_req **req);
-int neu_parse_encode_update_nodes_res(struct neu_parse_update_nodes_res *res,
-                                      char **                            buf);
+int  neu_parse_decode_update_node(char *                        buf,
+                                  neu_parse_update_node_req_t **result);
+void neu_parse_decode_update_node_free(neu_parse_update_node_req_t *req);
 
 #ifdef __cplusplus
 }

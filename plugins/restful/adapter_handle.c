@@ -22,8 +22,8 @@
 #include "vector.h"
 
 #include "neu_plugin.h"
+#include "parser/neu_json_fn.h"
 #include "parser/neu_json_node.h"
-#include "parser/neu_json_parser.h"
 
 #include "handle.h"
 #include "http.h"
@@ -34,59 +34,62 @@ void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_add_nodes_req, {
-        intptr_t err = neu_system_add_node(plugin, req->node_type,
-                                           req->adapter_name, req->plugin_name);
-        if (err != 0) {
-            http_bad_request(aio, "{\"error\": 1}");
-        } else {
-            http_ok(aio, "{\"error\": 0}");
-        }
-    })
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_add_node_req_t, neu_parse_decode_add_node, {
+            intptr_t err = neu_system_add_node(
+                plugin, req->node_type, req->node_name, req->plugin_name);
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
 }
 
 void handle_del_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_delete_nodes_req, {
-        intptr_t err = neu_system_del_node(plugin, req->node_id);
-        if (err != 0) {
-            http_bad_request(aio, "{\"error\": 1}");
-        } else {
-            http_ok(aio, "{\"error\": 0}");
-        }
-    })
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_del_node_req_t, neu_parse_decode_del_node, {
+            intptr_t err = neu_system_del_node(plugin, req->node_id);
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
 }
 
 void handle_update_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(aio, struct neu_parse_update_nodes_req, {
-        intptr_t err = neu_system_update_node(
-            plugin, req->node_type, req->adapter_name, req->plugin_name);
-        if (err != 0) {
-            http_bad_request(aio, "{\"error\": 1}");
-        } else {
-            http_ok(aio, "{\"error\": 0}");
-        }
-    })
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_update_node_req_t, neu_parse_decode_update_node, {
+            intptr_t err = neu_system_update_node(
+                plugin, req->node_type, req->node_name, req->plugin_name);
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
 }
 
 void handle_get_adapter(nng_aio *aio)
 {
-    neu_plugin_t *  plugin      = neu_rest_get_plugin();
-    char *          result      = NULL;
-    char *          s_node_type = http_get_param(aio, "node_type");
-    neu_node_type_e node_type   = (neu_node_type_e) atoi(s_node_type);
-    struct neu_parse_get_nodes_res nodes_res = { 0 };
-    int                            index     = 0;
-    vector_t nodes = neu_system_get_nodes(plugin, node_type);
+    neu_plugin_t *            plugin      = neu_rest_get_plugin();
+    char *                    result      = NULL;
+    char *                    s_node_type = http_get_param(aio, "node_type");
+    neu_node_type_e           node_type   = (neu_node_type_e) atoi(s_node_type);
+    neu_parse_get_nodes_res_t nodes_res   = { 0 };
+    int                       index       = 0;
+    vector_t                  nodes = neu_system_get_nodes(plugin, node_type);
 
     nodes_res.n_node = nodes.size;
     nodes_res.nodes =
-        calloc(nodes_res.n_node, sizeof(struct neu_parse_get_nodes_res_nodes));
+        calloc(nodes_res.n_node, sizeof(neu_parse_get_nodes_res_node_t));
 
     VECTOR_FOR_EACH(&nodes, iter)
     {
@@ -97,7 +100,7 @@ void handle_get_adapter(nng_aio *aio)
         index += 1;
     }
 
-    neu_parse_encode_get_nodes_res(&nodes_res, &result);
+    neu_json_encode_by_fn(&nodes_res, neu_parse_encode_get_nodes, &result);
 
     http_ok(aio, result);
 

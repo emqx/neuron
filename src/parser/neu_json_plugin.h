@@ -27,95 +27,55 @@ extern "C" {
 #include <stdint.h>
 
 #include "neu_adapter.h"
-#include "neu_json_parser.h"
 
-struct neu_parse_add_plugin_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-
+typedef struct {
     plugin_kind_e   kind;
     neu_node_type_e node_type;
     char *          plugin_name;
     char *          plugin_lib_name;
-};
+} neu_parse_add_plugin_req_t;
 
-struct neu_parse_add_plugin_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+int neu_parse_decode_add_plugin(char *buf, neu_parse_add_plugin_req_t **result);
+void neu_parse_decode_add_plugin_free(neu_parse_add_plugin_req_t *req);
 
-struct neu_parse_delete_plugin_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-    uint32_t                plugin_id;
-};
+typedef struct {
+    uint32_t plugin_id;
+} neu_parse_del_plugin_req_t;
 
-struct neu_parse_delete_plugin_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+int neu_parse_decode_del_plugin(char *buf, neu_parse_del_plugin_req_t **result);
+void neu_parse_decode_del_plugin_free(neu_parse_del_plugin_req_t *req);
 
-struct neu_parse_update_plugin_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-
+typedef struct {
     plugin_kind_e   kind;
     neu_node_type_e node_type;
     char *          plugin_name;
     char *          plugin_lib_name;
-};
+} neu_parse_update_plugin_req_t;
 
-struct neu_parse_update_plugin_res {
-    enum neu_parse_function function;
-    char *                  uuid;
-    int64_t                 error;
-};
+int  neu_parse_decode_update_plugin(char *                          buf,
+                                    neu_parse_update_plugin_req_t **result);
+void neu_parse_decode_update_plugin_free(neu_parse_update_plugin_req_t *req);
 
-struct neu_parse_get_plugin_req {
-    enum neu_parse_function function;
-    char *                  uuid;
-};
+typedef struct {
+} neu_parse_get_plugins_req_t;
 
-struct neu_parse_get_plugin_res_libs {
+typedef struct {
     uint32_t        plugin_id;
     plugin_kind_e   kind;
     neu_node_type_e node_type;
     char *          plugin_name;
     char *          plugin_lib_name;
-};
+} neu_parse_get_plugins_res_lib_t;
 
-struct neu_parse_get_plugin_res {
-    enum neu_parse_function               function;
-    char *                                uuid;
-    uint16_t                              n_plugin;
-    struct neu_parse_get_plugin_res_libs *plugin_libs;
-};
+typedef struct neu_parse_get_plugins_res {
+    uint16_t                         n_plugin;
+    neu_parse_get_plugins_res_lib_t *plugin_libs;
+} neu_parse_get_plugins_res_t;
 
-int neu_parse_decode_add_plugin_req(char *                            buf,
-                                    struct neu_parse_add_plugin_req **req);
-int neu_parse_encode_add_plugin_res(struct neu_parse_add_plugin_res *res,
-                                    char **                          buf);
-int neu_parse_decode_delete_plugin_req(
-    char *buf, struct neu_parse_delete_plugin_req **req);
-int neu_parse_encode_delete_plugin_res(struct neu_parse_delete_plugin_res *res,
-                                       char **                             buf);
-int neu_parse_decode_update_plugin_req(
-    char *buf, struct neu_parse_update_plugin_req **req);
-int neu_parse_encode_update_plugin_res(struct neu_parse_update_plugin_res *res,
-                                       char **                             buf);
-int neu_parse_decode_get_plugin_req(char *                            buf,
-                                    struct neu_parse_get_plugin_req **req);
-int neu_parse_encode_get_plugin_res(struct neu_parse_get_plugin_res *res,
-                                    char **                          buf);
-
-void neu_parse_decode_add_plugin_free(struct neu_parse_add_plugin_req *req);
-void neu_parse_decode_delete_plugin_free(
-    struct neu_parse_delete_plugin_req *req);
-void neu_parse_decode_update_plugin_free(
-    struct neu_parse_update_plugin_req *req);
-void neu_parse_decode_get_plugin_free(struct neu_parse_get_plugin_req *req);
+int  neu_parse_decode_get_plugins(char *                        buf,
+                                  neu_parse_get_plugins_req_t **result);
+void neu_parse_decode_get_plugins_free(neu_parse_get_plugins_req_t *req);
+int  neu_parse_encode_get_plugins(void *json_object, void *param);
 
 #ifdef __cplusplus
 }

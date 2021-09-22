@@ -17,16 +17,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_JSON_PARSE_H
-#define _NEU_JSON_PARSE_H
+#ifndef _NEU_JSON_MQTT_H
+#define _NEU_JSON_MQTT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdint.h>
-
-#include "neu_data_expr.h"
 
 typedef enum neu_mqtt_function {
     NEU_MQTT_OP_LOGIN = 1,
@@ -63,14 +61,14 @@ typedef enum neu_mqtt_function {
     NEU_MQTT_OP_DELETE_DATATAG_IDS_CONFIG,
 } neu_mqtt_function_e;
 
-typedef struct neu_json_mqtt_param {
-    neu_data_val_t *function;
-    neu_data_val_t *uuid;
-} neu_json_mqtt_param_t;
+typedef struct neu_parse_mqtt {
+    neu_mqtt_function_e function;
+    char *              uuid;
+} neu_parse_mqtt_t;
 
-int neu_json_decode_mqtt_param_req(char *buf, neu_json_mqtt_param_t *param);
-int neu_json_encode_mqtt_param_res(void *                 json_object,
-                                   neu_json_mqtt_param_t *param);
+int  neu_parse_decode_mqtt_param(char *buf, neu_parse_mqtt_t **req);
+void neu_parse_decode_mqtt_param_free(neu_parse_mqtt_t *req);
+int  neu_parse_encode_mqtt_param(void *json_object, void *param);
 
 #ifdef __cplusplus
 }
