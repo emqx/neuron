@@ -47,8 +47,6 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_ERR_CODE, // result code of command
     NEU_REQRESP_READ_DATA,
     NEU_REQRESP_WRITE_DATA,
-    NEU_REQRESP_START_PERIODIC_READ,
-    NEU_REQRESP_STOP_PERIODIC_READ,
     NEU_REQRESP_SUBSCRIBE_NODE,
     NEU_REQRESP_UNSUBSCRIBE_NODE,
     NEU_REQRESP_TRANS_DATA,
@@ -88,11 +86,17 @@ typedef struct neu_reqresp_write {
     neu_variable_t *     data_var;
 } neu_reqresp_write_t;
 
-/* NEU_REQRESP_START_PERIODIC_READ */
-typedef struct neu_reqresp_start_periodic_rd {
+/* NEU_REQRESP_SUBSCRIBE_NODE */
+typedef struct neu_reqresp_subscribe_node {
     neu_taggrp_config_t *grp_config;
     neu_node_id_t        dst_node_id;
-} neu_reqresp_start_periodic_rd_t;
+} neu_reqresp_subscribe_node_t;
+
+/* NEU_REQRESP_UNSUBSCRIBE_NODE */
+typedef struct neu_reqresp_unsubscribe_node {
+    neu_taggrp_config_t *grp_config;
+    neu_node_id_t        dst_node_id;
+} neu_reqresp_unsubscribe_node_t;
 
 /* NEU_REQRESP_TRANS_DATA */
 typedef struct neu_reqresp_data {

@@ -805,6 +805,7 @@ static int add_grp_config_to_adapter(adapter_reg_entity_t *reg_entity,
     return rv;
 }
 
+/*
 static int manager_add_config_by_name(neu_manager_t *   manager,
                                       config_add_cmd_t *cmd)
 {
@@ -825,19 +826,46 @@ add_config_by_name_exit:
     nng_mtx_unlock(manager->adapters_mtx);
     return rv;
 }
+*/
 
 static void add_default_grp_configs(neu_manager_t *manager)
 {
-    uint32_t             i;
-    config_add_cmd_t *   config_add_cmd;
-    neu_taggrp_config_t *grp_config;
+    uint32_t              i;
+    config_add_cmd_t *    config_add_cmd;
+    neu_taggrp_config_t * grp_config;
+    adapter_reg_entity_t *reg_entity;
 
     for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
         config_add_cmd = &default_config_add_cmds[i];
         grp_config     = neu_taggrp_cfg_new(config_add_cmd->config_name);
         neu_taggrp_cfg_set_interval(grp_config, config_add_cmd->read_interval);
         config_add_cmd->grp_config = grp_config;
-        manager_add_config_by_name(manager, config_add_cmd);
+        reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+                                              config_add_cmd->dst_adapter_name);
+        add_grp_config_to_adapter(reg_entity, grp_config);
+        sub_grp_config_with_adapter(manager, grp_config, reg_entity);
+    }
+    return;
+}
+
+static void remove_default_grp_configs(neu_manager_t *manager)
+{
+    uint32_t              i;
+    config_add_cmd_t *    config_add_cmd;
+    neu_taggrp_config_t * grp_config;
+    adapter_reg_entity_t *reg_entity;
+
+    for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
+        config_add_cmd = &default_config_add_cmds[i];
+        grp_config     = config_add_cmd->grp_config;
+
+        nng_mtx_lock(manager->adapters_mtx);
+        reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+                                              config_add_cmd->dst_adapter_name);
+        unsub_grp_config_with_adapter(manager, grp_config, reg_entity);
+        neu_datatag_mng_del_grp_config(reg_entity->datatag_manager,
+                                       config_add_cmd->config_name);
+        nng_mtx_unlock(manager->adapters_mtx);
     }
     return;
 }
@@ -1056,82 +1084,6 @@ static void manager_loop(void *arg)
             break;
         }
 
-            /* clang-format off
-        case MSG_CMD_START_PERIODIC_READ: {
-            size_t       msg_size;
-            nng_msg *    out_msg;
-            nng_pipe     msg_pipe;
-            adapter_id_t adapter_id;
-
-            start_periodic_read_cmd_t *cmd_ptr;
-            adapter_reg_entity_t *     reg_entity;
-
-            cmd_ptr = (start_periodic_read_cmd_t *) msg_get_buf_ptr(pay_msg);
-            nng_mtx_lock(manager->adapters_mtx);
-            adapter_id = neu_manager_adapter_id_from_node_id(
-                manager, cmd_ptr->dst_node_id);
-            reg_entity =
-                find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
-            msg_pipe = reg_entity->adapter_pipe;
-            nng_mtx_unlock(manager->adapters_mtx);
-            msg_size =
-                msg_inplace_data_get_size(sizeof(start_periodic_read_cmd_t));
-            rv = nng_msg_alloc(&out_msg, msg_size);
-            if (rv == 0) {
-                message_t *                msg_ptr;
-                start_periodic_read_cmd_t *out_cmd_ptr;
-                msg_ptr = (message_t *) nng_msg_body(out_msg);
-                msg_inplace_data_init(msg_ptr, MSG_CMD_START_PERIODIC_READ,
-                                      sizeof(start_periodic_read_cmd_t));
-                out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
-                memcpy(out_cmd_ptr, cmd_ptr, sizeof(start_periodic_read_cmd_t));
-                nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info(
-                    "Forward start periodic read command to driver pipe: %d",
-                    msg_pipe);
-                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
-            }
-            break;
-        }
-
-        case MSG_CMD_STOP_PERIODIC_READ: {
-            size_t       msg_size;
-            nng_msg *    out_msg;
-            nng_pipe     msg_pipe;
-            adapter_id_t adapter_id;
-
-            stop_periodic_read_cmd_t *cmd_ptr;
-            adapter_reg_entity_t *    reg_entity;
-
-            cmd_ptr = (stop_periodic_read_cmd_t *) msg_get_buf_ptr(pay_msg);
-            nng_mtx_lock(manager->adapters_mtx);
-            adapter_id = neu_manager_adapter_id_from_node_id(
-                manager, cmd_ptr->dst_node_id);
-            reg_entity =
-                find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
-            msg_pipe = reg_entity->adapter_pipe;
-            nng_mtx_unlock(manager->adapters_mtx);
-            msg_size =
-                msg_inplace_data_get_size(sizeof(stop_periodic_read_cmd_t));
-            rv = nng_msg_alloc(&out_msg, msg_size);
-            if (rv == 0) {
-                message_t *               msg_ptr;
-                stop_periodic_read_cmd_t *out_cmd_ptr;
-                msg_ptr = (message_t *) nng_msg_body(out_msg);
-                msg_inplace_data_init(msg_ptr, MSG_CMD_STOP_PERIODIC_READ,
-                                      sizeof(stop_periodic_read_cmd_t));
-                out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
-                memcpy(out_cmd_ptr, cmd_ptr, sizeof(stop_periodic_read_cmd_t));
-                nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info(
-                    "Forward stop periodic read command to driver pipe: %d",
-                    msg_pipe);
-                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
-            }
-            break;
-        }
-        clang-format on */
-
         case MSG_CMD_SUBSCRIBE_NODE: {
             size_t       msg_size;
             nng_msg *    out_msg;
@@ -1270,6 +1222,7 @@ static void manager_loop(void *arg)
     }
 
     log_info("End message loop of neu_manager");
+    remove_default_grp_configs(manager);
     stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
     nng_close(manager_bind->mng_sock);

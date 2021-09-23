@@ -240,11 +240,57 @@ static void adapter_loop(void *arg)
                 req.buf_len  = sizeof(neu_reqresp_data_t);
                 req.buf      = (void *) &data_req;
                 intf_funs->request(adapter->plugin, &req);
-                // TODO: free the data_var of neu_variable_t
+                neu_variable_destroy(data_req.data_var);
             } else {
                 neu_taggrp_cfg_free(databuf_ptr->grp_config);
             }
             core_databuf_put(databuf_ptr->databuf);
+            break;
+        }
+
+        case MSG_CMD_SUBSCRIBE_NODE: {
+            subscribe_node_cmd_t *cmd_ptr;
+            cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
+
+            const neu_plugin_intf_funs_t *intf_funs;
+            neu_request_t                 req;
+            if (adapter->plugin_module) {
+                neu_reqresp_subscribe_node_t sub_node_req;
+                sub_node_req.grp_config  = cmd_ptr->grp_config;
+                sub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+
+                intf_funs    = adapter->plugin_module->intf_funs;
+                req.req_id   = adapter_get_req_id(adapter);
+                req.req_type = NEU_REQRESP_SUBSCRIBE_NODE;
+                req.buf_len  = sizeof(neu_reqresp_subscribe_node_t);
+                req.buf      = (void *) &sub_node_req;
+                intf_funs->request(adapter->plugin, &req);
+            } else {
+                neu_taggrp_cfg_free(cmd_ptr->grp_config);
+            }
+            break;
+        }
+
+        case MSG_CMD_UNSUBSCRIBE_NODE: {
+            unsubscribe_node_cmd_t *cmd_ptr;
+            cmd_ptr = (unsubscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
+
+            const neu_plugin_intf_funs_t *intf_funs;
+            neu_request_t                 req;
+            if (adapter->plugin_module) {
+                neu_reqresp_unsubscribe_node_t unsub_node_req;
+                unsub_node_req.grp_config  = cmd_ptr->grp_config;
+                unsub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+
+                intf_funs    = adapter->plugin_module->intf_funs;
+                req.req_id   = adapter_get_req_id(adapter);
+                req.req_type = NEU_REQRESP_UNSUBSCRIBE_NODE;
+                req.buf_len  = sizeof(neu_reqresp_unsubscribe_node_t);
+                req.buf      = (void *) &unsub_node_req;
+                intf_funs->request(adapter->plugin, &req);
+            } else {
+                neu_taggrp_cfg_free(cmd_ptr->grp_config);
+            }
             break;
         }
 
@@ -291,7 +337,7 @@ static void adapter_loop(void *arg)
                 req.buf_len  = sizeof(neu_reqresp_write_t);
                 req.buf      = (void *) &write_req;
                 intf_funs->request(adapter->plugin, &req);
-                // TODO: free the data_var of neu_variable_t
+                neu_variable_destroy(write_req.data_var);
             } else {
                 neu_taggrp_cfg_free(cmd_ptr->grp_config);
             }
@@ -336,16 +382,23 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
 
     log_info("Get command from plugin %d", cmd->req_type);
     switch (cmd->req_type) {
-    case NEU_REQRESP_READ_DATA: {
-        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_READ_DATA, read_data_cmd_t,
-                         neu_reqresp_read_t, {});
+    case NEU_REQRESP_SUBSCRIBE_NODE: {
+        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_SUBSCRIBE_NODE,
+                         subscribe_node_cmd_t, neu_reqresp_subscribe_node_t,
+                         {});
         break;
     }
 
-    case NEU_REQRESP_START_PERIODIC_READ: {
-        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_START_PERIODIC_READ,
-                         start_periodic_read_cmd_t,
-                         neu_reqresp_start_periodic_rd_t, {});
+    case NEU_REQRESP_UNSUBSCRIBE_NODE: {
+        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_UNSUBSCRIBE_NODE,
+                         unsubscribe_node_cmd_t, neu_reqresp_unsubscribe_node_t,
+                         {});
+        break;
+    }
+
+    case NEU_REQRESP_READ_DATA: {
+        ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_READ_DATA, read_data_cmd_t,
+                         neu_reqresp_read_t, {});
         break;
     }
 
@@ -654,6 +707,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             neu_databuf->databuf    = databuf;
             nng_sendmsg(adapter->sock, read_msg, 0);
         }
+        neu_variable_destroy(neu_data->data_var);
         break;
     }
 

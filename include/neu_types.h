@@ -63,27 +63,56 @@ typedef bool (*neu_key_match_func)(const void *key, const void *item);
 /*
  * define functions for implement equal function for primitive value
  */
-#define prim_val_equal(locase_type, locase_type_t)                       \
+#define gen_prim_val_equal(locase_type, locase_type_t)                   \
     static inline bool locase_type##_equal(const void *a, const void *b) \
     {                                                                    \
         return *(locase_type_t *) (a) == *(locase_type_t *) (b);         \
     }
 
-#define prim_val_equal_t(locase_type) \
-    prim_val_equal(locase_type, locase_type##_t)
+#define gen_prim_val_equal_t(locase_type) \
+    gen_prim_val_equal(locase_type, locase_type##_t)
 
-prim_val_equal_t(int8);
-prim_val_equal_t(int16);
-prim_val_equal_t(int32);
-prim_val_equal_t(int64);
+gen_prim_val_equal_t(int8);  // generate function int8_equal
+gen_prim_val_equal_t(int16); // generate function int16_equal
+gen_prim_val_equal_t(int32); // generate function int32_equal
+gen_prim_val_equal_t(int64); // generate function int64_equal
 
-prim_val_equal_t(uint8);
-prim_val_equal_t(uint16);
-prim_val_equal_t(uint32);
-prim_val_equal_t(uint64);
+gen_prim_val_equal_t(uint8);  // generate function uint8_equal
+gen_prim_val_equal_t(uint16); // generate function uint16_equal
+gen_prim_val_equal_t(uint32); // generate function uint32_equal
+gen_prim_val_equal_t(uint64); // generate function uint64_equal
 
-prim_val_equal(float, float);
-prim_val_equal(double, double);
+gen_prim_val_equal(float, float);   // generate function float_equal
+gen_prim_val_equal(double, double); // generate function double_equal
+
+/*
+ * define functions for implement compare function for primitive value
+ */
+#define gen_prim_val_compare(locase_type, locase_type_t)                   \
+    static inline bool locase_type##_compare(const void *a, const void *b) \
+    {                                                                      \
+        locase_type_t val_a = *(locase_type_t *) (a);                      \
+        locase_type_t val_b = *(locase_type_t *) (b);                      \
+        return val_a == val_b ? NEU_ORDER_EQ                               \
+            : val_a > val_b   ? NEU_ORDER_MORE                             \
+                              : NEU_ORDER_LESS;                              \
+    }
+
+#define gen_prim_val_compare_t(locase_type) \
+    gen_prim_val_compare(locase_type, locase_type##_t)
+
+gen_prim_val_compare_t(int8);  // generate function int8_compare
+gen_prim_val_compare_t(int16); // generate function int16_compare
+gen_prim_val_compare_t(int32); // generate function int32_compare
+gen_prim_val_compare_t(int64); // generate function int64_compare
+
+gen_prim_val_compare_t(uint8);  // generate function uint8_compare
+gen_prim_val_compare_t(uint16); // generate function uint16_compare
+gen_prim_val_compare_t(uint32); // generate function uint32_compare
+gen_prim_val_compare_t(uint64); // generate function uint64_compare
+
+gen_prim_val_compare(float, float);   // generate function float_compare
+gen_prim_val_compare(double, double); // generate function double_compare
 
 /**
  * Boolean
