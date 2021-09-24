@@ -3,39 +3,143 @@
 #include "neu_data_expr.h"
 #include "neu_types.h"
 
-TEST(DataValueTest, neu_dvalue_set_get_int8)
+TEST(DataValueTest, neu_dvalue_init_set_get_prim_val)
 {
-    neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_INT8);
-    int             rc  = neu_dvalue_set_int8(val, 16);
-    EXPECT_EQ(0, rc);
-    int8_t ret;
-    rc = neu_dvalue_get_int8(val, &ret);
-    EXPECT_EQ(0, rc);
-    EXPECT_EQ(16, ret);
-    neu_dvalue_free(val);
-}
+    neu_data_val_t *val;
 
-TEST(DataValueTest, neu_dvalue_set_get_int64)
-{
-    neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_INT64);
-    int             rc  = neu_dvalue_set_int64(val, 100010111010);
-    EXPECT_EQ(0, rc);
-    int64_t ret;
-    rc = neu_dvalue_get_int64(val, &ret);
-    EXPECT_EQ(0, rc);
-    EXPECT_EQ(100010111010, ret);
-    neu_dvalue_free(val);
-}
+    int8_t  ret_int8;
+    int16_t ret_int16;
+    int32_t ret_int32;
+    int64_t ret_int64;
 
-TEST(DataValueTest, neu_dvalue_set_get_double)
-{
-    neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
-    int             rc  = neu_dvalue_set_double(val, 100010111010.010603);
-    EXPECT_EQ(0, rc);
-    double ret;
-    rc = neu_dvalue_get_double(val, &ret);
-    EXPECT_EQ(0, rc);
-    EXPECT_EQ(100010111010.010603, ret);
+    uint8_t  ret_uint8;
+    uint16_t ret_uint16;
+    uint32_t ret_uint32;
+    uint64_t ret_uint64;
+
+    float  ret_float;
+    double ret_double;
+    bool   b;
+
+    /** test bool **/
+    val = neu_dvalue_new(NEU_DTYPE_BOOL);
+    neu_dvalue_init_bool(val, true);
+    EXPECT_EQ(0, neu_dvalue_get_bool(val, &b));
+    EXPECT_EQ(true, b);
+
+    neu_dvalue_set_bool(val, false);
+    EXPECT_EQ(0, neu_dvalue_get_bool(val, &b));
+    EXPECT_EQ(false, b);
+    neu_dvalue_free(val);
+
+    /** test int8 **/
+    val = neu_dvalue_new(NEU_DTYPE_INT8);
+    neu_dvalue_init_int8(val, 16);
+    EXPECT_EQ(0, neu_dvalue_get_int8(val, &ret_int8));
+    EXPECT_EQ(16, ret_int8);
+
+    neu_dvalue_set_int8(val, 17);
+    EXPECT_EQ(0, neu_dvalue_get_int8(val, &ret_int8));
+    EXPECT_EQ(17, ret_int8);
+    neu_dvalue_free(val);
+
+    /** test int16 **/
+    val = neu_dvalue_new(NEU_DTYPE_INT16);
+    neu_dvalue_init_int16(val, 4096);
+    EXPECT_EQ(0, neu_dvalue_get_int16(val, &ret_int16));
+    EXPECT_EQ(4096, ret_int16);
+
+    neu_dvalue_set_int16(val, 32767);
+    EXPECT_EQ(0, neu_dvalue_get_int16(val, &ret_int16));
+    EXPECT_EQ(32767, ret_int16);
+    neu_dvalue_free(val);
+
+    /** test int32 **/
+    val = neu_dvalue_new(NEU_DTYPE_INT32);
+    neu_dvalue_init_int32(val, 268435456);
+    EXPECT_EQ(0, neu_dvalue_get_int32(val, &ret_int32));
+    EXPECT_EQ(268435456, ret_int32);
+
+    neu_dvalue_set_int32(val, 268435457);
+    EXPECT_EQ(0, neu_dvalue_get_int32(val, &ret_int32));
+    EXPECT_EQ(268435457, ret_int32);
+    neu_dvalue_free(val);
+
+    /** test int64 **/
+    val = neu_dvalue_new(NEU_DTYPE_INT64);
+    neu_dvalue_init_int64(val, 100010111010);
+    EXPECT_EQ(0, neu_dvalue_get_int64(val, &ret_int64));
+    EXPECT_EQ(100010111010, ret_int64);
+
+    neu_dvalue_set_int64(val, 100010111011);
+    EXPECT_EQ(0, neu_dvalue_get_int64(val, &ret_int64));
+    EXPECT_EQ(100010111011, ret_int64);
+    neu_dvalue_free(val);
+
+    /** test uint8**/
+    val = neu_dvalue_new(NEU_DTYPE_UINT8);
+    neu_dvalue_init_uint8(val, 16);
+    EXPECT_EQ(0, neu_dvalue_get_uint8(val, &ret_uint8));
+    EXPECT_EQ(16, ret_uint8);
+
+    neu_dvalue_set_uint8(val, 17);
+    EXPECT_EQ(0, neu_dvalue_get_uint8(val, &ret_uint8));
+    EXPECT_EQ(17, ret_uint8);
+    neu_dvalue_free(val);
+
+    /** test uint16**/
+    val = neu_dvalue_new(NEU_DTYPE_UINT16);
+    neu_dvalue_init_uint16(val, 4096);
+    EXPECT_EQ(0, neu_dvalue_get_uint16(val, &ret_uint16));
+    EXPECT_EQ(4096, ret_uint16);
+
+    neu_dvalue_set_uint16(val, 65535);
+    EXPECT_EQ(0, neu_dvalue_get_uint16(val, &ret_uint16));
+    EXPECT_EQ(65535, ret_uint16);
+    neu_dvalue_free(val);
+
+    /** test uint32 **/
+    val = neu_dvalue_new(NEU_DTYPE_UINT32);
+    neu_dvalue_init_uint32(val, 268435456);
+    EXPECT_EQ(0, neu_dvalue_get_uint32(val, &ret_uint32));
+    EXPECT_EQ(268435456, ret_uint32);
+
+    neu_dvalue_set_uint32(val, 268435457);
+    EXPECT_EQ(0, neu_dvalue_get_uint32(val, &ret_uint32));
+    EXPECT_EQ(268435457, ret_uint32);
+    neu_dvalue_free(val);
+
+    /** test uint64 **/
+    val = neu_dvalue_new(NEU_DTYPE_UINT64);
+    neu_dvalue_init_uint64(val, 100010111010);
+    EXPECT_EQ(0, neu_dvalue_get_uint64(val, &ret_uint64));
+    EXPECT_EQ(100010111010, ret_uint64);
+
+    neu_dvalue_set_uint64(val, 100010111011);
+    EXPECT_EQ(0, neu_dvalue_get_uint64(val, &ret_uint64));
+    EXPECT_EQ(100010111011, ret_uint64);
+    neu_dvalue_free(val);
+
+    /** test float **/
+    val = neu_dvalue_new(NEU_DTYPE_FLOAT);
+    neu_dvalue_init_float(val, (float) 100.101);
+    EXPECT_EQ(0, neu_dvalue_get_float(val, &ret_float));
+    EXPECT_EQ((float) 100.101, ret_float);
+
+    neu_dvalue_set_float(val, (float) 101.101);
+    EXPECT_EQ(0, neu_dvalue_get_float(val, &ret_float));
+    EXPECT_EQ((float) 101.101, ret_float);
+    neu_dvalue_free(val);
+
+    /** test double **/
+    val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
+    neu_dvalue_init_double(val, 100010111010.010603);
+    EXPECT_EQ(0, neu_dvalue_get_double(val, &ret_double));
+    EXPECT_EQ(100010111010.010603, ret_double);
+
+    neu_dvalue_set_double(val, 100010111010.010604);
+    EXPECT_EQ(0, neu_dvalue_get_double(val, &ret_double));
+    EXPECT_EQ(100010111010.010604, ret_double);
     neu_dvalue_free(val);
 }
 
@@ -111,20 +215,25 @@ TEST(DataValueTest, neu_dvalue_set_get_cstr)
     neu_dvalue_free(val);
 }
 
-TEST(DataValueTest, neu_dvalue_set_get_bytes)
-{
-    // neu_data_val_t *val = neu_dvalue_inplace_new(NEU_DTYPE_BIT, sizeof());
-    neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_BYTES);
-    neu_bytes_t *   bytes_set;
-    bytes_set = neu_bytes_new(16);
-    neu_dvalue_set_bytes(val, bytes_set);
+// TEST(DataValueTest, neu_dvalue_set_get_bytes)
+// {
+//     // neu_data_val_t *val = neu_dvalue_inplace_new(NEU_DTYPE_BIT, sizeof());
+//     neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_BYTES);
+//     neu_bytes_t *   set_bytes;
+//     neu_bytes_t **  get_bytes;
+//     int             rc;
 
-    // neu_fixed_(bytes_set);
-    // neu_fixed_array_free(array_get_ref);
-    neu_bytes_free(bytes_set);
-    neu_dvalue_free(val);
-    // neu_dvalue_get_bytes();
-}
+//     set_bytes = neu_bytes_new(16);
+//     rc        = neu_dvalue_set_bytes(val, set_bytes);
+//     EXPECT_EQ(0, rc);
+//     neu_dvalue_get_bytes(val, get_bytes);
+
+//     // neu_fixed_(bytes_set);
+//     // neu_fixed_array_free(array_get_ref);
+//     neu_bytes_free(set_bytes);
+//     neu_dvalue_free(val);
+//     // neu_dvalue_get_bytes();
+// }
 
 TEST(DataValueTest, neu_dvalue_set_get_array)
 {
