@@ -1488,7 +1488,7 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->node_id);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
         log_error("Can't find matched src registered adapter");
@@ -1551,7 +1551,7 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
     }
 
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->node_id);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
         log_error("Can't find matched src or dst registered adapter");

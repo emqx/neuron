@@ -33,11 +33,7 @@ int neu_parse_decode_add_group_config(char *                             buf,
 
     neu_json_elem_t elem[] = {
         {
-            .name = "src_node_id",
-            .t    = NEU_JSON_INT,
-        },
-        {
-            .name = "dst_node_id",
+            .name = "node_id",
             .t    = NEU_JSON_INT,
         },
         {
@@ -55,10 +51,9 @@ int neu_parse_decode_add_group_config(char *                             buf,
         free(req);
         return -1;
     }
-    req->src_node_id = elem[0].v.val_int;
-    req->dst_node_id = elem[1].v.val_int;
-    req->interval    = elem[2].v.val_int;
-    req->name        = elem[3].v.val_str;
+    req->node_id  = elem[0].v.val_int;
+    req->interval = elem[1].v.val_int;
+    req->name     = elem[2].v.val_str;
 
     *result = req;
     return 0;
@@ -83,11 +78,7 @@ int neu_parse_decode_update_group_config(
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "src_node_id",
-                                   .t    = NEU_JSON_INT,
-                               },
-                               {
-                                   .name = "dst_node_id",
+                                   .name = "node_id",
                                    .t    = NEU_JSON_INT,
                                },
                                {
@@ -100,10 +91,9 @@ int neu_parse_decode_update_group_config(
         free(req);
         return -1;
     }
-    req->name        = elem[0].v.val_str;
-    req->src_node_id = elem[1].v.val_int;
-    req->dst_node_id = elem[2].v.val_int;
-    req->interval    = elem[3].v.val_int;
+    req->name     = elem[0].v.val_str;
+    req->node_id  = elem[1].v.val_int;
+    req->interval = elem[2].v.val_int;
 
     *result = req;
     return 0;

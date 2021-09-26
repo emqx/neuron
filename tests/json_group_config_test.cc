@@ -54,8 +54,7 @@ TEST(TagGroupConfigTest, neu_parse_encode_get_group_config_res)
 TEST(TagGroupConfigTest, neu_parse_decode_add_group_config_req)
 {
     char *buf = (char *) "{\"name\":\"Config0\", "
-                         "\"src_node_id\":123456, "
-                         "\"dst_node_id\":654321, "
+                         "\"node_id\":123456, "
                          "\"interval\": 2000 "
                          " }";
 
@@ -64,8 +63,7 @@ TEST(TagGroupConfigTest, neu_parse_decode_add_group_config_req)
     EXPECT_EQ(0, neu_parse_decode_add_group_config(buf, &req));
 
     EXPECT_STREQ("Config0", req->name);
-    EXPECT_EQ(123456, req->src_node_id);
-    EXPECT_EQ(654321, req->dst_node_id);
+    EXPECT_EQ(123456, req->node_id);
     EXPECT_EQ(2000, req->interval);
 
     neu_parse_decode_add_group_config_free(req);
@@ -74,8 +72,7 @@ TEST(TagGroupConfigTest, neu_parse_decode_add_group_config_req)
 TEST(TagGroupConfigTest, neu_parse_decode_update_group_config_req)
 {
     char *buf = (char *) "{\"name\":\"Config0\", "
-                         "\"src_node_id\":123456, "
-                         "\"dst_node_id\":654321, "
+                         "\"node_id\":123456, "
                          "\"interval\": 2000 "
                          " }";
 
@@ -84,8 +81,7 @@ TEST(TagGroupConfigTest, neu_parse_decode_update_group_config_req)
     EXPECT_EQ(0, neu_parse_decode_update_group_config(buf, &req));
 
     EXPECT_STREQ("Config0", req->name);
-    EXPECT_EQ(123456, req->src_node_id);
-    EXPECT_EQ(654321, req->dst_node_id);
+    EXPECT_EQ(123456, req->node_id);
     EXPECT_EQ(2000, req->interval);
 
     neu_parse_decode_update_group_config_free(req);

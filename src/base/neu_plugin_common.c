@@ -180,16 +180,14 @@ vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type)
 }
 
 intptr_t neu_system_add_group_config(neu_plugin_t *       plugin,
-                                     neu_node_id_t        src_node_id,
-                                     neu_node_id_t        dst_node_id,
+                                     neu_node_id_t        node_id,
                                      neu_taggrp_config_t *grp_config)
 {
     intptr_t                 errorcode          = -1;
     neu_cmd_add_grp_config_t grp_config_add_cmd = { 0 };
 
-    grp_config_add_cmd.dst_node_id = dst_node_id;
-    grp_config_add_cmd.grp_config  = grp_config;
-    grp_config_add_cmd.src_node_id = src_node_id;
+    grp_config_add_cmd.grp_config = grp_config;
+    grp_config_add_cmd.node_id    = node_id;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_ADD_GRP_CONFIG, grp_config_add_cmd,
                     intptr_t, { errorcode = (intptr_t) resp; })
@@ -213,16 +211,14 @@ intptr_t neu_system_del_group_config(neu_plugin_t *plugin,
 }
 
 intptr_t neu_system_update_group_config(neu_plugin_t *       plugin,
-                                        neu_node_id_t        src_node_id,
-                                        neu_node_id_t        dst_node_id,
+                                        neu_node_id_t        node_id,
                                         neu_taggrp_config_t *grp_config)
 {
     intptr_t                    errorcode             = -1;
     neu_cmd_update_grp_config_t grp_config_update_cmd = { 0 };
 
-    grp_config_update_cmd.src_node_id = src_node_id;
-    grp_config_update_cmd.dst_node_id = dst_node_id;
-    grp_config_update_cmd.grp_config  = grp_config;
+    grp_config_update_cmd.node_id    = node_id;
+    grp_config_update_cmd.grp_config = grp_config;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_UPDATE_GRP_CONFIG,
                     grp_config_update_cmd, intptr_t,
