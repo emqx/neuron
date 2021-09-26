@@ -118,8 +118,6 @@ static void start_periodic_read(neu_plugin_t *       plugin,
 
     modbus_point_new_cmd(sub_inst->point_ctx);
 
-    log_info("pre start periodic read, grp: %s(%p), interval: %d",
-             sub_inst->name, grp_config, interval);
     pthread_mutex_lock(&plugin->mtx);
     TAILQ_INSERT_TAIL(&plugin->sub_instances, sub_inst, node);
     pthread_mutex_unlock(&plugin->mtx);
@@ -251,6 +249,7 @@ static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
     plugin->common.state             = NEURON_PLUGIN_STATE_NULL;
+    TAILQ_INIT(&plugin->sub_instances);
 
     return plugin;
 }
