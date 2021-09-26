@@ -169,6 +169,7 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         return -1;
     }
 
+    log_info("plugin context is %p", plugin->handle_context);
     if (NULL == plugin->handle_context->table) {
         plugin->handle_context->table = neu_system_get_datatags_table(
             plugin, plugin->handle_context->self_node_id);

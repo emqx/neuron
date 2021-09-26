@@ -387,19 +387,22 @@ static int handle_trans_data_value(neu_data_val_t *trans_val)
     neu_data_val_t *val_i64;
     neu_data_val_t *val_f64;
     neu_data_val_t *val_cstr;
-    int64_t         tag001;
-    double          tag002;
+    int64_t         i64;
+    double          f64;
     char *          cstr;
 
     int_val = neu_fixed_array_get(array, 0);
     val_i64 = int_val->val;
-    neu_dvalue_get_int64(val_i64, &tag001);
+    neu_dvalue_get_int64(val_i64, &i64);
     int_val = neu_fixed_array_get(array, 1);
     val_f64 = int_val->val;
-    neu_dvalue_get_double(val_f64, &tag002);
+    neu_dvalue_get_double(val_f64, &f64);
     int_val  = neu_fixed_array_get(array, 2);
     val_cstr = int_val->val;
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
+
+    log_info("The sample driver read data, i64: %d, f64: %f, cstr: %s", i64,
+             f64, cstr);
     return 0;
 }
 

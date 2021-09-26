@@ -118,6 +118,8 @@ static void start_periodic_read(neu_plugin_t *       plugin,
 
     modbus_point_new_cmd(sub_inst->point_ctx);
 
+    log_info("pre start periodic read, grp: %s(%p), interval: %d",
+             sub_inst->name, grp_config, interval);
     pthread_mutex_lock(&plugin->mtx);
     TAILQ_INSERT_TAIL(&plugin->sub_instances, sub_inst, node);
     pthread_mutex_unlock(&plugin->mtx);

@@ -26,9 +26,9 @@
 const neu_plugin_module_t neu_plugin_module;
 
 #define TAG_DATA_STR_LEN 100
-static int64_t tag001;
-static double  tag002;
-static char    tag003[TAG_DATA_STR_LEN + 1];
+static int64_t tag001                       = 42;
+static double  tag002                       = 2.718281828;
+static char    tag003[TAG_DATA_STR_LEN + 1] = "Hello, sample app";
 
 struct neu_plugin {
     neu_plugin_common_t common;

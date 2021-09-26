@@ -258,7 +258,7 @@ static const plugin_reg_param_t default_plugin_infos[] = {
 typedef struct config_add_cmd {
     char *               config_name;
     char *               src_adapter_name;
-    char *               dst_adapter_name;
+    char *               sub_adapter_name;
     uint32_t             read_interval;
     neu_taggrp_config_t *grp_config;
 } config_add_cmd_t;
@@ -268,42 +268,42 @@ static config_add_cmd_t default_config_add_cmds[] = {
     {
         .config_name      = "config_drv_sample",
         .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .dst_adapter_name = SAMPLE_APP_ADAPTER_NAME,
+        .sub_adapter_name = SAMPLE_APP_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
     {
         .config_name      = "config_app_sample",
         .src_adapter_name = SAMPLE_APP_ADAPTER_NAME,
-        .dst_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
+        .sub_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
     {
         .config_name      = "config_mqtt_sample",
         .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .dst_adapter_name = MQTT_ADAPTER_NAME,
+        .sub_adapter_name = MQTT_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
     {
         .config_name      = "config_modbus_tcp_sample",
         .src_adapter_name = SAMPLE_APP_ADAPTER_NAME,
-        .dst_adapter_name = MODBUS_TCP_ADAPTER_NAME,
+        .sub_adapter_name = MODBUS_TCP_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
     {
         .config_name      = "config_modbus_tcp_sample_2",
         .src_adapter_name = MODBUS_TCP_ADAPTER_NAME,
-        .dst_adapter_name = MQTT_ADAPTER_NAME,
+        .sub_adapter_name = MQTT_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
     {
         .config_name      = "config_opcua_sample",
         .src_adapter_name = OPCUA_ADAPTER_NAME,
-        .dst_adapter_name = MQTT_ADAPTER_NAME,
+        .sub_adapter_name = MQTT_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
@@ -833,17 +833,47 @@ static void add_default_grp_configs(neu_manager_t *manager)
     uint32_t              i;
     config_add_cmd_t *    config_add_cmd;
     neu_taggrp_config_t * grp_config;
-    adapter_reg_entity_t *reg_entity;
+    adapter_reg_entity_t *src_reg_entity;
+    adapter_reg_entity_t *sub_reg_entity;
+
+    size_t   msg_size;
+    nng_msg *out_msg;
+    int      need_send;
+    int      rv;
 
     for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
         config_add_cmd = &default_config_add_cmds[i];
         grp_config     = neu_taggrp_cfg_new(config_add_cmd->config_name);
         neu_taggrp_cfg_set_interval(grp_config, config_add_cmd->read_interval);
         config_add_cmd->grp_config = grp_config;
-        reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
-                                              config_add_cmd->dst_adapter_name);
-        add_grp_config_to_adapter(reg_entity, grp_config);
-        sub_grp_config_with_adapter(manager, grp_config, reg_entity);
+        src_reg_entity             = find_reg_adapter_by_name(
+            &manager->reg_adapters, config_add_cmd->src_adapter_name);
+        sub_reg_entity = find_reg_adapter_by_name(
+            &manager->reg_adapters, config_add_cmd->sub_adapter_name);
+        add_grp_config_to_adapter(src_reg_entity, grp_config);
+        need_send =
+            sub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
+
+        /* Send the subscribe node message to driver
+         */
+        msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
+        rv       = nng_msg_alloc(&out_msg, msg_size);
+        if (rv == 0 && need_send == 1) {
+            message_t *           msg_ptr;
+            subscribe_node_cmd_t *out_cmd_ptr;
+            msg_ptr = (message_t *) nng_msg_body(out_msg);
+            msg_inplace_data_init(msg_ptr, MSG_CMD_SUBSCRIBE_NODE,
+                                  sizeof(subscribe_node_cmd_t));
+            out_cmd_ptr              = msg_get_buf_ptr(msg_ptr);
+            out_cmd_ptr->grp_config  = grp_config;
+            out_cmd_ptr->sender_id   = 0;
+            out_cmd_ptr->dst_node_id = neu_manager_adapter_id_to_node_id(
+                manager, src_reg_entity->adapter_id);
+            nng_msg_set_pipe(out_msg, src_reg_entity->adapter_pipe);
+            log_info("Send subscribe driver command to driver pipe: %d",
+                     src_reg_entity->adapter_pipe);
+            nng_sendmsg(manager->bind_info.mng_sock, out_msg, 0);
+        }
     }
     return;
 }
@@ -853,19 +883,26 @@ static void remove_default_grp_configs(neu_manager_t *manager)
     uint32_t              i;
     config_add_cmd_t *    config_add_cmd;
     neu_taggrp_config_t * grp_config;
-    adapter_reg_entity_t *reg_entity;
+    adapter_reg_entity_t *src_reg_entity;
+    adapter_reg_entity_t *sub_reg_entity;
 
     for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
         config_add_cmd = &default_config_add_cmds[i];
         grp_config     = config_add_cmd->grp_config;
 
         nng_mtx_lock(manager->adapters_mtx);
-        reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
-                                              config_add_cmd->dst_adapter_name);
-        unsub_grp_config_with_adapter(manager, grp_config, reg_entity);
-        neu_datatag_mng_del_grp_config(reg_entity->datatag_manager,
+        src_reg_entity = find_reg_adapter_by_name(
+            &manager->reg_adapters, config_add_cmd->src_adapter_name);
+        sub_reg_entity = find_reg_adapter_by_name(
+            &manager->reg_adapters, config_add_cmd->sub_adapter_name);
+        unsub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
+        neu_datatag_mng_del_grp_config(src_reg_entity->datatag_manager,
                                        config_add_cmd->config_name);
         nng_mtx_unlock(manager->adapters_mtx);
+
+        /* The neuron manager should be shutdown, so there is no need to
+         * send the unsubscribe node message to driver.
+         */
     }
     return;
 }
