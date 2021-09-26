@@ -293,7 +293,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_reqresp_data_t *neu_data;
         assert(req->buf_len == sizeof(neu_reqresp_data_t));
         neu_data                 = (neu_reqresp_data_t *) req->buf;
-        neu_variable_t *variable = neu_data->data_var;
+        neu_variable_t *variable = NULL; // neu_data->data_var;
         size_t          count    = neu_variable_count(variable);
         log_debug("variable count: %ld", count);
         if (0 < count) {
@@ -306,7 +306,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_reqresp_data_t *neu_data;
         assert(req->buf_len == sizeof(neu_reqresp_data_t));
         neu_data                 = (neu_reqresp_data_t *) req->buf;
-        neu_variable_t *variable = neu_data->data_var;
+        neu_variable_t *variable = NULL; // neu_data->data_var;
         size_t          count    = neu_variable_count(variable);
         if (0 < count) { }
         break;

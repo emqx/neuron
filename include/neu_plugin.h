@@ -103,10 +103,10 @@ uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
                                   neu_taggrp_config_t *grp_configs);
 uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
                                    neu_taggrp_config_t *grp_configs,
-                                   neu_variable_t *     data);
+                                   neu_data_val_t *     data);
 void     neu_plugin_response_trans_data(neu_plugin_t *       plugin,
                                         neu_taggrp_config_t *grp_config,
-                                        neu_variable_t *data, uint32_t event_id);
+                                        neu_data_val_t *data, uint32_t event_id);
 neu_node_id_t neu_plugin_self_node_id(neu_plugin_t *plugin);
 
 intptr_t neu_system_add_plugin(neu_plugin_t *plugin, plugin_kind_e kind,

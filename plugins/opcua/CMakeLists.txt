@@ -11,5 +11,9 @@ target_include_directories(plugin-opcua PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 )
 
-target_link_libraries(plugin-opcua neuron-base open62541 ssl crypto yaml nng)
-target_link_libraries(plugin-opcua ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(plugin-opcua neuron-base open62541 ssl crypto yaml)
+if(APPLE)
+target_link_libraries(plugin-opcua nng::nng ${CMAKE_THREAD_LIBS_INIT})
+else()
+target_link_libraries(plugin-opcua nng ${CMAKE_THREAD_LIBS_INIT})
+endif()

@@ -173,7 +173,19 @@ static inline void neu_string_val_move(neu_string_val_t *dst,
     return;
 }
 
-neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type);
+static inline neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type)
+{
+    neu_dtype_e ret_type;
+    ret_type = (neu_dtype_e) (type & (NEU_DTYPE_FLAGS_START - 1));
+    return ret_type;
+}
+
+static inline neu_dtype_e neu_flags_type_in_dtype(neu_dtype_e type)
+{
+    neu_dtype_e ret_type;
+    ret_type = (neu_dtype_e) (type & ~(NEU_DTYPE_FLAGS_START - 1));
+    return ret_type;
+}
 
 neu_dtype_e neu_dvalue_get_type(neu_data_val_t *val);
 
@@ -354,8 +366,9 @@ int neu_dvalue_get_move_vec(neu_data_val_t *val, vector_t **p_vec);
 /*
  * declare functions for serialize and deserialize
  */
-int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf);
-int neu_dvalue_desialize(uint8_t *buf, neu_data_val_t **p_val);
+ssize_t neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf);
+ssize_t neu_dvalue_desialize(uint8_t *buf, size_t buf_len,
+                             neu_data_val_t **p_val);
 
 /*
  * declare functions for int-value and string-value pair

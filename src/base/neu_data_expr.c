@@ -100,16 +100,6 @@ static neu_data_val_t *data_val_base_new(neu_dtype_e type, size_t size,
     return val;
 }
 
-neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type)
-{
-    return type & (NEU_DTYPE_FLAGS_START - 1);
-}
-
-neu_dtype_e neu_flags_type_in_dtype(neu_dtype_e type)
-{
-    return type & ~(NEU_DTYPE_FLAGS_START - 1);
-}
-
 neu_dtype_e neu_dvalue_get_type(neu_data_val_t *val)
 {
     return val->type;
@@ -1541,7 +1531,7 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
         }
 
         default:
-            log_error("Not support base type(%d) of data value", type);
+            log_error("Not support base type(%d) of data value in sized", type);
             size = 0;
             break;
         }
@@ -1575,7 +1565,7 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
             size += vector_byte_size(vec) + 2 * sizeof(size_t);
         }
     } else {
-        log_error("Not support type(%d) of data value", type);
+        log_error("Not support type(%d) of data value in sized", type);
         size = 0;
     }
 
@@ -1593,9 +1583,9 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
 #define prim_val_serial_case_t(upcase_type, locase_type) \
     prim_val_serial_case(upcase_type, locase_type, locase_type##_t)
 
-static size_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
+static ssize_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
 {
-    size_t      size;
+    ssize_t     size;
     neu_dtype_e type;
     uint8_t *   cur_ptr;
 
@@ -1673,8 +1663,8 @@ static size_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
         }
 
         default:
-            log_error("Not support type(%d) of data value", type);
-            size = 0;
+            log_error("Not support type(%d) of data value in serialize", type);
+            size = -1;
             break;
         }
     } else if (type & NEU_DTYPE_ARRAY) {
@@ -1696,6 +1686,10 @@ static size_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
                 sub_val =
                     *(neu_data_val_t **) neu_fixed_array_get(array, index);
                 sub_size = do_dvalue_serialize(sub_val, cur_ptr);
+                if (sub_size < 0) {
+                    size = sub_size;
+                    break;
+                }
                 size += sub_size;
                 cur_ptr += sub_size;
             }
@@ -1731,6 +1725,10 @@ static size_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
 
                 sub_val  = (neu_data_val_t *) iterator_get(&iter);
                 sub_size = do_dvalue_serialize(sub_val, cur_ptr);
+                if (sub_size < 0) {
+                    size = sub_size;
+                    break;
+                }
                 size += sub_size;
                 cur_ptr += sub_size;
             }
@@ -1749,17 +1747,15 @@ static size_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
             cur_ptr += buf_size;
         }
     } else {
-        log_error("Not support type(%d) of data value", type);
-        size = 0;
+        log_error("Not support type(%d) of data value in serialize", type);
+        size = -1;
     }
 
     return size;
 }
 
-int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
+ssize_t neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
 {
-    int rv = 0;
-
     assert(val != NULL && p_buf != NULL);
     if (val == NULL || p_buf == NULL) {
         log_error("Serialize the data value with NULL value or buf");
@@ -1769,7 +1765,7 @@ int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
     *p_buf = NULL;
 
     uint8_t *out_buf;
-    size_t   size;
+    ssize_t  size;
 
     size = dvalue_get_serialized_size(val);
     log_debug("type(0x%x) serialized size is %d", val->type, size);
@@ -1780,20 +1776,20 @@ int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
     }
 
     size = do_dvalue_serialize(val, out_buf);
-    if (size == 0) {
+    if (size < 0) {
         free(out_buf);
-        return -1;
+        return size;
     }
 
     *p_buf = out_buf;
-    return rv;
+    return size;
 }
 
 #define prim_val_deserial_case(upcase_type, locase_type, locase_type_t) \
     case NEU_DTYPE_##upcase_type: {                                     \
         locase_type_t prim_val = *(locase_type_t *) cur_ptr;            \
+        size += sizeof(locase_type_t);                                  \
         cur_ptr += sizeof(locase_type_t);                               \
-        *p_rem_buf = cur_ptr;                                           \
         neu_dvalue_init_##locase_type(val, prim_val);                   \
         break;                                                          \
     }
@@ -1801,15 +1797,18 @@ int neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
 #define prim_val_deserial_case_t(upcase_type, locase_type) \
     prim_val_deserial_case(upcase_type, locase_type, locase_type##_t)
 
-static int do_dvalue_deserialize(uint8_t *buf, neu_data_val_t *val,
-                                 uint8_t **p_rem_buf)
+static ssize_t do_dvalue_deserialize(uint8_t *buf, size_t buf_len,
+                                     neu_data_val_t *val)
 {
-    int         rv = 0;
+    ssize_t     size;
     neu_dtype_e type;
     uint8_t *   cur_ptr;
 
+    (void) buf_len;
+
     cur_ptr = buf;
     type    = *(neu_dtype_e *) cur_ptr;
+    size    = sizeof(neu_dtype_e);
     cur_ptr += sizeof(neu_dtype_e);
     if (type == neu_value_type_in_dtype(type)) {
         switch (type) {
@@ -1827,65 +1826,76 @@ static int do_dvalue_deserialize(uint8_t *buf, neu_data_val_t *val,
             prim_val_deserial_case(DOUBLE, double, double);
 
         case NEU_DTYPE_INT_VAL: {
+            ssize_t         sub_size;
             neu_data_val_t *sub_val;
-            uint8_t *       rem_buf;
             neu_int_val_t   int_val;
 
             int_val.key = *(typeof(int_val.key) *) cur_ptr;
+            size += sizeof(int_val.key);
             cur_ptr += sizeof(int_val.key);
-            sub_val     = (neu_data_val_t *) malloc(sizeof(neu_data_val_t));
-            rv          = do_dvalue_deserialize(cur_ptr, sub_val, &rem_buf);
+            sub_val  = neu_dvalue_unit_new();
+            sub_size = do_dvalue_deserialize(cur_ptr, buf_len - size, sub_val);
+            if (sub_size < 0) {
+                size = sub_size;
+                break;
+            }
             int_val.val = sub_val;
             neu_dvalue_init_int_val(val, int_val);
-            cur_ptr    = rem_buf;
-            *p_rem_buf = cur_ptr;
+            size += sub_size;
+            cur_ptr += sub_size;
             break;
         }
 
         case NEU_DTYPE_STRING_VAL: {
+            ssize_t          sub_size;
             neu_data_val_t * sub_val;
-            uint8_t *        rem_buf;
             neu_string_val_t string_val;
 
             size_t key_size = neu_string_deserialize(cur_ptr, &string_val.key);
+            size += key_size;
             cur_ptr += key_size;
-            sub_val        = (neu_data_val_t *) malloc(sizeof(neu_data_val_t));
-            rv             = do_dvalue_deserialize(cur_ptr, sub_val, &rem_buf);
+            sub_val  = neu_dvalue_unit_new();
+            sub_size = do_dvalue_deserialize(cur_ptr, buf_len - size, sub_val);
+            if (sub_size < 0) {
+                size = sub_size;
+                break;
+            }
             string_val.val = sub_val;
             neu_dvalue_init_string_val(val, string_val);
-            cur_ptr    = rem_buf;
-            *p_rem_buf = cur_ptr;
+            size += sub_size;
+            cur_ptr += sub_size;
             break;
         }
 
         case NEU_DTYPE_CSTR: {
-            size_t size = strlen((char *) cur_ptr) + 1;
+            size_t cstr_size = strlen((char *) cur_ptr) + 1;
             neu_dvalue_init_copy_cstr(val, (char *) cur_ptr);
-            cur_ptr += size;
-            *p_rem_buf = cur_ptr;
+            size += cstr_size;
+            cur_ptr += cstr_size;
             break;
         }
 
         case NEU_DTYPE_STRING: {
             neu_string_t *string;
-            size_t        size = neu_string_deserialize(cur_ptr, &string);
+            size_t        str_size = neu_string_deserialize(cur_ptr, &string);
             neu_dvalue_init_move_string(val, string);
-            cur_ptr += size;
-            *p_rem_buf = cur_ptr;
+            size += str_size;
+            cur_ptr += str_size;
             break;
         }
 
         case NEU_DTYPE_BYTES: {
-            size_t size = *(size_t *) cur_ptr + sizeof(size_t);
+            size_t bytes_size = *(size_t *) cur_ptr + sizeof(size_t);
             neu_dvalue_init_copy_bytes(val, (neu_bytes_t *) cur_ptr);
+            size += bytes_size;
             cur_ptr += size;
-            *p_rem_buf = cur_ptr;
             break;
         }
 
         default:
-            log_error("Not support type(%d) of data value", type);
-            rv = -1;
+            log_error("Not support type(%d) of data value in deserialize",
+                      type);
+            size = -1;
             break;
         }
     } else if (type & NEU_DTYPE_ARRAY) {
@@ -1894,30 +1904,39 @@ static int do_dvalue_deserialize(uint8_t *buf, neu_data_val_t *val,
         size_t             length, esize;
 
         length = *(size_t *) cur_ptr;
+        size += sizeof(size_t);
         cur_ptr += sizeof(size_t);
         esize = *(size_t *) cur_ptr;
+        size += sizeof(size_t);
         cur_ptr += sizeof(size_t);
         array    = neu_fixed_array_new(length, esize);
         val_type = neu_value_type_in_dtype(type);
         if (val_type == NEU_DTYPE_DATA_VAL) {
             size_t index;
             for (index = 0; index < array->length; index++) {
+                ssize_t          sub_size;
                 neu_data_val_t * sub_val;
                 neu_data_val_t **item_ptr;
-                uint8_t *        rem_buf;
 
-                sub_val = (neu_data_val_t *) malloc(sizeof(neu_data_val_t));
-                rv      = do_dvalue_deserialize(cur_ptr, sub_val, &rem_buf);
+                sub_val = neu_dvalue_unit_new();
+                sub_size =
+                    do_dvalue_deserialize(cur_ptr, buf_len - size, sub_val);
+                if (sub_size < 0) {
+                    size = sub_size;
+                    break;
+                }
                 item_ptr =
                     (neu_data_val_t **) neu_fixed_array_get(array, index);
                 *item_ptr = sub_val;
-                cur_ptr   = rem_buf;
+                size += sub_size;
+                cur_ptr += sub_size;
             }
             neu_dvalue_init_move_array(val, val_type, array);
         } else {
             size_t buf_size = array->length * array->esize;
             memcpy(array->buf, cur_ptr, buf_size);
             neu_dvalue_init_move_array(val, val_type, array);
+            size += buf_size;
             cur_ptr += buf_size;
         }
     } else if (type & NEU_DTYPE_VEC) {
@@ -1926,61 +1945,77 @@ static int do_dvalue_deserialize(uint8_t *buf, neu_data_val_t *val,
         size_t      length, esize;
 
         length = *(size_t *) cur_ptr;
+        size += sizeof(size_t);
         cur_ptr += sizeof(size_t);
         esize = *(size_t *) cur_ptr;
+        size += sizeof(size_t);
         cur_ptr += sizeof(size_t);
         vec      = vector_new(length, esize);
         val_type = neu_value_type_in_dtype(type);
         if (val_type == NEU_DTYPE_DATA_VAL) {
             VECTOR_FOR_EACH(vec, iter)
             {
+                ssize_t          sub_size;
                 neu_data_val_t * sub_val;
                 neu_data_val_t **item_ptr;
-                uint8_t *        rem_buf;
 
-                sub_val   = (neu_data_val_t *) malloc(sizeof(neu_data_val_t));
-                rv        = do_dvalue_deserialize(cur_ptr, sub_val, &rem_buf);
+                sub_val = neu_dvalue_unit_new();
+                sub_size =
+                    do_dvalue_deserialize(cur_ptr, buf_len - size, sub_val);
+                if (sub_size < 0) {
+                    size = sub_size;
+                    break;
+                }
                 item_ptr  = (neu_data_val_t **) iterator_get(&iter);
                 *item_ptr = sub_val;
-                cur_ptr   = rem_buf;
+                size += sub_size;
+                cur_ptr += sub_size;
             }
             neu_dvalue_init_move_vec(val, val_type, vec);
         } else {
             size_t buf_size = vector_byte_size(vec);
             memcpy(vec->data, cur_ptr, buf_size);
             neu_dvalue_init_move_vec(val, val_type, vec);
+            size += buf_size;
             cur_ptr += buf_size;
         }
     } else {
-        log_error("Not support type(%d) of data value", type);
-        rv = -1;
+        log_error("Not support type(%d) of data value in deserialize", type);
+        size = -1;
     }
-    return rv;
+    return size;
 }
 
-int neu_dvalue_desialize(uint8_t *buf, neu_data_val_t **p_val)
+ssize_t neu_dvalue_desialize(uint8_t *buf, size_t buf_len,
+                             neu_data_val_t **p_val)
 {
-    int rv;
+    ssize_t size;
 
     assert(buf != NULL && p_val != NULL);
     if (buf == NULL || p_val == NULL) {
-        log_error("Serialize the data value with NULL buf or value");
+        log_error("Deserialize the data value with NULL buf or value pointer");
+        return -1;
+    }
+
+    if (buf_len == 0) {
+        log_error("Deserialize the data value with 0 length buffer");
         return -1;
     }
 
     *p_val = NULL;
 
     neu_data_val_t *out_val;
-    out_val = (neu_data_val_t *) malloc(sizeof(neu_data_val_t));
+    out_val = neu_dvalue_unit_new();
     if (out_val == NULL) {
         log_error("Failed to allocate datat value for deserialize value");
         return -1;
     }
 
-    uint8_t *rem_buf;
-    rv = do_dvalue_deserialize(buf, out_val, &rem_buf);
-    if (rv == 0) {
+    size = do_dvalue_deserialize(buf, buf_len, out_val);
+    if (size > 0) {
         *p_val = out_val;
+    } else {
+        neu_dvalue_free(out_val);
     }
-    return rv;
+    return size;
 }

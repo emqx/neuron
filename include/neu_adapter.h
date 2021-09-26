@@ -28,6 +28,7 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
+#include "neu_data_expr.h"
 #include "neu_datatag_table.h"
 #include "neu_errcodes.h"
 #include "neu_plugin_info.h"
@@ -83,7 +84,7 @@ typedef struct neu_reqresp_read {
 typedef struct neu_reqresp_write {
     neu_taggrp_config_t *grp_config;
     neu_node_id_t        dst_node_id;
-    neu_variable_t *     data_var;
+    neu_data_val_t *     data_val;
 } neu_reqresp_write_t;
 
 /* NEU_REQRESP_SUBSCRIBE_NODE */
@@ -101,7 +102,7 @@ typedef struct neu_reqresp_unsubscribe_node {
 /* NEU_REQRESP_TRANS_DATA */
 typedef struct neu_reqresp_data {
     neu_taggrp_config_t *grp_config;
-    neu_variable_t *     data_var;
+    neu_data_val_t *     data_val;
 } neu_reqresp_data_t;
 
 typedef enum neu_node_type {

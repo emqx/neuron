@@ -285,6 +285,7 @@ TEST(DataValueTest, neu_dvalue_set_get_vec)
 TEST(DataValueTest, neu_dvalue_prim_val_deser)
 {
     int      rc;
+    ssize_t  size;
     uint8_t *buf;
 
     neu_data_val_t *val;
@@ -293,11 +294,11 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
     val = neu_dvalue_new(NEU_DTYPE_INT64);
     rc  = neu_dvalue_set_int64(val, 100);
     EXPECT_EQ(0, rc);
-    rc = neu_dvalue_serialize(val, &buf);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_serialize(val, &buf);
+    EXPECT_LT(0, size);
 
-    rc = neu_dvalue_desialize(buf, &val1);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_desialize(buf, size, &val1);
+    EXPECT_LT(0, size);
     int64_t i64;
     rc = neu_dvalue_get_int64(val1, &i64);
     EXPECT_EQ(0, rc);
@@ -309,11 +310,11 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
 
     val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
     neu_dvalue_set_double(val, 3.14159265);
-    rc = neu_dvalue_serialize(val, &buf);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_serialize(val, &buf);
+    EXPECT_LT(0, size);
 
-    rc = neu_dvalue_desialize(buf, &val1);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_desialize(buf, size, &val1);
+    EXPECT_LT(0, size);
     double f64;
     rc = neu_dvalue_get_double(val1, &f64);
     EXPECT_EQ(0, rc);
@@ -327,6 +328,7 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
 TEST(DataValueTest, neu_dvalue_keyvalue_deser)
 {
     int      rc;
+    ssize_t  size;
     uint8_t *buf;
 
     neu_data_val_t *val;
@@ -341,11 +343,11 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
     val = neu_dvalue_new(NEU_DTYPE_INT_VAL);
     rc  = neu_dvalue_set_int_val(val, int_val);
     EXPECT_EQ(0, rc);
-    rc = neu_dvalue_serialize(val, &buf);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_serialize(val, &buf);
+    EXPECT_LT(0, size);
 
-    rc = neu_dvalue_desialize(buf, &val1);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_desialize(buf, size, &val1);
+    EXPECT_LT(0, size);
     neu_int_val_t int_val_get;
     char *        cstr;
     rc = neu_dvalue_get_int_val(val1, &int_val_get);
@@ -363,6 +365,7 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
 TEST(DataValueTest, neu_dvalue_array_deser)
 {
     int      rc;
+    ssize_t  size;
     uint8_t *buf;
 
     neu_data_val_t *val =
@@ -370,12 +373,12 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     neu_fixed_array_t *array_set;
     array_set = neu_fixed_array_new(4, sizeof(int8_t));
     rc        = neu_dvalue_set_array(val, array_set);
-    rc        = neu_dvalue_serialize(val, &buf);
-    EXPECT_EQ(0, rc);
+    size      = neu_dvalue_serialize(val, &buf);
+    EXPECT_LT(0, size);
 
     neu_data_val_t *val1;
-    rc = neu_dvalue_desialize(buf, &val1);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_desialize(buf, size, &val1);
+    EXPECT_LT(0, size);
     neu_fixed_array_t *array_get;
     rc = neu_dvalue_get_array(val, &array_get);
     EXPECT_EQ(0, rc);
@@ -391,18 +394,19 @@ TEST(DataValueTest, neu_dvalue_array_deser)
 TEST(DataValueTest, neu_dvalue_vec_deser)
 {
     int      rc;
+    ssize_t  size;
     uint8_t *buf;
 
     neu_data_val_t *val = neu_dvalue_vec_new(NEU_DTYPE_INT8, 4, sizeof(int8_t));
     vector_t *      vec_set;
     vec_set = vector_new(4, sizeof(int8_t));
     rc      = neu_dvalue_set_vec(val, vec_set);
-    rc      = neu_dvalue_serialize(val, &buf);
-    EXPECT_EQ(0, rc);
+    size    = neu_dvalue_serialize(val, &buf);
+    EXPECT_LT(0, size);
 
     neu_data_val_t *val1;
-    rc = neu_dvalue_desialize(buf, &val1);
-    EXPECT_EQ(0, rc);
+    size = neu_dvalue_desialize(buf, size, &val1);
+    EXPECT_LT(0, size);
     vector_t *vec_get;
     rc = neu_dvalue_get_vec(val, &vec_get);
     EXPECT_EQ(0, rc);

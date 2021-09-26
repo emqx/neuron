@@ -46,6 +46,47 @@ static uint32_t plugin_get_event_id(neu_plugin_t *plugin)
     return req_id;
 }
 
+static neu_data_val_t *setup_write_data_val()
+{
+    neu_data_val_t *   write_val;
+    neu_fixed_array_t *array;
+
+    write_val = neu_dvalue_unit_new();
+    if (write_val == NULL) {
+        log_error("Failed to allocate data value for write data");
+        return NULL;
+    }
+
+    array = neu_fixed_array_new(3, sizeof(neu_int_val_t));
+    if (array == NULL) {
+        log_error("Failed to allocate array for write data");
+        neu_dvalue_free(write_val);
+        return NULL;
+    }
+
+    neu_int_val_t   int_val;
+    neu_data_val_t *val_i64;
+    val_i64 = neu_dvalue_new(NEU_DTYPE_INT64);
+    neu_dvalue_set_int64(val_i64, 114514);
+    neu_int_val_init(&int_val, 1, val_i64);
+    neu_fixed_array_set(array, 0, (void *) &int_val);
+
+    neu_data_val_t *val_f64;
+    val_f64 = neu_dvalue_new(NEU_DTYPE_DOUBLE);
+    neu_dvalue_set_double(val_f64, 3.14159265);
+    neu_int_val_init(&int_val, 2, val_f64);
+    neu_fixed_array_set(array, 1, (void *) &int_val);
+
+    neu_data_val_t *val_cstr;
+    val_cstr = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(val_cstr, "hello, sampe driver");
+    neu_int_val_init(&int_val, 3, val_cstr);
+    neu_fixed_array_set(array, 2, (void *) &int_val);
+
+    neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
+    return write_val;
+}
+
 static void *sample_app_work_loop(void *arg)
 {
     int           rv;
@@ -243,20 +284,19 @@ get_grp_configs_retry:
     /* example of send write command */
     neu_request_t       cmd1;
     neu_reqresp_write_t write_req;
-    neu_variable_t *    data_var = neu_variable_create();
-    neu_variable_set_string(data_var, "Sample app writing");
+    neu_data_val_t *    write_val = setup_write_data_val();
 
     write_req.grp_config =
         (neu_taggrp_config_t *) neu_taggrp_cfg_ref(grp_config);
     write_req.dst_node_id = dst_node_id;
-    write_req.data_var    = data_var;
+    write_req.data_val    = write_val;
     cmd1.req_type         = NEU_REQRESP_WRITE_DATA;
     cmd1.req_id           = plugin_get_event_id(plugin);
     cmd1.buf              = (void *) &write_req;
     cmd1.buf_len          = sizeof(neu_reqresp_write_t);
     log_info("Send a write command to node: %d", dst_node_id);
     adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
-    neu_variable_destroy(data_var);
+    neu_dvalue_free(write_val);
 
     neu_taggrp_cfg_free(grp_config);
     return NULL;
@@ -337,6 +377,32 @@ static int sample_app_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return rv;
 }
 
+static int handle_trans_data_value(neu_data_val_t *trans_val)
+{
+    neu_fixed_array_t *array;
+
+    neu_dvalue_get_ref_array(trans_val, &array);
+
+    neu_int_val_t * int_val;
+    neu_data_val_t *val_i64;
+    neu_data_val_t *val_f64;
+    neu_data_val_t *val_cstr;
+    int64_t         tag001;
+    double          tag002;
+    char *          cstr;
+
+    int_val = neu_fixed_array_get(array, 0);
+    val_i64 = int_val->val;
+    neu_dvalue_get_int64(val_i64, &tag001);
+    int_val = neu_fixed_array_get(array, 1);
+    val_f64 = int_val->val;
+    neu_dvalue_get_double(val_f64, &tag002);
+    int_val  = neu_fixed_array_get(array, 2);
+    val_cstr = int_val->val;
+    neu_dvalue_get_ref_cstr(val_cstr, &cstr);
+    return 0;
+}
+
 static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
     int rv = 0;
@@ -358,8 +424,7 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         assert(req->buf_len == sizeof(neu_reqresp_data_t));
         neu_data = (neu_reqresp_data_t *) req->buf;
 
-        size_t count = neu_variable_count(neu_data->data_var);
-        log_debug("variable count: %ld", count);
+        handle_trans_data_value(neu_data->data_val);
         break;
     }
 

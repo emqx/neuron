@@ -25,9 +25,10 @@
 
 const neu_plugin_module_t neu_plugin_module;
 
+#define TAG_DATA_STR_LEN 100
 static int64_t tag001;
 static double  tag002;
-static char    tag003[100];
+static char    tag003[TAG_DATA_STR_LEN + 1];
 
 struct neu_plugin {
     neu_plugin_common_t common;
@@ -98,6 +99,72 @@ static int sample_drv_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return rv;
 }
 
+static neu_data_val_t *setup_read_resp_data_value()
+{
+    neu_data_val_t *   resp_val;
+    neu_fixed_array_t *array;
+
+    resp_val = neu_dvalue_unit_new();
+    if (resp_val == NULL) {
+        log_error("Failed to allocate data value for response tags");
+        return NULL;
+    }
+
+    array = neu_fixed_array_new(3, sizeof(neu_int_val_t));
+    if (array == NULL) {
+        log_error("Failed to allocate array for response tags");
+        neu_dvalue_free(resp_val);
+        return NULL;
+    }
+
+    neu_int_val_t   int_val;
+    neu_data_val_t *val_i64;
+    val_i64 = neu_dvalue_new(NEU_DTYPE_INT64);
+    neu_dvalue_set_int64(val_i64, tag001);
+    neu_int_val_init(&int_val, 1, val_i64);
+    neu_fixed_array_set(array, 0, (void *) &int_val);
+
+    neu_data_val_t *val_f64;
+    val_f64 = neu_dvalue_new(NEU_DTYPE_DOUBLE);
+    neu_dvalue_set_double(val_f64, tag002);
+    neu_int_val_init(&int_val, 2, val_f64);
+    neu_fixed_array_set(array, 1, (void *) &int_val);
+
+    neu_data_val_t *val_cstr;
+    val_cstr = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(val_cstr, tag003);
+    neu_int_val_init(&int_val, 3, val_cstr);
+    neu_fixed_array_set(array, 2, (void *) &int_val);
+
+    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
+    return resp_val;
+}
+
+static int handle_write_data_value(neu_data_val_t *write_val)
+{
+    neu_fixed_array_t *array;
+
+    neu_dvalue_get_ref_array(write_val, &array);
+
+    neu_int_val_t * int_val;
+    neu_data_val_t *val_i64;
+    neu_data_val_t *val_f64;
+    neu_data_val_t *val_cstr;
+    char *          cstr;
+
+    int_val = neu_fixed_array_get(array, 0);
+    val_i64 = int_val->val;
+    neu_dvalue_get_int64(val_i64, &tag001);
+    int_val = neu_fixed_array_get(array, 1);
+    val_f64 = int_val->val;
+    neu_dvalue_get_double(val_f64, &tag002);
+    int_val  = neu_fixed_array_get(array, 2);
+    val_cstr = int_val->val;
+    neu_dvalue_get_ref_cstr(val_cstr, &cstr);
+    strncpy(tag003, cstr, TAG_DATA_STR_LEN);
+    return 0;
+}
+
 static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
     int rv = 0;
@@ -116,11 +183,10 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_reqresp_read_t *read_req;
         neu_response_t      resp;
         neu_reqresp_data_t  data_resp;
-        neu_variable_t *    head = neu_variable_create();
-        neu_variable_set_qword(head, 0); // No error
 
         assert(req->buf_len == sizeof(neu_reqresp_read_t));
         read_req = (neu_reqresp_read_t *) req->buf;
+
         // log_info("Read data from addr(%d) with group config(%p), "
         //          "dst_node_id:%d, req_id:%d",
         //          read_req->addr, read_req->grp_config, read_req->dst_node_id,
@@ -128,20 +194,13 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
         // log_info("------------------>%s",
         //          neu_taggrp_cfg_get_name(read_req->grp_config));
-        neu_variable_t *t001 = neu_variable_create();
-        neu_variable_set_qword(t001, tag001);
-        neu_variable_add_item(head, t001);
-
-        neu_variable_t *t002 = neu_variable_create();
-        neu_variable_set_double(t002, tag002);
-        neu_variable_add_item(head, t002);
-
-        neu_variable_t *t003 = neu_variable_create();
-        neu_variable_set_string(t003, tag003);
-        neu_variable_add_item(head, t003);
 
         data_resp.grp_config = read_req->grp_config;
-        data_resp.data_var   = head;
+        data_resp.data_val   = setup_read_resp_data_value();
+        if (data_resp.data_val == NULL) {
+            rv = -1;
+            break;
+        }
 
         memset(&resp, 0, sizeof(resp));
         resp.req_id    = req->req_id;
@@ -149,7 +208,6 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         resp.buf_len   = sizeof(neu_reqresp_data_t);
         resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
-        // neu_variable_destroy(head);
         break;
     }
 
@@ -159,24 +217,35 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         assert(req->buf_len == sizeof(neu_reqresp_write_t));
         write_req = (neu_reqresp_write_t *) req->buf;
 
-        int type = neu_variable_get_type(write_req->data_var);
-        if (type == NEU_DATATYPE_STRING) {
-            char * ret = NULL;
-            size_t len;
-            neu_variable_get_string(write_req->data_var, &ret, &len);
-            memset(tag003, 0x00, sizeof(tag003));
-            memcpy(tag003, ret, strlen(ret));
+        handle_write_data_value(write_req->data_val);
 
-            log_info("Write NEU_DATATYPE_STRING value: %s", ret);
+        neu_data_val_t *   resp_val;
+        neu_fixed_array_t *array;
+        resp_val = neu_dvalue_unit_new();
+        if (resp_val == NULL) {
+            log_error("Failed to allocate data value for response write data");
+            rv = -1;
+            break;
         }
-        if (type == NEU_DATATYPE_QWORD) {
-            neu_variable_get_qword(write_req->data_var, &tag001);
-            log_info("Write NEU_DATATYPE_QWORD value: %ld", tag001);
+
+        array = neu_fixed_array_new(3, sizeof(neu_int_val_t));
+        if (array == NULL) {
+            log_error("Failed to allocate array for response write data");
+            neu_dvalue_free(resp_val);
+            rv = -1;
+            break;
         }
-        if (type == NEU_DATATYPE_DOUBLE) {
-            neu_variable_get_double(write_req->data_var, &tag002);
-            log_info("Write NEU_DATATYPE_DOUBLE value: %lf", tag002);
+
+        size_t        i;
+        neu_int_val_t resp_int_val;
+        for (i = 0; i < array->length; i++) {
+            neu_data_val_t *val_i32;
+
+            val_i32 = neu_dvalue_unit_new();
+            neu_dvalue_init_int32(val_i32, 0);
+            neu_int_val_init(&resp_int_val, i + 1, val_i32);
         }
+
         break;
     }
 

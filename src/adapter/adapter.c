@@ -228,11 +228,12 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             if (adapter->plugin_module) {
+                ssize_t            size;
                 neu_reqresp_data_t data_req;
                 data_req.grp_config = databuf_ptr->grp_config;
-                void * buf        = core_databuf_get_ptr(databuf_ptr->databuf);
-                size_t buf_len    = core_databuf_get_len(databuf_ptr->databuf);
-                data_req.data_var = neu_variable_deserialize(buf, buf_len);
+                void * buf     = core_databuf_get_ptr(databuf_ptr->databuf);
+                size_t buf_len = core_databuf_get_len(databuf_ptr->databuf);
+                size = neu_dvalue_desialize(buf, buf_len, &data_req.data_val);
 
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);
@@ -240,7 +241,7 @@ static void adapter_loop(void *arg)
                 req.buf_len  = sizeof(neu_reqresp_data_t);
                 req.buf      = (void *) &data_req;
                 intf_funs->request(adapter->plugin, &req);
-                neu_variable_destroy(data_req.data_var);
+                neu_dvalue_free(data_req.data_val);
             } else {
                 neu_taggrp_cfg_free(databuf_ptr->grp_config);
             }
@@ -324,12 +325,13 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             if (adapter->plugin_module) {
+                ssize_t             size;
                 neu_reqresp_write_t write_req;
                 write_req.grp_config  = cmd_ptr->grp_config;
                 write_req.dst_node_id = cmd_ptr->dst_node_id;
                 void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
                 size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
-                write_req.data_var    = neu_variable_deserialize(buf, buf_len);
+                size = neu_dvalue_desialize(buf, buf_len, &write_req.data_val);
 
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);
@@ -337,7 +339,7 @@ static void adapter_loop(void *arg)
                 req.buf_len  = sizeof(neu_reqresp_write_t);
                 req.buf      = (void *) &write_req;
                 intf_funs->request(adapter->plugin, &req);
-                neu_variable_destroy(write_req.data_var);
+                neu_dvalue_free(write_req.data_val);
             } else {
                 neu_taggrp_cfg_free(cmd_ptr->grp_config);
             }
@@ -405,12 +407,12 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     case NEU_REQRESP_WRITE_DATA: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_WRITE_DATA, write_data_cmd_t,
                          neu_reqresp_write_t, {
-                             void *          buf;
+                             uint8_t *       buf;
                              size_t          buf_len;
                              core_databuf_t *databuf;
 
-                             buf_len = neu_variable_serialize(
-                                 reqresp_cmd->data_var, &buf);
+                             buf_len = neu_dvalue_serialize(
+                                 reqresp_cmd->data_val, &buf);
                              databuf = core_databuf_new_with_buf(buf, buf_len);
                              cmd_ptr->databuf = databuf;
                          })
@@ -683,14 +685,14 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
     case NEU_REQRESP_TRANS_DATA: {
         size_t              msg_size;
         nng_msg *           read_msg;
-        void *              buf;
+        uint8_t *           buf;
         size_t              buf_len;
         neu_reqresp_data_t *neu_data;
         core_databuf_t *    databuf;
 
         assert(resp->buf_len == sizeof(neu_reqresp_data_t));
         neu_data = (neu_reqresp_data_t *) resp->buf;
-        buf_len  = neu_variable_serialize(neu_data->data_var, &buf);
+        buf_len  = neu_dvalue_serialize(neu_data->data_val, &buf);
         databuf  = core_databuf_new_with_buf(buf, buf_len);
 
         msg_size = msg_inplace_data_get_size(sizeof(neuron_databuf_t));
@@ -707,7 +709,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             neu_databuf->databuf    = databuf;
             nng_sendmsg(adapter->sock, read_msg, 0);
         }
-        neu_variable_destroy(neu_data->data_var);
+        neu_dvalue_free(neu_data->data_val);
         break;
     }
 

@@ -181,7 +181,7 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     switch (req->req_type) {
     case NEU_REQRESP_READ_DATA: {
         neu_reqresp_read_t *read_req = (neu_reqresp_read_t *) req->buf;
-        neu_variable_t *    head     = neu_variable_create();
+        neu_data_val_t *    head     = NULL; // neu_variable_create();
         plugin_handle_read_once(plugin->handle_context, read_req->grp_config,
                                 head);
         neu_plugin_response_trans_data(plugin, read_req->grp_config, head,
@@ -190,7 +190,7 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     }
     case NEU_REQRESP_WRITE_DATA: {
         neu_reqresp_write_t *write_req = (neu_reqresp_write_t *) req->buf;
-        neu_variable_t *     data_var  = write_req->data_var;
+        neu_variable_t *     data_var  = NULL; // write_req->data_var;
         vector_t             v;
         vector_init(&v, 10, sizeof(opcua_data_t));
         plugin_handle_write_value(plugin->handle_context, data_var, &v);
