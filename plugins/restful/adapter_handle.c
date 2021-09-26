@@ -79,12 +79,18 @@ void handle_update_adapter(nng_aio *aio)
 
 void handle_get_adapter(nng_aio *aio)
 {
-    neu_plugin_t *            plugin      = neu_rest_get_plugin();
-    char *                    result      = NULL;
-    char *                    s_node_type = http_get_param(aio, "node_type");
-    neu_node_type_e           node_type   = (neu_node_type_e) atoi(s_node_type);
-    neu_parse_get_nodes_res_t nodes_res   = { 0 };
-    int                       index       = 0;
+    neu_plugin_t *plugin      = neu_rest_get_plugin();
+    char *        result      = NULL;
+    char *        s_node_type = http_get_param(aio, "type");
+
+    if (s_node_type == NULL) {
+        http_bad_request(aio, "{\"error\": 1}");
+        return;
+    }
+
+    neu_node_type_e           node_type = (neu_node_type_e) atoi(s_node_type);
+    neu_parse_get_nodes_res_t nodes_res = { 0 };
+    int                       index     = 0;
     vector_t                  nodes = neu_system_get_nodes(plugin, node_type);
 
     nodes_res.n_node = nodes.size;

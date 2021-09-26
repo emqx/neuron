@@ -93,9 +93,9 @@ gen_prim_val_equal(double, double); // generate function double_equal
     {                                                                      \
         locase_type_t val_a = *(locase_type_t *) (a);                      \
         locase_type_t val_b = *(locase_type_t *) (b);                      \
-        return val_a == val_b ? NEU_ORDER_EQ                               \
-            : val_a > val_b   ? NEU_ORDER_MORE                             \
-                              : NEU_ORDER_LESS;                              \
+        return val_a == val_b                                              \
+            ? NEU_ORDER_EQ                                                 \
+            : val_a > val_b ? NEU_ORDER_MORE : NEU_ORDER_LESS;             \
     }
 
 #define gen_prim_val_compare_t(locase_type) \

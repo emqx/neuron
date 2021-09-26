@@ -130,7 +130,13 @@ void handle_get_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin    = neu_rest_get_plugin();
     char *        s_node_id = http_get_param(aio, "node_id");
-    neu_node_id_t node_id   = (neu_node_id_t) atoi(s_node_id);
+
+    if (s_node_id == NULL) {
+        http_bad_request(aio, "{\"error\": 1}");
+        return;
+    }
+
+    neu_node_id_t node_id = (neu_node_id_t) atoi(s_node_id);
 
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
     if (table == NULL) {

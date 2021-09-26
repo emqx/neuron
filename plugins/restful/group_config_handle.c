@@ -113,9 +113,15 @@ void handle_update_group_config(nng_aio *aio)
 
 void handle_get_group_config(nng_aio *aio)
 {
-    neu_plugin_t *                   plugin    = neu_rest_get_plugin();
-    char *                           result    = NULL;
-    char *                           s_node_id = http_get_param(aio, "node_id");
+    neu_plugin_t *plugin    = neu_rest_get_plugin();
+    char *        result    = NULL;
+    char *        s_node_id = http_get_param(aio, "id");
+
+    if (s_node_id == NULL) {
+        http_bad_request(aio, "{\"error\": 1}");
+        return;
+    }
+
     neu_node_id_t                    node_id = (neu_node_id_t) atoi(s_node_id);
     neu_parse_get_group_config_res_t gconfig_res = { 0 };
     int                              index       = 0;

@@ -26,11 +26,11 @@ int neu_parse_decode_add_node(char *buf, neu_parse_add_node_req_t **result)
 {
     neu_parse_add_node_req_t *req = calloc(1, sizeof(neu_parse_add_node_req_t));
     neu_json_elem_t           elem[] = { {
-                                   .name = "node_type",
+                                   .name = "type",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "node_name",
+                                   .name = "name",
                                    .t    = NEU_JSON_STR,
                                },
                                {
@@ -63,7 +63,7 @@ int neu_parse_decode_del_node(char *buf, neu_parse_del_node_req_t **result)
 {
     neu_parse_del_node_req_t *req = calloc(1, sizeof(neu_parse_del_node_req_t));
     neu_json_elem_t           elem[] = { {
-        .name = "node_id",
+        .name = "id",
         .t    = NEU_JSON_INT,
     } };
 
@@ -91,11 +91,11 @@ int neu_parse_decode_update_node(char *                        buf,
     neu_parse_update_node_req_t *req =
         calloc(1, sizeof(neu_parse_update_node_req_t));
     neu_json_elem_t elem[] = { {
-                                   .name = "node_type",
+                                   .name = "type",
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "node_name",
+                                   .name = "name",
                                    .t    = NEU_JSON_STR,
                                },
                                {
@@ -129,7 +129,7 @@ int neu_parse_decode_get_nodes(char *buf, neu_parse_get_nodes_req_t **result)
     neu_parse_get_nodes_req_t *req =
         calloc(1, sizeof(neu_parse_get_nodes_req_t));
     neu_json_elem_t elem[] = { {
-        .name = "node_type",
+        .name = "type",
         .t    = NEU_JSON_INT,
     } };
 
