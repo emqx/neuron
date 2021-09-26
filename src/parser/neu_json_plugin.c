@@ -36,11 +36,11 @@ int neu_parse_decode_add_plugin(char *buf, neu_parse_add_plugin_req_t **result)
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "plugin_name",
+                                   .name = "name",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "plugin_lib_name",
+                                   .name = "lib_name",
                                    .t    = NEU_JSON_STR,
                                } };
 
@@ -72,7 +72,7 @@ int neu_parse_decode_del_plugin(char *buf, neu_parse_del_plugin_req_t **result)
     neu_parse_del_plugin_req_t *req =
         calloc(1, sizeof(neu_parse_del_plugin_req_t));
     neu_json_elem_t elem[] = { {
-        .name = "plugin_id",
+        .name = "id",
         .t    = NEU_JSON_INT,
     } };
 
@@ -108,11 +108,11 @@ int neu_parse_decode_update_plugin(char *                          buf,
                                    .t    = NEU_JSON_INT,
                                },
                                {
-                                   .name = "plugin_name",
+                                   .name = "name",
                                    .t    = NEU_JSON_STR,
                                },
                                {
-                                   .name = "plugin_lib_name",
+                                   .name = "lib_name",
                                    .t    = NEU_JSON_STR,
                                } };
 
@@ -164,7 +164,7 @@ int neu_parse_encode_get_plugins(void *json_object, void *param)
     for (int i = 0; i < res->n_plugin; i++) {
         neu_json_elem_t plugin_libs[] = {
             {
-                .name      = "plugin_id",
+                .name      = "id",
                 .t         = NEU_JSON_INT,
                 .v.val_int = res->plugin_libs[i].plugin_id,
             },
@@ -179,12 +179,12 @@ int neu_parse_encode_get_plugins(void *json_object, void *param)
                 .v.val_int = res->plugin_libs[i].node_type,
             },
             {
-                .name      = "plugin_name",
+                .name      = "name",
                 .t         = NEU_JSON_STR,
                 .v.val_str = res->plugin_libs[i].plugin_name,
             },
             {
-                .name      = "plugin_lib_name",
+                .name      = "lib_name",
                 .t         = NEU_JSON_STR,
                 .v.val_str = res->plugin_libs[i].plugin_lib_name,
             }

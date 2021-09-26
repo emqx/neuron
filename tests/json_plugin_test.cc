@@ -2,173 +2,74 @@
 
 #include <gtest/gtest.h>
 
-#include "parser/neu_json_parser.h"
+#include "parser/neu_json_fn.h"
 #include "parser/neu_json_plugin.h"
 
 TEST(JsonPluginTest, AddPluginDecode)
 {
-    char *buf = (char *) "{\"function\": 39, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"kind\": 1, "
+    char *buf = (char *) "{\"kind\": 1, "
                          "\"node_type\": 1, "
-                         "\"plugin_name\": \"plugin1\", "
-                         "\"plugin_lib_name\": \"lib1\" }";
-    void *                           result = NULL;
-    struct neu_parse_add_plugin_req *req    = NULL;
+                         "\"name\": \"plugin1\", "
+                         "\"lib_name\": \"lib1\" }";
+    neu_parse_add_plugin_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_add_plugin(buf, &req));
 
-    req = (struct neu_parse_add_plugin_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_ADD_PLUGIN, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(1, req->kind);
     EXPECT_EQ(1, req->node_type);
     EXPECT_STREQ("plugin1", req->plugin_name);
     EXPECT_STREQ("lib1", req->plugin_lib_name);
 
-    neu_parse_decode_free(result);
-}
-
-TEST(JsonPluginTest, AddPluginEncode)
-{
-    char *buf = (char *) "{\"function\": 39, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"error\": 0}";
-    char *                          result = NULL;
-    struct neu_parse_add_plugin_res res    = {
-        .function = NEU_PARSE_OP_ADD_PLUGIN,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
-    EXPECT_STREQ(buf, result);
-
-    free(result);
+    neu_parse_decode_add_plugin_free(req);
 }
 
 TEST(JsonPluginTest, DeletePluginDecode)
 {
-    char *buf = (char *) "{\"function\": 41, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"plugin_id\": 1 }";
-    void *                              result = NULL;
-    struct neu_parse_delete_plugin_req *req    = NULL;
+    char *                      buf = (char *) "{\"id\": 1 }";
+    neu_parse_del_plugin_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_del_plugin(buf, &req));
 
-    req = (struct neu_parse_delete_plugin_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_DELETE_PLUGIN, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(1, req->plugin_id);
 
-    neu_parse_decode_free(result);
-}
-
-TEST(JsonPluginTest, DeletePluginEncode)
-{
-    char *buf = (char *) "{\"function\": 41, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"error\": 0}";
-    char *                             result = NULL;
-    struct neu_parse_delete_plugin_res res    = {
-        .function = NEU_PARSE_OP_DELETE_PLUGIN,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
-    EXPECT_STREQ(buf, result);
-
-    free(result);
+    neu_parse_decode_del_plugin_free(req);
 }
 
 TEST(JsonPluginTest, UpdatePluginDecode)
 {
-    char *buf = (char *) "{\"function\": 42, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"kind\": 2, "
+    char *buf = (char *) "{\"kind\": 2, "
                          "\"node_type\": 2, "
-                         "\"plugin_name\": \"plugin1\", "
-                         "\"plugin_lib_name\": \"lib1\" }";
-    void *                              result = NULL;
-    struct neu_parse_update_plugin_req *req    = NULL;
+                         "\"name\": \"plugin1\", "
+                         "\"lib_name\": \"lib1\" }";
+    neu_parse_update_plugin_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_update_plugin(buf, &req));
 
-    req = (struct neu_parse_update_plugin_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_UPDATE_PLUGIN, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(2, req->kind);
     EXPECT_EQ(2, req->node_type);
     EXPECT_STREQ("plugin1", req->plugin_name);
     EXPECT_STREQ("lib1", req->plugin_lib_name);
 
-    neu_parse_decode_free(result);
-}
-
-TEST(JsonPluginTest, UpdatePluginEncode)
-{
-    char *buf = (char *) "{\"function\": 42, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"error\": 0}";
-    char *                          result = NULL;
-    struct neu_parse_add_plugin_res res    = {
-        .function = NEU_PARSE_OP_UPDATE_PLUGIN,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
-    EXPECT_STREQ(buf, result);
-
-    free(result);
-}
-
-TEST(JsonPluginTest, GetPluginDecode)
-{
-    char *buf = (char *) "{\"function\": 40, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\" }";
-    void *                           result = NULL;
-    struct neu_parse_get_plugin_req *req    = NULL;
-
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
-
-    req = (struct neu_parse_get_plugin_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_GET_PLUGIN, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
-
-    neu_parse_decode_free(result);
+    neu_parse_decode_update_plugin_free(req);
 }
 
 TEST(JsonPluginTest, GetPluginEncode)
 {
     char *buf =
-        (char
-             *) "{\"function\": 40, "
-                "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                "\"plugin_libs\": "
-                "[{\"plugin_id\": 123, \"kind\": 1, \"node_type\": 1, "
-                "\"plugin_name\": \"plugin1\", \"plugin_lib_name\": \"lib1\"}, "
-                "{\"plugin_id\": 456, \"kind\": 1, \"node_type\": 1, "
-                "\"plugin_name\": \"plugin2\", \"plugin_lib_name\": \"lib2\"}, "
-                "{\"plugin_id\": 789, \"kind\": 1, \"node_type\": 1, "
-                "\"plugin_name\": \"plugin3\", \"plugin_lib_name\": "
-                "\"lib3\"}]}";
+        (char *) "{\"plugin_libs\": [{\"id\": 123, \"kind\": 1, \"node_type\": "
+                 "1, \"name\": \"plugin1\", \"lib_name\": \"lib1\"}, {\"id\": "
+                 "456, \"kind\": 1, \"node_type\": 1, \"name\": \"plugin2\", "
+                 "\"lib_name\": \"lib2\"}, {\"id\": 789, \"kind\": 1, "
+                 "\"node_type\": 1, \"name\": \"plugin3\", \"lib_name\": "
+                 "\"lib3\"}]}";
     char *result = NULL;
 
-    struct neu_parse_get_plugin_res res = {
-        .function = NEU_PARSE_OP_GET_PLUGIN,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
+    neu_parse_get_plugins_res_t res = {
         .n_plugin = 3,
     };
 
-    res.plugin_libs = (struct neu_parse_get_plugin_res_libs *) calloc(
-        3, sizeof(struct neu_parse_get_plugin_res_libs));
+    res.plugin_libs = (neu_parse_get_plugins_res_lib_t *) calloc(
+        3, sizeof(neu_parse_get_plugins_res_lib_t));
 
     res.plugin_libs[0].plugin_id       = 123;
     res.plugin_libs[0].kind            = PLUGIN_KIND_SYSTEM;
@@ -188,7 +89,8 @@ TEST(JsonPluginTest, GetPluginEncode)
     res.plugin_libs[2].plugin_name     = strdup((char *) "plugin3");
     res.plugin_libs[2].plugin_lib_name = strdup((char *) "lib3");
 
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
+    EXPECT_EQ(
+        0, neu_json_encode_by_fn(&res, neu_parse_encode_get_plugins, &result));
     EXPECT_STREQ(buf, result);
 
     free(res.plugin_libs[0].plugin_name);

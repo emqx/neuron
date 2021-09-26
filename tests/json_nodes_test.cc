@@ -2,86 +2,50 @@
 
 #include <gtest/gtest.h>
 
+#include "parser/neu_json_fn.h"
 #include "parser/neu_json_node.h"
-#include "parser/neu_json_parser.h"
 
 TEST(JsonNodesTest, AddNodesDecode)
 {
-    char *buf = (char *) "{\"function\": 35, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"node_type\": 1, "
-                         "\"adapter_name\": \"adapter1\" ,"
+    char *buf = (char *) "{\"type\": 1, "
+                         "\"name\": \"adapter1\" ,"
                          "\"plugin_name\": \"plugin1\" }";
-    void *                          result = NULL;
-    struct neu_parse_add_nodes_req *req    = NULL;
+    neu_parse_add_node_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_add_node(buf, &req));
 
-    req = (struct neu_parse_add_nodes_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_ADD_NODES, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(NEU_NODE_TYPE_DRIVER, req->node_type);
-    EXPECT_STREQ("adapter1", req->adapter_name);
+    EXPECT_STREQ("adapter1", req->node_name);
     EXPECT_STREQ("plugin1", req->plugin_name);
 
-    neu_parse_decode_free(result);
-}
-
-TEST(JsonNodesTest, AddNodesEncode)
-{
-    char *buf = (char *) "{\"function\": 35, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"error\": 0}";
-    char *                         result = NULL;
-    struct neu_parse_add_nodes_res res    = {
-        .function = NEU_PARSE_OP_ADD_NODES,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
-    EXPECT_STREQ(buf, result);
-
-    free(result);
+    neu_parse_decode_add_node_free(req);
 }
 
 TEST(JsonNodesTest, GetNodesDecode)
 {
-    char *buf = (char *) "{\"function\": 36, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\","
-                         "\"node_type\": 1 }";
-    void *                          result = NULL;
-    struct neu_parse_get_nodes_req *req    = NULL;
+    char *                     buf = (char *) "{\"type\": 1 }";
+    neu_parse_get_nodes_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_get_nodes(buf, &req));
 
-    req = (struct neu_parse_get_nodes_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_GET_NODES, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(1, req->node_type);
 
-    neu_parse_decode_free(result);
+    neu_parse_decode_get_nodes_free(req);
 }
 
 TEST(JsonNodesTest, GetNodesEncode)
 {
-    char *buf = (char *) "{\"function\": 36, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"nodes\": "
+    char *buf = (char *) "{\"nodes\": "
                          "[{\"name\": \"node1\", \"id\": 123}, "
                          "{\"name\": \"node2\", \"id\": 456}, "
                          "{\"name\": \"node3\", \"id\": 789}]}";
-    char *                         result = NULL;
-    struct neu_parse_get_nodes_res res    = {
-        .function = NEU_PARSE_OP_GET_NODES,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .n_node   = 3,
+    char *                    result = NULL;
+    neu_parse_get_nodes_res_t res    = {
+        .n_node = 3,
     };
 
-    res.nodes = (struct neu_parse_get_nodes_res_nodes *) calloc(
-        3, sizeof(struct neu_parse_get_nodes_res_nodes));
+    res.nodes = (neu_parse_get_nodes_res_node_t *) calloc(
+        3, sizeof(neu_parse_get_nodes_res_node_t));
     res.nodes[0].name = strdup((char *) "node1");
     res.nodes[0].id   = 123;
 
@@ -91,7 +55,8 @@ TEST(JsonNodesTest, GetNodesEncode)
     res.nodes[2].name = strdup((char *) "node3");
     res.nodes[2].id   = 789;
 
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
+    EXPECT_EQ(0,
+              neu_json_encode_by_fn(&res, neu_parse_encode_get_nodes, &result));
     EXPECT_STREQ(buf, result);
 
     free(res.nodes[0].name);
@@ -104,78 +69,28 @@ TEST(JsonNodesTest, GetNodesEncode)
 
 TEST(JsonNodesTest, DeleteNodesDecode)
 {
-    char *buf = (char *) "{\"function\": 37, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\","
-                         "\"node_id\": 123 }";
-    void *                             result = NULL;
-    struct neu_parse_delete_nodes_req *req    = NULL;
+    char *                    buf = (char *) "{\"id\": 123 }";
+    neu_parse_del_node_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_del_node(buf, &req));
 
-    req = (struct neu_parse_delete_nodes_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_DELETE_NODES, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(123, req->node_id);
 
-    neu_parse_decode_free(result);
-}
-
-TEST(JsonNodesTest, DeleteNodesEncode)
-{
-    char *buf = (char *) "{\"function\": 37, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"error\": 0}";
-    char *                            result = NULL;
-    struct neu_parse_delete_nodes_res res    = {
-        .function = NEU_PARSE_OP_DELETE_NODES,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
-    EXPECT_STREQ(buf, result);
-
-    free(result);
+    neu_parse_decode_del_node_free(req);
 }
 
 TEST(JsonNodesTest, UpdateNodesDecode)
 {
-    char *buf = (char *) "{\"function\": 38, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"node_type\": 1, "
-                         "\"adapter_name\": \"adapter1\", "
+    char *buf = (char *) "{\"type\": 1, "
+                         "\"name\": \"adapter1\", "
                          "\"plugin_name\":  \"plugin1\" }";
-    void *                             result = NULL;
-    struct neu_parse_update_nodes_req *req    = NULL;
+    neu_parse_update_node_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode(buf, &result));
+    EXPECT_EQ(0, neu_parse_decode_update_node(buf, &req));
 
-    req = (struct neu_parse_update_nodes_req *) result;
-
-    EXPECT_EQ(NEU_PARSE_OP_UPDATE_NODES, req->function);
-    EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", req->uuid);
     EXPECT_EQ(1, req->node_type);
-    EXPECT_STREQ("adapter1", req->adapter_name);
+    EXPECT_STREQ("adapter1", req->node_name);
     EXPECT_STREQ("plugin1", req->plugin_name);
 
-    neu_parse_decode_free(result);
-}
-
-TEST(JsonNodesTest, UpdaeNodesEncode)
-{
-    char *buf = (char *) "{\"function\": 38, "
-                         "\"uuid\": \"554f5fd8-f437-11eb-975c-7704b9e17821\", "
-                         "\"error\": 0}";
-    char *                            result = NULL;
-    struct neu_parse_update_nodes_res res    = {
-        .function = NEU_PARSE_OP_UPDATE_NODES,
-        .uuid     = (char *) "554f5fd8-f437-11eb-975c-7704b9e17821",
-        .error    = 0,
-    };
-
-    EXPECT_EQ(0, neu_parse_encode(&res, &result));
-    EXPECT_STREQ(buf, result);
-
-    free(result);
+    neu_parse_decode_update_node_free(req);
 }

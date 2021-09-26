@@ -15,33 +15,33 @@ target_include_directories(api_json_test PRIVATE
 )
 target_link_libraries(api_json_test neuron-base gtest_main gtest pthread jansson)
 
-#add_executable(json_datatag_table_test json_datatag_table_test.cc ${SRC_PARSER})
-#target_include_directories(json_datatag_table_test PRIVATE
-	#${CMAKE_SOURCE_DIR}/src
-	#${CMAKE_SOURCE_DIR}/include       
-#)
-#target_link_libraries(json_datatag_table_test neuron-base gtest_main gtest pthread jansson)
+add_executable(json_datatag_table_test json_datatag_table_test.cc ${SRC_PARSER})
+target_include_directories(json_datatag_table_test PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(json_datatag_table_test neuron-base gtest_main gtest pthread jansson)
 
-#add_executable(json_nodes_test json_nodes_test.cc ${SRC_PARSER})
-#target_include_directories(json_nodes_test PRIVATE
-	#${CMAKE_SOURCE_DIR}/src
-	#${CMAKE_SOURCE_DIR}/include       
-#)
-#target_link_libraries(json_nodes_test neuron-base gtest_main gtest pthread jansson)
+add_executable(json_nodes_test json_nodes_test.cc ${SRC_PARSER})
+target_include_directories(json_nodes_test PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(json_nodes_test neuron-base gtest_main gtest pthread jansson)
 
-#add_executable(json_plugin_test json_plugin_test.cc ${SRC_PARSER})
-#target_include_directories(json_plugin_test PRIVATE
-	#${CMAKE_SOURCE_DIR}/src
-	#${CMAKE_SOURCE_DIR}/include       
-#)
-#target_link_libraries(json_plugin_test neuron-base gtest_main gtest pthread jansson)
+add_executable(json_plugin_test json_plugin_test.cc ${SRC_PARSER})
+target_include_directories(json_plugin_test PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(json_plugin_test neuron-base gtest_main gtest pthread jansson)
 
-#add_executable(json_group_config_test json_group_config_test.cc ${SRC_PARSER})
-#target_include_directories(json_group_config_test PRIVATE 
-	#${CMAKE_SOURCE_DIR}/src
-	#${CMAKE_SOURCE_DIR}/include
-#)
-#target_link_libraries(json_group_config_test neuron-base gtest_main gtest)
+add_executable(json_group_config_test json_group_config_test.cc ${SRC_PARSER})
+target_include_directories(json_group_config_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(json_group_config_test neuron-base gtest_main gtest)
 
 add_executable(variable_test variable_test.cc)
 target_include_directories(variable_test PRIVATE 
@@ -93,15 +93,16 @@ target_include_directories(plugin_manager_test PRIVATE
 target_link_libraries(plugin_manager_test neuron-base gtest_main gtest pthread jansson dl nng yaml)
 
 include(GoogleTest)
-#gtest_discover_tests(variable_test)
-#gtest_discover_tests(modbus_point_test)
-#gtest_discover_tests(config_test)
 gtest_discover_tests(data_val_test)
-#gtest_discover_tests(plugin_manager_test)
+gtest_discover_tests(variable_test)
+gtest_discover_tests(modbus_point_test)
+gtest_discover_tests(config_test)
+gtest_discover_tests(data_val_test)
+gtest_discover_tests(plugin_manager_test)
+gtest_discover_tests(datatag_table_test)
 gtest_discover_tests(json_test)
 gtest_discover_tests(api_json_test)
-#gtest_discover_tests(json_group_config_test)
-#gtest_discover_tests(datatag_table_test)
-#gtest_discover_tests(json_datatag_table_test)
-#gtest_discover_tests(json_nodes_test)
-#gtest_discover_tests(json_plugin_test)
+gtest_discover_tests(json_datatag_table_test)
+gtest_discover_tests(json_nodes_test)
+gtest_discover_tests(json_plugin_test)
+gtest_discover_tests(json_group_config_test)
