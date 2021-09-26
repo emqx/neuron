@@ -40,8 +40,8 @@ void handle_add_group_config(nng_aio *aio)
         neu_parse_decode_add_group_config, {
             neu_taggrp_config_t *gconfig = neu_taggrp_cfg_new(req->name);
             neu_taggrp_cfg_set_interval(gconfig, req->interval);
-            intptr_t err = neu_system_add_group_config(
-                plugin, req->src_node_id, req->dst_node_id, gconfig);
+            intptr_t err =
+                neu_system_add_group_config(plugin, req->node_id, gconfig);
             if (err != 0) {
                 http_bad_request(aio, "{\"error\": 1}");
             } else {
@@ -93,15 +93,15 @@ void handle_update_group_config(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST(
         aio, neu_parse_update_group_config_req_t,
         neu_parse_decode_update_group_config, {
-            neu_taggrp_config_t *config = neu_system_find_group_config(
-                plugin, req->src_node_id, req->name);
+            neu_taggrp_config_t *config =
+                neu_system_find_group_config(plugin, req->node_id, req->name);
 
             if (config == NULL) {
                 http_not_found(aio, "{\"error\": 1}");
             } else {
                 neu_taggrp_cfg_set_interval(config, req->interval);
                 intptr_t err = neu_system_update_group_config(
-                    plugin, req->src_node_id, req->dst_node_id, config);
+                    plugin, req->node_id, config);
                 if (err != 0) {
                     http_bad_request(aio, "{\"error\": 1}");
                 } else {

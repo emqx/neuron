@@ -50,8 +50,7 @@ int neu_parse_encode_get_group_config(void *json_object, void *param);
 
 typedef struct {
     char *   name;
-    uint32_t src_node_id;
-    uint32_t dst_node_id;
+    uint32_t node_id;
     uint32_t interval;
 } neu_parse_add_group_config_req_t;
 
@@ -62,8 +61,7 @@ void neu_parse_decode_add_group_config_free(
 
 typedef struct {
     char *   name;
-    uint32_t src_node_id;
-    uint32_t dst_node_id;
+    uint32_t node_id;
     uint32_t interval;
 } neu_parse_update_group_config_req_t;
 

@@ -610,27 +610,21 @@ void message_handle_get_group_config(neu_plugin_t *                    plugin,
 }
 
 static int add_config(neu_plugin_t *plugin, const char *config_name,
-                      const uint32_t src_node_id, const uint32_t dst_node_id,
-                      const int read_interval)
+                      const uint32_t node_id, const int read_interval)
 {
-    if (0 == src_node_id || 0 == dst_node_id) {
+    if (0 == node_id) {
         return -1;
     }
 
     vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    int      rc    = node_id_exist(&nodes, src_node_id);
+    int      rc    = node_id_exist(&nodes, node_id);
     if (0 != rc) {
         vector_uninit(&nodes);
         return -2;
     }
-    rc = node_id_exist(&nodes, dst_node_id);
-    if (0 != rc) {
-        vector_uninit(&nodes);
-        return -3;
-    }
     vector_uninit(&nodes);
 
-    vector_t configs = neu_system_get_group_configs(plugin, src_node_id);
+    vector_t configs = neu_system_get_group_configs(plugin, node_id);
     rc               = config_exist(&configs, config_name);
     VECTOR_FOR_EACH(&configs, iter)
     {
@@ -649,8 +643,7 @@ static int add_config(neu_plugin_t *plugin, const char *config_name,
         return -5;
     }
     neu_taggrp_cfg_set_interval(grp_config, read_interval);
-    intptr_t error = neu_system_add_group_config(plugin, src_node_id,
-                                                 dst_node_id, grp_config);
+    intptr_t error = neu_system_add_group_config(plugin, node_id, grp_config);
     if (0 != error) {
         return -6;
     }
@@ -661,13 +654,11 @@ void message_handle_add_group_config(neu_plugin_t *                    plugin,
                                      neu_parse_mqtt_t *                mqtt,
                                      neu_parse_add_group_config_req_t *req)
 {
-    log_debug("uuid:%s, config:%s, src node id:%d, dst node id:%d, "
+    log_debug("uuid:%s, config:%s, node id:%d, "
               "read interval:%d",
-              mqtt->uuid, req->name, req->src_node_id, req->dst_node_id,
-              req->interval);
+              mqtt->uuid, req->name, req->node_id, req->interval);
 
-    int rc = add_config(plugin, req->name, req->src_node_id, req->dst_node_id,
-                        req->interval);
+    int rc = add_config(plugin, req->name, req->node_id, req->interval);
 
     char *            json_str = NULL;
     neu_parse_error_t error    = { .error = rc };
@@ -682,27 +673,21 @@ void message_handle_add_group_config(neu_plugin_t *                    plugin,
 }
 
 static int update_config(neu_plugin_t *plugin, const char *config_name,
-                         const uint32_t src_node_id, const uint32_t dst_node_id,
-                         const int read_interval)
+                         const uint32_t node_id, const int read_interval)
 {
-    if (0 == src_node_id || 0 == dst_node_id) {
+    if (0 == node_id) {
         return -1;
     }
 
     vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    int      rc    = node_id_exist(&nodes, src_node_id);
+    int      rc    = node_id_exist(&nodes, node_id);
     if (0 != rc) {
         vector_uninit(&nodes);
         return -2;
     }
-    rc = node_id_exist(&nodes, dst_node_id);
-    if (0 != rc) {
-        vector_uninit(&nodes);
-        return -3;
-    }
     vector_uninit(&nodes);
 
-    vector_t configs = neu_system_get_group_configs(plugin, src_node_id);
+    vector_t configs = neu_system_get_group_configs(plugin, node_id);
     rc               = config_exist(&configs, config_name);
     VECTOR_FOR_EACH(&configs, iter)
     {
@@ -722,8 +707,8 @@ static int update_config(neu_plugin_t *plugin, const char *config_name,
     }
     neu_taggrp_cfg_set_interval(grp_config, read_interval);
 
-    intptr_t error = neu_system_update_group_config(plugin, src_node_id,
-                                                    dst_node_id, grp_config);
+    intptr_t error =
+        neu_system_update_group_config(plugin, node_id, grp_config);
     if (0 != error) {
         return -6;
     }
@@ -734,13 +719,11 @@ void message_handle_update_group_config(
     neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     neu_parse_update_group_config_req_t *req)
 {
-    log_debug("uuid:%s, config:%s, src node id:%d, dst node id:%d, "
+    log_debug("uuid:%s, config:%s, src node id:%d,"
               "read interval:%d",
-              mqtt->uuid, req->name, req->src_node_id, req->dst_node_id,
-              req->interval);
+              mqtt->uuid, req->name, req->node_id, req->interval);
 
-    int rc = update_config(plugin, req->name, req->src_node_id,
-                           req->dst_node_id, req->interval);
+    int rc = update_config(plugin, req->name, req->node_id, req->interval);
 
     char *            json_str = NULL;
     neu_parse_error_t error    = { .error = rc };

@@ -156,8 +156,7 @@ typedef struct neu_reqresp_nodes {
 
 /* NEU_REQRESP_ADD_GRP_CONFIG */
 typedef struct neu_cmd_add_grp_config {
-    neu_node_id_t        src_node_id;
-    neu_node_id_t        dst_node_id;
+    neu_node_id_t        node_id;
     neu_taggrp_config_t *grp_config;
 } neu_cmd_add_grp_config_t;
 
@@ -169,8 +168,7 @@ typedef struct neu_cmd_del_grp_config {
 
 /* NEU_REQRESP_UPDATE_GRP_CONFIG */
 typedef struct neu_cmd_update_grp_config {
-    neu_node_id_t        src_node_id;
-    neu_node_id_t        dst_node_id;
+    neu_node_id_t        node_id;
     neu_taggrp_config_t *grp_config;
 } neu_cmd_update_grp_config_t;
 

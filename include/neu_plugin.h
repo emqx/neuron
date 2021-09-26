@@ -84,14 +84,12 @@ intptr_t neu_system_update_node(neu_plugin_t *plugin, neu_node_type_e node_type,
 // uninit vector
 vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
 intptr_t neu_system_add_group_config(neu_plugin_t *       plugin,
-                                     neu_node_id_t        src_node_id,
-                                     neu_node_id_t        dst_node_id,
+                                     neu_node_id_t        node_id,
                                      neu_taggrp_config_t *grp_config);
 intptr_t neu_system_del_group_config(neu_plugin_t *plugin,
                                      neu_node_id_t node_id, char *config_name);
 intptr_t neu_system_update_group_config(neu_plugin_t *       plugin,
-                                        neu_node_id_t        src_node_id,
-                                        neu_node_id_t        dst_node_id,
+                                        neu_node_id_t        node_id,
                                         neu_taggrp_config_t *grp_config);
 neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
                                                   neu_node_id_t node_id,
