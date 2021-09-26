@@ -101,22 +101,27 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
     plugin->option.cert_file         = strdup(cert_file);
     plugin->option.key_file          = strdup(key_file);
 
-    int rc = open62541_client_open(&plugin->option, plugin, &plugin->client);
-    if (0 != rc) {
-        log_error("Can not connect to opc.tcp://%s:%d", plugin->option.host,
-                  plugin->option.port);
-        return -1;
-    }
-
     plugin->handle_context = malloc(sizeof(opc_handle_context_t));
     memset(plugin->handle_context, 0, sizeof(opc_handle_context_t));
     plugin->handle_context->plugin       = plugin;
-    plugin->handle_context->client       = plugin->client;
     plugin->handle_context->table        = NULL;
     plugin->handle_context->self_node_id = neu_plugin_self_node_id(plugin);
 
     NEU_LIST_INIT(&plugin->handle_context->subscribe_list,
                   opc_subscribe_tuple_t, node);
+
+    int rc = open62541_client_open(&plugin->option, plugin, &plugin->client);
+    if (0 != rc) {
+        log_error("Can not connect to opc.tcp://%s:%d", plugin->option.host,
+                  plugin->option.port);
+
+        plugin->handle_context->client = NULL;
+        return -1;
+    } else {
+        log_info("Connected to opc.tcp://%s:%d", plugin->option.host,
+                 plugin->option.port);
+        plugin->handle_context->client = plugin->client;
+    }
 
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
@@ -169,7 +174,10 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         return -1;
     }
 
-    log_info("plugin context is %p", plugin->handle_context);
+    if (NULL == plugin->handle_context->client) {
+        return -2;
+    }
+
     if (NULL == plugin->handle_context->table) {
         plugin->handle_context->table = neu_system_get_datatags_table(
             plugin, plugin->handle_context->self_node_id);
