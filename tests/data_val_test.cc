@@ -141,6 +141,30 @@ TEST(DataValueTest, neu_dvalue_init_set_get_prim_val)
     EXPECT_EQ(0, neu_dvalue_get_double(val, &ret_double));
     EXPECT_EQ(100010111010.010604, ret_double);
     neu_dvalue_free(val);
+
+    /** test errorcode **/
+    int32_t ret_error = 0;
+    val               = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+    neu_dvalue_init_errorcode_val(val, -1);
+    EXPECT_EQ(0, neu_dvalue_get_errorcode(val, &ret_error));
+    EXPECT_EQ(NEU_DTYPE_ERRORCODE, neu_dvalue_get_type(val));
+    EXPECT_EQ(-1, ret_error);
+
+    EXPECT_EQ(0, neu_dvalue_set_errorcode(val, 0));
+    EXPECT_EQ(0, neu_dvalue_get_errorcode(val, &ret_error));
+    EXPECT_EQ(0, ret_error);
+
+    EXPECT_EQ(0, neu_dvalue_set_errorcode(val, 1));
+    EXPECT_EQ(0, neu_dvalue_get_errorcode(val, &ret_error));
+    EXPECT_EQ(1, ret_error);
+    neu_dvalue_free(val);
+
+    val = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+    EXPECT_EQ(NEU_DTYPE_ERRORCODE, neu_dvalue_get_type(val));
+    EXPECT_EQ(0, neu_dvalue_set_errorcode(val, 2));
+    EXPECT_EQ(0, neu_dvalue_get_errorcode(val, &ret_error));
+    EXPECT_EQ(2, ret_error);
+    neu_dvalue_free(val);
 }
 
 #define INT_VAL_TEST_STR "hello int-val"

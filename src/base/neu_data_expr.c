@@ -362,6 +362,12 @@ void neu_dvalue_init_data_val(neu_data_val_t *val, void *data)
     val->val_data = data;
 }
 
+void neu_dvalue_init_errorcode_val(neu_data_val_t *val, int32_t i32)
+{
+    val->type      = NEU_DTYPE_ERRORCODE;
+    val->val_int32 = i32;
+}
+
 void neu_dvalue_init_copy_cstr(neu_data_val_t *val, char *cstr)
 {
     val->type = NEU_DTYPE_CSTR | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
@@ -679,6 +685,17 @@ int neu_dvalue_set_string_val(neu_data_val_t *val, neu_string_val_t string_val)
             neu_string_val_move((neu_string_val_t *) val->val_data,
                                 &string_val);
         }
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+int neu_dvalue_set_errorcode(neu_data_val_t *val, int32_t i32)
+{
+    assert(val->type == NEU_DTYPE_ERRORCODE);
+    if (val->type == NEU_DTYPE_ERRORCODE) {
+        val->val_int32 = i32;
         return 0;
     } else {
         return -1;
@@ -1172,6 +1189,17 @@ int neu_dvalue_get_data_val(neu_data_val_t *val, void **p_data)
     assert(val->type == NEU_DTYPE_DATA_VAL);
     if (val->type == NEU_DTYPE_DATA_VAL) {
         *p_data = val->val_data;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+int neu_dvalue_get_errorcode(neu_data_val_t *val, int32_t *p_i32)
+{
+    assert(val->type == NEU_DTYPE_ERRORCODE);
+    if (val->type == NEU_DTYPE_ERRORCODE) {
+        *p_i32 = val->val_int32;
         return 0;
     } else {
         return -1;
