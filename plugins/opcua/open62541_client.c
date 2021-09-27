@@ -256,64 +256,64 @@ static int client_set_read_value(opcua_data_t *data, UA_Variant *value)
         return -1;
     }
 
-    if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_SBYTE])) {
-        data->value.value_int8 = *(UA_SByte *) value->data;
-        data->type             = NEU_DATATYPE_BYTE;
-        return 0;
-    }
+    // if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_SBYTE])) {
+    //     data->value.value_int8 = *(UA_SByte *) value->data;
+    //     data->type             = NEU_DTYPE_BYTE;
+    //     return 0;
+    // }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_BYTE])) {
         data->value.value_uint8 = *(UA_Byte *) value->data;
-        data->type              = NEU_DATATYPE_UBYTE;
+        data->type              = NEU_DTYPE_BYTE;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_BOOLEAN])) {
         data->value.value_boolean = *(UA_Boolean *) value->data;
-        data->type                = NEU_DATATYPE_BOOLEAN;
+        data->type                = NEU_DTYPE_BOOL;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_INT16])) {
         data->value.value_int16 = *(UA_Int16 *) value->data;
-        data->type              = NEU_DATATYPE_WORD;
+        data->type              = NEU_DTYPE_INT16;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_UINT16])) {
         data->value.value_uint16 = *(UA_UInt16 *) value->data;
-        data->type               = NEU_DATATYPE_UWORD;
+        data->type               = NEU_DTYPE_UINT16;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_INT32])) {
         data->value.value_int32 = *(UA_Int32 *) value->data;
-        data->type              = NEU_DATATYPE_DWORD;
+        data->type              = NEU_DTYPE_INT32;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_UINT32])) {
         data->value.value_uint32 = *(UA_UInt32 *) value->data;
-        data->type               = NEU_DATATYPE_UDWORD;
+        data->type               = NEU_DTYPE_UINT32;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_DATETIME])) {
         UA_DateTime time           = *(UA_DateTime *) value->data;
         data->value.value_datetime = (UA_UInt32) UA_DateTime_toUnixTime(time);
-        data->type                 = NEU_DATATYPE_DATETIME;
+        data->type                 = NEU_DTYPE_UINT32;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_FLOAT])) {
         data->value.value_float = *(UA_Float *) value->data;
-        data->type              = NEU_DATATYPE_FLOAT;
+        data->type              = NEU_DTYPE_FLOAT;
         return 0;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_DOUBLE])) {
         data->value.value_double = *(UA_Double *) value->data;
-        data->type               = NEU_DATATYPE_DOUBLE;
+        data->type               = NEU_DTYPE_DOUBLE;
         return 0;
     }
 
@@ -322,7 +322,7 @@ static int client_set_read_value(opcua_data_t *data, UA_Variant *value)
         data->value.value_string = (char *) malloc(str.length + 1);
         memset(data->value.value_string, 0, str.length + 1);
         memcpy(data->value.value_string, str.data, str.length);
-        data->type = NEU_DATATYPE_STRING;
+        data->type = NEU_DTYPE_CSTR;
         return 0;
     }
 
@@ -427,52 +427,52 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
         UA_VARIANT_DATA_NODELETE;
 
     switch (data->type) {
-    case NEU_DATATYPE_BYTE:
+    case NEU_DTYPE_BYTE:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_SBYTE];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_int8;
         break;
-    case NEU_DATATYPE_UBYTE:
-        write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_BYTE];
-        write_req.nodesToWrite[0].value.value.data = &data->value.value_uint8;
-        break;
-    case NEU_DATATYPE_BOOLEAN:
+    // case NEU_DATATYPE_UBYTE:
+    //     write_req.nodesToWrite[0].value.value.type =
+    //     &UA_TYPES[UA_TYPES_BYTE]; write_req.nodesToWrite[0].value.value.data
+    //     = &data->value.value_uint8; break;
+    case NEU_DTYPE_BOOL:
         write_req.nodesToWrite[0].value.value.type =
             &UA_TYPES[UA_TYPES_BOOLEAN];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_boolean;
         break;
-    case NEU_DATATYPE_WORD:
+    case NEU_DTYPE_INT16:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_INT16];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_int16;
         break;
-    case NEU_DATATYPE_UWORD:
+    case NEU_DTYPE_UINT16:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_UINT16];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_uint16;
         break;
-    case NEU_DATATYPE_DWORD:
+    case NEU_DTYPE_INT32:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_INT32];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_int32;
         break;
-    case NEU_DATATYPE_UDWORD:
+    case NEU_DTYPE_UINT32:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_UINT32];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_int32;
         break;
-    case NEU_DATATYPE_QWORD:
+    case NEU_DTYPE_INT64:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_INT64];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_int64;
         break;
-    case NEU_DATATYPE_UQWORD:
+    case NEU_DTYPE_UINT64:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_UINT64];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_uint64;
         break;
-    case NEU_DATATYPE_FLOAT:
+    case NEU_DTYPE_FLOAT:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_FLOAT];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_float;
         break;
-    case NEU_DATATYPE_DOUBLE:
+    case NEU_DTYPE_DOUBLE:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_DOUBLE];
         write_req.nodesToWrite[0].value.value.data = &data->value.value_double;
         break;
-    case NEU_DATATYPE_STRING:
+    case NEU_DTYPE_CSTR:
         write_req.nodesToWrite[0].value.value.type = &UA_TYPES[UA_TYPES_STRING];
         UA_String str = UA_STRING(data->value.value_string);
         write_req.nodesToWrite[0].value.value.data =
@@ -495,7 +495,7 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
     if (write_resp.responseHeader.serviceResult != UA_STATUSCODE_GOOD) {
         UA_WriteRequest_clear(&write_req);
         UA_WriteResponse_clear(&write_resp);
-        if (NEU_DATATYPE_STRING == data->type) {
+        if (NEU_DTYPE_CSTR == data->type) {
             UA_free(write_req.nodesToWrite[0].value.value.data);
         }
         return -3;

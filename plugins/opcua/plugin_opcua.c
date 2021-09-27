@@ -147,11 +147,11 @@ static int opcua_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 }
 
 static void periodic_response(neu_plugin_t *plugin, neu_taggrp_config_t *config,
-                              neu_variable_t *array)
+                              neu_data_val_t *resp_val)
 {
     UNUSED(plugin);
     UNUSED(config);
-    UNUSED(array);
+    UNUSED(resp_val);
     // neu_variable_t *head = neu_variable_create();
     // neu_plugin_response_trans_data(plugin, config, head, 0);
     // neu_variable_destroy(head);
@@ -159,16 +159,17 @@ static void periodic_response(neu_plugin_t *plugin, neu_taggrp_config_t *config,
 
 static void subscribe_response(neu_plugin_t *       plugin,
                                neu_taggrp_config_t *config,
-                               neu_variable_t *     array)
+                               neu_data_val_t *     resp_val)
 {
     UNUSED(plugin);
     UNUSED(config);
-    UNUSED(array);
+    UNUSED(resp_val);
     // TODO: return subscription data
 }
 
 static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
+    int rv = 0;
     if (plugin == NULL || req == NULL) {
         log_warn("The plugin pointer or request is NULL");
         return -1;
@@ -190,20 +191,32 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     switch (req->req_type) {
     case NEU_REQRESP_READ_DATA: {
         neu_reqresp_read_t *read_req = (neu_reqresp_read_t *) req->buf;
-        neu_data_val_t *    head     = NULL; // neu_variable_create();
+        neu_data_val_t *    resp_val;
+        resp_val = neu_dvalue_unit_new();
+        if (resp_val == NULL) {
+            log_error("Failed to allocate data value for response tags");
+            rv = -1;
+            break;
+        }
+
         plugin_handle_read_once(plugin->handle_context, read_req->grp_config,
-                                head);
-        neu_plugin_response_trans_data(plugin, read_req->grp_config, head,
+                                resp_val);
+        neu_plugin_response_trans_data(plugin, read_req->grp_config, resp_val,
                                        req->req_id);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {
         neu_reqresp_write_t *write_req = (neu_reqresp_write_t *) req->buf;
-        neu_variable_t *     data_var  = NULL; // write_req->data_var;
-        vector_t             v;
-        vector_init(&v, 10, sizeof(opcua_data_t));
-        plugin_handle_write_value(plugin->handle_context, data_var, &v);
-        vector_uninit(&v);
+        neu_data_val_t *     write_val = write_req->data_val;
+
+        neu_data_val_t *resp_val;
+        resp_val = neu_dvalue_unit_new();
+        if (resp_val == NULL) {
+            log_error("Failed to allocate data value for response write data");
+            break;
+        }
+
+        plugin_handle_write_value(plugin->handle_context, write_val, resp_val);
         break;
     }
     case NEU_REQRESP_SUBSCRIBE_NODE: {
@@ -223,7 +236,7 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     default:
         break;
     }
-    return 0;
+    return rv;
 }
 
 static int opcua_plugin_event_reply(neu_plugin_t *     plugin,

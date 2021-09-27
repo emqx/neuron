@@ -29,11 +29,11 @@ extern "C" {
 
 typedef void (*periodic_response_callback)(neu_plugin_t *       plugin,
                                            neu_taggrp_config_t *config,
-                                           neu_variable_t *     array);
+                                           neu_data_val_t *     resp_val);
 
 typedef void (*subscribe_response_callback)(neu_plugin_t *       plugin,
                                             neu_taggrp_config_t *config,
-                                            neu_variable_t *     array);
+                                            neu_data_val_t *     resp_val);
 
 typedef struct {
     neu_plugin_t *       plugin;
@@ -56,9 +56,11 @@ typedef struct {
 } opc_subscribe_tuple_t;
 
 int plugin_handle_read_once(opc_handle_context_t *context,
-                            neu_taggrp_config_t *config, neu_variable_t *array);
+                            neu_taggrp_config_t * config,
+                            neu_data_val_t *      resp_val);
 int plugin_handle_write_value(opc_handle_context_t *context,
-                              neu_variable_t *array, vector_t *data);
+                              neu_data_val_t *      write_val,
+                              neu_data_val_t *      resp_val);
 int plugin_handle_subscribe(opc_handle_context_t *      context,
                             neu_taggrp_config_t *       config,
                             periodic_response_callback  periodic_cb,

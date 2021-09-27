@@ -62,7 +62,7 @@ typedef struct {
 typedef struct {
     opcua_node_t      opcua_node;
     int               error;
-    neu_datatype_t    type;
+    neu_dtype_e       type;
     union opcua_value value;
 } opcua_data_t;
 
