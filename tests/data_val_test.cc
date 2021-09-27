@@ -250,13 +250,17 @@ TEST(DataValueTest, neu_dvalue_set_get_cstr)
 //     set_bytes = neu_bytes_new(16);
 //     rc        = neu_dvalue_set_bytes(val, set_bytes);
 //     EXPECT_EQ(0, rc);
-//     neu_dvalue_get_bytes(val, get_bytes);
+//     rc = neu_dvalue_get_bytes(val, get_bytes);
+//     EXPECT_EQ(0, rc);
 
-//     // neu_fixed_(bytes_set);
-//     // neu_fixed_array_free(array_get_ref);
+//     size_t bytes_length = set_bytes->length;
+//     EXPECT_EQ(0, memcmp(set_bytes->buf, (*get_bytes)->buf, bytes_length));
+//     EXPECT_EQ(set_bytes->buf, (*get_bytes)->buf);
+//     EXPECT_EQ(set_bytes->length, (*get_bytes)->length);
+
 //     neu_bytes_free(set_bytes);
+//     neu_bytes_free(*get_bytes);
 //     neu_dvalue_free(val);
-//     // neu_dvalue_get_bytes();
 // }
 
 TEST(DataValueTest, neu_dvalue_set_get_array)
