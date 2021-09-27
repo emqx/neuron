@@ -242,6 +242,36 @@ vector_t neu_system_get_group_configs(neu_plugin_t *plugin,
     return group_configs;
 }
 
+uint32_t neu_plugin_send_subscribe_cmd(neu_plugin_t *       plugin,
+                                       neu_node_id_t        node_id,
+                                       neu_taggrp_config_t *grp_config)
+{
+    uint32_t                     event_id = 0;
+    neu_reqresp_subscribe_node_t req      = { 0 };
+
+    req.grp_config  = grp_config;
+    req.dst_node_id = node_id;
+
+    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_SUBSCRIBE_NODE, req, event_id)
+
+    return event_id;
+}
+
+uint32_t neu_plugin_send_unsubscribe_cmd(neu_plugin_t *       plugin,
+                                         neu_node_id_t        node_id,
+                                         neu_taggrp_config_t *grp_config)
+{
+    uint32_t                     event_id = 0;
+    neu_reqresp_subscribe_node_t req      = { 0 };
+
+    req.grp_config  = grp_config;
+    req.dst_node_id = node_id;
+
+    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_UNSUBSCRIBE_NODE, req, event_id)
+
+    return event_id;
+}
+
 uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
                                   neu_taggrp_config_t *grp_configs)
 {
