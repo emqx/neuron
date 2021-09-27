@@ -25,6 +25,7 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "neu_data_expr.h"
 #include "utils/json.h"
 
 typedef struct neu_parse_read_req {
@@ -59,8 +60,9 @@ typedef struct neu_parse_write_req {
     neu_parse_write_req_tag_t *tags;
 } neu_parse_write_req_t;
 
-int  neu_parse_decode_write(char *buf, neu_parse_write_req_t **req);
-void neu_parse_decode_write_free(neu_parse_write_req_t *req);
+int             neu_parse_decode_write(char *buf, neu_parse_write_req_t **req);
+void            neu_parse_decode_write_free(neu_parse_write_req_t *req);
+neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req);
 
 #ifdef __cplusplus
 }

@@ -228,12 +228,11 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             if (adapter->plugin_module) {
-                ssize_t            size;
                 neu_reqresp_data_t data_req;
                 data_req.grp_config = databuf_ptr->grp_config;
                 void * buf     = core_databuf_get_ptr(databuf_ptr->databuf);
                 size_t buf_len = core_databuf_get_len(databuf_ptr->databuf);
-                size = neu_dvalue_desialize(buf, buf_len, &data_req.data_val);
+                neu_dvalue_desialize(buf, buf_len, &data_req.data_val);
 
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);
@@ -325,13 +324,12 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             if (adapter->plugin_module) {
-                ssize_t             size;
                 neu_reqresp_write_t write_req;
                 write_req.grp_config  = cmd_ptr->grp_config;
                 write_req.dst_node_id = cmd_ptr->dst_node_id;
                 void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
                 size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
-                size = neu_dvalue_desialize(buf, buf_len, &write_req.data_val);
+                neu_dvalue_desialize(buf, buf_len, &write_req.data_val);
 
                 intf_funs    = adapter->plugin_module->intf_funs;
                 req.req_id   = adapter_get_req_id(adapter);

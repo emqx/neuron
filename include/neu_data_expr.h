@@ -235,6 +235,7 @@ void *neu_dvalue_get_ptr(neu_data_val_t *val);
 /*
  * declare all value initialize functions
  */
+void neu_dvalue_init_bit(neu_data_val_t *val, uint8_t bit);
 void neu_dvalue_init_bool(neu_data_val_t *val, bool b);
 void neu_dvalue_init_int8(neu_data_val_t *val, int8_t i8);
 void neu_dvalue_init_int16(neu_data_val_t *val, int16_t i16);
@@ -280,6 +281,7 @@ void neu_dvalue_init_move_vec(neu_data_val_t *val, neu_dtype_e type,
 /*
  * declare all value set functions
  */
+int neu_dvalue_set_bit(neu_data_val_t *val, uint8_t bit);
 int neu_dvalue_set_bool(neu_data_val_t *val, bool b);
 int neu_dvalue_set_int8(neu_data_val_t *val, int8_t i8);
 int neu_dvalue_set_int16(neu_data_val_t *val, int16_t i16);
@@ -322,6 +324,7 @@ int neu_dvalue_set_move_vec(neu_data_val_t *val, vector_t *vec);
 /*
  * declare all value get functions
  */
+int neu_dvalue_get_bit(neu_data_val_t *val, uint8_t *p_b);
 int neu_dvalue_get_bool(neu_data_val_t *val, bool *p_b);
 int neu_dvalue_get_int8(neu_data_val_t *val, int8_t *p_i8);
 int neu_dvalue_get_int16(neu_data_val_t *val, int16_t *p_i16);

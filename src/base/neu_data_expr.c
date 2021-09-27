@@ -255,6 +255,12 @@ void *neu_dvalue_get_ptr(neu_data_val_t *val)
 /*
  * define all value initialize functions
  */
+void neu_dvalue_init_bit(neu_data_val_t *val, uint8_t bit)
+{
+    val->type      = NEU_DTYPE_BIT;
+    val->val_uint8 = bit > 0 ? 1 : 0;
+}
+
 void neu_dvalue_init_bool(neu_data_val_t *val, bool b)
 {
     val->type     = NEU_DTYPE_BOOL;
@@ -498,6 +504,17 @@ void neu_dvalue_init_move_vec(neu_data_val_t *val, neu_dtype_e type,
 /*
  * define all value set functions
  */
+int neu_dvalue_set_bit(neu_data_val_t *val, uint8_t bit)
+{
+    assert(val->type == NEU_DTYPE_BIT);
+    if (val->type == NEU_DTYPE_BIT) {
+        val->val_uint8 = bit > 0 ? 1 : 0;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 int neu_dvalue_set_bool(neu_data_val_t *val, bool b)
 {
     assert(val->type == NEU_DTYPE_BOOL);
@@ -981,6 +998,17 @@ int neu_dvalue_set_move_vec(neu_data_val_t *val, vector_t *vec)
 /*
  * define all value get functions
  */
+int neu_dvalue_get_bit(neu_data_val_t *val, uint8_t *p_b)
+{
+    assert(val->type == NEU_DTYPE_BIT);
+    if (val->type == NEU_DTYPE_BIT) {
+        *p_b = val->val_uint8;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 int neu_dvalue_get_bool(neu_data_val_t *val, bool *p_b)
 {
     assert(val->type == NEU_DTYPE_BOOL);
@@ -1681,7 +1709,7 @@ static ssize_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
 
             for (index = 0; index < array->length; index++) {
                 neu_data_val_t *sub_val;
-                size_t          sub_size;
+                ssize_t         sub_size;
 
                 sub_val =
                     *(neu_data_val_t **) neu_fixed_array_get(array, index);
@@ -1721,7 +1749,7 @@ static ssize_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf)
             VECTOR_FOR_EACH(vec, iter)
             {
                 neu_data_val_t *sub_val;
-                size_t          sub_size;
+                ssize_t         sub_size;
 
                 sub_val  = (neu_data_val_t *) iterator_get(&iter);
                 sub_size = do_dvalue_serialize(sub_val, cur_ptr);
