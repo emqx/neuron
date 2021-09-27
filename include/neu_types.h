@@ -711,7 +711,7 @@ typedef enum {
     NEU_ATTRIBUTETYPE_READ      = 1,
     NEU_ATTRIBUTETYPE_WRITE     = 2,
     NEU_ATTRIBUTETYPE_SUBSCRIBE = 4,
-} neu_attributetype_t;
+} neu_attributetype_e;
 
 typedef uint32_t neu_datatag_id_t;
 typedef char *   neu_addr_str_t;
@@ -719,7 +719,7 @@ typedef char *   neu_tag_name;
 
 typedef struct {
     neu_datatag_id_t    id;
-    neu_attributetype_t attribute;
+    neu_attributetype_e attribute;
     // The readInterval move to datatag group
     // neu_udword_t     readInterval;
     neu_datatype_t type;

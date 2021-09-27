@@ -409,3 +409,22 @@ neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
 
     return find_config;
 }
+
+int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
+                                      neu_datatag_table_t *tag_table,
+                                      neu_attributetype_e  attribute)
+{
+    vector_t *ids   = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    int       count = 0;
+
+    VECTOR_FOR_EACH(ids, iter_id)
+    {
+        neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
+        neu_datatag_t *   tag = neu_datatag_tbl_get(tag_table, *id);
+        if ((tag->attribute & attribute) == attribute) {
+            count += 1;
+        }
+    }
+
+    return count;
+}

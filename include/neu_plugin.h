@@ -125,6 +125,10 @@ intptr_t neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
 // uninit vector
 vector_t neu_system_get_plugin(neu_plugin_t *plugin);
 
+int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
+                                      neu_datatag_table_t *tag_table,
+                                      neu_attributetype_e  attribute);
+
 #ifdef __cplusplus
 }
 #endif
