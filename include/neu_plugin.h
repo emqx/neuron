@@ -97,6 +97,12 @@ neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
 // uninit vector
 vector_t neu_system_get_group_configs(neu_plugin_t *plugin,
                                       neu_node_id_t node_id);
+uint32_t neu_plugin_send_unsubscribe_cmd(neu_plugin_t *       plugin,
+                                         neu_node_id_t        node_id,
+                                         neu_taggrp_config_t *grp_config);
+uint32_t neu_plugin_send_subscribe_cmd(neu_plugin_t *       plugin,
+                                       neu_node_id_t        node_id,
+                                       neu_taggrp_config_t *grp_config);
 uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
                                   neu_taggrp_config_t *grp_configs);
 uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,

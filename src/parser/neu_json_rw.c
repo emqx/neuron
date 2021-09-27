@@ -193,6 +193,7 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req)
         case NEU_JSON_BOOL:
             v = neu_dvalue_new(NEU_DTYPE_BOOL);
             neu_dvalue_set_bool(v, req->tags[i].value.val_bool);
+            break;
         default:
             assert(false);
             break;
