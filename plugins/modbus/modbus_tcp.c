@@ -150,15 +150,17 @@ static void stop_periodic_read(neu_plugin_t *       plugin,
     pthread_mutex_unlock(&plugin->mtx);
 }
 
-static neu_data_val_t *neu_data_vat(neu_datatag_table_t *   tag_table,
-                                    neu_taggrp_config_t *   grp_config,
-                                    modbus_point_context_t *point_ctx)
+static neu_data_val_t *
+setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
+                           neu_taggrp_config_t *   grp_config,
+                           modbus_point_context_t *point_ctx)
 {
-    neu_data_val_t *   resp_val   = NULL;
-    neu_fixed_array_t *array      = NULL;
-    int                read_count = 0;
-    modbus_data_t      data_tags  = { 0 };
-    vector_t *         ids        = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    neu_data_val_t *resp_val   = NULL;
+    int             read_count = 0;
+    modbus_data_t   data_tags  = { 0 };
+    vector_t *      ids        = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    // neu_fixed_array_t *array_req  = NULL;
+    neu_fixed_array_t *array_resp = NULL;
 
     read_count = neu_plugin_tag_count_by_attribute(grp_config, tag_table,
                                                    NEU_ATTRIBUTETYPE_READ);
@@ -169,8 +171,8 @@ static neu_data_val_t *neu_data_vat(neu_datatag_table_t *   tag_table,
         return NULL;
     }
 
-    array = neu_fixed_array_new(read_count, sizeof(neu_int_val_t));
-    if (array == NULL) {
+    array_resp = neu_fixed_array_new(read_count, sizeof(neu_int_val_t));
+    if (array_resp == NULL) {
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
         return NULL;
@@ -178,149 +180,128 @@ static neu_data_val_t *neu_data_vat(neu_datatag_table_t *   tag_table,
 
     VECTOR_FOR_EACH(ids, iter_id)
     {
-        neu_datatag_id_t *id     = (neu_datatag_id_t *) iterator_get(&iter_id);
-        neu_datatag_t *   tag    = neu_datatag_tbl_get(tag_table, *id);
-        int               result = 0;
-        int               index  = 0;
-        neu_int_val_t     int_val;
+        neu_datatag_id_t *id      = (neu_datatag_id_t *) iterator_get(&iter_id);
+        neu_datatag_t *   tag     = neu_datatag_tbl_get(tag_table, *id);
+        int               result  = 0;
+        int               index   = 0;
+        neu_int_val_t     int_val = { 0 };
 
         if ((tag->attribute & NEU_ATTRIBUTETYPE_READ) ==
             NEU_ATTRIBUTETYPE_READ) {
             result = modbus_point_find(point_ctx, tag->addr_str, &data_tags);
             if (result == -1) {
+                neu_data_val_t *val_error = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+
                 log_error("Failed to find modbus point");
                 // todo errorcode
-            }
-            switch (data_tags.type) {
-            case MODBUS_B8: {
-                neu_data_val_t *val_bit = neu_dvalue_new(NEU_DTYPE_BIT);
-                neu_dvalue_set_bit(val_bit, data_tags.val.val_u8);
-                neu_int_val_init(&int_val, tag->id, val_bit);
-                neu_fixed_array_set(array, index, (void *) &int_val);
-                break;
-            }
-            case MODBUS_B16:
-                switch (tag->type) {
-                case NEU_DTYPE_INT16: {
-                    neu_data_val_t *val_i16 = neu_dvalue_new(NEU_DTYPE_INT16);
-                    neu_dvalue_set_int16(val_i16, data_tags.val.val_u16);
-                    neu_int_val_init(&int_val, tag->id, val_i16);
-                    neu_fixed_array_set(array, index, (void *) &int_val);
+                neu_dvalue_set_errorcode(val_error, result);
+                neu_int_val_init(&int_val, tag->id, val_error);
+                neu_fixed_array_set(array_resp, index, (void *) &int_val);
+            } else {
+                switch (data_tags.type) {
+                case MODBUS_B8: {
+                    neu_data_val_t *val_bit = neu_dvalue_new(NEU_DTYPE_BIT);
+                    neu_dvalue_set_bit(val_bit, data_tags.val.val_u8);
+                    neu_int_val_init(&int_val, tag->id, val_bit);
+                    neu_fixed_array_set(array_resp, index, (void *) &int_val);
                     break;
                 }
-                case NEU_DTYPE_UINT16: {
-                    neu_data_val_t *val_ui16 = neu_dvalue_new(NEU_DTYPE_UINT16);
-                    neu_dvalue_set_uint16(val_ui16, data_tags.val.val_u16);
-                    neu_int_val_init(&int_val, tag->id, val_ui16);
-                    neu_fixed_array_set(array, index, (void *) &int_val);
+                case MODBUS_B16:
+                    switch (tag->type) {
+                    case NEU_DTYPE_INT16: {
+                        neu_data_val_t *val_i16 =
+                            neu_dvalue_new(NEU_DTYPE_INT16);
+                        neu_dvalue_set_int16(val_i16, data_tags.val.val_u16);
+                        neu_int_val_init(&int_val, tag->id, val_i16);
+                        neu_fixed_array_set(array_resp, index,
+                                            (void *) &int_val);
+                        break;
+                    }
+                    case NEU_DTYPE_UINT16: {
+                        neu_data_val_t *val_ui16 =
+                            neu_dvalue_new(NEU_DTYPE_UINT16);
+                        neu_dvalue_set_uint16(val_ui16, data_tags.val.val_u16);
+                        neu_int_val_init(&int_val, tag->id, val_ui16);
+                        neu_fixed_array_set(array_resp, index,
+                                            (void *) &int_val);
+                        break;
+                    }
+                    default:
+                        break;
+                    }
                     break;
-                }
-                default:
-                    break;
-                }
-                break;
-            case MODBUS_B32:
-                switch (tag->type) {
-                case NEU_DTYPE_INT32: {
-                    neu_data_val_t *val_i32 = neu_dvalue_new(NEU_DTYPE_INT32);
-                    neu_dvalue_set_int32(val_i32, data_tags.val.val_u32);
-                    neu_int_val_init(&int_val, tag->id, val_i32);
-                    neu_fixed_array_set(array, index, (void *) &int_val);
-                    break;
-                }
-                case NEU_DTYPE_UINT32: {
-                    neu_data_val_t *val_ui32 = neu_dvalue_new(NEU_DTYPE_UINT32);
-                    neu_dvalue_set_uint32(val_ui32, data_tags.val.val_u32);
-                    neu_int_val_init(&int_val, tag->id, val_ui32);
-                    neu_fixed_array_set(array, index, (void *) &int_val);
-                    break;
-                }
-                case NEU_DTYPE_FLOAT: {
-                    neu_data_val_t *val_float = neu_dvalue_new(NEU_DTYPE_FLOAT);
-                    neu_dvalue_set_float(val_float, data_tags.val.val_f32);
-                    neu_int_val_init(&int_val, tag->id, val_float);
-                    neu_fixed_array_set(array, index, (void *) &int_val);
-                    break;
-                }
-                default:
-                    break;
+                case MODBUS_B32:
+                    switch (tag->type) {
+                    case NEU_DTYPE_INT32: {
+                        neu_data_val_t *val_i32 =
+                            neu_dvalue_new(NEU_DTYPE_INT32);
+                        neu_dvalue_set_int32(val_i32, data_tags.val.val_u32);
+                        neu_int_val_init(&int_val, tag->id, val_i32);
+                        neu_fixed_array_set(array_resp, index,
+                                            (void *) &int_val);
+                        break;
+                    }
+                    case NEU_DTYPE_UINT32: {
+                        neu_data_val_t *val_ui32 =
+                            neu_dvalue_new(NEU_DTYPE_UINT32);
+                        neu_dvalue_set_uint32(val_ui32, data_tags.val.val_u32);
+                        neu_int_val_init(&int_val, tag->id, val_ui32);
+                        neu_fixed_array_set(array_resp, index,
+                                            (void *) &int_val);
+                        break;
+                    }
+                    case NEU_DTYPE_FLOAT: {
+                        neu_data_val_t *val_float =
+                            neu_dvalue_new(NEU_DTYPE_FLOAT);
+                        neu_dvalue_set_float(val_float, data_tags.val.val_f32);
+                        neu_int_val_init(&int_val, tag->id, val_float);
+                        neu_fixed_array_set(array_resp, index,
+                                            (void *) &int_val);
+                        break;
+                    }
+                    default:
+                        break;
+                    }
                 }
             }
         }
         index += 1;
     }
-    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
+    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array_resp);
 
     return resp_val;
 }
 
-static void tags_read(neu_plugin_t *plugin, neu_taggrp_config_t *grp_config)
+static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
+                                                   neu_plugin_t *  plugin)
 {
-    struct subscribe_instance *sub_inst = NULL;
+    neu_fixed_array_t *array_req  = NULL;
+    neu_fixed_array_t *array_resp = NULL;
+    neu_data_val_t *   resp_val   = NULL;
 
-    pthread_mutex_lock(&plugin->mtx);
-
-    TAILQ_FOREACH(sub_inst, &plugin->sub_instances, node)
-    {
-        if (sub_inst->grp_configs == grp_config) {
-            neu_response_t     resp      = { 0 };
-            neu_reqresp_data_t data_resp = { 0 };
-            neu_data_val_t *   resp_val  = NULL;
-
-            resp_val = neu_data_vat(plugin->tag_table, grp_config,
-                                    sub_inst->point_ctx);
-
-            data_resp.grp_config = grp_config;
-            data_resp.data_val   = resp_val;
-            resp.req_id          = 1;
-            resp.resp_type       = NEU_REQRESP_TRANS_DATA;
-            resp.buf             = &data_resp;
-            resp.buf_len         = sizeof(neu_reqresp_data_t);
-
-            plugin->common.adapter_callbacks->response(plugin->common.adapter,
-                                                       &resp);
-            log_info("find read grp: %p", grp_config);
-            break;
-        }
-    }
-
-    pthread_mutex_unlock(&plugin->mtx);
-
-    return;
-}
-
-static void tags_write(neu_plugin_t *plugin, neu_reqresp_write_t *write_req)
-{
-    neu_data_val_t *   write_val = NULL;
-    neu_fixed_array_t *array     = NULL;
-    neu_data_val_t *   resp_val  = NULL;
-    neu_reqresp_data_t data_resp = { 0 };
-    neu_response_t     resp      = { 0 };
-
-    write_val = write_req->data_val;
-    neu_dvalue_get_ref_array(write_val, &array);
+    neu_dvalue_get_ref_array(write_val, &array_req);
 
     resp_val = neu_dvalue_unit_new();
     if (resp_val == NULL) {
         log_error("Failed to allocate data value for response write data");
-        return;
+        return NULL;
     }
 
-    array = neu_fixed_array_new(array->length, sizeof(neu_int_val_t));
-    if (array == NULL) {
+    array_resp = neu_fixed_array_new(array_req->length, sizeof(neu_int_val_t));
+    if (array_resp == NULL) {
         log_error("Failed to allocate array for response write data");
         neu_dvalue_free(resp_val);
-        return;
+        return NULL;
     }
 
-    for (uint32_t i = 0; i < array->length; i++) {
+    for (uint32_t i = 0; i < array_req->length; i++) {
         int            ret     = 0;
-        neu_int_val_t *int_val = neu_fixed_array_get(array, i);
+        neu_int_val_t *int_val = neu_fixed_array_get(array_req, i);
         neu_dtype_e    val_type =
             neu_value_type_in_dtype(neu_dvalue_get_type(int_val->val));
         modbus_data_t   data = { 0 };
         neu_int_val_t   iv;
-        neu_data_val_t *val_error = neu_dvalue_new(NEU_DTYPE_INT32);
+        neu_data_val_t *val_error = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
         neu_datatag_t * tag =
             neu_datatag_tbl_get(plugin->tag_table, int_val->key);
 
@@ -369,27 +350,15 @@ static void tags_write(neu_plugin_t *plugin, neu_reqresp_write_t *write_req)
             ret = -1;
             break;
         }
+        neu_dvalue_set_errorcode(val_error, ret);
 
-        if (ret == 0) {
-            log_error("Success to allocate array for response write data");
-            // todo errorcode
-
-        } else {
-            log_error("Failed to allocate array for response write data");
-            // todo errorcode
-        }
         neu_int_val_init(&iv, int_val->key, val_error);
-        neu_fixed_array_set(array, i, (void *) &iv);
+        neu_fixed_array_set(array_resp, i, (void *) &iv);
     }
-    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
 
-    data_resp.grp_config = write_req->grp_config;
-    data_resp.data_val   = resp_val;
-    resp.req_id          = 1;
-    resp.resp_type       = NEU_REQRESP_TRANS_DATA;
-    resp.buf             = &data_resp;
-    resp.buf_len         = sizeof(neu_reqresp_data_t);
-    plugin->common.adapter_callbacks->response(plugin->common.adapter, &resp);
+    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array_resp);
+
+    return resp_val;
 }
 
 static void tags_periodic_read(nng_aio *aio, void *arg, int code)
@@ -405,8 +374,9 @@ static void tags_periodic_read(nng_aio *aio, void *arg, int code)
 
             modbus_point_all_read(sub_inst->point_ctx, true,
                                   send_recv_callback);
-            resp_val = neu_data_vat(sub_inst->plugin->tag_table,
-                                    sub_inst->grp_configs, sub_inst->point_ctx);
+            resp_val = setup_read_resp_data_value(sub_inst->plugin->tag_table,
+                                                  sub_inst->grp_configs,
+                                                  sub_inst->point_ctx);
             // todo modbus point find;
             data_resp.grp_config = sub_inst->grp_configs;
             data_resp.data_val   = resp_val;
@@ -531,15 +501,59 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_DATA: {
-        neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
+        neu_reqresp_read_t *       read_req = (neu_reqresp_read_t *) req->buf;
+        struct subscribe_instance *sub_inst = NULL;
 
-        tags_read(plugin, data->grp_config);
+        pthread_mutex_lock(&plugin->mtx);
+
+        TAILQ_FOREACH(sub_inst, &plugin->sub_instances, node)
+        {
+            if (sub_inst->grp_configs == read_req->grp_config) {
+                neu_response_t     resp      = { 0 };
+                neu_reqresp_data_t data_resp = { 0 };
+
+                assert(req->buf_len == sizeof(neu_reqresp_read_t));
+                data_resp.grp_config = read_req->grp_config;
+                data_resp.data_val   = setup_read_resp_data_value(
+                    plugin->tag_table, read_req->grp_config,
+                    sub_inst->point_ctx);
+
+                memset(&resp, 0, sizeof(resp));
+                resp.req_id    = 1;
+                resp.resp_type = NEU_REQRESP_READ_RESP;
+                resp.buf       = &data_resp;
+                resp.buf_len   = sizeof(neu_reqresp_data_t);
+                resp.recver_id = req->sender_id;
+
+                plugin->common.adapter_callbacks->response(
+                    plugin->common.adapter, &resp);
+                log_info("find read grp: %p", read_req->grp_config);
+                break;
+            }
+        }
+
+        pthread_mutex_unlock(&plugin->mtx);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {
-        neu_reqresp_write_t *data = (neu_reqresp_write_t *) req->buf;
+        neu_reqresp_write_t *write_req = (neu_reqresp_write_t *) req->buf;
+        neu_reqresp_data_t   data_resp = { 0 };
+        neu_response_t       resp      = { 0 };
 
-        tags_write(plugin, data);
+        assert(req->buf_len == sizeof(neu_reqresp_write_t));
+
+        data_resp.grp_config = write_req->grp_config;
+        data_resp.data_val =
+            setup_write_resp_data_value(write_req->data_val, plugin);
+
+        memset(&resp, 0, sizeof(resp));
+        resp.req_id    = 1;
+        resp.resp_type = NEU_REQRESP_WRITE_RESP;
+        resp.buf       = &data_resp;
+        resp.buf_len   = sizeof(neu_reqresp_data_t);
+        resp.recver_id = req->sender_id;
+        plugin->common.adapter_callbacks->response(plugin->common.adapter,
+                                                   &resp);
         break;
     }
     case NEU_REQRESP_SUBSCRIBE_NODE: {
