@@ -150,8 +150,11 @@ static void generate_read_result_array(vector_t *         datas,
             break;
         }
 
-        default:
+        default: {
+            val = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+            neu_dvalue_set_errorcode(val, -1); // no match
             break;
+        }
         }
 
         neu_int_val_init(&int_val, data->opcua_node.id, val);
@@ -473,6 +476,7 @@ static opc_subscribe_tuple_t *add_subscribe(opc_handle_context_t *context,
     opc_subscribe->node_id = context->self_node_id;
     opc_subscribe->name    = strdup(neu_taggrp_cfg_get_name(config));
     opc_subscribe->config  = config;
+    opc_subscribe->context = context;
 
     NEU_LIST_NODE_INIT(&opc_subscribe->node);
     neu_list_append(&context->subscribe_list, opc_subscribe);
