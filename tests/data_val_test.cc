@@ -7,6 +7,7 @@ TEST(DataValueTest, neu_dvalue_init_set_get_prim_val)
 {
     neu_data_val_t *val;
 
+    uint8_t ret_bit;
     int8_t  ret_int8;
     int16_t ret_int16;
     int32_t ret_int32;
@@ -20,6 +21,17 @@ TEST(DataValueTest, neu_dvalue_init_set_get_prim_val)
     float  ret_float;
     double ret_double;
     bool   b;
+
+    /** test bit **/
+    val = neu_dvalue_new(NEU_DTYPE_BIT);
+    neu_dvalue_init_bit(val, 1);
+    EXPECT_EQ(0, neu_dvalue_get_bit(val, &ret_bit));
+    EXPECT_EQ(1, ret_bit);
+
+    neu_dvalue_set_bit(val, 0);
+    EXPECT_EQ(0, neu_dvalue_get_bit(val, &ret_bit));
+    EXPECT_EQ(0, ret_bit);
+    neu_dvalue_free(val);
 
     /** test bool **/
     val = neu_dvalue_new(NEU_DTYPE_BOOL);
@@ -239,29 +251,35 @@ TEST(DataValueTest, neu_dvalue_set_get_cstr)
     neu_dvalue_free(val);
 }
 
-// TEST(DataValueTest, neu_dvalue_set_get_bytes)
-// {
-//     // neu_data_val_t *val = neu_dvalue_inplace_new(NEU_DTYPE_BIT, sizeof());
-//     neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_BYTES);
-//     neu_bytes_t *   set_bytes;
-//     neu_bytes_t **  get_bytes;
-//     int             rc;
+TEST(DataValueTest, neu_dvalue_set_get_string)
+{
+    neu_data_val_t *val        = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_string_t *  string_set = NULL;
 
-//     set_bytes = neu_bytes_new(16);
-//     rc        = neu_dvalue_set_bytes(val, set_bytes);
-//     EXPECT_EQ(0, rc);
-//     rc = neu_dvalue_get_bytes(val, get_bytes);
-//     EXPECT_EQ(0, rc);
+    neu_dvalue_free(val);
+}
 
-//     size_t bytes_length = set_bytes->length;
-//     EXPECT_EQ(0, memcmp(set_bytes->buf, (*get_bytes)->buf, bytes_length));
-//     EXPECT_EQ(set_bytes->buf, (*get_bytes)->buf);
-//     EXPECT_EQ(set_bytes->length, (*get_bytes)->length);
+TEST(DataValueTest, neu_dvalue_set_get_bytes)
+{
+    neu_data_val_t *val = neu_dvalue_new(NEU_DTYPE_BYTES);
+    neu_bytes_t *   bytes_set;
+    neu_bytes_t *   bytes_get;
+    int             rc;
 
-//     neu_bytes_free(set_bytes);
-//     neu_bytes_free(*get_bytes);
-//     neu_dvalue_free(val);
-// }
+    bytes_set = neu_bytes_new(16);
+    rc        = neu_dvalue_set_bytes(val, bytes_set);
+    EXPECT_EQ(0, rc);
+    rc = neu_dvalue_get_bytes(val, &bytes_get);
+    EXPECT_EQ(0, rc);
+
+    size_t bytes_length = bytes_set->length;
+    EXPECT_EQ(0, memcmp(bytes_set->buf, bytes_get->buf, bytes_length));
+    EXPECT_EQ(bytes_set->length, bytes_get->length);
+
+    neu_bytes_free(bytes_set);
+    neu_bytes_free(bytes_get);
+    neu_dvalue_free(val);
+}
 
 TEST(DataValueTest, neu_dvalue_set_get_array)
 {
