@@ -62,6 +62,8 @@ typedef enum msg_type {
 
     MSG_TYPE_DATA_START     = 0x3000,
     MSG_DATA_NEURON_DATABUF = MSG_TYPE_DATA_START,
+    MSG_DATA_READ_RESP,
+    MSG_DATA_WRITE_RESP,
     MSG_TYPE_DATA_END,
 
     // User customer message types
@@ -140,6 +142,20 @@ typedef struct neuron_databuf {
     neu_taggrp_config_t *grp_config;
     core_databuf_t *     databuf;
 } neuron_databuf_t;
+
+/* MSG_DATA_READ_RESP */
+typedef struct read_data_resp {
+    neu_taggrp_config_t *grp_config;
+    core_databuf_t *     databuf;
+    adapter_id_t         recver_id;
+} read_data_resp_t;
+
+/* MSG_DATA_WRITE_RESP */
+typedef struct write_data_resp {
+    neu_taggrp_config_t *grp_config;
+    core_databuf_t *     databuf;
+    adapter_id_t         recver_id;
+} write_data_resp_t;
 
 typedef struct message message_t;
 

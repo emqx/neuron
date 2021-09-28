@@ -47,7 +47,9 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_NOP = 0,
     NEU_REQRESP_ERR_CODE, // result code of command
     NEU_REQRESP_READ_DATA,
+    NEU_REQRESP_READ_RESP,
     NEU_REQRESP_WRITE_DATA,
+    NEU_REQRESP_WRITE_RESP,
     NEU_REQRESP_SUBSCRIBE_NODE,
     NEU_REQRESP_UNSUBSCRIBE_NODE,
     NEU_REQRESP_TRANS_DATA,
@@ -80,12 +82,24 @@ typedef struct neu_reqresp_read {
     neu_node_id_t        dst_node_id;
 } neu_reqresp_read_t;
 
+/* NEU_REQRESP_READ_RESP */
+typedef struct neu_reqresp_read_resp {
+    neu_taggrp_config_t *grp_config;
+    neu_data_val_t *     data_val; ///< data values of reading
+} neu_reqresp_read_resp_t;
+
 /* NEU_REQRESP_WRITE_DATA */
 typedef struct neu_reqresp_write {
     neu_taggrp_config_t *grp_config;
     neu_node_id_t        dst_node_id;
     neu_data_val_t *     data_val;
 } neu_reqresp_write_t;
+
+/* NEU_REQRESP_WRITE_RESP */
+typedef struct neu_reqresp_write_resp {
+    neu_taggrp_config_t *grp_config;
+    neu_data_val_t *     data_val; ///< result status of writing
+} neu_reqresp_write_resp_t;
 
 /* NEU_REQRESP_SUBSCRIBE_NODE */
 typedef struct neu_reqresp_subscribe_node {
@@ -248,6 +262,7 @@ typedef struct neu_represp_node_id {
 typedef struct neu_request {
     uint32_t           req_id;
     neu_reqresp_type_e req_type;
+    uint64_t           sender_id; // adapter_id of sender
     uint32_t           buf_len;
     void *             buf;
 } neu_request_t;
@@ -255,8 +270,10 @@ typedef struct neu_request {
 typedef struct neu_response {
     uint32_t           req_id;
     neu_reqresp_type_e resp_type;
-    uint32_t           buf_len;
-    void *             buf;
+    uint64_t           recver_id; // adapter_id of reciever, it is same as
+                                  // sender_id in neu_request_t
+    uint32_t buf_len;
+    void *   buf;
 } neu_response_t;
 
 /**

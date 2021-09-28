@@ -110,7 +110,10 @@ static neu_data_val_t *setup_read_resp_data_value()
         return NULL;
     }
 
-    array = neu_fixed_array_new(3, sizeof(neu_int_val_t));
+    // Return array of reading result, the first element is error code of
+    // all reading, so length is count of tags plus 1.
+    // In this case, length is 3 + 1 = 4.
+    array = neu_fixed_array_new(4, sizeof(neu_int_val_t));
     if (array == NULL) {
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
@@ -118,29 +121,37 @@ static neu_data_val_t *setup_read_resp_data_value()
     }
 
     neu_int_val_t   int_val;
+    neu_data_val_t *val_err;
+    val_err = neu_dvalue_new(NEU_DTYPE_INT32);
+    neu_dvalue_set_int32(val_err, 0);
+    // tag id of first element is 0 for indicate all reading
+    neu_int_val_init(&int_val, 0, val_err);
+    neu_fixed_array_set(array, 0, (void *) &int_val);
+
     neu_data_val_t *val_i64;
     val_i64 = neu_dvalue_new(NEU_DTYPE_INT64);
     neu_dvalue_set_int64(val_i64, tag001);
     neu_int_val_init(&int_val, 1, val_i64);
-    neu_fixed_array_set(array, 0, (void *) &int_val);
+    neu_fixed_array_set(array, 1, (void *) &int_val);
 
     neu_data_val_t *val_f64;
     val_f64 = neu_dvalue_new(NEU_DTYPE_DOUBLE);
     neu_dvalue_set_double(val_f64, tag002);
     neu_int_val_init(&int_val, 2, val_f64);
-    neu_fixed_array_set(array, 1, (void *) &int_val);
+    neu_fixed_array_set(array, 2, (void *) &int_val);
 
     neu_data_val_t *val_cstr;
     val_cstr = neu_dvalue_new(NEU_DTYPE_CSTR);
     neu_dvalue_set_cstr(val_cstr, tag003);
     neu_int_val_init(&int_val, 3, val_cstr);
-    neu_fixed_array_set(array, 2, (void *) &int_val);
+    neu_fixed_array_set(array, 3, (void *) &int_val);
 
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
     return resp_val;
 }
 
-static int handle_write_data_value(neu_data_val_t *write_val)
+static int handle_write_data_value(neu_data_val_t * write_val,
+                                   neu_data_val_t **p_resp_val)
 {
     neu_fixed_array_t *array;
 
@@ -152,6 +163,7 @@ static int handle_write_data_value(neu_data_val_t *write_val)
     neu_data_val_t *val_cstr;
     char *          cstr;
 
+    log_info("Write data values to driver cache");
     int_val = neu_fixed_array_get(array, 0);
     val_i64 = int_val->val;
     neu_dvalue_get_int64(val_i64, &tag001);
@@ -162,6 +174,41 @@ static int handle_write_data_value(neu_data_val_t *write_val)
     val_cstr = int_val->val;
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
     strncpy(tag003, cstr, TAG_DATA_STR_LEN);
+
+    neu_data_val_t *resp_val;
+
+    *p_resp_val = NULL;
+    resp_val    = neu_dvalue_unit_new();
+    if (resp_val == NULL) {
+        log_error("Failed to allocate data value for response write data");
+        return -1;
+    }
+
+    // Return array of writting error code, the first element is error code of
+    // all writting, so length is count of tags plus 1.
+    // In this case, length is 3 + 1 = 4.
+    array = neu_fixed_array_new(4, sizeof(neu_int_val_t));
+    if (array == NULL) {
+        log_error("Failed to allocate array for response write data");
+        neu_dvalue_free(resp_val);
+        return -1;
+    }
+
+    // tag id of first element is 0 for indicate all writting
+    size_t        i;
+    neu_int_val_t resp_int_val;
+    for (i = 0; i < array->length; i++) {
+        neu_data_val_t *val_i32;
+
+        val_i32 = neu_dvalue_unit_new();
+        // all results of writing is success, so set 0
+        neu_dvalue_init_int32(val_i32, 0);
+        neu_int_val_init(&resp_int_val, i, val_i32);
+        neu_fixed_array_set(array, i, &resp_int_val);
+    }
+
+    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
+    *p_resp_val = resp_val;
     return 0;
 }
 
@@ -183,9 +230,11 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_reqresp_read_t *read_req;
         neu_response_t      resp;
         neu_reqresp_data_t  data_resp;
+        neu_node_id_t       sender_id;
 
         assert(req->buf_len == sizeof(neu_reqresp_read_t));
-        read_req = (neu_reqresp_read_t *) req->buf;
+        read_req  = (neu_reqresp_read_t *) req->buf;
+        sender_id = req->sender_id;
 
         // log_info("Read data from addr(%d) with group config(%p), "
         //          "dst_node_id:%d, req_id:%d",
@@ -204,7 +253,8 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
         memset(&resp, 0, sizeof(resp));
         resp.req_id    = req->req_id;
-        resp.resp_type = NEU_REQRESP_TRANS_DATA;
+        resp.resp_type = NEU_REQRESP_READ_RESP;
+        resp.recver_id = sender_id;
         resp.buf_len   = sizeof(neu_reqresp_data_t);
         resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
@@ -213,39 +263,31 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     case NEU_REQRESP_WRITE_DATA: {
         neu_reqresp_write_t *write_req;
+        neu_response_t       resp;
+        neu_reqresp_data_t   data_resp;
+        neu_node_id_t        sender_id;
 
         assert(req->buf_len == sizeof(neu_reqresp_write_t));
         write_req = (neu_reqresp_write_t *) req->buf;
+        sender_id = req->sender_id;
 
-        handle_write_data_value(write_req->data_val);
-
-        neu_data_val_t *   resp_val;
-        neu_fixed_array_t *array;
-        resp_val = neu_dvalue_unit_new();
+        neu_data_val_t *resp_val;
+        handle_write_data_value(write_req->data_val, &resp_val);
         if (resp_val == NULL) {
-            log_error("Failed to allocate data value for response write data");
             rv = -1;
             break;
         }
 
-        array = neu_fixed_array_new(3, sizeof(neu_int_val_t));
-        if (array == NULL) {
-            log_error("Failed to allocate array for response write data");
-            neu_dvalue_free(resp_val);
-            rv = -1;
-            break;
-        }
+        data_resp.grp_config = write_req->grp_config;
+        data_resp.data_val   = resp_val;
 
-        size_t        i;
-        neu_int_val_t resp_int_val;
-        for (i = 0; i < array->length; i++) {
-            neu_data_val_t *val_i32;
-
-            val_i32 = neu_dvalue_unit_new();
-            neu_dvalue_init_int32(val_i32, 0);
-            neu_int_val_init(&resp_int_val, i + 1, val_i32);
-        }
-
+        memset(&resp, 0, sizeof(resp));
+        resp.req_id    = req->req_id;
+        resp.resp_type = NEU_REQRESP_WRITE_RESP;
+        resp.recver_id = sender_id;
+        resp.buf_len   = sizeof(neu_reqresp_data_t);
+        resp.buf       = &data_resp;
+        rv = adapter_callbacks->response(plugin->common.adapter, &resp);
         break;
     }
 

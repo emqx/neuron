@@ -384,25 +384,60 @@ static int handle_trans_data_value(neu_data_val_t *trans_val)
     neu_dvalue_get_ref_array(trans_val, &array);
 
     neu_int_val_t * int_val;
+    neu_data_val_t *val_err;
     neu_data_val_t *val_i64;
     neu_data_val_t *val_f64;
     neu_data_val_t *val_cstr;
+    int32_t         err;
     int64_t         i64;
     double          f64;
     char *          cstr;
 
     int_val = neu_fixed_array_get(array, 0);
+    val_err = int_val->val;
+    neu_dvalue_get_int32(val_err, &err);
+
+    int_val = neu_fixed_array_get(array, 1);
     val_i64 = int_val->val;
     neu_dvalue_get_int64(val_i64, &i64);
-    int_val = neu_fixed_array_get(array, 1);
+    int_val = neu_fixed_array_get(array, 2);
     val_f64 = int_val->val;
     neu_dvalue_get_double(val_f64, &f64);
-    int_val  = neu_fixed_array_get(array, 2);
+    int_val  = neu_fixed_array_get(array, 3);
     val_cstr = int_val->val;
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
 
-    log_info("The sample driver read data, i64: %d, f64: %f, cstr: %s", i64,
-             f64, cstr);
+    log_info("The sample driver read status: %d", err);
+    if (err == 0) {
+        log_info("The sample driver read data, i64: %d, f64: %f, cstr: %s", i64,
+                 f64, cstr);
+    }
+    return 0;
+}
+
+static int handle_read_resp_value(neu_data_val_t *data_val)
+{
+    return handle_trans_data_value(data_val);
+}
+
+static int handle_write_resp_value(neu_data_val_t *data_value)
+{
+    neu_fixed_array_t *array;
+
+    neu_dvalue_get_ref_array(data_value, &array);
+
+    neu_int_val_t * int_val;
+    neu_data_val_t *val_err;
+    int32_t         err;
+    size_t          i;
+
+    for (i = 0; i < array->length; i++) {
+        int_val = neu_fixed_array_get(array, i);
+        val_err = int_val->val;
+        neu_dvalue_get_int32(val_err, &err);
+        log_info("The sample driver write datatag(%d) return result(%d)",
+                 int_val->key, err);
+    }
     return 0;
 }
 
@@ -428,6 +463,26 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_data = (neu_reqresp_data_t *) req->buf;
 
         handle_trans_data_value(neu_data->data_val);
+        break;
+    }
+
+    case NEU_REQRESP_READ_RESP: {
+        neu_reqresp_read_resp_t *read_resp;
+
+        assert(req->buf_len == sizeof(neu_reqresp_read_resp_t));
+        read_resp = (neu_reqresp_read_resp_t *) req->buf;
+
+        handle_read_resp_value(read_resp->data_val);
+        break;
+    }
+
+    case NEU_REQRESP_WRITE_RESP: {
+        neu_reqresp_write_resp_t *write_resp;
+
+        assert(req->buf_len == sizeof(neu_reqresp_write_resp_t));
+        write_resp = (neu_reqresp_write_resp_t *) req->buf;
+
+        handle_write_resp_value(write_resp->data_val);
         break;
     }
 
