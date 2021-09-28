@@ -395,7 +395,7 @@ static int handle_trans_data_value(neu_data_val_t *trans_val)
 
     int_val = neu_fixed_array_get(array, 0);
     val_err = int_val->val;
-    neu_dvalue_get_int32(val_err, &err);
+    neu_dvalue_get_errorcode(val_err, &err);
 
     int_val = neu_fixed_array_get(array, 1);
     val_i64 = int_val->val;
@@ -434,7 +434,7 @@ static int handle_write_resp_value(neu_data_val_t *data_value)
     for (i = 0; i < array->length; i++) {
         int_val = neu_fixed_array_get(array, i);
         val_err = int_val->val;
-        neu_dvalue_get_int32(val_err, &err);
+        neu_dvalue_get_errorcode(val_err, &err);
         log_info("The sample driver write datatag(%d) return result(%d)",
                  int_val->key, err);
     }

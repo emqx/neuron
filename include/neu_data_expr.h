@@ -247,11 +247,11 @@ void neu_dvalue_init_uint32(neu_data_val_t *val, uint32_t u32);
 void neu_dvalue_init_uint64(neu_data_val_t *val, uint64_t u64);
 void neu_dvalue_init_float(neu_data_val_t *val, float f32);
 void neu_dvalue_init_double(neu_data_val_t *val, double f64);
+void neu_dvalue_init_errorcode(neu_data_val_t *val, int32_t i32);
 void neu_dvalue_init_int_val(neu_data_val_t *val, neu_int_val_t int_val);
 void neu_dvalue_init_string_val(neu_data_val_t * val,
                                 neu_string_val_t string_val);
 void neu_dvalue_init_data_val(neu_data_val_t *val, void *data);
-void neu_dvalue_init_errorcode_val(neu_data_val_t *val, int32_t i32);
 
 /* The parameter cstr/bytes/array/vec is copy to neu_data_val_t
  */
@@ -294,9 +294,9 @@ int neu_dvalue_set_uint32(neu_data_val_t *val, uint32_t u32);
 int neu_dvalue_set_uint64(neu_data_val_t *val, uint64_t u64);
 int neu_dvalue_set_float(neu_data_val_t *val, float f32);
 int neu_dvalue_set_double(neu_data_val_t *val, double f64);
+int neu_dvalue_set_errorcode(neu_data_val_t *val, int32_t i32);
 int neu_dvalue_set_int_val(neu_data_val_t *val, neu_int_val_t int_val);
 int neu_dvalue_set_string_val(neu_data_val_t *val, neu_string_val_t string_val);
-int neu_dvalue_set_errorcode(neu_data_val_t *val, int32_t i32);
 
 /* The parameter cstr/bytes/array/vec is copy to neu_data_val_t
  */
@@ -338,11 +338,11 @@ int neu_dvalue_get_uint32(neu_data_val_t *val, uint32_t *p_u32);
 int neu_dvalue_get_uint64(neu_data_val_t *val, uint64_t *p_u64);
 int neu_dvalue_get_float(neu_data_val_t *val, float *p_f32);
 int neu_dvalue_get_double(neu_data_val_t *val, double *p_f64);
+int neu_dvalue_get_errorcode(neu_data_val_t *val, int32_t *p_i32);
 int neu_dvalue_get_int_val(neu_data_val_t *val, neu_int_val_t *p_int_val);
 int neu_dvalue_get_string_val(neu_data_val_t *  val,
                               neu_string_val_t *p_string_val);
 int neu_dvalue_get_data_val(neu_data_val_t *val, void **p_data);
-int neu_dvalue_get_errorcode(neu_data_val_t *val, int32_t *p_i32);
 
 /* The parameter cstr/bytes/array/vec is copy from neu_data_val_t
  */

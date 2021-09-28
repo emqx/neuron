@@ -145,7 +145,7 @@ TEST(DataValueTest, neu_dvalue_init_set_get_prim_val)
     /** test errorcode **/
     int32_t ret_error = 0;
     val               = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-    neu_dvalue_init_errorcode_val(val, -1);
+    neu_dvalue_init_errorcode(val, -1);
     EXPECT_EQ(0, neu_dvalue_get_errorcode(val, &ret_error));
     EXPECT_EQ(NEU_DTYPE_ERRORCODE, neu_dvalue_get_type(val));
     EXPECT_EQ(-1, ret_error);

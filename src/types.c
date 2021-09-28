@@ -908,7 +908,9 @@ neu_fixed_array_t *neu_fixed_array_new(size_t length, size_t esize)
 /* shallow free */
 void neu_fixed_array_free(neu_fixed_array_t *array)
 {
-    free(array);
+    if (array != NULL) {
+        free(array);
+    }
     return;
 }
 

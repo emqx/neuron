@@ -62,6 +62,7 @@ static bool type_has_pointer(neu_dtype_e type)
     case NEU_DTYPE_BYTES:
     case NEU_DTYPE_TEXT:
     case NEU_DTYPE_STRUCT:
+    case NEU_DTYPE_DATA_VAL:
         return true;
 
     default:
@@ -327,6 +328,12 @@ void neu_dvalue_init_double(neu_data_val_t *val, double f64)
     val->val_double = f64;
 }
 
+void neu_dvalue_init_errorcode(neu_data_val_t *val, int32_t i32)
+{
+    val->type      = NEU_DTYPE_ERRORCODE;
+    val->val_int32 = i32;
+}
+
 void neu_dvalue_init_int_val(neu_data_val_t *val, neu_int_val_t int_val)
 {
     neu_dtype_e type;
@@ -354,18 +361,6 @@ void neu_dvalue_init_string_val(neu_data_val_t * val,
     if (val->val_data != NULL) {
         neu_string_val_move((neu_string_val_t *) val->val_data, &string_val);
     }
-}
-
-void neu_dvalue_init_data_val(neu_data_val_t *val, void *data)
-{
-    val->type     = NEU_DTYPE_DATA_VAL;
-    val->val_data = data;
-}
-
-void neu_dvalue_init_errorcode_val(neu_data_val_t *val, int32_t i32)
-{
-    val->type      = NEU_DTYPE_ERRORCODE;
-    val->val_int32 = i32;
 }
 
 void neu_dvalue_init_copy_cstr(neu_data_val_t *val, char *cstr)
@@ -481,6 +476,17 @@ void neu_dvalue_init_move_bytes(neu_data_val_t *val, neu_bytes_t *bytes)
     type |= NEU_DTYPE_OWNERED_PTR;
     val->type     = type;
     val->val_data = bytes;
+}
+
+void neu_dvalue_init_move_data_val(neu_data_val_t *val, neu_data_val_t *data)
+{
+    neu_dtype_e type;
+
+    type = NEU_DTYPE_DATA_VAL;
+    type |= NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
+    type |= NEU_DTYPE_OWNERED_PTR;
+    val->type     = type;
+    val->val_data = data;
 }
 
 /* The owership of parameter array is move to neu_data_val_t
@@ -642,6 +648,17 @@ int neu_dvalue_set_double(neu_data_val_t *val, double f64)
     }
 }
 
+int neu_dvalue_set_errorcode(neu_data_val_t *val, int32_t i32)
+{
+    assert(val->type == NEU_DTYPE_ERRORCODE);
+    if (val->type == NEU_DTYPE_ERRORCODE) {
+        val->val_int32 = i32;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 int neu_dvalue_set_int_val(neu_data_val_t *val, neu_int_val_t int_val)
 {
     neu_dtype_e type;
@@ -691,29 +708,21 @@ int neu_dvalue_set_string_val(neu_data_val_t *val, neu_string_val_t string_val)
     }
 }
 
-int neu_dvalue_set_errorcode(neu_data_val_t *val, int32_t i32)
-{
-    assert(val->type == NEU_DTYPE_ERRORCODE);
-    if (val->type == NEU_DTYPE_ERRORCODE) {
-        val->val_int32 = i32;
-        return 0;
-    } else {
-        return -1;
-    }
-}
-
 int neu_dvalue_set_cstr(neu_data_val_t *val, char *cstr)
 {
     neu_dtype_e type;
+    neu_dtype_e val_type;
 
     type = NEU_DTYPE_CSTR | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
     type |= NEU_DTYPE_OWNERED_PTR;
-    assert(val->type == type);
-    if (val->type == type) {
-        if (val->val_data != NULL) {
+    val_type = val->type | NEU_DTYPE_OWNERED_PTR;
+    assert(val_type == type);
+    if (val_type == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             free(val->val_data);
         }
         val->val_data = strdup(cstr);
+        val->type     = type;
         return 0;
     } else {
         return -1;
@@ -723,15 +732,18 @@ int neu_dvalue_set_cstr(neu_data_val_t *val, char *cstr)
 int neu_dvalue_set_string(neu_data_val_t *val, neu_string_t *string)
 {
     neu_dtype_e type;
+    neu_dtype_e val_type;
 
-    type = NEU_DTYPE_BYTES | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
+    type = NEU_DTYPE_STRING | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
     type |= NEU_DTYPE_OWNERED_PTR;
-    assert(val->type == type);
-    if (val->type == type) {
-        if (val->val_data != NULL) {
+    val_type = val->type | NEU_DTYPE_OWNERED_PTR;
+    assert(val_type == type);
+    if (val_type == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             neu_string_free(val->val_data);
         }
         val->val_data = neu_string_clone(string);
+        val->type     = type;
         return 0;
     } else {
         return -1;
@@ -741,15 +753,18 @@ int neu_dvalue_set_string(neu_data_val_t *val, neu_string_t *string)
 int neu_dvalue_set_bytes(neu_data_val_t *val, neu_bytes_t *bytes)
 {
     neu_dtype_e type;
+    neu_dtype_e val_type;
 
     type = NEU_DTYPE_BYTES | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
     type |= NEU_DTYPE_OWNERED_PTR;
-    assert(val->type == type);
-    if (val->type == type) {
-        if (val->val_data != NULL) {
+    val_type = val->type | NEU_DTYPE_OWNERED_PTR;
+    assert(val_type == type);
+    if (val_type == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             neu_bytes_free(val->val_data);
         }
         val->val_data = neu_bytes_clone(bytes);
+        val->type     = type;
         return 0;
     } else {
         return -1;
@@ -759,15 +774,18 @@ int neu_dvalue_set_bytes(neu_data_val_t *val, neu_bytes_t *bytes)
 int neu_dvalue_set_array(neu_data_val_t *val, neu_fixed_array_t *array)
 {
     neu_dtype_e type;
+    neu_dtype_e flags_type;
 
     type = NEU_DTYPE_ARRAY | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
     type |= NEU_DTYPE_OWNERED_PTR;
-    assert(neu_flags_type_in_dtype(val->type) == type);
-    if (neu_flags_type_in_dtype(val->type) == type) {
-        if (val->val_data != NULL) {
+    flags_type = neu_flags_type_in_dtype(val->type);
+    assert((flags_type | NEU_DTYPE_OWNERED_PTR) == type);
+    if ((flags_type | NEU_DTYPE_OWNERED_PTR) == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             neu_fixed_array_free(val->val_data);
         }
         val->val_data = neu_fixed_array_clone(array);
+        val->type |= NEU_DTYPE_OWNERED_PTR;
         return 0;
     } else {
         log_error("value type: 0x%08x not match expect type: 0x%08x", val->type,
@@ -779,15 +797,18 @@ int neu_dvalue_set_array(neu_data_val_t *val, neu_fixed_array_t *array)
 int neu_dvalue_set_vec(neu_data_val_t *val, vector_t *vec)
 {
     neu_dtype_e type;
+    neu_dtype_e flags_type;
 
     type = NEU_DTYPE_VEC | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
     type |= NEU_DTYPE_OWNERED_PTR;
-    assert(neu_flags_type_in_dtype(val->type) == type);
-    if (neu_flags_type_in_dtype(val->type) == type) {
-        if (val->val_data != NULL) {
+    flags_type = neu_flags_type_in_dtype(val->type);
+    assert((flags_type | NEU_DTYPE_OWNERED_PTR) == type);
+    if ((flags_type | NEU_DTYPE_OWNERED_PTR) == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             vector_free(val->val_data);
         }
         val->val_data = vector_clone(vec);
+        val->type |= NEU_DTYPE_OWNERED_PTR;
         return 0;
     } else {
         log_error("value type: 0x%08x not match expect type: 0x%08x", val->type,
@@ -806,7 +827,7 @@ int neu_dvalue_set_ref_cstr(neu_data_val_t *val, char *cstr)
     val_type = val->type & ~NEU_DTYPE_OWNERED_PTR;
     assert(val_type == type);
     if (val_type == type) {
-        if (val->type & NEU_DTYPE_OWNERED_PTR) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             free(val->val_data);
         }
         val->val_data = cstr;
@@ -827,7 +848,7 @@ int neu_dvalue_set_ref_string(neu_data_val_t *val, neu_string_t *string)
     val_type = val->type & ~NEU_DTYPE_OWNERED_PTR;
     assert(val_type == type);
     if (val_type == type) {
-        if (val->type & NEU_DTYPE_OWNERED_PTR) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             neu_string_free(val->val_data);
         }
         val->val_data = string;
@@ -848,7 +869,7 @@ int neu_dvalue_set_ref_bytes(neu_data_val_t *val, neu_bytes_t *bytes)
     val_type = val->type & ~NEU_DTYPE_OWNERED_PTR;
     assert(val_type == type);
     if (val_type == type) {
-        if (val->type & NEU_DTYPE_OWNERED_PTR) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             neu_bytes_free(val->val_data);
         }
         val->val_data = bytes;
@@ -869,11 +890,11 @@ int neu_dvalue_set_ref_array(neu_data_val_t *val, neu_fixed_array_t *array)
     flags_type = neu_flags_type_in_dtype(val->type);
     assert((flags_type & ~NEU_DTYPE_OWNERED_PTR) == type);
     if ((flags_type & ~NEU_DTYPE_OWNERED_PTR) == type) {
-        if (val->type & NEU_DTYPE_OWNERED_PTR) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
             neu_fixed_array_free(val->val_data);
         }
         val->val_data = array;
-        val->type     = neu_value_type_in_dtype(val->type) | type;
+        val->type     = type;
         return 0;
     } else {
         return -1;
@@ -890,11 +911,11 @@ int neu_dvalue_set_ref_vec(neu_data_val_t *val, vector_t *vec)
     flags_type = neu_flags_type_in_dtype(val->type);
     assert((flags_type & ~NEU_DTYPE_OWNERED_PTR) == type);
     if ((flags_type & ~NEU_DTYPE_OWNERED_PTR) == type) {
-        if (val->type & NEU_DTYPE_OWNERED_PTR) {
-            neu_fixed_array_free(val->val_data);
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
+            vector_free(val->val_data);
         }
         val->val_data = vec;
-        val->type     = neu_value_type_in_dtype(val->type) | type;
+        val->type     = type;
         return 0;
     } else {
         return -1;
@@ -945,6 +966,9 @@ int neu_dvalue_set_move_cstr(neu_data_val_t *val, char *cstr)
     type |= NEU_DTYPE_OWNERED_PTR;
     assert(val->type == type);
     if (val->type == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
+            free(val->val_data);
+        }
         val->val_data = cstr;
         return 0;
     } else {
@@ -960,6 +984,9 @@ int neu_dvalue_set_move_string(neu_data_val_t *val, neu_string_t *string)
     type |= NEU_DTYPE_OWNERED_PTR;
     assert(val->type == type);
     if (val->type == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
+            neu_string_free(val->val_data);
+        }
         val->val_data = string;
         return 0;
     } else {
@@ -975,7 +1002,28 @@ int neu_dvalue_set_move_bytes(neu_data_val_t *val, neu_bytes_t *bytes)
     type |= NEU_DTYPE_OWNERED_PTR;
     assert(val->type == type);
     if (val->type == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
+            neu_bytes_free(val->val_data);
+        }
         val->val_data = bytes;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+int neu_dvalue_set_move_data_val(neu_data_val_t *val, neu_data_val_t *data)
+{
+    neu_dtype_e type;
+
+    type = NEU_DTYPE_DATA_VAL | NEU_DTYPE_PTR | NEU_DTYPE_EXTERN_PTR;
+    type |= NEU_DTYPE_OWNERED_PTR;
+    assert(val->type == type);
+    if (val->type == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
+            neu_dvalue_free(val->val_data);
+        }
+        val->val_data = data;
         return 0;
     } else {
         return -1;
@@ -990,6 +1038,9 @@ int neu_dvalue_set_move_array(neu_data_val_t *val, neu_fixed_array_t *array)
     type |= NEU_DTYPE_OWNERED_PTR;
     assert(neu_flags_type_in_dtype(val->type) == type);
     if (neu_flags_type_in_dtype(val->type) == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
+            neu_fixed_array_free(val->val_data);
+        }
         val->val_data = array;
         return 0;
     } else {
@@ -1005,6 +1056,9 @@ int neu_dvalue_set_move_vec(neu_data_val_t *val, vector_t *vec)
     type |= NEU_DTYPE_OWNERED_PTR;
     assert(neu_flags_type_in_dtype(val->type) == type);
     if (neu_flags_type_in_dtype(val->type) == type) {
+        if (val->val_data != NULL && (val->type & NEU_DTYPE_OWNERED_PTR)) {
+            vector_free(val->val_data);
+        }
         val->val_data = vec;
         return 0;
     } else {
@@ -1147,6 +1201,17 @@ int neu_dvalue_get_double(neu_data_val_t *val, double *p_f64)
     }
 }
 
+int neu_dvalue_get_errorcode(neu_data_val_t *val, int32_t *p_i32)
+{
+    assert(val->type == NEU_DTYPE_ERRORCODE);
+    if (val->type == NEU_DTYPE_ERRORCODE) {
+        *p_i32 = val->val_int32;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
 int neu_dvalue_get_int_val(neu_data_val_t *val, neu_int_val_t *p_int_val)
 {
     neu_dtype_e val_type;
@@ -1178,28 +1243,6 @@ int neu_dvalue_get_string_val(neu_data_val_t *  val,
     assert(val_type == type);
     if (val_type == type) {
         neu_string_val_move(p_string_val, (neu_string_val_t *) val->val_data);
-        return 0;
-    } else {
-        return -1;
-    }
-}
-
-int neu_dvalue_get_data_val(neu_data_val_t *val, void **p_data)
-{
-    assert(val->type == NEU_DTYPE_DATA_VAL);
-    if (val->type == NEU_DTYPE_DATA_VAL) {
-        *p_data = val->val_data;
-        return 0;
-    } else {
-        return -1;
-    }
-}
-
-int neu_dvalue_get_errorcode(neu_data_val_t *val, int32_t *p_i32)
-{
-    assert(val->type == NEU_DTYPE_ERRORCODE);
-    if (val->type == NEU_DTYPE_ERRORCODE) {
-        *p_i32 = val->val_int32;
         return 0;
     } else {
         return -1;
@@ -1466,6 +1509,27 @@ int neu_dvalue_get_move_bytes(neu_data_val_t *val, neu_bytes_t **p_bytes)
         return 0;
     } else {
         *p_bytes = NULL;
+        return -1;
+    }
+}
+
+int neu_dvalue_get_move_data_val(neu_data_val_t *val, neu_data_val_t **p_data)
+{
+    neu_dtype_e val_type;
+    neu_dtype_e type;
+
+    type = NEU_DTYPE_DATA_VAL | NEU_DTYPE_EXTERN_PTR;
+    type |= NEU_DTYPE_OWNERED_PTR;
+
+    val_type = val->type & (~NEU_DTYPE_PTR_MASK);
+    assert(val_type == type);
+    if (val->type == type) {
+        *p_data       = (neu_data_val_t *) val->val_data;
+        val->val_data = NULL;
+        val->type &= ~NEU_DTYPE_OWNERED_PTR;
+        return 0;
+    } else {
+        *p_data = NULL;
         return -1;
     }
 }

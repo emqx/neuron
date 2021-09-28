@@ -122,8 +122,8 @@ static neu_data_val_t *setup_read_resp_data_value()
 
     neu_int_val_t   int_val;
     neu_data_val_t *val_err;
-    val_err = neu_dvalue_new(NEU_DTYPE_INT32);
-    neu_dvalue_set_int32(val_err, 0);
+    val_err = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+    neu_dvalue_set_errorcode(val_err, 0);
     // tag id of first element is 0 for indicate all reading
     neu_int_val_init(&int_val, 0, val_err);
     neu_fixed_array_set(array, 0, (void *) &int_val);
@@ -202,7 +202,7 @@ static int handle_write_data_value(neu_data_val_t * write_val,
 
         val_i32 = neu_dvalue_unit_new();
         // all results of writing is success, so set 0
-        neu_dvalue_init_int32(val_i32, 0);
+        neu_dvalue_init_errorcode(val_i32, 0);
         neu_int_val_init(&resp_int_val, i, val_i32);
         neu_fixed_array_set(array, i, &resp_int_val);
     }

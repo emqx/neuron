@@ -57,6 +57,7 @@ int  neu_parse_decode_update_plugin(char *                          buf,
 void neu_parse_decode_update_plugin_free(neu_parse_update_plugin_req_t *req);
 
 typedef struct {
+    uint32_t reserved;
 } neu_parse_get_plugins_req_t;
 
 typedef struct {
