@@ -160,8 +160,7 @@ void neu_parse_decode_write_free(neu_parse_write_req_t *req)
 
 neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req)
 {
-    neu_data_val_t *   val = neu_dvalue_array_new(NEU_DTYPE_INT_VAL, req->n_tag,
-                                               sizeof(neu_int_val_t));
+    neu_data_val_t *   val = neu_dvalue_unit_new();
     neu_fixed_array_t *array =
         neu_fixed_array_new(req->n_tag, sizeof(neu_int_val_t));
 
@@ -203,6 +202,6 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req)
         neu_fixed_array_set(array, i, &iv);
     }
 
-    neu_dvalue_set_array(val, array);
+    neu_dvalue_set_move_array(val, NEU_DTYPE_INT_VAL, array);
     return val;
 }

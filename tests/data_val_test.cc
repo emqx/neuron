@@ -266,29 +266,27 @@ TEST(DataValueTest, neu_dvalue_set_get_cstr)
 TEST(DataValueTest, neu_dvalue_set_get_array)
 {
     int             rc;
-    neu_data_val_t *val =
-        neu_dvalue_array_new(NEU_DTYPE_INT8, 4, sizeof(int8_t));
+    neu_data_val_t *val = neu_dvalue_unit_new();
     neu_fixed_array_t *array_set;
     neu_fixed_array_t *array_get;
     neu_fixed_array_t *array_get_ref;
 
     array_set = neu_fixed_array_new(4, sizeof(int8_t));
-    rc        = neu_dvalue_set_array(val, array_set);
-    EXPECT_EQ(0, rc);
-    rc = neu_dvalue_get_array(val, &array_get);
-    EXPECT_EQ(0, rc);
+    neu_dvalue_init_move_array(val, NEU_DTYPE_INT8, array_set);
 
     size_t array_length = array_set->length;
-    EXPECT_EQ(0, memcmp(array_set->buf, array_get->buf, array_length));
-    EXPECT_EQ(array_set->esize, array_get->esize);
-    EXPECT_EQ(array_set->length, array_get->length);
-
     neu_dvalue_get_ref_array(val, &array_get_ref);
     EXPECT_EQ(0, memcmp(array_set->buf, array_get_ref->buf, array_length));
     EXPECT_EQ(array_set->esize, array_get_ref->esize);
     EXPECT_EQ(array_set->length, array_get_ref->length);
 
-    neu_fixed_array_free(array_set);
+    rc = neu_dvalue_get_move_array(val, &array_get);
+    EXPECT_EQ(0, rc);
+
+    EXPECT_EQ(0, memcmp(array_set->buf, array_get->buf, array_length));
+    EXPECT_EQ(array_set->esize, array_get->esize);
+    EXPECT_EQ(array_set->length, array_get->length);
+
     neu_fixed_array_free(array_get);
     neu_dvalue_free(val);
 }
@@ -296,16 +294,15 @@ TEST(DataValueTest, neu_dvalue_set_get_array)
 TEST(DataValueTest, neu_dvalue_set_get_vec)
 {
     int             rc;
-    neu_data_val_t *val = neu_dvalue_vec_new(NEU_DTYPE_INT8, 4, sizeof(int8_t));
+    neu_data_val_t *val = neu_dvalue_unit_new();
     vector_t *      vec_set;
     vec_set = vector_new(4, sizeof(int8_t));
-    rc      = neu_dvalue_set_vec(val, vec_set);
+    neu_dvalue_init_move_vec(val, NEU_DTYPE_INT8, vec_set);
     vector_t *vec_get;
-    rc = neu_dvalue_get_vec(val, &vec_get);
+    rc = neu_dvalue_get_move_vec(val, &vec_get);
 
     // TODO: assert two vector is equal
 
-    vector_free(vec_set);
     vector_free(vec_get);
     neu_dvalue_free(val);
 }
@@ -324,6 +321,7 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
     EXPECT_EQ(0, rc);
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
+    neu_dvalue_free(val);
 
     size = neu_dvalue_desialize(buf, size, &val1);
     EXPECT_LT(0, size);
@@ -333,13 +331,13 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
     EXPECT_EQ(100, i64);
 
     free(buf);
-    neu_dvalue_free(val);
     neu_dvalue_free(val1);
 
     val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
     neu_dvalue_set_double(val, 3.14159265);
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
+    neu_dvalue_free(val);
 
     size = neu_dvalue_desialize(buf, size, &val1);
     EXPECT_LT(0, size);
@@ -349,7 +347,6 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
     EXPECT_EQ(3.14159265, f64);
 
     free(buf);
-    neu_dvalue_free(val);
     neu_dvalue_free(val1);
 }
 
@@ -373,6 +370,7 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
     EXPECT_EQ(0, rc);
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
+    neu_dvalue_free(val);
 
     size = neu_dvalue_desialize(buf, size, &val1);
     EXPECT_LT(0, size);
@@ -386,7 +384,6 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
     neu_int_val_uninit(&int_val_get);
 
     free(buf);
-    neu_dvalue_free(val);
     neu_dvalue_free(val1);
 }
 
@@ -396,26 +393,24 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     ssize_t  size;
     uint8_t *buf;
 
-    neu_data_val_t *val =
-        neu_dvalue_array_new(NEU_DTYPE_INT8, 4, sizeof(int8_t));
+    neu_data_val_t *val = neu_dvalue_unit_new();
     neu_fixed_array_t *array_set;
     array_set = neu_fixed_array_new(4, sizeof(int8_t));
-    rc        = neu_dvalue_set_array(val, array_set);
+    neu_dvalue_init_move_array(val, NEU_DTYPE_INT8, array_set);
     size      = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
+    neu_dvalue_free(val);
 
     neu_data_val_t *val1;
     size = neu_dvalue_desialize(buf, size, &val1);
     EXPECT_LT(0, size);
     neu_fixed_array_t *array_get;
-    rc = neu_dvalue_get_array(val, &array_get);
+    rc = neu_dvalue_get_move_array(val1, &array_get);
     EXPECT_EQ(0, rc);
     // TODO: assert two array is euqal
 
     free(buf);
-    neu_fixed_array_free(array_set);
     neu_fixed_array_free(array_get);
-    neu_dvalue_free(val);
     neu_dvalue_free(val1);
 }
 
@@ -425,24 +420,23 @@ TEST(DataValueTest, neu_dvalue_vec_deser)
     ssize_t  size;
     uint8_t *buf;
 
-    neu_data_val_t *val = neu_dvalue_vec_new(NEU_DTYPE_INT8, 4, sizeof(int8_t));
+    neu_data_val_t *val = neu_dvalue_unit_new();
     vector_t *      vec_set;
     vec_set = vector_new(4, sizeof(int8_t));
-    rc      = neu_dvalue_set_vec(val, vec_set);
+    neu_dvalue_init_move_vec(val, NEU_DTYPE_INT8, vec_set);
     size    = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
+    neu_dvalue_free(val);
 
     neu_data_val_t *val1;
     size = neu_dvalue_desialize(buf, size, &val1);
     EXPECT_LT(0, size);
     vector_t *vec_get;
-    rc = neu_dvalue_get_vec(val, &vec_get);
+    rc = neu_dvalue_get_move_vec(val1, &vec_get);
     EXPECT_EQ(0, rc);
     // TODO: assert two vector is euqal
 
     free(buf);
-    vector_free(vec_set);
     vector_free(vec_get);
-    neu_dvalue_free(val);
     neu_dvalue_free(val1);
 }

@@ -384,6 +384,35 @@ static int handle_trans_data_value(neu_data_val_t *trans_val)
     neu_dvalue_get_ref_array(trans_val, &array);
 
     neu_int_val_t * int_val;
+    neu_data_val_t *val_i64;
+    neu_data_val_t *val_f64;
+    neu_data_val_t *val_cstr;
+    int64_t         i64;
+    double          f64;
+    char *          cstr;
+
+    int_val = neu_fixed_array_get(array, 1);
+    val_i64 = int_val->val;
+    neu_dvalue_get_int64(val_i64, &i64);
+    int_val = neu_fixed_array_get(array, 2);
+    val_f64 = int_val->val;
+    neu_dvalue_get_double(val_f64, &f64);
+    int_val  = neu_fixed_array_get(array, 3);
+    val_cstr = int_val->val;
+    neu_dvalue_get_ref_cstr(val_cstr, &cstr);
+
+    log_info("The sample driver report data, i64: %d, f64: %f, cstr: %s", i64,
+             f64, cstr);
+    return 0;
+}
+
+static int handle_read_resp_value(neu_data_val_t *data_val)
+{
+    neu_fixed_array_t *array;
+
+    neu_dvalue_get_ref_array(data_val, &array);
+
+    neu_int_val_t * int_val;
     neu_data_val_t *val_err;
     neu_data_val_t *val_i64;
     neu_data_val_t *val_f64;
@@ -413,11 +442,6 @@ static int handle_trans_data_value(neu_data_val_t *trans_val)
                  f64, cstr);
     }
     return 0;
-}
-
-static int handle_read_resp_value(neu_data_val_t *data_val)
-{
-    return handle_trans_data_value(data_val);
 }
 
 static int handle_write_resp_value(neu_data_val_t *data_value)

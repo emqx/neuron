@@ -62,17 +62,6 @@ typedef enum {
     NEU_DTYPE_TEXT,   ///< localized text
     NEU_DTYPE_STRUCT, ///< valued structure, no pointer in field of structure
 
-    /* special value types */
-    NEU_DTYPE_ERRORCODE,
-    NEU_DTYPE_DATETIME,
-    NEU_DTYPE_UUID,
-
-    /**
-     * A key data value is a string(neu_string_t), it indicate the type of the
-     * followed data value.
-     */
-    NEU_DTYPE_KEY,
-
     /**
      * A int-value pair for IntMap
      */
@@ -82,6 +71,11 @@ typedef enum {
      * A string-value pair for StringMap
      */
     NEU_DTYPE_STRING_VAL,
+
+    /* special value types */
+    NEU_DTYPE_ERRORCODE,
+    NEU_DTYPE_DATETIME,
+    NEU_DTYPE_UUID,
     NEU_VALUE_TYPE_END,
 
     /* recursive type definition */
@@ -176,14 +170,14 @@ static inline void neu_string_val_move(neu_string_val_t *dst,
 static inline neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type)
 {
     neu_dtype_e ret_type;
-    ret_type = (neu_dtype_e)(type & (NEU_DTYPE_FLAGS_START - 1));
+    ret_type = (neu_dtype_e) (type & (NEU_DTYPE_FLAGS_START - 1));
     return ret_type;
 }
 
 static inline neu_dtype_e neu_flags_type_in_dtype(neu_dtype_e type)
 {
     neu_dtype_e ret_type;
-    ret_type = (neu_dtype_e)(type & ~(NEU_DTYPE_FLAGS_START - 1));
+    ret_type = (neu_dtype_e) (type & ~(NEU_DTYPE_FLAGS_START - 1));
     return ret_type;
 }
 
@@ -214,20 +208,6 @@ neu_data_val_t *neu_dvalue_unit_new();
  */
 neu_data_val_t *neu_dvalue_inplace_new(neu_dtype_e type, size_t buf_size);
 
-/**
- * new a neu_data_val_t include array with external buffer
- * parameter type is type of element in array
- */
-neu_data_val_t *neu_dvalue_array_new(neu_dtype_e type, size_t length,
-                                     size_t esize);
-
-/**
- * new a neu_data_val_t include vector with external buffer
- * parameter type is type of element in vector
- */
-neu_data_val_t *neu_dvalue_vec_new(neu_dtype_e type, size_t length,
-                                   size_t esize);
-
 void  neu_dvalue_uninit(neu_data_val_t *val);
 void  neu_dvalue_free(neu_data_val_t *val);
 void *neu_dvalue_get_ptr(neu_data_val_t *val);
@@ -251,21 +231,22 @@ void neu_dvalue_init_errorcode(neu_data_val_t *val, int32_t i32);
 void neu_dvalue_init_int_val(neu_data_val_t *val, neu_int_val_t int_val);
 void neu_dvalue_init_string_val(neu_data_val_t * val,
                                 neu_string_val_t string_val);
-void neu_dvalue_init_data_val(neu_data_val_t *val, void *data);
 
 /* The parameter cstr/bytes/array/vec is copy to neu_data_val_t
  */
-void neu_dvalue_init_copy_cstr(neu_data_val_t *val, char *cstr);
-void neu_dvalue_init_copy_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
-void neu_dvalue_init_copy_array(neu_data_val_t *val, neu_fixed_array_t *array);
-void neu_dvalue_init_copy_vec(neu_data_val_t *val, vector_t *vec);
+void neu_dvalue_init_cstr(neu_data_val_t *val, char *cstr);
+void neu_dvalue_init_string(neu_data_val_t *val, neu_string_t *string);
+void neu_dvalue_init_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
 
 /* The neu_data_val_t reference the parameter cstr/bytes/array/vec
  */
 void neu_dvalue_init_ref_cstr(neu_data_val_t *val, char *cstr);
+void neu_dvalue_init_ref_string(neu_data_val_t *val, neu_string_t *string);
 void neu_dvalue_init_ref_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 void neu_dvalue_init_ref_array(neu_data_val_t *val, neu_dtype_e type,
                                neu_fixed_array_t *array);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 void neu_dvalue_init_ref_vec(neu_data_val_t *val, neu_dtype_e type,
                              vector_t *vec);
 
@@ -274,8 +255,11 @@ void neu_dvalue_init_ref_vec(neu_data_val_t *val, neu_dtype_e type,
 void neu_dvalue_init_move_cstr(neu_data_val_t *val, char *cstr);
 void neu_dvalue_init_move_string(neu_data_val_t *val, neu_string_t *string);
 void neu_dvalue_init_move_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
+void neu_dvalue_init_move_data_val(neu_data_val_t *val, neu_data_val_t *data);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 void neu_dvalue_init_move_array(neu_data_val_t *val, neu_dtype_e type,
                                 neu_fixed_array_t *array);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 void neu_dvalue_init_move_vec(neu_data_val_t *val, neu_dtype_e type,
                               vector_t *vec);
 
@@ -303,8 +287,6 @@ int neu_dvalue_set_string_val(neu_data_val_t *val, neu_string_val_t string_val);
 int neu_dvalue_set_cstr(neu_data_val_t *val, char *cstr);
 int neu_dvalue_set_string(neu_data_val_t *val, neu_string_t *string);
 int neu_dvalue_set_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
-int neu_dvalue_set_array(neu_data_val_t *val, neu_fixed_array_t *array);
-int neu_dvalue_set_vec(neu_data_val_t *val, vector_t *vec);
 
 /* The neu_data_val_t reference the parameter cstr/bytes/array/vec
  * So the lifetime of neu_data_val_t must less than parameter.
@@ -312,16 +294,25 @@ int neu_dvalue_set_vec(neu_data_val_t *val, vector_t *vec);
 int neu_dvalue_set_ref_cstr(neu_data_val_t *val, char *cstr);
 int neu_dvalue_set_ref_string(neu_data_val_t *val, neu_string_t *string);
 int neu_dvalue_set_ref_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
-int neu_dvalue_set_ref_array(neu_data_val_t *val, neu_fixed_array_t *array);
-int neu_dvalue_set_ref_vec(neu_data_val_t *val, vector_t *vec);
+// The parameter type is value type that get by neu_value_type_in_dtype()
+int neu_dvalue_set_ref_array(neu_data_val_t *val, neu_dtype_e type,
+                             neu_fixed_array_t *array);
+// The parameter type is value type that get by neu_value_type_in_dtype()
+int neu_dvalue_set_ref_vec(neu_data_val_t *val, neu_dtype_e type,
+                           vector_t *vec);
 
 /* The owership of parameter cstr/bytes/array/vec is move to neu_data_val_t
  */
 int neu_dvalue_set_move_cstr(neu_data_val_t *val, char *cstr);
 int neu_dvalue_set_move_string(neu_data_val_t *val, neu_string_t *string);
 int neu_dvalue_set_move_bytes(neu_data_val_t *val, neu_bytes_t *bytes);
-int neu_dvalue_set_move_array(neu_data_val_t *val, neu_fixed_array_t *array);
-int neu_dvalue_set_move_vec(neu_data_val_t *val, vector_t *vec);
+int neu_dvalue_set_move_data_val(neu_data_val_t *val, neu_data_val_t *data);
+// The parameter type is value type that get by neu_value_type_in_dtype()
+int neu_dvalue_set_move_array(neu_data_val_t *val, neu_dtype_e type,
+                              neu_fixed_array_t *array);
+// The parameter type is value type that get by neu_value_type_in_dtype()
+int neu_dvalue_set_move_vec(neu_data_val_t *val, neu_dtype_e type,
+                            vector_t *vec);
 
 /*
  * declare all value get functions
@@ -349,8 +340,6 @@ int neu_dvalue_get_data_val(neu_data_val_t *val, void **p_data);
 int neu_dvalue_get_cstr(neu_data_val_t *val, char **p_cstr);
 int neu_dvalue_get_string(neu_data_val_t *val, neu_string_t **p_string);
 int neu_dvalue_get_bytes(neu_data_val_t *val, neu_bytes_t **p_bytes);
-int neu_dvalue_get_array(neu_data_val_t *val, neu_fixed_array_t **p_array);
-int neu_dvalue_get_vec(neu_data_val_t *val, vector_t **p_vec);
 
 /* The parameter cstr/bytes/array/vec get reference of value in neu_data_val_t.
  * So the lifetime of parameter must less than neu_data_val_t.
@@ -358,7 +347,9 @@ int neu_dvalue_get_vec(neu_data_val_t *val, vector_t **p_vec);
 int neu_dvalue_get_ref_cstr(neu_data_val_t *val, char **p_cstr);
 int neu_dvalue_get_ref_string(neu_data_val_t *val, neu_string_t **p_string);
 int neu_dvalue_get_ref_bytes(neu_data_val_t *val, neu_bytes_t **p_bytes);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 int neu_dvalue_get_ref_array(neu_data_val_t *val, neu_fixed_array_t **p_array);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 int neu_dvalue_get_ref_vec(neu_data_val_t *val, vector_t **p_vec);
 
 /* The owership of parameter cstr/bytes/array/vec is move from neu_data_val_t
@@ -366,7 +357,10 @@ int neu_dvalue_get_ref_vec(neu_data_val_t *val, vector_t **p_vec);
 int neu_dvalue_get_move_cstr(neu_data_val_t *val, char **p_cstr);
 int neu_dvalue_get_move_string(neu_data_val_t *val, neu_string_t **p_string);
 int neu_dvalue_get_move_bytes(neu_data_val_t *val, neu_bytes_t **p_bytes);
+int neu_dvalue_get_move_data_val(neu_data_val_t *val, neu_data_val_t **p_data);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 int neu_dvalue_get_move_array(neu_data_val_t *val, neu_fixed_array_t **p_array);
+// The parameter type is value type that get by neu_value_type_in_dtype()
 int neu_dvalue_get_move_vec(neu_data_val_t *val, vector_t **p_vec);
 
 /*
