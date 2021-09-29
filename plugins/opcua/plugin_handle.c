@@ -26,6 +26,24 @@
 
 #define UNUSED(x) (void) (x)
 
+#define SET_RESULT_ERRORCODE(resp_val, code)                            \
+    {                                                                   \
+        neu_fixed_array_t *array;                                       \
+        array = neu_fixed_array_new(1, sizeof(neu_int_val_t));          \
+        if (array == NULL) {                                            \
+            log_error("Failed to allocate array for response tags");    \
+            neu_dvalue_free(resp_val);                                  \
+            return -10;                                                 \
+        }                                                               \
+        neu_int_val_t   int_val;                                        \
+        neu_data_val_t *val_err;                                        \
+        val_err = neu_dvalue_new(NEU_DTYPE_ERRORCODE);                  \
+        neu_dvalue_set_errorcode(val_err, code);                        \
+        neu_int_val_init(&int_val, 0, val_err);                         \
+        neu_fixed_array_set(array, 0, (void *) &int_val);               \
+        neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array); \
+    }
+
 #define NAMESPACE_LEN 16
 #define IDENTIFIER_LEN 128
 
@@ -73,9 +91,9 @@ static int fixed_address(const char *address, int *identifier_type,
     return 0;
 }
 
-static void generate_read_result_array(vector_t *         datas,
-                                       neu_fixed_array_t *array)
+static int generate_read_result_array(vector_t *datas, neu_fixed_array_t *array)
 {
+    int           rc = 0;
     opcua_data_t *data;
 
     int total = datas->size;
@@ -88,7 +106,8 @@ static void generate_read_result_array(vector_t *         datas,
             val = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
             neu_dvalue_set_errorcode(val, data->error);
             neu_int_val_init(&int_val, data->opcua_node.id, val);
-            neu_fixed_array_set(array, i, (void *) &int_val);
+            neu_fixed_array_set(array, i + 1, (void *) &int_val);
+            rc++;
             continue;
         }
 
@@ -158,8 +177,10 @@ static void generate_read_result_array(vector_t *         datas,
         }
 
         neu_int_val_init(&int_val, data->opcua_node.id, val);
-        neu_fixed_array_set(array, i, (void *) &int_val);
+        neu_fixed_array_set(array, i + 1, (void *) &int_val);
     }
+
+    return rc;
 }
 
 static void generate_read_node_vector(opc_handle_context_t *context,
@@ -193,6 +214,7 @@ static void generate_read_node_vector(opc_handle_context_t *context,
         }
 
         opcua_data_t read_data;
+        memset(&read_data, 0, sizeof(opcua_data_t));
         read_data.opcua_node.name            = datatag->name;
         read_data.opcua_node.id              = tag_id;
         read_data.opcua_node.namespace_index = atoi(namespace_str);
@@ -206,36 +228,35 @@ static void generate_read_node_vector(opc_handle_context_t *context,
     }
 }
 
-static void generate_write_result_array(vector_t *      datas,
-                                        neu_data_val_t *resp_val)
+static int generate_write_result_array(vector_t *         datas,
+                                       neu_fixed_array_t *array)
 {
-    int                size = datas->size;
-    neu_fixed_array_t *array;
-    array = neu_fixed_array_new(size, sizeof(neu_int_val_t));
-    if (array == NULL) {
-        log_error("Failed to allocate array for response write data");
-        neu_dvalue_free(resp_val);
-    }
-
-    neu_int_val_t resp_int_val;
+    int index = 1;
+    int error = 0;
     VECTOR_FOR_EACH(datas, iter)
     {
-        opcua_data_t *  data = (opcua_data_t *) iterator_get(&iter);
+        opcua_data_t *data = (opcua_data_t *) iterator_get(&iter);
+        if (0 != data->error) {
+            error++;
+        }
+
         neu_data_val_t *val_i32;
         val_i32 = neu_dvalue_unit_new();
         neu_dvalue_init_int32(val_i32, data->error);
+        neu_int_val_t resp_int_val;
         neu_int_val_init(&resp_int_val, data->opcua_node.id, val_i32);
+        neu_fixed_array_set(array, index, (void *) &resp_int_val);
+        index++;
     }
 
-    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
+    return error;
 }
 
 static void generate_write_node_vector(opc_handle_context_t *context,
                                        neu_fixed_array_t *   array,
                                        vector_t *            datas)
 {
-    int size = neu_fixed_array_size(array);
-
+    int             size = array->length;
     neu_int_val_t * int_val;
     neu_data_val_t *val;
     uint32_t        id;
@@ -248,7 +269,10 @@ static void generate_write_node_vector(opc_handle_context_t *context,
 
         neu_datatag_t *datatag = get_datatag_by_id(context->table, id);
         if (NULL == datatag) {
-            continue; // error return ?
+            opcua_data_t write_data;
+            write_data.error = -10;
+            vector_push_back(datas, &write_data);
+            continue;
         }
 
         char namespace_str[NAMESPACE_LEN]   = { 0 };
@@ -355,69 +379,127 @@ int plugin_handle_read_once(opc_handle_context_t *context,
                             neu_taggrp_config_t * config,
                             neu_data_val_t *      resp_val)
 {
+    int code = 0;
+
     if (NULL == config) {
+        code = -1;
         log_error("Group config is NULL");
-        return -1;
+        SET_RESULT_ERRORCODE(resp_val, code);
+        return code;
     }
 
     const vector_t *ids = neu_taggrp_cfg_ref_datatag_ids(config);
     if (NULL == ids) {
+        code = -2;
         log_error("Datatag vector is NULL");
-        return -2;
+        SET_RESULT_ERRORCODE(resp_val, code);
+        return code;
     }
 
-    vector_t data;
-    vector_init(&data, ids->size, sizeof(opcua_data_t));
-    generate_read_node_vector(context, config, &data);
+    vector_t datas;
+    vector_init(&datas, ids->size, sizeof(opcua_data_t));
+    generate_read_node_vector(context, config, &datas);
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
+        code = -3;
         log_error("Open62541 client offline");
-        vector_uninit(&data);
-        return -3;
+        SET_RESULT_ERRORCODE(resp_val, code);
+        vector_uninit(&datas);
+        return code;
     }
 
-    rc = open62541_client_read(context->client, &data);
+    rc = open62541_client_read(context->client, &datas);
     if (0 != rc) {
+        code = -4;
         log_error("Open62541 read error:%d", rc);
-        return -4;
+        SET_RESULT_ERRORCODE(resp_val, code);
+        vector_uninit(&datas);
+        return code;
     }
 
     neu_fixed_array_t *array;
-    array = neu_fixed_array_new(ids->size, sizeof(neu_int_val_t));
-    if (array == NULL) {
+    array = neu_fixed_array_new(ids->size + 1, sizeof(neu_int_val_t));
+    if (NULL == array) {
+        code = -5;
         log_error("Failed to allocate array for response tags");
+        neu_dvalue_free(resp_val);
+        return code;
     }
 
-    generate_read_result_array(&data, array);
-    vector_uninit(&data);
+    rc = generate_read_result_array(&datas, array);
+    neu_int_val_t   int_val;
+    neu_data_val_t *val_err;
+    val_err = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+    neu_dvalue_set_errorcode(val_err, rc);
+    neu_int_val_init(&int_val, 0, val_err);
+    neu_fixed_array_set(array, 0, (void *) &int_val);
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
 
-    return 0;
+    vector_uninit(&datas);
+    return code;
 }
 
 int plugin_handle_write_value(opc_handle_context_t *context,
                               neu_data_val_t *      write_val,
                               neu_data_val_t *      resp_val)
 {
+    int                code = 0;
     neu_fixed_array_t *array;
     neu_dvalue_get_ref_array(write_val, &array);
+    int size = array->length;
 
     vector_t datas;
-    vector_init(&datas, 10, sizeof(opcua_data_t));
+    vector_init(&datas, size, sizeof(opcua_data_t));
 
     generate_write_node_vector(context, array, &datas);
 
+    // if (size != datas.size) {
+    //     code = -1;
+    //     log_error("open62541 client offline");
+    //     vector_uninit(&datas);
+    //     SET_RESULT_ERRORCODE(resp_val, code);
+    //     return code;
+    // }
+
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
+        code = -2;
         log_error("open62541 client offline");
-        return -1;
+        vector_uninit(&datas);
+        SET_RESULT_ERRORCODE(resp_val, code);
+        return code;
     }
 
     rc = open62541_client_write(context->client, &datas);
-    generate_write_result_array(&datas, resp_val);
-    vector_uninit(&datas);
+    if (0 != rc) {
+        code = -3;
+        log_error("open62541 write error");
+        vector_uninit(&datas);
+        SET_RESULT_ERRORCODE(resp_val, code);
+        return code;
+    }
 
+    neu_fixed_array_t *resp_array;
+    resp_array = neu_fixed_array_new(size + 1, sizeof(neu_int_val_t));
+    if (NULL == resp_array) {
+        code = -4;
+        log_error("Failed to allocate array for response tags");
+        vector_uninit(&datas);
+        neu_dvalue_free(resp_val);
+        return code;
+    }
+
+    rc = generate_write_result_array(&datas, resp_array);
+    neu_int_val_t   int_val;
+    neu_data_val_t *val_err;
+    val_err = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+    neu_dvalue_set_errorcode(val_err, rc);
+    neu_int_val_init(&int_val, 0, val_err);
+    neu_fixed_array_set(resp_array, 0, (void *) &int_val);
+    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, resp_array);
+
+    vector_uninit(&datas);
     return 0;
 }
 

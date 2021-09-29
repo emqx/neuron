@@ -38,13 +38,6 @@ void message_handle_set_paho_client(paho_client_t *paho);
 
 void message_handle_init_tags(neu_plugin_t *plugin);
 
-void message_handle_read(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                         neu_parse_read_req_t *req);
-void message_handle_read_result(neu_plugin_t *       plugin,
-                                neu_taggrp_config_t *grp_config,
-                                neu_variable_t *     variable);
-void message_handle_write(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_write_req_t *write_req);
 void message_handle_get_tag_list(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
                                  neu_parse_get_tags_req_t *req);
 void message_handle_add_tag(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
