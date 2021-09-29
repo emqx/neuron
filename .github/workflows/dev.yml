@@ -44,3 +44,48 @@ jobs:
 
       - name: Run unit test
         run: cd build && ctest --output-on-failure
+      
+  function_test:
+    strategy:
+      matrix:
+        os: [ ubuntu-20.04 ]
+        name: [ release ]
+        system:
+        - [gcc-7, x86_64]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Start neuron
+        run: |
+          git submodule update --init --remote
+          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
+          sudo ./install-libs.sh -a
+          mkdir build && cd build && cmake .. && make
+
+      - name: Run function test
+        run: |
+          sudo apt-get install python3-pip
+          pip3 install robotframework
+          pip3 install RESTinstance
+          python3 -m robot -P ft/ -d ft/reports ft
+      
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ft-output
+          path: "ft/reports/output.xml"
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ft-log
+          path: "ft/reports/log.html"
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ft-report
+          path: "ft/reports/report.html"
+  
