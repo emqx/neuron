@@ -80,56 +80,6 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         return;
     }
 
-    // switch (mqtt->function) {
-    // case NEU_MQTT_OP_GET_GROUP_CONFIG:
-    //     rc = neu_parse_decode_get_group_config(
-    //         json_str, (neu_parse_get_group_config_req_t **) &result);
-    //     break;
-    // case NEU_MQTT_OP_ADD_GROUP_CONFIG:
-    //     rc = neu_parse_decode_add_group_config(
-    //         json_str, (neu_parse_add_group_config_req_t **) &result);
-    //     break;
-    // case NEU_MQTT_OP_UPDATE_GROUP_CONFIG:
-    //     rc = neu_parse_decode_update_group_config(
-    //         json_str, (neu_parse_update_group_config_req_t **) &result);
-    //     break;
-    // case NEU_MQTT_OP_DELETE_GROUP_CONFIG:
-    //     rc = neu_parse_decode_del_group_config(
-    //         json_str, (neu_parse_del_group_config_req_t **) &result);
-    //     break;
-    // case NEU_MQTT_OP_ADD_DATATAG_IDS_CONFIG:
-    //     rc = -1;
-    //     break;
-    // case NEU_MQTT_OP_DELETE_DATATAG_IDS_CONFIG:
-    //     rc = -1;
-    //     break;
-    // case NEU_MQTT_OP_READ:
-    //     rc = neu_parse_decode_read(json_str, (neu_parse_read_req_t **)
-    //     &result); break;
-    // case NEU_MQTT_OP_WRITE:
-    //     rc = neu_parse_decode_write(json_str,
-    //                                 (neu_parse_write_req_t **) &result);
-    //     break;
-    // case NEU_MQTT_OP_GET_TAGS:
-    //     rc = neu_parse_decode_get_tags(json_str,
-    //                                    (neu_parse_get_tags_req_t **)
-    //                                    &result);
-    //     break;
-    // case NEU_MQTT_OP_ADD_TAGS:
-    //     rc = neu_parse_decode_add_tags(json_str,
-    //                                    (neu_parse_add_tags_req_t **)
-    //                                    &result);
-    //     break;
-    // default:
-    //     rc = -1;
-    //     break;
-    // }
-
-    // if (0 != rc) {
-    //     log_error("JSON parsing matt failed");
-    //     return;
-    // }
-
     switch (mqtt->function) {
     case NEU_MQTT_OP_GET_GROUP_CONFIG:
         message_handle_get_group_config(
@@ -162,15 +112,22 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
     case NEU_MQTT_OP_READ: {
         rc = neu_parse_decode_read(json_str, (neu_parse_read_req_t **) &result);
         if (0 == rc) {
-            command_read_request(plugin, mqtt, (neu_parse_read_req_t *) result);
+            command_read_once_request(plugin, mqtt,
+                                      (neu_parse_read_req_t *) result);
             neu_parse_decode_read_free((neu_parse_read_req_t *) result);
         }
         break;
     }
-    case NEU_MQTT_OP_WRITE:
-        message_handle_write(plugin, mqtt, (neu_parse_write_req_t *) result);
-        neu_parse_decode_write_free(result);
+    case NEU_MQTT_OP_WRITE: {
+        rc = neu_parse_decode_write(json_str,
+                                    (neu_parse_write_req_t **) &result);
+        if (0 == rc) {
+            command_write_request(plugin, mqtt,
+                                  (neu_parse_write_req_t *) result);
+            neu_parse_decode_write_free(result);
+        }
         break;
+    }
     case NEU_MQTT_OP_GET_TAGS:
         message_handle_get_tag_list(plugin, mqtt,
                                     (neu_parse_get_tags_req_t *) result);
@@ -296,26 +253,53 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     log_info("send request to plugin: %s", neu_plugin_module.module_name);
 
     switch (req->req_type) {
+    case NEU_REQRESP_READ_RESP: {
+        neu_reqresp_read_resp_t *read_resp;
+        read_resp = (neu_reqresp_read_resp_t *) req->buf;
+        char *json_str =
+            command_read_once_response(plugin, "", read_resp->data_val);
+        if (NULL != json_str) {
+            client_error error = paho_client_publish(
+                plugin->paho, "neuronlite/response", 0,
+                (unsigned char *) json_str, strlen(json_str));
+            log_debug("Publish error code:%d, json:%s", error, json_str);
+            free(json_str);
+        }
+        break;
+    }
+    case NEU_REQRESP_WRITE_RESP: {
+        neu_reqresp_write_resp_t *write_resp;
+        write_resp = (neu_reqresp_write_resp_t *) req->buf;
+        char *json_str =
+            command_write_response(plugin, "", write_resp->data_val);
+        if (NULL != json_str) {
+            client_error error = paho_client_publish(
+                plugin->paho, "neuronlite/response", 0,
+                (unsigned char *) json_str, strlen(json_str));
+            log_debug("Publish error code:%d, json:%s", error, json_str);
+            free(json_str);
+        }
+        break;
+    }
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_data_t *neu_data;
-        assert(req->buf_len == sizeof(neu_reqresp_data_t));
-        neu_data                 = (neu_reqresp_data_t *) req->buf;
-        neu_variable_t *variable = NULL; // neu_data->data_var;
-        size_t          count    = neu_variable_count(variable);
-        log_debug("variable count: %ld", count);
-        if (0 < count) {
-            message_handle_read_result(plugin, neu_data->grp_config, variable);
+        neu_data = (neu_reqresp_data_t *) req->buf;
+
+        char *json_str =
+            command_read_cycle_response(plugin, neu_data->data_val);
+        if (NULL != json_str) {
+            client_error error = paho_client_publish(
+                plugin->paho, "neuronlite/response", 0,
+                (unsigned char *) json_str, strlen(json_str));
+            log_debug("Publish error code:%d, json:%s", error, json_str);
+            free(json_str);
         }
+
+        log_debug("------------------------------------");
         break;
     }
 
     case NEU_REQRESP_WRITE_DATA: {
-        neu_reqresp_data_t *neu_data;
-        assert(req->buf_len == sizeof(neu_reqresp_data_t));
-        neu_data                 = (neu_reqresp_data_t *) req->buf;
-        neu_variable_t *variable = NULL; // neu_data->data_var;
-        size_t          count    = neu_variable_count(variable);
-        if (0 < count) { }
         break;
     }
 

@@ -28,13 +28,16 @@ extern "C" {
 
 #include "common.h"
 
-void command_read_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_read_req_t *req);
-void command_read_response(neu_plugin_t *plugin, neu_taggrp_config_t *config,
-                           neu_data_val_t *array);
-void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                           neu_parse_write_req_t *write_req);
-void command_write_response(neu_plugin_t *plugin, neu_data_val_t *array);
+void  command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                                neu_parse_read_req_t *req);
+char *command_read_once_response(neu_plugin_t *plugin, const char *uuid,
+                                 neu_data_val_t *resp_val);
+char *command_read_cycle_response(neu_plugin_t *  plugin,
+                                  neu_data_val_t *resp_val);
+void  command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                            neu_parse_write_req_t *write_req);
+char *command_write_response(neu_plugin_t *plugin, const char *uuid,
+                             neu_data_val_t *resp_val);
 
 #ifdef __cplusplus
 }
