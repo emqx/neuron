@@ -6,3 +6,5 @@ build
 compile_commands.json
 .vscode
 *.log
+ft/reports
+__pycache__
