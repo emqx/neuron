@@ -283,8 +283,8 @@ TEST(DataValueTest, neu_dvalue_set_get_bytes)
 
 TEST(DataValueTest, neu_dvalue_set_get_array)
 {
-    int             rc;
-    neu_data_val_t *val = neu_dvalue_unit_new();
+    int                rc;
+    neu_data_val_t *   val = neu_dvalue_unit_new();
     neu_fixed_array_t *array_set;
     neu_fixed_array_t *array_get;
     neu_fixed_array_t *array_get_ref;
@@ -411,11 +411,11 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     ssize_t  size;
     uint8_t *buf;
 
-    neu_data_val_t *val = neu_dvalue_unit_new();
+    neu_data_val_t *   val = neu_dvalue_unit_new();
     neu_fixed_array_t *array_set;
     array_set = neu_fixed_array_new(4, sizeof(int8_t));
     neu_dvalue_init_move_array(val, NEU_DTYPE_INT8, array_set);
-    size      = neu_dvalue_serialize(val, &buf);
+    size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
 
@@ -442,7 +442,7 @@ TEST(DataValueTest, neu_dvalue_vec_deser)
     vector_t *      vec_set;
     vec_set = vector_new(4, sizeof(int8_t));
     neu_dvalue_init_move_vec(val, NEU_DTYPE_INT8, vec_set);
-    size    = neu_dvalue_serialize(val, &buf);
+    size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
 
