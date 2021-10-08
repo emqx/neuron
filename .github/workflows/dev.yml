@@ -74,18 +74,18 @@ jobs:
           pip3 install RESTinstance
           python3 -m robot -P ft/ -d ft/reports ft
       
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ft-output
-          path: "ft/reports/output.xml"
+      #- uses: actions/upload-artifact@v2
+        #with:
+          #name: ft-output
+          #path: "ft/reports/output.xml"
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ft-log
-          path: "ft/reports/log.html"
+      #- uses: actions/upload-artifact@v2
+        #with:
+          #name: ft-log
+          #path: "ft/reports/log.html"
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ft-report
-          path: "ft/reports/report.html"
+      #- uses: actions/upload-artifact@v2
+        #with:
+          #name: ft-report
+          #path: "ft/reports/report.html"
   
