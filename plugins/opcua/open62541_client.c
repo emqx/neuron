@@ -480,9 +480,10 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
         *((UA_String *) write_req.nodesToWrite[0].value.value.data) = str;
         break;
 
-    default:
+    default: {
         flag++;
         break;
+    }
     }
 
     if (0 != flag) {

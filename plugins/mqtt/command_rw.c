@@ -64,7 +64,7 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
     for (int i = 1; i < length; i++) {
         int_val          = neu_fixed_array_get(array, i);
         val              = int_val->val;
-        neu_dtype_e type = neu_dvalue_get_type(val);
+        neu_dtype_e type = neu_dvalue_get_value_type(val);
 
         json->tags[i - 1].name   = strdup((char *) "");
         json->tags[i - 1].tag_id = int_val->key;
@@ -257,30 +257,6 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
     return req_id;
 }
 
-static void set_int_type_value(neu_data_val_t *val, const int64_t data)
-{
-    if (INT8_MIN <= data && INT8_MAX >= data) {
-        val = neu_dvalue_new(NEU_DTYPE_INT8);
-        neu_dvalue_set_int8(val, (int8_t) data);
-        return;
-    }
-    if (INT16_MIN <= data && INT16_MAX >= data) {
-        val = neu_dvalue_new(NEU_DTYPE_INT16);
-        neu_dvalue_set_int16(val, (int16_t) data);
-        return;
-    }
-    if (INT32_MIN <= data && INT32_MAX >= data) {
-        val = neu_dvalue_new(NEU_DTYPE_INT32);
-        neu_dvalue_set_int32(val, (int32_t) data);
-        return;
-    }
-    if (INT64_MIN <= data && INT64_MAX >= data) {
-        val = neu_dvalue_new(NEU_DTYPE_INT64);
-        neu_dvalue_set_int64(val, (int64_t) data);
-        return;
-    }
-}
-
 void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
                            neu_parse_write_req_t *write_req)
 {
@@ -310,7 +286,8 @@ void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 
         switch (type) {
         case NEU_JSON_INT: {
-            set_int_type_value(val, value.val_int);
+            val = neu_dvalue_new(NEU_DTYPE_INT64);
+            neu_dvalue_set_int64(val, value.val_int);
             break;
         }
         case NEU_JSON_BIT: {
@@ -326,11 +303,6 @@ void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         case NEU_JSON_DOUBLE: {
             val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
             neu_dvalue_set_double(val, value.val_double);
-            break;
-        }
-        case NEU_JSON_FLOAT: {
-            val = neu_dvalue_new(NEU_DTYPE_FLOAT);
-            neu_dvalue_set_float(val, value.val_float);
             break;
         }
         case NEU_JSON_BOOL: {
