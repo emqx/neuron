@@ -265,8 +265,6 @@ static void generate_write_node_vector(opc_handle_context_t *context,
         id      = int_val->key;
         val     = int_val->val;
 
-        neu_dtype_e type = neu_dvalue_get_type(val);
-
         neu_datatag_t *datatag = get_datatag_by_id(context->table, id);
         if (NULL == datatag) {
             opcua_data_t write_data;
@@ -275,13 +273,15 @@ static void generate_write_node_vector(opc_handle_context_t *context,
             continue;
         }
 
-        char namespace_str[NAMESPACE_LEN]   = { 0 };
-        char identifier_str[IDENTIFIER_LEN] = { 0 };
-        int  identifier_type                = 0;
+        neu_dtype_e type                         = (neu_dtype_e) datatag->type;
+        char        namespace_str[NAMESPACE_LEN] = { 0 };
+        char        identifier_str[IDENTIFIER_LEN] = { 0 };
+        int         identifier_type                = 0;
         fixed_address(datatag->addr_str, &identifier_type, namespace_str,
                       identifier_str);
 
         opcua_data_t write_data;
+        memset(&write_data, 0, sizeof(opcua_data_t));
         write_data.opcua_node.name            = datatag->name;
         write_data.opcua_node.id              = id;
         write_data.opcua_node.namespace_index = atoi(namespace_str);
@@ -302,21 +302,21 @@ static void generate_write_node_vector(opc_handle_context_t *context,
             break;
         }
         case NEU_DTYPE_INT8: {
-            int8_t value;
-            neu_dvalue_get_int8(val, &value);
-            write_data.value.value_int8 = value;
+            int64_t value;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_int8 = (int8_t) value;
             break;
         }
         case NEU_DTYPE_INT16: {
-            int16_t value;
-            neu_dvalue_get_int16(val, &value);
-            write_data.value.value_int16 = value;
+            int64_t value;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_int16 = (int16_t) value;
             break;
         }
         case NEU_DTYPE_INT32: {
-            int32_t value;
-            neu_dvalue_get_int32(val, &value);
-            write_data.value.value_int32 = value;
+            int64_t value;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_int32 = (int32_t) value;
             break;
         }
         case NEU_DTYPE_INT64: {
@@ -326,33 +326,33 @@ static void generate_write_node_vector(opc_handle_context_t *context,
             break;
         }
         case NEU_DTYPE_UINT8: {
-            uint8_t value;
-            neu_dvalue_get_uint8(val, &value);
-            write_data.value.value_uint8 = value;
+            int64_t value;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_uint8 = (uint8_t) value;
             break;
         }
         case NEU_DTYPE_UINT16: {
-            uint16_t value;
-            neu_dvalue_get_uint16(val, &value);
-            write_data.value.value_int16 = value;
+            int64_t value;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_uint16 = (uint16_t) value;
             break;
         }
         case NEU_DTYPE_UINT32: {
-            uint32_t value;
-            neu_dvalue_get_uint32(val, &value);
-            write_data.value.value_uint32 = value;
+            int64_t value;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_uint32 = (uint32_t) value;
             break;
         }
         case NEU_DTYPE_UINT64: {
-            uint64_t value;
-            neu_dvalue_get_uint64(val, &value);
-            write_data.value.value_uint64 = value;
+            int64_t value;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_uint64 = (uint64_t) value;
             break;
         }
         case NEU_DTYPE_FLOAT: {
-            float value;
-            neu_dvalue_get_float(val, &value);
-            write_data.value.value_float = value;
+            double value;
+            neu_dvalue_get_double(val, &value);
+            write_data.value.value_float = (float) value;
             break;
         }
         case NEU_DTYPE_DOUBLE: {
