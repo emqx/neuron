@@ -161,6 +161,11 @@ neu_dtype_e neu_dvalue_get_type(neu_data_val_t *val)
     return val->type;
 }
 
+neu_dtype_e neu_dvalue_get_value_type(neu_data_val_t *val)
+{
+    return val->type & (NEU_DTYPE_FLAGS_START - 1);
+}
+
 /* new a normal neu_data_val_t with external buffer */
 neu_data_val_t *neu_dvalue_new(neu_dtype_e type)
 {
