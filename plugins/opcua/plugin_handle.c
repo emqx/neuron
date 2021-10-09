@@ -252,11 +252,21 @@ static int generate_write_result_array(vector_t *         datas,
     return error;
 }
 
+static bool tag_id_equal(const void *a, const void *b)
+{
+    neu_datatag_id_t *id_a = (neu_datatag_id_t *) a;
+    neu_datatag_id_t *id_b = (neu_datatag_id_t *) b;
+
+    return *id_a == *id_b;
+}
+
 static void generate_write_node_vector(opc_handle_context_t *context,
+                                       neu_taggrp_config_t * config,
                                        neu_fixed_array_t *   array,
                                        vector_t *            datas)
 {
-    int             size = array->length;
+    vector_t *      datatag_ids = neu_taggrp_cfg_get_datatag_ids(config);
+    int             size        = array->length;
     neu_int_val_t * int_val;
     neu_data_val_t *val;
     uint32_t        id;
@@ -268,7 +278,14 @@ static void generate_write_node_vector(opc_handle_context_t *context,
         neu_datatag_t *datatag = get_datatag_by_id(context->table, id);
         if (NULL == datatag) {
             opcua_data_t write_data;
-            write_data.error = -10;
+            write_data.error = OPCUA_ERROR_DATATAG_NULL;
+            vector_push_back(datas, &write_data);
+            continue;
+        }
+
+        if (!vector_has_elem(datatag_ids, &id, tag_id_equal)) {
+            opcua_data_t write_data;
+            write_data.error = OPCUA_ERROR_DATATAG_NOT_MATCH;
             vector_push_back(datas, &write_data);
             continue;
         }
@@ -375,14 +392,14 @@ static void generate_write_node_vector(opc_handle_context_t *context,
     }
 }
 
-int plugin_handle_read_once(opc_handle_context_t *context,
-                            neu_taggrp_config_t * config,
-                            neu_data_val_t *      resp_val)
+opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
+                                           neu_taggrp_config_t * config,
+                                           neu_data_val_t *      resp_val)
 {
-    int code = 0;
+    opcua_error_code_e code = OPCUA_ERROR_SUCESS;
 
     if (NULL == config) {
-        code = -1;
+        code = OPCUA_ERROR_GROUP_CONFIG_NULL;
         log_error("Group config is NULL");
         SET_RESULT_ERRORCODE(resp_val, code);
         return code;
@@ -390,7 +407,7 @@ int plugin_handle_read_once(opc_handle_context_t *context,
 
     const vector_t *ids = neu_taggrp_cfg_ref_datatag_ids(config);
     if (NULL == ids) {
-        code = -2;
+        code = OPCUA_ERROR_DATATAG_VECTOR_NULL;
         log_error("Datatag vector is NULL");
         SET_RESULT_ERRORCODE(resp_val, code);
         return code;
@@ -402,7 +419,7 @@ int plugin_handle_read_once(opc_handle_context_t *context,
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
-        code = -3;
+        code = OPCUA_ERROR_CLIENT_OFFLINE;
         log_error("Open62541 client offline");
         SET_RESULT_ERRORCODE(resp_val, code);
         vector_uninit(&datas);
@@ -411,7 +428,7 @@ int plugin_handle_read_once(opc_handle_context_t *context,
 
     rc = open62541_client_read(context->client, &datas);
     if (0 != rc) {
-        code = -4;
+        code = OPCUA_ERROR_READ_FAIL;
         log_error("Open62541 read error:%d", rc);
         SET_RESULT_ERRORCODE(resp_val, code);
         vector_uninit(&datas);
@@ -421,7 +438,7 @@ int plugin_handle_read_once(opc_handle_context_t *context,
     neu_fixed_array_t *array;
     array = neu_fixed_array_new(ids->size + 1, sizeof(neu_int_val_t));
     if (NULL == array) {
-        code = -5;
+        code = OPCUA_ERROR_ARRAY_NULL;
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
         return code;
@@ -440,11 +457,12 @@ int plugin_handle_read_once(opc_handle_context_t *context,
     return code;
 }
 
-int plugin_handle_write_value(opc_handle_context_t *context,
-                              neu_data_val_t *      write_val,
-                              neu_data_val_t *      resp_val)
+opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
+                                             neu_taggrp_config_t * config,
+                                             neu_data_val_t *      write_val,
+                                             neu_data_val_t *      resp_val)
 {
-    int                code = 0;
+    opcua_error_code_e code = OPCUA_ERROR_SUCESS;
     neu_fixed_array_t *array;
     neu_dvalue_get_ref_array(write_val, &array);
     int size = array->length;
@@ -452,7 +470,7 @@ int plugin_handle_write_value(opc_handle_context_t *context,
     vector_t datas;
     vector_init(&datas, size, sizeof(opcua_data_t));
 
-    generate_write_node_vector(context, array, &datas);
+    generate_write_node_vector(context, config, array, &datas);
 
     // if (size != datas.size) {
     //     code = -1;
@@ -464,7 +482,7 @@ int plugin_handle_write_value(opc_handle_context_t *context,
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
-        code = -2;
+        code = OPCUA_ERROR_CLIENT_OFFLINE;
         log_error("open62541 client offline");
         vector_uninit(&datas);
         SET_RESULT_ERRORCODE(resp_val, code);
@@ -473,7 +491,7 @@ int plugin_handle_write_value(opc_handle_context_t *context,
 
     rc = open62541_client_write(context->client, &datas);
     if (0 != rc) {
-        code = -3;
+        code = OPCUA_ERROR_WRITE_FAIL;
         log_error("open62541 write error");
         vector_uninit(&datas);
         SET_RESULT_ERRORCODE(resp_val, code);
@@ -483,7 +501,7 @@ int plugin_handle_write_value(opc_handle_context_t *context,
     neu_fixed_array_t *resp_array;
     resp_array = neu_fixed_array_new(size + 1, sizeof(neu_int_val_t));
     if (NULL == resp_array) {
-        code = -4;
+        code = OPCUA_ERROR_ARRAY_NULL;
         log_error("Failed to allocate array for response tags");
         vector_uninit(&datas);
         neu_dvalue_free(resp_val);
@@ -500,7 +518,7 @@ int plugin_handle_write_value(opc_handle_context_t *context,
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, resp_array);
 
     vector_uninit(&datas);
-    return 0;
+    return code;
 }
 
 static void periodic_read(nng_aio *aio, void *arg, int code)
@@ -581,14 +599,16 @@ static void start_opc_subscribe(opc_handle_context_t *context,
     open62541_client_subscribe(context->client, NULL);
 }
 
-int plugin_handle_subscribe(opc_handle_context_t *      context,
-                            neu_taggrp_config_t *       config,
-                            periodic_response_callback  periodic_cb,
-                            subscribe_response_callback subscribe_cb)
+opcua_error_code_e
+plugin_handle_subscribe(opc_handle_context_t *      context,
+                        neu_taggrp_config_t *       config,
+                        periodic_response_callback  periodic_cb,
+                        subscribe_response_callback subscribe_cb)
 {
+    opcua_error_code_e     code  = OPCUA_ERROR_SUCESS;
     opc_subscribe_tuple_t *tuple = add_subscribe(context, config);
     if (NULL == tuple) {
-        return -1;
+        return OPCUA_ERROR_ADD_SUBSCRIBE_FAIL;
     }
 
     tuple->periodic_cb  = periodic_cb;
@@ -596,7 +616,7 @@ int plugin_handle_subscribe(opc_handle_context_t *      context,
 
     start_periodic_read(tuple);
     start_opc_subscribe(context, config);
-    return 0;
+    return code;
 }
 
 static opc_subscribe_tuple_t *find_subscribe(opc_handle_context_t *context,
@@ -640,12 +660,13 @@ static void stop_opc_subscribe(opc_handle_context_t *context,
     open62541_client_unsubscribe(context->client, NULL);
 }
 
-int plugin_handle_unsubscribe(opc_handle_context_t *context,
-                              neu_taggrp_config_t * config)
+opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
+                                             neu_taggrp_config_t * config)
 {
+    opcua_error_code_e     code  = OPCUA_ERROR_SUCESS;
     opc_subscribe_tuple_t *tuple = find_subscribe(context, config);
     stop_periodic_read(tuple);
     stop_opc_subscribe(context, config);
     remove_subscribe(tuple);
-    return 0;
+    return code;
 }

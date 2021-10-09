@@ -55,18 +55,33 @@ typedef struct {
     opc_handle_context_t *      context;
 } opc_subscribe_tuple_t;
 
-int plugin_handle_read_once(opc_handle_context_t *context,
-                            neu_taggrp_config_t * config,
-                            neu_data_val_t *      resp_val);
-int plugin_handle_write_value(opc_handle_context_t *context,
-                              neu_data_val_t *      write_val,
-                              neu_data_val_t *      resp_val);
-int plugin_handle_subscribe(opc_handle_context_t *      context,
-                            neu_taggrp_config_t *       config,
-                            periodic_response_callback  periodic_cb,
-                            subscribe_response_callback subscribe_cb);
-int plugin_handle_unsubscribe(opc_handle_context_t *context,
-                              neu_taggrp_config_t * config);
+typedef enum {
+    OPCUA_ERROR_SUCESS              = 0,
+    OPCUA_ERROR_GROUP_CONFIG_NULL   = -1,
+    OPCUA_ERROR_DATATAG_VECTOR_NULL = -2,
+    OPCUA_ERROR_CLIENT_OFFLINE      = -3,
+    OPCUA_ERROR_READ_FAIL           = -4,
+    OPCUA_ERROR_ARRAY_NULL          = -5,
+    OPCUA_ERROR_WRITE_FAIL          = -6,
+    OPCUA_ERROR_ADD_SUBSCRIBE_FAIL  = -7,
+    OPCUA_ERROR_DATATAG_NULL        = -10,
+    OPCUA_ERROR_DATATAG_NOT_MATCH   = -11
+} opcua_error_code_e;
+
+opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
+                                           neu_taggrp_config_t * config,
+                                           neu_data_val_t *      resp_val);
+opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
+                                             neu_taggrp_config_t * config,
+                                             neu_data_val_t *      write_val,
+                                             neu_data_val_t *      resp_val);
+opcua_error_code_e
+                   plugin_handle_subscribe(opc_handle_context_t *      context,
+                                           neu_taggrp_config_t *       config,
+                                           periodic_response_callback  periodic_cb,
+                                           subscribe_response_callback subscribe_cb);
+opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
+                                             neu_taggrp_config_t * config);
 
 #ifdef __cplusplus
 }

@@ -231,7 +231,8 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
         neu_response_t     resp;
         neu_reqresp_data_t data_resp;
-        plugin_handle_write_value(plugin->handle_context, write_val, resp_val);
+        plugin_handle_write_value(plugin->handle_context, write_req->grp_config,
+                                  write_val, resp_val);
 
         data_resp.grp_config = write_req->grp_config;
         data_resp.data_val   = resp_val;

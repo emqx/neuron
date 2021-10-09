@@ -60,7 +60,8 @@ TEST(JsonAPITest, ReadResEncode)
 
 TEST(JsonAPITest, WriteReqDecode)
 {
-    char *buf = (char *) "{\"node_id\": 123, \"tags\": "
+    char *buf = (char *) "{\"node_id\": 123, \"group_config_name\": "
+                         "\"config_opcua_sample\", \"tags\": "
                          "[{\"tag_id\":1, \"value\":8877},{\"tag_id\":2, "
                          "\"value\":11.22},{\"tag_id\":3, \"value\": \"hello "
                          "world\"}]}";
@@ -70,6 +71,8 @@ TEST(JsonAPITest, WriteReqDecode)
 
     EXPECT_EQ(3, req->n_tag);
     EXPECT_EQ(123, req->node_id);
+
+    EXPECT_STREQ("config_opcua_sample", req->group_config_name);
 
     EXPECT_EQ(1, req->tags[0].tag_id);
     EXPECT_EQ(NEU_JSON_INT, req->tags[0].t);

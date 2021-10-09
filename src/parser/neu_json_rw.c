@@ -94,9 +94,13 @@ int neu_parse_decode_write(char *buf, neu_parse_write_req_t **result)
 {
     neu_parse_write_req_t *req    = calloc(1, sizeof(neu_parse_write_req_t));
     neu_json_elem_t        elem[] = { {
-        .name = "node_id",
-        .t    = NEU_JSON_INT,
-    }
+                                   .name = "node_id",
+                                   .t    = NEU_JSON_INT,
+                               },
+                               {
+                                   .name = "group_config_name",
+                                   .t    = NEU_JSON_STR,
+                               }
 
     };
 
@@ -105,7 +109,8 @@ int neu_parse_decode_write(char *buf, neu_parse_write_req_t **result)
         free(req);
         return -1;
     }
-    req->node_id = elem[0].v.val_int;
+    req->node_id           = elem[0].v.val_int;
+    req->group_config_name = elem[1].v.val_str;
 
     req->n_tag = neu_json_decode_array_size(buf, "tags");
     req->tags  = calloc(req->n_tag, sizeof(neu_parse_write_req_tag_t));
@@ -147,6 +152,9 @@ int neu_parse_decode_write(char *buf, neu_parse_write_req_t **result)
 
 void neu_parse_decode_write_free(neu_parse_write_req_t *req)
 {
+    if (NULL != req->group_config_name) {
+        free(req->group_config_name);
+    }
 
     for (int i = 0; i < req->n_tag; i++) {
         if (req->tags[i].t == NEU_JSON_STR) {
