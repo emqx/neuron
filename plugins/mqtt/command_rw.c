@@ -233,7 +233,42 @@ char *command_read_cycle_response(neu_plugin_t *  plugin,
     return command_read_once_response(plugin, "", resp_val);
 }
 
+static bool match_name_grp_config(const void *key, const void *item)
+{
+    if (NULL == key || NULL == item) {
+        return false;
+    }
+    const char *         name   = (const char *) key;
+    neu_taggrp_config_t *config = *(neu_taggrp_config_t **) item;
+    if (0 == strcmp(name, neu_taggrp_cfg_get_name(config))) {
+        return true;
+    }
+
+    return false;
+}
+
+static neu_taggrp_config_t *
+get_group_config_by_name(neu_plugin_t *plugin, uint32_t dest_node_id,
+                         const char *group_config_name)
+{
+    vector_t configs = neu_system_get_group_configs(plugin, dest_node_id);
+    neu_taggrp_config_t *config;
+    neu_taggrp_config_t *c;
+    // config1 = *(neu_taggrp_config_t **) vector_get(&configs, 0);
+    config = *(neu_taggrp_config_t **) vector_find_item(
+        &configs, group_config_name, match_name_grp_config);
+    if (NULL == config) {
+        GROUP_CONFIGS_UINIT(configs);
+        return NULL;
+    }
+    c = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
+    GROUP_CONFIGS_UINIT(configs);
+
+    return c;
+}
+
 static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
+                         const char *    group_config_name,
                          neu_data_val_t *write_val)
 {
     vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
@@ -244,23 +279,23 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
         return -1;
     }
 
-    vector_t configs = neu_system_get_group_configs(plugin, dest_node_id);
     neu_taggrp_config_t *config;
-    neu_taggrp_config_t *c;
-    config = *(neu_taggrp_config_t **) vector_get(&configs, 0);
-    c      = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
+    config = get_group_config_by_name(plugin, dest_node_id, group_config_name);
+    if (NULL == config) {
+        return -2;
+    }
 
     uint32_t req_id =
-        neu_plugin_send_write_cmd(plugin, dest_node_id, c, write_val);
+        neu_plugin_send_write_cmd(plugin, dest_node_id, config, write_val);
 
-    GROUP_CONFIGS_UINIT(configs);
     return req_id;
 }
 
 void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
                            neu_parse_write_req_t *write_req)
 {
-    log_info("WRITE uuid:%s", mqtt->uuid);
+    log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
+             write_req->group_config_name);
 
     neu_data_val_t *   write_val;
     neu_fixed_array_t *array;
@@ -319,7 +354,8 @@ void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
-    write_command(plugin, write_req->node_id, write_val);
+    write_command(plugin, write_req->node_id, write_req->group_config_name,
+                  write_val);
     neu_dvalue_free(write_val);
 }
 

@@ -19,7 +19,7 @@ api:
 opcua:
   default_cert_file: ./opcua-default-cert.der
   default_key_file: ./opcua-default-key.der
-  host: 192.168.50.156
+  host: localhost
   port: 4840
   username: gaoc01
   password: 123456

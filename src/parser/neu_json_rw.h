@@ -56,6 +56,7 @@ typedef struct {
 
 typedef struct neu_parse_write_req {
     uint32_t                   node_id;
+    char *                     group_config_name;
     int                        n_tag;
     neu_parse_write_req_tag_t *tags;
 } neu_parse_write_req_t;
