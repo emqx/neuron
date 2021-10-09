@@ -217,8 +217,10 @@ size_t neu_string_deserialize(uint8_t *buf, neu_string_t **p_string)
         return 0;
     }
 
-    cur_ptr = buf;
-    length  = *(size_t *) cur_ptr;
+    *p_string = NULL;
+    cur_ptr   = buf;
+
+    length = *(size_t *) cur_ptr;
     cur_ptr += sizeof(size_t);
     size += sizeof(size_t);
     string = neu_string_new(length);
@@ -895,7 +897,7 @@ neu_fixed_array_t *neu_fixed_array_new(size_t length, size_t esize)
     }
 
     size  = length * esize + 2 * sizeof(size_t);
-    array = (neu_fixed_array_t *) malloc(size);
+    array = (neu_fixed_array_t *) calloc(1, size);
     if (array == NULL) {
         return NULL;
     }

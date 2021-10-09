@@ -487,7 +487,7 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
     same_reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
                                                reg_param->adapter_name);
     if (same_reg_entity != NULL) {
-        log_error("A adapter with same name has already been registered");
+        log_warn("A adapter with same name has already been registered");
         return 0;
     }
 

@@ -284,12 +284,18 @@ TEST(DataValueTest, neu_dvalue_set_get_bytes)
 TEST(DataValueTest, neu_dvalue_set_get_array)
 {
     int                rc;
-    neu_data_val_t *   val = neu_dvalue_unit_new();
     neu_fixed_array_t *array_set;
     neu_fixed_array_t *array_get;
     neu_fixed_array_t *array_get_ref;
 
-    array_set = neu_fixed_array_new(4, sizeof(int8_t));
+    int8_t i8_arr[4] = { 2, 7, 1, 8 };
+    array_set        = neu_fixed_array_new(4, sizeof(int8_t));
+    neu_fixed_array_set(array_set, 0, &i8_arr[0]);
+    neu_fixed_array_set(array_set, 1, &i8_arr[1]);
+    neu_fixed_array_set(array_set, 2, &i8_arr[2]);
+    neu_fixed_array_set(array_set, 3, &i8_arr[3]);
+
+    neu_data_val_t *val = neu_dvalue_unit_new();
     neu_dvalue_init_move_array(val, NEU_DTYPE_INT8, array_set);
 
     size_t array_length = array_set->length;
@@ -311,10 +317,16 @@ TEST(DataValueTest, neu_dvalue_set_get_array)
 
 TEST(DataValueTest, neu_dvalue_set_get_vec)
 {
-    int             rc;
+    int       rc;
+    vector_t *vec_set;
+    int8_t    i8_arr[4] = { 2, 7, 1, 8 };
+    vec_set             = vector_new(4, sizeof(int8_t));
+    vector_push_back(vec_set, &i8_arr[0]);
+    vector_push_back(vec_set, &i8_arr[1]);
+    vector_push_back(vec_set, &i8_arr[2]);
+    vector_push_back(vec_set, &i8_arr[3]);
+
     neu_data_val_t *val = neu_dvalue_unit_new();
-    vector_t *      vec_set;
-    vec_set = vector_new(4, sizeof(int8_t));
     neu_dvalue_init_move_vec(val, NEU_DTYPE_INT8, vec_set);
     vector_t *vec_get;
     rc = neu_dvalue_get_move_vec(val, &vec_get);
@@ -341,7 +353,7 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
 
-    size = neu_dvalue_desialize(buf, size, &val1);
+    size = neu_dvalue_deserialize(buf, size, &val1);
     EXPECT_LT(0, size);
     int64_t i64;
     rc = neu_dvalue_get_int64(val1, &i64);
@@ -357,7 +369,7 @@ TEST(DataValueTest, neu_dvalue_prim_val_deser)
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
 
-    size = neu_dvalue_desialize(buf, size, &val1);
+    size = neu_dvalue_deserialize(buf, size, &val1);
     EXPECT_LT(0, size);
     double f64;
     rc = neu_dvalue_get_double(val1, &f64);
@@ -390,7 +402,7 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
 
-    size = neu_dvalue_desialize(buf, size, &val1);
+    size = neu_dvalue_deserialize(buf, size, &val1);
     EXPECT_LT(0, size);
     neu_int_val_t int_val_get;
     char *        cstr;
@@ -411,16 +423,22 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     ssize_t  size;
     uint8_t *buf;
 
-    neu_data_val_t *   val = neu_dvalue_unit_new();
     neu_fixed_array_t *array_set;
-    array_set = neu_fixed_array_new(4, sizeof(int8_t));
+    int8_t             i8_arr[4] = { 2, 7, 1, 8 };
+    array_set                    = neu_fixed_array_new(4, sizeof(int8_t));
+    neu_fixed_array_set(array_set, 0, &i8_arr[0]);
+    neu_fixed_array_set(array_set, 1, &i8_arr[1]);
+    neu_fixed_array_set(array_set, 2, &i8_arr[2]);
+    neu_fixed_array_set(array_set, 3, &i8_arr[3]);
+
+    neu_data_val_t *val = neu_dvalue_unit_new();
     neu_dvalue_init_move_array(val, NEU_DTYPE_INT8, array_set);
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
 
     neu_data_val_t *val1;
-    size = neu_dvalue_desialize(buf, size, &val1);
+    size = neu_dvalue_deserialize(buf, size, &val1);
     EXPECT_LT(0, size);
     neu_fixed_array_t *array_get;
     rc = neu_dvalue_get_move_array(val1, &array_get);
@@ -438,16 +456,22 @@ TEST(DataValueTest, neu_dvalue_vec_deser)
     ssize_t  size;
     uint8_t *buf;
 
+    vector_t *vec_set;
+    int8_t    i8_arr[4] = { 2, 7, 1, 8 };
+    vec_set             = vector_new(4, sizeof(int8_t));
+    vector_push_back(vec_set, &i8_arr[0]);
+    vector_push_back(vec_set, &i8_arr[1]);
+    vector_push_back(vec_set, &i8_arr[2]);
+    vector_push_back(vec_set, &i8_arr[3]);
+
     neu_data_val_t *val = neu_dvalue_unit_new();
-    vector_t *      vec_set;
-    vec_set = vector_new(4, sizeof(int8_t));
     neu_dvalue_init_move_vec(val, NEU_DTYPE_INT8, vec_set);
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
 
     neu_data_val_t *val1;
-    size = neu_dvalue_desialize(buf, size, &val1);
+    size = neu_dvalue_deserialize(buf, size, &val1);
     EXPECT_LT(0, size);
     vector_t *vec_get;
     rc = neu_dvalue_get_move_vec(val1, &vec_get);

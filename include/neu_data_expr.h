@@ -136,8 +136,8 @@ typedef struct neu_unit {
 
 /* NEU_DTYPE_INT_VAL */
 typedef struct neu_int_val {
-    uint32_t        key;
     neu_data_val_t *val;
+    uint32_t        key;
 } neu_int_val_t;
 
 /* NEU_DTYPE_STRING_VAL */
@@ -368,8 +368,8 @@ int neu_dvalue_get_move_vec(neu_data_val_t *val, vector_t **p_vec);
  * declare functions for serialize and deserialize
  */
 ssize_t neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf);
-ssize_t neu_dvalue_desialize(uint8_t *buf, size_t buf_len,
-                             neu_data_val_t **p_val);
+ssize_t neu_dvalue_deserialize(uint8_t *buf, size_t buf_len,
+                               neu_data_val_t **p_val);
 
 /*
  * declare functions for int-value and string-value pair

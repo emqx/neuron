@@ -72,7 +72,7 @@ void neu_panic(const char *fmt, ...)
 
     log_fatal(buf);
     log_fatal("This message is indicative of a BUG.");
-    log_fatal("Report this at https://github.com/emqx/neuronlite/issues");
+    log_fatal("Report this at https://github.com/neugates/neuron/issues");
 
     neu_show_backtrace();
     abort();
