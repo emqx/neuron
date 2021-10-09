@@ -10,7 +10,7 @@ if [ $system == 'Linux' ];then
     fi
 fi
 
-lib_list=(nng jansson jwt paho uuid openssl gtest open62541 yaml)
+lib_list=(nng jansson jwt paho openssl gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]};do
@@ -140,12 +140,6 @@ function install_tool()
     echo "Please install library manually!"
     ;;
     esac
-}
-
-function build_uuid()
-{
-    echo "Installing uuid"
-    install_tool uuid-dev libuuid-devel ossp-uuid
 }
 
 function build_openssl()

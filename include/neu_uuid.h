@@ -17,24 +17,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEURON_H_
-#define _NEURON_H_
+#ifndef __NEU_UUID_H__
+#define __NEU_UUID_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "neu_adapter.h"
-#include "neu_list.h"
-#include "neu_log.h"
-#include "neu_panic.h"
-#include "neu_plugin.h"
-#include "neu_types.h"
-#include "neu_uuid.h"
-#include "neu_vector.h"
+int neu_uuid_v4_gen(char *buffer);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // __NEU_UUID_H__
