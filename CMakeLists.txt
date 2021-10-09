@@ -115,14 +115,15 @@ set(NEURON_BASE_SOURCES
     src/utils/log.c
     src/utils/json.c
     src/utils/common.c
-    src/utils/neu_jwt.c)
+    src/utils/neu_jwt.c
+    src/utils/uuid4.c)
 
 set(NEURON_BASE_INCLUDE_DIRECTORIES include)
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES})
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
-target_link_libraries(neuron-base vector-static csptr jansson
+target_link_libraries(neuron-base vector-static csptr jansson crypto
                       ${CMAKE_THREAD_LIBS_INIT})
 
 #copy yaml to build

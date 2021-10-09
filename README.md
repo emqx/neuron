@@ -70,18 +70,6 @@ NEURON IIoT System for Industry 4.0
   $ ninja install
   ```
   
-- uuid
-  ```shell
-  # Ubuntu
-  $ apt-get install uuid-dev
-  
-  # CentOS
-  $ yum install libuuid-devel
-   
-  # MacOS
-  $ brew install ossp-uuid
-  ```
-
 - [yaml](https://github.com/yaml/libyaml.git)
   ```shell
   $ git clone https://github.com/yaml/libyaml.git
