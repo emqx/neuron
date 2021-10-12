@@ -30,6 +30,7 @@
 
 #include "adapter_handle.h"
 #include "datatag_handle.h"
+#include "get_ttys_handle.h"
 #include "group_config_handle.h"
 #include "http.h"
 #include "plugin_handle.h"
@@ -171,6 +172,12 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/plugin",
         .value.handler = handle_del_plugin,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/tty",
+        .value.handler = handle_get_ttys,
     },
 };
 
