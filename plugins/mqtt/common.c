@@ -54,3 +54,64 @@ int common_config_exist(vector_t *v, const char *config_name)
     }
     return -1;
 }
+
+int common_has_node(neu_plugin_t *plugin, const uint32_t node_id)
+{
+    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
+    int      rc    = common_node_id_exist(&nodes, node_id);
+    vector_uninit(&nodes);
+    return rc;
+}
+
+int common_has_group_config(neu_plugin_t *plugin, const uint32_t node_id,
+                            const char *group_config_name)
+{
+    vector_t configs = neu_system_get_group_configs(plugin, node_id);
+    int      rc      = common_config_exist(&configs, group_config_name);
+    GROUP_CONFIGS_UNINIT(configs);
+    return rc;
+}
+
+neu_taggrp_config_t *common_get_group_config(neu_plugin_t * plugin,
+                                             const uint32_t node_id,
+                                             const char *   group_config_name)
+{
+    vector_t configs            = neu_system_get_group_configs(plugin, node_id);
+    neu_taggrp_config_t *config = NULL;
+    neu_taggrp_config_t *ret_config = NULL;
+    VECTOR_FOR_EACH(&configs, iter)
+    {
+        config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (NULL == config) {
+            continue;
+        }
+
+        if (0 == strcmp(group_config_name, neu_taggrp_cfg_get_name(config))) {
+            ret_config = config;
+        }
+    }
+    GROUP_CONFIGS_UNINIT(configs);
+
+    return ret_config;
+}
+
+void common_group_configs_freach(neu_plugin_t *plugin, const uint32_t node_id,
+                                 void *context,
+                                 void visit_func(neu_taggrp_config_t *, void *))
+{
+    vector_t configs = neu_system_get_group_configs(plugin, node_id);
+    neu_taggrp_config_t *config;
+    VECTOR_FOR_EACH(&configs, iter)
+    {
+        config = *(neu_taggrp_config_t **) iterator_get(&iter);
+        visit_func(config, context);
+    }
+    GROUP_CONFIGS_UNINIT(configs);
+}
+
+neu_datatag_table_t *common_get_datatags_table(neu_plugin_t * plugin,
+                                               const uint32_t node_id)
+{
+    neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
+    return table;
+}

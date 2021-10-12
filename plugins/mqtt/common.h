@@ -33,7 +33,7 @@ extern "C" {
 
 #define UNUSED(x) (void) (x)
 
-#define GROUP_CONFIGS_UINIT(configs)                                        \
+#define GROUP_CONFIGS_UNINIT(configs)                                       \
     {                                                                       \
         VECTOR_FOR_EACH(&configs, iter)                                     \
         {                                                                   \
@@ -46,6 +46,21 @@ extern "C" {
 
 int common_node_id_exist(vector_t *v, const uint32_t node_id);
 int common_config_exist(vector_t *v, const char *config_name);
+
+int common_has_node(neu_plugin_t *plugin, const uint32_t node_id);
+
+int common_has_group_config(neu_plugin_t *plugin, const uint32_t node_id,
+                            const char *group_config_name);
+neu_taggrp_config_t *common_get_group_config(neu_plugin_t * plugin,
+                                             const uint32_t node_id,
+                                             const char *   group_config_name);
+void common_group_configs_freach(neu_plugin_t *plugin, const uint32_t node_id,
+                                 void *context,
+                                 void  visit_func(neu_taggrp_config_t *,
+                                                 void *));
+
+neu_datatag_table_t *common_get_datatags_table(neu_plugin_t * plugin,
+                                               const uint32_t node_id);
 
 #ifdef __cplusplus
 }

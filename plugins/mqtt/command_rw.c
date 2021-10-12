@@ -42,7 +42,7 @@ void command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     c               = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
     uint32_t req_id = neu_plugin_send_read_cmd(plugin, req->node_id, c);
 
-    GROUP_CONFIGS_UINIT(configs);
+    GROUP_CONFIGS_UNINIT(configs);
     UNUSED(req_id);
 }
 
@@ -258,11 +258,11 @@ get_group_config_by_name(neu_plugin_t *plugin, uint32_t dest_node_id,
     config = *(neu_taggrp_config_t **) vector_find_item(
         &configs, group_config_name, match_name_grp_config);
     if (NULL == config) {
-        GROUP_CONFIGS_UINIT(configs);
+        GROUP_CONFIGS_UNINIT(configs);
         return NULL;
     }
     c = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
-    GROUP_CONFIGS_UINIT(configs);
+    GROUP_CONFIGS_UNINIT(configs);
 
     return c;
 }
