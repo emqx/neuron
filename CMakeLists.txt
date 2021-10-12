@@ -86,7 +86,8 @@ set(NEURON_SOURCES
     plugins/restful/group_config_handle.c
     plugins/restful/plugin_handle.c
     plugins/restful/rest.c
-    plugins/restful/http.c)
+    plugins/restful/http.c
+    plugins/restful/get_ttys_handle.c)
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
