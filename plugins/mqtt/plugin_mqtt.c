@@ -24,6 +24,8 @@
 #include <config.h>
 #include <neuron.h>
 
+#include "command_datatag.h"
+#include "command_group_config.h"
 #include "command_rw.h"
 #include "message_handle.h"
 
@@ -31,6 +33,17 @@
 #include "paho_client.h"
 
 #define UNUSED(x) (void) (x)
+
+#define MQTT_SEND(client, topic, qos, json_str)                           \
+    {                                                                     \
+        if (NULL != json_str) {                                           \
+            client_error error = paho_client_publish(                     \
+                client, topic, qos, (unsigned char *) json_str,           \
+                strlen(json_str));                                        \
+            log_debug("Publish error code:%d, json:%s", error, json_str); \
+            free(json_str);                                               \
+        }                                                                 \
+    }
 
 const neu_plugin_module_t neu_plugin_module;
 
@@ -81,34 +94,54 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
     }
 
     switch (mqtt->function) {
-    case NEU_MQTT_OP_GET_GROUP_CONFIG:
-        message_handle_get_group_config(
-            plugin, mqtt, (neu_parse_get_group_config_req_t *) result);
-        neu_parse_decode_get_group_config_free(result);
+    case NEU_MQTT_OP_GET_GROUP_CONFIG: {
+        rc = neu_parse_decode_get_group_config(
+            json_str, (neu_parse_get_group_config_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_get_group_configs(
+                plugin, mqtt, (neu_parse_get_group_config_req_t *) result);
+            neu_parse_decode_get_group_config_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
         break;
-    case NEU_MQTT_OP_ADD_GROUP_CONFIG:
-        message_handle_add_group_config(
-            plugin, mqtt, (neu_parse_add_group_config_req_t *) result);
-        neu_parse_decode_add_group_config_free(result);
+    }
+    case NEU_MQTT_OP_ADD_GROUP_CONFIG: {
+        rc = neu_parse_decode_add_group_config(
+            json_str, (neu_parse_add_group_config_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_add_group_config(
+                plugin, mqtt, (neu_parse_add_group_config_req_t *) result);
+            neu_parse_decode_add_group_config_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
         break;
-    case NEU_MQTT_OP_UPDATE_GROUP_CONFIG:
-        message_handle_update_group_config(
-            plugin, mqtt, (neu_parse_update_group_config_req_t *) result);
-        neu_parse_decode_update_group_config_free(result);
+    }
+    case NEU_MQTT_OP_UPDATE_GROUP_CONFIG: {
+        rc = neu_parse_decode_update_group_config(
+            json_str, (neu_parse_update_group_config_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_update_group_config(
+                plugin, mqtt, (neu_parse_update_group_config_req_t *) result);
+            neu_parse_decode_update_group_config_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
         break;
-    case NEU_MQTT_OP_DELETE_GROUP_CONFIG:
-        message_handle_delete_group_config(
-            plugin, mqtt, (neu_parse_del_group_config_req_t *) result);
-        neu_parse_decode_del_group_config_free(result);
+    }
+    case NEU_MQTT_OP_DELETE_GROUP_CONFIG: {
+        rc = neu_parse_decode_del_group_config(
+            json_str, (neu_parse_del_group_config_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_delete_group_config(
+                plugin, mqtt, (neu_parse_del_group_config_req_t *) result);
+            neu_parse_decode_del_group_config_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
         break;
-    case NEU_MQTT_OP_ADD_DATATAG_IDS_CONFIG:
-        // message_handle_add_datatag_ids(
-        // plugin, (neu_parse_add_tag_ids_req_t *) result);
-        break;
-    case NEU_MQTT_OP_DELETE_DATATAG_IDS_CONFIG:
-        // message_handle_delete_datatag_ids(
-        // plugin, (struct neu_parse_delete_tag_ids_req *) result);
-        break;
+    }
     case NEU_MQTT_OP_READ: {
         rc = neu_parse_decode_read(json_str, (neu_parse_read_req_t **) &result);
         if (0 == rc) {
@@ -128,16 +161,54 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         }
         break;
     }
-    case NEU_MQTT_OP_GET_TAGS:
-        message_handle_get_tag_list(plugin, mqtt,
-                                    (neu_parse_get_tags_req_t *) result);
-        neu_parse_decode_get_tags_free(result);
+    case NEU_MQTT_OP_GET_TAGS: {
+        rc = neu_parse_decode_get_tags(json_str,
+                                       (neu_parse_get_tags_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_get_tags(plugin, mqtt,
+                                       (neu_parse_get_tags_req_t *) result);
+            neu_parse_decode_get_tags_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
         break;
-    case NEU_MQTT_OP_ADD_TAGS:
-        message_handle_add_tag(plugin, mqtt,
-                               (neu_parse_add_tags_req_t *) result);
-        neu_parse_decode_add_tags_free(result);
+    }
+    case NEU_MQTT_OP_ADD_TAGS: {
+        rc = neu_parse_decode_add_tags(json_str,
+                                       (neu_parse_add_tags_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_add_tags(plugin, mqtt,
+                                       (neu_parse_add_tags_req_t *) result);
+            neu_parse_decode_add_tags_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
         break;
+    }
+    case NEU_MQTT_OP_UPDATE_TAGS: {
+        rc = neu_parse_decode_update_tags(
+            json_str, (neu_parse_update_tags_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_update_tags(
+                plugin, mqtt, (neu_parse_update_tags_req_t *) result);
+            neu_parse_decode_update_tags_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_DELETE_TAGS: {
+        rc = neu_parse_decode_del_tags(json_str,
+                                       (neu_parse_del_tags_req_t **) &result);
+        if (0 == rc) {
+            char *ret_str = NULL;
+            ret_str       = command_delete_tags(plugin, mqtt,
+                                          (neu_parse_del_tags_req_t *) result);
+            neu_parse_decode_del_tags_free(result);
+            MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+        }
+        break;
+    }
     default:
         break;
     }
@@ -258,13 +329,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         read_resp = (neu_reqresp_read_resp_t *) req->buf;
         char *json_str =
             command_read_once_response(plugin, "", read_resp->data_val);
-        if (NULL != json_str) {
-            client_error error = paho_client_publish(
-                plugin->paho, "neuronlite/response", 0,
-                (unsigned char *) json_str, strlen(json_str));
-            log_debug("Publish error code:%d, json:%s", error, json_str);
-            free(json_str);
-        }
+        MQTT_SEND(plugin->paho, "neuronlite/response", 0, json_str);
         break;
     }
     case NEU_REQRESP_WRITE_RESP: {
@@ -272,33 +337,17 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         write_resp = (neu_reqresp_write_resp_t *) req->buf;
         char *json_str =
             command_write_response(plugin, "", write_resp->data_val);
-        if (NULL != json_str) {
-            client_error error = paho_client_publish(
-                plugin->paho, "neuronlite/response", 0,
-                (unsigned char *) json_str, strlen(json_str));
-            log_debug("Publish error code:%d, json:%s", error, json_str);
-            free(json_str);
-        }
+        MQTT_SEND(plugin->paho, "neuronlite/response", 0, json_str);
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_data_t *neu_data;
         neu_data = (neu_reqresp_data_t *) req->buf;
-
         char *json_str =
             command_read_cycle_response(plugin, neu_data->data_val);
-        if (NULL != json_str) {
-            client_error error = paho_client_publish(
-                plugin->paho, "neuronlite/response", 0,
-                (unsigned char *) json_str, strlen(json_str));
-            log_debug("Publish error code:%d, json:%s", error, json_str);
-            free(json_str);
-        }
-
-        log_debug("------------------------------------");
+        MQTT_SEND(plugin->paho, "neuronlite/response", 0, json_str);
         break;
     }
-
     case NEU_REQRESP_WRITE_DATA: {
         break;
     }
