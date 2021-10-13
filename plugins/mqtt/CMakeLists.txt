@@ -8,7 +8,6 @@ set(src
 	${CONFIG_SRC} 
 	plugin_mqtt.c 
 	paho_client.c 
-	message_handle.c 
 	common.c 
 	command_rw.c
 	command_group_config.c

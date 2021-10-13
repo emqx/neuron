@@ -27,7 +27,6 @@
 #include "command_datatag.h"
 #include "command_group_config.h"
 #include "command_rw.h"
-#include "message_handle.h"
 
 #include "option.h"
 #include "paho_client.h"
@@ -288,7 +287,6 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     plugin_subscribe(plugin, "neuronlite/request", 0, plugin_response_handle);
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
 
-    message_handle_set_paho_client(plugin->paho);
     return 0;
 }
 
@@ -302,8 +300,6 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
 static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-    message_handle_init_tags(plugin);
-
     UNUSED(plugin);
 
     UNUSED(configs);
