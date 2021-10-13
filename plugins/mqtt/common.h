@@ -28,6 +28,7 @@ extern "C" {
 #include "parser/neu_json_fn.h"
 #include "parser/neu_json_group_config.h"
 #include "parser/neu_json_mqtt.h"
+#include "parser/neu_json_node.h"
 #include "parser/neu_json_rw.h"
 #include "parser/neu_json_tag.h"
 
@@ -54,10 +55,10 @@ int common_has_group_config(neu_plugin_t *plugin, const uint32_t node_id,
 neu_taggrp_config_t *common_get_group_config(neu_plugin_t * plugin,
                                              const uint32_t node_id,
                                              const char *   group_config_name);
-void common_group_configs_freach(neu_plugin_t *plugin, const uint32_t node_id,
-                                 void *context,
-                                 void  visit_func(neu_taggrp_config_t *,
-                                                 void *));
+void common_group_configs_foreach(neu_plugin_t *plugin, const uint32_t node_id,
+                                  void *context,
+                                  void  visit_func(neu_taggrp_config_t *,
+                                                  void *));
 
 neu_datatag_table_t *common_get_datatags_table(neu_plugin_t * plugin,
                                                const uint32_t node_id);

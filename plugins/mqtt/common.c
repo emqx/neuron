@@ -95,9 +95,10 @@ neu_taggrp_config_t *common_get_group_config(neu_plugin_t * plugin,
     return ret_config;
 }
 
-void common_group_configs_freach(neu_plugin_t *plugin, const uint32_t node_id,
-                                 void *context,
-                                 void visit_func(neu_taggrp_config_t *, void *))
+void common_group_configs_foreach(neu_plugin_t *plugin, const uint32_t node_id,
+                                  void *context,
+                                  void  visit_func(neu_taggrp_config_t *,
+                                                  void *))
 {
     vector_t configs = neu_system_get_group_configs(plugin, node_id);
     neu_taggrp_config_t *config;

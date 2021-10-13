@@ -27,22 +27,20 @@ void command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
                                neu_parse_read_req_t *req)
 {
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
-
-    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    int      rc    = common_node_id_exist(&nodes, req->node_id);
-    vector_uninit(&nodes);
+    int rc = common_has_node(plugin, req->node_id);
     if (0 != rc) {
+        log_debug("The requested node does not exist");
         return;
     }
 
-    vector_t configs = neu_system_get_group_configs(plugin, req->node_id);
-    neu_taggrp_config_t *config;
-    neu_taggrp_config_t *c;
-    config          = *(neu_taggrp_config_t **) vector_get(&configs, 0);
-    c               = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
-    uint32_t req_id = neu_plugin_send_read_cmd(plugin, req->node_id, c);
+    neu_taggrp_config_t *config = neu_system_find_group_config(
+        plugin, req->node_id, req->group_config_name);
+    if (NULL == config) {
+        log_debug("The requested config does not exist");
+        return;
+    }
 
-    GROUP_CONFIGS_UNINIT(configs);
+    uint32_t req_id = neu_plugin_send_read_cmd(plugin, req->node_id, config);
     UNUSED(req_id);
 }
 
@@ -182,12 +180,13 @@ static void clean_read_response_json_object(neu_parse_read_res_t *json)
     free(json->tags);
 }
 
-char *command_read_once_response(neu_plugin_t *plugin, const char *uuid,
-                                 neu_data_val_t *resp_val)
+char *command_read_once_response(neu_plugin_t *    plugin,
+                                 neu_parse_mqtt_t *parse_header,
+                                 neu_data_val_t *  resp_val)
 {
     UNUSED(plugin);
-    UNUSED(uuid);
     UNUSED(resp_val);
+    UNUSED(parse_header);
 
     neu_fixed_array_t *array;
     int                rc = neu_dvalue_get_ref_array(resp_val, &array);
@@ -229,8 +228,12 @@ char *command_read_once_response(neu_plugin_t *plugin, const char *uuid,
 char *command_read_cycle_response(neu_plugin_t *  plugin,
                                   neu_data_val_t *resp_val)
 {
-    // TODO: Generate UUID
-    return command_read_once_response(plugin, "", resp_val);
+    neu_parse_mqtt_t parse_header = { 0 };
+    parse_header.function         = NEU_MQTT_OP_READ;
+    char uuid4_str[40]            = { '\0' };
+    neu_uuid_v4_gen(uuid4_str);
+    parse_header.uuid = uuid4_str;
+    return command_read_once_response(plugin, &parse_header, resp_val);
 }
 
 static bool match_name_grp_config(const void *key, const void *item)

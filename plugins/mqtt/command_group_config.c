@@ -109,15 +109,11 @@ char *command_get_group_configs(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 static int add_group_config(neu_plugin_t *plugin, const char *config_name,
                             const uint32_t node_id, const int read_interval)
 {
-    if (0 == node_id) {
-        return -1;
-    }
-
     vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
     int      rc    = common_node_id_exist(&nodes, node_id);
     vector_uninit(&nodes);
     if (0 != rc) {
-        return -2;
+        return -1;
     }
 
     vector_t configs = neu_system_get_group_configs(plugin, node_id);
@@ -125,17 +121,17 @@ static int add_group_config(neu_plugin_t *plugin, const char *config_name,
     GROUP_CONFIGS_UNINIT(configs);
 
     if (0 == rc) {
-        return -4;
+        return -2;
     }
 
     neu_taggrp_config_t *grp_config = neu_taggrp_cfg_new((char *) config_name);
     if (NULL == grp_config) {
-        return -5;
+        return -3;
     }
     neu_taggrp_cfg_set_interval(grp_config, read_interval);
     intptr_t error = neu_system_add_group_config(plugin, node_id, grp_config);
     if (0 != error) {
-        return -6;
+        return -4;
     }
     return 0;
 }

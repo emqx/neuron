@@ -11,7 +11,8 @@ set(src
 	common.c 
 	command_rw.c
 	command_group_config.c
-	command_datatag.c)
+	command_datatag.c
+	command_node.c)
 add_library(plugin-mqtt SHARED ${src})
 
 target_include_directories(plugin-mqtt PRIVATE 
