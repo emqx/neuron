@@ -103,7 +103,7 @@ static int get_all_tag(neu_plugin_t *plugin, const uint32_t node_id,
     }
 
     struct visit_context ctx = { .table = table, .tags = tags };
-    common_group_configs_freach(plugin, node_id, &ctx, visit_func);
+    common_group_configs_foreach(plugin, node_id, &ctx, visit_func);
 
     return 0;
 }

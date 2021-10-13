@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT_COMMAND_RW
-#define NEURON_PLUGIN_MQTT_COMMAND_RW
+#ifndef NEURON_PLUGIN_MQTT_COMMAND_NODE
+#define NEURON_PLUGIN_MQTT_COMMAND_NODE
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,17 +28,14 @@ extern "C" {
 
 #include "common.h"
 
-void  command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                neu_parse_read_req_t *req);
-char *command_read_once_response(neu_plugin_t *    plugin,
-                                 neu_parse_mqtt_t *parse_header,
-                                 neu_data_val_t *  resp_val);
-char *command_read_cycle_response(neu_plugin_t *  plugin,
-                                  neu_data_val_t *resp_val);
-void  command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                            neu_parse_write_req_t *write_req);
-char *command_write_response(neu_plugin_t *plugin, const char *uuid,
-                             neu_data_val_t *resp_val);
+char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                        neu_parse_get_nodes_req_t *req);
+char *command_add_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                       neu_parse_add_node_req_t *req);
+char *command_update_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                          neu_parse_update_node_req_t *req);
+char *command_delete_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                          neu_parse_del_node_req_t *req);
 
 #ifdef __cplusplus
 }
