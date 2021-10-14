@@ -30,7 +30,7 @@
 #include "handle.h"
 #include "http.h"
 
-#include "get_ttys_handle.h"
+#include "normal_handle.h"
 
 #define DEV_TTY_LENTH 261
 
@@ -85,4 +85,19 @@ void handle_get_ttys(nng_aio *aio)
         free(result);
         free(ttys_res.ttys);
     }
+}
+
+void handle_ping(nng_aio *aio)
+{
+    http_ok(aio, "{\"status\": \"OK\"}");
+}
+
+void handle_login(nng_aio *aio)
+{
+    (void) aio;
+}
+
+void handle_logout(nng_aio *aio)
+{
+    (void) aio;
 }

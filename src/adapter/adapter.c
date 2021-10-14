@@ -191,7 +191,8 @@ static void adapter_loop(void *arg)
 
         rv = nng_recvmsg(adapter->sock, &msg, 0);
         if (rv != 0) {
-            log_warn("Manage pipe no message received");
+            if (rv != NNG_ETIMEDOUT)
+                log_warn("Manage pipe no message received %d", rv);
             continue;
         }
 
@@ -331,13 +332,11 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             if (adapter->plugin_module) {
-                ssize_t                 size;
                 neu_reqresp_read_resp_t read_resp;
                 read_resp.grp_config = cmd_ptr->grp_config;
                 void * buf           = core_databuf_get_ptr(cmd_ptr->databuf);
                 size_t buf_len       = core_databuf_get_len(cmd_ptr->databuf);
-                size =
-                    neu_dvalue_deserialize(buf, buf_len, &read_resp.data_val);
+                neu_dvalue_deserialize(buf, buf_len, &read_resp.data_val);
 
                 intf_funs     = adapter->plugin_module->intf_funs;
                 req.req_id    = adapter_get_req_id(adapter);
@@ -388,13 +387,11 @@ static void adapter_loop(void *arg)
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
             if (adapter->plugin_module) {
-                ssize_t                  size;
                 neu_reqresp_write_resp_t write_resp;
                 write_resp.grp_config = cmd_ptr->grp_config;
                 void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
                 size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
-                size =
-                    neu_dvalue_deserialize(buf, buf_len, &write_resp.data_val);
+                neu_dvalue_deserialize(buf, buf_len, &write_resp.data_val);
 
                 intf_funs     = adapter->plugin_module->intf_funs;
                 req.req_id    = adapter_get_req_id(adapter);
@@ -444,7 +441,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         return (-1);
     }
 
-    log_info("Get command from plugin %d", cmd->req_type);
+    log_info("Get command from plugin %d, %s", cmd->req_type, adapter->name);
     switch (cmd->req_type) {
     case NEU_REQRESP_SUBSCRIBE_NODE: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_SUBSCRIBE_NODE,
@@ -876,6 +873,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
                                   neu_manager_t *     manager)
 {
     neu_adapter_t *adapter;
+    nng_duration   recv_timeout = 100;
 
     if (manager == NULL) {
         log_error("Create adapter with NULL manager");
@@ -947,6 +945,9 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     if (rv != 0) {
         neu_panic("The adapter(%s) can't open pipe", adapter->name);
     }
+
+    nng_setopt(adapter->sock, NNG_OPT_RECVTIMEO, &recv_timeout,
+               sizeof(recv_timeout));
 
     log_info("Success to create adapter: %s", adapter->name);
     return adapter;

@@ -129,7 +129,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
 
 static int opcua_plugin_uninit(neu_plugin_t *plugin)
 {
-    open62541_client_close(plugin->client);
+    // open62541_client_close(plugin->client);
     free(plugin->handle_context);
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
