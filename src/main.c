@@ -35,9 +35,10 @@
 #include "neu_panic.h"
 #include "restful/rest.h"
 
+static neu_manager_t *manager;
+
 static nng_mtx *log_mtx;
 FILE *          g_logfile;
-neu_manager_t * manager;
 
 static void log_lock(bool lock, void *udata)
 {
