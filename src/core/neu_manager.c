@@ -535,7 +535,8 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
     return reg_entity.adapter_id;
 }
 
-static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
+static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
+                                 bool need_erase)
 {
     int                    rv = 0;
     size_t                 index;
@@ -552,12 +553,15 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
     nng_mtx_lock(manager->adapters_mtx);
     index = find_reg_adapter_index_by_id(reg_adapters, id);
     if (index != SIZE_MAX) {
-        // adapter_reg_entity_t *reg_entity;
+        adapter_reg_entity_t *reg_entity;
 
-        // reg_entity  = (adapter_reg_entity_t *) vector_get(reg_adapters,
-        // index); adapter     = reg_entity->adapter; datatag_mng =
-        // reg_entity->datatag_manager; cv          = reg_entity->cv;
-        // vector_erase(reg_adapters, index);
+        reg_entity  = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
+        adapter     = reg_entity->adapter;
+        datatag_mng = reg_entity->datatag_manager;
+        cv          = reg_entity->cv;
+        if (need_erase) {
+            vector_erase(reg_adapters, index);
+        }
     }
     nng_mtx_unlock(manager->adapters_mtx);
 
@@ -686,11 +690,11 @@ static void reg_and_start_default_adapters(neu_manager_t *manager)
 // Call this function after quit manager loop, so it don't need lock
 static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
 {
-    vector_t *            adapters;
+    vector_t *            reg_adapters;
     adapter_reg_entity_t *reg_entity;
 
-    adapters = &manager->reg_adapters;
-    VECTOR_FOR_EACH(adapters, iter)
+    reg_adapters = &manager->reg_adapters;
+    VECTOR_FOR_EACH(reg_adapters, iter)
     {
         neu_adapter_t *adapter;
 
@@ -698,7 +702,7 @@ static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
         adapter    = reg_entity->adapter;
         if (adapter != NULL) {
             manager_stop_adapter(manager, adapter);
-            manager_unreg_adapter(manager, reg_entity->adapter_id);
+            manager_unreg_adapter(manager, reg_entity->adapter_id, false);
         }
     }
 }
@@ -1324,9 +1328,9 @@ static void manager_loop(void *arg)
     }
 
     log_info("End message loop of neu_manager");
+    remove_default_grp_configs(manager);
     stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
-    remove_default_grp_configs(manager);
     nng_close(manager_bind->mng_sock);
     return;
 }
@@ -1484,7 +1488,7 @@ int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
     adapter_id_t adapter_id;
 
     adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
-    rv         = manager_unreg_adapter(manager, adapter_id);
+    rv         = manager_unreg_adapter(manager, adapter_id, true);
     return rv;
 }
 
