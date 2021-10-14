@@ -475,7 +475,7 @@ static int modbus_tcp_close(neu_plugin_t *plugin)
 static int modbus_tcp_init(neu_plugin_t *plugin)
 {
     pthread_mutex_init(&plugin->mtx, NULL);
-    plugin->client = neu_tcp_client_create("192.168.8.27", 502);
+    plugin->client = neu_tcp_client_create("192.168.50.68", 502);
 
     plugin->common.state = NEURON_PLUGIN_STATE_READY;
     log_info("modbus tcp init.....");
@@ -529,10 +529,11 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_DATA: {
-        neu_reqresp_read_t *       read_req  = (neu_reqresp_read_t *) req->buf;
-        struct subscribe_instance *sub_inst  = NULL;
-        neu_response_t             resp      = { 0 };
-        neu_reqresp_data_t         data_resp = { 0 };
+        neu_reqresp_read_t *       read_req = (neu_reqresp_read_t *) req->buf;
+        struct subscribe_instance *sub_inst = NULL;
+        neu_response_t             resp     = { 0 };
+        //        neu_reqresp_data_t         data_resp = { 0 };
+        neu_reqresp_read_resp_t data_resp = { 0 };
 
         pthread_mutex_lock(&plugin->mtx);
 
@@ -562,11 +563,12 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
             neu_dvalue_init_move_array(array_resp, NEU_DTYPE_INT_VAL, array);
             data_resp.data_val = array_resp;
         }
+        data_resp.context    = read_req->context;
         data_resp.grp_config = read_req->grp_config;
         resp.req_id          = 1;
         resp.resp_type       = NEU_REQRESP_READ_RESP;
         resp.buf             = &data_resp;
-        resp.buf_len         = sizeof(neu_reqresp_data_t);
+        resp.buf_len         = sizeof(neu_reqresp_read_resp_t);
         resp.recver_id       = req->sender_id;
 
         plugin->common.adapter_callbacks->response(plugin->common.adapter,

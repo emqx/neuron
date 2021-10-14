@@ -80,12 +80,14 @@ typedef uint32_t neu_node_id_t;
 typedef struct neu_reqresp_read {
     neu_taggrp_config_t *grp_config;
     neu_node_id_t        dst_node_id;
+    void *               context;
 } neu_reqresp_read_t;
 
 /* NEU_REQRESP_READ_RESP */
 typedef struct neu_reqresp_read_resp {
     neu_taggrp_config_t *grp_config;
     neu_data_val_t *     data_val; ///< data values of reading
+    void *               context;
 } neu_reqresp_read_resp_t;
 
 /* NEU_REQRESP_WRITE_DATA */
@@ -93,12 +95,14 @@ typedef struct neu_reqresp_write {
     neu_taggrp_config_t *grp_config;
     neu_node_id_t        dst_node_id;
     neu_data_val_t *     data_val;
+    void *               context;
 } neu_reqresp_write_t;
 
 /* NEU_REQRESP_WRITE_RESP */
 typedef struct neu_reqresp_write_resp {
     neu_taggrp_config_t *grp_config;
     neu_data_val_t *     data_val; ///< result status of writing
+    void *               context;
 } neu_reqresp_write_resp_t;
 
 /* NEU_REQRESP_SUBSCRIBE_NODE */

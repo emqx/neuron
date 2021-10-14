@@ -20,4 +20,9 @@
 #ifndef _NEU_RW_HANDLE_H_
 #define _NEU_RW_HANDLE_H_
 
+#include <nng/nng.h>
+
+void handle_read(nng_aio *aio);
+void handle_write(nng_aio *aio);
+
 #endif

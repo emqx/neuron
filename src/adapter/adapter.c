@@ -739,7 +739,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
         return (-1);
     }
 
-    log_info("Get response from plugin");
+    log_info("Get response from plugin %s", adapter->name);
     switch (resp->resp_type) {
     case NEU_REQRESP_TRANS_DATA: {
         size_t              msg_size;

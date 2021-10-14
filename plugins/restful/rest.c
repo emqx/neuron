@@ -26,6 +26,7 @@
 
 #include "config.h"
 #include "handle.h"
+#include "http.h"
 #include "neu_log.h"
 #include "rest.h"
 
@@ -132,6 +133,7 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_t *                 plugin;
     uint32_t                       n_handler     = 0;
     const struct neu_rest_handler *rest_handlers = NULL;
+    const struct neu_rest_handler *cors          = NULL;
 
     if (adapter == NULL || callbacks == NULL) {
         log_error("Open plugin with NULL adapter or callbacks");
@@ -161,6 +163,10 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     neu_rest_api_handler(&rest_handlers, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
         rest_add_handler(plugin->api_server, &rest_handlers[i]);
+    }
+    neu_rest_api_cors_handler(&cors, &n_handler);
+    for (uint32_t i = 0; i < n_handler; i++) {
+        rest_add_handler(plugin->api_server, &cors[i]);
     }
     if (nng_http_server_start(plugin->api_server) != 0) {
         return NULL;
@@ -241,6 +247,12 @@ static int dashb_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     (void) adapter_callbacks;
 
     switch (req->req_type) {
+    case NEU_REQRESP_READ_RESP: {
+        neu_reqresp_read_resp_t *read_resp =
+            (neu_reqresp_read_resp_t *) req->buf;
+        http_not_found(read_resp->context, "{\"error\" : 1}");
+        break;
+    }
     default:
         break;
     }
