@@ -552,13 +552,12 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id)
     nng_mtx_lock(manager->adapters_mtx);
     index = find_reg_adapter_index_by_id(reg_adapters, id);
     if (index != SIZE_MAX) {
-        adapter_reg_entity_t *reg_entity;
+        // adapter_reg_entity_t *reg_entity;
 
-        reg_entity  = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
-        adapter     = reg_entity->adapter;
-        datatag_mng = reg_entity->datatag_manager;
-        cv          = reg_entity->cv;
-        vector_erase(reg_adapters, index);
+        // reg_entity  = (adapter_reg_entity_t *) vector_get(reg_adapters,
+        // index); adapter     = reg_entity->adapter; datatag_mng =
+        // reg_entity->datatag_manager; cv          = reg_entity->cv;
+        // vector_erase(reg_adapters, index);
     }
     nng_mtx_unlock(manager->adapters_mtx);
 
@@ -1325,9 +1324,9 @@ static void manager_loop(void *arg)
     }
 
     log_info("End message loop of neu_manager");
-    remove_default_grp_configs(manager);
     stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
+    remove_default_grp_configs(manager);
     nng_close(manager_bind->mng_sock);
     return;
 }
@@ -1366,6 +1365,13 @@ neu_manager_t *neu_manager_create()
 
     nng_thread_create(&manager->thrd, manager_loop, manager);
     return manager;
+}
+
+void neu_manager_stop(neu_manager_t *manager)
+{
+    nng_mtx_lock(manager->mtx);
+    manager->stop = true;
+    nng_mtx_unlock(manager->mtx);
 }
 
 void neu_manager_destroy(neu_manager_t *manager)

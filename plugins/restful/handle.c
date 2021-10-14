@@ -30,16 +30,13 @@
 
 #include "adapter_handle.h"
 #include "datatag_handle.h"
-#include "get_ttys_handle.h"
 #include "group_config_handle.h"
 #include "http.h"
+#include "normal_handle.h"
 #include "plugin_handle.h"
+#include "rw_handle.h"
 
 #include "handle.h"
-
-static void ping(nng_aio *aio);
-static void login(nng_aio *aio);
-static void logout(nng_aio *aio);
 
 struct neu_rest_handle_ctx {
     void *plugin;
@@ -61,19 +58,19 @@ struct neu_rest_handler api_handlers[] = {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/ping",
-        .value.handler = ping,
+        .value.handler = handle_ping,
     },
     {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/login",
-        .value.handler = login,
+        .value.handler = handle_login,
     },
     {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/logout",
-        .value.handler = logout,
+        .value.handler = handle_logout,
     },
     {
         .method        = NEU_REST_METHOD_POST,
@@ -193,21 +190,6 @@ void neu_rest_api_handler(const struct neu_rest_handler **handlers,
 {
     *handlers = api_handlers;
     *size     = sizeof(api_handlers) / sizeof(struct neu_rest_handler);
-}
-
-static void ping(nng_aio *aio)
-{
-    http_ok(aio, "{\"status\": \"OK\"}");
-}
-
-static void login(nng_aio *aio)
-{
-    (void) aio;
-}
-
-static void logout(nng_aio *aio)
-{
-    (void) aio;
 }
 
 neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin)

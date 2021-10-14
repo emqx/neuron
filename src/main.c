@@ -18,6 +18,7 @@
  **/
 
 #include <getopt.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +37,7 @@
 
 static nng_mtx *log_mtx;
 FILE *          g_logfile;
+neu_manager_t * manager;
 
 static void log_lock(bool lock, void *udata)
 {
@@ -52,7 +54,7 @@ static void init()
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
     log_set_level(LOG_DEBUG);
-    FILE *g_logfile = fopen("neuron.log", "a");
+    g_logfile = fopen("neuron.log", "a");
     if (g_logfile == NULL) {
         fprintf(stderr,
                 "Failed to open logfile when"
@@ -77,6 +79,12 @@ static void usage()
 static int read_neuron_config()
 {
     return neu_config_init("./neuron.yaml");
+}
+
+static void sig_handler(int sig)
+{
+    log_warn("recv sig: %d", sig);
+    neu_manager_stop(manager);
 }
 
 int main(int argc, char *argv[])
@@ -113,7 +121,10 @@ int main(int argc, char *argv[])
         goto main_end;
     }
 
-    neu_manager_t *manager;
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+    signal(SIGABRT, sig_handler);
+
     log_info("running neuron main process, daemon: %d", is_daemon);
     manager = neu_manager_create();
     if (manager == NULL) {

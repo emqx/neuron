@@ -16,11 +16,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-#ifndef _NEU_TTY_REST_TTY_HANDLE_H_
-#define _NEU_TTY_REST_TTY_HANDLE_H_
 
-#include <nng/nng.h>
-
-void handle_get_ttys(nng_aio *aio);
+#ifndef _NEU_RW_HANDLE_H_
+#define _NEU_RW_HANDLE_H_
 
 #endif
