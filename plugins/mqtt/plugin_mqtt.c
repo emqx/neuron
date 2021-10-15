@@ -29,15 +29,21 @@
 #include "command_node.h"
 #include "command_rw.h"
 
-#include "option.h"
+#include "mqtt_client.h"
+#include "mqttc_client.h"
 #include "paho_client.h"
 
 #define UNUSED(x) (void) (x)
 
+#define MQTT_TYPE_PAHO 1;
+#define MQTT_TYPE_MQTTC 2;
+#define CONFIG_FILE "./neuron.yaml"
+#define CONFIG_NODE "mqtt"
+
 #define MQTT_SEND(client, topic, qos, json_str)                           \
     {                                                                     \
         if (NULL != json_str) {                                           \
-            client_error error = paho_client_publish(                     \
+            client_error error = mqttc_client_publish(                    \
                 client, topic, qos, (unsigned char *) json_str,           \
                 strlen(json_str));                                        \
             log_debug("Publish error code:%d, json:%s", error, json_str); \
@@ -58,10 +64,124 @@ struct neu_plugin {
     option_t            option;
     paho_client_t *     paho;
     neu_list            context_list;
-    neu_parse_mqtt_t *  parse_header;
+    int                 mqtt_client_type;
+    void *              mqtt_client;
 };
 
-struct context *context_create()
+static int mqtt_option_init(neu_plugin_t *plugin)
+{
+    char *clientid = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "id");
+    char *mqtt_version =
+        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "mqtt_version");
+    char *topic = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "topic");
+    char *qos   = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "qos");
+    char *keepalive_interval =
+        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "keepalive_interval");
+    char *clean_session =
+        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "clean_session");
+    char *connection = neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE,
+                                            "broker", "connection");
+    char *host =
+        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "host");
+    char *port =
+        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "port");
+
+    // MQTT option
+    if (NULL == clientid) {
+        plugin->option.clientid = NULL; // Use random id
+    } else {
+        plugin->option.clientid = strdup(clientid);
+        free(clientid);
+    }
+
+    if (NULL == mqtt_version) {
+        plugin->option.MQTT_version = 4; // Version 3.1.1
+    } else {
+        plugin->option.MQTT_version = atoi(mqtt_version);
+        free(mqtt_version);
+    }
+
+    if (NULL == topic) {
+        return -1;
+    } else {
+        plugin->option.topic = strdup(topic);
+        free(topic);
+    }
+
+    if (NULL == qos) {
+        plugin->option.qos = 0;
+    } else {
+        plugin->option.qos = atoi(qos);
+        free(qos);
+    }
+
+    if (NULL == connection) {
+        plugin->option.connection = strdup("tcp://");
+    } else {
+        plugin->option.connection = strdup(connection);
+        free(connection);
+    }
+
+    if (NULL == host) {
+        return -2;
+    } else {
+        plugin->option.host = strdup(host);
+        free(host);
+    }
+
+    if (NULL == port) {
+        return -3;
+    } else {
+        plugin->option.port = strdup(port);
+        free(port);
+    }
+
+    if (NULL == keepalive_interval) {
+        plugin->option.keepalive_interval = 20;
+    } else {
+        plugin->option.keepalive_interval = atoi(keepalive_interval);
+        free(keepalive_interval);
+    }
+
+    if (NULL == clean_session) {
+        plugin->option.clean_session = 1;
+    } else {
+        plugin->option.clean_session = atoi(clean_session);
+        free(clean_session);
+    }
+
+    return 0;
+}
+
+static void mqtt_option_uninit(neu_plugin_t *plugin)
+{
+    if (NULL != plugin->option.clientid) {
+        free(plugin->option.clientid);
+    }
+
+    if (NULL != plugin->option.topic) {
+        free(plugin->option.topic);
+    }
+
+    if (NULL != plugin->option.connection) {
+        free(plugin->option.connection);
+    }
+
+    if (NULL != plugin->option.host) {
+        free(plugin->option.host);
+    }
+
+    if (NULL != plugin->option.port) {
+        free(plugin->option.port);
+    }
+}
+
+static void context_list_init(neu_list *list)
+{
+    NEU_LIST_INIT(list, struct context, node);
+}
+
+static struct context *context_create()
 {
     struct context *ctx = NULL;
     ctx                 = malloc(sizeof(struct context));
@@ -71,9 +191,14 @@ struct context *context_create()
     return ctx;
 }
 
-void context_list_add(neu_list *list, struct context *ctx, int req_id,
-                      neu_parse_mqtt_t *parse_header)
+static void context_list_add(neu_list *list, int req_id,
+                             neu_parse_mqtt_t *parse_header)
 {
+    struct context *ctx = context_create();
+    if (NULL == ctx) {
+        return;
+    }
+
     ctx->req_id                = req_id;
     ctx->parse_header.function = parse_header->function;
     ctx->parse_header.uuid     = strdup(parse_header->uuid);
@@ -82,7 +207,7 @@ void context_list_add(neu_list *list, struct context *ctx, int req_id,
     neu_list_append(list, ctx);
 }
 
-struct context *context_list_find(neu_list *list, const int id)
+static struct context *context_list_find(neu_list *list, const int id)
 {
     struct context *item;
     NEU_LIST_FOREACH(list, item)
@@ -94,7 +219,7 @@ struct context *context_list_find(neu_list *list, const int id)
     return NULL;
 }
 
-void context_destroy(struct context *ctx)
+static void context_destroy(struct context *ctx)
 {
     if (NULL != ctx) {
         if (NULL != ctx->parse_header.uuid) {
@@ -104,13 +229,12 @@ void context_destroy(struct context *ctx)
     }
 }
 
-void context_list_remove(neu_list *list, struct context *ctx)
+static void context_list_remove(neu_list *list, struct context *ctx)
 {
-    UNUSED(list);
-    UNUSED(ctx);
+    neu_list_remove(list, ctx);
 }
 
-void context_list_destroy(neu_list *list)
+static void context_list_destroy(neu_list *list)
 {
     while (!neu_list_empty(list)) {
         struct context *ctx = neu_list_first(list);
@@ -119,22 +243,12 @@ void context_list_destroy(neu_list *list)
     }
 }
 
-static int plugin_subscribe(neu_plugin_t *plugin, const char *topic,
-                            const int qos, subscribe_handle handle)
-{
-    client_error error =
-        paho_client_subscribe(plugin->paho, topic, qos, handle);
-    if (ClientSubscribeFailure == error ||
-        ClientSubscribeAddListFailure == error) {
-        neu_panic("Subscribe Failure");
-    }
-    return 0;
-}
-
 static void plugin_response_handle(const char *topic_name, size_t topic_len,
                                    void *payload, const size_t len,
                                    void *context)
 {
+    UNUSED(topic_len);
+
     neu_plugin_t *plugin = (neu_plugin_t *) context;
 
     if (NULL == topic_name || NULL == payload) {
@@ -157,8 +271,6 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         log_error("JSON parsing mqtt failed");
         return;
     }
-
-    plugin->parse_header = mqtt;
 
     switch (mqtt->function) {
     case NEU_MQTT_OP_GET_GROUP_CONFIG: {
@@ -202,7 +314,9 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         rc                        = neu_parse_decode_read(json_str, &req);
         if (0 == rc) {
             int req_id = command_read_once_request(plugin, mqtt, req);
-            UNUSED(req_id);
+            if (0 < req_id) {
+                context_list_add(&plugin->context_list, req_id, mqtt);
+            }
             neu_parse_decode_read_free(req);
         }
         break;
@@ -212,7 +326,9 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         rc                         = neu_parse_decode_write(json_str, &req);
         if (0 == rc) {
             int req_id = command_write_request(plugin, mqtt, req);
-            UNUSED(req_id);
+            if (0 < req_id) {
+                context_list_add(&plugin->context_list, req_id, mqtt);
+            }
             neu_parse_decode_write_free(req);
         }
         break;
@@ -293,20 +409,18 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         break;
     }
 
-    MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
+    MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, ret_str);
 
-    // if (NULL != mqtt) {
-    //     if (NULL != mqtt->uuid) {
-    //         free(mqtt->uuid);
-    //     }
-    //     free(mqtt);
-    // }
+    if (NULL != mqtt) {
+        if (NULL != mqtt->uuid) {
+            free(mqtt->uuid);
+        }
+        free(mqtt);
+    }
 
     if (NULL != json_str) {
         free(json_str);
     }
-
-    UNUSED(topic_len);
 }
 
 static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
@@ -340,57 +454,34 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
-    const char *clientid =
-        neu_config_get_value("./neuron.yaml", 2, "mqtt", "id");
-    const char *mqtt_version =
-        neu_config_get_value("./neuron.yaml", 2, "mqtt", "mqtt_version");
-    const char *topic =
-        neu_config_get_value("./neuron.yaml", 2, "mqtt", "topic");
-    const char *qos = neu_config_get_value("./neuron.yaml", 2, "mqtt", "qos");
-    const char *keepalive_interval =
-        neu_config_get_value("./neuron.yaml", 2, "mqtt", "keepalive_interval");
-    const char *clean_session =
-        neu_config_get_value("./neuron.yaml", 2, "mqtt", "clean_session");
-    const char *connection = neu_config_get_value("./neuron.yaml", 3, "mqtt",
-                                                  "broker", "connection");
-    const char *host =
-        neu_config_get_value("./neuron.yaml", 3, "mqtt", "broker", "host");
-    const char *port =
-        neu_config_get_value("./neuron.yaml", 3, "mqtt", "broker", "port");
+    // Context list init
+    context_list_init(&plugin->context_list);
 
-    // MQTT option
-    plugin->option.clientid           = strdup(clientid);
-    plugin->option.MQTT_version       = atoi(mqtt_version);
-    plugin->option.topic              = strdup(topic);
-    plugin->option.qos                = atoi(qos);
-    plugin->option.connection         = strdup(connection);
-    plugin->option.host               = strdup(host);
-    plugin->option.port               = strdup(port);
-    plugin->option.keepalive_interval = atoi(keepalive_interval);
-    plugin->option.clean_session      = atoi(clean_session);
-
-    plugin->parse_header = NULL;
-
-    NEU_LIST_INIT(&plugin->context_list, struct context, node);
-
-    // Paho mqtt client setup
-    client_error error =
-        paho_client_open(&plugin->option, plugin, &plugin->paho);
-    if (ClientIsNULL == error) {
+    int rc = mqtt_option_init(plugin);
+    if (0 != rc) {
+        log_error("mqtt option init fail:%d", rc);
         return -1;
     }
 
-    plugin_subscribe(plugin, "neuronlite/request", 0, plugin_response_handle);
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    // MQTT-C client setup
+    client_error error = mqttc_client_open(
+        &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
+    log_info("mqttc open:%d", error);
 
+    error = mqttc_client_subscribe(plugin->mqtt_client, "neuronlite/request", 0,
+                                   plugin_response_handle);
+    log_info("mqttc subscribe:%d", error);
+
+    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
-    paho_client_close(plugin->paho);
-
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    mqttc_client_close(plugin->mqtt_client);
+    mqtt_option_uninit(plugin);
+    context_list_destroy(&plugin->context_list);
     return 0;
 }
 
@@ -418,18 +509,30 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     switch (req->req_type) {
     case NEU_REQRESP_READ_RESP: {
         neu_reqresp_read_resp_t *read_resp;
-        read_resp      = (neu_reqresp_read_resp_t *) req->buf;
-        char *json_str = command_read_once_response(
-            plugin, plugin->parse_header, read_resp->data_val);
-        MQTT_SEND(plugin->paho, "neuronlite/response", 0, json_str);
+        read_resp = (neu_reqresp_read_resp_t *) req->buf;
+
+        struct context *ctx = NULL;
+        ctx = context_list_find(&plugin->context_list, req->req_id);
+        if (NULL != ctx) {
+            char *json_str = command_read_once_response(
+                plugin, &ctx->parse_header, read_resp->data_val);
+            MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
+            context_list_remove(&plugin->context_list, ctx);
+        }
         break;
     }
     case NEU_REQRESP_WRITE_RESP: {
         neu_reqresp_write_resp_t *write_resp;
         write_resp = (neu_reqresp_write_resp_t *) req->buf;
-        char *json_str =
-            command_write_response(plugin, "", write_resp->data_val);
-        MQTT_SEND(plugin->paho, "neuronlite/response", 0, json_str);
+
+        struct context *ctx = NULL;
+        ctx = context_list_find(&plugin->context_list, req->req_id);
+        if (NULL != ctx) {
+            char *json_str = command_write_response(plugin, &ctx->parse_header,
+                                                    write_resp->data_val);
+            MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
+            context_list_remove(&plugin->context_list, ctx);
+        }
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
@@ -437,7 +540,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_data = (neu_reqresp_data_t *) req->buf;
         char *json_str =
             command_read_cycle_response(plugin, neu_data->data_val);
-        MQTT_SEND(plugin->paho, "neuronlite/response", 0, json_str);
+        MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {

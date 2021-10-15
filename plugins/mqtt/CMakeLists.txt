@@ -7,7 +7,8 @@ set(src
 	${PARSER_SRC} 
 	${CONFIG_SRC} 
 	plugin_mqtt.c 
-	paho_client.c 
+	# paho_client.c 
+	mqttc_client.c
 	common.c 
 	command_rw.c
 	command_group_config.c
@@ -20,5 +21,9 @@ target_include_directories(plugin-mqtt PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 )
 
-target_link_libraries(plugin-mqtt neuron-base paho-mqtt3as ssl crypto yaml)
+target_link_libraries(plugin-mqtt 
+	neuron-base mqttc 
+	# paho-mqtt3as 
+	ssl crypto 
+	yaml)
 target_link_libraries(plugin-mqtt ${CMAKE_THREAD_LIBS_INIT})

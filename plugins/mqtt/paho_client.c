@@ -24,7 +24,6 @@
 #include <MQTTAsync.h>
 #include <neuron.h>
 
-#include "option.h"
 #include "paho_client.h"
 
 #define UNUSED(x) (void) (x)

@@ -69,6 +69,18 @@ NEURON IIoT System for Industry 4.0
   $ ninja
   $ ninja install
   ```
+
+  [MQTT-C](https://github.com/LiamBindle/MQTT-C.git)
+
+  ```shell
+  $ git clone -b 1.1.5 https://github.com/LiamBindle/MQTT-C.git 
+  $ cd MQTT-C
+  $ mkdir build
+  $ cd build
+  $ cmake -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
+  $ ninja
+  $ ninja install
+  ```
   
 - [yaml](https://github.com/yaml/libyaml.git)
   ```shell
