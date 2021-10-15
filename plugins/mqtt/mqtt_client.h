@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_PAHO_OPTION
-#define NEURON_PLUGIN_PAHO_OPTION
+#ifndef NEURON_PLUGIN_MQTT_CLIENT
+#define NEURON_PLUGIN_MQTT_CLIENT
 
 #ifdef __cplusplus
 extern "C" {
@@ -78,6 +78,23 @@ typedef struct {
     char *http_proxy;
     char *https_proxy;
 } option_t;
+
+typedef enum {
+    ClientSuccess = 0,
+    ClientIsNULL,
+    ClientConnectFailure,
+    ClientSubscribeTimeout,
+    ClientSubscribeListInitialFailure,
+    ClientSubscribeFailure,
+    ClientSubscribeAddListRepeat,
+    ClientSubscribeAddListFailure,
+    ClientUnsubscribeFailure,
+    ClientPublishFailure,
+} client_error;
+
+typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
+                                 void *payload, const size_t len,
+                                 void *context);
 
 #ifdef __cplusplus
 }

@@ -27,25 +27,10 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
+#include "mqtt_client.h"
+
 typedef struct paho_client     paho_client_t;
 typedef struct subscribe_tuple subscribe_tuple_t;
-
-typedef enum {
-    ClientSuccess = 0,
-    ClientIsNULL,
-    ClientConnectFailure,
-    ClientSubscribeTimeout,
-    ClientSubscribeListInitialFailure,
-    ClientSubscribeFailure,
-    ClientSubscribeAddListRepeat,
-    ClientSubscribeAddListFailure,
-    ClientUnsubscribeFailure,
-    ClientPublishFailure,
-} client_error;
-
-typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
-                                 void *payload, const size_t len,
-                                 void *context);
 
 paho_client_t *paho_client_create(option_t *option, void *context);
 client_error   paho_client_connect(paho_client_t *client);

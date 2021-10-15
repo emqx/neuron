@@ -10,7 +10,7 @@ if [ $system == 'Linux' ];then
     fi
 fi
 
-lib_list=(nng jansson jwt paho openssl gtest open62541 yaml)
+lib_list=(nng jansson jwt paho MQTT-C openssl gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]};do
@@ -99,6 +99,24 @@ function build_paho()
     ninja
     ninja install
     echo "Leaving paho.mqtt.c "
+    cd ../../
+}
+
+# MQTT-C
+function build_MQTT-C()
+{
+    echo "Building MQTT-C (1.1.5)"
+    if [ ! -d MQTT-C ];then
+        git clone -b 1.1.5 https://github.com/LiamBindle/MQTT-C.git
+    fi
+    cd MQTT-C
+    rm -rf build
+    mkdir build
+    cd build
+    cmake -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
+    ninja
+    ninja install
+    echo "Leaving MQTT-C "
     cd ../../
 }
 

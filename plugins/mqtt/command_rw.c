@@ -178,8 +178,6 @@ char *command_read_once_response(neu_plugin_t *    plugin,
                                  neu_data_val_t *  resp_val)
 {
     UNUSED(plugin);
-    UNUSED(resp_val);
-    UNUSED(parse_header);
 
     neu_fixed_array_t *array;
     int                rc = neu_dvalue_get_ref_array(resp_val, &array);
@@ -248,7 +246,6 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
 
     uint32_t req_id = neu_plugin_get_event_id(plugin);
     neu_plugin_send_write_cmd(plugin, req_id, dest_node_id, config, write_val);
-
     return req_id;
 }
 
@@ -360,11 +357,11 @@ static void clean_write_response_json_object(neu_parse_read_res_t *json)
     free(json->tags);
 }
 
-char *command_write_response(neu_plugin_t *plugin, const char *uuid,
-                             neu_data_val_t *resp_val)
+char *command_write_response(neu_plugin_t *    plugin,
+                             neu_parse_mqtt_t *parse_header,
+                             neu_data_val_t *  resp_val)
 {
     UNUSED(plugin);
-    UNUSED(uuid);
 
     neu_fixed_array_t *array;
     neu_dvalue_get_ref_array(resp_val, &array);
@@ -381,8 +378,8 @@ char *command_write_response(neu_plugin_t *plugin, const char *uuid,
     wrap_write_response_json_object(array, &json);
 
     char *json_str = NULL;
-    neu_json_encode_by_fn(&json, neu_parse_encode_read, &json_str);
+    neu_json_encode_with_mqtt(&json, neu_parse_encode_read, parse_header,
+                              neu_parse_encode_mqtt_param, &json_str);
     clean_write_response_json_object(&json);
-
     return json_str;
 }

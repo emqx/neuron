@@ -17,29 +17,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT_COMMAND_RW
-#define NEURON_PLUGIN_MQTT_COMMAND_RW
+#ifndef NEURON_PLUGIN_MQTTC_CLIENT
+#define NEURON_PLUGIN_MQTTC_CLIENT
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <neuron.h>
+#include <stddef.h>
+#include <stdint.h>
 
-#include "common.h"
+#include "mqtt_client.h"
+#include "mqttc_client.h"
 
-int   command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                neu_parse_read_req_t *req);
-char *command_read_once_response(neu_plugin_t *    plugin,
-                                 neu_parse_mqtt_t *parse_header,
-                                 neu_data_val_t *  resp_val);
-char *command_read_cycle_response(neu_plugin_t *  plugin,
-                                  neu_data_val_t *resp_val);
-int   command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                            neu_parse_write_req_t *write_req);
-char *command_write_response(neu_plugin_t *    plugin,
-                             neu_parse_mqtt_t *parse_header,
-                             neu_data_val_t *  resp_val);
+typedef struct mqttc_client mqttc_client_t;
+
+client_error mqttc_client_open(option_t *option, void *context,
+                               mqttc_client_t **p_client);
+client_error mqttc_client_is_connected(mqttc_client_t *client);
+client_error mqttc_client_subscribe(mqttc_client_t *client, const char *topic,
+                                    const int qos, subscribe_handle handle);
+client_error mqttc_client_unsubscribe(mqttc_client_t *client,
+                                      const char *    topic);
+client_error mqttc_client_publish(mqttc_client_t *client, const char *topic,
+                                  int qos, unsigned char *payload, size_t len);
+client_error mqttc_client_close(mqttc_client_t *client);
 
 #ifdef __cplusplus
 }
