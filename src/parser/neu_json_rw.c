@@ -64,12 +64,7 @@ int neu_parse_encode_read(void *json_object, void *param)
 
     for (int i = 0; i < res->n_tag; i++) {
         neu_json_elem_t tag[] = { {
-                                      .name      = "name",
-                                      .t         = NEU_JSON_STR,
-                                      .v.val_str = res->tags[i].name,
-                                  },
-                                  {
-                                      .name      = "tag_id",
+                                      .name      = "id",
                                       .t         = NEU_JSON_INT,
                                       .v.val_int = res->tags[i].tag_id,
 
@@ -79,7 +74,7 @@ int neu_parse_encode_read(void *json_object, void *param)
                                       .t    = res->tags[i].t,
                                       .v    = res->tags[i].value,
                                   } };
-        array                 = neu_json_encode_array(array, tag, 3);
+        array                 = neu_json_encode_array(array, tag, 2);
     }
     neu_json_elem_t elems[] = { {
         .name     = "tags",
@@ -116,7 +111,7 @@ int neu_parse_decode_write(char *buf, neu_parse_write_req_t **result)
     req->tags  = calloc(req->n_tag, sizeof(neu_parse_write_req_tag_t));
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t celem[] = { {
-                                        .name = "tag_id",
+                                        .name = "id",
                                         .t    = NEU_JSON_INT,
                                     },
                                     {
@@ -210,6 +205,6 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req)
         neu_fixed_array_set(array, i, &iv);
     }
 
-    neu_dvalue_set_move_array(val, NEU_DTYPE_INT_VAL, array);
+    neu_dvalue_init_move_array(val, NEU_DTYPE_INT_VAL, array);
     return val;
 }

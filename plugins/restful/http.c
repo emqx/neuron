@@ -129,3 +129,8 @@ int http_conflict(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_CONFLICT);
 }
+
+int http_internal_error(nng_aio *aio, char *content)
+{
+    return response(aio, content, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);
+}

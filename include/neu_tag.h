@@ -15,21 +15,31 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- **/
+config_ **/
 
-#ifndef _NEU_PLUGIN_HTTP_H_
-#define _NEU_PLUGIN_HTTP_H_
+#ifndef NEURON_TAG_H
+#define NEURON_TAG_H
 
-#include <nng/nng.h>
+#include <stdint.h>
 
-int   http_get_body(nng_aio *aio, void **data, size_t *data_size);
-char *http_get_param(nng_aio *aio, const char *name);
-int   http_ok(nng_aio *aio, char *content);
-int   http_created(nng_aio *aio, char *content);
-int   http_bad_request(nng_aio *aio, char *content);
-int   http_unauthorized(nng_aio *aio, char *content);
-int   http_not_found(nng_aio *aio, char *content);
-int   http_conflict(nng_aio *aio, char *content);
-int   http_internal_error(nng_aio *aio, char *content);
+#include "neu_data_expr.h"
+
+typedef uint32_t neu_datatag_id_t;
+typedef char *   neu_addr_str_t;
+typedef char *   neu_tag_name;
+
+typedef enum {
+    NEU_ATTRIBUTETYPE_READ      = 1,
+    NEU_ATTRIBUTETYPE_WRITE     = 2,
+    NEU_ATTRIBUTETYPE_SUBSCRIBE = 4,
+} neu_attributetype_e;
+
+typedef struct {
+    neu_datatag_id_t    id;
+    neu_attributetype_e attribute;
+    neu_dtype_e         type;
+    neu_addr_str_t      addr_str;
+    neu_tag_name        name;
+} neu_datatag_t;
 
 #endif

@@ -58,6 +58,8 @@ void handle_add_tags(nng_aio *aio)
                     vector_push_back(ids, &tag->id);
                 }
 
+                neu_taggrp_cfg_unanchor(config);
+
                 http_ok(aio, "{\"error\": 0}");
             }
         })

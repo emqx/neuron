@@ -99,15 +99,18 @@ static void start_periodic_read(neu_plugin_t *       plugin,
         if ((tag->attribute & NEU_ATTRIBUTETYPE_READ) ==
             NEU_ATTRIBUTETYPE_READ) {
             switch (tag->type) {
-            case NEU_DATATYPE_WORD:
+            case NEU_DTYPE_UINT16:
+            case NEU_DTYPE_INT16:
                 modbus_point_add(sub_inst->point_ctx, tag->addr_str,
                                  MODBUS_B16);
                 break;
-            case NEU_DATATYPE_DWORD:
+            case NEU_DTYPE_FLOAT:
+            case NEU_DTYPE_UINT32:
+            case NEU_DTYPE_INT32:
                 modbus_point_add(sub_inst->point_ctx, tag->addr_str,
                                  MODBUS_B32);
                 break;
-            case NEU_DATATYPE_BOOLEAN:
+            case NEU_DTYPE_BIT:
                 modbus_point_add(sub_inst->point_ctx, tag->addr_str, MODBUS_B8);
                 break;
             default:
@@ -141,8 +144,7 @@ static void stop_periodic_read(neu_plugin_t *       plugin,
             modbus_point_destory(sub_inst->point_ctx);
             free(sub_inst->name);
             free(sub_inst);
-            log_info("stop periodic read, grp: %s(%p)", sub_inst->name,
-                     grp_config);
+            log_info("stop periodic read, grp: %p", grp_config);
             break;
         }
     }
@@ -191,11 +193,27 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
 
         if ((tag->attribute & NEU_ATTRIBUTETYPE_READ) ==
             NEU_ATTRIBUTETYPE_READ) {
+            switch (tag->type) {
+            case NEU_DTYPE_UINT32:
+            case NEU_DTYPE_INT32:
+            case NEU_DTYPE_FLOAT:
+                data_tags.type = MODBUS_B32;
+                break;
+            case NEU_DTYPE_UINT16:
+            case NEU_DTYPE_INT16:
+                data_tags.type = MODBUS_B16;
+                break;
+            case NEU_DTYPE_BIT:
+                data_tags.type = MODBUS_B8;
+                break;
+            default:
+                break;
+            }
             result = modbus_point_find(point_ctx, tag->addr_str, &data_tags);
             if (result == -1) {
                 neu_data_val_t *val_error = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
 
-                log_error("Failed to find modbus point");
+                log_error("Failed to find modbus point %s", tag->addr_str);
                 neu_dvalue_set_errorcode(val_error, result);
                 neu_int_val_init(&int_val, tag->id, val_error);
                 neu_fixed_array_set(array_resp, index, (void *) &int_val);
@@ -420,11 +438,13 @@ static void tags_periodic_read(nng_aio *aio, void *arg, int code)
         } else {
             neu_taggrp_config_t *new_config = neu_system_find_group_config(
                 sub_inst->plugin, sub_inst->plugin->node_id, sub_inst->name);
+            neu_plugin_t *plugin = sub_inst->plugin;
 
             stop_periodic_read(sub_inst->plugin, sub_inst->grp_configs);
 
+            neu_taggrp_cfg_anchor(new_config);
             if (new_config != NULL) {
-                start_periodic_read(sub_inst->plugin, new_config);
+                start_periodic_read(plugin, new_config);
             }
         }
 
@@ -486,6 +506,7 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
 {
     struct subscribe_instance *sub_inst = NULL;
 
+    log_info("modbus uninit start...");
     pthread_mutex_lock(&plugin->mtx);
     sub_inst = TAILQ_FIRST(&plugin->sub_instances);
 
@@ -504,6 +525,8 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
     neu_tcp_client_close(plugin->client);
 
     pthread_mutex_destroy(&plugin->mtx);
+
+    log_info("modbus uninit end...");
 
     return 0;
 }
@@ -529,11 +552,10 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_DATA: {
-        neu_reqresp_read_t *       read_req = (neu_reqresp_read_t *) req->buf;
-        struct subscribe_instance *sub_inst = NULL;
-        neu_response_t             resp     = { 0 };
-        //        neu_reqresp_data_t         data_resp = { 0 };
-        neu_reqresp_read_resp_t data_resp = { 0 };
+        neu_reqresp_read_t *       read_req  = (neu_reqresp_read_t *) req->buf;
+        struct subscribe_instance *sub_inst  = NULL;
+        neu_response_t             resp      = { 0 };
+        neu_reqresp_read_resp_t    data_resp = { 0 };
 
         pthread_mutex_lock(&plugin->mtx);
 
@@ -596,13 +618,13 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
         break;
     }
     case NEU_REQRESP_SUBSCRIBE_NODE: {
-        neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
+        neu_reqresp_subscribe_node_t *data = (neu_reqresp_read_t *) req->buf;
 
         start_periodic_read(plugin, data->grp_config);
         break;
     }
     case NEU_REQRESP_UNSUBSCRIBE_NODE: {
-        neu_reqresp_read_t *data = (neu_reqresp_read_t *) req->buf;
+        neu_reqresp_unsubscribe_node_t *data = (neu_reqresp_read_t *) req->buf;
 
         stop_periodic_read(plugin, data->grp_config);
         break;
