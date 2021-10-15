@@ -166,11 +166,96 @@ void handle_write(nng_aio *aio)
 
 void handle_read_resp(void *cmd_resp)
 {
-    neu_request_t * req = (neu_request_t *) cmd_resp;
-    struct cmd_ctx *ctx = read_find_ctx(req->req_id);
+    neu_request_t *          req        = (neu_request_t *) cmd_resp;
+    struct cmd_ctx *         ctx        = read_find_ctx(req->req_id);
+    neu_reqresp_read_resp_t *resp       = (neu_reqresp_read_resp_t *) req->buf;
+    neu_fixed_array_t *      array      = NULL;
+    neu_parse_read_res_t     api_res    = { 0 };
+    char *                   result     = NULL;
+    neu_int_val_t *          iv         = NULL;
+    int32_t                  error_code = 0;
 
-    http_ok(ctx->aio, "{\"status\": \"OK\"}");
+    assert(ctx != NULL);
+
+    neu_dvalue_get_ref_array(resp->data_val, &array);
+
+    iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
+    assert(iv->key == 0);
+    assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
+
+    neu_dvalue_get_errorcode(iv->val, &error_code);
+    if (error_code != 0) {
+        http_bad_request(ctx->aio, "{\"error\": 1}");
+        free(ctx);
+        return;
+    }
+
+    api_res.n_tag = array->length - 1;
+    api_res.tags  = calloc(api_res.n_tag, sizeof(neu_parse_read_res_tag_t));
+
+    for (size_t i = 1; i < array->length; i++) {
+        iv = (neu_int_val_t *) neu_fixed_array_get(array, i);
+
+        api_res.tags[i - 1].tag_id = iv->key;
+
+        switch (neu_dvalue_get_value_type(iv->val)) {
+        case NEU_DTYPE_BIT: {
+            uint8_t bit = 0;
+
+            neu_dvalue_get_bit(iv->val, &bit);
+            api_res.tags[i - 1].t             = NEU_JSON_BIT;
+            api_res.tags[i - 1].value.val_bit = bit;
+            break;
+        }
+        case NEU_DTYPE_UINT16: {
+            uint16_t u16 = 0;
+
+            neu_dvalue_get_uint16(iv->val, &u16);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = u16;
+            break;
+        }
+        case NEU_DTYPE_INT16: {
+            int16_t i16 = 0;
+
+            neu_dvalue_get_int16(iv->val, &i16);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = i16;
+            break;
+        }
+        case NEU_DTYPE_INT32: {
+            int32_t i32 = 0;
+
+            neu_dvalue_get_int32(iv->val, &i32);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = i32;
+            break;
+        }
+        case NEU_DTYPE_UINT32: {
+            uint32_t u32 = 0;
+
+            neu_dvalue_get_uint32(iv->val, &u32);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = u32;
+            break;
+        }
+        case NEU_DTYPE_FLOAT: {
+            float f32 = 0;
+
+            neu_dvalue_get_float(iv->val, &f32);
+            api_res.tags[i - 1].t               = NEU_JSON_FLOAT;
+            api_res.tags[i - 1].value.val_float = f32;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    neu_json_encode_by_fn(&api_res, neu_parse_encode_read, &result);
+    http_ok(ctx->aio, result);
     free(ctx);
+    free(api_res.tags);
 }
 
 void handle_write_resp(void *cmd_resp)

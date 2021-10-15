@@ -29,8 +29,8 @@ TEST(JsonAPITest, ReadReqDecode)
 
 TEST(JsonAPITest, ReadResEncode)
 {
-    char *buf = (char *) "{\"tags\": [{\"name\": \"tag001\", \"tag_id\": 1, "
-                         "\"value\": 123}, {\"name\": \"tag002\", \"tag_id\": "
+    char *buf = (char *) "{\"tags\": [{\"id\": 1, "
+                         "\"value\": 123}, {\"id\": "
                          "2, \"value\": 11.123456789}]}";
     char *               result = NULL;
     neu_parse_read_res_t res    = {
@@ -39,12 +39,10 @@ TEST(JsonAPITest, ReadResEncode)
 
     res.tags = (neu_parse_read_res_tag_t *) calloc(
         2, sizeof(neu_parse_read_res_tag_t));
-    res.tags[0].name          = strdup((char *) "tag001");
     res.tags[0].tag_id        = 1;
     res.tags[0].t             = NEU_JSON_INT;
     res.tags[0].value.val_int = 123;
 
-    res.tags[1].name             = strdup((char *) "tag002");
     res.tags[1].tag_id           = 2;
     res.tags[1].t                = NEU_JSON_DOUBLE;
     res.tags[1].value.val_double = 11.123456789;
@@ -52,8 +50,6 @@ TEST(JsonAPITest, ReadResEncode)
     EXPECT_EQ(0, neu_json_encode_by_fn(&res, neu_parse_encode_read, &result));
     EXPECT_STREQ(buf, result);
 
-    free(res.tags[0].name);
-    free(res.tags[1].name);
     free(res.tags);
     free(result);
 }
@@ -62,8 +58,8 @@ TEST(JsonAPITest, WriteReqDecode)
 {
     char *buf = (char *) "{\"node_id\": 123, \"group_config_name\": "
                          "\"config_opcua_sample\", \"tags\": "
-                         "[{\"tag_id\":1, \"value\":8877},{\"tag_id\":2, "
-                         "\"value\":11.22},{\"tag_id\":3, \"value\": \"hello "
+                         "[{\"id\":1, \"value\":8877},{\"id\":2, "
+                         "\"value\":11.22},{\"id\":3, \"value\": \"hello "
                          "world\"}]}";
     neu_parse_write_req_t *req = NULL;
 

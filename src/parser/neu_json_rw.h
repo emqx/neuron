@@ -35,7 +35,6 @@ typedef struct neu_parse_read_req {
 
 typedef struct neu_parse_read_res_tag {
     uint32_t             tag_id;
-    char *               name;
     enum neu_json_type   t;
     union neu_json_value value;
 } neu_parse_read_res_tag_t;

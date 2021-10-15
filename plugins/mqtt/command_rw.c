@@ -64,7 +64,6 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
         val              = int_val->val;
         neu_dtype_e type = neu_dvalue_get_value_type(val);
 
-        json->tags[i - 1].name   = strdup((char *) "");
         json->tags[i - 1].tag_id = int_val->key;
 
         switch (type) {
@@ -168,13 +167,6 @@ static void clean_read_response_json_object(neu_parse_read_res_t *json)
 
     if (NULL == json->tags) {
         return;
-    }
-
-    int length = json->n_tag;
-    for (int i = 0; i < length; i++) {
-        if (NULL != json->tags[i].name) {
-            free(json->tags[i].name);
-        }
     }
 
     free(json->tags);
@@ -377,7 +369,6 @@ static int wrap_write_response_json_object(neu_fixed_array_t *   array,
         int_val = neu_fixed_array_get(array, i);
         val     = int_val->val;
 
-        json->tags[i - 1].name   = strdup((char *) "");
         json->tags[i - 1].tag_id = int_val->key;
 
         int32_t value;
@@ -397,13 +388,6 @@ static void clean_write_response_json_object(neu_parse_read_res_t *json)
 
     if (NULL == json->tags) {
         return;
-    }
-
-    int length = json->n_tag;
-    for (int i = 0; i < length; i++) {
-        if (NULL != json->tags[i].name) {
-            free(json->tags[i].name);
-        }
     }
 
     free(json->tags);
