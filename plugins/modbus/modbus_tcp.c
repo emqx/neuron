@@ -563,7 +563,6 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
             neu_dvalue_init_move_array(array_resp, NEU_DTYPE_INT_VAL, array);
             data_resp.data_val = array_resp;
         }
-        data_resp.context    = read_req->context;
         data_resp.grp_config = read_req->grp_config;
         resp.req_id          = 1;
         resp.resp_type       = NEU_REQRESP_READ_RESP;

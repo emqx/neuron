@@ -18,7 +18,7 @@ void handle_read(nng_aio *aio)
         aio, neu_parse_read_req_t, neu_parse_decode_read, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
-            neu_plugin_send_read_cmd(plugin, req->node_id, config, aio);
+            neu_plugin_send_read_cmd(plugin, req->node_id, config);
         })
 }
 

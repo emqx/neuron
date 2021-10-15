@@ -250,7 +250,7 @@ static int dashb_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     case NEU_REQRESP_READ_RESP: {
         neu_reqresp_read_resp_t *read_resp =
             (neu_reqresp_read_resp_t *) req->buf;
-        http_not_found(read_resp->context, "{\"error\" : 1}");
+        // http_not_found(read_resp->context, "{\"error\" : 1}");
         break;
     }
     default:

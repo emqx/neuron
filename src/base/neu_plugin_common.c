@@ -273,14 +273,13 @@ uint32_t neu_plugin_send_unsubscribe_cmd(neu_plugin_t *       plugin,
 }
 
 uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                  neu_taggrp_config_t *grp_configs, void *ctx)
+                                  neu_taggrp_config_t *grp_configs)
 {
     uint32_t           event_id = 0;
     neu_reqresp_read_t read_req = { 0 };
 
     read_req.grp_config  = grp_configs;
     read_req.dst_node_id = node_id;
-    read_req.context     = ctx;
 
     PLUGIN_SEND_CMD(plugin, NEU_REQRESP_READ_DATA, read_req, event_id)
 
@@ -289,7 +288,7 @@ uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
 
 uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
                                    neu_taggrp_config_t *grp_configs,
-                                   neu_data_val_t *data, void *ctx)
+                                   neu_data_val_t *     data)
 {
     uint32_t            event_id  = 0;
     neu_reqresp_write_t write_req = { 0 };
@@ -297,7 +296,6 @@ uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
     write_req.grp_config  = grp_configs;
     write_req.dst_node_id = node_id;
     write_req.data_val    = data;
-    write_req.context     = ctx;
 
     PLUGIN_SEND_CMD(plugin, NEU_REQRESP_WRITE_DATA, write_req, event_id)
 
