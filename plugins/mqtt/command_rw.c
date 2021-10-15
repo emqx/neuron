@@ -40,7 +40,8 @@ void command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         return;
     }
 
-    uint32_t req_id = neu_plugin_send_read_cmd(plugin, req->node_id, config, NULL);
+    uint32_t req_id =
+        neu_plugin_send_read_cmd(plugin, req->node_id, config, NULL);
     UNUSED(req_id);
 }
 
