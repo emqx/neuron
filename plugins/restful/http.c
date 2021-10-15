@@ -32,6 +32,10 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     nng_http_res_alloc(&res);
 
     nng_http_res_set_header(res, "Content-Type", "application/json");
+    nng_http_res_set_header(res, "Access-Control-Allow-Origin", "*");
+    nng_http_res_set_header(res, "Access-Control-Allow-Methods",
+                            "POST,GET,PUT,DELETE,OPTIONS");
+    nng_http_res_set_header(res, "Access-Control-Allow-Headers", "*");
 
     if (content != NULL && strlen(content) > 0) {
         nng_http_res_copy_data(res, content, strlen(content));
