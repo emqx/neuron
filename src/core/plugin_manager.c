@@ -582,7 +582,7 @@ static void *load_dyn_plugin_library(char *                plugin_lib_name,
 {
     void *lib_handle;
 
-    lib_handle = dlopen(plugin_lib_name, RTLD_NOW);
+    lib_handle = dlopen(plugin_lib_name, RTLD_NOW | RTLD_NODELETE);
     if (lib_handle == NULL) {
         log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
                   dlerror());

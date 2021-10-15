@@ -255,17 +255,17 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         resp.req_id    = req->req_id;
         resp.resp_type = NEU_REQRESP_READ_RESP;
         resp.recver_id = sender_id;
-        resp.buf_len   = sizeof(neu_reqresp_data_t);
+        resp.buf_len   = sizeof(neu_reqresp_read_t);
         resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
         break;
     }
 
     case NEU_REQRESP_WRITE_DATA: {
-        neu_reqresp_write_t *write_req;
-        neu_response_t       resp;
-        neu_reqresp_data_t   data_resp;
-        neu_node_id_t        sender_id;
+        neu_reqresp_write_t *    write_req;
+        neu_response_t           resp;
+        neu_reqresp_write_resp_t data_resp;
+        neu_node_id_t            sender_id;
 
         assert(req->buf_len == sizeof(neu_reqresp_write_t));
         write_req = (neu_reqresp_write_t *) req->buf;
@@ -285,7 +285,7 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         resp.req_id    = req->req_id;
         resp.resp_type = NEU_REQRESP_WRITE_RESP;
         resp.recver_id = sender_id;
-        resp.buf_len   = sizeof(neu_reqresp_data_t);
+        resp.buf_len   = sizeof(neu_reqresp_write_resp_t);
         resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
         break;

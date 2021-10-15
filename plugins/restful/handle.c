@@ -53,6 +53,41 @@ struct neu_rest_handler web_handlers[] = {
     },
 };
 
+static void cors(nng_aio *aio);
+
+struct neu_rest_handler cors_handler[] = {
+    {
+        .url = "/api/v2/ping",
+    },
+    {
+        .url = "/api/v2/login",
+    },
+    {
+        .url = "/api/v2/logout",
+    },
+    {
+        .url = "/api/v2/tags",
+    },
+    {
+        .url = "/api/v2/gconfig",
+    },
+    {
+        .url = "/api/v2/node",
+    },
+    {
+        .url = "/api/v2/plugin",
+    },
+    {
+        .url = "/api/v2/tty",
+    },
+    {
+        .url = "/api/v2/read",
+    },
+    {
+        .url = "/api/v2/write",
+    },
+};
+
 struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_POST,
@@ -176,6 +211,18 @@ struct neu_rest_handler api_handlers[] = {
         .url           = "/api/v2/tty",
         .value.handler = handle_get_ttys,
     },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/read",
+        .value.handler = handle_read,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/write",
+        .value.handler = handle_write,
+    },
 };
 
 void neu_rest_web_handler(const struct neu_rest_handler **handlers,
@@ -190,6 +237,19 @@ void neu_rest_api_handler(const struct neu_rest_handler **handlers,
 {
     *handlers = api_handlers;
     *size     = sizeof(api_handlers) / sizeof(struct neu_rest_handler);
+}
+
+void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
+                               uint32_t *                      size)
+{
+    *handlers = cors_handler;
+    *size     = sizeof(cors_handler) / sizeof(struct neu_rest_handler);
+
+    for (uint32_t i = 0; i < *size; i++) {
+        cors_handler[i].method        = NEU_REST_METHOD_OPTIONS;
+        cors_handler[i].type          = NEU_REST_HANDLER_FUNCTION;
+        cors_handler[i].value.handler = cors;
+    }
 }
 
 neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin)
@@ -208,4 +268,23 @@ void neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx)
 void *neu_rest_get_plugin()
 {
     return rest_ctx->plugin;
+}
+
+static void cors(nng_aio *aio)
+{
+    nng_http_res *res = NULL;
+
+    nng_http_res_alloc(&res);
+
+    nng_http_res_set_header(res, "Access-Control-Allow-Origin", "*");
+    nng_http_res_set_header(res, "Access-Control-Allow-Methods",
+                            "POST,GET,PUT,DELETE,OPTIONS");
+    nng_http_res_set_header(res, "Access-Control-Allow-Headers",
+                            "Content-Type");
+
+    nng_http_res_copy_data(res, " ", strlen(" "));
+    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
+
+    nng_aio_set_output(aio, 0, res);
+    nng_aio_finish(aio, 0);
 }

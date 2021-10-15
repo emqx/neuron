@@ -70,5 +70,6 @@ void neu_rest_web_handler(const struct neu_rest_handler **handlers,
                           uint32_t *                      size);
 void neu_rest_api_handler(const struct neu_rest_handler **handlers,
                           uint32_t *                      size);
-
+void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
+                               uint32_t *                      size);
 #endif
