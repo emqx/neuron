@@ -27,5 +27,6 @@ void handle_update_group_config(nng_aio *aio);
 void handle_get_group_config(nng_aio *aio);
 void handle_grp_subscribe(nng_aio *aio);
 void handle_grp_unsubscribe(nng_aio *aio);
+void handle_grp_get_subscribe(nng_aio *aio);
 
 #endif

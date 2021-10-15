@@ -58,6 +58,7 @@
             cmd_ptr->sender_id   = to_node_id((adapter), (adapter)->id);     \
             cmd_ptr->dst_node_id = reqresp_cmd->dst_node_id;                 \
             cmd_ptr->grp_config  = reqresp_cmd->grp_config;                  \
+            cmd_ptr->req_id      = cmd->req_id;                              \
             { func };                                                        \
             nng_sendmsg((adapter)->sock, msg, 0);                            \
         }                                                                    \
@@ -313,7 +314,7 @@ static void adapter_loop(void *arg)
                 read_req.dst_node_id = cmd_ptr->dst_node_id;
 
                 intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = adapter_get_req_id(adapter);
+                req.req_id    = cmd_ptr->req_id;
                 req.req_type  = NEU_REQRESP_READ_DATA;
                 req.sender_id = cmd_ptr->sender_id;
                 req.buf_len   = sizeof(neu_reqresp_read_t);
@@ -339,7 +340,7 @@ static void adapter_loop(void *arg)
                 neu_dvalue_deserialize(buf, buf_len, &read_resp.data_val);
 
                 intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = adapter_get_req_id(adapter);
+                req.req_id    = cmd_ptr->req_id;
                 req.req_type  = NEU_REQRESP_READ_RESP;
                 req.sender_id = 0;
                 req.buf_len   = sizeof(neu_reqresp_read_resp_t);
@@ -366,7 +367,7 @@ static void adapter_loop(void *arg)
                 neu_dvalue_deserialize(buf, buf_len, &write_req.data_val);
 
                 intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = adapter_get_req_id(adapter);
+                req.req_id    = cmd_ptr->req_id;
                 req.req_type  = NEU_REQRESP_WRITE_DATA;
                 req.sender_id = cmd_ptr->sender_id;
                 req.buf_len   = sizeof(neu_reqresp_write_t);
@@ -394,7 +395,7 @@ static void adapter_loop(void *arg)
                 neu_dvalue_deserialize(buf, buf_len, &write_resp.data_val);
 
                 intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = adapter_get_req_id(adapter);
+                req.req_id    = cmd_ptr->req_id;
                 req.req_type  = NEU_REQRESP_WRITE_RESP;
                 req.sender_id = 0;
                 req.buf_len   = sizeof(neu_reqresp_write_resp_t);
@@ -798,6 +799,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             read_data_resp->grp_config = read_resp->grp_config;
             read_data_resp->databuf    = databuf;
             read_data_resp->recver_id  = resp->recver_id;
+            read_data_resp->req_id     = resp->req_id;
             nng_sendmsg(adapter->sock, read_resp_msg, 0);
         }
         neu_dvalue_free(read_resp->data_val);
@@ -830,6 +832,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             write_data_resp->grp_config = write_resp->grp_config;
             write_data_resp->databuf    = databuf;
             write_data_resp->recver_id  = resp->recver_id;
+            write_data_resp->req_id     = resp->req_id;
             nng_sendmsg(adapter->sock, write_resp_msg, 0);
         }
         neu_dvalue_free(write_resp->data_val);

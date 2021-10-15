@@ -158,10 +158,51 @@ void handle_get_group_config(nng_aio *aio)
 
 void handle_grp_subscribe(nng_aio *aio)
 {
-    (void) aio;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_subscribe_req_t, neu_parse_decode_subscribe, {
+            neu_taggrp_config_t *config = neu_system_find_group_config(
+                plugin, req->src_node_id, req->name);
+
+            if (config == NULL) {
+                http_not_found(aio, "{\"error\" : 1}");
+            } else {
+                intptr_t err = neu_plugin_send_subscribe_cmd(
+                    plugin, req->dst_node_id, config);
+                if (err != 0) {
+                    http_bad_request(aio, "{\"error\": 1}");
+                } else {
+                    http_ok(aio, "{\"error\": 0}");
+                }
+            }
+        })
 }
 
 void handle_grp_unsubscribe(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_unsubscribe_req_t, neu_parse_decode_unsubscribe, {
+            neu_taggrp_config_t *config = neu_system_find_group_config(
+                plugin, req->src_node_id, req->name);
+
+            if (config == NULL) {
+                http_not_found(aio, "{\"error\" : 1}");
+            } else {
+                intptr_t err = neu_plugin_send_unsubscribe_cmd(
+                    plugin, req->dst_node_id, config);
+                if (err != 0) {
+                    http_bad_request(aio, "{\"error\": 1}");
+                } else {
+                    http_ok(aio, "{\"error\": 0}");
+                }
+            }
+        })
+}
+
+void handle_grp_get_subscribe(nng_aio *aio)
 {
     (void) aio;
 }

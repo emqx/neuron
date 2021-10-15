@@ -29,6 +29,7 @@
 #include "http.h"
 #include "neu_log.h"
 #include "rest.h"
+#include "rw_handle.h"
 
 #define neu_plugin_module default_dashboard_plugin_module
 
@@ -181,6 +182,7 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
+    handle_rw_init();
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
@@ -189,6 +191,7 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
+    handle_rw_uninit();
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     nng_http_server_stop(plugin->web_server);
@@ -247,12 +250,12 @@ static int dashb_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     (void) adapter_callbacks;
 
     switch (req->req_type) {
-    case NEU_REQRESP_READ_RESP: {
-        neu_reqresp_read_resp_t *read_resp =
-            (neu_reqresp_read_resp_t *) req->buf;
-        // http_not_found(read_resp->context, "{\"error\" : 1}");
+    case NEU_REQRESP_READ_RESP:
+        handle_read_resp(req);
         break;
-    }
+    case NEU_REQRESP_WRITE_RESP:
+        handle_write_resp(req);
+        break;
     default:
         break;
     }

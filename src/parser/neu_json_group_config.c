@@ -218,3 +218,115 @@ int neu_parse_encode_get_group_config(void *json_object, void *param)
 
     return neu_json_encode_field(json_object, elems, 1);
 }
+
+int neu_parse_decode_subscribe(char *buf, neu_parse_subscribe_req_t **result)
+{
+    neu_parse_subscribe_req_t *req = malloc(sizeof(neu_parse_subscribe_req_t));
+    memset(req, 0, sizeof(neu_parse_subscribe_req_t));
+
+    neu_json_elem_t elem[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "dst_node_id",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = "src_node_id",
+            .t    = NEU_JSON_INT,
+        },
+    };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+    req->name        = elem[0].v.val_str;
+    req->dst_node_id = elem[1].v.val_int;
+    req->src_node_id = elem[2].v.val_int;
+
+    *result = req;
+    return 0;
+}
+
+void neu_parse_decode_subscribe_free(neu_parse_subscribe_req_t *req)
+{
+    free(req->name);
+    free(req);
+}
+
+int neu_parse_decode_unsubscribe(char *                        buf,
+                                 neu_parse_unsubscribe_req_t **result)
+{
+    neu_parse_unsubscribe_req_t *req =
+        malloc(sizeof(neu_parse_unsubscribe_req_t));
+    memset(req, 0, sizeof(neu_parse_unsubscribe_req_t));
+
+    neu_json_elem_t elem[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "dst_node_id",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = "src_node_id",
+            .t    = NEU_JSON_INT,
+        },
+    };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+    req->name        = elem[0].v.val_str;
+    req->dst_node_id = elem[1].v.val_int;
+    req->src_node_id = elem[2].v.val_int;
+
+    *result = req;
+    return 0;
+}
+
+void neu_parse_decode_unsubscribe_free(neu_parse_unsubscribe_req_t *req)
+{
+    free(req->name);
+    free(req);
+}
+
+int neu_parse_encode_get_subscribe(void *json_object, void *param)
+{
+    neu_parse_get_subscribe_res_t *res =
+        (neu_parse_get_subscribe_res_t *) param;
+    void *array = NULL;
+
+    for (int i = 0; i < res->n_config; i++) {
+        neu_json_elem_t grp[] = {
+            {
+                .name      = "group_config_name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = res->group_configs[i].group_config_name,
+            },
+            {
+                .name      = "node_id",
+                .t         = NEU_JSON_INT,
+                .v.val_int = res->group_configs[i].node_id,
+            },
+        };
+
+        array = neu_json_encode_array(array, grp, 2);
+    }
+
+    neu_json_elem_t elems[] = { {
+        .name     = "groups",
+        .t        = NEU_JSON_OBJECT,
+        .v.object = array,
+    } };
+
+    return neu_json_encode_field(json_object, elems, 1);
+}
