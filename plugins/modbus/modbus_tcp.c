@@ -564,7 +564,7 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
             data_resp.data_val = array_resp;
         }
         data_resp.grp_config = read_req->grp_config;
-        resp.req_id          = 1;
+        resp.req_id          = req->req_id;
         resp.resp_type       = NEU_REQRESP_READ_RESP;
         resp.buf             = &data_resp;
         resp.buf_len         = sizeof(neu_reqresp_read_resp_t);
@@ -586,7 +586,7 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
             setup_write_resp_data_value(write_req->data_val, plugin);
 
         memset(&resp, 0, sizeof(resp));
-        resp.req_id    = 1;
+        resp.req_id    = req->req_id;
         resp.resp_type = NEU_REQRESP_WRITE_RESP;
         resp.buf       = &data_resp;
         resp.buf_len   = sizeof(neu_reqresp_data_t);

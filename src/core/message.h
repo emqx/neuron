@@ -85,6 +85,7 @@ typedef struct read_data_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
     neu_node_id_t        dst_node_id;
+    uint32_t             req_id;
 } read_data_cmd_t;
 
 /* MSG_CMD_WRITE_DATA */
@@ -93,6 +94,7 @@ typedef struct write_data_cmd {
     adapter_id_t         sender_id; // adapter_id of sender
     neu_node_id_t        dst_node_id;
     core_databuf_t *     databuf;
+    uint32_t             req_id;
 } write_data_cmd_t;
 
 /* MSG_CMD_START_PERIODIC_READ */
@@ -114,6 +116,7 @@ typedef struct subscribe_driver_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
     neu_node_id_t        dst_node_id;
+    uint32_t             req_id;
 } subscribe_node_cmd_t;
 
 /* MSG_CMD_UNSUBSCRIBE_DRIVER */
@@ -121,6 +124,7 @@ typedef struct unsubscribe_driver_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
     neu_node_id_t        dst_node_id;
+    uint32_t             req_id;
 } unsubscribe_node_cmd_t;
 
 /* MSG_CMD_GROUP_CONFIG_CHANGED */
@@ -148,6 +152,7 @@ typedef struct read_data_resp {
     neu_taggrp_config_t *grp_config;
     core_databuf_t *     databuf;
     adapter_id_t         recver_id;
+    uint32_t             req_id;
 } read_data_resp_t;
 
 /* MSG_DATA_WRITE_RESP */
@@ -155,6 +160,7 @@ typedef struct write_data_resp {
     neu_taggrp_config_t *grp_config;
     core_databuf_t *     databuf;
     adapter_id_t         recver_id;
+    uint32_t             req_id;
 } write_data_resp_t;
 
 typedef struct message message_t;

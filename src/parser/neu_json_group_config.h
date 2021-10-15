@@ -80,6 +80,31 @@ int neu_parse_decode_del_group_config(
 void neu_parse_decode_del_group_config_free(
     neu_parse_del_group_config_req_t *req);
 
+typedef struct {
+    uint32_t dst_node_id;
+    uint32_t src_node_id;
+    char *   name;
+} neu_parse_subscribe_req_t, neu_parse_unsubscribe_req_t;
+
+int  neu_parse_decode_subscribe(char *buf, neu_parse_subscribe_req_t **result);
+void neu_parse_decode_subscribe_free(neu_parse_subscribe_req_t *req);
+
+int  neu_parse_decode_unsubscribe(char *                        buf,
+                                  neu_parse_unsubscribe_req_t **result);
+void neu_parse_decode_unsubscribe_free(neu_parse_unsubscribe_req_t *req);
+
+typedef struct {
+    uint32_t node_id;
+    char *   group_config_name;
+} neu_parse_subscribe_res_grp_t;
+
+typedef struct {
+    int                            n_config;
+    neu_parse_subscribe_res_grp_t *group_configs;
+} neu_parse_get_subscribe_res_t;
+
+int neu_parse_encode_get_subscribe(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif

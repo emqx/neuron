@@ -86,6 +86,9 @@ struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/write",
     },
+    {
+        .url = "/api/v2/subscribe",
+    },
 };
 
 struct neu_rest_handler api_handlers[] = {
@@ -223,6 +226,24 @@ struct neu_rest_handler api_handlers[] = {
         .url           = "/api/v2/write",
         .value.handler = handle_write,
     },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/subscribe",
+        .value.handler = handle_grp_subscribe,
+    },
+    {
+        .method        = NEU_REST_METHOD_DELETE,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/subscribe",
+        .value.handler = handle_grp_unsubscribe,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/subscribe",
+        .value.handler = handle_grp_get_subscribe,
+    },
 };
 
 void neu_rest_web_handler(const struct neu_rest_handler **handlers,
@@ -279,8 +300,7 @@ static void cors(nng_aio *aio)
     nng_http_res_set_header(res, "Access-Control-Allow-Origin", "*");
     nng_http_res_set_header(res, "Access-Control-Allow-Methods",
                             "POST,GET,PUT,DELETE,OPTIONS");
-    nng_http_res_set_header(res, "Access-Control-Allow-Headers",
-                            "Content-Type");
+    nng_http_res_set_header(res, "Access-Control-Allow-Headers", "*");
 
     nng_http_res_copy_data(res, " ", strlen(" "));
     nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
