@@ -47,6 +47,12 @@
 
 const neu_plugin_module_t neu_plugin_module;
 
+struct context {
+    neu_list_node    node;
+    int              req_id;
+    neu_parse_mqtt_t parse_header;
+};
+
 struct neu_plugin {
     neu_plugin_common_t common;
     option_t            option;
@@ -54,6 +60,64 @@ struct neu_plugin {
     neu_list            context_list;
     neu_parse_mqtt_t *  parse_header;
 };
+
+struct context *context_create()
+{
+    struct context *ctx = NULL;
+    ctx                 = malloc(sizeof(struct context));
+    if (NULL != ctx) {
+        memset(ctx, 0, sizeof(struct context));
+    }
+    return ctx;
+}
+
+void context_list_add(neu_list *list, struct context *ctx, int req_id,
+                      neu_parse_mqtt_t *parse_header)
+{
+    ctx->req_id                = req_id;
+    ctx->parse_header.function = parse_header->function;
+    ctx->parse_header.uuid     = strdup(parse_header->uuid);
+
+    NEU_LIST_NODE_INIT(&ctx->node);
+    neu_list_append(list, ctx);
+}
+
+struct context *context_list_find(neu_list *list, const int id)
+{
+    struct context *item;
+    NEU_LIST_FOREACH(list, item)
+    {
+        if (id == item->req_id) {
+            return item;
+        }
+    }
+    return NULL;
+}
+
+void context_destroy(struct context *ctx)
+{
+    if (NULL != ctx) {
+        if (NULL != ctx->parse_header.uuid) {
+            free(ctx->parse_header.uuid);
+        }
+        free(ctx);
+    }
+}
+
+void context_list_remove(neu_list *list, struct context *ctx)
+{
+    UNUSED(list);
+    UNUSED(ctx);
+}
+
+void context_list_destroy(neu_list *list)
+{
+    while (!neu_list_empty(list)) {
+        struct context *ctx = neu_list_first(list);
+        neu_list_remove(list, ctx);
+        context_destroy(ctx);
+    }
+}
 
 static int plugin_subscribe(neu_plugin_t *plugin, const char *topic,
                             const int qos, subscribe_handle handle)
@@ -137,7 +201,8 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         neu_parse_read_req_t *req = NULL;
         rc                        = neu_parse_decode_read(json_str, &req);
         if (0 == rc) {
-            command_read_once_request(plugin, mqtt, req);
+            int req_id = command_read_once_request(plugin, mqtt, req);
+            UNUSED(req_id);
             neu_parse_decode_read_free(req);
         }
         break;
@@ -146,7 +211,8 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         neu_parse_write_req_t *req = NULL;
         rc                         = neu_parse_decode_write(json_str, &req);
         if (0 == rc) {
-            command_write_request(plugin, mqtt, req);
+            int req_id = command_write_request(plugin, mqtt, req);
+            UNUSED(req_id);
             neu_parse_decode_write_free(req);
         }
         break;
@@ -228,7 +294,17 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
     }
 
     MQTT_SEND(plugin->paho, "neuronlite/response", 0, ret_str);
-    free(json_str);
+
+    // if (NULL != mqtt) {
+    //     if (NULL != mqtt->uuid) {
+    //         free(mqtt->uuid);
+    //     }
+    //     free(mqtt);
+    // }
+
+    if (NULL != json_str) {
+        free(json_str);
+    }
 
     UNUSED(topic_len);
 }
@@ -294,6 +370,8 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     plugin->option.clean_session      = atoi(clean_session);
 
     plugin->parse_header = NULL;
+
+    NEU_LIST_INIT(&plugin->context_list, struct context, node);
 
     // Paho mqtt client setup
     client_error error =
