@@ -547,7 +547,7 @@ TEST(DataValueTest, neu_dvalue_cstr_deser)
     neu_data_val_t *val_des;
     char *          get_cstr = NULL;
 
-    EXPECT_EQ(0, neu_dvalue_set_cstr(val, (char *) "Hello"));
+    EXPECT_EQ(0, neu_dvalue_set_cstr(val, (char *) "Hello, Neuron!"));
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
@@ -555,7 +555,7 @@ TEST(DataValueTest, neu_dvalue_cstr_deser)
     size = neu_dvalue_deserialize(buf, size, &val_des);
     EXPECT_LT(0, size);
     EXPECT_EQ(0, neu_dvalue_get_cstr(val_des, &get_cstr));
-    EXPECT_STREQ("Hello", get_cstr);
+    EXPECT_STREQ("Hello, Neuron!", get_cstr);
 
     free(buf);
     free(get_cstr);
