@@ -23,26 +23,26 @@
 
 #include "command_rw.h"
 
-void command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                               neu_parse_read_req_t *req)
+int command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                              neu_parse_read_req_t *req)
 {
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
     int rc = common_has_node(plugin, req->node_id);
     if (0 != rc) {
         log_debug("The requested node does not exist");
-        return;
+        return -1;
     }
 
     neu_taggrp_config_t *config = neu_system_find_group_config(
         plugin, req->node_id, req->group_config_name);
     if (NULL == config) {
         log_debug("The requested config does not exist");
-        return;
+        return -2;
     }
 
     uint32_t req_id = neu_plugin_get_event_id(plugin);
     neu_plugin_send_read_cmd(plugin, req_id, req->node_id, config);
-    UNUSED(req_id);
+    return req_id;
 }
 
 static int wrap_read_response_json_object(neu_fixed_array_t *   array,
@@ -208,7 +208,8 @@ char *command_read_once_response(neu_plugin_t *    plugin,
     }
 
     char *json_str = NULL;
-    rc = neu_json_encode_by_fn(&json, neu_parse_encode_read, &json_str);
+    rc = neu_json_encode_with_mqtt(&json, neu_parse_encode_read, parse_header,
+                                   neu_parse_encode_mqtt_param, &json_str);
     clean_read_response_json_object(&json);
     if (0 != rc) {
         log_info("Json string parse error:%d", rc);
@@ -229,54 +230,18 @@ char *command_read_cycle_response(neu_plugin_t *  plugin,
     return command_read_once_response(plugin, &parse_header, resp_val);
 }
 
-static bool match_name_grp_config(const void *key, const void *item)
-{
-    if (NULL == key || NULL == item) {
-        return false;
-    }
-    const char *         name   = (const char *) key;
-    neu_taggrp_config_t *config = *(neu_taggrp_config_t **) item;
-    if (0 == strcmp(name, neu_taggrp_cfg_get_name(config))) {
-        return true;
-    }
-
-    return false;
-}
-
-static neu_taggrp_config_t *
-get_group_config_by_name(neu_plugin_t *plugin, uint32_t dest_node_id,
-                         const char *group_config_name)
-{
-    vector_t configs = neu_system_get_group_configs(plugin, dest_node_id);
-    neu_taggrp_config_t *config;
-    neu_taggrp_config_t *c;
-    // config1 = *(neu_taggrp_config_t **) vector_get(&configs, 0);
-    config = *(neu_taggrp_config_t **) vector_find_item(
-        &configs, group_config_name, match_name_grp_config);
-    if (NULL == config) {
-        GROUP_CONFIGS_UNINIT(configs);
-        return NULL;
-    }
-    c = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
-    GROUP_CONFIGS_UNINIT(configs);
-
-    return c;
-}
-
 static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
                          const char *    group_config_name,
                          neu_data_val_t *write_val)
 {
-    vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    int      rc    = common_node_id_exist(&nodes, dest_node_id);
-    vector_uninit(&nodes);
-
+    int rc = common_has_node(plugin, dest_node_id);
     if (0 != rc) {
         return -1;
     }
 
     neu_taggrp_config_t *config;
-    config = get_group_config_by_name(plugin, dest_node_id, group_config_name);
+    config =
+        neu_system_find_group_config(plugin, dest_node_id, group_config_name);
     if (NULL == config) {
         return -2;
     }
@@ -287,8 +252,8 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
     return req_id;
 }
 
-void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                           neu_parse_write_req_t *write_req)
+int command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+                          neu_parse_write_req_t *write_req)
 {
     log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
              write_req->group_config_name);
@@ -298,14 +263,14 @@ void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     write_val = neu_dvalue_unit_new();
     if (write_val == NULL) {
         log_error("Failed to allocate data value for write data");
-        return;
+        return -1;
     }
 
     array = neu_fixed_array_new(write_req->n_tag, sizeof(neu_int_val_t));
     if (array == NULL) {
         log_error("Failed to allocate array for write data");
         neu_dvalue_free(write_val);
-        return;
+        return -2;
     }
 
     neu_int_val_t   int_val;
@@ -350,9 +315,10 @@ void command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
-    write_command(plugin, write_req->node_id, write_req->group_config_name,
-                  write_val);
+    int req_id = write_command(plugin, write_req->node_id,
+                               write_req->group_config_name, write_val);
     neu_dvalue_free(write_val);
+    return req_id;
 }
 
 static int wrap_write_response_json_object(neu_fixed_array_t *   array,

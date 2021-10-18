@@ -548,6 +548,7 @@ static void periodic_read(nng_aio *aio, void *arg, int code)
 
             stop_periodic_read(tuple);
 
+            neu_taggrp_cfg_anchor(new_config);
             if (new_config != NULL) {
                 neu_taggrp_cfg_free(tuple->config);
                 tuple->config = new_config;
@@ -636,7 +637,6 @@ static opc_subscribe_tuple_t *find_subscribe(opc_handle_context_t *context,
 static void stop_periodic_read(opc_subscribe_tuple_t *tuple)
 {
     nng_aio_cancel(tuple->aio);
-    nng_aio_free(tuple->aio);
 }
 
 static void remove_subscribe(opc_subscribe_tuple_t *tuple)
