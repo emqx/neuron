@@ -48,7 +48,7 @@ configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
 # Call this from your own project's makefile.
 
 if(APPLE)
-include_directories(/usr/local/include)
+include_directories(/usr/local/include /usr/local/opt/openssl/include)
 link_directories(/usr/local/lib /usr/local/opt/openssl/lib)
 else()
 link_directories(/usr/local/lib)
