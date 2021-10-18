@@ -112,7 +112,7 @@ int http_created(nng_aio *aio, char *content)
 
 int http_bad_request(nng_aio *aio, char *content)
 {
-    return response(aio, content, NNG_HTTP_STATUS_BAD_GATEWAY);
+    return response(aio, content, NNG_HTTP_STATUS_BAD_REQUEST);
 }
 
 int http_unauthorized(nng_aio *aio, char *content)

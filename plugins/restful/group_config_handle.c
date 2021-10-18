@@ -168,13 +168,8 @@ void handle_grp_subscribe(nng_aio *aio)
             if (config == NULL) {
                 http_not_found(aio, "{\"error\" : 1}");
             } else {
-                intptr_t err = neu_plugin_send_subscribe_cmd(
-                    plugin, req->dst_node_id, config);
-                if (err != 0) {
-                    http_bad_request(aio, "{\"error\": 1}");
-                } else {
-                    http_ok(aio, "{\"error\": 0}");
-                }
+                neu_plugin_send_subscribe_cmd(plugin, req->dst_node_id, config);
+                http_ok(aio, "{\"error\": 0}");
             }
         })
 }
@@ -191,13 +186,9 @@ void handle_grp_unsubscribe(nng_aio *aio)
             if (config == NULL) {
                 http_not_found(aio, "{\"error\" : 1}");
             } else {
-                intptr_t err = neu_plugin_send_unsubscribe_cmd(
-                    plugin, req->dst_node_id, config);
-                if (err != 0) {
-                    http_bad_request(aio, "{\"error\": 1}");
-                } else {
-                    http_ok(aio, "{\"error\": 0}");
-                }
+                neu_plugin_send_unsubscribe_cmd(plugin, req->dst_node_id,
+                                                config);
+                http_ok(aio, "{\"error\": 0}");
             }
         })
 }
