@@ -233,23 +233,19 @@ static void adapter_loop(void *arg)
 
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
-            if (adapter->plugin_module) {
-                neu_reqresp_data_t data_req;
-                data_req.grp_config = databuf_ptr->grp_config;
-                void * buf     = core_databuf_get_ptr(databuf_ptr->databuf);
-                size_t buf_len = core_databuf_get_len(databuf_ptr->databuf);
-                neu_dvalue_deserialize(buf, buf_len, &data_req.data_val);
+            neu_reqresp_data_t            data_req;
+            data_req.grp_config = databuf_ptr->grp_config;
+            void * buf          = core_databuf_get_ptr(databuf_ptr->databuf);
+            size_t buf_len      = core_databuf_get_len(databuf_ptr->databuf);
+            neu_dvalue_deserialize(buf, buf_len, &data_req.data_val);
 
-                intf_funs    = adapter->plugin_module->intf_funs;
-                req.req_id   = adapter_get_req_id(adapter);
-                req.req_type = NEU_REQRESP_TRANS_DATA;
-                req.buf_len  = sizeof(neu_reqresp_data_t);
-                req.buf      = (void *) &data_req;
-                intf_funs->request(adapter->plugin, &req);
-                neu_dvalue_free(data_req.data_val);
-            } else {
-                neu_taggrp_cfg_free(databuf_ptr->grp_config);
-            }
+            intf_funs    = adapter->plugin_module->intf_funs;
+            req.req_id   = adapter_get_req_id(adapter);
+            req.req_type = NEU_REQRESP_TRANS_DATA;
+            req.buf_len  = sizeof(neu_reqresp_data_t);
+            req.buf      = (void *) &data_req;
+            intf_funs->request(adapter->plugin, &req);
+            neu_dvalue_free(data_req.data_val);
             core_databuf_put(databuf_ptr->databuf);
             break;
         }
@@ -260,21 +256,18 @@ static void adapter_loop(void *arg)
 
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
-            if (adapter->plugin_module) {
-                neu_reqresp_subscribe_node_t sub_node_req;
-                sub_node_req.grp_config  = cmd_ptr->grp_config;
-                sub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+            neu_reqresp_subscribe_node_t  sub_node_req;
 
-                intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = adapter_get_req_id(adapter);
-                req.req_type  = NEU_REQRESP_SUBSCRIBE_NODE;
-                req.sender_id = cmd_ptr->sender_id;
-                req.buf_len   = sizeof(neu_reqresp_subscribe_node_t);
-                req.buf       = (void *) &sub_node_req;
-                intf_funs->request(adapter->plugin, &req);
-            } else {
-                neu_taggrp_cfg_free(cmd_ptr->grp_config);
-            }
+            sub_node_req.grp_config  = cmd_ptr->grp_config;
+            sub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = adapter_get_req_id(adapter);
+            req.req_type  = NEU_REQRESP_SUBSCRIBE_NODE;
+            req.sender_id = cmd_ptr->sender_id;
+            req.buf_len   = sizeof(neu_reqresp_subscribe_node_t);
+            req.buf       = (void *) &sub_node_req;
+            intf_funs->request(adapter->plugin, &req);
             break;
         }
 
@@ -282,23 +275,20 @@ static void adapter_loop(void *arg)
             unsubscribe_node_cmd_t *cmd_ptr;
             cmd_ptr = (unsubscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
 
-            const neu_plugin_intf_funs_t *intf_funs;
-            neu_request_t                 req;
-            if (adapter->plugin_module) {
-                neu_reqresp_unsubscribe_node_t unsub_node_req;
-                unsub_node_req.grp_config  = cmd_ptr->grp_config;
-                unsub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+            const neu_plugin_intf_funs_t * intf_funs;
+            neu_request_t                  req;
+            neu_reqresp_unsubscribe_node_t unsub_node_req;
 
-                intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = adapter_get_req_id(adapter);
-                req.req_type  = NEU_REQRESP_UNSUBSCRIBE_NODE;
-                req.sender_id = cmd_ptr->sender_id;
-                req.buf_len   = sizeof(neu_reqresp_unsubscribe_node_t);
-                req.buf       = (void *) &unsub_node_req;
-                intf_funs->request(adapter->plugin, &req);
-            } else {
-                neu_taggrp_cfg_free(cmd_ptr->grp_config);
-            }
+            unsub_node_req.grp_config  = cmd_ptr->grp_config;
+            unsub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = adapter_get_req_id(adapter);
+            req.req_type  = NEU_REQRESP_UNSUBSCRIBE_NODE;
+            req.sender_id = cmd_ptr->sender_id;
+            req.buf_len   = sizeof(neu_reqresp_unsubscribe_node_t);
+            req.buf       = (void *) &unsub_node_req;
+            intf_funs->request(adapter->plugin, &req);
             break;
         }
 
@@ -308,21 +298,18 @@ static void adapter_loop(void *arg)
 
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
-            if (adapter->plugin_module) {
-                neu_reqresp_read_t read_req;
-                read_req.grp_config  = cmd_ptr->grp_config;
-                read_req.dst_node_id = cmd_ptr->dst_node_id;
+            neu_reqresp_read_t            read_req;
 
-                intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = cmd_ptr->req_id;
-                req.req_type  = NEU_REQRESP_READ_DATA;
-                req.sender_id = cmd_ptr->sender_id;
-                req.buf_len   = sizeof(neu_reqresp_read_t);
-                req.buf       = (void *) &read_req;
-                intf_funs->request(adapter->plugin, &req);
-            } else {
-                neu_taggrp_cfg_free(cmd_ptr->grp_config);
-            }
+            read_req.grp_config  = cmd_ptr->grp_config;
+            read_req.dst_node_id = cmd_ptr->dst_node_id;
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = cmd_ptr->req_id;
+            req.req_type  = NEU_REQRESP_READ_DATA;
+            req.sender_id = cmd_ptr->sender_id;
+            req.buf_len   = sizeof(neu_reqresp_read_t);
+            req.buf       = (void *) &read_req;
+            intf_funs->request(adapter->plugin, &req);
             break;
         }
 
@@ -332,23 +319,22 @@ static void adapter_loop(void *arg)
 
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
-            if (adapter->plugin_module) {
-                neu_reqresp_read_resp_t read_resp;
-                read_resp.grp_config = cmd_ptr->grp_config;
-                void * buf           = core_databuf_get_ptr(cmd_ptr->databuf);
-                size_t buf_len       = core_databuf_get_len(cmd_ptr->databuf);
-                neu_dvalue_deserialize(buf, buf_len, &read_resp.data_val);
+            neu_reqresp_read_resp_t       read_resp;
 
-                intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = cmd_ptr->req_id;
-                req.req_type  = NEU_REQRESP_READ_RESP;
-                req.sender_id = 0;
-                req.buf_len   = sizeof(neu_reqresp_read_resp_t);
-                req.buf       = (void *) &read_resp;
-                intf_funs->request(adapter->plugin, &req);
-            } else {
-                neu_taggrp_cfg_free(cmd_ptr->grp_config);
-            }
+            read_resp.grp_config = cmd_ptr->grp_config;
+            void * buf           = core_databuf_get_ptr(cmd_ptr->databuf);
+            size_t buf_len       = core_databuf_get_len(cmd_ptr->databuf);
+            neu_dvalue_deserialize(buf, buf_len, &read_resp.data_val);
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = cmd_ptr->req_id;
+            req.req_type  = NEU_REQRESP_READ_RESP;
+            req.sender_id = 0;
+            req.buf_len   = sizeof(neu_reqresp_read_resp_t);
+            req.buf       = (void *) &read_resp;
+            intf_funs->request(adapter->plugin, &req);
+            neu_dvalue_free(read_resp.data_val);
+            core_databuf_put(cmd_ptr->databuf);
             break;
         }
 
@@ -358,25 +344,22 @@ static void adapter_loop(void *arg)
 
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
-            if (adapter->plugin_module) {
-                neu_reqresp_write_t write_req;
-                write_req.grp_config  = cmd_ptr->grp_config;
-                write_req.dst_node_id = cmd_ptr->dst_node_id;
-                void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
-                size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
-                neu_dvalue_deserialize(buf, buf_len, &write_req.data_val);
+            neu_reqresp_write_t           write_req;
 
-                intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = cmd_ptr->req_id;
-                req.req_type  = NEU_REQRESP_WRITE_DATA;
-                req.sender_id = cmd_ptr->sender_id;
-                req.buf_len   = sizeof(neu_reqresp_write_t);
-                req.buf       = (void *) &write_req;
-                intf_funs->request(adapter->plugin, &req);
-                neu_dvalue_free(write_req.data_val);
-            } else {
-                neu_taggrp_cfg_free(cmd_ptr->grp_config);
-            }
+            write_req.grp_config  = cmd_ptr->grp_config;
+            write_req.dst_node_id = cmd_ptr->dst_node_id;
+            void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
+            size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
+            neu_dvalue_deserialize(buf, buf_len, &write_req.data_val);
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = cmd_ptr->req_id;
+            req.req_type  = NEU_REQRESP_WRITE_DATA;
+            req.sender_id = cmd_ptr->sender_id;
+            req.buf_len   = sizeof(neu_reqresp_write_t);
+            req.buf       = (void *) &write_req;
+            intf_funs->request(adapter->plugin, &req);
+            neu_dvalue_free(write_req.data_val);
             core_databuf_put(cmd_ptr->databuf);
             break;
         }
@@ -387,23 +370,22 @@ static void adapter_loop(void *arg)
 
             const neu_plugin_intf_funs_t *intf_funs;
             neu_request_t                 req;
-            if (adapter->plugin_module) {
-                neu_reqresp_write_resp_t write_resp;
-                write_resp.grp_config = cmd_ptr->grp_config;
-                void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
-                size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
-                neu_dvalue_deserialize(buf, buf_len, &write_resp.data_val);
+            neu_reqresp_write_resp_t      write_resp;
 
-                intf_funs     = adapter->plugin_module->intf_funs;
-                req.req_id    = cmd_ptr->req_id;
-                req.req_type  = NEU_REQRESP_WRITE_RESP;
-                req.sender_id = 0;
-                req.buf_len   = sizeof(neu_reqresp_write_resp_t);
-                req.buf       = (void *) &write_resp;
-                intf_funs->request(adapter->plugin, &req);
-            } else {
-                neu_taggrp_cfg_free(cmd_ptr->grp_config);
-            }
+            write_resp.grp_config = cmd_ptr->grp_config;
+            void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
+            size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
+            neu_dvalue_deserialize(buf, buf_len, &write_resp.data_val);
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = cmd_ptr->req_id;
+            req.req_type  = NEU_REQRESP_WRITE_RESP;
+            req.sender_id = 0;
+            req.buf_len   = sizeof(neu_reqresp_write_resp_t);
+            req.buf       = (void *) &write_resp;
+            intf_funs->request(adapter->plugin, &req);
+            neu_dvalue_free(write_resp.data_val);
+            core_databuf_put(cmd_ptr->databuf);
             break;
         }
 

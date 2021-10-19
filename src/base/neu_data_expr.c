@@ -84,22 +84,31 @@ static bool type_has_pointer(neu_dtype_e type)
 static void *allocate_buf_for_type(neu_dtype_e type)
 {
     neu_dtype_e val_type;
+    void *      buf;
 
+    buf      = NULL;
     val_type = neu_value_type_in_dtype(type);
     switch (val_type) {
     case NEU_DTYPE_INT_VAL:
-        return malloc(sizeof(neu_int_val_t));
+        if (!(type & (NEU_DTYPE_ARRAY | NEU_DTYPE_VEC))) {
+            buf = malloc(sizeof(neu_int_val_t));
+        }
+        break;
 
     case NEU_DTYPE_STRING_VAL:
-        return malloc(sizeof(neu_string_val_t));
+        if (!(type & (NEU_DTYPE_ARRAY | NEU_DTYPE_VEC))) {
+            buf = malloc(sizeof(neu_string_val_t));
+        }
+        break;
 
     default:
-        return NULL;
+        break;
     }
+
+    return buf;
 }
 
 /* Free the value data that pointed by val_data
- * The parameter type is value type that get by neu_value_type_in_dtype()
  * The parameter is_inbuf is used to check if the int_val is in buffer of
  * array/vector
  */

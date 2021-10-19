@@ -195,6 +195,11 @@ static void *sample_app_work_loop(void *arg)
     dst_node_id = node_info->node_id;
     log_info("The first node(%d) of driver nodes list, name:%s", dst_node_id,
              node_info->node_name);
+    VECTOR_FOR_EACH(&resp_nodes->nodes, iter)
+    {
+        node_info = (neu_node_info_t *) iterator_get(&iter);
+        free(node_info->node_name);
+    }
     vector_uninit(&resp_nodes->nodes);
     free(resp_nodes);
     free(result);
