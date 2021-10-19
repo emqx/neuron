@@ -256,6 +256,8 @@ TEST(DataValueTest, neu_dvalue_set_get_string)
     neu_data_val_t *val        = neu_dvalue_new(NEU_DTYPE_STRING);
     neu_string_t *  string_set = NULL;
 
+    // To do
+
     neu_dvalue_free(val);
 }
 
@@ -564,13 +566,13 @@ TEST(DataValueTest, neu_dvalue_cstr_deser)
 
 TEST(DataValueTest, neu_dvalue_keyvalue_deser)
 {
-    int      rc;
     ssize_t  size;
-    uint8_t *buf;
+    uint8_t *buf = NULL;
 
     neu_data_val_t *val;
     neu_data_val_t *val1;
 
+    /** test int_val serialize **/
     neu_int_val_t   int_val;
     neu_data_val_t *input_val;
     input_val = neu_dvalue_new(NEU_DTYPE_CSTR);
@@ -578,8 +580,7 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
     neu_int_val_init(&int_val, 21, input_val);
 
     val = neu_dvalue_new(NEU_DTYPE_INT_VAL);
-    rc  = neu_dvalue_set_int_val(val, int_val);
-    EXPECT_EQ(0, rc);
+    EXPECT_EQ(0, neu_dvalue_set_int_val(val, int_val));
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
@@ -588,15 +589,44 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
     EXPECT_LT(0, size);
     neu_int_val_t int_val_get;
     char *        cstr;
-    rc = neu_dvalue_get_int_val(val1, &int_val_get);
-    EXPECT_EQ(0, rc);
-    rc = neu_dvalue_get_ref_cstr(int_val_get.val, &cstr);
-    EXPECT_EQ(0, rc);
+    EXPECT_EQ(0, neu_dvalue_get_int_val(val1, &int_val_get));
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(int_val_get.val, &cstr));
     EXPECT_STREQ((char *) INT_VAL_TEST_STR, cstr);
     neu_int_val_uninit(&int_val_get);
 
     free(buf);
     neu_dvalue_free(val1);
+
+    /** test string_val serialize **/
+    neu_string_val_t string_val;
+    neu_string_t *   input_key =
+        neu_string_from_cstr((char *) STRING_KEY_TEST_STR);
+    neu_string_t *test_string =
+        neu_string_from_cstr((char *) STRING_VAL_TEST_STR);
+    input_val = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_val, test_string);
+    neu_string_val_init(&string_val, input_key, input_val);
+
+    val = neu_dvalue_new(NEU_DTYPE_STRING_VAL);
+    EXPECT_EQ(0, neu_dvalue_set_string_val(val, string_val));
+    size = neu_dvalue_serialize(val, &buf);
+    EXPECT_LT(0, size);
+    neu_dvalue_free(val);
+
+    neu_data_val_t *val_des = NULL;
+    size                    = neu_dvalue_deserialize(buf, size, &val_des);
+    neu_string_val_t string_val_get;
+    neu_dvalue_get_string_val(val_des, &string_val_get);
+    EXPECT_STREQ((char *) STRING_KEY_TEST_STR,
+                 neu_string_get_ref_cstr(string_val_get.key));
+    neu_string_t *string_get = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_string(string_val_get.val, &string_get));
+    EXPECT_STREQ((char *) STRING_VAL_TEST_STR,
+                 neu_string_get_ref_cstr(string_get));
+    neu_string_val_uninit(&string_val_get);
+
+    free(buf);
+    neu_dvalue_free(val_des);
 }
 
 TEST(DataValueTest, neu_dvalue_array_deser)
@@ -608,8 +638,10 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     int8_t * i8_get_buf;
 
     neu_fixed_array_t *array_set;
-    int8_t             i8_arr[4] = { 2, 7, 1, 8 };
-    array_set                    = neu_fixed_array_new(4, sizeof(int8_t));
+    neu_fixed_array_t *array_get_ref;
+
+    int8_t i8_arr[4] = { 2, 7, 1, 8 };
+    array_set        = neu_fixed_array_new(4, sizeof(int8_t));
     neu_fixed_array_set(array_set, 0, &i8_arr[0]);
     neu_fixed_array_set(array_set, 1, &i8_arr[1]);
     neu_fixed_array_set(array_set, 2, &i8_arr[2]);
