@@ -452,9 +452,11 @@ static void tags_periodic_read(nng_aio *aio, void *arg, int code)
     }
     case NNG_ECANCELED:
         log_warn("aio: %p cancel", aio);
+        nng_aio_free(aio);
         break;
     default:
         log_warn("aio: %p, skip error: %d", aio, code);
+        nng_aio_free(aio);
         break;
     }
 }
@@ -618,13 +620,15 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
         break;
     }
     case NEU_REQRESP_SUBSCRIBE_NODE: {
-        neu_reqresp_subscribe_node_t *data = (neu_reqresp_read_t *) req->buf;
+        neu_reqresp_subscribe_node_t *data =
+            (neu_reqresp_subscribe_node_t *) req->buf;
 
         start_periodic_read(plugin, data->grp_config);
         break;
     }
     case NEU_REQRESP_UNSUBSCRIBE_NODE: {
-        neu_reqresp_unsubscribe_node_t *data = (neu_reqresp_read_t *) req->buf;
+        neu_reqresp_unsubscribe_node_t *data =
+            (neu_reqresp_unsubscribe_node_t *) req->buf;
 
         stop_periodic_read(plugin, data->grp_config);
         break;

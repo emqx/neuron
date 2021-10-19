@@ -88,6 +88,7 @@ char *http_get_param(nng_aio *aio, const char *name)
     char          parse_url[256] = { 0 };
     nng_http_req *nng_req        = nng_aio_get_input(aio, 0);
     int           ret            = -1;
+    char *        result         = NULL;
 
     snprintf(parse_url, sizeof(parse_url), "http://127.0.0.1:7000/%s",
              nng_http_req_get_uri(nng_req));
@@ -97,7 +98,11 @@ char *http_get_param(nng_aio *aio, const char *name)
         return NULL;
     }
 
-    return get_param(nn_url->u_query, name);
+    result = get_param(nn_url->u_query, name);
+
+    nng_url_free(nn_url);
+
+    return result;
 }
 
 int http_ok(nng_aio *aio, char *content)

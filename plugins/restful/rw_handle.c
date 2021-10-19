@@ -256,6 +256,7 @@ void handle_read_resp(void *cmd_resp)
     http_ok(ctx->aio, result);
     free(ctx);
     free(api_res.tags);
+    free(result);
 }
 
 void handle_write_resp(void *cmd_resp)
@@ -263,6 +264,9 @@ void handle_write_resp(void *cmd_resp)
     neu_request_t * req = (neu_request_t *) cmd_resp;
     struct cmd_ctx *ctx = write_find_ctx(req->req_id);
 
-    http_ok(ctx->aio, "{\"status\": \"OK\"}");
-    free(ctx);
+    if (ctx != NULL) {
+        http_ok(ctx->aio, "{\"status\": \"OK\"}");
+        free(ctx);
+    }
+    log_info("write resp id: %d, ctx: %p", req->req_id, ctx);
 }
