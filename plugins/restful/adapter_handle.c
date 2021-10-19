@@ -112,5 +112,13 @@ void handle_get_adapter(nng_aio *aio)
 
     free(result);
     free(nodes_res.nodes);
+
+    VECTOR_FOR_EACH(&nodes, iter)
+    {
+        neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
+
+        free(info->node_name);
+        index += 1;
+    }
     vector_uninit(&nodes);
 }

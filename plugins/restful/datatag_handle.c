@@ -130,8 +130,9 @@ void handle_update_tags(nng_aio *aio)
 
 void handle_get_tags(nng_aio *aio)
 {
-    neu_plugin_t *plugin    = neu_rest_get_plugin();
-    char *        s_node_id = http_get_param(aio, "node_id");
+    neu_plugin_t *plugin     = neu_rest_get_plugin();
+    char *        s_node_id  = strdup(http_get_param(aio, "node_id"));
+    char *        s_grp_name = http_get_param(aio, "group_config_name");
 
     if (s_node_id == NULL) {
         http_bad_request(aio, "{\"error\": 1}");
@@ -139,6 +140,7 @@ void handle_get_tags(nng_aio *aio)
     }
 
     neu_node_id_t node_id = (neu_node_id_t) atoi(s_node_id);
+    free(s_node_id);
 
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
     if (table == NULL) {
@@ -154,6 +156,11 @@ void handle_get_tags(nng_aio *aio)
             neu_taggrp_config_t *config =
                 *(neu_taggrp_config_t **) iterator_get(&iter);
             vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+            if (s_grp_name != NULL &&
+                strncmp(neu_taggrp_cfg_get_name(config), s_grp_name,
+                        strlen(s_grp_name)) != 0) {
+                break;
+            }
 
             tags_res.n_tag += ids->size;
         }
@@ -166,6 +173,11 @@ void handle_get_tags(nng_aio *aio)
             neu_taggrp_config_t *config =
                 *(neu_taggrp_config_t **) iterator_get(&iter);
             const char *group_name = neu_taggrp_cfg_get_name(config);
+
+            if (s_grp_name != NULL &&
+                strncmp(group_name, s_grp_name, strlen(s_grp_name)) != 0) {
+                break;
+            }
 
             vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
 
