@@ -23,8 +23,6 @@
 
 #include "neu_plugin.h"
 
-static uint32_t plugin_get_event_id(neu_plugin_common_t *common);
-
 #define NEU_PLUGIN_MAGIC_NUMBER 0x43474d50 // a string "PMGC"
 
 #define PLUGIN_CALL_CMD(plugin, type, req_buff, resp_struct, func)            \
@@ -34,7 +32,7 @@ static uint32_t plugin_get_event_id(neu_plugin_common_t *common);
         neu_plugin_common_t *plugin_common =                                  \
             neu_plugin_to_plugin_common(plugin);                              \
         cmd.req_type = (type);                                                \
-        cmd.req_id   = plugin_get_event_id(plugin_common);                    \
+        cmd.req_id   = neu_plugin_get_event_id(plugin);                       \
         cmd.buf      = (void *) &(req_buff);                                  \
         cmd.buf_len  = sizeof(req_buff);                                      \
         if (plugin_common->adapter_callbacks->command(                        \
@@ -56,10 +54,9 @@ static uint32_t plugin_get_event_id(neu_plugin_common_t *common);
         neu_plugin_common_t *plugin_common =                              \
             neu_plugin_to_plugin_common(plugin);                          \
         cmd.req_type = (type);                                            \
-        cmd.req_id   = plugin_get_event_id(plugin_common);                \
+        cmd.req_id   = (event_id);                                        \
         cmd.buf      = (void *) &(req_buff);                              \
         cmd.buf_len  = sizeof(req_buff);                                  \
-        (event_id)   = cmd.req_id;                                        \
         plugin_common->adapter_callbacks->command(plugin_common->adapter, \
                                                   &(cmd), NULL);          \
     }
@@ -90,8 +87,9 @@ static uint32_t plugin_get_event_id(neu_plugin_common_t *common);
                                                        &event);                \
     }
 
-static uint32_t plugin_get_event_id(neu_plugin_common_t *common)
+uint32_t neu_plugin_get_event_id(neu_plugin_t *plugin)
 {
+    neu_plugin_common_t *common = neu_plugin_to_plugin_common(plugin);
     common->event_id += 2; // for avoid check event_id == 0
     return common->event_id;
 }
@@ -272,25 +270,23 @@ uint32_t neu_plugin_send_unsubscribe_cmd(neu_plugin_t *       plugin,
     return event_id;
 }
 
-uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                  neu_taggrp_config_t *grp_configs)
+void neu_plugin_send_read_cmd(neu_plugin_t *plugin, uint32_t event_id,
+                              neu_node_id_t        node_id,
+                              neu_taggrp_config_t *grp_configs)
 {
-    uint32_t           event_id = 0;
     neu_reqresp_read_t read_req = { 0 };
 
     read_req.grp_config  = grp_configs;
     read_req.dst_node_id = node_id;
 
     PLUGIN_SEND_CMD(plugin, NEU_REQRESP_READ_DATA, read_req, event_id)
-
-    return event_id;
 }
 
-uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                   neu_taggrp_config_t *grp_configs,
-                                   neu_data_val_t *     data)
+void neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
+                               neu_node_id_t        node_id,
+                               neu_taggrp_config_t *grp_configs,
+                               neu_data_val_t *     data)
 {
-    uint32_t            event_id  = 0;
     neu_reqresp_write_t write_req = { 0 };
 
     write_req.grp_config  = grp_configs;
@@ -298,8 +294,6 @@ uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
     write_req.data_val    = data;
 
     PLUGIN_SEND_CMD(plugin, NEU_REQRESP_WRITE_DATA, write_req, event_id)
-
-    return event_id;
 }
 
 void neu_plugin_response_trans_data(neu_plugin_t *       plugin,

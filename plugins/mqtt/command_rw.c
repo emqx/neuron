@@ -40,7 +40,8 @@ void command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         return;
     }
 
-    uint32_t req_id = neu_plugin_send_read_cmd(plugin, req->node_id, config);
+    uint32_t req_id = neu_plugin_get_event_id(plugin);
+    neu_plugin_send_read_cmd(plugin, req_id, req->node_id, config);
     UNUSED(req_id);
 }
 
@@ -280,8 +281,8 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
         return -2;
     }
 
-    uint32_t req_id =
-        neu_plugin_send_write_cmd(plugin, dest_node_id, config, write_val);
+    uint32_t req_id = neu_plugin_get_event_id(plugin);
+    neu_plugin_send_write_cmd(plugin, req_id, dest_node_id, config, write_val);
 
     return req_id;
 }

@@ -143,9 +143,9 @@ void handle_read(nng_aio *aio)
         aio, neu_parse_read_req_t, neu_parse_decode_read, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
-            uint32_t event_id =
-                neu_plugin_send_read_cmd(plugin, req->node_id, config);
+            uint32_t event_id = neu_plugin_get_event_id(plugin);
             read_add_ctx(event_id, aio);
+            neu_plugin_send_read_cmd(plugin, event_id, req->node_id, config);
         })
 }
 
@@ -157,10 +157,11 @@ void handle_write(nng_aio *aio)
         aio, neu_parse_write_req_t, neu_parse_decode_write, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
-            neu_data_val_t *data = neu_parse_write_req_to_val(req);
-            uint32_t        event_id =
-                neu_plugin_send_write_cmd(plugin, req->node_id, config, data);
+            neu_data_val_t *data     = neu_parse_write_req_to_val(req);
+            uint32_t        event_id = neu_plugin_get_event_id(plugin);
             write_add_ctx(event_id, aio);
+            neu_plugin_send_write_cmd(plugin, event_id, req->node_id, config,
+                                      data);
         })
 }
 
@@ -175,6 +176,7 @@ void handle_read_resp(void *cmd_resp)
     neu_int_val_t *          iv         = NULL;
     int32_t                  error_code = 0;
 
+    log_info("read resp id: %d, ctx: %p", req->req_id, ctx);
     assert(ctx != NULL);
 
     neu_dvalue_get_ref_array(resp->data_val, &array);
@@ -264,9 +266,10 @@ void handle_write_resp(void *cmd_resp)
     neu_request_t * req = (neu_request_t *) cmd_resp;
     struct cmd_ctx *ctx = write_find_ctx(req->req_id);
 
+    log_info("write resp id: %d, ctx: %p", req->req_id, ctx);
     if (ctx != NULL) {
         http_ok(ctx->aio, "{\"status\": \"OK\"}");
         free(ctx);
     }
-    log_info("write resp id: %d, ctx: %p", req->req_id, ctx);
+    assert(ctx != NULL);
 }

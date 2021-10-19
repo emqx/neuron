@@ -73,6 +73,8 @@ neu_plugin_to_plugin_common(neu_plugin_t *plugin)
 void neu_plugin_common_init(neu_plugin_common_t *common);
 bool neu_plugin_common_check(neu_plugin_t *plugin);
 
+uint32_t neu_plugin_get_event_id(neu_plugin_t *plugin);
+
 neu_datatag_table_t *neu_system_get_datatags_table(neu_plugin_t *plugin,
                                                    neu_node_id_t ndoe_id);
 intptr_t neu_system_add_node(neu_plugin_t *plugin, neu_node_type_e node_type,
@@ -95,22 +97,24 @@ neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
                                                   neu_node_id_t node_id,
                                                   const char *  name);
 // uninit vector
-vector_t neu_system_get_group_configs(neu_plugin_t *plugin,
-                                      neu_node_id_t node_id);
-uint32_t neu_plugin_send_unsubscribe_cmd(neu_plugin_t *       plugin,
-                                         neu_node_id_t        node_id,
-                                         neu_taggrp_config_t *grp_config);
-uint32_t neu_plugin_send_subscribe_cmd(neu_plugin_t *       plugin,
+vector_t      neu_system_get_group_configs(neu_plugin_t *plugin,
+                                           neu_node_id_t node_id);
+uint32_t      neu_plugin_send_unsubscribe_cmd(neu_plugin_t *       plugin,
+                                              neu_node_id_t        node_id,
+                                              neu_taggrp_config_t *grp_config);
+uint32_t      neu_plugin_send_subscribe_cmd(neu_plugin_t *       plugin,
+                                            neu_node_id_t        node_id,
+                                            neu_taggrp_config_t *grp_config);
+void          neu_plugin_send_read_cmd(neu_plugin_t *plugin, uint32_t event_id,
                                        neu_node_id_t        node_id,
-                                       neu_taggrp_config_t *grp_config);
-uint32_t neu_plugin_send_read_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                  neu_taggrp_config_t *grp_configs);
-uint32_t neu_plugin_send_write_cmd(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                   neu_taggrp_config_t *grp_configs,
-                                   neu_data_val_t *     data);
-void     neu_plugin_response_trans_data(neu_plugin_t *       plugin,
-                                        neu_taggrp_config_t *grp_config,
-                                        neu_data_val_t *data, uint32_t event_id);
+                                       neu_taggrp_config_t *grp_configs);
+void          neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
+                                        neu_node_id_t        node_id,
+                                        neu_taggrp_config_t *grp_configs,
+                                        neu_data_val_t *     data);
+void          neu_plugin_response_trans_data(neu_plugin_t *       plugin,
+                                             neu_taggrp_config_t *grp_config,
+                                             neu_data_val_t *data, uint32_t event_id);
 neu_node_id_t neu_plugin_self_node_id(neu_plugin_t *plugin);
 
 intptr_t neu_system_add_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
