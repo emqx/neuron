@@ -604,6 +604,8 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     int      rc;
     ssize_t  size;
     uint8_t *buf;
+    int8_t * i8_set_buf;
+    int8_t * i8_get_buf;
 
     neu_fixed_array_t *array_set;
     int8_t             i8_arr[4] = { 2, 7, 1, 8 };
@@ -614,10 +616,11 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     neu_fixed_array_set(array_set, 3, &i8_arr[3]);
 
     neu_data_val_t *val = neu_dvalue_unit_new();
-    neu_dvalue_init_move_array(val, NEU_DTYPE_INT8, array_set);
+    neu_dvalue_init_ref_array(val, NEU_DTYPE_INT8, array_set);
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
+    i8_set_buf = (int8_t *) array_set->buf;
 
     neu_data_val_t *val1;
     size = neu_dvalue_deserialize(buf, size, &val1);
@@ -625,9 +628,13 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     neu_fixed_array_t *array_get;
     rc = neu_dvalue_get_move_array(val1, &array_get);
     EXPECT_EQ(0, rc);
-    // TODO: assert two array is euqal
+    i8_get_buf = (int8_t *) array_get->buf;
+    EXPECT_EQ(0, memcmp(array_set->buf, array_get->buf, array_get->length));
+    EXPECT_EQ(array_set->esize, array_get->esize);
+    EXPECT_EQ(array_set->length, array_get->length);
 
     free(buf);
+    neu_fixed_array_free(array_set);
     neu_fixed_array_free(array_get);
     neu_dvalue_free(val1);
 }

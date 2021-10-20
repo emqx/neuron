@@ -81,6 +81,32 @@ static bool type_has_pointer(neu_dtype_e type)
     }
 }
 
+/*
+ * The parameter type is value type
+ */
+static bool type_has_allocated_value(neu_dtype_e type)
+{
+    neu_dtype_e val_type;
+    bool        need_allocate;
+
+    need_allocate = false;
+    val_type      = neu_value_type_in_dtype(type);
+    switch (val_type) {
+    case NEU_DTYPE_INT_VAL:
+        need_allocate = true;
+        break;
+
+    case NEU_DTYPE_STRING_VAL:
+        need_allocate = true;
+        break;
+
+    default:
+        break;
+    }
+
+    return need_allocate;
+}
+
 static void *allocate_buf_for_type(neu_dtype_e type)
 {
     neu_dtype_e val_type;
@@ -1715,6 +1741,73 @@ static size_t dvalue_get_serialized_size(neu_data_val_t *val)
     return size + data_size;
 }
 
+static void *value_union_to_void_ptr(void *val_union, neu_dtype_e val_type)
+{
+    neu_value_union_t value;
+
+    val_type &= ~(NEU_DTYPE_ARRAY | NEU_DTYPE_VEC);
+    if (type_has_pointer(val_type)) {
+        return val_union;
+    }
+
+    value.val_data = NULL;
+    switch (val_type) {
+    case NEU_DTYPE_BIT:
+        value.val_uint8 = *(uint8_t *) val_union;
+        break;
+
+    case NEU_DTYPE_BOOL:
+        value.val_bool = *(bool *) val_union;
+        break;
+
+    case NEU_DTYPE_INT8:
+        value.val_int8 = *(int8_t *) val_union;
+        break;
+
+    case NEU_DTYPE_INT16:
+        value.val_int16 = *(int16_t *) val_union;
+        break;
+
+    case NEU_DTYPE_INT32:
+        value.val_int32 = *(int32_t *) val_union;
+        break;
+
+    case NEU_DTYPE_INT64:
+        value.val_int64 = *(int64_t *) val_union;
+        break;
+
+    case NEU_DTYPE_UINT8:
+        value.val_uint8 = *(uint8_t *) val_union;
+        break;
+
+    case NEU_DTYPE_UINT16:
+        value.val_uint16 = *(uint16_t *) val_union;
+        break;
+
+    case NEU_DTYPE_UINT32:
+        value.val_uint32 = *(uint32_t *) val_union;
+        break;
+
+    case NEU_DTYPE_UINT64:
+        value.val_uint64 = *(uint64_t *) val_union;
+        break;
+
+    case NEU_DTYPE_FLOAT:
+        value.val_float = *(float *) val_union;
+        break;
+
+    case NEU_DTYPE_DOUBLE:
+        value.val_double = *(double *) val_union;
+        break;
+
+    default:
+        neu_panic("Unspport value type for convert to value union");
+        break;
+    }
+
+    return value.val_data;
+}
+
 static ssize_t do_dvalue_serialize(neu_data_val_t *val, uint8_t *buf);
 
 #define prim_val_serial_case(upcase_type, locase_type, locase_type_t) \
@@ -1845,12 +1938,20 @@ static ssize_t value_data_serialize(void *val_data, uint8_t *buf,
             void *  item_ptr;
 
             item_ptr = neu_fixed_array_get(array, index);
-            if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(type)) {
+            if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(valid_type)) {
                 neu_data_val_t *sub_val;
                 sub_val   = *(neu_data_val_t **) item_ptr;
                 data_size = do_dvalue_serialize(sub_val, cur_ptr);
             } else {
-                data_size = value_data_serialize(item_ptr, cur_ptr, data_type);
+                void *sub_val_data;
+                if (type_has_allocated_value(valid_type)) {
+                    sub_val_data = item_ptr;
+                } else {
+                    sub_val_data =
+                        value_union_to_void_ptr(item_ptr, valid_type);
+                }
+                data_size =
+                    value_data_serialize(sub_val_data, cur_ptr, data_type);
             }
 
             if (data_size < 0) {
@@ -1879,12 +1980,20 @@ static ssize_t value_data_serialize(void *val_data, uint8_t *buf,
             void *  item_ptr;
 
             item_ptr = iterator_get(&iter);
-            if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(type)) {
+            if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(valid_type)) {
                 neu_data_val_t *sub_val;
                 sub_val   = *(neu_data_val_t **) item_ptr;
                 data_size = do_dvalue_serialize(sub_val, cur_ptr);
             } else {
-                data_size = value_data_serialize(item_ptr, cur_ptr, data_type);
+                void *sub_val_data;
+                if (type_has_allocated_value(valid_type)) {
+                    sub_val_data = item_ptr;
+                } else {
+                    sub_val_data =
+                        value_union_to_void_ptr(item_ptr, valid_type);
+                }
+                data_size =
+                    value_data_serialize(sub_val_data, cur_ptr, data_type);
             }
             if (data_size < 0) {
                 size = data_size;
@@ -2108,8 +2217,14 @@ static ssize_t data_value_deserialize(uint8_t *buf, size_t buf_len,
                     do_dvalue_deserialize(cur_ptr, buf_len - size, tmp_val);
                 *(neu_data_val_t **) item_ptr = tmp_val;
             } else {
+                void *sub_val_data;
+                if (type_has_allocated_value(val_type)) {
+                    sub_val_data = &item_ptr;
+                } else {
+                    sub_val_data = item_ptr;
+                }
                 data_size = data_value_deserialize(cur_ptr, buf_len - size,
-                                                   &item_ptr, data_type);
+                                                   sub_val_data, data_type);
             }
             if (data_size < 0) {
                 size = data_size;
@@ -2148,8 +2263,14 @@ static ssize_t data_value_deserialize(uint8_t *buf, size_t buf_len,
                     do_dvalue_deserialize(cur_ptr, buf_len - size, tmp_val);
                 *(neu_data_val_t **) item_ptr = tmp_val;
             } else {
+                void *sub_val_data;
+                if (type_has_allocated_value(val_type)) {
+                    sub_val_data = &item_ptr;
+                } else {
+                    sub_val_data = item_ptr;
+                }
                 data_size = data_value_deserialize(cur_ptr, buf_len - size,
-                                                   &item_ptr, data_type);
+                                                   sub_val_data, data_type);
             }
             if (data_size < 0) {
                 size = data_size;
