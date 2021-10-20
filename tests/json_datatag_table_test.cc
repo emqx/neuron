@@ -50,9 +50,9 @@ TEST(JsonDatatagTableTest, GetTagEncode)
     char *buf =
         (char
              *) "{\"tags\": [{\"name\": \"Tag0001\", \"type\": 0, \"address\": "
-                "\"1!400001\", \"attribute\": 0, \"tag_id\": 0}, {\"name\": "
+                "\"1!400001\", \"attribute\": 0, \"id\": 0}, {\"name\": "
                 "\"Tag0002\", \"type\": 1, \"address\": \"1!400002\", "
-                "\"attribute\": 0, \"tag_id\": 0}]}";
+                "\"attribute\": 0, \"id\": 0}]}";
     char *                   result = NULL;
     neu_parse_get_tags_res_t res    = { 0 };
 
@@ -86,7 +86,7 @@ TEST(JsonDatatagTableTest, DeleteTagDecode)
 {
     char *buf =
         (char *) "{\"node_id\": 123456, \"group_config_name\": \"name\", "
-                 "\"tag_ids\": [123, 456]}";
+                 "\"ids\": [123, 456]}";
     neu_parse_del_tags_req_t *req = NULL;
 
     EXPECT_EQ(0, neu_parse_decode_del_tags(buf, &req));
