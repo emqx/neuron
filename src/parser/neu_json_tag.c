@@ -110,7 +110,7 @@ int neu_parse_decode_del_tags(char *buf, neu_parse_del_tags_req_t **result)
     req->node_id           = elem[0].v.val_int;
     req->group_config_name = elem[1].v.val_str;
 
-    req->n_tag_id = neu_json_decode_array_size(buf, "tag_ids");
+    req->n_tag_id = neu_json_decode_array_size(buf, "ids");
     req->tag_ids  = calloc(req->n_tag_id, sizeof(uint32_t));
     for (int i = 0; i < req->n_tag_id; i++) {
         neu_json_elem_t celem[] = {
@@ -120,8 +120,7 @@ int neu_parse_decode_del_tags(char *buf, neu_parse_del_tags_req_t **result)
             },
         };
 
-        neu_json_decode_array(buf, "tag_ids", i, NEU_JSON_ELEM_SIZE(celem),
-                              celem);
+        neu_json_decode_array(buf, "ids", i, NEU_JSON_ELEM_SIZE(celem), celem);
         req->tag_ids[i] = celem[0].v.val_int;
     }
 
@@ -175,7 +174,7 @@ int neu_parse_decode_update_tags(char *                        buf,
                                         .t    = NEU_JSON_INT,
                                     },
                                     {
-                                        .name = "tag_id",
+                                        .name = "id",
                                         .t    = NEU_JSON_INT,
                                     } };
 
@@ -263,7 +262,7 @@ int neu_parse_encode_get_tags(void *json_object, void *param)
                 .v.val_str = res->tags[i].group_config_name,
             },
             {
-                .name      = "tag_id",
+                .name      = "id",
                 .t         = NEU_JSON_INT,
                 .v.val_int = res->tags[i].id,
             },
