@@ -140,4 +140,3 @@ add_subdirectory(plugins/opcua)
 # define for tests
 enable_testing()
 add_subdirectory(tests)
-# add_subdirectory(tests/plugins/mqtt)
