@@ -247,7 +247,10 @@ static void free_vector_sub_value(vector_t *vec, neu_dtype_e type)
 
 void neu_dvalue_uninit(neu_data_val_t *val)
 {
-    if ((val->type & (NEU_DTYPE_EXTERN_PTR | NEU_DTYPE_OWNERED_PTR)) &&
+    neu_dtype_e allocated_flags;
+
+    allocated_flags = NEU_DTYPE_EXTERN_PTR | NEU_DTYPE_OWNERED_PTR;
+    if (((val->type & allocated_flags) == allocated_flags) &&
         val->val_data != NULL) {
 
         if (val->type & NEU_DTYPE_VEC) {
