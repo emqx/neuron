@@ -10,7 +10,7 @@ if [ $system == 'Linux' ];then
     fi
 fi
 
-lib_list=(nng jansson jwt paho MQTT-C openssl gtest open62541 yaml)
+lib_list=(nng jansson jwt MQTT-C openssl gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]};do
@@ -81,24 +81,6 @@ function build_jwt()
     ninja install
 
     echo "Leaving libjwt "
-    cd ../../
-}
-
-# paho.mqtt.c
-function build_paho()
-{
-    echo "Building paho.mqtt.c (v1.3.9)"
-    if [ ! -d paho.mqtt.c ];then
-        git clone -b v1.3.9 https://github.com/eclipse/paho.mqtt.c.git
-    fi
-    cd paho.mqtt.c
-    rm -rf build
-    mkdir build
-    cd build
-    cmake -G Ninja -DPAHO_BUILD_SAMPLES=FALSE  -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_SHARED=FALSE  -DPAHO_BUILD_STATIC=TRUE $ssl_lib_flag -DPAHO_HIGH_PERFORMANCE=TRUE -DCMAKE_BUILD_TYPE=Release  ..
-    ninja
-    ninja install
-    echo "Leaving paho.mqtt.c "
     cd ../../
 }
 

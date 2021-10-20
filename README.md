@@ -58,18 +58,6 @@ NEURON IIoT System for Industry 4.0
   $ ninja install
   ```
 
-- [paho-mqtt.c](https://github.com/eclipse/paho.mqtt.c/tree/v1.3.9)
-
-  ```shell
-  $ git clone -b v1.3.9 git@github.com:eclipse/paho.mqtt.c.git
-  $ cd paho.mqtt.c
-  $ mkdir build
-  $ cd build
-  $ cmake -G Ninja -DPAHO_BUILD_SAMPLES=FALSE  -DPAHO_WITH_SSL=TRUE -DPAHO_BUILD_SHARED=FALSE  -DPAHO_BUILD_STATIC=TRUE -DOPENSSL_ROOT_DIR={YOUR_OPENSSL_ROOT_DIR} -DPAHO_HIGH_PERFORMANCE=TRUE -DCMAKE_BUILD_TYPE=Release  ..
-  $ ninja
-  $ ninja install
-  ```
-
   [MQTT-C](https://github.com/LiamBindle/MQTT-C.git)
 
   ```shell

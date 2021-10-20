@@ -31,12 +31,8 @@
 
 #include "mqtt_client.h"
 #include "mqttc_client.h"
-#include "paho_client.h"
 
 #define UNUSED(x) (void) (x)
-
-#define MQTT_TYPE_PAHO 1;
-#define MQTT_TYPE_MQTTC 2;
 #define CONFIG_FILE "./neuron.yaml"
 #define CONFIG_NODE "mqtt"
 
@@ -62,7 +58,6 @@ struct context {
 struct neu_plugin {
     neu_plugin_common_t common;
     option_t            option;
-    paho_client_t *     paho;
     neu_list            context_list;
     int                 mqtt_client_type;
     void *              mqtt_client;
