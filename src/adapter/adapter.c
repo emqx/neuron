@@ -1052,3 +1052,13 @@ adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter)
 
     return adapter->type;
 }
+
+plugin_id_t neu_adapter_get_plugin_id(neu_adapter_t *adapter)
+{
+    if (adapter == NULL) {
+        plugin_id_t id = { 0 };
+        return id;
+    }
+
+    return adapter->plugin_id;
+}

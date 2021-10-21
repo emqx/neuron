@@ -157,17 +157,24 @@ int neu_parse_encode_get_nodes(void *json_object, void *param)
     void *                     array = NULL;
 
     for (int i = 0; i < res->n_node; i++) {
-        neu_json_elem_t nodes[] = { {
-                                        .name      = "name",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = res->nodes[i].name,
-                                    },
-                                    {
-                                        .name      = "id",
-                                        .t         = NEU_JSON_INT,
-                                        .v.val_int = res->nodes[i].id,
-                                    } };
-        array                   = neu_json_encode_array(array, nodes, 2);
+        neu_json_elem_t nodes[] = {
+            {
+                .name      = "name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = res->nodes[i].name,
+            },
+            {
+                .name      = "id",
+                .t         = NEU_JSON_INT,
+                .v.val_int = res->nodes[i].id,
+            },
+            {
+                .name      = "plugin_id",
+                .t         = NEU_JSON_INT,
+                .v.val_int = res->nodes[i].plugin_id,
+            },
+        };
+        array = neu_json_encode_array(array, nodes, NEU_JSON_ELEM_SIZE(nodes));
     }
     neu_json_elem_t elems[] = { {
         .name     = "nodes",

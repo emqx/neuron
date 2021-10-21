@@ -108,7 +108,7 @@ static const char *const manager_url = "inproc://neu_manager";
 #endif
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
-#define MODBUS_TCP_PLUGIN_NAME "modbus-plugin-tcp"
+#define MODBUS_TCP_PLUGIN_NAME "modbus-tcp-plugin"
 #define OPCUA_PLUGIN_NAME "opcua-plugin"
 
 // definition for adapter names
@@ -1538,6 +1538,8 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
             node_info.node_id =
                 neu_manager_adapter_id_to_node_id(manager, adapter_id);
             node_info.node_name = strdup(adapter_name);
+            node_info.plugin_id =
+                neu_adapter_get_plugin_id(reg_entity->adapter);
             vector_push_back(result_nodes, &node_info);
         }
     }
