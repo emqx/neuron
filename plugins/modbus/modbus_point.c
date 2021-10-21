@@ -437,7 +437,8 @@ static void insert_cmd(modbus_point_context_t *ctx, modbus_point_t *point)
     for (int i = 0; i < ctx->n_cmd; i++) {
         if (ctx->cmds[i].device == point->device &&
             ctx->cmds[i].function == function) {
-            if (ctx->cmds[i].start_addr + ctx->cmds[i].n_reg == point->addr) {
+            if (ctx->cmds[i].start_addr + ctx->cmds[i].n_reg == point->addr &&
+                ctx->cmds[i].n_reg < 126) {
                 exist = true;
                 if (point->value.type == MODBUS_B32) {
                     ctx->cmds[i].n_reg += 2;
