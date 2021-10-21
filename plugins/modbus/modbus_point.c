@@ -535,8 +535,9 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
         for (int i = 0; i < cmd->n_point; i++) {
             switch (cmd->points[i]->value.type) {
             case MODBUS_B16: {
-                uint16_t *ptr = (uint16_t *) (data + cmd->points[i]->addr -
-                                              cmd->start_addr);
+                uint16_t *ptr =
+                    (uint16_t *) ((uint16_t *) data + cmd->points[i]->addr -
+                                  cmd->start_addr);
                 cmd->points[i]->value.val.val_u16 = ntohs(*ptr);
                 log_info("get result16.... %d, %d %d",
                          cmd->points[i]->value.val.val_u16, cmd->start_addr,
@@ -544,10 +545,12 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
                 break;
             }
             case MODBUS_B32: {
-                uint16_t *ptrl = (uint16_t *) (data + cmd->points[i]->addr -
-                                               cmd->start_addr);
-                uint16_t *ptrh = (uint16_t *) (data + cmd->points[i]->addr -
-                                               cmd->start_addr + 2);
+                uint16_t *ptrl =
+                    (uint16_t *) ((uint16_t *) data + cmd->points[i]->addr -
+                                  cmd->start_addr);
+                uint16_t *ptrh =
+                    (uint16_t *) ((uint16_t *) data + cmd->points[i]->addr -
+                                  cmd->start_addr + 1);
                 cmd->points[i]->value.val.val_u32 =
                     ntohs(*ptrl) << 16 | ntohs(*ptrh);
 
