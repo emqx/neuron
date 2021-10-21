@@ -44,6 +44,7 @@ typedef struct {
 typedef struct {
     uint32_t id;
     char *   name;
+    uint32_t plugin_id;
 } neu_parse_get_nodes_res_node_t;
 
 typedef struct {

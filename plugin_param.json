@@ -1,0 +1,110 @@
+{
+	"plugins": [
+		"mqtt-plugin",
+		"modbus-tcp-plugin",
+		"opcua-plugin"
+	],
+	"mqtt-plugin": {
+		"params": [
+			"host",
+			"port"
+		],
+		"host": {
+			"description": "broker host",
+			"type": "string",
+			"default": "127.0.0.1",
+			"valid": {
+				"length": 30
+			}
+		},
+		"port": {
+			"description": "broker port",
+			"type": "int",
+			"default": 1883,
+			"valid": {
+				"min": 1,
+				"max": 65535
+			}
+		}
+	},
+	"opcua-plugin": {
+		"tag_type": [
+			2,
+			3,
+			4,
+			5,
+			6,
+			7,
+			8,
+			9,
+			10,
+			11,
+			12,
+			13,
+			14,
+			15
+		],
+		"params": [
+			"host",
+			"port"
+		],
+		"host": {
+			"description": "opcua host",
+			"type": "string",
+			"default": "127.0.0.1",
+			"valid": {
+				"length": 30
+			}
+		},
+		"port": {
+			"description": "opcua port",
+			"type": "int",
+			"default": 4840,
+			"valid": {
+				"min": 1,
+				"max": 65535
+			}
+		}
+	},
+	"modbus-tcp-plugin": {
+		"tag_type": [
+			4,
+			5,
+			6,
+			7,
+			8,
+			9,
+			10,
+			11,
+			14
+		],
+		"params": [
+			"host",
+			"port",
+			"server_mode"
+		],
+		"host": {
+			"description": "modbus host",
+			"type": "string",
+			"default": "127.0.0.1",
+			"valid": {
+				"length": 30
+			}
+		},
+		"port": {
+			"description": "modbus port",
+			"type": "int",
+			"default": 502,
+			"valid": {
+				"min": 1,
+				"max": 65535
+			}
+		},
+		"server_mode": {
+			"description": "server mode",
+			"type": "bool",
+			"default": false,
+			"valid": {}
+		}
+	}
+}

@@ -83,20 +83,30 @@ void handle_update_plugin(nng_aio *aio)
 
 void handle_get_plugin(nng_aio *aio)
 {
-    neu_plugin_t *              plugin     = neu_rest_get_plugin();
-    char *                      result     = NULL;
-    neu_parse_get_plugins_res_t plugin_res = { 0 };
-    int                         index      = 0;
+    neu_plugin_t *              plugin      = neu_rest_get_plugin();
+    neu_parse_get_plugins_res_t plugin_res  = { 0 };
+    char *                      s_plugin_id = http_get_param(aio, "plugin_id");
+    char *                      result      = NULL;
+    int                         index       = 0;
+    uint32_t                    plugin_id   = 0;
+    vector_t                    plugin_libs = neu_system_get_plugin(plugin);
 
-    vector_t plugin_libs = neu_system_get_plugin(plugin);
+    plugin_id = atoi(s_plugin_id);
 
     plugin_res.n_plugin = plugin_libs.size;
+    if (plugin_id > 0) {
+        plugin_res.n_plugin = 1;
+    }
     plugin_res.plugin_libs =
         calloc(plugin_res.n_plugin, sizeof(neu_parse_get_plugins_res_lib_t));
 
     VECTOR_FOR_EACH(&plugin_libs, iter)
     {
         plugin_lib_info_t *info = (plugin_lib_info_t *) iterator_get(&iter);
+
+        if (plugin_id > 0 && plugin_id != info->plugin_id.id_val) {
+            continue;
+        }
 
         plugin_res.plugin_libs[index].node_type   = info->node_type;
         plugin_res.plugin_libs[index].plugin_id   = info->plugin_id.id_val;

@@ -132,6 +132,7 @@ typedef enum neu_node_type {
 typedef struct neu_node_info {
     neu_node_id_t node_id;
     char *        node_name;
+    plugin_id_t   plugin_id;
     // TODO: add node attribute
 } neu_node_info_t;
 

@@ -101,8 +101,9 @@ void handle_get_adapter(nng_aio *aio)
     {
         neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
 
-        nodes_res.nodes[index].id   = info->node_id;
-        nodes_res.nodes[index].name = info->node_name;
+        nodes_res.nodes[index].id        = info->node_id;
+        nodes_res.nodes[index].name      = info->node_name;
+        nodes_res.nodes[index].plugin_id = info->plugin_id.id_val;
         index += 1;
     }
 

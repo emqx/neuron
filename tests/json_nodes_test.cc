@@ -35,10 +35,11 @@ TEST(JsonNodesTest, GetNodesDecode)
 
 TEST(JsonNodesTest, GetNodesEncode)
 {
-    char *buf = (char *) "{\"nodes\": "
-                         "[{\"name\": \"node1\", \"id\": 123}, "
-                         "{\"name\": \"node2\", \"id\": 456}, "
-                         "{\"name\": \"node3\", \"id\": 789}]}";
+    char *buf = (char *) "{\"nodes\": [{\"name\": \"node1\", \"id\": 123, "
+                         "\"plugin_id\": 0}, "
+                         "{\"name\": \"node2\", \"id\": 456, \"plugin_id\": "
+                         "0}, {\"name\": "
+                         "\"node3\", \"id\": 789, \"plugin_id\": 0}]}";
     char *                    result = NULL;
     neu_parse_get_nodes_res_t res    = {
         .n_node = 3,
