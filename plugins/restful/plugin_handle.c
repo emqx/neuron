@@ -91,7 +91,9 @@ void handle_get_plugin(nng_aio *aio)
     uint32_t                    plugin_id   = 0;
     vector_t                    plugin_libs = neu_system_get_plugin(plugin);
 
-    plugin_id = atoi(s_plugin_id);
+    if (s_plugin_id != NULL) {
+        plugin_id = atoi(s_plugin_id);
+    }
 
     plugin_res.n_plugin = plugin_libs.size;
     if (plugin_id > 0) {
