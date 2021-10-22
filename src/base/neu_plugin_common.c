@@ -422,3 +422,19 @@ int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
 
     return count;
 }
+
+intptr_t neu_plugin_node_config_setting(neu_plugin_t *plugin,
+                                        neu_node_id_t node_id,
+                                        const char *  setting)
+{
+    intptr_t               errorcode    = -1;
+    neu_cmd_node_setting_t node_setting = { 0 };
+
+    node_setting.node_id = node_id;
+    node_setting.setting = setting;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_NODE_SETTING, node_setting, intptr_t,
+                    { errorcode = (intptr_t) resp; })
+
+    return errorcode;
+}

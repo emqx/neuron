@@ -125,7 +125,6 @@ struct neu_adapter {
     uint32_t             new_req_id;
     plugin_id_t          plugin_id;
     plugin_kind_e        plugin_kind;
-    char *               plugin_lib_name;
     void *               plugin_lib; // handle of dynamic lib
     neu_plugin_module_t *plugin_module;
     neu_plugin_t *       plugin;
@@ -705,6 +704,16 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_NODE_SETTING: {
+        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_node_setting_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = neu_manager_adapter_config_setting(
+                                  adapter->manager, req_cmd->node_id,
+                                  req_cmd->setting);
+                          });
+        break;
+    }
+
     default:
         rv = -1;
         break;
@@ -888,13 +897,9 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->plugin_kind = info->plugin_kind;
     adapter->manager     = manager;
 
-    adapter->plugin_lib_name = strdup(info->plugin_lib_name);
-    if (adapter->name == NULL || adapter->plugin_lib_name == NULL) {
+    if (adapter->name == NULL || info->plugin_lib_name == NULL) {
         if (adapter->name != NULL) {
             free(adapter->name);
-        }
-        if (adapter->plugin_lib_name != NULL) {
-            free(adapter->plugin_lib_name);
         }
         nng_mtx_free(adapter->mtx);
         free(adapter);
@@ -904,11 +909,11 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
 
     void *               handle;
     neu_plugin_module_t *plugin_module;
-    handle = load_plugin_library(adapter->plugin_lib_name, adapter->plugin_kind,
-                                 &plugin_module);
+    handle = load_plugin_library((char *) info->plugin_lib_name,
+                                 adapter->plugin_kind, &plugin_module);
     if (handle == NULL) {
         neu_panic("Can't to load library(%s) for plugin(%s)",
-                  adapter->plugin_lib_name, adapter->name);
+                  info->plugin_lib_name, adapter->name);
     }
 
     neu_plugin_t *plugin;
@@ -953,9 +958,6 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     }
     if (adapter->name != NULL) {
         free(adapter->name);
-    }
-    if (adapter->plugin_lib_name != NULL) {
-        free(adapter->plugin_lib_name);
     }
     nng_mtx_free(adapter->mtx);
     free(adapter);
@@ -1061,4 +1063,23 @@ plugin_id_t neu_adapter_get_plugin_id(neu_adapter_t *adapter)
     }
 
     return adapter->plugin_id;
+}
+
+int neu_adapter_config(neu_adapter_t *adapter, neu_config_t *config)
+{
+    int rv = 0;
+
+    if (adapter == NULL) {
+        log_error("Config adapter with NULL adapter");
+        return -1;
+    }
+
+    if (adapter->plugin_module != NULL) {
+        const neu_plugin_intf_funs_t *intf_funs;
+
+        intf_funs = adapter->plugin_module->intf_funs;
+        intf_funs->config(adapter->plugin, config);
+    }
+
+    return rv;
 }

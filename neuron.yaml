@@ -8,7 +8,7 @@ mqtt:
   clean_session: 1
   broker:
     connection: tcp://
-    host: localhost
+    host: broker.emqx.io 
     port: 1883
 web:
   host: 0.0.0.0

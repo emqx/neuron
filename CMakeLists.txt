@@ -71,6 +71,7 @@ endif()
 
 # define neuron executalbe program
 aux_source_directory(src/parser NEURON_SRC_PARSE)
+aux_source_directory(src/schema NEURON_SRC_SCHEMA)
 set(NEURON_SOURCES
     src/main.c
     src/config.c
@@ -92,7 +93,7 @@ set(NEURON_SOURCES
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
-target_sources(neuron PRIVATE ${NEURON_SOURCES} ${NEURON_SRC_PARSE}) 
+target_sources(neuron PRIVATE ${NEURON_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_SCHEMA}) 
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 if(APPLE)
   target_link_libraries(neuron nng::nng jansson yaml neuron-base)
@@ -128,8 +129,9 @@ target_include_directories(neuron-base
 target_link_libraries(neuron-base vector-static csptr jansson crypto
                       ${CMAKE_THREAD_LIBS_INIT})
 
-#copy yaml to build
+#copy file for run and unit test
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINARY_DIR})
 
 # define for plugins
 add_subdirectory(plugins/sample)

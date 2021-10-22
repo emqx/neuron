@@ -73,6 +73,13 @@ int  neu_parse_decode_update_node(char *                        buf,
                                   neu_parse_update_node_req_t **result);
 void neu_parse_decode_update_node_free(neu_parse_update_node_req_t *req);
 
+typedef struct {
+    uint32_t node_id;
+} neu_parse_node_setting_req_t;
+int  neu_parse_decode_node_setting(char *                         buf,
+                                   neu_parse_node_setting_req_t **result);
+void neu_parse_decode_node_setting_free(neu_parse_node_setting_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif

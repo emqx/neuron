@@ -184,3 +184,32 @@ int neu_parse_encode_get_nodes(void *json_object, void *param)
 
     return neu_json_encode_field(json_object, elems, 1);
 }
+
+int neu_parse_decode_node_setting(char *                         buf,
+                                  neu_parse_node_setting_req_t **result)
+{
+    neu_parse_node_setting_req_t *req =
+        calloc(1, sizeof(neu_parse_node_setting_req_t));
+    neu_json_elem_t elem[] = {
+        {
+            .name = "node_id",
+            .t    = NEU_JSON_INT,
+        },
+    };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+    req->node_id = elem[0].v.val_int;
+
+    *result = req;
+
+    return 0;
+}
+
+void neu_parse_decode_node_setting_free(neu_parse_node_setting_req_t *req)
+{
+    free(req);
+}

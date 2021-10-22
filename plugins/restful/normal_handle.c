@@ -101,3 +101,20 @@ void handle_logout(nng_aio *aio)
 {
     (void) aio;
 }
+
+void handle_get_plugin_schema(nng_aio *aio)
+{
+    char  buf[4096] = { 0 };
+    FILE *fp        = fopen("./plugin_param_schema.json", "r");
+
+    if (fp == NULL) {
+        log_info("open ./plugin_param_schema.json error: %d", errno);
+        http_not_found(aio, "{\"status\": \"error\"}");
+        return;
+    }
+
+    fread(buf, 1, sizeof(buf), fp);
+    fclose(fp);
+
+    http_ok(aio, buf);
+}

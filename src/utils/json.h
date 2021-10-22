@@ -56,10 +56,13 @@ typedef struct neu_json_elem {
 
 #define NEU_JSON_ELEM_SIZE(elems) sizeof(elems) / sizeof(neu_json_elem_t)
 
-int neu_json_decode(char *buf, int size, neu_json_elem_t *ele);
-int neu_json_decode_array_size(char *buf, char *child);
-int neu_json_decode_array(char *buf, char *name, int index, int size,
-                          neu_json_elem_t *ele);
+int   neu_json_decode(char *buf, int size, neu_json_elem_t *ele);
+int   neu_json_decode_array_size(char *buf, char *child);
+int   neu_json_decode_array(char *buf, char *name, int index, int size,
+                            neu_json_elem_t *ele);
+void *neu_json_decode_new(char *buf);
+void  neu_json_decode_free(void *ob);
+int   neu_json_decode_value(void *object, neu_json_elem_t *ele);
 
 void *neu_json_encode_new();
 void  neu_json_encode_free(void *json_object);

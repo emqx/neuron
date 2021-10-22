@@ -1776,3 +1776,34 @@ neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
 
     return tag_table;
 }
+
+int neu_manager_adapter_config_setting(neu_manager_t *manager,
+                                       neu_node_id_t  node_id,
+                                       const char *   config)
+{
+    adapter_id_t          adapter_id = { 0 };
+    adapter_reg_entity_t *reg_entity = NULL;
+    int                   ret        = 0;
+    neu_config_t          neu_config = { .type = NEU_CONFIG_SETTING };
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+
+    if (reg_entity == NULL) {
+        log_error("Can't find matched src registered adapter");
+        nng_mtx_unlock(manager->adapters_mtx);
+        return -1;
+    }
+
+    neu_config.buf_len = strlen(config);
+    neu_config.buf     = strdup(config);
+
+    ret = neu_adapter_config(reg_entity->adapter, &neu_config);
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    free(neu_config.buf);
+
+    return ret;
+}
