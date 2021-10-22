@@ -539,7 +539,8 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     int ret = 0;
 
-    log_info("modbus config.............");
+    log_info("modbus config............. type: %d, config: %s", configs->type,
+             configs->buf);
 
     return ret;
 }

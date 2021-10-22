@@ -16,15 +16,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-#ifndef _NEU_PLUGIN_REST_ADAPTER_HANDLE_H_
-#define _NEU_PLUGIN_REST_ADAPTER_HANDLE_H_
 
-#include <nng/nng.h>
+#ifndef _NEU_JSON_PARAM_H
+#define _NEU_JSON_PARAM_H
 
-void handle_add_adapter(nng_aio *aio);
-void handle_del_adapter(nng_aio *aio);
-void handle_update_adapter(nng_aio *aio);
-void handle_get_adapter(nng_aio *aio);
-void handle_node_setting(nng_aio *aio);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "utils/json.h"
+
+int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
+                    ...);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

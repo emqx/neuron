@@ -13,7 +13,7 @@ TEST(JsonTest, DecodeField)
 
     result = neu_config_get_value((char *) "./neuron.yaml", 3, (char *) "mqtt",
                                   (char *) "broker", (char *) "host");
-    EXPECT_STREQ("localhost", result);
+    EXPECT_STREQ("broker.emqx.io", result);
     free(result);
 
     result = neu_config_get_value((char *) "./neuron.yaml", 3, (char *) "mqtt",

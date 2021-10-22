@@ -287,3 +287,28 @@ int neu_json_encode(void *json_object, char **str)
 
     return 0;
 }
+
+void *neu_json_decode_new(char *buf)
+{
+    json_error_t error;
+    json_t *     root = json_loads(buf, 0, &error);
+
+    if (root == NULL) {
+        log_error(
+            "json load error, line: %d, column: %d, position: %d, info: %s",
+            error.line, error.column, error.position, error.text);
+        return NULL;
+    }
+
+    return root;
+}
+
+void neu_json_decode_free(void *ob)
+{
+    json_decref(ob);
+}
+
+int neu_json_decode_value(void *object, neu_json_elem_t *ele)
+{
+    return decode_object(object, ele);
+}

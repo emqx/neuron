@@ -16,15 +16,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-#ifndef _NEU_PLUGIN_REST_ADAPTER_HANDLE_H_
-#define _NEU_PLUGIN_REST_ADAPTER_HANDLE_H_
 
-#include <nng/nng.h>
+#ifndef _NEU_SCHEMA_H_
+#define _NEU_SCHEMA_H_
 
-void handle_add_adapter(nng_aio *aio);
-void handle_del_adapter(nng_aio *aio);
-void handle_update_adapter(nng_aio *aio);
-void handle_get_adapter(nng_aio *aio);
-void handle_node_setting(nng_aio *aio);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdint.h>
+
+typedef enum neu_schema_valid_type {
+    NEU_SCHEMA_VALID_INT,
+    NEU_SCHEMA_VALID_REAL,
+    NEU_SCHEMA_VALID_STRING,
+    NEU_SCHEMA_VALID_ENUM,
+} neu_schema_valid_type_e;
+
+typedef struct neu_schema_valid neu_schema_valid_t;
+
+neu_schema_valid_t *neu_schema_load(char *buf, char *plugin);
+void                neu_schema_free(neu_schema_valid_t *v);
+int neu_schema_valid_param(neu_schema_valid_t *v, void *value, char *name,
+                           neu_schema_valid_type_e);
+int neu_schema_valid_tag_type(neu_schema_valid_t *v, uint8_t t);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

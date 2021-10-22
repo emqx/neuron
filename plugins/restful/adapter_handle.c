@@ -123,3 +123,25 @@ void handle_get_adapter(nng_aio *aio)
     }
     vector_uninit(&nodes);
 }
+
+void handle_node_setting(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_node_setting_req_t, neu_parse_decode_node_setting, {
+            char *   config_buf = calloc(req_data_size + 1, sizeof(char));
+            intptr_t err        = 0;
+
+            memcpy(config_buf, req_data, req_data_size);
+            err = neu_plugin_node_config_setting(plugin, req->node_id,
+                                                 config_buf);
+            free(config_buf);
+
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
+}

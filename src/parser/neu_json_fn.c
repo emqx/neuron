@@ -17,11 +17,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "utils/json.h"
 
 #include "neu_json_fn.h"
+#include "neu_json_param.h"
 
 int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result)
 {
@@ -73,4 +76,34 @@ int neu_parse_encode_error(void *json_object, void *param)
     };
 
     return neu_json_encode_field(json_object, elems, 1);
+}
+
+int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
+                    ...)
+{
+    void *          json       = neu_json_decode_new(buf);
+    neu_json_elem_t params_ele = { .name = "params", .t = NEU_JSON_OBJECT };
+    va_list         ap;
+    int             ret = 0;
+
+    if (neu_json_decode_value(json, &params_ele) != 0) {
+        neu_json_decode_free(json);
+        *err_param = strdup("params");
+        return -1;
+    }
+
+    va_start(ap, ele);
+    for (int i = 0; i < n; i++) {
+        neu_json_elem_t *tmp_ele = va_arg(ap, neu_json_elem_t *);
+        if (neu_json_decode_value(params_ele.v.object, tmp_ele) != 0) {
+            *err_param = strdup(tmp_ele->name);
+            ret        = -1;
+            break;
+        }
+    }
+
+    va_end(ap);
+
+    neu_json_decode_free(json);
+    return ret;
 }
