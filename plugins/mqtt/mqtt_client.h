@@ -24,6 +24,10 @@
 extern "C" {
 #endif
 
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
 typedef struct {
     /* debug app options */
     int   publisher; /* publisher app? */
@@ -48,7 +52,7 @@ typedef struct {
     char *password;
     char *host;
     char *port;
-    char *connection;
+    char *connection; // tcp://, ssl://, ws://, wss://
     int   keepalive;
 
     int keepalive_interval;
@@ -81,6 +85,8 @@ typedef struct {
 
 typedef enum {
     ClientSuccess = 0,
+    ClientNoCertfileSet,
+    ClientCertfileLoadFail,
     ClientIsNULL,
     ClientConnectFailure,
     ClientSubscribeTimeout,
@@ -90,11 +96,16 @@ typedef enum {
     ClientSubscribeAddListFailure,
     ClientUnsubscribeFailure,
     ClientPublishFailure,
-} client_error;
+} client_error_e;
 
 typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
                                  void *payload, const size_t len,
                                  void *context);
+
+SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path);
+void     ssl_ctx_uninit(SSL_CTX *ssl_ctx);
+int      mqtt_option_init(option_t *option);
+void     mqtt_option_uninit(option_t *option);
 
 #ifdef __cplusplus
 }

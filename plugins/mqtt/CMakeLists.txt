@@ -5,6 +5,7 @@ set(src
 	${PARSER_SRC} 
 	${CONFIG_SRC} 
 	plugin_mqtt.c 
+	mqtt_client.c
 	mqttc_client.c
 	common.c 
 	command_rw.c
@@ -16,6 +17,8 @@ add_library(plugin-mqtt SHARED ${src})
 target_include_directories(plugin-mqtt PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include)
+
+target_compile_definitions(plugin-mqtt PRIVATE MQTT_USE_BIO)
 
 target_link_libraries(plugin-mqtt 
 	neuron-base 

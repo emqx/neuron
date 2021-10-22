@@ -10,6 +10,10 @@ mqtt:
     connection: tcp://
     host: broker.emqx.io 
     port: 1883
+    ca_file:
+    ca_path:
+    username:
+    password:
 web:
   host: 0.0.0.0
   port: 7000

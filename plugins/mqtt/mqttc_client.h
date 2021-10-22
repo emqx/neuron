@@ -32,16 +32,17 @@ extern "C" {
 
 typedef struct mqttc_client mqttc_client_t;
 
-client_error mqttc_client_open(option_t *option, void *context,
-                               mqttc_client_t **p_client);
-client_error mqttc_client_is_connected(mqttc_client_t *client);
-client_error mqttc_client_subscribe(mqttc_client_t *client, const char *topic,
-                                    const int qos, subscribe_handle handle);
-client_error mqttc_client_unsubscribe(mqttc_client_t *client,
-                                      const char *    topic);
-client_error mqttc_client_publish(mqttc_client_t *client, const char *topic,
-                                  int qos, unsigned char *payload, size_t len);
-client_error mqttc_client_close(mqttc_client_t *client);
+client_error_e mqttc_client_open(option_t *option, void *context,
+                                 mqttc_client_t **p_client);
+client_error_e mqttc_client_is_connected(mqttc_client_t *client);
+client_error_e mqttc_client_subscribe(mqttc_client_t *client, const char *topic,
+                                      const int qos, subscribe_handle handle);
+client_error_e mqttc_client_unsubscribe(mqttc_client_t *client,
+                                        const char *    topic);
+client_error_e mqttc_client_publish(mqttc_client_t *client, const char *topic,
+                                    int qos, unsigned char *payload,
+                                    size_t len);
+client_error_e mqttc_client_close(mqttc_client_t *client);
 
 #ifdef __cplusplus
 }

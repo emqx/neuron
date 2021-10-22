@@ -21,7 +21,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#include <config.h>
 #include <neuron.h>
 
 #include "command_datatag.h"
@@ -33,13 +32,11 @@
 #include "mqttc_client.h"
 
 #define UNUSED(x) (void) (x)
-#define CONFIG_FILE "./neuron.yaml"
-#define CONFIG_NODE "mqtt"
 
 #define MQTT_SEND(client, topic, qos, json_str)                           \
     {                                                                     \
         if (NULL != json_str) {                                           \
-            client_error error = mqttc_client_publish(                    \
+            client_error_e error = mqttc_client_publish(                  \
                 client, topic, qos, (unsigned char *) json_str,           \
                 strlen(json_str));                                        \
             log_debug("Publish error code:%d, json:%s", error, json_str); \
@@ -62,114 +59,6 @@ struct neu_plugin {
     int                 mqtt_client_type;
     void *              mqtt_client;
 };
-
-static int mqtt_option_init(neu_plugin_t *plugin)
-{
-    char *clientid = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "id");
-    char *mqtt_version =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "mqtt_version");
-    char *topic = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "topic");
-    char *qos   = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "qos");
-    char *keepalive_interval =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "keepalive_interval");
-    char *clean_session =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "clean_session");
-    char *connection = neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE,
-                                            "broker", "connection");
-    char *host =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "host");
-    char *port =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "port");
-
-    // MQTT option
-    if (NULL == clientid) {
-        plugin->option.clientid = NULL; // Use random id
-    } else {
-        plugin->option.clientid = strdup(clientid);
-        free(clientid);
-    }
-
-    if (NULL == mqtt_version) {
-        plugin->option.MQTT_version = 4; // Version 3.1.1
-    } else {
-        plugin->option.MQTT_version = atoi(mqtt_version);
-        free(mqtt_version);
-    }
-
-    if (NULL == topic) {
-        return -1;
-    } else {
-        plugin->option.topic = strdup(topic);
-        free(topic);
-    }
-
-    if (NULL == qos) {
-        plugin->option.qos = 0;
-    } else {
-        plugin->option.qos = atoi(qos);
-        free(qos);
-    }
-
-    if (NULL == connection) {
-        plugin->option.connection = strdup("tcp://");
-    } else {
-        plugin->option.connection = strdup(connection);
-        free(connection);
-    }
-
-    if (NULL == host) {
-        return -2;
-    } else {
-        plugin->option.host = strdup(host);
-        free(host);
-    }
-
-    if (NULL == port) {
-        return -3;
-    } else {
-        plugin->option.port = strdup(port);
-        free(port);
-    }
-
-    if (NULL == keepalive_interval) {
-        plugin->option.keepalive_interval = 20;
-    } else {
-        plugin->option.keepalive_interval = atoi(keepalive_interval);
-        free(keepalive_interval);
-    }
-
-    if (NULL == clean_session) {
-        plugin->option.clean_session = 1;
-    } else {
-        plugin->option.clean_session = atoi(clean_session);
-        free(clean_session);
-    }
-
-    return 0;
-}
-
-static void mqtt_option_uninit(neu_plugin_t *plugin)
-{
-    if (NULL != plugin->option.clientid) {
-        free(plugin->option.clientid);
-    }
-
-    if (NULL != plugin->option.topic) {
-        free(plugin->option.topic);
-    }
-
-    if (NULL != plugin->option.connection) {
-        free(plugin->option.connection);
-    }
-
-    if (NULL != plugin->option.host) {
-        free(plugin->option.host);
-    }
-
-    if (NULL != plugin->option.port) {
-        free(plugin->option.port);
-    }
-}
 
 static void context_list_init(neu_list *list)
 {
@@ -432,6 +321,7 @@ static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
                   neu_plugin_module.module_name);
         return NULL;
     }
+    memset(plugin, 0, sizeof(neu_plugin_t));
 
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
@@ -452,20 +342,24 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     // Context list init
     context_list_init(&plugin->context_list);
 
-    int rc = mqtt_option_init(plugin);
+    int rc = mqtt_option_init(&plugin->option);
     if (0 != rc) {
-        log_error("mqtt option init fail:%d", rc);
+        log_error("MQTT option init fail:%d, initialize plugin failed: %s", rc,
+                  neu_plugin_module.module_name);
         return -1;
     }
 
     // MQTT-C client setup
-    client_error error = mqttc_client_open(
+    client_error_e error = mqttc_client_open(
         &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
-    log_info("mqttc open:%d", error);
-
     error = mqttc_client_subscribe(plugin->mqtt_client, "neuronlite/request", 0,
                                    plugin_response_handle);
-    log_info("mqttc subscribe:%d", error);
+    if (ClientIsNULL == error) {
+        log_error(
+            "Can not create mqtt client instance, initialize plugin failed: %s",
+            neu_plugin_module.module_name);
+        return -1;
+    }
 
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
@@ -475,7 +369,7 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     mqttc_client_close(plugin->mqtt_client);
-    mqtt_option_uninit(plugin);
+    mqtt_option_uninit(&plugin->option);
     context_list_destroy(&plugin->context_list);
     return 0;
 }
