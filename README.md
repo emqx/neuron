@@ -65,7 +65,7 @@ NEURON IIoT System for Industry 4.0
   $ cd MQTT-C
   $ mkdir build
   $ cd build
-  $ cmake -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
+  $ cmake -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON ..
   $ ninja
   $ ninja install
   ```
