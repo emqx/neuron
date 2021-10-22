@@ -24,12 +24,43 @@
 extern "C" {
 #endif
 
-#define NEU_ERRORCODE_NONE 0x00000000
-#define NEU_ERRORCODE_OUTOFMEMORY 0xA0000000
-
 typedef enum {
     NEU_ERR_SUCCESS = 0,
-    NEU_ERR_FAILURE = -1,
+
+    NEU_ERR_EINTR        = -1,
+    NEU_ERR_ENOMEM       = -2,
+    NEU_ERR_EINVAL       = -3,
+    NEU_ERR_EBUSY        = -4,
+    NEU_ERR_ETIMEDOUT    = -5,
+    NEU_ERR_ECONNREFUSED = -6,
+    NEU_ERR_ECLOSED      = -7,
+    NEU_ERR_EAGAIN       = -8,
+    NEU_ERR_ENOTSUP      = -9,
+    NEU_ERR_EADDRINUSE   = -10,
+    NEU_ERR_ESTATE       = -11,
+    NEU_ERR_ENOENT       = -12,
+    NEU_ERR_EPROTO       = -13,
+    NEU_ERR_EUNREACHABLE = -14,
+    NEU_ERR_EADDRINVAL   = -15,
+    NEU_ERR_EPERM        = -16,
+    NEU_ERR_EMSGSIZE     = -17,
+    NEU_ERR_ECONNABORTED = -18,
+    NEU_ERR_ECONNRESET   = -19,
+    NEU_ERR_ECANCELED    = -20,
+    NEU_ERR_ENOFILES     = -21,
+    NEU_ERR_ENOSPC       = -22,
+    NEU_ERR_EEXIST       = -23,
+    NEU_ERR_EREADONLY    = -24,
+    NEU_ERR_EWRITEONLY   = -25,
+    NEU_ERR_ECRYPTO      = -26,
+    NEU_ERR_EPEERAUTH    = -27,
+    NEU_ERR_ENOARG       = -28,
+    NEU_ERR_EAMBIGUOUS   = -29,
+    NEU_ERR_EBADTYPE     = -30,
+    NEU_ERR_ECONNSHUT    = -31,
+
+    NEU_ERR_EINTERNAL = -1000, // A neuron interanl error
+    NEU_ERR_FAILURE   = -1001  // A general error
 } neu_err_code_e;
 
 #ifdef __cplusplus

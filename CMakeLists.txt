@@ -109,6 +109,7 @@ set(NEURON_BASE_SOURCES
     src/base/neu_tag_group_config.c
     src/base/neu_plugin_common.c
     src/base/neu_data_expr.c
+    src/base/neu_errcodes.c
     src/connection/tcp_client.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
