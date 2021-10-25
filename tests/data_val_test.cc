@@ -631,17 +631,13 @@ TEST(DataValueTest, neu_dvalue_keyvalue_deser)
 
 TEST(DataValueTest, neu_dvalue_array_deser)
 {
-    int      rc;
     ssize_t  size;
     uint8_t *buf;
     int8_t * i8_set_buf;
     int8_t * i8_get_buf;
 
-    neu_fixed_array_t *array_set;
-    neu_fixed_array_t *array_get_ref;
-
-    int8_t i8_arr[4] = { 2, 7, 1, 8 };
-    array_set        = neu_fixed_array_new(4, sizeof(int8_t));
+    int8_t             i8_arr[4] = { 2, 7, 1, 8 };
+    neu_fixed_array_t *array_set = neu_fixed_array_new(4, sizeof(int8_t));
     neu_fixed_array_set(array_set, 0, &i8_arr[0]);
     neu_fixed_array_set(array_set, 1, &i8_arr[1]);
     neu_fixed_array_set(array_set, 2, &i8_arr[2]);
@@ -652,15 +648,12 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     size = neu_dvalue_serialize(val, &buf);
     EXPECT_LT(0, size);
     neu_dvalue_free(val);
-    i8_set_buf = (int8_t *) array_set->buf;
 
     neu_data_val_t *val1;
-    size = neu_dvalue_deserialize(buf, size, &val1);
-    EXPECT_LT(0, size);
+    EXPECT_LT(0, neu_dvalue_deserialize(buf, size, &val1));
     neu_fixed_array_t *array_get;
-    rc = neu_dvalue_get_move_array(val1, &array_get);
-    EXPECT_EQ(0, rc);
-    i8_get_buf = (int8_t *) array_get->buf;
+    EXPECT_EQ(0, neu_dvalue_get_move_array(val1, &array_get));
+    // i8_get_buf = (int8_t *) array_get->buf;
     EXPECT_EQ(0, memcmp(array_set->buf, array_get->buf, array_get->length));
     EXPECT_EQ(array_set->esize, array_get->esize);
     EXPECT_EQ(array_set->length, array_get->length);
@@ -670,6 +663,69 @@ TEST(DataValueTest, neu_dvalue_array_deser)
     neu_fixed_array_free(array_get);
     neu_dvalue_free(val1);
 }
+
+TEST(DataValueTest, neu_dvalue_2D_array_deser)
+{
+    uint8_t *buf = NULL;
+
+    int64_t i64_arr[2][3] = { { 3, 2, 1 }, { 6, 5, 4 } };
+
+    neu_fixed_array_t *array_set_2d =
+        neu_fixed_array_new(2, sizeof(neu_fixed_array_t));
+    neu_fixed_array_t *array_set_1 = neu_fixed_array_new(3, sizeof(int64_t));
+    neu_fixed_array_t *array_set_2 = neu_fixed_array_new(3, sizeof(int64_t));
+
+    neu_fixed_array_set(array_set_1, 0, &i64_arr[0][0]);
+    neu_fixed_array_set(array_set_1, 1, &i64_arr[0][1]);
+    neu_fixed_array_set(array_set_1, 2, &i64_arr[0][2]);
+    neu_fixed_array_set(array_set_2, 0, &i64_arr[1][0]);
+    neu_fixed_array_set(array_set_2, 1, &i64_arr[1][1]);
+    neu_fixed_array_set(array_set_2, 2, &i64_arr[1][2]);
+
+    neu_fixed_array_set(array_set_2d, 0, array_set_1);
+    neu_fixed_array_set(array_set_2d, 1, array_set_2);
+
+    neu_data_val_t *val = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(val, NEU_DTYPE_INT64, array_set_2d);
+    ssize_t size = neu_dvalue_serialize(val, &buf);
+    EXPECT_LT(0, size);
+    neu_dvalue_free(val);
+
+    neu_data_val_t *val_des = NULL;
+    EXPECT_LT(0, neu_dvalue_deserialize(buf, size, &val_des));
+    neu_fixed_array_t *array_get = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_move_array(val_des, &array_get));
+
+    EXPECT_EQ(array_set_2d->esize, array_get->esize);
+    EXPECT_EQ(array_set_2d->length, array_get->length);
+    EXPECT_EQ(0, memcmp(array_set_2d->buf, array_get->buf, array_get->length));
+
+    neu_fixed_array_t *array_get_1 =
+        (neu_fixed_array_t *) neu_fixed_array_get(array_get, 0);
+    // Two values are not equal
+    EXPECT_EQ(array_set_1->esize, array_get_1->esize);
+    EXPECT_EQ(array_set_1->length, array_get_1->length);
+    EXPECT_EQ(0,
+              memcmp(array_set_1->buf, array_get_1->buf, array_get_1->length));
+
+    neu_fixed_array_t *array_get_2 =
+        (neu_fixed_array_t *) neu_fixed_array_get(array_get, 1);
+    // Two values are not equal
+    EXPECT_EQ(array_set_2->esize, array_get_2->esize);
+    EXPECT_EQ(array_set_2->length, array_get_2->length);
+    // heap-buffer-overflow
+    EXPECT_EQ(0,
+              memcmp(array_set_2->buf, array_get_2->buf, array_get_2->length));
+
+    free(buf);
+    neu_fixed_array_free(array_set_1);
+    neu_fixed_array_free(array_set_2);
+    neu_fixed_array_free(array_set_2d);
+    neu_fixed_array_free(array_get);
+    neu_dvalue_free(val_des);
+}
+
+TEST(DataValuTest, neu_dvalue_3D_array_deser) { }
 
 TEST(DataValueTest, neu_dvalue_vec_deser)
 {
