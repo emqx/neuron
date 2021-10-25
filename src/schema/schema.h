@@ -37,8 +37,15 @@ typedef struct neu_schema_valid neu_schema_valid_t;
 
 neu_schema_valid_t *neu_schema_load(char *buf, char *plugin);
 void                neu_schema_free(neu_schema_valid_t *v);
-int neu_schema_valid_param(neu_schema_valid_t *v, void *value, char *name,
-                           neu_schema_valid_type_e);
+
+int neu_schema_valid_param_int(neu_schema_valid_t *v, int64_t value,
+                               char *name);
+int neu_schema_valid_param_real(neu_schema_valid_t *v, double value,
+                                char *name);
+int neu_schema_valid_param_string(neu_schema_valid_t *v, char *value,
+                                  char *name);
+int neu_schema_valid_param_enum(neu_schema_valid_t *v, int64_t value,
+                                char *name);
 int neu_schema_valid_tag_type(neu_schema_valid_t *v, uint8_t t);
 
 #ifdef __cplusplus
