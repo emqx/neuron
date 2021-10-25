@@ -23,10 +23,10 @@
 
 #include <neuron.h>
 
-#include "command_datatag.h"
-#include "command_group_config.h"
-#include "command_node.h"
-#include "command_rw.h"
+#include "command/command_datatag.h"
+#include "command/command_group_config.h"
+#include "command/command_node.h"
+#include "command/command_rw.h"
 
 #include "mqtt_client.h"
 #include "mqttc_client.h"
