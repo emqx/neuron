@@ -721,7 +721,7 @@ TEST(DataValueTest, neu_dvalue_2D_array_deser)
     int64_t *int_get13 = (int64_t *) neu_fixed_array_get(get_array1, 2);
     EXPECT_EQ(1, *int_get13);
     neu_fixed_array_free(get_array1);
-    neu_dvalue_free(get_array_2d_val1);
+    neu_dvalue_free(*get_array_2d_val1);
 
     neu_data_val_t *get_array_2d_val2 =
         *(neu_data_val_t **) neu_fixed_array_get(array_get, 1);
@@ -734,7 +734,7 @@ TEST(DataValueTest, neu_dvalue_2D_array_deser)
     int64_t *int_get23 = (int64_t *) neu_fixed_array_get(get_array2, 2);
     EXPECT_EQ(4, *int_get23);
     neu_fixed_array_free(get_array2);
-    neu_dvalue_free(get_array_2d_val2);
+    neu_dvalue_free(*get_array_2d_val2);
 
     neu_fixed_array_free(array_set_1d1);
     neu_fixed_array_free(array_set_1d2);
