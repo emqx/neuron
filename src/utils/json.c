@@ -206,6 +206,46 @@ int neu_json_decode_array(char *buf, char *name, int index, int size,
     return 0;
 }
 
+int neu_json_decode_array_by_json(void *json, char *name, int index, int size,
+                                  neu_json_elem_t *ele)
+{
+    json_t *child  = NULL;
+    json_t *object = NULL;
+
+    object = json_object_get(json, name);
+    if (object == NULL) {
+        return -1;
+    }
+
+    child = json_array_get(object, index);
+    if (child == NULL) {
+        return -1;
+    }
+
+    for (int i = 0; i < size; i++) {
+        if (decode_object(child, &ele[i]) == -1) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int neu_json_decode_array_size_by_json(void *json, char *child)
+{
+    json_t *ob;
+    int     ret = -1;
+
+    ob = json_object_get(json, child);
+    if (ob != NULL && json_is_array(ob)) {
+        ret = json_array_size(ob);
+    } else {
+        log_error("json get array object fail, %s", child);
+    }
+
+    return ret;
+}
+
 int neu_json_decode_array_size(char *buf, char *child)
 {
     json_error_t error;
