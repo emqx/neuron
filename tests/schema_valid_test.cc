@@ -5,10 +5,12 @@
 #include "schema/schema.h"
 #include "utils/json.h"
 
+#define SCHEMA_FILE "./plugin_param_schema_test.json"
+
 TEST(JsonSchema, SchemaValidTagType)
 {
     char  buf[40960] = { 0 };
-    FILE *fp         = fopen("./plugin_param_schema.json", "r");
+    FILE *fp         = fopen(SCHEMA_FILE, "r");
     fread(buf, 1, sizeof(buf), fp);
     fclose(fp);
 
@@ -23,7 +25,7 @@ TEST(JsonSchema, SchemaValidTagType)
 TEST(JsonSchema, SchemaValidInt)
 {
     char  buf[40960] = { 0 };
-    FILE *fp         = fopen("./plugin_param_schema.json", "r");
+    FILE *fp         = fopen(SCHEMA_FILE, "r");
     fread(buf, 1, sizeof(buf), fp);
     fclose(fp);
 
@@ -39,7 +41,7 @@ TEST(JsonSchema, SchemaValidInt)
 TEST(JsonSchema, SchemaValidString)
 {
     char  buf[40960] = { 0 };
-    FILE *fp         = fopen("./plugin_param_schema.json", "r");
+    FILE *fp         = fopen(SCHEMA_FILE, "r");
     fread(buf, 1, sizeof(buf), fp);
     fclose(fp);
 
@@ -58,7 +60,7 @@ TEST(JsonSchema, SchemaValidString)
 TEST(JsonSchema, SchemaValidReal)
 {
     char  buf[40960] = { 0 };
-    FILE *fp         = fopen("./plugin_param_schema.json", "r");
+    FILE *fp         = fopen(SCHEMA_FILE, "r");
     fread(buf, 1, sizeof(buf), fp);
     fclose(fp);
 
@@ -74,7 +76,7 @@ TEST(JsonSchema, SchemaValidReal)
 TEST(JsonSchema, SchemaValidEnum)
 {
     char  buf[40960] = { 0 };
-    FILE *fp         = fopen("./plugin_param_schema.json", "r");
+    FILE *fp         = fopen(SCHEMA_FILE, "r");
     fread(buf, 1, sizeof(buf), fp);
     fclose(fp);
 

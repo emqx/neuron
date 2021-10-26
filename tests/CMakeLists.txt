@@ -100,7 +100,7 @@ target_include_directories(uuid_test PRIVATE
 target_link_libraries(uuid_test neuron-base gtest_main gtest crypto)
 
 #copy schema for test
-file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINARY_DIR}/tests)
+file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema_test.json DESTINATION ${CMAKE_BINARY_DIR}/tests)
 add_executable(schema_valid_test schema_valid_test.cc ${CMAKE_SOURCE_DIR}/src/schema/schema.c)
 target_include_directories(schema_valid_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
