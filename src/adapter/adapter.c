@@ -129,6 +129,7 @@ struct neu_adapter {
     neu_plugin_module_t *plugin_module;
     neu_plugin_t *       plugin;
     adapter_callbacks_t  cb_funs;
+    neu_config_t         node_setting;
 };
 
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
@@ -704,13 +705,27 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
-    case NEU_REQRESP_NODE_SETTING: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_node_setting_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_adapter_config_setting(
+    case NEU_REQRESP_SET_NODE_SETTING: {
+        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_set_node_setting_t,
+                          rv, NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = neu_manager_adapter_set_setting(
                                   adapter->manager, req_cmd->node_id,
                                   req_cmd->setting);
                           });
+        break;
+    }
+
+    case NEU_REQRESP_GET_NODE_SETTING: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_node_setting_t,
+            neu_cmd_get_node_setting_t, rv, NEU_REQRESP_GET_NODE_SETTING_RESP,
+            p_result, {
+                ret = calloc(1, sizeof(neu_reqresp_node_setting_t));
+
+                ret->result = neu_manager_adapter_get_setting(
+                    adapter->manager, req_cmd->node_id, &ret->setting);
+            });
+
         break;
     }
 
@@ -874,7 +889,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
         return NULL;
     }
 
-    adapter = malloc(sizeof(neu_adapter_t));
+    adapter = calloc(1, sizeof(neu_adapter_t));
     if (adapter == NULL) {
         log_error("Out of memeory for create adapter");
         return NULL;
@@ -1065,9 +1080,9 @@ plugin_id_t neu_adapter_get_plugin_id(neu_adapter_t *adapter)
     return adapter->plugin_id;
 }
 
-int neu_adapter_config(neu_adapter_t *adapter, neu_config_t *config)
+int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
 {
-    int rv = 0;
+    int rv = -1;
 
     if (adapter == NULL) {
         log_error("Config adapter with NULL adapter");
@@ -1078,8 +1093,31 @@ int neu_adapter_config(neu_adapter_t *adapter, neu_config_t *config)
         const neu_plugin_intf_funs_t *intf_funs;
 
         intf_funs = adapter->plugin_module->intf_funs;
-        intf_funs->config(adapter->plugin, config);
+        rv        = intf_funs->config(adapter->plugin, config);
+        if (rv == 0) {
+            adapter->node_setting.buf_len = config->buf_len;
+            adapter->node_setting.type    = config->type;
+
+            if (adapter->node_setting.buf != NULL)
+                free(adapter->node_setting.buf);
+            adapter->node_setting.buf = strdup(config->buf);
+        }
     }
 
     return rv;
+}
+
+int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
+{
+    if (adapter == NULL) {
+        log_error("Get Config adapter with NULL adapter");
+        return -1;
+    }
+
+    if (adapter->node_setting.buf != NULL) {
+        *config = strdup(adapter->node_setting.buf);
+        return 0;
+    }
+
+    return -1;
 }

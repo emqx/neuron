@@ -133,9 +133,11 @@ int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
                                       neu_datatag_table_t *tag_table,
                                       neu_attributetype_e  attribute);
 
-intptr_t neu_plugin_node_config_setting(neu_plugin_t *plugin,
-                                        neu_node_id_t node_id,
-                                        const char *  setting);
+intptr_t neu_plugin_set_node_setting(neu_plugin_t *plugin,
+                                     neu_node_id_t node_id,
+                                     const char *  setting);
+int32_t neu_plugin_get_node_setting(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                    char **setting);
 #ifdef __cplusplus
 }
 #endif

@@ -423,18 +423,33 @@ int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
     return count;
 }
 
-intptr_t neu_plugin_node_config_setting(neu_plugin_t *plugin,
-                                        neu_node_id_t node_id,
-                                        const char *  setting)
+intptr_t neu_plugin_set_node_setting(neu_plugin_t *plugin,
+                                     neu_node_id_t node_id, const char *setting)
 {
-    intptr_t               errorcode    = -1;
-    neu_cmd_node_setting_t node_setting = { 0 };
+    intptr_t                   errorcode    = -1;
+    neu_cmd_set_node_setting_t node_setting = { 0 };
 
     node_setting.node_id = node_id;
     node_setting.setting = setting;
 
-    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_NODE_SETTING, node_setting, intptr_t,
-                    { errorcode = (intptr_t) resp; })
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_SET_NODE_SETTING, node_setting,
+                    intptr_t, { errorcode = (intptr_t) resp; })
 
     return errorcode;
+}
+
+int32_t neu_plugin_get_node_setting(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                    char **setting)
+{
+    int32_t                    ret              = -1;
+    neu_cmd_get_node_setting_t get_node_setting = { 0 };
+
+    get_node_setting.node_id = node_id;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_NODE_SETTING, get_node_setting,
+                    neu_reqresp_node_setting_t, {
+                        ret      = resp->result;
+                        *setting = resp->setting;
+                    })
+    return ret;
 }
