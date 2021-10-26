@@ -2,8 +2,7 @@
 	"plugins": [
 		"mqtt-plugin",
 		"modbus-tcp-plugin",
-		"opcua-plugin",
-		"test-plugin"
+		"opcua-plugin"
 	],
 	"mqtt-plugin": {
 		"params": [
@@ -104,79 +103,12 @@
 				"max": 65535
 			}
 		},
-		"server_mode": {
-			"description": "server mode",
+		"connection_mode": {
+			"name": "connection mode",
+			"description": "false means neuron as the client, true means neuron as the server",
 			"type": "bool",
 			"default": false,
 			"valid": {}
-		}
-	},
-	"test-plugin": {
-		"tag_type": [
-			4,
-			5,
-			6,
-			7,
-			8,
-			9,
-			10,
-			11,
-			14
-		],
-		"params": [
-			"host",
-			"port",
-			"mode",
-			"baud_rate",
-			"real_param"
-		],
-		"host": {
-			"name": "host",
-			"description": "host",
-			"type": "string",
-			"default": "127.0.0.1",
-			"valid": {
-				"length": 30
-			}
-		},
-		"port": {
-			"name": "port",
-			"description": "port",
-			"type": "int",
-			"default": 502,
-			"valid": {
-				"min": 1024,
-				"max": 65535
-			}
-		},
-		"mode": {
-			"name": "mode",
-			"description": "mode",
-			"type": "bool",
-			"default": false,
-			"valid": {}
-		},
-		"baud_rate": {
-			"name": "baud rate",
-			"description": "port",
-			"type": "int",
-			"default": 9600,
-			"valid": {
-				"value": [
-					9600,
-					112800
-				]
-			}
-		},
-		"real_param": {
-			"name": "real param",
-			"description": "real",
-			"type": "real",
-			"default": 11.22,
-			"valid": {
-				"min": 1.1,
-				"max": 20.2
-			}
 		}
 	}
 }
