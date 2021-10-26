@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -38,8 +39,13 @@ struct subscribe_tuple {
 
 struct open62541_client {
     option_t *                    option;
+    pthread_mutex_t               mutex;
+    pthread_t                     thread;
+    UA_Boolean                    running;
     UA_Client *                   ua_client;
     UA_ClientConfig *             ua_config;
+    int                           connected;
+    UA_Boolean                    subscription_ready;
     UA_CreateSubscriptionResponse subscription_response;
     char                          server_url[MAX_SERVER_URL_LENGTH];
     void *                        user_data;
@@ -75,8 +81,8 @@ static UA_ByteString client_load_file(const char *const path)
     } else {
         file_contents.length = 0;
     }
-    fclose(fp);
 
+    fclose(fp);
     return file_contents;
 }
 
@@ -129,16 +135,21 @@ open62541_client_t *open62541_client_create(option_t *option, void *context)
     }
     memset(client, 0, sizeof(open62541_client_t));
 
-    client->option    = option;
-    client->user_data = context;
-    client->ua_client = UA_Client_new();
-    client->ua_config = UA_Client_getConfig(client->ua_client);
+    pthread_mutex_init(&client->mutex, NULL);
+    client->running            = true;
+    client->subscription_ready = false;
+    client->connected          = -1;
+    client->option             = option;
+    client->user_data          = context;
+    client->ua_client          = UA_Client_new();
+    client->ua_config          = UA_Client_getConfig(client->ua_client);
+    UA_LogLevel log_level      = UA_LOGLEVEL_ERROR;
+    client->ua_config->logger  = UA_Log_Stdout_withLevel(log_level);
 
     client_field_init(client);
     client_ssl_option_bind(client);
     client_connect_option_bind(client);
     UA_ClientConfig_setDefault(client->ua_config);
-
     return client;
 }
 
@@ -152,22 +163,81 @@ static void delete_subscription_callback(UA_Client *client,
     log_info("Subscription id %u was deleted", subscription_id);
 }
 
-static int client_create_subscription(open62541_client_t *client)
+static void client_open_subscription(open62541_client_t *client)
 {
+    if (client->subscription_ready) {
+        return;
+    }
+
     UA_CreateSubscriptionRequest request;
-    request                       = UA_CreateSubscriptionRequest_default();
+    request = UA_CreateSubscriptionRequest_default();
+
+    pthread_mutex_lock(&client->mutex);
     client->subscription_response = UA_Client_Subscriptions_create(
         client->ua_client, request, NULL, NULL, delete_subscription_callback);
+    pthread_mutex_unlock(&client->mutex);
+
     if (UA_STATUSCODE_GOOD !=
         client->subscription_response.responseHeader.serviceResult) {
-        UA_Client_disconnect(client->ua_client);
-        UA_Client_delete(client->ua_client);
-        return -1;
+        return;
     }
+
     log_info("Create subscription succeeded, id:%u",
              client->subscription_response.subscriptionId);
+    client->subscription_ready = true;
+}
 
-    return 0;
+static void client_close_subscription(open62541_client_t *client)
+{
+    if (client->subscription_ready) {
+        pthread_mutex_lock(&client->mutex);
+        UA_Client_Subscriptions_deleteSingle(
+            client->ua_client, client->subscription_response.subscriptionId);
+        pthread_mutex_unlock(&client->mutex);
+    }
+
+    client->subscription_ready = false;
+}
+
+static void *client_refresh(void *context)
+{
+    open62541_client_t *client = (open62541_client_t *) context;
+    UA_StatusCode       rc;
+    option_t *          option = client->option;
+
+    while (client->running) {
+        if (0 < strlen(option->username)) {
+            pthread_mutex_lock(&client->mutex);
+            rc =
+                UA_Client_connectUsername(client->ua_client, client->server_url,
+                                          option->username, option->password);
+            pthread_mutex_unlock(&client->mutex);
+        }
+
+        pthread_mutex_lock(&client->mutex);
+        rc = UA_Client_connect(client->ua_client, client->server_url);
+        pthread_mutex_unlock(&client->mutex);
+
+        if (UA_STATUSCODE_GOOD != rc) {
+            client->connected = -1;
+            UA_sleep_ms(1000);
+            client_close_subscription(client);
+            continue;
+        }
+
+        pthread_mutex_lock(&client->mutex);
+        UA_Client_run_iterate(client->ua_client, 0);
+        pthread_mutex_unlock(&client->mutex);
+
+        if (!client->subscription_ready) {
+            client->connected = 0;
+            client_open_subscription(client);
+        }
+
+        UA_sleep_ms(1000);
+    }
+
+    return NULL;
 }
 
 int open62541_client_connect(open62541_client_t *client)
@@ -176,28 +246,14 @@ int open62541_client_connect(open62541_client_t *client)
         return -1;
     }
 
-    int rc = -1;
-    if (0 < strlen(client->option->username)) {
-        rc = UA_Client_connectUsername(client->ua_client, client->server_url,
-                                       client->option->username,
-                                       client->option->password);
-        log_info("Connect with username");
-    } else {
-        rc = UA_Client_connect(client->ua_client, client->server_url);
-        log_info("Connect without username");
+    int rc =
+        pthread_create(&client->thread, NULL, client_refresh, (void *) client);
+    if (0 == rc) {
+        log_error("Create reconnect thread succeed");
+        return 0;
     }
 
-    if (UA_STATUSCODE_GOOD != rc) {
-        log_error("Connection trial failure, code:%d", rc);
-        return -1;
-    }
-
-    rc = client_create_subscription(client);
-    if (0 != rc) {
-        return -2;
-    }
-
-    return 0;
+    return -2;
 }
 
 int open62541_client_open(option_t *option, void *context,
@@ -220,18 +276,22 @@ int open62541_client_open(option_t *option, void *context,
 int open62541_client_is_connected(open62541_client_t *client)
 {
     UA_StatusCode connect_status;
+    pthread_mutex_lock(&client->mutex);
     UA_Client_getState(client->ua_client, NULL, NULL, &connect_status);
+    pthread_mutex_unlock(&client->mutex);
     return connect_status;
 }
 
 int open62541_client_disconnect(open62541_client_t *client)
 {
+    client_close_subscription(client);
+
     if (0 == open62541_client_is_connected(client)) {
+        pthread_mutex_lock(&client->mutex);
         UA_Client_disconnect(client->ua_client);
+        pthread_mutex_unlock(&client->mutex);
     }
 
-    UA_Client_Subscriptions_deleteSingle(
-        client->ua_client, client->subscription_response.subscriptionId);
     return 0;
 }
 
@@ -356,10 +416,14 @@ int open62541_client_read(open62541_client_t *client, vector_t *data)
     }
 
     // Send read
-    req.nodesToRead      = ids;
-    req.nodesToReadSize  = count;
+    req.nodesToRead     = ids;
+    req.nodesToReadSize = count;
+
+    pthread_mutex_lock(&client->mutex);
     UA_ReadResponse resp = UA_Client_Service_read(client->ua_client, req);
-    uint32_t        status_code = resp.responseHeader.serviceResult;
+    pthread_mutex_unlock(&client->mutex);
+
+    uint32_t status_code = resp.responseHeader.serviceResult;
     if (UA_STATUSCODE_GOOD != status_code || count != (int) resp.resultsSize) {
         log_error("Respons status code:%x", status_code);
         return -4;
@@ -491,8 +555,11 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
         return -2;
     }
 
+    pthread_mutex_lock(&client->mutex);
     UA_WriteResponse write_resp =
         UA_Client_Service_write(client->ua_client, write_req);
+    pthread_mutex_unlock(&client->mutex);
+
     if (write_resp.responseHeader.serviceResult != UA_STATUSCODE_GOOD) {
         UA_WriteRequest_clear(&write_req);
         UA_WriteResponse_clear(&write_resp);
@@ -555,11 +622,15 @@ int client_subscribe(open62541_client_t *client, opcua_node_t *node)
 
     UA_MonitoredItemCreateRequest monitor_request =
         UA_MonitoredItemCreateRequest_default(node_id);
+
+    pthread_mutex_lock(&client->mutex);
     UA_MonitoredItemCreateResult result =
         UA_Client_MonitoredItems_createDataChange(
             client->ua_client, client->subscription_response.subscriptionId,
             UA_TIMESTAMPSTORETURN_BOTH, monitor_request, name,
             client_handler_node_changed, NULL);
+    pthread_mutex_unlock(&client->mutex);
+
     if (UA_STATUSCODE_GOOD != result.statusCode) {
         log_error("Monitoring %s fail", node->name);
         return -1;
@@ -577,7 +648,6 @@ int client_subscribe(open62541_client_t *client, opcua_node_t *node)
 
     log_info("Monitoring %s succeeded, id:%u", node->name,
              result.monitoredItemId);
-
     return 0;
 }
 
@@ -649,13 +719,15 @@ int open62541_client_unsubscribe(open62541_client_t *client, vector_t *node)
 
 int open62541_client_destroy(open62541_client_t *client)
 {
+    pthread_mutex_destroy(&client->mutex);
+
     while (!neu_list_empty(&client->subscribe_list)) {
         subscribe_tuple_t *tuple = neu_list_first(&client->subscribe_list);
         neu_list_remove(&client->subscribe_list, tuple);
     }
 
     if (NULL != client->ua_client) {
-        UA_Client_delete(client->ua_client);
+        UA_Client_delete(client->ua_client); // No lock-unlock
     }
 
     free(client);
@@ -664,6 +736,8 @@ int open62541_client_destroy(open62541_client_t *client)
 
 int open62541_client_close(open62541_client_t *client)
 {
+    client->running = false;
+    pthread_join(client->thread, NULL);
     open62541_client_disconnect(client);
     open62541_client_destroy(client);
     return 0;
