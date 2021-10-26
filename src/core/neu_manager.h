@@ -64,8 +64,8 @@ neu_node_id_t        neu_manager_adapter_id_to_node_id(neu_manager_t *manager,
                                                        adapter_id_t   adapter_id);
 adapter_id_t         neu_manager_adapter_id_from_node_id(neu_manager_t *manager,
                                                          neu_node_id_t  node_id);
-int                  neu_manager_adapter_config_setting(neu_manager_t *manager,
-                                                        neu_node_id_t  node_id,
-                                                        const char *   config);
-
+int                  neu_manager_adapter_set_setting(neu_manager_t *manager,
+                                                     neu_node_id_t node_id, const char *config);
+int                  neu_manager_adapter_get_setting(neu_manager_t *manager,
+                                                     neu_node_id_t node_id, char **config);
 #endif

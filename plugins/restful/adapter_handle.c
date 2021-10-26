@@ -124,7 +124,7 @@ void handle_get_adapter(nng_aio *aio)
     vector_uninit(&nodes);
 }
 
-void handle_node_setting(nng_aio *aio)
+void handle_set_node_setting(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
@@ -134,8 +134,7 @@ void handle_node_setting(nng_aio *aio)
             intptr_t err        = 0;
 
             memcpy(config_buf, req_data, req_data_size);
-            err = neu_plugin_node_config_setting(plugin, req->node_id,
-                                                 config_buf);
+            err = neu_plugin_set_node_setting(plugin, req->node_id, config_buf);
             free(config_buf);
 
             if (err != 0) {
@@ -144,4 +143,27 @@ void handle_node_setting(nng_aio *aio)
                 http_ok(aio, "{\"error\": 0}");
             }
         })
+}
+
+void handle_get_node_setting(nng_aio *aio)
+{
+    neu_plugin_t *plugin    = neu_rest_get_plugin();
+    char *        s_node_id = http_get_param(aio, "node_id");
+    char *        setting   = NULL;
+    neu_node_id_t node_id   = 0;
+
+    if (s_node_id == NULL) {
+        http_bad_request(aio, "{\"error\": 1}");
+        return;
+    }
+
+    node_id = (neu_node_id_t) atoi(s_node_id);
+
+    if (neu_plugin_get_node_setting(plugin, node_id, &setting) != 0) {
+        http_not_found(aio, "{\"error\": 1}");
+        return;
+    }
+
+    http_ok(aio, setting);
+    free(setting);
 }
