@@ -11,15 +11,16 @@
 			"port"
 		],
 		"host": {
-			"description": "broker host",
+			"name": "host",
+			"description": "mqtt broker host",
 			"type": "string",
-			"default": "127.0.0.1",
 			"valid": {
 				"length": 30
 			}
 		},
 		"port": {
-			"description": "broker port",
+			"name": "port",
+			"description": "mqtt broker port",
 			"type": "int",
 			"default": 1883,
 			"valid": {
@@ -50,19 +51,20 @@
 			"port"
 		],
 		"host": {
-			"description": "opcua host",
+			"name": "host",
+			"description": "opcua server host",
 			"type": "string",
-			"default": "127.0.0.1",
 			"valid": {
 				"length": 30
 			}
 		},
 		"port": {
-			"description": "opcua port",
+			"name": "port",
+			"description": "opcua server port",
 			"type": "int",
 			"default": 4840,
 			"valid": {
-				"min": 1,
+				"min": 1024,
 				"max": 65535
 			}
 		}
@@ -85,15 +87,16 @@
 			"server_mode"
 		],
 		"host": {
-			"description": "modbus host",
+			"name": "host",
+			"description": "local ip in server mode, remote device ip in client mode",
 			"type": "string",
-			"default": "127.0.0.1",
 			"valid": {
 				"length": 30
 			}
 		},
 		"port": {
-			"description": "modbus port",
+			"name": "port",
+			"description": "local port in server mode, remote device port in client mode",
 			"type": "int",
 			"default": 502,
 			"valid": {
@@ -128,6 +131,7 @@
 			"real_param"
 		],
 		"host": {
+			"name": "host",
 			"description": "host",
 			"type": "string",
 			"default": "127.0.0.1",
@@ -136,6 +140,7 @@
 			}
 		},
 		"port": {
+			"name": "port",
 			"description": "port",
 			"type": "int",
 			"default": 502,
@@ -145,12 +150,14 @@
 			}
 		},
 		"mode": {
+			"name": "mode",
 			"description": "mode",
 			"type": "bool",
 			"default": false,
 			"valid": {}
 		},
 		"baud_rate": {
+			"name": "baud rate",
 			"description": "port",
 			"type": "int",
 			"default": 9600,
@@ -162,6 +169,7 @@
 			}
 		},
 		"real_param": {
+			"name": "real param",
 			"description": "real",
 			"type": "real",
 			"default": 11.22,
