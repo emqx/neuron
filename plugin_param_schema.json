@@ -5,10 +5,6 @@
 		"opcua-plugin"
 	],
 	"mqtt-plugin": {
-		"params": [
-			"host",
-			"port"
-		],
 		"host": {
 			"name": "host",
 			"description": "mqtt broker host",
@@ -45,10 +41,6 @@
 			14,
 			15
 		],
-		"params": [
-			"host",
-			"port"
-		],
 		"host": {
 			"name": "host",
 			"description": "opcua server host",
@@ -77,11 +69,6 @@
 			9,
 			11,
 			14
-		],
-		"params": [
-			"host",
-			"port",
-			"server_mode"
 		],
 		"host": {
 			"name": "host",
