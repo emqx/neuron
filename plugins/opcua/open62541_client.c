@@ -25,8 +25,8 @@
 #include <open62541.h>
 
 #include "open62541_client.h"
+#include "open62541_utils.h"
 
-#define UNUSED(x) (void) (x)
 #define MAX_SERVER_URL_LENGTH 200
 
 struct subscribe_tuple {
@@ -56,34 +56,6 @@ static int client_connect_option_bind(open62541_client_t *client)
 {
     UNUSED(client);
     return 0;
-}
-
-static UA_ByteString client_load_file(const char *const path)
-{
-    UA_ByteString file_contents = UA_STRING_NULL;
-
-    FILE *fp = fopen(path, "rb");
-    if (!fp) {
-        errno = 0;
-        return file_contents;
-    }
-
-    fseek(fp, 0, SEEK_END);
-    file_contents.length = (size_t) ftell(fp);
-    file_contents.data =
-        (UA_Byte *) UA_malloc(file_contents.length * sizeof(UA_Byte));
-    if (file_contents.data) {
-        fseek(fp, 0, SEEK_SET);
-        size_t read = fread(file_contents.data, sizeof(UA_Byte),
-                            file_contents.length, fp);
-        if (read != file_contents.length)
-            UA_ByteString_clear(&file_contents);
-    } else {
-        file_contents.length = 0;
-    }
-
-    fclose(fp);
-    return file_contents;
 }
 
 static int client_ssl_option_bind(open62541_client_t *client)
@@ -144,7 +116,7 @@ open62541_client_t *open62541_client_create(option_t *option, void *context)
     client->ua_client          = UA_Client_new();
     client->ua_config          = UA_Client_getConfig(client->ua_client);
     UA_LogLevel log_level      = UA_LOGLEVEL_ERROR;
-    client->ua_config->logger  = UA_Log_Stdout_withLevel(log_level);
+    client->ua_config->logger  = open62541_log_with_level(log_level);
 
     client_field_init(client);
     client_ssl_option_bind(client);
@@ -205,7 +177,16 @@ static void *client_refresh(void *context)
     UA_StatusCode       rc;
     option_t *          option = client->option;
 
-    while (client->running) {
+    UA_Boolean run_flag = true;
+    while (1) {
+        pthread_mutex_lock(&client->mutex);
+        run_flag = client->running;
+        pthread_mutex_unlock(&client->mutex);
+
+        if (!run_flag) {
+            break;
+        }
+
         if (0 < strlen(option->username)) {
             pthread_mutex_lock(&client->mutex);
             rc =
@@ -736,8 +717,12 @@ int open62541_client_destroy(open62541_client_t *client)
 
 int open62541_client_close(open62541_client_t *client)
 {
+    pthread_mutex_lock(&client->mutex);
     client->running = false;
+    pthread_mutex_unlock(&client->mutex);
+
     pthread_join(client->thread, NULL);
+
     open62541_client_disconnect(client);
     open62541_client_destroy(client);
     return 0;
