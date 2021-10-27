@@ -90,10 +90,21 @@
 		},
 		"connection_mode": {
 			"name": "connection mode",
-			"description": "false means neuron as the client, true means neuron as the server",
-			"type": "bool",
-			"default": false,
-			"valid": {}
+			"description": "neuron as the client, or as the server",
+			"type": "map",
+			"default": 0,
+			"valid": {
+				"map": [
+					{
+						"key": "client",
+						"value": 0
+					},
+					{
+						"key": "server",
+						"value": 1
+					}
+				]
+			}
 		}
 	}
 }
