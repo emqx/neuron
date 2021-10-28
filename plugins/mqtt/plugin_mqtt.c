@@ -372,10 +372,10 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     mqttc_client_close(plugin->mqtt_client);
     mqtt_option_uninit(&plugin->option);
     context_list_destroy(&plugin->context_list);
+    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 

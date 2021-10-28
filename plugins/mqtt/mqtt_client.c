@@ -129,25 +129,25 @@ int mqtt_option_init(option_t *option)
         free(port);
     }
 
-    if (NULL == username || 0 == strlen(username)) {
+    if (NULL == username) {
         option->username = NULL;
     } else {
         option->username = strdup(username);
     }
 
-    if (NULL == password || 0 == strlen(password)) {
+    if (NULL == password) {
         option->password = NULL;
     } else {
         option->password = strdup(password);
     }
 
-    if (NULL == ca_path || 0 == strlen(ca_path)) {
+    if (NULL == ca_path) {
         option->capath = NULL;
     } else {
         option->capath = strdup(ca_path);
     }
 
-    if (NULL == ca_file || 0 == strlen(ca_file)) {
+    if (NULL == ca_file) {
         option->cafile = NULL;
     } else {
         option->cafile = strdup(ca_file);
@@ -204,5 +204,21 @@ void mqtt_option_uninit(option_t *option)
 
     if (NULL != option->port) {
         free(option->port);
+    }
+
+    if (NULL != option->username) {
+        free(option->username);
+    }
+
+    if (NULL != option->password) {
+        free(option->password);
+    }
+
+    if (NULL != option->capath) {
+        free(option->capath);
+    }
+
+    if (NULL != option->cafile) {
+        free(option->cafile);
     }
 }

@@ -52,36 +52,34 @@ struct open62541_client {
     neu_list                      subscribe_list;
 };
 
+static int client_tcp_option_bind(open62541_client_t *client)
+{
+    UA_ClientConfig_setDefault(client->ua_config);
+    return 0;
+}
+
+// static int client_ssl_option_bind(open62541_client_t *client)
+// {
+//     option_t *    option = client->option;
+//     UA_ByteString certificate;
+//     UA_ByteString privatekey;
+//     if (NULL != option->cert_file && strlen(option->cert_file) > 0) {
+//         certificate = client_load_file(client->option->cert_file);
+//         privatekey  = client_load_file(client->option->key_file);
+//     } else {
+//         log_info("Load default cert and key");
+//         certificate = client_load_file(client->option->default_cert_file);
+//         privatekey  = client_load_file(client->option->default_key_file);
+//     }
+
+//     UA_ClientConfig_setDefaultEncryption(client->ua_config, certificate,
+//                                          privatekey, NULL, 0, NULL, 0);
+//     UA_ByteString_clear(&certificate);
+//     UA_ByteString_clear(&privatekey);
+//     return 0;
+// }
+
 static int client_connect_option_bind(open62541_client_t *client)
-{
-    UNUSED(client);
-    return 0;
-}
-
-static int client_ssl_option_bind(open62541_client_t *client)
-{
-    UA_ByteString certificate;
-    UA_ByteString privatekey;
-    if (strlen(client->option->cert_file) > 0) {
-        certificate = client_load_file(client->option->cert_file);
-        privatekey  = client_load_file(client->option->key_file);
-    } else {
-        log_info("Load default cert and key");
-        certificate = client_load_file(client->option->default_cert_file);
-        privatekey  = client_load_file(client->option->default_key_file);
-    }
-
-    UA_ClientConfig_setDefaultEncryption(client->ua_config, certificate,
-                                         privatekey, NULL, 0, NULL, 0);
-    UA_ByteString_clear(&certificate);
-    UA_ByteString_clear(&privatekey);
-
-    UNUSED(certificate);
-    UNUSED(privatekey);
-    return 0;
-}
-
-static int client_field_init(open62541_client_t *client)
 {
     if (NULL == client->option->host) {
         return -1;
@@ -89,8 +87,11 @@ static int client_field_init(open62541_client_t *client)
 
     NEU_LIST_INIT(&client->subscribe_list, subscribe_tuple_t, node);
 
-    sprintf(client->server_url, "opc.tcp://%s:%d", client->option->host,
+    sprintf(client->server_url, "opc.tcp://%s:%s", client->option->host,
             client->option->port);
+
+    client_tcp_option_bind(client);
+    // client_ssl_option_bind(client); // !!! not enable
     return 0;
 }
 
@@ -118,10 +119,7 @@ open62541_client_t *open62541_client_create(option_t *option, void *context)
     UA_LogLevel log_level      = UA_LOGLEVEL_ERROR;
     client->ua_config->logger  = open62541_log_with_level(log_level);
 
-    client_field_init(client);
-    client_ssl_option_bind(client);
     client_connect_option_bind(client);
-    UA_ClientConfig_setDefault(client->ua_config);
     return client;
 }
 
@@ -541,14 +539,17 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
         UA_Client_Service_write(client->ua_client, write_req);
     pthread_mutex_unlock(&client->mutex);
 
+    if (NEU_DTYPE_CSTR == data->type) {
+        UA_free(write_req.nodesToWrite[0].value.value.data);
+    }
+
     if (write_resp.responseHeader.serviceResult != UA_STATUSCODE_GOOD) {
         UA_WriteRequest_clear(&write_req);
         UA_WriteResponse_clear(&write_resp);
-        if (NEU_DTYPE_CSTR == data->type) {
-            UA_free(write_req.nodesToWrite[0].value.value.data);
-        }
+
         return -3;
     }
+
     UA_WriteRequest_clear(&write_req);
     UA_WriteResponse_clear(&write_resp);
     return 0;

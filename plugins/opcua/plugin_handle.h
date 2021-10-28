@@ -82,6 +82,7 @@ opcua_error_code_e
                                            subscribe_response_callback subscribe_cb);
 opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
                                              neu_taggrp_config_t * config);
+opcua_error_code_e plugin_handle_stop(opc_handle_context_t *context);
 
 #ifdef __cplusplus
 }

@@ -91,6 +91,24 @@ static int fixed_address(const char *address, int *identifier_type,
     return 0;
 }
 
+static void release_node_vector(vector_t *datas)
+{
+    if (NULL == datas) {
+        return;
+    }
+
+    VECTOR_FOR_EACH(datas, iter)
+    {
+        opcua_data_t *data = (opcua_data_t *) iterator_get(&iter);
+        if (NULL != data) {
+            if (NULL != data->opcua_node.identifier_str) {
+                free(data->opcua_node.identifier_str);
+                data->opcua_node.identifier_str = NULL;
+            }
+        }
+    }
+}
+
 static int generate_read_result_array(vector_t *datas, neu_fixed_array_t *array)
 {
     int           rc = 0;
@@ -166,6 +184,11 @@ static int generate_read_result_array(vector_t *datas, neu_fixed_array_t *array)
         case NEU_DTYPE_CSTR: {
             val = neu_dvalue_new(NEU_DTYPE_CSTR);
             neu_dvalue_set_cstr(val, data->value.value_string);
+
+            if (NULL != data->value.value_string) {
+                free(data->value.value_string);
+            }
+
             break;
         }
 
@@ -278,6 +301,7 @@ static void generate_write_node_vector(opc_handle_context_t *context,
         neu_datatag_t *datatag = get_datatag_by_id(context->table, id);
         if (NULL == datatag) {
             opcua_data_t write_data;
+            memset(&write_data, 0, sizeof(opcua_data_t));
             write_data.error = OPCUA_ERROR_DATATAG_NULL;
             vector_push_back(datas, &write_data);
             continue;
@@ -285,6 +309,7 @@ static void generate_write_node_vector(opc_handle_context_t *context,
 
         if (!vector_has_elem(datatag_ids, &id, tag_id_equal)) {
             opcua_data_t write_data;
+            memset(&write_data, 0, sizeof(opcua_data_t));
             write_data.error = OPCUA_ERROR_DATATAG_NOT_MATCH;
             vector_push_back(datas, &write_data);
             continue;
@@ -422,6 +447,8 @@ opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
         code = OPCUA_ERROR_CLIENT_OFFLINE;
         log_error("Open62541 client offline");
         SET_RESULT_ERRORCODE(resp_val, code);
+
+        release_node_vector(&datas);
         vector_uninit(&datas);
         return code;
     }
@@ -431,6 +458,8 @@ opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
         code = OPCUA_ERROR_READ_FAIL;
         log_error("Open62541 read error:%d", rc);
         SET_RESULT_ERRORCODE(resp_val, code);
+
+        release_node_vector(&datas);
         vector_uninit(&datas);
         return code;
     }
@@ -441,6 +470,9 @@ opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
         code = OPCUA_ERROR_ARRAY_NULL;
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
+
+        release_node_vector(&datas);
+        vector_uninit(&datas);
         return code;
     }
 
@@ -453,6 +485,7 @@ opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
     neu_fixed_array_set(array, 0, (void *) &int_val);
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
 
+    release_node_vector(&datas);
     vector_uninit(&datas);
     return code;
 }
@@ -484,8 +517,10 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
     if (0 != rc) {
         code = OPCUA_ERROR_CLIENT_OFFLINE;
         log_error("open62541 client offline");
-        vector_uninit(&datas);
         SET_RESULT_ERRORCODE(resp_val, code);
+
+        release_node_vector(&datas);
+        vector_uninit(&datas);
         return code;
     }
 
@@ -493,8 +528,10 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
     if (0 != rc) {
         code = OPCUA_ERROR_WRITE_FAIL;
         log_error("open62541 write error");
-        vector_uninit(&datas);
         SET_RESULT_ERRORCODE(resp_val, code);
+
+        release_node_vector(&datas);
+        vector_uninit(&datas);
         return code;
     }
 
@@ -503,8 +540,10 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
     if (NULL == resp_array) {
         code = OPCUA_ERROR_ARRAY_NULL;
         log_error("Failed to allocate array for response tags");
-        vector_uninit(&datas);
         neu_dvalue_free(resp_val);
+
+        release_node_vector(&datas);
+        vector_uninit(&datas);
         return code;
     }
 
@@ -517,6 +556,7 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
     neu_fixed_array_set(resp_array, 0, (void *) &int_val);
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, resp_array);
 
+    release_node_vector(&datas);
     vector_uninit(&datas);
     return code;
 }
@@ -639,6 +679,11 @@ static void stop_periodic_read(opc_subscribe_tuple_t *tuple)
     nng_aio_cancel(tuple->aio);
 }
 
+static void release_periodic_read(opc_subscribe_tuple_t *tuple)
+{
+    nng_aio_free(tuple->aio);
+}
+
 static void remove_subscribe(opc_subscribe_tuple_t *tuple)
 {
     if (NULL == tuple) {
@@ -668,5 +713,22 @@ opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
     stop_periodic_read(tuple);
     stop_opc_subscribe(context, config);
     remove_subscribe(tuple);
+    return code;
+}
+
+opcua_error_code_e plugin_handle_stop(opc_handle_context_t *context)
+{
+    opcua_error_code_e     code = OPCUA_ERROR_SUCESS;
+    opc_subscribe_tuple_t *item;
+    NEU_LIST_FOREACH(&context->subscribe_list, item)
+    {
+        if (NULL != item) {
+            stop_periodic_read(item);
+            release_periodic_read(item);
+            stop_opc_subscribe(context, item->config);
+            remove_subscribe(item);
+        }
+    }
+
     return code;
 }

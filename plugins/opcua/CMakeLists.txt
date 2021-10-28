@@ -8,6 +8,7 @@ set(src
 	${PARSER_SRC}
 	${CONFIG_SRC}
 	plugin_opcua.c
+	option.c
 	open62541_client.c
 	open62541_utils.c
 	plugin_handle.c)
