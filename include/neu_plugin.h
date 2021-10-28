@@ -29,16 +29,9 @@ extern "C" {
 #define NEURON_PLUGIN_VER_1_0 100
 #define NEURON_PLUGIN_VER_2_0 200
 
-typedef enum neu_plugin_state {
-    NEURON_PLUGIN_STATE_NULL,
-    NEURON_PLUGIN_STATE_IDLE,
-    NEURON_PLUGIN_STATE_READY,
-    NEURON_PLUGIN_STATE_RUNNING,
-} neu_plugin_state_e;
-
 typedef struct neu_plugin_common {
     uint32_t                   magic;
-    neu_plugin_state_e         state;
+    neu_plugin_state_t         state;
     neu_adapter_t *            adapter;
     const adapter_callbacks_t *adapter_callbacks;
     uint32_t                   event_id;
@@ -138,6 +131,10 @@ intptr_t neu_plugin_set_node_setting(neu_plugin_t *plugin,
                                      const char *  setting);
 int32_t neu_plugin_get_node_setting(neu_plugin_t *plugin, neu_node_id_t node_id,
                                     char **setting);
+int32_t neu_plugin_get_node_state(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                  neu_plugin_state_t *state);
+intptr_t neu_plugin_node_ctl(neu_plugin_t *plugin, neu_node_id_t node_id,
+                             neu_adapter_ctl_e ctl);
 #ifdef __cplusplus
 }
 #endif

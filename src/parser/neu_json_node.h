@@ -80,6 +80,19 @@ int  neu_parse_decode_node_setting(char *                         buf,
                                    neu_parse_node_setting_req_t **result);
 void neu_parse_decode_node_setting_free(neu_parse_node_setting_req_t *req);
 
+typedef struct {
+    uint8_t running;
+    uint8_t link;
+} neu_parse_node_state_res_t;
+int neu_parse_encode_get_node_state(void *json_object, void *param);
+
+typedef struct {
+    uint32_t node_id;
+    uint8_t  cmd;
+} neu_parse_node_ctl_req_t;
+int  neu_parse_decode_node_ctl(char *buf, neu_parse_node_ctl_req_t **result);
+void neu_parse_decode_node_ctl_free(neu_parse_node_ctl_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif

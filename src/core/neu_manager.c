@@ -578,7 +578,7 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
     return rv;
 }
 
-static int manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
+int neu_manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
     int rv = 0;
 
@@ -602,7 +602,7 @@ static int manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     return rv;
 }
 
-static int manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
+int neu_manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
     int      rv = 0;
     size_t   msg_size;
@@ -681,7 +681,7 @@ static void reg_and_start_default_adapters(neu_manager_t *manager)
             manager, (adapter_reg_cmd_t *) &default_adapter_reg_cmds[i],
             &p_adapter);
         if (id != 0 && p_adapter != NULL) {
-            manager_start_adapter(manager, p_adapter);
+            neu_manager_start_adapter(manager, p_adapter);
         }
     }
     return;
@@ -701,7 +701,7 @@ static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
         adapter    = reg_entity->adapter;
         if (adapter != NULL) {
-            manager_stop_adapter(manager, adapter);
+            neu_manager_stop_adapter(manager, adapter);
             manager_unreg_adapter(manager, reg_entity->adapter_id, false);
         }
     }
@@ -1828,5 +1828,85 @@ int neu_manager_adapter_get_setting(neu_manager_t *manager,
     ret = neu_adapter_get_setting(reg_entity->adapter, config);
     nng_mtx_unlock(manager->adapters_mtx);
 
+    return ret;
+}
+
+int neu_manager_adapter_get_state(neu_manager_t *manager, neu_node_id_t node_id,
+                                  neu_plugin_state_t *state)
+{
+    adapter_id_t          adapter_id = { 0 };
+    adapter_reg_entity_t *reg_entity = NULL;
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+
+    if (reg_entity == NULL) {
+        log_error("Can't find matched src registered adapter");
+        nng_mtx_unlock(manager->adapters_mtx);
+        return -1;
+    }
+
+    *state = neu_adapter_get_state(reg_entity->adapter);
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return 0;
+}
+
+int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
+                            neu_adapter_ctl_e ctl)
+{
+    adapter_id_t          adapter_id = { 0 };
+    adapter_reg_entity_t *reg_entity = NULL;
+    int                   ret        = -1;
+    neu_plugin_state_t    state      = { 0 };
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+
+    if (reg_entity == NULL) {
+        log_error("Can't find matched src registered adapter");
+        nng_mtx_unlock(manager->adapters_mtx);
+        return -1;
+    }
+
+    nng_mtx_unlock(manager->adapters_mtx);
+    state = neu_adapter_get_state(reg_entity->adapter);
+
+    switch (ctl) {
+    case NEU_ADAPTER_CTL_START:
+        switch (state.running) {
+        case NEU_PLUGIN_RUNNING_STATE_IDLE:
+            ret = -1;
+            break;
+        case NEU_PLUGIN_RUNNING_STATE_READY:
+        case NEU_PLUGIN_RUNNING_STATE_STOPPED:
+            // ret = neu_manager_start_adapter(manager, reg_entity->adapter);
+            ret = 0;
+            break;
+        case NEU_PLUGIN_RUNNING_STATE_RUNNING:
+            ret = 0;
+            break;
+        }
+        break;
+    case NEU_ADAPTER_CTL_STOP:
+        switch (state.running) {
+        case NEU_PLUGIN_RUNNING_STATE_IDLE:
+        case NEU_PLUGIN_RUNNING_STATE_READY:
+            ret = -1;
+            break;
+        case NEU_PLUGIN_RUNNING_STATE_RUNNING:
+            // ret = neu_manager_stop_adapter(manager, reg_entity->adapter);
+            ret = 0;
+            break;
+        case NEU_PLUGIN_RUNNING_STATE_STOPPED:
+            ret = 0;
+            break;
+        }
+        break;
+    }
     return ret;
 }

@@ -34,6 +34,24 @@ typedef enum plugin_kind {
     PLUGIN_KIND_CUSTOM
 } plugin_kind_e;
 
+typedef enum neu_plugin_link_state {
+    NEU_PLUGIN_LINK_STATE_DISCONNECTED = 0,
+    NEU_PLUGIN_LINK_STATE_CONNECTING,
+    NEU_PLUGIN_LINK_STATE_CONNECTED,
+} neu_plugin_link_state_e;
+
+typedef enum neu_plugin_running_state {
+    NEU_PLUGIN_RUNNING_STATE_IDLE = 0,
+    NEU_PLUGIN_RUNNING_STATE_READY,
+    NEU_PLUGIN_RUNNING_STATE_RUNNING,
+    NEU_PLUGIN_RUNNING_STATE_STOPPED,
+} neu_plugin_running_state_e;
+
+typedef struct neu_plugin_state {
+    neu_plugin_link_state_e    link;
+    neu_plugin_running_state_e running;
+} neu_plugin_state_t;
+
 #ifdef __cplusplus
 }
 #endif

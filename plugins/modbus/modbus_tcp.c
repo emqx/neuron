@@ -482,7 +482,9 @@ static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
 
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
-    plugin->common.state             = NEURON_PLUGIN_STATE_NULL;
+    //    plugin->common.state             = NEURON_PLUGIN_STATE_NULL;
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_IDLE;
+    plugin->common.state.link    = NEU_PLUGIN_LINK_STATE_CONNECTING;
     TAILQ_INIT(&plugin->sub_instances);
 
     return plugin;
@@ -499,8 +501,10 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
     pthread_mutex_init(&plugin->mtx, NULL);
     plugin->client = neu_tcp_client_create("192.168.50.68", 502);
 
-    plugin->common.state = NEURON_PLUGIN_STATE_READY;
+    //    plugin->common.state = NEURON_PLUGIN_STATE_READY;
     log_info("modbus tcp init.....");
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_RUNNING;
+
     return 0;
 }
 
@@ -529,6 +533,7 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
     pthread_mutex_destroy(&plugin->mtx);
 
     log_info("modbus uninit end...");
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_STOPPED;
 
     return 0;
 }
@@ -542,6 +547,7 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
     log_info("modbus config............. type: %d, config: %s", configs->type,
              configs->buf);
 
+    // plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
     return ret;
 }
 

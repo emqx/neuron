@@ -453,3 +453,33 @@ int32_t neu_plugin_get_node_setting(neu_plugin_t *plugin, neu_node_id_t node_id,
                     })
     return ret;
 }
+
+int32_t neu_plugin_get_node_state(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                  neu_plugin_state_t *state)
+{
+    neu_cmd_get_node_state_t get_node_state = { 0 };
+    int                      ret            = -1;
+
+    get_node_state.node_id = node_id;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_NODE_STATE, get_node_state,
+                    neu_reqresp_node_state_t, {
+                        ret    = resp->result;
+                        *state = resp->state;
+                    })
+    return ret;
+}
+
+intptr_t neu_plugin_node_ctl(neu_plugin_t *plugin, neu_node_id_t node_id,
+                             neu_adapter_ctl_e ctl)
+{
+    intptr_t           errorcode = -1;
+    neu_cmd_node_ctl_t node_ctl  = { 0 };
+
+    node_ctl.node_id = node_id;
+    node_ctl.ctl     = ctl;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_NODE_CTL, node_ctl, intptr_t,
+                    { errorcode = (intptr_t) resp; })
+    return errorcode;
+}

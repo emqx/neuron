@@ -104,11 +104,10 @@
     }
 
 typedef enum adapter_state {
-    ADAPTER_STATE_NULL,
-    ADAPTER_STATE_IDLE,
-    ADAPTER_STATE_STARTING,
+    ADAPTER_STATE_IDLE = 0,
+    ADAPTER_STATE_READY,
     ADAPTER_STATE_RUNNING,
-    ADAPTER_STATE_STOPPING,
+    ADAPTER_STATE_STOPPED,
 } adapter_state_e;
 
 struct neu_adapter {
@@ -149,11 +148,12 @@ static void adapter_loop(void *arg)
 {
     int            rv;
     neu_adapter_t *adapter;
+    nng_dialer     dialer = { 0 };
 
     adapter = (neu_adapter_t *) arg;
     const char *manager_url;
     manager_url = neu_manager_get_url(adapter->manager);
-    rv          = nng_dial(adapter->sock, manager_url, NULL, 0);
+    rv          = nng_dial(adapter->sock, manager_url, &dialer, 0);
     if (rv != 0) {
         neu_panic("The adapter can't dial to %s", manager_url);
     }
@@ -183,7 +183,7 @@ static void adapter_loop(void *arg)
 
         nng_mtx_lock(adapter->mtx);
         if (adapter->stop) {
-            adapter->state = ADAPTER_STATE_NULL;
+            adapter->state = ADAPTER_STATE_STOPPED;
             nng_mtx_unlock(adapter->mtx);
             log_info("Exit loop of the adapter(%s)", adapter->name);
             break;
@@ -396,7 +396,7 @@ static void adapter_loop(void *arg)
             log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
                      exit_code);
             nng_mtx_lock(adapter->mtx);
-            adapter->state = ADAPTER_STATE_NULL;
+            adapter->state = ADAPTER_STATE_STOPPED;
             adapter->stop  = true;
             nng_mtx_unlock(adapter->mtx);
             break;
@@ -411,6 +411,7 @@ static void adapter_loop(void *arg)
         nng_msg_free(msg);
     }
 
+    nng_dialer_close(dialer);
     return;
 }
 
@@ -729,6 +730,28 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_NODE_STATE: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_node_state_t, neu_cmd_get_node_state_t,
+            rv, NEU_REQRESP_NODE_STATE_RESP, p_result, {
+                ret = calloc(1, sizeof(neu_reqresp_node_state_t));
+
+                ret->result = neu_manager_adapter_get_state(
+                    adapter->manager, req_cmd->node_id, &ret->state);
+            });
+        break;
+    }
+
+    case NEU_REQRESP_NODE_CTL: {
+        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_node_ctl_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = neu_manager_adapter_ctl(adapter->manager,
+                                                            req_cmd->node_id,
+                                                            req_cmd->ctl);
+                          });
+        break;
+    }
+
     default:
         rv = -1;
         break;
@@ -896,7 +919,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     }
 
     int rv;
-    adapter->state = ADAPTER_STATE_NULL;
+    adapter->state = ADAPTER_STATE_IDLE;
     adapter->stop  = false;
     if ((rv = nng_mtx_alloc(&adapter->mtx)) != 0) {
         log_error("Can't allocate mutex for adapter");
@@ -994,6 +1017,7 @@ int neu_adapter_start(neu_adapter_t *adapter)
         intf_funs->init(adapter->plugin);
     }
 
+    adapter->stop = false;
     nng_thread_create(&adapter->thrd, adapter_loop, adapter);
     return rv;
 }
@@ -1120,4 +1144,11 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
     }
 
     return -1;
+}
+
+neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter)
+{
+    neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
+
+    return common->state;
 }

@@ -27,5 +27,7 @@ void handle_update_adapter(nng_aio *aio);
 void handle_get_adapter(nng_aio *aio);
 void handle_set_node_setting(nng_aio *aio);
 void handle_get_node_setting(nng_aio *aio);
+void handle_node_ctl(nng_aio *aio);
+void handle_get_node_state(nng_aio *aio);
 
 #endif
