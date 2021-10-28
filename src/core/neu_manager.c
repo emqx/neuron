@@ -1861,6 +1861,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
     adapter_reg_entity_t *reg_entity = NULL;
     int                   ret        = -1;
     neu_plugin_state_t    state      = { 0 };
+    neu_adapter_t *       adapter;
 
     nng_mtx_lock(manager->adapters_mtx);
 
@@ -1873,8 +1874,9 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
         return -1;
     }
 
+    adapter = reg_entity->adapter;
     nng_mtx_unlock(manager->adapters_mtx);
-    state = neu_adapter_get_state(reg_entity->adapter);
+    state = neu_adapter_get_state(adapter);
 
     switch (ctl) {
     case NEU_ADAPTER_CTL_START:
@@ -1884,7 +1886,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
             break;
         case NEU_PLUGIN_RUNNING_STATE_READY:
         case NEU_PLUGIN_RUNNING_STATE_STOPPED:
-            // ret = neu_manager_start_adapter(manager, reg_entity->adapter);
+            // ret = neu_manager_start_adapter(manager, adapter);
             ret = 0;
             break;
         case NEU_PLUGIN_RUNNING_STATE_RUNNING:
@@ -1899,7 +1901,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
             ret = -1;
             break;
         case NEU_PLUGIN_RUNNING_STATE_RUNNING:
-            // ret = neu_manager_stop_adapter(manager, reg_entity->adapter);
+            // ret = neu_manager_stop_adapter(manager, adapter);
             ret = 0;
             break;
         case NEU_PLUGIN_RUNNING_STATE_STOPPED:

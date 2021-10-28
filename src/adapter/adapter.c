@@ -730,10 +730,10 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
-    case NEU_REQRESP_NODE_STATE: {
+    case NEU_REQRESP_GET_NODE_STATE: {
         ADAPTER_RESP_CMD(
             adapter, cmd, neu_reqresp_node_state_t, neu_cmd_get_node_state_t,
-            rv, NEU_REQRESP_NODE_STATE_RESP, p_result, {
+            rv, NEU_REQRESP_NODE_STATE, p_result, {
                 ret = calloc(1, sizeof(neu_reqresp_node_state_t));
 
                 ret->result = neu_manager_adapter_get_state(
