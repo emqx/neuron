@@ -75,31 +75,12 @@ static int opcua_plugin_close(neu_plugin_t *plugin)
 
 static int opcua_plugin_init(neu_plugin_t *plugin)
 {
-    const char *default_cert_file =
-        neu_config_get_value("./neuron.yaml", 2, "opcua", "default_cert_file");
-    const char *default_key_file =
-        neu_config_get_value("./neuron.yaml", 2, "opcua", "default_key_file");
-    const char *host =
-        neu_config_get_value("./neuron.yaml", 2, "opcua", "host");
-    const char *port = neu_config_get_value("neuron.yaml", 2, "opcua", "port");
-    const char *username =
-        neu_config_get_value("./neuron.yaml", 2, "opcua", "username");
-    const char *password =
-        neu_config_get_value("./neuron.yaml", 2, "opcua", "password");
-    const char *cert_file =
-        neu_config_get_value("./neuron.yaml", 2, "opcua", "cert_file");
-    const char *key_file =
-        neu_config_get_value("./neuron.yaml", 2, "opcua", "key_file");
-
-    // OPC-UA option
-    plugin->option.default_cert_file = strdup(default_cert_file);
-    plugin->option.default_key_file  = strdup(default_key_file);
-    plugin->option.host              = strdup(host);
-    plugin->option.port              = atoi(port);
-    plugin->option.username          = strdup(username);
-    plugin->option.password          = strdup(password);
-    plugin->option.cert_file         = strdup(cert_file);
-    plugin->option.key_file          = strdup(key_file);
+    int rc = opcua_option_init(&plugin->option);
+    if (0 != rc) {
+        log_error("OPCUA option init fail:%d initialize plugin failed: %s", rc,
+                  neu_plugin_module.module_name);
+        return -1;
+    }
 
     plugin->handle_context = malloc(sizeof(opc_handle_context_t));
     memset(plugin->handle_context, 0, sizeof(opc_handle_context_t));
@@ -110,7 +91,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
     NEU_LIST_INIT(&plugin->handle_context->subscribe_list,
                   opc_subscribe_tuple_t, node);
 
-    int rc = open62541_client_open(&plugin->option, plugin, &plugin->client);
+    rc = open62541_client_open(&plugin->option, plugin, &plugin->client);
     if (0 != rc) {
         log_error("Can not connect to opc.tcp://%s:%d", plugin->option.host,
                   plugin->option.port);
@@ -129,7 +110,9 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
 
 static int opcua_plugin_uninit(neu_plugin_t *plugin)
 {
-    // open62541_client_close(plugin->client);
+    // plugin_handle_stop(plugin->handle_context);
+    open62541_client_close(plugin->client);
+    opcua_option_uninit(&plugin->option);
     free(plugin->handle_context);
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;

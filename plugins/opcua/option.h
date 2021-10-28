@@ -26,7 +26,7 @@ extern "C" {
 
 typedef struct {
     char *host;
-    int   port;
+    char *port;
     char *username;
     char *password;
     char *cert_file;
@@ -34,6 +34,9 @@ typedef struct {
     char *default_cert_file;
     char *default_key_file;
 } option_t;
+
+int  opcua_option_init(option_t *option);
+void opcua_option_uninit(option_t *option);
 
 #ifdef __cplusplus
 }

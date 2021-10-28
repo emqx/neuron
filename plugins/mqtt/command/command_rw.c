@@ -288,7 +288,7 @@ int command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         }
         case NEU_JSON_STR: {
             val = neu_dvalue_new(NEU_DTYPE_CSTR);
-            neu_dvalue_set_cstr(val, strdup(value.val_str));
+            neu_dvalue_set_cstr(val, value.val_str);
             break;
         }
         case NEU_JSON_DOUBLE: {
