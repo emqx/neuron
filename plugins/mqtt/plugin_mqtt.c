@@ -116,6 +116,7 @@ static void context_destroy(struct context *ctx)
 static void context_list_remove(neu_list *list, struct context *ctx)
 {
     neu_list_remove(list, ctx);
+    context_destroy(ctx);
 }
 
 static void context_list_destroy(neu_list *list)
