@@ -213,3 +213,55 @@ void neu_parse_decode_node_setting_free(neu_parse_node_setting_req_t *req)
 {
     free(req);
 }
+
+int neu_parse_encode_get_node_state(void *json_object, void *param)
+{
+    neu_parse_node_state_res_t *res = (neu_parse_node_state_res_t *) param;
+
+    neu_json_elem_t elems[] = {
+        {
+            .name      = "running",
+            .t         = NEU_JSON_INT,
+            .v.val_int = res->running,
+        },
+        {
+            .name      = "link",
+            .t         = NEU_JSON_INT,
+            .v.val_int = res->link,
+        },
+    };
+
+    return neu_json_encode_field(json_object, elems, NEU_JSON_ELEM_SIZE(elems));
+}
+
+int neu_parse_decode_node_ctl(char *buf, neu_parse_node_ctl_req_t **result)
+{
+    neu_parse_node_ctl_req_t *req = calloc(1, sizeof(neu_parse_node_ctl_req_t));
+    neu_json_elem_t           elem[] = {
+        {
+            .name = "id",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = "cmd",
+            .t    = NEU_JSON_INT,
+        },
+    };
+
+    int ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elem), elem);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+    req->node_id = elem[0].v.val_int;
+    req->cmd     = elem[1].v.val_int;
+
+    *result = req;
+
+    return 0;
+}
+
+void neu_parse_decode_node_ctl_free(neu_parse_node_ctl_req_t *req)
+{
+    free(req);
+}

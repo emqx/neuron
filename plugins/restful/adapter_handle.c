@@ -167,3 +167,51 @@ void handle_get_node_setting(nng_aio *aio)
     http_ok(aio, setting);
     free(setting);
 }
+
+void handle_node_ctl(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_parse_node_ctl_req_t, neu_parse_decode_node_ctl, {
+            intptr_t err = 0;
+
+            err = neu_plugin_node_ctl(plugin, req->node_id, req->cmd);
+
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
+}
+
+void handle_get_node_state(nng_aio *aio)
+{
+    neu_plugin_t *             plugin    = neu_rest_get_plugin();
+    char *                     s_node_id = http_get_param(aio, "node_id");
+    neu_node_id_t              node_id   = 0;
+    neu_parse_node_state_res_t res       = { 0 };
+    neu_plugin_state_t         state     = { 0 };
+    char *                     result    = NULL;
+
+    if (s_node_id == NULL) {
+        http_bad_request(aio, "{\"error\": 1}");
+        return;
+    }
+
+    node_id = (neu_node_id_t) atoi(s_node_id);
+
+    if (neu_plugin_get_node_state(plugin, node_id, &state) != 0) {
+        http_not_found(aio, "{\"error\": 1}");
+        return;
+    }
+
+    res.running = state.running;
+    res.link    = state.link;
+
+    neu_json_encode_by_fn(&res, neu_parse_encode_get_node_state, &result);
+
+    http_ok(aio, result);
+    free(result);
+}

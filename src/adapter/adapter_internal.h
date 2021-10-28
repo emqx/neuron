@@ -40,5 +40,6 @@ adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter);
 plugin_id_t    neu_adapter_get_plugin_id(neu_adapter_t *adapter);
 int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
+neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter);
 
 #endif
