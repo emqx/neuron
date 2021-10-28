@@ -198,10 +198,12 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         neu_parse_read_req_t *req = NULL;
         rc                        = neu_parse_decode_read(json_str, &req);
         if (0 == rc) {
-            int req_id = command_read_once_request(plugin, mqtt, req);
+            uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
                 context_list_add(&plugin->context_list, req_id, mqtt);
             }
+
+            command_read_once_request(plugin, mqtt, req, req_id);
             neu_parse_decode_read_free(req);
         }
         break;
@@ -210,10 +212,12 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         neu_parse_write_req_t *req = NULL;
         rc                         = neu_parse_decode_write(json_str, &req);
         if (0 == rc) {
-            int req_id = command_write_request(plugin, mqtt, req);
+            uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
                 context_list_add(&plugin->context_list, req_id, mqtt);
             }
+
+            command_write_request(plugin, mqtt, req, req_id);
             neu_parse_decode_write_free(req);
         }
         break;

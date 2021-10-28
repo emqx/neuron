@@ -54,6 +54,7 @@ struct mqttc_client {
     uint8_t                send_buf[SEND_BUF_SIZE];
     uint8_t                recv_buf[RECV_BUF_SIZE];
     pthread_t              client_daemon;
+    pthread_mutex_t        mutex;
     void *                 user_data;
 };
 
@@ -207,7 +208,17 @@ static void *mqtt_refresher(void *context)
 {
     mqttc_client_t *    client = (mqttc_client_t *) context;
     struct mqtt_client *mqtt   = &client->mqtt;
-    while (client->running) {
+
+    bool run_flag = true;
+    while (1) {
+        pthread_mutex_lock(&client->mutex);
+        run_flag = client->running;
+        pthread_mutex_unlock(&client->mutex);
+
+        if (!run_flag) {
+            break;
+        }
+
         mqtt_sync((struct mqtt_client *) mqtt);
         usleep(INTERVAL);
     }
@@ -224,6 +235,7 @@ mqttc_client_t *mqttc_client_create(option_t *option, void *context)
     }
     memset(client, 0, sizeof(mqttc_client_t));
 
+    pthread_mutex_init(&client->mutex, NULL);
     client->option    = option;
     client->running   = true;
     client->user_data = context;
@@ -354,6 +366,7 @@ client_error_e mqttc_client_disconnect(mqttc_client_t *client)
 
 client_error_e mqttc_client_destroy(mqttc_client_t *client)
 {
+    pthread_mutex_destroy(&client->mutex);
     free(client);
     return ClientSuccess;
 }
@@ -492,7 +505,10 @@ client_error_e mqttc_client_close(mqttc_client_t *client)
         return ClientIsNULL;
     }
 
+    pthread_mutex_lock(&client->mutex);
     client->running = false;
+    pthread_mutex_unlock(&client->mutex);
+
     pthread_join(client->client_daemon, NULL);
     client_error_e rc = mqttc_client_disconnect(client);
     rc                = mqttc_client_destroy(client);

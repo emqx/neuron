@@ -24,7 +24,7 @@
 #include "command_rw.h"
 
 int command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                              neu_parse_read_req_t *req)
+                              neu_parse_read_req_t *req, uint32_t req_id)
 {
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
     int rc = common_has_node(plugin, req->node_id);
@@ -40,9 +40,8 @@ int command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         return -2;
     }
 
-    uint32_t req_id = neu_plugin_get_event_id(plugin);
     neu_plugin_send_read_cmd(plugin, req_id, req->node_id, config);
-    return req_id;
+    return 0;
 }
 
 static int wrap_read_response_json_object(neu_fixed_array_t *   array,
@@ -230,7 +229,7 @@ char *command_read_cycle_response(neu_plugin_t *  plugin,
 
 static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
                          const char *    group_config_name,
-                         neu_data_val_t *write_val)
+                         neu_data_val_t *write_val, uint32_t req_id)
 {
     int rc = common_has_node(plugin, dest_node_id);
     if (0 != rc) {
@@ -244,13 +243,12 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
         return -2;
     }
 
-    uint32_t req_id = neu_plugin_get_event_id(plugin);
     neu_plugin_send_write_cmd(plugin, req_id, dest_node_id, config, write_val);
-    return req_id;
+    return 0;
 }
 
 int command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_write_req_t *write_req)
+                          neu_parse_write_req_t *write_req, uint32_t req_id)
 {
     log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
              write_req->group_config_name);
@@ -312,10 +310,10 @@ int command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
-    int req_id = write_command(plugin, write_req->node_id,
-                               write_req->group_config_name, write_val);
+    write_command(plugin, write_req->node_id, write_req->group_config_name,
+                  write_val, req_id);
     neu_dvalue_free(write_val);
-    return req_id;
+    return 0;
 }
 
 static int wrap_write_response_json_object(neu_fixed_array_t *   array,
