@@ -48,6 +48,7 @@ struct mqttc_client {
     neu_list               subscribe_list;
     struct mqtt_client     mqtt;
     struct reconnect_state state;
+    bool                   running;
     SSL_CTX *              ssl_ctx;
     BIO *                  sock_fd;
     uint8_t                send_buf[SEND_BUF_SIZE];
@@ -202,9 +203,11 @@ static void publish_callback(void **                       p_reconnect_state,
     free(topic_name);
 }
 
-static void *mqtt_refresher(void *mqtt)
+static void *mqtt_refresher(void *context)
 {
-    while (1) {
+    mqttc_client_t *    client = (mqttc_client_t *) context;
+    struct mqtt_client *mqtt   = &client->mqtt;
+    while (client->running) {
         mqtt_sync((struct mqtt_client *) mqtt);
         usleep(INTERVAL);
     }
@@ -222,6 +225,7 @@ mqttc_client_t *mqttc_client_create(option_t *option, void *context)
     memset(client, 0, sizeof(mqttc_client_t));
 
     client->option    = option;
+    client->running   = true;
     client->user_data = context;
 
     struct reconnect_state *state = &client->state;
@@ -272,8 +276,7 @@ client_error_e mqttc_client_connect(mqttc_client_t *client)
     mqtt_init_reconnect(&client->mqtt, reconnect_mqtt, &client->state,
                         publish_callback);
 
-    if (pthread_create(&client->client_daemon, NULL, mqtt_refresher,
-                       &client->mqtt)) {
+    if (pthread_create(&client->client_daemon, NULL, mqtt_refresher, client)) {
         log_error("Failed to start client daemon.");
         return ClientConnectFailure;
     }
@@ -309,22 +312,34 @@ client_error_e mqttc_client_is_connected(mqttc_client_t *client)
     return ClientSuccess;
 }
 
+client_error_e mqttc_client_subscribe_destroy(struct subscribe_tuple *tuple)
+{
+    if (NULL != tuple) {
+        if (NULL != tuple->topic) {
+            free(tuple->topic);
+        }
+        free(tuple);
+    }
+
+    return ClientSuccess;
+}
+
 client_error_e mqttc_client_disconnect(mqttc_client_t *client)
 {
-    struct subscribe_tuple *item;
-    NEU_LIST_FOREACH(&client->subscribe_list, item)
-    {
-        client_error_e error = mqttc_client_unsubscribe(client, item->topic);
-        if (ClientSuccess != error) {
-            // TODO: Error handle
-            continue;
+    while (!neu_list_empty(&client->subscribe_list)) {
+        struct subscribe_tuple *tuple = NULL;
+        tuple                         = neu_list_first(&client->subscribe_list);
+        if (NULL != tuple) {
+            mqttc_client_unsubscribe(client, tuple->topic);
+            neu_list_remove(&client->subscribe_list, tuple);
+            mqttc_client_subscribe_destroy(tuple);
         }
     }
 
     if (NULL != client) {
         int rc = mqtt_disconnect(&client->mqtt);
         if (1 != rc) {
-            // TODO: Disconnect failed
+            log_error("Disconnect connection fail");
         }
 
         if (NULL != client->sock_fd) {
@@ -339,15 +354,6 @@ client_error_e mqttc_client_disconnect(mqttc_client_t *client)
 
 client_error_e mqttc_client_destroy(mqttc_client_t *client)
 {
-    while (!neu_list_empty(&client->subscribe_list)) {
-        struct subscribe_tuple *tuple = neu_list_first(&client->subscribe_list);
-        neu_list_remove(&client->subscribe_list, tuple);
-    }
-
-    if (NULL != &client->client_daemon) {
-        pthread_cancel(client->client_daemon);
-    }
-
     free(client);
     return ClientSuccess;
 }
@@ -370,18 +376,6 @@ mqttc_client_subscribe_create(mqttc_client_t *client, const char *topic,
     tuple->subscribed = false;
     tuple->client     = client;
     return tuple;
-}
-
-client_error_e mqttc_client_subscribe_destroy(struct subscribe_tuple *tuple)
-{
-    if (NULL != tuple) {
-        if (NULL != tuple->topic) {
-            free(tuple->topic);
-        }
-        free(tuple);
-    }
-
-    return ClientSuccess;
 }
 
 client_error_e mqttc_client_subscribe_send(mqttc_client_t *        client,
@@ -407,21 +401,6 @@ client_error_e mqttc_client_subscribe_add(mqttc_client_t *        client,
 {
     NEU_LIST_NODE_INIT(&tuple->node);
     neu_list_append(&client->subscribe_list, tuple);
-    return ClientSuccess;
-}
-
-client_error_e mqttc_client_subscribe_remove(mqttc_client_t *client,
-                                             const char *    topic)
-{
-    struct subscribe_tuple *item;
-    struct subscribe_tuple *tuple;
-    NEU_LIST_FOREACH(&client->subscribe_list, item)
-    {
-        if (0 == strcmp(item->topic, topic)) {
-            tuple = item;
-        }
-    }
-    neu_list_remove(&client->subscribe_list, tuple);
     return ClientSuccess;
 }
 
@@ -484,7 +463,7 @@ client_error_e mqttc_client_unsubscribe(mqttc_client_t *client,
     }
 
     mqttc_client_unsubscribe_send(client, tuple);
-    mqttc_client_subscribe_remove(client, topic);
+    // mqttc_client_subscribe_remove(client, topic);
     return ClientSuccess;
 }
 
@@ -509,10 +488,12 @@ client_error_e mqttc_client_publish(mqttc_client_t *client, const char *topic,
 
 client_error_e mqttc_client_close(mqttc_client_t *client)
 {
-    if (NULL != client) {
+    if (NULL == client) {
         return ClientIsNULL;
     }
 
+    client->running = false;
+    pthread_join(client->client_daemon, NULL);
     client_error_e rc = mqttc_client_disconnect(client);
     rc                = mqttc_client_destroy(client);
     return rc;
