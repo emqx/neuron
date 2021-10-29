@@ -23,6 +23,7 @@
 
 #include "neu_log.h"
 #include "neu_plugin.h"
+#include "neu_subscribe.h"
 #include "parser/neu_json_fn.h"
 #include "parser/neu_json_group_config.h"
 
@@ -195,5 +196,42 @@ void handle_grp_unsubscribe(nng_aio *aio)
 
 void handle_grp_get_subscribe(nng_aio *aio)
 {
-    (void) aio;
+    neu_plugin_t *                plugin    = neu_rest_get_plugin();
+    char *                        result    = NULL;
+    char *                        s_node_id = http_get_param(aio, "node_id");
+    neu_node_id_t                 node_id   = 0;
+    neu_parse_get_subscribe_res_t sub_grp_configs = { 0 };
+    int                           index           = 0;
+
+    if (s_node_id == NULL) {
+        http_bad_request(aio, "{\"error\": 1}");
+        return;
+    }
+
+    node_id            = (neu_node_id_t) atoi(s_node_id);
+    vector_t *gconfigs = neu_system_get_sub_group_configs(plugin, node_id);
+
+    sub_grp_configs.n_config = gconfigs->size;
+    sub_grp_configs.group_configs =
+        calloc(gconfigs->size, sizeof(neu_parse_subscribe_res_grp_t));
+
+    VECTOR_FOR_EACH(gconfigs, iter)
+    {
+        neu_sub_grp_config_t *sgc =
+            (neu_sub_grp_config_t *) iterator_get(&iter);
+
+        sub_grp_configs.group_configs[index].node_id = sgc->node_id;
+        sub_grp_configs.group_configs[index].group_config_name =
+            sgc->group_config_name;
+
+        index += 1;
+    }
+
+    neu_json_encode_by_fn(&sub_grp_configs, neu_parse_encode_get_subscribe,
+                          &result);
+
+    http_ok(aio, result);
+    vector_free(gconfigs);
+    free(result);
+    free(sub_grp_configs.group_configs);
 }

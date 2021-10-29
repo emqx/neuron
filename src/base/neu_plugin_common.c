@@ -483,3 +483,17 @@ intptr_t neu_plugin_node_ctl(neu_plugin_t *plugin, neu_node_id_t node_id,
                     { errorcode = (intptr_t) resp; })
     return errorcode;
 }
+
+vector_t *neu_system_get_sub_group_configs(neu_plugin_t *plugin,
+                                           neu_node_id_t node_id)
+{
+    vector_t *                    sub_group_configs = NULL;
+    neu_cmd_get_sub_grp_configs_t get_sgc           = { 0 };
+
+    get_sgc.node_id = node_id;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_SUB_GRP_CONFIGS, get_sgc,
+                    neu_reqresp_sub_grp_configs_t,
+                    { sub_group_configs = resp->sub_grp_configs; })
+    return sub_group_configs;
+}

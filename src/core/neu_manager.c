@@ -854,6 +854,10 @@ static void add_default_grp_configs(neu_manager_t *manager)
         sub_reg_entity = find_reg_adapter_by_name(
             &manager->reg_adapters, config_add_cmd->sub_adapter_name);
         add_grp_config_to_adapter(src_reg_entity, grp_config);
+        neu_adapter_add_sub_grp_config(sub_reg_entity->adapter,
+                                       neu_manager_adapter_id_to_node_id(
+                                           manager, src_reg_entity->adapter_id),
+                                       grp_config);
         need_send =
             sub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
 
@@ -898,6 +902,10 @@ static void remove_default_grp_configs(neu_manager_t *manager)
             &manager->reg_adapters, config_add_cmd->src_adapter_name);
         sub_reg_entity = find_reg_adapter_by_name(
             &manager->reg_adapters, config_add_cmd->sub_adapter_name);
+        neu_adapter_del_sub_grp_config(sub_reg_entity->adapter,
+                                       neu_manager_adapter_id_to_node_id(
+                                           manager, src_reg_entity->adapter_id),
+                                       grp_config);
         unsub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
         neu_datatag_mng_del_grp_config(src_reg_entity->datatag_manager,
                                        config_add_cmd->config_name);
@@ -1206,6 +1214,8 @@ static void manager_loop(void *arg)
                 manager, cmd_ptr->dst_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+            neu_adapter_add_sub_grp_config(
+                reg_entity->adapter, cmd_ptr->dst_node_id, cmd_ptr->grp_config);
             msg_pipe = reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
@@ -1244,6 +1254,8 @@ static void manager_loop(void *arg)
                 manager, cmd_ptr->dst_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+            neu_adapter_del_sub_grp_config(
+                reg_entity->adapter, cmd_ptr->dst_node_id, cmd_ptr->grp_config);
             msg_pipe = reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size =
@@ -1911,4 +1923,28 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
         break;
     }
     return ret;
+}
+
+int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
+                                            neu_node_id_t  node_id,
+                                            vector_t **    result_sgc)
+{
+    adapter_id_t          adapter_id = { 0 };
+    adapter_reg_entity_t *reg_entity = NULL;
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+
+    if (reg_entity == NULL) {
+        log_error("Can't find matched src registered adapter");
+        nng_mtx_unlock(manager->adapters_mtx);
+        return -1;
+    }
+
+    *result_sgc = neu_adapter_get_sub_grp_configs(reg_entity->adapter);
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return 0;
 }

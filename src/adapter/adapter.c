@@ -35,6 +35,7 @@
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "neu_plugin.h"
+#include "neu_subscribe.h"
 
 #define to_node_id(adapter, id) \
     neu_manager_adapter_id_to_node_id((adapter)->manager, id);
@@ -114,6 +115,7 @@ struct neu_adapter {
     adapter_id_t         id;
     adapter_type_e       type;
     nng_mtx *            mtx;
+    nng_mtx *            sub_grp_mtx;
     adapter_state_e      state;
     bool                 stop;
     char *               name;
@@ -129,6 +131,7 @@ struct neu_adapter {
     neu_plugin_t *       plugin;
     adapter_callbacks_t  cb_funs;
     neu_config_t         node_setting;
+    vector_t             sub_grp_configs; // neu_sub_grp_config_t
 };
 
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
@@ -752,6 +755,19 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_GET_SUB_GRP_CONFIGS: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_sub_grp_configs_t,
+            neu_cmd_get_sub_grp_configs_t, rv, NEU_REQRESP_SUB_GRP_CONFIGS_RESP,
+            p_result, {
+                ret = calloc(1, sizeof(neu_reqresp_sub_grp_configs_t));
+
+                ret->result = neu_manager_adapter_get_sub_grp_configs(
+                    adapter->manager, req_cmd->node_id, &ret->sub_grp_configs);
+            });
+        break;
+    }
+
     default:
         rv = -1;
         break;
@@ -927,6 +943,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
         return NULL;
     }
 
+    if ((rv = nng_mtx_alloc(&adapter->sub_grp_mtx)) != 0) {
+        log_error("Can't allocate mutex for adapter sub grp config");
+        free(adapter);
+        return NULL;
+    }
+
     adapter->id          = info->id;
     adapter->type        = info->type;
     adapter->name        = strdup(info->name);
@@ -944,6 +966,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
         log_error("Failed duplicate string for create adapter");
         return NULL;
     }
+
+    vector_init(&adapter->sub_grp_configs, 0, sizeof(neu_sub_grp_config_t));
 
     void *               handle;
     neu_plugin_module_t *plugin_module;
@@ -997,7 +1021,12 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     if (adapter->name != NULL) {
         free(adapter->name);
     }
+    nng_mtx_lock(adapter->sub_grp_mtx);
+    vector_uninit(&adapter->sub_grp_configs);
+    nng_mtx_unlock(adapter->sub_grp_mtx);
+
     nng_mtx_free(adapter->mtx);
+    nng_mtx_free(adapter->sub_grp_mtx);
     free(adapter);
     return;
 }
@@ -1151,4 +1180,69 @@ neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter)
     neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
 
     return common->state;
+}
+
+void neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,
+                                    neu_node_id_t        node_id,
+                                    neu_taggrp_config_t *grp_config)
+{
+    bool  find = false;
+    char *name = (char *) neu_taggrp_cfg_get_name(grp_config);
+
+    nng_mtx_lock(adapter->sub_grp_mtx);
+
+    VECTOR_FOR_EACH(&adapter->sub_grp_configs, iter)
+    {
+        neu_sub_grp_config_t *sgc =
+            (neu_sub_grp_config_t *) iterator_get(&iter);
+        if (sgc->node_id == node_id &&
+            strncmp(name, sgc->group_config_name, strlen(name)) == 0) {
+            find = true;
+            break;
+        }
+    }
+
+    if (!find) {
+        neu_sub_grp_config_t *sgc = calloc(1, sizeof(neu_sub_grp_config_t));
+        sgc->node_id              = node_id;
+        sgc->group_config_name    = name;
+
+        vector_push_back(&adapter->sub_grp_configs, sgc);
+    }
+
+    nng_mtx_unlock(adapter->sub_grp_mtx);
+}
+
+void neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
+                                    neu_node_id_t        node_id,
+                                    neu_taggrp_config_t *grp_config)
+{
+    char *name = (char *) neu_taggrp_cfg_get_name(grp_config);
+
+    nng_mtx_lock(adapter->sub_grp_mtx);
+
+    VECTOR_FOR_EACH(&adapter->sub_grp_configs, iter)
+    {
+        neu_sub_grp_config_t *sgc =
+            (neu_sub_grp_config_t *) iterator_get(&iter);
+        if (sgc->node_id == node_id &&
+            strncmp(name, sgc->group_config_name, strlen(name)) == 0) {
+
+            iterator_erase(&adapter->sub_grp_configs, &iter);
+            break;
+        }
+    }
+
+    nng_mtx_unlock(adapter->sub_grp_mtx);
+}
+
+vector_t *neu_adapter_get_sub_grp_configs(neu_adapter_t *adapter)
+{
+    vector_t *sgc = NULL;
+
+    nng_mtx_lock(adapter->sub_grp_mtx);
+    sgc = vector_clone(&adapter->sub_grp_configs);
+    nng_mtx_unlock(adapter->sub_grp_mtx);
+
+    return sgc;
 }

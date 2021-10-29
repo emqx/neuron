@@ -74,4 +74,8 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
                             neu_adapter_ctl_e ctl);
 int neu_manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter);
 int neu_manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter);
+int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
+                                            neu_node_id_t  node_id,
+                                            vector_t **    result_sgc);
+
 #endif

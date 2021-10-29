@@ -41,5 +41,11 @@ plugin_id_t    neu_adapter_get_plugin_id(neu_adapter_t *adapter);
 int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
 neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter);
-
+void               neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,
+                                                  neu_node_id_t        node_id,
+                                                  neu_taggrp_config_t *grp_config);
+void               neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
+                                                  neu_node_id_t        node_id,
+                                                  neu_taggrp_config_t *grp_config);
+vector_t *         neu_adapter_get_sub_grp_configs(neu_adapter_t *adapter);
 #endif
