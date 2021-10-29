@@ -133,8 +133,10 @@ int32_t neu_plugin_get_node_setting(neu_plugin_t *plugin, neu_node_id_t node_id,
                                     char **setting);
 int32_t neu_plugin_get_node_state(neu_plugin_t *plugin, neu_node_id_t node_id,
                                   neu_plugin_state_t *state);
-intptr_t neu_plugin_node_ctl(neu_plugin_t *plugin, neu_node_id_t node_id,
-                             neu_adapter_ctl_e ctl);
+intptr_t  neu_plugin_node_ctl(neu_plugin_t *plugin, neu_node_id_t node_id,
+                              neu_adapter_ctl_e ctl);
+vector_t *neu_system_get_sub_group_configs(neu_plugin_t *plugin,
+                                           neu_node_id_t node_id);
 #ifdef __cplusplus
 }
 #endif
