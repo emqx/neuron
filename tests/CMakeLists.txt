@@ -108,6 +108,29 @@ target_include_directories(schema_valid_test PRIVATE
 )
 target_link_libraries(schema_valid_test neuron-base gtest_main gtest jansson)
 
+file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINARY_DIR}/tests)
+add_executable(mqtt_test mqtt_test.cc 
+	${CMAKE_SOURCE_DIR}/src/config.c
+	${CMAKE_SOURCE_DIR}/src/schema/schema.c
+	${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt_client.c)
+target_include_directories(mqtt_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+	${CMAKE_SOURCE_DIR}/src/schema
+	${CMAKE_SOURCE_DIR}/plugins/mqtt)
+target_link_libraries(mqtt_test neuron-base gtest_main gtest yaml jansson ssl crypto)
+
+add_executable(opcua_test opcua_test.cc 
+	${CMAKE_SOURCE_DIR}/src/config.c
+	${CMAKE_SOURCE_DIR}/src/schema/schema.c
+	${CMAKE_SOURCE_DIR}/plugins/opcua/option.c)
+target_include_directories(opcua_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+	${CMAKE_SOURCE_DIR}/src/schema
+	${CMAKE_SOURCE_DIR}/plugins/opcua)
+target_link_libraries(opcua_test neuron-base gtest_main gtest yaml jansson ssl crypto)
+
 include(GoogleTest)
 gtest_discover_tests(data_val_test)
 gtest_discover_tests(modbus_point_test)
@@ -122,3 +145,5 @@ gtest_discover_tests(json_plugin_test)
 gtest_discover_tests(json_group_config_test)
 gtest_discover_tests(uuid_test)
 gtest_discover_tests(schema_valid_test)
+gtest_discover_tests(mqtt_test)
+gtest_discover_tests(opcua_test)

@@ -35,7 +35,7 @@
 
 struct node_setting {
     char *host;
-    char *port;
+    int   port;
     char *username;
     char *password;
 };
@@ -153,10 +153,10 @@ static int decode_node_setting(const char *         json_str,
     // setting->port
     param = json_object_get(child, "port");
     if (NULL == param) {
-        setting->port = NULL;
+        setting->port = 4840;
     }
-    if (json_is_string(param)) {
-        setting->port = strdup(json_string_value(param));
+    if (json_is_integer(param)) {
+        setting->port = json_integer_value(param);
         json_decref(param);
     }
 
@@ -185,8 +185,8 @@ static int decode_node_setting(const char *         json_str,
     return 0;
 }
 
-static int valid_node_setting(const char *file, const char *plugin_name,
-                              struct node_setting *setting)
+int valid_node_setting(const char *file, const char *plugin_name,
+                       struct node_setting *setting)
 {
     char  buf[BUF_SIZE] = { 0 };
     FILE *fp            = fopen(file, "r");
@@ -205,7 +205,7 @@ static int valid_node_setting(const char *file, const char *plugin_name,
         return -2;
     }
 
-    rc = neu_schema_valid_param_string(valid, setting->port, (char *) "port");
+    rc = neu_schema_valid_param_int(valid, setting->port, (char *) "port");
     if (0 != rc) {
         neu_schema_free(valid);
         return -3;
@@ -243,11 +243,13 @@ int opcua_option_init_by_config(neu_config_t *config, option_t *option)
         return -2;
     }
 
-    rc = valid_node_setting(SCHEMA_FILE, OPCUA_PLUGIN_NAME, &setting);
-
     // OPCUA option
-    option->host     = setting.host;
-    option->port     = setting.port;
+    option->host = setting.host;
+    option->port = calloc(10, sizeof(char));
+    if (NULL != option->port) {
+        snprintf(option->port, 10, "%d", setting.port);
+    }
+
     option->username = setting.username;
     option->password = setting.password;
     return 0;
