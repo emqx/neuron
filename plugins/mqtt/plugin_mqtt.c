@@ -316,6 +316,7 @@ static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
                                       const adapter_callbacks_t *callbacks)
 {
     if (NULL == adapter || NULL == callbacks) {
+        log_error("Open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
@@ -331,6 +332,9 @@ static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
+    plugin->common.state.running     = NEU_PLUGIN_RUNNING_STATE_IDLE;
+    plugin->common.state.link        = NEU_PLUGIN_LINK_STATE_CONNECTING;
+
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
@@ -375,17 +379,29 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     mqttc_client_close(plugin->mqtt_client);
     mqtt_option_uninit(&plugin->option);
     context_list_destroy(&plugin->context_list);
+
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_STOPPED;
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 
 static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-    UNUSED(plugin);
+    if (NULL == configs || NULL == configs->buf) {
+        return -1;
+    }
 
-    UNUSED(configs);
+    int rc = mqtt_option_init_by_config(configs, &plugin->option);
+    if (0 != rc) {
+        log_error("MQTT option init fail:%d, initialize plugin failed: %s", rc,
+                  neu_plugin_module.module_name);
 
-    log_info("config plugin: %s", neu_plugin_module.module_name);
+        mqtt_option_uninit(&plugin->option);
+        return -1;
+    }
+
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
+    log_info("Config plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 

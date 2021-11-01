@@ -5,22 +5,84 @@
 		"opcua-plugin"
 	],
 	"mqtt-plugin": {
+		"req-topic": {
+			"name": "req-topic",
+			"description": "Neuron request topic",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 100
+			}
+		},
+		"res-topic": {
+			"name": "res-topic",
+			"description": "Neuron response topic",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 100
+			}
+		},
+		"ssl": {
+			"name": "ssl",
+			"description": "Enable SSL connection",
+			"type": "bool",
+			"default": false,
+			"valid": {}
+		},
 		"host": {
 			"name": "host",
-			"description": "mqtt broker host",
+			"description": "MQTT broker host",
 			"type": "string",
+			"default": "broker.emqx.io",
 			"valid": {
 				"length": 30
 			}
 		},
 		"port": {
 			"name": "port",
-			"description": "mqtt broker port",
+			"description": "MQTT broker port",
 			"type": "int",
 			"default": 1883,
 			"valid": {
 				"min": 1024,
 				"max": 65535
+			}
+		},
+		"username": {
+			"name": "username",
+			"description": "User name",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 30
+			}
+		},
+		"password": {
+			"name": "password",
+			"description": "Password",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 30
+			}
+		},
+		"ca-path": {
+			"name": "ca-path",
+			"description": "",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 100
+			}
+		},
+		"ca-file": {
+			"name": "ca-file",
+			"description": "",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 100
 			}
 		}
 	},
@@ -43,7 +105,7 @@
 		],
 		"host": {
 			"name": "host",
-			"description": "opcua server host",
+			"description": "OPCUA server host",
 			"type": "string",
 			"valid": {
 				"length": 30
@@ -51,12 +113,30 @@
 		},
 		"port": {
 			"name": "port",
-			"description": "opcua server port",
+			"description": "OPCUA server port",
 			"type": "int",
 			"default": 4840,
 			"valid": {
 				"min": 1024,
 				"max": 65535
+			}
+		},
+		"username": {
+			"name": "username",
+			"description": "User name",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 30
+			}
+		},
+		"password": {
+			"name": "password",
+			"description": "Password",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 30
 			}
 		}
 	},

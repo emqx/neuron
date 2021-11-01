@@ -17,16 +17,34 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <jansson.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mqtt_client.h"
+#include "schema/schema.h"
+#include "utils/json.h"
 #include <config.h>
 #include <neuron.h>
 
+#define MQTT_PLUGIN_NAME "mqtt-plugin"
+#define SCHEMA_FILE "plugin_param_schema.json"
 #define CONFIG_FILE "./neuron.yaml"
 #define CONFIG_NODE "mqtt"
+
+struct node_setting {
+    uint32_t node_id;
+    char *   req_topic;
+    char *   res_topic;
+    bool     ssl;
+    char *   host;
+    int      port;
+    char *   username;
+    char *   password;
+    char *   ca_path;
+    char *   ca_file;
+};
 
 void ssl_ctx_uninit(SSL_CTX *ssl_ctx)
 {
@@ -194,6 +212,10 @@ void mqtt_option_uninit(option_t *option)
         free(option->topic);
     }
 
+    if (NULL != option->respons_topic) {
+        free(option->respons_topic);
+    }
+
     if (NULL != option->connection) {
         free(option->connection);
     }
@@ -221,4 +243,245 @@ void mqtt_option_uninit(option_t *option)
     if (NULL != option->cafile) {
         free(option->cafile);
     }
+}
+
+static int decode_node_setting(const char *         json_str,
+                               struct node_setting *setting)
+{
+    json_error_t error;
+    json_t *     root = json_loads(json_str, 0, &error);
+
+    if (NULL == root) {
+        log_debug("json error, column:%d, line:%d, pos:%d, %s, %s",
+                  error.column, error.line, error.position, error.source,
+                  error.text);
+        return -1;
+    }
+
+    json_t *child = json_object_get(root, "params");
+    if (NULL == child) {
+        json_decref(root);
+        return -2;
+    }
+
+    // setting->req_topic
+    json_t *param = json_object_get(child, "req-topic");
+    if (NULL == param) {
+        setting->req_topic = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->req_topic = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->res_topic
+    param = json_object_get(child, "res-topic");
+    if (NULL == param) {
+        setting->res_topic = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->res_topic = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->ssl
+    param = json_object_get(child, "ssl");
+    if (NULL == param) {
+        setting->ssl = false;
+    }
+    if (json_is_boolean(param)) {
+        setting->ssl = json_boolean_value(param);
+        json_decref(param);
+    }
+
+    // setting->host
+    param = json_object_get(child, "host");
+    if (NULL == param) {
+        setting->host = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->host = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->port
+    param = json_object_get(child, "port");
+    if (NULL == param) {
+        setting->port = 1883;
+    }
+    if (json_is_integer(param)) {
+        setting->port = json_integer_value(param);
+        json_decref(param);
+    }
+
+    // setting->username
+    param = json_object_get(child, "username");
+    if (NULL == param) {
+        setting->username = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->username = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->password
+    param = json_object_get(child, "password");
+    if (NULL == param) {
+        setting->password = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->password = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->ca_path
+    param = json_object_get(child, "ca-path");
+    if (NULL == param) {
+        setting->ca_path = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->ca_path = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    param = json_object_get(child, "ca-file");
+    if (NULL == param) {
+        setting->ca_file = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->ca_file = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    json_decref(child);
+    json_decref(root);
+    return 0;
+}
+
+static int valid_node_setting(const char *file, const char *plugin_name,
+                              struct node_setting *setting)
+{
+    char  buf[40960] = { 0 };
+    FILE *fp         = fopen(file, "r");
+    fread(buf, 1, sizeof(buf), fp);
+    fclose(fp);
+
+    neu_schema_valid_t *valid = neu_schema_load(buf, (char *) plugin_name);
+    if (NULL == valid) {
+        return -1;
+    }
+
+    int rc = neu_schema_valid_param_string(valid, setting->req_topic,
+                                           (char *) "req-topic");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -2;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->res_topic,
+                                       (char *) "res-topic");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -3;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->host, (char *) "host");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -4;
+    }
+
+    rc = neu_schema_valid_param_int(valid, setting->port, (char *) "port");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -5;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->username,
+                                       (char *) "username");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -6;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->password,
+                                       (char *) "password");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -7;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->ca_file,
+                                       (char *) "ca-file");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -8;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->ca_path,
+                                       (char *) "ca-path");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -9;
+    }
+
+    neu_schema_free(valid);
+    return 0;
+}
+
+int mqtt_option_init_by_config(neu_config_t *config, option_t *option)
+{
+    if (NULL == config || NULL == option) {
+        return -1;
+    }
+
+    struct node_setting setting = { 0 };
+    int rc = decode_node_setting((char *) config->buf, &setting);
+    if (0 != rc) {
+        return -2;
+    }
+
+    rc = valid_node_setting(SCHEMA_FILE, MQTT_PLUGIN_NAME, &setting);
+
+    // MQTT option
+    option->clientid      = NULL; // Use random id
+    option->MQTT_version  = 4;    // Version 3.1.1
+    option->topic         = setting.req_topic;
+    option->respons_topic = setting.res_topic;
+    option->qos           = 0;
+
+    if (false == setting.ssl) {
+        option->connection = strdup("tcp://");
+    } else {
+        option->connection = strdup("ssl://");
+    }
+
+    option->host = setting.host;
+    option->port = calloc(10, sizeof(char));
+    if (NULL != option->port) {
+        snprintf(option->port, 10, "%d", setting.port);
+    }
+
+    option->username = setting.username;
+    option->password = setting.password;
+    option->capath   = setting.ca_path;
+    option->cafile   = setting.ca_file;
+
+    if (0 == strcmp(option->connection, "ssl://") && NULL == option->cafile) {
+        return -6;
+    }
+
+    if (0 == strcmp(option->connection, "ssl://")) {
+        SSL_CTX *ssl_ctx = NULL;
+        ssl_ctx          = ssl_ctx_init(option->cafile, option->capath);
+        if (NULL == ssl_ctx) {
+            return -7;
+        }
+
+        ssl_ctx_uninit(ssl_ctx);
+    }
+
+    option->keepalive_interval = 20;
+    option->clean_session      = 1;
+    return 0;
 }

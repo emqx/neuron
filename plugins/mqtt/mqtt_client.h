@@ -28,6 +28,8 @@ extern "C" {
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 
+#include <neuron.h>
+
 typedef struct {
     /* debug app options */
     int   publisher; /* publisher app? */
@@ -45,6 +47,7 @@ typedef struct {
     /* MQTT options */
     int   MQTT_version; // 3-3_1, 4-3_3_1, 5-5
     char *topic;
+    char *respons_topic;
     char *clientid;
     int   qos;
     int   retained;
@@ -106,6 +109,7 @@ SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path);
 void     ssl_ctx_uninit(SSL_CTX *ssl_ctx);
 int      mqtt_option_init(option_t *option);
 void     mqtt_option_uninit(option_t *option);
+int      mqtt_option_init_by_config(neu_config_t *config, option_t *option);
 
 #ifdef __cplusplus
 }
