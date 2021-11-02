@@ -1499,84 +1499,362 @@ void comp_arr_3d_double(neu_fixed_array_t *get_array_double)
     neu_fixed_array_free(get_array_double);
 }
 
-// void comp_arr_3d_cstr(neu_fixed_array_t *get_array_cstr)
-// {
-//     /** Get the first element of the 3D array **/
-//     neu_data_val_t *get_array_dval1 =
-//         *(neu_data_val_t **) neu_fixed_array_get(get_array_cstr, 0);
-//     neu_fixed_array_t *get_array1 = NULL;
-//     neu_dvalue_get_move_array(get_array_dval1, &get_array1);
+void comp_arr_3d_cstr(neu_fixed_array_t *get_array_cstr)
+{
+    /** Get the first element of the 3D array **/
+    neu_data_val_t *get_array_dval1 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array_cstr, 0);
+    neu_fixed_array_t *get_array1 = NULL;
+    neu_dvalue_get_move_array(get_array_dval1, &get_array1);
 
-//     /** Get the first element of the first 2D array **/
-//     neu_data_val_t *get_array_dval11 =
-//         *(neu_data_val_t **) neu_fixed_array_get(get_array1, 0);
-//     neu_fixed_array_t *get_array11 = NULL;
-//     neu_dvalue_get_move_array(get_array_dval11, &get_array11);
-//     char *get_cstr111 = (char *) neu_fixed_array_get(get_array11, 0);
-//     EXPECT_EQ((char *) "Hello,cstr-test1", get_cstr111);
-//     char *get_cstr112 = (char *) neu_fixed_array_get(get_array11, 1);
-//     EXPECT_EQ((char *) "Hello,cstr-test2", get_cstr112);
-//     neu_fixed_array_free(get_array11);
-//     neu_dvalue_free(get_array_dval11);
-//     free(get_cstr111);
-//     free(get_cstr112);
+    /** Get the first element of the first 2D array **/
+    neu_data_val_t *get_array_dval11 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array1, 0);
+    neu_fixed_array_t *get_array11 = NULL;
+    neu_dvalue_get_move_array(get_array_dval11, &get_array11);
+    char *get_cstr111 = *(char **) neu_fixed_array_get(get_array11, 0);
+    EXPECT_STREQ((char *) "Hello,cstr-test1", get_cstr111);
+    char *get_cstr112 = *(char **) neu_fixed_array_get(get_array11, 1);
+    EXPECT_STREQ((char *) "Hello,cstr-test2", get_cstr112);
+    neu_fixed_array_free(get_array11);
+    neu_dvalue_free(get_array_dval11);
+    free(get_cstr111);
+    free(get_cstr112);
 
-//     /** Get the second element of the first 2D array **/
-//     neu_data_val_t *get_array_dval12 =
-//         *(neu_data_val_t **) neu_fixed_array_get(get_array1, 1);
-//     neu_fixed_array_t *get_array12 = NULL;
-//     neu_dvalue_get_move_array(get_array_dval12, &get_array12);
-//     char *get_cstr121 = *(char **) neu_fixed_array_get(get_array12, 0);
-//     EXPECT_EQ((char *) "Hello,cstr-test3", get_cstr121);
-//     char *get_cstr122 = *(char **) neu_fixed_array_get(get_array12, 1);
-//     EXPECT_EQ((char *) "Hello,cstr-test4", get_cstr122);
-//     neu_fixed_array_free(get_array12);
-//     neu_dvalue_free(get_array_dval12);
-//     free(get_cstr121);
-//     free(get_cstr122);
+    /** Get the second element of the first 2D array **/
+    neu_data_val_t *get_array_dval12 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array1, 1);
+    neu_fixed_array_t *get_array12 = NULL;
+    neu_dvalue_get_move_array(get_array_dval12, &get_array12);
+    char *get_cstr121 = *(char **) neu_fixed_array_get(get_array12, 0);
+    EXPECT_STREQ((char *) "Hello,cstr-test3", get_cstr121);
+    char *get_cstr122 = *(char **) neu_fixed_array_get(get_array12, 1);
+    EXPECT_STREQ((char *) "Hello,cstr-test4", get_cstr122);
+    neu_fixed_array_free(get_array12);
+    neu_dvalue_free(get_array_dval12);
+    free(get_cstr121);
+    free(get_cstr122);
 
-//     neu_fixed_array_free(get_array1);
-//     neu_dvalue_free(get_array_dval1);
+    neu_fixed_array_free(get_array1);
+    neu_dvalue_free(get_array_dval1);
 
-//     /** Get the second element of the 3D array **/
-//     neu_data_val_t *get_array_dval2 =
-//         *(neu_data_val_t **) neu_fixed_array_get(get_array_cstr, 1);
-//     neu_fixed_array_t *get_array2 = NULL;
-//     neu_dvalue_get_move_array(get_array_dval2, &get_array2);
+    /** Get the second element of the 3D array **/
+    neu_data_val_t *get_array_dval2 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array_cstr, 1);
+    neu_fixed_array_t *get_array2 = NULL;
+    neu_dvalue_get_move_array(get_array_dval2, &get_array2);
 
-//     /** Get the first element of the second 2D array **/
-//     neu_data_val_t *get_array_dval21 =
-//         *(neu_data_val_t **) neu_fixed_array_get(get_array2, 0);
-//     neu_fixed_array_t *get_array21 = NULL;
-//     neu_dvalue_get_move_array(get_array_dval21, &get_array21);
-//     char *get_cstr311 = (char *) neu_fixed_array_get(get_array21, 0);
-//     EXPECT_EQ((char *) "Hello,cstr-test5", get_cstr311);
-//     char *get_cstr312 = (char *) neu_fixed_array_get(get_array21, 1);
-//     EXPECT_EQ((char *) "Hello,cstr-test6", get_cstr312);
-//     neu_fixed_array_free(get_array21);
-//     neu_dvalue_free(get_array_dval21);
-//     free(get_cstr311);
-//     free(get_cstr312);
+    /** Get the first element of the second 2D array **/
+    neu_data_val_t *get_array_dval21 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array2, 0);
+    neu_fixed_array_t *get_array21 = NULL;
+    neu_dvalue_get_move_array(get_array_dval21, &get_array21);
+    char *get_cstr311 = *(char **) neu_fixed_array_get(get_array21, 0);
+    EXPECT_STREQ((char *) "Hello,cstr-test5", get_cstr311);
+    char *get_cstr312 = *(char **) neu_fixed_array_get(get_array21, 1);
+    EXPECT_STREQ((char *) "Hello,cstr-test6", get_cstr312);
+    neu_fixed_array_free(get_array21);
+    neu_dvalue_free(get_array_dval21);
+    free(get_cstr311);
+    free(get_cstr312);
 
-//     /** Get the second element of the second 2D array **/
-//     neu_data_val_t *get_array_dval22 =
-//         *(neu_data_val_t **) neu_fixed_array_get(get_array2, 1);
-//     neu_fixed_array_t *get_array22 = NULL;
-//     neu_dvalue_get_move_array(get_array_dval22, &get_array22);
-//     char *get_cstr321 = (char *) neu_fixed_array_get(get_array22, 0);
-//     EXPECT_EQ((char *) "Hello,cstr-test7", get_cstr321);
-//     char *get_cstr322 = (char *) neu_fixed_array_get(get_array22, 1);
-//     EXPECT_EQ((char *) "Hello,cstr-test8", get_cstr322);
-//     neu_fixed_array_free(get_array22);
-//     neu_dvalue_free(get_array_dval22);
-//     free(get_cstr321);
-//     free(get_cstr322);
+    /** Get the second element of the second 2D array **/
+    neu_data_val_t *get_array_dval22 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array2, 1);
+    neu_fixed_array_t *get_array22 = NULL;
+    neu_dvalue_get_move_array(get_array_dval22, &get_array22);
+    char *get_cstr321 = *(char **) neu_fixed_array_get(get_array22, 0);
+    EXPECT_STREQ((char *) "Hello,cstr-test7", get_cstr321);
+    char *get_cstr322 = *(char **) neu_fixed_array_get(get_array22, 1);
+    EXPECT_STREQ((char *) "Hello,cstr-test8", get_cstr322);
+    neu_fixed_array_free(get_array22);
+    neu_dvalue_free(get_array_dval22);
+    free(get_cstr321);
+    free(get_cstr322);
 
-//     neu_fixed_array_free(get_array2);
-//     neu_dvalue_free(get_array_dval2);
+    neu_fixed_array_free(get_array2);
+    neu_dvalue_free(get_array_dval2);
 
-//     neu_fixed_array_free(get_array_cstr);
-// }
+    neu_fixed_array_free(get_array_cstr);
+}
+
+void comp_arr_3d_int_val(neu_fixed_array_t *get_array_int_val)
+{
+    /** Get the first element of the 3D array **/
+    neu_data_val_t *get_array_dval1 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array_int_val, 0);
+    neu_fixed_array_t *get_array1 = NULL;
+    neu_dvalue_get_move_array(get_array_dval1, &get_array1);
+
+    /** Get the first element of the first 2D array1 **/
+    neu_data_val_t *get_array_dval11 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array1, 0);
+    neu_fixed_array_t *get_array11 = NULL;
+    neu_dvalue_get_move_array(get_array_dval11, &get_array11);
+
+    neu_int_val_t *get_int_val111 =
+        *(neu_int_val_t **) neu_fixed_array_get(get_array11, 0);
+    EXPECT_EQ(111, get_int_val111->key);
+    char *output_val111 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val111->val, &output_val111));
+    EXPECT_STREQ((char *) "hello,int-val1", output_val111);
+    neu_int_val_uninit(get_int_val111);
+
+    neu_int_val_t *get_int_val112 =
+        *(neu_int_val_t **) neu_fixed_array_get(get_array11, 1);
+    EXPECT_EQ(112, get_int_val112->key);
+    char *output_val112 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val112->val, &output_val112));
+    EXPECT_STREQ((char *) "hello,int-val2", output_val112);
+    neu_int_val_uninit(get_int_val112);
+
+    neu_fixed_array_free(get_array11);
+    neu_dvalue_free(get_array_dval11);
+
+    /** Get the second element of the first 2D array1 **/
+    neu_data_val_t *get_array_dval12 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array1, 1);
+    neu_fixed_array_t *get_array12 = NULL;
+    neu_dvalue_get_move_array(get_array_dval12, &get_array12);
+
+    neu_int_val_t *get_int_val121 =
+        *(neu_int_val_t **) neu_fixed_array_get(get_array12, 0);
+    EXPECT_EQ(121, get_int_val121->key);
+    char *output_val121 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val121->val, &output_val121));
+    EXPECT_STREQ((char *) "hello,int-val3", output_val121);
+    neu_int_val_uninit(get_int_val121);
+
+    neu_int_val_t *get_int_val122 =
+        *(neu_int_val_t **) neu_fixed_array_get(get_array12, 1);
+    EXPECT_EQ(122, get_int_val122->key);
+    char *output_val122 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val122->val, &output_val122));
+    EXPECT_STREQ((char *) "hello,int-val4", output_val122);
+    neu_int_val_uninit(get_int_val122);
+
+    neu_fixed_array_free(get_array12);
+    neu_dvalue_free(get_array_dval12);
+
+    neu_fixed_array_free(get_array1);
+    neu_dvalue_free(get_array_dval1);
+
+    /** Get the second element of the 3D array **/
+    neu_data_val_t *get_array_dval2 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array_int_val, 1);
+    neu_fixed_array_t *get_array2 = NULL;
+    neu_dvalue_get_move_array(get_array_dval2, &get_array2);
+
+    /** Get the first element of the second 2D array2 **/
+    neu_data_val_t *get_array_dval21 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array2, 0);
+    neu_fixed_array_t *get_array21 = NULL;
+    neu_dvalue_get_move_array(get_array_dval21, &get_array21);
+
+    neu_int_val_t *get_int_val211 =
+        (neu_int_val_t *) neu_fixed_array_get(get_array21, 0);
+    EXPECT_EQ(111, get_int_val211->key);
+    char *output_val211 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val211->val, &output_val211));
+    EXPECT_STREQ((char *) "hello,int-val5", output_val211);
+    neu_int_val_uninit(get_int_val211);
+
+    neu_int_val_t *get_int_val212 =
+        (neu_int_val_t *) neu_fixed_array_get(get_array21, 1);
+    EXPECT_EQ(212, get_int_val212->key);
+    char *output_val212 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val212->val, &output_val212));
+    EXPECT_STREQ((char *) "hello,int-val6", output_val212);
+    neu_int_val_uninit(get_int_val212);
+
+    neu_fixed_array_free(get_array21);
+    neu_dvalue_free(get_array_dval21);
+
+    /** Get the second element of the second 2D array2 **/
+    neu_data_val_t *get_array_dval22 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array2, 1);
+    neu_fixed_array_t *get_array22 = NULL;
+    neu_dvalue_get_move_array(get_array_dval22, &get_array22);
+
+    neu_int_val_t *get_int_val221 =
+        *(neu_int_val_t **) neu_fixed_array_get(get_array22, 0);
+    EXPECT_EQ(221, get_int_val221->key);
+    char *output_val221 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val221->val, &output_val221));
+    EXPECT_STREQ((char *) "hello,int-val7", output_val221);
+    neu_int_val_uninit(get_int_val221);
+
+    neu_int_val_t *get_int_val222 =
+        *(neu_int_val_t **) neu_fixed_array_get(get_array22, 1);
+    EXPECT_EQ(222, get_int_val222->key);
+    char *output_val222 = NULL;
+    EXPECT_EQ(0, neu_dvalue_get_ref_cstr(get_int_val222->val, &output_val222));
+    EXPECT_STREQ((char *) "hello,int-val8", output_val222);
+    neu_int_val_uninit(get_int_val222);
+
+    neu_fixed_array_free(get_array22);
+    neu_dvalue_free(get_array_dval22);
+
+    neu_fixed_array_free(get_array2);
+    neu_dvalue_free(get_array_dval2);
+
+    neu_fixed_array_free(get_array_int_val);
+}
+
+void comp_arr_3d_str_val(neu_fixed_array_t *get_array_str_val)
+{
+    /** Get the first 2D array1 within 3D array **/
+    neu_data_val_t *get_array_dval1 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array_str_val, 0);
+    neu_fixed_array_t *get_array1 = NULL;
+    neu_dvalue_get_move_array(get_array_dval1, &get_array1);
+
+    /** Get the first 1D array11 within the first 2D array1 **/
+    neu_data_val_t *get_array_dval11 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array1, 0);
+    neu_fixed_array_t *get_array11 = NULL;
+    neu_dvalue_get_move_array(get_array_dval11, &get_array11);
+
+    /** Compare the first element of the first 1D array11 **/
+    neu_string_val_t *get_str_val111 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array11, 0);
+    EXPECT_STREQ((char *) "string-key1",
+                 neu_string_get_ref_cstr(get_str_val111->key));
+    neu_string_t *get_string111 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val111->val, &get_string111));
+    EXPECT_STREQ((char *) "hello,string-val1",
+                 neu_string_get_ref_cstr(get_string111));
+    neu_string_val_uninit(get_str_val111);
+
+    /** Compare the second element of the first 1D array11 **/
+    neu_string_val_t *get_str_val112 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array11, 1);
+    EXPECT_STREQ((char *) "string-key2",
+                 neu_string_get_ref_cstr(get_str_val112->key));
+    neu_string_t *get_string112 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val112->val, &get_string112));
+    EXPECT_STREQ((char *) "hello,string-val2",
+                 neu_string_get_ref_cstr(get_string112));
+    neu_string_val_uninit(get_str_val112);
+
+    neu_fixed_array_free(get_array11);
+    neu_dvalue_free(get_array_dval11);
+
+    /** Get the second 1D array12 within the first 2D array1 **/
+    neu_data_val_t *get_array_dval12 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array1, 1);
+    neu_fixed_array_t *get_array12 = NULL;
+    neu_dvalue_get_move_array(get_array_dval12, &get_array12);
+
+    /** Compare the first element of the first 1D array12 **/
+    neu_string_val_t *get_str_val121 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array12, 0);
+    EXPECT_STREQ((char *) "string-key3",
+                 neu_string_get_ref_cstr(get_str_val121->key));
+    neu_string_t *get_string121 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val121->val, &get_string121));
+    EXPECT_STREQ((char *) "hello,string-val3",
+                 neu_string_get_ref_cstr(get_string121));
+    neu_string_val_uninit(get_str_val121);
+
+    /** Compare the second element of the first 1D array12 **/
+    neu_string_val_t *get_str_val122 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array12, 1);
+    EXPECT_STREQ((char *) "string-key4",
+                 neu_string_get_ref_cstr(get_str_val122->key));
+    neu_string_t *get_string122 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val122->val, &get_string122));
+    EXPECT_STREQ((char *) "hello,string-val4",
+                 neu_string_get_ref_cstr(get_string122));
+    neu_string_val_uninit(get_str_val122);
+
+    neu_fixed_array_free(get_array12);
+    neu_dvalue_free(get_array_dval12);
+
+    neu_fixed_array_free(get_array1);
+    neu_dvalue_free(get_array_dval1);
+
+    /** Get the second 2D array2 within 3D array **/
+    neu_data_val_t *get_array_dval2 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array_str_val, 1);
+    neu_fixed_array_t *get_array2 = NULL;
+    neu_dvalue_get_move_array(get_array_dval2, &get_array2);
+
+    /** Get the first 1D array21 within the second 2D array2 **/
+    neu_data_val_t *get_array_dval21 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array2, 0);
+    neu_fixed_array_t *get_array21 = NULL;
+    neu_dvalue_get_move_array(get_array_dval21, &get_array21);
+
+    /** Compare the first element of the first 1D array21 **/
+    neu_string_val_t *get_str_val211 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array21, 0);
+    EXPECT_STREQ((char *) "string-key5",
+                 neu_string_get_ref_cstr(get_str_val211->key));
+    neu_string_t *get_string211 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val211->val, &get_string211));
+    EXPECT_STREQ((char *) "hello,string-val5",
+                 neu_string_get_ref_cstr(get_string211));
+    neu_string_val_uninit(get_str_val211);
+
+    /** Compare the second element of the first 1D array21 **/
+    neu_string_val_t *get_str_val212 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array21, 1);
+    EXPECT_STREQ((char *) "string-key6",
+                 neu_string_get_ref_cstr(get_str_val212->key));
+    neu_string_t *get_string212 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val212->val, &get_string212));
+    EXPECT_STREQ((char *) "hello,string-val6",
+                 neu_string_get_ref_cstr(get_string212));
+    neu_string_val_uninit(get_str_val212);
+
+    neu_fixed_array_free(get_array21);
+    neu_dvalue_free(get_array_dval21);
+
+    /** Get the second 1D array22 within the second 2D array2 **/
+    neu_data_val_t *get_array_dval22 =
+        *(neu_data_val_t **) neu_fixed_array_get(get_array2, 1);
+    neu_fixed_array_t *get_array22 = NULL;
+    neu_dvalue_get_move_array(get_array_dval22, &get_array22);
+
+    /** Compare the first element of the first 1D array22 **/
+    neu_string_val_t *get_str_val221 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array22, 0);
+    EXPECT_STREQ((char *) "string-key7",
+                 neu_string_get_ref_cstr(get_str_val221->key));
+    neu_string_t *get_string221 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val221->val, &get_string221));
+    EXPECT_STREQ((char *) "hello,string-val7",
+                 neu_string_get_ref_cstr(get_string221));
+    neu_string_val_uninit(get_str_val221);
+
+    /** Compare the second element of the first 1D array22 **/
+    neu_string_val_t *get_str_val222 =
+        (neu_string_val_t *) neu_fixed_array_get(get_array22, 1);
+    EXPECT_STREQ((char *) "string-key8",
+                 neu_string_get_ref_cstr(get_str_val222->key));
+    neu_string_t *get_string222 = NULL;
+    EXPECT_EQ(0,
+              neu_dvalue_get_ref_string(get_str_val222->val, &get_string222));
+    EXPECT_STREQ((char *) "hello,string-val8",
+                 neu_string_get_ref_cstr(get_string222));
+    neu_string_val_uninit(get_str_val222);
+
+    neu_fixed_array_free(get_array22);
+    neu_dvalue_free(get_array_dval22);
+
+    neu_fixed_array_free(get_array2);
+    neu_dvalue_free(get_array_dval2);
+
+    neu_fixed_array_free(get_array_str_val);
+}
 
 TEST(DataValuTest, neu_dvalue_3D_array_deser)
 {
@@ -1748,93 +2026,422 @@ TEST(DataValuTest, neu_dvalue_3D_array_deser)
     /** Compare **/
     comp_arr_3d_double(get_array_double);
 
-    // /** cstr **/
-    // /** set array **/
-    // char *cstr1 = (char *) "Hello,cstr-test1";
-    // char *cstr2 = (char *) "Hello,cstr-test2";
-    // char *cstr3 = (char *) "Hello,cstr-test3";
-    // char *cstr4 = (char *) "Hello,cstr-test4";
-    // char *cstr5 = (char *) "Hello,cstr-test5";
-    // char *cstr6 = (char *) "Hello,cstr-test6";
-    // char *cstr7 = (char *) "Hello,cstr-test7";
-    // char *cstr8 = (char *) "Hello,cstr-test8";
+    /** cstr **/
+    /** set array **/
+    char *cstr1 = (char *) "Hello,cstr-test1";
+    char *cstr2 = (char *) "Hello,cstr-test2";
+    char *cstr3 = (char *) "Hello,cstr-test3";
+    char *cstr4 = (char *) "Hello,cstr-test4";
+    char *cstr5 = (char *) "Hello,cstr-test5";
+    char *cstr6 = (char *) "Hello,cstr-test6";
+    char *cstr7 = (char *) "Hello,cstr-test7";
+    char *cstr8 = (char *) "Hello,cstr-test8";
 
-    // neu_fixed_array_t *set_array_cstr11 =
-    //     neu_fixed_array_new(2, sizeof(char *));
-    // neu_fixed_array_set(set_array_cstr11, 0, &cstr1);
-    // neu_fixed_array_set(set_array_cstr11, 1, &cstr2);
-    // neu_data_val_t *array_cstr_dval11 = neu_dvalue_unit_new();
-    // neu_dvalue_init_ref_array(array_cstr_dval11, NEU_DTYPE_CSTR,
-    //                           set_array_cstr11);
+    neu_fixed_array_t *set_array_cstr11 =
+        neu_fixed_array_new(2, sizeof(char *));
+    neu_fixed_array_set(set_array_cstr11, 0, &cstr1);
+    neu_fixed_array_set(set_array_cstr11, 1, &cstr2);
+    neu_data_val_t *array_cstr_dval11 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_cstr_dval11, NEU_DTYPE_CSTR,
+                              set_array_cstr11);
 
-    // neu_fixed_array_t *set_array_cstr12 =
-    //     neu_fixed_array_new(2, sizeof(char *));
-    // neu_fixed_array_set(set_array_cstr12, 0, &cstr3);
-    // neu_fixed_array_set(set_array_cstr12, 1, &cstr4);
-    // neu_data_val_t *array_cstr_dval12 = neu_dvalue_unit_new();
-    // neu_dvalue_init_ref_array(array_cstr_dval12, NEU_DTYPE_CSTR,
-    //                           set_array_cstr12);
+    neu_fixed_array_t *set_array_cstr12 =
+        neu_fixed_array_new(2, sizeof(char *));
+    neu_fixed_array_set(set_array_cstr12, 0, &cstr3);
+    neu_fixed_array_set(set_array_cstr12, 1, &cstr4);
+    neu_data_val_t *array_cstr_dval12 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_cstr_dval12, NEU_DTYPE_CSTR,
+                              set_array_cstr12);
 
-    // neu_fixed_array_t *set_array_cstr21 =
-    //     neu_fixed_array_new(2, sizeof(char *));
-    // neu_fixed_array_set(set_array_cstr21, 0, &cstr5);
-    // neu_fixed_array_set(set_array_cstr21, 1, &cstr6);
-    // neu_data_val_t *array_cstr_dval21 = neu_dvalue_unit_new();
-    // neu_dvalue_init_ref_array(array_cstr_dval21, NEU_DTYPE_CSTR,
-    //                           set_array_cstr21);
+    neu_fixed_array_t *set_array_cstr21 =
+        neu_fixed_array_new(2, sizeof(char *));
+    neu_fixed_array_set(set_array_cstr21, 0, &cstr5);
+    neu_fixed_array_set(set_array_cstr21, 1, &cstr6);
+    neu_data_val_t *array_cstr_dval21 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_cstr_dval21, NEU_DTYPE_CSTR,
+                              set_array_cstr21);
 
-    // neu_fixed_array_t *set_array_cstr22 =
-    //     neu_fixed_array_new(2, sizeof(char *));
-    // neu_fixed_array_set(set_array_cstr22, 0, &cstr7);
-    // neu_fixed_array_set(set_array_cstr22, 1, &cstr8);
-    // neu_data_val_t *array_cstr_dval22 = neu_dvalue_unit_new();
-    // neu_dvalue_init_ref_array(array_cstr_dval22, NEU_DTYPE_CSTR,
-    //                           set_array_cstr22);
+    neu_fixed_array_t *set_array_cstr22 =
+        neu_fixed_array_new(2, sizeof(char *));
+    neu_fixed_array_set(set_array_cstr22, 0, &cstr7);
+    neu_fixed_array_set(set_array_cstr22, 1, &cstr8);
+    neu_data_val_t *array_cstr_dval22 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_cstr_dval22, NEU_DTYPE_CSTR,
+                              set_array_cstr22);
 
-    // neu_fixed_array_t *set_array_cstr1 =
-    //     neu_fixed_array_new(2, sizeof(neu_data_val_t *));
-    // neu_fixed_array_set(set_array_cstr1, 0, &array_cstr_dval11);
-    // neu_fixed_array_set(set_array_cstr1, 1, &array_cstr_dval12);
-    // neu_data_val_t *array_cstr_dval1 = neu_dvalue_unit_new();
-    // neu_dvalue_init_ref_array(array_cstr_dval1, NEU_DTYPE_DATA_VAL,
-    //                           set_array_cstr1);
+    neu_fixed_array_t *set_array_cstr1 =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_array_cstr1, 0, &array_cstr_dval11);
+    neu_fixed_array_set(set_array_cstr1, 1, &array_cstr_dval12);
+    neu_data_val_t *array_cstr_dval1 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_cstr_dval1, NEU_DTYPE_DATA_VAL,
+                              set_array_cstr1);
 
-    // neu_fixed_array_t *set_array_cstr2 =
-    //     neu_fixed_array_new(2, sizeof(neu_data_val_t *));
-    // neu_fixed_array_set(set_array_cstr2, 0, &array_cstr_dval21);
-    // neu_fixed_array_set(set_array_cstr2, 1, &array_cstr_dval22);
-    // neu_data_val_t *array_cstr_dval2 = neu_dvalue_unit_new();
-    // neu_dvalue_init_ref_array(array_cstr_dval2, NEU_DTYPE_DATA_VAL,
-    //                           set_array_cstr2);
+    neu_fixed_array_t *set_array_cstr2 =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_array_cstr2, 0, &array_cstr_dval21);
+    neu_fixed_array_set(set_array_cstr2, 1, &array_cstr_dval22);
+    neu_data_val_t *array_cstr_dval2 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_cstr_dval2, NEU_DTYPE_DATA_VAL,
+                              set_array_cstr2);
 
-    // neu_fixed_array_t *set_array_cstr =
-    //     neu_fixed_array_new(2, sizeof(neu_data_val_t *));
-    // neu_fixed_array_set(set_array_cstr, 0, &array_cstr_dval1);
-    // neu_fixed_array_set(set_array_cstr, 1, &array_cstr_dval2);
+    neu_fixed_array_t *set_array_cstr =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_array_cstr, 0, &array_cstr_dval1);
+    neu_fixed_array_set(set_array_cstr, 1, &array_cstr_dval2);
+
+    // neu_fixed_array_free(set_array_cstr);
+
+    /** serialize and deserialize return **/
+    neu_fixed_array_t *get_array_cstr =
+        ser_deser_get(set_array_cstr, NEU_DTYPE_DATA_VAL);
+
+    /** Compare **/
+    comp_arr_3d_cstr(get_array_cstr);
+
+    /** free **/
+    neu_fixed_array_free(set_array_cstr11);
+    neu_fixed_array_free(set_array_cstr12);
+    neu_fixed_array_free(set_array_cstr21);
+    neu_fixed_array_free(set_array_cstr22);
+
+    neu_dvalue_free(array_cstr_dval11);
+    neu_dvalue_free(array_cstr_dval12);
+    neu_dvalue_free(array_cstr_dval21);
+    neu_dvalue_free(array_cstr_dval22);
+
+    neu_fixed_array_free(set_array_cstr1);
+    neu_fixed_array_free(set_array_cstr2);
+
+    neu_dvalue_free(array_cstr_dval1);
+    neu_dvalue_free(array_cstr_dval2);
+
+    /** int_val **/
+    /** the fist element of 1D array **/
+    neu_data_val_t *input_int_val111 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val111, (char *) "hello,int-val1");
+    neu_int_val_t int_val111;
+    neu_int_val_init(&int_val111, 111, input_int_val111);
+
+    /** the second element of 1D array **/
+    neu_data_val_t *input_int_val112 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val112, (char *) "hello,int-val2");
+    neu_int_val_t int_val112;
+    neu_int_val_init(&int_val112, 112, input_int_val112);
+
+    /** the third element of 1D array **/
+    neu_data_val_t *input_int_val121 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val121, (char *) "hello,int-val3");
+    neu_int_val_t int_val121;
+    neu_int_val_init(&int_val121, 121, input_int_val121);
+
+    /** the fourth element of 1D array **/
+    neu_data_val_t *input_int_val122 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val122, (char *) "hello,int-val4");
+    neu_int_val_t int_val122;
+    neu_int_val_init(&int_val122, 122, input_int_val122);
+
+    /** the fifth element of 1D array **/
+    neu_data_val_t *input_int_val211 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val211, (char *) "hello,int-val5");
+    neu_int_val_t int_val211;
+    neu_int_val_init(&int_val211, 211, input_int_val211);
+
+    /** the sixth element of 1D array **/
+    neu_data_val_t *input_int_val212 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val212, (char *) "hello,int-val6");
+    neu_int_val_t int_val212;
+    neu_int_val_init(&int_val212, 212, input_int_val212);
+
+    /** the seventh element of 1D array **/
+    neu_data_val_t *input_int_val221 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val221, (char *) "hello,int-val7");
+    neu_int_val_t int_val221;
+    neu_int_val_init(&int_val221, 221, input_int_val221);
+
+    /** the eighth element of 1D array **/
+    neu_data_val_t *input_int_val222 = neu_dvalue_new(NEU_DTYPE_CSTR);
+    neu_dvalue_set_cstr(input_int_val222, (char *) "hello,int-val8");
+    neu_int_val_t int_val222;
+    neu_int_val_init(&int_val222, 222, input_int_val222);
+
+    /** set the first element of 2D array1 **/
+    neu_fixed_array_t *set_array_int_val11 =
+        neu_fixed_array_new(2, sizeof(neu_int_val_t));
+    neu_fixed_array_set(set_array_int_val11, 0, &int_val111);
+    neu_fixed_array_set(set_array_int_val11, 1, &int_val112);
+    neu_data_val_t *array_int_val_dval11 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_int_val_dval11, NEU_DTYPE_INT_VAL,
+                              set_array_int_val11);
+
+    /** set the second element of 2D array1 **/
+    neu_fixed_array_t *set_array_int_val12 =
+        neu_fixed_array_new(2, sizeof(neu_int_val_t));
+    neu_fixed_array_set(set_array_int_val12, 0, &int_val121);
+    neu_fixed_array_set(set_array_int_val11, 1, &int_val122);
+    neu_data_val_t *array_int_val_dval12 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_int_val_dval12, NEU_DTYPE_INT_VAL,
+                              set_array_int_val12);
+
+    /** set the first element of 2D array2 **/
+    neu_fixed_array_t *set_array_int_val21 =
+        neu_fixed_array_new(2, sizeof(neu_int_val_t));
+    neu_fixed_array_set(set_array_int_val21, 0, &int_val211);
+    neu_fixed_array_set(set_array_int_val21, 1, &int_val212);
+    neu_data_val_t *array_int_val_dval21 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_int_val_dval21, NEU_DTYPE_INT_VAL,
+                              set_array_int_val21);
+
+    /** set the second element of 2D array2 **/
+    neu_fixed_array_t *set_array_int_val22 =
+        neu_fixed_array_new(2, sizeof(neu_int_val_t));
+    neu_fixed_array_set(set_array_int_val22, 0, &int_val221);
+    neu_fixed_array_set(set_array_int_val21, 1, &int_val222);
+    neu_data_val_t *array_int_val_dval22 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_int_val_dval22, NEU_DTYPE_INT_VAL,
+                              set_array_int_val22);
+
+    /** set the first element of 3D array **/
+    neu_fixed_array_t *set_array_int_val1 =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_array_int_val1, 0, &array_int_val_dval11);
+    neu_fixed_array_set(set_array_int_val1, 1, &array_int_val_dval12);
+    neu_data_val_t *array_int_val_dval1 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_int_val_dval1, NEU_DTYPE_DATA_VAL,
+                              set_array_int_val1);
+
+    /** set the second element of 3D array **/
+    neu_fixed_array_t *set_array_int_val2 =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_array_int_val2, 0, &array_int_val_dval21);
+    neu_fixed_array_set(set_array_int_val2, 1, &array_int_val_dval22);
+    neu_data_val_t *array_int_val_dval2 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_int_val_dval2, NEU_DTYPE_DATA_VAL,
+                              set_array_int_val2);
+
+    /** set 3D array **/
+    neu_fixed_array_t *set_array_int_val =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_array_int_val, 0, &array_int_val_dval1);
+    neu_fixed_array_set(set_array_int_val, 1, &array_int_val_dval2);
+
+    neu_fixed_array_free(set_array_int_val);
 
     // /** serialize and deserialize return **/
-    // neu_fixed_array_t *get_array_cstr =
-    //     ser_deser_get(set_array_cstr, NEU_DTYPE_DATA_VAL);
+    // neu_fixed_array_t *get_array_int_val =
+    //     ser_deser_get(set_array_int_val, NEU_DTYPE_DATA_VAL);
+
+    /** free **/
+    neu_dvalue_free(input_int_val111);
+    neu_dvalue_free(input_int_val112);
+    neu_dvalue_free(input_int_val121);
+    neu_dvalue_free(input_int_val122);
+    neu_dvalue_free(input_int_val211);
+    neu_dvalue_free(input_int_val212);
+    neu_dvalue_free(input_int_val221);
+    neu_dvalue_free(input_int_val222);
+
+    neu_fixed_array_free(set_array_int_val11);
+    neu_fixed_array_free(set_array_int_val12);
+    neu_fixed_array_free(set_array_int_val21);
+    neu_fixed_array_free(set_array_int_val22);
+
+    neu_dvalue_free(array_int_val_dval11);
+    neu_dvalue_free(array_int_val_dval12);
+    neu_dvalue_free(array_int_val_dval21);
+    neu_dvalue_free(array_int_val_dval22);
+
+    neu_fixed_array_free(set_array_int_val1);
+    neu_fixed_array_free(set_array_int_val2);
+
+    neu_dvalue_free(array_int_val_dval1);
+    neu_dvalue_free(array_int_val_dval2);
 
     // /** Compare **/
-    // comp_arr_3d_cstr(get_array_cstr);
+    // comp_arr_3d_int_val(get_array_int_val);
 
-    // /** free **/
-    // neu_fixed_array_free(set_array_cstr11);
-    // neu_fixed_array_free(set_array_cstr12);
-    // neu_fixed_array_free(set_array_cstr21);
-    // neu_fixed_array_free(set_array_cstr22);
+    /** string_val **/
+    /** set the first element of 1D array **/
+    neu_string_t *input_str_key1 = neu_string_from_cstr((char *) "string-key1");
+    neu_string_t *test_string1 =
+        neu_string_from_cstr((char *) "hello,string-val1");
+    neu_data_val_t *input_str_dval1 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval1, test_string1);
+    neu_string_val_t string_val1;
+    neu_string_val_init(&string_val1, input_str_key1, input_str_dval1);
 
-    // neu_dvalue_free(array_cstr_dval11);
-    // neu_dvalue_free(array_cstr_dval12);
-    // neu_dvalue_free(array_cstr_dval21);
-    // neu_dvalue_free(array_cstr_dval22);
+    /** set the second element of 1D array **/
+    neu_string_t *input_str_key2 = neu_string_from_cstr((char *) "string-key2");
+    neu_string_t *test_string2 =
+        neu_string_from_cstr((char *) "hello,string-val2");
+    neu_data_val_t *input_str_dval2 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval2, test_string2);
+    neu_string_val_t string_val2;
+    neu_string_val_init(&string_val2, input_str_key2, input_str_dval2);
 
-    // neu_fixed_array_free(set_array_cstr1);
-    // neu_fixed_array_free(set_array_cstr2);
+    /** set the third element of 1D array **/
+    neu_string_t *input_str_key3 = neu_string_from_cstr((char *) "string-key3");
+    neu_string_t *test_string3 =
+        neu_string_from_cstr((char *) "hello,string-val3");
+    neu_data_val_t *input_str_dval3 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval3, test_string3);
+    neu_string_val_t string_val3;
+    neu_string_val_init(&string_val3, input_str_key3, input_str_dval3);
 
-    // neu_dvalue_free(array_cstr_dval1);
-    // neu_dvalue_free(array_cstr_dval2);
+    /** set the fourth element of 1D array **/
+    neu_string_t *input_str_key4 = neu_string_from_cstr((char *) "string-key4");
+    neu_string_t *test_string4 =
+        neu_string_from_cstr((char *) "hello,string-val4");
+    neu_data_val_t *input_str_dval4 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval4, test_string4);
+    neu_string_val_t string_val4;
+    neu_string_val_init(&string_val4, input_str_key4, input_str_dval4);
+
+    /** set the fifth element of 1D array **/
+    neu_string_t *input_str_key5 = neu_string_from_cstr((char *) "string-key5");
+    neu_string_t *test_string5 =
+        neu_string_from_cstr((char *) "hello,string-val5");
+    neu_data_val_t *input_str_dval5 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval5, test_string5);
+    neu_string_val_t string_val5;
+    neu_string_val_init(&string_val5, input_str_key5, input_str_dval5);
+
+    /** set the sixth element of 1D array **/
+    neu_string_t *input_str_key6 = neu_string_from_cstr((char *) "string-key6");
+    neu_string_t *test_string6 =
+        neu_string_from_cstr((char *) "hello,string-val6");
+    neu_data_val_t *input_str_dval6 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval6, test_string6);
+    neu_string_val_t string_val6;
+    neu_string_val_init(&string_val6, input_str_key6, input_str_dval6);
+
+    /** set the seventh element of 1D array **/
+    neu_string_t *input_str_key7 = neu_string_from_cstr((char *) "string-key7");
+    neu_string_t *test_string7 =
+        neu_string_from_cstr((char *) "hello,string-val7");
+    neu_data_val_t *input_str_dval7 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval7, test_string7);
+    neu_string_val_t string_val7;
+    neu_string_val_init(&string_val7, input_str_key7, input_str_dval7);
+
+    /** set the eighth element of 1D array **/
+    neu_string_t *input_str_key8 = neu_string_from_cstr((char *) "string-key8");
+    neu_string_t *test_string8 =
+        neu_string_from_cstr((char *) "hello,string-val8");
+    neu_data_val_t *input_str_dval8 = neu_dvalue_new(NEU_DTYPE_STRING);
+    neu_dvalue_set_move_string(input_str_dval8, test_string8);
+    neu_string_val_t string_val8;
+    neu_string_val_init(&string_val8, input_str_key8, input_str_dval8);
+
+    /** set the first element of 2D array1 **/
+    neu_fixed_array_t *set_str_val_array11 =
+        neu_fixed_array_new(2, sizeof(neu_string_val_t));
+    neu_fixed_array_set(set_str_val_array11, 0, &string_val1);
+    neu_fixed_array_set(set_str_val_array11, 1, &string_val2);
+
+    neu_data_val_t *array_str_val_dval11 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_str_val_dval11, NEU_DTYPE_STRING_VAL,
+                              set_str_val_array11);
+
+    /** set the second element of 2D array1 **/
+    neu_fixed_array_t *set_str_val_array12 =
+        neu_fixed_array_new(2, sizeof(neu_string_val_t));
+    neu_fixed_array_set(set_str_val_array12, 0, &string_val3);
+    neu_fixed_array_set(set_str_val_array12, 1, &string_val4);
+
+    neu_data_val_t *array_str_val_dval12 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_str_val_dval12, NEU_DTYPE_STRING_VAL,
+                              set_str_val_array12);
+
+    /** set the first element of 2D array2 **/
+    neu_fixed_array_t *set_str_val_array21 =
+        neu_fixed_array_new(2, sizeof(neu_string_val_t));
+    neu_fixed_array_set(set_str_val_array21, 0, &string_val5);
+    neu_fixed_array_set(set_str_val_array21, 1, &string_val6);
+
+    neu_data_val_t *array_str_val_dval21 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_str_val_dval21, NEU_DTYPE_STRING_VAL,
+                              set_str_val_array21);
+
+    /** set the second element of 2D array2 **/
+    neu_fixed_array_t *set_str_val_array22 =
+        neu_fixed_array_new(2, sizeof(neu_string_val_t));
+    neu_fixed_array_set(set_str_val_array22, 0, &string_val7);
+    neu_fixed_array_set(set_str_val_array22, 1, &string_val8);
+
+    neu_data_val_t *array_str_val_dval22 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_str_val_dval22, NEU_DTYPE_STRING_VAL,
+                              set_str_val_array22);
+
+    /** set the first element of 3D array**/
+    neu_fixed_array_t *set_str_val_array1 =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_str_val_array1, 0, &array_str_val_dval11);
+    neu_fixed_array_set(set_str_val_array1, 1, &array_str_val_dval12);
+
+    neu_data_val_t *array_str_val_dval1 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_str_val_dval1, NEU_DTYPE_DATA_VAL,
+                              set_str_val_array1);
+
+    /** set the second element of 3D array**/
+    neu_fixed_array_t *set_str_val_array2 =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_str_val_array2, 0, &array_str_val_dval21);
+    neu_fixed_array_set(set_str_val_array2, 1, &array_str_val_dval22);
+
+    neu_data_val_t *array_str_val_dval2 = neu_dvalue_unit_new();
+    neu_dvalue_init_ref_array(array_str_val_dval2, NEU_DTYPE_DATA_VAL,
+                              set_str_val_array2);
+
+    /** set 3D array **/
+    neu_fixed_array_t *set_array_str_val =
+        neu_fixed_array_new(2, sizeof(neu_data_val_t *));
+    neu_fixed_array_set(set_array_str_val, 0, &array_str_val_dval1);
+    neu_fixed_array_set(set_array_str_val, 1, &array_str_val_dval2);
+
+    /** serialize and deserializa return **/
+    neu_fixed_array_t *get_array_str_val =
+        ser_deser_get(set_array_str_val, NEU_DTYPE_DATA_VAL);
+
+    // neu_fixed_array_free(set_array_str_val);
+
+    /** free **/
+    neu_string_free(input_str_key1);
+    neu_string_free(input_str_key2);
+    neu_string_free(input_str_key3);
+    neu_string_free(input_str_key4);
+    neu_string_free(input_str_key5);
+    neu_string_free(input_str_key6);
+    neu_string_free(input_str_key7);
+    neu_string_free(input_str_key8);
+
+    neu_dvalue_free(input_str_dval1);
+    neu_dvalue_free(input_str_dval2);
+    neu_dvalue_free(input_str_dval3);
+    neu_dvalue_free(input_str_dval4);
+    neu_dvalue_free(input_str_dval5);
+    neu_dvalue_free(input_str_dval6);
+    neu_dvalue_free(input_str_dval7);
+    neu_dvalue_free(input_str_dval8);
+
+    neu_fixed_array_free(set_str_val_array11);
+    neu_fixed_array_free(set_str_val_array12);
+    neu_fixed_array_free(set_str_val_array21);
+    neu_fixed_array_free(set_str_val_array22);
+
+    neu_dvalue_free(array_str_val_dval11);
+    neu_dvalue_free(array_str_val_dval12);
+    neu_dvalue_free(array_str_val_dval21);
+    neu_dvalue_free(array_str_val_dval22);
+
+    neu_fixed_array_free(set_str_val_array1);
+    neu_fixed_array_free(set_str_val_array2);
+
+    neu_dvalue_free(array_str_val_dval1);
+    neu_dvalue_free(array_str_val_dval2);
+
+    /** Compare **/
+    comp_arr_3d_str_val(get_array_str_val);
 }
 
 TEST(DataValueTest, neu_dvalue_vec_deser)
