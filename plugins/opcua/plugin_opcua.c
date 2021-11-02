@@ -60,6 +60,9 @@ static neu_plugin_t *opcua_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
+    plugin->common.state.running     = NEU_PLUGIN_RUNNING_STATE_IDLE;
+    plugin->common.state.link        = NEU_PLUGIN_LINK_STATE_CONNECTING;
+
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
@@ -114,19 +117,31 @@ static int opcua_plugin_uninit(neu_plugin_t *plugin)
     open62541_client_close(plugin->client);
     opcua_option_uninit(&plugin->option);
     free(plugin->handle_context);
+
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_STOPPED;
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 
 static int opcua_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-    int rv = 0;
 
-    (void) plugin;
-    (void) configs;
+    if (NULL == configs || NULL == configs->buf) {
+        return -1;
+    }
 
-    log_info("config plugin: %s", neu_plugin_module.module_name);
-    return rv;
+    int rc = opcua_option_init_by_config(configs, &plugin->option);
+    if (0 != rc) {
+        log_error("OPCUA option init fail:%d, initialize plugin failed: %s", rc,
+                  neu_plugin_module.module_name);
+
+        opcua_option_uninit(&plugin->option);
+        return -1;
+    }
+
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
+    log_info("Config plugin: %s", neu_plugin_module.module_name);
+    return 0;
 }
 
 static void periodic_response(neu_plugin_t *plugin, neu_taggrp_config_t *config,

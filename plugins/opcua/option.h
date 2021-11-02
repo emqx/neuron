@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#include <neuron.h>
+
 typedef struct {
     char *host;
     char *port;
@@ -37,6 +39,7 @@ typedef struct {
 
 int  opcua_option_init(option_t *option);
 void opcua_option_uninit(option_t *option);
+int  opcua_option_init_by_config(neu_config_t *config, option_t *option);
 
 #ifdef __cplusplus
 }
