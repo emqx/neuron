@@ -17,48 +17,43 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <jansson.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "option.h"
+#include "schema/schema.h"
+#include "utils/json.h"
 #include <config.h>
-#include <neuron.h>
 
+#define BUF_SIZE 40960
+#define OPCUA_PLUGIN_NAME "opcua-plugin"
+#define SCHEMA_FILE "plugin_param_schema.json"
 #define CONFIG_FILE "./neuron.yaml"
 #define CONFIG_NODE "opcua"
 
+struct node_setting {
+    char *host;
+    char *port;
+    char *username;
+    char *password;
+};
+
 int opcua_option_init(option_t *option)
 {
-    char *default_cert_file =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "default_cert_file");
-    char *default_key_file =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "default_key_file");
+    if (NULL == option) {
+        return -1;
+    }
+
+    memset(option, 0, sizeof(option_t));
+
     char *host = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "host");
     char *port = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "port");
     char *username =
         neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "username");
     char *password =
         neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "password");
-    char *cert_file =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "cert_file");
-    char *key_file =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "key_file");
-
-    // OPC-UA option
-    if (NULL == default_cert_file) {
-        option->default_cert_file = NULL;
-    } else {
-        option->default_cert_file = strdup(default_cert_file);
-        free(default_cert_file);
-    }
-
-    if (NULL == default_key_file) {
-        option->default_key_file = NULL;
-    } else {
-        option->default_key_file = strdup(default_key_file);
-        free(default_key_file);
-    }
 
     if (NULL == host) {
         return -2;
@@ -86,20 +81,6 @@ int opcua_option_init(option_t *option)
     } else {
         option->password = strdup(password);
         free(password);
-    }
-
-    if (NULL == cert_file) {
-        option->cert_file = NULL;
-    } else {
-        option->cert_file = strdup(cert_file);
-        free(cert_file);
-    }
-
-    if (NULL == key_file) {
-        option->key_file = NULL;
-    } else {
-        option->key_file = strdup(key_file);
-        free(key_file);
     }
 
     return 0;
@@ -138,4 +119,136 @@ void opcua_option_uninit(option_t *option)
     if (NULL != option->key_file) {
         free(option->key_file);
     }
+}
+
+static int decode_node_setting(const char *         json_str,
+                               struct node_setting *setting)
+{
+    json_error_t error;
+    json_t *     root = json_loads(json_str, 0, &error);
+
+    if (NULL == root) {
+        log_debug("json error, column:%d, line:%d, pos:%d, %s, %s",
+                  error.column, error.line, error.position, error.source,
+                  error.text);
+        return -1;
+    }
+
+    json_t *child = json_object_get(root, "params");
+    if (NULL == child) {
+        json_decref(root);
+        return -2;
+    }
+
+    // setting->host
+    json_t *param = json_object_get(child, "host");
+    if (NULL == param) {
+        setting->host = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->host = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->port
+    param = json_object_get(child, "port");
+    if (NULL == param) {
+        setting->port = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->port = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->username
+    param = json_object_get(child, "username");
+    if (NULL == param) {
+        setting->username = NULL;
+    }
+    if (json_is_boolean(param)) {
+        setting->username = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->password
+    param = json_object_get(child, "password");
+    if (NULL == param) {
+        setting->host = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->password = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    json_decref(child);
+    json_decref(root);
+    return 0;
+}
+
+static int valid_node_setting(const char *file, const char *plugin_name,
+                              struct node_setting *setting)
+{
+    char  buf[BUF_SIZE] = { 0 };
+    FILE *fp            = fopen(file, "r");
+    fread(buf, 1, sizeof(buf), fp);
+    fclose(fp);
+
+    neu_schema_valid_t *valid = neu_schema_load(buf, (char *) plugin_name);
+    if (NULL == valid) {
+        return -1;
+    }
+
+    int rc =
+        neu_schema_valid_param_string(valid, setting->host, (char *) "host");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -2;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->port, (char *) "port");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -3;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->username,
+                                       (char *) "username");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -4;
+    }
+
+    rc = neu_schema_valid_param_string(valid, setting->password,
+                                       (char *) "password");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -5;
+    }
+
+    neu_schema_free(valid);
+    return 0;
+}
+
+int opcua_option_init_by_config(neu_config_t *config, option_t *option)
+{
+    if (NULL == config || NULL == option) {
+        return -1;
+    }
+
+    memset(option, 0, sizeof(option_t));
+
+    struct node_setting setting = { 0 };
+    int rc = decode_node_setting((char *) config->buf, &setting);
+    if (0 != rc) {
+        return -2;
+    }
+
+    rc = valid_node_setting(SCHEMA_FILE, OPCUA_PLUGIN_NAME, &setting);
+
+    // OPCUA option
+    option->host     = setting.host;
+    option->port     = setting.port;
+    option->username = setting.username;
+    option->password = setting.password;
+    return 0;
 }
