@@ -1,11 +1,7 @@
-file(GLOB PARSER_SRC "${CMAKE_SOURCE_DIR}/src/parser/*.c")
-file(GLOB CONFIG_SRC "${CMAKE_SOURCE_DIR}/src/config.c")
-file(GLOB SCHEMA_SRC "${CMAKE_SOURCE_DIR}/src/schema/schema.c")
+# MQTT Plugin
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+
 set(src 
-	${PARSER_SRC} 
-	${CONFIG_SRC} 
-	${SCHEMA_SRC} 
 	plugin_mqtt.c 
 	mqtt_client.c
 	mqttc_client.c
@@ -14,6 +10,7 @@ set(src
 	command/command_group_config.c
 	command/command_datatag.c
 	command/command_node.c)
+
 add_library(plugin-mqtt SHARED ${src})
 
 target_include_directories(plugin-mqtt PRIVATE 
