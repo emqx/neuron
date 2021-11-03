@@ -89,11 +89,18 @@ int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
     if (neu_json_decode_value(json, &params_ele) != 0) {
         neu_json_decode_free(json);
         *err_param = strdup("params");
+        neu_json_decode_free(json);
+        return -1;
+    }
+
+    if (neu_json_decode_value(params_ele.v.object, ele) != 0) {
+        *err_param = strdup(ele->name);
+        neu_json_decode_free(json);
         return -1;
     }
 
     va_start(ap, ele);
-    for (int i = 0; i < n; i++) {
+    for (int i = 1; i < n; i++) {
         neu_json_elem_t *tmp_ele = va_arg(ap, neu_json_elem_t *);
         if (neu_json_decode_value(params_ele.v.object, tmp_ele) != 0) {
             *err_param = strdup(tmp_ele->name);

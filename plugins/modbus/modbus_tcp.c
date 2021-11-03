@@ -31,6 +31,7 @@
 #include "neu_tag_group_config.h"
 #include "neu_vector.h"
 #include "neuron.h"
+#include "parser/neu_json_param.h"
 
 #include "modbus.h"
 #include "modbus_point.h"
@@ -482,9 +483,8 @@ static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
 
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
-    //    plugin->common.state             = NEURON_PLUGIN_STATE_NULL;
-    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_IDLE;
-    plugin->common.state.link    = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->common.state.running     = NEU_PLUGIN_RUNNING_STATE_IDLE;
+    plugin->common.state.link        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
     TAILQ_INIT(&plugin->sub_instances);
 
     return plugin;
@@ -540,14 +540,30 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
 
 static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-    (void) configs;
-    (void) plugin;
-    int ret = 0;
+    int             ret              = 0;
+    char *          err_param        = NULL;
+    neu_json_elem_t port             = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t connection_modem = { .name = "connection_mode",
+                                         .t    = NEU_JSON_INT };
+    ;
+    neu_json_elem_t host = { .name = "host", .t = NEU_JSON_STR };
 
     log_info("modbus config............. type: %d, config: %s", configs->type,
              configs->buf);
 
-    // plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
+    ret = neu_parse_param(configs->buf, &err_param, 3, &port, &connection_modem,
+                          &host);
+
+    if (ret == 0) {
+        if (plugin->common.state.running == NEU_PLUGIN_RUNNING_STATE_IDLE) {
+            plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
+        }
+        plugin->client = neu_tcp_client_create(host.v.val_str, port.v.val_int);
+    }
+
+    log_info("port = %d, connection_modem = %d, host = %s,ret = %d",
+             port.v.val_int, connection_modem.v.val_int, host.v.val_str, ret);
+
     return ret;
 }
 
