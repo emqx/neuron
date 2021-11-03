@@ -113,7 +113,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
 
 static int opcua_plugin_uninit(neu_plugin_t *plugin)
 {
-    // plugin_handle_stop(plugin->handle_context);
+    plugin_handle_stop(plugin->handle_context);
     open62541_client_close(plugin->client);
     opcua_option_uninit(&plugin->option);
     free(plugin->handle_context);
