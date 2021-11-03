@@ -93,7 +93,7 @@ set(NEURON_SOURCES
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
-target_sources(neuron PRIVATE ${NEURON_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_SCHEMA}) 
+target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 if(APPLE)
   target_link_libraries(neuron nng::nng jansson yaml neuron-base)
