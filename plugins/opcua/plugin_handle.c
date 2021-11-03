@@ -563,11 +563,14 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
 
 static void periodic_read(nng_aio *aio, void *arg, int code)
 {
+    log_debug("0--------------->");
     switch (code) {
     case NNG_ETIMEDOUT: {
+        log_debug("1--------------->");
         opc_subscribe_tuple_t *tuple = (opc_subscribe_tuple_t *) arg;
         if (neu_taggrp_cfg_is_anchored(tuple->config)) {
             neu_variable_t *head = neu_variable_create();
+            log_debug("1-1--------------->");
 
             neu_data_val_t *resp_val;
             resp_val = neu_dvalue_unit_new();
@@ -583,10 +586,12 @@ static void periodic_read(nng_aio *aio, void *arg, int code)
             neu_variable_destroy(head);
             nng_aio_defer(aio, periodic_read, arg);
         } else {
+            log_debug("2--------------->");
             neu_taggrp_config_t *new_config = neu_system_find_group_config(
                 tuple->plugin, tuple->node_id, tuple->name);
 
             stop_periodic_read(tuple);
+            log_debug("2-1--------------->");
 
             neu_taggrp_cfg_anchor(new_config);
             if (new_config != NULL) {
@@ -599,7 +604,7 @@ static void periodic_read(nng_aio *aio, void *arg, int code)
         break;
     }
     case NNG_ECANCELED:
-        log_warn("aio: %p cancel", aio);
+        log_warn("0==============>aio: %p cancel", aio);
         break;
     default:
         log_warn("aio: %p, skip error: %d", aio, code);
@@ -628,8 +633,8 @@ static void start_periodic_read(opc_subscribe_tuple_t *tuple)
 {
     uint32_t interval = neu_taggrp_cfg_get_interval(tuple->config);
     nng_aio_alloc(&tuple->aio, NULL, NULL);
+    nng_aio_wait(tuple->aio);
     nng_aio_set_timeout(tuple->aio, interval != 0 ? interval : 10000);
-
     nng_aio_defer(tuple->aio, periodic_read, tuple);
 }
 
@@ -677,6 +682,9 @@ static opc_subscribe_tuple_t *find_subscribe(opc_handle_context_t *context,
 static void stop_periodic_read(opc_subscribe_tuple_t *tuple)
 {
     nng_aio_cancel(tuple->aio);
+    nng_aio_free(tuple->aio);
+    tuple->aio = NULL;
+    log_info("cancel---------------------------->");
 }
 
 static void release_periodic_read(opc_subscribe_tuple_t *tuple)
@@ -694,7 +702,7 @@ static void remove_subscribe(opc_subscribe_tuple_t *tuple)
         free(tuple->name);
     }
 
-    stop_periodic_read(tuple);
+    // stop_periodic_read(tuple);
     neu_list_remove(&tuple->context->subscribe_list, tuple);
 }
 
@@ -708,6 +716,7 @@ static void stop_opc_subscribe(opc_handle_context_t *context,
 opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
                                              neu_taggrp_config_t * config)
 {
+    log_info("hand---------------------------->");
     opcua_error_code_e     code  = OPCUA_ERROR_SUCESS;
     opc_subscribe_tuple_t *tuple = find_subscribe(context, config);
     stop_periodic_read(tuple);
@@ -723,8 +732,10 @@ opcua_error_code_e plugin_handle_stop(opc_handle_context_t *context)
     NEU_LIST_FOREACH(&context->subscribe_list, item)
     {
         if (NULL != item) {
+
+            log_info("item---------------------------->");
             stop_periodic_read(item);
-            release_periodic_read(item);
+            // release_periodic_read(item);
             stop_opc_subscribe(context, item->config);
             remove_subscribe(item);
         }
