@@ -32,12 +32,16 @@ typedef enum neu_mqtt_function {
 
     NEU_MQTT_OP_READ,
     NEU_MQTT_OP_WRITE,
+    NEU_MQTT_OP_GET_TTY,
 
     /*group config*/
     NEU_MQTT_OP_ADD_GROUP_CONFIG,
     NEU_MQTT_OP_UPDATE_GROUP_CONFIG,
     NEU_MQTT_OP_DELETE_GROUP_CONFIG,
     NEU_MQTT_OP_GET_GROUP_CONFIG,
+    NEU_MQTT_OP_SUBSCRIBE,
+    NEU_MQTT_OP_UNSUBSCRIBE,
+    NEU_MQTT_OP_GET_SUBSCRIBE_GRP_CONFIG,
 
     /*tag */
     NEU_MQTT_OP_ADD_TAGS,
@@ -50,6 +54,10 @@ typedef enum neu_mqtt_function {
     NEU_MQTT_OP_UPDATE_NODES,
     NEU_MQTT_OP_DELETE_NODES,
     NEU_MQTT_OP_GET_NODES,
+    NEU_MQTT_OP_NODE_SETTING,
+    NEU_MQTT_OP_GET_NODE_SETTING,
+    NEU_MQTT_OP_NODE_CTL,
+    NEU_MQTT_OP_GET_NODE_STATE,
 
     /*plugin*/
     NEU_MQTT_OP_ADD_PLUGIN,
@@ -57,8 +65,6 @@ typedef enum neu_mqtt_function {
     NEU_MQTT_OP_DELETE_PLUGIN,
     NEU_MQTT_OP_GET_PLUGIN,
 
-    NEU_MQTT_OP_ADD_DATATAG_IDS_CONFIG,
-    NEU_MQTT_OP_DELETE_DATATAG_IDS_CONFIG,
 } neu_mqtt_function_e;
 
 typedef struct neu_parse_mqtt {
