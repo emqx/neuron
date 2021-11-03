@@ -159,7 +159,7 @@ void handle_get_tags(nng_aio *aio)
             if (s_grp_name != NULL &&
                 strncmp(neu_taggrp_cfg_get_name(config), s_grp_name,
                         strlen(s_grp_name)) != 0) {
-                break;
+                continue;
             }
 
             tags_res.n_tag += ids->size;
@@ -176,7 +176,7 @@ void handle_get_tags(nng_aio *aio)
 
             if (s_grp_name != NULL &&
                 strncmp(group_name, s_grp_name, strlen(s_grp_name)) != 0) {
-                break;
+                continue;
             }
 
             vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
