@@ -1215,7 +1215,7 @@ static void manager_loop(void *arg)
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             neu_adapter_add_sub_grp_config(
-                reg_entity->adapter, cmd_ptr->dst_node_id, cmd_ptr->grp_config);
+                reg_entity->adapter, cmd_ptr->src_node_id, cmd_ptr->grp_config);
             msg_pipe = reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
@@ -1255,7 +1255,7 @@ static void manager_loop(void *arg)
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             neu_adapter_del_sub_grp_config(
-                reg_entity->adapter, cmd_ptr->dst_node_id, cmd_ptr->grp_config);
+                reg_entity->adapter, cmd_ptr->src_node_id, cmd_ptr->grp_config);
             msg_pipe = reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size =

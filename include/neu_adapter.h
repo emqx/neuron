@@ -113,12 +113,14 @@ typedef struct neu_reqresp_write_resp {
 typedef struct neu_reqresp_subscribe_node {
     neu_taggrp_config_t *grp_config;
     neu_node_id_t        dst_node_id;
+    neu_node_id_t        src_node_id;
 } neu_reqresp_subscribe_node_t;
 
 /* NEU_REQRESP_UNSUBSCRIBE_NODE */
 typedef struct neu_reqresp_unsubscribe_node {
     neu_taggrp_config_t *grp_config;
     neu_node_id_t        dst_node_id;
+    neu_node_id_t        src_node_id;
 } neu_reqresp_unsubscribe_node_t;
 
 /* NEU_REQRESP_TRANS_DATA */
