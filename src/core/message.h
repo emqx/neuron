@@ -115,6 +115,7 @@ typedef struct stop_periodic_read_cmd {
 typedef struct subscribe_driver_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
+    neu_node_id_t        src_node_id;
     neu_node_id_t        dst_node_id;
     uint32_t             req_id;
 } subscribe_node_cmd_t;
@@ -123,6 +124,7 @@ typedef struct subscribe_driver_cmd {
 typedef struct unsubscribe_driver_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
+    neu_node_id_t        src_node_id;
     neu_node_id_t        dst_node_id;
     uint32_t             req_id;
 } unsubscribe_node_cmd_t;

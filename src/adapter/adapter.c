@@ -263,6 +263,7 @@ static void adapter_loop(void *arg)
 
             sub_node_req.grp_config  = cmd_ptr->grp_config;
             sub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+            sub_node_req.src_node_id = cmd_ptr->src_node_id;
 
             intf_funs     = adapter->plugin_module->intf_funs;
             req.req_id    = adapter_get_req_id(adapter);
@@ -284,6 +285,7 @@ static void adapter_loop(void *arg)
 
             unsub_node_req.grp_config  = cmd_ptr->grp_config;
             unsub_node_req.dst_node_id = cmd_ptr->dst_node_id;
+            unsub_node_req.src_node_id = cmd_ptr->src_node_id;
 
             intf_funs     = adapter->plugin_module->intf_funs;
             req.req_id    = adapter_get_req_id(adapter);
@@ -433,14 +435,14 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     case NEU_REQRESP_SUBSCRIBE_NODE: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_SUBSCRIBE_NODE,
                          subscribe_node_cmd_t, neu_reqresp_subscribe_node_t,
-                         {});
+                         { cmd_ptr->src_node_id = reqresp_cmd->src_node_id; });
         break;
     }
 
     case NEU_REQRESP_UNSUBSCRIBE_NODE: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_UNSUBSCRIBE_NODE,
                          unsubscribe_node_cmd_t, neu_reqresp_unsubscribe_node_t,
-                         {});
+                         { cmd_ptr->src_node_id = reqresp_cmd->src_node_id; });
         break;
     }
 
