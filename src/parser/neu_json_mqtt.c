@@ -19,9 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "utils/json.h"
+#include "json/json.h"
 
-#include "neu_json_mqtt.h"
+#include "json/neu_json_mqtt.h"
 
 int neu_parse_decode_mqtt_param(char *buf, neu_parse_mqtt_t **req)
 {

@@ -19,8 +19,8 @@
 
 #include <stdlib.h>
 
-#include "neu_json_tag.h"
-#include "utils/json.h"
+#include "json/json.h"
+#include "json/neu_json_tag.h"
 
 int neu_parse_decode_add_tags(char *buf, neu_parse_add_tags_req_t **result)
 {

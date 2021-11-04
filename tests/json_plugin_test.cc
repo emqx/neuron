@@ -2,8 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_plugin.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_plugin.h"
 
 TEST(JsonPluginTest, AddPluginDecode)
 {

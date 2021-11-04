@@ -24,7 +24,7 @@
 
 #include "option.h"
 #include "schema/schema.h"
-#include "utils/json.h"
+#include "json/json.h"
 #include <config.h>
 
 #define BUF_SIZE 40960

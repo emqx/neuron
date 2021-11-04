@@ -19,9 +19,9 @@
 
 #include <stdlib.h>
 
-#include "utils/json.h"
+#include "json/json.h"
 
-#include "neu_json_plugin.h"
+#include "json/neu_json_plugin.h"
 
 int neu_parse_decode_add_plugin(char *buf, neu_parse_add_plugin_req_t **result)
 {

@@ -24,7 +24,7 @@
 
 #include "mqtt_client.h"
 #include "schema/schema.h"
-#include "utils/json.h"
+#include "json/json.h"
 #include <config.h>
 #include <neuron.h>
 

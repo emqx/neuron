@@ -24,7 +24,7 @@
 
 #include "neu_log.h"
 #include "schema.h"
-#include "utils/json.h"
+#include "json/json.h"
 
 struct neu_schema_valid {
     void *   root;

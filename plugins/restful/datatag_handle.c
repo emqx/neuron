@@ -23,8 +23,8 @@
 #include "neu_datatag_table.h"
 #include "neu_log.h"
 #include "neu_plugin.h"
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_tag.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_tag.h"
 
 #include "handle.h"
 #include "http.h"

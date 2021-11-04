@@ -22,8 +22,8 @@
 #include "vector.h"
 
 #include "neu_plugin.h"
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_node.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_node.h"
 
 #include "handle.h"
 #include "http.h"

@@ -20,9 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "utils/json.h"
+#include "json/json.h"
 
-#include "neu_json_rw.h"
+#include "json/neu_json_rw.h"
 
 int neu_parse_decode_read(char *buf, neu_parse_read_req_t **result)
 {
