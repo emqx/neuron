@@ -18,8 +18,8 @@
  **/
 #include <stdlib.h>
 
-#include "neu_json_tty.h"
-#include "utils/json.h"
+#include "json/json.h"
+#include "json/neu_json_tty.h"
 
 int neu_parse_encode_get_tty(void *json_object, void *param)
 {

@@ -21,10 +21,10 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "utils/json.h"
+#include "json/json.h"
 
-#include "neu_json_fn.h"
-#include "neu_json_param.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_param.h"
 
 int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result)
 {

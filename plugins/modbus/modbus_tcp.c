@@ -31,7 +31,7 @@
 #include "neu_tag_group_config.h"
 #include "neu_vector.h"
 #include "neuron.h"
-#include "parser/neu_json_param.h"
+#include "json/neu_json_param.h"
 
 #include "modbus.h"
 #include "modbus_point.h"

@@ -2,9 +2,9 @@
 
 #include <gtest/gtest.h>
 
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_mqtt.h"
-#include "parser/neu_json_rw.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_mqtt.h"
+#include "json/neu_json_rw.h"
 
 TEST(JsonAPITest, ReadReqDecode)
 {

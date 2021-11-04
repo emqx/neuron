@@ -24,8 +24,8 @@
 #include "neu_log.h"
 #include "neu_plugin.h"
 #include "neu_subscribe.h"
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_group_config.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_group_config.h"
 
 #include "handle.h"
 #include "http.h"

@@ -25,12 +25,12 @@ extern "C" {
 
 #include <neuron.h>
 
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_group_config.h"
-#include "parser/neu_json_mqtt.h"
-#include "parser/neu_json_node.h"
-#include "parser/neu_json_rw.h"
-#include "parser/neu_json_tag.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_group_config.h"
+#include "json/neu_json_mqtt.h"
+#include "json/neu_json_node.h"
+#include "json/neu_json_rw.h"
+#include "json/neu_json_tag.h"
 
 #define UNUSED(x) (void) (x)
 

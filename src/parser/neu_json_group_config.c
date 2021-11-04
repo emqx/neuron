@@ -20,9 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "utils/json.h"
+#include "json/json.h"
 
-#include "neu_json_group_config.h"
+#include "json/neu_json_group_config.h"
 
 int neu_parse_decode_add_group_config(char *                             buf,
                                       neu_parse_add_group_config_req_t **result)

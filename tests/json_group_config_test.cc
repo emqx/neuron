@@ -1,8 +1,8 @@
 #include <cstdlib>
 #include <gtest/gtest.h>
 
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_group_config.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_group_config.h"
 
 TEST(TagGroupConfigTest, neu_parse_decode_get_group_config_req)
 {

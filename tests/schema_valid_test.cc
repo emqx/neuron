@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "schema/schema.h"
-#include "utils/json.h"
+#include "json/json.h"
 
 #define SCHEMA_FILE "./plugin_param_schema_test.json"
 

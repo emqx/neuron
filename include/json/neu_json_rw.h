@@ -26,7 +26,7 @@ extern "C" {
 #include <stdint.h>
 
 #include "neu_data_expr.h"
-#include "utils/json.h"
+#include "json/json.h"
 
 typedef struct neu_parse_read_req {
     uint32_t node_id;

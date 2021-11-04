@@ -24,8 +24,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "parser/neu_json_fn.h"
-#include "parser/neu_json_tty.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_tty.h"
 
 #include "handle.h"
 #include "http.h"
