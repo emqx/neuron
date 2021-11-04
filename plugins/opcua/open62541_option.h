@@ -31,10 +31,6 @@ typedef struct {
     char *port;
     char *username;
     char *password;
-    char *cert_file;
-    char *key_file;
-    char *default_cert_file;
-    char *default_key_file;
 } option_t;
 
 int  opcua_option_init(option_t *option);

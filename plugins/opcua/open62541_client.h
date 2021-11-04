@@ -28,10 +28,9 @@ extern "C" {
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "option.h"
+#include "open62541_option.h"
 
 typedef struct open62541_client open62541_client_t;
-typedef struct subscribe_tuple  subscribe_tuple_t;
 
 union opcua_value {
     int8_t   value_int8;
@@ -69,10 +68,8 @@ typedef struct {
 int open62541_client_open(option_t *option, void *context,
                           open62541_client_t **p_client);
 int open62541_client_is_connected(open62541_client_t *client);
-int open62541_client_read(open62541_client_t *client, vector_t *data);
+int open62541_client_read(open62541_client_t *client, vector_t *datas);
 int open62541_client_write(open62541_client_t *client, vector_t *data);
-int open62541_client_subscribe(open62541_client_t *client, vector_t *node);
-int open62541_client_unsubscribe(open62541_client_t *client, vector_t *node);
 int open62541_client_close(open62541_client_t *client);
 
 #ifdef __cplusplus

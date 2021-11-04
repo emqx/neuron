@@ -5,10 +5,10 @@ set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 set(src
 	plugin_opcua.c
-	option.c
+	open62541_option.c
 	open62541_client.c
-	open62541_utils.c
-	plugin_handle.c)
+	open62541_util.c
+	opcua_handle.c)
 
 add_library(plugin-opcua SHARED ${src})
 

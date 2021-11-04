@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_OPEN62541_UTILS
-#define NEURON_PLUGIN_OPEN62541_UTILS
+#ifndef NEURON_PLUGIN_OPEN62541_UTIL
+#define NEURON_PLUGIN_OPEN62541_UTIL
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,7 +29,7 @@ extern "C" {
 #define UNUSED(x) (void) (x)
 
 UA_Logger     open62541_log_with_level(UA_LogLevel min_level);
-UA_ByteString client_load_file(const char *const path);
+UA_ByteString client_file_load(const char *const path);
 
 #ifdef __cplusplus
 }

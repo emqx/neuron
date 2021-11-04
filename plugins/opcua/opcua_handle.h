@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_OPEN62541_HANDLE
-#define NEURON_PLUGIN_OPEN62541_HANDLE
+#ifndef NEURON_OPCUA_HANDLE
+#define NEURON_OPCUA_HANDLE
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,13 +27,11 @@ extern "C" {
 #include <neuron.h>
 #include <nng/nng.h>
 
+#include "open62541_client.h"
+
 typedef void (*cycle_response_callback)(neu_plugin_t *       plugin,
                                         neu_taggrp_config_t *config,
                                         neu_data_val_t *     resp_val);
-
-typedef void (*subscribe_response_callback)(neu_plugin_t *       plugin,
-                                            neu_taggrp_config_t *config,
-                                            neu_data_val_t *     resp_val);
 
 typedef struct {
     neu_plugin_t *       plugin;
@@ -44,15 +42,14 @@ typedef struct {
 } opc_handle_context_t;
 
 typedef struct {
-    neu_list_node               node;
-    neu_plugin_t *              plugin;
-    neu_node_id_t               node_id;
-    neu_taggrp_config_t *       config;
-    char *                      name;
-    nng_aio *                   aio;
-    cycle_response_callback     cycle_cb;
-    subscribe_response_callback subscribe_cb;
-    opc_handle_context_t *      context;
+    neu_list_node           node;
+    neu_plugin_t *          plugin;
+    neu_node_id_t           node_id;
+    neu_taggrp_config_t *   config;
+    char *                  name;
+    nng_aio *               aio;
+    cycle_response_callback cycle_cb;
+    opc_handle_context_t *  context;
 } opc_subscribe_tuple_t;
 
 typedef enum {
@@ -68,19 +65,19 @@ typedef enum {
     OPCUA_ERROR_DATATAG_NOT_MATCH   = -11
 } opcua_error_code_e;
 
-opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
-                                           neu_taggrp_config_t * config,
-                                           neu_data_val_t *      resp_val);
-opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
-                                             neu_taggrp_config_t * config,
-                                             neu_data_val_t *      write_val,
-                                             neu_data_val_t *      resp_val);
-opcua_error_code_e plugin_handle_subscribe(
-    opc_handle_context_t *context, neu_taggrp_config_t *config,
-    cycle_response_callback cycle_cb, subscribe_response_callback subscribe_cb);
-opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
-                                             neu_taggrp_config_t * config);
-opcua_error_code_e plugin_handle_stop(opc_handle_context_t *context);
+opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
+                                          neu_taggrp_config_t * config,
+                                          neu_data_val_t *      resp_val);
+opcua_error_code_e opcua_handle_write_value(opc_handle_context_t *context,
+                                            neu_taggrp_config_t * config,
+                                            neu_data_val_t *      write_val,
+                                            neu_data_val_t *      resp_val);
+opcua_error_code_e opcua_handle_subscribe(opc_handle_context_t *  context,
+                                          neu_taggrp_config_t *   config,
+                                          cycle_response_callback cycle_cb);
+opcua_error_code_e opcua_handle_unsubscribe(opc_handle_context_t *context,
+                                            neu_taggrp_config_t * config);
+opcua_error_code_e opcua_handle_stop(opc_handle_context_t *context);
 
 #ifdef __cplusplus
 }

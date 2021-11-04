@@ -24,10 +24,10 @@
 #include <config.h>
 #include <neuron.h>
 
-#include "option.h"
+#include "open62541_option.h"
 
+#include "opcua_handle.h"
 #include "open62541_client.h"
-#include "plugin_handle.h"
 
 #define UNUSED(x) (void) (x)
 
@@ -43,7 +43,7 @@ struct neu_plugin {
 static neu_plugin_t *opcua_plugin_open(neu_adapter_t *            adapter,
                                        const adapter_callbacks_t *callbacks)
 {
-    neu_plugin_t *plugin;
+    neu_plugin_t *plugin = NULL;
 
     if (adapter == NULL || callbacks == NULL) {
         log_error("Open plugin with NULL adapter or callbacks");
@@ -69,11 +69,9 @@ static neu_plugin_t *opcua_plugin_open(neu_adapter_t *            adapter,
 
 static int opcua_plugin_close(neu_plugin_t *plugin)
 {
-    int rv = 0;
-
     free(plugin);
     log_info("Success to free plugin: %s", neu_plugin_module.module_name);
-    return rv;
+    return 0;
 }
 
 static int opcua_plugin_init(neu_plugin_t *plugin)
@@ -114,7 +112,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
 
 static int opcua_plugin_uninit(neu_plugin_t *plugin)
 {
-    plugin_handle_stop(plugin->handle_context);
+    opcua_handle_stop(plugin->handle_context);
     open62541_client_close(plugin->client);
     opcua_option_uninit(&plugin->option);
     free(plugin->handle_context);
@@ -145,20 +143,10 @@ static int opcua_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return 0;
 }
 
-static void periodic_response(neu_plugin_t *plugin, neu_taggrp_config_t *config,
-                              neu_data_val_t *resp_val)
+static void cycle_response(neu_plugin_t *plugin, neu_taggrp_config_t *config,
+                           neu_data_val_t *resp_val)
 {
     neu_plugin_response_trans_data(plugin, config, resp_val, 0);
-}
-
-static void subscribe_response(neu_plugin_t *       plugin,
-                               neu_taggrp_config_t *config,
-                               neu_data_val_t *     resp_val)
-{
-    UNUSED(plugin);
-    UNUSED(config);
-    UNUSED(resp_val);
-    // TODO: return subscription data
 }
 
 static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
@@ -186,10 +174,10 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_DATA: {
-        neu_reqresp_read_t *read_req = (neu_reqresp_read_t *) req->buf;
-        neu_data_val_t *    resp_val;
-        neu_response_t      resp;
-        neu_reqresp_data_t  data_resp;
+        neu_reqresp_read_t *read_req  = (neu_reqresp_read_t *) req->buf;
+        neu_data_val_t *    resp_val  = NULL;
+        neu_response_t      resp      = { 0 };
+        neu_reqresp_data_t  data_resp = { 0 };
 
         resp_val = neu_dvalue_unit_new();
         if (NULL == resp_val) {
@@ -198,8 +186,8 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
             break;
         }
 
-        plugin_handle_read_once(plugin->handle_context, read_req->grp_config,
-                                resp_val);
+        opcua_handle_read_once(plugin->handle_context, read_req->grp_config,
+                               resp_val);
 
         data_resp.grp_config = read_req->grp_config;
         data_resp.data_val   = resp_val;
@@ -208,7 +196,6 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
             break;
         }
 
-        memset(&resp, 0, sizeof(resp));
         resp.req_id    = req->req_id;
         resp.resp_type = NEU_REQRESP_READ_RESP;
         resp.recver_id = req->sender_id;
@@ -221,42 +208,41 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_reqresp_write_t *write_req = (neu_reqresp_write_t *) req->buf;
         neu_data_val_t *     write_val = write_req->data_val;
 
-        neu_data_val_t *resp_val;
-        resp_val = neu_dvalue_unit_new();
+        neu_data_val_t *resp_val = NULL;
+        resp_val                 = neu_dvalue_unit_new();
         if (resp_val == NULL) {
             log_error("Failed to allocate data value for response write data");
             break;
         }
 
-        neu_response_t     resp;
-        neu_reqresp_data_t data_resp;
-        plugin_handle_write_value(plugin->handle_context, write_req->grp_config,
-                                  write_val, resp_val);
+        neu_response_t     resp      = { 0 };
+        neu_reqresp_data_t data_resp = { 0 };
+        opcua_handle_write_value(plugin->handle_context, write_req->grp_config,
+                                 write_val, resp_val);
 
         data_resp.grp_config = write_req->grp_config;
         data_resp.data_val   = resp_val;
 
-        memset(&resp, 0, sizeof(resp));
         resp.req_id    = req->req_id;
         resp.resp_type = NEU_REQRESP_WRITE_RESP;
         resp.recver_id = req->sender_id;
         resp.buf_len   = sizeof(neu_reqresp_data_t);
         resp.buf       = &data_resp;
         rv = adapter_callbacks->response(plugin->common.adapter, &resp);
-
         break;
     }
     case NEU_REQRESP_SUBSCRIBE_NODE: {
-        neu_reqresp_read_t *subscribe_req = (neu_reqresp_read_t *) req->buf;
-        plugin_handle_subscribe(plugin->handle_context,
-                                subscribe_req->grp_config, periodic_response,
-                                subscribe_response);
+        neu_reqresp_subscribe_node_t *subscribe_req =
+            (neu_reqresp_subscribe_node_t *) req->buf;
+        opcua_handle_subscribe(plugin->handle_context,
+                               subscribe_req->grp_config, cycle_response);
         break;
     }
     case NEU_REQRESP_UNSUBSCRIBE_NODE: {
-        neu_reqresp_read_t *unsubscribe_req = (neu_reqresp_read_t *) req->buf;
-        plugin_handle_unsubscribe(plugin->handle_context,
-                                  unsubscribe_req->grp_config);
+        neu_reqresp_unsubscribe_node_t *unsubscribe_req =
+            (neu_reqresp_unsubscribe_node_t *) req->buf;
+        opcua_handle_unsubscribe(plugin->handle_context,
+                                 unsubscribe_req->grp_config);
         break;
     }
 

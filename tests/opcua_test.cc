@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "option.h"
+#include "open62541_option.h"
 
 TEST(MQTTTest, mqtt_option_init_by_config)
 {
