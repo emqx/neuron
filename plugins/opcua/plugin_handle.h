@@ -27,9 +27,9 @@ extern "C" {
 #include <neuron.h>
 #include <nng/nng.h>
 
-typedef void (*periodic_response_callback)(neu_plugin_t *       plugin,
-                                           neu_taggrp_config_t *config,
-                                           neu_data_val_t *     resp_val);
+typedef void (*cycle_response_callback)(neu_plugin_t *       plugin,
+                                        neu_taggrp_config_t *config,
+                                        neu_data_val_t *     resp_val);
 
 typedef void (*subscribe_response_callback)(neu_plugin_t *       plugin,
                                             neu_taggrp_config_t *config,
@@ -50,7 +50,7 @@ typedef struct {
     neu_taggrp_config_t *       config;
     char *                      name;
     nng_aio *                   aio;
-    periodic_response_callback  periodic_cb;
+    cycle_response_callback     cycle_cb;
     subscribe_response_callback subscribe_cb;
     opc_handle_context_t *      context;
 } opc_subscribe_tuple_t;
@@ -75,11 +75,9 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
                                              neu_taggrp_config_t * config,
                                              neu_data_val_t *      write_val,
                                              neu_data_val_t *      resp_val);
-opcua_error_code_e
-                   plugin_handle_subscribe(opc_handle_context_t *      context,
-                                           neu_taggrp_config_t *       config,
-                                           periodic_response_callback  periodic_cb,
-                                           subscribe_response_callback subscribe_cb);
+opcua_error_code_e plugin_handle_subscribe(
+    opc_handle_context_t *context, neu_taggrp_config_t *config,
+    cycle_response_callback cycle_cb, subscribe_response_callback subscribe_cb);
 opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
                                              neu_taggrp_config_t * config);
 opcua_error_code_e plugin_handle_stop(opc_handle_context_t *context);
