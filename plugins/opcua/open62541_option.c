@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "option.h"
+#include "open62541_option.h"
 #include "schema/schema.h"
 #include "json/json.h"
 #include <config.h>
@@ -88,14 +88,6 @@ int opcua_option_init(option_t *option)
 
 void opcua_option_uninit(option_t *option)
 {
-    if (NULL != option->default_cert_file) {
-        free(option->default_cert_file);
-    }
-
-    if (NULL != option->default_key_file) {
-        free(option->default_key_file);
-    }
-
     if (NULL != option->host) {
         free(option->host);
     }
@@ -111,21 +103,13 @@ void opcua_option_uninit(option_t *option)
     if (NULL != option->password) {
         free(option->password);
     }
-
-    if (NULL != option->cert_file) {
-        free(option->cert_file);
-    }
-
-    if (NULL != option->key_file) {
-        free(option->key_file);
-    }
 }
 
 static int decode_node_setting(const char *         json_str,
                                struct node_setting *setting)
 {
-    json_error_t error;
-    json_t *     root = json_loads(json_str, 0, &error);
+    json_error_t error = { 0 };
+    json_t *     root  = json_loads(json_str, 0, &error);
 
     if (NULL == root) {
         log_debug("json error, column:%d, line:%d, pos:%d, %s, %s",

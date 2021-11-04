@@ -21,8 +21,7 @@
 
 #include <neuron.h>
 
-#include "open62541_client.h"
-#include "plugin_handle.h"
+#include "opcua_handle.h"
 
 #define UNUSED(x) (void) (x)
 
@@ -47,20 +46,19 @@
 #define NAMESPACE_LEN 16
 #define IDENTIFIER_LEN 128
 
-static neu_datatag_t *get_datatag_by_id(neu_datatag_table_t *table,
+static neu_datatag_t *datatag_get_by_id(neu_datatag_table_t *table,
                                         datatag_id_t         id)
 {
     if (NULL == table) {
         return NULL;
     }
+
     return neu_datatag_tbl_get(table, id);
 }
 
-static int fixed_address(const char *address, int *identifier_type,
+static int address_fixed(const char *address, int *identifier_type,
                          char *namespace_str, char *identifier_str)
 {
-    UNUSED(identifier_type);
-
     char *sub_str = strchr(address, '!');
     if (NULL != sub_str) {
         int offset = sub_str - address;
@@ -88,7 +86,7 @@ static int fixed_address(const char *address, int *identifier_type,
     return 0;
 }
 
-static void release_node_vector(vector_t *datas)
+static void node_vector_release(vector_t *datas)
 {
     if (NULL == datas) {
         return;
@@ -106,17 +104,16 @@ static void release_node_vector(vector_t *datas)
     }
 }
 
-static int generate_read_result_array(vector_t *datas, neu_fixed_array_t *array)
+static int read_response_array_generate(vector_t *         datas,
+                                        neu_fixed_array_t *array)
 {
-    int           rc = 0;
-    opcua_data_t *data;
-
-    int total = datas->size;
+    int           rc    = 0;
+    opcua_data_t *data  = NULL;
+    int           total = datas->size;
     for (int i = 0; i < total; i++) {
-        data = vector_get(datas, i);
-
-        neu_data_val_t *val;
-        neu_int_val_t   int_val;
+        data                    = vector_get(datas, i);
+        neu_data_val_t *val     = NULL;
+        neu_int_val_t   int_val = { 0 };
         if (0 != data->error) {
             val = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
             neu_dvalue_set_errorcode(val, data->error);
@@ -203,20 +200,21 @@ static int generate_read_result_array(vector_t *datas, neu_fixed_array_t *array)
     return rc;
 }
 
-static void generate_read_node_vector(opc_handle_context_t *context,
-                                      neu_taggrp_config_t * config,
-                                      vector_t *            datas)
+static void read_request_vector_generate(opc_handle_context_t *context,
+                                         neu_taggrp_config_t * config,
+                                         vector_t *            datas)
 {
-    log_info("Group config name:%s", neu_taggrp_cfg_get_name(config));
-    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
-    if (NULL == ids) {
+    // log_info("Group config name:%s", neu_taggrp_cfg_get_name(config));
+    vector_t *datatag_ids = neu_taggrp_cfg_get_datatag_ids(config);
+    if (NULL == datatag_ids) {
         return;
     }
-    datatag_id_t tag_id;
-    VECTOR_FOR_EACH(ids, iter)
+
+    datatag_id_t datatag_id = 0;
+    VECTOR_FOR_EACH(datatag_ids, iter)
     {
-        tag_id                 = *(datatag_id_t *) iterator_get(&iter);
-        neu_datatag_t *datatag = get_datatag_by_id(context->table, tag_id);
+        datatag_id             = *(datatag_id_t *) iterator_get(&iter);
+        neu_datatag_t *datatag = datatag_get_by_id(context->table, datatag_id);
         if (NULL == datatag) {
             continue;
         }
@@ -224,32 +222,33 @@ static void generate_read_node_vector(opc_handle_context_t *context,
         log_info("Datatag in group config, name:%s, id:%u", datatag->name,
                  datatag->id);
 
-        char namespace_str[16]  = { 0 };
-        char identifier_str[32] = { 0 };
-        int  identifier_type    = 0;
-        int  rc = fixed_address(datatag->addr_str, &identifier_type,
+        char namespace_str[NAMESPACE_LEN]   = { 0 };
+        char identifier_str[IDENTIFIER_LEN] = { 0 };
+        int  identifier_type                = 0;
+        int  rc = address_fixed(datatag->addr_str, &identifier_type,
                                namespace_str, identifier_str);
         if (0 != rc) {
             continue;
         }
 
-        opcua_data_t read_data;
-        memset(&read_data, 0, sizeof(opcua_data_t));
+        opcua_data_t read_data               = { 0 };
         read_data.opcua_node.name            = datatag->name;
-        read_data.opcua_node.id              = tag_id;
+        read_data.opcua_node.id              = datatag_id;
         read_data.opcua_node.namespace_index = atoi(namespace_str);
         read_data.opcua_node.identifier_type = identifier_type;
+        read_data.type                       = datatag->type;
         if (0 == identifier_type) {
             read_data.opcua_node.identifier_str = strdup(identifier_str);
         } else if (1 == identifier_type) {
             read_data.opcua_node.identifier_int = atoi(identifier_str);
         }
+
         vector_push_back(datas, &read_data);
     }
 }
 
-static int generate_write_result_array(vector_t *         datas,
-                                       neu_fixed_array_t *array)
+static int write_response_array_generate(vector_t *         datas,
+                                         neu_fixed_array_t *array)
 {
     int index = 1;
     int error = 0;
@@ -260,10 +259,9 @@ static int generate_write_result_array(vector_t *         datas,
             error++;
         }
 
-        neu_data_val_t *val_i32;
-        val_i32 = neu_dvalue_unit_new();
+        neu_data_val_t *val_i32 = neu_dvalue_unit_new();
         neu_dvalue_init_int32(val_i32, data->error);
-        neu_int_val_t resp_int_val;
+        neu_int_val_t resp_int_val = { 0 };
         neu_int_val_init(&resp_int_val, data->opcua_node.id, val_i32);
         neu_fixed_array_set(array, index, (void *) &resp_int_val);
         index++;
@@ -272,42 +270,39 @@ static int generate_write_result_array(vector_t *         datas,
     return error;
 }
 
-static bool tag_id_equal(const void *a, const void *b)
+static bool datatag_id_equal(const void *a, const void *b)
 {
     neu_datatag_id_t *id_a = (neu_datatag_id_t *) a;
     neu_datatag_id_t *id_b = (neu_datatag_id_t *) b;
-
     return *id_a == *id_b;
 }
 
-static void generate_write_node_vector(opc_handle_context_t *context,
-                                       neu_taggrp_config_t * config,
-                                       neu_fixed_array_t *   array,
-                                       vector_t *            datas)
+static void write_request_vector_generate(opc_handle_context_t *context,
+                                          neu_taggrp_config_t * config,
+                                          neu_fixed_array_t *   array,
+                                          vector_t *            datas)
 {
     vector_t *      datatag_ids = neu_taggrp_cfg_get_datatag_ids(config);
     int             size        = array->length;
-    neu_int_val_t * int_val;
-    neu_data_val_t *val;
-    uint32_t        id;
+    neu_int_val_t * int_val     = NULL;
+    neu_data_val_t *val         = NULL;
+    uint32_t        id          = 0;
     for (int i = 0; i < size; i++) {
         int_val = neu_fixed_array_get(array, i);
         id      = int_val->key;
         val     = int_val->val;
 
-        neu_datatag_t *datatag = get_datatag_by_id(context->table, id);
+        neu_datatag_t *datatag = datatag_get_by_id(context->table, id);
         if (NULL == datatag) {
-            opcua_data_t write_data;
-            memset(&write_data, 0, sizeof(opcua_data_t));
-            write_data.error = OPCUA_ERROR_DATATAG_NULL;
+            opcua_data_t write_data = { 0 };
+            write_data.error        = OPCUA_ERROR_DATATAG_NULL;
             vector_push_back(datas, &write_data);
             continue;
         }
 
-        if (!vector_has_elem(datatag_ids, &id, tag_id_equal)) {
-            opcua_data_t write_data;
-            memset(&write_data, 0, sizeof(opcua_data_t));
-            write_data.error = OPCUA_ERROR_DATATAG_NOT_MATCH;
+        if (!vector_has_elem(datatag_ids, &id, datatag_id_equal)) {
+            opcua_data_t write_data = { 0 };
+            write_data.error        = OPCUA_ERROR_DATATAG_NOT_MATCH;
             vector_push_back(datas, &write_data);
             continue;
         }
@@ -316,92 +311,86 @@ static void generate_write_node_vector(opc_handle_context_t *context,
         char        namespace_str[NAMESPACE_LEN] = { 0 };
         char        identifier_str[IDENTIFIER_LEN] = { 0 };
         int         identifier_type                = 0;
-        fixed_address(datatag->addr_str, &identifier_type, namespace_str,
+        address_fixed(datatag->addr_str, &identifier_type, namespace_str,
                       identifier_str);
 
-        opcua_data_t write_data;
-        memset(&write_data, 0, sizeof(opcua_data_t));
+        opcua_data_t write_data               = { 0 };
         write_data.opcua_node.name            = datatag->name;
         write_data.opcua_node.id              = id;
         write_data.opcua_node.namespace_index = atoi(namespace_str);
         write_data.opcua_node.identifier_type = identifier_type;
+        write_data.type                       = type;
         if (0 == identifier_type) {
             write_data.opcua_node.identifier_str = strdup(identifier_str);
         } else if (1 == identifier_type) {
             write_data.opcua_node.identifier_int = atoi(identifier_str);
         }
 
-        write_data.type = type;
-
         switch (type) {
-        case NEU_DTYPE_BYTE: {
-            uint8_t value;
-            neu_dvalue_get_uint8(val, &value);
-            write_data.value.value_uint8 = value;
-            break;
-        }
         case NEU_DTYPE_INT8: {
-            int64_t value;
+            // int8(NEURON) -> sbyte(OPCUA)
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_int8 = (int8_t) value;
             break;
         }
         case NEU_DTYPE_INT16: {
-            int64_t value;
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_int16 = (int16_t) value;
             break;
         }
         case NEU_DTYPE_INT32: {
-            int64_t value;
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_int32 = (int32_t) value;
             break;
         }
         case NEU_DTYPE_INT64: {
-            int64_t value;
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_int64 = value;
             break;
         }
         case NEU_DTYPE_UINT8: {
-            int64_t value;
+            // uint8(Neuron) -> byte(OPCUA)
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_uint8 = (uint8_t) value;
             break;
         }
         case NEU_DTYPE_UINT16: {
-            int64_t value;
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_uint16 = (uint16_t) value;
             break;
         }
         case NEU_DTYPE_UINT32: {
-            int64_t value;
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_uint32 = (uint32_t) value;
             break;
         }
         case NEU_DTYPE_UINT64: {
-            int64_t value;
+            int64_t value = 0;
             neu_dvalue_get_int64(val, &value);
             write_data.value.value_uint64 = (uint64_t) value;
             break;
         }
         case NEU_DTYPE_FLOAT: {
-            double value;
+            double value = 0;
             neu_dvalue_get_double(val, &value);
             write_data.value.value_float = (float) value;
             break;
         }
         case NEU_DTYPE_DOUBLE: {
-            double value;
+            double value = 0;
             neu_dvalue_get_double(val, &value);
             write_data.value.value_double = value;
             break;
         }
         case NEU_DTYPE_CSTR: {
-            char *value;
+            char *value = NULL;
             neu_dvalue_get_ref_cstr(val, &value);
             write_data.value.value_string = value;
             break;
@@ -414,9 +403,9 @@ static void generate_write_node_vector(opc_handle_context_t *context,
     }
 }
 
-opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
-                                           neu_taggrp_config_t * config,
-                                           neu_data_val_t *      resp_val)
+opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
+                                          neu_taggrp_config_t * config,
+                                          neu_data_val_t *      resp_val)
 {
     opcua_error_code_e code = OPCUA_ERROR_SUCESS;
 
@@ -427,17 +416,17 @@ opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
         return code;
     }
 
-    const vector_t *ids = neu_taggrp_cfg_ref_datatag_ids(config);
-    if (NULL == ids) {
+    const vector_t *datatag_ids = neu_taggrp_cfg_ref_datatag_ids(config);
+    if (NULL == datatag_ids) {
         code = OPCUA_ERROR_DATATAG_VECTOR_NULL;
         log_error("Datatag vector is NULL");
         SET_RESULT_ERRORCODE(resp_val, code);
         return code;
     }
 
-    vector_t datas;
-    vector_init(&datas, ids->size, sizeof(opcua_data_t));
-    generate_read_node_vector(context, config, &datas);
+    vector_t datas = { 0 };
+    vector_init(&datas, datatag_ids->size, sizeof(opcua_data_t));
+    read_request_vector_generate(context, config, &datas);
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
@@ -445,7 +434,7 @@ opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
         log_error("Open62541 client offline");
         SET_RESULT_ERRORCODE(resp_val, code);
 
-        release_node_vector(&datas);
+        node_vector_release(&datas);
         vector_uninit(&datas);
         return code;
     }
@@ -456,59 +445,50 @@ opcua_error_code_e plugin_handle_read_once(opc_handle_context_t *context,
         log_error("Open62541 read error:%d", rc);
         SET_RESULT_ERRORCODE(resp_val, code);
 
-        release_node_vector(&datas);
+        node_vector_release(&datas);
         vector_uninit(&datas);
         return code;
     }
 
-    neu_fixed_array_t *array;
-    array = neu_fixed_array_new(ids->size + 1, sizeof(neu_int_val_t));
+    neu_fixed_array_t *array = NULL;
+    array = neu_fixed_array_new(datatag_ids->size + 1, sizeof(neu_int_val_t));
     if (NULL == array) {
         code = OPCUA_ERROR_ARRAY_NULL;
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
 
-        release_node_vector(&datas);
+        node_vector_release(&datas);
         vector_uninit(&datas);
         return code;
     }
 
-    rc = generate_read_result_array(&datas, array);
-    neu_int_val_t   int_val;
-    neu_data_val_t *val_err;
-    val_err = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+    rc                      = read_response_array_generate(&datas, array);
+    neu_int_val_t   int_val = { 0 };
+    neu_data_val_t *val_err = NULL;
+    val_err                 = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
     neu_dvalue_set_errorcode(val_err, rc);
     neu_int_val_init(&int_val, 0, val_err);
     neu_fixed_array_set(array, 0, (void *) &int_val);
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
 
-    release_node_vector(&datas);
+    node_vector_release(&datas);
     vector_uninit(&datas);
     return code;
 }
 
-opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
-                                             neu_taggrp_config_t * config,
-                                             neu_data_val_t *      write_val,
-                                             neu_data_val_t *      resp_val)
+opcua_error_code_e opcua_handle_write_value(opc_handle_context_t *context,
+                                            neu_taggrp_config_t * config,
+                                            neu_data_val_t *      write_val,
+                                            neu_data_val_t *      resp_val)
 {
-    opcua_error_code_e code = OPCUA_ERROR_SUCESS;
-    neu_fixed_array_t *array;
+    opcua_error_code_e code  = OPCUA_ERROR_SUCESS;
+    neu_fixed_array_t *array = NULL;
     neu_dvalue_get_ref_array(write_val, &array);
     int size = array->length;
 
-    vector_t datas;
+    vector_t datas = { 0 };
     vector_init(&datas, size, sizeof(opcua_data_t));
-
-    generate_write_node_vector(context, config, array, &datas);
-
-    // if (size != datas.size) {
-    //     code = -1;
-    //     log_error("open62541 client offline");
-    //     vector_uninit(&datas);
-    //     SET_RESULT_ERRORCODE(resp_val, code);
-    //     return code;
-    // }
+    write_request_vector_generate(context, config, array, &datas);
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
@@ -516,7 +496,7 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
         log_error("open62541 client offline");
         SET_RESULT_ERRORCODE(resp_val, code);
 
-        release_node_vector(&datas);
+        node_vector_release(&datas);
         vector_uninit(&datas);
         return code;
     }
@@ -527,33 +507,33 @@ opcua_error_code_e plugin_handle_write_value(opc_handle_context_t *context,
         log_error("open62541 write error");
         SET_RESULT_ERRORCODE(resp_val, code);
 
-        release_node_vector(&datas);
+        node_vector_release(&datas);
         vector_uninit(&datas);
         return code;
     }
 
-    neu_fixed_array_t *resp_array;
+    neu_fixed_array_t *resp_array = NULL;
     resp_array = neu_fixed_array_new(size + 1, sizeof(neu_int_val_t));
     if (NULL == resp_array) {
         code = OPCUA_ERROR_ARRAY_NULL;
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
 
-        release_node_vector(&datas);
+        node_vector_release(&datas);
         vector_uninit(&datas);
         return code;
     }
 
-    rc = generate_write_result_array(&datas, resp_array);
-    neu_int_val_t   int_val;
-    neu_data_val_t *val_err;
-    val_err = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+    rc                      = write_response_array_generate(&datas, resp_array);
+    neu_int_val_t   int_val = { 0 };
+    neu_data_val_t *val_err = NULL;
+    val_err                 = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
     neu_dvalue_set_errorcode(val_err, rc);
     neu_int_val_init(&int_val, 0, val_err);
     neu_fixed_array_set(resp_array, 0, (void *) &int_val);
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, resp_array);
 
-    release_node_vector(&datas);
+    node_vector_release(&datas);
     vector_uninit(&datas);
     return code;
 }
@@ -566,15 +546,15 @@ static void group_config_read(opc_subscribe_tuple_t *tuple)
         return;
     }
 
-    neu_data_val_t *resp_val;
-    resp_val = neu_dvalue_unit_new();
+    neu_data_val_t *resp_val = NULL;
+    resp_val                 = neu_dvalue_unit_new();
     if (NULL == resp_val) {
         neu_variable_destroy(head);
         log_warn("Failed to allocate data value for response tags");
         return;
     }
 
-    plugin_handle_read_once(tuple->context, tuple->config, resp_val);
+    opcua_handle_read_once(tuple->context, tuple->config, resp_val);
     if (NULL != tuple->cycle_cb) {
         tuple->cycle_cb(tuple->plugin, tuple->config, resp_val);
     }
@@ -658,8 +638,8 @@ static void subscribe_tuple_add(opc_handle_context_t * context,
 static opc_subscribe_tuple_t *
 subscribe_tuple_find(opc_handle_context_t *context, neu_taggrp_config_t *config)
 {
-    opc_subscribe_tuple_t *iterator;
-    opc_subscribe_tuple_t *tuple = NULL;
+    opc_subscribe_tuple_t *iterator = NULL;
+    opc_subscribe_tuple_t *tuple    = NULL;
     NEU_LIST_FOREACH(&context->subscribe_list, iterator)
     {
         if (iterator->config == config) {
@@ -698,9 +678,9 @@ static void unsubscribe(opc_handle_context_t * context,
     subscribe_tuple_release(tuple);
 }
 
-opcua_error_code_e plugin_handle_subscribe(
-    opc_handle_context_t *context, neu_taggrp_config_t *config,
-    cycle_response_callback cycle_cb, subscribe_response_callback subscribe_cb)
+opcua_error_code_e opcua_handle_subscribe(opc_handle_context_t *  context,
+                                          neu_taggrp_config_t *   config,
+                                          cycle_response_callback cycle_cb)
 {
     opcua_error_code_e code = OPCUA_ERROR_SUCESS;
 
@@ -710,15 +690,13 @@ opcua_error_code_e plugin_handle_subscribe(
         return OPCUA_ERROR_ADD_SUBSCRIBE_FAIL;
     }
 
-    tuple->cycle_cb     = cycle_cb;
-    tuple->subscribe_cb = subscribe_cb;
-
+    tuple->cycle_cb = cycle_cb;
     subscribe(context, tuple);
     return code;
 }
 
-opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
-                                             neu_taggrp_config_t * config)
+opcua_error_code_e opcua_handle_unsubscribe(opc_handle_context_t *context,
+                                            neu_taggrp_config_t * config)
 {
     opcua_error_code_e     code  = OPCUA_ERROR_SUCESS;
     opc_subscribe_tuple_t *tuple = subscribe_tuple_find(context, config);
@@ -726,7 +704,7 @@ opcua_error_code_e plugin_handle_unsubscribe(opc_handle_context_t *context,
     return code;
 }
 
-opcua_error_code_e plugin_handle_stop(opc_handle_context_t *context)
+opcua_error_code_e opcua_handle_stop(opc_handle_context_t *context)
 {
     opcua_error_code_e code = OPCUA_ERROR_SUCESS;
 

@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "open62541_utils.h"
+#include "open62541_util.h"
 
 #define OPEN62541_LOG_LEN 256
 
@@ -76,11 +76,10 @@ UA_Logger open62541_log_with_level(UA_LogLevel min_level)
     return logger;
 }
 
-UA_ByteString client_load_file(const char *const path)
+UA_ByteString client_file_load(const char *const path)
 {
     UA_ByteString file_contents = UA_STRING_NULL;
-
-    FILE *fp = fopen(path, "rb");
+    FILE *        fp            = fopen(path, "rb");
     if (!fp) {
         errno = 0;
         return file_contents;
@@ -94,8 +93,9 @@ UA_ByteString client_load_file(const char *const path)
         fseek(fp, 0, SEEK_SET);
         size_t read = fread(file_contents.data, sizeof(UA_Byte),
                             file_contents.length, fp);
-        if (read != file_contents.length)
+        if (read != file_contents.length) {
             UA_ByteString_clear(&file_contents);
+        }
     } else {
         file_contents.length = 0;
     }

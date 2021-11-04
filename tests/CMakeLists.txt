@@ -123,7 +123,7 @@ target_link_libraries(mqtt_test neuron-base gtest_main gtest yaml jansson ssl cr
 add_executable(opcua_test opcua_test.cc 
 	${CMAKE_SOURCE_DIR}/src/config.c
 	${CMAKE_SOURCE_DIR}/src/schema/schema.c
-	${CMAKE_SOURCE_DIR}/plugins/opcua/option.c)
+	${CMAKE_SOURCE_DIR}/plugins/opcua/open62541_option.c)
 target_include_directories(opcua_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include       
