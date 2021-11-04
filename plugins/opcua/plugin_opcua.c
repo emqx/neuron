@@ -107,6 +107,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
         plugin->handle_context->client = plugin->client;
     }
 
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_RUNNING;
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
