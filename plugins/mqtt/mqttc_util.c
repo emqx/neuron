@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mqtt_client.h"
+#include "mqttc_util.h"
 #include "schema/schema.h"
 #include "json/json.h"
 #include <config.h>

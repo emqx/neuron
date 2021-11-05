@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT_CLIENT
-#define NEURON_PLUGIN_MQTT_CLIENT
+#ifndef NEURON_PLUGIN_MQTTC_UTIL
+#define NEURON_PLUGIN_MQTTC_UTIL
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,18 +87,18 @@ typedef struct {
 } option_t;
 
 typedef enum {
-    ClientSuccess = 0,
-    ClientNoCertfileSet,
-    ClientCertfileLoadFail,
-    ClientIsNULL,
-    ClientConnectFailure,
-    ClientSubscribeTimeout,
-    ClientSubscribeListInitialFailure,
-    ClientSubscribeFailure,
-    ClientSubscribeAddListRepeat,
-    ClientSubscribeAddListFailure,
-    ClientUnsubscribeFailure,
-    ClientPublishFailure,
+    MQTTC_SUCCESS = 0,
+    MQTTC_NO_CERTFILESET,
+    MQTTC_CERTFILE_LOAD_FAILURE,
+    MQTTC_IS_NULL,
+    MQTTC_CONNECT_FAILURE,
+    MQTTC_SUBSCRIBE_TIMEOUT,
+    MQTTC_SUBSCRIBE_LIST_INITIAL_FAILURE,
+    MQTTC_SUBSCRIBE_FAILURE,
+    MQTTC_SUBSCRIBE_ADD_REPEAT,
+    MQTTC_SUBSCRIBE_ADD_FAILURE,
+    MQTTC_UNSUBSCRIBE_FAILURE,
+    MQTTC_PUBLISH_FAILURE,
 } client_error_e;
 
 typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
