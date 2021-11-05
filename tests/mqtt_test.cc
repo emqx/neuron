@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "mqtt_client.h"
+#include "mqttc_util.h"
 
 TEST(MQTTTest, mqtt_option_init_by_config)
 {

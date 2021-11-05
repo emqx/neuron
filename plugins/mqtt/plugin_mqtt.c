@@ -28,8 +28,8 @@
 #include "command/command_node.h"
 #include "command/command_rw.h"
 
-#include "mqtt_client.h"
 #include "mqttc_client.h"
+#include "mqttc_util.h"
 
 #define UNUSED(x) (void) (x)
 
@@ -72,6 +72,7 @@ static struct context *context_create()
     if (NULL != ctx) {
         memset(ctx, 0, sizeof(struct context));
     }
+
     return ctx;
 }
 
@@ -93,13 +94,14 @@ static void context_list_add(neu_list *list, int req_id,
 
 static struct context *context_list_find(neu_list *list, const int id)
 {
-    struct context *item;
+    struct context *item = NULL;
     NEU_LIST_FOREACH(list, item)
     {
         if (id == item->req_id) {
             return item;
         }
     }
+
     return NULL;
 }
 
@@ -186,7 +188,7 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         break;
     }
     case NEU_MQTT_OP_DELETE_GROUP_CONFIG: {
-        neu_parse_del_group_config_req_t *req;
+        neu_parse_del_group_config_req_t *req = NULL;
         rc = neu_parse_decode_del_group_config(json_str, &req);
         if (0 == rc) {
             ret_str = command_delete_group_config(plugin, mqtt, req);
@@ -223,7 +225,7 @@ static void plugin_response_handle(const char *topic_name, size_t topic_len,
         break;
     }
     case NEU_MQTT_OP_GET_TAGS: {
-        neu_parse_get_tags_req_t *req;
+        neu_parse_get_tags_req_t *req = NULL;
         rc = neu_parse_decode_get_tags(json_str, &req);
         if (0 == rc) {
             ret_str = command_get_tags(plugin, mqtt, req);
@@ -320,8 +322,8 @@ static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
-    neu_plugin_t *plugin;
-    plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
+    neu_plugin_t *plugin = NULL;
+    plugin               = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (NULL == plugin) {
         log_error("Failed to allocate plugin %s",
                   neu_plugin_module.module_name);
@@ -363,7 +365,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
         &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
     error = mqttc_client_subscribe(plugin->mqtt_client, "neuronlite/request", 0,
                                    plugin_response_handle);
-    if (ClientIsNULL == error) {
+    if (MQTTC_IS_NULL == error) {
         log_error(
             "Can not create mqtt client instance, initialize plugin failed: %s",
             neu_plugin_module.module_name);
@@ -418,7 +420,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_RESP: {
-        neu_reqresp_read_resp_t *read_resp;
+        neu_reqresp_read_resp_t *read_resp = NULL;
         read_resp = (neu_reqresp_read_resp_t *) req->buf;
 
         struct context *ctx = NULL;
@@ -432,7 +434,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         break;
     }
     case NEU_REQRESP_WRITE_RESP: {
-        neu_reqresp_write_resp_t *write_resp;
+        neu_reqresp_write_resp_t *write_resp = NULL;
         write_resp = (neu_reqresp_write_resp_t *) req->buf;
 
         struct context *ctx = NULL;
@@ -446,8 +448,8 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
-        neu_reqresp_data_t *neu_data;
-        neu_data = (neu_reqresp_data_t *) req->buf;
+        neu_reqresp_data_t *neu_data = NULL;
+        neu_data                     = (neu_reqresp_data_t *) req->buf;
         char *json_str =
             command_read_cycle_response(plugin, neu_data->data_val);
         MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
