@@ -1,96 +1,58 @@
-# neuron
+# Neuron
 
-NEURON IIoT System for Industry 4.0
+English | [简体中文](https://github.com/neugates/neuron/blob/main/README-CN.md)
 
+Neuron is a Industrial IoT (IIoT) edge industrial gateway for modern big data technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol to access the Industrial IoT platform.
 
+Version 2.0 removes unnecessary features from version 1.x and focuses on data acquisition and forwarding of industrial protocols.Neuron 2.0 support simultaneous connection of a large number of devices with different protocols.
 
-## Build Requirements
+## Feature
 
-- [openssl](https://github.com/openssl/openssl)
+- Plugged-in southbound driver and northbound application;
+- Support simultaneous connection of a large number of devices with different protocols;
+- Highly integrated with other EMQ products,including eKuiper, EMQX, Fabric;
+- Support updating device drivers during Neuron runtime;
 
-  ```shell
-  # Ubuntu
-  $ apt-get install libssl-dev
-  
-  # CentOS
-  $ yum install openssl-devel
-  
-  # MacOS
-  $ brew install openssl
-  ```
+For full list of new features,plfaase read [Instructions for application and driver](https://github.com/neugates/nep/blob/main/docs/neuron2.x-driver.md)。
 
-  
+For more information,please visit [Homepage](https://www.emqx.com/zh/products/neuron)。
 
-- [nng](https://github.com/nanomsg/nng/tree/v1.5.1)
+## Installation
 
-  ```shell
-  $ git clone -b v1.5.1 git@github.com:nanomsg/nng.git
-  $ cd nng
-  $ mkdir build
-  $ cd build
-  $ cmake -G Ninja -DBUILD_SHARED_LIBS=1 ..
-  $ ninja
-  $ ninja test
-  $ ninja install
-  ```
+[Script to install dependent libraries](https://github.com/neugates/neuron/blob/main/install-libs.sh)
 
-- [jansson](https://github.com/akheron/jansson)
+```shell
+# Script to install all libraries
+cd neuron 
+./install-libs.sh
+```
 
-  ```shell
-  $ git clone git@github.com:akheron/jansson.git
-  $ cd jansson
-  $ mkdir build
-  $ cd build
-  $ cmake -G Ninja -DJANSSON_BUILD_DOCS=OFF ..
-  $ ninja
-  $ ninja install
-  ```
+[Source code to install dependent libraries](https://github.com/neugates/neuron/blob/main/Install-dependent-libraries.md)
 
-- [jwt](https://github.com/benmcollins/libjwt)
+## Build
 
-  ```shell
-  $ git clone git@github.com:benmcollins/libjwt.git
-  $ cd libjwt
-  $ mkdir build
-  $ cd build
-  $ cmake -G Ninja -DBUILD_EXAMPLES=OFF -DOPENSSL_ROOT_DIR={YOUR_OPENSSL_ROOT_DIR} ..
-  $ ninja
-  $ ninja install
-  ```
+```shell
+git clone https://github.com/neugates/neuron.git
+# Get submodule
+git submodule update --init
+# build
+cd neuron && mkdir build 
+cmake .. && make
+```
 
-  [MQTT-C](https://github.com/LiamBindle/MQTT-C.git)
+## Quick Start
 
-  ```shell
-  $ git clone -b 1.1.5 https://github.com/LiamBindle/MQTT-C.git 
-  $ cd MQTT-C
-  $ mkdir build
-  $ cd build
-  $ cmake -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON ..
-  $ ninja
-  $ ninja install
-  ```
-  
-- [yaml](https://github.com/yaml/libyaml.git)
-  ```shell
-  $ git clone https://github.com/yaml/libyaml.git
-  $ cd libyaml
-  $ mkdir build && cd build && cmake DBUILD_SHARED_LIBS=1 .. && make
-  $ make install
-  ```
+```shell
+# Start neuron
+./neuron
+```
 
-- [neuron-dashboard](https://github.com/neugates/neuron-dashboard-src/releases)
-  ```shell
-  # Download lastest neuron-dashboard release from https://github.com/neugates/neuron-dashboard-src/releases
-  # Unzip and move to "build"
+## Test
 
-  $ unzip neuron-dashboard.zip -d build
-  ```
-- [open62541](https://open62541.org/)
-  ```shell
-  $ git clone -b v1.2.2 https://github.com/open62541/open62541.git
-  $ cd open62541
-  $ mkdir build
-  $ cd build
-  $ cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DUA_ENABLE_AMALGAMATION=ON -DUA_ENABLE_ENCRYPTION=ON -DUA_ENABLE_ENCRYPTION_OPENSSL=ON ..
-  $ ninja && ninja install
-  ```
+To test everying in one go
+
+```shell
+ctest --output-on-failure
+```
+
+## Community
