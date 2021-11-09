@@ -527,28 +527,19 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_ADD_GRP_CONFIG: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_add_grp_config_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = NEU_ERR_SUCCESS;
-                              rv  = neu_manager_add_grp_config(adapter->manager,
-                                                              req_cmd);
-                              if (rv != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_add_grp_config_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result,
+            { ret = neu_manager_add_grp_config(adapter->manager, req_cmd); });
         break;
     }
 
     case NEU_REQRESP_DEL_GRP_CONFIG: {
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_del_grp_config_t, rv,
                           NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = NEU_ERR_SUCCESS;
-                              rv  = neu_manager_del_grp_config(
+                              ret = neu_manager_del_grp_config(
                                   adapter->manager, req_cmd->node_id,
                                   req_cmd->config_name);
-                              if (rv != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
                           });
         break;
     }
@@ -556,12 +547,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     case NEU_REQRESP_UPDATE_GRP_CONFIG: {
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_update_grp_config_t,
                           rv, NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = NEU_ERR_SUCCESS;
-                              rv  = neu_manager_update_grp_config(
+                              ret = neu_manager_update_grp_config(
                                   adapter->manager, req_cmd);
-                              if (rv != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
                           });
         break;
     }

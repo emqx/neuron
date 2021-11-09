@@ -1,7 +1,7 @@
 import subprocess
 
 
-class NeuronLib(object):
+class Neuron(object):
     process = 0
 
     def __init__(self):

@@ -7,3 +7,4 @@ ${err_plugin_name_not_found}		-2000
 ${err_node_type_invalid}		-2001
 ${err_node_exist}			-2002
 ${err_node_not_exist}			-2003
+${err_grpconfig_not_exist}		-2004

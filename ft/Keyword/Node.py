@@ -1,8 +1,4 @@
-import json
-
-
-class NodeLib(object):
-    process = 0
+class Node(object):
 
     def __init__(self):
         pass

@@ -1,6 +1,6 @@
 *** Settings ***
-Library     Keyword.NeuronLib.NeuronLib
-Library     Keyword.NodeLib.NodeLib
+Library     Keyword.Neuron.Neuron
+Library     Keyword.Node.Node
 Resource    error.robot
 Resource    neuron.robot
 Library     REST    http://127.0.0.1:7001

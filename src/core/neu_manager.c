@@ -1587,7 +1587,7 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
         log_error("Can't find matched src registered adapter");
-        rv = -1;
+        rv = NEU_ERR_NODE_NOT_EXIST;
         goto add_grp_config_exit;
     }
 
@@ -1600,13 +1600,13 @@ add_grp_config_exit:
 int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
                                const char *config_name)
 {
-    int                   rv = 0;
+    int                   rv = NEU_ERR_SUCCESS;
     adapter_id_t          adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || config_name == NULL) {
         log_error("Delete group config NULL manager or config_name");
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -1614,7 +1614,7 @@ int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
         log_error("Can't find matched registered adapter");
-        rv = -1;
+        rv = NEU_ERR_NODE_NOT_EXIST;
         goto del_grp_config_exit;
     }
 
@@ -1622,6 +1622,7 @@ int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
                                         config_name);
     if (rv != 0) {
         log_error("Failed to delete datatag group config: %s", config_name);
+        rv = NEU_ERR_EINTERNAL;
     }
 del_grp_config_exit:
     nng_mtx_unlock(manager->adapters_mtx);
@@ -1631,18 +1632,18 @@ del_grp_config_exit:
 int neu_manager_update_grp_config(neu_manager_t *              manager,
                                   neu_cmd_update_grp_config_t *cmd)
 {
-    int                   rv = 0;
+    int                   rv = NEU_ERR_SUCCESS;
     adapter_id_t          adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
         log_error("Update group config with NULL manager or command");
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     if (cmd->grp_config == NULL) {
         log_error("group config is NULL");
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -1650,7 +1651,7 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
         log_error("Can't find matched src or dst registered adapter");
-        rv = -1;
+        rv = NEU_ERR_NODE_NOT_EXIST;
         goto update_grp_config_exit;
     }
 
@@ -1660,6 +1661,7 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
         log_error("Failed to update datatag group config: %s",
                   neu_taggrp_cfg_get_name(cmd->grp_config));
         neu_taggrp_cfg_free(cmd->grp_config);
+        rv = NEU_ERR_EINTERNAL;
     }
 
 update_grp_config_exit:
