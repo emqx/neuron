@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "command_rw.h"
+#include "read_write.h"
 
 int command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
                               neu_parse_read_req_t *req, uint32_t req_id)

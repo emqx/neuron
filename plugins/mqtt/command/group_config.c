@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include "command_group_config.h"
+#include "group_config.h"
 
 static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
                                   neu_parse_get_group_config_res_t *res)

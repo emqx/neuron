@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include "command_datatag.h"
+#include "datatag.h"
 
 typedef struct {
     char *           name;
