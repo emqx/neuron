@@ -89,7 +89,7 @@ void handle_get_ttys(nng_aio *aio)
 
 void handle_ping(nng_aio *aio)
 {
-    http_ok(aio, "{\"status\": \"OK\"}");
+    http_ok(aio, "{}");
 }
 
 void handle_login(nng_aio *aio)

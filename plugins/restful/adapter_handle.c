@@ -34,14 +34,22 @@ void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
         aio, neu_parse_add_node_req_t, neu_parse_decode_add_node, {
-            intptr_t err = neu_system_add_node(
-                plugin, req->node_type, req->node_name, req->plugin_name);
-            if (err != 0) {
-                http_bad_request(aio, "{\"error\": 1}");
+            if (req->node_type >= NEU_NODE_TYPE_MAX ||
+                req->node_type <= NEU_NODE_TYPE_UNKNOW) {
+                error.error = NEU_ERR_NODE_TYPE_INVALID;
             } else {
-                http_ok(aio, "{\"error\": 0}");
+                error.error = neu_system_add_node(
+                    plugin, req->node_type, req->node_name, req->plugin_name);
+            }
+
+            neu_json_encode_by_fn(&error, neu_parse_encode_error,
+                                  &result_error);
+            if (error.error != 0) {
+                http_bad_request(aio, result_error);
+            } else {
+                http_created(aio, result_error);
             }
         })
 }
@@ -50,13 +58,15 @@ void handle_del_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
         aio, neu_parse_del_node_req_t, neu_parse_decode_del_node, {
-            intptr_t err = neu_system_del_node(plugin, req->node_id);
-            if (err != 0) {
-                http_bad_request(aio, "{\"error\": 1}");
+            error.error = neu_system_del_node(plugin, req->node_id);
+            neu_json_encode_by_fn(&error, neu_parse_encode_error,
+                                  &result_error);
+            if (error.error != 0) {
+                http_bad_request(aio, result_error);
             } else {
-                http_ok(aio, "{\"error\": 0}");
+                http_ok(aio, result_error);
             }
         })
 }
@@ -79,12 +89,15 @@ void handle_update_adapter(nng_aio *aio)
 
 void handle_get_adapter(nng_aio *aio)
 {
-    neu_plugin_t *plugin      = neu_rest_get_plugin();
-    char *        result      = NULL;
-    char *        s_node_type = http_get_param(aio, "type");
+    neu_plugin_t *    plugin      = neu_rest_get_plugin();
+    char *            result      = NULL;
+    neu_parse_error_t error       = { 0 };
+    char *            s_node_type = http_get_param(aio, "type");
 
     if (s_node_type == NULL) {
-        http_bad_request(aio, "{\"error\": 1}");
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_by_fn(&error, neu_parse_encode_error, &result);
+        http_bad_request(aio, result);
         return;
     }
 

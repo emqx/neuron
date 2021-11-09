@@ -34,8 +34,16 @@
             { func };                                                         \
             decode_fun##_free(req);                                           \
         } else {                                                              \
-            http_bad_request(aio, "{\"error\": \"request body is wrong\"}");  \
+            http_bad_request(aio, "{\"error\": -1002}");                      \
         }                                                                     \
+    }
+
+#define REST_PROCESS_HTTP_REQUEST_WITH_ERROR(aio, req_type, decode_fun, func) \
+    {                                                                         \
+        neu_parse_error_t error        = { 0 };                               \
+        char *            result_error = NULL;                                \
+        REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)            \
+        free(result_error);                                                   \
     }
 
 enum neu_rest_method {

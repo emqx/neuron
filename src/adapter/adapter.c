@@ -471,12 +471,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_add_node_t, rv,
                           NEU_REQRESP_ERR_CODE, p_result, {
                               neu_node_id_t node_id;
-                              ret = NEU_ERR_SUCCESS;
-                              if (neu_manager_add_node(adapter->manager,
-                                                       req_cmd,
-                                                       &node_id) != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
+                              ret = neu_manager_add_node(adapter->manager,
+                                                         req_cmd, &node_id);
                           });
         break;
     }
@@ -484,12 +480,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     case NEU_REQRESP_DEL_NODE: {
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_del_node_t, rv,
                           NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = NEU_ERR_SUCCESS;
-                              rv  = neu_manager_del_node(adapter->manager,
-                                                        req_cmd->node_id);
-                              if (rv != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
+                              ret = neu_manager_del_node(adapter->manager,
+                                                         req_cmd->node_id);
                           });
         break;
     }
