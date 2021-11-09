@@ -462,11 +462,12 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 }
 
 // The output parameter p_adapter hold a new adapter
-static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
-                                        adapter_reg_cmd_t *reg_param,
-                                        neu_adapter_t **   p_adapter)
+static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
+                                          adapter_reg_cmd_t *reg_param,
+                                          neu_adapter_t **   p_adapter,
+                                          adapter_id_t *     adapter_id)
 {
-    int                rv;
+    int                rv = NEU_ERR_SUCCESS;
     neu_adapter_t *    adapter;
     neu_adapter_info_t adapter_info;
     plugin_reg_info_t  plugin_reg_info;
@@ -480,7 +481,7 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
     }
     if (rv != 0) {
         log_error("Can't find plugin: %s", reg_param->plugin_name);
-        return 0;
+        return NEU_ERR_PLUGIN_NAME_NOT_FOUND;
     }
 
     adapter_reg_entity_t *same_reg_entity;
@@ -488,7 +489,7 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
                                                reg_param->adapter_name);
     if (same_reg_entity != NULL) {
         log_warn("A adapter with same name has already been registered");
-        return 0;
+        return NEU_ERR_NODE_EXIST;
     }
 
     adapter_info.id              = manager_new_adapter_id(manager);
@@ -499,14 +500,14 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
     adapter_info.plugin_lib_name = plugin_reg_info.plugin_lib_name;
     adapter                      = neu_adapter_create(&adapter_info, manager);
     if (adapter == NULL) {
-        return 0;
+        return NEU_ERR_EINTERNAL;
     }
 
     neu_datatag_manager_t *datatag_manager;
     datatag_manager = neu_datatag_mng_create(adapter);
     if (datatag_manager == NULL) {
         neu_adapter_destroy(adapter);
-        return 0;
+        return NEU_ERR_EINTERNAL;
     }
 
     adapter_reg_entity_t reg_entity;
@@ -517,7 +518,7 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
         log_error("Failed to new cv for register adapter");
         neu_datatag_mng_destroy(datatag_manager);
         neu_adapter_destroy(adapter);
-        return 0;
+        return NEU_ERR_EINTERNAL;
     }
 
     reg_entity.adapter_id      = adapter_info.id;
@@ -532,13 +533,14 @@ static adapter_id_t manager_reg_adapter(neu_manager_t *    manager,
     }
     log_debug("register adapter id: %d, type: %d, name: %s",
               reg_entity.adapter_id, adapter_info.type, adapter_info.name);
-    return reg_entity.adapter_id;
+    *adapter_id = reg_entity.adapter_id;
+    return NEU_ERR_SUCCESS;
 }
 
 static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
                                  bool need_erase)
 {
-    int                    rv = 0;
+    int                    rv = NEU_ERR_NODE_NOT_EXIST;
     size_t                 index;
     vector_t *             reg_adapters;
     nng_cv *               cv;
@@ -562,6 +564,7 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
         if (need_erase) {
             vector_erase(reg_adapters, index);
         }
+        rv = NEU_ERR_SUCCESS;
     }
     nng_mtx_unlock(manager->adapters_mtx);
 
@@ -677,9 +680,9 @@ static void reg_and_start_default_adapters(neu_manager_t *manager)
 
     for (i = 0; i < DEFAULT_ADAPTER_ADD_INFO_SIZE; i++) {
         p_adapter = NULL;
-        id        = manager_reg_adapter(
-            manager, (adapter_reg_cmd_t *) &default_adapter_reg_cmds[i],
-            &p_adapter);
+        manager_reg_adapter(manager,
+                            (adapter_reg_cmd_t *) &default_adapter_reg_cmds[i],
+                            &p_adapter, &id);
         if (id != 0 && p_adapter != NULL) {
             neu_manager_start_adapter(manager, p_adapter);
         }
@@ -1489,8 +1492,10 @@ int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
     reg_cmd.adapter_name = cmd->adapter_name;
     reg_cmd.plugin_name  = cmd->plugin_name;
     reg_cmd.plugin_id    = cmd->plugin_id;
-    adapter_id           = manager_reg_adapter(manager, &reg_cmd, NULL);
-    *p_node_id = neu_manager_adapter_id_to_node_id(manager, adapter_id);
+    rv = manager_reg_adapter(manager, &reg_cmd, NULL, &adapter_id);
+    if (rv == NEU_ERR_SUCCESS) {
+        *p_node_id = neu_manager_adapter_id_to_node_id(manager, adapter_id);
+    }
     return rv;
 }
 

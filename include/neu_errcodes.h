@@ -59,8 +59,15 @@ typedef enum {
     NEU_ERR_EBADTYPE     = -30,
     NEU_ERR_ECONNSHUT    = -31,
 
-    NEU_ERR_EINTERNAL = -1000, // A neuron interanl error
-    NEU_ERR_FAILURE   = -1001  // A general error
+    NEU_ERR_FAILURE        = -1000, // A general error
+    NEU_ERR_EINTERNAL      = -1001, // A neuron interanl error
+    NEU_ERR_BODY_IS_WRONG  = -1002,
+    NEU_ERR_PARAM_IS_WRONG = -1003,
+
+    NEU_ERR_PLUGIN_NAME_NOT_FOUND = -2000,
+    NEU_ERR_NODE_TYPE_INVALID     = -2001,
+    NEU_ERR_NODE_EXIST            = -2002,
+    NEU_ERR_NODE_NOT_EXIST        = -2003,
 } neu_err_code_e;
 
 #ifdef __cplusplus
