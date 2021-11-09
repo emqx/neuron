@@ -68,6 +68,7 @@ typedef enum {
     NEU_ERR_NODE_TYPE_INVALID     = -2001,
     NEU_ERR_NODE_EXIST            = -2002,
     NEU_ERR_NODE_NOT_EXIST        = -2003,
+    NEU_ERR_GRP_CONFIG_NOT_EXIST  = -2004,
 } neu_err_code_e;
 
 #ifdef __cplusplus
