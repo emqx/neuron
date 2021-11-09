@@ -6,10 +6,11 @@ set(src
 	mqttc_util.c
 	mqttc_client.c
 	command/common.c 
-	command/command_rw.c
-	command/command_group_config.c
-	command/command_datatag.c
-	command/command_node.c)
+	command/read_write.c
+	command/group_config.c
+	command/datatag.c
+	command/node.c
+	command/command.c)
 
 add_library(plugin-mqtt SHARED ${src})
 

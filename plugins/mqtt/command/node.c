@@ -19,7 +19,7 @@
 
 #include <stdlib.h>
 
-#include "command_node.h"
+#include "node.h"
 
 char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
                         neu_parse_get_nodes_req_t *req)
