@@ -211,9 +211,9 @@ int neu_parse_encode_get_group_config(void *json_object, void *param)
         array                   = neu_json_encode_array(array, group, 4);
     }
     neu_json_elem_t elems[] = { {
-        .name     = "group_configs",
-        .t        = NEU_JSON_OBJECT,
-        .v.object = array,
+        .name         = "group_configs",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = array,
     } };
 
     return neu_json_encode_field(json_object, elems, 1);
@@ -323,9 +323,9 @@ int neu_parse_encode_get_subscribe(void *json_object, void *param)
     }
 
     neu_json_elem_t elems[] = { {
-        .name     = "groups",
-        .t        = NEU_JSON_OBJECT,
-        .v.object = array,
+        .name         = "groups",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = array,
     } };
 
     return neu_json_encode_field(json_object, elems, 1);

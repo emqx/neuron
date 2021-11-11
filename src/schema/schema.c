@@ -49,7 +49,7 @@ neu_schema_valid_t *neu_schema_load(char *buf, char *plugin)
         neu_json_decode_free(json);
         return st;
     }
-    size = neu_json_decode_array_size_by_json(elem.v.object, "tag_type");
+    size = neu_json_decode_array_size_by_json(elem.v.val_object, "tag_type");
 
     if (size <= 0) {
         neu_json_decode_free(json);
@@ -61,7 +61,7 @@ neu_schema_valid_t *neu_schema_load(char *buf, char *plugin)
 
     for (int i = 0; i < size; i++) {
         neu_json_elem_t e = { .name = NULL, .t = NEU_JSON_INT };
-        if (neu_json_decode_array_by_json(elem.v.object, "tag_type", i, 1,
+        if (neu_json_decode_array_by_json(elem.v.val_object, "tag_type", i, 1,
                                           &e) == 0) {
             st->types[st->n_type] = e.v.val_int;
             st->n_type++;
@@ -69,7 +69,7 @@ neu_schema_valid_t *neu_schema_load(char *buf, char *plugin)
     }
 
     st->root        = json;
-    st->plugin_json = elem.v.object;
+    st->plugin_json = elem.v.val_object;
 
     return st;
 }
@@ -98,7 +98,7 @@ static bool valid_init(void *json, neu_json_elem_t *vele, char *name)
     vele->t    = NEU_JSON_OBJECT;
 
     return neu_json_decode_value(json, &ele) == 0 &&
-        neu_json_decode_value(ele.v.object, vele) == 0;
+        neu_json_decode_value(ele.v.val_object, vele) == 0;
 }
 
 int neu_schema_valid_param_int(neu_schema_valid_t *v, int64_t value, char *name)
@@ -111,8 +111,8 @@ int neu_schema_valid_param_int(neu_schema_valid_t *v, int64_t value, char *name)
         return -1;
     }
 
-    if (neu_json_decode_value(valid_ele.v.object, &min_ele) != 0 ||
-        neu_json_decode_value(valid_ele.v.object, &max_ele) != 0) {
+    if (neu_json_decode_value(valid_ele.v.val_object, &min_ele) != 0 ||
+        neu_json_decode_value(valid_ele.v.val_object, &max_ele) != 0) {
         return 0;
     }
 
@@ -133,8 +133,8 @@ int neu_schema_valid_param_real(neu_schema_valid_t *v, double value, char *name)
         return -1;
     }
 
-    if (neu_json_decode_value(valid_ele.v.object, &min_ele) != 0 ||
-        neu_json_decode_value(valid_ele.v.object, &max_ele) != 0) {
+    if (neu_json_decode_value(valid_ele.v.val_object, &min_ele) != 0 ||
+        neu_json_decode_value(valid_ele.v.val_object, &max_ele) != 0) {
         return 0;
     }
 
@@ -155,7 +155,7 @@ int neu_schema_valid_param_string(neu_schema_valid_t *v, char *value,
         return -1;
     }
 
-    if (neu_json_decode_value(valid_ele.v.object, &len_ele) != 0) {
+    if (neu_json_decode_value(valid_ele.v.val_object, &len_ele) != 0) {
         return 0;
     }
 
@@ -176,14 +176,14 @@ int neu_schema_valid_param_enum(neu_schema_valid_t *v, int64_t value,
         return -1;
     }
 
-    size = neu_json_decode_array_size_by_json(valid_ele.v.object, "value");
+    size = neu_json_decode_array_size_by_json(valid_ele.v.val_object, "value");
     if (size <= 0) {
         return -1;
     }
 
     for (int i = 0; i < size; i++) {
         neu_json_elem_t ve = { .name = NULL, .t = NEU_JSON_INT };
-        if (neu_json_decode_array_by_json(valid_ele.v.object, "value", i, 1,
+        if (neu_json_decode_array_by_json(valid_ele.v.val_object, "value", i, 1,
                                           &ve) == 0) {
             if (ve.v.val_int == value) {
                 return 0;

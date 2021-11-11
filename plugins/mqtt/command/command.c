@@ -95,37 +95,37 @@ void command_response_handle(mqtt_response_t *response)
     }
     case NEU_MQTT_OP_GET_TAGS: {
         neu_parse_get_tags_req_t *req = NULL;
-        rc = neu_parse_decode_get_tags(json_str, &req);
+        rc = neu_parse_decode_get_tags_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_get_tags(plugin, mqtt, req);
-            neu_parse_decode_get_tags_free(req);
+            neu_parse_decode_get_tags_req_free(req);
         }
         break;
     }
     case NEU_MQTT_OP_ADD_TAGS: {
         neu_parse_add_tags_req_t *req = NULL;
-        rc = neu_parse_decode_add_tags(json_str, &req);
+        rc = neu_parse_decode_add_tags_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_add_tags(plugin, mqtt, req);
-            neu_parse_decode_add_tags_free(req);
+            neu_parse_decode_add_tags_req_free(req);
         }
         break;
     }
     case NEU_MQTT_OP_UPDATE_TAGS: {
         neu_parse_update_tags_req_t *req = NULL;
-        rc = neu_parse_decode_update_tags(json_str, &req);
+        rc = neu_parse_decode_update_tags_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_update_tags(plugin, mqtt, req);
-            neu_parse_decode_update_tags_free(req);
+            neu_parse_decode_update_tags_req_free(req);
         }
         break;
     }
     case NEU_MQTT_OP_DELETE_TAGS: {
         neu_parse_del_tags_req_t *req = NULL;
-        rc = neu_parse_decode_del_tags(json_str, &req);
+        rc = neu_parse_decode_del_tags_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_delete_tags(plugin, mqtt, req);
-            neu_parse_decode_del_tags_free(req);
+            neu_parse_decode_del_tags_req_free(req);
         }
         break;
     }

@@ -177,9 +177,9 @@ int neu_parse_encode_get_nodes(void *json_object, void *param)
         array = neu_json_encode_array(array, nodes, NEU_JSON_ELEM_SIZE(nodes));
     }
     neu_json_elem_t elems[] = { {
-        .name     = "nodes",
-        .t        = NEU_JSON_OBJECT,
-        .v.object = array,
+        .name         = "nodes",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = array,
     } };
 
     return neu_json_encode_field(json_object, elems, 1);

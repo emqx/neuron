@@ -77,9 +77,9 @@ int neu_parse_encode_read(void *json_object, void *param)
         array                 = neu_json_encode_array(array, tag, 2);
     }
     neu_json_elem_t elems[] = { {
-        .name     = "tags",
-        .t        = NEU_JSON_OBJECT,
-        .v.object = array,
+        .name         = "tags",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = array,
     } };
 
     return neu_json_encode_field(json_object, elems, 1);

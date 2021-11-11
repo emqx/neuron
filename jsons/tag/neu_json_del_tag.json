@@ -1,0 +1,10 @@
+{
+	"del_tags_req": {
+		"node_id": 4,
+		"group_config_name": "config_modbus_tcp_sample_2",
+		"tag_ids": [
+			4,
+			5
+		]
+	}
+}
