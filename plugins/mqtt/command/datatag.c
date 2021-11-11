@@ -108,12 +108,12 @@ static int get_all_tag(neu_plugin_t *plugin, const uint32_t node_id,
     return 0;
 }
 
-static int wrap_get_tags_response_json_object(vector_t *                tags,
-                                              neu_parse_get_tags_res_t *json)
+static int wrap_get_tags_response_json_object(vector_t *                 tags,
+                                              neu_parse_get_tags_resp_t *json)
 {
     json->n_tag = tags->size;
-    json->tags  = malloc(tags->size * sizeof(neu_parse_get_tags_res_tag_t));
-    memset(json->tags, 0, tags->size * sizeof(neu_parse_get_tags_res_tag_t));
+    json->tags  = malloc(tags->size * sizeof(neu_parse_get_tags_resp_tag_t));
+    memset(json->tags, 0, tags->size * sizeof(neu_parse_get_tags_resp_tag_t));
 
     tag_t *tag  = NULL;
     int    size = tags->size;
@@ -134,8 +134,8 @@ static int wrap_get_tags_response_json_object(vector_t *                tags,
     return 0;
 }
 
-static void free_get_tags_response_object(vector_t *                tags,
-                                          neu_parse_get_tags_res_t *json)
+static void free_get_tags_response_object(vector_t *                 tags,
+                                          neu_parse_get_tags_resp_t *json)
 {
     tag_t *tag  = NULL;
     int    size = tags->size;
@@ -165,9 +165,9 @@ char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
                        neu_parse_get_tags_req_t *req)
 {
     log_info("Get tag list uuid:%s, node id:%d", mqtt->uuid, req->node_id);
-    char *                   json_str = NULL;
-    neu_parse_get_tags_res_t res      = { 0 };
-    neu_parse_error_t        error    = { 0 };
+    char *                    json_str = NULL;
+    neu_parse_get_tags_resp_t res      = { 0 };
+    neu_parse_error_t         error    = { 0 };
 
     uint32_t node_id = req->node_id;
     vector_t tags;
@@ -185,7 +185,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     rc = wrap_get_tags_response_json_object(&tags, &res);
-    rc = neu_json_encode_with_mqtt(&res, neu_parse_encode_get_tags, mqtt,
+    rc = neu_json_encode_with_mqtt(&res, neu_parse_encode_get_tags_resp, mqtt,
                                    neu_parse_encode_mqtt_param, &json_str);
 
     free_get_tags_response_object(&tags, &res);
@@ -302,8 +302,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     for (int i = 0; i < req->n_tag; i++) {
-        neu_datatag_t *datatag =
-            neu_datatag_tbl_get(table, req->tags[i].tag_id);
+        neu_datatag_t *datatag = neu_datatag_tbl_get(table, req->tags[i].id);
 
         if (NULL == datatag) {
             continue;
@@ -312,12 +311,12 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         free(datatag->name);
         free(datatag->addr_str);
 
-        datatag->id        = req->tags[i].tag_id;
+        datatag->id        = req->tags[i].id;
         datatag->name      = strdup(req->tags[i].name);
         datatag->attribute = req->tags[i].attribute;
         datatag->type      = req->tags[i].type;
         datatag->addr_str  = strdup(req->tags[i].address);
-        rc = neu_datatag_tbl_update(table, req->tags[i].tag_id, datatag);
+        rc = neu_datatag_tbl_update(table, req->tags[i].id, datatag);
 
         log_info("Update datatag to the datatag table, id:%ld", datatag->id);
     }

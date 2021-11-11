@@ -79,7 +79,7 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
         json_object_set_new(ob, ele.name, json_boolean(ele.v.val_bool));
         break;
     case NEU_JSON_OBJECT:
-        json_object_set_new(ob, ele.name, ele.v.object);
+        json_object_set_new(ob, ele.name, ele.v.val_object);
         break;
     default:
         break;
@@ -135,7 +135,7 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         ele->v.val_bool = json_boolean_value(ob);
         break;
     case NEU_JSON_OBJECT:
-        ele->v.object = ob;
+        ele->v.val_object = ob;
         break;
     default:
         log_error("json decode unknown type: %d", ele->t);

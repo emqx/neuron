@@ -247,9 +247,9 @@ TEST(JsonTest, EncodeArray)
     json_array2 =
         neu_json_encode_array(json_array2, array2, NEU_JSON_ELEM_SIZE(array2));
 
-    elems[0].v.val_int = 12345;
-    elems[1].v.object  = json_array1;
-    elems[2].v.object  = json_array2;
+    elems[0].v.val_int    = 12345;
+    elems[1].v.val_object = json_array1;
+    elems[2].v.val_object = json_array2;
     EXPECT_EQ(3, NEU_JSON_ELEM_SIZE(elems));
     void *ob = neu_json_encode_new();
     EXPECT_EQ(0, neu_json_encode_field(ob, elems, NEU_JSON_ELEM_SIZE(elems)));

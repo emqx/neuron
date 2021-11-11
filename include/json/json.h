@@ -45,7 +45,7 @@ typedef union neu_json_value {
     double  val_double;
     bool    val_bool;
     char *  val_str;
-    void *  object;
+    void *  val_object;
 } neu_json_value_u;
 
 typedef struct neu_json_elem {

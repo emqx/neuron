@@ -192,9 +192,9 @@ int neu_parse_encode_get_plugins(void *json_object, void *param)
         array = neu_json_encode_array(array, plugin_libs, 5);
     }
     neu_json_elem_t elems[] = { {
-        .name     = "plugin_libs",
-        .t        = NEU_JSON_OBJECT,
-        .v.object = array,
+        .name         = "plugin_libs",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = array,
     } };
 
     return neu_json_encode_field(json_object, elems, 1);

@@ -1,0 +1,34 @@
+{
+	"get_tags_req": {
+		"node_id": 4,
+		"group_config_name": "config_modbus_tcp_sample_2"
+	},
+	"get_tags_resp": {
+		"tags": [
+			{
+				"name": "tag1",
+				"type": 4,
+				"address": "1!400001",
+				"attribute": 1,
+				"group_config_name": "config_modbus_tcp_sample_2",
+				"id": 1
+			},
+			{
+				"name": "tag2",
+				"type": 14,
+				"address": "1!00001",
+				"attribute": 3,
+				"group_config_name": "config_modbus_tcp_sample_2",
+				"id": 4
+			},
+			{
+				"name": "tag3",
+				"type": 11,
+				"address": "1!400009",
+				"attribute": 3,
+				"group_config_name": "config_modbus_tcp_sample_2",
+				"id": 5
+			}
+		]
+	}
+}

@@ -45,8 +45,9 @@ char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     char *json_str = NULL;
-    int   rc = neu_json_encode_with_mqtt(&res, neu_parse_encode_get_tags, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+    int   rc =
+        neu_json_encode_with_mqtt(&res, neu_parse_encode_get_tags_resp, mqtt,
+                                  neu_parse_encode_mqtt_param, &json_str);
     if (0 == rc) {
         return json_str;
     }
