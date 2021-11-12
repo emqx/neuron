@@ -181,17 +181,22 @@ void handle_grp_subscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
         aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->src_node_id, req->name);
 
             if (config == NULL) {
-                http_not_found(aio, "{\"error\" : 1}");
+                error.error = NEU_ERR_GRP_CONFIG_NOT_EXIST;
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
+                                      &result_error);
+                http_not_found(aio, result_error);
             } else {
                 neu_plugin_send_subscribe_cmd(plugin, req->src_node_id,
                                               req->dst_node_id, config);
-                http_ok(aio, "{\"error\": 0}");
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
+                                      &result_error);
+                http_ok(aio, result_error);
             }
         })
 }
@@ -200,17 +205,22 @@ void handle_grp_unsubscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
         aio, neu_json_unsubscribe_req_t, neu_json_decode_unsubscribe_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->src_node_id, req->name);
 
             if (config == NULL) {
-                http_not_found(aio, "{\"error\" : 1}");
+                error.error = NEU_ERR_GRP_CONFIG_NOT_EXIST;
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
+                                      &result_error);
+                http_not_found(aio, result_error);
             } else {
                 neu_plugin_send_unsubscribe_cmd(plugin, req->src_node_id,
                                                 req->dst_node_id, config);
-                http_ok(aio, "{\"error\": 0}");
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
+                                      &result_error);
+                http_ok(aio, result_error);
             }
         })
 }
@@ -218,6 +228,7 @@ void handle_grp_unsubscribe(nng_aio *aio)
 void handle_grp_get_subscribe(nng_aio *aio)
 {
     neu_plugin_t *                plugin    = neu_rest_get_plugin();
+    neu_json_error_resp_t         error     = { 0 };
     char *                        result    = NULL;
     char *                        s_node_id = http_get_param(aio, "node_id");
     neu_node_id_t                 node_id   = 0;
@@ -225,7 +236,9 @@ void handle_grp_get_subscribe(nng_aio *aio)
     int                           index           = 0;
 
     if (s_node_id == NULL) {
-        http_bad_request(aio, "{\"error\": 1}");
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &result);
+        http_bad_request(aio, result);
         return;
     }
 

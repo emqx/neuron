@@ -126,7 +126,7 @@ vector_t neu_system_get_plugin(neu_plugin_t *plugin);
 
 int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
                                       neu_datatag_table_t *tag_table,
-                                      neu_attributetype_e  attribute);
+                                      neu_attribute_e      attribute);
 
 intptr_t neu_plugin_set_node_setting(neu_plugin_t *plugin,
                                      neu_node_id_t node_id,

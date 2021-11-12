@@ -142,40 +142,47 @@ void handle_set_node_setting(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
         aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
-            char *   config_buf = calloc(req_data_size + 1, sizeof(char));
-            intptr_t err        = 0;
+            char *config_buf = calloc(req_data_size + 1, sizeof(char));
 
             memcpy(config_buf, req_data, req_data_size);
-            err = neu_plugin_set_node_setting(plugin, req->node_id, config_buf);
+            error.error =
+                neu_plugin_set_node_setting(plugin, req->node_id, config_buf);
             free(config_buf);
 
-            if (err != 0) {
-                http_bad_request(aio, "{\"error\": 1}");
+            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
+                                  &result_error);
+            if (error.error != 0) {
+                http_bad_request(aio, result_error);
             } else {
-                http_ok(aio, "{\"error\": 0}");
+                http_ok(aio, result_error);
             }
         })
 }
 
 void handle_get_node_setting(nng_aio *aio)
 {
-    neu_plugin_t *plugin    = neu_rest_get_plugin();
-    char *        s_node_id = http_get_param(aio, "node_id");
-    char *        setting   = NULL;
-    neu_node_id_t node_id   = 0;
+    neu_plugin_t *        plugin    = neu_rest_get_plugin();
+    char *                s_node_id = http_get_param(aio, "node_id");
+    char *                setting   = NULL;
+    neu_json_error_resp_t error     = { 0 };
+    neu_node_id_t         node_id   = 0;
 
     if (s_node_id == NULL) {
-        http_bad_request(aio, "{\"error\": 1}");
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &setting);
+        http_bad_request(aio, setting);
         return;
     }
 
     node_id = (neu_node_id_t) atoi(s_node_id);
 
-    if (neu_plugin_get_node_setting(plugin, node_id, &setting) != 0) {
-        http_not_found(aio, "{\"error\": 1}");
-        return;
+    error.error = neu_plugin_get_node_setting(plugin, node_id, &setting);
+
+    if (error.error != 0) {
+        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &setting);
+        http_not_found(aio, setting);
     }
 
     http_ok(aio, setting);

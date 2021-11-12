@@ -115,6 +115,11 @@ int http_created(nng_aio *aio, char *content)
     return response(aio, content, NNG_HTTP_STATUS_CREATED);
 }
 
+int http_partial(nng_aio *aio, char *content)
+{
+    return response(aio, content, NNG_HTTP_STATUS_PARTIAL_CONTENT);
+}
+
 int http_bad_request(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_BAD_REQUEST);

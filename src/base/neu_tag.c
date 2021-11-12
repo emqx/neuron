@@ -17,32 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 config_ **/
 
-#ifndef NEURON_TAG_H
-#define NEURON_TAG_H
+#include "neu_tag.h"
 
-#include <stdbool.h>
-#include <stdint.h>
-
-#include "neu_data_expr.h"
-
-typedef uint32_t neu_datatag_id_t;
-typedef char *   neu_addr_str_t;
-typedef char *   neu_tag_name;
-
-typedef enum {
-    NEU_ATTRIBUTE_READ      = 1,
-    NEU_ATTRIBUTE_WRITE     = 2,
-    NEU_ATTRIBUTE_SUBSCRIBE = 4,
-} neu_attribute_e;
-
-typedef struct {
-    neu_datatag_id_t id;
-    neu_attribute_e  attribute;
-    neu_dtype_e      type;
-    neu_addr_str_t   addr_str;
-    neu_tag_name     name;
-} neu_datatag_t;
-
-bool neu_tag_check_attribute(neu_attribute_e attribute);
-
-#endif
+bool neu_tag_check_attribute(neu_attribute_e attribute)
+{
+    return !((attribute & NEU_ATTRIBUTE_READ) == 0 &&
+             (attribute & NEU_ATTRIBUTE_WRITE) == 0 &&
+             (attribute & NEU_ATTRIBUTE_SUBSCRIBE) == 0);
+}

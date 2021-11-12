@@ -113,6 +113,7 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 # define neuron base library
 set(NEURON_BASE_SOURCES
     src/types.c
+    src/base/neu_tag.c
     src/base/neu_datatag_table.c
     src/base/neu_tag_group_config.c
     src/base/neu_plugin_common.c
