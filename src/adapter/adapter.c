@@ -1120,7 +1120,7 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
 
     if (adapter == NULL) {
         log_error("Config adapter with NULL adapter");
-        return -1;
+        return NEU_ERR_NODE_NOT_EXIST;
     }
 
     if (adapter->plugin_module != NULL) {
@@ -1135,6 +1135,8 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
             if (adapter->node_setting.buf != NULL)
                 free(adapter->node_setting.buf);
             adapter->node_setting.buf = strdup(config->buf);
+        } else {
+            rv = NEU_ERR_NODE_SETTING_INVALID;
         }
     }
 
@@ -1145,15 +1147,15 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
 {
     if (adapter == NULL) {
         log_error("Get Config adapter with NULL adapter");
-        return -1;
+        return NEU_ERR_NODE_NOT_EXIST;
     }
 
     if (adapter->node_setting.buf != NULL) {
         *config = strdup(adapter->node_setting.buf);
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
-    return -1;
+    return NEU_ERR_NODE_SETTING_NOT_FOUND;
 }
 
 neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter)

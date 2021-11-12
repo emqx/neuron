@@ -1,10 +1,14 @@
 *** Variables ***
-${err_success}				0
-${err_internal}				-1001
-${err_request_body_invalid}		-1002
-${err_request_param_invalid}		-1003
-${err_plugin_name_not_found}		-2000
-${err_node_type_invalid}		-2001
-${err_node_exist}			-2002
-${err_node_not_exist}			-2003
-${err_grpconfig_not_exist}		-2004
+${ERR_SUCCESS}                      0
+${ERR_INTERNAL}                     -1001
+${ERR_REQUEST_BODY_INVALID}         -1002
+${ERR_REQUEST_PARAM_INVALID}        -1003
+${ERR_PLUGIN_NAME_NOT_FOUND}        -2000
+${ERR_NODE_TYPE_INVALID}            -2001
+${ERR_NODE_EXIST}                   -2002
+${ERR_NODE_NOT_EXIST}               -2003
+${ERR_GRPCONFIG_NOT_EXIST}          -2004
+${ERR_TAG_NOT_EXIST}                -2005
+${ERR_TAG_ATTRIBUTE_NOT_SUPPORT}    -2006
+${ERR_NODE_SETTING_INVALID}         -2007
+${ERR_NODE_SETTING_NOT_EXIST}       -2008

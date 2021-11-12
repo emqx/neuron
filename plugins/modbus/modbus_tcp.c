@@ -97,8 +97,7 @@ static void start_periodic_read(neu_plugin_t *       plugin,
         neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter);
         neu_datatag_t *   tag = neu_datatag_tbl_get(plugin->tag_table, *id);
 
-        if ((tag->attribute & NEU_ATTRIBUTETYPE_READ) ==
-            NEU_ATTRIBUTETYPE_READ) {
+        if ((tag->attribute & NEU_ATTRIBUTE_READ) == NEU_ATTRIBUTE_READ) {
             switch (tag->type) {
             case NEU_DTYPE_UINT16:
             case NEU_DTYPE_INT16:
@@ -168,7 +167,7 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
     neu_int_val_t      int_val_resp   = { 0 };
 
     read_count = neu_plugin_tag_count_by_attribute(grp_config, tag_table,
-                                                   NEU_ATTRIBUTETYPE_READ);
+                                                   NEU_ATTRIBUTE_READ);
 
     resp_val = neu_dvalue_unit_new();
     if (resp_val == NULL) {
@@ -192,8 +191,7 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
         int               result  = 0;
         neu_int_val_t     int_val = { 0 };
 
-        if ((tag->attribute & NEU_ATTRIBUTETYPE_READ) ==
-            NEU_ATTRIBUTETYPE_READ) {
+        if ((tag->attribute & NEU_ATTRIBUTE_READ) == NEU_ATTRIBUTE_READ) {
             switch (tag->type) {
             case NEU_DTYPE_UINT32:
             case NEU_DTYPE_INT32:

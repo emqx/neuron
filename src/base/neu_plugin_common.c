@@ -410,7 +410,7 @@ neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
 
 int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
                                       neu_datatag_table_t *tag_table,
-                                      neu_attributetype_e  attribute)
+                                      neu_attribute_e      attribute)
 {
     vector_t *ids   = neu_taggrp_cfg_get_datatag_ids(grp_config);
     int       count = 0;

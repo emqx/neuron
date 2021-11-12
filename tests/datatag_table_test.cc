@@ -10,11 +10,10 @@ TEST(DatatageTableTest, DatatagTableAdd)
 {
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
     char *               addr_str;
-    neu_datatag_t        datatag1 = { 0, NEU_ATTRIBUTETYPE_READ, NEU_DTYPE_BIT,
+    neu_datatag_t datatag1 = { 0, NEU_ATTRIBUTE_READ, NEU_DTYPE_BIT, addr_str };
+    neu_datatag_t datatag2 = { 0, NEU_ATTRIBUTE_WRITE, NEU_DTYPE_INT16,
                                addr_str };
-    neu_datatag_t datatag2 = { 0, NEU_ATTRIBUTETYPE_WRITE, NEU_DTYPE_INT16,
-                               addr_str };
-    neu_datatag_t datatag3 = { 0, NEU_ATTRIBUTETYPE_SUBSCRIBE, NEU_DTYPE_UINT16,
+    neu_datatag_t datatag3 = { 0, NEU_ATTRIBUTE_SUBSCRIBE, NEU_DTYPE_UINT16,
                                addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
@@ -53,12 +52,12 @@ TEST(DatatageTableTest, DatatagTableRemove)
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
     neu_datatag_id_t     id;
     char *               addr_str;
-    neu_datatag_t        datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DTYPE_BIT,
+    neu_datatag_t        datatag1 = { id, NEU_ATTRIBUTE_READ, NEU_DTYPE_BIT,
                                addr_str };
-    neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DTYPE_INT16,
+    neu_datatag_t        datatag2 = { id, NEU_ATTRIBUTE_WRITE, NEU_DTYPE_INT16,
                                addr_str };
-    neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DTYPE_UINT16, addr_str };
+    neu_datatag_t datatag3 = { id, NEU_ATTRIBUTE_SUBSCRIBE, NEU_DTYPE_UINT16,
+                               addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
@@ -95,22 +94,21 @@ TEST(DatatageTableTest, DatatagTableUpdate)
     neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
     neu_datatag_id_t     id;
     char *               addr_str;
-    neu_datatag_t        datatag = { id, NEU_ATTRIBUTETYPE_READ, NEU_DTYPE_BIT,
-                              addr_str };
+    neu_datatag_t datatag = { id, NEU_ATTRIBUTE_READ, NEU_DTYPE_BIT, addr_str };
 
     datatag_id_t   datatag_id;
     neu_datatag_t *datatag_id_return = NULL;
 
     datatag_id = neu_datatag_tbl_add(datatag_table_create, &datatag);
 
-    datatag.attribute = NEU_ATTRIBUTETYPE_WRITE;
+    datatag.attribute = NEU_ATTRIBUTE_WRITE;
     datatag.type      = NEU_DTYPE_BOOL;
     EXPECT_EQ(
         0, neu_datatag_tbl_update(datatag_table_create, datatag_id, &datatag));
 
     datatag_id_return = neu_datatag_tbl_get(datatag_table_create, datatag_id);
 
-    EXPECT_EQ(datatag_id_return->attribute, NEU_ATTRIBUTETYPE_WRITE);
+    EXPECT_EQ(datatag_id_return->attribute, NEU_ATTRIBUTE_WRITE);
     EXPECT_EQ(datatag_id_return->type, NEU_DTYPE_BOOL);
     EXPECT_EQ(datatag_id_return->id, datatag.id);
     EXPECT_EQ(datatag_id_return->addr_str, datatag.addr_str);
@@ -123,12 +121,12 @@ void *datatag_table_thread(void *arg)
     neu_datatag_table_t *datatag_table_create = (neu_datatag_table_t *) arg;
     datatag_id_t         id;
     char *               addr_str;
-    neu_datatag_t        datatag1 = { id, NEU_ATTRIBUTETYPE_READ, NEU_DTYPE_BIT,
+    neu_datatag_t        datatag1 = { id, NEU_ATTRIBUTE_READ, NEU_DTYPE_BIT,
                                addr_str };
-    neu_datatag_t datatag2 = { id, NEU_ATTRIBUTETYPE_WRITE, NEU_DTYPE_INT16,
+    neu_datatag_t        datatag2 = { id, NEU_ATTRIBUTE_WRITE, NEU_DTYPE_INT16,
                                addr_str };
-    neu_datatag_t datatag3 = { id, NEU_ATTRIBUTETYPE_SUBSCRIBE,
-                               NEU_DTYPE_UINT16, addr_str };
+    neu_datatag_t datatag3 = { id, NEU_ATTRIBUTE_SUBSCRIBE, NEU_DTYPE_UINT16,
+                               addr_str };
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
@@ -142,7 +140,7 @@ void *datatag_table_thread(void *arg)
 
         EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table_create, datatag_id1));
 
-        datatag2.attribute = NEU_ATTRIBUTETYPE_WRITE;
+        datatag2.attribute = NEU_ATTRIBUTE_WRITE;
         datatag3.type      = NEU_DTYPE_BOOL;
         EXPECT_EQ(0,
                   neu_datatag_tbl_update(datatag_table_create, datatag_id2,
@@ -161,7 +159,7 @@ void *datatag_table_thread(void *arg)
         EXPECT_EQ(NULL, datatag_id_return1);
 
         EXPECT_EQ(datatag_id_return2->id, datatag2.id);
-        EXPECT_EQ(datatag_id_return2->attribute, NEU_ATTRIBUTETYPE_WRITE);
+        EXPECT_EQ(datatag_id_return2->attribute, NEU_ATTRIBUTE_WRITE);
         EXPECT_EQ(datatag_id_return2->type, datatag2.type);
         EXPECT_EQ(datatag_id_return2->addr_str, datatag2.addr_str);
 

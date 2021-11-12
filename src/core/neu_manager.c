@@ -1812,7 +1812,7 @@ int neu_manager_adapter_set_setting(neu_manager_t *manager,
     if (reg_entity == NULL) {
         log_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
-        return -1;
+        return NEU_ERR_NODE_NOT_EXIST;
     }
 
     neu_config.buf_len = strlen(config);
@@ -1841,7 +1841,7 @@ int neu_manager_adapter_get_setting(neu_manager_t *manager,
     if (reg_entity == NULL) {
         log_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
-        return -1;
+        return NEU_ERR_NODE_NOT_EXIST;
     }
 
     ret = neu_adapter_get_setting(reg_entity->adapter, config);
