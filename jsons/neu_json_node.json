@@ -1,0 +1,53 @@
+{
+    "add_node_req": {
+        "type": 1,
+        "name": "modbus-tcp-node",
+        "plugin_name": "modbus-plugin-tcp"
+    },
+    "del_node_req": {
+        "id": 7
+    },
+    "update_node_req": {
+        "type": 1,
+        "name": "modbus-tcp-node",
+        "plugin_name": "modbus-plugin-tcp"
+    },
+    "get_nodes_req": {
+        "node_type": 1
+    },
+    "get_nodes_resp": {
+        "nodes": [
+            {
+                "name": "sample-driver-adapter",
+                "id": 1,
+                "plugin_id": 1
+            },
+            {
+                "name": "modbus-tcp-adapter",
+                "id": 4,
+                "plugin_id": 2
+            },
+            {
+                "name": "opcua-adapter",
+                "id": 6,
+                "plugin_id": 3
+            },
+            {
+                "name": "modbus-tcp-test",
+                "id": 7,
+                "plugin_id": 4
+            }
+        ]
+    },
+    "node_setting_req": {
+        "node_id": 4
+    },
+    "get_node_state_resp": {
+        "running": 2,
+        "link": 1
+    },
+    "node_ctl_req": {
+        "id": 4,
+        "cmd": 0
+    }
+}

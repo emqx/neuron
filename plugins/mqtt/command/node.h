@@ -29,13 +29,13 @@ extern "C" {
 #include "common.h"
 
 char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                        neu_parse_get_nodes_req_t *req);
+                        neu_json_get_nodes_req_t *req);
 char *command_add_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                       neu_parse_add_node_req_t *req);
+                       neu_json_add_node_req_t *req);
 char *command_update_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_update_node_req_t *req);
+                          neu_json_update_node_req_t *req);
 char *command_delete_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_del_node_req_t *req);
+                          neu_json_del_node_req_t *req);
 
 #ifdef __cplusplus
 }

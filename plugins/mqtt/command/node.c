@@ -22,18 +22,18 @@
 #include "node.h"
 
 char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                        neu_parse_get_nodes_req_t *req)
+                        neu_json_get_nodes_req_t *req)
 {
     log_info("Get node list uuid:%s, node type:%d", mqtt->uuid, req->node_type);
 
     neu_node_type_e           node_type = req->node_type;
-    neu_parse_get_nodes_res_t res       = { 0 };
+    neu_json_get_nodes_resp_t res       = { 0 };
     int                       index     = 0;
     vector_t                  nodes = neu_system_get_nodes(plugin, node_type);
 
     res.n_node = nodes.size;
-    res.nodes  = malloc(res.n_node * sizeof(neu_parse_get_nodes_res_node_t));
-    memset(res.nodes, 0, res.n_node * sizeof(neu_parse_get_nodes_res_node_t));
+    res.nodes  = malloc(res.n_node * sizeof(neu_json_get_nodes_resp_node_t));
+    memset(res.nodes, 0, res.n_node * sizeof(neu_json_get_nodes_resp_node_t));
 
     VECTOR_FOR_EACH(&nodes, iter)
     {
@@ -56,12 +56,12 @@ char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 }
 
 char *command_add_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                       neu_parse_add_node_req_t *req)
+                       neu_json_add_node_req_t *req)
 {
-    log_info("Add node uuid:%s, node type:%d", mqtt->uuid, req->node_type);
-    intptr_t rc = neu_system_add_node(plugin, req->node_type, req->node_name,
-                                      req->plugin_name);
-    char *   json_str = NULL;
+    log_info("Add node uuid:%s, node type:%d", mqtt->uuid, req->type);
+    intptr_t rc =
+        neu_system_add_node(plugin, req->type, req->name, req->plugin_name);
+    char *json_str = NULL;
     if (rc != 0) {
         json_str = strdup("{\"error\": 1}");
     } else {
@@ -72,12 +72,12 @@ char *command_add_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 }
 
 char *command_update_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_update_node_req_t *req)
+                          neu_json_update_node_req_t *req)
 {
-    log_info("Update node uuid:%s, node type:%d", mqtt->uuid, req->node_type);
-    intptr_t rc = neu_system_update_node(plugin, req->node_type, req->node_name,
-                                         req->plugin_name);
-    char *   json_str = NULL;
+    log_info("Update node uuid:%s, node type:%d", mqtt->uuid, req->type);
+    intptr_t rc =
+        neu_system_update_node(plugin, req->type, req->name, req->plugin_name);
+    char *json_str = NULL;
     if (rc != 0) {
         json_str = strdup("{\"error\": 1}");
     } else {
@@ -88,10 +88,10 @@ char *command_update_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 }
 
 char *command_delete_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_del_node_req_t *req)
+                          neu_json_del_node_req_t *req)
 {
-    log_info("Delete node uuid:%s, node id:%d", mqtt->uuid, req->node_id);
-    intptr_t rc       = neu_system_del_node(plugin, req->node_id);
+    log_info("Delete node uuid:%s, node id:%d", mqtt->uuid, req->id);
+    intptr_t rc       = neu_system_del_node(plugin, req->id);
     char *   json_str = NULL;
     if (rc != 0) {
         json_str = strdup("{\"error\": 1}");
