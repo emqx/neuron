@@ -1,0 +1,31 @@
+{
+    "add_plugin_req": {
+        "kind": 1,
+        "node_type": 1,
+        "name": "plugin_name",
+        "lib_name": "plugin_name.so"
+    },
+    "del_plugin_req": {
+        "id": 1
+    },
+    "update_plugin_req": {
+        "kind": 1,
+        "node_type": 1,
+        "name": "plugin_name",
+        "lib_name": "plugin_name.so"
+    },
+    "get_plugin_req": {
+        "id": 1
+    },
+    "get_plugin_resp": {
+        "plugin_libs": [
+            {
+                "id": 1,
+                "kind": 1,
+                "node_type": 1,
+                "name": "plugin_name",
+                "lib_name": "plugin_lib_name"
+            }
+        ]
+    }
+}

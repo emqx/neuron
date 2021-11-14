@@ -35,10 +35,9 @@ void handle_add_plugin(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_add_plugin_req_t, neu_parse_decode_add_plugin, {
-            intptr_t err =
-                neu_system_add_plugin(plugin, req->kind, req->node_type,
-                                      req->plugin_name, req->plugin_lib_name);
+        aio, neu_json_add_plugin_req_t, neu_json_decode_add_plugin_req, {
+            intptr_t err = neu_system_add_plugin(
+                plugin, req->kind, req->node_type, req->name, req->lib_name);
             if (err != 0) {
                 http_bad_request(aio, "{\"error\": 1}");
             } else {
@@ -52,9 +51,9 @@ void handle_del_plugin(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_del_plugin_req_t, neu_parse_decode_del_plugin, {
+        aio, neu_json_del_plugin_req_t, neu_json_decode_del_plugin_req, {
             plugin_id_t id;
-            id.id_val    = req->plugin_id;
+            id.id_val    = req->id;
             intptr_t err = neu_system_del_plugin(plugin, id);
             if (err != 0) {
                 http_bad_request(aio, "{\"error\": 1}");
@@ -68,39 +67,38 @@ void handle_update_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(aio, neu_parse_update_plugin_req_t,
-                              neu_parse_decode_update_plugin, {
-                                  intptr_t err = neu_system_update_plugin(
-                                      plugin, req->kind, req->node_type,
-                                      req->plugin_name, req->plugin_lib_name);
-                                  if (err != 0) {
-                                      http_bad_request(aio, "{\"error\": 1}");
-                                  } else {
-                                      http_ok(aio, "{\"error\": 0}");
-                                  }
-                              })
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_json_update_plugin_req_t, neu_json_decode_update_plugin_req, {
+            intptr_t err = neu_system_update_plugin(
+                plugin, req->kind, req->node_type, req->name, req->lib_name);
+            if (err != 0) {
+                http_bad_request(aio, "{\"error\": 1}");
+            } else {
+                http_ok(aio, "{\"error\": 0}");
+            }
+        })
 }
 
 void handle_get_plugin(nng_aio *aio)
 {
-    neu_plugin_t *              plugin      = neu_rest_get_plugin();
-    neu_parse_get_plugins_res_t plugin_res  = { 0 };
-    char *                      s_plugin_id = http_get_param(aio, "plugin_id");
-    char *                      result      = NULL;
-    int                         index       = 0;
-    uint32_t                    plugin_id   = 0;
-    vector_t                    plugin_libs = neu_system_get_plugin(plugin);
+    neu_plugin_t *             plugin      = neu_rest_get_plugin();
+    neu_json_get_plugin_resp_t plugin_res  = { 0 };
+    char *                     s_plugin_id = http_get_param(aio, "plugin_id");
+    char *                     result      = NULL;
+    int                        index       = 0;
+    uint32_t                   plugin_id   = 0;
+    vector_t                   plugin_libs = neu_system_get_plugin(plugin);
 
     if (s_plugin_id != NULL) {
         plugin_id = atoi(s_plugin_id);
     }
 
-    plugin_res.n_plugin = plugin_libs.size;
+    plugin_res.n_plugin_lib = plugin_libs.size;
     if (plugin_id > 0) {
-        plugin_res.n_plugin = 1;
+        plugin_res.n_plugin_lib = 1;
     }
-    plugin_res.plugin_libs =
-        calloc(plugin_res.n_plugin, sizeof(neu_parse_get_plugins_res_lib_t));
+    plugin_res.plugin_libs = calloc(
+        plugin_res.n_plugin_lib, sizeof(neu_json_get_plugin_resp_plugin_lib_t));
 
     VECTOR_FOR_EACH(&plugin_libs, iter)
     {
@@ -110,17 +108,17 @@ void handle_get_plugin(nng_aio *aio)
             continue;
         }
 
-        plugin_res.plugin_libs[index].node_type   = info->node_type;
-        plugin_res.plugin_libs[index].plugin_id   = info->plugin_id.id_val;
-        plugin_res.plugin_libs[index].kind        = info->plugin_kind;
-        plugin_res.plugin_libs[index].plugin_name = (char *) info->plugin_name;
-        plugin_res.plugin_libs[index].plugin_lib_name =
-            (char *) info->plugin_lib_name;
+        plugin_res.plugin_libs[index].node_type = info->node_type;
+        plugin_res.plugin_libs[index].id        = info->plugin_id.id_val;
+        plugin_res.plugin_libs[index].kind      = info->plugin_kind;
+        plugin_res.plugin_libs[index].name      = (char *) info->plugin_name;
+        plugin_res.plugin_libs[index].lib_name = (char *) info->plugin_lib_name;
 
         index += 1;
     }
 
-    neu_json_encode_by_fn(&plugin_res, neu_parse_encode_get_plugins, &result);
+    neu_json_encode_by_fn(&plugin_res, neu_json_encode_get_plugin_resp,
+                          &result);
 
     http_ok(aio, result);
     free(result);
