@@ -29,13 +29,13 @@ extern "C" {
 #include "common.h"
 
 char *command_get_group_configs(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                neu_parse_get_group_config_req_t *req);
+                                neu_json_get_group_config_req_t *req);
 char *command_add_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                               neu_parse_add_group_config_req_t *req);
+                               neu_json_add_group_config_req_t *req);
 char *command_update_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                  neu_parse_update_group_config_req_t *req);
+                                  neu_json_update_group_config_req_t *req);
 char *command_delete_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                  neu_parse_del_group_config_req_t *req);
+                                  neu_json_del_group_config_req_t *req);
 
 #ifdef __cplusplus
 }

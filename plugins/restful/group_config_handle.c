@@ -24,7 +24,6 @@
 #include "neu_log.h"
 #include "neu_plugin.h"
 #include "neu_subscribe.h"
-// #include "json/neu_group_config.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_group_config.h"
 
@@ -38,8 +37,8 @@ void handle_add_group_config(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
-        aio, neu_parse_add_group_config_req_t,
-        neu_parse_decode_add_group_config, {
+        aio, neu_json_add_group_config_req_t,
+        neu_json_decode_add_group_config_req, {
             neu_taggrp_config_t *gconfig = neu_taggrp_cfg_new(req->name);
             neu_taggrp_cfg_set_interval(gconfig, req->interval);
             error.error =
@@ -61,8 +60,8 @@ void handle_del_group_config(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
-        aio, neu_parse_del_group_config_req_t,
-        neu_parse_decode_del_group_config, {
+        aio, neu_json_del_group_config_req_t,
+        neu_json_decode_del_group_config_req, {
             neu_taggrp_config_t *config =
                 neu_system_find_group_config(plugin, req->node_id, req->name);
             neu_datatag_table_t *table =
@@ -101,8 +100,8 @@ void handle_update_group_config(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
-        aio, neu_parse_update_group_config_req_t,
-        neu_parse_decode_update_group_config, {
+        aio, neu_json_update_group_config_req_t,
+        neu_json_decode_update_group_config_req, {
             neu_taggrp_config_t *config =
                 neu_system_find_group_config(plugin, req->node_id, req->name);
 
@@ -141,37 +140,40 @@ void handle_get_group_config(nng_aio *aio)
     }
 
     neu_node_id_t                    node_id = (neu_node_id_t) atoi(s_node_id);
-    neu_parse_get_group_config_res_t gconfig_res = { 0 };
+    neu_json_get_group_config_resp_t gconfig_res = { 0 };
     int                              index       = 0;
     vector_t gconfigs = neu_system_get_group_configs(plugin, node_id);
 
-    gconfig_res.n_config = gconfigs.size;
-    gconfig_res.rows     = calloc(gconfig_res.n_config,
-                              sizeof(neu_parse_get_group_config_res_row_t));
+    gconfig_res.n_group_config = gconfigs.size;
+    gconfig_res.group_configs =
+        calloc(gconfig_res.n_group_config,
+               sizeof(neu_json_get_group_config_resp_group_config_t));
 
     VECTOR_FOR_EACH(&gconfigs, iter)
     {
         neu_taggrp_config_t *config =
             *(neu_taggrp_config_t **) iterator_get(&iter);
 
-        gconfig_res.rows[index].name = (char *) neu_taggrp_cfg_get_name(config);
-        gconfig_res.rows[index].interval = neu_taggrp_cfg_get_interval(config);
-        gconfig_res.rows[index].tag_count =
+        gconfig_res.group_configs[index].name =
+            (char *) neu_taggrp_cfg_get_name(config);
+        gconfig_res.group_configs[index].interval =
+            neu_taggrp_cfg_get_interval(config);
+        gconfig_res.group_configs[index].tag_count =
             neu_taggrp_cfg_get_datatag_ids(config)->size;
-        gconfig_res.rows[index].pipe_count =
+        gconfig_res.group_configs[index].pipe_count =
             neu_taggrp_cfg_get_subpipes(config)->size;
 
         index += 1;
     }
 
-    neu_json_encode_by_fn(&gconfig_res, neu_parse_encode_get_group_config,
+    neu_json_encode_by_fn(&gconfig_res, neu_json_encode_get_group_config_resp,
                           &result);
 
     http_ok(aio, result);
 
     vector_uninit(&gconfigs);
     free(result);
-    free(gconfig_res.rows);
+    free(gconfig_res.group_configs);
 }
 
 void handle_grp_subscribe(nng_aio *aio)
@@ -179,7 +181,7 @@ void handle_grp_subscribe(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_subscribe_req_t, neu_parse_decode_subscribe, {
+        aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->src_node_id, req->name);
 
@@ -198,7 +200,7 @@ void handle_grp_unsubscribe(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_unsubscribe_req_t, neu_parse_decode_unsubscribe, {
+        aio, neu_json_unsubscribe_req_t, neu_json_decode_unsubscribe_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->src_node_id, req->name);
 
@@ -218,7 +220,7 @@ void handle_grp_get_subscribe(nng_aio *aio)
     char *                        result    = NULL;
     char *                        s_node_id = http_get_param(aio, "node_id");
     neu_node_id_t                 node_id   = 0;
-    neu_parse_get_subscribe_res_t sub_grp_configs = { 0 };
+    neu_json_get_subscribe_resp_t sub_grp_configs = { 0 };
     int                           index           = 0;
 
     if (s_node_id == NULL) {
@@ -229,27 +231,27 @@ void handle_grp_get_subscribe(nng_aio *aio)
     node_id            = (neu_node_id_t) atoi(s_node_id);
     vector_t *gconfigs = neu_system_get_sub_group_configs(plugin, node_id);
 
-    sub_grp_configs.n_config = gconfigs->size;
-    sub_grp_configs.group_configs =
-        calloc(gconfigs->size, sizeof(neu_parse_subscribe_res_grp_t));
+    sub_grp_configs.n_group = gconfigs->size;
+    sub_grp_configs.groups =
+        calloc(gconfigs->size, sizeof(neu_json_get_subscribe_resp_group_t));
 
     VECTOR_FOR_EACH(gconfigs, iter)
     {
         neu_sub_grp_config_t *sgc =
             (neu_sub_grp_config_t *) iterator_get(&iter);
 
-        sub_grp_configs.group_configs[index].node_id = sgc->node_id;
-        sub_grp_configs.group_configs[index].group_config_name =
+        sub_grp_configs.groups[index].node_id = sgc->node_id;
+        sub_grp_configs.groups[index].group_config_name =
             sgc->group_config_name;
 
         index += 1;
     }
 
-    neu_json_encode_by_fn(&sub_grp_configs, neu_parse_encode_get_subscribe,
+    neu_json_encode_by_fn(&sub_grp_configs, neu_json_encode_get_subscribe_resp,
                           &result);
 
     http_ok(aio, result);
     vector_free(gconfigs);
     free(result);
-    free(sub_grp_configs.group_configs);
+    free(sub_grp_configs.groups);
 }

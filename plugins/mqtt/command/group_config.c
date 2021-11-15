@@ -22,7 +22,7 @@
 #include "group_config.h"
 
 static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
-                                  neu_parse_get_group_config_res_t *res)
+                                  neu_json_get_group_config_resp_t *res)
 {
     vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
     int      rc    = common_node_id_exist(&nodes, node_id);
@@ -37,11 +37,14 @@ static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
         return;
     }
 
-    res->n_config = configs.size;
-    res->rows     = (neu_parse_get_group_config_res_row_t *) malloc(
-        sizeof(neu_parse_get_group_config_res_row_t) * configs.size);
-    memset(res->rows, 0,
-           sizeof(neu_parse_get_group_config_res_row_t) * configs.size);
+    res->n_group_config = configs.size;
+    res->group_configs =
+        (neu_json_get_group_config_resp_group_config_t *) malloc(
+            sizeof(neu_json_get_group_config_resp_group_config_t) *
+            configs.size);
+    memset(res->group_configs, 0,
+           sizeof(neu_json_get_group_config_resp_group_config_t) *
+               configs.size);
 
     int                  count = 0;
     neu_taggrp_config_t *config;
@@ -52,18 +55,19 @@ static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
             continue;
         }
 
-        res->rows[count].name =
+        res->group_configs[count].name =
             strdup((char *) neu_taggrp_cfg_get_name(config));
-        res->rows[count].interval = neu_taggrp_cfg_get_interval(config);
+        res->group_configs[count].interval =
+            neu_taggrp_cfg_get_interval(config);
 
         vector_t *pipes = neu_taggrp_cfg_get_subpipes(config);
         if (NULL != pipes) {
-            res->rows[count].pipe_count = pipes->size;
+            res->group_configs[count].pipe_count = pipes->size;
         }
 
         vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
         if (NULL != ids) {
-            res->rows[count].tag_count = ids->size;
+            res->group_configs[count].tag_count = ids->size;
         }
 
         count++;
@@ -72,34 +76,34 @@ static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
 }
 
 static void
-free_parse_get_group_config_res(neu_parse_get_group_config_res_t *res)
+free_parse_get_group_config_res(neu_json_get_group_config_resp_t *res)
 {
     if (NULL == res) {
         return;
     }
 
-    if (NULL == res->rows) {
+    if (NULL == res->group_configs) {
         return;
     }
 
     int i;
-    for (i = 0; i < res->n_config; i++) {
-        if (NULL == res->rows[i].name) {
-            free(res->rows[i].name);
+    for (i = 0; i < res->n_group_config; i++) {
+        if (NULL == res->group_configs[i].name) {
+            free(res->group_configs[i].name);
         }
     }
-    free(res->rows);
+    free(res->group_configs);
 }
 
 char *command_get_group_configs(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                neu_parse_get_group_config_req_t *req)
+                                neu_json_get_group_config_req_t *req)
 {
     log_debug("uuid:%s, node id:%d", mqtt->uuid, req->node_id);
 
     char *                           json_str = NULL;
-    neu_parse_get_group_config_res_t res      = { 0 };
+    neu_json_get_group_config_resp_t res      = { 0 };
     get_all_group_configs(plugin, req->node_id, &res);
-    neu_json_encode_with_mqtt(&res, neu_parse_encode_get_group_config, mqtt,
+    neu_json_encode_with_mqtt(&res, neu_json_encode_get_group_config_resp, mqtt,
                               neu_parse_encode_mqtt_param, &json_str);
     free_parse_get_group_config_res(&res);
 
@@ -137,7 +141,7 @@ static int add_group_config(neu_plugin_t *plugin, const char *config_name,
 }
 
 char *command_add_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                               neu_parse_add_group_config_req_t *req)
+                               neu_json_add_group_config_req_t *req)
 {
     log_debug("uuid:%s, config:%s, node id:%d, "
               "read interval:%d",
@@ -190,7 +194,7 @@ static int update_group_config(neu_plugin_t *plugin, const char *config_name,
 }
 
 char *command_update_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                  neu_parse_update_group_config_req_t *req)
+                                  neu_json_update_group_config_req_t *req)
 {
     log_debug("uuid:%s, config:%s, src node id:%d,"
               "read interval:%d",
@@ -238,7 +242,7 @@ static int delete_group_config(neu_plugin_t *plugin, const char *config_name,
 }
 
 char *command_delete_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                  neu_parse_del_group_config_req_t *req)
+                                  neu_json_del_group_config_req_t *req)
 {
     log_debug("uuid:%s, config:%s, src node id:%d", mqtt->uuid, req->name,
               req->node_id);

@@ -30,38 +30,38 @@ void command_response_handle(mqtt_response_t *response)
 
     switch (mqtt->function) {
     case NEU_MQTT_OP_GET_GROUP_CONFIG: {
-        neu_parse_get_group_config_req_t *req = NULL;
-        rc = neu_parse_decode_get_group_config(json_str, &req);
+        neu_json_get_group_config_req_t *req = NULL;
+        rc = neu_json_decode_get_group_config_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_get_group_configs(plugin, mqtt, req);
-            neu_parse_decode_get_group_config_free(req);
+            neu_json_decode_get_group_config_req_free(req);
         }
         break;
     }
     case NEU_MQTT_OP_ADD_GROUP_CONFIG: {
-        neu_parse_add_group_config_req_t *req = NULL;
-        rc = neu_parse_decode_add_group_config(json_str, &req);
+        neu_json_add_group_config_req_t *req = NULL;
+        rc = neu_json_decode_add_group_config_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_add_group_config(plugin, mqtt, req);
-            neu_parse_decode_add_group_config_free(req);
+            neu_json_decode_add_group_config_req_free(req);
         }
         break;
     }
     case NEU_MQTT_OP_UPDATE_GROUP_CONFIG: {
-        neu_parse_update_group_config_req_t *req = NULL;
-        rc = neu_parse_decode_update_group_config(json_str, &req);
+        neu_json_update_group_config_req_t *req = NULL;
+        rc = neu_json_decode_update_group_config_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_update_group_config(plugin, mqtt, req);
-            neu_parse_decode_update_group_config_free(req);
+            neu_json_decode_update_group_config_req_free(req);
         }
         break;
     }
     case NEU_MQTT_OP_DELETE_GROUP_CONFIG: {
-        neu_parse_del_group_config_req_t *req = NULL;
-        rc = neu_parse_decode_del_group_config(json_str, &req);
+        neu_json_del_group_config_req_t *req = NULL;
+        rc = neu_json_decode_del_group_config_req(json_str, &req);
         if (0 == rc) {
             ret_str = command_delete_group_config(plugin, mqtt, req);
-            neu_parse_decode_del_group_config_free(req);
+            neu_json_decode_del_group_config_req_free(req);
         }
         break;
     }
