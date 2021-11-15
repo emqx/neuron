@@ -17,29 +17,24 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_JSON_FN_H
-#define _NEU_JSON_FN_H
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "json/json.h"
+#include "json/neu_json_error.h"
 
-#include <stdint.h>
+int neu_parse_encode_error(void *json_object, void *param)
+{
+    neu_parse_error_t *res = (neu_parse_error_t *) param;
 
-#include "json/neu_json_rw.h"
+    neu_json_elem_t elems[] = {
+        {
+            .name      = "error",
+            .t         = NEU_JSON_INT,
+            .v.val_int = res->error,
+        },
+    };
 
-typedef int (*neu_json_encode_fn)(void *object, void *param);
-
-int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result);
-
-int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
-                              void *mqtt_param, neu_json_encode_fn mqtt_fn,
-                              char **result);
-
-neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req);
-
-#ifdef __cplusplus
+    return neu_json_encode_field(json_object, elems, 1);
 }
-#endif
-
-#endif

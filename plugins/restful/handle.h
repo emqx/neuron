@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #include "neu_plugin.h"
+#include "json/neu_json_error.h"
 
 #define REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)            \
     {                                                                         \
