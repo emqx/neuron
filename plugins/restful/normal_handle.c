@@ -67,7 +67,7 @@ static int get_tty_file_list(char ***tty_file)
 
 void handle_get_ttys(nng_aio *aio)
 {
-    neu_parse_get_tty_res_t ttys_res = { 0 };
+    neu_json_get_tty_resp_t ttys_res = { 0 };
 
     ttys_res.n_tty = get_tty_file_list(&ttys_res.ttys);
     if (ttys_res.n_tty == -1) {
@@ -76,7 +76,7 @@ void handle_get_ttys(nng_aio *aio)
     } else {
         char *result = NULL;
 
-        neu_json_encode_by_fn(&ttys_res, neu_parse_encode_get_tty, &result);
+        neu_json_encode_by_fn(&ttys_res, neu_json_encode_get_tty_resp, &result);
         http_ok(aio, result);
 
         for (int i = 0; i < ttys_res.n_tty; i++) {
