@@ -160,5 +160,3 @@ void neu_parse_decode_write_free(neu_parse_write_req_t *req)
     free(req->tags);
     free(req);
 }
-
-
