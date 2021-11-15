@@ -1,0 +1,8 @@
+{
+    "get_tty_resp": {
+        "ttys": [
+            "/dev/tty0",
+            "/dev/tty1"
+        ]
+    }
+}
