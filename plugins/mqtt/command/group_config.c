@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "group_config.h"
+#include "json/neu_json_error.h"
 
 static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
                                   neu_json_get_group_config_resp_t *res)

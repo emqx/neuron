@@ -20,6 +20,7 @@
 #include <stdlib.h>
 
 #include "datatag.h"
+#include "json/neu_json_error.h"
 
 typedef struct {
     char *           name;

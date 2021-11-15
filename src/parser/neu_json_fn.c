@@ -64,21 +64,6 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
     return neu_json_encode(object, result);
 }
 
-int neu_parse_encode_error(void *json_object, void *param)
-{
-    neu_parse_error_t *res = (neu_parse_error_t *) param;
-
-    neu_json_elem_t elems[] = {
-        {
-            .name      = "error",
-            .t         = NEU_JSON_INT,
-            .v.val_int = res->error,
-        },
-    };
-
-    return neu_json_encode_field(json_object, elems, 1);
-}
-
 int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
                     ...)
 {
