@@ -26,6 +26,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "json/neu_json_rw.h"
+
 typedef int (*neu_json_encode_fn)(void *object, void *param);
 
 int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result);
@@ -44,6 +46,8 @@ typedef struct neu_parse_error {
 } neu_parse_error_t;
 
 int neu_parse_encode_error(void *json_object, void *param);
+
+neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req);
 
 #ifdef __cplusplus
 }
