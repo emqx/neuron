@@ -150,7 +150,7 @@ add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/opcua)
 
-if(CMAKE_BUILD_TYPE MATCHES "Debug")
+if(NEURON_TEST)
   # define for tests
   enable_testing()
   add_subdirectory(tests)

@@ -18,6 +18,7 @@
  **/
 
 #include <assert.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -406,8 +407,9 @@ static int handle_trans_data_value(neu_data_val_t *trans_val)
     val_cstr = int_val->val;
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
 
-    log_info("The sample driver report data, i64: %d, f64: %f, cstr: %s", i64,
-             f64, cstr);
+    log_info("The sample driver report data, i64: %" PRIi64
+             ", f64: %f, cstr: %s",
+             i64, f64, cstr);
     return 0;
 }
 
@@ -442,9 +444,11 @@ static int handle_read_resp_value(neu_data_val_t *data_val)
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
 
     log_info("The sample driver read status: %d", err);
+ 
     if (err == 0) {
-        log_info("The sample driver read data, i64: %d, f64: %f, cstr: %s", i64,
-                 f64, cstr);
+        log_info("The sample driver read data, i64: %" PRIi64
+                 ", f64: %f, cstr: %s",
+                 i64, f64, cstr);
     }
     return 0;
 }

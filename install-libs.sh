@@ -46,7 +46,7 @@ fi
 function build_nng() {
     echo "Building nng (v1.5.2)"
     if [ ! -d nng ]; then
-        git clone -b v1.5.2 ${git_url_prefix}nanomsg/nng.git
+        git clone -b v1.5.2 ${git_url_prefix}neugates/nng.git
     fi
     cd nng
     rm -rf build
@@ -90,7 +90,12 @@ function build_jwt() {
     rm -rf build
     mkdir build
     cd build
-    cmake -G Ninja -DBUILD_EXAMPLES=OFF ${ssl_lib_flag} ${compiler_opt} ${install_opt} ..
+    cmake -G Ninja -DBUILD_EXAMPLES=OFF \
+        -DBUILD_TESTS=OFF \
+        -DENABLE_DEBUG_INFO_IN_RELEASE=OFF \
+        -Djansson_DIR=${install_dir}/jansson \
+        -DJANSSON_INCLUDE_DIRS=${install_dir}/jansson/include \
+        ${ssl_lib_flag} ${compiler_opt} ${install_opt} ..
     ninja
     ninja install
 
@@ -125,7 +130,7 @@ function build_yaml() {
     rm -rf build
     mkdir build
     cd build
-    cmake -G Ninja -DBUILD_SHARED_LIBS=ON ${compiler_opt} ${install_opt} ..
+    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF ${compiler_opt} ${install_opt} ..
     ninja
     ninja install
 
