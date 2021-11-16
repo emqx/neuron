@@ -1,0 +1,40 @@
+{
+	"read_resp": {
+		"tags": [
+			{
+				"id": 1,
+				"value": 123
+			},
+			{
+				"id": 2,
+				"value": 2.2
+			},
+			{
+				"id": 3,
+				"value": true
+			}
+		]
+	},
+	"write_req": {
+		"node_id": 4,
+		"group_config_name": "config_modbus_tcp_sample_2",
+		"tags": [
+			{
+				"id": 1,
+				"value": "wrhello"
+			},
+			{
+				"id": 2,
+				"value": 2.2
+			},
+			{
+				"id": 3,
+				"value": true
+			}
+		]
+	},
+	"read_req": {
+		"node_id": 4,
+		"group_config_name": "config_modbus_tcp_sample_2"
+	}
+}

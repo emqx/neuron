@@ -101,7 +101,7 @@ int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
     return ret;
 }
 
-neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req)
+neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req)
 {
     neu_data_val_t *   val = neu_dvalue_unit_new();
     neu_fixed_array_t *array =
@@ -141,7 +141,7 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_parse_write_req_t *req)
             break;
         }
 
-        neu_int_val_init(&iv, req->tags[i].tag_id, v);
+        neu_int_val_init(&iv, req->tags[i].id, v);
         neu_fixed_array_set(array, i, &iv);
     }
 

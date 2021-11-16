@@ -29,14 +29,14 @@ extern "C" {
 #include "common.h"
 
 int   command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                                neu_parse_read_req_t *req, uint32_t req_id);
+                                neu_json_read_req_t *req, uint32_t req_id);
 char *command_read_once_response(neu_plugin_t *    plugin,
                                  neu_parse_mqtt_t *parse_header,
                                  neu_data_val_t *  resp_val);
 char *command_read_cycle_response(neu_plugin_t *  plugin,
                                   neu_data_val_t *resp_val);
 int   command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                            neu_parse_write_req_t *write_req, uint32_t req_id);
+                            neu_json_write_req_t *write_req, uint32_t req_id);
 char *command_write_response(neu_plugin_t *    plugin,
                              neu_parse_mqtt_t *parse_header,
                              neu_data_val_t *  resp_val);

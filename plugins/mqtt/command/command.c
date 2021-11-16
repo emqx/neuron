@@ -66,8 +66,8 @@ void command_response_handle(mqtt_response_t *response)
         break;
     }
     case NEU_MQTT_OP_READ: {
-        neu_parse_read_req_t *req = NULL;
-        rc                        = neu_parse_decode_read(json_str, &req);
+        neu_json_read_req_t *req = NULL;
+        rc                       = neu_json_decode_read_req(json_str, &req);
         if (0 == rc) {
             uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
@@ -75,13 +75,13 @@ void command_response_handle(mqtt_response_t *response)
             }
 
             command_read_once_request(plugin, mqtt, req, req_id);
-            neu_parse_decode_read_free(req);
+            neu_json_decode_read_req_free(req);
         }
         break;
     }
     case NEU_MQTT_OP_WRITE: {
-        neu_parse_write_req_t *req = NULL;
-        rc                         = neu_parse_decode_write(json_str, &req);
+        neu_json_write_req_t *req = NULL;
+        rc                        = neu_json_decode_write_req(json_str, &req);
         if (0 == rc) {
             uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
@@ -89,7 +89,7 @@ void command_response_handle(mqtt_response_t *response)
             }
 
             command_write_request(plugin, mqtt, req, req_id);
-            neu_parse_decode_write_free(req);
+            neu_json_decode_write_req_free(req);
         }
         break;
     }
