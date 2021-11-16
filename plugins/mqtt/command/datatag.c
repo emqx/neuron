@@ -168,7 +168,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     log_info("Get tag list uuid:%s, node id:%d", mqtt->uuid, req->node_id);
     char *                    json_str = NULL;
     neu_parse_get_tags_resp_t res      = { 0 };
-    neu_parse_error_t         error    = { 0 };
+    neu_json_error_resp_t     error    = { 0 };
 
     uint32_t node_id = req->node_id;
     vector_t tags;
@@ -177,7 +177,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 
     if (0 != rc) {
         error.error = rc;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -205,14 +205,14 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     log_info("Add tags uuid:%s, node id:%d, group config name:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
 
-    char *            json_str = NULL;
-    uint32_t          node_id  = req->node_id;
-    neu_parse_error_t error    = { 0 };
+    char *                json_str = NULL;
+    uint32_t              node_id  = req->node_id;
+    neu_json_error_resp_t error    = { 0 };
 
     int rc = common_has_node(plugin, node_id);
     if (0 != rc) {
         error.error = -1;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -224,7 +224,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     config = common_get_group_config(plugin, node_id, req->group_config_name);
     if (NULL == config) {
         error.error = -2;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -235,7 +235,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     neu_datatag_table_t *table = common_get_datatags_table(plugin, node_id);
     if (NULL == table) {
         error.error = -3;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -262,7 +262,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         }
     }
 
-    rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                    neu_parse_encode_mqtt_param, &json_str);
     if (0 == rc) {
         return json_str;
@@ -276,14 +276,14 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 {
     log_info("Update tags uuid:%s, node id:%d", mqtt->uuid, req->node_id);
 
-    char *            json_str = NULL;
-    uint32_t          node_id  = req->node_id;
-    neu_parse_error_t error    = { 0 };
+    char *                json_str = NULL;
+    uint32_t              node_id  = req->node_id;
+    neu_json_error_resp_t error    = { 0 };
 
     int rc = common_has_node(plugin, node_id);
     if (0 != rc) {
         error.error = -1;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -294,7 +294,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     neu_datatag_table_t *table = common_get_datatags_table(plugin, node_id);
     if (NULL == table) {
         error.error = -3;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -322,7 +322,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         log_info("Update datatag to the datatag table, id:%ld", datatag->id);
     }
 
-    rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                    neu_parse_encode_mqtt_param, &json_str);
 
     if (0 == rc) {
@@ -338,14 +338,14 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     log_info("Delete tags uuid:%s, node id:%d, group config:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
 
-    char *            json_str = NULL;
-    uint32_t          node_id  = req->node_id;
-    neu_parse_error_t error    = { 0 };
+    char *                json_str = NULL;
+    uint32_t              node_id  = req->node_id;
+    neu_json_error_resp_t error    = { 0 };
 
     int rc = common_has_node(plugin, node_id);
     if (0 != rc) {
         error.error = -1;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -357,7 +357,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         neu_system_find_group_config(plugin, node_id, req->group_config_name);
     if (NULL == config) {
         error.error = -2;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -369,7 +369,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         neu_system_get_datatags_table(plugin, req->node_id);
     if (NULL == table) {
         error.error = -3;
-        rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                        neu_parse_encode_mqtt_param, &json_str);
         if (0 == rc) {
             return json_str;
@@ -392,7 +392,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
         }
     }
 
-    rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                    neu_parse_encode_mqtt_param, &json_str);
     if (0 == rc) {
         return json_str;

@@ -41,8 +41,8 @@
 
 #define REST_PROCESS_HTTP_REQUEST_WITH_ERROR(aio, req_type, decode_fun, func) \
     {                                                                         \
-        neu_parse_error_t error        = { 0 };                               \
-        char *            result_error = NULL;                                \
+        neu_json_error_resp_t error        = { 0 };                           \
+        char *                result_error = NULL;                            \
         REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)            \
         free(result_error);                                                   \
     }

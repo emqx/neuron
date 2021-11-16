@@ -150,10 +150,10 @@ char *command_add_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 
     int rc = add_group_config(plugin, req->name, req->node_id, req->interval);
 
-    char *            json_str = NULL;
-    neu_parse_error_t error    = { .error = rc };
+    char *                json_str = NULL;
+    neu_json_error_resp_t error    = { .error = rc };
 
-    neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                               neu_parse_encode_mqtt_param, &json_str);
     return json_str;
 }
@@ -204,10 +204,10 @@ char *command_update_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     int rc =
         update_group_config(plugin, req->name, req->node_id, req->interval);
 
-    char *            json_str = NULL;
-    neu_parse_error_t error    = { .error = rc };
+    char *                json_str = NULL;
+    neu_json_error_resp_t error    = { .error = rc };
 
-    rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                    neu_parse_encode_mqtt_param, &json_str);
     return json_str;
 }
@@ -250,10 +250,10 @@ char *command_delete_group_config(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 
     int rc = delete_group_config(plugin, req->name, req->node_id);
 
-    char *            json_str = NULL;
-    neu_parse_error_t error    = { .error = rc };
+    char *                json_str = NULL;
+    neu_json_error_resp_t error    = { .error = rc };
 
-    rc = neu_json_encode_with_mqtt(&error, neu_parse_encode_error, mqtt,
+    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                    neu_parse_encode_mqtt_param, &json_str);
     return json_str;
 }

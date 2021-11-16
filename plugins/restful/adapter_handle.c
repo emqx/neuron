@@ -45,7 +45,7 @@ void handle_add_adapter(nng_aio *aio)
                                                   req->plugin_name);
             }
 
-            neu_json_encode_by_fn(&error, neu_parse_encode_error,
+            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
                                   &result_error);
             if (error.error != 0) {
                 http_bad_request(aio, result_error);
@@ -62,7 +62,7 @@ void handle_del_adapter(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
         aio, neu_json_del_node_req_t, neu_json_decode_del_node_req, {
             error.error = neu_system_del_node(plugin, req->id);
-            neu_json_encode_by_fn(&error, neu_parse_encode_error,
+            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
                                   &result_error);
             if (error.error != 0) {
                 http_bad_request(aio, result_error);
@@ -90,14 +90,14 @@ void handle_update_adapter(nng_aio *aio)
 
 void handle_get_adapter(nng_aio *aio)
 {
-    neu_plugin_t *    plugin      = neu_rest_get_plugin();
-    char *            result      = NULL;
-    neu_parse_error_t error       = { 0 };
-    char *            s_node_type = http_get_param(aio, "type");
+    neu_plugin_t *        plugin      = neu_rest_get_plugin();
+    char *                result      = NULL;
+    neu_json_error_resp_t error       = { 0 };
+    char *                s_node_type = http_get_param(aio, "type");
 
     if (s_node_type == NULL) {
         error.error = NEU_ERR_PARAM_IS_WRONG;
-        neu_json_encode_by_fn(&error, neu_parse_encode_error, &result);
+        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &result);
         http_bad_request(aio, result);
         return;
     }
