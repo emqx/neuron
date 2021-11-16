@@ -45,7 +45,7 @@ void handle_add_group_config(nng_aio *aio)
             error.error =
                 neu_system_add_group_config(plugin, req->node_id, gconfig);
 
-            neu_json_encode_by_fn(&error, neu_parse_encode_error,
+            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
                                   &result_error);
             if (error.error != 0) {
                 http_bad_request(aio, result_error);
@@ -70,7 +70,7 @@ void handle_del_group_config(nng_aio *aio)
 
             if (config == NULL || table == NULL) {
                 error.error = NEU_ERR_GRP_CONFIG_NOT_EXIST;
-                neu_json_encode_by_fn(&error, neu_parse_encode_error,
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
                                       &result_error);
                 http_not_found(aio, result_error);
             } else {
@@ -85,7 +85,7 @@ void handle_del_group_config(nng_aio *aio)
 
                 error.error = neu_system_del_group_config(plugin, req->node_id,
                                                           req->name);
-                neu_json_encode_by_fn(&error, neu_parse_encode_error,
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
                                       &result_error);
                 if (error.error != 0) {
                     http_bad_request(aio, result_error);
@@ -108,14 +108,14 @@ void handle_update_group_config(nng_aio *aio)
 
             if (config == NULL) {
                 error.error = NEU_ERR_GRP_CONFIG_NOT_EXIST;
-                neu_json_encode_by_fn(&error, neu_parse_encode_error,
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
                                       &result_error);
                 http_not_found(aio, result_error);
             } else {
                 neu_taggrp_cfg_set_interval(config, req->interval);
                 error.error = neu_system_update_group_config(
                     plugin, req->node_id, config);
-                neu_json_encode_by_fn(&error, neu_parse_encode_error,
+                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
                                       &result_error);
                 if (error.error != 0) {
                     http_bad_request(aio, result_error);
@@ -128,14 +128,14 @@ void handle_update_group_config(nng_aio *aio)
 
 void handle_get_group_config(nng_aio *aio)
 {
-    neu_plugin_t *    plugin    = neu_rest_get_plugin();
-    char *            result    = NULL;
-    char *            s_node_id = http_get_param(aio, "node_id");
-    neu_parse_error_t error     = { 0 };
+    neu_plugin_t *        plugin    = neu_rest_get_plugin();
+    char *                result    = NULL;
+    char *                s_node_id = http_get_param(aio, "node_id");
+    neu_json_error_resp_t error     = { 0 };
 
     if (s_node_id == NULL) {
         error.error = NEU_ERR_PARAM_IS_WRONG;
-        neu_json_encode_by_fn(&error, neu_parse_encode_error, &result);
+        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &result);
         http_bad_request(aio, result);
         return;
     }
