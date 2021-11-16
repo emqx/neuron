@@ -24,7 +24,7 @@
 #include "read_write.h"
 
 int command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                              neu_parse_read_req_t *req, uint32_t req_id)
+                              neu_json_read_req_t *req, uint32_t req_id)
 {
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
     int rc = common_has_node(plugin, req->node_id);
@@ -45,7 +45,7 @@ int command_read_once_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 }
 
 static int wrap_read_response_json_object(neu_fixed_array_t *   array,
-                                          neu_parse_read_res_t *json)
+                                          neu_json_read_resp_t *json)
 {
     neu_int_val_t * int_val;
     neu_data_val_t *val;
@@ -56,15 +56,15 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
         return -1;
     }
 
-    json->tags = (neu_parse_read_res_tag_t *) calloc(
-        length - 1, sizeof(neu_parse_read_res_tag_t));
+    json->tags = (neu_json_read_resp_tag_t *) calloc(
+        length - 1, sizeof(neu_json_read_resp_tag_t));
 
     for (int i = 1; i < length; i++) {
         int_val          = neu_fixed_array_get(array, i);
         val              = int_val->val;
         neu_dtype_e type = neu_dvalue_get_value_type(val);
 
-        json->tags[i - 1].tag_id = int_val->key;
+        json->tags[i - 1].id = int_val->key;
 
         switch (type) {
         case NEU_DTYPE_BYTE: {
@@ -159,7 +159,7 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
     return 0;
 }
 
-static void clean_read_response_json_object(neu_parse_read_res_t *json)
+static void clean_read_response_json_object(neu_json_read_resp_t *json)
 {
     if (NULL == json) {
         return;
@@ -197,16 +197,17 @@ char *command_read_once_response(neu_plugin_t *    plugin,
     val_err = int_val->val;
     neu_dvalue_get_errorcode(val_err, &error);
 
-    neu_parse_read_res_t json;
-    memset(&json, 0, sizeof(neu_parse_read_res_t));
+    neu_json_read_resp_t json;
+    memset(&json, 0, sizeof(neu_json_read_resp_t));
     rc = wrap_read_response_json_object(array, &json);
     if (0 != rc) {
         return NULL;
     }
 
     char *json_str = NULL;
-    rc = neu_json_encode_with_mqtt(&json, neu_parse_encode_read, parse_header,
-                                   neu_parse_encode_mqtt_param, &json_str);
+    rc             = neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp,
+                                   parse_header, neu_parse_encode_mqtt_param,
+                                   &json_str);
     clean_read_response_json_object(&json);
     if (0 != rc) {
         log_info("Json string parse error:%d", rc);
@@ -248,7 +249,7 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
 }
 
 int command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
-                          neu_parse_write_req_t *write_req, uint32_t req_id)
+                          neu_json_write_req_t *write_req, uint32_t req_id)
 {
     log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
              write_req->group_config_name);
@@ -273,7 +274,7 @@ int command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     for (int i = 0; i < write_req->n_tag; i++) {
         enum neu_json_type   type  = write_req->tags[i].t;
         union neu_json_value value = write_req->tags[i].value;
-        neu_datatag_id_t     id    = write_req->tags[i].tag_id;
+        neu_datatag_id_t     id    = write_req->tags[i].id;
 
         switch (type) {
         case NEU_JSON_INT: {
@@ -317,21 +318,21 @@ int command_write_request(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 }
 
 static int wrap_write_response_json_object(neu_fixed_array_t *   array,
-                                           neu_parse_read_res_t *json)
+                                           neu_json_read_resp_t *json)
 {
     neu_int_val_t * int_val;
     neu_data_val_t *val;
     int             length = array->length;
     json->n_tag            = length - 1;
 
-    json->tags = (neu_parse_read_res_tag_t *) calloc(
-        length - 1, sizeof(neu_parse_read_res_tag_t));
+    json->tags = (neu_json_read_resp_tag_t *) calloc(
+        length - 1, sizeof(neu_json_read_resp_tag_t));
 
     for (int i = 1; i < length; i++) {
         int_val = neu_fixed_array_get(array, i);
         val     = int_val->val;
 
-        json->tags[i - 1].tag_id = int_val->key;
+        json->tags[i - 1].id = int_val->key;
 
         int32_t value;
         neu_dvalue_get_int32(val, &value);
@@ -342,7 +343,7 @@ static int wrap_write_response_json_object(neu_fixed_array_t *   array,
     return 0;
 }
 
-static void clean_write_response_json_object(neu_parse_read_res_t *json)
+static void clean_write_response_json_object(neu_json_read_resp_t *json)
 {
     if (NULL == json) {
         return;
@@ -372,11 +373,11 @@ char *command_write_response(neu_plugin_t *    plugin,
     val_err = int_val->val;
     neu_dvalue_get_errorcode(val_err, &error);
 
-    neu_parse_read_res_t json;
+    neu_json_read_resp_t json;
     wrap_write_response_json_object(array, &json);
 
     char *json_str = NULL;
-    neu_json_encode_with_mqtt(&json, neu_parse_encode_read, parse_header,
+    neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, parse_header,
                               neu_parse_encode_mqtt_param, &json_str);
     clean_write_response_json_object(&json);
     return json_str;

@@ -140,7 +140,7 @@ void handle_read(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_read_req_t, neu_parse_decode_read, {
+        aio, neu_json_read_req_t, neu_json_decode_read_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
             uint32_t event_id = neu_plugin_get_event_id(plugin);
@@ -154,7 +154,7 @@ void handle_write(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_write_req_t, neu_parse_decode_write, {
+        aio, neu_json_write_req_t, neu_json_decode_write_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
             neu_data_val_t *data     = neu_parse_write_req_to_val(req);
@@ -171,7 +171,7 @@ void handle_read_resp(void *cmd_resp)
     struct cmd_ctx *         ctx        = read_find_ctx(req->req_id);
     neu_reqresp_read_resp_t *resp       = (neu_reqresp_read_resp_t *) req->buf;
     neu_fixed_array_t *      array      = NULL;
-    neu_parse_read_res_t     api_res    = { 0 };
+    neu_json_read_resp_t     api_res    = { 0 };
     char *                   result     = NULL;
     neu_int_val_t *          iv         = NULL;
     int32_t                  error_code = 0;
@@ -193,12 +193,12 @@ void handle_read_resp(void *cmd_resp)
     }
 
     api_res.n_tag = array->length - 1;
-    api_res.tags  = calloc(api_res.n_tag, sizeof(neu_parse_read_res_tag_t));
+    api_res.tags  = calloc(api_res.n_tag, sizeof(neu_json_read_resp_tag_t));
 
     for (size_t i = 1; i < array->length; i++) {
         iv = (neu_int_val_t *) neu_fixed_array_get(array, i);
 
-        api_res.tags[i - 1].tag_id = iv->key;
+        api_res.tags[i - 1].id = iv->key;
 
         switch (neu_dvalue_get_value_type(iv->val)) {
         case NEU_DTYPE_BIT: {
@@ -254,7 +254,7 @@ void handle_read_resp(void *cmd_resp)
         }
     }
 
-    neu_json_encode_by_fn(&api_res, neu_parse_encode_read, &result);
+    neu_json_encode_by_fn(&api_res, neu_json_encode_read_resp, &result);
     http_ok(ctx->aio, result);
     free(ctx);
     free(api_res.tags);

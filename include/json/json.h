@@ -35,7 +35,8 @@ typedef enum neu_json_type {
     NEU_JSON_DOUBLE,
     NEU_JSON_FLOAT,
     NEU_JSON_BOOL,
-    NEU_JSON_OBJECT
+    NEU_JSON_OBJECT,
+    NEU_JSON_VALUE = NEU_JSON_UNDEFINE
 } neu_json_type_e;
 
 typedef union neu_json_value {
