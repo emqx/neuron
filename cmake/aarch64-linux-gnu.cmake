@@ -1,8 +1,9 @@
 set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_VERSION 1)
-set(CMAKE_SYSTEM_PROCESSOR armv7l)
+set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
-set(triple arm-linux-gnueabihf)
+set(triple aarch64-linux-gnu)
+
+set(CMAKE_STAGING_PREFIX /opt/externs/libs/${triple})
 
 if(NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX .cross/${triple})
