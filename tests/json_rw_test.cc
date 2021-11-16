@@ -13,9 +13,9 @@ TEST(JsonAPITest, ReadReqDecode)
                          "\"node_id\": 123 ,"
                          "\"group_config_name\": \"group1\"}";
     neu_json_read_req_t *req  = NULL;
-    neu_parse_mqtt_t *   mqtt = NULL;
+    neu_json_mqtt_t *    mqtt = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode_mqtt_param(buf, &mqtt));
+    EXPECT_EQ(0, neu_json_decode_mqtt_req(buf, &mqtt));
     EXPECT_EQ(0, neu_json_decode_read_req(buf, &req));
 
     EXPECT_EQ(NEU_MQTT_OP_READ, mqtt->function);
@@ -23,7 +23,7 @@ TEST(JsonAPITest, ReadReqDecode)
     EXPECT_EQ(123, req->node_id);
     EXPECT_STREQ("group1", req->group_config_name);
 
-    neu_parse_decode_mqtt_param_free(mqtt);
+    neu_json_decode_mqtt_req_free(mqtt);
     neu_json_decode_read_req_free(req);
 }
 

@@ -21,7 +21,7 @@
 
 #include "node.h"
 
-char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_get_nodes(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                         neu_json_get_nodes_req_t *req)
 {
     log_info("Get node list uuid:%s, node type:%d", mqtt->uuid, req->node_type);
@@ -47,7 +47,7 @@ char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     char *json_str = NULL;
     int   rc =
         neu_json_encode_with_mqtt(&res, neu_parse_encode_get_tags_resp, mqtt,
-                                  neu_parse_encode_mqtt_param, &json_str);
+                                  neu_json_encode_mqtt_resp, &json_str);
     if (0 == rc) {
         return json_str;
     }
@@ -55,7 +55,7 @@ char *command_get_nodes(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     return NULL;
 }
 
-char *command_add_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_add_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_json_add_node_req_t *req)
 {
     log_info("Add node uuid:%s, node type:%d", mqtt->uuid, req->type);
@@ -71,7 +71,7 @@ char *command_add_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     return json_str;
 }
 
-char *command_update_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_update_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_update_node_req_t *req)
 {
     log_info("Update node uuid:%s, node type:%d", mqtt->uuid, req->type);
@@ -87,7 +87,7 @@ char *command_update_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     return json_str;
 }
 
-char *command_delete_node(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_delete_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_del_node_req_t *req)
 {
     log_info("Delete node uuid:%s, node id:%d", mqtt->uuid, req->id);

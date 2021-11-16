@@ -162,7 +162,7 @@ static void free_get_tags_response_object(vector_t *                 tags,
     }
 }
 
-char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_get_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_parse_get_tags_req_t *req)
 {
     log_info("Get tag list uuid:%s, node id:%d", mqtt->uuid, req->node_id);
@@ -178,7 +178,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (0 != rc) {
         error.error = rc;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -187,7 +187,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
 
     rc = wrap_get_tags_response_json_object(&tags, &res);
     rc = neu_json_encode_with_mqtt(&res, neu_parse_encode_get_tags_resp, mqtt,
-                                   neu_parse_encode_mqtt_param, &json_str);
+                                   neu_json_encode_mqtt_resp, &json_str);
 
     free_get_tags_response_object(&tags, &res);
     vector_uninit(&tags);
@@ -199,7 +199,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     return NULL;
 }
 
-char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_parse_add_tags_req_t *req)
 {
     log_info("Add tags uuid:%s, node id:%d, group config name:%s", mqtt->uuid,
@@ -213,7 +213,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (0 != rc) {
         error.error = -1;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -225,7 +225,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (NULL == config) {
         error.error = -2;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -236,7 +236,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (NULL == table) {
         error.error = -3;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -263,7 +263,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                   neu_parse_encode_mqtt_param, &json_str);
+                                   neu_json_encode_mqtt_resp, &json_str);
     if (0 == rc) {
         return json_str;
     }
@@ -271,7 +271,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     return NULL;
 }
 
-char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_parse_update_tags_req_t *req)
 {
     log_info("Update tags uuid:%s, node id:%d", mqtt->uuid, req->node_id);
@@ -284,7 +284,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (0 != rc) {
         error.error = -1;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -295,7 +295,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (NULL == table) {
         error.error = -3;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -323,7 +323,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                   neu_parse_encode_mqtt_param, &json_str);
+                                   neu_json_encode_mqtt_resp, &json_str);
 
     if (0 == rc) {
         return json_str;
@@ -332,7 +332,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     return NULL;
 }
 
-char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_parse_del_tags_req_t *req)
 {
     log_info("Delete tags uuid:%s, node id:%d, group config:%s", mqtt->uuid,
@@ -346,7 +346,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (0 != rc) {
         error.error = -1;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -358,7 +358,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (NULL == config) {
         error.error = -2;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -370,7 +370,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     if (NULL == table) {
         error.error = -3;
         rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_parse_encode_mqtt_param, &json_str);
+                                       neu_json_encode_mqtt_resp, &json_str);
         if (0 == rc) {
             return json_str;
         }
@@ -393,7 +393,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
     }
 
     rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                   neu_parse_encode_mqtt_param, &json_str);
+                                   neu_json_encode_mqtt_resp, &json_str);
     if (0 == rc) {
         return json_str;
     }

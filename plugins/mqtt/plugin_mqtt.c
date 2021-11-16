@@ -42,9 +42,9 @@
 const neu_plugin_module_t neu_plugin_module;
 
 struct context {
-    neu_list_node    node;
-    int              req_id;
-    neu_parse_mqtt_t parse_header;
+    neu_list_node   node;
+    int             req_id;
+    neu_json_mqtt_t parse_header;
 };
 
 struct neu_plugin {
@@ -72,7 +72,7 @@ static struct context *context_create()
 }
 
 static void context_list_add(neu_list *list, int req_id,
-                             neu_parse_mqtt_t *parse_header)
+                             neu_json_mqtt_t *parse_header)
 {
     struct context *ctx = context_create();
     if (NULL == ctx) {
@@ -131,7 +131,7 @@ static void mqtt_send(neu_plugin_t *plugin, char *json_str)
 }
 
 static void context_add(neu_plugin_t *plugin, uint32_t req_id,
-                        neu_parse_mqtt_t *parse_header)
+                        neu_json_mqtt_t *parse_header)
 {
     context_list_add(&plugin->context_list, req_id, parse_header);
 }

@@ -1,0 +1,10 @@
+{
+    "mqtt_req": {
+        "function": 2,
+        "uuid": "554f5fd8-f437-11eb-975c-7704b9e17821"
+    },
+    "mqtt_resp": {
+        "function": 2,
+        "uuid": "554f5fd8-f437-11eb-975c-7704b9e17821"
+    }
+}
