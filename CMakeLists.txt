@@ -8,7 +8,7 @@ enable_language(C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Debug")
+  set(CMAKE_BUILD_TYPE "Release")
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -47,12 +47,19 @@ configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
 
 # Call this from your own project's makefile.
 
-if(APPLE)
-include_directories(/usr/local/include /usr/local/opt/openssl/include)
-link_directories(/usr/local/lib /usr/local/opt/openssl/lib)
+if(NOT CMAKE_STAGING_PREFIX)
+  if(APPLE)
+  include_directories(/usr/local/include /usr/local/opt/openssl/include)
+  link_directories(/usr/local/lib /usr/local/opt/openssl/lib)
+  else()
+  link_directories(/usr/local/lib)
+  endif()
 else()
-link_directories(/usr/local/lib)
+  set(CMAKE_PREFIX_PATH ${CMAKE_STAGING_PREFIX})
+  include_directories(${CMAKE_STAGING_PREFIX}/openssl/include)
+  link_directories(${CMAKE_STAGING_PREFIX}/openssl/lib)
 endif()
+
 
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
@@ -95,6 +102,7 @@ set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
+target_include_directories(neuron PUBLIC ${CMAKE_STAGING_PREFIX})
 if(APPLE)
   target_link_libraries(neuron nng::nng jansson yaml neuron-base)
 else()
@@ -128,6 +136,7 @@ add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_SCHEMA})
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
+target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
 target_link_libraries(neuron-base vector-static csptr jansson crypto yaml
                       ${CMAKE_THREAD_LIBS_INIT})
 
@@ -141,6 +150,9 @@ add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/opcua)
 
-# define for tests
-enable_testing()
-add_subdirectory(tests)
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+  # define for tests
+  enable_testing()
+  add_subdirectory(tests)
+endif()
+
