@@ -74,7 +74,7 @@ static void uninit()
 
 static void usage()
 {
-    log_info("neuron [--help] [--daemon]");
+    fprintf(stderr, "neuron [--help] [--daemon]\n");
 }
 
 static int read_neuron_config()
@@ -96,14 +96,16 @@ int main(int argc, char *argv[])
 
     init();
 
-    char *        opts           = "h:d:";
+    char *        opts           = ":hd:W;";
     struct option long_options[] = {
-        { "help", no_argument, NULL, 'h' },
-        { "daemon", required_argument, NULL, 'd' },
+        { "help", no_argument, NULL, 1 },
+        { "daemon", required_argument, NULL, 1 },
+        { NULL, 0, NULL, 0 },
     };
-    char c;
 
-    while ((c = getopt_long(argc, argv, opts, long_options, NULL)) != EOF) {
+    int c;
+
+    while ((c = getopt_long(argc, argv, opts, long_options, NULL)) != -1) {
         switch (c) {
         case 'h':
             usage();
@@ -111,9 +113,17 @@ int main(int argc, char *argv[])
         case 'd':
             is_daemon = true;
             break;
+        case ':':
+            fprintf(stderr, "%s: option '-%c' requires an argument\n", argv[0],
+                    optopt);
+            usage();
+            exit(0);
+        case '?':
         default:
-            log_warn("The arg %c is not supported!", c);
-            break;
+            fprintf(stderr, "%s: option '-%c' is invalid: ignored\n", argv[0],
+                    optopt);
+            usage();
+            exit(0);
         }
     }
 
