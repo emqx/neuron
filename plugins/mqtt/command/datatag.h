@@ -28,13 +28,13 @@ extern "C" {
 
 #include "common.h"
 
-char *command_get_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_get_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_parse_get_tags_req_t *req);
-char *command_add_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_parse_add_tags_req_t *req);
-char *command_update_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_parse_update_tags_req_t *req);
-char *command_delete_tags(neu_plugin_t *plugin, neu_parse_mqtt_t *mqtt,
+char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_parse_del_tags_req_t *req);
 
 #ifdef __cplusplus
