@@ -109,12 +109,12 @@ static int get_all_tag(neu_plugin_t *plugin, const uint32_t node_id,
     return 0;
 }
 
-static int wrap_get_tags_response_json_object(vector_t *                 tags,
-                                              neu_parse_get_tags_resp_t *json)
+static int wrap_get_tags_response_json_object(vector_t *                tags,
+                                              neu_json_get_tags_resp_t *json)
 {
     json->n_tag = tags->size;
-    json->tags  = malloc(tags->size * sizeof(neu_parse_get_tags_resp_tag_t));
-    memset(json->tags, 0, tags->size * sizeof(neu_parse_get_tags_resp_tag_t));
+    json->tags  = malloc(tags->size * sizeof(neu_json_get_tags_resp_tag_t));
+    memset(json->tags, 0, tags->size * sizeof(neu_json_get_tags_resp_tag_t));
 
     tag_t *tag  = NULL;
     int    size = tags->size;
@@ -135,8 +135,8 @@ static int wrap_get_tags_response_json_object(vector_t *                 tags,
     return 0;
 }
 
-static void free_get_tags_response_object(vector_t *                 tags,
-                                          neu_parse_get_tags_resp_t *json)
+static void free_get_tags_response_object(vector_t *                tags,
+                                          neu_json_get_tags_resp_t *json)
 {
     tag_t *tag  = NULL;
     int    size = tags->size;
@@ -163,12 +163,12 @@ static void free_get_tags_response_object(vector_t *                 tags,
 }
 
 char *command_get_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                       neu_parse_get_tags_req_t *req)
+                       neu_json_get_tags_req_t *req)
 {
     log_info("Get tag list uuid:%s, node id:%d", mqtt->uuid, req->node_id);
-    char *                    json_str = NULL;
-    neu_parse_get_tags_resp_t res      = { 0 };
-    neu_json_error_resp_t     error    = { 0 };
+    char *                   json_str = NULL;
+    neu_json_get_tags_resp_t res      = { 0 };
+    neu_json_error_resp_t    error    = { 0 };
 
     uint32_t node_id = req->node_id;
     vector_t tags;
@@ -186,7 +186,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     }
 
     rc = wrap_get_tags_response_json_object(&tags, &res);
-    rc = neu_json_encode_with_mqtt(&res, neu_parse_encode_get_tags_resp, mqtt,
+    rc = neu_json_encode_with_mqtt(&res, neu_json_encode_get_tags_resp, mqtt,
                                    neu_json_encode_mqtt_resp, &json_str);
 
     free_get_tags_response_object(&tags, &res);
@@ -200,7 +200,7 @@ char *command_get_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 }
 
 char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                       neu_parse_add_tags_req_t *req)
+                       neu_json_add_tags_req_t *req)
 {
     log_info("Add tags uuid:%s, node id:%d, group config name:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
@@ -272,7 +272,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 }
 
 char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                          neu_parse_update_tags_req_t *req)
+                          neu_json_update_tags_req_t *req)
 {
     log_info("Update tags uuid:%s, node id:%d", mqtt->uuid, req->node_id);
 
@@ -333,7 +333,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 }
 
 char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                          neu_parse_del_tags_req_t *req)
+                          neu_json_del_tags_req_t *req)
 {
     log_info("Delete tags uuid:%s, node id:%d, group config:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
@@ -377,14 +377,14 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return NULL;
     }
 
-    for (int i = 0; i < req->n_tag_id; i++) {
-        rc = neu_datatag_tbl_remove(table, req->tag_ids[i]);
+    for (int i = 0; i < req->n_id; i++) {
+        rc = neu_datatag_tbl_remove(table, req->ids[i]);
         if (0 == rc) {
             vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
             VECTOR_FOR_EACH(ids, iter)
             {
                 neu_datatag_id_t *id = (neu_datatag_id_t *) iterator_get(&iter);
-                if (*id == req->tag_ids[i]) {
+                if (*id == req->ids[i]) {
                     iterator_erase(ids, &iter);
                     break;
                 }

@@ -2,12 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "json/neu_json_add_tag.h"
-#include "json/neu_json_del_tag.h"
 #include "json/neu_json_fn.h"
-#include "json/neu_json_get_tag.h"
-#include "json/neu_json_update_tag.h"
-// #include "json/neu_json_tag.h"
+#include "json/neu_json_tag.h"
 
 TEST(JsonDatatagTableTest, AddTagDecode)
 {
@@ -17,9 +13,9 @@ TEST(JsonDatatagTableTest, AddTagDecode)
                          "\"address\":\"1!400001\", \"type\":0}, "
                          "{\"name\":\"name2\", \"attribute\":3,"
                          "\"address\":\"1!400002\", \"type\":1} ] }";
-    neu_parse_add_tags_req_t *req = NULL;
+    neu_json_add_tags_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode_add_tags_req(buf, &req));
+    EXPECT_EQ(0, neu_json_decode_add_tags_req(buf, &req));
 
     EXPECT_EQ(123456, req->node_id);
     EXPECT_STREQ("name", req->group_config_name);
@@ -34,20 +30,20 @@ TEST(JsonDatatagTableTest, AddTagDecode)
     EXPECT_STREQ("1!400002", req->tags[1].address);
     EXPECT_EQ(3, req->tags[1].attribute);
 
-    neu_parse_decode_add_tags_req_free(req);
+    neu_json_decode_add_tags_req_free(req);
 }
 
 TEST(JsonDatatagTableTest, GetTagDecode)
 {
     char *buf = (char *) "{\"node_id\": 123456, \"group_config_name\": "
                          "\"config_modbus_tcp_sample_2\"}";
-    neu_parse_get_tags_req_t *req = NULL;
+    neu_json_get_tags_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode_get_tags_req(buf, &req));
+    EXPECT_EQ(0, neu_json_decode_get_tags_req(buf, &req));
 
     EXPECT_EQ(123456, req->node_id);
 
-    neu_parse_decode_get_tags_req_free(req);
+    neu_json_decode_get_tags_req_free(req);
 }
 
 TEST(JsonDatatagTableTest, GetTagEncode)
@@ -59,13 +55,13 @@ TEST(JsonDatatagTableTest, GetTagEncode)
                  "\"name\": \"Tag0002\", \"id\": 1, \"group_config_name\": "
                  "\"config_modbus_tcp_sample_2\", \"attribute\": 1, "
                  "\"address\": \"1!400002\"}]}";
-    char *                    result = NULL;
-    neu_parse_get_tags_resp_t res    = { 0 };
+    char *                   result = NULL;
+    neu_json_get_tags_resp_t res    = { 0 };
 
     res.n_tag = 2;
 
-    res.tags = (neu_parse_get_tags_resp_tag_t *) calloc(
-        2, sizeof(neu_parse_get_tags_resp_tag_t));
+    res.tags = (neu_json_get_tags_resp_tag_t *) calloc(
+        2, sizeof(neu_json_get_tags_resp_tag_t));
     res.tags[0].type      = 0;
     res.tags[0].name      = strdup((char *) "Tag0001");
     res.tags[0].id        = 0;
@@ -83,8 +79,7 @@ TEST(JsonDatatagTableTest, GetTagEncode)
         strdup((char *) "config_modbus_tcp_sample_2");
 
     EXPECT_EQ(
-        0,
-        neu_json_encode_by_fn(&res, neu_parse_encode_get_tags_resp, &result));
+        0, neu_json_encode_by_fn(&res, neu_json_encode_get_tags_resp, &result));
     EXPECT_STREQ(buf, result);
 
     free(res.tags[0].name);
@@ -101,18 +96,18 @@ TEST(JsonDatatagTableTest, DeleteTagDecode)
 {
     char *buf =
         (char *) "{\"node_id\": 123456, \"group_config_name\": \"name\", "
-                 "\"tag_ids\": [123, 456]}";
-    neu_parse_del_tags_req_t *req = NULL;
+                 "\"ids\": [123, 456]}";
+    neu_json_del_tags_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode_del_tags_req(buf, &req));
+    EXPECT_EQ(0, neu_json_decode_del_tags_req(buf, &req));
 
     EXPECT_EQ(123456, req->node_id);
     EXPECT_STREQ("name", req->group_config_name);
-    EXPECT_EQ(2, req->n_tag_id);
-    EXPECT_EQ(123, req->tag_ids[0]);
-    EXPECT_EQ(456, req->tag_ids[1]);
+    EXPECT_EQ(2, req->n_id);
+    EXPECT_EQ(123, req->ids[0]);
+    EXPECT_EQ(456, req->ids[1]);
 
-    neu_parse_decode_del_tags_req_free(req);
+    neu_json_decode_del_tags_req_free(req);
 }
 
 TEST(JsonDatatagTableTest, UpdateTaDecode)
@@ -123,9 +118,9 @@ TEST(JsonDatatagTableTest, UpdateTaDecode)
                          "\"address\":\"1!400001\",\"attribute\":0}, "
                          "{\"id\":13,\"name\":\"name2\",\"type\":1, "
                          "\"address\":\"1!400003\",\"attribute\":1} ] }";
-    neu_parse_update_tags_req_t *req = NULL;
+    neu_json_update_tags_req_t *req = NULL;
 
-    EXPECT_EQ(0, neu_parse_decode_update_tags_req(buf, &req));
+    EXPECT_EQ(0, neu_json_decode_update_tags_req(buf, &req));
 
     EXPECT_EQ(123456, req->node_id);
 
@@ -141,5 +136,5 @@ TEST(JsonDatatagTableTest, UpdateTaDecode)
     EXPECT_STREQ("1!400003", req->tags[1].address);
     EXPECT_EQ(1, req->tags[1].attribute);
 
-    neu_parse_decode_update_tags_req_free(req);
+    neu_json_decode_update_tags_req_free(req);
 }
