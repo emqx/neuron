@@ -444,7 +444,7 @@ static int handle_read_resp_value(neu_data_val_t *data_val)
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
 
     log_info("The sample driver read status: %d", err);
- 
+
     if (err == 0) {
         log_info("The sample driver read data, i64: %" PRIi64
                  ", f64: %f, cstr: %s",
