@@ -26,6 +26,7 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "neu_data_expr.h"
 #include "json/neu_json_rw.h"
 
 typedef int (*neu_json_encode_fn)(void *object, void *param);

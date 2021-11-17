@@ -23,12 +23,8 @@
 #include "neu_datatag_table.h"
 #include "neu_log.h"
 #include "neu_plugin.h"
-#include "json/neu_json_add_tag.h"
-#include "json/neu_json_del_tag.h"
 #include "json/neu_json_fn.h"
-#include "json/neu_json_get_tag.h"
-#include "json/neu_json_update_tag.h"
-// #include "json/neu_json_tag.h"
+#include "json/neu_json_tag.h"
 
 #include "handle.h"
 #include "http.h"
@@ -40,7 +36,7 @@ void handle_add_tags(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_add_tags_req_t, neu_parse_decode_add_tags_req, {
+        aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
             neu_datatag_table_t *table =
@@ -74,7 +70,7 @@ void handle_del_tags(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_del_tags_req_t, neu_parse_decode_del_tags_req, {
+        aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
             neu_datatag_table_t *table =
@@ -82,15 +78,15 @@ void handle_del_tags(nng_aio *aio)
             if (config == NULL || table == NULL) {
                 http_not_found(aio, "{\"error\": 1}");
             } else {
-                for (int i = 0; i < req->n_tag_id; i++) {
-                    if (neu_datatag_tbl_remove(table, req->tag_ids[i]) == 0) {
+                for (int i = 0; i < req->n_id; i++) {
+                    if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
                         vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
 
                         VECTOR_FOR_EACH(ids, iter)
                         {
                             neu_datatag_id_t *id =
                                 (neu_datatag_id_t *) iterator_get(&iter);
-                            if (*id == req->tag_ids[i]) {
+                            if (*id == req->ids[i]) {
                                 iterator_erase(ids, &iter);
                                 break;
                             }
@@ -107,7 +103,7 @@ void handle_update_tags(nng_aio *aio)
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     REST_PROCESS_HTTP_REQUEST(
-        aio, neu_parse_update_tags_req_t, neu_parse_decode_update_tags_req, {
+        aio, neu_json_update_tags_req_t, neu_json_decode_update_tags_req, {
             neu_datatag_table_t *table =
                 neu_system_get_datatags_table(plugin, req->node_id);
             if (table == NULL) {
@@ -151,9 +147,9 @@ void handle_get_tags(nng_aio *aio)
         http_not_found(aio, "{\"error\": 1}");
     } else {
         vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
-        neu_parse_get_tags_resp_t tags_res = { 0 };
-        int                       index    = 0;
-        char *                    result   = NULL;
+        neu_json_get_tags_resp_t tags_res = { 0 };
+        int                      index    = 0;
+        char *                   result   = NULL;
 
         VECTOR_FOR_EACH(&grp_configs, iter)
         {
@@ -170,7 +166,7 @@ void handle_get_tags(nng_aio *aio)
         }
 
         tags_res.tags =
-            calloc(tags_res.n_tag, sizeof(neu_parse_get_tags_resp_tag_t));
+            calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
 
         VECTOR_FOR_EACH(&grp_configs, iter)
         {
@@ -202,7 +198,7 @@ void handle_get_tags(nng_aio *aio)
             }
         }
 
-        neu_json_encode_by_fn(&tags_res, neu_parse_encode_get_tags_resp,
+        neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp,
                               &result);
 
         http_ok(aio, result);
