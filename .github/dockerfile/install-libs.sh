@@ -1,5 +1,5 @@
 #!/bin/bash
-set -euo pipefail
+# set -euo pipefail
 
 system=$(uname)
 echo "System: $system"
@@ -313,7 +313,6 @@ if [ $is_cross == "TRUE" ]; then
 
     echo "Entering $externs"
 else
-    install_dir=${externs}
     case "$system" in
     "Linux")
         ssl_lib_flag=""
