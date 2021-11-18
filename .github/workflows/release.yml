@@ -1,20 +1,22 @@
 name: EMQX Neuron release workflow
 
 on:
+  push:
   release:
     types:
       - published
 
 jobs:
-  compile_x86_64:
+  compile:
     strategy:
       matrix:
-        os: [ ubuntu-20.04 ]
-        name: [ release ]
-        system:
-        - [gcc-7, x86_64]
+        tool:
+          - arm-linux-gnueabihf
+          - aarch64-linux-gnu
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-18.04
+
+    container: ghcr.io/${{ github.repository }}/base:latest
 
     steps:
       # checkout
@@ -23,11 +25,11 @@ jobs:
           submodules: recursive
 
       - name: Compile
+        working-directory: build
         run: |
-          git submodule update --init --remote
-          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
-          sudo ./install-libs.sh -a
-          mkdir build && cd build && cmake .. && make
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.tool }}.cmake
+          make
 
       - name: Run unit test
-        run: cd build && ctest --output-on-failure
+        working-directory: build
+        run: ctest --output-on-failure
