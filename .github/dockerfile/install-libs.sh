@@ -13,7 +13,7 @@ if [ $system == 'Linux' ]; then
     fi
 fi
 
-lib_list=(openssl cmake zlib nng jansson jwt MQTT-C gtest open62541 yaml)
+lib_list=(cmake zlib openssl nng jansson jwt MQTT-C gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]}; do
@@ -64,9 +64,9 @@ function build_cmake() {
 
 # nng
 function build_nng() {
-    echo "Building nng (v1.5.2)"
+    echo "Building nng (neuron/v1.5.2)"
     if [ ! -d nng ]; then
-        git clone -b v1.5.2 ${git_url_prefix}neugates/nng.git
+        git clone -b neuron/v1.5.2 ${git_url_prefix}neugates/nng.git
     fi
     cd nng
     rm -rf build
