@@ -4,8 +4,6 @@ set -euo pipefail
 system=$(uname)
 echo "System: $system"
 
-install_dir='/usr/local'
-
 if [ $system == 'Linux' ]; then
     if [ $(whoami) != "root" ]; then
         echo "Please use root access"
@@ -13,7 +11,7 @@ if [ $system == 'Linux' ]; then
     fi
 fi
 
-lib_list=(cmake zlib openssl nng jansson jwt MQTT-C gtest open62541 yaml)
+lib_list=(zlib openssl cmake nng jansson jwt MQTT-C gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]}; do
@@ -205,7 +203,6 @@ function build_zlib() {
 }
 
 function build_openssl() {
-    set -x
     echo "Installing openssl (1.1.1)"
     if [ $is_cross == "TRUE" ]; then
         if [ ! -n "$cross_compiler_prefix" ]; then
@@ -219,6 +216,7 @@ function build_openssl() {
         fi
 
         cd openssl
+        make clean || true
         mkdir -p ${install_dir}/openssl/ssl
         ./Configure ${system,}-${arch} no-asm shared \
             --prefix=${install_dir}/openssl \
@@ -315,6 +313,7 @@ if [ $is_cross == "TRUE" ]; then
 
     echo "Entering $externs"
 else
+    install_dir=${externs}
     case "$system" in
     "Linux")
         ssl_lib_flag=""
