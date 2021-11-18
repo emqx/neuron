@@ -11,7 +11,7 @@ if [ $system == 'Linux' ]; then
     fi
 fi
 
-lib_list=(zlib openssl cmake nng jansson jwt MQTT-C gtest open62541 yaml)
+lib_list=(openssl cmake zlib nng jansson jwt MQTT-C gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]}; do
