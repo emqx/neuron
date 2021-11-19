@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 system=$(uname)
 echo "System: $system"
 
@@ -10,7 +12,7 @@ if [ $system == 'Linux' ]; then
     fi
 fi
 
-lib_list=(zlib openssl nng jansson jwt MQTT-C gtest open62541 yaml)
+lib_list=(cmake zlib openssl nng jansson jwt MQTT-C gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]}; do
@@ -41,6 +43,23 @@ if [ $# -eq 0 ]; then
     usage
     exit
 fi
+
+# cmake
+function build_cmake() {
+    if [ $is_cross != "TRUE" ]; then
+      echo "Building cmake (v3.18.5)"
+      curl --silent --show-error -kfL -o cmake.tar.gz "https://github.com/Kitware/CMake/releases/download/v3.18.5/cmake-3.18.5.tar.gz"
+      tar -zxf cmake.tar.gz
+      rm -f cmake.tar.gz
+      cd "cmake-3.18.5/"
+
+      ./bootstrap --parallel=8
+      make -j8
+      make install
+      cd ..
+      cmake --version
+    fi
+}
 
 # nng
 function build_nng() {
@@ -125,7 +144,9 @@ function build_MQTT-C() {
 
 function build_yaml() {
     echo "Building yaml"
-    git clone ${git_url_prefix}yaml/libyaml.git
+    if [ ! -d libyaml ]; then
+        git clone ${git_url_prefix}yaml/libyaml.git
+    fi
     cd libyaml
     rm -rf build
     mkdir build
@@ -198,7 +219,6 @@ function build_openssl() {
         fi
 
         cd openssl
-        make clean
         mkdir -p ${install_dir}/openssl/ssl
         ./Configure ${system,}-${arch} no-asm shared \
             --prefix=${install_dir}/openssl \
@@ -206,6 +226,7 @@ function build_openssl() {
             --cross-compile-prefix=${cross_compiler_prefix}- \
             --with-zlib-include=${install_dir}/zlib/include \
             --with-zlib-lib=${install_dir}/zlib/lib
+        make clean
         make
         make install
         cd ../
@@ -307,7 +328,10 @@ else
     esac
 fi
 
-mkdir -p ${install_dir}
+if [ x$install_dir != "x" ]; then
+    echo "mkdir install dir"
+    mkdir -p ${install_dir}
+fi
 
 if [ $is_build_all == "TRUE" ]; then
     echo "Build ${list_str}"
