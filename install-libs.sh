@@ -105,9 +105,9 @@ function build_jwt() {
 
 # MQTT-C
 function build_MQTT-C() {
-    echo "Building MQTT-C (1.1.5)"
+    echo "Building MQTT-C (neugates/main)"
     if [ ! -d MQTT-C ]; then
-        git clone -b 1.1.5 ${git_url_prefix}neugates/MQTT-C.git
+        git clone ${git_url_prefix}neugates/MQTT-C.git
     fi
     cd MQTT-C
     rm -rf build
@@ -290,7 +290,7 @@ if [ $is_cross == "TRUE" ]; then
         -DCMAKE_STAGING_PREFIX=${install_dir} -DCMAKE_PREFIX_PATH=${install_dir}"
     install_opt="-DCMAKE_INSTALL_PREFIX=${install_dir}"
     ssl_lib_flag="-DOPENSSL_ROOT_DIR=${install_dir}/openssl \
-        -DOPENSSL_INCLUDE_DIR==${install_dir}/openssl/include \
+        -DOPENSSL_INCLUDE_DIR=${install_dir}/openssl/include \
         -DOPENSSL_LIBRARIES='${install_dir}/openssl/lib/libssl.so ${install_dir}/openssl/lib/libcrypto.so'"
 
     echo "Entering $externs"
