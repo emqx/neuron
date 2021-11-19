@@ -131,6 +131,7 @@ static nng_http_server *server_init(char *type)
 static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
                                        const adapter_callbacks_t *callbacks)
 {
+    int                            rv;
     neu_plugin_t *                 plugin;
     uint32_t                       n_handler     = 0;
     const struct neu_rest_handler *rest_handlers = NULL;
@@ -158,7 +159,8 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     plugin->api_server = server_init("api");
 
     if (plugin->web_server == NULL || plugin->api_server == NULL) {
-        return NULL;
+        log_error("Failed to create web server and api server");
+        goto server_init_fail;
     }
 
     neu_rest_api_handler(&rest_handlers, &n_handler);
@@ -169,8 +171,9 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     for (uint32_t i = 0; i < n_handler; i++) {
         rest_add_handler(plugin->api_server, &cors[i]);
     }
-    if (nng_http_server_start(plugin->api_server) != 0) {
-        return NULL;
+    if ((rv = nng_http_server_start(plugin->api_server)) != 0) {
+        log_error("Failed to start api server, error=%d", rv);
+        goto api_server_start_fail;
     }
 
     neu_rest_web_handler(&rest_handlers, &n_handler);
@@ -178,13 +181,28 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
         rest_add_handler(plugin->web_server, &rest_handlers[i]);
     }
 
-    if (nng_http_server_start(plugin->web_server) != 0) {
-        return NULL;
+    if ((rv = nng_http_server_start(plugin->web_server)) != 0) {
+        log_error("Failed to start web server, error=%d", rv);
+        goto web_server_start_fail;
     }
 
     handle_rw_init();
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
+
+web_server_start_fail:
+    nng_http_server_stop(plugin->api_server);
+api_server_start_fail:
+server_init_fail:
+    if (plugin->web_server != NULL) {
+        nng_http_server_release(plugin->web_server);
+    }
+    if (plugin->api_server != NULL) {
+        nng_http_server_release(plugin->api_server);
+    }
+    neu_rest_free_ctx(plugin->handle_ctx);
+    free(plugin);
+    return NULL;
 }
 
 static int dashb_plugin_close(neu_plugin_t *plugin)
