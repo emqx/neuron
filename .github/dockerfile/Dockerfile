@@ -17,7 +17,7 @@ RUN echo "Building cmake (v3.18.5)" \
     && cd .. \
     && cmake --version
 
-RUN ./install-libs.sh -a -s x86_64
+RUN ./install-libs.sh -a 
 RUN ./install-libs.sh -a -c -p aarch64-linux-gnu -s aarch64
 RUN ./install-libs.sh -a -c -p arm-linux-gnueabihf -s armv4
 
