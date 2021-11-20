@@ -361,6 +361,12 @@ static bool match_name_reg_adapter(const void *key, const void *item)
     return strcmp((const char *) key, neu_adapter_get_name(adapter)) == 0;
 }
 
+static bool match_pipe_reg_adapter(const void *key, const void *item)
+{
+    return (*(nng_pipe *) key).id ==
+        ((adapter_reg_entity_t *) item)->adapter_pipe.id;
+}
+
 // Return SIZE_MAX if can't find a adapter
 static size_t find_reg_adapter_index_by_id(vector_t *adapters, adapter_id_t id)
 {
@@ -377,6 +383,12 @@ static adapter_reg_entity_t *find_reg_adapter_by_name(vector_t *  adapters,
                                                       const char *name)
 {
     return vector_find_item(adapters, name, match_name_reg_adapter);
+}
+
+static adapter_reg_entity_t *find_reg_adapter_by_pipe(vector_t *adapters,
+                                                      nng_pipe  p)
+{
+    return vector_find_item(adapters, &p, match_pipe_reg_adapter);
 }
 
 static adapter_id_t manager_new_adapter_id(neu_manager_t *manager)
@@ -433,29 +445,31 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 
 static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
-    adapter_id_t          adapter_id;
     neu_adapter_t *       adapter;
+    neu_adapter_t *       cur_adapter;
     neu_manager_t *       manager;
     adapter_reg_entity_t *reg_entity;
 
     (void) ev;
 
+    /* The parameter adapter is a last registered adapter, not current unbind
+     * adapter, so we can not use adapter_id of this adapter to find registred
+     * adapter entity. We must use pipe to find current unbind adapter.
+     */
     adapter = (neu_adapter_t *) arg;
     manager = neu_adapter_get_manager(adapter);
     nng_mtx_lock(manager->adapters_mtx);
-    adapter_id = neu_adapter_get_id(adapter);
-    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    reg_entity  = find_reg_adapter_by_pipe(&manager->reg_adapters, p);
+    cur_adapter = reg_entity->adapter;
     nng_mtx_unlock(manager->adapters_mtx);
     if (reg_entity != NULL) {
-        manager = neu_adapter_get_manager(adapter);
         nng_mtx_lock(manager->bind_info.mtx);
-        reg_entity->adapter_pipe = p;
-        reg_entity->bind_count   = 0;
+        reg_entity->bind_count = 0;
         manager->bind_info.bind_count--;
         manager->bind_info.expect_bind_count--;
         nng_mtx_unlock(manager->bind_info.mtx);
         log_info("The manager unbind the adapter(%s)",
-                 neu_adapter_get_name(adapter));
+                 neu_adapter_get_name(cur_adapter));
     }
 
     return;
@@ -607,10 +621,28 @@ int neu_manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 
 int neu_manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
-    int      rv = 0;
+    int rv = 0;
+
+    nng_pipe              msg_pipe = { 0 };
+    adapter_reg_entity_t *reg_entity;
+    adapter_id_t          adapter_id;
+
+    adapter_id = neu_adapter_get_id(adapter);
+    nng_mtx_lock(manager->adapters_mtx);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (reg_entity != NULL) {
+        msg_pipe = reg_entity->adapter_pipe;
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    if (msg_pipe.id == 0) {
+        log_warn("The adapter(%s) had been unbound",
+                 neu_adapter_get_name(adapter));
+        goto stop_adapter;
+    }
+
     size_t   msg_size;
     nng_msg *msg;
-
     msg_size = msg_inplace_data_get_size(sizeof(uint32_t));
     rv       = nng_msg_alloc(&msg, msg_size);
     if (rv != 0) {
@@ -627,6 +659,8 @@ int neu_manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     *(uint32_t *) buf_ptr             = 0; // exit_code is 0
     manager_bind_info_t *manager_bind = &manager->bind_info;
     nng_sendmsg(manager_bind->mng_sock, msg, 0);
+
+stop_adapter:
     neu_adapter_stop(adapter);
     return rv;
 }
