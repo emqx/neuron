@@ -31,9 +31,9 @@ extern "C" {
 #include "node.h"
 #include "read_write.h"
 
-typedef void (*mqtt_send_callback)(neu_plugin_t *plugin, char *json_str);
 typedef void (*context_add_callback)(neu_plugin_t *plugin, uint32_t req_id,
-                                     neu_json_mqtt_t *parse_head);
+                                     neu_json_mqtt_t *parse_head, char *result,
+                                     bool ready);
 
 typedef struct {
     const char *         topic_name;
@@ -41,7 +41,6 @@ typedef struct {
     void *               payload;
     size_t               len;
     void *               context;
-    mqtt_send_callback   mqtt_send;
     context_add_callback context_add;
 } mqtt_response_t;
 

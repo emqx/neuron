@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "command/command.h"
 #include "mqttc_client.h"
@@ -27,6 +28,8 @@
 #include <neuron.h>
 
 #define UNUSED(x) (void) (x)
+#define INTERVAL 100000U
+#define TIMEOUT 5000000U
 
 #define MQTT_SEND(client, topic, qos, json_str)                           \
     {                                                                     \
@@ -43,22 +46,24 @@ const neu_plugin_module_t neu_plugin_module;
 
 struct context {
     neu_list_node   node;
+    double          timestamp; // Armv7l support
     int             req_id;
     neu_json_mqtt_t parse_header;
+    char *          result;
+    bool            ready;
 };
 
 struct neu_plugin {
     neu_plugin_common_t common;
     option_t            option;
+    pthread_t           daemon;
+    pthread_mutex_t     running_mutex; // lock publish thread running state
+    pthread_mutex_t     list_mutex;    // lock context state
+    bool                running;
     neu_list            context_list;
     int                 mqtt_client_type;
     void *              mqtt_client;
 };
-
-static void context_list_init(neu_list *list)
-{
-    NEU_LIST_INIT(list, struct context, node);
-}
 
 static struct context *context_create()
 {
@@ -71,26 +76,67 @@ static struct context *context_create()
     return ctx;
 }
 
-static void context_list_add(neu_list *list, int req_id,
-                             neu_json_mqtt_t *parse_header)
+static void context_destroy(struct context *ctx)
+{
+    if (NULL != ctx) {
+        if (NULL != ctx->parse_header.uuid) {
+            free(ctx->parse_header.uuid);
+        }
+
+        if (NULL != ctx->result) {
+            free(ctx->result);
+        }
+
+        free(ctx);
+    }
+}
+
+static double current_time_get()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    double ms = tv.tv_sec; // Armv7l support
+    return ms * 1000 + tv.tv_usec / 1000;
+}
+
+static int context_timeout(struct context *ctx)
+{
+    double time = current_time_get();
+    if (TIMEOUT < (time - ctx->timestamp)) {
+        return 0;
+    }
+
+    return -1;
+}
+
+static void context_list_add(neu_plugin_t *plugin, int req_id,
+                             neu_json_mqtt_t *parse_header, char *result,
+                             bool ready)
 {
     struct context *ctx = context_create();
     if (NULL == ctx) {
         return;
     }
 
-    ctx->req_id                = req_id;
-    ctx->parse_header.function = parse_header->function;
-    ctx->parse_header.uuid     = strdup(parse_header->uuid);
+    ctx->timestamp = current_time_get();
+    ctx->req_id    = req_id;
+
+    if (NULL != parse_header) {
+        ctx->parse_header.function = parse_header->function;
+        ctx->parse_header.uuid     = strdup(parse_header->uuid);
+    }
+
+    ctx->result = result;
+    ctx->ready  = ready;
 
     NEU_LIST_NODE_INIT(&ctx->node);
-    neu_list_append(list, ctx);
+    neu_list_append(&plugin->context_list, ctx);
 }
 
-static struct context *context_list_find(neu_list *list, const int id)
+static struct context *context_list_find(neu_plugin_t *plugin, const int id)
 {
     struct context *item = NULL;
-    NEU_LIST_FOREACH(list, item)
+    NEU_LIST_FOREACH(&plugin->context_list, item)
     {
         if (id == item->req_id) {
             return item;
@@ -100,55 +146,90 @@ static struct context *context_list_find(neu_list *list, const int id)
     return NULL;
 }
 
-static void context_destroy(struct context *ctx)
+static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
+                             neu_json_mqtt_t *parse_header, char *result,
+                             bool ready)
 {
-    if (NULL != ctx) {
-        if (NULL != ctx->parse_header.uuid) {
-            free(ctx->parse_header.uuid);
-        }
-        free(ctx);
-    }
+    pthread_mutex_lock(&plugin->list_mutex);
+    context_list_add(plugin, req_id, parse_header, result, ready);
+    pthread_mutex_unlock(&plugin->list_mutex);
 }
 
-static void context_list_remove(neu_list *list, struct context *ctx)
-{
-    neu_list_remove(list, ctx);
-    context_destroy(ctx);
-}
-
-static void context_list_destroy(neu_list *list)
-{
-    while (!neu_list_empty(list)) {
-        struct context *ctx = neu_list_first(list);
-        neu_list_remove(list, ctx);
-        context_destroy(ctx);
-    }
-}
-
-static void mqtt_send(neu_plugin_t *plugin, char *json_str)
-{
-    MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
-}
-
-static void context_add(neu_plugin_t *plugin, uint32_t req_id,
-                        neu_json_mqtt_t *parse_header)
-{
-    context_list_add(&plugin->context_list, req_id, parse_header);
-}
-
-static void plugin_response_handle(const char *topic_name, size_t topic_len,
-                                   void *payload, const size_t len,
-                                   void *context)
+static void mqtt_response_handle(const char *topic_name, size_t topic_len,
+                                 void *payload, const size_t len, void *context)
 {
     mqtt_response_t response = { .topic_name  = topic_name,
                                  .topic_len   = topic_len,
                                  .payload     = payload,
                                  .len         = len,
                                  .context     = context,
-                                 .mqtt_send   = mqtt_send,
-                                 .context_add = context_add };
+                                 .context_add = mqtt_context_add };
     command_response_handle(&response);
     return;
+}
+
+static void *mqtt_send_loop(void *argument)
+{
+    neu_plugin_t *plugin = (neu_plugin_t *) argument;
+
+    bool run_flag = true;
+    while (1) {
+        // Get run state
+        pthread_mutex_lock(&plugin->running_mutex);
+        run_flag = plugin->running;
+        pthread_mutex_unlock(&plugin->running_mutex);
+        if (!run_flag) {
+            break;
+        }
+
+        // Get context and publish
+        struct context *ctx    = NULL;
+        char *          result = NULL;
+        pthread_mutex_lock(&plugin->list_mutex);
+        ctx = neu_list_first(&plugin->context_list);
+        if (NULL != ctx) {
+            if (ctx->ready) {
+                neu_list_remove(&plugin->context_list, ctx);
+                if (NULL != ctx->result) {
+                    result = strdup(ctx->result);
+                }
+
+                context_destroy(ctx);
+            }
+        }
+        pthread_mutex_unlock(&plugin->list_mutex);
+        MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, result);
+
+        // Remove context of timeout
+        pthread_mutex_lock(&plugin->list_mutex);
+        ctx = neu_list_first(&plugin->context_list);
+        if (NULL != ctx) {
+            if (!ctx->ready && (0 == context_timeout(ctx))) {
+                neu_list_remove(&plugin->context_list, ctx);
+                context_destroy(ctx);
+            }
+        }
+        pthread_mutex_unlock(&plugin->list_mutex);
+
+        // If list empty -> delay(INTERVAL)
+        int rc = 0;
+        pthread_mutex_lock(&plugin->list_mutex);
+        rc = neu_list_empty(&plugin->context_list);
+        pthread_mutex_unlock(&plugin->list_mutex);
+        if (rc) {
+            usleep(INTERVAL);
+        }
+    }
+
+    // Cleanup on quit
+    pthread_mutex_lock(&plugin->list_mutex);
+    while (!neu_list_empty(&plugin->context_list)) {
+        struct context *ctx = neu_list_first(&plugin->context_list);
+        neu_list_remove(&plugin->context_list, ctx);
+        context_destroy(ctx);
+    }
+    pthread_mutex_unlock(&plugin->list_mutex);
+    return NULL;
 }
 
 static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
@@ -187,7 +268,16 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     // Context list init
-    context_list_init(&plugin->context_list);
+    NEU_LIST_INIT(&plugin->context_list, struct context, node);
+
+    // Publish thread init
+    plugin->running = true;
+    pthread_mutex_init(&plugin->running_mutex, NULL);
+    pthread_mutex_init(&plugin->list_mutex, NULL);
+    if (0 != pthread_create(&plugin->daemon, NULL, mqtt_send_loop, plugin)) {
+        log_error("Failed to start thread daemon.");
+        return -1;
+    }
 
     int rc = mqtt_option_init(&plugin->option);
     if (0 != rc) {
@@ -200,11 +290,11 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     client_error_e error = mqttc_client_open(
         &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
     error = mqttc_client_subscribe(plugin->mqtt_client, "neuronlite/request", 0,
-                                   plugin_response_handle);
+                                   mqtt_response_handle);
     if (MQTTC_IS_NULL == error) {
-        log_error(
-            "Can not create mqtt client instance, initialize plugin failed: %s",
-            neu_plugin_module.module_name);
+        log_error("Can not create mqtt client instance, initialize plugin "
+                  "failed: %s",
+                  neu_plugin_module.module_name);
         return -1;
     }
 
@@ -214,9 +304,17 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
+    // Close MQTT-C client
     mqttc_client_close(plugin->mqtt_client);
     mqtt_option_uninit(&plugin->option);
-    context_list_destroy(&plugin->context_list);
+
+    // Quit publish thread
+    pthread_mutex_lock(&plugin->running_mutex);
+    plugin->running = false;
+    pthread_mutex_unlock(&plugin->running_mutex);
+    pthread_join(plugin->daemon, NULL);
+    pthread_mutex_destroy(&plugin->list_mutex);
+    pthread_mutex_destroy(&plugin->running_mutex);
 
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
@@ -250,43 +348,49 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         return (-1);
     }
 
-    log_info("send request to plugin: %s", neu_plugin_module.module_name);
+    log_info("send request to plugin: %s, type:%d",
+             neu_plugin_module.module_name, req->req_type);
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_RESP: {
         neu_reqresp_read_resp_t *read_resp = NULL;
         read_resp = (neu_reqresp_read_resp_t *) req->buf;
 
+        pthread_mutex_lock(&plugin->list_mutex);
         struct context *ctx = NULL;
-        ctx = context_list_find(&plugin->context_list, req->req_id);
+        ctx                 = context_list_find(plugin, req->req_id);
         if (NULL != ctx) {
             char *json_str = command_read_once_response(
                 plugin, &ctx->parse_header, read_resp->data_val);
-            MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
-            context_list_remove(&plugin->context_list, ctx);
+            ctx->result = json_str;
+            ctx->ready  = true;
         }
+        pthread_mutex_unlock(&plugin->list_mutex);
         break;
     }
     case NEU_REQRESP_WRITE_RESP: {
         neu_reqresp_write_resp_t *write_resp = NULL;
         write_resp = (neu_reqresp_write_resp_t *) req->buf;
 
+        pthread_mutex_lock(&plugin->list_mutex);
         struct context *ctx = NULL;
-        ctx = context_list_find(&plugin->context_list, req->req_id);
+        ctx                 = context_list_find(plugin, req->req_id);
         if (NULL != ctx) {
             char *json_str = command_write_response(plugin, &ctx->parse_header,
                                                     write_resp->data_val);
-            MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
-            context_list_remove(&plugin->context_list, ctx);
+            ctx->result    = json_str;
+            ctx->ready     = true;
         }
+        pthread_mutex_unlock(&plugin->list_mutex);
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_data_t *neu_data = NULL;
         neu_data                     = (neu_reqresp_data_t *) req->buf;
+
         char *json_str =
             command_read_cycle_response(plugin, neu_data->data_val);
-        MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, json_str);
+        mqtt_context_add(plugin, 0, NULL, json_str, true);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {
