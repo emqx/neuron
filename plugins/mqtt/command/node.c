@@ -21,14 +21,24 @@
 
 #include "node.h"
 
-char *command_get_nodes(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_nodes_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                         neu_json_get_nodes_req_t *req)
 {
     log_info("Get node list uuid:%s, node type:%d", mqtt->uuid, req->node_type);
+    neu_node_type_e       node_type = req->node_type;
+    neu_json_error_resp_t error     = { 0 };
+    if (NEU_NODE_TYPE_MAX <= req->node_type ||
+        NEU_NODE_TYPE_UNKNOW >= req->node_type) {
+        error.error = NEU_ERR_NODE_TYPE_INVALID;
 
-    neu_node_type_e           node_type = req->node_type;
-    neu_json_get_nodes_resp_t res       = { 0 };
-    int                       index     = 0;
+        char *result = NULL;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
+    }
+
+    neu_json_get_nodes_resp_t res   = { 0 };
+    int                       index = 0;
     vector_t                  nodes = neu_system_get_nodes(plugin, node_type);
 
     res.n_node = nodes.size;
@@ -44,64 +54,110 @@ char *command_get_nodes(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         index += 1;
     }
 
-    char *json_str = NULL;
-    int   rc =
-        neu_json_encode_with_mqtt(&res, neu_json_encode_get_tags_resp, mqtt,
-                                  neu_json_encode_mqtt_resp, &json_str);
-    if (0 == rc) {
-        return json_str;
-    }
-
-    return NULL;
+    char *result = NULL;
+    neu_json_encode_with_mqtt(&res, neu_json_encode_get_nodes_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }
 
-char *command_add_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_node_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_json_add_node_req_t *req)
 {
     log_info("Add node uuid:%s, node type:%d", mqtt->uuid, req->type);
-    intptr_t rc =
-        neu_system_add_node(plugin, req->type, req->name, req->plugin_name);
-    char *json_str = NULL;
-    if (rc != 0) {
-        json_str = strdup("{\"error\": 1}");
+    neu_json_error_resp_t error = { 0 };
+    if (NEU_NODE_TYPE_MAX <= req->type || NEU_NODE_TYPE_UNKNOW >= req->type) {
+        error.error = NEU_ERR_NODE_TYPE_INVALID;
     } else {
-        json_str = strdup("{\"error\": 0}");
+        error.error =
+            neu_system_add_node(plugin, req->type, req->name, req->plugin_name);
     }
 
-    return json_str;
+    char *result = NULL;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }
 
-char *command_update_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_node_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_update_node_req_t *req)
 {
-    (void) plugin;
-    (void) mqtt;
-    (void) req;
-    // log_info("Update node uuid:%s, node type:%d", mqtt->uuid, req->type);
-    // intptr_t rc =
-    // neu_system_update_node(plugin, req->type, req->name, req->plugin_name);
-    // char *json_str = NULL;
-    // if (rc != 0) {
-    // json_str = strdup("{\"error\": 1}");
-    //} else {
-    // json_str = strdup("{\"error\": 0}");
-    //}
+    log_info("Update node uuid:%s, node name:%s", mqtt->uuid, req->name);
+    neu_json_error_resp_t error = { 0 };
+    error.error = neu_system_update_node(plugin, req->id, req->name);
 
-    // return json_str;
-    return NULL;
+    char *result = NULL;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }
 
-char *command_delete_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_node_delete(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_del_node_req_t *req)
 {
     log_info("Delete node uuid:%s, node id:%d", mqtt->uuid, req->id);
-    intptr_t rc       = neu_system_del_node(plugin, req->id);
-    char *   json_str = NULL;
-    if (rc != 0) {
-        json_str = strdup("{\"error\": 1}");
-    } else {
-        json_str = strdup("{\"error\": 0}");
+    neu_json_error_resp_t error = { 0 };
+    error.error                 = neu_system_del_node(plugin, req->id);
+    char *result                = NULL;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
+}
+
+char *command_node_setting_set(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                               neu_json_node_setting_req_t *req,
+                               const char *                 json_str)
+{
+    log_info("Set node setting uuid:%s, node id:%d", mqtt->uuid, req->node_id);
+    neu_json_error_resp_t error  = { 0 };
+    char *                result = NULL;
+    error.error = neu_plugin_set_node_setting(plugin, req->node_id, json_str);
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
+}
+
+char *command_node_setting_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                               neu_json_node_setting_req_t *req)
+{
+    log_info("Get node setting uuid:%s, node id:%d", mqtt->uuid, req->node_id);
+    neu_json_error_resp_t error  = { 0 };
+    char *                result = NULL;
+    error.error = neu_plugin_get_node_setting(plugin, req->node_id, &result);
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
+}
+
+char *command_node_state_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                             neu_json_node_setting_req_t *req)
+{
+    log_info("Get node state uuid:%s, node id:%d", mqtt->uuid, req->node_id);
+    neu_plugin_state_t             state  = { 0 };
+    neu_json_get_node_state_resp_t res    = { 0 };
+    neu_json_error_resp_t          error  = { 0 };
+    char *                         result = NULL;
+    error.error = neu_plugin_get_node_state(plugin, req->node_id, &state);
+    if (0 != error.error) {
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
     }
 
-    return json_str;
+    res.running = state.running;
+    res.link    = state.link;
+    neu_json_encode_with_mqtt(&res, neu_json_encode_get_node_state_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
+}
+
+char *command_node_control(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                           neu_json_node_ctl_req_t *req)
+{
+    log_info("Node control uuid:%s, node id:%d", mqtt->uuid, req->id);
+    char *                result = NULL;
+    neu_json_error_resp_t error  = { 0 };
+    error.error = neu_plugin_node_ctl(plugin, req->id, req->cmd);
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }

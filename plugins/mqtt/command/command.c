@@ -71,7 +71,7 @@ void command_response_handle(mqtt_response_t *response)
         if (0 == rc) {
             uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
-                response->context_add(plugin, req_id, mqtt);
+                response->context_add(plugin, req_id, mqtt, NULL, false);
             }
 
             command_read_once_request(plugin, mqtt, req, req_id);
@@ -85,7 +85,7 @@ void command_response_handle(mqtt_response_t *response)
         if (0 == rc) {
             uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
-                response->context_add(plugin, req_id, mqtt);
+                response->context_add(plugin, req_id, mqtt, NULL, false);
             }
 
             command_write_request(plugin, mqtt, req, req_id);
@@ -133,7 +133,7 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_get_nodes_req_t *req = NULL;
         rc = neu_json_decode_get_nodes_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_get_nodes(plugin, mqtt, req);
+            ret_str = command_nodes_get(plugin, mqtt, req);
             neu_json_decode_get_nodes_req_free(req);
         }
         break;
@@ -142,7 +142,7 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_add_node_req_t *req = NULL;
         rc = neu_json_decode_add_node_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_add_node(plugin, mqtt, req);
+            ret_str = command_node_add(plugin, mqtt, req);
             neu_json_decode_add_node_req_free(req);
         }
         break;
@@ -151,7 +151,7 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_update_node_req_t *req = NULL;
         rc = neu_json_decode_update_node_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_update_node(plugin, mqtt, req);
+            ret_str = command_node_update(plugin, mqtt, req);
             neu_json_decode_update_node_req_free(req);
         }
         break;
@@ -160,8 +160,44 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_del_node_req_t *req = NULL;
         rc = neu_json_decode_del_node_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_delete_node(plugin, mqtt, req);
+            ret_str = command_node_delete(plugin, mqtt, req);
             neu_json_decode_del_node_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_NODE_SETTING: {
+        neu_json_node_setting_req_t *req = NULL;
+        rc = neu_json_decode_node_setting_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_node_setting_set(plugin, mqtt, req, json_str);
+            neu_json_decode_node_setting_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_GET_NODE_SETTING: {
+        neu_json_node_setting_req_t *req = NULL;
+        rc = neu_json_decode_node_setting_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_node_setting_get(plugin, mqtt, req);
+            neu_json_decode_node_setting_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_GET_NODE_STATE: {
+        neu_json_node_setting_req_t *req = NULL;
+        rc = neu_json_decode_node_setting_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_node_state_get(plugin, mqtt, req);
+            neu_json_decode_node_setting_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_NODE_CTL: {
+        neu_json_node_ctl_req_t *req = NULL;
+        rc = neu_json_decode_node_ctl_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_node_control(plugin, mqtt, req);
+            neu_json_decode_node_ctl_req_free(req);
         }
         break;
     }
@@ -169,13 +205,8 @@ void command_response_handle(mqtt_response_t *response)
         break;
     }
 
-    response->mqtt_send(plugin, ret_str);
-
-    if (NULL != mqtt) {
-        if (NULL != mqtt->uuid) {
-            free(mqtt->uuid);
-        }
-        free(mqtt);
+    if (NULL != ret_str) {
+        response->context_add(plugin, 0, mqtt, ret_str, true);
     }
 
     if (NULL != json_str) {

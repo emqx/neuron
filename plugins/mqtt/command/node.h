@@ -28,14 +28,23 @@ extern "C" {
 
 #include "common.h"
 
-char *command_get_nodes(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_nodes_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                         neu_json_get_nodes_req_t *req);
-char *command_add_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_node_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_json_add_node_req_t *req);
-char *command_update_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_node_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_update_node_req_t *req);
-char *command_delete_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_node_delete(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_del_node_req_t *req);
+char *command_node_setting_set(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                               neu_json_node_setting_req_t *req,
+                               const char *                 json_str);
+char *command_node_setting_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                               neu_json_node_setting_req_t *req);
+char *command_node_state_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                             neu_json_node_setting_req_t *req);
+char *command_node_control(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                           neu_json_node_ctl_req_t *req);
 
 #ifdef __cplusplus
 }
