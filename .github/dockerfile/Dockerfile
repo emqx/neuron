@@ -1,10 +1,18 @@
 FROM ubuntu:18.04
 
 RUN apt-get update -y \
-    && apt-get install -y gcc gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu \
-       g++ git curl make ninja-build libssl-dev
+    && apt-get install -y curl wget vim unzip make ninja-build \
+       g++ gcc gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu \
+       libssl-dev libghc-zlib-dev libcurl4-gnutls-dev libexpat1-dev gettext
 
 COPY install-libs.sh install-libs.sh
+
+RUN echo "Building git (v2.18.0)" \
+    && curl --silent --show-error -kfL -o git.zip https://github.com/git/git/archive/v2.18.0.zip \
+    && unzip git.zip \
+    && cd git-* \
+    && make prefix=/usr/local all \
+    && make prefix=/usr/local install
 
 RUN echo "Building cmake (v3.18.5)" \
     && curl --silent --show-error -kfL -o cmake.tar.gz "https://github.com/Kitware/CMake/releases/download/v3.18.5/cmake-3.18.5.tar.gz" \
@@ -17,7 +25,7 @@ RUN echo "Building cmake (v3.18.5)" \
     && cd .. \
     && cmake --version
 
-RUN ./install-libs.sh -a 
+RUN ./install-libs.sh -a
 RUN ./install-libs.sh -a -c -p aarch64-linux-gnu -s aarch64
 RUN ./install-libs.sh -a -c -p arm-linux-gnueabihf -s armv4
 
