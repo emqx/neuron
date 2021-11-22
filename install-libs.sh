@@ -130,7 +130,7 @@ function build_yaml() {
     rm -rf build
     mkdir build
     cd build
-    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF ${compiler_opt} ${install_opt} ..
+    cmake -G Ninja -DBUILD_SHARED_LIBS=ON ${compiler_opt} ${install_opt} ..
     ninja
     ninja install
 
@@ -198,7 +198,6 @@ function build_openssl() {
         fi
 
         cd openssl
-        make clean
         mkdir -p ${install_dir}/openssl/ssl
         ./Configure ${system,}-${arch} no-asm shared \
             --prefix=${install_dir}/openssl \
@@ -208,6 +207,7 @@ function build_openssl() {
             --with-zlib-lib=${install_dir}/zlib/lib
         make
         make install
+        make clean
         cd ../
 
     else
