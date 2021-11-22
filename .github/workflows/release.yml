@@ -10,9 +10,10 @@ jobs:
   compile:
     strategy:
       matrix:
-        tool:
+        cmake:
           - arm-linux-gnueabihf
           - aarch64-linux-gnu
+          - x86_64-linux-gnu
 
     runs-on: ubuntu-18.04
 
@@ -28,10 +29,11 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.tool }}.cmake
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.cmake }}.cmake
           make
 
       - name: Run unit test
+        if: matrix.cmake == 'x86_64-linux-gnu'
         run: |
           mkdir -p build
           cd build
