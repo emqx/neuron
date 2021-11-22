@@ -33,6 +33,7 @@ void           neu_adapter_destroy(neu_adapter_t *adapter);
 int            neu_adapter_start(neu_adapter_t *adapter);
 int            neu_adapter_stop(neu_adapter_t *adapter);
 const char *   neu_adapter_get_name(neu_adapter_t *adapter);
+void           neu_adapter_rename(neu_adapter_t *adapter, const char *name);
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter);
 nng_socket     neu_adapter_get_sock(neu_adapter_t *adapter);
 adapter_id_t   neu_adapter_get_id(neu_adapter_t *adapter);

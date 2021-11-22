@@ -70,6 +70,8 @@ typedef enum neu_mqtt_function {
     NEU_MQTT_OP_DELETE_PLUGIN,
     NEU_MQTT_OP_GET_PLUGIN,
 
+    NEU_MQTT_OP_PING,
+
 } neu_mqtt_function_e;
 
 typedef struct {

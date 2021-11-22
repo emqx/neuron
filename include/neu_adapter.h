@@ -162,11 +162,8 @@ typedef struct neu_cmd_del_node {
 
 /* NEU_REQRESP_UPDATE_NODE */
 typedef struct neu_cmd_update_node {
-    neu_node_type_e node_type;
-    const char *    adapter_name;
-    const char *    plugin_name;
-    // optional value, it is nothing when set to 0
-    plugin_id_t plugin_id;
+    neu_node_id_t node_id;
+    const char *  node_name;
 } neu_cmd_update_node_t;
 
 /* NEU_REQRESP_GET_NODES */

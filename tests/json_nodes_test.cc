@@ -84,16 +84,14 @@ TEST(JsonNodesTest, DeleteNodesDecode)
 
 TEST(JsonNodesTest, UpdateNodesDecode)
 {
-    char *buf = (char *) "{\"type\": 1, "
-                         "\"name\": \"adapter1\", "
-                         "\"plugin_name\":  \"plugin1\" }";
+    char *buf = (char *) "{\"id\": 1, "
+                         "\"name\": \"adapter1\" }";
     neu_json_update_node_req_t *req = NULL;
 
     EXPECT_EQ(0, neu_json_decode_update_node_req(buf, &req));
 
-    EXPECT_EQ(1, req->type);
+    EXPECT_EQ(1, req->id);
     EXPECT_STREQ("adapter1", req->name);
-    EXPECT_STREQ("plugin1", req->plugin_name);
 
     neu_json_decode_update_node_req_free(req);
 }

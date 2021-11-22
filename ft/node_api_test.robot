@@ -124,22 +124,21 @@ Add setting to non-existent node, it should return failure
     Integer    response status        404
     Integer    response body error    ${ERR_NODE_NOT_EXIST}
 
+Get setting from non-existent node, it should return failure
+    GET    /api/v2/node/setting?node_id=999
 
-#Get setting from non-existent node, it should return failure
-    #GET    /api/v2/node/setting?node_id=999
+    Integer    response status        404
+    Integer    response body error    ${ERR_NODE_NOT_EXIST}
 
-    #Integer    response status        404
-    #Integer    response body error    ${ERR_NODE_NOT_EXIST}
+Get setting from a node that has never been set, it should return failure
+	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-nodee    ${PLUGIN_MODBUS}
 
-#Get setting from a node that has never been set, it should return failure
-	#${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-node1    ${PLUGIN_MODBUS}
+    GET    /api/v2/node/setting?node_id=${driver_node_id}
 
-    #GET    /api/v2/node/setting?node_id=${driver_node_id}
+    Integer    response status        404
+    Integer    response body error    ${ERR_NODE_SETTING_NOT_EXIST}
 
-    #Integer    response status        404
-    #Integer    response body error    ${ERR_NODE_SETTING_NOT_EXIST}
-
-    #Del Node    ${driver_node_id}
+    Del Node    ${driver_node_id}
 
 Add the correct settings to the node, it should return success
 	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-node    ${PLUGIN_MODBUS}
@@ -169,6 +168,28 @@ Add wrong settings to node, it should return failure
 
     Integer    response status        400
     Integer    response body error    ${ERR_NODE_SETTING_INVALID}
+
+Update a node that does not exist, it should return failure
+    PUT    /api/v2/node    {"id": 99, "name": "test-name"}
+
+    Integer    response status        404
+    Integer    response body error    ${ERR_NODE_NOT_EXIST}
+
+Update the name of the node, it should return success
+	${app_node_id}    Add Node    ${NODE_APP}    app-node    ${PLUGIN_MQTT}
+
+    PUT    /api/v2/node    {"id": ${app_node_id}, "name": "test-name"}
+
+    Integer    response status    200
+
+    GET    /api/v2/node?type=${NODE_APP}
+
+    Integer    response status    200
+    Array      $.nodes
+    String     $.nodes[*].name    sample-app-adapter    test-name
+
+    Del Node    ${app_node_id}
+
 
 
 #Start an unconfigured node, it should return failure

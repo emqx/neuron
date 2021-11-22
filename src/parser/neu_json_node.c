@@ -207,12 +207,8 @@ int neu_json_decode_update_node_req(char *                       buf,
     neu_json_update_node_req_t *req =
         calloc(1, sizeof(neu_json_update_node_req_t));
     neu_json_elem_t req_elems[] = { {
-                                        .name = "type",
+                                        .name = "id",
                                         .t    = NEU_JSON_INT,
-                                    },
-                                    {
-                                        .name = "plugin_name",
-                                        .t    = NEU_JSON_STR,
                                     },
                                     {
                                         .name = "name",
@@ -223,9 +219,8 @@ int neu_json_decode_update_node_req(char *                       buf,
         goto decode_fail;
     }
 
-    req->type        = req_elems[0].v.val_int;
-    req->plugin_name = req_elems[1].v.val_str;
-    req->name        = req_elems[2].v.val_str;
+    req->id   = req_elems[0].v.val_int;
+    req->name = req_elems[1].v.val_str;
 
     *result = req;
     return ret;
@@ -240,7 +235,6 @@ decode_fail:
 void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req)
 {
 
-    free(req->plugin_name);
     free(req->name);
 
     free(req);

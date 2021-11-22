@@ -78,6 +78,7 @@ static char *get_param(const char *url, const char *name)
 
     for (uint8_t i = 0; i < 64 && i < strlen(find); i++) {
         if (*(find + len + i) == '&' || *(find + len + i) == '\0') {
+            s_value[i] = '\0';
             break;
         }
         s_value[i] = *(find + len + i);

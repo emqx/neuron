@@ -1053,6 +1053,12 @@ const char *neu_adapter_get_name(neu_adapter_t *adapter)
     return (const char *) adapter->name;
 }
 
+void neu_adapter_rename(neu_adapter_t *adapter, const char *name)
+{
+    free(adapter->name);
+    adapter->name = strdup(name);
+}
+
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
 {
     if (adapter == NULL) {

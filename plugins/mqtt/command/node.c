@@ -74,17 +74,21 @@ char *command_add_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 char *command_update_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_update_node_req_t *req)
 {
-    log_info("Update node uuid:%s, node type:%d", mqtt->uuid, req->type);
-    intptr_t rc =
-        neu_system_update_node(plugin, req->type, req->name, req->plugin_name);
-    char *json_str = NULL;
-    if (rc != 0) {
-        json_str = strdup("{\"error\": 1}");
-    } else {
-        json_str = strdup("{\"error\": 0}");
-    }
+    (void) plugin;
+    (void) mqtt;
+    (void) req;
+    // log_info("Update node uuid:%s, node type:%d", mqtt->uuid, req->type);
+    // intptr_t rc =
+    // neu_system_update_node(plugin, req->type, req->name, req->plugin_name);
+    // char *json_str = NULL;
+    // if (rc != 0) {
+    // json_str = strdup("{\"error\": 1}");
+    //} else {
+    // json_str = strdup("{\"error\": 0}");
+    //}
 
-    return json_str;
+    // return json_str;
+    return NULL;
 }
 
 char *command_delete_node(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
