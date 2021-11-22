@@ -3,7 +3,8 @@ FROM ubuntu:18.04
 RUN apt-get update -y \
     && apt-get install -y curl wget vim unzip make ninja-build \
        g++ gcc gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu \
-       libssl-dev libghc-zlib-dev libcurl4-gnutls-dev libexpat1-dev gettext
+       libssl-dev libghc-zlib-dev libcurl4-gnutls-dev libexpat1-dev gettext \
+        pkg-config
 
 COPY install-libs.sh install-libs.sh
 
@@ -31,3 +32,5 @@ RUN ./install-libs.sh -a -c -p arm-linux-gnueabihf -s armv4
 
 RUN apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN ldconfig

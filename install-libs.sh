@@ -151,7 +151,7 @@ function build_yaml() {
     rm -rf build
     mkdir build
     cd build
-    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF ${compiler_opt} ${install_opt} ..
+    cmake -G Ninja -DBUILD_SHARED_LIBS=ON ${compiler_opt} ${install_opt} ..
     ninja
     ninja install
 
@@ -229,6 +229,7 @@ function build_openssl() {
         make clean
         make
         make install
+        make clean
         cd ../
 
     else
