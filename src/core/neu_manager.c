@@ -1556,24 +1556,31 @@ int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd)
 static bool adapter_match_node_type(neu_adapter_t * adapter,
                                     neu_node_type_e node_type)
 {
-    if (node_type == NEU_NODE_TYPE_UNKNOW) {
-        return true;
-    } else if (node_type == NEU_NODE_TYPE_DRIVER) {
+    switch (node_type) {
+    case NEU_NODE_TYPE_WEBSERVER:
+        return ADAPTER_TYPE_WEBSERVER == neu_adapter_get_type(adapter);
+    case NEU_NODE_TYPE_DRIVER:
         return ADAPTER_TYPE_DRIVER == neu_adapter_get_type(adapter);
-    } else {
-        return ADAPTER_TYPE_DRIVER != neu_adapter_get_type(adapter);
+    case NEU_NODE_TYPE_MQTT:
+        return ADAPTER_TYPE_MQTT == neu_adapter_get_type(adapter);
+    case NEU_NODE_TYPE_STREAM_PROCESSOR:
+        return ADAPTER_TYPE_STREAM_PROCESSOR == neu_adapter_get_type(adapter);
+    case NEU_NODE_TYPE_APP:
+        return ADAPTER_TYPE_APP == neu_adapter_get_type(adapter);
+    default:
+        return false;
     }
 }
 
 int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
                           vector_t *result_nodes)
 {
-    int                   rv = 0;
+    int                   rv = NEU_ERR_SUCCESS;
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || result_nodes == NULL) {
         log_error("get nodes with NULL manager or result_nodes");
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     nng_mtx_lock(manager->adapters_mtx);

@@ -39,7 +39,6 @@ TEST(PluginManagerTest, RegPluginManagerTest)
         case 1:
             plugin_id1 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin1", info->plugin_name);
             EXPECT_STREQ("lib1", info->plugin_lib_name);
@@ -47,7 +46,6 @@ TEST(PluginManagerTest, RegPluginManagerTest)
         case 2:
             plugin_id2 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin2", info->plugin_name);
             EXPECT_STREQ("lib2", info->plugin_lib_name);
@@ -55,7 +53,6 @@ TEST(PluginManagerTest, RegPluginManagerTest)
         case 3:
             plugin_id3 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin3", info->plugin_name);
             EXPECT_STREQ("lib3", info->plugin_lib_name);
@@ -246,7 +243,6 @@ void *plugin_manager_thread(void *arg)
         case 1:
             plugin_id1 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin1", info->plugin_name);
             EXPECT_STREQ("lib1", info->plugin_lib_name);
@@ -255,7 +251,6 @@ void *plugin_manager_thread(void *arg)
         case 2:
             plugin_id2 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin2", info->plugin_name);
             EXPECT_STREQ("lib2", info->plugin_lib_name);
@@ -345,7 +340,6 @@ void *plugin_manager_thread2(void *arg)
         case 1:
             plugin_id4 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin4", info->plugin_name);
             EXPECT_STREQ("lib4", info->plugin_lib_name);
@@ -354,7 +348,6 @@ void *plugin_manager_thread2(void *arg)
         case 2:
             plugin_id5 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin5", info->plugin_name);
             EXPECT_STREQ("lib5", info->plugin_lib_name);
@@ -362,7 +355,6 @@ void *plugin_manager_thread2(void *arg)
         case 3:
             plugin_id6 = info->plugin_id;
 
-            EXPECT_EQ(1, info->adapter_type);
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin6", info->plugin_name);
             EXPECT_STREQ("lib6", info->plugin_lib_name);
