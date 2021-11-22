@@ -80,10 +80,11 @@ Delete non-existent tags, it should return success
 	Integer	response status    200
 	Integer                    response body error    ${ERR_SUCCESS}
 
-#Query tag from non-existent node, it should return failure
-	#GET	/api/v2/tags?node_id=999
-	#Integer                         response status        404
-	#Integer                         response body error    ${ERR_NODE_NOT_EXIST}
+Query tag from non-existent node, it should return failure
+	GET	/api/v2/tags?node_id=999
+
+	Integer    response status        404
+	Integer    response body error    ${ERR_NODE_NOT_EXIST}
 
 After adding the tag, query the tag, it should return the added tag
 	${test_node_id}    Get Node ID	${NODE_DRIVER}    ${test_node}    

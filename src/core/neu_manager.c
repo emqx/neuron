@@ -1546,10 +1546,29 @@ int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
 
 int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd)
 {
-    int rv = 0;
+    int            rv           = NEU_ERR_NODE_NOT_EXIST;
+    size_t         index        = 0;
+    neu_adapter_t *adapter      = NULL;
+    vector_t *     reg_adapters = &manager->reg_adapters;
+    adapter_id_t   adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, cmd->node_id);
 
-    (void) manager;
-    (void) cmd;
+    nng_mtx_lock(manager->adapters_mtx);
+    index = find_reg_adapter_index_by_id(reg_adapters, adapter_id);
+    if (index != SIZE_MAX) {
+        adapter_reg_entity_t *reg_entity;
+
+        reg_entity = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
+        adapter    = reg_entity->adapter;
+
+        if (adapter != NULL) {
+
+            neu_adapter_rename(adapter, cmd->node_name);
+            rv = NEU_ERR_SUCCESS;
+        }
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
     return rv;
 }
 

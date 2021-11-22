@@ -8,9 +8,8 @@
         "id": 7
     },
     "update_node_req": {
-        "type": 1,
-        "name": "modbus-tcp-node",
-        "plugin_name": "modbus-plugin-tcp"
+        "id": 1,
+        "name": "modbus-tcp-node"
     },
     "get_nodes_req": {
         "node_type": 1
