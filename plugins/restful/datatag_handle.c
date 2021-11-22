@@ -36,7 +36,7 @@ void handle_add_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
+    REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
@@ -44,10 +44,9 @@ void handle_add_tags(nng_aio *aio)
                 neu_system_get_datatags_table(plugin, req->node_id);
 
             if (table == NULL) {
-                error.error = NEU_ERR_NODE_NOT_EXIST;
-                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                      &result_error);
-                http_not_found(aio, result_error);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+                    http_response(aio, error_code.error, result_error);
+                });
                 return;
             }
 
@@ -57,11 +56,12 @@ void handle_add_tags(nng_aio *aio)
                 neu_system_add_group_config(plugin, req->node_id, config);
             }
 
-            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+            vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(config);
+            neu_err_code_e code = { 0 };
 
             for (int i = 0; i < req->n_tag; i++) {
                 if (!neu_tag_check_attribute(req->tags[i].attribute)) {
-                    error.error = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
+                    code = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
                     continue;
                 }
 
@@ -78,13 +78,8 @@ void handle_add_tags(nng_aio *aio)
 
             neu_taggrp_cfg_unanchor(config);
 
-            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                  &result_error);
-            if (error.error != 0) {
-                http_partial(aio, result_error);
-            } else {
-                http_created(aio, result_error);
-            }
+            NEU_JSON_RESPONSE_ERROR(
+                code, { http_response(aio, code, result_error); });
         })
 }
 
@@ -92,7 +87,7 @@ void handle_del_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
+    REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
@@ -100,31 +95,31 @@ void handle_del_tags(nng_aio *aio)
                 neu_system_get_datatags_table(plugin, req->node_id);
 
             if (config == NULL || table == NULL) {
-                error.error = NEU_ERR_NODE_NOT_EXIST;
-                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                      &result_error);
-                http_not_found(aio, result_error);
-            } else {
-                for (int i = 0; i < req->n_id; i++) {
-                    if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
-                        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+                    http_response(aio, error_code.error, result_error);
+                });
+                return;
+            }
 
-                        VECTOR_FOR_EACH(ids, iter)
-                        {
-                            neu_datatag_id_t *id =
-                                (neu_datatag_id_t *) iterator_get(&iter);
-                            if (*id == req->ids[i]) {
-                                iterator_erase(ids, &iter);
-                                break;
-                            }
+            for (int i = 0; i < req->n_id; i++) {
+                if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
+                    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+
+                    VECTOR_FOR_EACH(ids, iter)
+                    {
+                        neu_datatag_id_t *id =
+                            (neu_datatag_id_t *) iterator_get(&iter);
+                        if (*id == req->ids[i]) {
+                            iterator_erase(ids, &iter);
+                            break;
                         }
                     }
                 }
-
-                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                      &result_error);
-                http_ok(aio, result_error);
             }
+
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
+                http_response(aio, NEU_ERR_SUCCESS, result_error);
+            })
         })
 }
 
@@ -132,133 +127,124 @@ void handle_update_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
+    REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_update_tags_req_t, neu_json_decode_update_tags_req, {
             neu_datatag_table_t *table =
                 neu_system_get_datatags_table(plugin, req->node_id);
             if (table == NULL) {
-                error.error = NEU_ERR_NODE_NOT_EXIST;
-                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                      &result_error);
-                http_not_found(aio, result_error);
-            } else {
-                for (int i = 0; i < req->n_tag; i++) {
-                    neu_datatag_t *tag =
-                        neu_datatag_tbl_get(table, req->tags[i].id);
-
-                    if (tag == NULL) {
-                        error.error = NEU_ERR_TAG_NOT_EXIST;
-                        continue;
-                    }
-
-                    if (!neu_tag_check_attribute(req->tags[i].attribute)) {
-                        error.error = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
-                        continue;
-                    }
-
-                    free(tag->addr_str);
-                    free(tag->name);
-                    tag->addr_str  = strdup(req->tags[i].address);
-                    tag->name      = strdup(req->tags[i].name);
-                    tag->type      = req->tags[i].type;
-                    tag->attribute = req->tags[i].attribute;
-
-                    neu_datatag_tbl_update(table, req->tags[i].id, tag);
-                }
-
-                neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                      &result_error);
-                if (error.error != 0) {
-                    http_partial(aio, result_error);
-                } else {
-                    http_ok(aio, result_error);
-                }
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+                    http_response(aio, error_code.error, result_error);
+                });
+                return;
             }
+
+            neu_err_code_e code = { 0 };
+            for (int i = 0; i < req->n_tag; i++) {
+                neu_datatag_t *tag =
+                    neu_datatag_tbl_get(table, req->tags[i].id);
+
+                if (tag == NULL) {
+                    code = NEU_ERR_TAG_NOT_EXIST;
+                    continue;
+                }
+
+                if (!neu_tag_check_attribute(req->tags[i].attribute)) {
+                    code = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
+                    continue;
+                }
+
+                free(tag->addr_str);
+                free(tag->name);
+                tag->addr_str  = strdup(req->tags[i].address);
+                tag->name      = strdup(req->tags[i].name);
+                tag->type      = req->tags[i].type;
+                tag->attribute = req->tags[i].attribute;
+
+                neu_datatag_tbl_update(table, req->tags[i].id, tag);
+            }
+
+            NEU_JSON_RESPONSE_ERROR(
+                code, { http_response(aio, code, result_error); });
         })
 }
 
 void handle_get_tags(nng_aio *aio)
 {
-    neu_plugin_t *        plugin     = neu_rest_get_plugin();
-    neu_json_error_resp_t error      = { 0 };
-    char *                result     = NULL;
-    char *                s_node_id  = strdup(http_get_param(aio, "node_id"));
-    char *                s_grp_name = http_get_param(aio, "group_config_name");
+    neu_plugin_t *plugin     = neu_rest_get_plugin();
+    char *        result     = NULL;
+    neu_node_id_t node_id    = { 0 };
+    char *        s_grp_name = http_get_param(aio, "group_config_name");
 
-    if (s_node_id == NULL) {
-        error.error = NEU_ERR_PARAM_IS_WRONG;
-        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &result);
-        http_bad_request(aio, result);
+    if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+        })
         return;
     }
 
-    neu_node_id_t node_id = (neu_node_id_t) atoi(s_node_id);
-    free(s_node_id);
-
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
     if (table == NULL) {
-        error.error = NEU_ERR_NODE_NOT_EXIST;
-        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &result);
-        http_not_found(aio, result);
-    } else {
-        vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
-        neu_json_get_tags_resp_t tags_res = { 0 };
-        int                      index    = 0;
-
-        VECTOR_FOR_EACH(&grp_configs, iter)
-        {
-            neu_taggrp_config_t *config =
-                *(neu_taggrp_config_t **) iterator_get(&iter);
-            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
-            if (s_grp_name != NULL &&
-                strncmp(neu_taggrp_cfg_get_name(config), s_grp_name,
-                        strlen(s_grp_name)) != 0) {
-                continue;
-            }
-
-            tags_res.n_tag += ids->size;
-        }
-
-        tags_res.tags =
-            calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
-
-        VECTOR_FOR_EACH(&grp_configs, iter)
-        {
-            neu_taggrp_config_t *config =
-                *(neu_taggrp_config_t **) iterator_get(&iter);
-            const char *group_name = neu_taggrp_cfg_get_name(config);
-
-            if (s_grp_name != NULL &&
-                strncmp(group_name, s_grp_name, strlen(s_grp_name)) != 0) {
-                continue;
-            }
-
-            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
-
-            VECTOR_FOR_EACH(ids, iter_id)
-            {
-                neu_datatag_id_t *id =
-                    (neu_datatag_id_t *) iterator_get(&iter_id);
-                neu_datatag_t *tag = neu_datatag_tbl_get(table, *id);
-
-                tags_res.tags[index].id                = *id;
-                tags_res.tags[index].name              = tag->name;
-                tags_res.tags[index].group_config_name = (char *) group_name;
-                tags_res.tags[index].type              = tag->type;
-                tags_res.tags[index].attribute         = tag->attribute;
-                tags_res.tags[index].address           = tag->addr_str;
-
-                index += 1;
-            }
-        }
-
-        neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp,
-                              &result);
-
-        http_ok(aio, result);
-
-        vector_uninit(&grp_configs);
-        free(result);
-        free(tags_res.tags);
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+            http_response(aio, NEU_ERR_NODE_NOT_EXIST, result_error);
+        })
+        return;
     }
+
+    vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
+    neu_json_get_tags_resp_t tags_res = { 0 };
+    int                      index    = 0;
+
+    VECTOR_FOR_EACH(&grp_configs, iter)
+    {
+        neu_taggrp_config_t *config =
+            *(neu_taggrp_config_t **) iterator_get(&iter);
+        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+        if (s_grp_name != NULL &&
+            strncmp(neu_taggrp_cfg_get_name(config), s_grp_name,
+                    strlen(s_grp_name)) != 0) {
+            continue;
+        }
+
+        tags_res.n_tag += ids->size;
+    }
+
+    tags_res.tags =
+        calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
+
+    VECTOR_FOR_EACH(&grp_configs, iter)
+    {
+        neu_taggrp_config_t *config =
+            *(neu_taggrp_config_t **) iterator_get(&iter);
+        const char *group_name = neu_taggrp_cfg_get_name(config);
+
+        if (s_grp_name != NULL &&
+            strncmp(group_name, s_grp_name, strlen(s_grp_name)) != 0) {
+            continue;
+        }
+
+        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+
+        VECTOR_FOR_EACH(ids, iter_id)
+        {
+            neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
+            neu_datatag_t *   tag = neu_datatag_tbl_get(table, *id);
+
+            tags_res.tags[index].id                = *id;
+            tags_res.tags[index].name              = tag->name;
+            tags_res.tags[index].group_config_name = (char *) group_name;
+            tags_res.tags[index].type              = tag->type;
+            tags_res.tags[index].attribute         = tag->attribute;
+            tags_res.tags[index].address           = tag->addr_str;
+
+            index += 1;
+        }
+    }
+
+    neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
+
+    http_ok(aio, result);
+
+    vector_uninit(&grp_configs);
+    free(result);
+    free(tags_res.tags);
 }

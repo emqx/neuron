@@ -1899,13 +1899,13 @@ int neu_manager_adapter_get_state(neu_manager_t *manager, neu_node_id_t node_id,
     if (reg_entity == NULL) {
         log_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
-        return -1;
+        return NEU_ERR_NODE_NOT_EXIST;
     }
 
     *state = neu_adapter_get_state(reg_entity->adapter);
     nng_mtx_unlock(manager->adapters_mtx);
 
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
@@ -1935,6 +1935,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
     switch (ctl) {
     case NEU_ADAPTER_CTL_START:
         switch (state.running) {
+        case NEU_PLUGIN_RUNNING_STATE_INIT:
         case NEU_PLUGIN_RUNNING_STATE_IDLE:
             ret = -1;
             break;
@@ -1950,6 +1951,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
         break;
     case NEU_ADAPTER_CTL_STOP:
         switch (state.running) {
+        case NEU_PLUGIN_RUNNING_STATE_INIT:
         case NEU_PLUGIN_RUNNING_STATE_IDLE:
         case NEU_PLUGIN_RUNNING_STATE_READY:
             ret = -1;

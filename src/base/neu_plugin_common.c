@@ -466,7 +466,7 @@ int32_t neu_plugin_get_node_state(neu_plugin_t *plugin, neu_node_id_t node_id,
 
     get_node_state.node_id = node_id;
 
-    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_NODE_STATE, get_node_state,
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_NODE_STATE, get_node_state,
                     neu_reqresp_node_state_t, {
                         ret    = resp->result;
                         *state = resp->state;

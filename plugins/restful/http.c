@@ -17,6 +17,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
+#include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -24,6 +27,7 @@
 #include <nng/supplemental/http/http.h>
 
 #include "http.h"
+#include "neu_log.h"
 
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {
@@ -103,6 +107,66 @@ char *http_get_param(nng_aio *aio, const char *name)
     nng_url_free(nn_url);
 
     return result;
+}
+
+int http_get_param_int(nng_aio *aio, const char *name, int32_t *param)
+{
+    char *   tmp    = http_get_param(aio, name);
+    intmax_t result = 0;
+
+    if (tmp == NULL) {
+        return -1;
+    }
+
+    result = strtoimax(tmp, NULL, 10);
+    if (result == INTMAX_MAX && errno == ERANGE) {
+        return -1;
+    }
+
+    *param = result;
+
+    return 0;
+}
+
+int http_response(nng_aio *aio, neu_err_code_e code, char *content)
+{
+    enum nng_http_status status = NNG_HTTP_STATUS_OK;
+
+    switch (code) {
+    case NEU_ERR_SUCCESS:
+        status = NNG_HTTP_STATUS_OK;
+        break;
+    case NEU_ERR_EINTERNAL:
+        status = NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+        break;
+    case NEU_ERR_BODY_IS_WRONG:
+    case NEU_ERR_PARAM_IS_WRONG:
+    case NEU_ERR_NODE_TYPE_INVALID:
+    case NEU_ERR_NODE_SETTING_INVALID:
+        status = NNG_HTTP_STATUS_BAD_REQUEST;
+        break;
+    case NEU_ERR_PLUGIN_NAME_NOT_FOUND:
+    case NEU_ERR_NODE_NOT_EXIST:
+    case NEU_ERR_GRP_CONFIG_NOT_EXIST:
+    case NEU_ERR_TAG_NOT_EXIST:
+    case NEU_ERR_NODE_SETTING_NOT_FOUND:
+        status = NNG_HTTP_STATUS_NOT_FOUND;
+        break;
+    case NEU_ERR_NODE_EXIST:
+        status = NNG_HTTP_STATUS_CONFLICT;
+        break;
+    case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
+        status = NNG_HTTP_STATUS_PARTIAL_CONTENT;
+        break;
+    case NEU_ERR_GRP_CONFIG_IN_USE:
+        status = NNG_HTTP_STATUS_PRECONDITION_FAILED;
+        break;
+    default:
+        assert(code == 0);
+        break;
+    }
+
+    return response(aio, content, status);
 }
 
 int http_ok(nng_aio *aio, char *content)

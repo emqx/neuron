@@ -27,7 +27,8 @@ extern "C" {
 #include <stdint.h>
 
 #include "neu_data_expr.h"
-#include "json/neu_json_rw.h"
+#include "neu_json_error.h"
+#include "neu_json_rw.h"
 
 typedef int (*neu_json_encode_fn)(void *object, void *param);
 
@@ -38,6 +39,17 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
                               char **result);
 
 neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req);
+
+#define NEU_JSON_RESPONSE_ERROR(err, func)                             \
+    {                                                                  \
+        neu_json_error_resp_t error_code   = { 0 };                    \
+        char *                result_error = NULL;                     \
+        error_code.error                   = (err);                    \
+        neu_json_encode_by_fn(&error_code, neu_json_encode_error_resp, \
+                              &result_error);                          \
+        { func };                                                      \
+        free(result_error);                                            \
+    }
 
 #ifdef __cplusplus
 }

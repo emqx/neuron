@@ -31,7 +31,7 @@ extern "C" {
 
 typedef struct neu_plugin_common {
     uint32_t                   magic;
-    neu_plugin_state_t         state;
+    neu_plugin_link_state_e    link_state;
     neu_adapter_t *            adapter;
     const adapter_callbacks_t *adapter_callbacks;
     uint32_t                   event_id;

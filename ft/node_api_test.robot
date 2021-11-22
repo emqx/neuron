@@ -24,7 +24,7 @@ Use the wrong body to crate a node, it should return failure
 Use a plugin name that does not exist to create a node, it should return failure
     POST    /api/v2/node    {"type": ${NODE_DRIVER}, "name": "test-node", "plugin_name": "test-plugin-name"}
 
-    Integer    response status        400
+    Integer    response status        404
     Integer    response body error    ${ERR_PLUGIN_NAME_NOT_FOUND}
 
 Use a invalid node type to create a node, it should return failure
@@ -36,13 +36,13 @@ Use a invalid node type to create a node, it should return failure
 Create a node with the correct body, it should return success
     POST    /api/v2/node    {"type": ${NODE_DRIVER}, "name": "test-node", "plugin_name": "modbus-tcp-plugin"}
 
-    Integer    response status        201
+    Integer    response status        200
     Integer    response body error    ${ERR_SUCCESS} 
 
 Create an existing node, it should return failure
     POST    /api/v2/node    {"type": ${NODE_DRIVER}, "name": "test-node", "plugin_name": "modbus-tcp-plugin"}
 
-    Integer    response status        400
+    Integer    response status        409
     Integer    response body error    ${ERR_NODE_EXIST}
 
 Get node with wrong parameters, it will return failure
@@ -121,13 +121,13 @@ Delete the existing node, it will return success
 Delete a non-existent node, it will return failure
     Delete    /api/v2/node    {"id": 1000}
 
-    Integer    response status        400
+    Integer    response status        404
     Integer    response body error    ${ERR_NODE_NOT_EXIST}
 
 Add setting to non-existent node, it should return failure
     POST    /api/v2/node/setting    {"node_id": 999, "params": {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}}
 
-    Integer    response status        400
+    Integer    response status        404
     Integer    response body error    ${ERR_NODE_NOT_EXIST}
 
 

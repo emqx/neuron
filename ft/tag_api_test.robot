@@ -23,7 +23,7 @@ Add different types of tags to the group, it should return success
 
 	POST	/api/v2/tags	{"node_id": ${test_node_id}, "group_config_name": "${test_gconfig}", "tags": [{"name": "tag1", "address": "1!400001", "attribute": 1, "type": 4},{"name": "tag2", "address": "1!00001", "attribute": 3, "type": 14}]}
 
-	Integer	response status    201
+	Integer	response status    200
 
 	Del Group Config    ${test_node_id}	${test_gconfig}
 
@@ -34,7 +34,7 @@ Add tags to the non-existent group, the group will be created automatically
 
 	POST	/api/v2/tags	{"node_id": ${test_node_id}, "group_config_name": "${test_gconfig}", "tags": [{"name": "tag1", "address": "1!400001", "attribute": 1, "type": 4},{"name": "tag2", "address": "1!00001", "attribute": 3, "type": 14}]}
 
-	Integer	response status    201
+	Integer	response status    200
 	Del Group Config           ${test_node_id}	${test_gconfig}
 
 When the attribute of the tag added is incorrect, it should return partial success
@@ -92,7 +92,7 @@ After adding the tag, query the tag, it should return the added tag
 
 	POST	/api/v2/tags	{"node_id": ${test_node_id}, "group_config_name": "${test_gconfig}", "tags": [{"name": "tag1", "address": "1!400001", "attribute": 1, "type": 4},{"name": "tag2", "address": "1!00001", "attribute": 3, "type": 14}]}
 
-	Integer	response status    201
+	Integer	response status    200
 
 	GET	/api/v2/tags?node_id=${test_node_id}
 	Integer                                     response status    200
@@ -152,7 +152,7 @@ Update non-existent tags, it should return partial success
 
 	PUT	/api/v2/tags	{"node_id": ${test_node_id}, "tags": [{"id": ${tag1_id}, "name": "tag11", "type": 4, "attribute": 1, "address": "1!400002"},{"id": 7788, "name": "tag22", "type": 4, "attribute": 1, "address": "3!100001"}]}
 
-	Integer    response status        206
+	Integer    response status        404
 	Integer    response body error    ${ERR_TAG_NOT_EXIST}
 
 	GET	/api/v2/tags?node_id=${test_node_id}

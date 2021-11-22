@@ -48,4 +48,6 @@ void               neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
                                                   neu_node_id_t        node_id,
                                                   neu_taggrp_config_t *grp_config);
 vector_t *         neu_adapter_get_sub_grp_configs(neu_adapter_t *adapter);
+neu_plugin_running_state_e
+neu_adapter_state_to_plugin_state(neu_adapter_t *adapter);
 #endif
