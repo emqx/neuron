@@ -480,15 +480,10 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_UPDATE_NODE: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_update_node_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = NEU_ERR_SUCCESS;
-                              rv  = neu_manager_update_node(adapter->manager,
-                                                           req_cmd);
-                              if (rv != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_update_node_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result,
+            { ret = neu_manager_update_node(adapter->manager, req_cmd); });
         break;
     }
 
@@ -499,7 +494,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                 ret = malloc(sizeof(neu_reqresp_nodes_t));
                 if (ret == NULL) {
                     log_error("Failed to allocate result of get nodes");
-                    rv = -1;
+                    rv = NEU_ERR_EINTERNAL;
                     free(result);
                     break;
                 }
@@ -511,7 +506,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                 if (rv < 0) {
                     free(result);
                     free(ret);
-                    rv = -1;
                     break;
                 }
             });

@@ -63,40 +63,34 @@ Get WEB node, it should return all WEB node
 
     Integer    response status    200
     Array      $.nodes
-    String     $.nodes[*].name    sample-app-adapter    mqtt-adapter    default-dashboard-adapter
-   # String      $.nodes[*].name     default-dashboard-adapter
+    String     $.nodes[*].name    default-dashboard-adapter
 
 Get MQTT node, it should return all mqtt node
     GET    /api/v2/node?type=${NODE_MQTT}
 
     Integer    response status    200
     Array      $.nodes
-    String     $.nodes[*].name    sample-app-adapter    mqtt-adapter    default-dashboard-adapter
-   # String      $.nodes[*].name    mqtt-adapter
+    String     $.nodes[*].name    mqtt-adapter
 
 Get STREAM PROCESSOR node, it should return all STREAM PROCESSOR node
     GET    /api/v2/node?type=${NODE_STREAM_PROCESSOR}
 
     Integer    response status    200
-    Array      $.nodes
-    String     $.nodes[*].name    sample-app-adapter    mqtt-adapter    default-dashboard-adapter
-   # String      $.nodes[*].name    stream-process-adapter
+    Object     response body      {}
+    #String     $.nodes[*].name    stream-process-adapter
 
 Get APP node, it should return all APP node
     GET    /api/v2/node?type=${NODE_APP}
 
     Integer    response status    200
     Array      $.nodes
-    String     $.nodes[*].name    sample-app-adapter    mqtt-adapter    default-dashboard-adapter
-   # String      $.nodes[*].name    app-adapter
+    String     $.nodes[*].name    sample-app-adapter
 
 Get UNKNOWN type node, it should return empty node
     GET    /api/v2/node?type=6
 
     Integer    response status    200
-    Array      $.nodes
-    String     $.nodes[*].name    sample-app-adapter    mqtt-adapter    default-dashboard-adapter
-   # String     response body   {}
+    Object     response body      {}
 
 Delete the existing node, it will return success
     GET    /api/v2/node?type=${NODE_DRIVER}
