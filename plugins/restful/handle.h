@@ -39,14 +39,6 @@
         }                                                                     \
     }
 
-#define REST_PROCESS_HTTP_REQUEST_WITH_ERROR(aio, req_type, decode_fun, func) \
-    {                                                                         \
-        neu_json_error_resp_t error        = { 0 };                           \
-        char *                result_error = NULL;                            \
-        REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)            \
-        free(result_error);                                                   \
-    }
-
 enum neu_rest_method {
     NEU_REST_METHOD_GET = 0x0,
     NEU_REST_METHOD_POST,

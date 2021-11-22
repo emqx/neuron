@@ -35,23 +35,20 @@ void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
+    REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
+            neu_err_code_e code = { 0 };
+
             if (req->type >= NEU_NODE_TYPE_MAX ||
                 req->type <= NEU_NODE_TYPE_UNKNOW) {
-                error.error = NEU_ERR_NODE_TYPE_INVALID;
+                code = NEU_ERR_NODE_TYPE_INVALID;
             } else {
-                error.error = neu_system_add_node(plugin, req->type, req->name,
-                                                  req->plugin_name);
+                code = neu_system_add_node(plugin, req->type, req->name,
+                                           req->plugin_name);
             }
 
-            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                  &result_error);
-            if (error.error != 0) {
-                http_bad_request(aio, result_error);
-            } else {
-                http_created(aio, result_error);
-            }
+            NEU_JSON_RESPONSE_ERROR(code,
+                                    { http_response(aio, code, result_error); })
         })
 }
 
@@ -59,16 +56,11 @@ void handle_del_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
+    REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_del_node_req_t, neu_json_decode_del_node_req, {
-            error.error = neu_system_del_node(plugin, req->id);
-            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                  &result_error);
-            if (error.error != 0) {
-                http_bad_request(aio, result_error);
-            } else {
-                http_ok(aio, result_error);
-            }
+            NEU_JSON_RESPONSE_ERROR(neu_system_del_node(plugin, req->id), {
+                http_response(aio, error_code.error, result_error);
+            });
         })
 }
 
@@ -90,19 +82,17 @@ void handle_update_adapter(nng_aio *aio)
 
 void handle_get_adapter(nng_aio *aio)
 {
-    neu_plugin_t *        plugin      = neu_rest_get_plugin();
-    char *                result      = NULL;
-    neu_json_error_resp_t error       = { 0 };
-    char *                s_node_type = http_get_param(aio, "type");
+    neu_plugin_t *  plugin    = neu_rest_get_plugin();
+    char *          result    = NULL;
+    neu_node_type_e node_type = { 0 };
 
-    if (s_node_type == NULL) {
-        error.error = NEU_ERR_PARAM_IS_WRONG;
-        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &result);
-        http_bad_request(aio, result);
+    if (http_get_param_int(aio, "type", (int32_t *) &node_type) != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            http_response(aio, error_code.error, result_error);
+        })
         return;
     }
 
-    neu_node_type_e           node_type = (neu_node_type_e) atoi(s_node_type);
     neu_json_get_nodes_resp_t nodes_res = { 0 };
     int                       index     = 0;
     vector_t                  nodes = neu_system_get_nodes(plugin, node_type);
@@ -142,51 +132,41 @@ void handle_set_node_setting(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_WITH_ERROR(
+    REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
             char *config_buf = calloc(req_data_size + 1, sizeof(char));
 
             memcpy(config_buf, req_data, req_data_size);
-            error.error =
-                neu_plugin_set_node_setting(plugin, req->node_id, config_buf);
-            free(config_buf);
 
-            neu_json_encode_by_fn(&error, neu_json_encode_error_resp,
-                                  &result_error);
-            if (error.error != 0) {
-                http_bad_request(aio, result_error);
-            } else {
-                http_ok(aio, result_error);
-            }
+            NEU_JSON_RESPONSE_ERROR(
+                neu_plugin_set_node_setting(plugin, req->node_id, config_buf),
+                { http_response(aio, error_code.error, result_error); });
+            free(config_buf);
         })
 }
 
 void handle_get_node_setting(nng_aio *aio)
 {
-    neu_plugin_t *        plugin    = neu_rest_get_plugin();
-    char *                s_node_id = http_get_param(aio, "node_id");
-    char *                setting   = NULL;
-    neu_json_error_resp_t error     = { 0 };
-    neu_node_id_t         node_id   = 0;
+    neu_plugin_t *plugin  = neu_rest_get_plugin();
+    char *        setting = NULL;
+    neu_node_id_t node_id = 0;
 
-    if (s_node_id == NULL) {
-        error.error = NEU_ERR_PARAM_IS_WRONG;
-        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &setting);
-        http_bad_request(aio, setting);
+    if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            http_response(aio, error_code.error, result_error);
+        })
         return;
     }
 
-    node_id = (neu_node_id_t) atoi(s_node_id);
-
-    error.error = neu_plugin_get_node_setting(plugin, node_id, &setting);
-
-    if (error.error != 0) {
-        neu_json_encode_by_fn(&error, neu_json_encode_error_resp, &setting);
-        http_not_found(aio, setting);
-    }
-
-    http_ok(aio, setting);
-    free(setting);
+    NEU_JSON_RESPONSE_ERROR(
+        neu_plugin_get_node_setting(plugin, node_id, &setting), {
+            if (error_code.error != NEU_ERR_SUCCESS) {
+                http_response(aio, error_code.error, result_error);
+            } else {
+                http_ok(aio, setting);
+                free(setting);
+            }
+        })
 }
 
 void handle_node_ctl(nng_aio *aio)
@@ -209,30 +189,32 @@ void handle_node_ctl(nng_aio *aio)
 
 void handle_get_node_state(nng_aio *aio)
 {
-    neu_plugin_t *                 plugin    = neu_rest_get_plugin();
-    char *                         s_node_id = http_get_param(aio, "node_id");
-    neu_node_id_t                  node_id   = 0;
-    neu_json_get_node_state_resp_t res       = { 0 };
-    neu_plugin_state_t             state     = { 0 };
-    char *                         result    = NULL;
+    neu_plugin_t *                 plugin  = neu_rest_get_plugin();
+    neu_node_id_t                  node_id = 0;
+    neu_json_get_node_state_resp_t res     = { 0 };
+    neu_plugin_state_t             state   = { 0 };
+    char *                         result  = NULL;
 
-    if (s_node_id == NULL) {
-        http_bad_request(aio, "{\"error\": 1}");
+    if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            http_response(aio, error_code.error, result_error);
+        })
         return;
     }
 
-    node_id = (neu_node_id_t) atoi(s_node_id);
+    NEU_JSON_RESPONSE_ERROR(
+        neu_plugin_get_node_state(plugin, node_id, &state), {
+            if (error_code.error != NEU_ERR_SUCCESS) {
+                http_response(aio, error_code.error, result_error);
+            } else {
+                res.running = state.running;
+                res.link    = state.link;
 
-    if (neu_plugin_get_node_state(plugin, node_id, &state) != 0) {
-        http_not_found(aio, "{\"error\": 1}");
-        return;
-    }
+                neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp,
+                                      &result);
 
-    res.running = state.running;
-    res.link    = state.link;
-
-    neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
-
-    http_ok(aio, result);
-    free(result);
+                http_ok(aio, result);
+                free(result);
+            }
+        })
 }

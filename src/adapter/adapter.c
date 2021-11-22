@@ -105,7 +105,8 @@
     }
 
 typedef enum adapter_state {
-    ADAPTER_STATE_IDLE = 0,
+    ADAPTER_STATE_INIT = 0,
+    ADAPTER_STATE_IDLE,
     ADAPTER_STATE_READY,
     ADAPTER_STATE_RUNNING,
     ADAPTER_STATE_STOPPED,
@@ -134,6 +135,14 @@ struct neu_adapter {
     vector_t             sub_grp_configs; // neu_sub_grp_config_t
 };
 
+neu_plugin_running_state_e
+neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
+{
+    neu_plugin_running_state_e state = adapter->state;
+
+    return state;
+}
+
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
 {
     uint32_t req_id;
@@ -161,10 +170,6 @@ static void adapter_loop(void *arg)
         neu_panic("The adapter can't dial to %s", manager_url);
     }
 
-    nng_mtx_lock(adapter->mtx);
-    adapter->state = ADAPTER_STATE_IDLE;
-    nng_mtx_unlock(adapter->mtx);
-
     const char *adapter_str = "adapter started";
     nng_msg *   out_msg;
     size_t      msg_size;
@@ -186,7 +191,6 @@ static void adapter_loop(void *arg)
 
         nng_mtx_lock(adapter->mtx);
         if (adapter->stop) {
-            adapter->state = ADAPTER_STATE_STOPPED;
             nng_mtx_unlock(adapter->mtx);
             log_info("Exit loop of the adapter(%s)", adapter->name);
             break;
@@ -204,29 +208,14 @@ static void adapter_loop(void *arg)
         pay_msg = nng_msg_body(msg);
         switch (msg_get_type(pay_msg)) {
         case MSG_CMD_RESP_PONG: {
-            bool  need_config;
             char *buf_ptr;
 
-            need_config = false;
-            buf_ptr     = msg_get_buf_ptr(pay_msg);
+            buf_ptr = msg_get_buf_ptr(pay_msg);
             log_info("Adapter(%s) received pong: %s", adapter->name, buf_ptr);
             nng_mtx_lock(adapter->mtx);
-            if (adapter->state == ADAPTER_STATE_IDLE) {
-                need_config    = true;
-                adapter->state = ADAPTER_STATE_RUNNING;
-            }
+            adapter->state = ADAPTER_STATE_IDLE;
             nng_mtx_unlock(adapter->mtx);
 
-            if (need_config) {
-                const neu_plugin_intf_funs_t *intf_funs;
-                neu_config_t                  config;
-
-                config.type    = NEU_CONFIG_UNKNOW;
-                config.buf_len = 0;
-                config.buf     = NULL;
-                intf_funs      = adapter->plugin_module->intf_funs;
-                intf_funs->config(adapter->plugin, &config);
-            }
             break;
         }
 
@@ -401,8 +390,7 @@ static void adapter_loop(void *arg)
             log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
                      exit_code);
             nng_mtx_lock(adapter->mtx);
-            adapter->state = ADAPTER_STATE_STOPPED;
-            adapter->stop  = true;
+            adapter->stop = true;
             nng_mtx_unlock(adapter->mtx);
             break;
         }
@@ -428,6 +416,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     if (adapter == NULL || cmd == NULL) {
         log_warn("The adapter or command is NULL");
         return (-1);
+    }
+
+    if (adapter->state == ADAPTER_STATE_INIT) {
+        log_warn("The adapter loop not running");
+        return -1;
     }
 
     log_info("Get command from plugin %d, %s", cmd->req_type, adapter->name);
@@ -916,8 +909,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     }
 
     int rv;
-    adapter->state = ADAPTER_STATE_IDLE;
-    adapter->stop  = false;
+    adapter->stop = false;
     if ((rv = nng_mtx_alloc(&adapter->mtx)) != 0) {
         log_error("Can't allocate mutex for adapter");
         free(adapter);
@@ -1027,7 +1019,8 @@ int neu_adapter_start(neu_adapter_t *adapter)
         intf_funs->init(adapter->plugin);
     }
 
-    adapter->stop = false;
+    adapter->stop  = false;
+    adapter->state = ADAPTER_STATE_INIT;
     nng_thread_create(&adapter->thrd, adapter_loop, adapter);
     return rv;
 }
@@ -1043,7 +1036,8 @@ int neu_adapter_stop(neu_adapter_t *adapter)
 
     log_info("Stop the adapter(%s)", adapter->name);
     nng_mtx_lock(adapter->mtx);
-    adapter->stop = true;
+    adapter->stop  = true;
+    adapter->state = ADAPTER_STATE_STOPPED;
     nng_mtx_unlock(adapter->mtx);
     nng_thread_destroy(adapter->thrd);
 
@@ -1135,6 +1129,10 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
             if (adapter->node_setting.buf != NULL)
                 free(adapter->node_setting.buf);
             adapter->node_setting.buf = strdup(config->buf);
+            if (adapter->state == ADAPTER_STATE_IDLE) {
+                adapter->state = ADAPTER_STATE_READY;
+            }
+
         } else {
             rv = NEU_ERR_NODE_SETTING_INVALID;
         }
@@ -1160,9 +1158,13 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
 
 neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter)
 {
+    neu_plugin_state_t   state  = { 0 };
     neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
 
-    return common->state;
+    state.link    = common->link_state;
+    state.running = neu_adapter_state_to_plugin_state(adapter);
+
+    return state;
 }
 
 void neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,

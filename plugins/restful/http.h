@@ -22,9 +22,13 @@
 
 #include <nng/nng.h>
 
+#include "neu_errcodes.h"
+
 int   http_get_body(nng_aio *aio, void **data, size_t *data_size);
 char *http_get_param(nng_aio *aio, const char *name);
+int   http_get_param_int(nng_aio *aio, const char *name, int32_t *param);
 
+int http_response(nng_aio *aio, neu_err_code_e code, char *content);
 int http_ok(nng_aio *aio, char *content);
 int http_created(nng_aio *aio, char *content);
 int http_partial(nng_aio *aio, char *content);

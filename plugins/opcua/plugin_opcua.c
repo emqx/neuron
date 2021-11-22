@@ -60,8 +60,7 @@ static neu_plugin_t *opcua_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
-    plugin->common.state.running     = NEU_PLUGIN_RUNNING_STATE_IDLE;
-    plugin->common.state.link        = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_CONNECTING;
 
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
@@ -105,7 +104,6 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
         plugin->handle_context->client = plugin->client;
     }
 
-    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
@@ -117,7 +115,6 @@ static int opcua_plugin_uninit(neu_plugin_t *plugin)
     opcua_option_uninit(&plugin->option);
     free(plugin->handle_context);
 
-    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_STOPPED;
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
@@ -138,7 +135,6 @@ static int opcua_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
-    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_RUNNING;
     log_info("Config plugin: %s", neu_plugin_module.module_name);
     return 0;
 }

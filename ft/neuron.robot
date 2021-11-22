@@ -28,7 +28,7 @@ Add Node
 	[Arguments]	${node_type}	${node_name}	${plugin_name}
 
 	POST       /api/v2/node           {"type": ${node_type}, "name": "${node_name}", "plugin_name": "${plugin_name}"}
-	Integer    response status        201
+	Integer    response status        200
 	Integer    response body error    ${ERR_SUCCESS}
 
 	${node_id}                         Get Node ID    ${node_type}    ${node_name}
@@ -45,7 +45,7 @@ Add Group Config
 	[Arguments]	${node_id}	${grp_config_name}
 	POST	/api/v2/gconfig                         {"name": "${grp_config_name}", "node_id": ${node_id}, "interval": 1000}
 
-	Integer    response status        201
+	Integer    response status        200
 	Integer    response body error    ${ERR_SUCCESS}
 
 Del Group Config

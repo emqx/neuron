@@ -73,6 +73,7 @@ typedef enum {
     NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT = -2006,
     NEU_ERR_NODE_SETTING_INVALID      = -2007,
     NEU_ERR_NODE_SETTING_NOT_FOUND    = -2008,
+    NEU_ERR_GRP_CONFIG_IN_USE         = -2009,
 } neu_err_code_e;
 
 #ifdef __cplusplus
