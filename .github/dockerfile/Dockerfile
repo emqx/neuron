@@ -33,9 +33,10 @@ RUN echo "Building googletest (v1.11.0)" \
     && rm -rf build \
     && mkdir build \
     && cd build \
-    && make  \
+    && cmake -G Ninja .. \
+    && ninja  \
     && cp *.a /usr/local/lib \
-    && cd .. 
+    && cd ..
 
 RUN ./install-libs.sh -a
 RUN ./install-libs.sh -a -c -p aarch64-linux-gnu -s aarch64
