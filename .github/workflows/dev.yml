@@ -41,6 +41,7 @@ jobs:
         run: |
           pip3 install robotframework
           pip3 install RESTinstance
+          pip3 install robotframework-mqttlibrary
           python3 -m robot -P ft/ -d ft/reports ft
 
       #- uses: actions/upload-artifact@v2
