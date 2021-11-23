@@ -6,11 +6,10 @@ concurrency:
 
 ## Update the base image every day
 on:
-  push:
   workflow_dispatch:
   schedule:
-  ## In UTC
-  - cron: '0 0 * * *'
+    ## In UTC
+    - cron: '0 0 * * *'
 
 ## Build base images to be used by other github workflows
 jobs:
