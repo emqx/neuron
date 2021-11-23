@@ -336,6 +336,7 @@ sample_app_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
+    plugin->common.state.running     = NEU_PLUGIN_RUNNING_STATE_IDLE;
     plugin->new_event_id             = 1;
 
     int rv;
@@ -365,6 +366,7 @@ static int sample_app_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
@@ -375,6 +377,7 @@ static int sample_app_plugin_uninit(neu_plugin_t *plugin)
 
     (void) plugin;
 
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_STOPPED;
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
@@ -386,6 +389,7 @@ static int sample_app_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     (void) configs;
 
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_RUNNING;
     log_info("config plugin: %s", neu_plugin_module.module_name);
     return rv;
 }

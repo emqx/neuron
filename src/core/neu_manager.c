@@ -1923,8 +1923,8 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
 
     if (reg_entity == NULL) {
-        log_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
+        log_error("Can't find matched src registered adapter");
         return -1;
     }
 

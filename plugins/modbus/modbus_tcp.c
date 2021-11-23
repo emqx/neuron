@@ -501,7 +501,7 @@ static int modbus_tcp_init(neu_plugin_t *plugin)
 
     //    plugin->common.state = NEURON_PLUGIN_STATE_READY;
     log_info("modbus tcp init.....");
-    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_RUNNING;
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
 
     return 0;
 }
@@ -553,8 +553,8 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
                           &host);
 
     if (ret == 0) {
-        if (plugin->common.state.running == NEU_PLUGIN_RUNNING_STATE_IDLE) {
-            plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
+        if (plugin->common.state.running == NEU_PLUGIN_RUNNING_STATE_READY) {
+            plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_RUNNING;
         }
         plugin->client = neu_tcp_client_create(host.v.val_str, port.v.val_int);
     }

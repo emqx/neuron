@@ -209,6 +209,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
         return -1;
     }
 
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
@@ -239,7 +240,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
-    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_READY;
+    plugin->common.state.running = NEU_PLUGIN_RUNNING_STATE_RUNNING;
     log_info("Config plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
