@@ -27,6 +27,16 @@ RUN echo "Building cmake (v3.18.5)" \
     && cd .. \
     && cmake --version
 
+RUN echo "Building googletest (v1.11.0)" \
+    && apt-get -y install libgtest-dev \
+    && cd /usr/src/gtest \
+    && rm -rf build \
+    && mkdir build \
+    && cd build \
+    && make  \
+    && cp *.a /usr/local/lib \
+    && cd .. 
+
 RUN ./install-libs.sh -a
 RUN ./install-libs.sh -a -c -p aarch64-linux-gnu -s aarch64
 RUN ./install-libs.sh -a -c -p arm-linux-gnueabihf -s armv4
