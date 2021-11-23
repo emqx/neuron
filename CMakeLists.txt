@@ -8,7 +8,7 @@ enable_language(C)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release")
+  set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -151,7 +151,7 @@ add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/opcua)
 
-if(NEURON_TEST)
+if(NOT DISABLE_UT)
   # define for tests
   enable_testing()
   add_subdirectory(tests)
