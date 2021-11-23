@@ -6,8 +6,6 @@ concurrency:
 
 ## Update the base image every day
 on:
-  push: ## for debug this workflow
-
   workflow_dispatch:
   schedule:
   ## In UTC
