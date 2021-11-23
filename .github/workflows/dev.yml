@@ -1,6 +1,6 @@
 name: EMQX Neuron dev workflow
 
-on: [ push, pull_request,  pull_request_target ]
+on: [pull_request, release ]
 
 jobs:
   clang_format_check:
@@ -20,40 +20,10 @@ jobs:
           clangFormatVersion: 10
           style: file
 
-  compile_x86_64:
-    strategy:
-      matrix:
-        os: [ ubuntu-20.04 ]
-        name: [ release ]
-        system:
-        - [gcc-7, x86_64]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Compile
-        run: |
-          git submodule update --init --remote
-          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
-          sudo ./install-libs.sh -a
-          mkdir build && cd build && cmake .. -DNEURON_TEST=ON -DCMAKE_BUILD_TYPE=Debug && make
-
-      - name: Run unit test
-        run: cd build && ctest --output-on-failure
-      
   function_test:
-    strategy:
-      matrix:
-        os: [ ubuntu-20.04 ]
-        name: [ release ]
-        system:
-        - [gcc-7, x86_64]
+    runs-on: ubuntu-18.04
 
-    runs-on: ${{ matrix.os }}
+    container: ghcr.io/${{ github.repository }}/base:latest
 
     steps:
       - uses: actions/checkout@v2
@@ -62,18 +32,17 @@ jobs:
 
       - name: Start neuron
         run: |
-          git submodule update --init --remote
-          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
-          sudo ./install-libs.sh -a
-          mkdir build && cd build && cmake .. -DNEURON_TEST=ON -DCMAKE_BUILD_TYPE=Debug && make
+          mkdir -p build
+          cd build
+          cmake .. -DNEURON_TEST=ON -DCMAKE_BUILD_TYPE=Debug
+          make
 
       - name: Run function test
         run: |
-          sudo apt-get install python3-pip
           pip3 install robotframework
           pip3 install RESTinstance
           python3 -m robot -P ft/ -d ft/reports ft
-      
+
       #- uses: actions/upload-artifact@v2
         #with:
           #name: ft-output
@@ -88,4 +57,96 @@ jobs:
         #with:
           #name: ft-report
           #path: "ft/reports/report.html"
-  
+  compile:
+    strategy:
+      matrix:
+        arch:
+          - "arm-linux-gnueabihf"
+          - "aarch64-linux-gnu"
+          - "x86_64-linux-gnu"
+
+    runs-on: ubuntu-18.04
+
+    container: ghcr.io/${{ github.repository }}/base:latest
+
+    steps:
+      # checkout
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Compile
+        run: |
+          mkdir -p build
+          cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch }}.cmake
+          make
+
+      - name: Run unit test
+        if: matrix.arch == 'x86_64-linux-gnu'
+        run: |
+          mkdir -p build
+          cd build
+          # cmake ..  -DNEURON_TEST=ON
+          ctest --output-on-failure
+
+      - name: Create package
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF##*/}-${ARCH%%-*}.tar.gz
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.arch }}
+          path: "*.tar.gz"
+
+  run_neuron:
+    needs: compile
+    strategy:
+      matrix:
+        arch:
+          - "arm-linux-gnueabihf"
+          - "aarch64-linux-gnu"
+          - "x86_64-linux-gnu"
+
+    runs-on: ubuntu-18.04
+
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.arch }}
+          path: neuron.tar.gz
+
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+
+      - name: Run neuron
+        run: |
+          case ${{ matrix.arch }} in
+            "arm-linux-gnueabihf")
+              platform="linux/arm/v7"
+              ;;
+            "aarch64-linux-gnu")
+              platform="linux/arm64"
+              ;;
+            "x86_64-linux-gnu")
+              platform="linux/amd64"
+              ;;
+          esac
+          docker run -d --name neuron \
+          -v $(pwd)/neuron.tar.gz:/opt/neuron.tar.gz \
+          -p 7001:7001 \
+          --platform ${platform} \
+          ubuntu:18.04 \
+          bash -c "tar -zxvf neuron.tar.gz -C /opt && cd /opt/neuron && ./neuron"
+
+      - name: Check status
+        timeout-minutes: 1
+        run: |
+          if ! curl --silent --show-error -X POST http://127.0.0.1:7001/api/v2/ping > /dev/null; then
+            sleep 1
+          fi
