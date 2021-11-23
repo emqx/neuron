@@ -32,10 +32,10 @@ jobs:
 
       - name: Start neuron
         run: |
-          mkdir -p build
-          cd build
-          cmake .. -DNEURON_TEST=ON -DCMAKE_BUILD_TYPE=Debug
-          make
+          git submodule update --init --remote
+          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
+          sudo ./install-libs.sh -a
+          mkdir build && cd build && cmake .. && make
 
       - name: Run function test
         run: |
