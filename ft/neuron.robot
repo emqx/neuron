@@ -8,6 +8,11 @@ ${NODE_APP}	5
 ${PLUGIN_MODBUS}	modbus-tcp-plugin
 ${PLUGIN_MQTT}    mqtt-plugin
 
+${MQTT_CONFIG_HOST}    broker.fengzero.com
+${MQTT_CONFIG_REQ_TOPIC}	test/mqtt_req
+${MQTT_CONFIG_RES_TOPIC}	test/mqtt_res
+${MQTT_CONFIG}    {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}", "res-topic": "${MQTT_CONFIG_RES_TOPIC}", "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": 1883, "username": "", "password": "", "ca-path":"", "ca-file": ""}
+
 *** Keywords ***
 Neuron Ready
     Start Neuron
@@ -66,3 +71,9 @@ To Array
 	[Arguments]	${str_array}
 	${tmp}                      Array    ${str_array}
 	[RETURN]	${tmp}[0]
+
+Node Setting
+	[Arguments]	${node_id}	${config}
+
+	POST       /api/v2/node/setting    ${config}
+	Integer    response status         200
