@@ -10,10 +10,10 @@ jobs:
   compile:
     strategy:
       matrix:
-        cmake:
-          - arm-linux-gnueabihf
-          - aarch64-linux-gnu
-          - x86_64-linux-gnu
+        arch:
+          - "arm-linux-gnueabihf"
+          - "aarch64-linux-gnu"
+          - "x86_64-linux-gnu"
 
     runs-on: ubuntu-18.04
 
@@ -24,17 +24,69 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-
       - name: Compile
         run: |
           mkdir -p build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.cmake }}.cmake
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch }}.cmake
           make
-
       - name: Run unit test
-        if: matrix.cmake == 'x86_64-linux-gnu'
+        if: matrix.arch == 'x86_64-linux-gnu'
         run: |
           mkdir -p build
           cd build
+          cmake ..  -DNEURON_TEST=ON
           ctest --output-on-failure
+      - name: Create package
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF_NAME}-${ARCH%%-*}.tar.gz
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.arch }}
+          path: "*.tar.gz"
+
+  run:
+    strategy:
+      matrix:
+        arch:
+          - "arm-linux-gnueabihf"
+          - "aarch64-linux-gnu"
+          - "x86_64-linux-gnu"
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.arch }}
+          path: neuron.tar.gz
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/setup-qemu-action@v1
+        with:
+          image: tonistiigi/binfmt:latest
+          platforms: all
+      - name: Run neuron
+        run: |
+          case ${{ matrix.arch }} in
+            "arm-linux-gnueabihf")
+              platform="linux/arm/v7"
+              ;;
+            "aarch64-linux-gnu")
+              platform="linux/arm64"
+              ;;
+            "x86_64-linux-gnu")
+              platform="linux/amd64"
+              ;;
+          esac
+          docker run -d --name neuron \
+          -v $(pwd)/neuron.tar.gz:/opt/neuron.tar.gz \
+          --platform ${platform} \
+          --port 7001:7001
+          ubuntu:18.04 \
+          bash -c "tar -zxvf neuron.tar.gz -C /opt && cd /opt/neuron && ./neuron"
+      - name: Check status
+        timeout-minutes: 1
+        run: |
+          if ! curl -X POST http://127.0.0.1:7001/api/v2/ping > /dev/null; then
+            sleep 1
+          fi
