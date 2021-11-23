@@ -658,6 +658,7 @@ int neu_manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     buf_ptr                           = msg_get_buf_ptr(pay_msg);
     *(uint32_t *) buf_ptr             = 0; // exit_code is 0
     manager_bind_info_t *manager_bind = &manager->bind_info;
+    nng_msg_set_pipe(msg, msg_pipe);
     nng_sendmsg(manager_bind->mng_sock, msg, 0);
 
 stop_adapter:
@@ -1939,7 +1940,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
             break;
         case NEU_PLUGIN_RUNNING_STATE_READY:
         case NEU_PLUGIN_RUNNING_STATE_STOPPED:
-            // ret = neu_manager_start_adapter(manager, adapter);
+            ret = neu_manager_start_adapter(manager, adapter);
             ret = 0;
             break;
         case NEU_PLUGIN_RUNNING_STATE_RUNNING:
@@ -1954,7 +1955,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
             ret = -1;
             break;
         case NEU_PLUGIN_RUNNING_STATE_RUNNING:
-            // ret = neu_manager_stop_adapter(manager, adapter);
+            ret = neu_manager_stop_adapter(manager, adapter);
             ret = 0;
             break;
         case NEU_PLUGIN_RUNNING_STATE_STOPPED:

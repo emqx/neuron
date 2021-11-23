@@ -305,6 +305,13 @@ get_grp_configs_retry:
     neu_dvalue_free(write_val);
 
     neu_taggrp_cfg_free(grp_config);
+
+    usleep(500000);
+    log_info("Stop a node(%d)", dst_node_id);
+    neu_plugin_node_ctl(plugin, dst_node_id, NEU_ADAPTER_CTL_STOP);
+    usleep(500000);
+    log_info("Restart a node(%d)", dst_node_id);
+    neu_plugin_node_ctl(plugin, dst_node_id, NEU_ADAPTER_CTL_START);
     return NULL;
 }
 
