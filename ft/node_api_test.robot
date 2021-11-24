@@ -131,7 +131,7 @@ Get setting from non-existent node, it should return failure
     Integer    response body error    ${ERR_NODE_NOT_EXIST}
 
 Get setting from a node that has never been set, it should return failure
-	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-nodee    ${PLUGIN_MODBUS}
+	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-nodee    ${PLUGIN_MODBUS_TCP}
 
     GET    /api/v2/node/setting?node_id=${driver_node_id}
 
@@ -141,7 +141,7 @@ Get setting from a node that has never been set, it should return failure
     Del Node    ${driver_node_id}
 
 Add the correct settings to the node, it should return success
-	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-node    ${PLUGIN_MODBUS}
+	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-node    ${PLUGIN_MODBUS_TCP}
 
     POST    /api/v2/node/setting    {"node_id": ${driver_node_id}, "params": {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}}
 
@@ -188,22 +188,137 @@ Update the name of the node, it should return success
     Array      $.nodes
     String     $.nodes[*].name    sample-app-adapter    test-name
 
-    Del Node    ${app_node_id}
+    [Teardown]    Del Node    ${app_node_id}
 
 
+Start an unconfigured node, it should return failure
+	${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
 
-#Start an unconfigured node, it should return failure
+    Sleep    1s
 
-#Start the configured node, it should return success
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
-#Start the stopped node, it should return success
+    should be equal as integers    ${running_state}    ${NODE_STATE_INIT}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
 
-#Start the running node, it should restart
 
-#Stop node that is not running, it should return failure
+    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
 
-#Stop the running node, it should return success
+    Integer    response status    409
+    Integer    $.error            ${ERR_NODE_NOT_READY}
 
-#When setting up an IDLE node, the node status should become READY
+    [Teardown]    Del Node    ${modbus_node_id}
 
-#When setting up a READY/RUNNING/STOPED node, the node status will not change
+Start the configured node, it should return success
+    ${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
+
+    Sleep    1s
+
+    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_READY}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+
+
+    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
+
+    Integer    response status    200
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+
+
+Start the stopped node, it should return success
+    ${modbus_node_id}    Get Node ID    ${NODE_DRIVER}    modbus-test-node
+
+    Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_STOP}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+
+    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
+
+    Integer    response status    200
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+
+Start the running node, it should return failure
+    ${modbus_node_id}    Get Node ID    ${NODE_DRIVER}    modbus-test-node
+
+    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
+
+    Integer    response status    409
+    Integer    $.error            ${ERR_NODE_IS_RUNNING}
+
+    [Teardown]    Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
+
+Stop node that is stopped, it should return failure
+    ${modbus_node_id}    Get Node ID    ${NODE_DRIVER}    modbus-test-node
+
+    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_STOP}}
+
+    Integer    response status    409
+    Integer    $.error            ${ERR_NODE_IS_STOPED}
+
+    [Teardown]    Del Node    ${modbus_node_id}
+
+Stop node that is ready(init/idle), it should return failure
+    ${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
+
+    Sleep    1s
+
+    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_STOP}}
+
+    Integer    response status    409
+    Integer    $.error            ${ERR_NODE_NOT_RUNNING}
+
+    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+
+    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_STOP}}
+
+    Integer    response status    409
+    Integer    $.error            ${ERR_NODE_NOT_RUNNING}
+
+    [Teardown]    Del Node    ${modbus_node_id}
+
+When setting up a READY/RUNNING/STOPED node, the node status will not change
+    ${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
+
+    Sleep    1s
+
+    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_READY}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+
+    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_READY}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+
+    Node Ctl    ${modbus_node_id}    ${NODE_CTL_START}
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+
+    Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
+
+    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+
+    should be equal as integers    ${running_state}    ${NODE_STATE_STOP}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}

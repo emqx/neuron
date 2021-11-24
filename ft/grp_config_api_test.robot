@@ -96,7 +96,7 @@ Update the interval of the test group config, it should return success
 
 North APP subscribe non-existent group config, it should return failure
 	${app_node_id}       Add Node    ${NODE_APP}       ${app_node}       ${PLUGIN_MQTT}
-	${driver_node_id}    Add Node    ${NODE_DRIVER}    ${driver_node}    ${PLUGIN_MODBUS}
+	${driver_node_id}    Add Node    ${NODE_DRIVER}    ${driver_node}    ${PLUGIN_MODBUS_TCP}
 
 	POST	/api/v2/subscribe	{"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "grp_config"}
 
@@ -129,7 +129,7 @@ Query the subscribers of the group config, it should return all nodes subscribed
 
 	should be equal as integers    ${check_ret}    0
 
-	${driver_node_id2}    Add Node    ${NODE_DRIVER}    driver-node2    ${PLUGIN_MODBUS}
+	${driver_node_id2}    Add Node    ${NODE_DRIVER}    driver-node2    ${PLUGIN_MODBUS_TCP}
 
 	Add Group Config    ${driver_node_id2}	grp_config
 	Subscribe Group     ${driver_node_id2}               ${app_node_id}	grp_config
@@ -194,4 +194,4 @@ North APP unsubscribe group config, it should return success
 *** Keywords ***
 Neuron Context Ready
 	Neuron Ready
-	Add Node	${NODE_DRIVER}    ${test_node}	${PLUGIN_MODBUS}
+	Add Node	${NODE_DRIVER}    ${test_node}	${PLUGIN_MODBUS_TCP}

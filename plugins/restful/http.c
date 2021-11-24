@@ -154,6 +154,10 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:
+    case NEU_ERR_NODE_NOT_READY:
+    case NEU_ERR_NODE_IS_RUNNING:
+    case NEU_ERR_NODE_NOT_RUNNING:
+    case NEU_ERR_NODE_IS_STOPED:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:

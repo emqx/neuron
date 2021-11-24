@@ -206,5 +206,5 @@ Delete tags, it should return success
 *** Keywords ***
 Neuron Context Ready
 	Neuron Ready
-	Add Node	${NODE_DRIVER}    ${test_node}	${PLUGIN_MODBUS}
+	Add Node	${NODE_DRIVER}    ${test_node}	${PLUGIN_MODBUS_TCP}
 
