@@ -292,11 +292,25 @@ static int dashb_plugin_event_reply(neu_plugin_t *     plugin,
     return rv;
 }
 
+static int dashb_plugin_start(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
+static int dashb_plugin_stop(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .open        = dashb_plugin_open,
     .close       = dashb_plugin_close,
     .init        = dashb_plugin_init,
     .uninit      = dashb_plugin_uninit,
+    .start       = dashb_plugin_start,
+    .stop        = dashb_plugin_stop,
     .config      = dashb_plugin_config,
     .request     = dashb_plugin_request,
     .event_reply = dashb_plugin_event_reply

@@ -74,6 +74,10 @@ typedef enum {
     NEU_ERR_NODE_SETTING_INVALID      = -2007,
     NEU_ERR_NODE_SETTING_NOT_FOUND    = -2008,
     NEU_ERR_GRP_CONFIG_IN_USE         = -2009,
+    NEU_ERR_NODE_NOT_READY            = -2010,
+    NEU_ERR_NODE_IS_RUNNING           = -2011,
+    NEU_ERR_NODE_NOT_RUNNING          = -2012,
+    NEU_ERR_NODE_IS_STOPED            = -2013,
 } neu_err_code_e;
 
 #ifdef __cplusplus

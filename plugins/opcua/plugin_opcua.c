@@ -260,11 +260,25 @@ static int opcua_plugin_event_reply(neu_plugin_t *     plugin,
     return rv;
 }
 
+static int opcua_plugin_start(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
+static int opcua_plugin_stop(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .open        = opcua_plugin_open,
     .close       = opcua_plugin_close,
     .init        = opcua_plugin_init,
     .uninit      = opcua_plugin_uninit,
+    .start       = opcua_plugin_start,
+    .stop        = opcua_plugin_stop,
     .config      = opcua_plugin_config,
     .request     = opcua_plugin_request,
     .event_reply = opcua_plugin_event_reply

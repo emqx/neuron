@@ -663,11 +663,25 @@ static int modbus_tcp_event_reply(neu_plugin_t *     plugin,
     return 0;
 }
 
+static int modbus_tcp_start(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
+static int modbus_tcp_stop(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .open        = modbus_tcp_open,
     .close       = modbus_tcp_close,
     .init        = modbus_tcp_init,
     .uninit      = modbus_tcp_uninit,
+    .start       = modbus_tcp_start,
+    .stop        = modbus_tcp_stop,
     .config      = modbus_tcp_config,
     .request     = modbus_tcp_request,
     .event_reply = modbus_tcp_event_reply,

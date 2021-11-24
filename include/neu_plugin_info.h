@@ -41,8 +41,8 @@ typedef enum neu_plugin_link_state {
 } neu_plugin_link_state_e;
 
 typedef enum neu_plugin_running_state {
-    NEU_PLUGIN_RUNNING_STATE_INIT = 0,
-    NEU_PLUGIN_RUNNING_STATE_IDLE,
+    NEU_PLUGIN_RUNNING_STATE_IDLE = 0,
+    NEU_PLUGIN_RUNNING_STATE_INIT,
     NEU_PLUGIN_RUNNING_STATE_READY,
     NEU_PLUGIN_RUNNING_STATE_RUNNING,
     NEU_PLUGIN_RUNNING_STATE_STOPPED,
