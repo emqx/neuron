@@ -5,7 +5,20 @@ ${NODE_MQTT}	3
 ${NODE_STREAM_PROCESSOR}	4
 ${NODE_APP}	5
 
-${PLUGIN_MODBUS}	modbus-tcp-plugin
+${NODE_CTL_START}	0
+${NODE_CTL_STOP}	1
+
+${NODE_STATE_IDLE}	0
+${NODE_STATE_INIT}	1
+${NODE_STATE_READY}	2
+${NODE_STATE_RUNNING}	3
+${NODE_STATE_STOP}	4
+
+${NODE_LINK_STATE_DISCONNECTED}    0
+${NODE_LINK_STATE_CONNECTING}      1
+${NODE_LINK_STATE_CONNECTED}       2
+
+${PLUGIN_MODBUS_TCP}	modbus-tcp-plugin
 ${PLUGIN_MQTT}    mqtt-plugin
 
 ${MQTT_CONFIG_HOST}    broker.fengzero.com
@@ -46,6 +59,30 @@ Del Node
 	Delete     /api/v2/node       {"id": ${node_id}}
 	Integer    response status    200
 
+Node Setting
+	[Arguments]	${node_id}	${config}
+
+	POST       /api/v2/node/setting    ${config}
+	Integer    response status         200
+
+Get Node State
+	[Arguments]	${node_id}
+
+	GET        /api/v2/node/state?node_id=${node_id}
+	Integer    response status                          200
+
+	${running}    Integer    $.running
+	${link}       Integer    $.link
+
+	[RETURN]	${running}[0]    ${link}[0]
+
+Node Ctl
+	[Arguments]	${node_id}	${cmd}
+
+	POST	/api/v2/node/ctl	{"id": ${node_id}, "cmd": ${cmd}}
+
+	Integer    response status    200
+
 Add Group Config
 	[Arguments]	${node_id}	${grp_config_name}
 	POST	/api/v2/gconfig                         {"name": "${grp_config_name}", "node_id": ${node_id}, "interval": 1000}
@@ -71,9 +108,3 @@ To Array
 	[Arguments]	${str_array}
 	${tmp}                      Array    ${str_array}
 	[RETURN]	${tmp}[0]
-
-Node Setting
-	[Arguments]	${node_id}	${config}
-
-	POST       /api/v2/node/setting    ${config}
-	Integer    response status         200

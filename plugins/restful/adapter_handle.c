@@ -170,15 +170,9 @@ void handle_node_ctl(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_node_ctl_req_t, neu_json_decode_node_ctl_req, {
-            intptr_t err = 0;
-
-            err = neu_plugin_node_ctl(plugin, req->id, req->cmd);
-
-            if (err != 0) {
-                http_bad_request(aio, "{\"error\": 1}");
-            } else {
-                http_ok(aio, "{\"error\": 0}");
-            }
+            NEU_JSON_RESPONSE_ERROR(
+                neu_plugin_node_ctl(plugin, req->id, req->cmd),
+                { http_response(aio, error_code.error, result_error); });
         })
 }
 
