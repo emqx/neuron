@@ -111,6 +111,7 @@ function build_jwt() {
     cd build
     cmake -G Ninja -DBUILD_EXAMPLES=OFF \
         -DBUILD_TESTS=OFF \
+        -DBUILD_SHARED_LIBS=ON \
         -DENABLE_DEBUG_INFO_IN_RELEASE=OFF \
         -Djansson_DIR=${install_dir}/jansson \
         -DJANSSON_INCLUDE_DIRS=${install_dir}/jansson/include \

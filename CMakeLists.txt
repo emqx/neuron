@@ -139,7 +139,7 @@ target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
 target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
-target_link_libraries(neuron-base vector-static csptr jansson crypto yaml
+target_link_libraries(neuron-base vector-static csptr jansson crypto yaml jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 
 #copy file for run and unit test
