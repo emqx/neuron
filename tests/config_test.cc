@@ -40,4 +40,14 @@ TEST(JsonTest, DecodeField)
                                   (char *) "port");
     EXPECT_STREQ("7001", result);
     free(result);
+
+    result = neu_config_get_value((char *) "./neuron.yaml", 2, (char *) "api",
+                                  (char *) "public_key");
+    EXPECT_STREQ("./.ssh/id_rsa.pub", result);
+    free(result);
+
+    result = neu_config_get_value((char *) "./neuron.yaml", 2, (char *) "api",
+                                  (char *) "private_key");
+    EXPECT_STREQ("./.ssh/id_rsa", result);
+    free(result);
 }

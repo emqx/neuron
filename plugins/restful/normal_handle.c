@@ -19,12 +19,17 @@
 
 #include <dirent.h>
 #include <errno.h>
+#include <getopt.h>
+#include <jwt.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "json/neu_json_fn.h"
+#include "json/neu_json_login.h"
 #include "json/neu_json_tty.h"
 
 #include "handle.h"
@@ -95,6 +100,45 @@ void handle_ping(nng_aio *aio)
 void handle_login(nng_aio *aio)
 {
     (void) aio;
+
+    // REST_PROCESS_HTTP_REQUEST(
+    //     aio, neu_json_login_req_t, neu_json_decode_login_req, {
+    //         neu_json_login_req_t *user    = NULL;
+    //         char *                name    = "admin";
+    //         char *                pass    = "0000";
+    //         jwt_t *               jwt     = NULL;
+    //         time_t                iat     = time(NULL);
+    //         int                   ret     = 0;
+    //         jwt_alg_t             opt_alg = JWT_ALG_RS256;
+    //         unsigned char         key[10240];
+    //         size_t                key_len = 0;
+
+    //         if (req == NULL) {
+    //             http_not_found(aio, "{\"error\": 1}");
+    //         } else {
+    //             if (req->name == name && req->pass == pass) {
+    //                 user->name = req->name;
+    //                 user->pass = req->pass;
+
+    //                 ret = jwt_new(&jwt);
+    //                 if (ret != 0 || jwt == NULL) {
+    //                     http_bad_request(aio, "{\"error\": 400}");
+    //                     jwt_free(jwt);
+    //                 }
+
+    //                 ret = jwt_add_grant_int(jwt, "iat", iat);
+
+    //                 ret = jwt_set_alg(jwt, opt_alg,
+    //                                   opt_alg == JWT_ALG_NONE ? NULL : key,
+    //                                   opt_alg == JWT_ALG_NONE ? 0 : key_len);
+    //                 if (ret < 0) {
+    //                     http_bad_request(aio, "{\"error\": 400}");
+    //                     jwt_free(jwt);
+    //                 }
+    //             }
+    //             http_ok(aio, "{\"error\": 0}");
+    //         }
+    //     })
 }
 
 void handle_logout(nng_aio *aio)
