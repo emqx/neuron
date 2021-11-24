@@ -545,10 +545,12 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
     if (p_adapter != NULL) {
         *p_adapter = adapter;
     }
+
     log_debug("register adapter id: %d, type: %d, name: %s",
               reg_entity.adapter_id, adapter_info.type, adapter_info.name);
+
     *adapter_id = reg_entity.adapter_id;
-    return NEU_ERR_SUCCESS;
+    return rv;
 }
 
 static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
@@ -595,7 +597,7 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
     return rv;
 }
 
-int neu_manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
+int neu_manager_init_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
     int rv = 0;
 
@@ -615,11 +617,11 @@ int neu_manager_start_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
                          manager_bind_adapter, adapter);
     rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_REM_POST,
                          manager_unbind_adapter, adapter);
-    neu_adapter_start(adapter);
+    neu_adapter_init(adapter);
     return rv;
 }
 
-int neu_manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
+int neu_manager_uninit_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
     int rv = 0;
 
@@ -662,8 +664,18 @@ int neu_manager_stop_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     nng_sendmsg(manager_bind->mng_sock, msg, 0);
 
 stop_adapter:
-    neu_adapter_stop(adapter);
+    neu_adapter_uninit(adapter);
     return rv;
+}
+
+int neu_manager_start_adapter(neu_adapter_t *adapter)
+{
+    return neu_adapter_start(adapter);
+}
+
+int neu_manager_stop_adapter(neu_adapter_t *adapter)
+{
+    return neu_adapter_stop(adapter);
 }
 
 // Call this function before start manager loop, so it don't need lock
@@ -719,7 +731,8 @@ static void reg_and_start_default_adapters(neu_manager_t *manager)
                             (adapter_reg_cmd_t *) &default_adapter_reg_cmds[i],
                             &p_adapter, &id);
         if (id != 0 && p_adapter != NULL) {
-            neu_manager_start_adapter(manager, p_adapter);
+            neu_manager_init_adapter(manager, p_adapter);
+            neu_manager_start_adapter(p_adapter);
         }
     }
     return;
@@ -739,7 +752,8 @@ static void stop_and_unreg_bind_adapters(neu_manager_t *manager)
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
         adapter    = reg_entity->adapter;
         if (adapter != NULL) {
-            neu_manager_stop_adapter(manager, adapter);
+            neu_manager_stop_adapter(adapter);
+            neu_manager_uninit_adapter(manager, adapter);
             manager_unreg_adapter(manager, reg_entity->adapter_id, false);
         }
     }
@@ -1521,26 +1535,42 @@ int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
 {
     int               rv = 0;
     adapter_id_t      adapter_id;
+    neu_adapter_t *   adapter = NULL;
     adapter_reg_cmd_t reg_cmd;
 
     reg_cmd.adapter_type = adapter_type_from_node_type(cmd->node_type);
     reg_cmd.adapter_name = cmd->adapter_name;
     reg_cmd.plugin_name  = cmd->plugin_name;
     reg_cmd.plugin_id    = cmd->plugin_id;
-    rv = manager_reg_adapter(manager, &reg_cmd, NULL, &adapter_id);
+    rv = manager_reg_adapter(manager, &reg_cmd, &adapter, &adapter_id);
     if (rv == NEU_ERR_SUCCESS) {
         *p_node_id = neu_manager_adapter_id_to_node_id(manager, adapter_id);
+        rv         = neu_manager_init_adapter(manager, adapter);
     }
     return rv;
 }
 
 int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
 {
-    int          rv = 0;
-    adapter_id_t adapter_id;
+    int                   rv = 0;
+    adapter_id_t          adapter_id;
+    neu_adapter_t *       adapter = NULL;
+    adapter_reg_entity_t *reg_entity;
 
     adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
-    rv         = manager_unreg_adapter(manager, adapter_id, true);
+
+    nng_mtx_lock(manager->adapters_mtx);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (reg_entity != NULL) {
+        adapter = reg_entity->adapter;
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    if (adapter != NULL) {
+        neu_manager_uninit_adapter(manager, adapter);
+    }
+
+    rv = manager_unreg_adapter(manager, adapter_id, true);
     return rv;
 }
 
@@ -1939,9 +1969,8 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
 {
     adapter_id_t          adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
-    int                   ret        = -1;
-    neu_plugin_state_t    state      = { 0 };
     neu_adapter_t *       adapter;
+    int                   ret = -1;
 
     nng_mtx_lock(manager->adapters_mtx);
 
@@ -1956,42 +1985,16 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
 
     adapter = reg_entity->adapter;
     nng_mtx_unlock(manager->adapters_mtx);
-    state = neu_adapter_get_state(adapter);
 
     switch (ctl) {
     case NEU_ADAPTER_CTL_START:
-        switch (state.running) {
-        case NEU_PLUGIN_RUNNING_STATE_INIT:
-        case NEU_PLUGIN_RUNNING_STATE_IDLE:
-            ret = -1;
-            break;
-        case NEU_PLUGIN_RUNNING_STATE_READY:
-        case NEU_PLUGIN_RUNNING_STATE_STOPPED:
-            ret = neu_manager_start_adapter(manager, adapter);
-            ret = 0;
-            break;
-        case NEU_PLUGIN_RUNNING_STATE_RUNNING:
-            ret = 0;
-            break;
-        }
+        ret = neu_manager_start_adapter(adapter);
         break;
     case NEU_ADAPTER_CTL_STOP:
-        switch (state.running) {
-        case NEU_PLUGIN_RUNNING_STATE_INIT:
-        case NEU_PLUGIN_RUNNING_STATE_IDLE:
-        case NEU_PLUGIN_RUNNING_STATE_READY:
-            ret = -1;
-            break;
-        case NEU_PLUGIN_RUNNING_STATE_RUNNING:
-            ret = neu_manager_stop_adapter(manager, adapter);
-            ret = 0;
-            break;
-        case NEU_PLUGIN_RUNNING_STATE_STOPPED:
-            ret = 0;
-            break;
-        }
+        ret = neu_manager_stop_adapter(adapter);
         break;
     }
+
     return ret;
 }
 

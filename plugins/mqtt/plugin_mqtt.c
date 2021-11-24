@@ -307,11 +307,25 @@ static int mqtt_plugin_event_reply(neu_plugin_t *     plugin,
     return 0;
 }
 
+static int mqtt_plugin_start(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
+static int mqtt_plugin_stop(neu_plugin_t *plugin)
+{
+    (void) plugin;
+    return 0;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .open        = mqtt_plugin_open,
     .close       = mqtt_plugin_close,
     .init        = mqtt_plugin_init,
     .uninit      = mqtt_plugin_uninit,
+    .start       = mqtt_plugin_start,
+    .stop        = mqtt_plugin_stop,
     .config      = mqtt_plugin_config,
     .request     = mqtt_plugin_request,
     .event_reply = mqtt_plugin_event_reply

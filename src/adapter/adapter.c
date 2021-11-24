@@ -105,8 +105,8 @@
     }
 
 typedef enum adapter_state {
-    ADAPTER_STATE_INIT = 0,
-    ADAPTER_STATE_IDLE,
+    ADAPTER_STATE_IDLE = 0,
+    ADAPTER_STATE_INIT,
     ADAPTER_STATE_READY,
     ADAPTER_STATE_RUNNING,
     ADAPTER_STATE_STOPPED,
@@ -212,10 +212,6 @@ static void adapter_loop(void *arg)
 
             buf_ptr = msg_get_buf_ptr(pay_msg);
             log_info("Adapter(%s) received pong: %s", adapter->name, buf_ptr);
-            nng_mtx_lock(adapter->mtx);
-            adapter->state = ADAPTER_STATE_IDLE;
-            nng_mtx_unlock(adapter->mtx);
-
             break;
         }
 
@@ -418,7 +414,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         return (-1);
     }
 
-    if (adapter->state == ADAPTER_STATE_INIT) {
+    if (adapter->state == ADAPTER_STATE_IDLE) {
         log_warn("The adapter loop not running");
         return -1;
     }
@@ -919,6 +915,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->id          = info->id;
     adapter->type        = info->type;
     adapter->name        = strdup(info->name);
+    adapter->state       = ADAPTER_STATE_IDLE;
     adapter->new_req_id  = 1;
     adapter->plugin_id   = info->plugin_id;
     adapter->plugin_kind = info->plugin_kind;
@@ -998,7 +995,7 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     return;
 }
 
-int neu_adapter_start(neu_adapter_t *adapter)
+int neu_adapter_init(neu_adapter_t *adapter)
 {
     int rv = 0;
 
@@ -1019,7 +1016,7 @@ int neu_adapter_start(neu_adapter_t *adapter)
     return rv;
 }
 
-int neu_adapter_stop(neu_adapter_t *adapter)
+int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     int rv = 0;
 
@@ -1030,8 +1027,7 @@ int neu_adapter_stop(neu_adapter_t *adapter)
 
     log_info("Stop the adapter(%s)", adapter->name);
     nng_mtx_lock(adapter->mtx);
-    adapter->stop  = true;
-    adapter->state = ADAPTER_STATE_STOPPED;
+    adapter->stop = true;
     nng_mtx_unlock(adapter->mtx);
     nng_thread_destroy(adapter->thrd);
 
@@ -1042,6 +1038,77 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     }
 
     return rv;
+}
+
+int neu_adapter_start(neu_adapter_t *adapter)
+{
+    // TODO  start by send msg
+    const neu_plugin_intf_funs_t *intf_funs = adapter->plugin_module->intf_funs;
+    neu_err_code_e                error     = NEU_ERR_SUCCESS;
+
+    nng_mtx_lock(adapter->mtx);
+    switch (adapter->state) {
+    case ADAPTER_STATE_IDLE:
+    case ADAPTER_STATE_INIT:
+        error = NEU_ERR_NODE_NOT_READY;
+        break;
+    case ADAPTER_STATE_RUNNING:
+        error = NEU_ERR_NODE_IS_RUNNING;
+        break;
+    case ADAPTER_STATE_READY:
+    case ADAPTER_STATE_STOPPED:
+        break;
+    }
+    nng_mtx_unlock(adapter->mtx);
+
+    if (error != NEU_ERR_SUCCESS) {
+        return error;
+    }
+
+    error = intf_funs->start(adapter->plugin);
+    if (error == NEU_ERR_SUCCESS) {
+        nng_mtx_lock(adapter->mtx);
+        adapter->state = ADAPTER_STATE_RUNNING;
+        nng_mtx_unlock(adapter->mtx);
+    }
+
+    return error;
+}
+
+int neu_adapter_stop(neu_adapter_t *adapter)
+{
+    // TODO  stop by send msg
+
+    const neu_plugin_intf_funs_t *intf_funs = adapter->plugin_module->intf_funs;
+    neu_err_code_e                error     = NEU_ERR_SUCCESS;
+
+    nng_mtx_lock(adapter->mtx);
+    switch (adapter->state) {
+    case ADAPTER_STATE_IDLE:
+    case ADAPTER_STATE_INIT:
+    case ADAPTER_STATE_READY:
+        error = NEU_ERR_NODE_NOT_RUNNING;
+        break;
+    case ADAPTER_STATE_STOPPED:
+        error = NEU_ERR_NODE_IS_STOPED;
+        break;
+    case ADAPTER_STATE_RUNNING:
+        break;
+    }
+    nng_mtx_unlock(adapter->mtx);
+
+    if (error != NEU_ERR_SUCCESS) {
+        return error;
+    }
+
+    error = intf_funs->stop(adapter->plugin);
+    if (error == NEU_ERR_SUCCESS) {
+        nng_mtx_lock(adapter->mtx);
+        adapter->state = ADAPTER_STATE_STOPPED;
+        nng_mtx_unlock(adapter->mtx);
+    }
+
+    return error;
 }
 
 const char *neu_adapter_get_name(neu_adapter_t *adapter)
@@ -1129,7 +1196,7 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
             if (adapter->node_setting.buf != NULL)
                 free(adapter->node_setting.buf);
             adapter->node_setting.buf = strdup(config->buf);
-            if (adapter->state == ADAPTER_STATE_IDLE) {
+            if (adapter->state == ADAPTER_STATE_INIT) {
                 adapter->state = ADAPTER_STATE_READY;
             }
 
