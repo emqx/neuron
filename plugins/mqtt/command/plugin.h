@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT_COMMAND
-#define NEURON_PLUGIN_MQTT_COMMAND
+#ifndef NEURON_PLUGIN_MQTT_COMMAND_PLUGIN
+#define NEURON_PLUGIN_MQTT_COMMAND_PLUGIN
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,27 +26,16 @@ extern "C" {
 
 #include <neuron.h>
 
-#include "datatag.h"
-#include "group_config.h"
-#include "node.h"
-#include "ping.h"
-#include "plugin.h"
-#include "read_write.h"
+#include "common.h"
 
-typedef void (*context_add_callback)(neu_plugin_t *plugin, uint32_t req_id,
-                                     neu_json_mqtt_t *parse_head, char *result,
-                                     bool ready);
-
-typedef struct {
-    const char *         topic_name;
-    size_t               topic_len;
-    void *               payload;
-    size_t               len;
-    void *               context;
-    context_add_callback context_add;
-} mqtt_response_t;
-
-void command_response_handle(mqtt_response_t *response);
+char *command_plugin_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                         neu_json_get_plugin_req_t *req);
+char *command_plugin_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                         neu_json_add_plugin_req_t *req);
+char *command_plugin_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                            neu_json_update_plugin_req_t *req);
+char *command_plugin_delete(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                            neu_json_del_plugin_req_t *req);
 
 #ifdef __cplusplus
 }

@@ -28,8 +28,8 @@ extern "C" {
 
 #include "common.h"
 
-char *command_nodes_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                        neu_json_get_nodes_req_t *req);
+char *command_node_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                       neu_json_get_nodes_req_t *req);
 char *command_node_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_json_add_node_req_t *req);
 char *command_node_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
