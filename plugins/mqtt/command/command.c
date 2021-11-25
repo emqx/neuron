@@ -33,7 +33,7 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_get_group_config_req_t *req = NULL;
         rc = neu_json_decode_get_group_config_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_get_group_configs(plugin, mqtt, req);
+            ret_str = command_group_config_get(plugin, mqtt, req);
             neu_json_decode_get_group_config_req_free(req);
         }
         break;
@@ -42,7 +42,7 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_add_group_config_req_t *req = NULL;
         rc = neu_json_decode_add_group_config_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_add_group_config(plugin, mqtt, req);
+            ret_str = command_group_config_add(plugin, mqtt, req);
             neu_json_decode_add_group_config_req_free(req);
         }
         break;
@@ -51,7 +51,7 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_update_group_config_req_t *req = NULL;
         rc = neu_json_decode_update_group_config_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_update_group_config(plugin, mqtt, req);
+            ret_str = command_group_config_update(plugin, mqtt, req);
             neu_json_decode_update_group_config_req_free(req);
         }
         break;
@@ -60,8 +60,35 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_del_group_config_req_t *req = NULL;
         rc = neu_json_decode_del_group_config_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_delete_group_config(plugin, mqtt, req);
+            ret_str = command_group_config_delete(plugin, mqtt, req);
             neu_json_decode_del_group_config_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_SUBSCRIBE: {
+        neu_json_subscribe_req_t *req = NULL;
+        rc = neu_json_decode_subscribe_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_group_config_subscribe(plugin, mqtt, req);
+            neu_json_decode_subscribe_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_UNSUBSCRIBE: {
+        neu_json_unsubscribe_req_t *req = NULL;
+        rc = neu_json_decode_unsubscribe_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_group_config_unsubscribe(plugin, mqtt, req);
+            neu_json_decode_unsubscribe_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_GET_SUBSCRIBE_GRP_CONFIG: {
+        neu_json_get_group_config_req_t *req = NULL;
+        rc = neu_json_decode_get_group_config_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_get_group_config_subscribes(plugin, mqtt, req);
+            neu_json_decode_get_group_config_req_free(req);
         }
         break;
     }

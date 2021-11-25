@@ -20,9 +20,10 @@
 #include <stdlib.h>
 
 #include "group_config.h"
+#include "neu_subscribe.h"
 #include "json/neu_json_error.h"
 
-static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
+static void all_group_configs_get(neu_plugin_t *plugin, const uint32_t node_id,
                                   neu_json_get_group_config_resp_t *res)
 {
     vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
@@ -76,8 +77,7 @@ static void get_all_group_configs(neu_plugin_t *plugin, const uint32_t node_id,
     GROUP_CONFIGS_UNINIT(configs);
 }
 
-static void
-free_parse_get_group_config_res(neu_json_get_group_config_resp_t *res)
+static void all_group_config_res_free(neu_json_get_group_config_resp_t *res)
 {
     if (NULL == res) {
         return;
@@ -96,22 +96,21 @@ free_parse_get_group_config_res(neu_json_get_group_config_resp_t *res)
     free(res->group_configs);
 }
 
-char *command_get_group_configs(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                                neu_json_get_group_config_req_t *req)
+char *command_group_config_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                               neu_json_get_group_config_req_t *req)
 {
-    log_debug("uuid:%s, node id:%d", mqtt->uuid, req->node_id);
+    log_debug("Get group config uuid:%s, node id:%d", mqtt->uuid, req->node_id);
 
     char *                           json_str = NULL;
     neu_json_get_group_config_resp_t res      = { 0 };
-    get_all_group_configs(plugin, req->node_id, &res);
+    all_group_configs_get(plugin, req->node_id, &res);
     neu_json_encode_with_mqtt(&res, neu_json_encode_get_group_config_resp, mqtt,
                               neu_json_encode_mqtt_resp, &json_str);
-    free_parse_get_group_config_res(&res);
-
+    all_group_config_res_free(&res);
     return json_str;
 }
 
-static int add_group_config(neu_plugin_t *plugin, const char *config_name,
+static int group_config_add(neu_plugin_t *plugin, const char *config_name,
                             const uint32_t node_id, const int read_interval)
 {
     vector_t nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
@@ -141,14 +140,14 @@ static int add_group_config(neu_plugin_t *plugin, const char *config_name,
     return 0;
 }
 
-char *command_add_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_group_config_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                neu_json_add_group_config_req_t *req)
 {
     log_debug("uuid:%s, config:%s, node id:%d, "
               "read interval:%d",
               mqtt->uuid, req->name, req->node_id, req->interval);
 
-    int rc = add_group_config(plugin, req->name, req->node_id, req->interval);
+    int rc = group_config_add(plugin, req->name, req->node_id, req->interval);
 
     char *                json_str = NULL;
     neu_json_error_resp_t error    = { .error = rc };
@@ -158,7 +157,7 @@ char *command_add_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return json_str;
 }
 
-static int update_group_config(neu_plugin_t *plugin, const char *config_name,
+static int group_config_update(neu_plugin_t *plugin, const char *config_name,
                                const uint32_t node_id, const int read_interval)
 {
     if (0 == node_id) {
@@ -194,7 +193,7 @@ static int update_group_config(neu_plugin_t *plugin, const char *config_name,
     return 0;
 }
 
-char *command_update_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_group_config_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                   neu_json_update_group_config_req_t *req)
 {
     log_debug("uuid:%s, config:%s, src node id:%d,"
@@ -202,7 +201,7 @@ char *command_update_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
               mqtt->uuid, req->name, req->node_id, req->interval);
 
     int rc =
-        update_group_config(plugin, req->name, req->node_id, req->interval);
+        group_config_update(plugin, req->name, req->node_id, req->interval);
 
     char *                json_str = NULL;
     neu_json_error_resp_t error    = { .error = rc };
@@ -212,7 +211,7 @@ char *command_update_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return json_str;
 }
 
-static int delete_group_config(neu_plugin_t *plugin, const char *config_name,
+static int group_config_delete(neu_plugin_t *plugin, const char *config_name,
                                const uint32_t node_id)
 {
     if (0 == node_id) {
@@ -242,18 +241,93 @@ static int delete_group_config(neu_plugin_t *plugin, const char *config_name,
     return 0;
 }
 
-char *command_delete_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_group_config_delete(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                   neu_json_del_group_config_req_t *req)
 {
     log_debug("uuid:%s, config:%s, src node id:%d", mqtt->uuid, req->name,
               req->node_id);
-
-    int rc = delete_group_config(plugin, req->name, req->node_id);
-
-    char *                json_str = NULL;
-    neu_json_error_resp_t error    = { .error = rc };
-
+    int   rc       = group_config_delete(plugin, req->name, req->node_id);
+    char *json_str = NULL;
+    neu_json_error_resp_t error = { .error = rc };
     rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                    neu_json_encode_mqtt_resp, &json_str);
     return json_str;
+}
+
+char *command_group_config_subscribe(neu_plugin_t *            plugin,
+                                     neu_json_mqtt_t *         mqtt,
+                                     neu_json_subscribe_req_t *req)
+{
+    log_info("Subscribe uuid:%s, config name:%s", mqtt->uuid, req->name);
+    neu_json_error_resp_t error = { 0 };
+    neu_taggrp_config_t * config =
+        neu_system_find_group_config(plugin, req->src_node_id, req->name);
+    if (NULL != config) {
+        neu_plugin_send_subscribe_cmd(plugin, req->src_node_id,
+                                      req->dst_node_id, config);
+        error.error = NEU_ERR_SUCCESS;
+    } else {
+        error.error = NEU_ERR_GRP_CONFIG_NOT_EXIST;
+    }
+
+    char *result = NULL;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
+}
+
+char *command_group_config_unsubscribe(neu_plugin_t *              plugin,
+                                       neu_json_mqtt_t *           mqtt,
+                                       neu_json_unsubscribe_req_t *req)
+{
+    log_info("Unsubscribe uuid:%s, config name:%s", mqtt->uuid, req->name);
+    neu_json_error_resp_t error = { 0 };
+    neu_taggrp_config_t * config =
+        neu_system_find_group_config(plugin, req->src_node_id, req->name);
+    if (NULL != config) {
+        neu_plugin_send_unsubscribe_cmd(plugin, req->src_node_id,
+                                        req->dst_node_id, config);
+        error.error = NEU_ERR_SUCCESS;
+    } else {
+        error.error = NEU_ERR_GRP_CONFIG_NOT_EXIST;
+    }
+
+    char *result = NULL;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
+}
+
+char *command_get_group_config_subscribes(neu_plugin_t *   plugin,
+                                          neu_json_mqtt_t *mqtt,
+                                          neu_json_get_group_config_req_t *req)
+{
+    neu_json_get_subscribe_resp_t sub_grp_configs = { 0 };
+    int                           index           = 0;
+    vector_t *configs = neu_system_get_sub_group_configs(plugin, req->node_id);
+
+    sub_grp_configs.n_group = configs->size;
+    sub_grp_configs.groups =
+        calloc(configs->size, sizeof(neu_json_get_subscribe_resp_group_t));
+
+    VECTOR_FOR_EACH(configs, iter)
+    {
+        neu_sub_grp_config_t *sgc =
+            (neu_sub_grp_config_t *) iterator_get(&iter);
+
+        sub_grp_configs.groups[index].node_id = sgc->node_id;
+        sub_grp_configs.groups[index].group_config_name =
+            sgc->group_config_name;
+
+        index += 1;
+    }
+
+    vector_free(configs);
+    free(sub_grp_configs.groups);
+
+    char *result = NULL;
+    neu_json_encode_with_mqtt(&sub_grp_configs,
+                              neu_json_encode_get_subscribe_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }
