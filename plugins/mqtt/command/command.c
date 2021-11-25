@@ -201,6 +201,10 @@ void command_response_handle(mqtt_response_t *response)
         }
         break;
     }
+    case NEU_MQTT_OP_PING: {
+        ret_str = command_ping(plugin, mqtt);
+        break;
+    }
     default:
         break;
     }
