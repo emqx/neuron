@@ -21,8 +21,8 @@
 
 #include "node.h"
 
-char *command_nodes_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                        neu_json_get_nodes_req_t *req)
+char *command_node_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                       neu_json_get_nodes_req_t *req)
 {
     log_info("Get node list uuid:%s, node type:%d", mqtt->uuid, req->node_type);
     neu_node_type_e       node_type = req->node_type;
@@ -53,6 +53,8 @@ char *command_nodes_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         res.nodes[index].name = info->node_name;
         index += 1;
     }
+
+    vector_uninit(&nodes);
 
     char *result = NULL;
     neu_json_encode_with_mqtt(&res, neu_json_encode_get_nodes_resp, mqtt,

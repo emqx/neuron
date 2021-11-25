@@ -133,7 +133,7 @@ void command_response_handle(mqtt_response_t *response)
         neu_json_get_nodes_req_t *req = NULL;
         rc = neu_json_decode_get_nodes_req(json_str, &req);
         if (0 == rc) {
-            ret_str = command_nodes_get(plugin, mqtt, req);
+            ret_str = command_node_get(plugin, mqtt, req);
             neu_json_decode_get_nodes_req_free(req);
         }
         break;
@@ -203,6 +203,42 @@ void command_response_handle(mqtt_response_t *response)
     }
     case NEU_MQTT_OP_PING: {
         ret_str = command_ping(plugin, mqtt);
+        break;
+    }
+    case NEU_MQTT_OP_ADD_PLUGIN: {
+        neu_json_add_plugin_req_t *req = NULL;
+        rc = neu_json_decode_add_plugin_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_plugin_add(plugin, mqtt, req);
+            neu_json_decode_add_plugin_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_UPDATE_PLUGIN: {
+        neu_json_update_plugin_req_t *req = NULL;
+        rc = neu_json_decode_update_plugin_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_plugin_update(plugin, mqtt, req);
+            neu_json_decode_update_plugin_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_DELETE_PLUGIN: {
+        neu_json_del_plugin_req_t *req = NULL;
+        rc = neu_json_decode_del_plugin_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_plugin_delete(plugin, mqtt, req);
+            neu_json_decode_del_plugin_req_free(req);
+        }
+        break;
+    }
+    case NEU_MQTT_OP_GET_PLUGIN: {
+        neu_json_get_plugin_req_t *req = NULL;
+        rc = neu_json_decode_get_plugin_req(json_str, &req);
+        if (0 == rc) {
+            ret_str = command_plugin_get(plugin, mqtt, req);
+            neu_json_decode_get_plugin_req_free(req);
+        }
         break;
     }
     default:
