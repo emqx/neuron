@@ -28,14 +28,23 @@ extern "C" {
 
 #include "common.h"
 
-char *command_get_group_configs(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                                neu_json_get_group_config_req_t *req);
-char *command_add_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_group_config_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                               neu_json_get_group_config_req_t *req);
+char *command_group_config_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                neu_json_add_group_config_req_t *req);
-char *command_update_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_group_config_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                   neu_json_update_group_config_req_t *req);
-char *command_delete_group_config(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+char *command_group_config_delete(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                   neu_json_del_group_config_req_t *req);
+char *command_group_config_subscribe(neu_plugin_t *            plugin,
+                                     neu_json_mqtt_t *         mqtt,
+                                     neu_json_subscribe_req_t *req);
+char *command_group_config_unsubscribe(neu_plugin_t *              plugin,
+                                       neu_json_mqtt_t *           mqtt,
+                                       neu_json_unsubscribe_req_t *req);
+char *command_get_group_config_subscribes(neu_plugin_t *   plugin,
+                                          neu_json_mqtt_t *mqtt,
+                                          neu_json_get_group_config_req_t *req);
 
 #ifdef __cplusplus
 }
