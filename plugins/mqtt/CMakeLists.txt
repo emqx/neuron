@@ -10,6 +10,7 @@ set(src
 	command/group_config.c
 	command/datatag.c
 	command/node.c
+	command/ping.c
 	command/command.c)
 
 add_library(plugin-mqtt SHARED ${src})

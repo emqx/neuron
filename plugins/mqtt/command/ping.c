@@ -17,37 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT_COMMAND
-#define NEURON_PLUGIN_MQTT_COMMAND
+#include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <neuron.h>
-
-#include "datatag.h"
-#include "group_config.h"
-#include "node.h"
 #include "ping.h"
-#include "read_write.h"
 
-typedef void (*context_add_callback)(neu_plugin_t *plugin, uint32_t req_id,
-                                     neu_json_mqtt_t *parse_head, char *result,
-                                     bool ready);
-
-typedef struct {
-    const char *         topic_name;
-    size_t               topic_len;
-    void *               payload;
-    size_t               len;
-    void *               context;
-    context_add_callback context_add;
-} mqtt_response_t;
-
-void command_response_handle(mqtt_response_t *response);
-
-#ifdef __cplusplus
+char *command_ping(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
+{
+    UNUSED(plugin);
+    log_info("Node control uuid:%s", mqtt->uuid);
+    char *result = calloc(100, sizeof(char));
+    snprintf(result, 99, "{\"function\":%d, \"uuid\": \"%s\"}", mqtt->function,
+             mqtt->uuid);
+    return result;
 }
-#endif
-#endif
