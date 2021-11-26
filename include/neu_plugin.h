@@ -90,6 +90,9 @@ intptr_t neu_system_update_group_config(neu_plugin_t *       plugin,
 neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
                                                   neu_node_id_t node_id,
                                                   const char *  name);
+neu_taggrp_config_t *neu_system_ref_group_config(neu_plugin_t *plugin,
+                                                  neu_node_id_t node_id,
+                                                  const char *  name);
 // uninit vector
 vector_t      neu_system_get_group_configs(neu_plugin_t *plugin,
                                            neu_node_id_t node_id);

@@ -406,6 +406,28 @@ neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
     return find_config;
 }
 
+neu_taggrp_config_t *neu_system_ref_group_config(neu_plugin_t *plugin,
+                                                  neu_node_id_t node_id,
+                                                  const char *  name)
+{
+    vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
+    neu_taggrp_config_t *find_config = NULL;
+
+    VECTOR_FOR_EACH(&grp_configs, iter)
+    {
+        neu_taggrp_config_t *config =
+            *(neu_taggrp_config_t **) iterator_get(&iter);
+        if (strncmp(neu_taggrp_cfg_get_name(config), name, strlen(name)) == 0) {
+            find_config = config;
+            break;
+        }
+    }
+
+    vector_uninit(&grp_configs);
+
+    return neu_taggrp_cfg_ref(find_config);
+}
+
 int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
                                       neu_datatag_table_t *tag_table,
                                       neu_attribute_e      attribute)
