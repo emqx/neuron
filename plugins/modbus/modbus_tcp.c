@@ -86,11 +86,12 @@ static void start_periodic_read(neu_plugin_t *       plugin,
     nng_aio_alloc(&aio, NULL, NULL);
     nng_aio_set_timeout(aio, interval != 0 ? interval : 10000);
 
-    sub_inst->grp_configs = grp_config;
-    sub_inst->point_ctx   = modbus_point_init(plugin);
-    sub_inst->aio         = aio;
-    sub_inst->plugin      = plugin;
-    sub_inst->name        = strdup(neu_taggrp_cfg_get_name(grp_config));
+    sub_inst->grp_configs =
+        (neu_taggrp_config_t *) neu_taggrp_cfg_ref(grp_config);
+    sub_inst->point_ctx = modbus_point_init(plugin);
+    sub_inst->aio       = aio;
+    sub_inst->plugin    = plugin;
+    sub_inst->name      = strdup(neu_taggrp_cfg_get_name(grp_config));
 
     VECTOR_FOR_EACH(ids, iter)
     {
@@ -142,6 +143,7 @@ static void stop_periodic_read(neu_plugin_t *       plugin,
             TAILQ_REMOVE(&plugin->sub_instances, sub_inst, node);
             nng_aio_cancel(sub_inst->aio);
             modbus_point_destory(sub_inst->point_ctx);
+            neu_taggrp_cfg_free(sub_inst->grp_configs);
             free(sub_inst->name);
             free(sub_inst);
             log_info("stop periodic read, grp: %p", grp_config);

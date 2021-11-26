@@ -567,7 +567,8 @@ static void group_config_swap(opc_subscribe_tuple_t *tuple)
     neu_taggrp_config_t *new_config = neu_system_find_group_config(
         tuple->plugin, tuple->node_id, tuple->name);
     neu_taggrp_cfg_anchor(new_config);
-    tuple->config = new_config;
+    neu_taggrp_cfg_free(tuple->config);
+    tuple->config = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(new_config);
 }
 
 static void cycle_read(nng_aio *aio, void *arg, int code)
@@ -609,6 +610,7 @@ static void cycle_read_stop(opc_subscribe_tuple_t *tuple)
 {
     nng_aio_cancel(tuple->aio);
     nng_aio_free(tuple->aio);
+    neu_taggrp_cfg_free(tuple->config);
 }
 
 static opc_subscribe_tuple_t *subscribe_tuple_new(opc_handle_context_t *context,
@@ -623,7 +625,7 @@ static opc_subscribe_tuple_t *subscribe_tuple_new(opc_handle_context_t *context,
     tuple->plugin  = context->plugin;
     tuple->node_id = context->self_node_id;
     tuple->name    = strdup(neu_taggrp_cfg_get_name(config));
-    tuple->config  = config;
+    tuple->config  = (neu_taggrp_config_t *) neu_taggrp_cfg_ref(config);
     tuple->context = context;
     return tuple;
 }
