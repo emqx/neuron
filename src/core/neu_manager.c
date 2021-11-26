@@ -467,6 +467,7 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         reg_entity->bind_count = 0;
         manager->bind_info.bind_count--;
         manager->bind_info.expect_bind_count--;
+        nng_cv_wake(reg_entity->cv);
         nng_mtx_unlock(manager->bind_info.mtx);
         log_info("The manager unbind the adapter(%s)",
                  neu_adapter_get_name(cur_adapter));
@@ -577,6 +578,18 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
         adapter     = reg_entity->adapter;
         datatag_mng = reg_entity->datatag_manager;
         cv          = reg_entity->cv;
+        if (cv != NULL) {
+            manager_bind_info_t *bind_info;
+
+            bind_info = &manager->bind_info;
+            nng_mtx_lock(bind_info->mtx);
+            // wait manage unbind the adapter
+            while (reg_entity->bind_count != 0) {
+                nng_cv_wait(cv);
+            }
+            nng_mtx_unlock(bind_info->mtx);
+        }
+
         if (need_erase) {
             vector_erase(reg_adapters, index);
         }
