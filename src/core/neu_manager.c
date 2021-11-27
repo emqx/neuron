@@ -69,6 +69,8 @@ struct neu_manager {
     manager_bind_info_t bind_info;
     plugin_manager_t *  plugin_manager;
     nng_mtx *           adapters_mtx;
+    nng_cv *            adapters_cv;
+    bool                is_adapters_freezed;
     vector_t            reg_adapters;
 };
 
@@ -541,6 +543,9 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
     reg_entity.datatag_manager = datatag_manager;
     reg_entity.bind_count      = 0;
     nng_mtx_lock(manager->adapters_mtx);
+    while (manager->is_adapters_freezed) {
+        nng_cv_wait(manager->adapters_cv);
+    }
     vector_push_back(&manager->reg_adapters, &reg_entity);
     nng_mtx_unlock(manager->adapters_mtx);
     if (p_adapter != NULL) {
@@ -557,57 +562,47 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
 static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
                                  bool need_erase)
 {
-    int                    rv = NEU_ERR_NODE_NOT_EXIST;
-    size_t                 index;
-    vector_t *             reg_adapters;
-    nng_cv *               cv;
-    neu_adapter_t *        adapter;
-    neu_datatag_manager_t *datatag_mng;
+    size_t                index;
+    vector_t *            reg_adapters;
+    adapter_reg_entity_t *reg_entity;
+    manager_bind_info_t * bind_info;
 
-    adapter      = NULL;
-    datatag_mng  = NULL;
-    cv           = NULL;
     reg_adapters = &manager->reg_adapters;
 
     nng_mtx_lock(manager->adapters_mtx);
     index = find_reg_adapter_index_by_id(reg_adapters, id);
-    if (index != SIZE_MAX) {
-        adapter_reg_entity_t *reg_entity;
-
-        reg_entity  = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
-        adapter     = reg_entity->adapter;
-        datatag_mng = reg_entity->datatag_manager;
-        cv          = reg_entity->cv;
-        if (cv != NULL) {
-            manager_bind_info_t *bind_info;
-
-            bind_info = &manager->bind_info;
-            nng_mtx_lock(bind_info->mtx);
-            // wait manage unbind the adapter
-            while (reg_entity->bind_count != 0) {
-                nng_cv_wait(cv);
-            }
-            nng_mtx_unlock(bind_info->mtx);
-        }
-
-        if (need_erase) {
-            vector_erase(reg_adapters, index);
-        }
-        rv = NEU_ERR_SUCCESS;
+    if (index == SIZE_MAX) {
+        nng_mtx_unlock(manager->adapters_mtx);
+        return NEU_ERR_NODE_NOT_EXIST;
     }
+    manager->is_adapters_freezed = true;
+    reg_entity = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
     nng_mtx_unlock(manager->adapters_mtx);
 
-    if (cv != NULL) {
-        nng_cv_free(cv);
+    // Do not lock adapters_mtx when waiting unbind adapter
+    bind_info = &manager->bind_info;
+    nng_mtx_lock(bind_info->mtx);
+    // wait manager unbind the adapter
+    while (reg_entity->bind_count != 0) {
+        nng_cv_wait(reg_entity->cv);
     }
-    if (datatag_mng != NULL) {
-        neu_datatag_mng_destroy(datatag_mng);
+    nng_mtx_unlock(bind_info->mtx);
+
+    nng_cv_free(reg_entity->cv);
+    neu_datatag_mng_destroy(reg_entity->datatag_manager);
+    if (reg_entity->adapter != NULL) {
+        neu_adapter_destroy(reg_entity->adapter);
     }
 
-    if (adapter != NULL) {
-        neu_adapter_destroy(adapter);
+    nng_mtx_lock(manager->adapters_mtx);
+    if (need_erase) {
+        vector_erase(reg_adapters, index);
     }
-    return rv;
+    manager->is_adapters_freezed = false;
+    nng_cv_wake(manager->adapters_cv);
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return NEU_ERR_SUCCESS;
 }
 
 int neu_manager_init_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
@@ -807,7 +802,7 @@ static int sub_grp_config_with_adapter(neu_manager_t *       manager,
 
     bind_info = &manager->bind_info;
     nng_mtx_lock(bind_info->mtx);
-    // wait manage bind the adapter
+    // wait manager bind the adapter
     while (reg_entity->bind_count == 0) {
         nng_cv_wait(reg_entity->cv);
     }
@@ -847,7 +842,7 @@ static int unsub_grp_config_with_adapter(neu_manager_t *       manager,
 
     bind_info = &manager->bind_info;
     nng_mtx_lock(bind_info->mtx);
-    // wait manage bind the adapter
+    // wait manager bind the adapter
     while (reg_entity->bind_count == 0) {
         nng_cv_wait(reg_entity->cv);
     }
@@ -1421,15 +1416,22 @@ neu_manager_t *neu_manager_create()
         neu_panic("Out of memeory for create neuron manager");
     }
 
-    manager->state          = MANAGER_STATE_NULL;
-    manager->stop           = false;
-    manager->listen_url     = manager_url;
-    manager->new_adapter_id = 1;
+    manager->state               = MANAGER_STATE_NULL;
+    manager->stop                = false;
+    manager->listen_url          = manager_url;
+    manager->new_adapter_id      = 1;
+    manager->is_adapters_freezed = false;
+
     int rv, rv1;
     rv  = nng_mtx_alloc(&manager->mtx);
     rv1 = nng_mtx_alloc(&manager->adapters_mtx);
     if (rv != 0 || rv1 != 0) {
         neu_panic("Can't allocate mutex for manager");
+    }
+
+    rv = nng_cv_alloc(&manager->adapters_cv, manager->adapters_mtx);
+    if (rv != 0) {
+        neu_panic("Failed to initialize condition(cv) for vector of adapters");
     }
 
     rv = vector_init(&manager->reg_adapters, DEFAULT_ADAPTER_REG_COUNT,
@@ -1462,6 +1464,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     uninit_bind_info(&manager->bind_info);
     vector_uninit(&manager->reg_adapters);
 
+    nng_cv_free(manager->adapters_cv);
     nng_mtx_free(manager->adapters_mtx);
     nng_mtx_free(manager->mtx);
     free(manager);
