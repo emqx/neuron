@@ -43,11 +43,11 @@ TEST(JsonTest, DecodeField)
 
     result = neu_config_get_value((char *) "./neuron.yaml", 2, (char *) "api",
                                   (char *) "public_key");
-    EXPECT_STREQ("./.ssh/id_rsa.pub", result);
+    EXPECT_STREQ("./public_test.pem", result);
     free(result);
 
     result = neu_config_get_value((char *) "./neuron.yaml", 2, (char *) "api",
                                   (char *) "private_key");
-    EXPECT_STREQ("./.ssh/id_rsa", result);
+    EXPECT_STREQ("./private_test.key", result);
     free(result);
 }

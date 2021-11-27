@@ -30,6 +30,7 @@
 #include "neu_log.h"
 #include "rest.h"
 #include "rw_handle.h"
+#include "utils/neu_jwt.h"
 
 #define neu_plugin_module default_dashboard_plugin_module
 
@@ -227,6 +228,15 @@ static int dashb_plugin_init(neu_plugin_t *plugin)
     int rv = 0;
 
     (void) plugin;
+
+    char *private_key_path = neu_config_get_value(
+        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "private_key");
+    char *public_key_path = neu_config_get_value(
+        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "public_key");
+    rv = neu_jwt_init(public_key_path, private_key_path);
+
+    free(private_key_path);
+    free(public_key_path);
 
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;

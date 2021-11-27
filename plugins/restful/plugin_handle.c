@@ -34,7 +34,7 @@ void handle_add_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_plugin_req_t, neu_json_decode_add_plugin_req, {
             intptr_t err = neu_system_add_plugin(
                 plugin, req->kind, req->node_type, req->name, req->lib_name);
@@ -50,7 +50,7 @@ void handle_del_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_plugin_req_t, neu_json_decode_del_plugin_req, {
             plugin_id_t id;
             id.id_val    = req->id;
@@ -67,7 +67,7 @@ void handle_update_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_plugin_req_t, neu_json_decode_update_plugin_req, {
             intptr_t err = neu_system_update_plugin(
                 plugin, req->kind, req->node_type, req->name, req->lib_name);
@@ -88,6 +88,8 @@ void handle_get_plugin(nng_aio *aio)
     int                        index       = 0;
     uint32_t                   plugin_id   = 0;
     vector_t                   plugin_libs = neu_system_get_plugin(plugin);
+
+    VALIDATE_JWT(aio);
 
     if (s_plugin_id != NULL) {
         plugin_id = atoi(s_plugin_id);

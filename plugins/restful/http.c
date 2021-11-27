@@ -54,6 +54,13 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     return 0;
 }
 
+const char *http_get_header(nng_aio *aio, char *name)
+{
+    nng_http_req *req = nng_aio_get_input(aio, 0);
+
+    return nng_http_req_get_header(req, name);
+}
+
 int http_get_body(nng_aio *aio, void **data, size_t *data_size)
 {
     nng_http_req *req = nng_aio_get_input(aio, 0);
@@ -144,6 +151,14 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         break;
     case NEU_ERR_EINTERNAL:
         status = NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+        break;
+    case NEU_ERR_DECODE_TOKEN:
+    case NEU_ERR_EXPIRED_TOKEN:
+    case NEU_ERR_VALIDATE_TOKEN:
+    case NEU_ERR_INVALID_TOKEN:
+    case NEU_ERR_NEED_TOKEN:
+    case NEU_ERR_INVALID_USER_OR_PASSWORD:
+        status = NNG_HTTP_STATUS_UNAUTHORIZED;
         break;
     case NEU_ERR_BODY_IS_WRONG:
     case NEU_ERR_PARAM_IS_WRONG:

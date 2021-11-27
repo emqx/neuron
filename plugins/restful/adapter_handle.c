@@ -35,7 +35,7 @@ void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             neu_err_code_e code = { 0 };
 
@@ -56,7 +56,7 @@ void handle_del_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_node_req_t, neu_json_decode_del_node_req, {
             NEU_JSON_RESPONSE_ERROR(neu_system_del_node(plugin, req->id), {
                 http_response(aio, error_code.error, result_error);
@@ -68,7 +68,7 @@ void handle_update_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_node_req_t, neu_json_decode_update_node_req,
         { NEU_JSON_RESPONSE_ERROR(
             neu_system_update_node(plugin, req->id, req->name),
@@ -80,6 +80,8 @@ void handle_get_adapter(nng_aio *aio)
     neu_plugin_t *  plugin    = neu_rest_get_plugin();
     char *          result    = NULL;
     neu_node_type_e node_type = { 0 };
+
+    VALIDATE_JWT(aio);
 
     if (http_get_param_int(aio, "type", (int32_t *) &node_type) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
@@ -127,7 +129,7 @@ void handle_set_node_setting(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
             char *config_buf = calloc(req_data_size + 1, sizeof(char));
 
@@ -145,6 +147,8 @@ void handle_get_node_setting(nng_aio *aio)
     neu_plugin_t *plugin  = neu_rest_get_plugin();
     char *        setting = NULL;
     neu_node_id_t node_id = 0;
+
+    VALIDATE_JWT(aio);
 
     if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
@@ -168,7 +172,7 @@ void handle_node_ctl(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_ctl_req_t, neu_json_decode_node_ctl_req, {
             NEU_JSON_RESPONSE_ERROR(
                 neu_plugin_node_ctl(plugin, req->id, req->cmd),
@@ -183,6 +187,8 @@ void handle_get_node_state(nng_aio *aio)
     neu_json_get_node_state_resp_t res     = { 0 };
     neu_plugin_state_t             state   = { 0 };
     char *                         result  = NULL;
+
+    VALIDATE_JWT(aio);
 
     if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
