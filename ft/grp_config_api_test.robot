@@ -161,7 +161,6 @@ Delete the subscribe group config, it should return failure
 North APP unsubscribe non-existent group config, it should return failure
 	${app_node_id}	Get Node ID       ${NODE_APP}       ${app_node}
 	${driver_node_id}	Get Node ID    ${NODE_DRIVER}    ${driver_node}
-	#Add Group Config                 ${driver_node_id}	grp_config
 
 	DELETE    /api/v2/subscribe	{"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "xxgrp_config"}
 

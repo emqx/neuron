@@ -17,12 +17,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdbool.h>
 #include <stdint.h>
+
+typedef ssize_t (*neu_tcp_asy_rcv_cb)(char *recv_buf, ssize_t recv_len);
 
 typedef struct neu_tcp_client neu_tcp_client_t;
 
-neu_tcp_client_t *neu_tcp_client_create(char *server, uint16_t port);
+neu_tcp_client_t *neu_tcp_client_create(neu_tcp_client_t *client, char *server,
+                                        uint16_t port);
 void              neu_tcp_client_close(neu_tcp_client_t *client);
+bool              neu_tcp_client_is_connected(neu_tcp_client_t *client);
+
 ssize_t neu_tcp_client_send_recv(neu_tcp_client_t *client, char *send_buf,
                                  ssize_t send_len, char *recv_buf,
                                  ssize_t recv_len);
+
+typedef struct neu_tcp_server neu_tcp_server_t;
+
+neu_tcp_server_t *neu_tcp_server_create(char *local_host, uint16_t local_port);
+void              neu_tcp_server_close(neu_tcp_server_t *server);
+int               neu_tcp_server_wait_client(neu_tcp_server_t *server);
+ssize_t neu_tcp_server_send_recv(neu_tcp_server_t *server, char *send_buf,
+                                 ssize_t send_len, char *recv_buf,
+                                 ssize_t recv_len);
+ssize_t neu_tcp_server_recv(neu_tcp_server_t *server, char *recv_buf,
+                            ssize_t buf_len, ssize_t recv_len);
+ssize_t neu_tcp_server_send(neu_tcp_server_t *server, char *send_buf,
+                            ssize_t send_len);

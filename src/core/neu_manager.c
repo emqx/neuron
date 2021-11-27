@@ -854,7 +854,7 @@ static int unsub_grp_config_with_adapter(neu_manager_t *       manager,
 static int add_grp_config_to_adapter(adapter_reg_entity_t *reg_entity,
                                      neu_taggrp_config_t * grp_config)
 {
-    int rv = 0;
+    int rv = NEU_ERR_SUCCESS;
 
     neu_datatag_manager_t *datatag_mng;
     datatag_mng = reg_entity->datatag_manager;
@@ -1675,18 +1675,18 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
 int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd)
 {
-    int                   rv = 0;
+    int                   rv = NEU_ERR_SUCCESS;
     adapter_id_t          adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
         log_error("Add group config with NULL manager or command");
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     if (cmd->grp_config == NULL) {
         log_error("group config is NULL");
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     nng_mtx_lock(manager->adapters_mtx);

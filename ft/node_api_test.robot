@@ -214,12 +214,12 @@ Start the configured node, it should return success
 
     Sleep    1s
 
-    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
 
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_READY}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
 
     POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
@@ -229,7 +229,7 @@ Start the configured node, it should return success
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
 
 Start the stopped node, it should return success
@@ -240,7 +240,7 @@ Start the stopped node, it should return success
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_STOP}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
     POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
 
@@ -249,7 +249,7 @@ Start the stopped node, it should return success
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
 Start the running node, it should return failure
     ${modbus_node_id}    Get Node ID    ${NODE_DRIVER}    modbus-test-node
@@ -281,7 +281,7 @@ Stop node that is ready(init/idle), it should return failure
     Integer    response status    409
     Integer    $.error            ${ERR_NODE_NOT_RUNNING}
 
-    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
 
     POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_STOP}}
 
@@ -295,30 +295,30 @@ When setting up a READY/RUNNING/STOPED node, the node status will not change
 
     Sleep    1s
 
-    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
 
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_READY}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
-    Node Setting    ${modbus_node_id}    {"node_id": ${modbus_node_id},"params": {"host": "127.0.0.1", "port": 502, "connection_mode": 0}}
+    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
 
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_READY}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
     Node Ctl    ${modbus_node_id}    ${NODE_CTL_START}
 
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
     Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
 
     ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
 
     should be equal as integers    ${running_state}    ${NODE_STATE_STOP}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}

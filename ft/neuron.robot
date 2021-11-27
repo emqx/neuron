@@ -1,3 +1,6 @@
+*** Settings ***
+Library    Keyword.Neuron.Read
+
 *** Variables ***
 ${NODE_DRIVER}	1
 ${NODE_WEB}	2
@@ -18,6 +21,26 @@ ${NODE_LINK_STATE_DISCONNECTED}    0
 ${NODE_LINK_STATE_CONNECTING}      1
 ${NODE_LINK_STATE_CONNECTED}       2
 
+${TAG_ATTRIBUTE_READ}	1
+${TAG_ATTRIBUTE_WRITE}	2
+${TAG_ATTRIBUTE_SUBSCRIBE}	4
+${TAG_ATTRIBUTE_RW}	3
+
+${TAG_DATA_TYPE_BYTE}	2
+${TAG_DATA_TYPE_INT8}	3
+${TAG_DATA_TYPE_INT16}	4
+${TAG_DATA_TYPE_INT32}	5
+${TAG_DATA_TYPE_INT64}	6
+${TAG_DATA_TYPE_UINT8}	7
+${TAG_DATA_TYPE_UINT16}	8
+${TAG_DATA_TYPE_UINT32}	9
+${TAG_DATA_TYPE_UINT64}	10
+${TAG_DATA_TYPE_FLOAT}	11
+${TAG_DATA_TYPE_DOUBLE}	12
+${TAG_DATA_TYPE_BOOL}	13
+${TAG_DATA_TYPE_BIT}	14
+${TAG_DATA_TYPE_STRING}	15
+
 ${PLUGIN_MODBUS_TCP}	modbus-tcp-plugin
 ${PLUGIN_MQTT}    mqtt-plugin
 
@@ -26,7 +49,14 @@ ${MQTT_CONFIG_REQ_TOPIC}	test/mqtt_req
 ${MQTT_CONFIG_RES_TOPIC}	test/mqtt_res
 ${MQTT_CONFIG}    {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}", "res-topic": "${MQTT_CONFIG_RES_TOPIC}", "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": 1883, "username": "", "password": "", "ca-path":"", "ca-file": ""}
 
+${MODBUS_TCP_CONFIG}	{"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
+
 *** Keywords ***
+To Array
+	[Arguments]	${str_array}
+	${tmp}                      Array    ${str_array}
+	[RETURN]	${tmp}[0]
+
 Neuron Ready
     Start Neuron
     Sleep           3
@@ -62,7 +92,7 @@ Del Node
 Node Setting
 	[Arguments]	${node_id}	${config}
 
-	POST       /api/v2/node/setting    ${config}
+	POST       /api/v2/node/setting    {"node_id": ${node_id}, "params": ${config}}
 	Integer    response status         200
 
 Get Node State
@@ -104,7 +134,73 @@ Subscribe Group
 	Integer    response status                       200
 	Integer    response body error	${ERR_SUCCESS}
 
-To Array
-	[Arguments]	${str_array}
-	${tmp}                      Array    ${str_array}
-	[RETURN]	${tmp}[0]
+Add Tags
+	[Arguments]	${node_id}	${group}	${tags}
+
+	POST	/api/v2/tags	{"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tags}]}
+
+	Integer    response status    200
+
+Del Tags
+	[Arguments]	${node_id}	${group}	${ids}
+
+	DELETE    /api/v2/tags    {"node_id": ${node_id}, "group_config_name": "${group}", "ids": [${ids}]}
+
+	Integer    response status    200
+
+Get Tag ID
+	[Arguments]	${node_id}	${group}	${tag_name}
+
+	GET    /api/v2/tags?node_id=${node_id}&group_config_name=${group}
+
+	Integer    response status    200
+
+	${result} =	To Array    $.tags
+
+	${id} =     Tag Find By Name	${result}	${tag_name}
+	[Return]    ${id}
+
+Read Tags
+	[Arguments]	${node_id}	${group}
+
+	POST	/api/v2/read    {"node_id": ${node_id}, "group_config_name": "${group}"}
+
+	Integer       response status    200
+	output        $
+	[Return]	$
+
+Write Tags
+	[Arguments]	${node_id}	${group}	${tags}
+
+	POST    /api/v2/write    {"node_id": ${node_id}, "group_config_name": "${group}", "tags":[${tags}]}
+
+	Integer    response status    200
+
+Compare Tag Value As Int
+	[Arguments]	${tags}    ${id}    ${value}
+
+	${val} =	To Array                 ${tags}
+	${ret} =	Compare Tag Value Int    ${val}	${id}	${value}
+
+	should be equal as integers	${ret}    0
+
+Compare Tag Value As Float
+	[Arguments]	${tags}    ${id}	${value}
+
+	${val} =	To Array                   ${tags}
+	${ret} =	Compare Tag Value Float    ${val}	${id}	${value}
+
+	should be equal as integers	${ret}    0
+
+Compare Tag Value As String
+	[Arguments]	${tags}    ${id}	${value}
+
+	${val} =	To Array                    ${tags}
+	${ret} =	Compare Tag Value String    ${val}	${id}	${value}
+
+	should be equal as integers	${ret}    0
+
+
+
+
+

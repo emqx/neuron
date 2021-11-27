@@ -1,0 +1,3 @@
+add_executable(modbus_tcp_server_simulator modbus_tcp_server_sim.c)
+target_include_directories(modbus_tcp_server_simulator PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(modbus_tcp_server_simulator neuron-base)	

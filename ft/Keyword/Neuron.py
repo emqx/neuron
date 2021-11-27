@@ -87,3 +87,36 @@ class Subscribe(object):
                 ret = 0
                 break
         return ret
+
+
+class Read(object):
+
+    def __init__(self):
+        pass
+
+    def Compare_Tag_Value_Int(self, tags, id, value):
+        ret = -1
+        for tag in tags:
+            if tag['id'] == int(id):
+                if tag['value'] == int(value):
+                    ret = 0
+                break
+        return ret
+
+    def Compare_Tag_Value_Float(self, tags, id, value):
+        ret = -1
+        for tag in tags:
+            if tag['id'] == int(id):
+                if tag['value'] <= float(value) + 0.1 and tag['value'] >= float(value) - 0.1:
+                    ret = 0
+                break
+        return ret
+
+    def Compare_Tag_Value_String(self, tags, id, value):
+        ret = -1
+        for tag in tags:
+            if tag['id'] == int(id):
+                if tag['value'] == str(value):
+                    ret = 0
+                break
+        return ret

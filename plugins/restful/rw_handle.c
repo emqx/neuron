@@ -167,14 +167,14 @@ void handle_write(nng_aio *aio)
 
 void handle_read_resp(void *cmd_resp)
 {
-    neu_request_t *          req        = (neu_request_t *) cmd_resp;
-    struct cmd_ctx *         ctx        = read_find_ctx(req->req_id);
-    neu_reqresp_read_resp_t *resp       = (neu_reqresp_read_resp_t *) req->buf;
-    neu_fixed_array_t *      array      = NULL;
-    neu_json_read_resp_t     api_res    = { 0 };
-    char *                   result     = NULL;
-    neu_int_val_t *          iv         = NULL;
-    int32_t                  error_code = 0;
+    neu_request_t *          req     = (neu_request_t *) cmd_resp;
+    struct cmd_ctx *         ctx     = read_find_ctx(req->req_id);
+    neu_reqresp_read_resp_t *resp    = (neu_reqresp_read_resp_t *) req->buf;
+    neu_fixed_array_t *      array   = NULL;
+    neu_json_read_resp_t     api_res = { 0 };
+    char *                   result  = NULL;
+    neu_int_val_t *          iv      = NULL;
+    int32_t                  error   = 0;
 
     log_info("read resp id: %d, ctx: %p", req->req_id, ctx);
     assert(ctx != NULL);
@@ -185,9 +185,10 @@ void handle_read_resp(void *cmd_resp)
     assert(iv->key == 0);
     assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
 
-    neu_dvalue_get_errorcode(iv->val, &error_code);
-    if (error_code != 0) {
-        http_bad_request(ctx->aio, "{\"error\": 1}");
+    neu_dvalue_get_errorcode(iv->val, &error);
+    if (error != 0) {
+        NEU_JSON_RESPONSE_ERROR(
+            error, { http_response(ctx->aio, error_code.error, result_error); })
         free(ctx);
         return;
     }
@@ -263,12 +264,24 @@ void handle_read_resp(void *cmd_resp)
 
 void handle_write_resp(void *cmd_resp)
 {
-    neu_request_t * req = (neu_request_t *) cmd_resp;
-    struct cmd_ctx *ctx = write_find_ctx(req->req_id);
+    neu_request_t *           req   = (neu_request_t *) cmd_resp;
+    struct cmd_ctx *          ctx   = write_find_ctx(req->req_id);
+    neu_reqresp_write_resp_t *resp  = (neu_reqresp_write_resp_t *) req->buf;
+    neu_fixed_array_t *       array = NULL;
+    neu_int_val_t *           iv    = NULL;
+    int32_t                   error = 0;
 
     log_info("write resp id: %d, ctx: %p", req->req_id, ctx);
+
+    neu_dvalue_get_ref_array(resp->data_val, &array);
+    iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
+    assert(iv->key == 0);
+    assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
+    neu_dvalue_get_errorcode(iv->val, &error);
+
     if (ctx != NULL) {
-        http_ok(ctx->aio, "{\"status\": \"OK\"}");
+        NEU_JSON_RESPONSE_ERROR(
+            error, { http_response(ctx->aio, error_code.error, result_error); })
         free(ctx);
     }
     assert(ctx != NULL);
