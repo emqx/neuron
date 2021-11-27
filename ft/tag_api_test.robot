@@ -15,7 +15,7 @@ ${test_gconfig}    test_grp_config
 
 *** Test Cases ***
 Add different types of tags to the group, it should return success
-	${test_node_id}    Get Node ID	${NODE_DRIVER}    ${test_node}    
+	${test_node_id} =    Get Node ID	${NODE_DRIVER}    ${test_node}    
 
 	should not be equal as integers    ${test_node_id}    0
 
@@ -25,7 +25,7 @@ Add different types of tags to the group, it should return success
 
 	Integer	response status    200
 
-	Del Group Config    ${test_node_id}	${test_gconfig}
+	[Teardown]	Del Group Config    ${test_node_id}	${test_gconfig}
 
 Add tags to the non-existent group, the group will be created automatically
 	${test_node_id}    Get Node ID	${NODE_DRIVER}    ${test_node}    
@@ -96,15 +96,16 @@ After adding the tag, query the tag, it should return the added tag
 	Integer	response status    200
 
 	GET	/api/v2/tags?node_id=${test_node_id}
-	Integer                                     response status    200
-	${result}	To Array                          $.tags
+
+	Integer               response status    200
+	${result}	To Array    $.tags
 
 
-	${tags_len}	Array Len	${result}
-	should be equal as integers        ${tags_len}    2
+	${tags_len} =                  Array Len	${result}
+	should be equal as integers    ${tags_len}            2
 
-	${ret}	Tag Check	${result}	tag1	4	test_grp_config    1	1!400001
-	should be equal as integers                          ${ret}        0
+	${ret} =	Tag Check	${result}	tag1	4	test_grp_config    1	1!400001
+	should be equal as integers                            ${ret}        0
 
 	${ret}	Tag Check	${result}	tag2	14	test_grp_config    3	1!00001
 	should be equal as integers                           ${ret}       0

@@ -137,7 +137,7 @@ void neu_datatag_mng_destroy(neu_datatag_manager_t *datatag_manager)
 int neu_datatag_mng_add_grp_config(neu_datatag_manager_t *datatag_manager,
                                    neu_taggrp_config_t *  grp_config)
 {
-    int    rv = -1;
+    int    rv = NEU_ERR_GRP_CONFIG_EXIST;
     size_t index;
 
     pthread_mutex_lock(&datatag_manager->mtx);
@@ -149,7 +149,7 @@ int neu_datatag_mng_add_grp_config(neu_datatag_manager_t *datatag_manager,
     }
     pthread_mutex_unlock(&datatag_manager->mtx);
 
-    if (rv == 0) {
+    if (rv == NEU_ERR_SUCCESS) {
         log_info("Add group config: %s", neu_taggrp_cfg_get_name(grp_config));
     }
     return rv;

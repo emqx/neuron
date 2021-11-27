@@ -109,10 +109,12 @@ int modbus_point_add(modbus_point_context_t *ctx, char *addr,
         point->value.type = type;
         insert_point(ctx, point);
     } else {
+        log_error("modbus parse addr: %s error", addr);
         free(point);
         return -1;
     }
 
+    log_info("add tag: %s success", addr);
     return 0;
 }
 
@@ -264,43 +266,39 @@ int modbus_point_all_read(modbus_point_context_t *ctx, bool with_head,
     ssize_t recv_len       = 0;
     int     result         = 0;
     int     ret;
+    (void) with_head;
 
     pthread_mutex_lock(&ctx->mtx);
-    if (with_head) {
-        for (int i = 0; i < ctx->n_cmd; i++) {
-            send_len = modbus_read_req_with_head(
-                send_buf, ctx->cmds[i].id, ctx->cmds[i].device,
-                ctx->cmds[i].function, ctx->cmds[i].start_addr,
-                ctx->cmds[i].n_reg);
+    for (int i = 0; i < ctx->n_cmd; i++) {
+        send_len = modbus_read_req_with_head(
+            send_buf, ctx->cmds[i].id, ctx->cmds[i].device,
+            ctx->cmds[i].function, ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
 
-            recv_len = callback(ctx->arg, send_buf, send_len, recv_buf,
-                                sizeof(recv_buf));
-            if (recv_len <= 0) {
-                log_error("cmd trans fail, id: %hd, function: %hd, addr: %hd, "
+        recv_len =
+            callback(ctx->arg, send_buf, send_len, recv_buf, sizeof(recv_buf));
+        if (recv_len <= 0) {
+            log_error("cmd trans fail, id: %hd, function: %hd, addr: %hd, "
+                      "n_reg: %hd",
+                      ctx->cmds[i].id, ctx->cmds[i].function,
+                      ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
+            result = -1;
+        } else {
+            log_debug("cmd trans success, id: %hd, function: %hd, addr: %hd, "
+                      "n_reg: %hd",
+                      ctx->cmds[i].id, ctx->cmds[i].function,
+                      ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
+            ret = process_read_res(&ctx->cmds[i], recv_buf, recv_len);
+            if (ret != 0) {
+                result = -1;
+                log_error("cmd parse error, id: %hd, function: %hd, addr: %hd, "
                           "n_reg: %hd",
                           ctx->cmds[i].id, ctx->cmds[i].function,
                           ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
-                result = -1;
-            } else {
-                log_debug(
-                    "cmd trans success, id: %hd, function: %hd, addr: %hd, "
-                    "n_reg: %hd",
-                    ctx->cmds[i].id, ctx->cmds[i].function,
-                    ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
-                ret = process_read_res(&ctx->cmds[i], recv_buf, recv_len);
-                if (ret != 0) {
-                    result = -1;
-                    log_error(
-                        "cmd parse error, id: %hd, function: %hd, addr: %hd, "
-                        "n_reg: %hd",
-                        ctx->cmds[i].id, ctx->cmds[i].function,
-                        ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
-                }
             }
         }
-
-        pthread_mutex_unlock(&ctx->mtx);
     }
+
+    pthread_mutex_unlock(&ctx->mtx);
 
     return result;
 }

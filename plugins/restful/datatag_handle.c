@@ -170,10 +170,9 @@ void handle_update_tags(nng_aio *aio)
 
 void handle_get_tags(nng_aio *aio)
 {
-    neu_plugin_t *plugin     = neu_rest_get_plugin();
-    char *        result     = NULL;
-    neu_node_id_t node_id    = { 0 };
-    char *        s_grp_name = http_get_param(aio, "group_config_name");
+    neu_plugin_t *plugin  = neu_rest_get_plugin();
+    char *        result  = NULL;
+    neu_node_id_t node_id = { 0 };
 
     if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
@@ -181,6 +180,8 @@ void handle_get_tags(nng_aio *aio)
         })
         return;
     }
+
+    char *s_grp_name = http_get_param(aio, "group_config_name");
 
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
     if (table == NULL) {

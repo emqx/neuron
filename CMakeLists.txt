@@ -120,6 +120,7 @@ set(NEURON_BASE_SOURCES
     src/base/neu_data_expr.c
     src/base/neu_errcodes.c
     src/connection/tcp_client.c
+    src/connection/tcp_server.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
     src/utils/idhash.c
@@ -150,6 +151,9 @@ add_subdirectory(plugins/sample)
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/opcua)
+
+# define for simulator
+add_subdirectory(simulator)
 
 if(NOT DISABLE_UT)
   # define for tests

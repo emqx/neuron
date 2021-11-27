@@ -35,8 +35,9 @@
             { func };                                                         \
             decode_fun##_free(req);                                           \
         } else {                                                              \
-            http_bad_request(aio, "{\"error\": -1002}");                      \
+            http_bad_request(aio, "{\"error\": 1002}");                       \
         }                                                                     \
+        free(req_data);                                                       \
     }
 
 enum neu_rest_method {

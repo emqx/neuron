@@ -151,9 +151,9 @@ int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
     json_t *     root = json_loads(buf, 0, &error);
 
     if (root == NULL) {
-        log_error(
-            "json load error, line: %d, column: %d, position: %d, info: %s",
-            error.line, error.column, error.position, error.text);
+        log_error("json load error, line: %d, column: %d, position: %d, info: "
+                  "%s",
+                  error.line, error.column, error.position, error.text);
         return -1;
     }
 

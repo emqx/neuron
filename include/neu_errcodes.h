@@ -59,25 +59,28 @@ typedef enum {
     NEU_ERR_EBADTYPE     = -30,
     NEU_ERR_ECONNSHUT    = -31,
 
-    NEU_ERR_FAILURE        = -1000, // A general error
-    NEU_ERR_EINTERNAL      = -1001, // A neuron interanl error
-    NEU_ERR_BODY_IS_WRONG  = -1002,
-    NEU_ERR_PARAM_IS_WRONG = -1003,
+    NEU_ERR_FAILURE        = 1000, // A general error
+    NEU_ERR_EINTERNAL      = 1001, // A neuron interanl error
+    NEU_ERR_BODY_IS_WRONG  = 1002,
+    NEU_ERR_PARAM_IS_WRONG = 1003,
 
-    NEU_ERR_PLUGIN_NAME_NOT_FOUND     = -2000,
-    NEU_ERR_NODE_TYPE_INVALID         = -2001,
-    NEU_ERR_NODE_EXIST                = -2002,
-    NEU_ERR_NODE_NOT_EXIST            = -2003,
-    NEU_ERR_GRP_CONFIG_NOT_EXIST      = -2004,
-    NEU_ERR_TAG_NOT_EXIST             = -2005,
-    NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT = -2006,
-    NEU_ERR_NODE_SETTING_INVALID      = -2007,
-    NEU_ERR_NODE_SETTING_NOT_FOUND    = -2008,
-    NEU_ERR_GRP_CONFIG_IN_USE         = -2009,
-    NEU_ERR_NODE_NOT_READY            = -2010,
-    NEU_ERR_NODE_IS_RUNNING           = -2011,
-    NEU_ERR_NODE_NOT_RUNNING          = -2012,
-    NEU_ERR_NODE_IS_STOPED            = -2013,
+    NEU_ERR_PLUGIN_NAME_NOT_FOUND     = 2000,
+    NEU_ERR_NODE_TYPE_INVALID         = 2001,
+    NEU_ERR_NODE_EXIST                = 2002,
+    NEU_ERR_NODE_NOT_EXIST            = 2003,
+    NEU_ERR_GRP_CONFIG_NOT_EXIST      = 2004,
+    NEU_ERR_TAG_NOT_EXIST             = 2005,
+    NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT = 2006,
+    NEU_ERR_NODE_SETTING_INVALID      = 2007,
+    NEU_ERR_NODE_SETTING_NOT_FOUND    = 2008,
+    NEU_ERR_GRP_CONFIG_IN_USE         = 2009,
+    NEU_ERR_NODE_NOT_READY            = 2010,
+    NEU_ERR_NODE_IS_RUNNING           = 2011,
+    NEU_ERR_NODE_NOT_RUNNING          = 2012,
+    NEU_ERR_NODE_IS_STOPED            = 2013,
+    NEU_ERR_GRP_NOT_SUBSCRIBE         = 2014,
+    NEU_ERR_TAG_TYPE_NOT_SUPPORT      = 2015,
+    NEU_ERR_GRP_CONFIG_EXIST          = 2016,
 } neu_err_code_e;
 
 #ifdef __cplusplus

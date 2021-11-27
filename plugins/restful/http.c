@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <nng/nng.h>
@@ -61,6 +62,10 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     if (*data_size <= 0) {
         return -1;
     } else {
+        char *buf = calloc(*data_size + 1, sizeof(char));
+        memcpy(buf, *data, *data_size);
+        log_info("body: %s", buf);
+        *data = buf;
         return 0;
     }
 }
@@ -151,6 +156,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GRP_CONFIG_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
     case NEU_ERR_NODE_SETTING_NOT_FOUND:
+    case NEU_ERR_GRP_NOT_SUBSCRIBE:
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:
@@ -158,15 +164,18 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_IS_RUNNING:
     case NEU_ERR_NODE_NOT_RUNNING:
     case NEU_ERR_NODE_IS_STOPED:
+    case NEU_ERR_GRP_CONFIG_EXIST:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
+    case NEU_ERR_TAG_TYPE_NOT_SUPPORT:
         status = NNG_HTTP_STATUS_PARTIAL_CONTENT;
         break;
     case NEU_ERR_GRP_CONFIG_IN_USE:
         status = NNG_HTTP_STATUS_PRECONDITION_FAILED;
         break;
     default:
+        log_error("unhandle error code: %d", code);
         assert(code == 0);
         break;
     }

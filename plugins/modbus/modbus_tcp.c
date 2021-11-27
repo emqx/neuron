@@ -69,6 +69,12 @@ static ssize_t send_recv_callback(void *arg, char *send_buf, ssize_t send_len,
                                   char *recv_buf, ssize_t recv_len)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) arg;
+
+    if (neu_tcp_client_is_connected(plugin->client)) {
+        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
+    } else {
+        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    }
     return neu_tcp_client_send_recv(plugin->client, send_buf, send_len,
                                     recv_buf, recv_len);
 }
@@ -164,9 +170,9 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
     vector_t *         ids        = neu_taggrp_cfg_get_datatag_ids(grp_config);
     neu_fixed_array_t *array_resp = NULL;
     int                index      = 1;
-    int                resp_res   = 0;
     neu_data_val_t *   val_error_resp = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
     neu_int_val_t      int_val_resp   = { 0 };
+    neu_err_code_e     error          = NEU_ERR_SUCCESS;
 
     read_count = neu_plugin_tag_count_by_attribute(grp_config, tag_table,
                                                    NEU_ATTRIBUTE_READ);
@@ -219,7 +225,7 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
                 neu_int_val_init(&int_val, tag->id, val_error);
                 neu_fixed_array_set(array_resp, index, (void *) &int_val);
 
-                resp_res = -1;
+                error = NEU_ERR_TAG_NOT_EXIST;
             } else {
                 switch (data_tags.type) {
                 case MODBUS_B8: {
@@ -291,11 +297,7 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
         index += 1;
     }
 
-    if (resp_res == -1) {
-        neu_dvalue_set_errorcode(val_error_resp, resp_res);
-    } else {
-        neu_dvalue_set_errorcode(val_error_resp, 0);
-    }
+    neu_dvalue_set_errorcode(val_error_resp, error);
     neu_int_val_init(&int_val_resp, 0, val_error_resp);
     neu_fixed_array_set(array_resp, 0, (void *) &int_val_resp);
 
@@ -310,9 +312,9 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
     neu_fixed_array_t *array_req      = NULL;
     neu_fixed_array_t *array_resp     = NULL;
     neu_data_val_t *   resp_val       = NULL;
-    int                resp_res       = 0;
     neu_data_val_t *   val_error_resp = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
     neu_int_val_t      int_val_resp   = { 0 };
+    neu_err_code_e     error          = NEU_ERR_SUCCESS;
 
     neu_dvalue_get_ref_array(write_val, &array_req);
 
@@ -332,7 +334,6 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
     }
 
     for (uint32_t i = 0; i < array_req->length; i++) {
-        int            ret     = 0;
         neu_int_val_t *int_val = neu_fixed_array_get(array_req, i);
         neu_dtype_e    val_type =
             neu_value_type_in_dtype(neu_dvalue_get_type(int_val->val));
@@ -352,24 +353,24 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
             case NEU_DTYPE_INT16:
                 data.type        = MODBUS_B16;
                 data.val.val_u16 = (uint16_t) i64;
-                ret              = modbus_point_write(tag->addr_str, &data,
-                                         send_recv_callback, plugin);
+                error            = modbus_point_write(tag->addr_str, &data,
+                                           send_recv_callback, plugin);
                 break;
             case NEU_DTYPE_INT32:
             case NEU_DTYPE_UINT32:
                 data.type        = MODBUS_B32;
                 data.val.val_u32 = (uint32_t) i64;
-                ret              = modbus_point_write(tag->addr_str, &data,
-                                         send_recv_callback, plugin);
+                error            = modbus_point_write(tag->addr_str, &data,
+                                           send_recv_callback, plugin);
                 break;
             case NEU_DTYPE_BIT:
                 data.type       = MODBUS_B8;
                 data.val.val_u8 = (uint8_t) i64;
-                ret             = modbus_point_write(tag->addr_str, &data,
-                                         send_recv_callback, plugin);
+                error           = modbus_point_write(tag->addr_str, &data,
+                                           send_recv_callback, plugin);
                 break;
             default:
-                ret = -1;
+                error = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
                 break;
             }
             break;
@@ -379,27 +380,22 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
             neu_dvalue_get_double(int_val->val, &db);
             data.type        = MODBUS_B32;
             data.val.val_f32 = (float) db;
-            ret = modbus_point_write(tag->addr_str, &data, send_recv_callback,
-                                     plugin);
+            error = modbus_point_write(tag->addr_str, &data, send_recv_callback,
+                                       plugin);
             break;
         }
         default:
-            ret = -1;
+            error = NEU_ERR_EINTERNAL;
             break;
         }
-        if (ret == -1) {
-            resp_res = -1;
-        }
-        neu_dvalue_set_errorcode(val_error, ret);
+
+        neu_dvalue_set_errorcode(val_error, error);
 
         neu_int_val_init(&iv, int_val->key, val_error);
         neu_fixed_array_set(array_resp, i, (void *) &iv);
     }
-    if (resp_res == -1) {
-        neu_dvalue_set_errorcode(val_error_resp, resp_res);
-    } else {
-        neu_dvalue_set_errorcode(val_error_resp, 0);
-    }
+
+    neu_dvalue_set_errorcode(val_error_resp, error);
     neu_int_val_init(&int_val_resp, 0, val_error_resp);
     neu_fixed_array_set(array_resp, 0, (void *) &int_val_resp);
 
@@ -498,9 +494,6 @@ static int modbus_tcp_close(neu_plugin_t *plugin)
 static int modbus_tcp_init(neu_plugin_t *plugin)
 {
     pthread_mutex_init(&plugin->mtx, NULL);
-    plugin->client = neu_tcp_client_create("192.168.50.68", 502);
-
-    //    plugin->common.state = NEURON_PLUGIN_STATE_READY;
     log_info("modbus tcp init.....");
 
     return 0;
@@ -552,7 +545,12 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
                           &host);
 
     if (ret == 0) {
-        plugin->client = neu_tcp_client_create(host.v.val_str, port.v.val_int);
+        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+        plugin->client = neu_tcp_client_create(plugin->client, host.v.val_str,
+                                               port.v.val_int);
+        if (neu_tcp_client_is_connected(plugin->client)) {
+            plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
+        }
     }
 
     log_info("port = %d, connection_modem = %d, host = %s,ret = %d",
@@ -598,7 +596,7 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
             neu_fixed_array_t *array =
                 neu_fixed_array_new(1, sizeof(neu_int_val_t));
 
-            neu_dvalue_set_errorcode(val_error, -1);
+            neu_dvalue_set_errorcode(val_error, NEU_ERR_GRP_NOT_SUBSCRIBE);
             neu_int_val_init(&val, 0, val_error);
             neu_fixed_array_set(array, 0, (void *) &val);
             neu_dvalue_init_move_array(array_resp, NEU_DTYPE_INT_VAL, array);
