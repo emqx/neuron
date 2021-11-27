@@ -30,10 +30,13 @@
 
 #include "json/neu_json_fn.h"
 #include "json/neu_json_login.h"
+#include "json/neu_json_logout.h"
 #include "json/neu_json_tty.h"
 
+#include "config.h"
 #include "handle.h"
 #include "http.h"
+#include "utils/neu_jwt.h"
 
 #include "normal_handle.h"
 
@@ -74,6 +77,8 @@ void handle_get_ttys(nng_aio *aio)
 {
     neu_json_get_tty_resp_t ttys_res = { 0 };
 
+    VALIDATE_JWT(aio);
+
     ttys_res.n_tty = get_tty_file_list(&ttys_res.ttys);
     if (ttys_res.n_tty == -1) {
         http_bad_request(aio, "{\"error\": 400}");
@@ -94,62 +99,66 @@ void handle_get_ttys(nng_aio *aio)
 
 void handle_ping(nng_aio *aio)
 {
+    VALIDATE_JWT(aio);
+
     http_ok(aio, "{}");
 }
 
 void handle_login(nng_aio *aio)
 {
-    (void) aio;
+    REST_PROCESS_HTTP_REQUEST(
+        aio, neu_json_login_req_t, neu_json_decode_login_req, {
+            neu_json_login_resp_t login_resp = { 0 };
+            char *                name       = "admin";
+            char *                password   = "0000";
+            uint                  ret        = 0;
 
-    // REST_PROCESS_HTTP_REQUEST(
-    //     aio, neu_json_login_req_t, neu_json_decode_login_req, {
-    //         neu_json_login_req_t *user    = NULL;
-    //         char *                name    = "admin";
-    //         char *                pass    = "0000";
-    //         jwt_t *               jwt     = NULL;
-    //         time_t                iat     = time(NULL);
-    //         int                   ret     = 0;
-    //         jwt_alg_t             opt_alg = JWT_ALG_RS256;
-    //         unsigned char         key[10240];
-    //         size_t                key_len = 0;
+            if (strcmp(req->name, name) == 0 &&
+                strcmp(req->pass, password) == 0) {
 
-    //         if (req == NULL) {
-    //             http_not_found(aio, "{\"error\": 1}");
-    //         } else {
-    //             if (req->name == name && req->pass == pass) {
-    //                 user->name = req->name;
-    //                 user->pass = req->pass;
+                char *token  = NULL;
+                char *result = NULL;
 
-    //                 ret = jwt_new(&jwt);
-    //                 if (ret != 0 || jwt == NULL) {
-    //                     http_bad_request(aio, "{\"error\": 400}");
-    //                     jwt_free(jwt);
-    //                 }
+                ret = neu_jwt_new(&token);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_NEED_TOKEN, {
+                        http_response(aio, error_code.error, result_error);
+                        jwt_free_str(token);
+                    });
+                }
 
-    //                 ret = jwt_add_grant_int(jwt, "iat", iat);
+                login_resp.token = calloc(strlen(token), sizeof(char));
+                login_resp.token = token;
 
-    //                 ret = jwt_set_alg(jwt, opt_alg,
-    //                                   opt_alg == JWT_ALG_NONE ? NULL : key,
-    //                                   opt_alg == JWT_ALG_NONE ? 0 : key_len);
-    //                 if (ret < 0) {
-    //                     http_bad_request(aio, "{\"error\": 400}");
-    //                     jwt_free(jwt);
-    //                 }
-    //             }
-    //             http_ok(aio, "{\"error\": 0}");
-    //         }
-    //     })
+                neu_json_encode_by_fn(&login_resp, neu_json_encode_login_resp,
+                                      &result);
+                http_ok(aio, result);
+                free(login_resp.token);
+            } else {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
+                    http_response(aio, error_code.error, result_error);
+                });
+            }
+        })
 }
 
 void handle_logout(nng_aio *aio)
 {
-    (void) aio;
+    char *jwt = (char *) http_get_header(aio, (char *) "Authorization");
+    NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {
+        if (error_code.error == NEU_ERR_SUCCESS) {
+            neu_jwt_destroy();
+        }
+        http_response(aio, error_code.error, result_error);
+    });
 }
 
 void handle_get_plugin_schema(nng_aio *aio)
 {
     char  buf[4096] = { 0 };
     FILE *fp        = fopen("./plugin_param_schema.json", "r");
+
+    VALIDATE_JWT(aio);
 
     if (fp == NULL) {
         log_info("open ./plugin_param_schema.json error: %d", errno);

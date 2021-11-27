@@ -28,14 +28,15 @@ int   http_get_body(nng_aio *aio, void **data, size_t *data_size);
 char *http_get_param(nng_aio *aio, const char *name);
 int   http_get_param_int(nng_aio *aio, const char *name, int32_t *param);
 
-int http_response(nng_aio *aio, neu_err_code_e code, char *content);
-int http_ok(nng_aio *aio, char *content);
-int http_created(nng_aio *aio, char *content);
-int http_partial(nng_aio *aio, char *content);
-int http_bad_request(nng_aio *aio, char *content);
-int http_unauthorized(nng_aio *aio, char *content);
-int http_not_found(nng_aio *aio, char *content);
-int http_conflict(nng_aio *aio, char *content);
-int http_internal_error(nng_aio *aio, char *content);
+int         http_response(nng_aio *aio, neu_err_code_e code, char *content);
+const char *http_get_header(nng_aio *aio, char *name);
+int         http_ok(nng_aio *aio, char *content);
+int         http_created(nng_aio *aio, char *content);
+int         http_partial(nng_aio *aio, char *content);
+int         http_bad_request(nng_aio *aio, char *content);
+int         http_unauthorized(nng_aio *aio, char *content);
+int         http_not_found(nng_aio *aio, char *content);
+int         http_conflict(nng_aio *aio, char *content);
+int         http_internal_error(nng_aio *aio, char *content);
 
 #endif

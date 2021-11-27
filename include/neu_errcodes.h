@@ -59,10 +59,16 @@ typedef enum {
     NEU_ERR_EBADTYPE     = -30,
     NEU_ERR_ECONNSHUT    = -31,
 
-    NEU_ERR_FAILURE        = 1000, // A general error
-    NEU_ERR_EINTERNAL      = 1001, // A neuron interanl error
-    NEU_ERR_BODY_IS_WRONG  = 1002,
-    NEU_ERR_PARAM_IS_WRONG = 1003,
+    NEU_ERR_FAILURE                  = 1000, // A general error
+    NEU_ERR_EINTERNAL                = 1001, // A neuron interanl error
+    NEU_ERR_BODY_IS_WRONG            = 1002,
+    NEU_ERR_PARAM_IS_WRONG           = 1003,
+    NEU_ERR_NEED_TOKEN               = 1004,
+    NEU_ERR_DECODE_TOKEN             = 1005,
+    NEU_ERR_EXPIRED_TOKEN            = 1006,
+    NEU_ERR_VALIDATE_TOKEN           = 1007,
+    NEU_ERR_INVALID_TOKEN            = 1008,
+    NEU_ERR_INVALID_USER_OR_PASSWORD = 1009,
 
     NEU_ERR_PLUGIN_NAME_NOT_FOUND     = 2000,
     NEU_ERR_NODE_TYPE_INVALID         = 2001,

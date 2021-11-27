@@ -37,7 +37,7 @@ void handle_add_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_group_config_req_t,
         neu_json_decode_add_group_config_req, {
             neu_taggrp_config_t *gconfig = neu_taggrp_cfg_new(req->name);
@@ -57,7 +57,7 @@ void handle_del_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_group_config_req_t,
         neu_json_decode_del_group_config_req, {
             neu_taggrp_config_t *config =
@@ -97,7 +97,7 @@ void handle_update_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_group_config_req_t,
         neu_json_decode_update_group_config_req, {
             neu_taggrp_config_t *config =
@@ -123,6 +123,8 @@ void handle_get_group_config(nng_aio *aio)
     neu_plugin_t *plugin  = neu_rest_get_plugin();
     char *        result  = NULL;
     neu_node_id_t node_id = { 0 };
+
+    VALIDATE_JWT(aio);
 
     if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
@@ -171,7 +173,7 @@ void handle_grp_subscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->src_node_id, req->name);
@@ -194,7 +196,7 @@ void handle_grp_unsubscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST(
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_unsubscribe_req_t, neu_json_decode_unsubscribe_req, {
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->src_node_id, req->name);
@@ -220,6 +222,8 @@ void handle_grp_get_subscribe(nng_aio *aio)
     neu_node_id_t                 node_id         = 0;
     neu_json_get_subscribe_resp_t sub_grp_configs = { 0 };
     int                           index           = 0;
+
+    VALIDATE_JWT(aio);
 
     if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {

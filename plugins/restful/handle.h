@@ -23,6 +23,7 @@
 #include <stdlib.h>
 
 #include "neu_plugin.h"
+#include "utils/neu_jwt.h"
 #include "json/neu_json_error.h"
 
 #define REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)            \
@@ -30,6 +31,7 @@
         char *    req_data      = NULL;                                       \
         size_t    req_data_size = 0;                                          \
         req_type *req           = NULL;                                       \
+                                                                              \
         if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
             decode_fun(req_data, &req) == 0) {                                \
             { func };                                                         \
@@ -38,6 +40,32 @@
             http_bad_request(aio, "{\"error\": 1002}");                       \
         }                                                                     \
         free(req_data);                                                       \
+    }
+
+#define REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(aio, req_type, decode_fun,    \
+                                               func)                         \
+    {                                                                        \
+        char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
+                                                                             \
+        NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
+            if (error_code.error != NEU_ERR_SUCCESS) {                       \
+                http_response(aio, error_code.error, result_error);          \
+                return;                                                      \
+            }                                                                \
+        })                                                                   \
+        REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func);          \
+    }
+
+#define VALIDATE_JWT(aio)                                                    \
+    {                                                                        \
+        char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
+                                                                             \
+        NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
+            if (error_code.error != NEU_ERR_SUCCESS) {                       \
+                http_response(aio, error_code.error, result_error);          \
+                return;                                                      \
+            }                                                              \
+        });                                                                  \
     }
 
 enum neu_rest_method {
