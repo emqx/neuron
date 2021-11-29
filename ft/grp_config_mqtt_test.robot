@@ -9,7 +9,7 @@ Resource          neuron.robot
 Library           MQTTLibrary	
 Library           REST                        http://127.0.0.1:7001
 Suite Setup       Neuron Context Ready
-Suite Teardown    Stop Neuron
+Suite Teardown    Neuron Context Stop
 
 *** Variables ***
 ${mqtt_node_name}    mqtt-adapter
@@ -42,3 +42,13 @@ Publish
 *** Keywords ***
 Neuron Context Ready
 	Neuron Ready
+
+	${token} =    LOGIN
+
+    ${jwt} =    Catenate    Bearer    ${token}
+
+    Set Headers    {"Authorization":"${jwt}"}
+
+Neuron Context Stop
+	LOGOUT
+	Stop Neuron

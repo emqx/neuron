@@ -7,7 +7,7 @@ Resource          error.robot
 Resource          neuron.robot
 Library           REST                     http://127.0.0.1:7001
 Suite Setup       Neuron Context Ready
-Suite Teardown    Stop Neuron
+Suite Teardown    Neuron Context Stop
 
 *** Variables ***
 ${test_node}	test-node
@@ -207,5 +207,14 @@ Delete tags, it should return success
 *** Keywords ***
 Neuron Context Ready
 	Neuron Ready
+
+    ${token} =     LOGIN
+    ${jwt} =       Catenate                      Bearer    ${token}
+    Set Headers    {"Authorization":"${jwt}"}
+
 	Add Node	${NODE_DRIVER}    ${test_node}	${PLUGIN_MODBUS_TCP}
+
+Neuron Context Stop
+	LOGOUT
+	Stop Neuron
 

@@ -4,8 +4,8 @@ Library           Keyword.Neuron.Node
 Resource          error.robot
 Resource          neuron.robot
 Library           REST                     http://127.0.0.1:7001
-Suite Setup       Neuron Ready
-Suite Teardown    Stop Neuron
+Suite Setup       Neuron Context Ready
+Suite Teardown    Neuron Context Stop
 
 *** Variables ***
 
@@ -322,3 +322,15 @@ When setting up a READY/RUNNING/STOPED node, the node status will not change
 
     should be equal as integers    ${running_state}    ${NODE_STATE_STOP}
     should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
+
+*** Keywords ***
+Neuron Context Ready
+	Neuron Ready
+
+    ${token} =     LOGIN
+    ${jwt} =       Catenate                      Bearer    ${token}
+    Set Headers    {"Authorization":"${jwt}"}
+
+Neuron Context Stop
+    LOGOUT
+    Stop Neuron

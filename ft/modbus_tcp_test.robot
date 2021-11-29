@@ -171,8 +171,15 @@ Read a point in the input area, and the data as bit type, it should return succe
 
 *** Keywords ***
 Neuron Context Ready
-	Start Simulator        ${MODBUS_TCP_SERVER_SIMULATOR}       ${SIMULATOR_DIR}
+	Start Simulator    ${MODBUS_TCP_SERVER_SIMULATOR}    ${SIMULATOR_DIR}
 	Neuron Ready
+
+	${token} =    LOGIN
+
+    ${jwt} =    Catenate    Bearer    ${token}
+
+    Set Headers    {"Authorization":"${jwt}"}
+
 	${id} =	Get Node ID    ${NODE_DRIVER}	modbus-tcp-adapter
 
 	Set Global Variable	${node_id}	${id}
@@ -180,6 +187,8 @@ Neuron Context Ready
 	Node Setting    ${node_id}    ${MODBUS_TCP_CONFIG}
 
 Stop All Processes
+    LOGOUT
+
 	Stop Neuron
 	sleep                      1s
 	Terminate All Processes    kill=false

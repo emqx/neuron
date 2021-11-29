@@ -152,11 +152,6 @@ int neu_jwt_validate(char *b_token)
         return NEU_ERR_DECODE_TOKEN;
     }
 
-    if (strcmp(token_local, token) != 0) {
-        jwt_free(jwt);
-        return NEU_ERR_INVALID_TOKEN;
-    }
-
     int ret = jwt_valid_new(&jwt_valid, opt_alg);
     if (ret != 0 || jwt_valid == NULL) {
         jwt_valid_free(jwt_valid);
@@ -195,6 +190,10 @@ int neu_jwt_validate(char *b_token)
 
     jwt_valid_free(jwt_valid);
     jwt_free(jwt);
+
+    if (strcmp(token_local, token) != 0) {
+        return NEU_ERR_INVALID_TOKEN;
+    }
 
     return NEU_ERR_SUCCESS;
 }
