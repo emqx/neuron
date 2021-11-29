@@ -348,8 +348,8 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         return (-1);
     }
 
-    log_info("send request to plugin: %s, type:%d",
-             neu_plugin_module.module_name, req->req_type);
+    log_info_node(plugin, "send request to plugin: %s, type:%d",
+                  neu_plugin_module.module_name, req->req_type);
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_RESP: {

@@ -37,6 +37,7 @@ typedef struct {
     const char *fmt;
     const char *file;
     const char *func;
+    const char *label;
     struct tm * time;
     void *      udata;
     int         line;
@@ -55,7 +56,7 @@ extern void        log_set_quiet(bool enable);
 extern int         log_add_callback(log_LogFn fn, void *udata, int level);
 extern int         log_add_fp(FILE *fp, int level);
 extern void log_log(int level, const char *file, int line, const char *func,
-                    const char *fmt, ...);
+                    const char *label, const char *fmt, ...);
 
 /*
 #define fatal(msg, rv)                             \
@@ -65,18 +66,48 @@ extern void log_log(int level, const char *file, int line, const char *func,
     }
 */
 
-#define log_trace(...) \
-    log_log(LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#define log_debug(...) \
-    log_log(LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#define log_info(...) \
-    log_log(LOG_INFO, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#define log_warn(...) \
-    log_log(LOG_WARN, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#define log_error(...) \
-    log_log(LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
-#define log_fatal(...) \
-    log_log(LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, __VA_ARGS__)
+#ifndef NEURON_LOG_LABEL
+#define NEURON_LOG_LABEL "neuron"
+#endif
+
+#define log_trace(...)                                                     \
+    log_log(LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
+            __VA_ARGS__)
+#define log_debug(...)                                                     \
+    log_log(LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
+            __VA_ARGS__)
+#define log_info(...)                                                     \
+    log_log(LOG_INFO, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
+            __VA_ARGS__)
+#define log_warn(...)                                                     \
+    log_log(LOG_WARN, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
+            __VA_ARGS__)
+#define log_error(...)                                                     \
+    log_log(LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
+            __VA_ARGS__)
+#define log_fatal(...)                                                     \
+    log_log(LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
+            __VA_ARGS__)
+
+// these will log the node name as the label
+#define log_trace_node(plugin, ...)                      \
+    log_log(LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, \
+            neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_debug_node(plugin, ...)                      \
+    log_log(LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, \
+            neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_info_node(plugin, ...)                      \
+    log_log(LOG_INFO, __FILE__, __LINE__, __FUNCTION__, \
+            neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_warn_node(plugin, ...)                      \
+    log_log(LOG_WARN, __FILE__, __LINE__, __FUNCTION__, \
+            neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_error_node(plugin, ...)                      \
+    log_log(LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, \
+            neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_fatal_node(plugin, ...)                      \
+    log_log(LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, \
+            neu_plugin_self_node_name(plugin), __VA_ARGS__)
 
 #ifdef __cplusplus
 }
