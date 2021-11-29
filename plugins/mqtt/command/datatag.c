@@ -22,365 +22,231 @@
 #include "datatag.h"
 #include "json/neu_json_error.h"
 
-typedef struct {
-    char *           name;
-    int              type;
-    char *           address;
-    int              attribute;
-    char *           group_config_name;
-    neu_datatag_id_t id;
-} tag_t;
-
-struct visit_context {
-    neu_datatag_table_t *table;
-    vector_t *           tags;
-};
-
-void visit_func(neu_taggrp_config_t *config, void *context)
-{
-    struct visit_context *ctx = (struct visit_context *) context;
-    if (NULL == config) {
-        return;
-    }
-
-    char *group_config_name = strdup((char *) neu_taggrp_cfg_get_name(config));
-    vector_t *tag_ids       = neu_taggrp_cfg_get_datatag_ids(config);
-    if (NULL == tag_ids) {
-        return;
-    }
-
-    neu_datatag_id_t id;
-    VECTOR_FOR_EACH(tag_ids, id_iter)
-    {
-        id = *(neu_datatag_id_t *) iterator_get(&id_iter);
-
-        tag_t *tag = malloc(sizeof(tag_t));
-        if (NULL == tag) {
-            continue;
-        }
-        memset(tag, 0, sizeof(tag_t));
-
-        neu_datatag_t *datatag = NULL;
-        datatag                = neu_datatag_tbl_get(ctx->table, id);
-        if (NULL == datatag) {
-            continue;
-        }
-
-        tag->name              = strdup(datatag->name);
-        tag->type              = datatag->type;
-        tag->address           = strdup(datatag->addr_str);
-        tag->attribute         = datatag->attribute;
-        tag->group_config_name = strdup(group_config_name);
-        tag->id                = id;
-
-        log_debug("id:%u, config name:%s, "
-                  "attr:%d, address:%s, type:%d, name:%s",
-                  tag->id, tag->group_config_name, tag->attribute, tag->address,
-                  tag->type, tag->name);
-
-        vector_push_back(ctx->tags, tag);
-    }
-}
-
-static int get_all_tag(neu_plugin_t *plugin, const uint32_t node_id,
-                       vector_t *tags)
-{
-    int rc = common_has_node(plugin, node_id);
-    if (0 != rc) {
-        return -1;
-    }
-
-    vector_t configs = neu_system_get_group_configs(plugin, node_id);
-    if (0 == configs.size) {
-        GROUP_CONFIGS_UNINIT(configs);
-        return -2;
-    }
-
-    neu_datatag_table_t *table = common_get_datatags_table(plugin, node_id);
-
-    if (NULL == table) {
-        GROUP_CONFIGS_UNINIT(configs);
-        return -3;
-    }
-
-    struct visit_context ctx = { .table = table, .tags = tags };
-    common_group_configs_foreach(plugin, node_id, &ctx, visit_func);
-
-    return 0;
-}
-
-static int wrap_get_tags_response_json_object(vector_t *                tags,
-                                              neu_json_get_tags_resp_t *json)
-{
-    json->n_tag = tags->size;
-    json->tags  = malloc(tags->size * sizeof(neu_json_get_tags_resp_tag_t));
-    memset(json->tags, 0, tags->size * sizeof(neu_json_get_tags_resp_tag_t));
-
-    tag_t *tag  = NULL;
-    int    size = tags->size;
-    for (int i = 0; i < size; i++) {
-        tag = vector_get(tags, i);
-        if (NULL == tag) {
-            continue;
-        }
-
-        json->tags[i].name              = tag->name;
-        json->tags[i].type              = tag->type;
-        json->tags[i].address           = tag->address;
-        json->tags[i].attribute         = tag->attribute;
-        json->tags[i].group_config_name = tag->group_config_name;
-        json->tags[i].id                = tag->id;
-    }
-
-    return 0;
-}
-
-static void free_get_tags_response_object(vector_t *                tags,
-                                          neu_json_get_tags_resp_t *json)
-{
-    tag_t *tag  = NULL;
-    int    size = tags->size;
-    for (int i = 0; i < size; i++) {
-        tag = vector_get(tags, i);
-        if (NULL == tag) {
-            continue;
-        }
-
-        if (NULL != tag->name) {
-            free(tag->name);
-        }
-        if (NULL != tag->address) {
-            free(tag->address);
-        }
-        if (NULL != tag->group_config_name) {
-            free(tag->group_config_name);
-        }
-    }
-
-    if (NULL != json->tags) {
-        free(json->tags);
-    }
-}
-
 char *command_get_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_json_get_tags_req_t *req)
 {
+    neu_json_error_resp_t error  = { 0 };
+    char *                result = NULL;
+    if (NULL == req) {
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
+    }
+
     log_info("Get tag list uuid:%s, node id:%d", mqtt->uuid, req->node_id);
-    char *                   json_str = NULL;
-    neu_json_get_tags_resp_t res      = { 0 };
-    neu_json_error_resp_t    error    = { 0 };
 
-    uint32_t node_id = req->node_id;
-    vector_t tags;
-    vector_init(&tags, 0, sizeof(tag_t));
-    int rc = get_all_tag(plugin, node_id, &tags);
+    neu_datatag_table_t *table =
+        neu_system_get_datatags_table(plugin, req->node_id);
+    if (NULL == table) {
+        error.error = NEU_ERR_NODE_NOT_EXIST;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
+    }
 
-    if (0 != rc) {
-        error.error = rc;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
+    vector_t grp_configs = neu_system_get_group_configs(plugin, req->node_id);
+    neu_json_get_tags_resp_t res   = { 0 };
+    int                      index = 0;
+
+    VECTOR_FOR_EACH(&grp_configs, iter)
+    {
+        neu_taggrp_config_t *config =
+            *(neu_taggrp_config_t **) iterator_get(&iter);
+        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+        if (NULL != req->group_config_name &&
+            strncmp(neu_taggrp_cfg_get_name(config), req->group_config_name,
+                    strlen(req->group_config_name)) != 0) {
+            continue;
         }
-        return NULL;
+
+        res.n_tag += ids->size;
     }
 
-    rc = wrap_get_tags_response_json_object(&tags, &res);
-    rc = neu_json_encode_with_mqtt(&res, neu_json_encode_get_tags_resp, mqtt,
-                                   neu_json_encode_mqtt_resp, &json_str);
+    res.tags = calloc(res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
 
-    free_get_tags_response_object(&tags, &res);
-    vector_uninit(&tags);
+    VECTOR_FOR_EACH(&grp_configs, iter)
+    {
+        neu_taggrp_config_t *config =
+            *(neu_taggrp_config_t **) iterator_get(&iter);
+        const char *group_name = neu_taggrp_cfg_get_name(config);
 
-    if (0 == rc) {
-        return json_str;
+        if (NULL != req->group_config_name &&
+            strncmp(group_name, req->group_config_name,
+                    strlen(req->group_config_name)) != 0) {
+            continue;
+        }
+
+        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+
+        VECTOR_FOR_EACH(ids, iter_id)
+        {
+            neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
+            neu_datatag_t *   tag = neu_datatag_tbl_get(table, *id);
+
+            res.tags[index].id                = *id;
+            res.tags[index].name              = tag->name;
+            res.tags[index].group_config_name = (char *) group_name;
+            res.tags[index].type              = tag->type;
+            res.tags[index].attribute         = tag->attribute;
+            res.tags[index].address           = tag->addr_str;
+
+            index += 1;
+        }
     }
 
-    return NULL;
+    neu_json_encode_with_mqtt(&res, neu_json_encode_get_tags_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    vector_uninit(&grp_configs);
+    free(res.tags);
+    return result;
 }
 
 char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                        neu_json_add_tags_req_t *req)
 {
+    neu_json_error_resp_t error  = { 0 };
+    char *                result = NULL;
+    if (NULL == req) {
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
+    }
+
     log_info("Add tags uuid:%s, node id:%d, group config name:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
 
-    char *                json_str = NULL;
-    uint32_t              node_id  = req->node_id;
-    neu_json_error_resp_t error    = { 0 };
+    neu_taggrp_config_t *config = neu_system_find_group_config(
+        plugin, req->node_id, req->group_config_name);
+    neu_datatag_table_t *table =
+        neu_system_get_datatags_table(plugin, req->node_id);
 
-    int rc = common_has_node(plugin, node_id);
-    if (0 != rc) {
-        error.error = -1;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
-    }
-
-    neu_taggrp_config_t *config;
-    config = common_get_group_config(plugin, node_id, req->group_config_name);
-    if (NULL == config) {
-        error.error = -2;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
-    }
-
-    neu_datatag_table_t *table = common_get_datatags_table(plugin, node_id);
     if (NULL == table) {
-        error.error = -3;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
+        error.error = NEU_ERR_NODE_NOT_EXIST;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
     }
+
+    if (NULL == config) {
+        config = neu_taggrp_cfg_new(req->group_config_name);
+        neu_taggrp_cfg_set_interval(config, 10000);
+        neu_system_add_group_config(plugin, req->node_id, config);
+    }
+
+    vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(config);
+    neu_err_code_e code = { 0 };
 
     for (int i = 0; i < req->n_tag; i++) {
-        neu_datatag_t *datatag = malloc(sizeof(neu_datatag_t));
-        datatag->name          = strdup(req->tags[i].name);
-        datatag->attribute     = req->tags[i].attribute;
-        datatag->type          = req->tags[i].type;
-        datatag->addr_str      = strdup(req->tags[i].address);
-        datatag_id_t id        = neu_datatag_tbl_add(table, datatag);
-
-        log_info("Add datatag to the datatag table, id:%ld", id);
-        if (0 != id) {
-            vector_t *ids    = neu_taggrp_cfg_get_datatag_ids(config);
-            int *     tag_id = malloc(sizeof(uint32_t));
-            *tag_id          = id;
-            rc               = vector_push_back(ids, tag_id);
-            log_info("Add datatag id to the config:%s, id:%ld, error code:%d",
-                     req->group_config_name, id, rc);
+        if (!neu_tag_check_attribute(req->tags[i].attribute)) {
+            code = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
+            continue;
         }
+
+        neu_datatag_t *tag = calloc(1, sizeof(neu_datatag_t));
+
+        tag->addr_str  = strdup(req->tags[i].address);
+        tag->name      = strdup(req->tags[i].name);
+        tag->type      = req->tags[i].type;
+        tag->attribute = req->tags[i].attribute;
+
+        neu_datatag_tbl_add(table, tag);
+        vector_push_back(ids, &tag->id);
     }
 
-    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                   neu_json_encode_mqtt_resp, &json_str);
-    if (0 == rc) {
-        return json_str;
-    }
+    neu_taggrp_cfg_unanchor(config);
 
-    return NULL;
+    error.error = code;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }
 
 char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_update_tags_req_t *req)
 {
+    neu_json_error_resp_t error  = { 0 };
+    char *                result = NULL;
+    if (NULL == req) {
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
+    }
+
     log_info("Update tags uuid:%s, node id:%d", mqtt->uuid, req->node_id);
 
-    char *                json_str = NULL;
-    uint32_t              node_id  = req->node_id;
-    neu_json_error_resp_t error    = { 0 };
-
-    int rc = common_has_node(plugin, node_id);
-    if (0 != rc) {
-        error.error = -1;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
-    }
-
-    neu_datatag_table_t *table = common_get_datatags_table(plugin, node_id);
+    neu_datatag_table_t *table =
+        neu_system_get_datatags_table(plugin, req->node_id);
     if (NULL == table) {
-        error.error = -3;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
+        error.error = NEU_ERR_NODE_NOT_EXIST;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
     }
 
+    neu_err_code_e code = { 0 };
     for (int i = 0; i < req->n_tag; i++) {
-        neu_datatag_t *datatag = neu_datatag_tbl_get(table, req->tags[i].id);
+        neu_datatag_t *tag = neu_datatag_tbl_get(table, req->tags[i].id);
 
-        if (NULL == datatag) {
+        if (tag == NULL) {
+            code = NEU_ERR_TAG_NOT_EXIST;
             continue;
         }
 
-        free(datatag->name);
-        free(datatag->addr_str);
+        if (!neu_tag_check_attribute(req->tags[i].attribute)) {
+            code = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
+            continue;
+        }
 
-        datatag->id        = req->tags[i].id;
-        datatag->name      = strdup(req->tags[i].name);
-        datatag->attribute = req->tags[i].attribute;
-        datatag->type      = req->tags[i].type;
-        datatag->addr_str  = strdup(req->tags[i].address);
-        rc = neu_datatag_tbl_update(table, req->tags[i].id, datatag);
+        free(tag->addr_str);
+        free(tag->name);
+        tag->addr_str  = strdup(req->tags[i].address);
+        tag->name      = strdup(req->tags[i].name);
+        tag->type      = req->tags[i].type;
+        tag->attribute = req->tags[i].attribute;
 
-        log_info("Update datatag to the datatag table, id:%ld", datatag->id);
+        neu_datatag_tbl_update(table, req->tags[i].id, tag);
     }
 
-    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                   neu_json_encode_mqtt_resp, &json_str);
-
-    if (0 == rc) {
-        return json_str;
-    }
-
-    return NULL;
+    error.error = code;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }
 
 char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_del_tags_req_t *req)
 {
+    neu_json_error_resp_t error  = { 0 };
+    char *                result = NULL;
+    if (NULL == req) {
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
+    }
+
     log_info("Delete tags uuid:%s, node id:%d, group config:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
 
-    char *                json_str = NULL;
-    uint32_t              node_id  = req->node_id;
-    neu_json_error_resp_t error    = { 0 };
-
-    int rc = common_has_node(plugin, node_id);
-    if (0 != rc) {
-        error.error = -1;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
-    }
-
-    neu_taggrp_config_t *config =
-        neu_system_find_group_config(plugin, node_id, req->group_config_name);
-    if (NULL == config) {
-        error.error = -2;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
-    }
-
+    neu_taggrp_config_t *config = neu_system_find_group_config(
+        plugin, req->node_id, req->group_config_name);
     neu_datatag_table_t *table =
         neu_system_get_datatags_table(plugin, req->node_id);
-    if (NULL == table) {
-        error.error = -3;
-        rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                       neu_json_encode_mqtt_resp, &json_str);
-        if (0 == rc) {
-            return json_str;
-        }
-        return NULL;
+
+    if (NULL == config || NULL == table) {
+        error.error = NEU_ERR_NODE_NOT_EXIST;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
     }
 
     for (int i = 0; i < req->n_id; i++) {
-        rc = neu_datatag_tbl_remove(table, req->ids[i]);
-        if (0 == rc) {
+        if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
             vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+
             VECTOR_FOR_EACH(ids, iter)
             {
                 neu_datatag_id_t *id = (neu_datatag_id_t *) iterator_get(&iter);
@@ -392,11 +258,8 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         }
     }
 
-    rc = neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                   neu_json_encode_mqtt_resp, &json_str);
-    if (0 == rc) {
-        return json_str;
-    }
-
-    return NULL;
+    error.error = NEU_ERR_SUCCESS;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                              neu_json_encode_mqtt_resp, &result);
+    return result;
 }

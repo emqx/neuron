@@ -27,12 +27,6 @@ int command_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                               neu_json_read_req_t *req, uint32_t req_id)
 {
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
-    int rc = common_has_node(plugin, req->node_id);
-    if (0 != rc) {
-        log_debug("The requested node does not exist");
-        return -1;
-    }
-
     neu_taggrp_config_t *config = neu_system_find_group_config(
         plugin, req->node_id, req->group_config_name);
     if (NULL == config) {
@@ -67,6 +61,13 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
         json->tags[i - 1].id = int_val->key;
 
         switch (type) {
+        case NEU_DTYPE_ERRORCODE: {
+            int32_t value;
+            neu_dvalue_get_errorcode(val, &value);
+            json->tags[i - 1].t             = NEU_JSON_INT;
+            json->tags[i - 1].value.val_int = value;
+            break;
+        }
         case NEU_DTYPE_BYTE: {
             uint8_t value;
             neu_dvalue_get_uint8(val, &value);
@@ -232,11 +233,6 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
                          const char *    group_config_name,
                          neu_data_val_t *write_val, uint32_t req_id)
 {
-    int rc = common_has_node(plugin, dest_node_id);
-    if (0 != rc) {
-        return -1;
-    }
-
     neu_taggrp_config_t *config;
     config =
         neu_system_find_group_config(plugin, dest_node_id, group_config_name);
