@@ -17,6 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#define NEURON_LOG_LABEL "neu_datatag_manager"
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
