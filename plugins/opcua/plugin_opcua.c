@@ -86,8 +86,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
     memset(plugin->handle_context, 0, sizeof(opc_handle_context_t));
     plugin->handle_context->plugin       = plugin;
     plugin->handle_context->table        = NULL;
-    plugin->handle_context->self_node_id = neu_plugin_self_node_id(plugin);
-
+    plugin->handle_context->self_node_id = 0;
     NEU_LIST_INIT(&plugin->handle_context->subscribe_list,
                   opc_subscribe_tuple_t, node);
 
@@ -99,7 +98,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
         plugin->handle_context->client = NULL;
         return -1;
     } else {
-        log_info("Connected to opc.tcp://%s:%d", plugin->option.host,
+        log_info("Connected to opc.tcp://%s:%s", plugin->option.host,
                  plugin->option.port);
         plugin->handle_context->client = plugin->client;
     }
@@ -155,6 +154,10 @@ static int opcua_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     if (NULL == plugin->handle_context->client) {
         return -2;
+    }
+
+    if (0 == plugin->handle_context->self_node_id) {
+        plugin->handle_context->self_node_id = neu_plugin_self_node_id(plugin);
     }
 
     if (NULL == plugin->handle_context->table) {
