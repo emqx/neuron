@@ -465,14 +465,14 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     cur_adapter = reg_entity->adapter;
     nng_mtx_unlock(manager->adapters_mtx);
     if (reg_entity != NULL) {
+        log_info("The manager unbind the adapter(%s)",
+                 neu_adapter_get_name(cur_adapter));
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->bind_count = 0;
         manager->bind_info.bind_count--;
         manager->bind_info.expect_bind_count--;
         nng_cv_wake(reg_entity->cv);
         nng_mtx_unlock(manager->bind_info.mtx);
-        log_info("The manager unbind the adapter(%s)",
-                 neu_adapter_get_name(cur_adapter));
     }
 
     return;
