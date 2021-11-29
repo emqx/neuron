@@ -25,6 +25,8 @@
 
 #define NEU_PLUGIN_MAGIC_NUMBER 0x43474d50 // a string "PMGC"
 
+#define NEU_SELF_NODE_NAME_UNKNOWN "unknown-adapter"
+
 #define PLUGIN_CALL_CMD(plugin, type, req_buff, resp_struct, func)            \
     {                                                                         \
         neu_request_t        cmd    = { 0 };                                  \
@@ -319,6 +321,18 @@ neu_node_id_t neu_plugin_self_node_id(neu_plugin_t *plugin)
                     neu_reqresp_node_id_t, { node_id = resp->node_id; })
 
     return node_id;
+}
+
+const char *neu_plugin_self_node_name(neu_plugin_t *plugin)
+{
+    neu_cmd_self_node_name_t self_node_name;
+    // the adapter may not be ready yet
+    const char *node_name = NEU_SELF_NODE_NAME_UNKNOWN;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_SELF_NODE_NAME, self_node_name,
+                    neu_reqresp_node_name_t, { node_name = resp->node_name; })
+
+    return node_name;
 }
 
 intptr_t neu_system_add_plugin(neu_plugin_t *plugin, plugin_kind_e kind,

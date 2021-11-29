@@ -115,6 +115,7 @@ void          neu_plugin_response_trans_data(neu_plugin_t *       plugin,
                                              neu_taggrp_config_t *grp_config,
                                              neu_data_val_t *data, uint32_t event_id);
 neu_node_id_t neu_plugin_self_node_id(neu_plugin_t *plugin);
+const char *  neu_plugin_self_node_name(neu_plugin_t *plugin);
 
 intptr_t neu_system_add_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
                                neu_node_type_e node_type,
