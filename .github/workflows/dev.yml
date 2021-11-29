@@ -1,6 +1,6 @@
 name: EMQX Neuron dev workflow
 
-on: [pull_request, release ]
+on: [push, pull_request, release ]
 
 jobs:
   clang_format_check:
