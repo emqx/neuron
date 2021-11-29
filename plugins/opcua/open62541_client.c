@@ -328,10 +328,13 @@ int open62541_client_read(open62541_client_t *client, vector_t *datas)
         opcua_data_t *data = (opcua_data_t *) iterator_get(&iter);
         if (!read_response.results[count].hasValue) {
             data->error = -1;
+            count++;
             continue;
         }
+
         if (!UA_Variant_isScalar(&read_response.results[count].value)) {
             data->error = -2;
+            count++;
             continue;
         }
 
