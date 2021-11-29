@@ -72,6 +72,8 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_DATATAGS,
     NEU_REQRESP_SELF_NODE_ID,
     NEU_REQRESP_NODE_ID,
+    NEU_REQRESP_SELF_NODE_NAME,
+    NEU_REQRESP_NODE_NAME,
     NEU_REQRESP_SET_NODE_SETTING,
     NEU_REQRESP_GET_NODE_SETTING,
     NEU_REQRESP_GET_NODE_SETTING_RESP,
@@ -266,6 +268,16 @@ typedef struct neu_cmd_self_node_id {
 typedef struct neu_represp_node_id {
     neu_node_id_t node_id;
 } neu_reqresp_node_id_t;
+
+/* NEU_REQRESP_SELF_NODE_NAME */
+typedef struct neu_cmd_self_node_name {
+    uint32_t reserved;
+} neu_cmd_self_node_name_t;
+
+/* NEU_REQRESP_NODE_NAME */
+typedef struct neu_represp_node_name {
+    const char *node_name;
+} neu_reqresp_node_name_t;
 
 /* NEU_REQRESP_SET_NODE_SETTING */
 typedef struct neu_cmd_set_node_setting {

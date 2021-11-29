@@ -673,6 +673,24 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_SELF_NODE_NAME: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_node_name_t, neu_cmd_self_node_name_t, rv,
+            NEU_REQRESP_NODE_NAME, p_result, {
+                (void) req_cmd;
+                ret = malloc(sizeof(neu_reqresp_node_name_t));
+                if (ret == NULL) {
+                    log_error("Failed to allocate result of get node name");
+                    rv = -1;
+                    free(result);
+                    break;
+                }
+
+                ret->node_name = adapter->name;
+            });
+        break;
+    }
+
     case NEU_REQRESP_SET_NODE_SETTING: {
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_set_node_setting_t,
                           rv, NEU_REQRESP_ERR_CODE, p_result, {
