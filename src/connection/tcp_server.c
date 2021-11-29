@@ -24,6 +24,11 @@
 #include <string.h>
 #include <sys/time.h>
 
+#ifndef SOCK_NONBLOCK
+#include <fcntl.h>
+#define SOCK_NONBLOCK O_NONBLOCK
+#endif
+
 #include "neu_log.h"
 
 #include "connection/neu_tcp.h"

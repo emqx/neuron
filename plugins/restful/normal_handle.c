@@ -111,7 +111,7 @@ void handle_login(nng_aio *aio)
             neu_json_login_resp_t login_resp = { 0 };
             char *                name       = "admin";
             char *                password   = "0000";
-            uint                  ret        = 0;
+            int                   ret        = 0;
 
             if (strcmp(req->name, name) == 0 &&
                 strcmp(req->pass, password) == 0) {
