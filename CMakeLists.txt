@@ -65,6 +65,9 @@ find_package(nng CONFIG REQUIRED)
 find_package(Threads)
 
 add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
+if(NOT CMAKE_SYSTEM_NAME)
+  set(CMAKE_SYSTEM_NAME "Linux")
+endif()
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
   add_definitions(-DNEU_PLATFORM_LINUX)
 
@@ -121,6 +124,8 @@ set(NEURON_BASE_SOURCES
     src/base/neu_errcodes.c
     src/connection/tcp_client.c
     src/connection/tcp_server.c
+    src/event/event_linux.c
+    src/event/event_unix.c
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
     src/utils/idhash.c
