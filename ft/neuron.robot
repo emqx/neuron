@@ -61,6 +61,18 @@ Neuron Ready
     Start Neuron
     Sleep           3
 
+LOGIN
+	POST    /api/v2/login	{"name": "admin", "pass":"0000"}
+
+    Integer    response status	200
+
+	${token}	String         $.token
+	[Return]	${token}[0]
+
+LOGOUT
+	POST	/api/v2/logout
+	Integer	response status	200
+
 Get Node ID
     [Arguments]    ${node_type}                      ${node_name}
     GET            /api/v2/node?type=${node_type}
@@ -199,8 +211,3 @@ Compare Tag Value As String
 	${ret} =	Compare Tag Value String    ${val}	${id}	${value}
 
 	should be equal as integers	${ret}    0
-
-
-
-
-
