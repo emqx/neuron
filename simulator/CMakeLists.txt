@@ -1,3 +1,6 @@
 add_executable(modbus_tcp_server_simulator modbus_tcp_server_sim.c)
 target_include_directories(modbus_tcp_server_simulator PRIVATE ${CMAKE_SOURCE_DIR})
 target_link_libraries(modbus_tcp_server_simulator neuron-base)	
+
+add_executable(opcua_simulator opcua_simulator.c)
+target_link_libraries(opcua_simulator rt open62541 ssl crypto)
