@@ -864,7 +864,6 @@ static int add_grp_config_to_adapter(adapter_reg_entity_t *reg_entity,
     if (rv != 0) {
         log_error("Failed to add datatag group config: %s",
                   neu_taggrp_cfg_get_name(grp_config));
-        neu_taggrp_cfg_free(grp_config);
         return rv;
     }
     return rv;
