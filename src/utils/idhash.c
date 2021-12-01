@@ -280,3 +280,22 @@ int neu_id_alloc(neu_id_map *m, uint32_t *idp, void *val)
     }
     return (rv);
 }
+
+size_t neu_id_traverse(neu_id_map *m, void (*cb)(uint32_t, void *, void *),
+                       void *      userdata)
+{
+    size_t index;
+    size_t n = 0;
+    if (m->id_count == 0) {
+        return 0;
+    }
+
+    for (index = 0; index < m->id_cap; index++) {
+        if (m->id_entries[index].val) {
+            cb(m->id_entries[index].key, m->id_entries[index].val, userdata);
+            n++;
+        }
+    }
+
+    return n;
+}

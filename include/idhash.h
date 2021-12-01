@@ -54,12 +54,14 @@ struct neu_id_map {
     neu_id_entry *id_entries;
 };
 
-extern void  neu_id_map_init(neu_id_map *, uint32_t, uint32_t);
-extern void  neu_id_map_fini(neu_id_map *);
-extern void *neu_id_get(neu_id_map *, uint32_t);
-extern int   neu_id_set(neu_id_map *, uint32_t, void *);
-extern int   neu_id_alloc(neu_id_map *, uint32_t *, void *);
-extern int   neu_id_remove(neu_id_map *, uint32_t);
+extern void   neu_id_map_init(neu_id_map *, uint32_t, uint32_t);
+extern void   neu_id_map_fini(neu_id_map *);
+extern void * neu_id_get(neu_id_map *, uint32_t);
+extern int    neu_id_set(neu_id_map *, uint32_t, void *);
+extern int    neu_id_alloc(neu_id_map *, uint32_t *, void *);
+extern int    neu_id_remove(neu_id_map *, uint32_t);
+extern size_t neu_id_traverse(neu_id_map *,
+                              void (*cb)(uint32_t, void *, void *), void *);
 
 #ifdef __cplusplus
 }
