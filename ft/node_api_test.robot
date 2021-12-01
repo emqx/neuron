@@ -135,7 +135,7 @@ Get setting from a node that has never been set, it should return failure
 
     GET    /api/v2/node/setting?node_id=${driver_node_id}
 
-    Integer    response status        404
+    Integer    response status        200
     Integer    response body error    ${ERR_NODE_SETTING_NOT_EXIST}
 
     Del Node    ${driver_node_id}
