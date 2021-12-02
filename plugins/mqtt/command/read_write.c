@@ -153,8 +153,8 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
             break;
         }
         case NEU_DTYPE_BIT: {
-            bool value;
-            neu_dvalue_get_uint8(val, &value);
+            uint8_t value;
+            neu_dvalue_get_bit(val, &value);
             json->tags[i - 1].t             = NEU_JSON_BIT;
             json->tags[i - 1].value.val_bit = value;
             break;
