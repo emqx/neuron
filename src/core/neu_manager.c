@@ -1272,7 +1272,7 @@ static void manager_loop(void *arg)
             cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
             adapter_id = neu_manager_adapter_id_from_node_id(
-                manager, cmd_ptr->dst_node_id);
+                manager, cmd_ptr->src_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             neu_adapter_add_sub_grp_config(
@@ -1312,7 +1312,7 @@ static void manager_loop(void *arg)
             cmd_ptr = (unsubscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
             adapter_id = neu_manager_adapter_id_from_node_id(
-                manager, cmd_ptr->dst_node_id);
+                manager, cmd_ptr->src_node_id);
             reg_entity =
                 find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
             neu_adapter_del_sub_grp_config(
