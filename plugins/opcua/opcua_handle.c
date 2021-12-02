@@ -125,8 +125,13 @@ static int read_response_array_generate(vector_t *         datas,
 
         int type = data->type;
         switch (type) {
-        case NEU_DTYPE_BYTE: {
-            val = neu_dvalue_new(NEU_DTYPE_BYTE);
+        case NEU_DTYPE_INT8: {
+            val = neu_dvalue_new(NEU_DTYPE_INT8);
+            neu_dvalue_set_int8(val, data->value.value_int8);
+            break;
+        }
+        case NEU_DTYPE_UINT8: {
+            val = neu_dvalue_new(NEU_DTYPE_UINT8);
             neu_dvalue_set_uint8(val, data->value.value_uint8);
             break;
         }
@@ -172,7 +177,7 @@ static int read_response_array_generate(vector_t *         datas,
         }
         case NEU_DTYPE_DOUBLE: {
             val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
-            neu_dvalue_set_float(val, data->value.value_double);
+            neu_dvalue_set_double(val, data->value.value_double);
             break;
         }
         case NEU_DTYPE_CSTR: {
