@@ -29,7 +29,7 @@ Read unsubscribed point, it should return failure
 
 	[Teardown]	Del Group Config	${node_id}	xx
 
-Read a point in the hlod reg area, and the data as int16, it should return success
+Read a point in the hold reg area, and the data as int16, it should return success
 	Add Tags    ${node_id}    ${group}	{"name": "tag1", "address": "1!40001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
 
 	${tag_id} =	Get Tag ID             ${node_id}      ${group}    tag1
@@ -157,7 +157,19 @@ Read a point in the input area, and the data as bit type, it should return succe
 	Compare Tag Value As Int    ${tags}.tags    ${tag2_id}    1
 
 	[Teardown]	Del Tags	${node_id}	${group}	${tag1_id},${tag2_id}
-#Read a point in the input reg area, and the data as int16, it should return success
+
+Read a point in the input reg area, and the data as int16, it should return success
+	Add Tags    ${node_id}    ${group}	{"name": "tag1", "address": "1!40001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
+
+	${tag1_id} =	Get Tag ID            ${node_id}       ${group}    tag1
+	should not be equal as integers    ${tag1_id}	-1
+	Sleep                              4s
+
+	${tags} =	Read Tags         ${node_id}      ${group}
+	Compare Tag Value As Int    ${tags}.tags    ${tag1_id}    123
+
+	[Teardown]	Del Tags	${node_id}	${group}	${tag1_id}
+
 #Read a point in the input reg area, and the data as uint16, it should return success
 #Read a point in the input reg area, and the data as uint32, it should return success
 #Read a point in the input reg area, and the data as int32, it should return success
