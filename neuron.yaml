@@ -27,7 +27,7 @@ opcua:
   default_key_file: ./opcua-default-key.der
   host: localhost
   port: 4840
-  username: gaoc01
+  username: user
   password: 123456
   cert_file: ""
   key_file: ""

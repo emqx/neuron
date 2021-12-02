@@ -215,7 +215,7 @@ static int client_set_read_value(opcua_data_t *data, UA_Variant *value)
     // byte(OPCUA) -> uint8(Neuron)
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_BYTE])) {
         data->value.value_uint8 = *(UA_Byte *) value->data;
-        data->type              = NEU_DTYPE_BYTE;
+        data->type              = NEU_DTYPE_UINT8;
         return 0;
     }
 
@@ -253,6 +253,18 @@ static int client_set_read_value(opcua_data_t *data, UA_Variant *value)
         UA_DateTime time           = *(UA_DateTime *) value->data;
         data->value.value_datetime = (UA_UInt32) UA_DateTime_toUnixTime(time);
         data->type                 = NEU_DTYPE_UINT32;
+        return 0;
+    }
+
+    if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_INT64])) {
+        data->value.value_int64 = *(UA_Int64 *) value->data;
+        data->type              = NEU_DTYPE_INT64;
+        return 0;
+    }
+
+    if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_UINT64])) {
+        data->value.value_uint64 = *(UA_UInt64 *) value->data;
+        data->type               = NEU_DTYPE_UINT64;
         return 0;
     }
 

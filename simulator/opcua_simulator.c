@@ -111,16 +111,21 @@ static void data_uint32_add(UA_Server *server, char *name, char *node_id,
     node_attributes_set(server, name, node_id, UA_TYPES_UINT32, &u32, readonly);
 }
 
-// UA_DateTime
-// static void data_datetime_add(UA_Server *server, char *name, char *node_id,
-//                               uint32_t data, const int readonly)
-// {
-//     UNUSED(server);
-//     UNUSED(name);
-//     UNUSED(node_id);
-//     UNUSED(data);
-//     UNUSED(readonly);
-// }
+// UA_Int64
+static void data_int64_add(UA_Server *server, char *name, char *node_id,
+                           int64_t data, const int readonly)
+{
+    UA_Int64 i64 = data;
+    node_attributes_set(server, name, node_id, UA_TYPES_INT64, &i64, readonly);
+}
+
+// UA_UInt64
+static void data_uint64_add(UA_Server *server, char *name, char *node_id,
+                            uint64_t data, const int readonly)
+{
+    UA_UInt64 u64 = data;
+    node_attributes_set(server, name, node_id, UA_TYPES_UINT64, &u64, readonly);
+}
 
 // UA_Float
 static void data_float_add(UA_Server *server, char *name, char *node_id,
@@ -229,13 +234,16 @@ int main(int argc, char **argv)
         &config->securityPolicies[config->securityPoliciesSize - 1].policyUri,
         2, logins);
 
-    data_int8_add(server, "type_int8", "neu.type.int8", -10, 0);
-    data_uint8_add(server, "type_uint8", "neu.type.uint8", 10, 0);
+    data_int8_add(server, "type_int8", "neu.type_int8", -10, 0);
+    data_uint8_add(server, "type_uint8", "neu.type_uint8", 10, 0);
     data_bool_add(server, "type_bool", "neu.type_bool", true, 0);
     data_int16_add(server, "type_int16", "neu.type_int16", -1001, 0);
     data_uint16_add(server, "type_uint16", "neu.type_uint16", 1001, 0);
     data_int32_add(server, "type_int32", "neu.type_int32", -100, 0);
     data_uint32_add(server, "type_uint32", "neu.type_uint32", 111111, 0);
+    data_int64_add(server, "type_int64", "neu.type_int64", -10011111111111, 0);
+    data_uint64_add(server, "type_uint64", "neu.type_uint64", 5678710019198784,
+                    0);
     data_float_add(server, "type_float", "neu.type_float", 38.9, 0);
     data_double_add(server, "type_double", "neu.type_double", 100038.9999, 0);
     data_string_add(server, "type_cstr", "nue.type_cstr", "hello world!", 0);
