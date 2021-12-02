@@ -32,10 +32,18 @@ typedef struct neu_datatag_table neu_datatag_table_t;
 neu_datatag_table_t *neu_datatag_tbl_create(void);
 void                 neu_datatag_tbl_destroy(neu_datatag_table_t *);
 neu_datatag_t *      neu_datatag_tbl_get(neu_datatag_table_t *, datatag_id_t);
-int          neu_datatag_tbl_remove(neu_datatag_table_t *, datatag_id_t);
-int          neu_datatag_tbl_update(neu_datatag_table_t *, datatag_id_t,
-                                    neu_datatag_t *);
+
+// We take ownership of the datatag, this implies that the datatag and the
+// tag name should reside in heap.
 datatag_id_t neu_datatag_tbl_add(neu_datatag_table_t *, neu_datatag_t *);
+
+// The input datatag and its name should be newly allocated in the heap,
+// since we will destroy the old datatag.
+int neu_datatag_tbl_update(neu_datatag_table_t *, datatag_id_t,
+                           neu_datatag_t *);
+
+// Removing a datatag will also release it.
+int neu_datatag_tbl_remove(neu_datatag_table_t *, datatag_id_t);
 
 #ifdef __cplusplus
 }
