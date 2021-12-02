@@ -87,6 +87,7 @@ typedef enum {
     NEU_ERR_GRP_NOT_SUBSCRIBE         = 2014,
     NEU_ERR_TAG_TYPE_NOT_SUPPORT      = 2015,
     NEU_ERR_GRP_CONFIG_EXIST          = 2016,
+    NEU_ERR_TAG_NAME_EXIST            = 2017,
 } neu_err_code_e;
 
 #ifdef __cplusplus

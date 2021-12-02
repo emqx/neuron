@@ -181,6 +181,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_IS_RUNNING:
     case NEU_ERR_NODE_NOT_RUNNING:
     case NEU_ERR_NODE_IS_STOPED:
+    case NEU_ERR_TAG_NAME_EXIST:
     case NEU_ERR_GRP_CONFIG_EXIST:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
