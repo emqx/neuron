@@ -65,15 +65,25 @@ void handle_add_tags(nng_aio *aio)
                     continue;
                 }
 
-                neu_datatag_t *tag = calloc(1, sizeof(neu_datatag_t));
+                neu_datatag_t *tag =
+                    neu_datatag_alloc(req->tags[i].attribute, req->tags[i].type,
+                                      req->tags[i].address, req->tags[i].name);
 
-                tag->addr_str  = strdup(req->tags[i].address);
-                tag->name      = strdup(req->tags[i].name);
-                tag->type      = req->tags[i].type;
-                tag->attribute = req->tags[i].attribute;
+                if (NULL == tag) {
+                    code = NEU_ERR_ENOMEM;
+                    continue;
+                }
 
-                neu_datatag_tbl_add(table, tag);
-                vector_push_back(ids, &tag->id);
+                if (neu_datatag_tbl_add(table, tag)) {
+                    vector_push_back(ids, &tag->id);
+                } else {
+                    log_warn_node(plugin,
+                                  "Add failed, tag name exits, node_id:%d, "
+                                  "req_tag_name:%s",
+                                  req->node_id, req->tags[i].name);
+                    code = NEU_ERR_TAG_NAME_EXIST;
+                    free(tag);
+                }
             }
 
             neu_taggrp_cfg_unanchor(config);
@@ -153,14 +163,24 @@ void handle_update_tags(nng_aio *aio)
                     continue;
                 }
 
-                free(tag->addr_str);
-                free(tag->name);
-                tag->addr_str  = strdup(req->tags[i].address);
-                tag->name      = strdup(req->tags[i].name);
-                tag->type      = req->tags[i].type;
-                tag->attribute = req->tags[i].attribute;
+                tag =
+                    neu_datatag_alloc(req->tags[i].attribute, req->tags[i].type,
+                                      req->tags[i].address, req->tags[i].name);
 
-                neu_datatag_tbl_update(table, req->tags[i].id, tag);
+                if (NULL == tag) {
+                    code = NEU_ERR_ENOMEM;
+                    continue;
+                }
+
+                if (0 != neu_datatag_tbl_update(table, req->tags[i].id, tag)) {
+                    log_warn_node(plugin,
+                                  "Update failed, tag name exists, node_id:%d, "
+                                  "tag_id:%d, req_tag_name:%s",
+                                  req->node_id, req->tags[i].id,
+                                  req->tags[i].name);
+                    code = NEU_ERR_TAG_NAME_EXIST;
+                    free(tag);
+                }
             }
 
             NEU_JSON_RESPONSE_ERROR(
