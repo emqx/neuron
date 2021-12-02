@@ -3,6 +3,12 @@ ${ERR_SUCCESS}                      0
 ${ERR_INTERNAL}                     1001
 ${ERR_REQUEST_BODY_INVALID}         1002
 ${ERR_REQUEST_PARAM_INVALID}        1003
+${ERR_NEED_TOKEN}                   1004
+${ERR_DECODE_TOKEN}                 1005
+${ERR_EXPIRED_TOKEN}                1006
+${ERR_VALIDATE_TOKEN}               1007
+${ERR_INVALID_TOKEN}                1008
+${ERR_INVALID_USER_OR_PASSWORD}     1009
 ${ERR_PLUGIN_NAME_NOT_FOUND}        2000
 ${ERR_NODE_TYPE_INVALID}            2001
 ${ERR_NODE_EXIST}                   2002
