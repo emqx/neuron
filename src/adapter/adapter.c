@@ -138,7 +138,33 @@ struct neu_adapter {
 neu_plugin_running_state_e
 neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 {
-    neu_plugin_running_state_e state = adapter->state;
+    neu_plugin_running_state_e state;
+
+    switch (adapter->state) {
+    case ADAPTER_STATE_IDLE:
+        state = NEU_PLUGIN_RUNNING_STATE_IDLE;
+        break;
+
+    case ADAPTER_STATE_INIT:
+        state = NEU_PLUGIN_RUNNING_STATE_INIT;
+        break;
+
+    case ADAPTER_STATE_READY:
+        state = NEU_PLUGIN_RUNNING_STATE_READY;
+        break;
+
+    case ADAPTER_STATE_RUNNING:
+        state = NEU_PLUGIN_RUNNING_STATE_RUNNING;
+        break;
+
+    case ADAPTER_STATE_STOPPED:
+        state = NEU_PLUGIN_RUNNING_STATE_STOPPED;
+        break;
+
+    default:
+        state = NEU_PLUGIN_RUNNING_STATE_IDLE;
+        break;
+    }
 
     return state;
 }
@@ -795,6 +821,8 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             neu_databuf->grp_config = neu_data->grp_config;
             neu_databuf->databuf    = databuf;
             nng_sendmsg(adapter->sock, trans_data_msg, 0);
+        } else {
+            core_databuf_put(databuf);
         }
         neu_dvalue_free(neu_data->data_val);
         break;
@@ -828,6 +856,8 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             read_data_resp->recver_id  = resp->recver_id;
             read_data_resp->req_id     = resp->req_id;
             nng_sendmsg(adapter->sock, read_resp_msg, 0);
+        } else {
+            core_databuf_put(databuf);
         }
         neu_dvalue_free(read_resp->data_val);
         break;
@@ -861,6 +891,8 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             write_data_resp->recver_id  = resp->recver_id;
             write_data_resp->req_id     = resp->req_id;
             nng_sendmsg(adapter->sock, write_resp_msg, 0);
+        } else {
+            core_databuf_put(databuf);
         }
         neu_dvalue_free(write_resp->data_val);
         break;
@@ -1273,11 +1305,11 @@ void neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,
     }
 
     if (!find) {
-        neu_sub_grp_config_t *sgc = calloc(1, sizeof(neu_sub_grp_config_t));
-        sgc->node_id              = node_id;
-        sgc->group_config_name    = name;
+        neu_sub_grp_config_t sgc;
+        sgc.node_id           = node_id;
+        sgc.group_config_name = name;
 
-        vector_push_back(&adapter->sub_grp_configs, sgc);
+        vector_push_back(&adapter->sub_grp_configs, &sgc);
     }
 
     nng_mtx_unlock(adapter->sub_grp_mtx);
