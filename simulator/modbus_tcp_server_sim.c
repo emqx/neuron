@@ -144,6 +144,8 @@ int main()
                 if (code->function_code == MODBUS_READ_COIL) {
                     byte[i / 8] = byte[i / 8] |
                         coil[ntohs(r_req->start_addr) + i] << (i % 8);
+                    log_info("read coil, addr: %d, value: %d, index: %d",
+                             ntohs(r_req->start_addr) + i, byte[i / 8], i / 8);
                 } else {
                     byte[i / 8] = byte[i / 8] |
                         input[ntohs(r_req->start_addr) + i] << (i % 8);
@@ -188,6 +190,10 @@ int main()
         case MODBUS_WRITE_M_HOLD_REG:
             w_res->start_addr = w_req->start_addr;
             w_res->n_reg      = w_req->n_reg;
+
+            for (int i = 0; i < w_req->n_byte; i++) {
+                hold_reg[ntohs(w_req->start_addr) + i / 2] = 0;
+            }
 
             for (int i = 0; i < w_req->n_byte; i++) {
                 if (i % 2 == 0) {

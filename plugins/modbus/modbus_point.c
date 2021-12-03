@@ -522,7 +522,8 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
                 (uint8_t *) (data +
                              (cmd->points[i]->addr - cmd->start_addr) / 8);
             cmd->points[i]->value.val.val_u8 =
-                (((*ptr) >> cmd->points[i]->addr % 8) & 1) > 0;
+                (((*ptr) >> (cmd->points[i]->addr - cmd->start_addr) % 8) & 1) >
+                0;
             log_info("get result bit.... %d, %d %d",
                      cmd->points[i]->value.val.val_u8, cmd->start_addr,
                      cmd->points[i]->addr);
@@ -603,7 +604,8 @@ static int process_write_res(modbus_point_t *point, modbus_function_e function,
         return -1;
     }
 
-    log_info("write success.....");
+    log_info("write success, start addr: %d, n reg: %d", ntohs(pdu->start_addr),
+             ntohs(pdu->n_reg));
 
     return 0;
 }
