@@ -19,93 +19,91 @@
 
 #include <assert.h>
 
-#include "ht.h"
+#include "hash_table.h"
 #include "mem_alloc.h"
+#include "neu_errcodes.h"
 
-struct neu_ht_entry {
+struct neu_hash_table_entry {
     size_t hash;
     size_t skips;
     void * key;
     void * val;
 };
 
-size_t neu_ht_djb33(unsigned char *str)
+size_t neu_hash_cstr(const char *cstr)
 {
     size_t hash = 5381;
     int    c;
 
-    while ((c = *str++)) {
+    while ((c = (unsigned) *cstr++)) {
         hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
 
     return hash;
 }
 
-void neu_ht_map_init(neu_ht_map *m, neu_ht_hash_cb hash_cb, neu_ht_eq_cb eq_cb,
-                     neu_ht_free_cb free_cb)
+void neu_hash_table_init(neu_hash_table *tbl, neu_hash_table_hash_cb hash_cb,
+                         neu_hash_table_free_cb free_cb)
 {
     assert(hash_cb != NULL);
-    assert(eq_cb != NULL);
-    m->ht_entries  = NULL;
-    m->ht_count    = 0;
-    m->ht_load     = 0;
-    m->ht_cap      = 0;
-    m->ht_max_load = 0;
-    m->ht_min_load = 0; // never shrink below this
-    m->ht_hash_cb  = hash_cb;
-    m->ht_eq_cb    = eq_cb;
-    m->ht_free_cb  = free_cb;
+    tbl->entries  = NULL;
+    tbl->count    = 0;
+    tbl->load     = 0;
+    tbl->cap      = 0;
+    tbl->max_load = 0;
+    tbl->min_load = 0; // never shrink below this
+    tbl->hash_cb  = hash_cb;
+    tbl->free_cb  = free_cb;
 }
 
-void neu_ht_map_fini(neu_ht_map *m)
+void neu_hash_table_fini(neu_hash_table *tbl)
 {
-    if (m->ht_entries != NULL) {
-        if (m->ht_free_cb) {
-            for (size_t i = 0; i < m->ht_cap; ++i) {
-                if (m->ht_entries[i].val != NULL) {
-                    m->ht_free_cb(m->ht_entries[i].key);
-                    m->ht_free_cb(m->ht_entries[i].val);
+    if (tbl->entries != NULL) {
+        if (tbl->free_cb) {
+            for (size_t i = 0; i < tbl->cap; ++i) {
+                if (tbl->entries[i].val != NULL) {
+                    tbl->free_cb(tbl->entries[i].val);
                 }
             }
         }
-        NEU_FREE_STRUCTS(m->ht_entries, m->ht_cap);
-        m->ht_entries = NULL;
-        m->ht_cap = m->ht_count = 0;
-        m->ht_load = m->ht_min_load = m->ht_max_load = 0;
+        NEU_FREE_STRUCTS(tbl->entries, tbl->cap);
+        tbl->entries = NULL;
+        tbl->cap = tbl->count = 0;
+        tbl->load = tbl->min_load = tbl->max_load = 0;
     }
 }
 
 // Inspired by Python dict implementation.  This probe will visit every
 // cell.  We always hash consecutively assigned IDs.  This requires that
 // the capacity is always a power of two.
-#define ID_NEXT(m, j) ((((j) *5) + 1) & (m->ht_cap - 1))
-#define ID_INDEX(m, j) ((j) & (m->ht_cap - 1))
+#define ID_NEXT(t, j) ((((j) *5) + 1) & (t->cap - 1))
+#define ID_INDEX(t, j) ((j) & (t->cap - 1))
 
-static size_t ht_find(neu_ht_map *m, void *key)
+static size_t hash_table_find(neu_hash_table *tbl, const char *key)
 {
-    size_t        index;
-    size_t        start;
-    uint32_t      hash;
-    neu_ht_entry *ent;
+    size_t                index;
+    size_t                start;
+    uint32_t              hash;
+    neu_hash_table_entry *ent;
 
-    if (m->ht_count == 0) {
+    if (tbl->count == 0) {
         return ((size_t) -1);
     }
 
-    hash  = m->ht_hash_cb(key);
-    index = ID_INDEX(m, hash);
+    hash  = tbl->hash_cb(key);
+    index = ID_INDEX(tbl, hash);
     start = index;
     for (;;) {
-        ent = &m->ht_entries[index];
+        ent = &tbl->entries[index];
         // The entry is valid only if key not NULL
         if ((ent->hash == hash) && (ent->key != NULL) &&
-            (m->ht_eq_cb(ent->key, key))) {
+            (0 == strcmp(ent->key, key))) {
             return (index);
         }
         if (ent->skips == 0) {
             return ((size_t) -1);
         }
-        index = ID_NEXT(m, index);
+        index = ID_NEXT(tbl, index);
 
         if (index == start) {
             break;
@@ -115,31 +113,31 @@ static size_t ht_find(neu_ht_map *m, void *key)
     return ((size_t) -1);
 }
 
-void *neu_ht_get(neu_ht_map *m, void *key)
+void *neu_hash_table_get(neu_hash_table *tbl, const char *key)
 {
     size_t index;
-    if ((index = ht_find(m, key)) == (size_t) -1) {
+    if ((index = hash_table_find(tbl, key)) == (size_t) -1) {
         return (NULL);
     }
-    return (m->ht_entries[index].val);
+    return (tbl->entries[index].val);
 }
 
-static int ht_resize(neu_ht_map *m)
+static int hash_table_resize(neu_hash_table *tbl)
 {
-    size_t        new_cap;
-    size_t        old_cap;
-    neu_ht_entry *new_entries;
-    neu_ht_entry *old_entries;
-    uint32_t      i;
+    size_t                new_cap;
+    size_t                old_cap;
+    neu_hash_table_entry *new_entries;
+    neu_hash_table_entry *old_entries;
+    uint32_t              i;
 
-    if ((m->ht_load < m->ht_max_load) && (m->ht_load >= m->ht_min_load)) {
+    if ((tbl->load < tbl->max_load) && (tbl->load >= tbl->min_load)) {
         // No resize needed.
         return (0);
     }
 
-    old_cap = m->ht_cap;
+    old_cap = tbl->cap;
     new_cap = 8;
-    while (new_cap < (m->ht_count * 2)) {
+    while (new_cap < (tbl->count * 2)) {
         new_cap *= 2;
     }
     if (new_cap == old_cap) {
@@ -147,21 +145,21 @@ static int ht_resize(neu_ht_map *m)
         return (0);
     }
 
-    old_entries = m->ht_entries;
+    old_entries = tbl->entries;
     new_entries = NEU_ALLOC_STRUCTS(new_entries, new_cap);
     if (new_entries == NULL) {
-        return -2;
+        return NEU_ERR_ENOMEM;
     }
 
-    m->ht_entries = new_entries;
-    m->ht_cap     = new_cap;
-    m->ht_load    = 0;
+    tbl->entries = new_entries;
+    tbl->cap     = new_cap;
+    tbl->load    = 0;
     if (new_cap > 8) {
-        m->ht_min_load = new_cap / 8;
-        m->ht_max_load = new_cap * 2 / 3;
+        tbl->min_load = new_cap / 8;
+        tbl->max_load = new_cap * 2 / 3;
     } else {
-        m->ht_min_load = 0;
-        m->ht_max_load = 5;
+        tbl->min_load = 0;
+        tbl->max_load = 5;
     }
     for (i = 0; i < old_cap; i++) {
         size_t index;
@@ -174,7 +172,7 @@ static int ht_resize(neu_ht_map *m)
             // once for every item stored, plus once for each
             // hashing operation we use to store the item (i.e.
             // one for the item, plus once for each rehash.)
-            m->ht_load++;
+            tbl->load++;
             if (new_entries[index].key == NULL) {
                 // As we are hitting this entry for the first
                 // time, it won't have any skips.
@@ -185,7 +183,7 @@ static int ht_resize(neu_ht_map *m)
                 break;
             }
             new_entries[index].skips++;
-            index = ID_NEXT(m, index);
+            index = ID_NEXT(tbl, index);
         }
     }
     if (old_cap != 0) {
@@ -194,34 +192,33 @@ static int ht_resize(neu_ht_map *m)
     return (0);
 }
 
-int neu_ht_remove(neu_ht_map *m, void *key)
+int neu_hash_table_remove(neu_hash_table *tbl, const char *key)
 {
     size_t   index;
     size_t   probe;
     uint32_t hash;
 
-    if ((index = ht_find(m, key)) == (size_t) -1) {
-        return -2;
+    if ((index = hash_table_find(tbl, key)) == (size_t) -1) {
+        return NEU_ERR_ENOENT;
     }
 
     // Now we have found the index where the object exists.  We are going
     // to restart the search, until the index matches, to decrement the
     // skips counter.
-    hash  = m->ht_hash_cb(key);
-    probe = ID_INDEX(m, hash);
+    hash  = tbl->hash_cb(key);
+    probe = ID_INDEX(tbl, hash);
 
     for (;;) {
-        neu_ht_entry *entry;
+        neu_hash_table_entry *entry;
 
         // The load was increased once each hashing operation we used
         // to place the the item.  Decrement it accordingly.
-        m->ht_load--;
-        entry = &m->ht_entries[probe];
+        tbl->load--;
+        entry = &tbl->entries[probe];
         if (probe == index) {
             entry->hash = 0;
-            if (NULL != m->ht_free_cb) {
-                m->ht_free_cb(entry->key);
-                m->ht_free_cb(entry->val);
+            if (NULL != tbl->free_cb) {
+                tbl->free_cb(entry->val);
             }
             entry->val = NULL;
             entry->key = NULL; // invalid key
@@ -229,55 +226,59 @@ int neu_ht_remove(neu_ht_map *m, void *key)
         }
         NEU_ASSERT(entry->skips > 0);
         entry->skips--;
-        probe = ID_NEXT(m, probe);
+        probe = ID_NEXT(tbl, probe);
     }
 
-    m->ht_count--;
+    tbl->count--;
 
     // Shrink -- but it's ok if we can't.
-    (void) ht_resize(m);
+    (void) hash_table_resize(tbl);
 
     return (0);
 }
 
-int neu_ht_set(neu_ht_map *m, void *key, void *val)
+int neu_hash_table_set(neu_hash_table *tbl, const char *key, void *val)
 {
-    size_t        index;
-    uint32_t      hash;
-    neu_ht_entry *ent;
+    size_t                index;
+    uint32_t              hash;
+    neu_hash_table_entry *ent;
+
+    if (NULL == val) {
+        return NEU_ERR_EINVAL;
+    }
 
     // the table is filled full
-    if ((~(size_t) 0) == m->ht_count) {
-        return -2;
+    if ((~(size_t) 0) == tbl->count) {
+        return NEU_ERR_ENOMEM;
     }
 
     // Try to resize -- if we don't need to, this will be a no-op.
-    if (ht_resize(m) != 0) {
-        return -2;
+    if (hash_table_resize(tbl) != 0) {
+        return NEU_ERR_ENOMEM;
     }
 
     // If it already exists, just overwrite the old value.
-    if ((index = ht_find(m, key)) != (size_t) -1) {
-        ent = &m->ht_entries[index];
-        if (NULL != m->ht_free_cb) {
-            m->ht_free_cb(ent->val);
+    if ((index = hash_table_find(tbl, key)) != (size_t) -1) {
+        ent = &tbl->entries[index];
+        if (NULL != tbl->free_cb) {
+            tbl->free_cb(ent->val);
         }
         ent->val = val;
         return (0);
     }
 
-    hash  = m->ht_hash_cb(key);
-    index = ID_INDEX(m, hash);
+    hash  = tbl->hash_cb(key);
+    index = ID_INDEX(tbl, hash);
     for (;;) {
-        ent = &m->ht_entries[index];
+        ent = &tbl->entries[index];
 
         // Increment the load count.  We do this each time time we
         // rehash.  This may over-count items that collide on the
         // same rehashing, but this should just cause a table to
         // grow sooner, which is probably a good thing.
-        m->ht_load++;
+        tbl->load++;
         if (ent->val == NULL) {
-            m->ht_count++;
+            tbl->count++;
             ent->hash = hash;
             ent->key  = key;
             ent->val  = val;
@@ -287,6 +288,6 @@ int neu_ht_set(neu_ht_map *m, void *key, void *val)
         // that a rehash will be necessary.  Without this we
         // would need to scan the entire hash for the match.
         ent->skips++;
-        index = ID_NEXT(m, index);
+        index = ID_NEXT(tbl, index);
     }
 }

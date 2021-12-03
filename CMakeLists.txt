@@ -129,7 +129,7 @@ set(NEURON_BASE_SOURCES
     src/utils/atomic_data.c
     src/utils/mem_alloc.c
     src/utils/idhash.c
-    src/utils/ht.c
+    src/utils/hash_table.c
     src/utils/list.c
     src/utils/panic.c
     src/utils/log.c

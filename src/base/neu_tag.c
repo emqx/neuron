@@ -25,3 +25,44 @@ bool neu_tag_check_attribute(neu_attribute_e attribute)
              (attribute & NEU_ATTRIBUTE_WRITE) == 0 &&
              (attribute & NEU_ATTRIBUTE_SUBSCRIBE) == 0);
 }
+
+neu_datatag_t *neu_datatag_alloc(neu_attribute_e attr, neu_dtype_e type,
+                                 neu_addr_str_t addr, const char *name)
+{
+    neu_datatag_t *tag = malloc(sizeof(neu_datatag_t));
+
+    if (NULL == tag) {
+        return NULL;
+    }
+
+    tag->id        = 0;
+    tag->attribute = attr;
+    tag->type      = type;
+
+    tag->addr_str = strdup(addr);
+    if (NULL == tag->addr_str) {
+        goto error;
+    }
+
+    tag->name = strdup(name);
+    if (NULL == tag->name) {
+        goto error;
+    }
+
+    return tag;
+
+error:
+    free(tag->addr_str);
+    free(tag->name);
+    free(tag);
+    return NULL;
+}
+
+void neu_datatag_free(neu_datatag_t *datatag)
+{
+    if (datatag) {
+        free(datatag->addr_str);
+        free(datatag->name);
+    }
+    free(datatag);
+}
