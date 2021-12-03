@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef __NEU_HT_H__
-#define __NEU_HT_H__
+#ifndef __NEU_HASH_TABLE_H__
+#define __NEU_HASH_TABLE_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -31,39 +31,42 @@ extern "C" {
 // to avoid hitting the same positions.  Our hash algorithm is just the low
 // order bits, and we use table sizes that are powers of two.
 
-typedef struct neu_ht_map   neu_ht_map;
-typedef struct neu_ht_entry neu_ht_entry;
+typedef struct neu_hash_table       neu_hash_table;
+typedef struct neu_hash_table_entry neu_hash_table_entry;
 
-typedef size_t (*neu_ht_hash_cb)(void *);
-typedef _Bool (*neu_ht_eq_cb)(void *, void *);
-typedef void (*neu_ht_free_cb)(void *);
+typedef size_t (*neu_hash_table_hash_cb)(const char *);
+typedef void (*neu_hash_table_free_cb)(void *);
 
 // NB: These details are entirely private to the hash implementation.
 // They are provided here to facilitate inlining in structures.
-struct neu_ht_map {
-    size_t         ht_cap;
-    size_t         ht_count;
-    size_t         ht_load;
-    size_t         ht_min_load; // considers placeholders
-    size_t         ht_max_load;
-    neu_ht_entry * ht_entries;
-    neu_ht_hash_cb ht_hash_cb;
-    neu_ht_eq_cb   ht_eq_cb;
-    neu_ht_free_cb ht_free_cb;
+struct neu_hash_table {
+    size_t                 cap;
+    size_t                 count;
+    size_t                 load;
+    size_t                 min_load; // considers placeholders
+    size_t                 max_load;
+    neu_hash_table_entry * entries;
+    neu_hash_table_hash_cb hash_cb;
+    neu_hash_table_free_cb free_cb;
 };
 
 // The provided `free_cb` could be NULL, so that you manage memory yourself.
-extern void  neu_ht_map_init(neu_ht_map *m, neu_ht_hash_cb hash_cb,
-                             neu_ht_eq_cb eq_cb, neu_ht_free_cb free_cb);
-extern void  neu_ht_map_fini(neu_ht_map *m);
-extern void *neu_ht_get(neu_ht_map *m, void *key);
-extern int   neu_ht_set(neu_ht_map *m, void *key, void *val);
-extern int   neu_ht_remove(neu_ht_map *m, void *key);
+extern void  neu_hash_table_init(neu_hash_table *       m,
+                                 neu_hash_table_hash_cb hash_cb,
+                                 neu_hash_table_free_cb free_cb);
+extern void  neu_hash_table_fini(neu_hash_table *m);
+extern void *neu_hash_table_get(neu_hash_table *m, const char *key);
+// The hash table take ownership of the value but not the key.
+// Returns 0 on success, NEU_ERR_EINVAL if val is NULL, NEU_ERR_ENOMEM if not
+// sufficient memory.
+extern int neu_hash_table_set(neu_hash_table *m, const char *key, void *val);
+// Returns 0 on success, NEU_ERR_ENOENT if the key does not exist.
+extern int neu_hash_table_remove(neu_hash_table *m, const char *key);
 
-extern size_t neu_ht_djb33(unsigned char *str);
+extern size_t neu_hash_cstr(const char *cstr);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // __NEU_HT_H__
+#endif // __NEU_HASH_TABLE_H__
