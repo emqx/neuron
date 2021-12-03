@@ -39,15 +39,18 @@ logout with invalid token, it should return ERR_EXPIRED_TOKEN
     Integer    $.error            ${ERR_EXPIRED_TOKEN}
 
 logout with invalid token, it should return ERR_INVALID_TOKEN
-    Set Headers    {"Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2Mzg0Mjc3Njh9.Iet0NJMF7XpRhmGWJ05hiHDUXJV1JpmlCSw4co0-9CSin9tWJ7tQ42SpxDZVEaXBd12l22eKztrD4u7wk8Wh_o3cOPTFJPL8yMPEQTuKOsSaHd7Dx6oF1wf7IxPmkhAtf1MuywSrr5Pw2UQ54R2mvWaRfe_DB1xmlFNiRjxgFHo5Ml3WUOUl8VwSzblA_tlIVJD3rbHMeZY3J8UAXf7t1rRxPdApVVj2wPwtTPDwaJHsn00JhpFpecWTf6mAP_-HfxSXlgLUfLtsgKpLLWgtbVBI9emDgIcfcRrgjDp27TMA8E5xGt37Mf5BCB1Aliwuned3VYWV8YNlGEsaBCYWHA"}
-    POST           /api/v2/logout
+    ${token} =     LOGIN
+    ${jwt} =       Catenate                       Bearer    ${token}
+    Set Headers    {"Authorization": "${jwt}"}
+    LOGOUT
 
-    Integer    response status    403
-    Integer    $.error            ${ERR_INVALID_TOKEN}
+    Set Headers    {"Authorization": "${jwt}"}
+    POST           /api/v2/logout
+    Integer        response status                403
+    Integer        $.error                        ${ERR_INVALID_TOKEN}
 
 logout with valid token, it should return success
     ${token} =     LOGIN
     ${jwt} =       Catenate                      Bearer    ${token}
     Set Headers    {"Authorization":"${jwt}"}
-    POST           /api/v2/logout
-    Integer        response status               200
+    LOGOUT
