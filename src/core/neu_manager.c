@@ -1264,20 +1264,27 @@ static void manager_loop(void *arg)
             nng_msg *    out_msg;
             nng_pipe     msg_pipe;
             int          need_forward;
-            adapter_id_t adapter_id;
+            adapter_id_t src_adapter_id;
+            adapter_id_t sub_adapter_id;
 
             subscribe_node_cmd_t *cmd_ptr;
-            adapter_reg_entity_t *reg_entity;
+            adapter_reg_entity_t *src_reg_entity;
+            adapter_reg_entity_t *sub_reg_entity;
 
             cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
-            adapter_id = neu_manager_adapter_id_from_node_id(
+            src_adapter_id = neu_manager_adapter_id_from_node_id(
                 manager, cmd_ptr->src_node_id);
-            reg_entity =
-                find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
-            neu_adapter_add_sub_grp_config(
-                reg_entity->adapter, cmd_ptr->src_node_id, cmd_ptr->grp_config);
-            msg_pipe = reg_entity->adapter_pipe;
+            sub_adapter_id = neu_manager_adapter_id_from_node_id(
+                manager, cmd_ptr->dst_node_id);
+            src_reg_entity =
+                find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
+            sub_reg_entity =
+                find_reg_adapter_by_id(&manager->reg_adapters, sub_adapter_id);
+            neu_adapter_add_sub_grp_config(sub_reg_entity->adapter,
+                                           cmd_ptr->src_node_id,
+                                           cmd_ptr->grp_config);
+            msg_pipe = src_reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
             rv       = nng_msg_alloc(&out_msg, msg_size);
@@ -1304,20 +1311,27 @@ static void manager_loop(void *arg)
             nng_msg *    out_msg;
             nng_pipe     msg_pipe;
             int          need_forward;
-            adapter_id_t adapter_id;
+            adapter_id_t src_adapter_id;
+            adapter_id_t sub_adapter_id;
 
             unsubscribe_node_cmd_t *cmd_ptr;
-            adapter_reg_entity_t *  reg_entity;
+            adapter_reg_entity_t *  src_reg_entity;
+            adapter_reg_entity_t *  sub_reg_entity;
 
             cmd_ptr = (unsubscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
             nng_mtx_lock(manager->adapters_mtx);
-            adapter_id = neu_manager_adapter_id_from_node_id(
+            src_adapter_id = neu_manager_adapter_id_from_node_id(
                 manager, cmd_ptr->src_node_id);
-            reg_entity =
-                find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
-            neu_adapter_del_sub_grp_config(
-                reg_entity->adapter, cmd_ptr->src_node_id, cmd_ptr->grp_config);
-            msg_pipe = reg_entity->adapter_pipe;
+            sub_adapter_id = neu_manager_adapter_id_from_node_id(
+                manager, cmd_ptr->dst_node_id);
+            src_reg_entity =
+                find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
+            sub_reg_entity =
+                find_reg_adapter_by_id(&manager->reg_adapters, sub_adapter_id);
+            neu_adapter_del_sub_grp_config(sub_reg_entity->adapter,
+                                           cmd_ptr->src_node_id,
+                                           cmd_ptr->grp_config);
+            msg_pipe = src_reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
             msg_size =
                 msg_inplace_data_get_size(sizeof(unsubscribe_node_cmd_t));
