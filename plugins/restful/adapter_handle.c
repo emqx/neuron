@@ -83,7 +83,7 @@ void handle_get_adapter(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_int(aio, "type", (int32_t *) &node_type) != 0) {
+    if (http_get_param_node_type(aio, "type", &node_type) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
@@ -150,7 +150,7 @@ void handle_get_node_setting(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
+    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
@@ -190,7 +190,7 @@ void handle_get_node_state(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
+    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })

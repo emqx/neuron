@@ -196,14 +196,16 @@ void handle_get_tags(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_int(aio, "node_id", (int32_t *) &node_id) != 0) {
+    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
         })
         return;
     }
 
-    char *s_grp_name = http_get_param(aio, "group_config_name");
+    size_t      s_grp_name_len = 0;
+    const char *s_grp_name =
+        http_get_param(aio, "group_config_name", &s_grp_name_len);
 
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
     if (table == NULL) {
@@ -224,7 +226,7 @@ void handle_get_tags(nng_aio *aio)
         vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
         if (s_grp_name != NULL &&
             strncmp(neu_taggrp_cfg_get_name(config), s_grp_name,
-                    strlen(s_grp_name)) != 0) {
+                    s_grp_name_len) != 0) {
             continue;
         }
 
