@@ -83,7 +83,6 @@ void handle_get_plugin(nng_aio *aio)
 {
     neu_plugin_t *             plugin      = neu_rest_get_plugin();
     neu_json_get_plugin_resp_t plugin_res  = { 0 };
-    char *                     s_plugin_id = http_get_param(aio, "plugin_id");
     char *                     result      = NULL;
     int                        index       = 0;
     uint32_t                   plugin_id   = 0;
@@ -91,9 +90,7 @@ void handle_get_plugin(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (s_plugin_id != NULL) {
-        plugin_id = atoi(s_plugin_id);
-    }
+    http_get_param_uint32(aio, "plugin_id", &plugin_id);
 
     plugin_res.n_plugin_lib = plugin_libs.size;
     if (plugin_id > 0) {
