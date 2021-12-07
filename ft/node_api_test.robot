@@ -87,10 +87,16 @@ Get APP node, it should return all APP node
     String     $.nodes[*].name    sample-app-adapter
 
 Get UNKNOWN type node, it should return empty node
-    GET    /api/v2/node?type=6
+    GET    /api/v2/node?type=${NODE_UNKNOWN}
 
     Integer    response status    200
     Object     response body      {}
+
+Get INVALID type node, it should return failure
+    GET    /api/v2/node?type=123456
+
+    Integer    response status    400
+    Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
 
 Delete the existing node, it will return success
     GET    /api/v2/node?type=${NODE_DRIVER}
