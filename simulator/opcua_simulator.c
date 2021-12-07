@@ -246,7 +246,7 @@ int main(int argc, char **argv)
                     0);
     data_float_add(server, "type_float", "neu.type_float", 38.9, 0);
     data_double_add(server, "type_double", "neu.type_double", 100038.9999, 0);
-    data_string_add(server, "type_cstr", "nue.type_cstr", "hello world!", 0);
+    data_string_add(server, "type_cstr", "neu.type_cstr", "hello world!", 0);
     current_time_datasource_variable_add(server);
 
     UA_StatusCode retval = UA_Server_run(server, &running);
