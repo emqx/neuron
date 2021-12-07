@@ -210,6 +210,30 @@ void handle_read_resp(void *cmd_resp)
             api_res.tags[i - 1].value.val_bit = bit;
             break;
         }
+        case NEU_DTYPE_INT8: {
+            int8_t i8 = 0;
+
+            neu_dvalue_get_int8(iv->val, &i8);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = i8;
+            break;
+        }
+        case NEU_DTYPE_UINT8: {
+            uint8_t u8 = 0;
+
+            neu_dvalue_get_uint8(iv->val, &u8);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = u8;
+            break;
+        }
+        case NEU_DTYPE_BOOL: {
+            bool b = true;
+
+            neu_dvalue_get_bool(iv->val, &b);
+            api_res.tags[i - 1].t              = NEU_JSON_BOOL;
+            api_res.tags[i - 1].value.val_bool = b;
+            break;
+        }
         case NEU_DTYPE_UINT16: {
             uint16_t u16 = 0;
 
@@ -242,6 +266,22 @@ void handle_read_resp(void *cmd_resp)
             api_res.tags[i - 1].value.val_int = u32;
             break;
         }
+        case NEU_DTYPE_INT64: {
+            int64_t i64 = 0;
+
+            neu_dvalue_get_int64(iv->val, &i64);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = i64;
+            break;
+        }
+        case NEU_DTYPE_UINT64: {
+            uint64_t u64 = 0;
+
+            neu_dvalue_get_uint64(iv->val, &u64);
+            api_res.tags[i - 1].t             = NEU_JSON_INT;
+            api_res.tags[i - 1].value.val_int = u64;
+            break;
+        }
         case NEU_DTYPE_FLOAT: {
             float f32 = 0;
 
@@ -249,6 +289,21 @@ void handle_read_resp(void *cmd_resp)
             api_res.tags[i - 1].t               = NEU_JSON_FLOAT;
             api_res.tags[i - 1].value.val_float = f32;
             break;
+        }
+        case NEU_DTYPE_DOUBLE: {
+            double d64 = 0;
+
+            neu_dvalue_get_double(iv->val, &d64);
+            api_res.tags[i - 1].t                = NEU_JSON_DOUBLE;
+            api_res.tags[i - 1].value.val_double = d64;
+            break;
+        }
+        case NEU_DTYPE_CSTR: {
+            char *cstr = NULL;
+
+            neu_dvalue_get_ref_cstr(iv->val, &cstr);
+            api_res.tags[i - 1].t             = NEU_JSON_STR;
+            api_res.tags[i - 1].value.val_str = cstr;
         }
         default:
             break;
