@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,7 @@
 #include <nng/supplemental/http/http.h>
 
 #include "http.h"
+#include "neu_errcodes.h"
 #include "neu_log.h"
 
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
@@ -77,67 +79,155 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     }
 }
 
-static char *get_param(const char *url, const char *name)
+// Find query parameter value of the given name.
+//
+// On failure, returns NULL.
+// On success, returns an alias pointer to the value following name in the url,
+// if `len_p` is not NULL, then stores the length of the value in `*len_p`.
+//
+// Example
+// -------
+// 1. get_param("/?key=val", "key", &len) will return a pointer to "val"
+//    and store 3 in len.
+// 2. get_param("/?key&foo", "key", &len) will return a pointer to "&foo"
+//    and store 0 in len.
+// 3. get_param("/?foo=bar", "key", &len) will return NULL and will not
+//    touch len.
+static char *get_param(const char *url, const char *name, size_t *len_p)
 {
-    char        param[32]   = { 0 };
-    static char s_value[64] = { 0 };
-    int         len         = snprintf(param, sizeof(param), "%s=", name);
+    const char *query = strchr(url, '?');
 
-    const char *find = strstr(url, param);
-    if (find == NULL) {
+    if (NULL == query) {
         return NULL;
     }
 
-    for (uint8_t i = 0; i < 64 && i < strlen(find); i++) {
-        if (*(find + len + i) == '&' || *(find + len + i) == '\0') {
-            s_value[i] = '\0';
+    int   len = strlen(name);
+    char *p   = strstr(query, name);
+    while (NULL != p) {
+        if (0 == p[len] || '&' == p[len] || '=' == p[len] || '#' == p[len]) {
             break;
         }
-        s_value[i] = *(find + len + i);
+        p = strstr(p + len, name);
     }
 
-    return s_value;
-}
-
-char *http_get_param(nng_aio *aio, const char *name)
-{
-    nng_url *     nn_url         = NULL;
-    char          parse_url[256] = { 0 };
-    nng_http_req *nng_req        = nng_aio_get_input(aio, 0);
-    int           ret            = -1;
-    char *        result         = NULL;
-
-    snprintf(parse_url, sizeof(parse_url), "http://127.0.0.1:7000/%s",
-             nng_http_req_get_uri(nng_req));
-
-    ret = nng_url_parse(&nn_url, parse_url);
-    if (ret != 0 || nn_url->u_query == NULL) {
+    if (NULL == p) {
         return NULL;
     }
 
-    result = get_param(nn_url->u_query, name);
-
-    nng_url_free(nn_url);
-
-    return result;
-}
-
-int http_get_param_int(nng_aio *aio, const char *name, int32_t *param)
-{
-    char *   tmp    = http_get_param(aio, name);
-    intmax_t result = 0;
-
-    if (tmp == NULL) {
-        return -1;
+    const char *frag = strchr(url, '#');
+    if (frag && p > frag) {
+        return NULL;
     }
 
-    result = strtoimax(tmp, NULL, 10);
-    if (result == INTMAX_MAX && errno == ERANGE) {
-        return -1;
+    p += len;
+
+    if ('=' != *p) {
+        if (NULL != len_p) {
+            *len_p = 0;
+        }
+        return p;
+    }
+
+    ++p;
+
+    if (NULL == len_p) {
+        return p;
+    }
+
+    int i = 0;
+    while (p[i] && '&' != p[i]) {
+        ++i;
+    }
+    *len_p = i;
+
+    return p;
+}
+
+const char *http_get_param(nng_aio *aio, const char *name, size_t *len)
+{
+    nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+
+    const char *uri = nng_http_req_get_uri(nng_req);
+    const char *val = get_param(uri, name, len);
+
+    return val;
+}
+
+int http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
+{
+    size_t      len    = 0;
+    const char *tmp    = http_get_param(aio, name, &len);
+    char *      end    = NULL;
+    uintmax_t   result = 0;
+
+    if (tmp == NULL) {
+        return NEU_ERR_ENOENT;
+    }
+
+    if (0 == len) {
+        return NEU_ERR_EINVAL;
+    }
+
+    result = strtoumax(tmp, &end, 10);
+    if ((result == UINTMAX_MAX && errno == ERANGE) || result > UINTMAX_MAX ||
+        tmp + len != end) {
+        return NEU_ERR_EINVAL;
     }
 
     *param = result;
 
+    return 0;
+}
+
+int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
+{
+    uintmax_t val;
+
+    int rv = http_get_param_uintmax(aio, name, &val);
+    if (0 != rv) {
+        return rv;
+    }
+
+    if (val > UINT32_MAX) {
+        return NEU_ERR_EINVAL;
+    }
+
+    *param = (uint32_t) val;
+    return 0;
+}
+
+int http_get_param_node_id(nng_aio *aio, const char *name, neu_node_id_t *param)
+{
+    uint32_t val;
+
+    int rv = http_get_param_uint32(aio, name, &val);
+    if (0 != rv) {
+        return rv;
+    }
+
+    if (0 == val) {
+        return NEU_ERR_EINVAL;
+    }
+
+    *param = (neu_node_type_e) val;
+    return 0;
+}
+
+int http_get_param_node_type(nng_aio *aio, const char *name,
+                             neu_node_type_e *param)
+{
+    uintmax_t val;
+
+    int rv = http_get_param_uintmax(aio, name, &val);
+    if (0 != rv) {
+        return rv;
+    }
+
+    if (val >= (uintmax_t) NEU_NODE_TYPE_MAX) {
+        return NEU_ERR_EINVAL;
+    }
+
+    *param = (neu_node_type_e) val;
     return 0;
 }
 
