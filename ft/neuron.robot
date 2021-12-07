@@ -2,6 +2,7 @@
 Library    Keyword.Neuron.Read
 
 *** Variables ***
+${NODE_UNKNOWN}	0
 ${NODE_DRIVER}	1
 ${NODE_WEB}	2
 ${NODE_MQTT}	3
