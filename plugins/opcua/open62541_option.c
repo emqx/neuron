@@ -149,7 +149,7 @@ static int decode_node_setting(const char *         json_str,
     if (NULL == param) {
         setting->username = NULL;
     }
-    if (json_is_boolean(param)) {
+    if (json_is_string(param)) {
         setting->username = strdup(json_string_value(param));
         json_decref(param);
     }
