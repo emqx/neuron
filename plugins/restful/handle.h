@@ -64,7 +64,7 @@
             if (error_code.error != NEU_ERR_SUCCESS) {                       \
                 http_response(aio, error_code.error, result_error);          \
                 return;                                                      \
-            }                                                              \
+            }                                                                \
         });                                                                  \
     }
 

@@ -33,8 +33,8 @@ jobs:
       - name: Start neuron
         run: |
           git submodule update --init --remote
-          sudo apt install -y cmake ninja-build libgtest-dev libssl-dev
-          sudo ./install-libs.sh -a
+          apt install -y cmake ninja-build libgtest-dev libssl-dev
+          ./install-libs.sh -a
           mkdir build && cd build && cmake .. && make
 
       - name: Run function test
