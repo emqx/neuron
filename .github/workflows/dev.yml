@@ -32,10 +32,9 @@ jobs:
 
       - name: Start neuron
         run: |
-          git submodule update --init --remote
-          apt install -y cmake ninja-build libgtest-dev libssl-dev
-          ./install-libs.sh -a
-          mkdir build && cd build && cmake .. && make
+          mkdir -p build
+          cd build
+          cmake .. && make
 
       - name: Run function test
         run: |
