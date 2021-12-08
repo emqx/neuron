@@ -166,6 +166,12 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_BODY_IS_WRONG:
     case NEU_ERR_PARAM_IS_WRONG:
     case NEU_ERR_NODE_TYPE_INVALID:
+    case NEU_ERR_DEVICE_CONNECTION_FAILURE:
+    case NEU_ERR_DEVICE_READ_FAILURE:
+    case NEU_ERR_DEVICE_WRITE_FAILURE:
+    case NEU_ERR_DEVICE_ABNORMALITY:
+    case NEU_ERR_DEVICE_TAG_NOT_EXIST:
+    case NEU_ERR_DEVICE_TAG_TYPE_NOT_MATCH:
     case NEU_ERR_NODE_SETTING_INVALID:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
@@ -182,6 +188,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_NOT_RUNNING:
     case NEU_ERR_NODE_IS_STOPED:
     case NEU_ERR_TAG_NAME_EXIST:
+    case NEU_ERR_TAG_LIST_NOT_EXIST:
     case NEU_ERR_GRP_CONFIG_EXIST:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;

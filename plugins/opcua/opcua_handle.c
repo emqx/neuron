@@ -412,10 +412,10 @@ opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
                                           neu_taggrp_config_t * config,
                                           neu_data_val_t *      resp_val)
 {
-    opcua_error_code_e code = OPCUA_ERROR_SUCESS;
+    opcua_error_code_e code = NEU_ERR_SUCCESS;
 
     if (NULL == config) {
-        code = OPCUA_ERROR_GROUP_CONFIG_NULL;
+        code = NEU_ERR_GRP_CONFIG_NOT_EXIST;
         log_error("Group config is NULL");
         SET_RESULT_ERRORCODE(resp_val, code);
         return code;
@@ -423,7 +423,7 @@ opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
 
     const vector_t *datatag_ids = neu_taggrp_cfg_ref_datatag_ids(config);
     if (NULL == datatag_ids) {
-        code = OPCUA_ERROR_DATATAG_VECTOR_NULL;
+        code = NEU_ERR_TAG_LIST_NOT_EXIST;
         log_error("Datatag vector is NULL");
         SET_RESULT_ERRORCODE(resp_val, code);
         return code;
@@ -435,7 +435,7 @@ opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
-        code = OPCUA_ERROR_CLIENT_OFFLINE;
+        code = NEU_ERR_DEVICE_CONNECTION_FAILURE;
         log_error("Open62541 client offline");
         SET_RESULT_ERRORCODE(resp_val, code);
 
@@ -446,7 +446,7 @@ opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
 
     rc = open62541_client_read(context->client, &datas);
     if (0 != rc) {
-        code = OPCUA_ERROR_READ_FAIL;
+        code = NEU_ERR_DEVICE_READ_FAILURE;
         log_error("Open62541 read error:%d", rc);
         SET_RESULT_ERRORCODE(resp_val, code);
 
@@ -458,7 +458,7 @@ opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
     neu_fixed_array_t *array = NULL;
     array = neu_fixed_array_new(datatag_ids->size + 1, sizeof(neu_int_val_t));
     if (NULL == array) {
-        code = OPCUA_ERROR_ARRAY_NULL;
+        code = NEU_ERR_DEVICE_READ_FAILURE;
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
 
@@ -467,11 +467,15 @@ opcua_error_code_e opcua_handle_read_once(opc_handle_context_t *context,
         return code;
     }
 
-    rc                      = read_response_array_generate(&datas, array);
+    rc = read_response_array_generate(&datas, array);
+    if (0 != rc) {
+        code = NEU_ERR_DEVICE_READ_FAILURE;
+    }
+
     neu_int_val_t   int_val = { 0 };
     neu_data_val_t *val_err = NULL;
     val_err                 = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-    neu_dvalue_set_errorcode(val_err, rc);
+    neu_dvalue_set_errorcode(val_err, code);
     neu_int_val_init(&int_val, 0, val_err);
     neu_fixed_array_set(array, 0, (void *) &int_val);
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array);
@@ -486,7 +490,7 @@ opcua_error_code_e opcua_handle_write_value(opc_handle_context_t *context,
                                             neu_data_val_t *      write_val,
                                             neu_data_val_t *      resp_val)
 {
-    opcua_error_code_e code  = OPCUA_ERROR_SUCESS;
+    opcua_error_code_e code  = NEU_ERR_SUCCESS;
     neu_fixed_array_t *array = NULL;
     neu_dvalue_get_ref_array(write_val, &array);
     int size = array->length;
@@ -497,7 +501,7 @@ opcua_error_code_e opcua_handle_write_value(opc_handle_context_t *context,
 
     int rc = open62541_client_is_connected(context->client);
     if (0 != rc) {
-        code = OPCUA_ERROR_CLIENT_OFFLINE;
+        code = NEU_ERR_DEVICE_CONNECTION_FAILURE;
         log_error("open62541 client offline");
         SET_RESULT_ERRORCODE(resp_val, code);
 
@@ -508,7 +512,7 @@ opcua_error_code_e opcua_handle_write_value(opc_handle_context_t *context,
 
     rc = open62541_client_write(context->client, &datas);
     if (0 != rc) {
-        code = OPCUA_ERROR_WRITE_FAIL;
+        code = NEU_ERR_DEVICE_WRITE_FAILURE;
         log_error("open62541 write error");
         SET_RESULT_ERRORCODE(resp_val, code);
 
@@ -520,7 +524,7 @@ opcua_error_code_e opcua_handle_write_value(opc_handle_context_t *context,
     neu_fixed_array_t *resp_array = NULL;
     resp_array = neu_fixed_array_new(size + 1, sizeof(neu_int_val_t));
     if (NULL == resp_array) {
-        code = OPCUA_ERROR_ARRAY_NULL;
+        code = NEU_ERR_DEVICE_WRITE_FAILURE;
         log_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
 
@@ -529,11 +533,15 @@ opcua_error_code_e opcua_handle_write_value(opc_handle_context_t *context,
         return code;
     }
 
-    rc                      = write_response_array_generate(&datas, resp_array);
+    rc = write_response_array_generate(&datas, resp_array);
+    if (0 != rc) {
+        code = NEU_ERR_DEVICE_WRITE_FAILURE;
+    }
+
     neu_int_val_t   int_val = { 0 };
     neu_data_val_t *val_err = NULL;
     val_err                 = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-    neu_dvalue_set_errorcode(val_err, rc);
+    neu_dvalue_set_errorcode(val_err, code);
     neu_int_val_init(&int_val, 0, val_err);
     neu_fixed_array_set(resp_array, 0, (void *) &int_val);
     neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, resp_array);
