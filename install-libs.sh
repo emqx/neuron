@@ -114,8 +114,8 @@ function build_jwt() {
         -DBUILD_SHARED_LIBS=OFF \
         -DENABLE_PIC=ON \
         -DENABLE_DEBUG_INFO_IN_RELEASE=OFF \
-        -Djansson_DIR=${install_dir}/jansson \
-        -DJANSSON_INCLUDE_DIRS=${install_dir}/jansson/include \
+        -Djansson_DIR=${install_dir}/lib/cmake/jansson \
+        -DJANSSON_INCLUDE_DIRS=${install_dir}/include \
         ${ssl_lib_flag} ${compiler_opt} ${install_opt} ..
     ninja
     ninja install
