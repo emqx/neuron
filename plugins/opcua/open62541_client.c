@@ -201,59 +201,55 @@ static void client_generate_read_value_id(opcua_data_t *data, int index,
 
 static int client_set_read_value(opcua_data_t *data, UA_Variant *value)
 {
-    if (NULL == value) {
-        return -1;
-    }
-
     // sbyte(OPCUA) -> int8(Neuron)
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_SBYTE])) {
         data->value.value_int8 = *(UA_SByte *) value->data;
         data->type             = NEU_DTYPE_INT8;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     // byte(OPCUA) -> uint8(Neuron)
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_BYTE])) {
         data->value.value_uint8 = *(UA_Byte *) value->data;
         data->type              = NEU_DTYPE_UINT8;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_BOOLEAN])) {
         data->value.value_boolean = *(UA_Boolean *) value->data;
         data->type                = NEU_DTYPE_BOOL;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_INT16])) {
         data->value.value_int16 = *(UA_Int16 *) value->data;
         data->type              = NEU_DTYPE_INT16;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_UINT16])) {
         data->value.value_uint16 = *(UA_UInt16 *) value->data;
         data->type               = NEU_DTYPE_UINT16;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_INT32])) {
         data->value.value_int32 = *(UA_Int32 *) value->data;
         data->type              = NEU_DTYPE_INT32;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_UINT32])) {
         data->value.value_uint32 = *(UA_UInt32 *) value->data;
         data->type               = NEU_DTYPE_UINT32;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_DATETIME])) {
         UA_DateTime time           = *(UA_DateTime *) value->data;
         data->value.value_datetime = (UA_UInt32) UA_DateTime_toUnixTime(time);
         data->type                 = NEU_DTYPE_UINT32;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_INT64])) {
@@ -265,19 +261,19 @@ static int client_set_read_value(opcua_data_t *data, UA_Variant *value)
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_UINT64])) {
         data->value.value_uint64 = *(UA_UInt64 *) value->data;
         data->type               = NEU_DTYPE_UINT64;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_FLOAT])) {
         data->value.value_float = *(UA_Float *) value->data;
         data->type              = NEU_DTYPE_FLOAT;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_DOUBLE])) {
         data->value.value_double = *(UA_Double *) value->data;
         data->type               = NEU_DTYPE_DOUBLE;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
     if (UA_Variant_hasScalarType(value, &UA_TYPES[UA_TYPES_STRING])) {
@@ -286,10 +282,10 @@ static int client_set_read_value(opcua_data_t *data, UA_Variant *value)
         memset(data->value.value_string, 0, str.length + 1);
         memcpy(data->value.value_string, str.data, str.length);
         data->type = NEU_DTYPE_CSTR;
-        return 0;
+        return NEU_ERR_SUCCESS;
     }
 
-    return -2; // no matched
+    return NEU_ERR_DEVICE_TAG_TYPE_NOT_MATCH; // no matched
 }
 
 int open62541_client_read(open62541_client_t *client, vector_t *datas)
@@ -339,13 +335,13 @@ int open62541_client_read(open62541_client_t *client, vector_t *datas)
     {
         opcua_data_t *data = (opcua_data_t *) iterator_get(&iter);
         if (!read_response.results[count].hasValue) {
-            data->error = -1;
+            data->error = NEU_ERR_DEVICE_TAG_NOT_EXIST;
             count++;
             continue;
         }
 
         if (!UA_Variant_isScalar(&read_response.results[count].value)) {
-            data->error = -2;
+            data->error = NEU_ERR_DEVICE_TAG_TYPE_NOT_MATCH;
             count++;
             continue;
         }
@@ -365,15 +361,11 @@ int open62541_client_read(open62541_client_t *client, vector_t *datas)
 
     free(read_ids);
     UA_ReadResponse_clear(&read_response);
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 static int client_write(open62541_client_t *client, opcua_data_t *data)
 {
-    if (NULL == data) {
-        return -1;
-    }
-
     int             flag          = 0;
     UA_WriteRequest write_request = { 0 };
     UA_WriteRequest_init(&write_request);
@@ -492,7 +484,7 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
 
     if (0 != flag) {
         UA_WriteRequest_clear(&write_request);
-        return -2; // No match data type
+        return NEU_ERR_DEVICE_TAG_TYPE_NOT_MATCH; // No match data type
     }
 
     pthread_mutex_lock(&client->mutex);
@@ -507,13 +499,12 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
     if (write_response.responseHeader.serviceResult != UA_STATUSCODE_GOOD) {
         UA_WriteRequest_clear(&write_request);
         UA_WriteResponse_clear(&write_response);
-
-        return -3;
+        return NEU_ERR_DEVICE_ABNORMALITY;
     }
 
     UA_WriteRequest_clear(&write_request);
     UA_WriteResponse_clear(&write_response);
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 int open62541_client_write(open62541_client_t *client, vector_t *datas)
