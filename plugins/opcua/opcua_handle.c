@@ -715,7 +715,9 @@ opcua_error_code_e opcua_handle_unsubscribe(opc_handle_context_t *context,
 {
     opcua_error_code_e     code  = OPCUA_ERROR_SUCESS;
     opc_subscribe_tuple_t *tuple = subscribe_tuple_find(context, config);
-    unsubscribe(context, tuple);
+    if (NULL != tuple) {
+        unsubscribe(context, tuple);
+    }
     return code;
 }
 
