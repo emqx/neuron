@@ -28,8 +28,8 @@
 
 #define UNUSED(x) (void) (x)
 #define INTERVAL 100000U
-#define SEND_BUF_SIZE 2048
-#define RECV_BUF_SIZE 2048
+#define SEND_BUF_SIZE 20480
+#define RECV_BUF_SIZE 20480
 
 struct reconnect_state {
     const char *    hostname;
