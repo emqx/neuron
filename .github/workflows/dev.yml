@@ -20,7 +20,7 @@ jobs:
           clangFormatVersion: 10
           style: file
 
-  function_test:
+  test_neuron:
     runs-on: ubuntu-18.04
 
     container: ghcr.io/${{ github.repository }}/base:latest
@@ -35,6 +35,12 @@ jobs:
           mkdir -p build
           cd build
           cmake .. && make
+
+      - name: Run unit test
+        run: |
+          mkdir -p build
+          cd build
+          ctest --output-on-failure
 
       - name: Run function test
         run: |
@@ -80,15 +86,8 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch }}.cmake -DCMAKE_BUILD_TYPE=Release
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch }}.cmake -DCMAKE_BUILD_TYPE=Release -DDISABLE_UT=ON
           make
-
-      - name: Run unit test
-        if: matrix.arch == 'x86_64-linux-gnu'
-        run: |
-          mkdir -p build
-          cd build
-          ctest --output-on-failure
 
       - name: Create package
         env:
