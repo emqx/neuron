@@ -57,6 +57,7 @@ jobs:
         #with:
           #name: ft-report
           #path: "ft/reports/report.html"
+
   compile:
     strategy:
       matrix:
@@ -79,7 +80,7 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch }}.cmake
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch }}.cmake -DCMAKE_BUILD_TYPE=Release
           make
 
       - name: Run unit test
@@ -87,7 +88,6 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          # cmake ..  -DNEURON_TEST=ON
           ctest --output-on-failure
 
       - name: Create package

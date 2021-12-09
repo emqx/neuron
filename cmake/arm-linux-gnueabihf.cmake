@@ -3,6 +3,7 @@ set(CMAKE_SYSTEM_VERSION 1)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
 
 set(triple arm-linux-gnueabihf)
+set(DISABLE_UT ON)
 
 if(NOT CMAKE_INSTALL_PREFIX)
   set(CMAKE_INSTALL_PREFIX .cross/${triple})
