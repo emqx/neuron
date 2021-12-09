@@ -25,6 +25,8 @@
 #ifndef _NEU_JSON_API_NEU_JSON_ERROR_H_
 #define _NEU_JSON_API_NEU_JSON_ERROR_H_
 
+#include "json/json.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

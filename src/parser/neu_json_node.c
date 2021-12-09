@@ -207,20 +207,20 @@ int neu_json_decode_update_node_req(char *                       buf,
     neu_json_update_node_req_t *req =
         calloc(1, sizeof(neu_json_update_node_req_t));
     neu_json_elem_t req_elems[] = { {
-                                        .name = "id",
-                                        .t    = NEU_JSON_INT,
-                                    },
-                                    {
                                         .name = "name",
                                         .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "id",
+                                        .t    = NEU_JSON_INT,
                                     } };
     ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
 
-    req->id   = req_elems[0].v.val_int;
-    req->name = req_elems[1].v.val_str;
+    req->name = req_elems[0].v.val_str;
+    req->id   = req_elems[1].v.val_int;
 
     *result = req;
     return ret;
