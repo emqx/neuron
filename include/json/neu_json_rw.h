@@ -25,11 +25,11 @@
 #ifndef _NEU_JSON_API_NEU_JSON_RW_H_
 #define _NEU_JSON_API_NEU_JSON_RW_H_
 
+#include "json/json.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "json/json.h"
 
 typedef struct {
     int64_t              id;
