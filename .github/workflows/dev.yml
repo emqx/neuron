@@ -149,3 +149,7 @@ jobs:
           if ! curl --silent --show-error -X POST http://127.0.0.1:7001/api/v2/ping > /dev/null; then
             sleep 1
           fi
+
+      - uses: geekyeggo/delete-artifact@v1
+        with:
+          name: ${{ matrix.arch }}
