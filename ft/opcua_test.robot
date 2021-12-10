@@ -234,21 +234,20 @@ Write a point with data type of int8, it should return success
 
     [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
 
-# Write a point with data type of uint8, it should return success
-#    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
+Write a point with data type of uint8, it should return success
+   Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
 
-#    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-#    output                             ${tag_id}
-#    should not be equal as integers    ${tag_id}     -1
-#    Sleep                              4s
+   ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
+   should not be equal as integers    ${tag_id}     -1
+   Sleep                              4s
 
-#    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 66}
-#    Sleep         4s
+   Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 66}
+   Sleep         4s
 
-#    ${tags} =                   Read Tags       ${node_id}    ${group}
-#    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     66
+   ${tags} =                   Read Tags       ${node_id}    ${group}
+   Compare Tag Value As Int    ${tags}.tags    ${tag_id}     66
 
-#    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
+   [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
 
 Write a point with data type of bool, it should return success
     Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BOOL}}
@@ -257,7 +256,7 @@ Write a point with data type of bool, it should return success
     should not be equal as integers    ${tag_id}     -1
     Sleep                              -1
 
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": "false"}
+    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": false}
     Sleep         4s
 
     ${tags} =                   Read Tags       ${node_id}    ${group}
@@ -402,8 +401,8 @@ Write a point with data type of string, it should return success
 
 Write multiple points, including multiple data types(int8/uint8/int16/uint16/int32/uint32/int64/uint64/float/double/string), it should return success
     Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT8}}
-   # Add Tags    ${node_id}    ${group}    {"name": "tag2", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
-    # Add Tags    ${node_id}    ${group}    {"name": "tag3", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BOOL}}
+    Add Tags    ${node_id}    ${group}    {"name": "tag2", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
+    Add Tags    ${node_id}    ${group}    {"name": "tag3", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BOOL}}
     Add Tags    ${node_id}    ${group}    {"name": "tag4", "address": "1!neu.type_int16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
     Add Tags    ${node_id}    ${group}    {"name": "tag5", "address": "1!neu.type_uint16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
     Add Tags    ${node_id}    ${group}    {"name": "tag6", "address": "1!neu.type_int32", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
@@ -415,8 +414,8 @@ Write multiple points, including multiple data types(int8/uint8/int16/uint16/int
     Add Tags    ${node_id}    ${group}    {"name": "tag12", "address": "1!neu.type_cstr", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
 
     ${tag1_id} =     Get Tag ID    ${node_id}    ${group}    tag1
-   # ${tag2_id} =    Get Tag ID    ${node_id}    ${group}    tag2
-    # ${tag3_id} =     Get Tag ID    ${node_id}    ${group}    tag3
+    ${tag2_id} =     Get Tag ID    ${node_id}    ${group}    tag2
+    ${tag3_id} =     Get Tag ID    ${node_id}    ${group}    tag3
     ${tag4_id} =     Get Tag ID    ${node_id}    ${group}    tag4
     ${tag5_id} =     Get Tag ID    ${node_id}    ${group}    tag5
     ${tag6_id} =     Get Tag ID    ${node_id}    ${group}    tag6
@@ -428,8 +427,8 @@ Write multiple points, including multiple data types(int8/uint8/int16/uint16/int
     ${tag12_id} =    Get Tag ID    ${node_id}    ${group}    tag12
 
     should not be equal as integers    ${tag1_id}     -1
-   # should not be equal as integers    ${tag2_id}     -1
-    # should not be equal as integers    ${tag3_id}     -1
+    should not be equal as integers    ${tag2_id}     -1
+    should not be equal as integers    ${tag3_id}     -1
     should not be equal as integers    ${tag4_id}     -1
     should not be equal as integers    ${tag5_id}     -1
     should not be equal as integers    ${tag6_id}     -1
@@ -442,8 +441,8 @@ Write multiple points, including multiple data types(int8/uint8/int16/uint16/int
     Sleep                              4s
 
     Write Tags    ${node_id}    ${group}    {"id": ${tag1_id}, "value": 8}
-   # Write Tags    ${node_id}    ${group}    {"id": ${tag2_id}, "value": 7}
-    # Write Tags    ${node_id}    ${group}    {"id": ${tag3_id}, "value": "true"}
+    Write Tags    ${node_id}    ${group}    {"id": ${tag2_id}, "value": 7}
+    Write Tags    ${node_id}    ${group}    {"id": ${tag3_id}, "value": true}
     Write Tags    ${node_id}    ${group}    {"id": ${tag4_id}, "value": -999}
     Write Tags    ${node_id}    ${group}    {"id": ${tag5_id}, "value": 888}
     Write Tags    ${node_id}    ${group}    {"id": ${tag6_id}, "value": 77}
@@ -456,8 +455,8 @@ Write multiple points, including multiple data types(int8/uint8/int16/uint16/int
 
     ${tags} =                      Read Tags       ${node_id}     ${group}
     Compare Tag Value As Int       ${tags}.tags    ${tag1_id}     8
-   # Compare Tag Value As Int     ${tags}.tags    ${tag2_id}     7
-    # Compare Tag Value As Int       ${tags}.tags    ${tag3_id}     1
+    Compare Tag Value As Int       ${tags}.tags    ${tag2_id}     7
+    Compare Tag Value As Int       ${tags}.tags    ${tag3_id}     1
     Compare Tag Value As Int       ${tags}.tags    ${tag4_id}     -999
     Compare Tag Value As Int       ${tags}.tags    ${tag5_id}     888
     Compare Tag Value As Int       ${tags}.tags    ${tag6_id}     77
@@ -468,8 +467,7 @@ Write multiple points, including multiple data types(int8/uint8/int16/uint16/int
     Compare Tag Value As Float     ${tags}.tags    ${tag11_id}    123456.7890
     Compare Tag Value As String    ${tags}.tags    ${tag12_id}    Hello Strangers!!
 
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag1_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id}
-   # [Teardown]    Del Tags    ${node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id}
+    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id}
 
 *** Keywords ***
 Neuron Context Ready

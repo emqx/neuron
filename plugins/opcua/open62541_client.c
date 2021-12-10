@@ -436,7 +436,7 @@ static int client_write(open62541_client_t *client, opcua_data_t *data)
         write_request.nodesToWrite[0].value.value.type =
             &UA_TYPES[UA_TYPES_UINT32];
         write_request.nodesToWrite[0].value.value.data =
-            &data->value.value_int32;
+            &data->value.value_uint32;
         break;
     }
     case NEU_DTYPE_INT64: {

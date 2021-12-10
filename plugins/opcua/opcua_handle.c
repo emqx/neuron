@@ -332,6 +332,18 @@ static void write_request_vector_generate(opc_handle_context_t *context,
         }
 
         switch (type) {
+        case NEU_DTYPE_BOOL: {
+            bool value = 0;
+            neu_dvalue_get_bool(val, &value);
+            write_data.value.value_boolean = (bool) value;
+            break;
+        }
+        case NEU_DTYPE_BYTE: {
+            int64_t value = 0;
+            neu_dvalue_get_int64(val, &value);
+            write_data.value.value_uint8 = (uint8_t) value;
+            break;
+        }
         case NEU_DTYPE_INT8: {
             // int8(NEURON) -> sbyte(OPCUA)
             int64_t value = 0;
@@ -401,6 +413,7 @@ static void write_request_vector_generate(opc_handle_context_t *context,
             break;
         }
         default:
+            log_error("No support data type(neu_dtype_e): %d", type);
             break;
         }
 

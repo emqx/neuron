@@ -67,7 +67,7 @@ static void data_uint8_add(UA_Server *server, char *name, char *node_id,
                            uint8_t data, const int readonly)
 {
     UA_Byte byte = data;
-    node_attributes_set(server, name, node_id, UA_TYPES_SBYTE, &byte, readonly);
+    node_attributes_set(server, name, node_id, UA_TYPES_BYTE, &byte, readonly);
 }
 
 // UA_Boolean
