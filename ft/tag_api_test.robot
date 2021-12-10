@@ -1,11 +1,5 @@
 *** Settings ***
-Library           Keyword.Neuron.Neuron
-Library           Keyword.Neuron.Tool
-Library           Keyword.Neuron.Node
-Library           Keyword.Neuron.Tag
-Resource          error.robot
-Resource          neuron.robot
-Library           REST                     http://127.0.0.1:7001
+Resource          api_http.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
 
@@ -207,6 +201,7 @@ Delete tags, it should return success
 *** Keywords ***
 Neuron Context Ready
 	Neuron Ready
+
 
     ${token} =     LOGIN
     ${jwt} =       Catenate                      Bearer    ${token}

@@ -1,14 +1,5 @@
 *** Settings ***
-Library           Keyword.Neuron.Neuron
-Library           Keyword.Neuron.Tool
-Library           Keyword.Neuron.Node
-Library           Keyword.Neuron.GrpConfig
-Library           Keyword.Neuron.Subscribe
-Library           Keyword.Neuron.Tag
-Resource          error.robot
-Resource          neuron.robot
-Resource          simulator.robot
-Library           REST                        http://127.0.0.1:7001
+Resource          api_http.resource
 Suite Setup       Neuron Context Ready 
 Suite Teardown    Stop All Processes
 
