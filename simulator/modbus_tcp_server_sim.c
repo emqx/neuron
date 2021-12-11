@@ -216,7 +216,7 @@ int main()
             w_res->n_reg      = w_req->n_reg;
 
             for (int i = 0; i < ntohs(w_req->n_reg); i++) {
-                uint8_t x = w_u8[ntohs(w_req->n_reg) / 8] << (7 - (i % 8));
+                uint8_t x = (w_u8[ntohs(w_req->n_reg) / 8] >> (i % 8)) & 0x1;
 
                 if (x > 0) {
                     coil[ntohs(w_req->start_addr) + i] = 1;
