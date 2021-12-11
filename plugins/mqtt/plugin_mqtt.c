@@ -198,7 +198,7 @@ static void *mqtt_send_loop(void *argument)
             }
         }
         pthread_mutex_unlock(&plugin->list_mutex);
-        MQTT_SEND(plugin->mqtt_client, "neuronlite/response", 0, result);
+        MQTT_SEND(plugin->mqtt_client, plugin->option.respons_topic, 0, result);
 
         // Remove context of timeout
         pthread_mutex_lock(&plugin->list_mutex);
@@ -252,7 +252,7 @@ static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
-    plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
 
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
@@ -279,25 +279,6 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
         return -1;
     }
 
-    int rc = mqtt_option_init(&plugin->option);
-    if (0 != rc) {
-        log_error("MQTT option init fail:%d, initialize plugin failed: %s", rc,
-                  neu_plugin_module.module_name);
-        return -1;
-    }
-
-    // MQTT-C client setup
-    client_error_e error = mqttc_client_open(
-        &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
-    error = mqttc_client_subscribe(plugin->mqtt_client, "neuronlite/request", 0,
-                                   mqtt_response_handle);
-    if (MQTTC_IS_NULL == error) {
-        log_error("Can not create mqtt client instance, initialize plugin "
-                  "failed: %s",
-                  neu_plugin_module.module_name);
-        return -1;
-    }
-
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
@@ -306,7 +287,9 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
     // Close MQTT-C client
     mqttc_client_close(plugin->mqtt_client);
+    plugin->mqtt_client = NULL;
     mqtt_option_uninit(&plugin->option);
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
 
     // Quit publish thread
     pthread_mutex_lock(&plugin->running_mutex);
@@ -326,15 +309,35 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+
+    // Try close MQTT-C client
+    mqttc_client_close(plugin->mqtt_client);
+    plugin->mqtt_client = NULL;
+    mqtt_option_uninit(&plugin->option);
+
+    // Use new config set MQTT option instance
     int rc = mqtt_option_init_by_config(configs, &plugin->option);
     if (0 != rc) {
         log_error("MQTT option init fail:%d, initialize plugin failed: %s", rc,
                   neu_plugin_module.module_name);
-
         mqtt_option_uninit(&plugin->option);
         return -1;
     }
 
+    // MQTT-C client setup
+    client_error_e error = mqttc_client_open(
+        &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
+    error = mqttc_client_subscribe(plugin->mqtt_client, plugin->option.topic, 0,
+                                   mqtt_response_handle);
+    if (MQTTC_IS_NULL == error) {
+        log_error("Can not create mqtt client instance, initialize plugin "
+                  "failed: %s",
+                  neu_plugin_module.module_name);
+        return -1;
+    }
+
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
     log_info("Config plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
