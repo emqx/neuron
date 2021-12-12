@@ -57,10 +57,12 @@ static neu_plugin_t *opcua_plugin_open(neu_adapter_t *            adapter,
         return NULL;
     }
 
+    memset(plugin, 0, sizeof(neu_plugin_t));
+
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
-    plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
 
     log_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
@@ -75,13 +77,6 @@ static int opcua_plugin_close(neu_plugin_t *plugin)
 
 static int opcua_plugin_init(neu_plugin_t *plugin)
 {
-    int rc = opcua_option_init(&plugin->option);
-    if (0 != rc) {
-        log_error("OPCUA option init fail:%d initialize plugin failed: %s", rc,
-                  neu_plugin_module.module_name);
-        return -1;
-    }
-
     plugin->handle_context = malloc(sizeof(opc_handle_context_t));
     memset(plugin->handle_context, 0, sizeof(opc_handle_context_t));
     plugin->handle_context->plugin       = plugin;
@@ -90,6 +85,50 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
     NEU_LIST_INIT(&plugin->handle_context->subscribe_list,
                   opc_subscribe_tuple_t, node);
 
+    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    return 0;
+}
+
+static int opcua_plugin_uninit(neu_plugin_t *plugin)
+{
+    opcua_handle_stop(plugin->handle_context);
+    open62541_client_close(plugin->client);
+    plugin->client = NULL;
+    opcua_option_uninit(&plugin->option);
+    if (NULL != plugin->handle_context) {
+        free(plugin->handle_context);
+    }
+
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    return 0;
+}
+
+static int opcua_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
+{
+
+    if (NULL == configs || NULL == configs->buf) {
+        return -1;
+    }
+
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    // Close OPC-UA client
+    opcua_handle_stop(plugin->handle_context);
+    open62541_client_close(plugin->client);
+    plugin->client = NULL;
+    opcua_option_uninit(&plugin->option);
+
+    // OPC-UA client configuration
+    int rc = opcua_option_init_by_config(configs, &plugin->option);
+    if (0 != rc) {
+        log_error("OPCUA option init fail:%d, initialize plugin failed: %s", rc,
+                  neu_plugin_module.module_name);
+
+        opcua_option_uninit(&plugin->option);
+        return -1;
+    }
+
+    // Open open62541 client
     rc = open62541_client_open(&plugin->option, plugin, &plugin->client);
     if (0 != rc) {
         log_error("Can not connect to opc.tcp://%s:%d", plugin->option.host,
@@ -103,37 +142,7 @@ static int opcua_plugin_init(neu_plugin_t *plugin)
         plugin->handle_context->client = plugin->client;
     }
 
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
-    return 0;
-}
-
-static int opcua_plugin_uninit(neu_plugin_t *plugin)
-{
-    opcua_handle_stop(plugin->handle_context);
-    open62541_client_close(plugin->client);
-    opcua_option_uninit(&plugin->option);
-    free(plugin->handle_context);
-
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
-    return 0;
-}
-
-static int opcua_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
-{
-
-    if (NULL == configs || NULL == configs->buf) {
-        return -1;
-    }
-
-    int rc = opcua_option_init_by_config(configs, &plugin->option);
-    if (0 != rc) {
-        log_error("OPCUA option init fail:%d, initialize plugin failed: %s", rc,
-                  neu_plugin_module.module_name);
-
-        opcua_option_uninit(&plugin->option);
-        return -1;
-    }
-
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
     log_info("Config plugin: %s", neu_plugin_module.module_name);
     return 0;
 }

@@ -543,6 +543,10 @@ int open62541_client_destroy(open62541_client_t *client)
 
 int open62541_client_close(open62541_client_t *client)
 {
+    if (NULL == client) {
+        return -1;
+    }
+
     pthread_mutex_lock(&client->mutex);
     client->running = false;
     pthread_mutex_unlock(&client->mutex);
