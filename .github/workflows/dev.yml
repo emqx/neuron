@@ -151,5 +151,6 @@ jobs:
           fi
 
       - uses: geekyeggo/delete-artifact@v1
+        if: github.event_name != 'release'
         with:
           name: ${{ matrix.arch }}
