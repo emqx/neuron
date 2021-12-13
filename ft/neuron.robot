@@ -51,7 +51,7 @@ ${MQTT_CONFIG_RES_TOPIC}	test/mqtt_res
 ${MQTT_CONFIG}    {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}", "res-topic": "${MQTT_CONFIG_RES_TOPIC}", "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": 1883, "username": "", "password": "", "ca-path":"", "ca-file": ""}
 
 ${MODBUS_TCP_CONFIG}	{"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
-${OPCUA_CONFIG}    {"host": "127.0.0.1", "port": 4840, "username": "admin", "password": "0000"}
+${OPCUA_CONFIG}    {"host": "127.0.0.1", "port": 4840, "username": "user", "password": "123456"}
 
 *** Keywords ***
 To Array
