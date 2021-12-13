@@ -235,19 +235,19 @@ Write a point with data type of int8, it should return success
     [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
 
 Write a point with data type of uint8, it should return success
-   Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
+    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
 
-   ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-   should not be equal as integers    ${tag_id}     -1
-   Sleep                              4s
+    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
+    should not be equal as integers    ${tag_id}     -1
+    Sleep                              4s
 
-   Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 66}
-   Sleep         4s
+    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 66}
+    Sleep         4s
 
-   ${tags} =                   Read Tags       ${node_id}    ${group}
-   Compare Tag Value As Int    ${tags}.tags    ${tag_id}     66
+    ${tags} =                   Read Tags       ${node_id}    ${group}
+    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     66
 
-   [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
+    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
 
 Write a point with data type of bool, it should return success
     Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BOOL}}

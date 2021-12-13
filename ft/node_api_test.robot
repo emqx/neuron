@@ -95,7 +95,7 @@ Get UNKNOWN type node, it should return empty node
 Get INVALID type node, it should return failure
     GET    /api/v2/node?type=123456
 
-    Integer    response status    400
+    Integer    response status        400
     Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
 
 Delete the existing node, it will return success
