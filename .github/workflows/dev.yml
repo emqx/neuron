@@ -113,9 +113,9 @@ jobs:
 
     steps:
       - uses: actions/download-artifact@v2
+        id: download
         with:
           name: ${{ matrix.arch }}
-          path: neuron.tar.gz
 
       - uses: docker/setup-buildx-action@v1
       - uses: docker/setup-qemu-action@v1
@@ -137,7 +137,7 @@ jobs:
               ;;
           esac
           docker run -d --name neuron \
-          -v $(pwd)/neuron.tar.gz:/opt/neuron.tar.gz \
+          -v ${{ steps.download.outputs.download-path }}:/opt/neuron.tar.gz \
           -p 7001:7001 \
           --platform ${platform} \
           ubuntu:18.04 \
@@ -150,7 +150,15 @@ jobs:
             sleep 1
           fi
 
+      - uses: actions/upload-release-asset@v1
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ${{ steps.download.outputs.download-path }}
+          asset_content_type: application/octet-stream
+
       - uses: geekyeggo/delete-artifact@v1
-        if: github.event_name != 'release'
         with:
           name: ${{ matrix.arch }}
