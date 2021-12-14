@@ -215,11 +215,13 @@ char *command_get_group_config_subscribes(neu_plugin_t *   plugin,
     }
 
     vector_free(configs);
-    free(sub_grp_configs.groups);
 
     char *result = NULL;
     neu_json_encode_with_mqtt(&sub_grp_configs,
                               neu_json_encode_get_subscribe_resp, mqtt,
                               neu_json_encode_mqtt_resp, &result);
+
+    free(sub_grp_configs.groups);
+
     return result;
 }
