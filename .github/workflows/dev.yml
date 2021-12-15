@@ -149,6 +149,8 @@ jobs:
           if ! curl --silent --show-error -X POST http://127.0.0.1:7001/api/v2/ping > /dev/null; then
             sleep 1
           fi
+      - id: asset
+        run: echo "::set-output name=file-name::$(basename ${{ steps.download.outputs.download-path }})"
 
       - uses: actions/upload-release-asset@v1
         if: github.event_name == 'release'
@@ -157,6 +159,7 @@ jobs:
         with:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ${{ steps.download.outputs.download-path }}
+          asset_name: ${{ steps.asset.outputs.file-name}}
           asset_content_type: application/octet-stream
 
       - uses: geekyeggo/delete-artifact@v1
