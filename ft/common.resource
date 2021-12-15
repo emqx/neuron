@@ -54,10 +54,45 @@ ${TAG_DATA_TYPE_STRING}	15
 ${PLUGIN_MODBUS_TCP}	modbus-tcp-plugin
 ${PLUGIN_MQTT}    mqtt-plugin
 
-${MQTT_CONFIG_HOST}    broker.fengzero.com
-${MQTT_CONFIG_REQ_TOPIC}	test/mqtt_req
-${MQTT_CONFIG_RES_TOPIC}	test/mqtt_res
-${MQTT_CONFIG}    {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}", "res-topic": "${MQTT_CONFIG_RES_TOPIC}", "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": 1883, "username": "", "password": "", "ca-path":"", "ca-file": ""}
+${MQTT_FUNC_LOGIN}                          ${1}
+${MQTT_FUNC_LOGOUT}                         ${2}
+${MQTT_FUNC_READ}                           ${3}
+${MQTT_FUNC_WRITE}                          ${4}
+${MQTT_FUNC_GET_TTY}                        ${5}
+${MQTT_FUNC_ADD_GROUP_CONFIG}               ${6}
+${MQTT_FUNC_UPDATE_GROUP_CONFIG}            ${7}
+${MQTT_FUNC_DELETE_GROUP_CONFIG}            ${8}
+${MQTT_FUNC_GET_GROUP_CONFIG}               ${9}
+${MQTT_FUNC_SUBSCRIBE_GROUP_CONFIG}         ${10}
+${MQTT_FUNC_UNSUBSCRIBE_GROUP_CONFIG}       ${11}
+${MQTT_FUNC_GET_SUBSCRIBE_GROUP_CONFIG}     ${12}
+${MQTT_FUNC_ADD_TAGS}                       ${13}
+${MQTT_FUNC_UPDATE_TAGS}                    ${14}
+${MQTT_FUNC_DELETE_TAGS}                    ${15}
+${MQTT_FUNC_GET_TAGS}                       ${16}
+${MQTT_FUNC_ADD_NODES}                      ${17}
+${MQTT_FUNC_UPDATE_NODES}                   ${18}
+${MQTT_FUNC_DELETE_NODES}                   ${19}
+${MQTT_FUNC_GET_NODES}                      ${20}
+${MQTT_FUNC_NODE_SETTING}                   ${21}
+${MQTT_FUNC_GET_NODE_SETTING}               ${22}
+${MQTT_FUNC_NODE_CONTROL}                   ${23}
+${MQTT_FUNC_GET_NODE_STATE}                 ${24}
+${MQTT_FUNC_ADD_PLUGIN}                     ${25}
+${MQTT_FUNC_UPDATE_PLUGIN}                  ${26}
+${MQTT_FUNC_DELETE_PLUGIN}                  ${27}
+${MQTT_FUNC_GET_PLUGIN}                     ${28}
+${MQTT_FUNC_PING}                           ${29}
+
+${MQTT_UUID}                                123456-789abc-123456-aabbcc
+${MQTT_CONFIG_HOST}                         broker.emqx.io
+${MQTT_CONFIG_PORT}                         ${1883}
+${MQTT_CONFIG_REQ_TOPIC}                    neuronlite/request
+${MQTT_CONFIG_RES_TOPIC}                    neuronlite/response
+${MQTT_CONFIG}                              {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}",
+...                                          "res-topic": "${MQTT_CONFIG_RES_TOPIC}",
+...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
+...                                          "username": "", "password": "", "ca-path":"", "ca-file": ""}
 
 ${MODBUS_TCP_CONFIG}	{"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
 ${OPCUA_CONFIG}    {"host": "127.0.0.1", "port": 4840, "username": "user", "password": "123456"}
