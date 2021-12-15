@@ -117,6 +117,11 @@ jobs:
         with:
           name: ${{ matrix.arch }}
 
+      - id: package
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: echo "::set-output name=name::neuron-${GITHUB_REF##*/}-${ARCH%%-*}.tar.gz"
+
       - uses: docker/setup-buildx-action@v1
       - uses: docker/setup-qemu-action@v1
         with:
@@ -137,7 +142,7 @@ jobs:
               ;;
           esac
           docker run -d --name neuron \
-          -v ${{ steps.download.outputs.download-path }}:/opt/neuron.tar.gz \
+          -v $(pwd)/${{ steps.package.outputs.name }}:/opt/neuron.tar.gz \
           -p 7001:7001 \
           --platform ${platform} \
           ubuntu:18.04 \
@@ -149,8 +154,6 @@ jobs:
           if ! curl --silent --show-error -X POST http://127.0.0.1:7001/api/v2/ping > /dev/null; then
             sleep 1
           fi
-      - id: asset
-        run: echo "::set-output name=file-name::$(basename ${{ steps.download.outputs.download-path }})"
 
       - uses: actions/upload-release-asset@v1
         if: github.event_name == 'release'
@@ -158,8 +161,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ${{ steps.download.outputs.download-path }}
-          asset_name: ${{ steps.asset.outputs.file-name}}
+          asset_path: ./${{ steps.package.outputs.name}}
+          asset_name: ${{ steps.package.outputs.name}}
           asset_content_type: application/octet-stream
 
       - uses: geekyeggo/delete-artifact@v1
