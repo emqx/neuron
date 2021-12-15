@@ -93,7 +93,7 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}
         run: |
-          ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF##*/}-${ARCH%%-*}.tar.gz
+          ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF##*/}-${ARCH%%-*}
 
       - uses: actions/upload-artifact@v2
         with:
