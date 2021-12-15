@@ -22,3 +22,7 @@ target_link_libraries(plugin-opcua nng::nng ${CMAKE_THREAD_LIBS_INIT})
 else()
 target_link_libraries(plugin-opcua nng ${CMAKE_THREAD_LIBS_INIT})
 endif()
+
+install(TARGETS plugin-opcua
+	LIBRARY DESTINATION lib
+	RUNTIME DESTINATION bin)
