@@ -247,6 +247,14 @@ int main(int argc, char **argv)
     data_float_add(server, "type_float", "neu.type_float", 38.9, 0);
     data_double_add(server, "type_double", "neu.type_double", 100038.9999, 0);
     data_string_add(server, "type_cstr", "neu.type_cstr", "hello world!", 0);
+
+    data_string_add(server, "str01", "cstr01", "hello world 1!", 0);
+    data_string_add(server, "str02", "cstr02", "hello world 2!", 0);
+    data_string_add(server, "str03", "cstr03", "hello world 3!", 0);
+    data_string_add(server, "字符串10", "字符串10", "中文字符串测试 9!", 0);
+    data_string_add(server, "字符串十一", "\"测试\".\"字符串十一\"",
+                    "中文字符串测试 十一!", 0);
+
     current_time_datasource_variable_add(server);
 
     UA_StatusCode retval = UA_Server_run(server, &running);
