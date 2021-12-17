@@ -453,6 +453,10 @@ int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
     {
         neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
         neu_datatag_t *   tag = neu_datatag_tbl_get(tag_table, *id);
+        if (tag == NULL) {
+            // The tag had been deleted by other node
+            continue;
+        }
         if ((tag->attribute & attribute) == attribute) {
             count += 1;
         }
