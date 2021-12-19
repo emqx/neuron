@@ -47,10 +47,13 @@ class Node(object):
         pass
 
     def Get_Node_By_Name(self, snodes, name):
-        for node in snodes[0]:
+        for node in snodes:
             if node['name'] == name:
                 return node['id']
         return 0
+
+    def Node_With_Name_Should_Exist(self, snodes, name):
+        assert 0 != self.Get_Node_By_Name(snodes, name)
 
 
 class Tag(object):
@@ -93,6 +96,19 @@ class Read(object):
 
     def __init__(self):
         pass
+
+    def Compare_Tag_Value_Bool(self, tags, id, value):
+        ret = -1
+        for tag in tags:
+            if tag['id'] == int(id):
+                if isinstance(value, str):
+                    if (tag['value'] == False and value.lower() == "false" or
+                        tag['value'] == True and value.lower() == "true"):
+                        ret = 0
+                elif tag['value'] == int(value):
+                    ret = 0
+                break
+        return ret
 
     def Compare_Tag_Value_Int(self, tags, id, value):
         ret = -1
