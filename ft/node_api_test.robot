@@ -7,39 +7,39 @@ Suite Teardown    Neuron Context Stop
 
 *** Test Cases ***
 POST ping, status can be ok
-    POST       /api/v2/ping
-    Integer    response status    200
-    Object     response body      {}
+    Ping
 
 Use the wrong body to crate a node, it should return failure
-    POST    /api/v2/node    {"type": ${NODE_DRIVER}, "namexx": "test-node", "plugin_name": "test-plugin-name"}
+    ${res} =                Add Node                  type=${${NODE_DRIVER}}    namexx=test-node    plugin_name=test-plugin-name
 
-    Integer    response status        400
-    Integer    response body error    ${ERR_REQUEST_BODY_INVALID}
+    Check Response Status   ${res}                    400
+    Check Error Code        ${res}                    ${ERR_REQUEST_BODY_INVALID}
+
 
 Use a plugin name that does not exist to create a node, it should return failure
-    POST    /api/v2/node    {"type": ${NODE_DRIVER}, "name": "test-node", "plugin_name": "test-plugin-name"}
+    ${res} =                Add Node                  type=${${NODE_DRIVER}}    name=test-node    plugin_name=test-plugin-name
 
-    Integer    response status        404
-    Integer    response body error    ${ERR_PLUGIN_NAME_NOT_FOUND}
+    Check Response Status   ${res}                    404
+    Check Error Code        ${res}                    ${ERR_PLUGIN_NAME_NOT_FOUND}
+
 
 Use a invalid node type to create a node, it should return failure
-    POST    /api/v2/node    {"type": 10, "name": "test-node", "plugin_name": "modbus-tcp-plugin"}
+    ${res} =                Add Node                  type=${10}                name=test-node      plugin_name=modbus-tcp-plugin
 
-    Integer    response status        400
-    Integer    response body error    ${ERR_NODE_TYPE_INVALID}
+    Check Response Status   ${res}                    400
+    Check Error Code        ${res}                    ${ERR_NODE_TYPE_INVALID}
 
 Create a node with the correct body, it should return success
-    POST    /api/v2/node    {"type": ${NODE_DRIVER}, "name": "test-node", "plugin_name": "modbus-tcp-plugin"}
+    ${res} =                Add Node                  type=${${NODE_DRIVER}}    name=test-node      plugin_name=modbus-tcp-plugin
 
-    Integer    response status        200
-    Integer    response body error    ${ERR_SUCCESS} 
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 Create an existing node, it should return failure
-    POST    /api/v2/node    {"type": ${NODE_DRIVER}, "name": "test-node", "plugin_name": "modbus-tcp-plugin"}
+    ${res} =                Add Node                  type=${${NODE_DRIVER}}    name=test-node      plugin_name=modbus-tcp-plugin
 
-    Integer    response status        409
-    Integer    response body error    ${ERR_NODE_EXIST}
+    Check Response Status   ${res}                    409
+    Check Error Code        ${res}                    ${ERR_NODE_EXIST}
 
 Get node with wrong parameters, it will return failure
     GET    /api/v2/node?tt=${NODE_DRIVER}
@@ -48,290 +48,278 @@ Get node with wrong parameters, it will return failure
     Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
 
 Get DRIVER node, it should return all DRIVER node
-    GET    /api/v2/node?type=${NODE_DRIVER}
+    ${res} =                Get Nodes                 ${NODE_DRIVER}
 
-    Integer    response status    200
-    Array      $.nodes
-    String     $.nodes[*].name    sample-driver-adapter    modbus-tcp-adapter    opcua-adapter    test-node
+    Check Response Status   ${res}                    200
+
+    FOR   ${name}   IN      sample-driver-adapter     modbus-tcp-adapter    opcua-adapter     test-node
+      Node With Name Should Exist                     ${res}[nodes]         ${name}
+    END
 
 Get WEB node, it should return all WEB node
-    GET    /api/v2/node?type=${NODE_WEB}
+    ${res} =                Get Nodes                 ${NODE_WEB}
 
-    Integer    response status    200
-    Array      $.nodes
-    String     $.nodes[*].name    default-dashboard-adapter
+    Check Response Status   ${res}                    200
+    Node With Name Should Exist                       ${res}[nodes]         default-dashboard-adapter
 
 Get MQTT node, it should return all mqtt node
-    GET    /api/v2/node?type=${NODE_MQTT}
+    ${res} =                Get Nodes                 ${NODE_MQTT}
 
-    Integer    response status    200
-    Array      $.nodes
-    String     $.nodes[*].name    mqtt-adapter
+    Check Response Status   ${res}                    200
+    Node With Name Should Exist                       ${res}[nodes]         mqtt-adapter
+
 
 Get STREAM PROCESSOR node, it should return all STREAM PROCESSOR node
-    GET    /api/v2/node?type=${NODE_STREAM_PROCESSOR}
+    ${res} =                Get Nodes                 ${NODE_STREAM_PROCESSOR}
 
-    Integer    response status    200
-    Object     response body      {}
-    #String     $.nodes[*].name    stream-process-adapter
+    Check Response Status   ${res}                    200
+    Run Keyword If  ${res} != &{EMPTY}                Fail  not an empty object
 
 Get APP node, it should return all APP node
-    GET    /api/v2/node?type=${NODE_APP}
+    ${res} =                Get Nodes                 ${NODE_APP}
 
-    Integer    response status    200
-    Array      $.nodes
-    String     $.nodes[*].name    sample-app-adapter
+    Check Response Status   ${res}                    200
+    Node With Name Should Exist                       ${res}[nodes]         sample-app-adapter
+
 
 Get UNKNOWN type node, it should return empty node
-    GET    /api/v2/node?type=${NODE_UNKNOWN}
+    ${res} =                Get Nodes                 ${NODE_UNKNOWN}
 
-    Integer    response status    200
-    Object     response body      {}
+    Check Response Status   ${res}                    200
+    Run Keyword If  ${res} != &{EMPTY}                Fail  not an empty object
 
 Get INVALID type node, it should return failure
-    GET    /api/v2/node?type=123456
+    ${res} =                Get Nodes                 ${123456}
 
-    Integer    response status        400
-    Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
+    Check Response Status   ${res}                    400
+    Check Error Code        ${res}                    ${ERR_REQUEST_PARAM_INVALID}
 
 Delete the existing node, it will return success
-    GET    /api/v2/node?type=${NODE_DRIVER}
+    ${res} =  Get Nodes     ${NODE_DRIVER}
 
-    Integer                response status     200
-    ${tmp}                 Array               $.nodes
-    ${nodeId}              Get Node By Name    ${tmp}     test-node
-    should not be equal    ${nodeId}           0
+    Check Response Status   ${res}                    200
+    ${node_id} =            Get Node By Name          ${res}[nodes]         test-node
+    Should Not Be Equal As Integers                   ${node_id}             0
 
-    Delete    /api/v2/node    {"id": ${nodeId}}
+    ${res} =                Del Node                  ${node_id}
+    Check Response Status   ${res}                    200
 
-    Integer    response status    200
-
-    GET    /api/v2/node?type=${NODE_DRIVER}
-
-    Integer    response status    200
-    ${tmp}     Array              $.nodes
-
-    ${nodeId}                      Get Node By Name    ${tmp}    test-node
-    should be equal as integers    ${nodeId}           0
+    ${res} =                Get Nodes                 ${NODE_DRIVER}
+    Check Response Status   ${res}                    200
+    ${node_id} =             Get Node By Name          ${res}[nodes]         test-node
+    Should Be Equal As Integers                       ${node_id}             0
 
 Delete a non-existent node, it will return failure
-    Delete    /api/v2/node    {"id": 1000}
+    ${res} =                Del Node                  ${1000}
 
-    Integer    response status        404
-    Integer    response body error    ${ERR_NODE_NOT_EXIST}
+    Check Response Status   ${res}                    404
+    Check Error Code        ${res}                    ${ERR_NODE_NOT_EXIST}
 
 Add setting to non-existent node, it should return failure
-    POST    /api/v2/node/setting    {"node_id": 999, "params": {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}}
+    ${res} =                Node Setting              ${999}                {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}
 
-    Integer    response status        404
-    Integer    response body error    ${ERR_NODE_NOT_EXIST}
+    Check Response Status   ${res}                    404
+    Check Error Code        ${res}                    ${ERR_NODE_NOT_EXIST}
 
 Get setting from non-existent node, it should return failure
-    GET    /api/v2/node/setting?node_id=999
+    ${res} =                Get Node Setting          ${999}
 
-    Integer    response status        404
-    Integer    response body error    ${ERR_NODE_NOT_EXIST}
+    Check Response Status   ${res}                    404
+    Check Error Code        ${res}                    ${ERR_NODE_NOT_EXIST}
 
 Get setting from a node that has never been set, it should return failure
-	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-nodee    ${PLUGIN_MODBUS_TCP}
+    ${driver_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        driver-node    ${PLUGIN_MODBUS_TCP}
+    ${res} =                Get Node Setting          ${driver_node_id}
 
-    GET    /api/v2/node/setting?node_id=${driver_node_id}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_NODE_SETTING_NOT_EXIST}
 
-    Integer    response status        200
-    Integer    response body error    ${ERR_NODE_SETTING_NOT_EXIST}
-
-    Del Node    ${driver_node_id}
+    ${res} =                Del Node                  ${driver_node_id}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 Add the correct settings to the node, it should return success
-	${driver_node_id}    Add Node    ${NODE_DRIVER}    driver-node    ${PLUGIN_MODBUS_TCP}
+    ${driver_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        driver-node    ${PLUGIN_MODBUS_TCP}
+    ${res} =                Node Setting              ${driver_node_id}     {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}
 
-    POST    /api/v2/node/setting    {"node_id": ${driver_node_id}, "params": {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}}
-
-    Integer    response status        200
-    Integer    response body error    ${ERR_SUCCESS}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 Get the setting of node, it should return to the previous setting
-	${driver_node_id}	Get Node ID    ${NODE_DRIVER}    driver-node
+    ${driver_node_id} =     Get Node ID               ${NODE_DRIVER}        driver-node
+    ${res} =                Get Node Setting          ${driver_node_id}
+    ${params} =             Set Variable              ${res}[params]
 
-    GET    /api/v2/node/setting?node_id=${driver_node_id}
-
-    Integer    response status          200
-    Integer    response body node_id    ${driver_node_id}
-
-    Integer    $.params.port               6677
-    Integer    $.params.connection_mode    0
-    String     $.params.host               "1.1.1.1"
-
+    Check Response Status   ${res}                    200
+    Should Be Equal As Integers                       ${res}[node_id]       ${driver_node_id}
+    Should Be Equal As Integers                       ${params}[port]       6677
+    Should Be Equal As Strings                        ${params}[host]       1.1.1.1
+    Should Be Equal As Integers                       ${params}[connection_mode]            0
 
 Add wrong settings to node, it should return failure
-	${driver_node_id}	Get Node ID    ${NODE_DRIVER}    driver-node
+    ${driver_node_id} =     Get Node ID               ${NODE_DRIVER}        driver-node
+    ${res} =                Node Setting              ${driver_node_id}     {"xxhost": "1.1.1.1", "port": 6677, "connection_mode": 0}
 
-    POST    /api/v2/node/setting    {"node_id": ${driver_node_id}, "params": {"xxhost": "1.1.1.1", "port": 6677, "connection_mode": 0}}
-
-    Integer    response status        400
-    Integer    response body error    ${ERR_NODE_SETTING_INVALID}
+    Check Response Status   ${res}                    400
+    Check Error Code    ${res}  ${ERR_NODE_SETTING_INVALID}
 
 Update a node that does not exist, it should return failure
-    PUT    /api/v2/node    {"id": 99, "name": "test-name"}
+    ${res} =                Update Node               ${99}                 test-name
 
-    Integer    response status        404
-    Integer    response body error    ${ERR_NODE_NOT_EXIST}
+    Check Response Status   ${res}                    404
+    Check Error Code        ${res}                    ${ERR_NODE_NOT_EXIST}
 
 Update the name of the node, it should return success
-	${app_node_id}    Add Node    ${NODE_APP}    app-node    ${PLUGIN_MQTT}
+    ${app_node_id} =        Add Node And Return ID    ${NODE_APP}           app-node        ${PLUGIN_MQTT}
+    ${res} =                Update Node               ${app_node_id}        test-name
 
-    PUT    /api/v2/node    {"id": ${app_node_id}, "name": "test-name"}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
-    Integer    response status    200
+    ${res} =                Get Nodes                 ${NODE_APP}
+    Check Response Status   ${res}                    200
+    Node With Name Should Exist                       ${res}[nodes]         test-name
 
-    GET    /api/v2/node?type=${NODE_APP}
-
-    Integer    response status    200
-    Array      $.nodes
-    String     $.nodes[*].name    sample-app-adapter    test-name
-
-    [Teardown]    Del Node    ${app_node_id}
+    ${res} =                Del Node                  ${app_node_id}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 
 Start an unconfigured node, it should return failure
-	${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
+    ${modbus_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        modbus-test-node      ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s
 
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    should be equal as integers    ${running_state}    ${NODE_STATE_INIT}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_DISCONNECTED}
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_INIT}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_DISCONNECTED}
 
+    ${res} =                Node Ctl                  ${modbus_node_id}     ${NODE_CTL_START}
 
-    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
+    Check Response Status   ${res}                    409
+    Check Error Code        ${res}                    ${ERR_NODE_NOT_READY}
 
-    Integer    response status    409
-    Integer    $.error            ${ERR_NODE_NOT_READY}
-
-    [Teardown]    Del Node    ${modbus_node_id}
+    ${res} =                Del Node                  ${modbus_node_id}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 Start the configured node, it should return success
-    ${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
+    ${modbus_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        modbus-test-node      ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s
 
-    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Node Setting            ${modbus_node_id}         {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_READY}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
-    should be equal as integers    ${running_state}    ${NODE_STATE_READY}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
+    ${res} =                Node Ctl                  ${modbus_node_id}     ${NODE_CTL_START}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
-
-    Integer    response status    200
-
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
-
-    should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
-
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_RUNNING}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
 Start the stopped node, it should return success
-    ${modbus_node_id}    Get Node ID    ${NODE_DRIVER}    modbus-test-node
+    ${modbus_node_id} =     Get Node ID               ${NODE_DRIVER}        modbus-test-node
 
-    Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
+    Node Ctl                ${modbus_node_id}         ${NODE_CTL_STOP}
 
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    should be equal as integers    ${running_state}    ${NODE_STATE_STOP}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_STOP}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
-    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
+    ${res} =                Node Ctl                  ${modbus_node_id}     ${NODE_CTL_START}
 
-    Integer    response status    200
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_RUNNING}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
 Start the running node, it should return failure
-    ${modbus_node_id}    Get Node ID    ${NODE_DRIVER}    modbus-test-node
+    ${modbus_node_id} =     Get Node ID               ${NODE_DRIVER}        modbus-test-node
+    ${res} =                Node Ctl                  ${modbus_node_id}     ${NODE_CTL_START}
 
-    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_START}}
+    Check Response Status   ${res}                    409
+    Check Error Code        ${res}                    ${ERR_NODE_IS_RUNNING}
 
-    Integer    response status    409
-    Integer    $.error            ${ERR_NODE_IS_RUNNING}
-
-    [Teardown]    Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
+    ${res} =                Node Ctl                  ${modbus_node_id}     ${NODE_CTL_STOP}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 Stop node that is stopped, it should return failure
-    ${modbus_node_id}    Get Node ID    ${NODE_DRIVER}    modbus-test-node
+    ${modbus_node_id} =     Get Node ID               ${NODE_DRIVER}        modbus-test-node
 
-    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_STOP}}
+    ${res} =                Node Ctl                  ${modbus_node_id}     ${NODE_CTL_STOP}
+    Check Response Status   ${res}                    409
+    Check Error Code        ${res}                    ${ERR_NODE_IS_STOPED}
 
-    Integer    response status    409
-    Integer    $.error            ${ERR_NODE_IS_STOPED}
-
-    [Teardown]    Del Node    ${modbus_node_id}
+    ${res} =                Del Node                  ${modbus_node_id}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 Stop node that is ready(init/idle), it should return failure
-    ${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
+    ${modbus_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        modbus-test-node      ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s
 
-    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_STOP}}
+    ${res} =                Node Ctl                  ${modbus_node_id}     ${NODE_CTL_STOP}
+    Check Response Status   ${res}                    409
+    Check Error Code        ${res}                    ${ERR_NODE_NOT_RUNNING}
 
-    Integer    response status    409
-    Integer    $.error            ${ERR_NODE_NOT_RUNNING}
+    Node Setting            ${modbus_node_id}         {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
 
-    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    ${res} =                Node Ctl                  ${modbus_node_id}   ${NODE_CTL_STOP}
 
-    POST    /api/v2/node/ctl    {"id": ${modbus_node_id}, "cmd": ${NODE_CTL_STOP}}
+    Check Response Status   ${res}                    409
+    Check Error Code        ${res}                    ${ERR_NODE_NOT_RUNNING}
 
-    Integer    response status    409
-    Integer    $.error            ${ERR_NODE_NOT_RUNNING}
-
-    [Teardown]    Del Node    ${modbus_node_id}
+    ${res} =                Del Node                  ${modbus_node_id}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}
 
 When setting up a READY/RUNNING/STOPED node, the node status will not change
-    ${modbus_node_id}    Add Node    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
+    ${modbus_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        modbus-test-node      ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s
 
-    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Node Setting            ${modbus_node_id}         {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_READY}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
-    should be equal as integers    ${running_state}    ${NODE_STATE_READY}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
+    Node Setting            ${modbus_node_id}         {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    Node Setting    ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_READY}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
+    Node Ctl            ${modbus_node_id}    ${NODE_CTL_START}
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    should be equal as integers    ${running_state}    ${NODE_STATE_READY}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_RUNNING}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
-    Node Ctl    ${modbus_node_id}    ${NODE_CTL_START}
+    Node Ctl            ${modbus_node_id}    ${NODE_CTL_STOP}
+    ${running_state}    ${link_state} =               Get Node State        ${modbus_node_id}
 
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
-
-    should be equal as integers    ${running_state}    ${NODE_STATE_RUNNING}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
-
-    Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
-
-    ${running_state}    ${link_state}    Get Node State    ${modbus_node_id}    
-
-    should be equal as integers    ${running_state}    ${NODE_STATE_STOP}
-    should be equal as integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
+    Should Be Equal As Integers                       ${running_state}      ${NODE_STATE_STOP}
+    Should Be Equal As Integers                       ${link_state}         ${NODE_LINK_STATE_CONNECTING}
 
 *** Keywords ***
 Neuron Context Ready
 	Neuron Ready
 
-    ${token} =     LOGIN
-    ${jwt} =       Catenate                      Bearer    ${token}
-    Set Headers    {"Authorization":"${jwt}"}
+    LOGIN
 
 Neuron Context Stop
     LOGOUT
