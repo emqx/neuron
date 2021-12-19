@@ -4,480 +4,223 @@ Suite Setup       Neuron Context Ready
 Suite Teardown    Stop All Processes
 
 *** Variables ***
-${node_id}
-${group}    config_opcua_sample
+${test_node_id}
+${test_group}    config_opcua_sample
+
+${tag_bool}         {"name": "tag_bool", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BOOL}}
+${tag_int8}         {"name": "tag_int8", "address": "1!neu.type_int8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT8}}
+${tag_uint8}        {"name": "tag_uint8", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
+${tag_int16}        {"name": "tag_int16", "address": "1!neu.type_int16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
+${tag_uint16}       {"name": "tag_uint16", "address": "1!neu.type_uint16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
+${tag_int32}        {"name": "tag_int32", "address": "1!neu.type_int32", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
+${tag_uint32}       {"name": "tag_uint32", "address": "1!neu.type_uint32", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
+${tag_int64}        {"name": "tag_int64", "address": "1!neu.type_int64", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT64}}
+${tag_uint64}       {"name": "tag_uint64", "address": "1!neu.type_uint64", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT64}}
+${tag_float}        {"name": "tag_float", "address": "1!neu.type_float", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
+${tag_double}       {"name": "tag_double", "address": "1!neu.type_double", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_DOUBLE}}
+${tag_string}       {"name": "tag_string", "address": "1!neu.type_cstr", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
 
 *** Test Cases ***
-Read a point with data type of int8, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int8", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT8}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     -10
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of uint8, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT8}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =    Read Tags    ${node_id}    ${group}
-
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}    10
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of bool, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BOOL}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     1
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of int16, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int16", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     -1001
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of uint16, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint16", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT16}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     1001
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of int32, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int32", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT32}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     -100
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of uint32, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint32", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     111111
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of int64, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int64", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT64}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     -10011111111111
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of uint64, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint64", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT64}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     5678710019198784
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of float, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_float", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                     Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Float    ${tags}.tags    ${tag_id}     38.9
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of double, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_double", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_DOUBLE}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                     Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Float    ${tags}.tags    ${tag_id}     100038.9999
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read a point with data type of string, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_cstr", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_STRING}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    ${tags} =                      Read Tags       ${node_id}    ${group}
-    Compare Tag Value As String    ${tags}.tags    ${tag_id}     hello world!
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
+Read a point with data type of bool/int8/uint8/int16/uint16/int32/uint32/int64/uint64/float/double/string, it should return success
+  [Template]  Read A Point Should Success
+  ${test_node_id}                     ${test_group}             bool              ${tag_bool}       true
+  ${test_node_id}                     ${test_group}             int8              ${tag_int8}       -10
+  ${test_node_id}                     ${test_group}             uint8             ${tag_uint8}      10
+  ${test_node_id}                     ${test_group}             int16             ${tag_int16}      -1001
+  ${test_node_id}                     ${test_group}             uint16            ${tag_uint16}     1001
+  ${test_node_id}                     ${test_group}             int32             ${tag_int32}      -100
+  ${test_node_id}                     ${test_group}             uint32            ${tag_uint32}     111111
+  ${test_node_id}                     ${test_group}             int64             ${tag_int64}      -10011111111111
+  ${test_node_id}                     ${test_group}             uint64            ${tag_uint64}     5678710019198784
+  ${test_node_id}                     ${test_group}             float             ${tag_float}      38.9
+  ${test_node_id}                     ${test_group}             double            ${tag_double}     100038.9999
+  ${test_node_id}                     ${test_group}             string            ${tag_string}     hello world!
 
 Read multiple points, including multiple data types(int8/uint8/int16/uint16/int32/uint32/int64/uint64/float/double/string), it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "type_int8", "address": "1!neu.type_int8", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT8}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_uint8", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT8}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_bool", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BOOL}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_int16", "address": "1!neu.type_int16", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_uint16", "address": "1!neu.type_uint16", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT16}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_int32", "address": "1!neu.type_int32", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT32}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_uint32", "address": "1!neu.type_uint32", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_int64", "address": "1!neu.type_int64", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT64}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_uint64", "address": "1!neu.type_uint64", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT64}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_float", "address": "1!neu.type_float", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_double", "address": "1!neu.type_double", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_DOUBLE}}
-    Add Tags    ${node_id}    ${group}    {"name": "type_cstr", "address": "1!neu.type_cstr", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_STRING}}
-
-    ${tag_id_int8} =      Get Tag ID    ${node_id}    ${group}    type_int8
-    ${tag_id_uint8} =     Get Tag ID    ${node_id}    ${group}    type_uint8
-    ${tag_id_bool} =      Get Tag ID    ${node_id}    ${group}    type_bool
-    ${tag_id_int16} =     Get Tag ID    ${node_id}    ${group}    type_int16
-    ${tag_id_uint16} =    Get Tag ID    ${node_id}    ${group}    type_uint16
-    ${tag_id_int32} =     Get Tag ID    ${node_id}    ${group}    type_int32
-    ${tag_id_uint32} =    Get Tag ID    ${node_id}    ${group}    type_uint32
-    ${tag_id_int64} =     Get Tag ID    ${node_id}    ${group}    type_int64
-    ${tag_id_uint64} =    Get Tag ID    ${node_id}    ${group}    type_uint64
-    ${tag_id_float} =     Get Tag ID    ${node_id}    ${group}    type_float
-    ${tag_id_double} =    Get Tag ID    ${node_id}    ${group}    type_double
-    ${tag_id_cstr} =      Get Tag ID    ${node_id}    ${group}    type_cstr
-
-    should not be equal as integers    ${tag_id_int8}      -1
-    should not be equal as integers    ${tag_id_uint8}     -1
-    should not be equal as integers    ${tag_id_bool}      -1
-    should not be equal as integers    ${tag_id_int16}     -1
-    should not be equal as integers    ${tag_id_uint16}    -1
-    should not be equal as integers    ${tag_id_int32}     -1
-    should not be equal as integers    ${tag_id_uint32}    -1
-    should not be equal as integers    ${tag_id_int64}     -1
-    should not be equal as integers    ${tag_id_uint64}    -1
-    should not be equal as integers    ${tag_id_float}     -1
-    should not be equal as integers    ${tag_id_double}    -1
-    should not be equal as integers    ${tag_id_cstr}      -1
-    Sleep                              4s
-
-    ${tags} =                      Read Tags       ${node_id}          ${group}
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_int8}      -10
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_uint8}     10
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_bool}      1
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_int16}     -1001
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_uint16}    1001
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_int32}     -100
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_uint32}    111111
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_int64}     -10011111111111
-    Compare Tag Value As Int       ${tags}.tags    ${tag_id_uint64}    5678710019198784
-    Compare Tag Value As Float     ${tags}.tags    ${tag_id_float}     38.9
-    Compare Tag Value As Float     ${tags}.tags    ${tag_id_double}    100038.9999
-    Compare Tag Value As String    ${tags}.tags    ${tag_id_cstr}      hello world!
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id_int8},${tag_id_uint8},${tag_id_bool},${tag_id_int16},${tag_id_uint16},${tag_id_int32},${tag_id_uint32},${tag_id_int64},${tag_id_uint64},${tag_id_float},${tag_id_double},${tag_id_cstr}
-
-Write a point with data type of int8, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT8}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": -9}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     -9
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of uint8, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 66}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     66
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of bool, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BOOL}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              -1
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": false}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     0
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of int16, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": -1000}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     -1000
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of uint16, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 999}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     999
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of int32, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int32", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 99}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     99
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of uint32, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint32", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 222221}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     222221
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of int64, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int64", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT64}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 10011111111111}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     10011111111111
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of uint64, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_uint64", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT64}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 5678710019198785}
-    Sleep         4s
-
-    ${tags} =                   Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Int    ${tags}.tags    ${tag_id}     5678710019198785
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of float, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_float", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 12.345}
-    Sleep         4s
-
-    ${tags} =                     Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Float    ${tags}.tags    ${tag_id}     12.345
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of double, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_double", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_DOUBLE}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": 100099.8888}
-    Sleep         4s
-
-    ${tags} =                     Read Tags       ${node_id}    ${group}
-    Compare Tag Value As Float    ${tags}.tags    ${tag_id}     100099.88
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Write a point with data type of string, it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_cstr", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-
-    ${tag_id} =                        Get Tag ID    ${node_id}    ${group}    tag1
-    should not be equal as integers    ${tag_id}     -1
-    Sleep                              4s
-
-    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": "Hello Neuron!"}
-    Sleep         4s
-
-    ${tags} =                      Read Tags       ${node_id}    ${group}
-    Compare Tag Value As String    ${tags}.tags    ${tag_id}     Hello Neuron!
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
+  ${tag_id_bool} =                    Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_bool}
+  ${tag_id_int8} =                    Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int8}
+  ${tag_id_uint8} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint8}
+  ${tag_id_int16} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int16}
+  ${tag_id_uint16} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint16}
+  ${tag_id_int32} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int32}
+  ${tag_id_uint32} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint32}
+  ${tag_id_int64} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int64}
+  ${tag_id_uint64} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint64}
+  ${tag_id_float} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_float}
+  ${tag_id_double} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_double}
+  ${tag_id_string} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_string}
+
+  Should Not Be Equal As Integers     ${tag_id_bool}            -1
+  Should Not Be Equal As Integers     ${tag_id_int8}            -1
+  Should Not Be Equal As Integers     ${tag_id_uint8}           -1
+  Should Not Be Equal As Integers     ${tag_id_int16}           -1
+  Should Not Be Equal As Integers     ${tag_id_uint16}          -1
+  Should Not Be Equal As Integers     ${tag_id_int32}           -1
+  Should Not Be Equal As Integers     ${tag_id_uint32}          -1
+  Should Not Be Equal As Integers     ${tag_id_int64}           -1
+  Should Not Be Equal As Integers     ${tag_id_uint64}          -1
+  Should Not Be Equal As Integers     ${tag_id_float}           -1
+  Should Not Be Equal As Integers     ${tag_id_double}          -1
+  Should Not Be Equal As Integers     ${tag_id_string}          -1
+
+  ${res} =                            Read Tags                 ${test_node_id}   ${test_group}
+  Compare Tag Value As Bool           ${res}[tags]              ${tag_id_bool}    true
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int8}    -10
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint8}   10
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int16}   -1001
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint16}  1001
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int32}   -100
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint32}  111111
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int64}   -10011111111111
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint64}  5678710019198784
+  Compare Tag Value As Float          ${res}[tags]              ${tag_id_float}   38.9
+  Compare Tag Value As Float          ${res}[tags]              ${tag_id_double}  100038.9999
+  Compare Tag Value As String         ${res}[tags]              ${tag_id_string}  hello world!
+
+  ${res} =                            Del Tags                  ${test_node_id}   ${test_group}     ${tag_id_bool},${tag_id_int8},${tag_id_uint8},${tag_id_int16},${tag_id_uint16},${tag_id_int32},${tag_id_uint32},${tag_id_int64},${tag_id_uint64},${tag_id_float},${tag_id_double},${tag_id_string}
+  Check Response Status               ${res}                    200
+  Check Error Code                    ${res}                    ${ERR_SUCCESS}
+
+Write a point with data type of bool/int8/uint8/int16/uint16/int32/uint32/int64/uint64/float/double/string, it should return success
+  [Template]  Write A Point Should Success
+  ${test_node_id}                     ${test_group}             bool              ${tag_bool}       false
+  ${test_node_id}                     ${test_group}             int8              ${tag_int8}       -9
+  ${test_node_id}                     ${test_group}             uint8             ${tag_uint8}      66
+  ${test_node_id}                     ${test_group}             int16             ${tag_int16}      -1000
+  ${test_node_id}                     ${test_group}             uint16            ${tag_uint16}     999
+  ${test_node_id}                     ${test_group}             int32             ${tag_int32}      99
+  ${test_node_id}                     ${test_group}             uint32            ${tag_uint32}     222221
+  ${test_node_id}                     ${test_group}             int64             ${tag_int64}      10011111111111
+  ${test_node_id}                     ${test_group}             uint64            ${tag_uint64}     5678710019198785
+  ${test_node_id}                     ${test_group}             float             ${tag_float}      12.345
+  ${test_node_id}                     ${test_group}             double            ${tag_double}     100099.88
+  ${test_node_id}                     ${test_group}             string            ${tag_string}     Hello Neuron!
 
 Write multiple points, including multiple data types(int8/uint8/int16/uint16/int32/uint32/int64/uint64/float/double/string), it should return success
-    Add Tags    ${node_id}    ${group}    {"name": "tag1", "address": "1!neu.type_int8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT8}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag2", "address": "1!neu.type_uint8", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT8}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag3", "address": "1!neu.type_bool", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BOOL}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag4", "address": "1!neu.type_int16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag5", "address": "1!neu.type_uint16", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag6", "address": "1!neu.type_int32", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag7", "address": "1!neu.type_uint32", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag8", "address": "1!neu.type_int64", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT64}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag9", "address": "1!neu.type_uint64", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT64}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag10", "address": "1!neu.type_float", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag11", "address": "1!neu.type_double", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_DOUBLE}}
-    Add Tags    ${node_id}    ${group}    {"name": "tag12", "address": "1!neu.type_cstr", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
+  ${tag_id_bool} =                    Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_bool}
+  ${tag_id_int8} =                    Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int8}
+  ${tag_id_uint8} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint8}
+  ${tag_id_int16} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int16}
+  ${tag_id_uint16} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint16}
+  ${tag_id_int32} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int32}
+  ${tag_id_uint32} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint32}
+  ${tag_id_int64} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_int64}
+  ${tag_id_uint64} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_uint64}
+  ${tag_id_float} =                   Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_float}
+  ${tag_id_double} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_double}
+  ${tag_id_string} =                  Add Tag And Return ID     ${test_node_id}   ${test_group}     ${tag_string}
 
-    ${tag1_id} =     Get Tag ID    ${node_id}    ${group}    tag1
-    ${tag2_id} =     Get Tag ID    ${node_id}    ${group}    tag2
-    ${tag3_id} =     Get Tag ID    ${node_id}    ${group}    tag3
-    ${tag4_id} =     Get Tag ID    ${node_id}    ${group}    tag4
-    ${tag5_id} =     Get Tag ID    ${node_id}    ${group}    tag5
-    ${tag6_id} =     Get Tag ID    ${node_id}    ${group}    tag6
-    ${tag7_id} =     Get Tag ID    ${node_id}    ${group}    tag7
-    ${tag8_id} =     Get Tag ID    ${node_id}    ${group}    tag8
-    ${tag9_id} =     Get Tag ID    ${node_id}    ${group}    tag9
-    ${tag10_id} =    Get Tag ID    ${node_id}    ${group}    tag10
-    ${tag11_id} =    Get Tag ID    ${node_id}    ${group}    tag11
-    ${tag12_id} =    Get Tag ID    ${node_id}    ${group}    tag12
+  Should Not Be Equal As Integers     ${tag_id_int8}            -1
+  Should Not Be Equal As Integers     ${tag_id_uint8}           -1
+  Should Not Be Equal As Integers     ${tag_id_bool}            -1
+  Should Not Be Equal As Integers     ${tag_id_int16}           -1
+  Should Not Be Equal As Integers     ${tag_id_uint16}          -1
+  Should Not Be Equal As Integers     ${tag_id_int32}           -1
+  Should Not Be Equal As Integers     ${tag_id_uint32}          -1
+  Should Not Be Equal As Integers     ${tag_id_int64}           -1
+  Should Not Be Equal As Integers     ${tag_id_uint64}          -1
+  Should Not Be Equal As Integers     ${tag_id_float}           -1
+  Should Not Be Equal As Integers     ${tag_id_double}          -1
+  Should Not Be Equal As Integers     ${tag_id_string}          -1
 
-    should not be equal as integers    ${tag1_id}     -1
-    should not be equal as integers    ${tag2_id}     -1
-    should not be equal as integers    ${tag3_id}     -1
-    should not be equal as integers    ${tag4_id}     -1
-    should not be equal as integers    ${tag5_id}     -1
-    should not be equal as integers    ${tag6_id}     -1
-    should not be equal as integers    ${tag7_id}     -1
-    should not be equal as integers    ${tag8_id}     -1
-    should not be equal as integers    ${tag9_id}     -1
-    should not be equal as integers    ${tag10_id}    -1
-    should not be equal as integers    ${tag11_id}    -1
-    should not be equal as integers    ${tag12_id}    -1
-    Sleep                              4s
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_bool}, "value": true}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_int8}, "value": 8}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_uint8}, "value": 7}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_int16}, "value": -999}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_uint16}, "value": 888}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_int32}, "value": 77}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_uint32}, "value": 123456}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_int64}, "value": -10011111111112}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_uint64}, "value": 123456789101112}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_float}, "value": 33.33}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_double}, "value": 123456.7890}
+  Write Tags                          ${test_node_id}           ${test_group}     {"id": ${tag_id_string}, "value": "Hello Strangers!!"}
 
-    Write Tags    ${node_id}    ${group}    {"id": ${tag1_id}, "value": 8}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag2_id}, "value": 7}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag3_id}, "value": true}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag4_id}, "value": -999}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag5_id}, "value": 888}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag6_id}, "value": 77}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag7_id}, "value": 123456}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag8_id}, "value": -10011111111112}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag9_id}, "value": 123456789101112}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag10_id}, "value": 33.33}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag11_id}, "value": 123456.7890}
-    Write Tags    ${node_id}    ${group}    {"id": ${tag12_id}, "value": "Hello Strangers!!"}
+  ${res} =                            Read Tags                 ${test_node_id}   ${test_group}
+  Compare Tag Value As Bool           ${res}[tags]              ${tag_id_bool}    true
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int8}    8
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint8}   7
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int16}   -999
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint16}  888
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int32}   77
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint32}  123456
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_int64}   -10011111111112
+  Compare Tag Value As Int            ${res}[tags]              ${tag_id_uint64}  123456789101112
+  Compare Tag Value As Float          ${res}[tags]              ${tag_id_float}   33.33
+  Compare Tag Value As Float          ${res}[tags]              ${tag_id_double}  123456.7890
+  Compare Tag Value As String         ${res}[tags]              ${tag_id_string}  Hello Strangers!!
 
-    ${tags} =                      Read Tags       ${node_id}     ${group}
-    Compare Tag Value As Int       ${tags}.tags    ${tag1_id}     8
-    Compare Tag Value As Int       ${tags}.tags    ${tag2_id}     7
-    Compare Tag Value As Int       ${tags}.tags    ${tag3_id}     1
-    Compare Tag Value As Int       ${tags}.tags    ${tag4_id}     -999
-    Compare Tag Value As Int       ${tags}.tags    ${tag5_id}     888
-    Compare Tag Value As Int       ${tags}.tags    ${tag6_id}     77
-    Compare Tag Value As Int       ${tags}.tags    ${tag7_id}     123456
-    Compare Tag Value As Int       ${tags}.tags    ${tag8_id}     -10011111111112
-    Compare Tag Value As Int       ${tags}.tags    ${tag9_id}     123456789101112
-    Compare Tag Value As Float     ${tags}.tags    ${tag10_id}    33.33
-    Compare Tag Value As Float     ${tags}.tags    ${tag11_id}    123456.7890
-    Compare Tag Value As String    ${tags}.tags    ${tag12_id}    Hello Strangers!!
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id}
+  ${res} =                            Del Tags                  ${test_node_id}   ${test_group}     ${tag_id_bool},${tag_id_int8},${tag_id_uint8},${tag_id_int16},${tag_id_uint16},${tag_id_int32},${tag_id_uint32},${tag_id_int64},${tag_id_uint64},${tag_id_float},${tag_id_double},${tag_id_string}
+  Check Response Status               ${res}                    200
+  Check Error Code                    ${res}                    ${ERR_SUCCESS}
 
 *** Keywords ***
 Neuron Context Ready
-    Start Simulator    ${OPCUA_SERVER_SIMULATOR}    ${SIMULATOR_DIR}
+  Start Simulator                     ${OPCUA_SERVER_SIMULATOR}                   ${SIMULATOR_DIR}
 
-	Neuron Ready
-	${token} =      LOGIN
-	${jwt} =        Catenate                       Bearer    ${token} 
-	Set Headers     {"Authorization": "${jwt}"}
+  Neuron Ready
+  LOGIN
 
-	${id} =                Get Node ID    ${NODE_DRIVER}     opcua-adapter
-	Set Global Variable    ${node_id}     ${id}
-	Node Setting           ${node_id}     ${OPCUA_CONFIG}
+  ${id} =                             Get Node ID               ${NODE_DRIVER}     opcua-adapter
+  Set Global Variable                 ${test_node_id}           ${id}
+  Node Setting                        ${test_node_id}           ${OPCUA_CONFIG}
 
 Stop All Processes
-	LOGOUT
+  LOGOUT
+  Stop Neuron
+  Sleep                               1s
+  Terminate All Processes             kill=false
 
-	Stop Neuron
+Read A Point Should Success
+  [Arguments]                         ${node_id}                ${group}            ${type}         ${tag}        ${value}
+  Log                                 Read a point as ${type}, it should return success
+  Log To Console                      Read a point as ${type}, it should return success
 
-    Sleep    1s
+  IF                                  "${type}" == "float" or "${type}" == "double"
+    ${cmp} =                          Set Variable  Compare Tag Value As Float
+  ELSE IF                             "${type}" == "string"
+    ${cmp} =                          Set Variable  Compare Tag Value As String
+  ELSE IF                             "${type}" == "bool"
+    ${cmp} =                          Set Variable  Compare Tag Value As Bool
+  ELSE
+    ${cmp} =                          Set Variable  Compare Tag Value As Int
+  END
 
-	Terminate All Processes    kill=false
+  ${tag_id} =                         Add Tag And Return ID     ${node_id}          ${group}        ${tag}
+  Should Not Be Equal As Integers     ${tag_id}                 -1
+
+  ${res} =                            Read Tags                 ${node_id}          ${group}
+  Run Keyword                         ${cmp}                    ${res}[tags]        ${tag_id}       ${value}
+
+  ${res} =                            Del Tags                  ${node_id}          ${group}        ${tag_id}
+  Check Response Status               ${res}                    200
+  Check Error Code                    ${res}                    ${ERR_SUCCESS}
+
+Write A Point Should Success
+  [Arguments]                         ${node_id}                ${group}            ${type}         ${tag}        ${value}
+  Log                                 Write a point as ${type}, it should return success
+  Log To Console                      Write a point as ${type}, it should return success
+
+  ${val} =                            Set Variable  ${value}
+  IF                                  "${type}" == "float" or "${type}" == "double"
+    ${cmp} =                          Set Variable  Compare Tag Value As Float
+  ELSE IF                             "${type}" == "string"
+    ${val} =                          Set Variable  "${value}"
+    ${cmp} =                          Set Variable  Compare Tag Value As String
+  ELSE IF                             "${type}" == "bool"
+    ${cmp} =                          Set Variable  Compare Tag Value As Bool
+  ELSE
+    ${cmp} =                          Set Variable  Compare Tag Value As Int
+  END
+
+  ${tag_id} =                         Add Tag And Return ID     ${node_id}          ${group}        ${tag}
+  Should Not Be Equal As Integers     ${tag_id}                 -1
+
+  ${res} =                            Write Tags                ${node_id}          ${group}        {"id": ${tag_id}, "value": ${val}}
+
+  ${res} =                            Read Tags                 ${node_id}          ${group}
+  Run Keyword                         ${cmp}                    ${res}[tags]        ${tag_id}       ${value}
+
+  ${res} =                            Del Tags                  ${node_id}          ${group}        ${tag_id}
+  Check Response Status               ${res}                    200
+  Check Error Code                    ${res}                    ${ERR_SUCCESS}
