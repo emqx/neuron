@@ -122,11 +122,23 @@ char *command_node_setting_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                neu_json_node_setting_req_t *req)
 {
     log_info("Get node setting uuid:%s, node id:%d", mqtt->uuid, req->node_id);
-    neu_json_error_resp_t error  = { 0 };
-    char *                result = NULL;
-    error.error = neu_plugin_get_node_setting(plugin, req->node_id, &result);
-    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                              neu_json_encode_mqtt_resp, &result);
+    neu_json_error_resp_t error    = { 0 };
+    char *                settings = NULL;
+    char *                result   = NULL;
+    error.error = neu_plugin_get_node_setting(plugin, req->node_id, &settings);
+    if (0 != error.error) {
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+        return result;
+    }
+    if (0 !=
+        neu_json_encode_setting_with_mqtt(req->node_id, settings, mqtt,
+                                          &result)) {
+        error.error = NEU_ERR_PARAM_IS_WRONG;
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &result);
+    }
+    free(settings);
     return result;
 }
 
