@@ -38,6 +38,9 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
                               void *mqtt_param, neu_json_encode_fn mqtt_fn,
                               char **result);
 
+int neu_json_encode_setting_with_mqtt(uint32_t node_id, char *setting,
+                                      void *mqtt_param, char **result);
+
 neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req);
 
 #define NEU_JSON_RESPONSE_ERROR(err, func)                             \

@@ -17,13 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <ctype.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "json/json.h"
 
 #include "json/neu_json_fn.h"
+#include "json/neu_json_mqtt.h"
 #include "json/neu_json_param.h"
 #include "json/neu_json_rw.h"
 
@@ -62,6 +65,76 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
     }
 
     return neu_json_encode(object, result);
+}
+
+int neu_json_encode_setting_with_mqtt(uint32_t node_id, char *setting,
+                                      void *mqtt_param, char **result)
+{
+    neu_json_mqtt_t *mqtt   = mqtt_param;
+    char *           params = strstr(setting, "\"params\"");
+
+    if (NULL == params) {
+        return -1;
+    }
+
+    int i       = sizeof("\"params\"");
+    int unmatch = 0;
+
+    while (params[i]) {
+        switch (params[i]) {
+        case '{':
+            ++unmatch; // fall through
+        case ':':
+        case ' ':
+        case '\t':
+        case '\n':
+        case '\r':
+            ++i;
+            break;
+        default:
+            return -1;
+        }
+        if (unmatch) {
+            break;
+        }
+    }
+
+    while (params[i]) {
+        if ('{' == params[i]) {
+            ++unmatch;
+        } else if ('}' == params[i]) {
+            --unmatch;
+        }
+        ++i;
+        if (0 == unmatch) {
+            break;
+        }
+    }
+
+    if (unmatch) {
+        return -1;
+    }
+
+    // At this point, the string started at `params` with length `i` is the
+    // the settings that should present in the response.
+    // Note that this is not an elegant solution due to the limitation of
+    // the current implementation.
+
+    const char *fmt = "{\"node_id\": %u, \"function\": %d, \"uuid\": \"%s\", "
+                      "%.*s, \"error\": 0}";
+    // plus 1 for '\0'
+    int size = 1 +
+        snprintf(NULL, 0, fmt, node_id, mqtt->function, mqtt->uuid, i, params);
+
+    *result = calloc(size, sizeof(char));
+    if (NULL == *result) {
+        return -1;
+    }
+
+    snprintf(*result, size, fmt, node_id, mqtt->function, mqtt->uuid, i,
+             params);
+
+    return 0;
 }
 
 int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
