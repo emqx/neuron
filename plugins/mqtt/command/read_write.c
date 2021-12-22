@@ -206,11 +206,20 @@ char *command_read_once_response(neu_plugin_t *   plugin,
 
     neu_int_val_t * int_val;
     neu_data_val_t *val_err;
-    int32_t         error;
+    int32_t         errcode  = 0;
+    char *          json_str = NULL;
 
     int_val = neu_fixed_array_get(array, 0);
     val_err = int_val->val;
-    neu_dvalue_get_errorcode(val_err, &error);
+    neu_dvalue_get_errorcode(val_err, &errcode);
+
+    if (0 != errcode) {
+        neu_json_error_resp_t error = { errcode };
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp,
+                                  parse_header, neu_json_encode_mqtt_resp,
+                                  &json_str);
+        return json_str;
+    }
 
     neu_json_read_resp_t json;
     memset(&json, 0, sizeof(neu_json_read_resp_t));
@@ -219,8 +228,7 @@ char *command_read_once_response(neu_plugin_t *   plugin,
         return NULL;
     }
 
-    char *json_str = NULL;
-    rc             = neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp,
+    rc = neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp,
                                    parse_header, neu_json_encode_mqtt_resp,
                                    &json_str);
     clean_read_response_json_object(&json);
