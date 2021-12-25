@@ -134,3 +134,17 @@ Compare Tag Value As String
   ${ret} =            Compare Tag Value String   ${tags}                    ${id}         ${value}
 
   Should Be Equal As Integers                 ${ret}                        0
+
+Import Neuron API Resource
+  ${api} =                  Get Variable Value                    ${NEURON_API}           http
+  IF                        $api.lower() not in ["mqtt", "http"]
+      Fatal Error           Neuron API should be `http` or `mqtt`, `${NEURON_API}` unsupported
+  END
+
+  Set Global Variable       ${NEURON_API}                         ${api}
+  Set Global Variable       ${NEURON_API_RESOURCE}                api_${api}.resource
+  Log To Console            Neuron API is `${NEURON_API}`, load resource `${NEURON_API_RESOURCE}`
+  Import Resource           ${NEURON_API_RESOURCE}
+
+Skip If Not Http API
+  Skip If                   $NEURON_API != "http"                 Current API is not `http`, just skip

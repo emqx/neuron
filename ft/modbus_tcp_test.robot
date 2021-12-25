@@ -1,5 +1,5 @@
 *** Settings ***
-Resource          api_http.resource
+Resource          common.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Stop All Processes
 
@@ -364,6 +364,8 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
 
 *** Keywords ***
 Neuron Context Ready
+  Import Neuron API Resource
+
   Start Simulator    ${MODBUS_TCP_SERVER_SIMULATOR}    ${SIMULATOR_DIR}
   Neuron Ready
 

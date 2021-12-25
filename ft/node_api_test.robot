@@ -1,5 +1,5 @@
 *** Settings ***
-Resource          api_http.resource
+Resource          common.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
 
@@ -42,6 +42,7 @@ Create an existing node, it should return failure
     Check Error Code        ${res}                    ${ERR_NODE_EXIST}
 
 Get node with wrong parameters, it will return failure
+    Skip If Not Http API
     GET    /api/v2/node?tt=${NODE_DRIVER}
 
     Integer    response status        400
@@ -317,7 +318,9 @@ When setting up a READY/RUNNING/STOPED node, the node status will not change
 
 *** Keywords ***
 Neuron Context Ready
-	Neuron Ready
+    Import Neuron API Resource
+
+    Neuron Ready
 
     LOGIN
 

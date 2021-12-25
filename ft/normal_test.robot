@@ -1,7 +1,7 @@
 *** Settings ***
-Resource          api_http.resource
-Suite Setup       Neuron Ready
-Suite Teardown    Stop Neuron
+Resource          common.resource
+Suite Setup       Neuron Context Ready
+Suite Teardown    Neuron Context Stop
 
 *** Variables ***
 
@@ -51,3 +51,13 @@ logout with valid token, it should return success
     ${jwt} =       Catenate                      Bearer    ${token}
     Set Headers    {"Authorization":"${jwt}"}
     LOGOUT
+
+*** Keywords ***
+Neuron Context Ready
+  Import Neuron API Resource
+  Skip If Not Http API
+
+  Neuron Ready
+
+Neuron Context Stop
+  Stop Neuron
