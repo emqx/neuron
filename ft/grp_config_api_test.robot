@@ -1,5 +1,5 @@
 *** Settings ***
-Resource          api_http.resource
+Resource          common.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
 
@@ -178,6 +178,8 @@ North APP unsubscribe group config, it should return success
 
 *** Keywords ***
 Neuron Context Ready
+  Import Neuron API Resource
+
   Neuron Ready
 
   LOGIN

@@ -1,5 +1,5 @@
 *** Settings ***
-Resource          api_http.resource
+Resource          common.resource
 Suite Setup       Neuron Context Ready 
 Suite Teardown    Stop All Processes
 
@@ -156,6 +156,8 @@ Write multiple points, including multiple data types(int8/uint8/int16/uint16/int
 
 *** Keywords ***
 Neuron Context Ready
+  Import Neuron API Resource
+
   Start Simulator                     ${OPCUA_SERVER_SIMULATOR}                   ${SIMULATOR_DIR}
 
   Neuron Ready
