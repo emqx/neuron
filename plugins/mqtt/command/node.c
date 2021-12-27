@@ -26,12 +26,10 @@ char *command_node_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 {
     log_info("Get node list uuid:%s, node type:%d", mqtt->uuid, req->node_type);
     neu_node_type_e       node_type = req->node_type;
+    char *                result    = NULL;
     neu_json_error_resp_t error     = { 0 };
-    if (NEU_NODE_TYPE_MAX <= req->node_type ||
-        NEU_NODE_TYPE_UNKNOW >= req->node_type) {
-        error.error = NEU_ERR_NODE_TYPE_INVALID;
-
-        char *result = NULL;
+    if (NEU_NODE_TYPE_MAX <= req->node_type) {
+        error.error = NEU_ERR_PARAM_IS_WRONG;
         neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                                   neu_json_encode_mqtt_resp, &result);
         return result;
@@ -56,7 +54,6 @@ char *command_node_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 
     vector_uninit(&nodes);
 
-    char *result = NULL;
     neu_json_encode_with_mqtt(&res, neu_json_encode_get_nodes_resp, mqtt,
                               neu_json_encode_mqtt_resp, &result);
     return result;
