@@ -135,9 +135,7 @@ Get setting from a node that has never been set, it should return failure
     Check Response Status   ${res}                    200
     Check Error Code        ${res}                    ${ERR_NODE_SETTING_NOT_EXIST}
 
-    ${res} =                Del Node                  ${driver_node_id}
-    Check Response Status   ${res}                    200
-    Check Error Code        ${res}                    ${ERR_SUCCESS}
+    [Teardown]              Del Node Check            ${driver_node_id}
 
 Add the correct settings to the node, it should return success
     ${driver_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        driver-node    ${PLUGIN_MODBUS_TCP}
@@ -181,9 +179,7 @@ Update the name of the node, it should return success
     Check Response Status   ${res}                    200
     Node With Name Should Exist                       ${res}[nodes]         test-name
 
-    ${res} =                Del Node                  ${app_node_id}
-    Check Response Status   ${res}                    200
-    Check Error Code        ${res}                    ${ERR_SUCCESS}
+    [Teardown]              Del Node Check            ${app_node_id}
 
 
 Start an unconfigured node, it should return failure
@@ -201,9 +197,7 @@ Start an unconfigured node, it should return failure
     Check Response Status   ${res}                    409
     Check Error Code        ${res}                    ${ERR_NODE_NOT_READY}
 
-    ${res} =                Del Node                  ${modbus_node_id}
-    Check Response Status   ${res}                    200
-    Check Error Code        ${res}                    ${ERR_SUCCESS}
+    [Teardown]              Del Node Check            ${modbus_node_id}
 
 Start the configured node, it should return success
     ${modbus_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        modbus-test-node      ${PLUGIN_MODBUS_TCP}
@@ -263,9 +257,7 @@ Stop node that is stopped, it should return failure
     Check Response Status   ${res}                    409
     Check Error Code        ${res}                    ${ERR_NODE_IS_STOPED}
 
-    ${res} =                Del Node                  ${modbus_node_id}
-    Check Response Status   ${res}                    200
-    Check Error Code        ${res}                    ${ERR_SUCCESS}
+    [Teardown]              Del Node Check            ${modbus_node_id}
 
 Stop node that is ready(init/idle), it should return failure
     ${modbus_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        modbus-test-node      ${PLUGIN_MODBUS_TCP}
@@ -283,9 +275,7 @@ Stop node that is ready(init/idle), it should return failure
     Check Response Status   ${res}                    409
     Check Error Code        ${res}                    ${ERR_NODE_NOT_RUNNING}
 
-    ${res} =                Del Node                  ${modbus_node_id}
-    Check Response Status   ${res}                    200
-    Check Error Code        ${res}                    ${ERR_SUCCESS}
+    [Teardown]              Del Node Check            ${modbus_node_id}
 
 When setting up a READY/RUNNING/STOPED node, the node status will not change
     ${modbus_node_id} =     Add Node And Return ID    ${NODE_DRIVER}        modbus-test-node      ${PLUGIN_MODBUS_TCP}
@@ -327,3 +317,9 @@ Neuron Context Ready
 Neuron Context Stop
     LOGOUT
     Stop Neuron
+
+Del Node Check
+    [Arguments]             ${node_id}
+    ${res} =                Del Node                  ${node_id}
+    Check Response Status   ${res}                    200
+    Check Error Code        ${res}                    ${ERR_SUCCESS}

@@ -17,9 +17,7 @@ Add different types of tags to the group, it should return success
   Check Response Status           ${res}        200
   Check Error Code                ${res}        ${ERR_SUCCESS}
 
-  ${res} =                        Del Group Config                    ${test_node_id}   ${test_gconfig}
-  Check Response Status           ${res}        200
-  Check Error Code                ${res}        ${ERR_SUCCESS}
+  [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
 
 Add tags to the non-existent group, the group will be created automatically
   ${res} =                        Add Tags      ${test_node_id}       ${test_gconfig}   ${tag1},${tag2}
@@ -27,9 +25,7 @@ Add tags to the non-existent group, the group will be created automatically
   Check Response Status           ${res}        200
   Check Error Code                ${res}        ${ERR_SUCCESS}
 
-  ${res} =                        Del Group Config                    ${test_node_id}   ${test_gconfig}
-  Check Response Status           ${res}        200
-  Check Error Code                ${res}        ${ERR_SUCCESS}
+  [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
 
 When the attribute of the tag added is incorrect, it should return partial success
   ${res} =                        Add Tags      ${test_node_id}       ${test_gconfig}   {"name": "tag1", "address": "1!400001", "attribute": 8, "type": 4},{"name": "tag2", "address": "1!00001", "attribute": 3, "type": 14}
@@ -37,9 +33,7 @@ When the attribute of the tag added is incorrect, it should return partial succe
   Check Response Status           ${res}        206
   Check Error Code                ${res}        ${ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
 
-  ${res} =                        Del Group Config                    ${test_node_id}   ${test_gconfig}
-  Check Response Status           ${res}        200
-  Check Error Code                ${res}        ${ERR_SUCCESS}
+  [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
 
 Add tags to non-existent node, it should return failure
   ${res} =                        Add Tags      ${999}                ${test_gconfig}   ${tag1},${tag2}
@@ -160,3 +154,8 @@ Neuron Context Stop
   LOGOUT
   Stop Neuron
 
+Del Group Config Check
+  [Arguments]                     ${node_id}                          ${group}
+  ${res} =                        Del Group Config                    ${node_id}   ${group}
+  Check Response Status           ${res}        200
+  Check Error Code                ${res}        ${ERR_SUCCESS}

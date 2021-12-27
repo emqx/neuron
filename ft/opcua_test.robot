@@ -77,9 +77,7 @@ Read multiple points, including multiple data types(int8/uint8/int16/uint16/int3
   Compare Tag Value As Float          ${res}[tags]              ${tag_id_double}  100038.9999
   Compare Tag Value As String         ${res}[tags]              ${tag_id_string}  hello world!
 
-  ${res} =                            Del Tags                  ${test_node_id}   ${test_group}     ${tag_id_bool},${tag_id_int8},${tag_id_uint8},${tag_id_int16},${tag_id_uint16},${tag_id_int32},${tag_id_uint32},${tag_id_int64},${tag_id_uint64},${tag_id_float},${tag_id_double},${tag_id_string}
-  Check Response Status               ${res}                    200
-  Check Error Code                    ${res}                    ${ERR_SUCCESS}
+  [Teardown]  Del Tags Check          ${test_node_id}           ${test_group}     ${tag_id_bool},${tag_id_int8},${tag_id_uint8},${tag_id_int16},${tag_id_uint16},${tag_id_int32},${tag_id_uint32},${tag_id_int64},${tag_id_uint64},${tag_id_float},${tag_id_double},${tag_id_string}
 
 Write a point with data type of bool/int8/uint8/int16/uint16/int32/uint32/int64/uint64/float/double/string, it should return success
   [Template]  Write A Point Should Success
@@ -150,9 +148,7 @@ Write multiple points, including multiple data types(int8/uint8/int16/uint16/int
   Compare Tag Value As Float          ${res}[tags]              ${tag_id_double}  123456.7890
   Compare Tag Value As String         ${res}[tags]              ${tag_id_string}  Hello Strangers!!
 
-  ${res} =                            Del Tags                  ${test_node_id}   ${test_group}     ${tag_id_bool},${tag_id_int8},${tag_id_uint8},${tag_id_int16},${tag_id_uint16},${tag_id_int32},${tag_id_uint32},${tag_id_int64},${tag_id_uint64},${tag_id_float},${tag_id_double},${tag_id_string}
-  Check Response Status               ${res}                    200
-  Check Error Code                    ${res}                    ${ERR_SUCCESS}
+  [Teardown]  Del Tags Check          ${test_node_id}           ${test_group}     ${tag_id_bool},${tag_id_int8},${tag_id_uint8},${tag_id_int16},${tag_id_uint16},${tag_id_int32},${tag_id_uint32},${tag_id_int64},${tag_id_uint64},${tag_id_float},${tag_id_double},${tag_id_string}
 
 *** Keywords ***
 Neuron Context Ready
@@ -194,9 +190,7 @@ Read A Point Should Success
   ${res} =                            Read Tags                 ${node_id}          ${group}
   Run Keyword                         ${cmp}                    ${res}[tags]        ${tag_id}       ${value}
 
-  ${res} =                            Del Tags                  ${node_id}          ${group}        ${tag_id}
-  Check Response Status               ${res}                    200
-  Check Error Code                    ${res}                    ${ERR_SUCCESS}
+  [Teardown]  Del Tags Check          ${node_id}                ${group}            ${tag_id}
 
 Write A Point Should Success
   [Arguments]                         ${node_id}                ${group}            ${type}         ${tag}        ${value}
@@ -223,6 +217,10 @@ Write A Point Should Success
   ${res} =                            Read Tags                 ${node_id}          ${group}
   Run Keyword                         ${cmp}                    ${res}[tags]        ${tag_id}       ${value}
 
+  [Teardown]  Del Tags Check          ${node_id}                ${group}            ${tag_id}
+
+Del Tags Check
+  [Arguments]                         ${node_id}                ${group}            ${tag_id}
   ${res} =                            Del Tags                  ${node_id}          ${group}        ${tag_id}
   Check Response Status               ${res}                    200
   Check Error Code                    ${res}                    ${ERR_SUCCESS}
