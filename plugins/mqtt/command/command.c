@@ -272,6 +272,12 @@ void command_response_handle(mqtt_response_t *response)
         break;
     }
 
+    if (0 != rc) {
+        neu_json_error_resp_t error = { .error = NEU_ERR_BODY_IS_WRONG };
+        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+                                  neu_json_encode_mqtt_resp, &ret_str);
+    }
+
     if (NULL != ret_str) {
         response->context_add(plugin, 0, mqtt, ret_str, true);
     }
