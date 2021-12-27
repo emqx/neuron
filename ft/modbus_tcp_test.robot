@@ -107,9 +107,7 @@ Read multiple points in the coil area, the point address includes continuous and
   Compare Tag Value As Int          ${res}[tags]            ${tag7_id}        1
   Compare Tag Value As Int          ${res}[tags]            ${tag8_id}        0
 
-  ${res} =   Del Tags               ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
-  Check Response Status             ${res}                  200
-  Check Error Code                  ${res}                  ${ERR_SUCCESS}
+  [Teardown]  Del Tags              ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
 Read multiple points in the input area, the point address includes continuous and non-continuous, and the data as bit type, it should return success
   ${tag1_id} =                      Add Tag And Return ID   ${test_node_id}   ${group}    {"name": "tag1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
@@ -142,9 +140,7 @@ Read multiple points in the input area, the point address includes continuous an
   Compare Tag Value As Int          ${res}[tags]            ${tag7_id}        1
   Compare Tag Value As Int          ${res}[tags]            ${tag8_id}        1
 
-  ${res} =  Del Tags                ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
-  Check Response Status             ${res}                  200
-  Check Error Code                  ${res}                  ${ERR_SUCCESS}
+  [Teardown]  Del Tags              ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
 Read multiple points in the input reg area, the point address includes continuous and non-continuous, and the data includes int16/uint16/int32/uint32/float type, it should return success
   ${tag1_id} =                      Add Tag And Return ID   ${test_node_id}   ${group}    {"name": "tag1", "address": "1!300001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
@@ -178,9 +174,7 @@ Read multiple points in the input reg area, the point address includes continuou
   Compare Tag Value As Int          ${res}[tags]            ${tag7_id}        66651130
   Compare Tag Value As Float        ${res}[tags]            ${tag8_id}        1.475336887045722e-36
 
-  ${res} =  Del Tags                ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
-  Check Response Status             ${res}                  200
-  Check Error Code                  ${res}                  ${ERR_SUCCESS}
+  [Teardown]  Del Tags              ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
 Read multiple points in the hold reg area, the point address includes continuous and non-continuous, and the data includes int16/uint16/int32/uint32/float type, it should return success
   ${tag1_id} =                      Add Tag And Return ID   ${test_node_id}   ${group}    {"name": "tag1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
@@ -234,9 +228,7 @@ Read multiple points in the hold reg area, the point address includes continuous
   Compare Tag Value As Int          ${res}[tags]            ${tag7_id}        66651131
   Compare Tag Value As Float        ${res}[tags]            ${tag8_id}        11.234
 
-  ${res} =  Del Tags                ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
-  Check Response Status             ${res}                  200
-  Check Error Code                  ${res}                  ${ERR_SUCCESS}
+  [Teardown]  Del Tags              ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
 Read multiple points belonging to different areas(coil/input/input reg/hold reg), the point address includes continuous and non-continuous, and the data include bit/int16/uint16/int32/uint32/float type, it should return success
   ${tag1_id} =                      Add Tag And Return ID   ${test_node_id}   ${group}    {"name": "tag1", "address": "1!000008", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
@@ -296,9 +288,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
   Compare Tag Value As Int          ${res}[tags]            ${tag9_id}        66651134
   Compare Tag Value As Float        ${res}[tags]            ${tag10_id}       11.123
 
-  ${res} =  Del Tags                ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
-  Check Response Status             ${res}                  200
-  Check Error Code                  ${res}                  ${ERR_SUCCESS}
+  [Teardown]  Del Tags              ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
 
 Read multiple points belonging to different areas(coil/input/input reg/hold reg) and different sites, the point address includes continuous and non-continuous, and the data include int16/uint16/int32/uint32/float type, it should return success
   ${tag1_id} =                      Add Tag And Return ID   ${test_node_id}   ${group}    {"name": "tag1", "address": "1!000018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
@@ -358,9 +348,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
   Compare Tag Value As Int          ${res}[tags]            ${tag9_id}        66651136
   Compare Tag Value As Float        ${res}[tags]            ${tag10_id}       11.789
 
-  ${res} =  Del Tags                ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
-  Check Response Status             ${res}                  200
-  Check Error Code                  ${res}                  ${ERR_SUCCESS}
+  [Teardown]  Del Tags              ${test_node_id}         ${group}          ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
 
 *** Keywords ***
 Neuron Context Ready
@@ -413,9 +401,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
   Run Keyword               ${cmp}                          ${res}[tags]          ${tag_id}                  ${value}
 
 
-  ${res} =                  Del Tags                        ${node_id}            ${group}                    ${tag_id}
-  Check Response Status     ${res}                          200
-  Check Error Code          ${res}                          ${ERR_SUCCESS}
+  [Teardown]                Del Tags                        ${node_id}            ${group}                    ${tag_id}
 
 Read A Point In The Input Or Input Reg Area Should Return Success
   [Arguments]               ${node_id}                      ${group}              ${area}                     ${type}        ${tag1}         ${value1}       ${tag2}       ${value2}
@@ -442,6 +428,10 @@ Read A Point In The Input Or Input Reg Area Should Return Success
   Run Keyword               ${cmp}                          ${res}[tags]          ${tag1_id}                  ${value1}
   Run Keyword               ${cmp}                          ${res}[tags]          ${tag2_id}                  ${value2}
 
-  ${res} =                  Del Tags                        ${node_id}            ${group}                    ${tag1_id},${tag2_id}
-  Check Response Status     ${res}                          200
-  Check Error Code          ${res}                          ${ERR_SUCCESS}
+  [Teardown]                Del Tags                        ${node_id}            ${group}                    ${tag1_id},${tag2_id}
+
+Del Tags Check
+  [Arguments]                         ${node_id}                ${group}            ${tag_id}
+  ${res} =                            Del Tags                  ${node_id}          ${group}        ${tag_id}
+  Check Response Status               ${res}                    200
+  Check Error Code                    ${res}                    ${ERR_SUCCESS}
