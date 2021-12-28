@@ -30,7 +30,7 @@ ${tag2_float}               {"name": "tag2", "address": "1!300008", "attribute":
 *** Test Cases ***
 Read unsubscribed point, it should return failure
   ${res} =                          Add Tags                ${test_node_id}   xxgrp             ${tag_int16}
-  Sleep                             3s
+  Sleep                             1s 500ms
 
   ${res} =                          Read Tags               ${test_node_id}   xxgrp
   Check Response Status             ${res}                  404
@@ -77,7 +77,7 @@ Read multiple points in the coil area, the point address includes continuous and
   Should Not Be Equal As Integers   ${tag7_id}              -1
   Should Not Be Equal As Integers   ${tag8_id}              -1
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int         ${res}[tags]             ${tag1_id}        1
@@ -95,7 +95,7 @@ Read multiple points in the coil area, the point address includes continuous and
   Write Tags    ${test_node_id}    ${group}    {"id": ${tag5_id}, "value": 1}
   Write Tags    ${test_node_id}    ${group}    {"id": ${tag7_id}, "value": 1}
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        1
@@ -128,7 +128,7 @@ Read multiple points in the input area, the point address includes continuous an
   Should Not Be Equal As Integers   ${tag7_id}              -1
   Should Not Be Equal As Integers   ${tag8_id}              -1
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        0
@@ -162,7 +162,7 @@ Read multiple points in the input reg area, the point address includes continuou
   Should Not Be Equal As Integers   ${tag7_id}              -1
   Should Not Be Equal As Integers   ${tag8_id}              -1
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        0
@@ -195,7 +195,7 @@ Read multiple points in the hold reg area, the point address includes continuous
   Should Not Be Equal As Integers   ${tag7_id}              -1
   Should Not Be Equal As Integers   ${tag8_id}              -1
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        123
@@ -216,7 +216,7 @@ Read multiple points in the hold reg area, the point address includes continuous
   Write Tags                        ${test_node_id}         ${group}          {"id": ${tag7_id}, "value": 66651131}
   Write Tags                        ${test_node_id}         ${group}          {"id": ${tag8_id}, "value": 11.234}
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        1
@@ -253,7 +253,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
   Should Not Be Equal As Integers   ${tag9_id}              -1
   Should Not Be Equal As Integers   ${tag10_id}             -1
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        0
@@ -274,7 +274,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
   Write Tags                        ${test_node_id}         ${group}          {"id": ${tag9_id}, "value": 66651134}
   Write Tags                        ${test_node_id}         ${group}          {"id": ${tag10_id}, "value": 11.123}
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        1
@@ -313,7 +313,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
   Should Not Be Equal As Integers   ${tag9_id}              -1
   Should Not Be Equal As Integers   ${tag10_id}             -1
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        0
@@ -334,7 +334,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
   Write Tags                        ${test_node_id}         ${group}          {"id": ${tag9_id}, "value": 66651136}
   Write Tags                        ${test_node_id}         ${group}          {"id": ${tag10_id}, "value": 11.789}
 
-  Sleep                             4s
+  Sleep                             1s 500ms
   ${res} =                          Read Tags               ${test_node_id}   ${group}
 
   Compare Tag Value As Int          ${res}[tags]            ${tag1_id}        1
@@ -354,23 +354,24 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
 Neuron Context Ready
   Import Neuron API Resource
 
-  Start Simulator    ${MODBUS_TCP_SERVER_SIMULATOR}    ${SIMULATOR_DIR}
+  Start Simulator           ${MODBUS_TCP_SERVER_SIMULATOR}  ${SIMULATOR_DIR}
   Neuron Ready
 
   LOGIN
 
-  ${id} =   Get Node ID    ${NODE_DRIVER}   modbus-tcp-adapter
+  ${id} =                   Get Node ID                     ${NODE_DRIVER}        modbus-tcp-adapter
 
-  Set Global Variable     ${test_node_id}  ${id}
+  Set Global Variable       ${test_node_id}                 ${id}
 
-  Node Setting    ${test_node_id}    ${MODBUS_TCP_CONFIG}
+  Node Setting              ${test_node_id}                 ${MODBUS_TCP_CONFIG}
+  Update Group Config       ${test_node_id}                 ${group}              300
 
 Stop All Processes
   LOGOUT
 
   Stop Neuron
-  sleep                      1s
-  Terminate All Processes    kill=false
+  sleep                     1s
+  Terminate All Processes   kill=false
 
 Read Write A Point In The hold/coil Reg Area Should Success
   [Arguments]               ${node_id}                      ${group}              ${tag}                      ${area}         ${type}           ${value}
@@ -386,7 +387,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
   ${tag_id} =               Add Tag And Return ID           ${node_id}            ${group}                    ${tag}
   Should Not Be Equal As Integers                           ${tag_id}             -1
 
-  Sleep    3s
+  Sleep                     1s 500ms
   ${res} =                  Read Tags                       ${node_id}            ${group}
   Check Response Status     ${res}                          200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
@@ -394,7 +395,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
 
   ${res} =                  Write Tags                      ${node_id}            ${group}                    {"id": ${tag_id}, "value": ${value}}
 
-  Sleep    3s
+  Sleep                     1s 500ms
   ${res} =                  Read Tags                       ${node_id}            ${group}
   Check Response Status     ${res}                          200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
@@ -420,7 +421,7 @@ Read A Point In The Input Or Input Reg Area Should Return Success
   ${tag2_id} =              Add Tag And Return ID           ${node_id}            ${group}                    ${tag2}
   Should Not Be Equal As Integers                           ${tag2_id}            -1
 
-  Sleep    4s
+  Sleep                     1s 500ms
   ${res} =                  Read Tags                       ${node_id}            ${group}
   Check Response Status     ${res}                          200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
