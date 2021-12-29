@@ -5,7 +5,8 @@ RUN apt-get update -y \
        g++ gcc gcc-arm-linux-gnueabihf gcc-aarch64-linux-gnu \
        libssl-dev libghc-zlib-dev libcurl4-gnutls-dev libexpat1-dev gettext \
        pkg-config \
-       python3 python3-pip
+       python3 python3-pip \
+       mosquitto
 
 COPY install-libs.sh install-libs.sh
 
