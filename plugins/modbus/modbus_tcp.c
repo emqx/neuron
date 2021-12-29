@@ -141,6 +141,14 @@ static void start_periodic_read(neu_plugin_t *       plugin,
     nng_aio_defer(aio, tags_periodic_read, sub_inst);
 }
 
+static void free_sub_instance(struct subscribe_instance *sub_inst)
+{
+    modbus_point_destory(sub_inst->point_ctx);
+    neu_taggrp_cfg_free(sub_inst->grp_configs);
+    free(sub_inst->name);
+    free(sub_inst);
+}
+
 static void stop_periodic_read(neu_plugin_t *       plugin,
                                neu_taggrp_config_t *grp_config)
 {
@@ -152,10 +160,6 @@ static void stop_periodic_read(neu_plugin_t *       plugin,
         if (sub_inst->grp_configs == grp_config) {
             TAILQ_REMOVE(&plugin->sub_instances, sub_inst, node);
             nng_aio_cancel(sub_inst->aio);
-            modbus_point_destory(sub_inst->point_ctx);
-            neu_taggrp_cfg_free(sub_inst->grp_configs);
-            free(sub_inst->name);
-            free(sub_inst);
             log_info("stop periodic read, grp: %p", grp_config);
             break;
         }
@@ -467,10 +471,12 @@ static void tags_periodic_read(nng_aio *aio, void *arg, int code)
         break;
     }
     case NNG_ECANCELED:
+        free_sub_instance(arg);
         log_warn("aio: %p cancel", aio);
         nng_aio_free(aio);
         break;
     default:
+        free_sub_instance(arg);
         log_warn("aio: %p, skip error: %d", aio, code);
         nng_aio_free(aio);
         break;
@@ -530,9 +536,6 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
         TAILQ_REMOVE(&plugin->sub_instances, sub_inst, node);
 
         nng_aio_cancel(sub_inst->aio);
-        modbus_point_destory(sub_inst->point_ctx);
-        free(sub_inst->name);
-        free(sub_inst);
 
         sub_inst = TAILQ_FIRST(&plugin->sub_instances);
     }
