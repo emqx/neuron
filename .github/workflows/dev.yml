@@ -50,22 +50,23 @@ jobs:
       - name: Run function test
         run: |
           pip3 install -r ft/requirements.txt
-          python3 -m robot -P ft/ -d ft/reports ft
+          python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
+          python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft
 
       #- uses: actions/upload-artifact@v2
         #with:
-          #name: ft-output
-          #path: "ft/reports/output.xml"
+          #name: ft-http-output
+          #path: "ft/http_reports/output.xml"
 
       #- uses: actions/upload-artifact@v2
         #with:
-          #name: ft-log
-          #path: "ft/reports/log.html"
+          #name: ft-http-log
+          #path: "ft/http_reports/log.html"
 
       #- uses: actions/upload-artifact@v2
         #with:
-          #name: ft-report
-          #path: "ft/reports/report.html"
+          #name: ft-http-report
+          #path: "ft/http_reports/report.html"
 
   compile:
     strategy:
