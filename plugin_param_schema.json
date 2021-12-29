@@ -8,6 +8,7 @@
 		"req-topic": {
 			"name": "req-topic",
 			"description": "Neuron request topic",
+			"attribute": "required",
 			"type": "string",
 			"default": "",
 			"valid": {
@@ -18,6 +19,7 @@
 			"name": "res-topic",
 			"description": "Neuron response topic",
 			"type": "string",
+			"attribute": "required",
 			"default": "",
 			"valid": {
 				"length": 100
@@ -26,6 +28,7 @@
 		"ssl": {
 			"name": "ssl",
 			"description": "Enable SSL connection",
+			"attribute": "required",
 			"type": "bool",
 			"default": false,
 			"valid": {}
@@ -33,6 +36,7 @@
 		"host": {
 			"name": "host",
 			"description": "MQTT broker host",
+			"attribute": "required",
 			"type": "string",
 			"default": "broker.emqx.io",
 			"valid": {
@@ -42,6 +46,7 @@
 		"port": {
 			"name": "port",
 			"description": "MQTT broker port",
+			"attribute": "required",
 			"type": "int",
 			"default": 1883,
 			"valid": {
@@ -52,6 +57,7 @@
 		"username": {
 			"name": "username",
 			"description": "User name",
+			"attribute": "optional",
 			"type": "string",
 			"default": "",
 			"valid": {
@@ -61,6 +67,7 @@
 		"password": {
 			"name": "password",
 			"description": "Password",
+			"attribute": "optional",
 			"type": "string",
 			"default": "",
 			"valid": {
@@ -70,8 +77,13 @@
 		"ca-path": {
 			"name": "ca-path",
 			"description": "",
+			"attribute": "required",
 			"type": "string",
 			"default": "",
+			"condition": {
+				"filed": "ssl",
+				"value": true
+			},
 			"valid": {
 				"length": 100
 			}
@@ -79,7 +91,12 @@
 		"ca-file": {
 			"name": "ca-file",
 			"description": "",
+			"attribute": "required",
 			"type": "string",
+			"condition": {
+				"filed": "ssl",
+				"value": true
+			},
 			"default": "",
 			"valid": {
 				"length": 100
@@ -106,6 +123,7 @@
 		"host": {
 			"name": "host",
 			"description": "OPCUA server host",
+			"attribute": "required",
 			"type": "string",
 			"valid": {
 				"length": 30
@@ -114,6 +132,7 @@
 		"port": {
 			"name": "port",
 			"description": "OPCUA server port",
+			"attribute": "required",
 			"type": "int",
 			"default": 4840,
 			"valid": {
@@ -124,6 +143,7 @@
 		"username": {
 			"name": "username",
 			"description": "User name",
+			"attribute": "optional",
 			"type": "string",
 			"default": "",
 			"valid": {
@@ -133,6 +153,7 @@
 		"password": {
 			"name": "password",
 			"description": "Password",
+			"attribute": "optional",
 			"type": "string",
 			"default": "",
 			"valid": {
@@ -152,6 +173,7 @@
 		"host": {
 			"name": "host",
 			"description": "local ip in server mode, remote device ip in client mode",
+			"attribute": "required",
 			"type": "string",
 			"valid": {
 				"length": 30
@@ -160,6 +182,7 @@
 		"port": {
 			"name": "port",
 			"description": "local port in server mode, remote device port in client mode",
+			"attribute": "required",
 			"type": "int",
 			"default": 502,
 			"valid": {
@@ -170,6 +193,7 @@
 		"connection_mode": {
 			"name": "connection mode",
 			"description": "neuron as the client, or as the server",
+			"attribute": "required",
 			"type": "map",
 			"default": 0,
 			"valid": {
