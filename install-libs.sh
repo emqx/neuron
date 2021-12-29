@@ -63,15 +63,15 @@ function build_cmake() {
 
 # nng
 function build_nng() {
-    echo "Building nng (neuron/v1.5.2)"
+    echo "Building nng (nanomq/nng:nng-mqtt)"
     if [ ! -d nng ]; then
-        git clone -b neuron/v1.5.2 ${git_url_prefix}neugates/nng.git
+        git clone -b nng-mqtt ${git_url_prefix}nanomq/nng.git
     fi
     cd nng
     rm -rf build
     mkdir build
     cd build
-    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF ${compiler_opt} ${install_opt} ..
+    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON ${compiler_opt} ${install_opt} ..
     ninja
     ninja install
 
