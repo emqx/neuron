@@ -85,7 +85,7 @@ ${MQTT_FUNC_GET_PLUGIN}                     ${28}
 ${MQTT_FUNC_PING}                           ${29}
 
 ${MQTT_UUID}                                123456-789abc-123456-aabbcc
-${MQTT_CONFIG_HOST}                         broker.emqx.io
+${MQTT_CONFIG_HOST}                         127.0.0.1
 ${MQTT_CONFIG_PORT}                         ${1883}
 ${MQTT_CONFIG_REQ_TOPIC}                    neuronlite/request
 ${MQTT_CONFIG_RES_TOPIC}                    neuronlite/response
