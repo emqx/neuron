@@ -11,16 +11,6 @@ TEST(JsonTest, DecodeField)
     EXPECT_STREQ("./", result);
     free(result);
 
-    result = neu_config_get_value((char *) "./neuron.yaml", 3, (char *) "mqtt",
-                                  (char *) "broker", (char *) "host");
-    EXPECT_STREQ("broker.emqx.io", result);
-    free(result);
-
-    result = neu_config_get_value((char *) "./neuron.yaml", 3, (char *) "mqtt",
-                                  (char *) "broker", (char *) "port");
-    EXPECT_STREQ("1883", result);
-    free(result);
-
     result = neu_config_get_value((char *) "./neuron.yaml", 2, (char *) "web",
                                   (char *) "host");
     EXPECT_STREQ("0.0.0.0", result);
