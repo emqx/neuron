@@ -24,5 +24,4 @@ target_link_libraries(plugin-opcua nng ${CMAKE_THREAD_LIBS_INIT})
 endif()
 
 install(TARGETS plugin-opcua
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin)
+	LIBRARY DESTINATION lib/neuron)

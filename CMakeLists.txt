@@ -169,16 +169,15 @@ if(NOT DISABLE_UT)
   add_subdirectory(tests)
 endif()
 
-install(DIRECTORY "${CMAKE_SOURCE_DIR}/include"
-        DESTINATION .
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
+        DESTINATION include/neuron
         FILES_MATCHING
         PATTERN "*.h")
 install(FILES "${CMAKE_SOURCE_DIR}/neuron.yaml"
 	      "${CMAKE_SOURCE_DIR}/plugin_param_schema.json"
 	      "${CMAKE_SOURCE_DIR}/private_test.key"
 	      "${CMAKE_SOURCE_DIR}/public_test.pem"
-	DESTINATION etc)
+	DESTINATION etc/neuron)
 install(TARGETS neuron-base neuron
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin
-	PUBLIC_HEADER DESTINATION include)
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin)
