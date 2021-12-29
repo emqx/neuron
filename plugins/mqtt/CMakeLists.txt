@@ -32,5 +32,4 @@ target_link_libraries(plugin-mqtt
 target_link_libraries(plugin-mqtt ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS plugin-mqtt
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin)
+	LIBRARY DESTINATION lib/neuron)

@@ -17,5 +17,4 @@ target_link_libraries(plugin-sample-app neuron-base dl)
 target_link_libraries(plugin-sample-app ${CMAKE_THREAD_LIBS_INIT})
 
 install(TARGETS plugin-sample-drv plugin-sample-app
-	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin)
+	LIBRARY DESTINATION lib/neuron)
