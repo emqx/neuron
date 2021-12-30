@@ -81,7 +81,7 @@
 			"type": "string",
 			"default": "",
 			"condition": {
-				"filed": "ssl",
+				"field": "ssl",
 				"value": true
 			},
 			"valid": {
@@ -94,12 +94,25 @@
 			"attribute": "required",
 			"type": "string",
 			"condition": {
-				"filed": "ssl",
+				"field": "ssl",
 				"value": true
 			},
 			"default": "",
 			"valid": {
 				"length": 100
+			}
+		},
+		"ca": {
+			"name": "ca",
+			"description": "",
+			"attribute": "optional",
+			"type": "file",
+			"condition": {
+				"field": "ssl",
+				"value": true
+			},
+			"valid": {
+				"length": 1024
 			}
 		}
 	},
