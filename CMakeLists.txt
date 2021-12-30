@@ -178,6 +178,8 @@ install(FILES "${CMAKE_SOURCE_DIR}/neuron.yaml"
 	      "${CMAKE_SOURCE_DIR}/private_test.key"
 	      "${CMAKE_SOURCE_DIR}/public_test.pem"
 	DESTINATION etc/neuron)
+install(FILES "${CMAKE_SOURCE_DIR}/cmake/neuron-config.cmake"
+	DESTINATION lib/cmake/neuron)
 install(TARGETS neuron-base neuron
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
