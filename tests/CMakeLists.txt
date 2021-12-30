@@ -122,13 +122,14 @@ add_executable(mqtt_test mqtt_test.cc
 	${CMAKE_SOURCE_DIR}/src/config.c
 	${CMAKE_SOURCE_DIR}/src/schema/schema.c
 	${CMAKE_SOURCE_DIR}/plugins/mqtt/mqttc_util.c
+	${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt_nng_client.c
 	${CMAKE_SOURCE_DIR}/plugins/mqtt/command/node.c)
 target_include_directories(mqtt_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include       
 	${CMAKE_SOURCE_DIR}/src/schema
 	${CMAKE_SOURCE_DIR}/plugins/mqtt)
-target_link_libraries(mqtt_test neuron-base gtest_main gtest yaml jansson ssl crypto)
+target_link_libraries(mqtt_test neuron-base gtest_main gtest yaml jansson ssl crypto nng)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/persist SRC_PERSIST)
 add_executable(json_persistence_test json_persistence_test.cc ${SRC_PERSIST})
