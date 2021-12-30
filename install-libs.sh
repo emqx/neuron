@@ -12,7 +12,7 @@ if [ $system == 'Linux' ]; then
     fi
 fi
 
-lib_list=(zlib openssl nng jansson jwt MQTT-C gtest open62541 yaml)
+lib_list=(zlib openssl mbedtls nng jansson jwt MQTT-C gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]}; do
@@ -61,6 +61,26 @@ function build_cmake() {
     fi
 }
 
+# mbedtls
+function build_mbedtls() {
+    echo "Building nng (mbedtls)"
+    if [ ! -d mbedtls ]; then
+        git clone -b v3.1.0 ${git_url_prefix}ARMmbed/mbedtls.git
+    fi
+    cd mbedtls
+    rm -rf build
+    mkdir build
+    cd build
+    cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
+        -DENABLE_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+        ${compiler_opt} ${install_opt} ..
+    ninja
+    ninja install
+
+    echo "Leaving nng "
+    cd ../../
+}
+
 # nng
 function build_nng() {
     echo "Building nng (nanomq/nng:nng-mqtt)"
@@ -71,7 +91,9 @@ function build_nng() {
     rm -rf build
     mkdir build
     cd build
-    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON ${compiler_opt} ${install_opt} ..
+    cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DNNG_ENABLE_TLS=ON \
+        ${compiler_opt} ${install_opt} ..
     ninja
     ninja install
 
