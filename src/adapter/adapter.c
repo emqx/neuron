@@ -84,6 +84,8 @@
             result->buf       = (void *) ret;                               \
             if ((p_result) != NULL) {                                       \
                 *(p_result) = result;                                       \
+            } else {                                                        \
+                free(result);                                               \
             }                                                               \
         }                                                                   \
     }
