@@ -76,6 +76,7 @@ LOGIN
   _Http Node Setting                ${mqtt_node}                      ${MQTT_CONFIG}
   _Http Node Ctl                    ${mqtt_node}                      ${NODE_CTL_START}
   _Http LOGOUT
+  Sleep                             1s
 
   Connect                           ${MQTT_CONFIG_HOST}               ${MQTT_CONFIG_PORT}                     client_id=neuron-ft         clean_session=${true}
   Subscribe                         ${MQTT_CONFIG_RES_TOPIC}          qos=0                                   timeout=5
