@@ -24,6 +24,7 @@
 
 #include "databuf.h"
 #include "neu_log.h"
+#include "neu_trans_buf.h"
 
 #include "adapter/adapter_internal.h"
 #include "neu_datatag_manager.h"
@@ -60,8 +61,8 @@ typedef enum msg_type {
     MSG_EVENT_NODE_PING,
     MSG_TYPE_EVENT_END,
 
-    MSG_TYPE_DATA_START     = 0x3000,
-    MSG_DATA_NEURON_DATABUF = MSG_TYPE_DATA_START,
+    MSG_TYPE_DATA_START        = 0x3000,
+    MSG_DATA_NEURON_TRANS_DATA = MSG_TYPE_DATA_START,
     MSG_DATA_READ_RESP,
     MSG_DATA_WRITE_RESP,
     MSG_TYPE_DATA_END,
@@ -93,7 +94,7 @@ typedef struct write_data_cmd {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
     neu_node_id_t        dst_node_id;
-    core_databuf_t *     databuf;
+    neu_trans_buf_t      trans_buf;
     uint32_t             req_id;
 } write_data_cmd_t;
 
@@ -143,16 +144,16 @@ typedef struct grp_config_changed_event {
     neu_node_id_t        dst_node_id;
 } grp_config_changed_event_t;
 
-/* MSG_DATA_NEURON_DATABUF */
-typedef struct neuron_databuf {
+/* MSG_DATA_NEURON_TRANS_DATA */
+typedef struct neuron_trans_data {
     neu_taggrp_config_t *grp_config;
-    core_databuf_t *     databuf;
-} neuron_databuf_t;
+    neu_trans_buf_t      trans_buf;
+} neuron_trans_data_t;
 
 /* MSG_DATA_READ_RESP */
 typedef struct read_data_resp {
     neu_taggrp_config_t *grp_config;
-    core_databuf_t *     databuf;
+    neu_trans_buf_t      trans_buf;
     adapter_id_t         recver_id;
     uint32_t             req_id;
 } read_data_resp_t;
@@ -160,7 +161,7 @@ typedef struct read_data_resp {
 /* MSG_DATA_WRITE_RESP */
 typedef struct write_data_resp {
     neu_taggrp_config_t *grp_config;
-    core_databuf_t *     databuf;
+    neu_trans_buf_t      trans_buf;
     adapter_id_t         recver_id;
     uint32_t             req_id;
 } write_data_resp_t;

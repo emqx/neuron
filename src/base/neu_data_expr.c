@@ -297,6 +297,10 @@ void neu_dvalue_uninit(neu_data_val_t *val)
 
 void neu_dvalue_free(neu_data_val_t *val)
 {
+    if (val == NULL) {
+        return;
+    }
+
     neu_dvalue_uninit(val);
     free(val);
 }
@@ -2288,4 +2292,260 @@ ssize_t neu_dvalue_deserialize(uint8_t *buf, size_t buf_len,
         neu_dvalue_free(out_val);
     }
     return size;
+}
+
+static neu_data_val_t *do_dvalue_to_owned(neu_data_val_t *val);
+
+static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
+{
+    neu_dtype_e valid_type;
+
+    valid_type = type & (~(NEU_DTYPE_PTR_MASK | NEU_DTYPE_ATTR_MASK));
+    if (valid_type == neu_value_type_in_dtype(valid_type)) {
+        switch (valid_type) {
+        case NEU_DTYPE_BIT:
+        case NEU_DTYPE_BOOL:
+        case NEU_DTYPE_INT8:
+        case NEU_DTYPE_INT16:
+        case NEU_DTYPE_INT32:
+        case NEU_DTYPE_INT64:
+        case NEU_DTYPE_UINT8:
+        case NEU_DTYPE_UINT16:
+        case NEU_DTYPE_UINT32:
+        case NEU_DTYPE_UINT64:
+        case NEU_DTYPE_FLOAT:
+        case NEU_DTYPE_DOUBLE:
+        case NEU_DTYPE_ERRORCODE:
+            // primary value just return pointer self
+            return p_val_data;
+
+        case NEU_DTYPE_INT_VAL: {
+            neu_int_val_t * int_val;
+            neu_data_val_t *owned_val;
+            int_val   = *(neu_int_val_t **) p_val_data;
+            owned_val = do_dvalue_to_owned(int_val->val);
+            if (owned_val == NULL) {
+                return NULL;
+            }
+            return int_val;
+        }
+
+        case NEU_DTYPE_STRING_VAL: {
+            neu_string_val_t *string_val;
+            neu_data_val_t *  owned_val;
+            string_val = *(neu_string_val_t **) p_val_data;
+            owned_val  = do_dvalue_to_owned(string_val->val);
+            if (owned_val == NULL) {
+                return NULL;
+            }
+            return string_val;
+        }
+
+        case NEU_DTYPE_CSTR: {
+            char *cstr;
+            cstr = *(char **) p_val_data;
+            if (valid_type & NEU_DTYPE_OWNERED_PTR) {
+                return cstr;
+            }
+
+            char *cstr_dup;
+            cstr_dup = strdup(cstr);
+            if (cstr_dup == NULL) {
+                return NULL;
+            }
+            *(char **) p_val_data = cstr_dup;
+            return cstr_dup;
+        }
+
+        case NEU_DTYPE_STRING: {
+            neu_string_t *neu_string;
+            neu_string = *(neu_string_t **) p_val_data;
+            if (valid_type & NEU_DTYPE_OWNERED_PTR) {
+                return neu_string;
+            }
+
+            neu_string_t *string_dup;
+            string_dup = neu_string_clone(neu_string);
+            if (string_dup == NULL) {
+                return NULL;
+            }
+            *(neu_string_t **) p_val_data = string_dup;
+            return string_dup;
+        }
+
+        case NEU_DTYPE_BYTES: {
+            neu_bytes_t *bytes;
+            bytes = *(neu_bytes_t **) p_val_data;
+            if (valid_type & NEU_DTYPE_OWNERED_PTR) {
+                return bytes;
+            }
+
+            neu_bytes_t *bytes_dup;
+            bytes_dup = neu_bytes_clone(bytes);
+            if (bytes_dup == NULL) {
+                return NULL;
+            }
+            *(neu_bytes_t **) p_val_data = bytes_dup;
+            return bytes_dup;
+        }
+
+        default:
+            log_error("Not support base type(%d) of data value in to owned",
+                      valid_type);
+            return NULL;
+        }
+    } else if (valid_type & NEU_DTYPE_ARRAY) {
+        size_t             index;
+        neu_fixed_array_t *org_array;
+        neu_fixed_array_t *array;
+        neu_dtype_e        data_type;
+        void *             owned_ptr = NULL;
+
+        org_array = *(neu_fixed_array_t **) p_val_data;
+        array     = org_array;
+        if (!(valid_type & NEU_DTYPE_OWNERED_PTR)) {
+            array = neu_fixed_array_clone(org_array);
+            if (array == NULL) {
+                log_error("Failed to clone fixed array for owner data value");
+                return NULL;
+            }
+        }
+        data_type = valid_type & ~NEU_DTYPE_ARRAY;
+        for (index = 0; index < array->length; index++) {
+            void *item_ptr;
+
+            item_ptr = neu_fixed_array_get(array, index);
+            if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(type)) {
+                neu_data_val_t *sub_val;
+                sub_val   = *(neu_data_val_t **) item_ptr;
+                owned_ptr = do_dvalue_to_owned(sub_val);
+            } else {
+                void **sub_val_data;
+                if (type_has_allocated_value(valid_type)) {
+                    sub_val_data = &item_ptr;
+                } else {
+                    sub_val_data = item_ptr;
+                }
+                owned_ptr = value_data_to_owned(sub_val_data, data_type);
+            }
+
+            if (owned_ptr == NULL) {
+                log_error(
+                    "Failed to owned item(%d) in fixed array with type(0x%08x)",
+                    index, type);
+                break;
+            }
+        }
+
+        if (owned_ptr == NULL) {
+            log_error("Failed to owner all sub values in fixed array, free all"
+                      "sub values");
+            if (!(valid_type & NEU_DTYPE_OWNERED_PTR)) {
+                /* free all sub values in fixed array of this data value, and
+                 * then this data value will not be used in future. */
+                free_array_sub_value(array, valid_type);
+                neu_fixed_array_free(array);
+            }
+            if (org_array != array) {
+                neu_fixed_array_free(org_array);
+            }
+            *(neu_fixed_array_t **) p_val_data = NULL;
+            return NULL;
+        }
+        *(neu_fixed_array_t **) p_val_data = array;
+        return array;
+    } else if (valid_type & NEU_DTYPE_VEC) {
+        vector_t *  org_vec;
+        vector_t *  vec;
+        neu_dtype_e data_type;
+        void *      owned_ptr = NULL;
+        size_t      index     = 0;
+
+        org_vec = *(vector_t **) p_val_data;
+        vec     = org_vec;
+        if (!(valid_type & NEU_DTYPE_OWNERED_PTR)) {
+            vec = vector_clone(org_vec);
+            if (vec == NULL) {
+                log_error("Failed to clone vector for owner data value");
+                return NULL;
+            }
+        }
+        data_type = valid_type & ~NEU_DTYPE_VEC;
+        VECTOR_FOR_EACH(vec, iter)
+        {
+            void *item_ptr;
+
+            item_ptr = iterator_get(&iter);
+            if (NEU_DTYPE_DATA_VAL == neu_value_type_in_dtype(type)) {
+                neu_data_val_t *sub_val;
+                sub_val   = *(neu_data_val_t **) item_ptr;
+                owned_ptr = do_dvalue_to_owned(sub_val);
+            } else {
+                void **p_val_data;
+                if (type_has_allocated_value(valid_type)) {
+                    p_val_data = &item_ptr;
+                } else {
+                    p_val_data = item_ptr;
+                }
+                owned_ptr = value_data_to_owned(p_val_data, data_type);
+            }
+
+            if (owned_ptr == NULL) {
+                log_error(
+                    "Failed to owned item(%d) in vector with type(0x%08x)",
+                    index, type);
+                break;
+            }
+            index++;
+        }
+
+        if (owned_ptr == NULL) {
+            log_error("Failed to owner all sub values in vector, free all"
+                      "sub values");
+            if (!(valid_type & NEU_DTYPE_OWNERED_PTR)) {
+                /* free all sub values in vector of this data value, and then
+                 * this data value will not be used in future. */
+                free_vector_sub_value(vec, valid_type);
+                vector_free(vec);
+            }
+            if (org_vec != vec) {
+                vector_free(vec);
+            }
+            *(vector_t **) p_val_data = NULL;
+            return NULL;
+        }
+        *(vector_t **) p_val_data = vec;
+        return vec;
+    } else {
+        log_error("Not support type(%d) of data value in to owned", valid_type);
+        return NULL;
+    }
+}
+
+static neu_data_val_t *do_dvalue_to_owned(neu_data_val_t *val)
+{
+    neu_dtype_e type;
+    void *      val_data;
+
+    type     = val->type & (~(NEU_DTYPE_PTR_MASK | NEU_DTYPE_ATTR_MASK));
+    val_data = value_data_to_owned(&val->val_data, type);
+    if (val_data == NULL) {
+        return NULL;
+    }
+
+    if (type_has_pointer(val->type)) {
+        val->type |= NEU_DTYPE_OWNERED_PTR;
+    }
+    return val;
+}
+
+neu_data_val_t *neu_dvalue_to_owned(neu_data_val_t *val)
+{
+    assert(val != NULL);
+    if (val == NULL) {
+        log_error("Owned all data in data value with NULL value pointer");
+        return NULL;
+    }
+
+    return do_dvalue_to_owned(val);
 }

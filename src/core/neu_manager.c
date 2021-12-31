@@ -35,6 +35,7 @@
 #include "neu_log.h"
 #include "neu_manager.h"
 #include "neu_panic.h"
+#include "neu_trans_buf.h"
 #include "neu_vector.h"
 #include "plugin_manager.h"
 
@@ -979,14 +980,14 @@ static void remove_default_grp_configs(neu_manager_t *manager)
     return;
 }
 
-static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
-                                        neuron_databuf_t *neu_databuf)
+static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
+                                        neuron_trans_data_t *neu_trans_data)
 {
     int       rv = 0;
     vector_t *sub_pipes;
 
     manager_bind_info_t *manager_bind = &manager->bind_info;
-    if (neu_databuf->grp_config == NULL) {
+    if (neu_trans_data->grp_config == NULL) {
         nng_pipe              msg_pipe;
         adapter_reg_entity_t *reg_entity;
 
@@ -1004,10 +1005,12 @@ static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
         vector_push_back(sub_pipes, &msg_pipe);
         nng_mtx_unlock(manager->adapters_mtx);
     } else {
-        sub_pipes =
-            (vector_t *) neu_taggrp_cfg_ref_subpipes(neu_databuf->grp_config);
+        sub_pipes = (vector_t *) neu_taggrp_cfg_ref_subpipes(
+            neu_trans_data->grp_config);
     }
 
+    neu_trans_buf_t *trans_buf;
+    trans_buf = &neu_trans_data->trans_buf;
     log_info("dispatch databuf to %d subscribes in sub_pipes", sub_pipes->size);
     VECTOR_FOR_EACH(sub_pipes, iter)
     {
@@ -1016,28 +1019,30 @@ static int dispatch_databuf_to_adapters(neu_manager_t *   manager,
         nng_pipe msg_pipe;
 
         msg_pipe = *(nng_pipe *) iterator_get(&iter);
-        msg_size = msg_inplace_data_get_size(sizeof(neuron_databuf_t));
+        msg_size = msg_inplace_data_get_size(sizeof(neuron_trans_data_t));
         rv       = nng_msg_alloc(&out_msg, msg_size);
         if (rv == 0) {
-            message_t *       msg_ptr;
-            neuron_databuf_t *out_neu_databuf;
+            message_t *          msg_ptr;
+            neuron_trans_data_t *out_neu_trans_data;
             msg_ptr = (message_t *) nng_msg_body(out_msg);
-            msg_inplace_data_init(msg_ptr, MSG_DATA_NEURON_DATABUF,
-                                  sizeof(neuron_databuf_t));
-            out_neu_databuf = msg_get_buf_ptr(msg_ptr);
-            out_neu_databuf->grp_config =
+            msg_inplace_data_init(msg_ptr, MSG_DATA_NEURON_TRANS_DATA,
+                                  sizeof(neuron_trans_data_t));
+            out_neu_trans_data = msg_get_buf_ptr(msg_ptr);
+            out_neu_trans_data->grp_config =
                 (neu_taggrp_config_t *) neu_taggrp_cfg_ref(
-                    neu_databuf->grp_config);
-            out_neu_databuf->databuf = core_databuf_get(neu_databuf->databuf);
+                    neu_trans_data->grp_config);
+            neu_trans_buf_copy(&out_neu_trans_data->trans_buf, trans_buf);
             nng_msg_set_pipe(out_msg, msg_pipe);
             log_debug("Forward databuf to pipe: %d", msg_pipe);
             nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
         }
     }
 
-    if (neu_databuf->grp_config == NULL) {
+    if (neu_trans_data->grp_config == NULL) {
         vector_free(sub_pipes);
     }
+    neu_taggrp_cfg_free(neu_trans_data->grp_config);
+    neu_trans_buf_uninit(trans_buf);
     return rv;
 }
 
@@ -1394,14 +1399,11 @@ static void manager_loop(void *arg)
             break;
         }
 
-        case MSG_DATA_NEURON_DATABUF: {
-            neuron_databuf_t *neu_databuf;
+        case MSG_DATA_NEURON_TRANS_DATA: {
+            neuron_trans_data_t *neu_trans_data;
 
-            neu_databuf = (neuron_databuf_t *) msg_get_buf_ptr(pay_msg);
-            rv          = dispatch_databuf_to_adapters(manager, neu_databuf);
-
-            neu_taggrp_cfg_free(neu_databuf->grp_config);
-            core_databuf_put(neu_databuf->databuf);
+            neu_trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
+            rv = dispatch_databuf_to_adapters(manager, neu_trans_data);
             break;
         }
 

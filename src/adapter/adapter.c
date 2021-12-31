@@ -30,6 +30,7 @@
 #include "adapter_internal.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
+#include "core/neu_trans_buf.h"
 #include "core/plugin_manager.h"
 #include "neu_adapter.h"
 #include "neu_log.h"
@@ -132,6 +133,7 @@ struct neu_adapter {
     void *               plugin_lib; // handle of dynamic lib
     neu_plugin_module_t *plugin_module;
     neu_plugin_t *       plugin;
+    neu_trans_kind_e     trans_kind;
     adapter_callbacks_t  cb_funs;
     neu_config_t         node_setting;
     vector_t             sub_grp_configs; // neu_sub_grp_config_t
@@ -243,17 +245,24 @@ static void adapter_loop(void *arg)
             break;
         }
 
-        case MSG_DATA_NEURON_DATABUF: {
-            neuron_databuf_t *databuf_ptr;
-            databuf_ptr = (neuron_databuf_t *) msg_get_buf_ptr(pay_msg);
+        case MSG_DATA_NEURON_TRANS_DATA: {
+            neuron_trans_data_t *trans_data;
+            trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
 
             const neu_plugin_intf_funs_t *intf_funs;
+            bool                          is_need_free;
+            neu_trans_buf_t *             trans_buf;
             neu_request_t                 req;
             neu_reqresp_data_t            data_req;
-            data_req.grp_config = databuf_ptr->grp_config;
-            void * buf          = core_databuf_get_ptr(databuf_ptr->databuf);
-            size_t buf_len      = core_databuf_get_len(databuf_ptr->databuf);
-            neu_dvalue_deserialize(buf, buf_len, &data_req.data_val);
+            data_req.grp_config = trans_data->grp_config;
+            trans_buf           = &trans_data->trans_buf;
+            data_req.data_val =
+                neu_trans_buf_get_data_val(trans_buf, &is_need_free);
+            if (data_req.data_val == NULL) {
+                neu_trans_buf_uninit(trans_buf);
+                log_error("Failed to get data value from trans data");
+                break;
+            }
 
             intf_funs    = adapter->plugin_module->intf_funs;
             req.req_id   = adapter_get_req_id(adapter);
@@ -261,8 +270,10 @@ static void adapter_loop(void *arg)
             req.buf_len  = sizeof(neu_reqresp_data_t);
             req.buf      = (void *) &data_req;
             intf_funs->request(adapter->plugin, &req);
-            neu_dvalue_free(data_req.data_val);
-            core_databuf_put(databuf_ptr->databuf);
+            if (is_need_free) {
+                neu_dvalue_free(data_req.data_val);
+            }
+            neu_trans_buf_uninit(trans_buf);
             break;
         }
 
@@ -336,13 +347,20 @@ static void adapter_loop(void *arg)
             cmd_ptr = (read_data_resp_t *) msg_get_buf_ptr(pay_msg);
 
             const neu_plugin_intf_funs_t *intf_funs;
+            bool                          is_need_free;
+            neu_trans_buf_t *             trans_buf;
             neu_request_t                 req;
             neu_reqresp_read_resp_t       read_resp;
 
             read_resp.grp_config = cmd_ptr->grp_config;
-            void * buf           = core_databuf_get_ptr(cmd_ptr->databuf);
-            size_t buf_len       = core_databuf_get_len(cmd_ptr->databuf);
-            neu_dvalue_deserialize(buf, buf_len, &read_resp.data_val);
+            trans_buf            = &cmd_ptr->trans_buf;
+            read_resp.data_val =
+                neu_trans_buf_get_data_val(trans_buf, &is_need_free);
+            if (read_resp.data_val == NULL) {
+                neu_trans_buf_uninit(trans_buf);
+                log_error("Failed to get data value from read response");
+                break;
+            }
 
             intf_funs     = adapter->plugin_module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
@@ -351,8 +369,10 @@ static void adapter_loop(void *arg)
             req.buf_len   = sizeof(neu_reqresp_read_resp_t);
             req.buf       = (void *) &read_resp;
             intf_funs->request(adapter->plugin, &req);
-            neu_dvalue_free(read_resp.data_val);
-            core_databuf_put(cmd_ptr->databuf);
+            if (is_need_free) {
+                neu_dvalue_free(read_resp.data_val);
+            }
+            neu_trans_buf_uninit(trans_buf);
             break;
         }
 
@@ -361,14 +381,21 @@ static void adapter_loop(void *arg)
             cmd_ptr = (write_data_cmd_t *) msg_get_buf_ptr(pay_msg);
 
             const neu_plugin_intf_funs_t *intf_funs;
+            bool                          is_need_free;
+            neu_trans_buf_t *             trans_buf;
             neu_request_t                 req;
             neu_reqresp_write_t           write_req;
 
             write_req.grp_config  = cmd_ptr->grp_config;
             write_req.dst_node_id = cmd_ptr->dst_node_id;
-            void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
-            size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
-            neu_dvalue_deserialize(buf, buf_len, &write_req.data_val);
+            trans_buf             = &cmd_ptr->trans_buf;
+            write_req.data_val =
+                neu_trans_buf_get_data_val(trans_buf, &is_need_free);
+            if (write_req.data_val == NULL) {
+                neu_trans_buf_uninit(trans_buf);
+                log_error("Failed to get data value from write request");
+                break;
+            }
 
             intf_funs     = adapter->plugin_module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
@@ -377,8 +404,10 @@ static void adapter_loop(void *arg)
             req.buf_len   = sizeof(neu_reqresp_write_t);
             req.buf       = (void *) &write_req;
             intf_funs->request(adapter->plugin, &req);
-            neu_dvalue_free(write_req.data_val);
-            core_databuf_put(cmd_ptr->databuf);
+            if (is_need_free) {
+                neu_dvalue_free(write_req.data_val);
+            }
+            neu_trans_buf_uninit(trans_buf);
             break;
         }
 
@@ -387,13 +416,20 @@ static void adapter_loop(void *arg)
             cmd_ptr = (write_data_resp_t *) msg_get_buf_ptr(pay_msg);
 
             const neu_plugin_intf_funs_t *intf_funs;
+            bool                          is_need_free;
+            neu_trans_buf_t *             trans_buf;
             neu_request_t                 req;
             neu_reqresp_write_resp_t      write_resp;
 
             write_resp.grp_config = cmd_ptr->grp_config;
-            void * buf            = core_databuf_get_ptr(cmd_ptr->databuf);
-            size_t buf_len        = core_databuf_get_len(cmd_ptr->databuf);
-            neu_dvalue_deserialize(buf, buf_len, &write_resp.data_val);
+            trans_buf             = &cmd_ptr->trans_buf;
+            write_resp.data_val =
+                neu_trans_buf_get_data_val(trans_buf, &is_need_free);
+            if (write_resp.data_val == NULL) {
+                neu_trans_buf_uninit(trans_buf);
+                log_error("Failed to get data value from write request");
+                break;
+            }
 
             intf_funs     = adapter->plugin_module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
@@ -402,8 +438,10 @@ static void adapter_loop(void *arg)
             req.buf_len   = sizeof(neu_reqresp_write_resp_t);
             req.buf       = (void *) &write_resp;
             intf_funs->request(adapter->plugin, &req);
-            neu_dvalue_free(write_resp.data_val);
-            core_databuf_put(cmd_ptr->databuf);
+            if (is_need_free) {
+                neu_dvalue_free(write_resp.data_val);
+            }
+            neu_trans_buf_uninit(trans_buf);
             break;
         }
 
@@ -472,14 +510,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     case NEU_REQRESP_WRITE_DATA: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_WRITE_DATA, write_data_cmd_t,
                          neu_reqresp_write_t, {
-                             uint8_t *       buf;
-                             size_t          buf_len;
-                             core_databuf_t *databuf;
+                             neu_trans_buf_t *trans_buf;
 
-                             buf_len = neu_dvalue_serialize(
-                                 reqresp_cmd->data_val, &buf);
-                             databuf = core_databuf_new_with_buf(buf, buf_len);
-                             cmd_ptr->databuf = databuf;
+                             trans_buf = &cmd_ptr->trans_buf;
+                             neu_trans_buf_init(trans_buf, adapter->trans_kind,
+                                                reqresp_cmd->data_val);
                          })
         break;
     }
@@ -800,103 +835,100 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
     case NEU_REQRESP_TRANS_DATA: {
         size_t              msg_size;
         nng_msg *           trans_data_msg;
-        uint8_t *           buf;
-        size_t              buf_len;
         neu_reqresp_data_t *neu_data;
-        core_databuf_t *    databuf;
 
         assert(resp->buf_len == sizeof(neu_reqresp_data_t));
         neu_data = (neu_reqresp_data_t *) resp->buf;
-        buf_len  = neu_dvalue_serialize(neu_data->data_val, &buf);
-        databuf  = core_databuf_new_with_buf(buf, buf_len);
 
-        msg_size = msg_inplace_data_get_size(sizeof(neuron_databuf_t));
+        msg_size = msg_inplace_data_get_size(sizeof(neuron_trans_data_t));
         rv       = nng_msg_alloc(&trans_data_msg, msg_size);
         if (rv == 0) {
-            message_t *       pay_msg;
-            neuron_databuf_t *neu_databuf;
+            message_t *          pay_msg;
+            neuron_trans_data_t *trans_data;
+            neu_trans_buf_t *    trans_buf;
 
             pay_msg = (message_t *) nng_msg_body(trans_data_msg);
-            msg_inplace_data_init(pay_msg, MSG_DATA_NEURON_DATABUF,
-                                  sizeof(neuron_databuf_t));
-            neu_databuf = (neuron_databuf_t *) msg_get_buf_ptr(pay_msg);
-            neu_databuf->grp_config = neu_data->grp_config;
-            neu_databuf->databuf    = databuf;
+            msg_inplace_data_init(pay_msg, MSG_DATA_NEURON_TRANS_DATA,
+                                  sizeof(neuron_trans_data_t));
+            trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
+            trans_data->grp_config = neu_data->grp_config;
+            trans_buf              = &trans_data->trans_buf;
+            rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
+                                    neu_data->data_val);
+            if (rv != 0) {
+                nng_msg_free(trans_data_msg);
+                break;
+            }
             nng_sendmsg(adapter->sock, trans_data_msg, 0);
-        } else {
-            core_databuf_put(databuf);
         }
-        neu_dvalue_free(neu_data->data_val);
         break;
     }
 
     case NEU_REQRESP_READ_RESP: {
         size_t                   msg_size;
         nng_msg *                read_resp_msg;
-        uint8_t *                buf;
-        size_t                   buf_len;
         neu_reqresp_read_resp_t *read_resp;
-        core_databuf_t *         databuf;
 
         assert(resp->buf_len == sizeof(neu_reqresp_read_resp_t));
         read_resp = (neu_reqresp_read_resp_t *) resp->buf;
-        buf_len   = neu_dvalue_serialize(read_resp->data_val, &buf);
-        databuf   = core_databuf_new_with_buf(buf, buf_len);
 
         msg_size = msg_inplace_data_get_size(sizeof(read_data_resp_t));
         rv       = nng_msg_alloc(&read_resp_msg, msg_size);
         if (rv == 0) {
             message_t *       pay_msg;
             read_data_resp_t *read_data_resp;
+            neu_trans_buf_t * trans_buf;
 
             pay_msg = (message_t *) nng_msg_body(read_resp_msg);
             msg_inplace_data_init(pay_msg, MSG_DATA_READ_RESP,
                                   sizeof(read_data_resp_t));
             read_data_resp = (read_data_resp_t *) msg_get_buf_ptr(pay_msg);
             read_data_resp->grp_config = read_resp->grp_config;
-            read_data_resp->databuf    = databuf;
             read_data_resp->recver_id  = resp->recver_id;
             read_data_resp->req_id     = resp->req_id;
+            trans_buf                  = &read_data_resp->trans_buf;
+            rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
+                                    read_resp->data_val);
+            if (rv != 0) {
+                nng_msg_free(read_resp_msg);
+                break;
+            }
             nng_sendmsg(adapter->sock, read_resp_msg, 0);
-        } else {
-            core_databuf_put(databuf);
         }
-        neu_dvalue_free(read_resp->data_val);
         break;
     }
 
     case NEU_REQRESP_WRITE_RESP: {
         size_t                    msg_size;
         nng_msg *                 write_resp_msg;
-        uint8_t *                 buf;
-        size_t                    buf_len;
         neu_reqresp_write_resp_t *write_resp;
-        core_databuf_t *          databuf;
 
         assert(resp->buf_len == sizeof(neu_reqresp_write_resp_t));
         write_resp = (neu_reqresp_write_resp_t *) resp->buf;
-        buf_len    = neu_dvalue_serialize(write_resp->data_val, &buf);
-        databuf    = core_databuf_new_with_buf(buf, buf_len);
 
         msg_size = msg_inplace_data_get_size(sizeof(write_data_resp_t));
         rv       = nng_msg_alloc(&write_resp_msg, msg_size);
         if (rv == 0) {
             message_t *        pay_msg;
             write_data_resp_t *write_data_resp;
+            neu_trans_buf_t *  trans_buf;
 
             pay_msg = (message_t *) nng_msg_body(write_resp_msg);
             msg_inplace_data_init(pay_msg, MSG_DATA_WRITE_RESP,
                                   sizeof(write_data_resp_t));
             write_data_resp = (write_data_resp_t *) msg_get_buf_ptr(pay_msg);
             write_data_resp->grp_config = write_resp->grp_config;
-            write_data_resp->databuf    = databuf;
             write_data_resp->recver_id  = resp->recver_id;
             write_data_resp->req_id     = resp->req_id;
+            trans_buf                   = &write_data_resp->trans_buf;
+            rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
+                                    write_resp->data_val);
+            if (rv != 0) {
+                nng_msg_free(write_resp_msg);
+                break;
+            }
             nng_sendmsg(adapter->sock, write_resp_msg, 0);
-        } else {
-            core_databuf_put(databuf);
         }
-        neu_dvalue_free(write_resp->data_val);
         break;
     }
 
@@ -972,6 +1004,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->plugin_id   = info->plugin_id;
     adapter->plugin_kind = info->plugin_kind;
     adapter->manager     = manager;
+    adapter->trans_kind  = NEURON_TRANS_DATAVAL;
 
     if (adapter->name == NULL || info->plugin_lib_name == NULL) {
         if (adapter->name != NULL) {

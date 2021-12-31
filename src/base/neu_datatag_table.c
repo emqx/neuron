@@ -127,7 +127,7 @@ datatag_id_t neu_datatag_tbl_add(neu_datatag_table_t *tag_tbl,
 
 int neu_datatag_tbl_remove(neu_datatag_table_t *tag_tbl, datatag_id_t tag_id)
 {
-    int            rv;
+    int            rv      = 0;
     neu_datatag_t *datatag = NULL;
 
     pthread_mutex_lock(&tag_tbl->mtx);

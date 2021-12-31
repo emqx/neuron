@@ -139,6 +139,7 @@ neu_string_t *neu_string_clone(neu_string_t *string)
         return NULL;
     }
 
+    new_string->length = string->length;
     memcpy(new_string->cstr, string->cstr, size);
     return new_string;
 }

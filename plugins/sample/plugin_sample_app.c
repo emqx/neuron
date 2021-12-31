@@ -303,7 +303,6 @@ get_grp_configs_retry:
     cmd1.buf_len          = sizeof(neu_reqresp_write_t);
     log_info("Send a write command to node: %d", dst_node_id);
     adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
-    neu_dvalue_free(write_val);
 
     neu_taggrp_cfg_free(grp_config);
 

@@ -236,14 +236,6 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         read_req  = (neu_reqresp_read_t *) req->buf;
         sender_id = req->sender_id;
 
-        // log_info("Read data from addr(%d) with group config(%p), "
-        //          "dst_node_id:%d, req_id:%d",
-        //          read_req->addr, read_req->grp_config, read_req->dst_node_id,
-        //          req->req_id);
-
-        // log_info("------------------>%s",
-        //          neu_taggrp_cfg_get_name(read_req->grp_config));
-
         data_resp.grp_config = read_req->grp_config;
         data_resp.data_val   = setup_read_resp_data_value();
         if (data_resp.data_val == NULL) {

@@ -170,14 +170,14 @@ static inline void neu_string_val_move(neu_string_val_t *dst,
 static inline neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type)
 {
     neu_dtype_e ret_type;
-    ret_type = (neu_dtype_e)(type & (NEU_DTYPE_FLAGS_START - 1));
+    ret_type = (neu_dtype_e) (type & (NEU_DTYPE_FLAGS_START - 1));
     return ret_type;
 }
 
 static inline neu_dtype_e neu_flags_type_in_dtype(neu_dtype_e type)
 {
     neu_dtype_e ret_type;
-    ret_type = (neu_dtype_e)(type & ~(NEU_DTYPE_FLAGS_START - 1));
+    ret_type = (neu_dtype_e) (type & ~(NEU_DTYPE_FLAGS_START - 1));
     return ret_type;
 }
 
@@ -370,6 +370,16 @@ int neu_dvalue_get_move_vec(neu_data_val_t *val, vector_t **p_vec);
 ssize_t neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf);
 ssize_t neu_dvalue_deserialize(uint8_t *buf, size_t buf_len,
                                neu_data_val_t **p_val);
+
+/**
+ * The input data value will owner all cstr/bytes/string/array/vec and sub data
+ * value in array/vec for this data value.
+ * After call this function, the user can share this data value to other
+ * adapter or thread.
+ * Note: If the function return NULL, it is must free the input data value,
+ * and don't use the input data value in future.
+ */
+neu_data_val_t *neu_dvalue_to_owned(neu_data_val_t *val);
 
 /*
  * declare functions for int-value and string-value pair

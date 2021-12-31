@@ -34,6 +34,10 @@ core_databuf_t *core_databuf_new_with_buf(void *buf, size_t len)
 {
     core_databuf_t *databuf;
 
+    if (len == 0) {
+        return NULL;
+    }
+
     databuf = (core_databuf_t *) malloc(sizeof(core_databuf_t));
     if (databuf == NULL) {
         return NULL;
