@@ -170,14 +170,14 @@ static inline void neu_string_val_move(neu_string_val_t *dst,
 static inline neu_dtype_e neu_value_type_in_dtype(neu_dtype_e type)
 {
     neu_dtype_e ret_type;
-    ret_type = (neu_dtype_e) (type & (NEU_DTYPE_FLAGS_START - 1));
+    ret_type = (neu_dtype_e)(type & (NEU_DTYPE_FLAGS_START - 1));
     return ret_type;
 }
 
 static inline neu_dtype_e neu_flags_type_in_dtype(neu_dtype_e type)
 {
     neu_dtype_e ret_type;
-    ret_type = (neu_dtype_e) (type & ~(NEU_DTYPE_FLAGS_START - 1));
+    ret_type = (neu_dtype_e)(type & ~(NEU_DTYPE_FLAGS_START - 1));
     return ret_type;
 }
 
