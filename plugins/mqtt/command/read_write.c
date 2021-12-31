@@ -331,7 +331,6 @@ int command_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
     write_command(plugin, write_req->node_id, write_req->group_config_name,
                   write_val, req_id);
-    neu_dvalue_free(write_val);
     return 0;
 }
 
