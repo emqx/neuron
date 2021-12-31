@@ -1338,7 +1338,7 @@ static void manager_loop(void *arg)
             rv           = nng_msg_alloc(&out_msg, msg_size);
             need_forward = unsub_grp_config_with_pipe(cmd_ptr->grp_config,
                                                       nng_msg_get_pipe(msg));
-            if (rv == 0 || need_forward == 1) {
+            if (rv == 0 && need_forward == 1) {
                 message_t *             msg_ptr;
                 unsubscribe_node_cmd_t *out_cmd_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
