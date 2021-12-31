@@ -5,7 +5,7 @@ from collections import defaultdict, deque
 from robot.api import logger
 from robot.api.deco import keyword, library
 from gmqtt import Client as MQTTClient, Subscription
-from gmqtt.mqtt.constants import MQTTv50
+from gmqtt.mqtt.constants import MQTTv311
 
 ROBOT_AUTO_KEYWORDS = False
 
@@ -97,7 +97,7 @@ class Client:
         )
         self._client = client
 
-        self._run(self._client.connect(host, port, version=MQTTv50))
+        self._run(self._client.connect(host, port, version=MQTTv311))
 
     @keyword
     def disconnect(self):
@@ -214,7 +214,7 @@ class Client:
         try:
             self._run(asyncio.wait_for(event.wait(), timeout))
             event.clear()
-        except asyncio.exceptions.TimeoutError:
+        except asyncio.TimeoutError:
             return True
         return False
 
