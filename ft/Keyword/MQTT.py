@@ -137,8 +137,9 @@ class Client:
         timeout = 1 if timeout < 1 else timeout
         self._client.subscribe(Subscription(topic, qos))
         if self._wait(self._subcribed, timeout=timeout):
-            raise Exception(f"MQTT client subscribe timeout {topic=} {qos=}")
-        logger.info(f"MQTT client subscribed to {topic=} {qos=}")
+            raise Exception(
+                "MQTT client subscribe timeout topic=%s qos=%s" % (topic, qos))
+        logger.info("MQTT client subscribed to topic=%s qos=%s" % (topic, qos))
 
     @keyword
     def unsubscribe(self, topic, timeout=1):
@@ -155,8 +156,8 @@ class Client:
         timeout = 1 if timeout < 1 else timeout
         self._client.unsubscribe(topic)
         if self._wait(self._unsubcribed, timeout=timeout):
-            raise Exception(f"MQTT client unsubscribe timeout {topic=}")
-        logger.info(f"MQTT client unsubscribed {topic=}")
+            raise Exception("MQTT client unsubscribe timeout topic=%s" % topic)
+        logger.info("MQTT client unsubscribed topic=%s" % topic)
 
     @keyword
     def publish(self, topic, payload, qos=0, retain=False):
@@ -221,7 +222,8 @@ class Client:
         logger.info("MQTT client connected")
 
     def _on_message(self, client, topic, payload, qos, properties):
-        logger.info(f"MQTT client received: {topic=} {qos=} {payload=}")
+        logger.info("MQTT client received: topic=%s qos=%s payload=%s" %
+                    (topic, qos, payload))
         self._messages[topic].append(payload.decode())
         self._recved.set()
         return 0
@@ -248,9 +250,9 @@ if __name__ == "__main__":
     client.subscribe(topic)
 
     for i in range(3):
-        client.publish(topic, f"hello world {i}")
+        client.publish(topic, "hello world %s" % i)
         msg = client.listen(topic)
-        print(f"MQTT client receive: {topic=} {msg=}")
+        print("MQTT client receive: topic=%s msg=%s" % (topic, msg))
 
     client.unsubscribe(topic)
     client.disconnect()
