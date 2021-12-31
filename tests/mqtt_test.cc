@@ -37,9 +37,11 @@ TEST(MQTTTest, mqtt_nng_client_open)
     option.clientid     = strdup(uuid4_str);
     option.verbose      = 1;
     option.MQTT_version = 4;
+    option.connection   = strdup("tcp://");
 
     mqtt_nng_client_t *client = NULL;
     client_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
+    mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
     sleep(30);
     EXPECT_EQ(MQTTC_SUCCESS, error);
     EXPECT_NE(nullptr, client);
