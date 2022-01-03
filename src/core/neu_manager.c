@@ -28,15 +28,16 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
-#include "adapter/adapter_internal.h"
 #include "message.h"
 #include "neu_adapter.h"
 #include "neu_datatag_manager.h"
+#include "neu_errcodes.h"
 #include "neu_log.h"
 #include "neu_manager.h"
 #include "neu_panic.h"
 #include "neu_trans_buf.h"
 #include "neu_vector.h"
+#include "persist/persist.h"
 #include "plugin_manager.h"
 
 typedef struct adapter_reg_entity {
@@ -385,6 +386,17 @@ static adapter_reg_entity_t *find_reg_adapter_by_pipe(vector_t *adapters,
                                                       nng_pipe  p)
 {
     return vector_find_item(adapters, &p, match_pipe_reg_adapter);
+}
+
+static bool is_default_adapter(const char *adapter_name)
+{
+    for (size_t i = 0; i < DEFAULT_ADAPTER_ADD_INFO_SIZE; ++i) {
+        if (0 ==
+            strcmp(default_adapter_reg_cmds[i].adapter_name, adapter_name)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 static adapter_id_t manager_new_adapter_id(neu_manager_t *manager)
@@ -1284,6 +1296,36 @@ static void manager_loop(void *arg)
             break;
         }
 
+        case MSG_EVENT_ADD_NODE:
+            // fall through
+
+        case MSG_EVENT_UPDATE_NODE:
+            // fall through
+
+        case MSG_EVENT_DEL_NODE: {
+            adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
+                &manager->reg_adapters, DEFAULT_PERSIST_ADAPTER_NAME);
+            nng_pipe   persist_pipe = persist_reg_entity->adapter_pipe;
+            msg_type_e msg_type     = msg_get_type(pay_msg);
+
+            nng_msg *   out_msg;
+            const char *name     = msg_get_buf_ptr(pay_msg);
+            size_t      len      = msg_get_buf_len(pay_msg);
+            size_t      msg_size = msg_inplace_data_get_size(len);
+            rv                   = nng_msg_alloc(&out_msg, msg_size);
+            if (rv == 0) {
+                message_t *msg_ptr = nng_msg_body(out_msg);
+                msg_inplace_data_init(msg_ptr, msg_type, len);
+                char *out_buf = msg_get_buf_ptr(msg_ptr);
+                memcpy(out_buf, name, len);
+                nng_msg_set_pipe(out_msg, persist_pipe);
+                log_info("Forward node event %d to %s pipe: %d", msg_type,
+                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
+            }
+            break;
+        }
+
         case MSG_CMD_SUBSCRIBE_NODE: {
             size_t       msg_size;
             nng_msg *    out_msg;
@@ -2026,6 +2068,68 @@ int neu_manager_adapter_set_setting(neu_manager_t *manager,
     free(neu_config.buf);
 
     return ret;
+}
+
+const char *find_adapter_plugin_name(neu_manager_t *manager,
+                                     neu_adapter_t *adapter)
+{
+    plugin_id_t plugin_id = neu_adapter_get_plugin_id(adapter);
+
+    plugin_reg_info_t reg_info = {};
+    plugin_manager_get_reg_info(manager->plugin_manager, plugin_id, &reg_info);
+
+    return reg_info.plugin_name;
+}
+
+int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
+                                          vector_t **    result)
+{
+    adapter_reg_entity_t *reg_entity    = NULL;
+    vector_t *            adapter_infos = NULL;
+
+    if (NULL == manager || NULL == result) {
+        log_error("get persist adapter infos with NULL manager or NULL result");
+        return NEU_ERR_EINVAL;
+    }
+
+    size_t count = manager->reg_adapters.size;
+    if (count >= DEFAULT_ADAPTER_ADD_INFO_SIZE) {
+        count -= DEFAULT_ADAPTER_ADD_INFO_SIZE;
+    }
+    adapter_infos = vector_new(count, sizeof(neu_persist_adapter_info_t));
+    if (NULL == adapter_infos) {
+        return NEU_ERR_ENOMEM;
+    }
+
+    nng_mtx_lock(manager->adapters_mtx);
+    VECTOR_FOR_EACH(&manager->reg_adapters, iter)
+    {
+        reg_entity               = (adapter_reg_entity_t *) iterator_get(&iter);
+        const char *adapter_name = neu_adapter_get_name(reg_entity->adapter);
+        const char *plugin_name =
+            find_adapter_plugin_name(manager, reg_entity->adapter);
+
+        if (is_default_adapter(adapter_name)) {
+            continue;
+        }
+
+        neu_persist_adapter_info_t adapter_info = {};
+        adapter_info.type  = neu_adapter_get_type(reg_entity->adapter);
+        adapter_info.state = neu_adapter_get_state(reg_entity->adapter).running;
+        adapter_info.name  = strdup(adapter_name);
+        adapter_info.plugin_name = strdup(plugin_name);
+
+        if (0 != vector_push_back(adapter_infos, &adapter_info)) {
+            neu_persist_adapter_infos_free(adapter_infos);
+            nng_mtx_unlock(manager->adapters_mtx);
+            return NEU_ERR_ENOMEM;
+        }
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    *result = adapter_infos;
+
+    return NEU_ERR_SUCCESS;
 }
 
 int neu_manager_adapter_get_setting(neu_manager_t *manager,
