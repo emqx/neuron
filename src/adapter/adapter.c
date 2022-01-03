@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -28,6 +29,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "adapter_internal.h"
+#include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
@@ -37,6 +39,7 @@
 #include "neu_panic.h"
 #include "neu_plugin.h"
 #include "neu_subscribe.h"
+#include "persist/persist.h"
 
 #define to_node_id(adapter, id) \
     neu_manager_adapter_id_to_node_id((adapter)->manager, id);
@@ -156,6 +159,66 @@ struct neu_adapter {
     vector_t             sub_grp_configs; // neu_sub_grp_config_t
 };
 
+static once_flag        g_persister_init_flag = ONCE_FLAG_INIT;
+static neu_persister_t *g_persister_singleton = NULL;
+
+static void persister_singleton_init()
+{
+    const char *persistence_dir = neu_config_get_value(
+        (char *) "./neuron.yaml", 2, (char *) "persistence", (char *) "dir");
+    if (NULL == persistence_dir) {
+        log_error("can't get persistence dir from config");
+        exit(EXIT_FAILURE);
+    }
+
+    neu_persister_t *persister = neu_persister_create(persistence_dir);
+    if (NULL == persister) {
+        log_error("can't create persister");
+        exit(EXIT_FAILURE);
+    }
+    free((char *) persistence_dir);
+    g_persister_singleton = persister;
+}
+
+static neu_persister_t *persister_singleton_get()
+{
+    call_once(&g_persister_init_flag, persister_singleton_init);
+    return g_persister_singleton;
+}
+
+static int persister_singleton_handle_nodes(neu_adapter_t *adapter,
+                                            msg_type_e     event,
+                                            const char *   node_name)
+{
+    neu_persister_t *persister     = persister_singleton_get();
+    vector_t *       adapter_infos = NULL;
+
+    log_info("%s handling node event %d of %s", adapter->name, event,
+             node_name);
+
+    int rv =
+        neu_manager_get_persist_adapter_infos(adapter->manager, &adapter_infos);
+    if (0 != rv) {
+        log_error("%s unable to get adapter infos", adapter->name);
+        return rv;
+    }
+
+    // store the current set of adapter infos
+    rv = neu_persister_store_adapters(persister, adapter_infos);
+    if (0 != rv) {
+        log_error("%s failed to store adapter infos", adapter->name);
+    } else if (MSG_EVENT_DEL_NODE == event) {
+        rv = neu_persister_delete_adapter(persister, node_name);
+        if (0 != rv) {
+            log_error("%s failed to del adapter %s", adapter->name, node_name);
+        }
+    }
+
+    neu_persist_adapter_infos_free(adapter_infos);
+
+    return rv;
+}
+
 neu_plugin_running_state_e
 neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 {
@@ -206,10 +269,9 @@ static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
 static void adapter_loop(void *arg)
 {
     int            rv;
-    neu_adapter_t *adapter;
-    nng_dialer     dialer = { 0 };
+    nng_dialer     dialer  = { 0 };
+    neu_adapter_t *adapter = (neu_adapter_t *) arg;
 
-    adapter = (neu_adapter_t *) arg;
     const char *manager_url;
     manager_url = neu_manager_get_url(adapter->manager);
     rv          = nng_dial(adapter->sock, manager_url, &dialer, 0);
@@ -251,9 +313,9 @@ static void adapter_loop(void *arg)
             continue;
         }
 
-        message_t *pay_msg;
-        pay_msg = nng_msg_body(msg);
-        switch (msg_get_type(pay_msg)) {
+        message_t *pay_msg      = nng_msg_body(msg);
+        msg_type_e pay_msg_type = msg_get_type(pay_msg);
+        switch (pay_msg_type) {
         case MSG_CMD_RESP_PONG: {
             char *buf_ptr;
 
@@ -291,6 +353,18 @@ static void adapter_loop(void *arg)
                 neu_dvalue_free(data_req.data_val);
             }
             neu_trans_buf_uninit(trans_buf);
+            break;
+        }
+
+        case MSG_EVENT_ADD_NODE:
+            // fall through
+
+        case MSG_EVENT_UPDATE_NODE:
+            // fall through
+
+        case MSG_EVENT_DEL_NODE: {
+            const char *node_name = msg_get_buf_ptr(pay_msg);
+            persister_singleton_handle_nodes(adapter, pay_msg_type, node_name);
             break;
         }
 

@@ -39,6 +39,17 @@ typedef neu_json_group_configs_req_t neu_persist_group_config_info_t;
 typedef neu_json_subscriptions_req_subscription_t
     neu_persist_subscription_info_t;
 
+static inline void neu_persist_adapter_infos_free(vector_t *adapter_infos)
+{
+    VECTOR_FOR_EACH(adapter_infos, iter)
+    {
+        neu_persist_adapter_info_t *p = iterator_get(&iter);
+        free(p->name);
+        free(p->plugin_name);
+    }
+    vector_free(adapter_infos);
+}
+
 /**
  * Persister, provide methods to persist data */
 typedef struct neu_persister neu_persister_t;
