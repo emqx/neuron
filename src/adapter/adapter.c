@@ -66,6 +66,23 @@
         }                                                                    \
     }
 
+#define ADAPTER_SEND_NODE_EVENT(adapter, rv, msg_type, name) \
+    {                                                        \
+        size_t   msg_size = 0;                               \
+        nng_msg *msg      = NULL;                            \
+        int      len      = strlen(name) + 1;                \
+        msg_size          = msg_inplace_data_get_size(len);  \
+        (rv)              = nng_msg_alloc(&msg, msg_size);   \
+        if ((rv) == 0) {                                     \
+            message_t *msg_ptr;                              \
+            msg_ptr = (message_t *) nng_msg_body(msg);       \
+            msg_inplace_data_init(msg_ptr, (msg_type), len); \
+            char *buf = msg_get_buf_ptr(msg_ptr);            \
+            memcpy(buf, (name), len);                        \
+            nng_sendmsg((adapter)->sock, msg, 0);            \
+        }                                                    \
+    }
+
 #define _ADAPTER_RESP(adapter, cmd, ret_type, req_type, rv, resp_type_code, \
                       p_result, func)                                       \
     {                                                                       \
@@ -520,29 +537,49 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_ADD_NODE: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_add_node_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              neu_node_id_t node_id;
-                              ret = neu_manager_add_node(adapter->manager,
-                                                         req_cmd, &node_id);
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_add_node_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                neu_node_id_t node_id;
+                ret = neu_manager_add_node(adapter->manager, req_cmd, &node_id);
+                if (0 == ret) {
+                    ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_ADD_NODE,
+                                            req_cmd->adapter_name);
+                }
+            });
         break;
     }
 
     case NEU_REQRESP_DEL_NODE: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_del_node_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_del_node(adapter->manager,
-                                                         req_cmd->node_id);
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_del_node_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                char *name = NULL;
+                ret        = neu_manager_get_node_name_by_id(adapter->manager,
+                                                      req_cmd->node_id, &name);
+                if (0 != ret) {
+                    break;
+                }
+                ret = neu_manager_del_node(adapter->manager, req_cmd->node_id);
+                if (0 == ret) {
+                    ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_DEL_NODE,
+                                            name);
+                }
+                free(name);
+            });
         break;
     }
 
     case NEU_REQRESP_UPDATE_NODE: {
         ADAPTER_RESP_CODE(
             adapter, cmd, intptr_t, neu_cmd_update_node_t, rv,
-            NEU_REQRESP_ERR_CODE, p_result,
-            { ret = neu_manager_update_node(adapter->manager, req_cmd); });
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = neu_manager_update_node(adapter->manager, req_cmd);
+                if (0 == ret) {
+                    ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_UPDATE_NODE,
+                                            req_cmd->node_name);
+                }
+            });
         break;
     }
 

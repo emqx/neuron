@@ -1739,6 +1739,34 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
     return rv;
 }
 
+int neu_manager_get_node_name_by_id(neu_manager_t *manager,
+                                    neu_node_id_t node_id, char **name)
+{
+    int                   rv = 0;
+    adapter_id_t          adapter_id;
+    adapter_reg_entity_t *reg_entity;
+
+    if (NULL == name) {
+        return NEU_ERR_EINVAL;
+    }
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+
+    nng_mtx_lock(manager->adapters_mtx);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (reg_entity != NULL) {
+        *name = strdup(neu_adapter_get_name(reg_entity->adapter));
+        if (NULL == *name) {
+            rv = NEU_ERR_ENOMEM;
+        }
+    } else {
+        rv = NEU_ERR_NODE_NOT_EXIST;
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return rv;
+}
+
 int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd)
 {
