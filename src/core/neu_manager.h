@@ -43,6 +43,8 @@ int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id);
 int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd);
 int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
                           vector_t *result_nodes);
+int neu_manager_get_node_name_by_id(neu_manager_t *manager,
+                                    neu_node_id_t node_id, char **name);
 
 int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd);
