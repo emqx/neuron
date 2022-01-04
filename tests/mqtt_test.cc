@@ -42,6 +42,9 @@ TEST(MQTTTest, mqtt_nng_client_open)
     mqtt_nng_client_t *client = NULL;
     client_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
     mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
+    char p[10] = "123456";
+    mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
+                            strlen(p));
     sleep(30);
     EXPECT_EQ(MQTTC_SUCCESS, error);
     EXPECT_NE(nullptr, client);

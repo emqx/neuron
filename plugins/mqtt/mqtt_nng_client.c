@@ -331,6 +331,27 @@ client_error_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
                                        const char *topic, int qos,
                                        unsigned char *payload, size_t len)
 {
+    nng_msg *publish_msg = NULL;
+    nng_mqtt_msg_alloc(&publish_msg, 0);
+    nng_mqtt_msg_set_packet_type(publish_msg, NNG_MQTT_PUBLISH);
+    nng_mqtt_msg_set_publish_dup(publish_msg, 0);
+    nng_mqtt_msg_set_publish_qos(publish_msg, qos);
+    nng_mqtt_msg_set_publish_retain(publish_msg, 0);
+    nng_mqtt_msg_set_publish_payload(publish_msg, (uint8_t *) payload, len);
+    nng_mqtt_msg_set_publish_topic(publish_msg, topic);
+
+    if (1 == client->option->verbose) {
+        uint8_t buff[1024] = { 0 };
+        nng_mqtt_msg_dump(publish_msg, buff, sizeof(buff), true);
+        log_info("%s", buff);
+    }
+
+    int ret = nng_sendmsg(client->sock, publish_msg, 0);
+    if (0 != ret) {
+        log_error("Publish msg send error:%d", ret);
+        return MQTTC_PUBLISH_FAILURE;
+    }
+
     return MQTTC_SUCCESS;
 }
 
