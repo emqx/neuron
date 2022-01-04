@@ -84,7 +84,11 @@ target_include_directories(data_val_test PRIVATE
 target_link_libraries(data_val_test neuron-base gtest_main gtest pthread jansson)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/plugins/restful SRC_RESTFUL)
-add_executable(plugin_manager_test plugin_manager_test.cc ${CMAKE_SOURCE_DIR}/src/core/plugin_manager.c ${SRC_RESTFUL} ${SRC_PARSER} ${CMAKE_SOURCE_DIR}/src/config.c)
+aux_source_directory(${CMAKE_SOURCE_DIR}/plugins/dummy SRC_DUMMY)
+add_executable(plugin_manager_test plugin_manager_test.cc
+               ${CMAKE_SOURCE_DIR}/src/core/plugin_manager.c
+               ${SRC_RESTFUL} ${SRC_DUMMY} ${SRC_PARSER}
+               ${CMAKE_SOURCE_DIR}/src/config.c)
 target_include_directories(plugin_manager_test PRIVATE
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include

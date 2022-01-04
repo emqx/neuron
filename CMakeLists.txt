@@ -108,6 +108,7 @@ set(NEURON_SOURCES
     plugins/restful/plugin_handle.c
     plugins/restful/rest.c
     plugins/restful/http.c
+    plugins/dummy/dummy.c
     ${PERSIST_SOURCES})
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)

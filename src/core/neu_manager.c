@@ -232,6 +232,12 @@ static const plugin_reg_param_t default_plugin_infos[] = {
         .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME
     },
+    {
+        .plugin_kind     = PLUGIN_KIND_STATIC,
+        .adapter_type    = ADAPTER_TYPE_APP,
+        .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
+        .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME
+    },
     /*
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
