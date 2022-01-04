@@ -27,11 +27,15 @@
 
 typedef struct neu_manager neu_manager_t;
 
+typedef void (*bind_notify_fun)(nng_pipe p, nng_pipe_ev ev, void *arg);
+
 neu_manager_t *neu_manager_create();
 void           neu_manager_stop(neu_manager_t *manager);
 void           neu_manager_destroy(neu_manager_t *manager);
 
 const char *neu_manager_get_url(neu_manager_t *manager);
+void        neu_manager_wait_ready(neu_manager_t *manager);
+void        neu_manager_trigger_running(neu_manager_t *manager);
 
 int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
                          neu_node_id_t *p_node_id);
@@ -80,4 +84,7 @@ int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
                                             neu_node_id_t  node_id,
                                             vector_t **    result_sgc);
 
+int neu_manager_init_main_adapter(neu_manager_t * manager,
+                                  bind_notify_fun bind_adapter,
+                                  bind_notify_fun unbind_adapter);
 #endif

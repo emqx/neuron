@@ -59,12 +59,14 @@ typedef struct manager_bind_info {
 typedef enum manager_state {
     MANAGER_STATE_NULL,
     MANAGER_STATE_IDLE,
+    MANAGER_STATE_READY,
     MANAGER_STATE_RUNNING,
 } manager_state_e;
 
 struct neu_manager {
     const char *        listen_url;
     nng_mtx *           mtx;
+    nng_cv *            cv;
     manager_state_e     state;
     bool                stop;
     nng_thread *        thrd;
@@ -450,7 +452,6 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 
 static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
-    neu_adapter_t *       adapter;
     neu_adapter_t *       cur_adapter;
     neu_manager_t *       manager;
     adapter_reg_entity_t *reg_entity;
@@ -461,13 +462,12 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
      * adapter, so we can not use adapter_id of this adapter to find registred
      * adapter entity. We must use pipe to find current unbind adapter.
      */
-    adapter = (neu_adapter_t *) arg;
-    manager = neu_adapter_get_manager(adapter);
+    manager = (neu_manager_t *) arg;
     nng_mtx_lock(manager->adapters_mtx);
-    reg_entity  = find_reg_adapter_by_pipe(&manager->reg_adapters, p);
-    cur_adapter = reg_entity->adapter;
+    reg_entity = find_reg_adapter_by_pipe(&manager->reg_adapters, p);
     nng_mtx_unlock(manager->adapters_mtx);
     if (reg_entity != NULL) {
+        cur_adapter = reg_entity->adapter;
         log_info("The manager unbind the adapter(%s)",
                  neu_adapter_get_name(cur_adapter));
         nng_mtx_lock(manager->bind_info.mtx);
@@ -608,6 +608,28 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
     return NEU_ERR_SUCCESS;
 }
 
+int neu_manager_init_main_adapter(neu_manager_t * manager,
+                                  bind_notify_fun bind_adapter,
+                                  bind_notify_fun unbind_adapter)
+{
+    int rv = 0;
+
+    manager_bind_info_t *bind_info;
+
+    bind_info = &manager->bind_info;
+    nng_mtx_lock(bind_info->mtx);
+    while (bind_info->bind_count != bind_info->expect_bind_count) {
+        nng_cv_wait(bind_info->cv);
+    }
+    nng_mtx_unlock(bind_info->mtx);
+
+    rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_ADD_POST,
+                         bind_adapter, manager);
+    rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_REM_POST,
+                         unbind_adapter, manager);
+    return rv;
+}
+
 int neu_manager_init_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 {
     int rv = 0;
@@ -627,7 +649,7 @@ int neu_manager_init_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_ADD_POST,
                          manager_bind_adapter, adapter);
     rv = nng_pipe_notify(manager->bind_info.mng_sock, NNG_PIPE_EV_REM_POST,
-                         manager_unbind_adapter, adapter);
+                         manager_unbind_adapter, manager);
     neu_adapter_init(adapter);
     return rv;
 }
@@ -1064,9 +1086,18 @@ static void manager_loop(void *arg)
     }
 
     nng_mtx_lock(manager->mtx);
-    manager->state = MANAGER_STATE_RUNNING;
+    manager->state = MANAGER_STATE_READY;
+    nng_cv_wake(manager->cv);
     nng_mtx_unlock(manager->mtx);
 
+    // Wait the main process connect to manager
+    nng_mtx_lock(manager->mtx);
+    while (manager->state != MANAGER_STATE_RUNNING) {
+        nng_cv_wait(manager->cv);
+    }
+    nng_mtx_unlock(manager->mtx);
+
+    log_info("Register and start all default adapters");
     register_default_plugins(manager);
     reg_and_start_default_adapters(manager);
     add_default_grp_configs(manager);
@@ -1446,9 +1477,11 @@ neu_manager_t *neu_manager_create()
         neu_panic("Can't allocate mutex for manager");
     }
 
-    rv = nng_cv_alloc(&manager->adapters_cv, manager->adapters_mtx);
-    if (rv != 0) {
-        neu_panic("Failed to initialize condition(cv) for vector of adapters");
+    rv  = nng_cv_alloc(&manager->cv, manager->mtx);
+    rv1 = nng_cv_alloc(&manager->adapters_cv, manager->adapters_mtx);
+    if (rv != 0 || rv1 != 0) {
+        neu_panic("Failed to initialize condition(cv) for manager"
+                  "and vector of adapters");
     }
 
     rv = vector_init(&manager->reg_adapters, DEFAULT_ADAPTER_REG_COUNT,
@@ -1482,9 +1515,37 @@ void neu_manager_destroy(neu_manager_t *manager)
     vector_uninit(&manager->reg_adapters);
 
     nng_cv_free(manager->adapters_cv);
+    nng_cv_free(manager->cv);
     nng_mtx_free(manager->adapters_mtx);
     nng_mtx_free(manager->mtx);
     free(manager);
+    return;
+}
+
+void neu_manager_wait_ready(neu_manager_t *manager)
+{
+    if (manager == NULL) {
+        return;
+    }
+
+    nng_mtx_lock(manager->mtx);
+    while (manager->state != MANAGER_STATE_READY) {
+        nng_cv_wait(manager->cv);
+    }
+    nng_mtx_unlock(manager->mtx);
+    return;
+}
+
+void neu_manager_trigger_running(neu_manager_t *manager)
+{
+    if (manager == NULL) {
+        return;
+    }
+
+    nng_mtx_lock(manager->mtx);
+    manager->state = MANAGER_STATE_RUNNING;
+    nng_cv_wake(manager->cv);
+    nng_mtx_unlock(manager->mtx);
     return;
 }
 

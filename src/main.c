@@ -25,17 +25,19 @@
 #include <unistd.h>
 
 #include <nng/nng.h>
-#include <nng/protocol/bus0/bus.h>
+#include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
 #include "config.h"
+#include "core/message.h"
 #include "core/neu_manager.h"
 #include "idhash.h"
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "restful/rest.h"
 
-static neu_manager_t *manager;
+static neu_manager_t *manager   = NULL;
+static nng_socket     main_sock = { 0 };
 
 static nng_mtx *log_mtx;
 FILE *          g_logfile;
@@ -84,8 +86,56 @@ static int read_neuron_config()
 
 static void sig_handler(int sig)
 {
+    // Receive abort signal, exit the neuron
     log_warn("recv sig: %d", sig);
-    neu_manager_stop(manager);
+
+    int      rv;
+    size_t   msg_size;
+    nng_msg *msg;
+    msg_size = msg_inplace_data_get_size(sizeof(uint32_t));
+    rv       = nng_msg_alloc(&msg, msg_size);
+    if (rv != 0) {
+        neu_panic("Can't allocate msg for stop neuron manager");
+    }
+
+    void *     buf_ptr;
+    message_t *pay_msg;
+    pay_msg = (message_t *) nng_msg_body(msg);
+    msg_inplace_data_init(pay_msg, MSG_CMD_EXIT_LOOP, sizeof(uint32_t));
+
+    buf_ptr               = msg_get_buf_ptr(pay_msg);
+    *(uint32_t *) buf_ptr = 0; // exit_code is 0
+
+    if (main_sock.id != 0) {
+        nng_sendmsg(main_sock, msg, 0);
+    } else {
+        nng_msg_free(msg);
+    }
+
+    if (manager != NULL) {
+        neu_manager_stop(manager);
+    }
+}
+
+static void bind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
+{
+    neu_manager_t *manager;
+
+    (void) ev;
+
+    manager = (neu_manager_t *) arg;
+    neu_manager_trigger_running(manager);
+    log_info("Bind the main adapter to neuron manager with pipe(%d)", p);
+    return;
+}
+
+static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
+{
+    (void) ev;
+    (void) arg;
+
+    log_info("Unbind the main adapter from neuron manager with pipe(%d)", p);
+    return;
 }
 
 int main(int argc, char *argv[])
@@ -143,8 +193,31 @@ int main(int argc, char *argv[])
         rv = -1;
         goto main_end;
     }
+    neu_manager_wait_ready(manager);
 
+    nng_duration recv_timeout = 100;
+    rv                        = nng_pair1_open(&main_sock);
+    if (rv != 0) {
+        neu_panic("The main process can't open pipe");
+    }
+
+    nng_setopt(main_sock, NNG_OPT_RECVTIMEO, &recv_timeout,
+               sizeof(recv_timeout));
+    rv = neu_manager_init_main_adapter(manager, bind_main_adapter,
+                                       unbind_main_adapter);
+
+    const char *manager_url;
+    nng_dialer  dialer = { 0 };
+    manager_url        = neu_manager_get_url(manager);
+    rv                 = nng_dial(main_sock, manager_url, &dialer, 0);
+    if (rv != 0) {
+        neu_panic("The main process can't dial to %s", manager_url);
+    }
+
+    log_info("neuron main process wait for exit");
     neu_manager_destroy(manager);
+    log_info("neuron main process close dialer");
+    nng_dialer_close(dialer);
 
 main_end:
     uninit();
