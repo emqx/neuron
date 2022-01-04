@@ -32,6 +32,8 @@ extern "C" {
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard-plugin"
 #define DEFAULT_DASHBOARD_PLUGIN_LIB_NAME "libplugin_default_dashboard"
+#define DEFAULT_DUMMY_PLUGIN_NAME "default-dummy-plugin"
+#define DEFAULT_DUMMY_PLUGIN_LIB_NAME "libplugin_default_dummy"
 
 typedef struct plugin_reg_param {
     plugin_kind_e  plugin_kind;

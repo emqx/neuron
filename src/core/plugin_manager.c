@@ -29,6 +29,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "adapter/adapter_internal.h"
+#include "dummy/dummy.h"
 #include "neu_panic.h"
 #include "neu_vector.h"
 #include "plugin_manager.h"
@@ -61,6 +62,13 @@ static const plugin_reg_entity_t builtin_static_plugins[] = {
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
         .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
+    },
+    {
+        .plugin_id       = { 2 },
+        .plugin_kind     = PLUGIN_KIND_STATIC,
+        .adapter_type    = ADAPTER_TYPE_APP,
+        .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
+        .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME,
     },
 };
 #define BUILTIN_STATIC_PLUGIN_COUNT \
@@ -620,6 +628,11 @@ static const plugin_module_map_t plugin_module_maps[] = {
     {
         DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
         &default_dashboard_plugin_module,
+
+    },
+    {
+        DEFAULT_DUMMY_PLUGIN_LIB_NAME,
+        &default_dummy_plugin_module,
     },
 };
 #define PLUGIN_MODULE_MAPS_COUNT \
