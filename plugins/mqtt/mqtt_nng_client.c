@@ -42,6 +42,7 @@ struct mqtt_nng_client {
     nng_dialer      dialer;
     char *          url;
     nng_mqtt_cb     callback;
+    int             connected;
 };
 
 struct subscribe_tuple {
@@ -55,14 +56,18 @@ struct subscribe_tuple {
 
 static void client_on_connected(void *arg, nng_msg *ack_msg)
 {
-    uint8_t status = nng_mqtt_msg_get_connack_return_code(ack_msg);
+    mqtt_nng_client_t *client = (mqtt_nng_client_t *) arg;
+    uint8_t            status = nng_mqtt_msg_get_connack_return_code(ack_msg);
+    client->connected         = (0 == status) ? 1 : 0;
+
     log_info("connected status:%d", status);
     nng_msg_free(ack_msg);
 }
 
 static void client_on_disconnected(void *arg, nng_msg *msg)
 {
-    (void) arg;
+    mqtt_nng_client_t *client = (mqtt_nng_client_t *) arg;
+    client->connected         = 0;
     log_info("disconnect mqtt");
     nng_msg_free(msg);
 }
@@ -134,6 +139,7 @@ static mqtt_nng_client_t *client_create(const option_t *option, void *context)
     client->option    = option;
     client->user_data = context;
     client->client_id = client->option->clientid;
+    client->connected = 0;
 
     char url[MAX_URL_LEN] = { '\0' };
     snprintf(url, MAX_URL_LEN, "mqtt-tcp://%s:%s", option->host, option->port);
@@ -186,9 +192,9 @@ static client_error_e client_connect(mqtt_nng_client_t *client)
     }
 
     if (NULL != client->option->will_topic) {
-        nng_mqtt_msg_set_connect_will_msg(connect_msg,
-                                          client->option->will_payload,
-                                          strlen(client->option->will_payload));
+        nng_mqtt_msg_set_connect_will_msg(
+            connect_msg, (uint8_t *) client->option->will_payload,
+            strlen(client->option->will_payload));
         nng_mqtt_msg_set_connect_will_topic(connect_msg,
                                             client->option->will_topic);
     }
@@ -229,7 +235,11 @@ client_error_e mqtt_nng_client_open(mqtt_nng_client_t **p_client,
 
 client_error_e mqtt_nng_client_is_connected(mqtt_nng_client_t *client)
 {
-    return MQTTC_SUCCESS;
+    if (NULL == client) {
+        return MQTTC_IS_NULL;
+    }
+
+    return (0 == client->connected) ? MQTTC_SUCCESS : MQTTC_CONNECT_FAILURE;
 }
 
 static struct subscribe_tuple *
@@ -321,9 +331,69 @@ client_error_e mqtt_nng_client_subscribe(mqtt_nng_client_t *client,
     return MQTTC_SUCCESS;
 }
 
+struct subscribe_tuple *client_unsubscribe_create(mqtt_nng_client_t *client,
+                                                  const char *       topic)
+{
+    struct subscribe_tuple *item = NULL;
+    NEU_LIST_FOREACH(&client->subscribe_list, item)
+    {
+        if (0 == strcmp(item->topic, topic)) {
+            return item;
+        }
+    }
+
+    log_error("Cant find topic %s", topic);
+    return NULL;
+}
+
+client_error_e client_unsubscribe_send(mqtt_nng_client_t *     client,
+                                       struct subscribe_tuple *tuple)
+{
+    nng_msg *unsubscribe_msg = NULL;
+    nng_mqtt_msg_alloc(&unsubscribe_msg, 0);
+    nng_mqtt_msg_set_packet_type(unsubscribe_msg, NNG_MQTT_UNSUBSCRIBE);
+
+    nng_mqtt_topic topic = { .buf    = (uint8_t *) tuple->topic,
+                             .length = strlen(tuple->topic) };
+    nng_mqtt_msg_set_unsubscribe_topics(unsubscribe_msg, &topic, 1);
+
+    if (1 == client->option->verbose) {
+        uint8_t buff[1024] = { 0 };
+        nng_mqtt_msg_dump(unsubscribe_msg, buff, sizeof(buff), true);
+        log_info("%s", buff);
+    }
+
+    int ret = nng_sendmsg(client->sock, unsubscribe_msg, 0);
+    nng_msg_free(unsubscribe_msg);
+    if (0 != ret) {
+        log_error("Unsubscribe msg send error:%d", ret);
+        return MQTTC_UNSUBSCRIBE_FAILURE;
+    }
+
+    return MQTTC_SUCCESS;
+}
+
+client_error_e client_unsubscribe_remove(mqtt_nng_client_t *     client,
+                                         struct subscribe_tuple *tuple)
+{
+    neu_list_remove(&client->subscribe_list, tuple);
+    return MQTTC_SUCCESS;
+}
+
 client_error_e mqtt_nng_client_unsubscribe(mqtt_nng_client_t *client,
                                            const char *       topic)
 {
+    if (NULL == client) {
+        return MQTTC_IS_NULL;
+    }
+
+    struct subscribe_tuple *tuple = client_unsubscribe_create(client, topic);
+    if (NULL == tuple) {
+        return MQTTC_UNSUBSCRIBE_FAILURE;
+    }
+
+    client_unsubscribe_send(client, tuple);
+    client_unsubscribe_remove(client, tuple);
     return MQTTC_SUCCESS;
 }
 
@@ -331,6 +401,10 @@ client_error_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
                                        const char *topic, int qos,
                                        unsigned char *payload, size_t len)
 {
+    if (NULL == client) {
+        return MQTTC_IS_NULL;
+    }
+
     nng_msg *publish_msg = NULL;
     nng_mqtt_msg_alloc(&publish_msg, 0);
     nng_mqtt_msg_set_packet_type(publish_msg, NNG_MQTT_PUBLISH);
@@ -347,6 +421,7 @@ client_error_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
     }
 
     int ret = nng_sendmsg(client->sock, publish_msg, 0);
+    nng_msg_free(publish_msg);
     if (0 != ret) {
         log_error("Publish msg send error:%d", ret);
         return MQTTC_PUBLISH_FAILURE;
