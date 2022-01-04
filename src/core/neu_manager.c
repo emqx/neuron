@@ -121,6 +121,7 @@ static const char *const manager_url = "inproc://neu_manager";
 #define SAMPLE_APP_ADAPTER_NAME "sample-app-adapter"
 #endif
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
+#define DEFAULT_PERSIST_ADAPTER_NAME "default-persist-adapter"
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 #define MQTT_ADAPTER_NAME "mqtt-adapter"
 #define MODBUS_TCP_ADAPTER_NAME "modbus-tcp-adapter"
@@ -169,6 +170,12 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .adapter_type = ADAPTER_TYPE_WEBSERVER,
         .adapter_name = DEFAULT_DASHBOARD_ADAPTER_NAME,
         .plugin_name  = DEFAULT_DASHBOARD_PLUGIN_NAME,
+        .plugin_id    = { 0 } // The plugin_id is nothing
+    },
+    {
+        .adapter_type = ADAPTER_TYPE_APP,
+        .adapter_name = DEFAULT_PERSIST_ADAPTER_NAME,
+        .plugin_name  = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
     /*
