@@ -449,6 +449,7 @@ client_error_e client_unsubscribe_remove(mqtt_nng_client_t *     client,
                                          struct subscribe_tuple *tuple)
 {
     neu_list_remove(&client->subscribe_list, tuple);
+    client_subscribe_destroy(tuple);
     return MQTTC_SUCCESS;
 }
 
@@ -509,12 +510,10 @@ static client_error_e mqtt_nng_client_disconnect(mqtt_nng_client_t *client)
         tuple                         = neu_list_first(&client->subscribe_list);
         if (NULL != tuple) {
             mqtt_nng_client_unsubscribe(client, tuple->topic);
-            neu_list_remove(&client->subscribe_list, tuple);
-            client_subscribe_destroy(tuple);
         }
     }
 
-    nng_dialer_close(client->dialer);
+    // nng_dialer_close(client->dialer);
     return MQTTC_SUCCESS;
 }
 
