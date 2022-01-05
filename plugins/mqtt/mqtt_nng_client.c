@@ -45,6 +45,11 @@ struct mqtt_nng_client {
     char *          url;
     nng_mqtt_cb     callback;
     int             connected;
+    char *          ca;
+    char *          cert;
+    char *          key;
+    char *          keypass;
+    nng_tls_config *config;
 };
 
 struct subscribe_tuple {
@@ -56,7 +61,7 @@ struct subscribe_tuple {
     mqtt_nng_client_t *client;
 };
 
-struct client_string {
+struct string {
     size_t         length;
     unsigned char *data;
 };
@@ -133,6 +138,36 @@ static void *client_refresher(void *context)
     return NULL;
 }
 
+static struct string client_file_load(const char *const path)
+{
+    struct string string = { 0 };
+    FILE *        fp     = fopen(path, "rb");
+    if (!fp) {
+        errno = 0;
+        return string;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    string.length = (size_t) ftell(fp);
+    string.data   = malloc((string.length + 1) * sizeof(unsigned char));
+    if (NULL != string.data) {
+        string.data[string.length] = '\0';
+        fseek(fp, 0, SEEK_SET);
+        size_t read =
+            fread(string.data, sizeof(unsigned char), string.length, fp);
+        if (read != string.length) {
+            free(string.data);
+            string.data   = NULL;
+            string.length = 0;
+        }
+    } else {
+        string.length = 0;
+    }
+
+    fclose(fp);
+    return string;
+}
+
 static mqtt_nng_client_t *client_create(const option_t *option, void *context)
 {
     mqtt_nng_client_t *client = malloc(sizeof(mqtt_nng_client_t));
@@ -152,6 +187,25 @@ static mqtt_nng_client_t *client_create(const option_t *option, void *context)
     snprintf(url, MAX_URL_LEN, "mqtt-tcp://%s:%s", option->host, option->port);
     client->url = strdup(url);
 
+    if (NULL != client->option->cert) {
+        struct string str = client_file_load(client->option->cert);
+        client->cert      = (char *) str.data;
+    }
+
+    if (NULL != client->option->key) {
+        struct string str = client_file_load(client->option->key);
+        client->key       = (char *) str.data;
+    }
+
+    if (NULL != client->option->keypass) {
+        client->keypass = strdup(client->option->keypass);
+    }
+
+    if (NULL != client->option->cafile) {
+        struct string str = client_file_load(client->option->cafile);
+        client->ca        = (char *) str.data;
+    }
+
     client->callback.name            = "neuron_client";
     client->callback.on_connected    = client_on_connected;
     client->callback.on_disconnected = client_on_disconnected;
@@ -162,66 +216,31 @@ static mqtt_nng_client_t *client_create(const option_t *option, void *context)
     return client;
 }
 
-static struct client_string client_file_load(const char *const path)
-{
-    struct client_string string = { 0 };
-    FILE *               fp     = fopen(path, "rb");
-    if (!fp) {
-        errno = 0;
-        return string;
-    }
-
-    fseek(fp, 0, SEEK_END);
-    string.length = (size_t) ftell(fp);
-    string.data   = malloc(string.length * sizeof(unsigned char));
-    if (NULL != string.data) {
-        fseek(fp, 0, SEEK_SET);
-        size_t read =
-            fread(string.data, sizeof(unsigned char), string.length, fp);
-        if (read != string.length) {
-            free(string.data);
-            string.data   = NULL;
-            string.length = 0;
-        }
-    } else {
-        string.length = 0;
-    }
-
-    fclose(fp);
-    return string;
-}
-
 static int client_tls(mqtt_nng_client_t *client)
 {
-    // char *capath  = client->option->capath;
-    char *cert    = client->option->cert;
-    char *cafile  = client->option->cafile;
-    char *key     = client->option->key;
-    char *keypass = client->option->keypass;
-
-    nng_tls_config *config = NULL;
-    int             ret    = nng_tls_config_alloc(&config, NNG_TLS_MODE_CLIENT);
+    int ret = nng_tls_config_alloc(&client->config, NNG_TLS_MODE_CLIENT);
     if (0 != ret) {
         return ret;
     }
 
-    if (NULL != cert && NULL != key) {
-        nng_tls_config_auth_mode(config, NNG_TLS_AUTH_MODE_REQUIRED);
-        if (0 != nng_tls_config_own_cert(config, cert, key, keypass)) {
+    if (NULL != client->cert && NULL != client->key) {
+        nng_tls_config_auth_mode(client->config, NNG_TLS_AUTH_MODE_REQUIRED);
+        if (0 !=
+            nng_tls_config_own_cert(client->config, client->cert, client->key,
+                                    client->keypass)) {
             return -1;
         }
     } else {
-        nng_tls_config_auth_mode(config, NNG_TLS_AUTH_MODE_NONE);
+        nng_tls_config_auth_mode(client->config, NNG_TLS_AUTH_MODE_NONE);
     }
 
-    if (NULL != cafile) {
-        if (0 != nng_tls_config_ca_chain(config, cafile, NULL)) {
+    if (NULL != client->ca) {
+        if (0 != nng_tls_config_ca_chain(client->config, client->ca, NULL)) {
             return -1;
         }
     }
 
-    nng_dialer_setopt_ptr(client->dialer, NNG_OPT_TLS_CONFIG, config);
-
+    nng_dialer_setopt_ptr(client->dialer, NNG_OPT_TLS_CONFIG, client->config);
     return 0;
 }
 
@@ -241,7 +260,9 @@ static client_error_e client_connection_init(mqtt_nng_client_t *client)
     }
 
     // TCP
-    if (0 == strcmp(client->option->connection, "tcp://")) { }
+    if (0 == strcmp(client->option->connection, "tcp://")) {
+        // do nothing
+    }
 
     if (pthread_create(&client->daemon, NULL, client_refresher, client)) {
         log_error("Failed to start client daemon.");
@@ -513,7 +534,7 @@ static client_error_e mqtt_nng_client_disconnect(mqtt_nng_client_t *client)
         }
     }
 
-    // nng_dialer_close(client->dialer);
+    nng_dialer_close(client->dialer);
     return MQTTC_SUCCESS;
 }
 
@@ -523,6 +544,26 @@ static client_error_e mqtt_nng_client_destroy(mqtt_nng_client_t *client)
 
     if (NULL != client->url) {
         free(client->url);
+    }
+
+    if (NULL != client->cert) {
+        free(client->cert);
+    }
+
+    if (NULL != client->key) {
+        free(client->key);
+    }
+
+    if (NULL != client->keypass) {
+        free(client->keypass);
+    }
+
+    if (NULL != client->ca) {
+        free(client->ca);
+    }
+
+    if (NULL != client->config) {
+        nng_tls_config_free(client->config);
     }
 
     free(client);
