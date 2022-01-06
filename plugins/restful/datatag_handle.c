@@ -38,7 +38,8 @@ void handle_add_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
-            neu_taggrp_config_t *config = neu_system_find_group_config(
+            neu_taggrp_config_t *new_config = NULL;
+            neu_taggrp_config_t *config     = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
             neu_datatag_table_t *table =
                 neu_system_get_datatags_table(plugin, req->node_id);
@@ -51,12 +52,14 @@ void handle_add_tags(nng_aio *aio)
             }
 
             if (config == NULL) {
-                config = neu_taggrp_cfg_new(req->group_config_name);
+                new_config = neu_taggrp_cfg_new(req->group_config_name);
                 neu_taggrp_cfg_set_interval(config, 10000);
                 neu_system_add_group_config(plugin, req->node_id, config);
+            } else {
+                new_config = neu_taggrp_cfg_clone(config);
             }
 
-            vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(config);
+            vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(new_config);
             neu_err_code_e code = { 0 };
 
             for (int i = 0; i < req->n_tag; i++) {
@@ -99,7 +102,8 @@ void handle_del_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
-            neu_taggrp_config_t *config = neu_system_find_group_config(
+            neu_taggrp_config_t *new_config = NULL;
+            neu_taggrp_config_t *config     = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
             neu_datatag_table_t *table =
                 neu_system_get_datatags_table(plugin, req->node_id);
@@ -111,9 +115,11 @@ void handle_del_tags(nng_aio *aio)
                 return;
             }
 
+            new_config = neu_taggrp_cfg_clone(config);
+
             for (int i = 0; i < req->n_id; i++) {
                 if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
-                    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+                    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(new_config);
 
                     VECTOR_FOR_EACH(ids, iter)
                     {
@@ -126,6 +132,8 @@ void handle_del_tags(nng_aio *aio)
                     }
                 }
             }
+
+            neu_taggrp_cfg_unanchor(config);
 
             NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
                 http_response(aio, NEU_ERR_SUCCESS, result_error);
