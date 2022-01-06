@@ -130,12 +130,12 @@ neu_taggrp_config_t *neu_taggrp_cfg_clone(neu_taggrp_config_t *src_config)
     int                  rv;
     neu_taggrp_config_t *dst_config;
 
-    if (src_config != NULL) {
+    if (src_config == NULL) {
         return NULL;
     }
 
     dst_config = neu_taggrp_cfg_new(src_config->config_name);
-    if (dst_config != NULL) {
+    if (dst_config == NULL) {
         return NULL;
     }
 

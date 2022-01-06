@@ -104,10 +104,6 @@ static void start_periodic_read(neu_plugin_t *       plugin,
         neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter);
         neu_datatag_t *   tag = neu_datatag_tbl_get(plugin->tag_table, *id);
 
-        if (tag == NULL) {
-            // The tag had been deleted by other node
-            continue;
-        }
         if ((tag->attribute & NEU_ATTRIBUTE_READ) == NEU_ATTRIBUTE_READ) {
             switch (tag->type) {
             case NEU_DTYPE_UINT16:
@@ -206,11 +202,6 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
         neu_datatag_t *   tag     = neu_datatag_tbl_get(tag_table, *id);
         int               result  = 0;
         neu_int_val_t     int_val = { 0 };
-
-        if (tag == NULL) {
-            // The tag had been deleted by other node
-            continue;
-        }
 
         if ((tag->attribute & NEU_ATTRIBUTE_READ) == NEU_ATTRIBUTE_READ) {
             switch (tag->type) {
@@ -462,7 +453,6 @@ static void tags_periodic_read(nng_aio *aio, void *arg, int code)
 
             stop_periodic_read(sub_inst->plugin, sub_inst->grp_configs);
 
-            neu_taggrp_cfg_anchor(new_config);
             if (new_config != NULL) {
                 start_periodic_read(plugin, new_config);
             }
