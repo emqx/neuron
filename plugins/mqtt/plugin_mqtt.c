@@ -23,8 +23,8 @@
 #include <sys/time.h>
 
 #include "command/command.h"
-#include "mqttc_client.h"
-#include "mqttc_util.h"
+#include "mqtt_nng_client.h"
+#include "mqtt_nng_util.h"
 #include <neuron.h>
 
 #define UNUSED(x) (void) (x)
@@ -34,7 +34,7 @@
 #define MQTT_SEND(client, topic, qos, json_str)                           \
     {                                                                     \
         if (NULL != json_str) {                                           \
-            client_error_e error = mqttc_client_publish(                  \
+            client_error_e error = mqtt_nng_client_publish(               \
                 client, topic, qos, (unsigned char *) json_str,           \
                 strlen(json_str));                                        \
             log_debug("Publish error code:%d, json:%s", error, json_str); \
@@ -221,7 +221,8 @@ static void *mqtt_send_loop(void *argument)
         }
 
         // Update link state
-        if (MQTTC_SUCCESS != mqttc_client_is_connected(plugin->mqtt_client)) {
+        if (MQTTC_SUCCESS !=
+            mqtt_nng_client_is_connected(plugin->mqtt_client)) {
             plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
         } else {
             plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
@@ -291,8 +292,8 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
-    // Close MQTT-C client
-    mqttc_client_close(plugin->mqtt_client);
+    // Close MQTT-NNG client
+    mqtt_nng_client_close(plugin->mqtt_client);
     plugin->mqtt_client = NULL;
     mqtt_option_uninit(&plugin->option);
 
@@ -314,8 +315,8 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
-    // Try close MQTT-C client
-    mqttc_client_close(plugin->mqtt_client);
+    // Try close MQTT-NNG client
+    mqtt_nng_client_close(plugin->mqtt_client);
     plugin->mqtt_client = NULL;
     mqtt_option_uninit(&plugin->option);
 
@@ -328,11 +329,11 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
-    // MQTT-C client setup
-    client_error_e error = mqttc_client_open(
-        &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
-    error = mqttc_client_subscribe(plugin->mqtt_client, plugin->option.topic, 0,
-                                   mqtt_response_handle);
+    // MQTT-NNG client setup
+    client_error_e error = mqtt_nng_client_open(
+        (mqtt_nng_client_t **) &plugin->mqtt_client, &plugin->option, plugin);
+    error = mqtt_nng_client_subscribe(plugin->mqtt_client, plugin->option.topic,
+                                      0, mqtt_response_handle);
     if (MQTTC_IS_NULL == error) {
         log_error("Can not create mqtt client instance, initialize plugin "
                   "failed: %s",

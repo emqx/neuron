@@ -121,7 +121,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINAR
 add_executable(mqtt_test mqtt_test.cc 
 	${CMAKE_SOURCE_DIR}/src/config.c
 	${CMAKE_SOURCE_DIR}/src/schema/schema.c
-	${CMAKE_SOURCE_DIR}/plugins/mqtt/mqttc_util.c
+	${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt_nng_util.c
 	${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt_nng_client.c
 	${CMAKE_SOURCE_DIR}/plugins/mqtt/command/node.c)
 target_include_directories(mqtt_test PRIVATE 

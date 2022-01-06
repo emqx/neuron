@@ -2,7 +2,7 @@
 
 #include "command/node.h"
 #include "mqtt_nng_client.h"
-#include "mqttc_util.h"
+#include "mqtt_nng_util.h"
 #include <neuron.h>
 
 TEST(MQTTTest, mqtt_option_init_by_config)

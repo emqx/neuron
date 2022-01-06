@@ -3,8 +3,8 @@ set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 set(src 
 	plugin_mqtt.c 
-	mqttc_util.c
-	mqttc_client.c
+	mqtt_nng_util.c
+	mqtt_nng_client.c
 	command/common.c 
 	command/read_write.c
 	command/group_config.c
@@ -27,7 +27,8 @@ target_link_libraries(plugin-mqtt
 	mqttc 
 	ssl 
 	crypto 
-	yaml)
+	yaml
+	nng)
 
 target_link_libraries(plugin-mqtt ${CMAKE_THREAD_LIBS_INIT})
 

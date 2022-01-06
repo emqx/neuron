@@ -22,8 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+<<<<<<< HEAD:plugins/mqtt/mqttc_util.c
 #include "mqttc_util.h"
 #include "schema.h"
+=======
+#include "mqtt_nng_util.h"
+#include "schema/schema.h"
+>>>>>>> Remove the MQTT-C dependency library:plugins/mqtt/mqtt_nng_util.c
 #include "json/json.h"
 #include <config.h>
 #include <neuron.h>
@@ -462,6 +467,9 @@ int mqtt_option_init_by_config(neu_config_t *config, option_t *option)
         snprintf(option->port, 10, "%d", setting.port);
     }
 
+    char uuid4_str[40] = { '\0' };
+    neu_uuid_v4_gen(uuid4_str);
+    option->clientid = strdup(uuid4_str);
     option->username = setting.username;
     option->password = setting.password;
     option->capath   = setting.ca_path;

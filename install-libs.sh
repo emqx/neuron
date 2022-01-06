@@ -12,7 +12,7 @@ if [ $system == 'Linux' ]; then
     fi
 fi
 
-lib_list=(zlib openssl mbedtls nng jansson jwt MQTT-C gtest open62541 yaml)
+lib_list=(zlib openssl mbedtls nng jansson jwt gtest open62541 yaml)
 
 list_str=""
 for var in ${lib_list[*]}; do
@@ -63,7 +63,7 @@ function build_cmake() {
 
 # mbedtls
 function build_mbedtls() {
-    echo "Building nng (mbedtls)"
+    echo "Building mbedtls(v3.1.0)"
     if [ ! -d mbedtls ]; then
         git clone -b v3.1.0 ${git_url_prefix}ARMmbed/mbedtls.git
     fi
@@ -143,26 +143,6 @@ function build_jwt() {
     ninja install
 
     echo "Leaving libjwt "
-    cd ../../
-}
-
-# MQTT-C
-function build_MQTT-C() {
-    echo "Building MQTT-C (neugates/main)"
-    if [ ! -d MQTT-C ]; then
-        git clone ${git_url_prefix}neugates/MQTT-C.git
-    fi
-    cd MQTT-C
-    rm -rf build
-    mkdir build
-    cd build
-    cmake -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-        -DMQTT_C_OpenSSL_SUPPORT=ON \
-        -DMQTT_C_EXAMPLES=OFF \
-        ${ssl_lib_flag} ${compiler_opt} ${install_opt} ..
-    ninja
-    ninja install
-    echo "Leaving MQTT-C "
     cd ../../
 }
 

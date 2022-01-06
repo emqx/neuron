@@ -27,7 +27,7 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-#include "mqttc_util.h"
+#include "mqtt_nng_util.h"
 
 typedef struct mqtt_nng_client mqtt_nng_client_t;
 
