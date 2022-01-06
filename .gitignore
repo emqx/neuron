@@ -8,4 +8,5 @@ compile_commands.json
 *.log
 *.tar.gz
 ft/reports
+include/csptr/
 __pycache__
