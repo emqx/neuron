@@ -39,6 +39,7 @@ typedef enum msg_type {
     MSG_CMD_SUBSCRIBE_NODE,
     MSG_CMD_UNSUBSCRIBE_NODE,
     MSG_CMD_GROUP_CONFIG_CHANGED,
+    MSG_CMD_PERSISTENCE_LOAD,
     MSG_CMD_EXIT_LOOP,
     MSG_CMD_RESP_PONG, // response pong for ping
     MSG_TYPE_CMD_END,
