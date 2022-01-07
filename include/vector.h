@@ -135,7 +135,9 @@ size_t iterator_index(Vector* vector, Iterator* iterator);
 
 /***** PRIVATE *****/
 
+#ifndef MAX
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
+#endif
 
 bool _vector_should_grow(Vector* vector);
 bool _vector_should_shrink(Vector* vector);
