@@ -186,6 +186,52 @@ static neu_persister_t *persister_singleton_get()
     return g_persister_singleton;
 }
 
+static int persister_singleton_load_data(neu_adapter_t *adapter)
+{
+    vector_t *       adapter_infos = NULL;
+    neu_persister_t *persister     = persister_singleton_get();
+
+    log_info("%s start persistence loading", adapter->name);
+
+    // TODO: load plugin infos
+
+    int rv = neu_persister_load_adapters(persister, &adapter_infos);
+    if (0 != rv) {
+        log_error("%s failed to load adapter infos", adapter->name);
+        goto error_load_adapters;
+    }
+
+    VECTOR_FOR_EACH(adapter_infos, iter)
+    {
+        neu_persist_adapter_info_t *adapter_info = iterator_get(&iter);
+        neu_cmd_add_node_t          add_node_cmd = {
+            .node_type    = adapter_info->type,
+            .adapter_name = adapter_info->name,
+            .plugin_name  = adapter_info->plugin_name,
+        };
+
+        rv = neu_manager_add_node(adapter->manager, &add_node_cmd, NULL);
+        const char *ok_or_err = (0 == rv) ? "success" : "fail";
+        log_info("%s load adapter %s type:%d, name:%s plugin:%s", adapter->name,
+                 ok_or_err, adapter_info->type, adapter_info->name,
+                 adapter_info->plugin_name);
+        if (0 != rv) {
+            goto error_add_adapters;
+        }
+        // TODO: node setting
+        // TODO: start node according to state
+    }
+
+    neu_persist_adapter_infos_free(adapter_infos);
+
+    return rv;
+
+error_add_adapters:
+    neu_persist_adapter_infos_free(adapter_infos);
+error_load_adapters:
+    return rv;
+}
+
 static int persister_singleton_handle_nodes(neu_adapter_t *adapter,
                                             msg_type_e     event,
                                             const char *   node_name)
@@ -279,7 +325,7 @@ static void adapter_loop(void *arg)
         neu_panic("The adapter can't dial to %s", manager_url);
     }
 
-    const char *adapter_str = "adapter started";
+    const char *adapter_str = adapter->name;
     nng_msg *   out_msg;
     size_t      msg_size;
     msg_size = msg_inplace_data_get_size(strlen(adapter_str) + 1);
@@ -353,6 +399,11 @@ static void adapter_loop(void *arg)
                 neu_dvalue_free(data_req.data_val);
             }
             neu_trans_buf_uninit(trans_buf);
+            break;
+        }
+
+        case MSG_CMD_PERSISTENCE_LOAD: {
+            persister_singleton_load_data(adapter);
             break;
         }
 

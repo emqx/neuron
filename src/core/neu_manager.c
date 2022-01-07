@@ -1149,6 +1149,17 @@ static void manager_loop(void *arg)
                 log_info("Reply pong to pipe: %d", msg_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
+            if (0 ==
+                strncmp(DEFAULT_PERSIST_ADAPTER_NAME, buf_ptr,
+                        msg_get_buf_len(pay_msg))) {
+                msg_size           = msg_inplace_data_get_size(0);
+                rv                 = nng_msg_alloc(&out_msg, msg_size);
+                message_t *msg_ptr = (message_t *) nng_msg_body(out_msg);
+                msg_inplace_data_init(msg_ptr, MSG_CMD_PERSISTENCE_LOAD, 0);
+                nng_msg_set_pipe(out_msg, msg_pipe);
+                log_info("Send persistence load to pipe: %d", msg_pipe);
+                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
+            }
             break;
         }
 
@@ -1669,8 +1680,10 @@ int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
     reg_cmd.plugin_id    = cmd->plugin_id;
     rv = manager_reg_adapter(manager, &reg_cmd, &adapter, &adapter_id);
     if (rv == NEU_ERR_SUCCESS) {
-        *p_node_id = neu_manager_adapter_id_to_node_id(manager, adapter_id);
-        rv         = neu_manager_init_adapter(manager, adapter);
+        if (NULL != p_node_id) {
+            *p_node_id = neu_manager_adapter_id_to_node_id(manager, adapter_id);
+        }
+        rv = neu_manager_init_adapter(manager, adapter);
     }
     return rv;
 }
