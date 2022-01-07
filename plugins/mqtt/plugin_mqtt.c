@@ -221,8 +221,7 @@ static void *mqtt_send_loop(void *argument)
         }
 
         // Update link state
-        if (MQTTC_SUCCESS !=
-            mqtt_nng_client_is_connected(plugin->mqtt_client)) {
+        if (MQTT_SUCCESS != mqtt_nng_client_is_connected(plugin->mqtt_client)) {
             plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
         } else {
             plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
@@ -321,7 +320,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     mqtt_option_uninit(&plugin->option);
 
     // Use new config set MQTT option instance
-    int rc = mqtt_option_init_by_config(configs, &plugin->option);
+    int rc = mqtt_option_init(configs, &plugin->option);
     if (0 != rc) {
         log_error("MQTT option init fail:%d, initialize plugin failed: %s", rc,
                   neu_plugin_module.module_name);
@@ -334,7 +333,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         (mqtt_nng_client_t **) &plugin->mqtt_client, &plugin->option, plugin);
     error = mqtt_nng_client_subscribe(plugin->mqtt_client, plugin->option.topic,
                                       0, mqtt_response_handle);
-    if (MQTTC_IS_NULL == error) {
+    if (MQTT_IS_NULL == error) {
         log_error("Can not create mqtt client instance, initialize plugin "
                   "failed: %s",
                   neu_plugin_module.module_name);

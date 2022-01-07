@@ -129,7 +129,7 @@ target_include_directories(mqtt_test PRIVATE
 	${CMAKE_SOURCE_DIR}/include       
 	${CMAKE_SOURCE_DIR}/src/schema
 	${CMAKE_SOURCE_DIR}/plugins/mqtt)
-target_link_libraries(mqtt_test neuron-base gtest_main gtest yaml jansson ssl crypto nng)
+target_link_libraries(mqtt_test neuron-base gtest_main gtest jansson nng)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/persist SRC_PERSIST)
 add_executable(json_persistence_test json_persistence_test.cc ${SRC_PERSIST})

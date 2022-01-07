@@ -247,11 +247,11 @@ static int client_tls(mqtt_nng_client_t *client)
 static client_error_e client_connection_init(mqtt_nng_client_t *client)
 {
     if (0 != nng_mqtt_client_open(&client->sock)) {
-        return MQTTC_INIT_FAILURE;
+        return MQTT_INIT_FAILURE;
     }
 
     if (0 != nng_dialer_create(&client->dialer, client->sock, client->url)) {
-        return MQTTC_CONNECT_FAILURE;
+        return MQTT_CONNECT_FAILURE;
     }
 
     // SSL
@@ -266,10 +266,10 @@ static client_error_e client_connection_init(mqtt_nng_client_t *client)
 
     if (pthread_create(&client->daemon, NULL, client_refresher, client)) {
         log_error("Failed to start client daemon.");
-        return MQTTC_CONNECT_FAILURE;
+        return MQTT_CONNECT_FAILURE;
     }
 
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 static client_error_e client_connect(mqtt_nng_client_t *client)
@@ -309,7 +309,7 @@ static client_error_e client_connect(mqtt_nng_client_t *client)
     nng_dialer_set_ptr(client->dialer, NNG_OPT_MQTT_CONNMSG, connect_msg);
     nng_dialer_set_cb(client->dialer, &client->callback);
     nng_dialer_start(client->dialer, NNG_FLAG_NONBLOCK);
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 client_error_e mqtt_nng_client_open(mqtt_nng_client_t **p_client,
@@ -317,7 +317,7 @@ client_error_e mqtt_nng_client_open(mqtt_nng_client_t **p_client,
 {
     mqtt_nng_client_t *client = client_create(option, context);
     if (NULL == client) {
-        return MQTTC_IS_NULL;
+        return MQTT_IS_NULL;
     }
 
     client_error_e rc = client_connection_init(client);
@@ -329,10 +329,10 @@ client_error_e mqtt_nng_client_open(mqtt_nng_client_t **p_client,
 client_error_e mqtt_nng_client_is_connected(mqtt_nng_client_t *client)
 {
     if (NULL == client) {
-        return MQTTC_IS_NULL;
+        return MQTT_IS_NULL;
     }
 
-    return (0 == client->connected) ? MQTTC_SUCCESS : MQTTC_CONNECT_FAILURE;
+    return (1 == client->connected) ? MQTT_SUCCESS : MQTT_CONNECT_FAILURE;
 }
 
 static struct subscribe_tuple *
@@ -362,7 +362,7 @@ client_error_e client_subscribe_destroy(struct subscribe_tuple *tuple)
         free(tuple);
     }
 
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 static client_error_e client_subscribe_send(mqtt_nng_client_t *     client,
@@ -390,10 +390,10 @@ static client_error_e client_subscribe_send(mqtt_nng_client_t *     client,
 
     if (0 != ret) {
         log_error("Subscribe msg send error:%d", ret);
-        return MQTTC_SUBSCRIBE_FAILURE;
+        return MQTT_SUBSCRIBE_FAILURE;
     }
 
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 static client_error_e client_subscribe_add(mqtt_nng_client_t *     client,
@@ -401,7 +401,7 @@ static client_error_e client_subscribe_add(mqtt_nng_client_t *     client,
 {
     NEU_LIST_NODE_INIT(&tuple->node);
     neu_list_append(&client->subscribe_list, tuple);
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 client_error_e mqtt_nng_client_subscribe(mqtt_nng_client_t *client,
@@ -411,17 +411,17 @@ client_error_e mqtt_nng_client_subscribe(mqtt_nng_client_t *client,
     struct subscribe_tuple *tuple =
         client_subscribe_create(client, topic, qos, handle);
     if (NULL == tuple) {
-        return MQTTC_SUBSCRIBE_FAILURE;
+        return MQTT_SUBSCRIBE_FAILURE;
     }
 
     client_subscribe_add(client, tuple);
     client_error_e error = client_subscribe_send(client, tuple);
-    if (MQTTC_SUCCESS != error) {
-        return MQTTC_SUBSCRIBE_FAILURE;
+    if (MQTT_SUCCESS != error) {
+        return MQTT_SUBSCRIBE_FAILURE;
     }
 
     log_info("Subscribing to topic %s for using QoS%d", topic, qos);
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 struct subscribe_tuple *client_unsubscribe_create(mqtt_nng_client_t *client,
@@ -460,10 +460,10 @@ client_error_e client_unsubscribe_send(mqtt_nng_client_t *     client,
     nng_msg_free(unsubscribe_msg);
     if (0 != ret) {
         log_error("Unsubscribe msg send error:%d", ret);
-        return MQTTC_UNSUBSCRIBE_FAILURE;
+        return MQTT_UNSUBSCRIBE_FAILURE;
     }
 
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 client_error_e client_unsubscribe_remove(mqtt_nng_client_t *     client,
@@ -471,24 +471,24 @@ client_error_e client_unsubscribe_remove(mqtt_nng_client_t *     client,
 {
     neu_list_remove(&client->subscribe_list, tuple);
     client_subscribe_destroy(tuple);
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 client_error_e mqtt_nng_client_unsubscribe(mqtt_nng_client_t *client,
                                            const char *       topic)
 {
     if (NULL == client) {
-        return MQTTC_IS_NULL;
+        return MQTT_IS_NULL;
     }
 
     struct subscribe_tuple *tuple = client_unsubscribe_create(client, topic);
     if (NULL == tuple) {
-        return MQTTC_UNSUBSCRIBE_FAILURE;
+        return MQTT_UNSUBSCRIBE_FAILURE;
     }
 
     client_unsubscribe_send(client, tuple);
     client_unsubscribe_remove(client, tuple);
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 client_error_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
@@ -496,7 +496,7 @@ client_error_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
                                        unsigned char *payload, size_t len)
 {
     if (NULL == client) {
-        return MQTTC_IS_NULL;
+        return MQTT_IS_NULL;
     }
 
     nng_msg *publish_msg = NULL;
@@ -518,10 +518,10 @@ client_error_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
     nng_msg_free(publish_msg);
     if (0 != ret) {
         log_error("Publish msg send error:%d", ret);
-        return MQTTC_PUBLISH_FAILURE;
+        return MQTT_PUBLISH_FAILURE;
     }
 
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 static client_error_e mqtt_nng_client_disconnect(mqtt_nng_client_t *client)
@@ -534,8 +534,8 @@ static client_error_e mqtt_nng_client_disconnect(mqtt_nng_client_t *client)
         }
     }
 
-    nng_dialer_close(client->dialer);
-    return MQTTC_SUCCESS;
+    // nng_dialer_close(client->dialer);
+    return MQTT_SUCCESS;
 }
 
 static client_error_e mqtt_nng_client_destroy(mqtt_nng_client_t *client)
@@ -567,13 +567,13 @@ static client_error_e mqtt_nng_client_destroy(mqtt_nng_client_t *client)
     }
 
     free(client);
-    return MQTTC_SUCCESS;
+    return MQTT_SUCCESS;
 }
 
 client_error_e mqtt_nng_client_close(mqtt_nng_client_t *client)
 {
     if (NULL == client) {
-        return MQTTC_IS_NULL;
+        return MQTT_IS_NULL;
     }
 
     pthread_cancel(client->daemon);

@@ -51,162 +51,6 @@ struct node_setting {
     char *   ca_file;
 };
 
-void ssl_ctx_uninit(SSL_CTX *ssl_ctx)
-{
-    if (NULL != ssl_ctx) {
-        SSL_CTX_free(ssl_ctx);
-    }
-}
-
-SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path)
-{
-    SSL_CTX *ssl_ctx = NULL;
-    ssl_ctx          = SSL_CTX_new(SSLv23_client_method());
-    if (NULL == ssl_ctx) {
-        log_error("Failed to create ssl ctx");
-        return NULL;
-    }
-
-    if (!SSL_CTX_load_verify_locations(ssl_ctx, ca_file, ca_path)) {
-        log_error("Failed to load certificate");
-        ssl_ctx_uninit(ssl_ctx);
-        return NULL;
-    }
-
-    return ssl_ctx;
-}
-
-int mqtt_option_init(option_t *option)
-{
-    char *clientid = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "id");
-    char *mqtt_version =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "mqtt_version");
-    char *topic = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "topic");
-    char *qos   = neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "qos");
-    char *keepalive_interval =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "keepalive_interval");
-    char *clean_session =
-        neu_config_get_value(CONFIG_FILE, 2, CONFIG_NODE, "clean_session");
-    char *connection = neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE,
-                                            "broker", "connection");
-    char *host =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "host");
-    char *port =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "port");
-    char *username =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "username");
-    char *password =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "password");
-    char *ca_path =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "ca_path");
-    char *ca_file =
-        neu_config_get_value(CONFIG_FILE, 3, CONFIG_NODE, "broker", "ca_file");
-
-    // MQTT option
-    if (NULL == clientid) {
-        option->clientid = NULL; // Use random id
-    } else {
-        option->clientid = strdup(clientid);
-        free(clientid);
-    }
-
-    if (NULL == mqtt_version) {
-        option->MQTT_version = 4; // Version 3.1.1
-    } else {
-        option->MQTT_version = atoi(mqtt_version);
-        free(mqtt_version);
-    }
-
-    if (NULL == topic) {
-        return -1;
-    } else {
-        option->topic = strdup(topic);
-        free(topic);
-    }
-
-    if (NULL == qos) {
-        option->qos = 0;
-    } else {
-        option->qos = atoi(qos);
-        free(qos);
-    }
-
-    if (NULL == connection) {
-        option->connection = strdup("tcp://");
-    } else {
-        option->connection = strdup(connection);
-        free(connection);
-    }
-
-    if (NULL == host) {
-        return -2;
-    } else {
-        option->host = strdup(host);
-        free(host);
-    }
-
-    if (NULL == port) {
-        return -3;
-    } else {
-        option->port = strdup(port);
-        free(port);
-    }
-
-    if (NULL == username) {
-        option->username = NULL;
-    } else {
-        option->username = strdup(username);
-    }
-
-    if (NULL == password) {
-        option->password = NULL;
-    } else {
-        option->password = strdup(password);
-    }
-
-    if (NULL == ca_path) {
-        option->capath = NULL;
-    } else {
-        option->capath = strdup(ca_path);
-    }
-
-    if (NULL == ca_file) {
-        option->cafile = NULL;
-    } else {
-        option->cafile = strdup(ca_file);
-    }
-
-    if (0 == strcmp(option->connection, "ssl://") && NULL == option->cafile) {
-        return -2;
-    }
-
-    if (0 == strcmp(option->connection, "ssl://")) {
-        SSL_CTX *ssl_ctx = NULL;
-        ssl_ctx          = ssl_ctx_init(option->cafile, option->capath);
-        if (NULL == ssl_ctx) {
-            return -3;
-        }
-
-        ssl_ctx_uninit(ssl_ctx);
-    }
-
-    if (NULL == keepalive_interval) {
-        option->keepalive_interval = 20;
-    } else {
-        option->keepalive_interval = atoi(keepalive_interval);
-        free(keepalive_interval);
-    }
-
-    if (NULL == clean_session) {
-        option->clean_session = 1;
-    } else {
-        option->clean_session = atoi(clean_session);
-        free(clean_session);
-    }
-
-    return 0;
-}
-
 void mqtt_option_uninit(option_t *option)
 {
     if (NULL != option->clientid) {
@@ -434,7 +278,7 @@ static int valid_node_setting(const char *file, const char *plugin_name,
     return 0;
 }
 
-int mqtt_option_init_by_config(neu_config_t *config, option_t *option)
+int mqtt_option_init(neu_config_t *config, option_t *option)
 {
     if (NULL == config || NULL == option) {
         return -1;
@@ -479,15 +323,7 @@ int mqtt_option_init_by_config(neu_config_t *config, option_t *option)
         return -6;
     }
 
-    if (0 == strcmp(option->connection, "ssl://")) {
-        SSL_CTX *ssl_ctx = NULL;
-        ssl_ctx          = ssl_ctx_init(option->cafile, option->capath);
-        if (NULL == ssl_ctx) {
-            return -7;
-        }
-
-        ssl_ctx_uninit(ssl_ctx);
-    }
+    if (0 == strcmp(option->connection, "ssl://")) { }
 
     option->keepalive_interval = 20;
     option->clean_session      = 1;

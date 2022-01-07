@@ -24,10 +24,6 @@ target_compile_definitions(plugin-mqtt PRIVATE MQTT_USE_BIO)
 
 target_link_libraries(plugin-mqtt 
 	neuron-base 
-	mqttc 
-	ssl 
-	crypto 
-	yaml
 	nng)
 
 target_link_libraries(plugin-mqtt ${CMAKE_THREAD_LIBS_INIT})

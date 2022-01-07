@@ -87,30 +87,27 @@ typedef struct {
 } option_t;
 
 typedef enum {
-    MQTTC_SUCCESS = 0,
-    MQTTC_NO_CERTFILESET,
-    MQTTC_CERTFILE_LOAD_FAILURE,
-    MQTTC_IS_NULL,
-    MQTTC_INIT_FAILURE,
-    MQTTC_CONNECT_FAILURE,
-    MQTTC_SUBSCRIBE_TIMEOUT,
-    MQTTC_SUBSCRIBE_LIST_INITIAL_FAILURE,
-    MQTTC_SUBSCRIBE_FAILURE,
-    MQTTC_SUBSCRIBE_ADD_REPEAT,
-    MQTTC_SUBSCRIBE_ADD_FAILURE,
-    MQTTC_UNSUBSCRIBE_FAILURE,
-    MQTTC_PUBLISH_FAILURE,
+    MQTT_SUCCESS = 0,
+    MQTT_NO_CERTFILESET,
+    MQTT_CERTFILE_LOAD_FAILURE,
+    MQTT_IS_NULL,
+    MQTT_INIT_FAILURE,
+    MQTT_CONNECT_FAILURE,
+    MQTT_SUBSCRIBE_TIMEOUT,
+    MQTT_SUBSCRIBE_LIST_INITIAL_FAILURE,
+    MQTT_SUBSCRIBE_FAILURE,
+    MQTT_SUBSCRIBE_ADD_REPEAT,
+    MQTT_SUBSCRIBE_ADD_FAILURE,
+    MQTT_UNSUBSCRIBE_FAILURE,
+    MQTT_PUBLISH_FAILURE,
 } client_error_e;
 
 typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
                                  void *payload, const size_t len,
                                  void *context);
 
-SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path);
-void     ssl_ctx_uninit(SSL_CTX *ssl_ctx);
-int      mqtt_option_init(option_t *option);
-void     mqtt_option_uninit(option_t *option);
-int      mqtt_option_init_by_config(neu_config_t *config, option_t *option);
+int  mqtt_option_init(neu_config_t *config, option_t *option);
+void mqtt_option_uninit(option_t *option);
 
 #ifdef __cplusplus
 }
