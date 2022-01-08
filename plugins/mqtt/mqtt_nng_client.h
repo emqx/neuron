@@ -60,6 +60,7 @@ typedef struct {
 
 typedef enum {
     MQTT_SUCCESS = 0,
+    MQTT_FAILURE,
     MQTT_NO_CERTFILESET,
     MQTT_CERTFILE_LOAD_FAILURE,
     MQTT_OPTION_IS_NULL,

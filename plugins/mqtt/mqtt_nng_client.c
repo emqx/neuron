@@ -68,6 +68,9 @@ struct string {
     unsigned char *data;
 };
 
+static mqtt_error_e client_subscribe_send(mqtt_nng_client_t *     client,
+                                          struct subscribe_tuple *tuple);
+
 static void client_on_connected(void *arg, nng_msg *ack_msg)
 {
     mqtt_nng_client_t *client = (mqtt_nng_client_t *) arg;
@@ -76,6 +79,14 @@ static void client_on_connected(void *arg, nng_msg *ack_msg)
 
     log_info("connected status:%d", status);
     nng_msg_free(ack_msg);
+
+    if (1 == client->connected) {
+        struct subscribe_tuple *tuple = NULL;
+        NEU_LIST_FOREACH(&client->subscribe_list, tuple)
+        {
+            client_subscribe_send(client, tuple);
+        }
+    }
 }
 
 static void client_on_disconnected(void *arg, nng_msg *msg)
@@ -84,6 +95,55 @@ static void client_on_disconnected(void *arg, nng_msg *msg)
     client->connected         = 0;
     log_info("disconnect mqtt");
     nng_msg_free(msg);
+
+    bool run_flag = true;
+    nng_mtx_lock(client->mtx);
+    run_flag = client->running;
+    nng_mtx_unlock(client->mtx);
+
+    if (!run_flag) {
+        log_info("exit");
+        return;
+    }
+}
+
+static mqtt_error_e client_send(mqtt_nng_client_t *client, nng_msg *msg)
+{
+    if (1 != client->connected) {
+        nng_msg_free(msg);
+        return MQTT_CONNECT_FAILURE;
+    }
+
+    nng_mqtt_packet_type type = nng_mqtt_msg_get_packet_type(msg);
+    int                  ret  = nng_sendmsg(client->sock, msg, 0);
+    nng_msg_free(msg);
+
+    if (0 != ret) {
+        mqtt_error_e error = MQTT_FAILURE;
+        char *       flag  = "Unknow";
+        switch (type) {
+        case NNG_MQTT_SUBSCRIBE:
+            error = MQTT_SUBSCRIBE_FAILURE;
+            flag  = "Subscribe";
+            break;
+        case NNG_MQTT_UNSUBSCRIBE:
+            error = MQTT_UNSUBSCRIBE_FAILURE;
+            flag  = "Unsubscribe";
+            break;
+        case NNG_MQTT_PUBLISH:
+            error = MQTT_PUBLISH_FAILURE;
+            flag  = "Publish";
+            break;
+
+        default:
+            break;
+        }
+
+        log_error("%s msg send error:%d", flag, ret);
+        return error;
+    }
+
+    return MQTT_SUCCESS;
 }
 
 static void client_refresher(void *context)
@@ -145,6 +205,62 @@ static void client_refresher(void *context)
         free(topic_name);
         nng_msg_free(msg);
     }
+}
+
+static void loadfile(const char *path, void **datap, size_t *lenp)
+{
+    FILE * f;
+    size_t total_read      = 0;
+    size_t allocation_size = BUFSIZ;
+    char * fdata;
+    char * realloc_result;
+
+    if (strcmp(path, "-") == 0) {
+        f = stdin;
+    } else {
+        if ((f = fopen(path, "rb")) == NULL) {
+            fprintf(stderr, "Cannot open file %s: %s", path, strerror(errno));
+            exit(1);
+        }
+    }
+
+    if ((fdata = malloc(allocation_size + 1)) == NULL) {
+        fprintf(stderr, "Out of memory.");
+    }
+
+    while (1) {
+        total_read +=
+            fread(fdata + total_read, 1, allocation_size - total_read, f);
+        if (ferror(f)) {
+            if (errno == EINTR) {
+                continue;
+            }
+            fprintf(stderr, "Read from %s failed: %s", path, strerror(errno));
+            exit(1);
+        }
+        if (feof(f)) {
+            break;
+        }
+        if (total_read == allocation_size) {
+            if (allocation_size > SIZE_MAX / 2) {
+                fprintf(stderr, "Out of memory.");
+            }
+            allocation_size *= 2;
+            if ((realloc_result = realloc(fdata, allocation_size + 1)) ==
+                NULL) {
+                free(fdata);
+                fprintf(stderr, "Out of memory.");
+                exit(1);
+            }
+            fdata = realloc_result;
+        }
+    }
+    if (f != stdin) {
+        fclose(f);
+    }
+    fdata[total_read] = '\0';
+    *datap            = fdata;
+    *lenp             = total_read;
 }
 
 static struct string client_file_load(const char *const path)
@@ -213,8 +329,13 @@ static mqtt_nng_client_t *client_create(const mqtt_option_t *option,
     }
 
     if (NULL != client->option->cafile) {
-        struct string str = client_file_load(client->option->cafile);
-        client->ca        = (char *) str.data;
+        // struct string str = client_file_load(client->option->cafile);
+        // client->ca        = (char *) str.data;
+
+        size_t file_len = 0;
+        loadfile(client->option->cafile, (void **) &client->ca, &file_len);
+        // log_info("ca length:%ld, strlen:%ld", str.length,
+        // strlen(client->ca));
     }
 
     client->callback.name            = "neuron_client";
@@ -231,6 +352,7 @@ static int client_tls(mqtt_nng_client_t *client)
 {
     int ret = nng_tls_config_alloc(&client->config, NNG_TLS_MODE_CLIENT);
     if (0 != ret) {
+        log_error("errro0------------------");
         return ret;
     }
 
@@ -246,7 +368,9 @@ static int client_tls(mqtt_nng_client_t *client)
     }
 
     if (NULL != client->ca) {
+        log_info("%s", client->ca);
         if (0 != nng_tls_config_ca_chain(client->config, client->ca, NULL)) {
+            log_error("errro1------------------");
             return -1;
         }
     }
@@ -403,15 +527,7 @@ static mqtt_error_e client_subscribe_send(mqtt_nng_client_t *     client,
         log_info("%s", buff);
     }
 
-    int ret = nng_sendmsg(client->sock, subscribe_msg, 0);
-    nng_msg_free(subscribe_msg);
-
-    if (0 != ret) {
-        log_error("Subscribe msg send error:%d", ret);
-        return MQTT_SUBSCRIBE_FAILURE;
-    }
-
-    return MQTT_SUCCESS;
+    return client_send(client, subscribe_msg);
 }
 
 static void client_subscribe_add(mqtt_nng_client_t *     client,
@@ -481,14 +597,7 @@ static mqtt_error_e client_unsubscribe_send(mqtt_nng_client_t *     client,
         log_info("%s", buff);
     }
 
-    int ret = nng_sendmsg(client->sock, unsubscribe_msg, 0);
-    nng_msg_free(unsubscribe_msg);
-    if (0 != ret) {
-        log_error("Unsubscribe msg send error:%d", ret);
-        return MQTT_UNSUBSCRIBE_FAILURE;
-    }
-
-    return MQTT_SUCCESS;
+    return client_send(client, unsubscribe_msg);
 }
 
 static void client_unsubscribe_remove(mqtt_nng_client_t *     client,
@@ -514,12 +623,16 @@ mqtt_error_e mqtt_nng_client_unsubscribe(mqtt_nng_client_t *client,
         return MQTT_UNSUBSCRIBE_FAILURE;
     }
 
-    mqtt_error_e error = client_unsubscribe_send(client, tuple);
-    if (MQTT_SUCCESS != error) {
-        return error;
-    }
+    // mqtt_error_e error = client_unsubscribe_send(client, tuple);
+    // if (MQTT_SUCCESS != error) {
+    //     return error;
+    // }
 
+    log_error("1=================");
+    client_unsubscribe_send(client, tuple);
+    log_error("2=================");
     client_unsubscribe_remove(client, tuple);
+    log_error("3=================");
     return MQTT_SUCCESS;
 }
 
@@ -550,14 +663,7 @@ mqtt_error_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
         log_info("%s", buff);
     }
 
-    int ret = nng_sendmsg(client->sock, publish_msg, 0);
-    nng_msg_free(publish_msg);
-    if (0 != ret) {
-        log_error("Publish msg send error:%d", ret);
-        return MQTT_PUBLISH_FAILURE;
-    }
-
-    return MQTT_SUCCESS;
+    return client_send(client, publish_msg);
 }
 
 static void client_disconnect(mqtt_nng_client_t *client)
@@ -574,8 +680,11 @@ static void client_disconnect(mqtt_nng_client_t *client)
     client->running = false;
     nng_mtx_unlock(client->mtx);
 
+    log_error("4=================");
     nng_close(client->sock);
+    log_error("5=================");
     nng_thread_destroy(client->daemon);
+    log_error("6=================");
 }
 
 static void client_destroy(mqtt_nng_client_t *client)

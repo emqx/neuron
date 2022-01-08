@@ -32,7 +32,7 @@ TEST(MQTTTest, mqtt_nng_client_open)
 
     mqtt_option_t option;
     memset(&option, 0, sizeof(mqtt_option_t));
-    option.host         = strdup("localhost");
+    option.host         = strdup("192.168.10.127");
     option.port         = strdup("1883");
     option.clientid     = strdup(uuid4_str);
     option.verbose      = 1;
@@ -45,7 +45,7 @@ TEST(MQTTTest, mqtt_nng_client_open)
     char p[10] = "123456";
     mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
                             strlen(p));
-    sleep(3);
+    sleep(6);
     EXPECT_EQ(MQTT_SUCCESS, error);
     EXPECT_NE(nullptr, client);
     error = mqtt_nng_client_close(client);
@@ -70,7 +70,7 @@ TEST(MQTTTest, mqtt_nng_client_open)
 //     option.cafile       = strdup("/home/gc/broker.emqx.io-ca.crt");
 
 //     mqtt_nng_client_t *client = NULL;
-//     mqtt_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
+//     mqtt_error_e       error  = mqtt_nng_client_open(&client, &option, NULL);
 //     mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
 //     char p[10] = "123456";
 //     mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
