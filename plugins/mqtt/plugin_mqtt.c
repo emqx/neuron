@@ -34,7 +34,7 @@
 #define MQTT_SEND(client, topic, qos, json_str)                           \
     {                                                                     \
         if (NULL != json_str) {                                           \
-            client_error_e error = mqtt_nng_client_publish(               \
+            mqtt_error_e error = mqtt_nng_client_publish(                 \
                 client, topic, qos, (unsigned char *) json_str,           \
                 strlen(json_str));                                        \
             log_debug("Publish error code:%d, json:%s", error, json_str); \
@@ -55,7 +55,7 @@ struct context {
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    option_t            option;
+    mqtt_option_t       option;
     pthread_t           daemon;
     pthread_mutex_t     running_mutex; // lock publish thread running state
     pthread_mutex_t     list_mutex;    // lock context state
@@ -329,7 +329,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     }
 
     // MQTT-NNG client setup
-    client_error_e error = mqtt_nng_client_open(
+    mqtt_error_e error = mqtt_nng_client_open(
         (mqtt_nng_client_t **) &plugin->mqtt_client, &plugin->option, plugin);
     error = mqtt_nng_client_subscribe(plugin->mqtt_client, plugin->option.topic,
                                       0, mqtt_response_handle);

@@ -51,7 +51,7 @@ struct node_setting {
     char *   ca_file;
 };
 
-void mqtt_option_uninit(option_t *option)
+void mqtt_option_uninit(mqtt_option_t *option)
 {
     if (NULL != option->clientid) {
         free(option->clientid);
@@ -278,7 +278,7 @@ static int valid_node_setting(const char *file, const char *plugin_name,
     return 0;
 }
 
-int mqtt_option_init(neu_config_t *config, option_t *option)
+int mqtt_option_init(neu_config_t *config, mqtt_option_t *option)
 {
     if (NULL == config || NULL == option) {
         return -1;

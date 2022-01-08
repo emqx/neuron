@@ -9,8 +9,8 @@ TEST(MQTTTest, mqtt_option_init_by_config)
 {
     neu_config_t config;
     memset(&config, 0, sizeof(neu_config_t));
-    option_t option;
-    memset(&option, 0, sizeof(option_t));
+    mqtt_option_t option;
+    memset(&option, 0, sizeof(mqtt_option_t));
     config.buf =
         (char *) "{ \"node_id\": 6, \"params\": { \"req-topic\": "
                  "\"neuronlite/response\", \"res-topic\": "
@@ -30,8 +30,8 @@ TEST(MQTTTest, mqtt_nng_client_open)
     char uuid4_str[40] = { '\0' };
     neu_uuid_v4_gen(uuid4_str);
 
-    option_t option;
-    memset(&option, 0, sizeof(option_t));
+    mqtt_option_t option;
+    memset(&option, 0, sizeof(mqtt_option_t));
     option.host         = strdup("localhost");
     option.port         = strdup("1883");
     option.clientid     = strdup(uuid4_str);
@@ -40,7 +40,7 @@ TEST(MQTTTest, mqtt_nng_client_open)
     option.connection   = strdup("tcp://");
 
     mqtt_nng_client_t *client = NULL;
-    client_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
+    mqtt_error_e       error  = mqtt_nng_client_open(&client, &option, NULL);
     mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
     char p[10] = "123456";
     mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
@@ -59,8 +59,8 @@ TEST(MQTTTest, mqtt_nng_client_open)
 //     char uuid4_str[40] = { '\0' };
 //     neu_uuid_v4_gen(uuid4_str);
 
-//     option_t option;
-//     memset(&option, 0, sizeof(option_t));
+//     mqtt_option_t option;
+//     memset(&option, 0, sizeof(mqtt_option_t));
 //     option.host         = strdup("broker-cn.emqx.io");
 //     option.port         = strdup("8883");
 //     option.clientid     = strdup(uuid4_str);
@@ -70,7 +70,7 @@ TEST(MQTTTest, mqtt_nng_client_open)
 //     option.cafile       = strdup("/home/gc/broker.emqx.io-ca.crt");
 
 //     mqtt_nng_client_t *client = NULL;
-//     client_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
+//     mqtt_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
 //     mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
 //     char p[10] = "123456";
 //     mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
