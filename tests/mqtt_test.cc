@@ -25,34 +25,34 @@ TEST(MQTTTest, mqtt_option_init_by_config)
     mqtt_option_uninit(&option);
 }
 
-// TEST(MQTTTest, mqtt_nng_client_open)
-// {
-//     char uuid4_str[40] = { '\0' };
-//     neu_uuid_v4_gen(uuid4_str);
+TEST(MQTTTest, mqtt_nng_client_open)
+{
+    char uuid4_str[40] = { '\0' };
+    neu_uuid_v4_gen(uuid4_str);
 
-//     option_t option;
-//     memset(&option, 0, sizeof(option_t));
-//     option.host         = strdup("localhost");
-//     option.port         = strdup("1883");
-//     option.clientid     = strdup(uuid4_str);
-//     option.verbose      = 1;
-//     option.MQTT_version = 4;
-//     option.connection   = strdup("tcp://");
+    option_t option;
+    memset(&option, 0, sizeof(option_t));
+    option.host         = strdup("localhost");
+    option.port         = strdup("1883");
+    option.clientid     = strdup(uuid4_str);
+    option.verbose      = 1;
+    option.MQTT_version = 4;
+    option.connection   = strdup("tcp://");
 
-//     mqtt_nng_client_t *client = NULL;
-//     client_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
-//     mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
-//     char p[10] = "123456";
-//     mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
-//                             strlen(p));
-//     sleep(3);
-//     EXPECT_EQ(MQTT_SUCCESS, error);
-//     EXPECT_NE(nullptr, client);
-//     error = mqtt_nng_client_close(client);
-//     EXPECT_EQ(MQTT_SUCCESS, error);
+    mqtt_nng_client_t *client = NULL;
+    client_error_e     error  = mqtt_nng_client_open(&client, &option, NULL);
+    mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
+    char p[10] = "123456";
+    mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
+                            strlen(p));
+    sleep(3);
+    EXPECT_EQ(MQTT_SUCCESS, error);
+    EXPECT_NE(nullptr, client);
+    error = mqtt_nng_client_close(client);
+    EXPECT_EQ(MQTT_SUCCESS, error);
 
-//     mqtt_option_uninit(&option);
-// }
+    mqtt_option_uninit(&option);
+}
 
 // TEST(MQTTTest, mqtt_nng_client_tls)
 // {
