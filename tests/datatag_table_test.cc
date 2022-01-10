@@ -45,24 +45,24 @@ static neu_datatag_t *rand_tag(const char *addr_str, const char *fmt, ...)
 
 TEST(DatatageTableTest, DatatagTableAdd)
 {
-    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
-    const char *         addr_str             = "1!neu.type_bit";
-    neu_datatag_t *      datatag1             = rand_tag(addr_str, "tag1");
-    neu_datatag_t *      datatag2             = rand_tag(addr_str, "tag2");
-    neu_datatag_t *      datatag3             = rand_tag(addr_str, "tag3");
+    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
+    const char *         addr_str      = "1!neu.type_bit";
+    neu_datatag_t *      datatag1      = rand_tag(addr_str, "tag1");
+    neu_datatag_t *      datatag2      = rand_tag(addr_str, "tag2");
+    neu_datatag_t *      datatag3      = rand_tag(addr_str, "tag3");
 
     datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
     neu_datatag_t *datatag_id_return1 = NULL;
     neu_datatag_t *datatag_id_return2 = NULL;
     neu_datatag_t *datatag_id_return3 = NULL;
 
-    datatag_id1 = neu_datatag_tbl_add(datatag_table_create, datatag1);
-    datatag_id2 = neu_datatag_tbl_add(datatag_table_create, datatag2);
-    datatag_id3 = neu_datatag_tbl_add(datatag_table_create, datatag3);
+    datatag_id1 = neu_datatag_tbl_add(datatag_table, datatag1);
+    datatag_id2 = neu_datatag_tbl_add(datatag_table, datatag2);
+    datatag_id3 = neu_datatag_tbl_add(datatag_table, datatag3);
 
-    datatag_id_return1 = neu_datatag_tbl_get(datatag_table_create, datatag_id1);
-    datatag_id_return2 = neu_datatag_tbl_get(datatag_table_create, datatag_id2);
-    datatag_id_return3 = neu_datatag_tbl_get(datatag_table_create, datatag_id3);
+    datatag_id_return1 = neu_datatag_tbl_get(datatag_table, datatag_id1);
+    datatag_id_return2 = neu_datatag_tbl_get(datatag_table, datatag_id2);
+    datatag_id_return3 = neu_datatag_tbl_get(datatag_table, datatag_id3);
 
     EXPECT_EQ(datatag_id_return1->id, datatag1->id);
     EXPECT_EQ(datatag_id_return1->type, datatag1->type);
@@ -79,16 +79,16 @@ TEST(DatatageTableTest, DatatagTableAdd)
     EXPECT_EQ(datatag_id_return3->attribute, datatag3->attribute);
     EXPECT_EQ(datatag_id_return3->addr_str, datatag3->addr_str);
 
-    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table_create, datatag1));
-    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table_create, datatag2));
-    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table_create, datatag3));
+    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag1));
+    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag2));
+    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag3));
 
-    neu_datatag_tbl_destroy(datatag_table_create);
+    neu_datatag_tbl_destroy(datatag_table);
 }
 
 TEST(DatatageTableTest, DatatagTableRemove)
 {
-    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
+    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
     neu_datatag_id_t     id;
     const char *         addr_str = "1!neu.type_bit";
     neu_datatag_t *      datatag1 = rand_tag(addr_str, "tag1");
@@ -100,20 +100,20 @@ TEST(DatatageTableTest, DatatagTableRemove)
     neu_datatag_t *datatag_id_return2 = NULL;
     neu_datatag_t *datatag_id_return3 = NULL;
 
-    datatag_id1 = neu_datatag_tbl_add(datatag_table_create, datatag1);
-    EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table_create, datatag_id1));
-    datatag_id_return1 = neu_datatag_tbl_get(datatag_table_create, datatag_id1);
+    datatag_id1 = neu_datatag_tbl_add(datatag_table, datatag1);
+    EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table, datatag_id1));
+    datatag_id_return1 = neu_datatag_tbl_get(datatag_table, datatag_id1);
     EXPECT_EQ(NULL, datatag_id_return1);
 
     datatag1 = rand_tag(addr_str, "tag1");
 
-    datatag_id1 = neu_datatag_tbl_add(datatag_table_create, datatag1);
-    datatag_id2 = neu_datatag_tbl_add(datatag_table_create, datatag2);
-    datatag_id3 = neu_datatag_tbl_add(datatag_table_create, datatag3);
+    datatag_id1 = neu_datatag_tbl_add(datatag_table, datatag1);
+    datatag_id2 = neu_datatag_tbl_add(datatag_table, datatag2);
+    datatag_id3 = neu_datatag_tbl_add(datatag_table, datatag3);
 
-    datatag_id_return1 = neu_datatag_tbl_get(datatag_table_create, datatag_id1);
-    datatag_id_return2 = neu_datatag_tbl_get(datatag_table_create, datatag_id2);
-    datatag_id_return3 = neu_datatag_tbl_get(datatag_table_create, datatag_id3);
+    datatag_id_return1 = neu_datatag_tbl_get(datatag_table, datatag_id1);
+    datatag_id_return2 = neu_datatag_tbl_get(datatag_table, datatag_id2);
+    datatag_id_return3 = neu_datatag_tbl_get(datatag_table, datatag_id3);
 
     EXPECT_EQ(datatag_id_return1->id, datatag1->id);
     EXPECT_EQ(datatag_id_return1->type, datatag1->type);
@@ -130,12 +130,12 @@ TEST(DatatageTableTest, DatatagTableRemove)
     EXPECT_EQ(datatag_id_return3->attribute, datatag3->attribute);
     EXPECT_EQ(datatag_id_return3->addr_str, datatag3->addr_str);
 
-    neu_datatag_tbl_destroy(datatag_table_create);
+    neu_datatag_tbl_destroy(datatag_table);
 }
 
 TEST(DatatageTableTest, DatatagTableUpdate)
 {
-    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
+    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
     neu_datatag_id_t     id;
     const char *         addr_str = "1!neu.type_bit";
     neu_datatag_t *      datatag1 = rand_tag(addr_str, "foo");
@@ -146,37 +146,33 @@ TEST(DatatageTableTest, DatatagTableUpdate)
     datatag_id_t   datatag_id1, datatag_id2;
     neu_datatag_t *datatag_id_return = NULL;
 
-    datatag_id1 = neu_datatag_tbl_add(datatag_table_create, datatag1);
-    datatag_id2 = neu_datatag_tbl_add(datatag_table_create, datatag2);
+    datatag_id1 = neu_datatag_tbl_add(datatag_table, datatag1);
+    datatag_id2 = neu_datatag_tbl_add(datatag_table, datatag2);
 
-    EXPECT_NE(0, neu_datatag_tbl_update(datatag_table_create, 0, datatag1));
-    EXPECT_NE(
-        0, neu_datatag_tbl_update(datatag_table_create, datatag_id1, datatag1));
-    EXPECT_NE(
-        0, neu_datatag_tbl_update(datatag_table_create, datatag_id1, datatag3));
+    EXPECT_NE(0, neu_datatag_tbl_update(datatag_table, 0, datatag1));
+    EXPECT_NE(0, neu_datatag_tbl_update(datatag_table, datatag_id1, datatag1));
+    EXPECT_NE(0, neu_datatag_tbl_update(datatag_table, datatag_id1, datatag3));
 
-    EXPECT_EQ(
-        0, neu_datatag_tbl_update(datatag_table_create, datatag_id1, datatag4));
+    EXPECT_EQ(0, neu_datatag_tbl_update(datatag_table, datatag_id1, datatag4));
 
-    datatag_id_return = neu_datatag_tbl_get(datatag_table_create, datatag_id1);
+    datatag_id_return = neu_datatag_tbl_get(datatag_table, datatag_id1);
 
     EXPECT_EQ(datatag_id_return->attribute, datatag4->attribute);
     EXPECT_EQ(datatag_id_return->type, datatag4->type);
     EXPECT_EQ(datatag_id_return->id, datatag4->id);
     EXPECT_EQ(datatag_id_return->addr_str, datatag4->addr_str);
 
-    EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table_create, datatag_id2));
-    EXPECT_EQ(
-        0, neu_datatag_tbl_update(datatag_table_create, datatag_id1, datatag3));
+    EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table, datatag_id2));
+    EXPECT_EQ(0, neu_datatag_tbl_update(datatag_table, datatag_id1, datatag3));
 
-    datatag_id_return = neu_datatag_tbl_get(datatag_table_create, datatag_id1);
+    datatag_id_return = neu_datatag_tbl_get(datatag_table, datatag_id1);
 
     EXPECT_EQ(datatag_id_return->attribute, datatag3->attribute);
     EXPECT_EQ(datatag_id_return->type, datatag3->type);
     EXPECT_EQ(datatag_id_return->id, datatag3->id);
     EXPECT_EQ(datatag_id_return->addr_str, datatag3->addr_str);
 
-    neu_datatag_tbl_destroy(datatag_table_create);
+    neu_datatag_tbl_destroy(datatag_table);
 }
 
 TEST(DatatageTableTest, DatatagTableToVec)
@@ -229,7 +225,7 @@ TEST(DatatageTableTest, DatatagTableToVec)
 
 void *datatag_table_thread(void *arg)
 {
-    neu_datatag_table_t *datatag_table_create = (neu_datatag_table_t *) arg;
+    neu_datatag_table_t *datatag_table = (neu_datatag_table_t *) arg;
     datatag_id_t         id;
     const char *         addr_str = "1!neu.type_bit";
     pthread_t            tid      = pthread_self();
@@ -244,35 +240,28 @@ void *datatag_table_thread(void *arg)
         neu_datatag_t *datatag2 = rand_tag(addr_str, "tag-%u-2-%d", tid, i);
         neu_datatag_t *datatag3 = rand_tag(addr_str, "tag-%u-3-%d", tid, i);
 
-        datatag_id1 = neu_datatag_tbl_add(datatag_table_create, datatag1);
-        datatag_id2 = neu_datatag_tbl_add(datatag_table_create, datatag2);
-        datatag_id3 = neu_datatag_tbl_add(datatag_table_create, datatag3);
+        datatag_id1 = neu_datatag_tbl_add(datatag_table, datatag1);
+        datatag_id2 = neu_datatag_tbl_add(datatag_table, datatag2);
+        datatag_id3 = neu_datatag_tbl_add(datatag_table, datatag3);
 
-        EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table_create, datatag_id1));
+        EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table, datatag_id1));
 
         EXPECT_NE(0,
-                  neu_datatag_tbl_update(datatag_table_create, datatag_id2,
-                                         datatag2));
+                  neu_datatag_tbl_update(datatag_table, datatag_id2, datatag2));
         EXPECT_NE(0,
-                  neu_datatag_tbl_update(datatag_table_create, datatag_id3,
-                                         datatag3));
+                  neu_datatag_tbl_update(datatag_table, datatag_id3, datatag3));
 
         datatag2 = rand_tag(addr_str, "tag-%d-2-%d", tid, i);
         datatag3 = rand_tag(addr_str, "tag-%d-3-%d", tid, i);
 
         EXPECT_EQ(0,
-                  neu_datatag_tbl_update(datatag_table_create, datatag_id2,
-                                         datatag2));
+                  neu_datatag_tbl_update(datatag_table, datatag_id2, datatag2));
         EXPECT_EQ(0,
-                  neu_datatag_tbl_update(datatag_table_create, datatag_id3,
-                                         datatag3));
+                  neu_datatag_tbl_update(datatag_table, datatag_id3, datatag3));
 
-        datatag_id_return1 =
-            neu_datatag_tbl_get(datatag_table_create, datatag_id1);
-        datatag_id_return2 =
-            neu_datatag_tbl_get(datatag_table_create, datatag_id2);
-        datatag_id_return3 =
-            neu_datatag_tbl_get(datatag_table_create, datatag_id3);
+        datatag_id_return1 = neu_datatag_tbl_get(datatag_table, datatag_id1);
+        datatag_id_return2 = neu_datatag_tbl_get(datatag_table, datatag_id2);
+        datatag_id_return3 = neu_datatag_tbl_get(datatag_table, datatag_id3);
 
         EXPECT_EQ(NULL, datatag_id_return1);
 
@@ -294,11 +283,11 @@ TEST(DatatageTableTest, DatatagTablePthread)
 {
     pthread_t            tids[2];
     int                  ret1, ret2;
-    neu_datatag_table_t *datatag_table_create = neu_datatag_tbl_create();
+    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
     ret1 = pthread_create(&tids[0], NULL, datatag_table_thread,
-                          (void *) datatag_table_create);
+                          (void *) datatag_table);
     ret2 = pthread_create(&tids[1], NULL, datatag_table_thread,
-                          (void *) datatag_table_create);
+                          (void *) datatag_table);
 
     pthread_join(tids[0], NULL);
     pthread_join(tids[1], NULL);
@@ -306,7 +295,7 @@ TEST(DatatageTableTest, DatatagTablePthread)
     EXPECT_EQ(0, ret1);
     EXPECT_EQ(0, ret2);
 
-    neu_datatag_tbl_destroy(datatag_table_create);
+    neu_datatag_tbl_destroy(datatag_table);
 }
 
 int main(int argc, char **argv)
