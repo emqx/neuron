@@ -220,6 +220,7 @@ TEST(DatatageTableTest, DatatagTableToVec)
     EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag2));
     EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag3));
 
+    vector_free(datatags_vec);
     neu_datatag_tbl_destroy(datatag_table);
 }
 
