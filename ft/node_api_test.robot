@@ -53,7 +53,7 @@ Get DRIVER node, it should return all DRIVER node
 
     Check Response Status   ${res}                    200
 
-    FOR   ${name}   IN      sample-driver-adapter     modbus-tcp-adapter    opcua-adapter     test-node
+    FOR   ${name}   IN      sample-driver-adapter     modbus-tcp-adapter    test-node
       Node With Name Should Exist                     ${res}[nodes]         ${name}
     END
 
