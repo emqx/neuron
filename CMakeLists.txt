@@ -125,6 +125,7 @@ set(NEURON_BASE_SOURCES
     src/base/neu_errcodes.c
     src/connection/tcp_client.c
     src/connection/tcp_server.c
+    src/connection/connection.c
     src/event/event_linux.c
     src/event/event_unix.c
     src/utils/atomic_data.c
