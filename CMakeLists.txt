@@ -160,7 +160,6 @@ file(COPY ${CMAKE_SOURCE_DIR}/public_test.pem DESTINATION ${CMAKE_BINARY_DIR})
 add_subdirectory(plugins/sample)
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
-add_subdirectory(plugins/opcua)
 
 # define for simulator
 add_subdirectory(simulator)

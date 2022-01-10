@@ -93,7 +93,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.dylib"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.dylib"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.dylib"
-#define OPCUA_PLUGIN_LIB_NAME "libplugin-opcua.dylib"
 
 #else
 
@@ -104,7 +103,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.so"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.so"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.so"
-#define OPCUA_PLUGIN_LIB_NAME "libplugin-opcua.so"
 
 #endif
 
@@ -116,7 +114,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
 #define MODBUS_TCP_PLUGIN_NAME "modbus-tcp-plugin"
-#define OPCUA_PLUGIN_NAME "opcua-plugin"
 
 // definition for adapter names
 #ifdef NEU_HAS_SAMPLE_ADAPTER
@@ -127,7 +124,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 #define MQTT_ADAPTER_NAME "mqtt-adapter"
 #define MODBUS_TCP_ADAPTER_NAME "modbus-tcp-adapter"
-#define OPCUA_ADAPTER_NAME "opcua-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 90
 #define GRP_CONFIG_NAME_MAX_LEN 90
@@ -183,12 +179,6 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .plugin_id       = { 0 }    // The plugin_id is nothing
     },
     */
-    {
-        .adapter_type = ADAPTER_TYPE_DRIVER,
-        .adapter_name = OPCUA_ADAPTER_NAME,
-        .plugin_name  = OPCUA_PLUGIN_NAME,
-        .plugin_id    = { 0 } // The plugin_id is nothing
-    },
 };
 #define DEFAULT_ADAPTER_ADD_INFO_SIZE \
     (sizeof(default_adapter_reg_cmds) / sizeof(default_adapter_reg_cmds[0]))
@@ -198,8 +188,7 @@ static const char *default_plugin_lib_names[] = {
     SAMPLE_DRV_PLUGIN_LIB_NAME, SAMPLE_APP_PLUGIN_LIB_NAME,
 #endif
 
-    MQTT_PLUGIN_LIB_NAME,       MODBUS_TCP_PLUGIN_LIB_NAME,
-    OPCUA_PLUGIN_LIB_NAME,
+    MQTT_PLUGIN_LIB_NAME, MODBUS_TCP_PLUGIN_LIB_NAME,
     /*
     WEBSERVER_PLUGIN_LIB_NAME,
     MODBUS_PLUGIN_LIB_NAME,
@@ -251,12 +240,6 @@ static const plugin_reg_param_t default_plugin_infos[] = {
         .plugin_lib_name = WEBSERVER_PLUGIN_LIB_NAME
     },
     */
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_DRIVER,
-        .plugin_name     = OPCUA_PLUGIN_NAME,
-        .plugin_lib_name = OPCUA_PLUGIN_LIB_NAME
-    },
 };
 // clang-format on
 #define DEFAULT_PLUGIN_INFO_SIZE \
@@ -303,13 +286,6 @@ static config_add_cmd_t default_config_add_cmds[] = {
     {
         .config_name      = "config_modbus_tcp_sample_2",
         .src_adapter_name = MODBUS_TCP_ADAPTER_NAME,
-        .sub_adapter_name = MQTT_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_opcua_sample",
-        .src_adapter_name = OPCUA_ADAPTER_NAME,
         .sub_adapter_name = MQTT_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
