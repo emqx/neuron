@@ -7,3 +7,5 @@ api:
   port: 7001
   private_key: ./private_test.key
   public_key: ./public_test.pem
+persistence:
+  dir: persistence
