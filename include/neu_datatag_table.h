@@ -45,6 +45,9 @@ int neu_datatag_tbl_update(neu_datatag_table_t *, datatag_id_t,
 // Removing a datatag will also release it.
 int neu_datatag_tbl_remove(neu_datatag_table_t *, datatag_id_t);
 
+int neu_datatag_tbl_to_vector(neu_datatag_table_t *tag_tbl,
+                              vector_t **          p_datatags_vec);
+
 #ifdef __cplusplus
 }
 #endif

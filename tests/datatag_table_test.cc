@@ -4,6 +4,7 @@
 
 #include "neu_datatag_table.h"
 #include "neu_tag.h"
+#include "neu_vector.h"
 
 #define MAX_NAME_LEN 128
 #define NUM_DATATAGTABLE_MODIFY 100
@@ -176,6 +177,54 @@ TEST(DatatageTableTest, DatatagTableUpdate)
     EXPECT_EQ(datatag_id_return->addr_str, datatag3->addr_str);
 
     neu_datatag_tbl_destroy(datatag_table_create);
+}
+
+TEST(DatatageTableTest, DatatagTableToVec)
+{
+    int                  rv;
+    neu_datatag_table_t *datatag_table = neu_datatag_tbl_create();
+    const char *         addr_str      = "1!neu.type_bit";
+    neu_datatag_t *      datatag1      = rand_tag(addr_str, "tag1");
+    neu_datatag_t *      datatag2      = rand_tag(addr_str, "tag2");
+    neu_datatag_t *      datatag3      = rand_tag(addr_str, "tag3");
+    vector_t *           datatags_vec;
+
+    datatag_id_t   datatag_id1, datatag_id2, datatag_id3;
+    neu_datatag_t *datatag_id_return1 = NULL;
+    neu_datatag_t *datatag_id_return2 = NULL;
+    neu_datatag_t *datatag_id_return3 = NULL;
+
+    datatag_id1 = neu_datatag_tbl_add(datatag_table, datatag1);
+    datatag_id2 = neu_datatag_tbl_add(datatag_table, datatag2);
+    datatag_id3 = neu_datatag_tbl_add(datatag_table, datatag3);
+
+    rv = neu_datatag_tbl_to_vector(datatag_table, &datatags_vec);
+    EXPECT_EQ(rv, 0);
+
+    datatag_id_return1 = (neu_datatag_t *) vector_get(datatags_vec, 0);
+    datatag_id_return2 = (neu_datatag_t *) vector_get(datatags_vec, 1);
+    datatag_id_return3 = (neu_datatag_t *) vector_get(datatags_vec, 2);
+
+    EXPECT_EQ(datatag_id_return1->id, datatag1->id);
+    EXPECT_EQ(datatag_id_return1->type, datatag1->type);
+    EXPECT_EQ(datatag_id_return1->attribute, datatag1->attribute);
+    EXPECT_EQ(datatag_id_return1->addr_str, datatag1->addr_str);
+
+    EXPECT_EQ(datatag_id_return2->id, datatag2->id);
+    EXPECT_EQ(datatag_id_return2->type, datatag2->type);
+    EXPECT_EQ(datatag_id_return2->attribute, datatag2->attribute);
+    EXPECT_EQ(datatag_id_return2->addr_str, datatag2->addr_str);
+
+    EXPECT_EQ(datatag_id_return3->id, datatag3->id);
+    EXPECT_EQ(datatag_id_return3->type, datatag3->type);
+    EXPECT_EQ(datatag_id_return3->attribute, datatag3->attribute);
+    EXPECT_EQ(datatag_id_return3->addr_str, datatag3->addr_str);
+
+    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag1));
+    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag2));
+    EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag3));
+
+    neu_datatag_tbl_destroy(datatag_table);
 }
 
 void *datatag_table_thread(void *arg)

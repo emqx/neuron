@@ -140,3 +140,39 @@ int neu_datatag_tbl_remove(neu_datatag_table_t *tag_tbl, datatag_id_t tag_id)
     pthread_mutex_unlock(&tag_tbl->mtx);
     return rv;
 }
+
+static void to_vector_step(uint32_t key, void *val, void *userdata)
+{
+    vector_t *     vec;
+    neu_datatag_t *datatag;
+
+    (void) key;
+
+    datatag = (neu_datatag_t *) val;
+    vec     = (vector_t *) userdata;
+    vector_push_back(vec, datatag);
+    return;
+}
+
+int neu_datatag_tbl_to_vector(neu_datatag_table_t *tag_tbl,
+                              vector_t **          p_datatags_vec)
+{
+    int       rv = 0;
+    vector_t *vec;
+
+    if (tag_tbl == NULL || p_datatags_vec == NULL) {
+        return -1;
+    }
+
+    vec = vector_new(tag_tbl->datatag_table.id_count, sizeof(neu_datatag_t));
+    if (vec == NULL) {
+        log_error("Failed to allocate vecotr for store datatags");
+        return -1;
+    }
+
+    pthread_mutex_lock(&tag_tbl->mtx);
+    neu_id_traverse(&tag_tbl->datatag_table, to_vector_step, vec);
+    pthread_mutex_unlock(&tag_tbl->mtx);
+    *p_datatags_vec = vec;
+    return rv;
+}
