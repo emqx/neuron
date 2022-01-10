@@ -77,7 +77,7 @@ function build_mbedtls() {
     ninja
     ninja install
 
-    echo "Leaving nng "
+    echo "Leaving mbedtls "
     cd ../../
 }
 

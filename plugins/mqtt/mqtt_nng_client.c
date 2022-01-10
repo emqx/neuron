@@ -160,6 +160,11 @@ static void client_refresher(void *context)
             break;
         }
 
+        if (1 != client->connected) {
+            nng_msleep(1000);
+            continue;
+        }
+
         const char *topic       = NULL;
         uint32_t    topic_len   = 0;
         uint8_t *   payload     = NULL;
@@ -205,62 +210,6 @@ static void client_refresher(void *context)
         free(topic_name);
         nng_msg_free(msg);
     }
-}
-
-static void loadfile(const char *path, void **datap, size_t *lenp)
-{
-    FILE * f;
-    size_t total_read      = 0;
-    size_t allocation_size = BUFSIZ;
-    char * fdata;
-    char * realloc_result;
-
-    if (strcmp(path, "-") == 0) {
-        f = stdin;
-    } else {
-        if ((f = fopen(path, "rb")) == NULL) {
-            fprintf(stderr, "Cannot open file %s: %s", path, strerror(errno));
-            exit(1);
-        }
-    }
-
-    if ((fdata = malloc(allocation_size + 1)) == NULL) {
-        fprintf(stderr, "Out of memory.");
-    }
-
-    while (1) {
-        total_read +=
-            fread(fdata + total_read, 1, allocation_size - total_read, f);
-        if (ferror(f)) {
-            if (errno == EINTR) {
-                continue;
-            }
-            fprintf(stderr, "Read from %s failed: %s", path, strerror(errno));
-            exit(1);
-        }
-        if (feof(f)) {
-            break;
-        }
-        if (total_read == allocation_size) {
-            if (allocation_size > SIZE_MAX / 2) {
-                fprintf(stderr, "Out of memory.");
-            }
-            allocation_size *= 2;
-            if ((realloc_result = realloc(fdata, allocation_size + 1)) ==
-                NULL) {
-                free(fdata);
-                fprintf(stderr, "Out of memory.");
-                exit(1);
-            }
-            fdata = realloc_result;
-        }
-    }
-    if (f != stdin) {
-        fclose(f);
-    }
-    fdata[total_read] = '\0';
-    *datap            = fdata;
-    *lenp             = total_read;
 }
 
 static struct string client_file_load(const char *const path)
@@ -310,10 +259,6 @@ static mqtt_nng_client_t *client_create(const mqtt_option_t *option,
     nng_mtx_alloc(&client->mtx);
     client->running = true;
 
-    char url[MAX_URL_LEN] = { '\0' };
-    snprintf(url, MAX_URL_LEN, "mqtt-tcp://%s:%s", option->host, option->port);
-    client->url = strdup(url);
-
     if (NULL != client->option->cert) {
         struct string str = client_file_load(client->option->cert);
         client->cert      = (char *) str.data;
@@ -328,14 +273,9 @@ static mqtt_nng_client_t *client_create(const mqtt_option_t *option,
         client->keypass = strdup(client->option->keypass);
     }
 
-    if (NULL != client->option->cafile) {
-        // struct string str = client_file_load(client->option->cafile);
-        // client->ca        = (char *) str.data;
-
-        size_t file_len = 0;
-        loadfile(client->option->cafile, (void **) &client->ca, &file_len);
-        // log_info("ca length:%ld, strlen:%ld", str.length,
-        // strlen(client->ca));
+    if (NULL != client->option->ca_file) {
+        struct string str = client_file_load(client->option->ca_file);
+        client->ca        = (char *) str.data;
     }
 
     client->callback.name            = "neuron_client";
@@ -352,7 +292,6 @@ static int client_tls(mqtt_nng_client_t *client)
 {
     int ret = nng_tls_config_alloc(&client->config, NNG_TLS_MODE_CLIENT);
     if (0 != ret) {
-        log_error("errro0------------------");
         return ret;
     }
 
@@ -368,14 +307,12 @@ static int client_tls(mqtt_nng_client_t *client)
     }
 
     if (NULL != client->ca) {
-        log_info("%s", client->ca);
         if (0 != nng_tls_config_ca_chain(client->config, client->ca, NULL)) {
-            log_error("errro1------------------");
             return -1;
         }
     }
 
-    nng_dialer_setopt_ptr(client->dialer, NNG_OPT_TLS_CONFIG, client->config);
+    nng_dialer_set_ptr(client->dialer, NNG_OPT_TLS_CONFIG, client->config);
     return 0;
 }
 
@@ -385,18 +322,24 @@ static mqtt_error_e client_connection_init(mqtt_nng_client_t *client)
         return MQTT_INIT_FAILURE;
     }
 
+    char url[MAX_URL_LEN] = { '\0' };
+    if (0 == strcmp(client->option->connection, "ssl://")) {
+        snprintf(url, MAX_URL_LEN, "tls+mqtt-tcp://%s:%s", client->option->host,
+                 client->option->port);
+    }
+
+    if (0 == strcmp(client->option->connection, "tcp://")) {
+        snprintf(url, MAX_URL_LEN, "mqtt-tcp://%s:%s", client->option->host,
+                 client->option->port);
+    }
+
+    client->url = strdup(url);
     if (0 != nng_dialer_create(&client->dialer, client->sock, client->url)) {
         return MQTT_CONNECT_FAILURE;
     }
 
-    // SSL
     if (0 == strcmp(client->option->connection, "ssl://")) {
         client_tls(client);
-    }
-
-    // TCP
-    if (0 == strcmp(client->option->connection, "tcp://")) {
-        // do nothing
     }
 
     return MQTT_SUCCESS;
@@ -623,16 +566,8 @@ mqtt_error_e mqtt_nng_client_unsubscribe(mqtt_nng_client_t *client,
         return MQTT_UNSUBSCRIBE_FAILURE;
     }
 
-    // mqtt_error_e error = client_unsubscribe_send(client, tuple);
-    // if (MQTT_SUCCESS != error) {
-    //     return error;
-    // }
-
-    log_error("1=================");
     client_unsubscribe_send(client, tuple);
-    log_error("2=================");
     client_unsubscribe_remove(client, tuple);
-    log_error("3=================");
     return MQTT_SUCCESS;
 }
 
@@ -680,11 +615,11 @@ static void client_disconnect(mqtt_nng_client_t *client)
     client->running = false;
     nng_mtx_unlock(client->mtx);
 
-    log_error("4=================");
+    log_debug("nng socket close...");
     nng_close(client->sock);
-    log_error("5=================");
+    log_debug("nng socket closed");
     nng_thread_destroy(client->daemon);
-    log_error("6=================");
+    log_debug("nng thread destroy");
 }
 
 static void client_destroy(mqtt_nng_client_t *client)

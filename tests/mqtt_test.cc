@@ -5,25 +5,26 @@
 #include "mqtt_nng_util.h"
 #include <neuron.h>
 
-TEST(MQTTTest, mqtt_option_init_by_config)
-{
-    neu_config_t config;
-    memset(&config, 0, sizeof(neu_config_t));
-    mqtt_option_t option;
-    memset(&option, 0, sizeof(mqtt_option_t));
-    config.buf =
-        (char *) "{ \"node_id\": 6, \"params\": { \"req-topic\": "
-                 "\"neuronlite/response\", \"res-topic\": "
-                 "\"neuronlite/request\", "
-                 "\"ssl\": false, \"host\": \"broker.emqx.io\", \"port\": "
-                 "\"1883\", "
-                 "\"username\": \"\", \"password\": \"\", \"ca-path\": \"\", "
-                 "\"ca-file\": \"\" } }";
+// TEST(MQTTTest, mqtt_option_init_by_config)
+// {
+//     neu_config_t config;
+//     memset(&config, 0, sizeof(neu_config_t));
+//     mqtt_option_t option;
+//     memset(&option, 0, sizeof(mqtt_option_t));
+//     config.buf =
+//         (char *) "{ \"node_id\": 6, \"params\": { \"req-topic\": "
+//                  "\"neuronlite/response\", \"res-topic\": "
+//                  "\"neuronlite/request\", "
+//                  "\"ssl\": false, \"host\": \"broker.emqx.io\", \"port\": "
+//                  "\"1883\", "
+//                  "\"username\": \"\", \"password\": \"\", \"ca-path\": \"\",
+//                  "
+//                  "\"ca-file\": \"\" } }";
 
-    int rc = mqtt_option_init(&config, &option);
-    EXPECT_EQ(0, rc);
-    mqtt_option_uninit(&option);
-}
+//     int rc = mqtt_option_init(&config, &option);
+//     EXPECT_EQ(0, rc);
+//     mqtt_option_uninit(&option);
+// }
 
 TEST(MQTTTest, mqtt_nng_client_open)
 {
@@ -32,7 +33,7 @@ TEST(MQTTTest, mqtt_nng_client_open)
 
     mqtt_option_t option;
     memset(&option, 0, sizeof(mqtt_option_t));
-    option.host         = strdup("192.168.10.127");
+    option.host         = strdup("192.168.10.126");
     option.port         = strdup("1883");
     option.clientid     = strdup(uuid4_str);
     option.verbose      = 1;
@@ -42,6 +43,9 @@ TEST(MQTTTest, mqtt_nng_client_open)
     mqtt_nng_client_t *client = NULL;
     mqtt_error_e       error  = mqtt_nng_client_open(&client, &option, NULL);
     mqtt_nng_client_subscribe(client, "one/testneuron", 0, NULL);
+    mqtt_nng_client_subscribe(client, "one/testneuron1", 0, NULL);
+    mqtt_nng_client_subscribe(client, "one/testneuron2", 0, NULL);
+    mqtt_nng_client_subscribe(client, "one/testneuron3", 0, NULL);
     char p[10] = "123456";
     mqtt_nng_client_publish(client, "hahah/test", 0, (unsigned char *) p,
                             strlen(p));
@@ -61,13 +65,13 @@ TEST(MQTTTest, mqtt_nng_client_open)
 
 //     mqtt_option_t option;
 //     memset(&option, 0, sizeof(mqtt_option_t));
-//     option.host         = strdup("broker-cn.emqx.io");
+//     option.host         = strdup("broker.emqx.io");
 //     option.port         = strdup("8883");
 //     option.clientid     = strdup(uuid4_str);
 //     option.verbose      = 1;
 //     option.MQTT_version = 4;
 //     option.connection   = strdup("ssl://");
-//     option.cafile       = strdup("/home/gc/broker.emqx.io-ca.crt");
+//     option.ca_file      = strdup("/home/gc/broker.emqx.io-ca.crt");
 
 //     mqtt_nng_client_t *client = NULL;
 //     mqtt_error_e       error  = mqtt_nng_client_open(&client, &option, NULL);

@@ -51,9 +51,9 @@ typedef struct {
     int   will_qos;
     int   will_retain;
     /* TLS options */
-    char *capath;
+    char *ca_path;
     char *cert;
-    char *cafile;
+    char *ca_file;
     char *key;
     char *keypass;
 } mqtt_option_t;

@@ -22,21 +22,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-<<<<<<< HEAD:plugins/mqtt/mqttc_util.c
-#include "mqttc_util.h"
-#include "schema.h"
-=======
 #include "mqtt_nng_util.h"
-#include "schema/schema.h"
->>>>>>> Remove the MQTT-C dependency library:plugins/mqtt/mqtt_nng_util.c
+#include "schema.h"
 #include "json/json.h"
 #include <config.h>
 #include <neuron.h>
 
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
 #define SCHEMA_FILE "plugin_param_schema.json"
-#define CONFIG_FILE "./neuron.yaml"
-#define CONFIG_NODE "mqtt"
 
 struct node_setting {
     uint32_t node_id;
@@ -85,12 +78,12 @@ void mqtt_option_uninit(mqtt_option_t *option)
         free(option->password);
     }
 
-    if (NULL != option->capath) {
-        free(option->capath);
+    if (NULL != option->ca_path) {
+        free(option->ca_path);
     }
 
-    if (NULL != option->cafile) {
-        free(option->cafile);
+    if (NULL != option->ca_file) {
+        free(option->ca_file);
     }
 }
 
@@ -316,10 +309,10 @@ int mqtt_option_init(neu_config_t *config, mqtt_option_t *option)
     option->clientid = strdup(uuid4_str);
     option->username = setting.username;
     option->password = setting.password;
-    option->capath   = setting.ca_path;
-    option->cafile   = setting.ca_file;
+    option->ca_path  = setting.ca_path;
+    option->ca_file  = setting.ca_file;
 
-    if (0 == strcmp(option->connection, "ssl://") && NULL == option->cafile) {
+    if (0 == strcmp(option->connection, "ssl://") && NULL == option->ca_file) {
         return -6;
     }
 
