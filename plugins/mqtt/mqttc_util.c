@@ -23,7 +23,7 @@
 #include <string.h>
 
 #include "mqttc_util.h"
-#include "schema/schema.h"
+#include "schema.h"
 #include "json/json.h"
 #include <config.h>
 #include <neuron.h>
