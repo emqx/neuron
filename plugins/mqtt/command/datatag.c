@@ -133,7 +133,6 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     if (NULL == config) {
         new_config = neu_taggrp_cfg_new(req->group_config_name);
         neu_taggrp_cfg_set_interval(new_config, 10000);
-        neu_system_add_group_config(plugin, req->node_id, new_config);
     } else {
         new_config = neu_taggrp_cfg_clone(config);
     }
@@ -170,6 +169,8 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 
     if (config != NULL) {
         neu_system_update_group_config(plugin, req->node_id, new_config);
+    } else {
+        neu_system_add_group_config(plugin, req->node_id, new_config);
     }
 
     error.error = code;
