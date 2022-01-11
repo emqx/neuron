@@ -399,6 +399,16 @@ static bool is_default_adapter(const char *adapter_name)
     return false;
 }
 
+static bool is_default_plugin(const char *plugin_name)
+{
+    for (size_t i = 0; i < DEFAULT_PLUGIN_INFO_SIZE; ++i) {
+        if (0 == strcmp(default_plugin_infos[i].plugin_name, plugin_name)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static adapter_id_t manager_new_adapter_id(neu_manager_t *manager)
 {
     adapter_id_t adapter_id;
@@ -1313,7 +1323,16 @@ static void manager_loop(void *arg)
         case MSG_EVENT_UPDATE_NODE:
             // fall through
 
-        case MSG_EVENT_DEL_NODE: {
+        case MSG_EVENT_DEL_NODE:
+            // fall through
+
+        case MSG_EVENT_ADD_PLUGIN:
+            // fall through
+
+        case MSG_EVENT_UPDATE_PLUGIN:
+            // fall through
+
+        case MSG_EVENT_DEL_PLUGIN: {
             adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
                 &manager->reg_adapters, DEFAULT_PERSIST_ADAPTER_NAME);
             nng_pipe   persist_pipe = persist_reg_entity->adapter_pipe;
@@ -1330,8 +1349,8 @@ static void manager_loop(void *arg)
                 char *out_buf = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_buf, name, len);
                 nng_msg_set_pipe(out_msg, persist_pipe);
-                log_info("Forward node event %d to %s pipe: %d", msg_type,
-                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+                log_info("Forward node/plugin event %d to %s pipe: %d",
+                         msg_type, DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -2021,6 +2040,56 @@ int neu_manager_get_plugin_libs(neu_manager_t *manager,
         vector_push_back(plugin_lib_infos, &plugin_lib_info);
     }
 
+    vector_free(plugin_regs);
+    return 0;
+}
+
+int neu_manager_get_persist_plugin_infos(neu_manager_t *manager,
+                                         vector_t **    result)
+{
+    if (NULL == manager || NULL == result) {
+        log_error("get persist plugin infos with NULL manager or result");
+        return NEU_ERR_EINVAL;
+    }
+
+    vector_t *plugin_regs =
+        plugin_manager_get_all_plugins(manager->plugin_manager);
+    if (plugin_regs == NULL) {
+        return NEU_ERR_ENOMEM;
+    }
+
+    size_t count = plugin_regs->size;
+    if (count >= DEFAULT_PLUGIN_INFO_SIZE) {
+        count -= DEFAULT_PLUGIN_INFO_SIZE;
+    }
+    vector_t *plugin_infos =
+        vector_new(count, sizeof(neu_persist_adapter_info_t));
+    if (NULL == plugin_infos) {
+        vector_free(plugin_regs);
+        return NEU_ERR_ENOMEM;
+    }
+
+    neu_persist_plugin_info_t plugin_info     = {};
+    plugin_reg_info_t *       plugin_reg_info = NULL;
+    VECTOR_FOR_EACH(plugin_regs, iter)
+    {
+        plugin_reg_info = (plugin_reg_info_t *) iterator_get(&iter);
+        if (is_default_plugin(plugin_reg_info->plugin_name)) {
+            continue;
+        }
+        adapter_type_e adapter_type = plugin_reg_info->adapter_type;
+        plugin_info.kind            = plugin_reg_info->plugin_kind;
+        plugin_info.adapter_type    = adapter_type_to_node_type(adapter_type);
+        plugin_info.name            = strdup(plugin_reg_info->plugin_name);
+        plugin_info.plugin_lib_name = strdup(plugin_reg_info->plugin_lib_name);
+        if (0 != vector_push_back(plugin_infos, &plugin_info)) {
+            neu_persist_plugin_infos_free(plugin_infos);
+            vector_free(plugin_regs);
+            return NEU_ERR_ENOMEM;
+        }
+    }
+
+    *result = plugin_infos;
     vector_free(plugin_regs);
     return 0;
 }

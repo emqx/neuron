@@ -276,6 +276,31 @@ static int persister_singleton_handle_nodes(neu_adapter_t *adapter,
     return rv;
 }
 
+static int persister_singleton_handle_plugins(neu_adapter_t *adapter,
+                                              msg_type_e     event)
+{
+    neu_persister_t *persister    = persister_singleton_get();
+    vector_t *       plugin_infos = NULL;
+
+    log_info("%s handling plugin event %d", adapter->name, event);
+
+    int rv =
+        neu_manager_get_persist_plugin_infos(adapter->manager, &plugin_infos);
+    if (0 != rv) {
+        log_error("%s unable to get plugin infos", adapter->name);
+        return rv;
+    }
+
+    // store the current set of plugin infos
+    rv = neu_persister_store_plugins(persister, plugin_infos);
+    if (0 != rv) {
+        log_error("%s failed to store plugins infos", adapter->name);
+    }
+
+    neu_persist_plugin_infos_free(plugin_infos);
+    return rv;
+}
+
 neu_plugin_running_state_e
 neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 {
@@ -427,6 +452,17 @@ static void adapter_loop(void *arg)
         case MSG_EVENT_DEL_NODE: {
             const char *node_name = msg_get_buf_ptr(pay_msg);
             persister_singleton_handle_nodes(adapter, pay_msg_type, node_name);
+            break;
+        }
+
+        case MSG_EVENT_ADD_PLUGIN:
+            // fall through
+
+        case MSG_EVENT_UPDATE_PLUGIN:
+            // fall through
+
+        case MSG_EVENT_DEL_PLUGIN: {
+            persister_singleton_handle_plugins(adapter, pay_msg_type);
             break;
         }
 
