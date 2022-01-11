@@ -537,7 +537,7 @@ vector_t *plugin_manager_get_all_plugins(plugin_manager_t *plugin_mng)
     }
 
     count = BUILTIN_STATIC_PLUGIN_COUNT;
-    count = plugin_mng->system_plugins.size + plugin_mng->custom_plugins.size;
+    count += plugin_mng->system_plugins.size + plugin_mng->custom_plugins.size;
     plugin_info_vec = vector_new(count, sizeof(plugin_reg_info_t));
     if (plugin_info_vec == NULL) {
         log_error("No memory to new vector of plugin infos");
