@@ -117,7 +117,8 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     log_info("Add tags uuid:%s, node id:%d, group config name:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
 
-    neu_taggrp_config_t *config = neu_system_find_group_config(
+    neu_taggrp_config_t *new_config = NULL;
+    neu_taggrp_config_t *config     = neu_system_find_group_config(
         plugin, req->node_id, req->group_config_name);
     neu_datatag_table_t *table =
         neu_system_get_datatags_table(plugin, req->node_id);
@@ -130,12 +131,14 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     }
 
     if (NULL == config) {
-        config = neu_taggrp_cfg_new(req->group_config_name);
-        neu_taggrp_cfg_set_interval(config, 10000);
-        neu_system_add_group_config(plugin, req->node_id, config);
+        new_config = neu_taggrp_cfg_new(req->group_config_name);
+        neu_taggrp_cfg_set_interval(new_config, 10000);
+        neu_system_add_group_config(plugin, req->node_id, new_config);
+    } else {
+        new_config = neu_taggrp_cfg_clone(config);
     }
 
-    vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(config);
+    vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(new_config);
     neu_err_code_e code = { 0 };
 
     for (int i = 0; i < req->n_tag; i++) {
@@ -165,7 +168,9 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         }
     }
 
-    neu_taggrp_cfg_unanchor(config);
+    if (config != NULL) {
+        neu_system_update_group_config(plugin, req->node_id, new_config);
+    }
 
     error.error = code;
     neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
@@ -250,7 +255,8 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     log_info("Delete tags uuid:%s, node id:%d, group config:%s", mqtt->uuid,
              req->node_id, req->group_config_name);
 
-    neu_taggrp_config_t *config = neu_system_find_group_config(
+    neu_taggrp_config_t *new_config = NULL;
+    neu_taggrp_config_t *config     = neu_system_find_group_config(
         plugin, req->node_id, req->group_config_name);
     neu_datatag_table_t *table =
         neu_system_get_datatags_table(plugin, req->node_id);
@@ -262,9 +268,11 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return result;
     }
 
+    new_config = neu_taggrp_cfg_clone(config);
+
     for (int i = 0; i < req->n_id; i++) {
         if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
-            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(new_config);
 
             VECTOR_FOR_EACH(ids, iter)
             {
@@ -277,6 +285,7 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         }
     }
 
+    neu_system_update_group_config(plugin, req->node_id, new_config);
     error.error = NEU_ERR_SUCCESS;
     neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                               neu_json_encode_mqtt_resp, &result);
