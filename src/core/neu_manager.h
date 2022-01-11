@@ -63,6 +63,8 @@ int neu_manager_update_plugin_lib(neu_manager_t *              manager,
                                   neu_cmd_update_plugin_lib_t *cmd);
 int neu_manager_get_plugin_libs(neu_manager_t *manager,
                                 vector_t *     plugin_lib_infos);
+int neu_manager_get_persist_plugin_infos(neu_manager_t *manager,
+                                         vector_t **    result);
 
 neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
                                                  neu_node_id_t  node_id);

@@ -50,6 +50,17 @@ static inline void neu_persist_adapter_infos_free(vector_t *adapter_infos)
     vector_free(adapter_infos);
 }
 
+static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
+{
+    VECTOR_FOR_EACH(plugin_infos, iter)
+    {
+        neu_persist_plugin_info_t *p = iterator_get(&iter);
+        free(p->name);
+        free(p->plugin_lib_name);
+    }
+    vector_free(plugin_infos);
+}
+
 /**
  * Persister, provide methods to persist data */
 typedef struct neu_persister neu_persister_t;
