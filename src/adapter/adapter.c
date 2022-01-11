@@ -68,21 +68,31 @@
         }                                                                    \
     }
 
+#define ADAPTER_SEND_BUF(adapter, rv, msg_type, src, len)      \
+    {                                                          \
+        size_t   msg_size = 0;                                 \
+        nng_msg *msg      = NULL;                              \
+        msg_size          = msg_inplace_data_get_size(len);    \
+        (rv)              = nng_msg_alloc(&msg, msg_size);     \
+        if ((rv) == 0) {                                       \
+            message_t *msg_ptr;                                \
+            msg_ptr = (message_t *) nng_msg_body(msg);         \
+            msg_inplace_data_init(msg_ptr, (msg_type), (len)); \
+            char *dst = msg_get_buf_ptr(msg_ptr);              \
+            memcpy(dst, (src), len);                           \
+            nng_sendmsg((adapter)->sock, msg, 0);              \
+        }                                                      \
+    }
+
 #define ADAPTER_SEND_NODE_EVENT(adapter, rv, msg_type, name) \
     {                                                        \
-        size_t   msg_size = 0;                               \
-        nng_msg *msg      = NULL;                            \
-        int      len      = strlen(name) + 1;                \
-        msg_size          = msg_inplace_data_get_size(len);  \
-        (rv)              = nng_msg_alloc(&msg, msg_size);   \
-        if ((rv) == 0) {                                     \
-            message_t *msg_ptr;                              \
-            msg_ptr = (message_t *) nng_msg_body(msg);       \
-            msg_inplace_data_init(msg_ptr, (msg_type), len); \
-            char *buf = msg_get_buf_ptr(msg_ptr);            \
-            memcpy(buf, (name), len);                        \
-            nng_sendmsg((adapter)->sock, msg, 0);            \
-        }                                                    \
+        size_t len = strlen(name) + 1;                       \
+        ADAPTER_SEND_BUF(adapter, rv, msg_type, name, len);  \
+    }
+
+#define ADAPTER_SEND_PLUGIN_EVENT(adapter, rv, msg_type) \
+    {                                                    \
+        ADAPTER_SEND_BUF(adapter, rv, msg_type, "", 0);  \
     }
 
 #define _ADAPTER_RESP(adapter, cmd, ret_type, req_type, rv, resp_type_code, \
@@ -789,16 +799,19 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_ADD_PLUGIN_LIB: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_add_plugin_lib_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              plugin_id_t plugin_id;
-                              ret = NEU_ERR_SUCCESS;
-                              if (neu_manager_add_plugin_lib(adapter->manager,
-                                                             req_cmd,
-                                                             &plugin_id) != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_add_plugin_lib_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                plugin_id_t plugin_id;
+                ret = NEU_ERR_SUCCESS;
+                if (neu_manager_add_plugin_lib(adapter->manager, req_cmd,
+                                               &plugin_id) != 0) {
+                    ret = NEU_ERR_FAILURE;
+                } else {
+                    ADAPTER_SEND_PLUGIN_EVENT(adapter, rv,
+                                              MSG_EVENT_ADD_PLUGIN);
+                }
+            });
         break;
     }
 
@@ -810,21 +823,27 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                                   adapter->manager, req_cmd->plugin_id);
                               if (rv != 0) {
                                   ret = NEU_ERR_FAILURE;
+                              } else {
+                                  ADAPTER_SEND_PLUGIN_EVENT(
+                                      adapter, rv, MSG_EVENT_DEL_PLUGIN);
                               }
                           });
         break;
     }
 
     case NEU_REQRESP_UPDATE_PLUGIN_LIB: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_update_plugin_lib_t,
-                          rv, NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = NEU_ERR_SUCCESS;
-                              rv  = neu_manager_update_plugin_lib(
-                                  adapter->manager, req_cmd);
-                              if (rv != 0) {
-                                  ret = NEU_ERR_FAILURE;
-                              }
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_update_plugin_lib_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = NEU_ERR_SUCCESS;
+                rv  = neu_manager_update_plugin_lib(adapter->manager, req_cmd);
+                if (rv != 0) {
+                    ret = NEU_ERR_FAILURE;
+                } else {
+                    ADAPTER_SEND_PLUGIN_EVENT(adapter, rv,
+                                              MSG_EVENT_UPDATE_PLUGIN);
+                }
+            });
         break;
     }
 
