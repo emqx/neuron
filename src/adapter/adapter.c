@@ -37,6 +37,7 @@
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "neu_plugin.h"
+#include "neu_plugin_info.h"
 #include "neu_subscribe.h"
 #include "persist/persist.h"
 
@@ -197,6 +198,43 @@ static neu_persister_t *persister_singleton_get()
     return g_persister_singleton;
 }
 
+static int persister_singleton_load_plugins(neu_adapter_t *adapter)
+{
+    vector_t *       plugin_infos = NULL;
+    neu_persister_t *persister    = persister_singleton_get();
+
+    int rv = neu_persister_load_plugins(persister, &plugin_infos);
+    if (0 != rv) {
+        log_error("%s failed to load plugin infos", adapter->name);
+        return -1;
+    }
+    VECTOR_FOR_EACH(plugin_infos, iter)
+    {
+        neu_persist_plugin_info_t *plugin_info    = iterator_get(&iter);
+        plugin_id_t                plugin_id      = {};
+        neu_cmd_add_plugin_lib_t   add_plugin_cmd = {
+            .node_type       = plugin_info->adapter_type,
+            .plugin_kind     = plugin_info->kind,
+            .plugin_name     = plugin_info->name,
+            .plugin_lib_name = plugin_info->plugin_lib_name,
+        };
+
+        rv = neu_manager_add_plugin_lib(adapter->manager, &add_plugin_cmd,
+                                        &plugin_id);
+        const char *ok_or_err = (0 == rv) ? "success" : "fail";
+        log_info("%s load plugin %s type:%d, kind:%d name:%s lib:%s",
+                 adapter->name, ok_or_err, plugin_info->adapter_type,
+                 plugin_info->kind, plugin_info->name,
+                 plugin_info->plugin_lib_name);
+        if (0 != rv) {
+            break;
+        }
+    }
+
+    neu_persist_plugin_infos_free(plugin_infos);
+    return rv;
+}
+
 static int persister_singleton_load_data(neu_adapter_t *adapter)
 {
     vector_t *       adapter_infos = NULL;
@@ -204,9 +242,12 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
 
     log_info("%s start persistence loading", adapter->name);
 
-    // TODO: load plugin infos
+    int rv = persister_singleton_load_plugins(adapter);
+    if (0 != rv) {
+        return rv;
+    }
 
-    int rv = neu_persister_load_adapters(persister, &adapter_infos);
+    rv = neu_persister_load_adapters(persister, &adapter_infos);
     if (0 != rv) {
         log_error("%s failed to load adapter infos", adapter->name);
         goto error_load_adapters;
