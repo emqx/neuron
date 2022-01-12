@@ -2,9 +2,8 @@
 
 #include <gtest/gtest.h>
 
-#include "json/neu_json_fn.h"
-// #include "json/neu_json_node.h"
 #include "neu_adapter.h"
+#include "json/neu_json_fn.h"
 #include "json/neu_json_node.h"
 
 TEST(JsonNodesTest, AddNodesDecode)

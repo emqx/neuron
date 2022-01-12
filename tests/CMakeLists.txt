@@ -130,6 +130,14 @@ target_include_directories(mqtt_test PRIVATE
 	${CMAKE_SOURCE_DIR}/plugins/mqtt)
 target_link_libraries(mqtt_test neuron-base gtest_main gtest yaml jansson ssl crypto)
 
+aux_source_directory(${CMAKE_SOURCE_DIR}/src/persist SRC_PERSIST)
+add_executable(json_persistence_test json_persistence_test.cc ${SRC_PERSIST})
+target_include_directories(json_persistence_test PRIVATE 
+    ${CMAKE_SOURCE_DIR}/src 
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(json_persistence_test neuron-base gtest_main gtest)
+
 file(COPY ${CMAKE_SOURCE_DIR}/private_test.key DESTINATION ${CMAKE_BINARY_DIR}/tests)
 file(COPY ${CMAKE_SOURCE_DIR}/public_test.pem DESTINATION ${CMAKE_BINARY_DIR}/tests)
 add_executable(jwt_test jwt_test.cc)
@@ -156,3 +164,4 @@ gtest_discover_tests(schema_valid_test)
 gtest_discover_tests(http_test)
 gtest_discover_tests(mqtt_test)
 gtest_discover_tests(jwt_test)
+gtest_discover_tests(json_persistence_test)
