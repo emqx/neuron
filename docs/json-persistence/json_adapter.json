@@ -1,0 +1,46 @@
+{
+    "node_req": {
+        "nodes": [
+            {
+                "state": 1,
+                "type": 1,
+                "name": "sample-driver-adapter",
+                "plugin_name": "sample-drv-plugin"
+            },
+            {
+                "state": 2,
+                "type": 5,
+                "name": "sample-app-adapter",
+                "plugin_name": "sample-app-plugin"
+            },
+            {
+                "state": 3,
+                "type": 3,
+                "name": "mqtt-adapter",
+                "plugin_name": "mqtt-plugin"
+            }
+        ]
+    },
+    "node_resp": {
+        "nodes": [
+            {
+                "state": 1,
+                "type": 1,
+                "name": "sample-driver-adapter",
+                "plugin_name": "sample-drv-plugin"
+            },
+            {
+                "state": 2,
+                "type": 5,
+                "name": "sample-app-adapter",
+                "plugin_name": "sample-app-plugin"
+            },
+            {
+                "state": 3,
+                "type": 3,
+                "name": "mqtt-adapter",
+                "plugin_name": "mqtt-plugin"
+            }
+        ]
+    }
+}

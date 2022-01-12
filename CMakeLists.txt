@@ -82,6 +82,13 @@ endif()
 # define neuron executalbe program
 aux_source_directory(src/parser NEURON_SRC_PARSE)
 aux_source_directory(src/schema NEURON_SRC_SCHEMA)
+set(PERSIST_SOURCES
+    src/persist/persist.c
+    src/persist/json_adapter.c
+    src/persist/json_datatags.c
+    src/persist/json_group_configs.c
+    src/persist/json_plugin.c
+    src/persist/json_subs.c)
 set(NEURON_SOURCES
     src/main.c
     src/config.c
@@ -100,7 +107,8 @@ set(NEURON_SOURCES
     plugins/restful/group_config_handle.c
     plugins/restful/plugin_handle.c
     plugins/restful/rest.c
-    plugins/restful/http.c)
+    plugins/restful/http.c
+    ${PERSIST_SOURCES})
 
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)

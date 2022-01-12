@@ -57,6 +57,29 @@ static inline void vector_free(vector_t *vec)
     return;
 }
 
+// vec should point to an uninitialised vector
+static inline void vector_init_move_from_buf(vector_t *vec, void *data,
+                                             size_t capacity, size_t size,
+                                             size_t element_size)
+{
+    vec->size         = size;
+    vec->capacity     = capacity;
+    vec->element_size = element_size;
+    vec->data         = data;
+}
+
+static inline vector_t *vector_new_move_from_buf(void *data, size_t capacity,
+                                                 size_t size,
+                                                 size_t element_size)
+{
+    vector_t *vec = (vector_t *) malloc(sizeof(vector_t));
+    if (vec != NULL) {
+        vector_init_move_from_buf(vec, data, capacity, size, element_size);
+    }
+
+    return vec;
+}
+
 static inline vector_t *vector_clone(vector_t *vec)
 {
     vector_t *new_vec;

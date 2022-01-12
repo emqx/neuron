@@ -1,0 +1,70 @@
+{
+    "subscriptions_req": {
+        "subscriptions": [
+            {
+                "sub_adapter_name": "sample-app-adapter",
+                "group_config_name": "config_drv_sample",
+                "src_adapter_name": "sample-driver-adapter",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "sample-driver-adapter",
+                "group_config_name": "config_app_sample",
+                "src_adapter_name": "config_app_sample",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "mqtt-adapter",
+                "group_config_name": "config_mqtt_sample",
+                "src_adapter_name": "sample-driver-adapter",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "mqtt-adapter",
+                "group_config_name": "config_modbus_tcp_sample_2",
+                "src_adapter_name": "modbus_tcp_adapter",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "mqtt_adapter",
+                "group_config_name": "config_opcua_sample",
+                "src_adapter_name": "opcua-adapter",
+                "read_interval": 2000
+            }
+        ]
+    },
+    "subscriptions_resp": {
+        "subscriptions": [
+            {
+                "sub_adapter_name": "sample-app-adapter",
+                "group_config_name": "config_drv_sample",
+                "src_adapter_name": "sample-driver-adapter",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "sample-driver-adapter",
+                "group_config_name": "config_app_sample",
+                "src_adapter_name": "config_app_sample",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "mqtt-adapter",
+                "group_config_name": "config_mqtt_sample",
+                "src_adapter_name": "sample-driver-adapter",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "mqtt-adapter",
+                "group_config_name": "config_modbus_tcp_sample_2",
+                "src_adapter_name": "modbbus_tcp_adapter",
+                "read_interval": 2000
+            },
+            {
+                "sub_adapter_name": "mqtt_adapter",
+                "group_config_name": "config_opcua_sample",
+                "src_adapter_name": "opcua-adapter",
+                "read_interval": 2000
+            }
+        ]
+    }
+}
