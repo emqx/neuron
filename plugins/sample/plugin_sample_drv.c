@@ -305,14 +305,24 @@ static int sample_drv_plugin_event_reply(neu_plugin_t *     plugin,
     return rv;
 }
 
+static int sample_drv_plugin_validate_tag(neu_plugin_t * plugin,
+                                          neu_datatag_t *tag)
+{
+    (void) plugin;
+    (void) tag;
+
+    return 0;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = sample_drv_plugin_open,
-    .close       = sample_drv_plugin_close,
-    .init        = sample_drv_plugin_init,
-    .uninit      = sample_drv_plugin_uninit,
-    .config      = sample_drv_plugin_config,
-    .request     = sample_drv_plugin_request,
-    .event_reply = sample_drv_plugin_event_reply
+    .open         = sample_drv_plugin_open,
+    .close        = sample_drv_plugin_close,
+    .init         = sample_drv_plugin_init,
+    .uninit       = sample_drv_plugin_uninit,
+    .config       = sample_drv_plugin_config,
+    .request      = sample_drv_plugin_request,
+    .validate_tag = sample_drv_plugin_validate_tag,
+    .event_reply  = sample_drv_plugin_event_reply
 };
 
 #define SAMPLE_DRV_PLUGIN_DESCR \

@@ -50,6 +50,7 @@ typedef struct neu_plugin_intf_funs {
     int (*config)(neu_plugin_t *plugin, neu_config_t *configs);
     int (*request)(neu_plugin_t *plugin, neu_request_t *req);
     int (*event_reply)(neu_plugin_t *plugin, neu_event_reply_t *reply);
+    int (*validate_tag)(neu_plugin_t *plugin, neu_datatag_t *tag);
 } neu_plugin_intf_funs_t;
 
 typedef struct neu_plugin_module {
@@ -144,6 +145,8 @@ intptr_t  neu_plugin_node_ctl(neu_plugin_t *plugin, neu_node_id_t node_id,
                               neu_adapter_ctl_e ctl);
 vector_t *neu_system_get_sub_group_configs(neu_plugin_t *plugin,
                                            neu_node_id_t node_id);
+intptr_t  neu_plugin_validate_tag(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                  neu_datatag_t *tag);
 #ifdef __cplusplus
 }
 #endif

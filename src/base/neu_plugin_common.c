@@ -539,3 +539,18 @@ vector_t *neu_system_get_sub_group_configs(neu_plugin_t *plugin,
                     { sub_group_configs = resp->sub_grp_configs; })
     return sub_group_configs;
 }
+
+intptr_t neu_plugin_validate_tag(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                 neu_datatag_t *tag)
+{
+    intptr_t               errorcode    = -1;
+    neu_cmd_validate_tag_t validate_tag = { 0 };
+
+    validate_tag.node_id = node_id;
+    validate_tag.tag     = tag;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_VALIDATE_TAG, validate_tag, intptr_t,
+                    { errorcode = (intptr_t) resp; })
+
+    return errorcode;
+}

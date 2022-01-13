@@ -544,14 +544,24 @@ static int sample_app_plugin_event_reply(neu_plugin_t *     plugin,
     return rv;
 }
 
+static int sample_app_plugin_validate_tag(neu_plugin_t * plugin,
+                                          neu_datatag_t *tag)
+{
+    (void) plugin;
+    (void) tag;
+
+    return 0;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = sample_app_plugin_open,
-    .close       = sample_app_plugin_close,
-    .init        = sample_app_plugin_init,
-    .uninit      = sample_app_plugin_uninit,
-    .config      = sample_app_plugin_config,
-    .request     = sample_app_plugin_request,
-    .event_reply = sample_app_plugin_event_reply
+    .open         = sample_app_plugin_open,
+    .close        = sample_app_plugin_close,
+    .init         = sample_app_plugin_init,
+    .uninit       = sample_app_plugin_uninit,
+    .config       = sample_app_plugin_config,
+    .request      = sample_app_plugin_request,
+    .validate_tag = sample_app_plugin_validate_tag,
+    .event_reply  = sample_app_plugin_event_reply
 };
 
 #define SAMPLE_APP_PLUGIN_DESCR \

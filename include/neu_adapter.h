@@ -82,6 +82,7 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_NODE_CTL,
     NEU_REQRESP_GET_SUB_GRP_CONFIGS,
     NEU_REQRESP_SUB_GRP_CONFIGS_RESP,
+    NEU_REQRESP_VALIDATE_TAG,
 } neu_reqresp_type_e;
 
 typedef uint32_t neu_node_id_t;
@@ -327,6 +328,12 @@ typedef struct neu_cmd_node_ctl {
     neu_node_id_t     node_id;
     neu_adapter_ctl_e ctl;
 } neu_cmd_node_ctl_t;
+
+/* NEU_REQRESP_VALIDATE_TAG */
+typedef struct neu_cmd_validate_tag {
+    neu_node_id_t  node_id;
+    neu_datatag_t *tag;
+} neu_cmd_validate_tag_t;
 
 typedef struct neu_request {
     uint32_t           req_id;

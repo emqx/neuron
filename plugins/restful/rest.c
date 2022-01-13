@@ -314,16 +314,25 @@ static int dashb_plugin_stop(neu_plugin_t *plugin)
     return 0;
 }
 
+static int dashb_plugin_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
+{
+    (void) plugin;
+    (void) tag;
+
+    return 0;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = dashb_plugin_open,
-    .close       = dashb_plugin_close,
-    .init        = dashb_plugin_init,
-    .uninit      = dashb_plugin_uninit,
-    .start       = dashb_plugin_start,
-    .stop        = dashb_plugin_stop,
-    .config      = dashb_plugin_config,
-    .request     = dashb_plugin_request,
-    .event_reply = dashb_plugin_event_reply
+    .open         = dashb_plugin_open,
+    .close        = dashb_plugin_close,
+    .init         = dashb_plugin_init,
+    .uninit       = dashb_plugin_uninit,
+    .start        = dashb_plugin_start,
+    .stop         = dashb_plugin_stop,
+    .config       = dashb_plugin_config,
+    .request      = dashb_plugin_request,
+    .validate_tag = dashb_plugin_validate_tag,
+    .event_reply  = dashb_plugin_event_reply
 };
 
 #define DEFAULT_DASHBOARD_PLUGIN_DESCR \
