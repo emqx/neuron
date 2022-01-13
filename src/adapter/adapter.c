@@ -39,6 +39,7 @@
 #include "neu_plugin.h"
 #include "neu_plugin_info.h"
 #include "neu_subscribe.h"
+#include "neu_tag_group_config.h"
 #include "persist/persist.h"
 
 #define to_node_id(adapter, id) \
@@ -877,27 +878,47 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     case NEU_REQRESP_ADD_GRP_CONFIG: {
         ADAPTER_RESP_CODE(
             adapter, cmd, intptr_t, neu_cmd_add_grp_config_t, rv,
-            NEU_REQRESP_ERR_CODE, p_result,
-            { ret = neu_manager_add_grp_config(adapter->manager, req_cmd); });
+            NEU_REQRESP_ERR_CODE, p_result, {
+                neu_taggrp_cfg_ref(req_cmd->grp_config);
+                ret = neu_manager_add_grp_config(adapter->manager, req_cmd);
+                if (0 == ret) {
+                    ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_ADD_GRP_CONFIG,
+                                     req_cmd, sizeof(*req_cmd));
+                }
+            });
         break;
     }
 
     case NEU_REQRESP_DEL_GRP_CONFIG: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_del_grp_config_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_del_grp_config(
-                                  adapter->manager, req_cmd->node_id,
-                                  req_cmd->config_name);
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_del_grp_config_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = neu_manager_del_grp_config(
+                    adapter->manager, req_cmd->node_id, req_cmd->config_name);
+                if (0 == ret) {
+                    neu_cmd_del_grp_config_t event = {};
+                    event.node_id                  = req_cmd->node_id;
+                    event.config_name = strdup(req_cmd->config_name);
+                    if (NULL != event.config_name) {
+                        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_DEL_GRP_CONFIG,
+                                         &event, sizeof(event));
+                    }
+                }
+            });
         break;
     }
 
     case NEU_REQRESP_UPDATE_GRP_CONFIG: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_update_grp_config_t,
-                          rv, NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_update_grp_config(
-                                  adapter->manager, req_cmd);
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_update_grp_config_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                neu_taggrp_cfg_ref(req_cmd->grp_config);
+                ret = neu_manager_update_grp_config(adapter->manager, req_cmd);
+                if (0 == ret) {
+                    ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UPDATE_GRP_CONFIG,
+                                     req_cmd, sizeof(*req_cmd));
+                }
+            });
         break;
     }
 
