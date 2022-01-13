@@ -742,6 +742,29 @@ int neu_persister_store_adapter_setting(neu_persister_t *persister,
     return rv;
 }
 
+int neu_persister_load_adapter_setting(neu_persister_t *  persister,
+                                       const char *       adapter_name,
+                                       const char **const setting)
+{
+    char path[PATH_MAX_SIZE] = { 0 };
+
+    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
+
+    n = path_cat(path, n, sizeof(path), "settings.json");
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
+
+    int rv = read_file_string(path, (char **) setting);
+
+    return rv;
+}
+
 int neu_persister_delete_adapter_setting(neu_persister_t *persister,
                                          const char *     adapter_name)
 {

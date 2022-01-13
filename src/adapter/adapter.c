@@ -235,6 +235,30 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
     return rv;
 }
 
+static int persister_singleton_load_setting(neu_adapter_t *adapter,
+                                            const char *   adapter_name,
+                                            neu_node_id_t  node_id)
+{
+    neu_persister_t *persister = persister_singleton_get();
+    const char *     setting   = NULL;
+    int              rv =
+        neu_persister_load_adapter_setting(persister, adapter_name, &setting);
+    if (0 != rv) {
+        log_error("%s ignore fail load setting of adapter: %s", adapter->name,
+                  adapter_name);
+        return 0; // ignore this error, may be no setting ever set
+    }
+
+    rv = neu_manager_adapter_set_setting(adapter->manager, node_id, setting);
+    const char *ok_or_err = (0 == rv) ? "success" : "fail";
+    log_info("%s %s set setting of %s %s", adapter->name, ok_or_err,
+             adapter_name, setting);
+
+    free((char *) setting);
+
+    return rv;
+}
+
 static int persister_singleton_load_data(neu_adapter_t *adapter)
 {
     vector_t *       adapter_infos = NULL;
@@ -262,7 +286,8 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
             .plugin_name  = adapter_info->plugin_name,
         };
 
-        rv = neu_manager_add_node(adapter->manager, &add_node_cmd, NULL);
+        neu_node_id_t node_id = 0;
+        rv = neu_manager_add_node(adapter->manager, &add_node_cmd, &node_id);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
         log_info("%s load adapter %s type:%d, name:%s plugin:%s", adapter->name,
                  ok_or_err, adapter_info->type, adapter_info->name,
@@ -270,7 +295,13 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         if (0 != rv) {
             goto error_add_adapters;
         }
-        // TODO: node setting
+
+        rv = persister_singleton_load_setting(adapter, adapter_info->name,
+                                              node_id);
+        if (0 != rv) {
+            goto error_add_adapters;
+        }
+
         // TODO: start node according to state
     }
 
