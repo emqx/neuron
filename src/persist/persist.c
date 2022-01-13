@@ -40,18 +40,122 @@
 #include "neu_vector.h"
 #include "json/neu_json_fn.h"
 
+#if defined _WIN32 || defined __CYGWIN__
+#define PATH_SEP_CHAR '\\'
+#else
+#define PATH_SEP_CHAR '/'
+#endif
+
+#define PATH_MAX_SIZE 128
+
+/**
+ * Escape special characters in path string,
+ *    '%' -> '%%', '/' => '%-', '.' -> '%.'
+ *
+ * @param buf     output buffer,
+ * @param size    size of output buffer
+ * @param path    path string
+ *
+ * @return if `buf` is NULL, return number of bytes needed to store the result.
+ *         otherwise, return the number of bytes written excluding the
+ *         terminating null byte, `size` indicates overflow.
+ */
+static int path_escape(char *buf, size_t size, const char *path)
+{
+    size_t i = 0;
+    char   c = '\0';
+
+    if (NULL != buf) {
+        for (const char *s = path; (c = *s++) && i < size; ++i) {
+            if (PATH_SEP_CHAR == c || '.' == c || '%' == c) {
+                c        = (PATH_SEP_CHAR == c) ? '-' : c;
+                buf[i++] = '%';
+                if (size == i) {
+                    break;
+                }
+            }
+            buf[i] = c;
+        }
+        if (i < size) {
+            buf[i] = '\0';
+        } else if (i > 0) {
+            buf[i - 1] = '\0';
+        }
+    } else {
+        for (const char *s = path; (c = *s++); ++i) {
+            if (PATH_SEP_CHAR == c || '.' == c || '%' == c) {
+                ++i;
+            }
+        }
+    }
+
+    return i;
+}
+
+/**
+ * Concatenate a path string to another.
+ *
+ * @param dst   destination path string buffer
+ * @param len   destination path string len, not greater than size
+ * @param size  destination path buffer size
+ * @param src   path string
+ *
+ * @return length of the result path string excluding the terminating NULL
+ *         byte, `size` indicates overflow.
+ */
+static int path_cat(char *dst, size_t len, size_t size, const char *src)
+{
+    size_t i = len;
+
+    if (0 < i && i < size && (PATH_SEP_CHAR != dst[i - 1])) {
+        dst[i++] = PATH_SEP_CHAR;
+    }
+
+    if (*src && PATH_SEP_CHAR == *src) {
+        ++src;
+    }
+
+    while (i < size && (dst[i] = *src++)) {
+        ++i;
+    }
+
+    if (i == size && i > 0) {
+        dst[i - 1] = '\0';
+    }
+
+    return i;
+}
+
+/**
+ * Escape and concatenate a path string to another.
+ *
+ * @param dst   destination path string buffer
+ * @param len   destination path string len, not greater than size
+ * @param size  destination path buffer size
+ * @param src   path string
+ *
+ * @return length of the result path string excluding the terminating NULL
+ *         byte, `size` indicates overflow.
+ */
+static int path_cat_escaped(char *dst, size_t len, size_t size, const char *src)
+{
+    size_t i = len;
+
+    if (0 < i && i < size && (PATH_SEP_CHAR != dst[i - 1])) {
+        dst[i++] = PATH_SEP_CHAR;
+        dst[i]   = '\0';
+    }
+
+    size_t n = path_escape(dst + i, size - i, src);
+
+    return i + n;
+}
+
 typedef struct neu_persister {
     const char *persist_dir;
     const char *adapters_fname;
     const char *plugins_fname;
 } neu_persister_t;
-
-typedef neu_json_node_req_node_t     neu_persist_adapter_info_t;
-typedef neu_json_plugin_req_plugin_t neu_persist_plugin_info_t;
-typedef neu_json_datatag_req_tag_t   neu_persist_datatag_info_t;
-typedef neu_json_group_configs_req_t neu_persist_group_config_info_t;
-typedef neu_json_subscriptions_req_subscription_t
-    neu_persist_subscription_info_t;
 
 static int create_dir(char *dir_name)
 {
@@ -136,6 +240,19 @@ error_io:
     free(persister);
 error_dir_name:
     return NULL;
+}
+
+static inline int persister_adapter_dir(char *buf, size_t size,
+                                        neu_persister_t *persister,
+                                        const char *     adapter_name)
+{
+    size_t n = path_cat(buf, 0, size, persister->persist_dir);
+    if (size == n) {
+        return n;
+    }
+
+    n = path_cat_escaped(buf, n, size, adapter_name);
+    return n;
 }
 
 static int write_file_string(const char *fn, const char *s)
@@ -602,10 +719,27 @@ int neu_persister_store_adapter_setting(neu_persister_t *persister,
                                         const char *     adapter_name,
                                         const char *     setting)
 {
-    (void *) persister;
-    (void *) adapter_name;
-    (void *) setting;
-    return 0;
+    char path[PATH_MAX_SIZE] = { 0 };
+
+    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
+    if (0 != create_dir(path)) {
+        log_error("persister failed to create dir: %s", path);
+        return -1;
+    }
+
+    n = path_cat(path, n, sizeof(path), "settings.json");
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
+
+    int rv = write_file_string(path, setting);
+
+    return rv;
 }
 
 int neu_persister_delete_adapter_setting(neu_persister_t *persister,
