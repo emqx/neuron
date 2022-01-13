@@ -1326,6 +1326,9 @@ static void manager_loop(void *arg)
         case MSG_EVENT_DEL_NODE:
             // fall through
 
+        case MSG_EVENT_SET_NODE_SETTING:
+            // fall through
+
         case MSG_EVENT_ADD_PLUGIN:
             // fall through
 
@@ -1349,8 +1352,8 @@ static void manager_loop(void *arg)
                 char *out_buf = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_buf, name, len);
                 nng_msg_set_pipe(out_msg, persist_pipe);
-                log_info("Forward node/plugin event %d to %s pipe: %d",
-                         msg_type, DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+                log_info("Forward event %d to %s pipe: %d", msg_type,
+                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;

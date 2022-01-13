@@ -496,6 +496,27 @@ static void adapter_loop(void *arg)
             break;
         }
 
+        case MSG_EVENT_SET_NODE_SETTING: {
+            neu_cmd_set_node_setting_t *cmd       = msg_get_buf_ptr(pay_msg);
+            neu_persister_t *           persister = persister_singleton_get();
+            char *                      adapter_name = NULL;
+            rv = neu_manager_get_node_name_by_id(adapter->manager, cmd->node_id,
+                                                 &adapter_name);
+            if (0 != rv) {
+                free((char *) cmd->setting);
+                break;
+            }
+            rv = neu_persister_store_adapter_setting(persister, adapter_name,
+                                                     cmd->setting);
+            if (0 != rv) {
+                log_error("%s fail to store adapter:%s setting:%s",
+                          adapter->name, adapter_name, cmd->setting);
+            }
+            free((char *) cmd->setting);
+            free(adapter_name);
+            break;
+        }
+
         case MSG_EVENT_ADD_PLUGIN:
             // fall through
 
