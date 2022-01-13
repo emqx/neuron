@@ -2321,3 +2321,30 @@ int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
 
     return 0;
 }
+
+int neu_manager_adapter_validate_tag(neu_manager_t *manager,
+                                     neu_node_id_t node_id, neu_datatag_t *tags)
+{
+    adapter_id_t          adapter_id = { 0 };
+    adapter_reg_entity_t *reg_entity = NULL;
+    neu_adapter_t *       adapter;
+    int                   ret = -1;
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+
+    if (reg_entity == NULL) {
+        nng_mtx_unlock(manager->adapters_mtx);
+        log_error("Can't find matched src registered adapter");
+        return -1;
+    }
+
+    adapter = reg_entity->adapter;
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    ret = neu_adapter_validate_tag(adapter, tags);
+
+    return ret;
+}

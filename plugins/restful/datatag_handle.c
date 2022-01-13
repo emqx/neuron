@@ -63,18 +63,19 @@ void handle_add_tags(nng_aio *aio)
             neu_err_code_e code = { 0 };
 
             for (int i = 0; i < req->n_tag; i++) {
-                if (!neu_tag_check_attribute(req->tags[i].attribute)) {
-                    code = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
-                    continue;
-                }
-
                 neu_datatag_t *tag =
                     neu_datatag_alloc(req->tags[i].attribute, req->tags[i].type,
                                       req->tags[i].address, req->tags[i].name);
 
                 if (NULL == tag) {
                     code = NEU_ERR_ENOMEM;
-                    continue;
+                    break;
+                }
+
+                code = neu_plugin_validate_tag(plugin, req->node_id, tag);
+                if (code != NEU_ERR_SUCCESS) {
+                    free(tag);
+                    break;
                 }
 
                 if (neu_datatag_tbl_add(table, tag)) {
@@ -93,7 +94,6 @@ void handle_add_tags(nng_aio *aio)
                 neu_system_update_group_config(plugin, req->node_id,
                                                new_config);
             }
-            //   neu_taggrp_cfg_unanchor(config);
 
             NEU_JSON_RESPONSE_ERROR(
                 code, { http_response(aio, code, result_error); });
@@ -167,12 +167,7 @@ void handle_update_tags(nng_aio *aio)
 
                 if (tag == NULL) {
                     code = NEU_ERR_TAG_NOT_EXIST;
-                    continue;
-                }
-
-                if (!neu_tag_check_attribute(req->tags[i].attribute)) {
-                    code = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
-                    continue;
+                    break;
                 }
 
                 tag =
@@ -181,7 +176,13 @@ void handle_update_tags(nng_aio *aio)
 
                 if (NULL == tag) {
                     code = NEU_ERR_ENOMEM;
-                    continue;
+                    break;
+                }
+
+                code = neu_plugin_validate_tag(plugin, req->node_id, tag);
+                if (code != NEU_ERR_SUCCESS) {
+                    free(tag);
+                    break;
                 }
 
                 if (0 != neu_datatag_tbl_update(table, req->tags[i].id, tag)) {

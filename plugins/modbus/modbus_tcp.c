@@ -697,16 +697,41 @@ static int modbus_tcp_stop(neu_plugin_t *plugin)
     return 0;
 }
 
+static int modbus_tcp_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
+{
+    (void) plugin;
+    if ((tag->attribute & 0xfffc) > 0) {
+        return NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
+    }
+
+    if (tag->type != NEU_DTYPE_INT16 && tag->type != NEU_DTYPE_UINT16 &&
+        tag->type != NEU_DTYPE_INT32 && tag->type != NEU_DTYPE_UINT32 &&
+        tag->type != NEU_DTYPE_FLOAT && tag->type != NEU_DTYPE_BOOL &&
+        tag->type != NEU_DTYPE_BIT && tag->type != NEU_DTYPE_INT8 &&
+        tag->type != NEU_DTYPE_UINT8) {
+        return NEU_ERR_TAG_TYPE_NOT_SUPPORT;
+    }
+
+    int a, b;
+    int n = sscanf(tag->addr_str, "%d!%d", &a, &b);
+    if (n != 2) {
+        return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+    }
+
+    return NEU_ERR_SUCCESS;
+}
+
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = modbus_tcp_open,
-    .close       = modbus_tcp_close,
-    .init        = modbus_tcp_init,
-    .uninit      = modbus_tcp_uninit,
-    .start       = modbus_tcp_start,
-    .stop        = modbus_tcp_stop,
-    .config      = modbus_tcp_config,
-    .request     = modbus_tcp_request,
-    .event_reply = modbus_tcp_event_reply,
+    .open         = modbus_tcp_open,
+    .close        = modbus_tcp_close,
+    .init         = modbus_tcp_init,
+    .uninit       = modbus_tcp_uninit,
+    .start        = modbus_tcp_start,
+    .stop         = modbus_tcp_stop,
+    .config       = modbus_tcp_config,
+    .request      = modbus_tcp_request,
+    .event_reply  = modbus_tcp_event_reply,
+    .validate_tag = modbus_tcp_validate_tag,
 };
 
 const neu_plugin_module_t neu_plugin_module = {

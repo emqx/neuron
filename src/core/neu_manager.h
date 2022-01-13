@@ -93,4 +93,7 @@ int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
 int neu_manager_init_main_adapter(neu_manager_t * manager,
                                   bind_notify_fun bind_adapter,
                                   bind_notify_fun unbind_adapter);
+int neu_manager_adapter_validate_tag(neu_manager_t *manager,
+                                     neu_node_id_t  node_id,
+                                     neu_datatag_t *tags);
 #endif

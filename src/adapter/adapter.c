@@ -1134,6 +1134,16 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_VALIDATE_TAG: {
+        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_validate_tag_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              ret = neu_manager_adapter_validate_tag(
+                                  adapter->manager, req_cmd->node_id,
+                                  req_cmd->tag);
+                          });
+        break;
+    }
+
     default:
         rv = -1;
         break;
@@ -1703,4 +1713,14 @@ vector_t *neu_adapter_get_sub_grp_configs(neu_adapter_t *adapter)
     nng_mtx_unlock(adapter->sub_grp_mtx);
 
     return sgc;
+}
+
+int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag)
+{
+    const neu_plugin_intf_funs_t *intf_funs = adapter->plugin_module->intf_funs;
+    neu_err_code_e                error     = NEU_ERR_SUCCESS;
+
+    error = intf_funs->validate_tag(adapter->plugin, tag);
+
+    return error;
 }

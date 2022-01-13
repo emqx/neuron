@@ -284,6 +284,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
     case NEU_ERR_TAG_TYPE_NOT_SUPPORT:
+    case NEU_ERR_TAG_ADDRESS_FORMAT_INVALID:
         status = NNG_HTTP_STATUS_PARTIAL_CONTENT;
         break;
     case NEU_ERR_GRP_CONFIG_IN_USE:
