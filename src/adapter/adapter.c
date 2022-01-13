@@ -1014,12 +1014,22 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_SET_NODE_SETTING: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_set_node_setting_t,
-                          rv, NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_adapter_set_setting(
-                                  adapter->manager, req_cmd->node_id,
-                                  req_cmd->setting);
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_set_node_setting_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = neu_manager_adapter_set_setting(
+                    adapter->manager, req_cmd->node_id, req_cmd->setting);
+                if (ret == 0) {
+                    neu_cmd_set_node_setting_t event = {};
+                    event.node_id                    = req_cmd->node_id;
+                    event.setting                    = strdup(req_cmd->setting);
+                    if (NULL != event.setting) {
+                        ADAPTER_SEND_BUF(adapter, rv,
+                                         MSG_EVENT_SET_NODE_SETTING, &event,
+                                         sizeof(event));
+                    }
+                }
+            });
         break;
     }
 
