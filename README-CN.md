@@ -1,7 +1,6 @@
 # Neuron
 
 [![GitHub Release](https://img.shields.io/github/release/neugates/neuron?color=brightgreen&label=Release)](https://github.com/neugates/neuron/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/neugates/neuron?label=Docker%20Pulls)](https://hub.docker.com/r/neugates/neuron)
 [![Slack](https://img.shields.io/badge/Slack-Neuron-39AE85?logo=slack)](https://slack-invite.emqx.io/)
 [![Discord](https://img.shields.io/discord/931086341838622751?label=Discord&logo=discord)](https://discord.gg/xYGf3fQnES)
 [![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
