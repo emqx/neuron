@@ -415,3 +415,60 @@ TEST(JsonDatatags, DatatagPersistenceEncode)
     free(result);
     free(result2);
 }
+
+TEST(JsonGroupConfigTest, GroupConfigPersistenceEncode)
+{
+    char *buf = (char *) "{\"read_interval\": 2000, \"group_config_name\": "
+                         "\"config_modbus_tcp_sample_2\", \"datatag_names\": "
+                         "[\"modbus1\", \"modbus2\", \"modbus3\"], "
+                         "\"adapter_name\": \"config_modbus_tcp_sample_2\"}";
+
+    char *buf2 =
+        (char *) "{\"read_interval\": 2000, \"group_config_name\": \"\", "
+                 "\"datatag_names\": [], \"adapter_name\": \"\"}";
+
+    char *result  = NULL;
+    char *result2 = NULL;
+
+    neu_json_group_configs_resp_t resp = {
+        .group_config_name = strdup("config_modbus_tcp_sample_2"),
+        .adapter_name      = strdup("config_modbus_tcp_sample_2"),
+        .read_interval     = 2000,
+        .n_datatag_name    = 3,
+    };
+    neu_json_group_configs_resp_t resp2 = {
+        .group_config_name = strdup(""),
+        .adapter_name      = strdup(""),
+        .read_interval     = 2000,
+        .n_datatag_name    = 0,
+    };
+
+    resp.datatag_names = (neu_json_group_configs_resp_datatag_name_t *) calloc(
+        3, sizeof(neu_json_group_configs_resp_datatag_name_t));
+    resp.datatag_names[0] = strdup("modbus1");
+    resp.datatag_names[1] = strdup("modbus2");
+    resp.datatag_names[2] = strdup("modbus3");
+
+    EXPECT_EQ(0,
+              neu_json_encode_by_fn(&resp, neu_json_encode_group_configs_resp,
+                                    &result));
+    EXPECT_EQ(0,
+              neu_json_encode_by_fn(&resp2, neu_json_encode_group_configs_resp,
+                                    &result2));
+
+    EXPECT_STREQ(buf, result);
+    EXPECT_STREQ(buf2, result2);
+
+    free(resp.adapter_name);
+    free(resp.group_config_name);
+    free(resp.datatag_names[0]);
+    free(resp.datatag_names[1]);
+    free(resp.datatag_names[2]);
+    free(resp.datatag_names);
+
+    free(resp2.adapter_name);
+    free(resp2.group_config_name);
+
+    free(result);
+    free(result2);
+}
