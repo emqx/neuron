@@ -36,21 +36,21 @@ TEST(PluginManagerTest, RegPluginManagerTest)
         plugin_reg_info_t *info = (plugin_reg_info_t *) iterator_get(&iter);
 
         switch (index) {
-        case 1:
+        case 2:
             plugin_id1 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin1", info->plugin_name);
             EXPECT_STREQ("lib1", info->plugin_lib_name);
             break;
-        case 2:
+        case 3:
             plugin_id2 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin2", info->plugin_name);
             EXPECT_STREQ("lib2", info->plugin_lib_name);
             break;
-        case 3:
+        case 4:
             plugin_id3 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
@@ -118,13 +118,13 @@ TEST(PluginManagerTest, UnregPluginManagerTest)
         plugin_reg_info_t *info = (plugin_reg_info_t *) iterator_get(&iter);
 
         switch (index) {
-        case 1:
+        case 2:
             plugin_id1 = info->plugin_id;
             break;
-        case 2:
+        case 3:
             plugin_id2 = info->plugin_id;
             break;
-        case 3:
+        case 4:
             plugin_id3 = info->plugin_id;
             break;
         default:
@@ -183,7 +183,7 @@ TEST(PluginManagerTest, UpdatePluginManagerTest)
         plugin_reg_info_t *info = (plugin_reg_info_t *) iterator_get(&iter);
 
         switch (index) {
-        case 3:
+        case 4:
             EXPECT_EQ(param_update.adapter_type, info->adapter_type);
             EXPECT_EQ(param_update.plugin_kind, info->plugin_kind);
             EXPECT_STREQ(param_update.plugin_name, info->plugin_name);
@@ -240,7 +240,7 @@ void *plugin_manager_thread(void *arg)
         plugin_reg_info_t *info = (plugin_reg_info_t *) iterator_get(&iter);
 
         switch (index) {
-        case 1:
+        case 2:
             plugin_id1 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
@@ -248,14 +248,14 @@ void *plugin_manager_thread(void *arg)
             EXPECT_STREQ("lib1", info->plugin_lib_name);
 
             break;
-        case 2:
+        case 3:
             plugin_id2 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin2", info->plugin_name);
             EXPECT_STREQ("lib2", info->plugin_lib_name);
             break;
-        case 3:
+        case 4:
             plugin_id3 = info->plugin_id;
 
             EXPECT_EQ(param_update.adapter_type, info->adapter_type);
@@ -337,7 +337,7 @@ void *plugin_manager_thread2(void *arg)
         plugin_reg_info_t *info = (plugin_reg_info_t *) iterator_get(&iter);
 
         switch (index) {
-        case 1:
+        case 2:
             plugin_id4 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
@@ -345,14 +345,14 @@ void *plugin_manager_thread2(void *arg)
             EXPECT_STREQ("lib4", info->plugin_lib_name);
 
             break;
-        case 2:
+        case 3:
             plugin_id5 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
             EXPECT_STREQ("plugin5", info->plugin_name);
             EXPECT_STREQ("lib5", info->plugin_lib_name);
             break;
-        case 3:
+        case 4:
             plugin_id6 = info->plugin_id;
 
             EXPECT_EQ(1, info->plugin_kind);
