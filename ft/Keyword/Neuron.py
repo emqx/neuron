@@ -106,7 +106,7 @@ class Read(object):
             if tag['id'] == int(id):
                 if isinstance(value, str):
                     if (tag['value'] == False and value.lower() == "false" or
-                        tag['value'] == True and value.lower() == "true"):
+                            tag['value'] == True and value.lower() == "true"):
                         ret = 0
                 elif tag['value'] == int(value):
                     ret = 0
