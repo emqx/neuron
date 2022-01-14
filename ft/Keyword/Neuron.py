@@ -1,4 +1,5 @@
 import subprocess
+import shutil
 
 
 class Neuron(object):
@@ -10,8 +11,10 @@ class Neuron(object):
     def Start_Neuron(self):
         self.process = subprocess.Popen(['./neuron'], cwd='build/')
 
-    def Stop_Neuron(self):
+    def Stop_Neuron(self, remove_persistence_data=True):
         self.process.kill()
+        if remove_persistence_data:
+            shutil.rmtree("build/persistence", ignore_errors=True)
 
 
 class Tool(object):
@@ -103,7 +106,7 @@ class Read(object):
             if tag['id'] == int(id):
                 if isinstance(value, str):
                     if (tag['value'] == False and value.lower() == "false" or
-                        tag['value'] == True and value.lower() == "true"):
+                            tag['value'] == True and value.lower() == "true"):
                         ret = 0
                 elif tag['value'] == int(value):
                     ret = 0

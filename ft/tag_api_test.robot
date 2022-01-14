@@ -152,7 +152,7 @@ Neuron Context Ready
 
 Neuron Context Stop
   LOGOUT
-  Stop Neuron
+  Stop Neuron                       remove_persistence_data=True
 
 Del Group Config Check
   [Arguments]                     ${node_id}                          ${group}
