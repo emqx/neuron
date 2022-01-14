@@ -61,7 +61,10 @@ Neuron的层次结构图如下图所示：
 Clone 本仓库后，使用脚本一键安装依赖：
 
 ```shell
+# Get Neuron repository
 git clone https://github.com/neugates/neuron.git
+# Get submodule
+git submodule update --init
 # Script to install all libraries
 cd neuron 
 ./install-libs.sh
@@ -74,8 +77,6 @@ cd neuron
 ### 编译
 
 ```shell
-# Get submodule
-git submodule update --init
 # build
 cd neuron && mkdir build 
 cd build

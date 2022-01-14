@@ -55,12 +55,15 @@ The hierarchical layer diagram of Neuron is shown in the figure below:
 
 ## Installation
 
-###  install dependent libraries
+###  Clone repository and install dependent libraries
 
 After clone this repository, you can use bellow script to install all dependent libraries：
 
 ```shell
+# Get Neuron repository
 git clone https://github.com/neugates/neuron.git
+# Get submodule
+git submodule update --init
 # Script to install all libraries
 cd neuron 
 ./install-libs.sh
@@ -73,9 +76,6 @@ You also can reference bellow manual to custom install some needed dependent lib
 ## Build
 
 ```shell
-git clone https://github.com/neugates/neuron.git
-# Get submodule
-git submodule update --init
 # build
 cd neuron && mkdir build 
 cd build
@@ -118,7 +118,6 @@ python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft
 
 You can connect with the Neuron community and developers in the following ways.
 
-- Forum：https://askemq.com/c/neuron/8 
-- GitHub Discussions：https://github.com/neugates/neuron/discussions
+- Discussions：https://github.com/neugates/neuron/discussions
 - Slack：https://slack-invite.emqx.io/
 - Discord：https://discord.gg/xYGf3fQnES 
