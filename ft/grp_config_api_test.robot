@@ -189,4 +189,4 @@ Neuron Context Ready
 
 Neuron Context Stop
   LOGOUT
-  Stop Neuron
+  Stop Neuron               remove_persistence_data=True

@@ -316,7 +316,7 @@ Neuron Context Ready
 
 Neuron Context Stop
     LOGOUT
-    Stop Neuron
+    Stop Neuron             remove_persistence_data=True
 
 Del Node Check
     [Arguments]             ${node_id}

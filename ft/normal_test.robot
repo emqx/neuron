@@ -60,4 +60,4 @@ Neuron Context Ready
   Neuron Ready
 
 Neuron Context Stop
-  Stop Neuron
+  Stop Neuron      remove_persistence_data=True
