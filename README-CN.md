@@ -56,20 +56,24 @@ Neuron的层次结构图如下图所示：
 
 ## 安装
 
-[脚本安装依赖库](https://github.com/neugates/neuron/blob/main/install-libs.sh)
+### 安装依赖
+
+Clone 本仓库后，使用脚本一键安装依赖：
 
 ```shell
+git clone https://github.com/neugates/neuron.git
 # Script to install all libraries
 cd neuron 
 ./install-libs.sh
 ```
 
-[源代码安装依赖库](https://github.com/lixiumei123/neuron/blob/main/Install-dependent-libraries.md)
+您也可以参考下面的文档根据实际需要手动安装所需依赖。
 
-## Build
+[Source code to install dependent libraries](https://github.com/neugates/neuron/blob/main/Install-dependent-libraries.md)
+
+### 编译
 
 ```shell
-git clone https://github.com/neugates/neuron.git
 # Get submodule
 git submodule update --init
 # build
@@ -88,9 +92,9 @@ cd build
 cd -
 ```
 
-## 测试
+## 单元测试
 
-一次性测试所有内容
+运行所有单元测试
 
 ```shell
 cd build
@@ -100,6 +104,8 @@ cd -
 
 ## 功能测试
 
+运行所有功能测试
+
 ```shell
 mosquitto -v &
 pip3 install -r ft/requirements.txt
@@ -108,8 +114,14 @@ python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft
 
 ```
 
-
+ 
 
 ## 社区
 
-[neugates.io](https://neugates.io)
+您可通过以下途径与 Neuron 社区及开发者联系。
+
+- 论坛：https://askemq.com/c/neuron/8 
+- GitHub Discussions：https://github.com/neugates/neuron/discussions
+- Slack：https://slack-invite.emqx.io/
+- Discord：https://discord.gg/xYGf3fQnES 
+

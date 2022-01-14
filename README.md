@@ -55,13 +55,18 @@ The hierarchical layer diagram of Neuron is shown in the figure below:
 
 ## Installation
 
-[Script to install dependent libraries](https://github.com/neugates/neuron/blob/main/install-libs.sh)
+###  install dependent libraries
+
+After clone this repository, you can use bellow script to install all dependent libraries：
 
 ```shell
+git clone https://github.com/neugates/neuron.git
 # Script to install all libraries
 cd neuron 
 ./install-libs.sh
 ```
+
+You also can reference bellow manual to custom install some needed dependent libraries：
 
 [Source code to install dependent libraries](https://github.com/neugates/neuron/blob/main/Install-dependent-libraries.md)
 
@@ -89,7 +94,7 @@ cd -
 
 ## Test
 
-To test everying in one go
+To run all unit testers
 
 ```shell
 cd build
@@ -98,6 +103,8 @@ cd -
 ```
 
 ## Functional test
+
+To run all functional testers
 
 ```shell
 mosquitto -v &
@@ -109,4 +116,9 @@ python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft
 
 ## Community
 
-[neugates.io](https://neugates.io)
+You can connect with the Neuron community and developers in the following ways.
+
+- Forum：https://askemq.com/c/neuron/8 
+- GitHub Discussions：https://github.com/neugates/neuron/discussions
+- Slack：https://slack-invite.emqx.io/
+- Discord：https://discord.gg/xYGf3fQnES 
