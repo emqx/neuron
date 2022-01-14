@@ -21,7 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <threads.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -159,7 +158,6 @@ struct neu_adapter {
     vector_t             sub_grp_configs; // neu_sub_grp_config_t
 };
 
-static once_flag        g_persister_init_flag = ONCE_FLAG_INIT;
 static neu_persister_t *g_persister_singleton = NULL;
 
 static void persister_singleton_init()
@@ -180,9 +178,12 @@ static void persister_singleton_init()
     g_persister_singleton = persister;
 }
 
+// NOTE: this function is not thread safe!
 static neu_persister_t *persister_singleton_get()
 {
-    call_once(&g_persister_init_flag, persister_singleton_init);
+    if (NULL == g_persister_singleton) {
+        persister_singleton_init();
+    }
     return g_persister_singleton;
 }
 
