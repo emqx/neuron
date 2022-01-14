@@ -683,13 +683,13 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                 char *name = NULL;
                 ret        = neu_manager_get_node_name_by_id(adapter->manager,
                                                       req_cmd->node_id, &name);
-                if (0 != ret) {
-                    break;
-                }
-                ret = neu_manager_del_node(adapter->manager, req_cmd->node_id);
                 if (0 == ret) {
-                    ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_DEL_NODE,
-                                            name);
+                    ret = neu_manager_del_node(adapter->manager,
+                                               req_cmd->node_id);
+                    if (0 == ret) {
+                        ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_DEL_NODE,
+                                                name);
+                    }
                 }
                 free(name);
             });
