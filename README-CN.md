@@ -62,9 +62,8 @@ Clone 本仓库后，使用脚本一键安装依赖：
 
 ```shell
 # Get Neuron repository
-git clone https://github.com/neugates/neuron.git
-# Get submodule
-git submodule update --init
+git clone --recurse-submodules https://github.com/neugates/neuron.git
+
 # Script to install all libraries
 cd neuron 
 ./install-libs.sh

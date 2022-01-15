@@ -61,9 +61,8 @@ After clone this repository, you can use bellow script to install all dependent 
 
 ```shell
 # Get Neuron repository
-git clone https://github.com/neugates/neuron.git
-# Get submodule
-git submodule update --init
+git clone --recurse-submodules https://github.com/neugates/neuron.git
+
 # Script to install all libraries
 cd neuron 
 ./install-libs.sh
