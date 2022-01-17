@@ -23,9 +23,9 @@
 #include <sys/time.h>
 
 #include "command/command.h"
+#include "mqtt_c_client.h"
 #include "mqtt_interface.h"
 #include "mqtt_util.h"
-#include "mqttc_client.h"
 #include <neuron.h>
 
 #define UNUSED(x) (void) (x)
@@ -271,15 +271,15 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     memset(&plugin->mqtt, 0, sizeof(mqtt_interface_t));
-    plugin->mqtt.client_open = (mqtt_client_open) mqttc_client_open;
+    plugin->mqtt.client_open = (mqtt_client_open) mqtt_c_client_open;
     plugin->mqtt.client_is_connected =
-        (mqtt_client_is_connected) mqttc_client_is_connected;
+        (mqtt_client_is_connected) mqtt_c_client_is_connected;
     plugin->mqtt.client_subscribe =
-        (mqtt_client_subscribe) mqttc_client_subscribe;
+        (mqtt_client_subscribe) mqtt_c_client_subscribe;
     plugin->mqtt.client_unsubscribe =
-        (mqtt_client_unsubscribe) mqttc_client_unsubscribe;
-    plugin->mqtt.client_publish = (mqtt_client_publish) mqttc_client_publish;
-    plugin->mqtt.client_close   = (mqtt_client_close) mqttc_client_close;
+        (mqtt_client_unsubscribe) mqtt_c_client_unsubscribe;
+    plugin->mqtt.client_publish = (mqtt_client_publish) mqtt_c_client_publish;
+    plugin->mqtt.client_close   = (mqtt_client_close) mqtt_c_client_close;
 
     // Context list init
     NEU_LIST_INIT(&plugin->context_list, struct context, node);

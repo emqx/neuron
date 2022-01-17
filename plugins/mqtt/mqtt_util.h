@@ -26,14 +26,9 @@ extern "C" {
 
 #include "mqtt_interface.h"
 #include <neuron.h>
-#include <openssl/bio.h>
-#include <openssl/err.h>
-#include <openssl/ssl.h>
 
-SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path);
-void     ssl_ctx_uninit(SSL_CTX *ssl_ctx);
-int      mqtt_option_init(neu_config_t *config, mqtt_option_t *option);
-void     mqtt_option_uninit(mqtt_option_t *option);
+int  mqtt_option_init(neu_config_t *config, mqtt_option_t *option);
+void mqtt_option_uninit(mqtt_option_t *option);
 
 #ifdef __cplusplus
 }
