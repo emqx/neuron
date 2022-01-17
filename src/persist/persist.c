@@ -367,32 +367,36 @@ int neu_persister_store_adapters(neu_persister_t *persister,
 int neu_persister_load_adapters(neu_persister_t *persister,
                                 vector_t **      adapter_infos)
 {
-    char *adapters = NULL;
-    int   rv       = read_file_string(persister->adapters_fname, &adapters);
+    char *json_str = NULL;
+    int   rv       = read_file_string(persister->adapters_fname, &json_str);
     if (rv != 0) {
         return rv;
     }
 
     neu_json_node_req_t *node_req = NULL;
-    rv = neu_json_decode_node_req(adapters, &node_req);
+    rv = neu_json_decode_node_req(json_str, &node_req);
+    free(json_str);
     if (rv != 0) {
         return rv;
     }
 
+    rv            = 0;
     vector_t *vec = vector_new_move_from_buf(
         node_req->nodes, node_req->n_node, node_req->n_node,
         sizeof(neu_persist_adapter_info_t));
     if (vec == NULL) {
         neu_json_decode_node_req_free(node_req);
-        return -1;
+        rv = -1;
+        goto load_adapters_exit;
     }
 
     *adapter_infos   = vec;
     node_req->n_node = 0;
     node_req->nodes  = NULL;
 
+load_adapters_exit:
     neu_json_decode_node_req_free(node_req);
-    return 0;
+    return rv;
 }
 
 int neu_persister_delete_adapter(neu_persister_t *persister,
@@ -427,31 +431,35 @@ int neu_persister_store_plugins(neu_persister_t *persister,
 int neu_persister_load_plugins(neu_persister_t *persister,
                                vector_t **      plugin_infos)
 {
-    char *plugins = NULL;
-    int   rv      = read_file_string(persister->plugins_fname, &plugins);
+    char *json_str = NULL;
+    int   rv       = read_file_string(persister->plugins_fname, &json_str);
     if (rv != 0) {
         return rv;
     }
 
     neu_json_plugin_req_t *plugin_req = NULL;
-    rv = neu_json_decode_plugin_req(plugins, &plugin_req);
+    rv = neu_json_decode_plugin_req(json_str, &plugin_req);
+    free(json_str);
     if (rv != 0) {
         return rv;
     }
 
+    rv            = 0;
     vector_t *vec = vector_new_move_from_buf(
         plugin_req->plugins, plugin_req->n_plugin, plugin_req->n_plugin,
         sizeof(neu_persist_plugin_info_t));
     if (vec == NULL) {
-        return -1;
+        rv = -1;
+        goto load_plugins_exit;
     }
 
     *plugin_infos        = vec;
     plugin_req->n_plugin = 0;
     plugin_req->plugins  = NULL;
 
+load_plugins_exit:
     neu_json_decode_plugin_req_free(plugin_req);
-    return 0;
+    return rv;
 }
 
 int neu_persister_store_datatags(neu_persister_t *persister,
