@@ -81,5 +81,5 @@ ssize_t neu_conn_recv(neu_conn_t *conn, neu_conn_tcp_client_t *client,
     (void) buf;
     (void) len;
 
-    return;
+    return 0;
 }
