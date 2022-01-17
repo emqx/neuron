@@ -2524,7 +2524,7 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
 
 static neu_data_val_t *do_dvalue_to_owned(neu_data_val_t *val)
 {
-    void *      val_data;
+    void *val_data;
 
     val_data = value_data_to_owned(&val->val_data, val->type);
     if (val_data == NULL) {

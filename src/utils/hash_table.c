@@ -280,7 +280,7 @@ int neu_hash_table_set(neu_hash_table *tbl, const char *key, void *val)
         if (ent->val == NULL) {
             tbl->count++;
             ent->hash = hash;
-            ent->key  = (void*)key;
+            ent->key  = (void *) key;
             ent->val  = val;
             return (0);
         }
