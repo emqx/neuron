@@ -13,6 +13,30 @@ $ yum install openssl-devel
 $ brew install openssl
 ```
 
+[mbedtls](https://github.com/ARMmbed/mbedtls)
+```shell
+git clone -b v3.1.0 https://github.com/ARMmbed/mbedtls.git
+cd mbedtls
+mkdir build
+cd build
+cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_SHARED_MBEDTLS_LIBRARY=OFF \
+-DENABLE_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
+ninja
+ninja install
+```
+
+[nanomq/nng](https://github.com/nanomq/nng)
+```shell
+git clone -b nng-mqtt https://github.com/nanomq/nng.git nanomq-nng
+cd nanomq-nng
+mkdir build
+cd build
+cmake -G Ninja -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF \
+-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DNNG_ENABLE_TLS=ON ..
+ninja
+ninja install
+```
+
 [nng](https://github.com/nanomsg/nng/tree/v1.5.1)
 
 ```shell
