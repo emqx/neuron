@@ -1,15 +1,15 @@
 #include <gtest/gtest.h>
 
 #include "command/node.h"
-#include "mqttc_util.h"
+#include "mqtt_util.h"
 #include <neuron.h>
 
 TEST(MQTTTest, mqtt_option_init_by_config)
 {
     neu_config_t config;
     memset(&config, 0, sizeof(neu_config_t));
-    option_t option;
-    memset(&option, 0, sizeof(option_t));
+    mqtt_option_t option;
+    memset(&option, 0, sizeof(mqtt_option_t));
     config.buf =
         (char *) "{ \"node_id\": 6, \"params\": { \"req-topic\": "
                  "\"neuronlite/response\", \"res-topic\": "
@@ -19,7 +19,7 @@ TEST(MQTTTest, mqtt_option_init_by_config)
                  "\"username\": \"\", \"password\": \"\", \"ca-path\": \"\", "
                  "\"ca-file\": \"\" } }";
 
-    int rc = mqtt_option_init_by_config(&config, &option);
+    int rc = mqtt_option_init(&config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(&option);
 }

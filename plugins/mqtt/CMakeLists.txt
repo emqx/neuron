@@ -3,7 +3,7 @@ set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
 
 set(src 
 	plugin_mqtt.c 
-	mqttc_util.c
+	mqtt_util.c
 	mqttc_client.c
 	command/common.c 
 	command/read_write.c

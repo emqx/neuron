@@ -23,24 +23,14 @@
 #include <sys/time.h>
 
 #include "command/command.h"
+#include "mqtt_interface.h"
+#include "mqtt_util.h"
 #include "mqttc_client.h"
-#include "mqttc_util.h"
 #include <neuron.h>
 
 #define UNUSED(x) (void) (x)
 #define INTERVAL 100000U
 #define TIMEOUT 5000000U
-
-#define MQTT_SEND(client, topic, qos, json_str)                           \
-    {                                                                     \
-        if (NULL != json_str) {                                           \
-            client_error_e error = mqttc_client_publish(                  \
-                client, topic, qos, (unsigned char *) json_str,           \
-                strlen(json_str));                                        \
-            log_debug("Publish error code:%d, json:%s", error, json_str); \
-            free(json_str);                                               \
-        }                                                                 \
-    }
 
 const neu_plugin_module_t neu_plugin_module;
 
@@ -55,14 +45,13 @@ struct context {
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    option_t            option;
+    mqtt_option_t       option;
     pthread_t           daemon;
     pthread_mutex_t     running_mutex; // lock publish thread running state
     pthread_mutex_t     list_mutex;    // lock context state
     bool                running;
     neu_list            context_list;
-    int                 mqtt_client_type;
-    void *              mqtt_client;
+    mqtt_interface_t    mqtt;
 };
 
 static struct context *context_create()
@@ -170,7 +159,8 @@ static void mqtt_response_handle(const char *topic_name, size_t topic_len,
 
 static void *mqtt_send_loop(void *argument)
 {
-    neu_plugin_t *plugin = (neu_plugin_t *) argument;
+    neu_plugin_t *    plugin = (neu_plugin_t *) argument;
+    mqtt_interface_t *mqtt   = &plugin->mqtt;
 
     bool run_flag = true;
     while (1) {
@@ -198,7 +188,14 @@ static void *mqtt_send_loop(void *argument)
             }
         }
         pthread_mutex_unlock(&plugin->list_mutex);
-        MQTT_SEND(plugin->mqtt_client, plugin->option.respons_topic, 0, result);
+
+        if (NULL != result) {
+            mqtt_error_e error = mqtt->client_publish(
+                mqtt->client, plugin->option.respons_topic, 0,
+                (unsigned char *) result, strlen(result));
+            log_debug("Publish error code:%d, json:%s", error, result);
+            free(result);
+        }
 
         // Remove context of timeout
         pthread_mutex_lock(&plugin->list_mutex);
@@ -221,7 +218,7 @@ static void *mqtt_send_loop(void *argument)
         }
 
         // Update link state
-        if (MQTTC_SUCCESS != mqttc_client_is_connected(plugin->mqtt_client)) {
+        if (MQTT_SUCCESS != mqtt->client_is_connected(mqtt->client)) {
             plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
         } else {
             plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
@@ -273,6 +270,17 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
+    memset(&plugin->mqtt, 0, sizeof(mqtt_interface_t));
+    plugin->mqtt.client_open = (mqtt_client_open) mqttc_client_open;
+    plugin->mqtt.client_is_connected =
+        (mqtt_client_is_connected) mqttc_client_is_connected;
+    plugin->mqtt.client_subscribe =
+        (mqtt_client_subscribe) mqttc_client_subscribe;
+    plugin->mqtt.client_unsubscribe =
+        (mqtt_client_unsubscribe) mqttc_client_unsubscribe;
+    plugin->mqtt.client_publish = (mqtt_client_publish) mqttc_client_publish;
+    plugin->mqtt.client_close   = (mqtt_client_close) mqttc_client_close;
+
     // Context list init
     NEU_LIST_INIT(&plugin->context_list, struct context, node);
 
@@ -291,9 +299,9 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
-    // Close MQTT-C client
-    mqttc_client_close(plugin->mqtt_client);
-    plugin->mqtt_client = NULL;
+    // Close MQTT client
+    plugin->mqtt.client_close(plugin->mqtt.client);
+    plugin->mqtt.client = NULL;
     mqtt_option_uninit(&plugin->option);
 
     // Quit publish thread
@@ -314,13 +322,14 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
-    // Try close MQTT-C client
-    mqttc_client_close(plugin->mqtt_client);
-    plugin->mqtt_client = NULL;
+    // Try close MQTT client
+    mqtt_interface_t *mqtt = &plugin->mqtt;
+    mqtt->client_close(plugin->mqtt.client);
+    mqtt->client = NULL;
     mqtt_option_uninit(&plugin->option);
 
     // Use new config set MQTT option instance
-    int rc = mqtt_option_init_by_config(configs, &plugin->option);
+    int rc = mqtt_option_init(configs, &plugin->option);
     if (0 != rc) {
         log_error("MQTT option init fail:%d, initialize plugin failed: %s", rc,
                   neu_plugin_module.module_name);
@@ -328,12 +337,13 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
-    // MQTT-C client setup
-    client_error_e error = mqttc_client_open(
-        &plugin->option, plugin, (mqttc_client_t **) &plugin->mqtt_client);
-    error = mqttc_client_subscribe(plugin->mqtt_client, plugin->option.topic, 0,
+    // MQTT client setup
+    mqtt_error_e error = mqtt->client_open((mqtt_client_t *) &mqtt->client,
+                                           &plugin->option, plugin);
+    error = mqtt->client_subscribe(plugin->mqtt.client, plugin->option.topic, 0,
                                    mqtt_response_handle);
-    if (MQTTC_IS_NULL == error) {
+
+    if (MQTT_IS_NULL == error) {
         log_error("Can not create mqtt client instance, initialize plugin "
                   "failed: %s",
                   neu_plugin_module.module_name);

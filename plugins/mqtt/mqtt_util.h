@@ -17,31 +17,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTTC_CLIENT
-#define NEURON_PLUGIN_MQTTC_CLIENT
+#ifndef NEURON_PLUGIN_MQTT_UTIL
+#define NEURON_PLUGIN_MQTT_UTIL
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stddef.h>
-#include <stdint.h>
-
 #include "mqtt_interface.h"
-#include "mqtt_util.h"
+#include <neuron.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
-typedef struct mqttc_client mqttc_client_t;
-
-mqtt_error_e mqttc_client_open(mqttc_client_t **    p_client,
-                               const mqtt_option_t *option, void *context);
-mqtt_error_e mqttc_client_is_connected(mqttc_client_t *client);
-mqtt_error_e mqttc_client_subscribe(mqttc_client_t *client, const char *topic,
-                                    const int qos, subscribe_handle handle);
-mqtt_error_e mqttc_client_unsubscribe(mqttc_client_t *client,
-                                      const char *    topic);
-mqtt_error_e mqttc_client_publish(mqttc_client_t *client, const char *topic,
-                                  int qos, unsigned char *payload, size_t len);
-mqtt_error_e mqttc_client_close(mqttc_client_t *client);
+SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path);
+void     ssl_ctx_uninit(SSL_CTX *ssl_ctx);
+int      mqtt_option_init(neu_config_t *config, mqtt_option_t *option);
+void     mqtt_option_uninit(mqtt_option_t *option);
 
 #ifdef __cplusplus
 }
