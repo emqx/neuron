@@ -271,31 +271,6 @@ static int valid_node_setting(const char *file, const char *plugin_name,
     return 0;
 }
 
-void ssl_ctx_uninit(SSL_CTX *ssl_ctx)
-{
-    if (NULL != ssl_ctx) {
-        SSL_CTX_free(ssl_ctx);
-    }
-}
-
-SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path)
-{
-    SSL_CTX *ssl_ctx = NULL;
-    ssl_ctx          = SSL_CTX_new(SSLv23_client_method());
-    if (NULL == ssl_ctx) {
-        log_error("Failed to create ssl ctx");
-        return NULL;
-    }
-
-    if (!SSL_CTX_load_verify_locations(ssl_ctx, ca_file, ca_path)) {
-        log_error("Failed to load certificate");
-        ssl_ctx_uninit(ssl_ctx);
-        return NULL;
-    }
-
-    return ssl_ctx;
-}
-
 int mqtt_option_init(neu_config_t *config, mqtt_option_t *option)
 {
     if (NULL == config || NULL == option) {
@@ -341,15 +316,7 @@ int mqtt_option_init(neu_config_t *config, mqtt_option_t *option)
         return -6;
     }
 
-    if (0 == strcmp(option->connection, "ssl://")) {
-        SSL_CTX *ssl_ctx = NULL;
-        ssl_ctx          = ssl_ctx_init(option->ca_file, option->ca_path);
-        if (NULL == ssl_ctx) {
-            return -7;
-        }
-
-        ssl_ctx_uninit(ssl_ctx);
-    }
+    if (0 == strcmp(option->connection, "ssl://")) { }
 
     option->keepalive_interval = 20;
     option->clean_session      = 1;

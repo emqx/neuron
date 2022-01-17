@@ -24,24 +24,22 @@
 extern "C" {
 #endif
 
+#include "mqtt_interface.h"
 #include <stddef.h>
 #include <stdint.h>
 
-#include "mqtt_interface.h"
-#include "mqtt_util.h"
+typedef struct mqtt_c_client mqtt_c_client_t;
 
-typedef struct mqttc_client mqttc_client_t;
-
-mqtt_error_e mqttc_client_open(mqttc_client_t **    p_client,
-                               const mqtt_option_t *option, void *context);
-mqtt_error_e mqttc_client_is_connected(mqttc_client_t *client);
-mqtt_error_e mqttc_client_subscribe(mqttc_client_t *client, const char *topic,
-                                    const int qos, subscribe_handle handle);
-mqtt_error_e mqttc_client_unsubscribe(mqttc_client_t *client,
-                                      const char *    topic);
-mqtt_error_e mqttc_client_publish(mqttc_client_t *client, const char *topic,
-                                  int qos, unsigned char *payload, size_t len);
-mqtt_error_e mqttc_client_close(mqttc_client_t *client);
+mqtt_error_e mqtt_c_client_open(mqtt_c_client_t **   p_client,
+                                const mqtt_option_t *option, void *context);
+mqtt_error_e mqtt_c_client_is_connected(mqtt_c_client_t *client);
+mqtt_error_e mqtt_c_client_subscribe(mqtt_c_client_t *client, const char *topic,
+                                     const int qos, subscribe_handle handle);
+mqtt_error_e mqtt_c_client_unsubscribe(mqtt_c_client_t *client,
+                                       const char *     topic);
+mqtt_error_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
+                                   int qos, unsigned char *payload, size_t len);
+mqtt_error_e mqtt_c_client_close(mqtt_c_client_t *client);
 
 #ifdef __cplusplus
 }

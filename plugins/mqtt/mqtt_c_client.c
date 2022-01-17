@@ -17,6 +17,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -24,7 +27,7 @@
 #include <mqtt.h>
 #include <neuron.h>
 
-#include "mqttc_client.h"
+#include "mqtt_c_client.h"
 
 #define UNUSED(x) (void) (x)
 #define INTERVAL 100000U
@@ -32,19 +35,19 @@
 #define RECV_BUF_SIZE 8192
 
 struct reconnect_state {
-    const char *    hostname;
-    const char *    port;
-    const char *    client_id;
-    const char *    topic;
-    mqttc_client_t *client;
-    uint8_t *       send_buf;
-    size_t          send_buf_sz;
-    uint8_t *       recv_buf;
-    size_t          recv_buf_sz;
+    const char *     hostname;
+    const char *     port;
+    const char *     client_id;
+    const char *     topic;
+    mqtt_c_client_t *client;
+    uint8_t *        send_buf;
+    size_t           send_buf_sz;
+    uint8_t *        recv_buf;
+    size_t           recv_buf_sz;
 };
 
-struct mqttc_client {
-    mqtt_option_t *        option;
+struct mqtt_c_client {
+    const mqtt_option_t *  option;
     neu_list               subscribe_list;
     struct mqtt_client     mqtt;
     struct reconnect_state state;
@@ -64,10 +67,35 @@ struct subscribe_tuple {
     int              qos;
     subscribe_handle handle;
     bool             subscribed;
-    mqttc_client_t * client;
+    mqtt_c_client_t *client;
 };
 
-static BIO *create_bio_socket_tcp(const char *addr, const char *port)
+static void ssl_ctx_uninit(SSL_CTX *ssl_ctx)
+{
+    if (NULL != ssl_ctx) {
+        SSL_CTX_free(ssl_ctx);
+    }
+}
+
+static SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path)
+{
+    SSL_CTX *ssl_ctx = NULL;
+    ssl_ctx          = SSL_CTX_new(SSLv23_client_method());
+    if (NULL == ssl_ctx) {
+        log_error("Failed to create ssl ctx");
+        return NULL;
+    }
+
+    if (!SSL_CTX_load_verify_locations(ssl_ctx, ca_file, ca_path)) {
+        log_error("Failed to load certificate");
+        ssl_ctx_uninit(ssl_ctx);
+        return NULL;
+    }
+
+    return ssl_ctx;
+}
+
+static BIO *bio_socket_tcp_create(const char *addr, const char *port)
 {
     BIO *bio = BIO_new_connect(addr);
     BIO_set_nbio(bio, 1);
@@ -75,7 +103,7 @@ static BIO *create_bio_socket_tcp(const char *addr, const char *port)
     return bio;
 }
 
-static BIO *create_bio_socket_ssl(SSL_CTX *ssl_ctx, const char *addr,
+static BIO *bio_socket_ssl_create(SSL_CTX *ssl_ctx, const char *addr,
                                   const char *port)
 {
     SSL *ssl = NULL;
@@ -92,14 +120,14 @@ static BIO *create_bio_socket_ssl(SSL_CTX *ssl_ctx, const char *addr,
     return bio;
 }
 
-static void destroy_bio_socket(BIO *bio)
+static void bio_socket_destroy(BIO *bio)
 {
     if (NULL != bio) {
         BIO_free_all(bio);
     }
 }
 
-static void connect_bio_socket(BIO *bio)
+static void bio_socket_connect(BIO *bio)
 {
     int start_time    = time(NULL);
     int do_connect_rv = BIO_do_connect(bio);
@@ -112,40 +140,40 @@ static void connect_bio_socket(BIO *bio)
     }
 }
 
-mqtt_error_e mqttc_client_subscribe_send(mqttc_client_t *        client,
-                                         struct subscribe_tuple *tuple);
+static mqtt_error_e client_subscribe_send(mqtt_c_client_t *       client,
+                                          struct subscribe_tuple *tuple);
 
-static void subscribe_all_topic(mqttc_client_t *client)
+static void subscribe_all_topic(mqtt_c_client_t *client)
 {
     struct subscribe_tuple *item = NULL;
     NEU_LIST_FOREACH(&client->subscribe_list, item)
     {
-        mqttc_client_subscribe_send(client, item);
+        client_subscribe_send(client, item);
     }
 }
 
-static void reconnect_mqtt(struct mqtt_client *mqtt, void **p_reconnect_state)
+static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
 {
     struct reconnect_state *state =
         *((struct reconnect_state **) p_reconnect_state);
-    mqttc_client_t *client = state->client;
-    mqtt_option_t * option = client->option;
+    mqtt_c_client_t *    client = state->client;
+    const mqtt_option_t *option = client->option;
 
     // If not first connection
     // if (mqtt->error != MQTT_ERROR_INITIAL_RECONNECT) { }
 
-    destroy_bio_socket(client->sock_fd);
+    bio_socket_destroy(client->sock_fd);
 
     if (0 == strcmp(option->connection, "tcp://")) {
-        client->sock_fd = create_bio_socket_tcp(option->host, option->port);
+        client->sock_fd = bio_socket_tcp_create(option->host, option->port);
     }
 
     if (0 == strcmp(option->connection, "ssl://")) {
         client->sock_fd =
-            create_bio_socket_ssl(client->ssl_ctx, option->host, option->port);
+            bio_socket_ssl_create(client->ssl_ctx, option->host, option->port);
     }
 
-    connect_bio_socket(client->sock_fd);
+    bio_socket_connect(client->sock_fd);
 
     mqtt_reinit(mqtt, client->sock_fd, state->send_buf, state->send_buf_sz,
                 state->recv_buf, state->recv_buf_sz);
@@ -177,7 +205,7 @@ static void publish_callback(void **                       p_reconnect_state,
 
     struct reconnect_state *state =
         *((struct reconnect_state **) p_reconnect_state);
-    mqttc_client_t *        client = state->client;
+    mqtt_c_client_t *       client = state->client;
     struct subscribe_tuple *item   = NULL;
     NEU_LIST_FOREACH(&client->subscribe_list, item)
     {
@@ -192,9 +220,9 @@ static void publish_callback(void **                       p_reconnect_state,
     free(topic_name);
 }
 
-static void *mqtt_refresher(void *context)
+static void *client_refresher(void *context)
 {
-    mqttc_client_t *    client = (mqttc_client_t *) context;
+    mqtt_c_client_t *   client = (mqtt_c_client_t *) context;
     struct mqtt_client *mqtt   = &client->mqtt;
 
     bool run_flag = true;
@@ -214,14 +242,15 @@ static void *mqtt_refresher(void *context)
     return NULL;
 }
 
-mqttc_client_t *mqttc_client_create(mqtt_option_t *option, void *context)
+static mqtt_c_client_t *client_create(const mqtt_option_t *option,
+                                      void *               context)
 {
-    mqttc_client_t *client = malloc(sizeof(mqttc_client_t));
+    mqtt_c_client_t *client = malloc(sizeof(mqtt_c_client_t));
     if (NULL == client) {
         log_error("Failed to malloc client memory");
         return NULL;
     }
-    memset(client, 0, sizeof(mqttc_client_t));
+    memset(client, 0, sizeof(mqtt_c_client_t));
 
     pthread_mutex_init(&client->mutex, NULL);
     client->option    = option;
@@ -245,16 +274,16 @@ mqttc_client_t *mqttc_client_create(mqtt_option_t *option, void *context)
     return client;
 }
 
-mqtt_error_e mqttc_client_init(mqttc_client_t *client)
+static mqtt_error_e client_init(mqtt_c_client_t *client)
 {
     SSL_load_error_strings();
     ERR_load_BIO_strings();
     OpenSSL_add_all_algorithms();
     SSL_library_init();
 
-    BIO *          bio     = NULL;
-    SSL_CTX *      ssl_ctx = NULL;
-    mqtt_option_t *option  = client->option;
+    BIO *                bio     = NULL;
+    SSL_CTX *            ssl_ctx = NULL;
+    const mqtt_option_t *option  = client->option;
     // if (0 == strcmp(option->connection, "tcp://")) { }
 
     if (0 == strcmp(option->connection, "ssl://")) {
@@ -266,17 +295,18 @@ mqtt_error_e mqttc_client_init(mqttc_client_t *client)
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_connect(mqttc_client_t *client)
+static mqtt_error_e client_connect(mqtt_c_client_t *client)
 {
     if (NULL == client) {
         log_error("The client is not initialized");
         return MQTT_IS_NULL;
     }
 
-    mqtt_init_reconnect(&client->mqtt, reconnect_mqtt, &client->state,
+    mqtt_init_reconnect(&client->mqtt, client_reconnect, &client->state,
                         publish_callback);
 
-    if (pthread_create(&client->client_daemon, NULL, mqtt_refresher, client)) {
+    if (pthread_create(&client->client_daemon, NULL, client_refresher,
+                       client)) {
         log_error("Failed to start client daemon.");
         return MQTT_CONNECT_FAILURE;
     }
@@ -285,21 +315,21 @@ mqtt_error_e mqttc_client_connect(mqttc_client_t *client)
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_open(mqttc_client_t **    p_client,
-                               const mqtt_option_t *option, void *context)
+mqtt_error_e mqtt_c_client_open(mqtt_c_client_t **   p_client,
+                                const mqtt_option_t *option, void *context)
 {
-    mqttc_client_t *client = mqttc_client_create(option, context);
+    mqtt_c_client_t *client = client_create(option, context);
     if (NULL == client) {
         return MQTT_IS_NULL;
     }
 
-    mqtt_error_e rc = mqttc_client_init(client);
-    rc              = mqttc_client_connect(client);
+    mqtt_error_e rc = client_init(client);
+    rc              = client_connect(client);
     *p_client       = client;
     return rc;
 }
 
-mqtt_error_e mqttc_client_is_connected(mqttc_client_t *client)
+mqtt_error_e mqtt_c_client_is_connected(mqtt_c_client_t *client)
 {
     if (NULL == client) {
         return MQTT_IS_NULL;
@@ -312,7 +342,7 @@ mqtt_error_e mqttc_client_is_connected(mqttc_client_t *client)
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_subscribe_destroy(struct subscribe_tuple *tuple)
+static mqtt_error_e client_subscribe_destroy(struct subscribe_tuple *tuple)
 {
     if (NULL != tuple) {
         if (NULL != tuple->topic) {
@@ -324,15 +354,15 @@ mqtt_error_e mqttc_client_subscribe_destroy(struct subscribe_tuple *tuple)
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_disconnect(mqttc_client_t *client)
+static mqtt_error_e client_disconnect(mqtt_c_client_t *client)
 {
     while (!neu_list_empty(&client->subscribe_list)) {
         struct subscribe_tuple *tuple = NULL;
         tuple                         = neu_list_first(&client->subscribe_list);
         if (NULL != tuple) {
-            mqttc_client_unsubscribe(client, tuple->topic);
+            mqtt_c_client_unsubscribe(client, tuple->topic);
             neu_list_remove(&client->subscribe_list, tuple);
-            mqttc_client_subscribe_destroy(tuple);
+            client_subscribe_destroy(tuple);
         }
     }
 
@@ -352,16 +382,16 @@ mqtt_error_e mqttc_client_disconnect(mqttc_client_t *client)
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_destroy(mqttc_client_t *client)
+static mqtt_error_e client_destroy(mqtt_c_client_t *client)
 {
     pthread_mutex_destroy(&client->mutex);
     free(client);
     return MQTT_SUCCESS;
 }
 
-struct subscribe_tuple *
-mqttc_client_subscribe_create(mqttc_client_t *client, const char *topic,
-                              const int qos, const subscribe_handle handle)
+static struct subscribe_tuple *
+client_subscribe_create(mqtt_c_client_t *client, const char *topic,
+                        const int qos, const subscribe_handle handle)
 {
     struct subscribe_tuple *tuple =
         (struct subscribe_tuple *) malloc(sizeof(struct subscribe_tuple));
@@ -379,10 +409,10 @@ mqttc_client_subscribe_create(mqttc_client_t *client, const char *topic,
     return tuple;
 }
 
-mqtt_error_e mqttc_client_subscribe_send(mqttc_client_t *        client,
-                                         struct subscribe_tuple *tuple)
+static mqtt_error_e client_subscribe_send(mqtt_c_client_t *       client,
+                                          struct subscribe_tuple *tuple)
 {
-    mqtt_error_e error = mqttc_client_is_connected(client);
+    mqtt_error_e error = mqtt_c_client_is_connected(client);
     if (0 != error) {
         log_error("Failed to start send message, return code %d", error);
         return error;
@@ -397,25 +427,25 @@ mqtt_error_e mqttc_client_subscribe_send(mqttc_client_t *        client,
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_subscribe_add(mqttc_client_t *        client,
-                                        struct subscribe_tuple *tuple)
+static mqtt_error_e client_subscribe_add(mqtt_c_client_t *       client,
+                                         struct subscribe_tuple *tuple)
 {
     NEU_LIST_NODE_INIT(&tuple->node);
     neu_list_append(&client->subscribe_list, tuple);
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_subscribe(mqttc_client_t *client, const char *topic,
-                                    const int qos, subscribe_handle handle)
+mqtt_error_e mqtt_c_client_subscribe(mqtt_c_client_t *client, const char *topic,
+                                     const int qos, subscribe_handle handle)
 {
     struct subscribe_tuple *tuple =
-        mqttc_client_subscribe_create(client, topic, qos, handle);
+        client_subscribe_create(client, topic, qos, handle);
     if (NULL == tuple) {
         return MQTT_SUBSCRIBE_FAILURE;
     }
 
-    mqttc_client_subscribe_add(client, tuple);
-    mqtt_error_e error = mqttc_client_subscribe_send(client, tuple);
+    client_subscribe_add(client, tuple);
+    mqtt_error_e error = client_subscribe_send(client, tuple);
     if (MQTT_SUCCESS != error) {
         return MQTT_SUBSCRIBE_FAILURE;
     }
@@ -424,8 +454,8 @@ mqtt_error_e mqttc_client_subscribe(mqttc_client_t *client, const char *topic,
     return MQTT_SUCCESS;
 }
 
-struct subscribe_tuple *mqttc_client_unsubscribe_create(mqttc_client_t *client,
-                                                        const char *    topic)
+static struct subscribe_tuple *
+client_unsubscribe_create(mqtt_c_client_t *client, const char *topic)
 {
     struct subscribe_tuple *item = NULL;
     NEU_LIST_FOREACH(&client->subscribe_list, item)
@@ -439,8 +469,8 @@ struct subscribe_tuple *mqttc_client_unsubscribe_create(mqttc_client_t *client,
     return NULL;
 }
 
-mqtt_error_e mqttc_client_unsubscribe_send(mqttc_client_t *        client,
-                                           struct subscribe_tuple *tuple)
+static mqtt_error_e client_unsubscribe_send(mqtt_c_client_t *       client,
+                                            struct subscribe_tuple *tuple)
 {
     int rc = mqtt_unsubscribe(&client->mqtt, tuple->topic);
     if (1 != rc) {
@@ -450,27 +480,26 @@ mqtt_error_e mqttc_client_unsubscribe_send(mqttc_client_t *        client,
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_unsubscribe(mqttc_client_t *client, const char *topic)
+mqtt_error_e mqtt_c_client_unsubscribe(mqtt_c_client_t *client,
+                                       const char *     topic)
 {
     if (NULL == client) {
         return MQTT_IS_NULL;
     }
 
-    struct subscribe_tuple *tuple =
-        mqttc_client_unsubscribe_create(client, topic);
+    struct subscribe_tuple *tuple = client_unsubscribe_create(client, topic);
     if (NULL == tuple) {
         return MQTT_UNSUBSCRIBE_FAILURE;
     }
 
-    mqttc_client_unsubscribe_send(client, tuple);
-    // mqttc_client_subscribe_remove(client, topic);
+    client_unsubscribe_send(client, tuple);
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_publish(mqttc_client_t *client, const char *topic,
-                                  int qos, unsigned char *payload, size_t len)
+mqtt_error_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
+                                   int qos, unsigned char *payload, size_t len)
 {
-    mqtt_error_e error = mqttc_client_is_connected(client);
+    mqtt_error_e error = mqtt_c_client_is_connected(client);
     if (0 != error) {
         log_error("Failed to start send message, return code %d", error);
         return error;
@@ -486,7 +515,7 @@ mqtt_error_e mqttc_client_publish(mqttc_client_t *client, const char *topic,
     return MQTT_SUCCESS;
 }
 
-mqtt_error_e mqttc_client_close(mqttc_client_t *client)
+mqtt_error_e mqtt_c_client_close(mqtt_c_client_t *client)
 {
     if (NULL == client) {
         return MQTT_IS_NULL;
@@ -497,7 +526,7 @@ mqtt_error_e mqttc_client_close(mqttc_client_t *client)
     pthread_mutex_unlock(&client->mutex);
 
     pthread_join(client->client_daemon, NULL);
-    mqtt_error_e rc = mqttc_client_disconnect(client);
-    rc              = mqttc_client_destroy(client);
+    mqtt_error_e rc = client_disconnect(client);
+    rc              = client_destroy(client);
     return rc;
 }
