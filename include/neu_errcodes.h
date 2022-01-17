@@ -97,6 +97,22 @@ typedef enum {
     NEU_ERR_DEVICE_ABNORMALITY        = 3003,
     NEU_ERR_DEVICE_TAG_NOT_EXIST      = 3004,
     NEU_ERR_DEVICE_TAG_TYPE_NOT_MATCH = 3005,
+
+    NEU_ERR_MQTT_FAILURE                        = 4000,
+    NEU_ERR_MQTT_NO_CERTFILESET                 = 4001,
+    NEU_ERR_MQTT_CERTFILE_LOAD_FAILURE          = 4002,
+    NEU_ERR_MQTT_OPTION_IS_NULL                 = 4003,
+    NEU_ERR_MQTT_TOPIC_EMPTY                    = 4004,
+    NEU_ERR_MQTT_IS_NULL                        = 4005,
+    NEU_ERR_MQTT_INIT_FAILURE                   = 4006,
+    NEU_ERR_MQTT_CONNECT_FAILURE                = 4007,
+    NEU_ERR_MQTT_SUBSCRIBE_TIMEOUT              = 4008,
+    NEU_ERR_MQTT_SUBSCRIBE_LIST_INITIAL_FAILURE = 4009,
+    NEU_ERR_MQTT_SUBSCRIBE_FAILURE              = 4010,
+    NEU_ERR_MQTT_SUBSCRIBE_ADD_REPEAT           = 4011,
+    NEU_ERR_MQTT_SUBSCRIBE_ADD_FAILURE          = 4012,
+    NEU_ERR_MQTT_UNSUBSCRIBE_FAILURE            = 4013,
+    NEU_ERR_MQTT_PUBLISH_FAILURE                = 4014,
 } neu_err_code_e;
 
 #ifdef __cplusplus

@@ -135,6 +135,8 @@ set(NEURON_BASE_SOURCES
     src/connection/tcp_client.c
     src/connection/tcp_server.c
     src/connection/connection.c
+    src/connection/mqtt_c_client.c
+    src/connection/mqtt_client_intf.c
     src/event/event_linux.c
     src/event/event_unix.c
     src/utils/atomic_data.c
@@ -156,7 +158,8 @@ target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${
 target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
 target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
-target_link_libraries(neuron-base vector-static csptr jansson crypto yaml jwt
+target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
+target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc yaml jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 
 #copy file for run and unit test
