@@ -17,29 +17,32 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTTC_CLIENT
-#define NEURON_PLUGIN_MQTTC_CLIENT
+#ifndef NEURON_NEU_MQTT_C_CLIENT
+#define NEURON_NEU_MQTT_C_CLIENT
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "mqtt_interface.h"
+#include "connection/mqtt_client_intf.h"
 #include <stddef.h>
 #include <stdint.h>
 
 typedef struct mqtt_c_client mqtt_c_client_t;
 
-mqtt_error_e mqtt_c_client_open(mqtt_c_client_t **   p_client,
-                                const mqtt_option_t *option, void *context);
-mqtt_error_e mqtt_c_client_is_connected(mqtt_c_client_t *client);
-mqtt_error_e mqtt_c_client_subscribe(mqtt_c_client_t *client, const char *topic,
-                                     const int qos, subscribe_handle handle);
-mqtt_error_e mqtt_c_client_unsubscribe(mqtt_c_client_t *client,
-                                       const char *     topic);
-mqtt_error_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
-                                   int qos, unsigned char *payload, size_t len);
-mqtt_error_e mqtt_c_client_close(mqtt_c_client_t *client);
+neu_err_code_e mqtt_c_client_open(mqtt_c_client_t **       p_client,
+                                  const neu_mqtt_option_t *option,
+                                  void *                   context);
+neu_err_code_e mqtt_c_client_is_connected(mqtt_c_client_t *client);
+neu_err_code_e mqtt_c_client_subscribe(mqtt_c_client_t *client,
+                                       const char *topic, const int qos,
+                                       neu_subscribe_handle handle);
+neu_err_code_e mqtt_c_client_unsubscribe(mqtt_c_client_t *client,
+                                         const char *     topic);
+neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
+                                     int qos, unsigned char *payload,
+                                     size_t len);
+neu_err_code_e mqtt_c_client_close(mqtt_c_client_t *client);
 
 #ifdef __cplusplus
 }
