@@ -17,10 +17,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -47,6 +47,13 @@
 #endif
 
 #define PATH_MAX_SIZE 128
+
+static inline bool ends_with(const char *str, const char *suffix)
+{
+    size_t m = strlen(str);
+    size_t n = strlen(suffix);
+    return m >= n && !strncmp(str + m - n, suffix, n);
+}
 
 /**
  * Escape special characters in path string,
@@ -151,13 +158,7 @@ static int path_cat_escaped(char *dst, size_t len, size_t size, const char *src)
     return i + n;
 }
 
-typedef struct neu_persister {
-    const char *persist_dir;
-    const char *adapters_fname;
-    const char *plugins_fname;
-} neu_persister_t;
-
-static int create_dir(char *dir_name)
+static inline int create_dir(char *dir_name)
 {
     int rv = mkdir(dir_name, 0777);
     if (0 != rv && EEXIST == errno) {
@@ -166,6 +167,149 @@ static int create_dir(char *dir_name)
     return rv;
 }
 
+/**
+ * Create a directory and any intermediate directory if necessary.
+ */
+static int create_dir_recursive(const char *path)
+{
+    int  rv               = 0;
+    char p[PATH_MAX_SIZE] = { 0 };
+
+    rv = snprintf(p, sizeof(p), "%s", path);
+    if (sizeof(p) == rv) {
+        return -1;
+    }
+
+    int i = 0;
+    while (1) {
+        while (p[i] && PATH_SEP_CHAR == p[i]) {
+            ++i;
+        }
+        if ('\0' == p[i]) {
+            break;
+        }
+        while (p[i] && PATH_SEP_CHAR != p[i]) {
+            ++i;
+        }
+
+        char c = p[i];
+        p[i]   = '\0';
+        rv     = create_dir(p);
+        if (0 != rv) {
+            break;
+        }
+        p[i] = c;
+    }
+    return rv;
+}
+
+/**
+ * Type of callback invoked in file tree walking.
+ */
+typedef int (*file_tree_walk_cb_t)(const char *fpath, bool is_dir, void *arg);
+
+// depth first file tree walking implementation.
+// `path_buf` is buffer for accumulating file path,
+// `len` is the length of the directory path of the current invocation,
+// `size` is the path buffer size.
+static int file_tree_walk_(char *path_buf, size_t len, size_t size,
+                           file_tree_walk_cb_t cb, void *ctx)
+{
+    int            rv = 0;
+    DIR *          dirp;
+    struct dirent *dent;
+
+    // if not possible to read the directory for this user
+    if ((dirp = opendir(path_buf)) == NULL) {
+        return -1;
+    }
+
+    while (NULL != (dent = readdir(dirp))) {
+        if (DT_DIR == dent->d_type) {
+            // skip entries "." and ".."
+            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
+                continue;
+            }
+        } else if (DT_REG != dent->d_type) {
+            continue;
+        }
+
+        // determinate a full path of an entry
+        size_t n = path_cat(path_buf, len, size, dent->d_name);
+        if (size == n) {
+            rv = -1;
+            break;
+        }
+
+        if (DT_DIR == dent->d_type) {
+            rv = file_tree_walk_(path_buf, n, size, cb, ctx);
+        } else {
+            rv = cb(path_buf, false, ctx);
+        }
+
+        path_buf[len] = '\0'; // restore current directory path
+
+        if (0 != rv) {
+            break;
+        }
+    }
+
+    if (0 == rv) {
+        rv = cb(path_buf, true, ctx);
+    }
+
+    closedir(dirp);
+    return rv;
+}
+
+/**
+ * Depth first traversal of file tree.
+ *
+ * @param dir       path of directory
+ * @param cb        callback to invoke for each directory entry
+ * @param ctx       argument to callback
+ *
+ * @return  If `cb` returns nonzero, then the tree walk is terminated and the
+ *          value returned by `cb` is returned as the result
+ */
+static int file_tree_walk(const char *dir, file_tree_walk_cb_t cb, void *ctx)
+{
+    char buf[PATH_MAX_SIZE] = { 0 };
+    int  n                  = path_cat(buf, 0, sizeof(buf), dir);
+    if (sizeof(buf) == n) {
+        return -1;
+    }
+    return file_tree_walk_(buf, n, sizeof(buf), cb, ctx);
+}
+
+// file tree walking callback for `rmdir_recursive`
+static int remove_cb(const char *fpath, bool is_dir, void *arg)
+{
+    (void) arg;
+
+    if (!is_dir && !ends_with(fpath, ".json")) {
+        // we are being defensive here, ignoring non-json files
+        return 0;
+    }
+    log_info("remove %s", fpath);
+    return remove(fpath);
+}
+
+/**
+ * Remove directory recursively.
+ * @param dir         path of directory to remove
+ */
+static int rmdir_recursive(const char *dir)
+{
+    return file_tree_walk(dir, remove_cb, NULL);
+}
+
+/**
+ * Ensure that a file with the given name exists.
+ *
+ * @param name              file name
+ * @param default_content   default file content if file not exists
+ */
 static inline int ensure_file_exist(const char *name,
                                     const char *default_content)
 {
@@ -184,75 +328,6 @@ static inline int ensure_file_exist(const char *name,
         }
     }
     return 0;
-}
-
-neu_persister_t *neu_persister_create(char *dir_name)
-{
-    char dir_path[128] = { 0 };
-    int  rv            = snprintf(dir_path, 128, "%s", dir_name);
-    if (sizeof(dir_path) == rv) {
-        log_error("dir_path exceeds maximum value");
-        goto error_dir_name;
-    }
-
-    rv = create_dir(dir_path);
-    if (rv != 0) {
-        log_error("failed to create directory");
-        goto error_dir_name;
-    }
-
-    char adapter_path[128] = { 0 };
-    rv = snprintf(adapter_path, 128, "%s/adapters.json", dir_path);
-    if (sizeof(adapter_path) == rv) {
-        log_error("adapter_path exceeds maximun value");
-        goto error_dir_name;
-    }
-
-    char plugin_path[128] = { 0 };
-    rv = snprintf(plugin_path, 128, "%s/plugins.json", dir_path);
-    if (sizeof(plugin_path) == rv) {
-        log_error("plugin_path exceeds maximun value");
-        goto error_dir_name;
-    }
-
-    neu_persister_t *persister = malloc(sizeof(neu_persister_t));
-    if (persister == NULL) {
-        log_error("failed to alloc memory for persister struct");
-        goto error_dir_name;
-    }
-
-    if (0 != ensure_file_exist(adapter_path, "{\"nodes\": []}")) {
-        log_error("persister failed to ensure file exist: %s", adapter_path);
-        goto error_io;
-    }
-    if (0 != ensure_file_exist(plugin_path, "{\"plugins\": []}")) {
-        log_error("persister failed to ensure file exist: %s", plugin_path);
-        goto error_io;
-    }
-
-    persister->adapters_fname = strdup(adapter_path);
-    persister->plugins_fname  = strdup(plugin_path);
-    persister->persist_dir    = strdup(dir_name);
-
-    return persister;
-
-error_io:
-    free(persister);
-error_dir_name:
-    return NULL;
-}
-
-static inline int persister_adapter_dir(char *buf, size_t size,
-                                        neu_persister_t *persister,
-                                        const char *     adapter_name)
-{
-    size_t n = path_cat(buf, 0, size, persister->persist_dir);
-    if (size == n) {
-        return n;
-    }
-
-    n = path_cat_escaped(buf, n, size, adapter_name);
-    return n;
 }
 
 static int write_file_string(const char *fn, const char *s)
@@ -333,6 +408,108 @@ error_fstat:
 error_open:
     log_error("persister fail to read %s, reason: %s", fn, strerror(errno));
     return NEU_ERR_FAILURE;
+}
+
+typedef struct neu_persister {
+    const char *persist_dir;
+    const char *adapters_fname;
+    const char *plugins_fname;
+} neu_persister_t;
+
+neu_persister_t *neu_persister_create(char *dir_name)
+{
+    char dir_path[128] = { 0 };
+    int  rv            = snprintf(dir_path, 128, "%s", dir_name);
+    if (sizeof(dir_path) == rv) {
+        log_error("dir_path exceeds maximum value");
+        goto error_dir_name;
+    }
+
+    rv = create_dir(dir_path);
+    if (rv != 0) {
+        log_error("failed to create directory");
+        goto error_dir_name;
+    }
+
+    char adapter_path[128] = { 0 };
+    rv = snprintf(adapter_path, 128, "%s/adapters.json", dir_path);
+    if (sizeof(adapter_path) == rv) {
+        log_error("adapter_path exceeds maximun value");
+        goto error_dir_name;
+    }
+
+    char plugin_path[128] = { 0 };
+    rv = snprintf(plugin_path, 128, "%s/plugins.json", dir_path);
+    if (sizeof(plugin_path) == rv) {
+        log_error("plugin_path exceeds maximun value");
+        goto error_dir_name;
+    }
+
+    neu_persister_t *persister = malloc(sizeof(neu_persister_t));
+    if (persister == NULL) {
+        log_error("failed to alloc memory for persister struct");
+        goto error_dir_name;
+    }
+
+    if (0 != ensure_file_exist(adapter_path, "{\"nodes\": []}")) {
+        log_error("persister failed to ensure file exist: %s", adapter_path);
+        goto error_io;
+    }
+    if (0 != ensure_file_exist(plugin_path, "{\"plugins\": []}")) {
+        log_error("persister failed to ensure file exist: %s", plugin_path);
+        goto error_io;
+    }
+
+    persister->adapters_fname = strdup(adapter_path);
+    persister->plugins_fname  = strdup(plugin_path);
+    persister->persist_dir    = strdup(dir_name);
+
+    return persister;
+
+error_io:
+    free(persister);
+error_dir_name:
+    return NULL;
+}
+
+static inline int persister_adapter_dir(char *buf, size_t size,
+                                        neu_persister_t *persister,
+                                        const char *     adapter_name)
+{
+    size_t n = path_cat(buf, 0, size, persister->persist_dir);
+    if (size == n) {
+        return n;
+    }
+
+    n = path_cat_escaped(buf, n, size, adapter_name);
+    return n;
+}
+
+static inline int persister_group_configs_dir(char *buf, size_t size,
+                                              neu_persister_t *persister,
+                                              const char *     adapter_name)
+{
+    size_t n = persister_adapter_dir(buf, size, persister, adapter_name);
+    if (size == n) {
+        return n;
+    }
+
+    n = path_cat(buf, n, size, "groups");
+    return n;
+}
+
+static inline int persister_group_config_dir(char *buf, size_t size,
+                                             neu_persister_t *persister,
+                                             const char *     adapter_name,
+                                             const char *     group_config_name)
+{
+    size_t n = persister_group_configs_dir(buf, size, persister, adapter_name);
+    if (size == n) {
+        return n;
+    }
+
+    n = path_cat_escaped(buf, n, size, group_config_name);
+    return n;
 }
 
 void neu_persister_destroy(neu_persister_t *persister)
@@ -625,43 +802,38 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
     return 0;
 }
 
-int neu_persister_store_group_configs(
-    neu_persister_t *                persister,
-    neu_persist_group_config_info_t *group_config_infos)
+int neu_persister_store_group_config(
+    neu_persister_t *persister, const char *adapter_name,
+    neu_persist_group_config_info_t *group_config_info)
 {
-    char group_config_path[128] = { 0 };
+    char path[PATH_MAX_SIZE] = { 0 };
 
-    int rv = snprintf(group_config_path, 128, "%s/persist/%s/group_configs",
-                      persister->persist_dir, group_config_infos->adapter_name);
-    if (sizeof(group_config_path) == rv) {
-        log_error("group_config_path exceeds maximum value");
-        return -1;
-    }
-    create_dir(group_config_path);
-
-    char group_config_file[128] = { 0 };
-    rv = snprintf(group_config_file, 128, "%s/%s", group_config_path,
-                  group_config_infos->group_config_name);
-    if (sizeof(group_config_file) == rv) {
-        log_error("group_config_file exceeds maximum value");
+    int n =
+        persister_group_config_dir(path, sizeof(path), persister, adapter_name,
+                                   group_config_info->group_config_name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
         return -1;
     }
 
-    neu_json_group_configs_resp_t group_config_resp = {
-        .adapter_name      = group_config_infos->adapter_name,
-        .group_config_name = group_config_infos->group_config_name,
-        .read_interval     = group_config_infos->read_interval,
-        .datatag_names     = group_config_infos->datatag_names,
-    };
-
-    char *result = NULL;
-    rv           = neu_json_encode_by_fn(&group_config_resp,
-                               neu_json_encode_group_configs_resp, &result);
-    if (rv != 0) {
+    int rv = create_dir_recursive(path);
+    if (0 != rv) {
+        log_error("persister failed to create dir: %s", path);
         return rv;
     }
 
-    rv = write_file_string(group_config_file, result);
+    n = path_cat(path, n, sizeof(path), "config.json");
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
+
+    char *result = NULL;
+    rv           = neu_json_encode_by_fn(group_config_info,
+                               neu_json_encode_group_configs_resp, &result);
+    if (rv == 0) {
+        rv = write_file_string(path, result);
+    }
 
     free(result);
     return rv;
@@ -713,14 +885,21 @@ int neu_persister_load_group_configs(neu_persister_t *persister,
     return 0;
 }
 
-int neu_persister_delete_group_configs(neu_persister_t *persister,
-                                       const char *     adapter_name,
-                                       vector_t **      group_config_infos)
+int neu_persister_delete_group_config(neu_persister_t *persister,
+                                      const char *     adapter_name,
+                                      const char *     group_config_name)
 {
-    (void *) persister;
-    (void *) adapter_name;
-    (void **) group_config_infos;
-    return 0;
+    char path[PATH_MAX_SIZE] = { 0 };
+
+    int n = persister_group_config_dir(path, sizeof(path), persister,
+                                       adapter_name, group_config_name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
+
+    int rv = rmdir_recursive(path);
+    return rv;
 }
 
 int neu_persister_store_adapter_setting(neu_persister_t *persister,

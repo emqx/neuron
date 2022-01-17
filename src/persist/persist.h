@@ -175,7 +175,7 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_store_group_config(
-    neu_persister_t *                persister,
+    neu_persister_t *persister, const char *adapter_name,
     neu_persist_group_config_info_t *group_config_info);
 /**
  * Load all group config infos under an adapter.

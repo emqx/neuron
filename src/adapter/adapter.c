@@ -374,6 +374,48 @@ static int persister_singleton_handle_plugins(neu_adapter_t *adapter,
     return rv;
 }
 
+static int persister_singleton_handle_grp_config(neu_adapter_t *adapter,
+                                                 msg_type_e     event,
+                                                 neu_node_id_t  node_id,
+                                                 void *         arg)
+{
+    neu_persister_t *persister    = persister_singleton_get();
+    char *           adapter_name = NULL;
+
+    log_info("%s handling grp config event %d", adapter->name, event);
+
+    int rv = neu_manager_get_node_name_by_id(adapter->manager, node_id,
+                                             &adapter_name);
+    if (0 != rv) {
+        return rv;
+    }
+
+    if (MSG_EVENT_DEL_GRP_CONFIG != event) {
+        neu_taggrp_config_t *           grp_config = arg;
+        neu_persist_group_config_info_t info       = {
+            .group_config_name = (char *) neu_taggrp_cfg_get_name(grp_config),
+            .read_interval     = neu_taggrp_cfg_get_interval(grp_config),
+            .adapter_name      = adapter_name, // TODO: remove
+            .datatag_names     = NULL, // we don't need these fields
+            .n_datatag_name    = 0,    //
+        };
+        rv = neu_persister_store_group_config(persister, adapter_name, &info);
+        if (0 != rv) {
+            log_error("% failed to store group config infos", adapter->name);
+        }
+    } else {
+        const char *group_config_name = arg;
+        rv = neu_persister_delete_group_config(persister, adapter_name,
+                                               group_config_name);
+        if (0 != rv) {
+            log_error("% failed to del group config infos", adapter->name);
+        }
+    }
+
+    free(adapter_name);
+    return rv;
+}
+
 neu_plugin_running_state_e
 neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 {
@@ -546,6 +588,30 @@ static void adapter_loop(void *arg)
             }
             free((char *) cmd->setting);
             free(adapter_name);
+            break;
+        }
+
+        case MSG_EVENT_ADD_GRP_CONFIG: {
+            neu_cmd_add_grp_config_t *cmd = msg_get_buf_ptr(pay_msg);
+            persister_singleton_handle_grp_config(
+                adapter, pay_msg_type, cmd->node_id, cmd->grp_config);
+            neu_taggrp_cfg_free(cmd->grp_config);
+            break;
+        }
+
+        case MSG_EVENT_UPDATE_GRP_CONFIG: {
+            neu_cmd_update_grp_config_t *cmd = msg_get_buf_ptr(pay_msg);
+            persister_singleton_handle_grp_config(
+                adapter, pay_msg_type, cmd->node_id, cmd->grp_config);
+            neu_taggrp_cfg_free(cmd->grp_config);
+            break;
+        }
+
+        case MSG_EVENT_DEL_GRP_CONFIG: {
+            neu_cmd_del_grp_config_t *cmd = msg_get_buf_ptr(pay_msg);
+            persister_singleton_handle_grp_config(
+                adapter, pay_msg_type, cmd->node_id, cmd->config_name);
+            free(cmd->config_name);
             break;
         }
 

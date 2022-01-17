@@ -1327,6 +1327,14 @@ static void manager_loop(void *arg)
             // fall through
 
         case MSG_EVENT_SET_NODE_SETTING:
+
+        case MSG_EVENT_ADD_GRP_CONFIG:
+            // fall through
+
+        case MSG_EVENT_UPDATE_GRP_CONFIG:
+            // fall through
+
+        case MSG_EVENT_DEL_GRP_CONFIG:
             // fall through
 
         case MSG_EVENT_ADD_PLUGIN:
