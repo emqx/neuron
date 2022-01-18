@@ -104,9 +104,6 @@ static void *sample_app_work_loop(void *arg)
     neu_response_t *         result = NULL;
     neu_cmd_add_plugin_lib_t plugin_add_cmd;
 
-    plugin_add_cmd.plugin_kind     = PLUGIN_KIND_SYSTEM;
-    plugin_add_cmd.node_type       = NEU_NODE_TYPE_DRIVER;
-    plugin_add_cmd.plugin_name     = "sample-drv-plugin";
     plugin_add_cmd.plugin_lib_name = "libplugin-sample-drv.so";
 
     sync_cmd.req_type = NEU_REQRESP_ADD_PLUGIN_LIB;
@@ -117,7 +114,7 @@ static void *sample_app_work_loop(void *arg)
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
         log_error("Failed to add plugin lib with name: %s",
-                  plugin_add_cmd.plugin_name);
+                  plugin_add_cmd.plugin_lib_name);
         return NULL;
     }
     log_info("Result of add command is %d", (intptr_t) result->buf);
@@ -571,5 +568,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,
     .module_name  = "neuron-sample-app-plugin",
     .module_descr = SAMPLE_APP_PLUGIN_DESCR,
-    .intf_funs    = &plugin_intf_funs
+    .intf_funs    = &plugin_intf_funs,
+    .kind         = PLUGIN_KIND_SYSTEM,
+    .type         = NEU_NODE_TYPE_APP,
 };

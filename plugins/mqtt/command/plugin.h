@@ -32,8 +32,6 @@ char *command_plugin_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                          neu_json_get_plugin_req_t *req);
 char *command_plugin_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                          neu_json_add_plugin_req_t *req);
-char *command_plugin_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                            neu_json_update_plugin_req_t *req);
 char *command_plugin_delete(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                             neu_json_del_plugin_req_t *req);
 

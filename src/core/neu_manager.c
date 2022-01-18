@@ -729,7 +729,6 @@ static int register_default_plugins(neu_manager_t *manager)
     uint32_t           i, j;
     plugin_id_t        plugin_id;
     plugin_reg_param_t reg_param;
-    int                path_len = 64;
 
     for (i = 0; i < DEFAULT_PLUGIN_COUNT; i++) {
         plugin_id.id_val = 0;
@@ -741,14 +740,10 @@ static int register_default_plugins(neu_manager_t *manager)
         }
 
         if (j < DEFAULT_PLUGIN_INFO_SIZE) {
-            reg_param                 = default_plugin_infos[j];
-            reg_param.plugin_lib_name = calloc(1, path_len);
+            reg_param = default_plugin_infos[j];
 
-            snprintf(reg_param.plugin_lib_name, path_len, "./%s",
-                     default_plugin_infos[j].plugin_lib_name);
             rv = plugin_manager_reg_plugin(manager->plugin_manager, &reg_param,
                                            &plugin_id);
-            free(reg_param.plugin_lib_name);
         }
     }
 
@@ -1987,13 +1982,35 @@ int neu_manager_add_plugin_lib(neu_manager_t *           manager,
                                neu_cmd_add_plugin_lib_t *cmd,
                                plugin_id_t *             p_plugin_id)
 {
-    int                rv;
-    plugin_reg_param_t reg_param;
+    int                  rv = 0;
+    plugin_reg_param_t   reg_param;
+    void *               handle      = NULL;
+    neu_plugin_module_t *module_info = NULL;
 
-    reg_param.plugin_kind     = cmd->plugin_kind;
-    reg_param.adapter_type    = adapter_type_from_node_type(cmd->node_type);
-    reg_param.plugin_name     = cmd->plugin_name;
+    handle = load_plugin_library((char *) cmd->plugin_lib_name,
+                                 PLUGIN_KIND_SYSTEM, &module_info);
+    if (handle == NULL) {
+        return NEU_ERR_PLUGIN_LIBRARY_NOT_FOUND;
+    }
+
+    reg_param.plugin_kind     = module_info->kind;
+    reg_param.adapter_type    = adapter_type_from_node_type(module_info->type);
     reg_param.plugin_lib_name = (char *) cmd->plugin_lib_name;
+    reg_param.plugin_name     = module_info->module_name;
+
+    unload_plugin_library(handle, PLUGIN_KIND_SYSTEM);
+
+    if (reg_param.plugin_kind != PLUGIN_KIND_STATIC &&
+        reg_param.plugin_kind != PLUGIN_KIND_SYSTEM &&
+        reg_param.plugin_kind != PLUGIN_KIND_CUSTOM) {
+        return NEU_ERR_PLUGIN_LIBRARY_INFO_INVALID;
+    }
+
+    if (reg_param.adapter_type <= ADAPTER_TYPE_UNKNOW ||
+        reg_param.adapter_type >= ADAPTER_TYPE_MAX) {
+        return NEU_ERR_PLUGIN_LIBRARY_INFO_INVALID;
+    }
+
     rv = plugin_manager_reg_plugin(manager->plugin_manager, &reg_param,
                                    p_plugin_id);
     return rv;

@@ -209,12 +209,6 @@ struct neu_rest_handler api_handlers[] = {
         .value.handler = handle_get_plugin,
     },
     {
-        .method        = NEU_REST_METHOD_PUT,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/plugin",
-        .value.handler = handle_update_plugin,
-    },
-    {
         .method        = NEU_REST_METHOD_DELETE,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/plugin",

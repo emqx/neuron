@@ -29,6 +29,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "adapter/adapter_internal.h"
+#include "config.h"
 #include "dummy/dummy.h"
 #include "neu_panic.h"
 #include "neu_vector.h"
@@ -325,7 +326,7 @@ int plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
     if (p_plugin_id->id_val == 0) {
         // There has same registered plugin
         log_warn("A plugin with same name has already been registered");
-        return -1;
+        return NEU_ERR_PLUGIN_LIBRARY_NAME_CONFLICT;
     }
 
     reg_entity_init(&reg_entity, *p_plugin_id, param);
@@ -587,12 +588,20 @@ void plugin_manager_dump(plugin_manager_t *plugin_mng)
  * load plugin and unload plugin
  */
 
-static void *load_dyn_plugin_library(char *                plugin_lib_name,
+static void *load_dyn_plugin_library(char *driver_path, char *plugin_lib_name,
                                      neu_plugin_module_t **p_plugin_module)
 {
     void *lib_handle;
 
-    lib_handle = dlopen(plugin_lib_name, RTLD_NOW | RTLD_NODELETE);
+    if (driver_path == NULL) {
+        lib_handle = dlopen(plugin_lib_name, RTLD_NOW | RTLD_NODELETE);
+    } else {
+        char lib_path[128] = { 0 };
+        snprintf(lib_path, sizeof(lib_path) - 1, "%s%s", driver_path,
+                 plugin_lib_name);
+        lib_handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
+    }
+
     if (lib_handle == NULL) {
         log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
                   dlerror());
@@ -668,11 +677,24 @@ static int unload_static_plugin(void *lib_handle)
 void *load_plugin_library(char *plugin_lib_name, plugin_kind_e plugin_kind,
                           neu_plugin_module_t **p_plugin_module)
 {
-    if (plugin_kind == PLUGIN_KIND_STATIC) {
-        return load_static_plugin(plugin_lib_name, p_plugin_module);
-    } else {
-        return load_dyn_plugin_library(plugin_lib_name, p_plugin_module);
+    char *path   = NULL;
+    void *result = NULL;
+
+    path = neu_config_get_value(2, "driver", "path");
+
+    switch (plugin_kind) {
+    case PLUGIN_KIND_STATIC:
+        result = load_static_plugin(plugin_lib_name, p_plugin_module);
+        break;
+    case PLUGIN_KIND_SYSTEM:
+    case PLUGIN_KIND_CUSTOM:
+        result =
+            load_dyn_plugin_library(path, plugin_lib_name, p_plugin_module);
+        free(path);
+        break;
     }
+
+    return result;
 }
 
 int unload_plugin_library(void *lib_handle, plugin_kind_e plugin_kind)

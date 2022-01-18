@@ -105,8 +105,8 @@ static nng_http_server *server_init(char *type)
     char             host_port[128] = { 0 };
     nng_http_server *server;
 
-    host = neu_config_get_value("./neuron.yaml", 2, type, "host");
-    port = neu_config_get_value("./neuron.yaml", 2, type, "port");
+    host = neu_config_get_value(2, type, "host");
+    port = neu_config_get_value(2, type, "port");
 
     snprintf(host_port, sizeof(host_port), "http://%s:%s", host, port);
     log_info("%s bind url: %s", type, host_port);
@@ -229,10 +229,10 @@ static int dashb_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    char *private_key_path = neu_config_get_value(
-        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "private_key");
-    char *public_key_path = neu_config_get_value(
-        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "public_key");
+    char *private_key_path =
+        neu_config_get_value(2, (char *) "api", (char *) "private_key");
+    char *public_key_path =
+        neu_config_get_value(2, (char *) "api", (char *) "public_key");
     rv = neu_jwt_init(public_key_path, private_key_path);
 
     free(private_key_path);
@@ -342,5 +342,7 @@ const neu_plugin_module_t default_dashboard_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,
     .module_name  = "neuron-default-dashboard",
     .module_descr = DEFAULT_DASHBOARD_PLUGIN_DESCR,
-    .intf_funs    = &plugin_intf_funs
+    .intf_funs    = &plugin_intf_funs,
+    .kind         = PLUGIN_KIND_SYSTEM,
+    .type         = NEU_NODE_TYPE_WEBSERVER
 };

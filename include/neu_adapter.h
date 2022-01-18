@@ -221,10 +221,7 @@ typedef struct plugin_lib_info {
 
 /* NEU_REQRESP_ADD_PLUGIN_LIB */
 typedef struct neu_cmd_add_plugin_lib_t {
-    plugin_kind_e   plugin_kind;
-    neu_node_type_e node_type;
-    const char *    plugin_name;
-    const char *    plugin_lib_name;
+    const char *plugin_lib_name;
 } neu_cmd_add_plugin_lib_t;
 
 /* NEU_REQRESP_DEL_PLUGIN_LIB */

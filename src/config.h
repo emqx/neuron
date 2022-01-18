@@ -21,9 +21,10 @@
 extern "C" {
 #endif
 
-int neu_config_init(char *config_file);
+int  neu_config_init(const char *config_file);
+void neu_config_uninit();
 // need free value
-char *neu_config_get_value(char *config_file, int n_key, char *key, ...);
+char *neu_config_get_value(int n_key, char *key, ...);
 
 #ifdef __cplusplus
 }
