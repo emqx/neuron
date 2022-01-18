@@ -43,7 +43,8 @@ static inline void neu_persist_adapter_infos_free(vector_t *adapter_infos)
 {
     VECTOR_FOR_EACH(adapter_infos, iter)
     {
-        neu_persist_adapter_info_t *p = iterator_get(&iter);
+        neu_persist_adapter_info_t *p =
+            (neu_persist_adapter_info_t *) iterator_get(&iter);
         free(p->name);
         free(p->plugin_name);
     }
@@ -54,7 +55,8 @@ static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
 {
     VECTOR_FOR_EACH(plugin_infos, iter)
     {
-        neu_persist_plugin_info_t *p = iterator_get(&iter);
+        neu_persist_plugin_info_t *p =
+            (neu_persist_plugin_info_t *) iterator_get(&iter);
         free(p->name);
         free(p->plugin_lib_name);
     }
@@ -63,13 +65,17 @@ static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
 
 /**
  * Persister, provide methods to persist data */
-typedef struct neu_persister neu_persister_t;
+typedef struct neu_persister {
+    char *persist_dir;
+    char *adapters_fname;
+    char *plugins_fname;
+} neu_persister_t;
 
 /**
  * Create persister.
  * @return Pointer to heap allocated neu_persister_t on success, NULL otherwise.
  */
-neu_persister_t *neu_persister_create();
+neu_persister_t *neu_persister_create(char *dir_name);
 /**
  * Destroy perister.
  * @param persister                 persiter object to destroy.
