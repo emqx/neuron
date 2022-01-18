@@ -18,41 +18,70 @@
  **/
 
 #include "connection/mqtt_client_intf.h"
+#ifdef USE_NNG_MQTT
+#include "mqtt_nng_client.h"
+#else
 #include "mqtt_c_client.h"
+#endif
 
 neu_err_code_e neu_mqtt_client_open(neu_mqtt_client_t *      p_client,
                                     const neu_mqtt_option_t *option,
                                     void *                   context)
 {
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_open((mqtt_nng_client_t **) p_client, option,
+                                context);
+#else
     return mqtt_c_client_open((mqtt_c_client_t **) p_client, option, context);
+#endif
 }
 
 neu_err_code_e neu_mqtt_client_is_connected(neu_mqtt_client_t client)
 {
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_is_connected(client);
+#else
     return mqtt_c_client_is_connected(client);
+#endif
 }
 
 neu_err_code_e neu_mqtt_client_subscribe(neu_mqtt_client_t client,
                                          const char *topic, const int qos,
                                          neu_subscribe_handle handle)
 {
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_subscribe(client, topic, qos, handle);
+#else
     return mqtt_c_client_subscribe(client, topic, qos, handle);
+#endif
 }
 
 neu_err_code_e neu_mqtt_client_unsubscribe(neu_mqtt_client_t client,
                                            const char *      topic)
 {
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_unsubscribe(client, topic);
+#else
     return mqtt_c_client_unsubscribe(client, topic);
+#endif
 }
 
 neu_err_code_e neu_mqtt_client_publish(neu_mqtt_client_t client,
                                        const char *topic, int qos,
                                        unsigned char *payload, size_t len)
 {
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_publish(client, topic, qos, payload, len);
+#else
     return mqtt_c_client_publish(client, topic, qos, payload, len);
+#endif
 }
 
 neu_err_code_e neu_mqtt_client_close(neu_mqtt_client_t client)
 {
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_close(client);
+#else
     return mqtt_c_client_close(client);
+#endif
 }
