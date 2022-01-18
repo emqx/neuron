@@ -152,6 +152,14 @@ set(NEURON_BASE_SOURCES
     src/utils/uuid4.c
     src/config.c)
 
+if(USE_NNG_MQTT)
+    message("-- USE_NNG_MQTT is defined")
+    add_definitions(-DUSE_NNG_MQTT)
+    set(NEURON_BASE_SOURCES 
+        ${NEURON_BASE_SOURCES}
+        src/connection/mqtt_nng_client.c)
+endif()
+
 set(NEURON_BASE_INCLUDE_DIRECTORIES include src)
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_SCHEMA})
@@ -161,6 +169,10 @@ target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
 target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
 target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc yaml jwt
                       ${CMAKE_THREAD_LIBS_INIT})
+
+if(USE_NNG_MQTT)
+  target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto nng)
+endif()
 
 #copy file for run and unit test
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR})
