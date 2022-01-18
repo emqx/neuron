@@ -257,7 +257,7 @@ static inline int persister_adapter_dir(char *buf, size_t size,
 
 static int write_file_string(const char *fn, const char *s)
 {
-    char tmp[PATH_MAX] = { 0 };
+    char tmp[PATH_MAX_SIZE] = { 0 };
     if (sizeof(tmp) == snprintf(tmp, sizeof(tmp), "%s.tmp", fn)) {
         log_error("persister too long file name:%s", fn);
         return NEU_ERR_FAILURE;
