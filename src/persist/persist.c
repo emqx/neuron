@@ -410,6 +410,43 @@ error_open:
     return NEU_ERR_FAILURE;
 }
 
+// file tree walking callback for collecting adapter group config infos
+static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
+{
+    vector_t *group_config_infos = arg;
+    int       rv                 = 0;
+
+    if (is_dir) {
+        return 0;
+    }
+
+    char *json_str = NULL;
+    rv             = read_file_string(fpath, &json_str);
+    if (0 != rv) {
+        return rv;
+    }
+
+    neu_json_group_configs_req_t *group_config_req = NULL;
+    rv = neu_json_decode_group_configs_req(json_str, &group_config_req);
+    free(json_str);
+    if (0 != rv) {
+        return rv;
+    }
+
+    log_info("read %s", fpath);
+
+    if (0 == vector_push_back(group_config_infos, group_config_req)) {
+        // NOTE: do not call neu_json_decode_group_configs_req_free,
+        //       since member ownership was transferred to vector
+        free(group_config_req);
+    } else {
+        neu_json_decode_group_configs_req_free(group_config_req);
+        rv = NEU_ERR_ENOMEM;
+    }
+
+    return rv;
+}
+
 typedef struct neu_persister {
     const char *persist_dir;
     const char *adapters_fname;
@@ -841,48 +878,30 @@ int neu_persister_store_group_config(
 
 int neu_persister_load_group_configs(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     const char *     group_config_name,
                                      vector_t **      group_config_infos)
 {
-    char *group_configs = NULL;
+    char path[PATH_MAX_SIZE] = { 0 };
 
-    char group_config_file[128] = { 0 };
-    int  rv = snprintf(group_config_file, 128, "%s/persist/%s/group_configs/%s",
-                      persister->persist_dir, adapter_name, group_config_name);
-    if (sizeof(group_config_file) == rv) {
-        log_error("group_config_file exceeds maximum value");
+    int n = persister_group_configs_dir(path, sizeof(path), persister,
+                                        adapter_name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
         return -1;
     }
 
-    rv = read_file_string(group_config_file, &group_configs);
-    if (rv != 0) {
-        return rv;
+    vector_t *result = vector_new(0, sizeof(neu_persist_group_config_info_t));
+    if (NULL == result) {
+        return NEU_ERR_ENOMEM;
     }
 
-    neu_json_group_configs_req_t *group_config_req = NULL;
-    rv = neu_json_decode_group_configs_req(group_configs, &group_config_req);
-    if (rv != 0) {
-        return rv;
+    int rv = file_tree_walk(path, read_group_config_cb, result);
+    if (0 == rv) {
+        *group_config_infos = result;
+    } else {
+        neu_persist_group_config_infos_free(result);
     }
 
-    // vector_t *vec = vector_new_move_from_buf(
-    //     group_config_req->datatag_names, group_config_req->datatag_names,
-    //     group_config_req->group_config_name,
-    //     group_config_req->n_datatag_name, group_config_req->read_interval,
-    //     sizeof(neu_persist_group_config_info_t));
-    // if (vec == NULL) {
-    //     return -1;
-    // }
-
-    // *group_config_infos                 = vec;
-    // group_config_req->adapter_name      = NULL;
-    // group_config_req->datatag_names     = NULL;
-    // group_config_req->group_config_name = NULL;
-    // group_config_req->n_datatag_name    = 0;
-    // group_config_req->read_interval     = 0;
-
-    neu_json_decode_group_configs_req_free(group_config_req);
-    return 0;
+    return rv;
 }
 
 int neu_persister_delete_group_config(neu_persister_t *persister,

@@ -260,6 +260,53 @@ static int persister_singleton_load_setting(neu_adapter_t *adapter,
     return rv;
 }
 
+static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
+                                                 const char *   adapter_name,
+                                                 neu_node_id_t  node_id)
+{
+    vector_t *       group_config_infos = NULL;
+    neu_persister_t *persister          = persister_singleton_get();
+
+    int rv = neu_persister_load_group_configs(persister, adapter_name,
+                                              &group_config_infos);
+    if (0 != rv) {
+        log_error("%s fail load grp config of %s", adapter->name, adapter_name);
+        return rv;
+    }
+
+    VECTOR_FOR_EACH(group_config_infos, iter)
+    {
+        neu_persist_group_config_info_t *p = iterator_get(&iter);
+
+        neu_taggrp_config_t *grp_config =
+            neu_taggrp_cfg_new(p->group_config_name);
+        if (NULL == grp_config) {
+            rv = NEU_ERR_ENOMEM;
+            break;
+        }
+        neu_taggrp_cfg_set_interval(grp_config, p->read_interval);
+
+        neu_cmd_add_grp_config_t cmd = {
+            .node_id    = node_id,
+            .grp_config = grp_config,
+        };
+
+        rv = neu_manager_add_grp_config(adapter->manager, &cmd);
+        const char *ok_or_err = (0 == rv) ? "success" : "fail";
+        log_info("%s load group config %s interval:%d", adapter->name,
+                 p->group_config_name, p->read_interval);
+        if (0 != rv) {
+            neu_taggrp_cfg_free(grp_config);
+            break;
+        }
+
+        // TODO: add tags
+    }
+
+    neu_persist_group_config_infos_free(group_config_infos);
+    return rv;
+}
+
 static int persister_singleton_load_data(neu_adapter_t *adapter)
 {
     vector_t *       adapter_infos = NULL;
@@ -299,6 +346,12 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
 
         rv = persister_singleton_load_setting(adapter, adapter_info->name,
                                               node_id);
+        if (0 != rv) {
+            goto error_add_adapters;
+        }
+
+        rv = persister_singleton_load_grp_and_tags(adapter, adapter_info->name,
+                                                   node_id);
         if (0 != rv) {
             goto error_add_adapters;
         }
