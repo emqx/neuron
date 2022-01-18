@@ -61,6 +61,23 @@ static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
     vector_free(plugin_infos);
 }
 
+static inline void
+neu_persist_group_config_infos_free(vector_t *group_config_infos)
+{
+    VECTOR_FOR_EACH(group_config_infos, iter)
+    {
+        neu_persist_group_config_info_t *p         = iterator_get(&iter);
+        char **                          tag_names = p->datatag_names;
+        for (int i = 0; i < p->n_datatag_name; ++i) {
+            free(tag_names[i]);
+        }
+        free(tag_names);
+        free(p->group_config_name);
+        free(p->adapter_name);
+    }
+    vector_free(group_config_infos);
+}
+
 /**
  * Persister, provide methods to persist data */
 typedef struct neu_persister neu_persister_t;
@@ -188,7 +205,6 @@ int neu_persister_store_group_config(
  */
 int neu_persister_load_group_configs(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     const char *     group_config_name,
                                      vector_t **      group_config_infos);
 /**
  * Delete group config.
