@@ -65,23 +65,11 @@ char *command_plugin_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 char *command_plugin_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                          neu_json_add_plugin_req_t *req)
 {
-    log_info("Add plugin uuid:%s, node name:%s", mqtt->uuid, req->name);
+    log_info("Add plugin uuid:%s, node name:%s", mqtt->uuid, req->lib_name);
     neu_json_error_resp_t error = { 0 };
-    error.error  = neu_system_add_plugin(plugin, req->kind, req->node_type,
-                                        req->name, req->lib_name);
-    char *result = NULL;
-    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                              neu_json_encode_mqtt_resp, &result);
-    return result;
-}
 
-char *command_plugin_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                            neu_json_update_plugin_req_t *req)
-{
-    log_info("Update plugin uuid:%s, node name:%s", mqtt->uuid, req->name);
-    neu_json_error_resp_t error = { 0 };
-    error.error  = neu_system_update_plugin(plugin, req->kind, req->node_type,
-                                           req->name, req->lib_name);
+    error.error = neu_system_add_plugin(plugin, req->lib_name);
+
     char *result = NULL;
     neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                               neu_json_encode_mqtt_resp, &result);

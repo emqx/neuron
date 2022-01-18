@@ -76,12 +76,12 @@ static void uninit()
 
 static void usage()
 {
-    fprintf(stderr, "neuron [--help] [--daemon]\n");
+    fprintf(stderr, "neuron [--help] [--config] [--daemon]\n");
 }
 
-static int read_neuron_config()
+static int read_neuron_config(const char *config)
 {
-    return neu_config_init("./neuron.yaml");
+    return neu_config_init(config);
 }
 
 static void sig_handler(int sig)
@@ -141,14 +141,16 @@ static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 int main(int argc, char *argv[])
 {
 
-    int  rv        = 0;
-    bool is_daemon = false;
+    int   rv          = 0;
+    bool  is_daemon   = false;
+    char *config_file = NULL;
 
     init();
 
-    char *        opts           = ":hd:W;";
+    char *        opts           = "c::hd:W;";
     struct option long_options[] = {
         { "help", no_argument, NULL, 1 },
+        { "config", optional_argument, NULL, 'c' },
         { "daemon", required_argument, NULL, 1 },
         { NULL, 0, NULL, 0 },
     };
@@ -168,6 +170,11 @@ int main(int argc, char *argv[])
                     optopt);
             usage();
             exit(0);
+        case 'c':
+            if (argc == 3) {
+                config_file = strdup(argv[2]);
+            }
+            break;
         case '?':
         default:
             fprintf(stderr, "%s: option '-%c' is invalid: ignored\n", argv[0],
@@ -177,7 +184,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    if ((rv = read_neuron_config()) < 0) {
+    if (config_file == NULL) {
+        config_file = strdup("./neuron.yaml");
+    }
+
+    rv = read_neuron_config(config_file);
+    if (rv < 0) {
         log_error("Failed to get neuron configuration.");
         goto main_end;
     }
@@ -221,5 +233,6 @@ int main(int argc, char *argv[])
 
 main_end:
     uninit();
+    free(config_file);
     return rv;
 }

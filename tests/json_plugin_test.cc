@@ -9,17 +9,11 @@
 
 TEST(JsonPluginTest, AddPluginDecode)
 {
-    char *buf = (char *) "{\"kind\": 1, "
-                         "\"node_type\": 1, "
-                         "\"name\": \"plugin1\", "
-                         "\"lib_name\": \"lib1\" }";
+    char *                     buf = (char *) "{\"lib_name\": \"lib1\" }";
     neu_json_add_plugin_req_t *req = NULL;
 
     EXPECT_EQ(0, neu_json_decode_add_plugin_req(buf, &req));
 
-    EXPECT_EQ(1, req->kind);
-    EXPECT_EQ(1, req->node_type);
-    EXPECT_STREQ("plugin1", req->name);
     EXPECT_STREQ("lib1", req->lib_name);
 
     neu_json_decode_add_plugin_req_free(req);
@@ -35,24 +29,6 @@ TEST(JsonPluginTest, DeletePluginDecode)
     EXPECT_EQ(1, req->id);
 
     neu_json_decode_del_plugin_req_free(req);
-}
-
-TEST(JsonPluginTest, UpdatePluginDecode)
-{
-    char *buf = (char *) "{\"kind\": 2, "
-                         "\"node_type\": 2, "
-                         "\"name\": \"plugin1\", "
-                         "\"lib_name\": \"lib1\" }";
-    neu_json_update_plugin_req_t *req = NULL;
-
-    EXPECT_EQ(0, neu_json_decode_update_plugin_req(buf, &req));
-
-    EXPECT_EQ(2, req->kind);
-    EXPECT_EQ(2, req->node_type);
-    EXPECT_STREQ("plugin1", req->name);
-    EXPECT_STREQ("lib1", req->lib_name);
-
-    neu_json_decode_update_plugin_req_free(req);
 }
 
 TEST(JsonPluginTest, GetPluginEncode)

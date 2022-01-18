@@ -335,17 +335,12 @@ const char *neu_plugin_self_node_name(neu_plugin_t *plugin)
     return node_name;
 }
 
-intptr_t neu_system_add_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
-                               neu_node_type_e node_type,
-                               const char *    plugin_name,
-                               const char *    plugin_lib_name)
+intptr_t neu_system_add_plugin(neu_plugin_t *plugin,
+                               const char *  plugin_lib_name)
 {
     intptr_t                 errorcode      = -1;
     neu_cmd_add_plugin_lib_t add_plugin_cmd = { 0 };
 
-    add_plugin_cmd.plugin_kind     = kind;
-    add_plugin_cmd.node_type       = node_type;
-    add_plugin_cmd.plugin_name     = plugin_name;
     add_plugin_cmd.plugin_lib_name = plugin_lib_name;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_ADD_PLUGIN_LIB, add_plugin_cmd,

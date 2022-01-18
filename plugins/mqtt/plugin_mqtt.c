@@ -450,5 +450,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,
     .module_name  = "neuron-mqtt-plugin",
     .module_descr = "Neuron northbound MQTT communication plugin",
-    .intf_funs    = &plugin_intf_funs
+    .intf_funs    = &plugin_intf_funs,
+    .kind         = PLUGIN_KIND_SYSTEM,
+    .type         = NEU_NODE_TYPE_MQTT
 };

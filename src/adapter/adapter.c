@@ -174,8 +174,8 @@ static neu_persister_t *g_persister_singleton = NULL;
 
 static void persister_singleton_init()
 {
-    const char *persistence_dir = neu_config_get_value(
-        (char *) "./neuron.yaml", 2, (char *) "persistence", (char *) "dir");
+    const char *persistence_dir =
+        neu_config_get_value(2, (char *) "persistence", (char *) "dir");
     if (NULL == persistence_dir) {
         log_error("can't get persistence dir from config");
         exit(EXIT_FAILURE);
@@ -214,9 +214,6 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
         neu_persist_plugin_info_t *plugin_info    = iterator_get(&iter);
         plugin_id_t                plugin_id      = {};
         neu_cmd_add_plugin_lib_t   add_plugin_cmd = {
-            .node_type       = plugin_info->adapter_type,
-            .plugin_kind     = plugin_info->kind,
-            .plugin_name     = plugin_info->name,
             .plugin_lib_name = plugin_info->plugin_lib_name,
         };
 
@@ -1068,19 +1065,16 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_ADD_PLUGIN_LIB: {
-        ADAPTER_RESP_CODE(
-            adapter, cmd, intptr_t, neu_cmd_add_plugin_lib_t, rv,
-            NEU_REQRESP_ERR_CODE, p_result, {
-                plugin_id_t plugin_id;
-                ret = NEU_ERR_SUCCESS;
-                if (neu_manager_add_plugin_lib(adapter->manager, req_cmd,
-                                               &plugin_id) != 0) {
-                    ret = NEU_ERR_FAILURE;
-                } else {
-                    ADAPTER_SEND_PLUGIN_EVENT(adapter, rv,
-                                              MSG_EVENT_ADD_PLUGIN);
-                }
-            });
+        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_add_plugin_lib_t, rv,
+                          NEU_REQRESP_ERR_CODE, p_result, {
+                              plugin_id_t plugin_id;
+                              ret = neu_manager_add_plugin_lib(
+                                  adapter->manager, req_cmd, &plugin_id);
+                              if (ret == NEU_ERR_SUCCESS) {
+                                  ADAPTER_SEND_PLUGIN_EVENT(
+                                      adapter, rv, MSG_EVENT_ADD_PLUGIN);
+                              }
+                          });
         break;
     }
 

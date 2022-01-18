@@ -27,7 +27,9 @@
 
 #include "config.h"
 
-int neu_config_init(char *config_path)
+static char *config = NULL;
+
+int neu_config_init(const char *config_path)
 {
     FILE *file = fopen(config_path, "r");
 
@@ -37,7 +39,13 @@ int neu_config_init(char *config_path)
     }
 
     fclose(file);
+    config = strdup(config_path);
     return 0;
+}
+
+void neu_config_uninit()
+{
+    free(config);
 }
 
 static int find_first_key(yaml_parser_t *parser, char *key)
@@ -75,16 +83,16 @@ static int find_next_key(yaml_parser_t *parser, char *key)
     return find_first_key(parser, key);
 }
 
-char *neu_config_get_value(char *config_path, int n_key, char *key, ...)
+char *neu_config_get_value(int n_key, char *key, ...)
 {
     yaml_token_t  token   = { 0 };
     yaml_token_t  token_v = { 0 };
     yaml_parser_t parser  = { 0 };
     char *        result  = NULL;
-    FILE *        file    = fopen(config_path, "r");
+    FILE *        file    = fopen(config, "r");
 
     if (file == NULL) {
-        log_error("open config %s fail, error: %d", config_path, errno);
+        log_error("open config %s fail, error: %d", config, errno);
         return NULL;
     }
 

@@ -58,6 +58,8 @@ typedef struct neu_plugin_module {
     const char *                  module_name;
     const char *                  module_descr;
     const neu_plugin_intf_funs_t *intf_funs;
+    neu_node_type_e               type;
+    plugin_kind_e                 kind;
 } neu_plugin_module_t;
 
 inline static neu_plugin_common_t *
@@ -118,10 +120,8 @@ void          neu_plugin_response_trans_data(neu_plugin_t *       plugin,
 neu_node_id_t neu_plugin_self_node_id(neu_plugin_t *plugin);
 const char *  neu_plugin_self_node_name(neu_plugin_t *plugin);
 
-intptr_t neu_system_add_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
-                               neu_node_type_e node_type,
-                               const char *    plugin_name,
-                               const char *    plugin_lib_name);
+intptr_t neu_system_add_plugin(neu_plugin_t *plugin,
+                               const char *  plugin_lib_name);
 intptr_t neu_system_del_plugin(neu_plugin_t *plugin, plugin_id_t plugin_id);
 intptr_t neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
                                   neu_node_type_e node_type,

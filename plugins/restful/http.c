@@ -263,6 +263,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_DEVICE_TAG_NOT_EXIST:
     case NEU_ERR_DEVICE_TAG_TYPE_NOT_MATCH:
     case NEU_ERR_NODE_SETTING_INVALID:
+    case NEU_ERR_PLUGIN_LIBRARY_INFO_INVALID:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_PLUGIN_NAME_NOT_FOUND:
@@ -270,6 +271,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GRP_CONFIG_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
     case NEU_ERR_GRP_NOT_SUBSCRIBE:
+    case NEU_ERR_PLUGIN_LIBRARY_NOT_FOUND:
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:
@@ -280,6 +282,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_TAG_NAME_EXIST:
     case NEU_ERR_TAG_LIST_NOT_EXIST:
     case NEU_ERR_GRP_CONFIG_EXIST:
+    case NEU_ERR_PLUGIN_LIBRARY_NAME_CONFLICT:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:

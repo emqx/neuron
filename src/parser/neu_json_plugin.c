@@ -36,31 +36,18 @@ int neu_json_decode_add_plugin_req(char *                      buf,
 
     neu_json_add_plugin_req_t *req =
         calloc(1, sizeof(neu_json_add_plugin_req_t));
-    neu_json_elem_t req_elems[] = { {
-                                        .name = "node_type",
-                                        .t    = NEU_JSON_INT,
-                                    },
-                                    {
-                                        .name = "name",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "lib_name",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "kind",
-                                        .t    = NEU_JSON_INT,
-                                    } };
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "lib_name",
+            .t    = NEU_JSON_STR,
+        },
+    };
     ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
 
-    req->node_type = req_elems[0].v.val_int;
-    req->name      = req_elems[1].v.val_str;
-    req->lib_name  = req_elems[2].v.val_str;
-    req->kind      = req_elems[3].v.val_int;
+    req->lib_name = req_elems[0].v.val_str;
 
     *result = req;
     return ret;
@@ -75,7 +62,6 @@ decode_fail:
 void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req)
 {
 
-    free(req->name);
     free(req->lib_name);
 
     free(req);
@@ -199,56 +185,4 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
                                 NEU_JSON_ELEM_SIZE(resp_elems));
 
     return ret;
-}
-
-int neu_json_decode_update_plugin_req(char *                         buf,
-                                      neu_json_update_plugin_req_t **result)
-{
-    int ret = 0;
-
-    neu_json_update_plugin_req_t *req =
-        calloc(1, sizeof(neu_json_update_plugin_req_t));
-    neu_json_elem_t req_elems[] = { {
-                                        .name = "node_type",
-                                        .t    = NEU_JSON_INT,
-                                    },
-                                    {
-                                        .name = "name",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "lib_name",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "kind",
-                                        .t    = NEU_JSON_INT,
-                                    } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
-    if (ret != 0) {
-        goto decode_fail;
-    }
-
-    req->node_type = req_elems[0].v.val_int;
-    req->name      = req_elems[1].v.val_str;
-    req->lib_name  = req_elems[2].v.val_str;
-    req->kind      = req_elems[3].v.val_int;
-
-    *result = req;
-    return ret;
-
-decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
-    return -1;
-}
-
-void neu_json_decode_update_plugin_req_free(neu_json_update_plugin_req_t *req)
-{
-
-    free(req->name);
-    free(req->lib_name);
-
-    free(req);
 }

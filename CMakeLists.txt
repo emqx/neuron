@@ -182,6 +182,8 @@ if(NOT DISABLE_UT)
   add_subdirectory(tests)
 endif()
 
+
+install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION /etc/ld.so.conf.d)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
         DESTINATION include/neuron
         FILES_MATCHING

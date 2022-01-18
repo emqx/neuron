@@ -13,10 +13,12 @@ TEST(JsonTest, SetJwt)
     unsigned char public_key[4096] = { 0 };
     size_t        pub_key_len      = 0;
 
-    char *public_key_path = neu_config_get_value(
-        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "public_key");
-    char *private_key_path = neu_config_get_value(
-        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "private_key");
+    neu_config_init((char *) "./neuron.yaml");
+
+    char *public_key_path =
+        neu_config_get_value(2, (char *) "api", (char *) "public_key");
+    char *private_key_path =
+        neu_config_get_value(2, (char *) "api", (char *) "private_key");
 
     EXPECT_EQ(0, neu_jwt_init(public_key_path, private_key_path));
 
@@ -36,10 +38,11 @@ TEST(JsonTest, JwtValidate)
     size_t         pub_key_len      = 0;
     struct timeval expire_tv        = { 0 };
 
-    char *private_key_path = neu_config_get_value(
-        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "private_key");
-    char *public_key_path = neu_config_get_value(
-        (char *) "./neuron.yaml", 2, (char *) "api", (char *) "public_key");
+    neu_config_init((char *) "./neuron.yaml");
+    char *private_key_path =
+        neu_config_get_value(2, (char *) "api", (char *) "private_key");
+    char *public_key_path =
+        neu_config_get_value(2, (char *) "api", (char *) "public_key");
 
     EXPECT_EQ(0, neu_jwt_init(public_key_path, private_key_path));
     EXPECT_EQ(0, neu_jwt_new(&token));
