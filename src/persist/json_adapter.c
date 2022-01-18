@@ -143,6 +143,5 @@ void neu_json_decode_node_req_free(neu_json_node_req_t *req)
     }
 
     free(req->nodes);
-
     free(req);
 }

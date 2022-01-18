@@ -173,7 +173,7 @@ static neu_persister_t *g_persister_singleton = NULL;
 
 static void persister_singleton_init()
 {
-    const char *persistence_dir = neu_config_get_value(
+    char *persistence_dir = neu_config_get_value(
         (char *) "./neuron.yaml", 2, (char *) "persistence", (char *) "dir");
     if (NULL == persistence_dir) {
         log_error("can't get persistence dir from config");
