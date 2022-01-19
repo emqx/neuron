@@ -374,6 +374,11 @@ typedef struct neu_event_reply {
     void *           buf;
 } neu_event_reply_t;
 
+typedef struct neu_event_tags {
+    neu_node_id_t node_id;
+    char *        grp_config_name;
+} neu_event_tags_t;
+
 /**
  * definition enum and structure for neuron config
  */

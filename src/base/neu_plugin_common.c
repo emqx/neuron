@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "neu_errcodes.h"
 #include "neu_plugin.h"
 
 #define NEU_PLUGIN_MAGIC_NUMBER 0x43474d50 // a string "PMGC"
@@ -298,6 +299,56 @@ void neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
     write_req.data_val    = data;
 
     PLUGIN_SEND_CMD(plugin, NEU_REQRESP_WRITE_DATA, write_req, event_id)
+}
+
+static inline int plugin_notify_tags_event(neu_plugin_t *   plugin,
+                                           uint32_t         event_id,
+                                           neu_event_type_e type,
+                                           neu_node_id_t    node_id,
+                                           const char *     grp_config_name)
+{
+    neu_event_tags_t tags_event = {
+        .node_id         = node_id,
+        .grp_config_name = strdup(grp_config_name),
+    };
+
+    if (NULL == tags_event.grp_config_name) {
+        return NEU_ERR_ENOMEM;
+    }
+
+    neu_event_notify_t event = {
+        .event_id = event_id,
+        .type     = type,
+        .buf      = &tags_event,
+        .buf_len  = sizeof(tags_event),
+    };
+    neu_plugin_common_t *plugin_common = neu_plugin_to_plugin_common(plugin);
+    return plugin_common->adapter_callbacks->event_notify(
+        plugin_common->adapter, &event);
+}
+
+int neu_plugin_notify_event_add_tags(neu_plugin_t *plugin, uint32_t event_id,
+                                     neu_node_id_t node_id,
+                                     const char *  grp_config_name)
+{
+    return plugin_notify_tags_event(plugin, event_id, NEU_EVENT_ADD_TAGS,
+                                    node_id, grp_config_name);
+}
+
+int neu_plugin_notify_event_del_tags(neu_plugin_t *plugin, uint32_t event_id,
+                                     neu_node_id_t node_id,
+                                     const char *  grp_config_name)
+{
+    return plugin_notify_tags_event(plugin, event_id, NEU_EVENT_DEL_TAGS,
+                                    node_id, grp_config_name);
+}
+
+int neu_plugin_notify_event_update_tags(neu_plugin_t *plugin, uint32_t event_id,
+                                        neu_node_id_t node_id,
+                                        const char *  grp_config_name)
+{
+    return plugin_notify_tags_event(plugin, event_id, NEU_EVENT_UPDATE_TAGS,
+                                    node_id, grp_config_name);
 }
 
 void neu_plugin_response_trans_data(neu_plugin_t *       plugin,
