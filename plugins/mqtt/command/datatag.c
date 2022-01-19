@@ -167,10 +167,15 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         }
     }
 
+    int rv = 0;
     if (config != NULL) {
-        neu_system_update_group_config(plugin, req->node_id, new_config);
+        rv = neu_system_update_group_config(plugin, req->node_id, new_config);
     } else {
-        neu_system_add_group_config(plugin, req->node_id, new_config);
+        rv = neu_system_add_group_config(plugin, req->node_id, new_config);
+    }
+
+    if (0 != rv) {
+        code = rv;
     }
 
     error.error = code;
