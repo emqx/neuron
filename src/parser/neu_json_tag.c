@@ -275,15 +275,20 @@ int neu_json_decode_update_tags_req(char *                       buf,
     neu_json_update_tags_req_t *req =
         calloc(1, sizeof(neu_json_update_tags_req_t));
     neu_json_elem_t req_elems[] = { {
-        .name = "node_id",
-        .t    = NEU_JSON_INT,
-    } };
+                                        .name = "node_id",
+                                        .t    = NEU_JSON_INT,
+                                    },
+                                    {
+                                        .name = "group_config_name",
+                                        .t    = NEU_JSON_STR,
+                                    } };
     ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
 
-    req->node_id = req_elems[0].v.val_int;
+    req->node_id           = req_elems[0].v.val_int;
+    req->group_config_name = req_elems[1].v.val_str;
 
     req->n_tag = neu_json_decode_array_size(buf, "tags");
     req->tags  = calloc(req->n_tag, sizeof(neu_json_update_tags_req_tag_t));
@@ -347,6 +352,7 @@ void neu_json_decode_update_tags_req_free(neu_json_update_tags_req_t *req)
     }
 
     free(req->tags);
+    free(req->group_config_name);
 
     free(req);
 }
