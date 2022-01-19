@@ -91,8 +91,11 @@ void handle_add_tags(nng_aio *aio)
             }
 
             if (config != NULL) {
-                neu_system_update_group_config(plugin, req->node_id,
-                                               new_config);
+                int rv = neu_system_update_group_config(plugin, req->node_id,
+                                                        new_config);
+                if (0 != rv) {
+                    code = rv;
+                }
             }
 
             NEU_JSON_RESPONSE_ERROR(
