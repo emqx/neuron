@@ -355,6 +355,9 @@ typedef struct neu_response {
 typedef enum neu_event_type {
     NEU_EVENT_NOP,
     NEU_EVENT_STATUS,
+    NEU_EVENT_ADD_TAGS,
+    NEU_EVENT_UPDATE_TAGS,
+    NEU_EVENT_DEL_TAGS,
 } neu_event_type_e;
 
 typedef struct neu_event_notify {
