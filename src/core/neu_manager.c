@@ -1347,6 +1347,15 @@ static void manager_loop(void *arg)
         case MSG_EVENT_DEL_GRP_CONFIG:
             // fall through
 
+        case MSG_EVENT_ADD_TAGS:
+            // fall through
+
+        case MSG_EVENT_DEL_TAGS:
+            // fall through
+
+        case MSG_EVENT_UPDATE_TAGS:
+            // fall through
+
         case MSG_EVENT_ADD_PLUGIN:
             // fall through
 
