@@ -291,8 +291,11 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         }
     }
 
-    neu_system_update_group_config(plugin, req->node_id, new_config);
-    error.error = NEU_ERR_SUCCESS;
+    int rv = neu_system_update_group_config(plugin, req->node_id, new_config);
+    if (0 != rv) {
+        error.error = rv;
+    }
+
     neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
                               neu_json_encode_mqtt_resp, &result);
     return result;
