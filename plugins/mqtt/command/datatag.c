@@ -137,8 +137,9 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         new_config = neu_taggrp_cfg_clone(config);
     }
 
-    vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(new_config);
-    neu_err_code_e code = { 0 };
+    vector_t *     ids   = neu_taggrp_cfg_get_datatag_ids(new_config);
+    neu_err_code_e code  = { 0 };
+    bool           added = false;
 
     for (int i = 0; i < req->n_tag; i++) {
         if (!neu_tag_check_attribute(req->tags[i].attribute)) {
@@ -157,6 +158,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 
         if (neu_datatag_tbl_add(table, tag)) {
             vector_push_back(ids, &tag->id);
+            added = true;
         } else {
             log_warn_node(plugin,
                           "Add failed, tag name exists, uuid:%s, "
@@ -175,7 +177,14 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     }
 
     if (0 != rv) {
-        code = rv;
+        code  = rv;
+        added = false;
+    }
+
+    if (added) {
+        uint32_t event_id = neu_plugin_get_event_id(plugin);
+        neu_plugin_notify_event_add_tags(plugin, event_id, req->node_id,
+                                         req->group_config_name);
     }
 
     error.error = code;
@@ -207,7 +216,8 @@ char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return result;
     }
 
-    neu_err_code_e code = { 0 };
+    bool           updated = false;
+    neu_err_code_e code    = { 0 };
     for (int i = 0; i < req->n_tag; i++) {
         neu_datatag_t *tag = neu_datatag_tbl_get(table, req->tags[i].id);
 
@@ -237,7 +247,15 @@ char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           req->tags[i].name);
             code = NEU_ERR_TAG_NAME_EXIST;
             free(tag);
+        } else {
+            updated = true;
         }
+    }
+
+    if (updated) {
+        uint32_t event_id = neu_plugin_get_event_id(plugin);
+        neu_plugin_notify_event_update_tags(plugin, event_id, req->node_id,
+                                            req->group_config_name);
     }
 
     error.error = code;
@@ -274,7 +292,8 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return result;
     }
 
-    new_config = neu_taggrp_cfg_clone(config);
+    new_config   = neu_taggrp_cfg_clone(config);
+    bool deleted = false;
 
     for (int i = 0; i < req->n_id; i++) {
         if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
@@ -288,12 +307,21 @@ char *command_delete_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                     break;
                 }
             }
+
+            deleted = true;
         }
     }
 
     int rv = neu_system_update_group_config(plugin, req->node_id, new_config);
     if (0 != rv) {
         error.error = rv;
+        deleted     = false;
+    }
+
+    if (deleted) {
+        uint32_t event_id = neu_plugin_get_event_id(plugin);
+        neu_plugin_notify_event_del_tags(plugin, event_id, req->node_id,
+                                         req->group_config_name);
     }
 
     neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
