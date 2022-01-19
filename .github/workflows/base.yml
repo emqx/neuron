@@ -7,6 +7,9 @@ concurrency:
 ## Update the base image every day
 on:
   workflow_dispatch:
+  release:
+    types:
+      - published
   schedule:
     ## In UTC
     - cron: '0 0 * * *'
