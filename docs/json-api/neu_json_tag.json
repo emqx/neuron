@@ -57,6 +57,7 @@
 	},
 	"update_tags_req": {
 		"node_id": 4,
+		"group_config_name": "test-group",
 		"tags": [
 			{
 				"id": 4,

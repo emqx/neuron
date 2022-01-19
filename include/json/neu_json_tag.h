@@ -95,6 +95,7 @@ typedef struct {
 typedef struct {
     int                             n_tag;
     neu_json_update_tags_req_tag_t *tags;
+    char *                          group_config_name;
     int64_t                         node_id;
 } neu_json_update_tags_req_t;
 
