@@ -122,7 +122,8 @@ void handle_del_tags(nng_aio *aio)
                 return;
             }
 
-            new_config = neu_taggrp_cfg_clone(config);
+            neu_err_code_e code = { 0 };
+            new_config          = neu_taggrp_cfg_clone(config);
 
             for (int i = 0; i < req->n_id; i++) {
                 if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
@@ -140,11 +141,14 @@ void handle_del_tags(nng_aio *aio)
                 }
             }
 
-            neu_system_update_group_config(plugin, req->node_id, new_config);
+            int rv = neu_system_update_group_config(plugin, req->node_id,
+                                                    new_config);
+            if (0 != rv) {
+                code = rv;
+            }
 
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
-                http_response(aio, NEU_ERR_SUCCESS, result_error);
-            })
+            NEU_JSON_RESPONSE_ERROR(
+                code, { http_response(aio, NEU_ERR_SUCCESS, result_error); })
         })
 }
 
