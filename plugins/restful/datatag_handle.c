@@ -59,8 +59,9 @@ void handle_add_tags(nng_aio *aio)
                 new_config = neu_taggrp_cfg_clone(config);
             }
 
-            vector_t *     ids  = neu_taggrp_cfg_get_datatag_ids(new_config);
-            neu_err_code_e code = { 0 };
+            vector_t *     ids   = neu_taggrp_cfg_get_datatag_ids(new_config);
+            neu_err_code_e code  = { 0 };
+            bool           added = false;
 
             for (int i = 0; i < req->n_tag; i++) {
                 neu_datatag_t *tag =
@@ -80,6 +81,7 @@ void handle_add_tags(nng_aio *aio)
 
                 if (neu_datatag_tbl_add(table, tag)) {
                     vector_push_back(ids, &tag->id);
+                    added = true;
                 } else {
                     log_warn_node(plugin,
                                   "Add failed, tag name exits, node_id:%d, "
@@ -94,8 +96,15 @@ void handle_add_tags(nng_aio *aio)
                 int rv = neu_system_update_group_config(plugin, req->node_id,
                                                         new_config);
                 if (0 != rv) {
-                    code = rv;
+                    code  = rv;
+                    added = false;
                 }
+            }
+
+            if (added) {
+                uint32_t event_id = neu_plugin_get_event_id(plugin);
+                neu_plugin_notify_event_add_tags(plugin, event_id, req->node_id,
+                                                 req->group_config_name);
             }
 
             NEU_JSON_RESPONSE_ERROR(
@@ -124,6 +133,7 @@ void handle_del_tags(nng_aio *aio)
 
             neu_err_code_e code = { 0 };
             new_config          = neu_taggrp_cfg_clone(config);
+            bool deleted        = false;
 
             for (int i = 0; i < req->n_id; i++) {
                 if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
@@ -138,13 +148,22 @@ void handle_del_tags(nng_aio *aio)
                             break;
                         }
                     }
+
+                    deleted = true;
                 }
             }
 
             int rv = neu_system_update_group_config(plugin, req->node_id,
                                                     new_config);
             if (0 != rv) {
-                code = rv;
+                code    = rv;
+                deleted = false;
+            }
+
+            if (deleted) {
+                uint32_t event_id = neu_plugin_get_event_id(plugin);
+                neu_plugin_notify_event_del_tags(plugin, event_id, req->node_id,
+                                                 req->group_config_name);
             }
 
             NEU_JSON_RESPONSE_ERROR(
@@ -167,7 +186,8 @@ void handle_update_tags(nng_aio *aio)
                 return;
             }
 
-            neu_err_code_e code = { 0 };
+            bool           updated = false;
+            neu_err_code_e code    = { 0 };
             for (int i = 0; i < req->n_tag; i++) {
                 neu_datatag_t *tag =
                     neu_datatag_tbl_get(table, req->tags[i].id);
@@ -200,7 +220,15 @@ void handle_update_tags(nng_aio *aio)
                                   req->tags[i].name);
                     code = NEU_ERR_TAG_NAME_EXIST;
                     free(tag);
+                } else {
+                    updated = true;
                 }
+            }
+
+            if (updated) {
+                uint32_t event_id = neu_plugin_get_event_id(plugin);
+                neu_plugin_notify_event_update_tags(
+                    plugin, event_id, req->node_id, req->group_config_name);
             }
 
             NEU_JSON_RESPONSE_ERROR(
