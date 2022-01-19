@@ -55,6 +55,39 @@ static inline bool ends_with(const char *str, const char *suffix)
     return m >= n && !strncmp(str + m - n, suffix, n);
 }
 
+typedef struct neu_persister {
+    const char *persist_dir;
+    const char *adapters_fname;
+    const char *plugins_fname;
+} neu_persister_t;
+
+const char *neu_persister_get_persist_dir(neu_persister_t *persister)
+{
+    if (persister == NULL) {
+        return NULL;
+    }
+
+    return persister->persist_dir;
+}
+
+const char *neu_persister_get_adapters_fname(neu_persister_t *persister)
+{
+    if (persister == NULL) {
+        return NULL;
+    }
+
+    return persister->adapters_fname;
+}
+
+const char *neu_persister_get_plugins_fname(neu_persister_t *persister)
+{
+    if (persister == NULL) {
+        return NULL;
+    }
+
+    return persister->plugins_fname;
+}
+
 /**
  * Escape special characters in path string,
  *    '%' -> '%%', '/' => '%-', '.' -> '%.'
@@ -447,13 +480,7 @@ static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
     return rv;
 }
 
-typedef struct neu_persister {
-    const char *persist_dir;
-    const char *adapters_fname;
-    const char *plugins_fname;
-} neu_persister_t;
-
-neu_persister_t *neu_persister_create(char *dir_name)
+neu_persister_t *neu_persister_create(const char *dir_name)
 {
     char dir_path[128] = { 0 };
     int  rv            = snprintf(dir_path, 128, "%s", dir_name);
@@ -589,8 +616,8 @@ int neu_persister_load_adapters(neu_persister_t *persister,
 
     neu_json_node_req_t *node_req = NULL;
     rv = neu_json_decode_node_req(json_str, &node_req);
-    free(json_str);
     if (rv != 0) {
+        free(json_str);
         return rv;
     }
 
@@ -599,14 +626,17 @@ int neu_persister_load_adapters(neu_persister_t *persister,
         node_req->nodes, node_req->n_node, node_req->n_node,
         sizeof(neu_persist_adapter_info_t));
     if (vec == NULL) {
+        free(json_str);
         neu_json_decode_node_req_free(node_req);
         rv = -1;
         goto load_adapters_exit;
     }
 
-    *adapter_infos   = vec;
-    node_req->n_node = 0;
-    node_req->nodes  = NULL;
+    *adapter_infos = vec;
+
+    free(json_str);
+    free(node_req);
+    return 0;
 
 load_adapters_exit:
     neu_json_decode_node_req_free(node_req);
@@ -653,8 +683,8 @@ int neu_persister_load_plugins(neu_persister_t *persister,
 
     neu_json_plugin_req_t *plugin_req = NULL;
     rv = neu_json_decode_plugin_req(json_str, &plugin_req);
-    free(json_str);
     if (rv != 0) {
+        free(json_str);
         return rv;
     }
 
@@ -667,10 +697,11 @@ int neu_persister_load_plugins(neu_persister_t *persister,
         goto load_plugins_exit;
     }
 
-    *plugin_infos        = vec;
-    plugin_req->n_plugin = 0;
-    plugin_req->plugins  = NULL;
+    *plugin_infos = vec;
 
+    free(json_str);
+    free(plugin_req);
+    return 0;
 load_plugins_exit:
     neu_json_decode_plugin_req_free(plugin_req);
     return rv;
@@ -682,8 +713,8 @@ int neu_persister_store_datatags(neu_persister_t *persister,
 {
     char datatag_path[128] = { 0 };
 
-    int rv = snprintf(datatag_path, 128, "%s/persist/%s",
-                      persister->persist_dir, adapter_name);
+    int rv = snprintf(datatag_path, 128, "%s/%s", persister->persist_dir,
+                      adapter_name);
     if (sizeof(datatag_path) == rv) {
         log_error("datatag_path exceeds maximum value");
         return -1;
@@ -725,7 +756,7 @@ int neu_persister_load_datatags(neu_persister_t *persister,
     char *datatags          = NULL;
     char  datatag_file[128] = { 0 };
 
-    int rv = snprintf(datatag_file, 128, "%s/persist/%s/datatags.json",
+    int rv = snprintf(datatag_file, 128, "%s/%s/datatags.json",
                       persister->persist_dir, adapter_name);
     if (sizeof(datatag_file) == rv) {
         log_error("datatg_file exceeds maximum value");
@@ -740,6 +771,7 @@ int neu_persister_load_datatags(neu_persister_t *persister,
     neu_json_datatag_req_t *datatag_req = NULL;
     rv = neu_json_decode_datatag_req(datatags, &datatag_req);
     if (rv != 0) {
+        free(datatags);
         return rv;
     }
 
@@ -747,14 +779,15 @@ int neu_persister_load_datatags(neu_persister_t *persister,
         datatag_req->tags, datatag_req->n_tag, datatag_req->n_tag,
         sizeof(neu_persist_datatag_info_t));
     if (vec == NULL) {
+        free(datatags);
+        neu_json_decode_datatag_req_free(datatag_req);
         return -1;
     }
 
-    *datatag_infos     = vec;
-    datatag_req->n_tag = 0;
-    datatag_req->tags  = NULL;
+    *datatag_infos = vec;
 
-    neu_json_decode_datatag_req_free(datatag_req);
+    free(datatags);
+    free(datatag_req);
     return 0;
 }
 
@@ -764,8 +797,8 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
 {
     char subs_path[128] = { 0 };
 
-    int rv = snprintf(subs_path, 128, "%s/persist/%s", persister->persist_dir,
-                      adapter_name);
+    int rv =
+        snprintf(subs_path, 128, "%s/%s", persister->persist_dir, adapter_name);
     if (sizeof(subs_path) == rv) {
         log_error("subs_path exceeds maximum value");
         return -1;
@@ -805,7 +838,7 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
     char *subs = NULL;
 
     char subs_file[128] = { 0 };
-    int  rv = snprintf(subs_file, 128, "%s/persist/%s/subscriptions.json",
+    int  rv             = snprintf(subs_file, 128, "%s/%s/subscriptions.json",
                       persister->persist_dir, adapter_name);
     if (sizeof(subs_file) == rv) {
         log_error("subs_file exceeds maximum value");
@@ -820,6 +853,7 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
     neu_json_subscriptions_req_t *subs_req = NULL;
     rv = neu_json_decode_subscriptions_req(subs, &subs_req);
     if (rv != 0) {
+        free(subs);
         return rv;
     }
 
@@ -828,14 +862,15 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
         subs_req->n_subscription, sizeof(neu_persist_subscription_info_t));
 
     if (vec == NULL) {
+        free(subs);
+        neu_json_decode_subscriptions_req_free(subs_req);
         return -1;
     }
 
-    *subscription_infos      = vec;
-    subs_req->n_subscription = 0;
-    subs_req->subscriptions  = NULL;
+    *subscription_infos = vec;
 
-    neu_json_decode_subscriptions_req_free(subs_req);
+    free(subs);
+    free(subs_req);
     return 0;
 }
 
