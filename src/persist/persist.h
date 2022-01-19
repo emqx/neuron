@@ -65,11 +65,11 @@ static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
 
 /**
  * Persister, provide methods to persist data */
-typedef struct neu_persister {
-    char *persist_dir;
-    char *adapters_fname;
-    char *plugins_fname;
-} neu_persister_t;
+typedef struct neu_persister neu_persister_t;
+
+char *neu_persister_get_peisister_dir(neu_persister_t *persister);
+char *neu_persister_get_adapters_fname(neu_persister_t *persister);
+char *neu_persister_get_plugins_fname(neu_persister_t *persister);
 
 /**
  * Create persister.

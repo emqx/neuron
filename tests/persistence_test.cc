@@ -4,8 +4,11 @@
 
 TEST(PersistenceAdapterTest, Adapter)
 {
-    char *           dir_name  = strdup("./persistence");
-    neu_persister_t *persister = neu_persister_create(dir_name);
+    char *           dir_name    = strdup("./persistence");
+    neu_persister_t *persister   = neu_persister_create(dir_name);
+    char *           persist_dir = neu_persister_get_peisister_dir(persister);
+    char *adapters_fname         = neu_persister_get_adapters_fname(persister);
+    char *plugins_fname          = neu_persister_get_plugins_fname(persister);
 
     neu_json_node_req_node_t node1 = { (char *) "sample-driver-adapter", 1,
                                        (char *) "sample-drv-plugin", 1 };
@@ -62,9 +65,9 @@ TEST(PersistenceAdapterTest, Adapter)
     vector_free(vec);
     free(dir_name);
 
-    free(persister->persist_dir);
-    free(persister->adapters_fname);
-    free(persister->plugins_fname);
+    free((char *) persist_dir);
+    free((char *) adapters_fname);
+    free((char *) plugins_fname);
     free(persister);
 
     free(req);
@@ -72,8 +75,11 @@ TEST(PersistenceAdapterTest, Adapter)
 
 TEST(PersistencePluginTest, Plugin)
 {
-    char *           dir_name  = strdup("./persistence");
-    neu_persister_t *persister = neu_persister_create(dir_name);
+    char *           dir_name    = strdup("./persistence");
+    neu_persister_t *persister   = neu_persister_create(dir_name);
+    char *           persist_dir = neu_persister_get_peisister_dir(persister);
+    char *adapters_fname         = neu_persister_get_adapters_fname(persister);
+    char *plugins_fname          = neu_persister_get_plugins_fname(persister);
 
     neu_json_plugin_req_plugin_t plugin1 = { (char *) "sample-drv-plugin", 1,
                                              (char *) "libplugin-sample-drv.so",
@@ -130,17 +136,20 @@ TEST(PersistencePluginTest, Plugin)
     vector_free(vec);
 
     free(req);
-    free(persister->persist_dir);
-    free(persister->adapters_fname);
-    free(persister->plugins_fname);
+    free((char *) persist_dir);
+    free((char *) adapters_fname);
+    free((char *) plugins_fname);
     free(persister);
     free(dir_name);
 }
 
 TEST(PersistenceDatatagTest, Datatag)
 {
-    char *           dir_name  = strdup("./persistence");
-    neu_persister_t *persister = neu_persister_create(dir_name);
+    char *           dir_name    = strdup("./persistence");
+    neu_persister_t *persister   = neu_persister_create(dir_name);
+    char *           persist_dir = neu_persister_get_peisister_dir(persister);
+    char *adapters_fname         = neu_persister_get_adapters_fname(persister);
+    char *plugins_fname          = neu_persister_get_plugins_fname(persister);
 
     neu_json_datatag_req_tag_t tag1 = { (char *) "1!400001", (char *) "modbus1",
                                         3, 1 };
@@ -197,9 +206,9 @@ TEST(PersistenceDatatagTest, Datatag)
     vector_free(vec);
     free(req);
 
-    free(persister->adapters_fname);
-    free(persister->persist_dir);
-    free(persister->plugins_fname);
+    free((char *) persist_dir);
+    free((char *) adapters_fname);
+    free((char *) plugins_fname);
     free(persister);
 
     free(dir_name);
@@ -207,8 +216,11 @@ TEST(PersistenceDatatagTest, Datatag)
 
 TEST(PersistenceSubscriptionTest, Subscription)
 {
-    char *           dir_name  = strdup("./persistence");
-    neu_persister_t *persister = neu_persister_create(dir_name);
+    char *           dir_name    = strdup("./persistence");
+    neu_persister_t *persister   = neu_persister_create(dir_name);
+    char *           persist_dir = neu_persister_get_peisister_dir(persister);
+    char *adapters_fname         = neu_persister_get_adapters_fname(persister);
+    char *plugins_fname          = neu_persister_get_plugins_fname(persister);
 
     neu_json_subscriptions_req_subscription_t sub1 = {
         (char *) "config_drv_sample", (char *) "sample-app-adapter", 2000,
@@ -273,9 +285,9 @@ TEST(PersistenceSubscriptionTest, Subscription)
     vector_free(subs);
     free(dir_name);
 
-    free(persister->adapters_fname);
-    free(persister->persist_dir);
-    free(persister->plugins_fname);
+    free((char *) persist_dir);
+    free((char *) adapters_fname);
+    free((char *) plugins_fname);
     free(persister);
 
     free(req);

@@ -48,6 +48,39 @@
 
 #define PATH_MAX_SIZE 128
 
+typedef struct neu_persister {
+    char *persist_dir;
+    char *adapters_fname;
+    char *plugins_fname;
+};
+
+char *neu_persister_get_peisister_dir(neu_persister_t *persister)
+{
+    if (persister == NULL) {
+        return NULL;
+    }
+
+    return (const char *) persister->persist_dir;
+}
+
+char *neu_persister_get_adapters_fname(neu_persister_t *persister)
+{
+    if (persister == NULL) {
+        return NULL;
+    }
+
+    return (const char *) persister->adapters_fname;
+}
+
+char *neu_persister_get_plugins_fname(neu_persister_t *persister)
+{
+    if (persister == NULL) {
+        return NULL;
+    }
+
+    return (const char *) persister->plugins_fname;
+}
+
 /**
  * Escape special characters in path string,
  *    '%' -> '%%', '/' => '%-', '.' -> '%.'
@@ -153,20 +186,11 @@ static int path_cat_escaped(char *dst, size_t len, size_t size, const char *src)
 
 static int create_dir(char *dir_name)
 {
-    DIR *dir = opendir(dir_name);
-    if (dir == NULL) {
-        int rv = mkdir(dir_name, 0777);
-        log_error("========%d,%d", rv, errno);
-        if (rv != 0 && EEXIST == errno) {
-            log_error("failed to create directory");
-            return rv;
-        }
-        return rv;
-    } else {
-        log_error("success to create directory");
-        closedir(dir);
+    int rv = mkdir(dir_name, 0777);
+    if (0 != rv && EEXIST == errno) {
+        rv = 0;
     }
-    return 0;
+    return rv;
 }
 
 static inline int ensure_file_exist(const char *name,
