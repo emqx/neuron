@@ -1423,6 +1423,24 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 
     log_info("Get event notify from plugin");
     switch (event->type) {
+    case NEU_EVENT_ADD_TAGS: {
+        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_ADD_TAGS, event->buf,
+                         event->buf_len);
+        break;
+    }
+
+    case NEU_EVENT_UPDATE_TAGS: {
+        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UPDATE_TAGS, event->buf,
+                         event->buf_len);
+        break;
+    }
+
+    case NEU_EVENT_DEL_TAGS: {
+        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_ADD_TAGS, event->buf,
+                         event->buf_len);
+        break;
+    }
+
     default:
         break;
     }
