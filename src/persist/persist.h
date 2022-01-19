@@ -43,7 +43,8 @@ static inline void neu_persist_adapter_infos_free(vector_t *adapter_infos)
 {
     VECTOR_FOR_EACH(adapter_infos, iter)
     {
-        neu_persist_adapter_info_t *p = iterator_get(&iter);
+        neu_persist_adapter_info_t *p =
+            (neu_persist_adapter_info_t *) iterator_get(&iter);
         free(p->name);
         free(p->plugin_name);
     }
@@ -54,7 +55,8 @@ static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
 {
     VECTOR_FOR_EACH(plugin_infos, iter)
     {
-        neu_persist_plugin_info_t *p = iterator_get(&iter);
+        neu_persist_plugin_info_t *p =
+            (neu_persist_plugin_info_t *) iterator_get(&iter);
         free(p->name);
         free(p->plugin_lib_name);
     }
@@ -66,8 +68,9 @@ neu_persist_group_config_infos_free(vector_t *group_config_infos)
 {
     VECTOR_FOR_EACH(group_config_infos, iter)
     {
-        neu_persist_group_config_info_t *p         = iterator_get(&iter);
-        char **                          tag_names = p->datatag_names;
+        neu_persist_group_config_info_t *p =
+            (neu_persist_group_config_info_t *) iterator_get(&iter);
+        char **tag_names = p->datatag_names;
         for (int i = 0; i < p->n_datatag_name; ++i) {
             free(tag_names[i]);
         }
@@ -82,11 +85,15 @@ neu_persist_group_config_infos_free(vector_t *group_config_infos)
  * Persister, provide methods to persist data */
 typedef struct neu_persister neu_persister_t;
 
+const char *neu_persister_get_persist_dir(neu_persister_t *persister);
+const char *neu_persister_get_adapters_fname(neu_persister_t *persister);
+const char *neu_persister_get_plugins_fname(neu_persister_t *persister);
+
 /**
  * Create persister.
  * @return Pointer to heap allocated neu_persister_t on success, NULL otherwise.
  */
-neu_persister_t *neu_persister_create();
+neu_persister_t *neu_persister_create(const char *dir_name);
 /**
  * Destroy perister.
  * @param persister                 persiter object to destroy.
