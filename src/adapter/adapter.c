@@ -290,8 +290,8 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
 
         rv = neu_manager_add_grp_config(adapter->manager, &cmd);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        log_info("%s load group config %s interval:%d", adapter->name,
-                 p->group_config_name, p->read_interval);
+        log_info("%s %s load group config %s interval:%d", adapter->name,
+                 ok_or_err, p->group_config_name, p->read_interval);
         if (0 != rv) {
             neu_taggrp_cfg_free(grp_config);
             break;
