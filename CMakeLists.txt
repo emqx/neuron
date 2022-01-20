@@ -135,7 +135,6 @@ set(NEURON_BASE_SOURCES
     src/connection/tcp_client.c
     src/connection/tcp_server.c
     src/connection/connection.c
-    src/connection/mqtt_c_client.c
     src/connection/mqtt_client_intf.c
     src/event/event_linux.c
     src/event/event_unix.c
@@ -153,11 +152,16 @@ set(NEURON_BASE_SOURCES
     src/config.c)
 
 if(USE_NNG_MQTT)
-    message("-- USE_NNG_MQTT is defined")
-    add_definitions(-DUSE_NNG_MQTT)
-    set(NEURON_BASE_SOURCES 
-        ${NEURON_BASE_SOURCES}
-        src/connection/mqtt_nng_client.c)
+  message("-- USE_NNG_MQTT is defined")
+  add_definitions(-DUSE_NNG_MQTT)
+  set(NEURON_BASE_SOURCES 
+    ${NEURON_BASE_SOURCES}
+      src/connection/mqtt_nng_client.c)
+else()
+  message("-- USE_NNG_MQTT not defined")
+  set(NEURON_BASE_SOURCES 
+    ${NEURON_BASE_SOURCES}
+      src/connection/mqtt_c_client.c)
 endif()
 
 set(NEURON_BASE_INCLUDE_DIRECTORIES include src)
@@ -167,12 +171,13 @@ target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
 target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
 target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
-target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc yaml jwt
-                      ${CMAKE_THREAD_LIBS_INIT})
 
 if(USE_NNG_MQTT)
   target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto nng)
 endif()
+
+target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc yaml jwt
+                      ${CMAKE_THREAD_LIBS_INIT})
 
 #copy file for run and unit test
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR})
