@@ -263,12 +263,69 @@ static int persister_singleton_load_setting(neu_adapter_t *adapter,
     return rv;
 }
 
+static int persister_singleton_load_datatags(neu_adapter_t *      adapter,
+                                             const char *         adapter_name,
+                                             neu_taggrp_config_t *grp_config,
+                                             neu_datatag_table_t *tag_tbl)
+{
+    neu_persister_t *persister = persister_singleton_get();
+
+    const char *grp_config_name = neu_taggrp_cfg_get_name(grp_config);
+    vector_t *  datatag_infos   = NULL;
+    int         rv = neu_persister_load_datatags(persister, adapter_name,
+                                         grp_config_name, &datatag_infos);
+    if (0 != rv) {
+        const char *fail_or_ignore = "fail";
+        if (NEU_ERR_ENOENT == rv) {
+            // ignore no datatags
+            rv             = 0;
+            fail_or_ignore = "ignore";
+        }
+        log_error("%s %s load datatags of adapter:%s grp:%s", adapter->name,
+                  fail_or_ignore, adapter_name, grp_config_name);
+        return rv;
+    }
+
+    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    VECTOR_FOR_EACH(datatag_infos, iter)
+    {
+        neu_persist_datatag_info_t *p = iterator_get(&iter);
+        neu_datatag_t *             tag =
+            neu_datatag_alloc(p->attribute, p->type, p->address, p->name);
+        if (NULL == tag) {
+            rv = NEU_ERR_ENOMEM;
+            break;
+        }
+
+        if (neu_datatag_tbl_add(tag_tbl, tag)) {
+            if (0 != vector_push_back(ids, &tag->id)) {
+                rv = NEU_ERR_ENOMEM;
+                break;
+            }
+        } else {
+            neu_datatag_free(tag);
+        }
+    }
+
+    neu_persist_datatag_infos_free(datatag_infos);
+
+    return rv;
+}
+
 static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
                                                  const char *   adapter_name,
                                                  neu_node_id_t  node_id)
 {
     vector_t *       group_config_infos = NULL;
     neu_persister_t *persister          = persister_singleton_get();
+
+    neu_datatag_table_t *tag_tbl =
+        neu_manager_get_datatag_tbl(adapter->manager, node_id);
+    if (NULL == tag_tbl) {
+        log_error("%s fail get datatag table of %s", adapter->name,
+                  adapter_name);
+        return NEU_ERR_EINTERNAL;
+    }
 
     int rv = neu_persister_load_group_configs(persister, adapter_name,
                                               &group_config_infos);
@@ -289,6 +346,13 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
         }
         neu_taggrp_cfg_set_interval(grp_config, p->read_interval);
 
+        rv = persister_singleton_load_datatags(adapter, adapter_name,
+                                               grp_config, tag_tbl);
+        if (0 != rv) {
+            neu_taggrp_cfg_free(grp_config);
+            break;
+        }
+
         neu_cmd_add_grp_config_t cmd = {
             .node_id    = node_id,
             .grp_config = grp_config,
@@ -302,8 +366,6 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
             neu_taggrp_cfg_free(grp_config);
             break;
         }
-
-        // TODO: add tags
     }
 
     neu_persist_group_config_infos_free(group_config_infos);
