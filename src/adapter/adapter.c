@@ -472,6 +472,39 @@ static int persister_singleton_handle_grp_config(neu_adapter_t *adapter,
     return rv;
 }
 
+static int persister_singleton_handle_datatags(neu_adapter_t *adapter,
+                                               neu_node_id_t  node_id,
+                                               const char *   grp_config_name)
+{
+    neu_persister_t *persister    = persister_singleton_get();
+    char *           adapter_name = NULL;
+    int rv = neu_manager_get_node_name_by_id(adapter->manager, node_id,
+                                             &adapter_name);
+    if (0 != rv) {
+        return rv;
+    }
+
+    vector_t *datatag_infos = NULL;
+    rv = neu_manager_get_persist_datatag_infos(adapter->manager, node_id,
+                                               grp_config_name, &datatag_infos);
+    if (0 != rv) {
+        log_error("%s fail get persist datatag infos", adapter->name);
+        free(adapter_name);
+        return rv;
+    }
+
+    rv = neu_persister_store_datatags(persister, adapter_name, grp_config_name,
+                                      datatag_infos);
+    if (0 != rv) {
+        log_error("%s fail store adapter:% grp:%s datatag infos", adapter_name,
+                  grp_config_name);
+    }
+
+    neu_persist_datatag_infos_free(datatag_infos);
+    free(adapter_name);
+    return rv;
+}
+
 neu_plugin_running_state_e
 neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 {
@@ -669,6 +702,20 @@ static void adapter_loop(void *arg)
             persister_singleton_handle_grp_config(
                 adapter, pay_msg_type, cmd->node_id, cmd->config_name);
             free(cmd->config_name);
+            break;
+        }
+
+        case MSG_EVENT_ADD_TAGS:
+            // fall through
+
+        case MSG_EVENT_UPDATE_TAGS:
+            // fall through
+
+        case MSG_EVENT_DEL_TAGS: {
+            neu_event_tags_t *event = msg_get_buf_ptr(pay_msg);
+            persister_singleton_handle_datatags(adapter, event->node_id,
+                                                event->grp_config_name);
+            free(event->grp_config_name);
             break;
         }
 
