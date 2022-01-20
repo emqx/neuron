@@ -18,14 +18,14 @@ static void sig_handle(int sig)
     run = false;
 }
 
-static uint8_t  coil[1024]      = { 0 };
-static uint8_t  input[1024]     = { 0 };
-static uint16_t input_reg[1024] = { 0 };
-static uint16_t hold_reg[1024]  = { 0 };
+static uint8_t  coil[65535]      = { 0 };
+static uint8_t  input[65535]     = { 0 };
+static uint16_t input_reg[65535] = { 0 };
+static uint16_t hold_reg[65535]  = { 0 };
 
 void input_init()
 {
-    for (uint32_t i = 0; i < 1024; i++) {
+    for (uint32_t i = 0; i < 65535; i++) {
         if (i % 2 == 0) {
             input[i] = 0;
         } else {
@@ -33,7 +33,7 @@ void input_init()
         }
     }
 
-    for (uint32_t i = 0; i < 1024; i++) {
+    for (uint32_t i = 0; i < 65535; i++) {
         input_reg[i] = (uint16_t) i;
     }
 }
