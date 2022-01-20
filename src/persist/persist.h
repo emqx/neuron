@@ -81,6 +81,18 @@ neu_persist_group_config_infos_free(vector_t *group_config_infos)
     vector_free(group_config_infos);
 }
 
+static inline void neu_persist_datatag_infos_free(vector_t *datatag_infos)
+{
+    VECTOR_FOR_EACH(datatag_infos, iter)
+    {
+        neu_persist_datatag_info_t *p =
+            (neu_persist_datatag_info_t *) iterator_get(&iter);
+        free(p->name);
+        free(p->address);
+    }
+    vector_free(datatag_infos);
+}
+
 /**
  * Persister, provide methods to persist data */
 typedef struct neu_persister neu_persister_t;
