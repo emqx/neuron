@@ -149,6 +149,7 @@ TEST(PersistenceDatatagTest, Datatag)
     neu_persister_t *persister   = neu_persister_create(dir_name);
     const char *     persist_dir = neu_persister_get_persist_dir(persister);
     const char *adapters_fname   = neu_persister_get_adapters_fname(persister);
+    const char *grp_config_name  = "test-group";
     const char *plugins_fname    = neu_persister_get_plugins_fname(persister);
 
     neu_json_datatag_req_tag_t tag1 = { (char *) "1!400001", (char *) "modbus1",
@@ -171,10 +172,14 @@ TEST(PersistenceDatatagTest, Datatag)
         req->tags, req->n_tag, req->n_tag, sizeof(neu_json_datatag_req_tag_t));
 
     char *adapter_name = strdup("adapter_modbus");
-    EXPECT_EQ(0, neu_persister_store_datatags(persister, adapter_name, vec));
+    EXPECT_EQ(0,
+              neu_persister_store_datatags(persister, adapter_name,
+                                           grp_config_name, vec));
 
     vector_t *tags = NULL;
-    EXPECT_EQ(0, neu_persister_load_datatags(persister, adapter_name, &tags));
+    EXPECT_EQ(0,
+              neu_persister_load_datatags(persister, adapter_name,
+                                          grp_config_name, &tags));
     VECTOR_FOR_EACH(tags, iter)
     {
         neu_json_datatag_req_tag_t *info =
@@ -220,6 +225,7 @@ TEST(PersistenceSubscriptionTest, Subscription)
     neu_persister_t *persister   = neu_persister_create(dir_name);
     const char *     persist_dir = neu_persister_get_persist_dir(persister);
     const char *adapters_fname   = neu_persister_get_adapters_fname(persister);
+    const char *grp_config_name  = "test-group";
     const char *plugins_fname    = neu_persister_get_plugins_fname(persister);
 
     neu_json_subscriptions_req_subscription_t sub1 = {
