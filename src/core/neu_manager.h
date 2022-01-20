@@ -54,6 +54,10 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
                                   neu_cmd_update_grp_config_t *cmd);
 int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
                                 vector_t *result_grp_configs);
+int neu_manager_get_persist_datatag_infos(neu_manager_t *manager,
+                                          neu_node_id_t  node_id,
+                                          const char *   grp_config_name,
+                                          vector_t **    result);
 
 int neu_manager_add_plugin_lib(neu_manager_t *           manager,
                                neu_cmd_add_plugin_lib_t *cmd,

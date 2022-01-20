@@ -2002,6 +2002,88 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
     return rv;
 }
 
+int neu_manager_get_persist_datatag_infos(neu_manager_t *manager,
+                                          neu_node_id_t  node_id,
+                                          const char *   grp_config_name,
+                                          vector_t **    result)
+{
+    int                   rv = 0;
+    adapter_reg_entity_t *reg_entity;
+    adapter_id_t          adapter_id;
+
+    if (manager == NULL || result == NULL) {
+        log_error("get persist datatag infos with NULL manager or result");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (NULL == reg_entity) {
+        rv = NEU_ERR_NODE_NOT_EXIST;
+        goto final;
+    }
+
+    neu_taggrp_config_t *grp_config = neu_datatag_mng_get_grp_config(
+        reg_entity->datatag_manager, grp_config_name);
+    if (NULL == grp_config) {
+        rv = NEU_ERR_GRP_CONFIG_NOT_EXIST;
+        goto final;
+    }
+
+    neu_datatag_table_t *tag_tbl =
+        neu_datatag_mng_get_datatag_tbl(reg_entity->datatag_manager);
+
+    vector_t *tag_ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
+
+    vector_t *datatag_infos =
+        vector_new(tag_ids->size, sizeof(neu_persist_datatag_info_t));
+    if (NULL == datatag_infos) {
+        rv = NEU_ERR_ENOMEM;
+        goto error_vector_new;
+    }
+
+    VECTOR_FOR_EACH(tag_ids, iter)
+    {
+        neu_datatag_id_t *id  = iterator_get(&iter);
+        neu_datatag_t *   tag = neu_datatag_tbl_get(tag_tbl, *id);
+        if (NULL == tag) {
+            continue; // ignore not found tag
+        }
+
+        neu_persist_datatag_info_t datatag_info = {
+            .type      = tag->type,
+            .attribute = tag->attribute,
+            .name      = strdup(tag->name),
+            .address   = strdup(tag->addr_str),
+
+        };
+        if (0 != vector_push_back(datatag_infos, &datatag_info)) {
+            free(datatag_info.name);
+            free(datatag_info.address);
+            rv = NEU_ERR_ENOMEM;
+            break;
+        }
+        if (NULL == datatag_info.name || NULL == datatag_info.address) {
+            rv = NEU_ERR_ENOMEM;
+            break;
+        }
+    }
+
+    if (0 == rv) {
+        *result = datatag_infos;
+    } else {
+        neu_persist_datatag_infos_free(datatag_infos);
+    }
+
+error_vector_new:
+    neu_taggrp_cfg_free(grp_config);
+final:
+    nng_mtx_unlock(manager->adapters_mtx); // NOTE: big lock granularity
+    return rv;
+}
+
 int neu_manager_add_plugin_lib(neu_manager_t *           manager,
                                neu_cmd_add_plugin_lib_t *cmd,
                                plugin_id_t *             p_plugin_id)
