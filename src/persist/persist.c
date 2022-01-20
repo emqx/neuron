@@ -549,6 +549,11 @@ static inline int persister_adapter_dir(char *buf, size_t size,
         return n;
     }
 
+    n = path_cat(buf, n, size, "adapters");
+    if (size == n) {
+        return n;
+    }
+
     n = path_cat_escaped(buf, n, size, adapter_name);
     return n;
 }
