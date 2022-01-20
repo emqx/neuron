@@ -160,11 +160,13 @@ int neu_persister_load_plugins(neu_persister_t *persister,
  * Persist adapter datatags.
  * @param persister                 persiter object.
  * @param adapter_name              name of the adapter who owns the datatags.
+ * @param group_config_name         name of the group config.
  * @param datatag_infos             vector of neu_persist_datatag_info_t.
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_store_datatags(neu_persister_t *persister,
                                  const char *     adapter_name,
+                                 const char *     group_config_name,
                                  vector_t *       datatag_infos);
 /**
  * Load adapter datatag infos.

@@ -457,6 +457,10 @@ static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
         return 0;
     }
 
+    if (!ends_with(fpath, "config.json")) {
+        return 0;
+    }
+
     char *json_str = NULL;
     rv             = read_file_string(fpath, &json_str);
     if (0 != rv) {
@@ -718,25 +722,28 @@ load_plugins_exit:
 
 int neu_persister_store_datatags(neu_persister_t *persister,
                                  const char *     adapter_name,
+                                 const char *     group_config_name,
                                  vector_t *       datatag_infos)
 {
-    char datatag_path[128] = { 0 };
+    char path[PATH_MAX_SIZE] = { 0 };
 
-    int rv = snprintf(datatag_path, 128, "%s/%s", persister->persist_dir,
-                      adapter_name);
-    if (sizeof(datatag_path) == rv) {
-        log_error("datatag_path exceeds maximum value");
-        return -1;
+    int n = persister_group_config_dir(path, sizeof(path), persister,
+                                       adapter_name, group_config_name);
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
     }
 
-    create_dir(datatag_path);
+    int rv = create_dir_recursive(path);
+    if (0 != rv) {
+        log_error("fail to create dir: %s", path);
+        return NEU_ERR_FAILURE;
+    }
 
-    char datatag_file[128] = { 0 };
-
-    rv = snprintf(datatag_file, 128, "%s/datatags.json", datatag_path);
-    if (sizeof(datatag_file) == rv) {
-        log_error("datatag_file exceeds maximum value");
-        return -1;
+    n = path_cat(path, n, sizeof(path), "datatags.json");
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
     }
 
     neu_json_datatag_req_t datatags_resp = {
@@ -747,14 +754,13 @@ int neu_persister_store_datatags(neu_persister_t *persister,
     char *result = NULL;
     rv = neu_json_encode_by_fn(&datatags_resp, neu_json_encode_datatag_resp,
                                &result);
-    if (rv != 0) {
-        free(result);
-        return rv;
+
+    if (rv == 0) {
+        write_file_string(path, result);
     }
 
-    rv = write_file_string(datatag_file, result);
-
     free(result);
+
     return rv;
 }
 
