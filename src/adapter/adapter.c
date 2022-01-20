@@ -242,9 +242,15 @@ static int persister_singleton_load_setting(neu_adapter_t *adapter,
     int              rv =
         neu_persister_load_adapter_setting(persister, adapter_name, &setting);
     if (0 != rv) {
-        log_error("%s ignore fail load setting of adapter: %s", adapter->name,
+        const char *fail_or_ignore = "fail";
+        if (NEU_ERR_ENOENT == rv) {
+            // ignore this error, no setting ever set
+            rv             = 0;
+            fail_or_ignore = "ignore";
+        }
+        log_error("%s %s load setting of %s", adapter->name, fail_or_ignore,
                   adapter_name);
-        return 0; // ignore this error, may be no setting ever set
+        return rv;
     }
 
     rv = neu_manager_adapter_set_setting(adapter->manager, node_id, setting);

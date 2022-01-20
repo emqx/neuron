@@ -399,8 +399,10 @@ static int write_file_string(const char *fn, const char *s)
 // read all file contents as string
 static int read_file_string(const char *fn, char **out)
 {
+    int rv = 0;
     int fd = open(fn, O_RDONLY);
     if (-1 == fd) {
+        rv = (ENOENT == errno) ? NEU_ERR_ENOENT : NEU_ERR_FAILURE;
         goto error_open;
     }
 
@@ -413,6 +415,7 @@ static int read_file_string(const char *fn, char **out)
 
     char *buf = malloc(fsize + 1);
     if (NULL == buf) {
+        rv = NEU_ERR_ENOMEM;
         goto error_buf;
     }
 
@@ -424,6 +427,7 @@ static int read_file_string(const char *fn, char **out)
         } else if (n < fsize && EINTR == errno) {
             continue;
         } else {
+            rv = NEU_ERR_FAILURE;
             goto error_read;
         }
     }
@@ -431,7 +435,7 @@ static int read_file_string(const char *fn, char **out)
     buf[fsize] = 0;
     *out       = buf;
     close(fd);
-    return 0;
+    return rv;
 
 error_read:
     free(buf);
@@ -440,7 +444,7 @@ error_fstat:
     close(fd);
 error_open:
     log_error("persister fail to read %s, reason: %s", fn, strerror(errno));
-    return NEU_ERR_FAILURE;
+    return rv;
 }
 
 // file tree walking callback for collecting adapter group config infos
