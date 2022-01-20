@@ -110,9 +110,10 @@ TEST(JsonDatatagTableTest, DeleteTagDecode)
     neu_json_decode_del_tags_req_free(req);
 }
 
-TEST(JsonDatatagTableTest, UpdateTaDecode)
+TEST(JsonDatatagTableTest, UpdateTagDecode)
 {
     char *buf = (char *) "{\"node_id\":123456, "
+                         "\"group_config_name\": \"test-group\","
                          "\"tags\": "
                          "[{\"id\":12,\"name\":\"name1\",\"type\":0,"
                          "\"address\":\"1!400001\",\"attribute\":0}, "
@@ -123,6 +124,7 @@ TEST(JsonDatatagTableTest, UpdateTaDecode)
     EXPECT_EQ(0, neu_json_decode_update_tags_req(buf, &req));
 
     EXPECT_EQ(123456, req->node_id);
+    EXPECT_STREQ("test-group", req->group_config_name);
 
     EXPECT_EQ(12, req->tags[0].id);
     EXPECT_STREQ("name1", req->tags[0].name);
