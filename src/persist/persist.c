@@ -766,44 +766,52 @@ int neu_persister_store_datatags(neu_persister_t *persister,
 
 int neu_persister_load_datatags(neu_persister_t *persister,
                                 const char *     adapter_name,
+                                const char *     group_config_name,
                                 vector_t **      datatag_infos)
 {
-    char *datatags          = NULL;
-    char  datatag_file[128] = { 0 };
+    char path[PATH_MAX_SIZE] = { 0 };
 
-    int rv = snprintf(datatag_file, 128, "%s/%s/datatags.json",
-                      persister->persist_dir, adapter_name);
-    if (sizeof(datatag_file) == rv) {
-        log_error("datatg_file exceeds maximum value");
-        return -1;
+    int n = persister_group_config_dir(path, sizeof(path), persister,
+                                       adapter_name, group_config_name);
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
     }
 
-    rv = read_file_string(datatag_file, &datatags);
+    n = path_cat(path, n, sizeof(path), "datatags.json");
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
+    }
+
+    char *json_str = NULL;
+    int   rv       = read_file_string(path, &json_str);
     if (rv != 0) {
         return rv;
     }
 
     neu_json_datatag_req_t *datatag_req = NULL;
-    rv = neu_json_decode_datatag_req(datatags, &datatag_req);
+    rv = neu_json_decode_datatag_req(json_str, &datatag_req);
+    free(json_str);
     if (rv != 0) {
-        free(datatags);
         return rv;
     }
 
     vector_t *vec = vector_new_move_from_buf(
         datatag_req->tags, datatag_req->n_tag, datatag_req->n_tag,
         sizeof(neu_persist_datatag_info_t));
-    if (vec == NULL) {
-        free(datatags);
-        neu_json_decode_datatag_req_free(datatag_req);
-        return -1;
+
+    if (NULL != vec) {
+        *datatag_infos     = vec;
+        datatag_req->n_tag = 0;
+        datatag_req->tags  = NULL;
+    } else {
+        rv = NEU_ERR_ENOMEM;
     }
 
-    *datatag_infos = vec;
+    neu_json_decode_datatag_req_free(datatag_req);
 
-    free(datatags);
-    free(datatag_req);
-    return 0;
+    return rv;
 }
 
 int neu_persister_store_subscriptions(neu_persister_t *persister,
