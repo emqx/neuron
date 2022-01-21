@@ -591,7 +591,7 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
     vector_t *            reg_adapters;
     adapter_reg_entity_t *reg_entity;
     manager_bind_info_t * bind_info;
-    neu_adapter_t * adapter;
+    neu_adapter_t *       adapter;
 
     reg_adapters = &manager->reg_adapters;
 
