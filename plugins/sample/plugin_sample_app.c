@@ -215,6 +215,7 @@ static void *sample_app_work_loop(void *arg)
     sync_cmd.buf         = (void *) &get_grps_cmd;
     sync_cmd.buf_len     = sizeof(neu_cmd_get_grp_configs_t);
     log_info("Get list of group configs");
+    int retry_count = 3;
 get_grp_configs_retry:
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
@@ -226,23 +227,29 @@ get_grp_configs_retry:
     if (resp_grps->grp_configs.size == 0) {
         vector_uninit(&resp_grps->grp_configs);
         free(resp_grps);
+        resp_grps = NULL;
         usleep(300000);
-        goto get_grp_configs_retry;
+        if (retry_count > 0) {
+            retry_count--;
+            goto get_grp_configs_retry;
+        }
     }
 
-    grp_config =
-        *(neu_taggrp_config_t **) vector_get(&resp_grps->grp_configs, 0);
-    neu_taggrp_cfg_ref(grp_config);
-    log_info("The first group config(%s) of node(%d)",
-             neu_taggrp_cfg_get_name(grp_config), dst_node_id);
-    VECTOR_FOR_EACH(&resp_grps->grp_configs, iter)
-    {
-        neu_taggrp_config_t *cur_grp_config;
-        cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
-        neu_taggrp_cfg_free(cur_grp_config);
+    if (resp_grps != NULL) {
+        grp_config =
+            *(neu_taggrp_config_t **) vector_get(&resp_grps->grp_configs, 0);
+        neu_taggrp_cfg_ref(grp_config);
+        log_info("The first group config(%s) of node(%d)",
+                 neu_taggrp_cfg_get_name(grp_config), dst_node_id);
+        VECTOR_FOR_EACH(&resp_grps->grp_configs, iter)
+        {
+            neu_taggrp_config_t *cur_grp_config;
+            cur_grp_config = *(neu_taggrp_config_t **) iterator_get(&iter);
+            neu_taggrp_cfg_free(cur_grp_config);
+        }
+        vector_uninit(&resp_grps->grp_configs);
+        free(resp_grps);
     }
-    vector_uninit(&resp_grps->grp_configs);
-    free(resp_grps);
     free(result);
 
     /* example of get datatag table */

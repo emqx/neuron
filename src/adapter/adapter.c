@@ -553,6 +553,7 @@ static void adapter_loop(void *arg)
 
         nng_mtx_lock(adapter->mtx);
         if (adapter->stop) {
+            adapter->state = ADAPTER_STATE_IDLE;
             nng_mtx_unlock(adapter->mtx);
             log_info("Exit loop of the adapter(%s)", adapter->name);
             break;
@@ -857,7 +858,8 @@ static void adapter_loop(void *arg)
             log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
                      exit_code);
             nng_mtx_lock(adapter->mtx);
-            adapter->stop = true;
+            adapter->state = ADAPTER_STATE_IDLE;
+            adapter->stop  = true;
             nng_mtx_unlock(adapter->mtx);
             break;
         }
