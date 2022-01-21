@@ -57,6 +57,59 @@ struct neu_data_val {
     // Don’t add any member after here
 };
 
+char *neu_dvalue_type_to_str(neu_dtype_e type)
+{
+    static char stype[8] = { 0 };
+    switch (type) {
+    case NEU_DTYPE_BYTE:
+        snprintf(stype, sizeof(stype) - 1, "byte");
+        break;
+    case NEU_DTYPE_INT8:
+        snprintf(stype, sizeof(stype) - 1, "int8");
+        break;
+    case NEU_DTYPE_INT16:
+        snprintf(stype, sizeof(stype) - 1, "int16");
+        break;
+    case NEU_DTYPE_INT32:
+        snprintf(stype, sizeof(stype) - 1, "int32");
+        break;
+    case NEU_DTYPE_INT64:
+        snprintf(stype, sizeof(stype) - 1, "int64");
+        break;
+    case NEU_DTYPE_UINT8:
+        snprintf(stype, sizeof(stype) - 1, "uint8");
+        break;
+    case NEU_DTYPE_UINT16:
+        snprintf(stype, sizeof(stype) - 1, "uint16");
+        break;
+    case NEU_DTYPE_UINT32:
+        snprintf(stype, sizeof(stype) - 1, "uint32");
+        break;
+    case NEU_DTYPE_UINT64:
+        snprintf(stype, sizeof(stype) - 1, "uint64");
+        break;
+    case NEU_DTYPE_FLOAT:
+        snprintf(stype, sizeof(stype) - 1, "float");
+        break;
+    case NEU_DTYPE_DOUBLE:
+        snprintf(stype, sizeof(stype) - 1, "double");
+        break;
+    case NEU_DTYPE_BOOL:
+        snprintf(stype, sizeof(stype) - 1, "bool");
+        break;
+    case NEU_DTYPE_BIT:
+        snprintf(stype, sizeof(stype) - 1, "bit");
+        break;
+    case NEU_DTYPE_CSTR:
+        snprintf(stype, sizeof(stype) - 1, "string");
+        break;
+    default:
+        break;
+    }
+
+    return stype;
+}
+
 static bool type_has_pointer(neu_dtype_e type)
 {
     neu_dtype_e val_type;
