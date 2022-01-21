@@ -355,6 +355,10 @@ static bool match_name_reg_adapter(const void *key, const void *item)
     neu_adapter_t *adapter;
 
     adapter = ((adapter_reg_entity_t *) item)->adapter;
+    if (adapter == NULL) {
+        log_warn("The adapter had been removed");
+        return false;
+    }
     return strcmp((const char *) key, neu_adapter_get_name(adapter)) == 0;
 }
 
@@ -503,6 +507,11 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
     neu_adapter_info_t adapter_info;
     plugin_reg_info_t  plugin_reg_info;
 
+    nng_mtx_lock(manager->mtx);
+    if (manager->state == MANAGER_STATE_NULL) {
+        return NEU_ERR_ESTATE;
+    }
+    nng_mtx_unlock(manager->mtx);
     if (reg_param->plugin_id.id_val != 0) {
         rv = plugin_manager_get_reg_info(
             manager->plugin_manager, reg_param->plugin_id, &plugin_reg_info);
@@ -516,8 +525,10 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
     }
 
     adapter_reg_entity_t *same_reg_entity;
+    nng_mtx_lock(manager->adapters_mtx);
     same_reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
                                                reg_param->adapter_name);
+    nng_mtx_unlock(manager->adapters_mtx);
     if (same_reg_entity != NULL) {
         log_warn("A adapter with same name has already been registered");
         return NEU_ERR_NODE_EXIST;
@@ -580,6 +591,7 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
     vector_t *            reg_adapters;
     adapter_reg_entity_t *reg_entity;
     manager_bind_info_t * bind_info;
+    neu_adapter_t * adapter;
 
     reg_adapters = &manager->reg_adapters;
 
@@ -604,17 +616,20 @@ static int manager_unreg_adapter(neu_manager_t *manager, adapter_id_t id,
 
     nng_cv_free(reg_entity->cv);
     neu_datatag_mng_destroy(reg_entity->datatag_manager);
-    if (reg_entity->adapter != NULL) {
-        neu_adapter_destroy(reg_entity->adapter);
-    }
+    adapter = reg_entity->adapter;
 
     nng_mtx_lock(manager->adapters_mtx);
     if (need_erase) {
         vector_erase(reg_adapters, index);
+    } else {
+        memset(reg_entity, 0, sizeof(adapter_reg_entity_t));
     }
     manager->is_adapters_freezed = false;
     nng_cv_wake(manager->adapters_cv);
     nng_mtx_unlock(manager->adapters_mtx);
+    if (adapter != NULL) {
+        neu_adapter_destroy(adapter);
+    }
 
     return NEU_ERR_SUCCESS;
 }
