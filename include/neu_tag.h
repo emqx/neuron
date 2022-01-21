@@ -50,25 +50,25 @@ typedef enum {
     NEU_DATATAG_ENDIAN_LB32 = 3, // #LB
     NEU_DATATAG_ENDIAN_BB32 = 4, // #BB
     NEU_DATATAG_ENDIAN_BL32 = 5, // #BL
-} neu_datatag_endian_u;
+} neu_datatag_endian_e;
 
 typedef enum {
     NEU_DATATAG_STRING_TYPE_H = 0, // high-to-low endian
     NEU_DATATAG_STRING_TYPE_L = 1, // low-to-high endian
     NEU_DATATAG_STRING_TYPE_D = 2, // a high byte is stored in an int16
     NEU_DATATAG_STRING_TYPE_E = 3, // a low byte is stored in an int16
-} neu_datatag_string_type_u;
+} neu_datatag_string_type_e;
 
 typedef union {
     struct {
-        neu_datatag_endian_u endian;
+        neu_datatag_endian_e endian;
     } value16;
     struct {
-        neu_datatag_endian_u endian;
+        neu_datatag_endian_e endian;
     } value32;
     struct {
         uint16_t                  length;
-        neu_datatag_string_type_u type;
+        neu_datatag_string_type_e type;
     } string;
 
     struct {

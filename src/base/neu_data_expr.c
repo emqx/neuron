@@ -57,57 +57,40 @@ struct neu_data_val {
     // Don’t add any member after here
 };
 
-char *neu_dvalue_type_to_str(neu_dtype_e type)
+const char *neu_dvalue_type_to_str(neu_dtype_e type)
 {
-    static char stype[8] = { 0 };
     switch (type) {
-    case NEU_DTYPE_BYTE:
-        snprintf(stype, sizeof(stype) - 1, "byte");
-        break;
+    case NEU_DTYPE_BYTES:
+        return "bytes";
     case NEU_DTYPE_INT8:
-        snprintf(stype, sizeof(stype) - 1, "int8");
-        break;
+        return "int8";
     case NEU_DTYPE_INT16:
-        snprintf(stype, sizeof(stype) - 1, "int16");
-        break;
+        return "int16";
     case NEU_DTYPE_INT32:
-        snprintf(stype, sizeof(stype) - 1, "int32");
-        break;
+        return "int32";
     case NEU_DTYPE_INT64:
-        snprintf(stype, sizeof(stype) - 1, "int64");
-        break;
+        return "int64";
     case NEU_DTYPE_UINT8:
-        snprintf(stype, sizeof(stype) - 1, "uint8");
-        break;
+        return "uint8";
     case NEU_DTYPE_UINT16:
-        snprintf(stype, sizeof(stype) - 1, "uint16");
-        break;
+        return "uint16";
     case NEU_DTYPE_UINT32:
-        snprintf(stype, sizeof(stype) - 1, "uint32");
-        break;
+        return "uint32";
     case NEU_DTYPE_UINT64:
-        snprintf(stype, sizeof(stype) - 1, "uint64");
-        break;
+        return "uint64";
     case NEU_DTYPE_FLOAT:
-        snprintf(stype, sizeof(stype) - 1, "float");
-        break;
+        return "float";
     case NEU_DTYPE_DOUBLE:
-        snprintf(stype, sizeof(stype) - 1, "double");
-        break;
+        return "double";
     case NEU_DTYPE_BOOL:
-        snprintf(stype, sizeof(stype) - 1, "bool");
-        break;
+        return "bool";
     case NEU_DTYPE_BIT:
-        snprintf(stype, sizeof(stype) - 1, "bit");
-        break;
+        return "bit";
     case NEU_DTYPE_CSTR:
-        snprintf(stype, sizeof(stype) - 1, "string");
-        break;
+        return "string";
     default:
-        break;
+        return "unsupport type";
     }
-
-    return stype;
 }
 
 static bool type_has_pointer(neu_dtype_e type)

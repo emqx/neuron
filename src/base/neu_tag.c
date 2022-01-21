@@ -253,7 +253,9 @@ int neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
         tv = neu_dvalue_new(NEU_DTYPE_CSTR);
         neu_dvalue_set_cstr(tv, (char *) data);
         break;
-    case NEU_DTYPE_BYTE:
+    case NEU_DTYPE_BYTES:
+        tv = neu_dvalue_new(NEU_DTYPE_BYTES);
+        neu_dvalue_set_bytes(tv, (neu_bytes_t *) data);
         break;
     default:
         ret = -1;
