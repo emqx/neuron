@@ -43,10 +43,46 @@ typedef struct {
     neu_tag_name     name;
 } neu_datatag_t;
 
+typedef enum {
+    NEU_DATATAG_ENDIAN_L16  = 0, // #L
+    NEU_DATATAG_ENDIAN_B16  = 1, // #B
+    NEU_DATATAG_ENDIAN_LL32 = 2, // #LL
+    NEU_DATATAG_ENDIAN_LB32 = 3, // #LB
+    NEU_DATATAG_ENDIAN_BB32 = 4, // #BB
+    NEU_DATATAG_ENDIAN_BL32 = 5, // #BL
+} neu_datatag_endian_u;
+
+typedef enum {
+    NEU_DATATAG_STRING_TYPE_H = 0, // high-to-low endian
+    NEU_DATATAG_STRING_TYPE_L = 1, // low-to-high endian
+    NEU_DATATAG_STRING_TYPE_D = 2, // a high byte is stored in an int16
+    NEU_DATATAG_STRING_TYPE_E = 3, // a low byte is stored in an int16
+} neu_datatag_string_type_u;
+
+typedef union {
+    struct {
+        neu_datatag_endian_u endian;
+    } value16;
+    struct {
+        neu_datatag_endian_u endian;
+    } value32;
+    struct {
+        uint16_t                  length;
+        neu_datatag_string_type_u type;
+    } string;
+
+    struct {
+        uint8_t bit;
+    } boolean;
+} neu_datatag_addr_option_u;
+
 bool neu_tag_check_attribute(neu_attribute_e attribute);
 // The id is set to zero, and we make a copy of the name.
 neu_datatag_t *neu_datatag_alloc(neu_attribute_e attr, neu_dtype_e type,
                                  neu_addr_str_t addr, const char *name);
 void           neu_datatag_free(neu_datatag_t *datatag);
+
+int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
+                                  neu_datatag_addr_option_u *option);
 
 #endif
