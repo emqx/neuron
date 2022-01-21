@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 config_ **/
 
+#include <assert.h>
 #include <string.h>
 
 #include "neu_tag.h"
@@ -172,6 +173,96 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
     }
     default:
         break;
+    }
+
+    return ret;
+}
+
+neu_data_val_t *neu_datatag_pack_create(int size)
+{
+    neu_data_val_t *   val   = neu_dvalue_unit_new();
+    neu_fixed_array_t *array = neu_fixed_array_new(size, sizeof(neu_int_val_t));
+
+    neu_dvalue_init_move_array(val, NEU_DTYPE_INT_VAL, array);
+
+    return val;
+}
+
+int neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
+                         uint32_t key, void *data)
+{
+    neu_fixed_array_t *array = NULL;
+    int                ret   = 0;
+    neu_int_val_t      elem  = { 0 };
+    neu_data_val_t *   tv    = NULL;
+
+    assert(neu_fixed_array_size(array) > index);
+    assert(neu_dvalue_get_value_type(val) == NEU_DTYPE_ARRAY);
+    neu_dvalue_get_ref_array(val, &array);
+
+    switch (type) {
+    case NEU_DTYPE_ERRORCODE:
+        tv = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
+        neu_dvalue_set_errorcode(tv, *(int32_t *) data);
+        break;
+    case NEU_DTYPE_INT8:
+        tv = neu_dvalue_new(NEU_DTYPE_INT8);
+        neu_dvalue_set_int8(tv, *(int8_t *) data);
+        break;
+    case NEU_DTYPE_UINT8:
+        tv = neu_dvalue_new(NEU_DTYPE_UINT8);
+        neu_dvalue_set_uint8(tv, *(uint8_t *) data);
+        break;
+    case NEU_DTYPE_INT16:
+        tv = neu_dvalue_new(NEU_DTYPE_INT16);
+        neu_dvalue_set_int16(tv, *(int16_t *) data);
+        break;
+    case NEU_DTYPE_UINT16:
+        tv = neu_dvalue_new(NEU_DTYPE_UINT16);
+        neu_dvalue_set_uint16(tv, *(uint16_t *) data);
+        break;
+    case NEU_DTYPE_INT32:
+        tv = neu_dvalue_new(NEU_DTYPE_INT32);
+        neu_dvalue_set_int32(tv, *(int32_t *) data);
+        break;
+    case NEU_DTYPE_UINT32:
+        tv = neu_dvalue_new(NEU_DTYPE_UINT32);
+        neu_dvalue_set_uint32(tv, *(uint32_t *) data);
+        break;
+    case NEU_DTYPE_INT64:
+        tv = neu_dvalue_new(NEU_DTYPE_INT64);
+        neu_dvalue_set_int64(tv, *(int64_t *) data);
+        break;
+    case NEU_DTYPE_UINT64:
+        tv = neu_dvalue_new(NEU_DTYPE_UINT64);
+        neu_dvalue_set_uint64(tv, *(uint64_t *) data);
+        break;
+    case NEU_DTYPE_FLOAT:
+        tv = neu_dvalue_new(NEU_DTYPE_FLOAT);
+        neu_dvalue_set_float(tv, *(float *) data);
+        break;
+    case NEU_DTYPE_DOUBLE:
+        tv = neu_dvalue_new(NEU_DTYPE_DOUBLE);
+        neu_dvalue_set_double(tv, *(double *) data);
+        break;
+    case NEU_DTYPE_BOOL:
+        tv = neu_dvalue_new(NEU_DTYPE_BOOL);
+        neu_dvalue_set_bool(tv, *(bool *) data);
+        break;
+    case NEU_DTYPE_CSTR:
+        tv = neu_dvalue_new(NEU_DTYPE_CSTR);
+        neu_dvalue_set_cstr(tv, (char *) data);
+        break;
+    case NEU_DTYPE_BYTE:
+        break;
+    default:
+        ret = -1;
+        break;
+    }
+
+    if (ret == 0) {
+        neu_int_val_init(&elem, key, tv);
+        neu_fixed_array_set(array, index, (void *) &elem);
     }
 
     return ret;
