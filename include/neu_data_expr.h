@@ -183,6 +183,7 @@ static inline neu_dtype_e neu_flags_type_in_dtype(neu_dtype_e type)
 
 neu_dtype_e neu_dvalue_get_type(neu_data_val_t *val);
 neu_dtype_e neu_dvalue_get_value_type(neu_data_val_t *val);
+char *      neu_dvalue_type_to_str(neu_dtype_e type);
 
 /*
  * declare all basic function for neu_data_val_t
