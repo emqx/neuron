@@ -690,10 +690,12 @@ void *load_plugin_library(char *plugin_lib_name, plugin_kind_e plugin_kind,
     case PLUGIN_KIND_CUSTOM:
         result =
             load_dyn_plugin_library(path, plugin_lib_name, p_plugin_module);
-        free(path);
         break;
     }
 
+    if (path != NULL) {
+        free(path);
+    }
     return result;
 }
 
