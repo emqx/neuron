@@ -352,7 +352,7 @@ static int wrap_write_response_json_object(neu_fixed_array_t *   array,
         json->tags[i - 1].id = int_val->key;
 
         int32_t value;
-        neu_dvalue_get_int32(val, &value);
+        neu_dvalue_get_errorcode(val, &value);
         json->tags[i - 1].t             = NEU_JSON_INT;
         json->tags[i - 1].value.val_int = value;
     }
