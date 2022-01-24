@@ -1,3 +1,4 @@
+import random
 import subprocess
 import shutil
 
@@ -43,6 +44,9 @@ class GrpConfig(object):
             size = size + 1
         return size
 
+    def Get_Random_Group_Config(self, gconfigs):
+        return random.choice(gconfigs)['name']
+
 
 class Node(object):
 
@@ -57,6 +61,9 @@ class Node(object):
 
     def Node_With_Name_Should_Exist(self, snodes, name):
         assert 0 != self.Get_Node_By_Name(snodes, name)
+
+    def Get_Random_Node(self, snodes):
+        return random.choice(snodes)['id']
 
 
 class Tag(object):
