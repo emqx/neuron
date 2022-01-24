@@ -70,11 +70,6 @@ neu_persist_group_config_infos_free(vector_t *group_config_infos)
     {
         neu_persist_group_config_info_t *p =
             (neu_persist_group_config_info_t *) iterator_get(&iter);
-        char **tag_names = p->datatag_names;
-        for (int i = 0; i < p->n_datatag_name; ++i) {
-            free(tag_names[i]);
-        }
-        free(tag_names);
         free(p->group_config_name);
         free(p->adapter_name);
     }
