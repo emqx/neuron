@@ -31,16 +31,10 @@
 extern "C" {
 #endif
 
-typedef char *neu_json_group_configs_req_datatag_name_t;
-
-typedef char *neu_json_group_configs_resp_datatag_name_t;
-
 typedef struct {
-    char *                                     group_config_name;
-    char *                                     adapter_name;
-    int64_t                                    read_interval;
-    int                                        n_datatag_name;
-    neu_json_group_configs_req_datatag_name_t *datatag_names;
+    char *  group_config_name;
+    char *  adapter_name;
+    int64_t read_interval;
 } neu_json_group_configs_req_t;
 
 int  neu_json_decode_group_configs_req(char *                         buf,
@@ -48,11 +42,9 @@ int  neu_json_decode_group_configs_req(char *                         buf,
 void neu_json_decode_group_configs_req_free(neu_json_group_configs_req_t *req);
 
 typedef struct {
-    char *                                      group_config_name;
-    char *                                      adapter_name;
-    int64_t                                     read_interval;
-    int                                         n_datatag_name;
-    neu_json_group_configs_resp_datatag_name_t *datatag_names;
+    char *  group_config_name;
+    char *  adapter_name;
+    int64_t read_interval;
 } neu_json_group_configs_resp_t;
 
 int neu_json_encode_group_configs_resp(void *json_object, void *param);
