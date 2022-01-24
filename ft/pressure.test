@@ -1,0 +1,104 @@
+*** Settings ***
+Resource          common.resource
+Suite Setup       Neuron Context Ready
+Suite Teardown    Neuron Context Stop
+
+*** Variables ***
+
+*** Test Cases ***
+Pressure Testing
+  ${hours} =                    Set Variable                    ${1}
+  ${msecs} =                    Set Variable                    ${hours * 3600 * 1000}
+  ${interval_ms} =              Set Variable                    ${50}
+  ${count} =                    Evaluate                        ${msecs} // ${interval_ms}
+  Repeat Keyword                ${count}                        Read Write Loop                 ${interval_ms}
+
+*** Keywords ***
+Neuron Context Ready
+  Import Neuron API Resource
+
+  Copy Persistence Test Data
+
+  Start Simulator               ${MODBUS_TCP_SERVER_SIMULATOR}  ${SIMULATOR_DIR}
+  Start Simulator               ${OPCUA_SERVER_SIMULATOR}       ${SIMULATOR_DIR}
+
+  Neuron Ready
+  LOGIN
+
+  Sleep                         10s
+
+
+Neuron Context Stop
+  LOGOUT
+  Stop Neuron                   remove_persistence_data=True
+
+Read Write Loop
+  [Arguments]                   ${interval_ms}
+  Ping
+  Random Read Then Write Back
+  Sleep                         ${interval_ms}ms
+
+Random Read Then Write Back
+  ${nodes} =                    Get Driver Nodes
+  ${node_id} =                  Get Random Node                 ${nodes}
+
+  ${res} =                      Get Group Config                ${node_id}
+  Return From Keyword If        "group_configs" not in $res
+  ${group} =                    Get Random Group Config         ${res}[group_configs]
+
+  ${dashb_id} =                 Get Node ID                     ${NODE_WEB}                     default-dashboard-adapter
+  ${res} =                      Subscribe Group                 ${node_id}                      ${dashb_id}                 ${group}
+  Check Response Status         ${res}                          200
+  Check Error Code              ${res}                          ${ERR_SUCCESS}
+
+  ${res} =                      Read Tags                       ${node_id}                      ${group}
+  Check Response Status         ${res}                          200
+
+  Return From Keyword If        "tags" not in $res
+
+  ${vals} =                     Evaluate                        ",".join(map(json.dumps, ${res}[tags]))                     json
+  ${res} =                      Write Tags                      ${node_id}                      ${group}                    ${vals}
+  Check Response Status         ${res}                          200
+  Check Error Code              ${res}                          ${ERR_SUCCESS}
+
+Get Driver Nodes
+  ${res} =                      Get Nodes                       ${NODE_DRIVER}
+  Check Response Status         ${res}                          200
+  [Return]  ${res}[nodes]
+
+Get App Nodes
+  ${res} =                      Get Nodes                       ${NODE_APP}
+  Check Response Status         ${res}                          200
+  [Return]  ${res}[nodes]
+
+Gen Tag Value
+  [Arguments]                   ${type}
+  If  ${type} == ${TAG_DATA_TYPE_BOOL}
+    ${val} =                    Set Variable                    1
+  If  ${type} == ${TAG_DATA_TYPE_BIT}
+    ${val} =                    Set Variable                    1
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_INT8}
+    ${val} =                    Set Variable                    128
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_BYTE}
+    ${val} =                    Set Variable                    255
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_UINT8}
+    ${val} =                    Set Variable                    255
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_INT16}
+    ${val} =                    Set Variable                    32768
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_UINT16}
+    ${val} =                    Set Variable                    65536
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_INT32}
+    ${val} =                    Set Variable                    2147483648
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_UINT32}
+    ${val} =                    Set Variable                    4294967295
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_INT64}
+    ${val} =                    Set Variable                    9223372036854775808
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_UINT64}
+    ${val} =                    Set Variable                    18446744073709551615
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_FLOAT}
+    ${val} =                    Set Variable                    3.14159
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_DOUBLE}
+    ${val} =                    Set Variable                    3.141592653589793
+  ELSE IF   ${type} == ${TAG_DATA_TYPE_STRING}
+    ${val} =                    Set Variable                    hello, world
+  END
