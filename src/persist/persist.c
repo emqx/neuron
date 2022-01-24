@@ -659,8 +659,13 @@ load_adapters_exit:
 int neu_persister_delete_adapter(neu_persister_t *persister,
                                  const char *     adapter_name)
 {
-    (void *) persister;
-    (void *) adapter_name;
+    char path[PATH_MAX_SIZE] = { 0 };
+    int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return NEU_ERR_FAILURE;
+    }
+    rmdir_recursive(path);
     return 0;
 }
 
