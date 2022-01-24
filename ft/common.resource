@@ -1,4 +1,6 @@
 *** Settings ***
+Library           OperatingSystem
+
 Library           Keyword.Neuron.GrpConfig
 Library           Keyword.Neuron.Neuron
 Library           Keyword.Neuron.Node
@@ -11,6 +13,9 @@ Resource          error.resource
 Resource          simulator.resource
 
 *** Variables ***
+${test_data_dir}                   ft/data
+${test_pdata_dir}                  ${test_data_dir}/persistence
+
 ${NODE_UNKNOWN}	0
 ${NODE_DRIVER}	1
 ${NODE_WEB}	2
@@ -148,3 +153,8 @@ Import Neuron API Resource
 
 Skip If Not Http API
   Skip If                   $NEURON_API != "http"                 Current API is not `http`, just skip
+
+Copy Persistence Test Data
+  Directory Should Exist        build
+  ${rc} =                       Run And Return Rc     cp -r ${test_pdata_dir} build/
+  Should Be Equal As Integers   ${rc}                 0
