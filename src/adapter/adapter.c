@@ -513,9 +513,7 @@ static int persister_singleton_handle_grp_config(neu_adapter_t *adapter,
         neu_persist_group_config_info_t info       = {
             .group_config_name = (char *) neu_taggrp_cfg_get_name(grp_config),
             .read_interval     = neu_taggrp_cfg_get_interval(grp_config),
-            .adapter_name      = adapter_name, // TODO: remove
-            .datatag_names     = NULL, // we don't need these fields
-            .n_datatag_name    = 0,    //
+            .adapter_name      = adapter_name,
         };
         rv = neu_persister_store_group_config(persister, adapter_name, &info);
         if (0 != rv) {
