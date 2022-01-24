@@ -1,0 +1,7 @@
+{
+    "params": {
+        "host":"127.0.0.1",
+        "port":60502,
+        "connection_mode":0
+    }
+}
