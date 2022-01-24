@@ -157,8 +157,7 @@ TEST(JsonGroupConfigs, GroupConfigsPersistenceDecode)
     char *buf =
         (char *) "{\"adapter_name\": \"modbus_tcp_adapter\", "
                  "\"group_config_name\": \"config_modbus_tcp_sample_2\", "
-                 "\"read_interval\": 2000, \"datatag_names\": [\"modbus1\", "
-                 "\"modbus2\", \"modbus3\"]}";
+                 "\"read_interval\": 2000 }";
 
     neu_json_group_configs_req_t *req = NULL;
 
@@ -167,9 +166,6 @@ TEST(JsonGroupConfigs, GroupConfigsPersistenceDecode)
     EXPECT_STREQ("modbus_tcp_adapter", req->adapter_name);
     EXPECT_STREQ("config_modbus_tcp_sample_2", req->group_config_name);
     EXPECT_EQ(2000, req->read_interval);
-    EXPECT_STREQ("modbus1", req->datatag_names[0]);
-    EXPECT_STREQ("modbus2", req->datatag_names[1]);
-    EXPECT_STREQ("modbus3", req->datatag_names[2]);
 
     neu_json_decode_group_configs_req_free(req);
 }
@@ -419,13 +415,11 @@ TEST(JsonDatatags, DatatagPersistenceEncode)
 TEST(JsonGroupConfigTest, GroupConfigPersistenceEncode)
 {
     char *buf = (char *) "{\"read_interval\": 2000, \"group_config_name\": "
-                         "\"config_modbus_tcp_sample_2\", \"datatag_names\": "
-                         "[\"modbus1\", \"modbus2\", \"modbus3\"], "
-                         "\"adapter_name\": \"config_modbus_tcp_sample_2\"}";
+                         "\"config_modbus_tcp_sample_2\", \"adapter_name\": "
+                         "\"config_modbus_tcp_sample_2\"}";
 
-    char *buf2 =
-        (char *) "{\"read_interval\": 2000, \"group_config_name\": \"\", "
-                 "\"datatag_names\": [], \"adapter_name\": \"\"}";
+    char *buf2 = (char *) "{\"read_interval\": 2000, \"group_config_name\": "
+                          "\"\", \"adapter_name\": \"\"}";
 
     char *result  = NULL;
     char *result2 = NULL;
@@ -434,20 +428,12 @@ TEST(JsonGroupConfigTest, GroupConfigPersistenceEncode)
         .group_config_name = strdup("config_modbus_tcp_sample_2"),
         .adapter_name      = strdup("config_modbus_tcp_sample_2"),
         .read_interval     = 2000,
-        .n_datatag_name    = 3,
     };
     neu_json_group_configs_resp_t resp2 = {
         .group_config_name = strdup(""),
         .adapter_name      = strdup(""),
         .read_interval     = 2000,
-        .n_datatag_name    = 0,
     };
-
-    resp.datatag_names = (neu_json_group_configs_resp_datatag_name_t *) calloc(
-        3, sizeof(neu_json_group_configs_resp_datatag_name_t));
-    resp.datatag_names[0] = strdup("modbus1");
-    resp.datatag_names[1] = strdup("modbus2");
-    resp.datatag_names[2] = strdup("modbus3");
 
     EXPECT_EQ(0,
               neu_json_encode_by_fn(&resp, neu_json_encode_group_configs_resp,
@@ -461,10 +447,6 @@ TEST(JsonGroupConfigTest, GroupConfigPersistenceEncode)
 
     free(resp.adapter_name);
     free(resp.group_config_name);
-    free(resp.datatag_names[0]);
-    free(resp.datatag_names[1]);
-    free(resp.datatag_names[2]);
-    free(resp.datatag_names);
 
     free(resp2.adapter_name);
     free(resp2.group_config_name);
