@@ -514,7 +514,18 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         goto error;
     }
 
-    int n = path_cat(path, dir_len, sizeof(path), "adapters.json");
+    int n = path_cat(path, dir_len, sizeof(path), "adapters");
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        goto error;
+    }
+    rv = create_dir(path);
+    if (rv != 0) {
+        log_error("failed to create directory: %s", path);
+        goto error;
+    }
+
+    n = path_cat(path, dir_len, sizeof(path), "adapters.json");
     if (sizeof(path) == n) {
         log_error("path too long: %s", path);
         goto error;
