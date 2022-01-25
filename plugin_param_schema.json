@@ -116,7 +116,7 @@
 			}
 		}
 	},
-	"opcua-plugin": {
+	"neuron-opcua-plugin": {
 		"tag_type": [
 			2,
 			3,
