@@ -1368,12 +1368,22 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_NODE_CTL: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_node_ctl_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_adapter_ctl(adapter->manager,
-                                                            req_cmd->node_id,
-                                                            req_cmd->ctl);
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_node_ctl_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = neu_manager_adapter_ctl(adapter->manager,
+                                              req_cmd->node_id, req_cmd->ctl);
+                if (0 == ret) {
+                    char *node_name = NULL;
+                    rv              = neu_manager_get_node_name_by_id(
+                        adapter->manager, req_cmd->node_id, &node_name);
+                    if (0 == rv) {
+                        ADAPTER_SEND_NODE_EVENT(
+                            adapter, rv, MSG_EVENT_UPDATE_NODE, node_name);
+                        free(node_name);
+                    }
+                }
+            });
         break;
     }
 
