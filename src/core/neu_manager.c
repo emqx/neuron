@@ -2372,6 +2372,31 @@ int neu_manager_adapter_get_setting(neu_manager_t *manager,
     return ret;
 }
 
+int neu_manager_start_adapter_with_id(neu_manager_t *manager,
+                                      neu_node_id_t  node_id)
+{
+    adapter_id_t          adapter_id = { 0 };
+    adapter_reg_entity_t *reg_entity = NULL;
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+
+    if (reg_entity == NULL) {
+        log_error("Can't find matched src registered adapter");
+        nng_mtx_unlock(manager->adapters_mtx);
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    // TODO: this should better be outside of lock
+    neu_adapter_start(reg_entity->adapter);
+
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return NEU_ERR_SUCCESS;
+}
+
 int neu_manager_adapter_get_state(neu_manager_t *manager, neu_node_id_t node_id,
                                   neu_plugin_state_t *state)
 {
