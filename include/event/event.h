@@ -54,7 +54,6 @@ typedef int (*neu_event_io_callback)(enum neu_event_io_type type, int fd,
                                      void *usr_data);
 
 typedef struct neu_event_io {
-    int                   type;
     int                   fd;
     void *                usr_data;
     neu_event_io_callback cb;
