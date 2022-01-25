@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <dirent.h>
 #include <errno.h>
@@ -490,57 +491,77 @@ static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
 
 neu_persister_t *neu_persister_create(const char *dir_name)
 {
-    char dir_path[128] = { 0 };
-    int  rv            = snprintf(dir_path, 128, "%s", dir_name);
-    if (sizeof(dir_path) == rv) {
-        log_error("dir_path exceeds maximum value");
-        goto error_dir_name;
+    int   rv                  = 0;
+    char *persist_dir         = NULL;
+    char *adapters_fname      = NULL;
+    char *plugins_fname       = NULL;
+    char  path[PATH_MAX_SIZE] = { 0 };
+
+    int dir_len = path_cat(path, 0, sizeof(path), dir_name);
+    if (sizeof(path) == dir_len) {
+        log_error("path too long: %s", dir_name);
+        goto error;
+    }
+    persist_dir = strdup(dir_name);
+    if (NULL == persist_dir) {
+        log_error("fail to strdup: %s", dir_name);
+        goto error;
     }
 
-    rv = create_dir(dir_path);
+    rv = create_dir(persist_dir);
     if (rv != 0) {
-        log_error("failed to create directory");
-        goto error_dir_name;
+        log_error("failed to create directory: %s", persist_dir);
+        goto error;
     }
 
-    char adapter_path[128] = { 0 };
-    rv = snprintf(adapter_path, 128, "%s/adapters.json", dir_path);
-    if (sizeof(adapter_path) == rv) {
-        log_error("adapter_path exceeds maximun value");
-        goto error_dir_name;
+    int n = path_cat(path, dir_len, sizeof(path), "adapters.json");
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        goto error;
+    }
+    adapters_fname = strdup(path);
+    if (NULL == adapters_fname) {
+        log_error("fail to strdup: %s", path);
+        goto error;
     }
 
-    char plugin_path[128] = { 0 };
-    rv = snprintf(plugin_path, 128, "%s/plugins.json", dir_path);
-    if (sizeof(plugin_path) == rv) {
-        log_error("plugin_path exceeds maximun value");
-        goto error_dir_name;
+    if (0 != ensure_file_exist(adapters_fname, "{\"nodes\": []}")) {
+        log_error("persister failed to ensure file exist: %s", adapters_fname);
+        goto error;
+    }
+
+    n = path_cat(path, dir_len, sizeof(path), "plugins.json");
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        goto error;
+    }
+    plugins_fname = strdup(path);
+    if (NULL == plugins_fname) {
+        log_error("fail to strdup: %s", path);
+        goto error;
+    }
+
+    if (0 != ensure_file_exist(plugins_fname, "{\"plugins\": []}")) {
+        log_error("persister failed to ensure file exist: %s", plugins_fname);
+        goto error;
     }
 
     neu_persister_t *persister = malloc(sizeof(neu_persister_t));
-    if (persister == NULL) {
+    if (NULL == persister) {
         log_error("failed to alloc memory for persister struct");
-        goto error_dir_name;
+        goto error;
     }
 
-    if (0 != ensure_file_exist(adapter_path, "{\"nodes\": []}")) {
-        log_error("persister failed to ensure file exist: %s", adapter_path);
-        goto error_io;
-    }
-    if (0 != ensure_file_exist(plugin_path, "{\"plugins\": []}")) {
-        log_error("persister failed to ensure file exist: %s", plugin_path);
-        goto error_io;
-    }
-
-    persister->adapters_fname = strdup(adapter_path);
-    persister->plugins_fname  = strdup(plugin_path);
-    persister->persist_dir    = strdup(dir_name);
+    persister->plugins_fname  = plugins_fname;
+    persister->adapters_fname = adapters_fname;
+    persister->persist_dir    = persist_dir;
 
     return persister;
 
-error_io:
-    free(persister);
-error_dir_name:
+error:
+    free(plugins_fname);
+    free(adapters_fname);
+    free(persist_dir);
     return NULL;
 }
 
