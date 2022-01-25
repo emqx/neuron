@@ -421,7 +421,14 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
             goto error_add_adapters;
         }
 
-        // TODO: start node according to state
+        if (ADAPTER_STATE_RUNNING == adapter_info->state) {
+            rv = neu_manager_start_adapter_with_id(adapter->manager, node_id);
+            if (0 != rv) {
+                log_error("%s fail start adapter %s", adapter->name,
+                          adapter_info->name);
+                goto error_add_adapters;
+            }
+        }
     }
 
     neu_persist_adapter_infos_free(adapter_infos);
