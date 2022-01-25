@@ -26,8 +26,7 @@
 typedef enum neu_conn_type {
     NEU_CONN_TCP_SERVER = 1,
     NEU_CONN_TCP_CLIENT,
-    NEU_CONN_UDP_SERVER,
-    NEU_CONN_UDP_CLIENT,
+    NEU_CONN_UDP,
     NEU_CONN_TTY_CLIENT,
 } neu_conn_type_e;
 
@@ -61,7 +60,7 @@ typedef enum neu_conn_tty_data {
 
 typedef struct neu_conn_tcp_client neu_conn_tcp_client_t;
 
-typedef struct neu_conn {
+typedef struct neu_conn_param {
     neu_conn_type_e type;
 
     union {
@@ -81,12 +80,7 @@ typedef struct neu_conn {
         struct {
             char *   ip;
             uint16_t port;
-        } udp_server;
-
-        struct {
-            char *   ip;
-            uint16_t port;
-        } udp_client;
+        } udp;
 
         struct {
             char *                device;
@@ -96,20 +90,25 @@ typedef struct neu_conn {
             neu_conn_tty_parity_e parity;
         } tty_client;
     } params;
-} neu_conn_t;
+} neu_conn_param_t;
 
-typedef struct neu_conn_ctx neu_conn_ctx_t;
+typedef struct neu_conn neu_conn_t;
 
-neu_conn_ctx_t *       neu_conn_new(neu_conn_t *conn);
-void                   neu_conn_destory(neu_conn_ctx_t *ctx);
+typedef void (*neu_conn_conncted)(void *data);
+typedef void (*neu_conn_disconnected)(void *data);
+
+neu_conn_t *           neu_conn_new(neu_conn_param_t *param, void *data,
+                                    neu_conn_conncted     connected,
+                                    neu_conn_disconnected disconnected);
+void                   neu_conn_destory(neu_conn_t *conn);
 neu_conn_type_e        neu_conn_get_type(neu_conn_t *conn);
-int                    neu_conn_get_fd(neu_conn_ctx_t *ctx);
-neu_conn_tcp_client_t *neu_conn_tcp_accept(neu_conn_ctx_t *ctx);
+int                    neu_conn_get_fd(neu_conn_t *conn);
+neu_conn_tcp_client_t *neu_conn_tcp_accept(neu_conn_t *conn);
 int neu_conn_tcp_client_get_fd(neu_conn_tcp_client_t *client);
 
+void    neu_conn_tcp_flush(neu_conn_t *conn, neu_conn_tcp_client_t *client);
 ssize_t neu_conn_send(neu_conn_t *conn, neu_conn_tcp_client_t *client,
                       uint8_t *buf, ssize_t len);
 ssize_t neu_conn_recv(neu_conn_t *conn, neu_conn_tcp_client_t *client,
                       uint8_t *buf, ssize_t len);
-
 #endif
