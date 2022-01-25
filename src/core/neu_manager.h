@@ -87,6 +87,8 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
 int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
                                           vector_t **    result);
 int neu_manager_start_adapter(neu_adapter_t *adapter);
+int neu_manager_start_adapter_with_id(neu_manager_t *manager,
+                                      neu_node_id_t  node_id);
 int neu_manager_stop_adapter(neu_adapter_t *adapter);
 int neu_manager_init_adapter(neu_manager_t *manager, neu_adapter_t *adapter);
 int neu_manager_uninit_adapter(neu_manager_t *manager, neu_adapter_t *adapter);
