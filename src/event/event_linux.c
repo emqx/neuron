@@ -37,6 +37,8 @@ struct neu_event_timer_ctx {
 };
 
 struct neu_event_io_ctx {
+    int   fd;
+    void *event_data;
 };
 
 struct event_data {
@@ -235,15 +237,53 @@ int neu_event_del_timer(neu_event_ctx_t *events, neu_event_timer_ctx_t *timer)
 
 neu_event_io_ctx_t *neu_event_add_io(neu_event_ctx_t *events, neu_event_io_t io)
 {
-    (void) events;
-    (void) io;
-    return NULL;
+    int                 ret    = 0;
+    neu_event_io_ctx_t *io_ctx = calloc(1, sizeof(neu_event_io_ctx_t));
+    struct event_data * data   = calloc(1, sizeof(struct event_data));
+    struct epoll_event  event  = { .events = EPOLLIN, .data.ptr = data };
+
+    data->type        = IO;
+    data->fd          = io.fd;
+    data->usr_data    = io.usr_data;
+    data->callback.io = io.cb;
+    data->ctx.io      = io_ctx;
+
+    io_ctx->fd         = io.fd;
+    io_ctx->event_data = data;
+
+    pthread_mutex_lock(&events->mtx);
+    TAILQ_INSERT_TAIL(&events->datas, data, node);
+    pthread_mutex_unlock(&events->mtx);
+
+    ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, io.fd, &event);
+
+    log_info("add io, fd: %d, epoll: %d, ret: %d", io.fd, events->epoll_fd,
+             ret);
+
+    return io_ctx;
 }
 
 int neu_event_del_io(neu_event_ctx_t *events, neu_event_io_ctx_t *io)
 {
-    (void) events;
-    (void) io;
+    struct event_data *data = NULL;
+    log_info("del io: %d from epoll: %d", io->fd, events->epoll_fd);
+
+    epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
+
+    pthread_mutex_lock(&events->mtx);
+    TAILQ_FOREACH(data, &events->datas, node)
+    {
+        if (data->fd == io->fd) {
+            TAILQ_REMOVE(&events->datas, data, node);
+
+            free(io->event_data);
+            free(io);
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&events->mtx);
+
     return 0;
 }
 
