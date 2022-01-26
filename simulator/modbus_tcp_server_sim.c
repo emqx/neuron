@@ -38,9 +38,18 @@ void input_init()
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-    neu_tcp_server_t *server     = neu_tcp_server_create("127.0.0.1", 60502);
+    uint16_t port = 60502;
+
+    if (argc == 2) {
+        int t_port = atoi(argv[1]);
+        if (t_port > 0) {
+            port = t_port;
+        }
+    }
+
+    neu_tcp_server_t *server     = neu_tcp_server_create("127.0.0.1", port);
     bool              new_client = true;
     int               ret        = 0;
 

@@ -419,6 +419,10 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
         neu_fixed_array_set(array_resp, i, (void *) &iv);
     }
 
+    if (error == -1) {
+        error = NEU_ERR_DEVICE_WRITE_FAILURE;
+    }
+
     neu_dvalue_set_errorcode(val_error_resp, error);
     neu_int_val_init(&int_val_resp, 0, val_error_resp);
     neu_fixed_array_set(array_resp, 0, (void *) &int_val_resp);
