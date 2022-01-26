@@ -35,6 +35,7 @@
 #include "neu_log.h"
 #include "neu_manager.h"
 #include "neu_panic.h"
+#include "neu_subscribe.h"
 #include "neu_trans_buf.h"
 #include "neu_vector.h"
 #include "persist/persist.h"
@@ -2517,6 +2518,97 @@ int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
     nng_mtx_unlock(manager->adapters_mtx);
 
     return 0;
+}
+
+int neu_manager_get_persist_subscription_infos(neu_manager_t *manager,
+                                               neu_node_id_t  node_id,
+                                               vector_t **    result)
+{
+    int rv = 0;
+
+    if (NULL == manager || NULL == result) {
+        log_error("get persist subscription infos with NULL manager or result");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    adapter_id_t          adapter_id = { 0 };
+    adapter_reg_entity_t *reg_entity = NULL;
+
+    nng_mtx_lock(manager->adapters_mtx);
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+
+    if (reg_entity == NULL) {
+        rv = NEU_ERR_NODE_NOT_EXIST;
+        goto final;
+    }
+
+    vector_t *sub_grp_configs =
+        neu_adapter_get_sub_grp_configs(reg_entity->adapter);
+    if (NULL == sub_grp_configs) {
+        rv = NEU_ERR_ENOMEM;
+        goto final;
+    }
+
+    vector_t *sub_infos = vector_new(sub_grp_configs->capacity,
+                                     sizeof(neu_persist_subscription_info_t));
+    if (NULL == sub_infos) {
+        rv = NEU_ERR_ENOMEM;
+        goto error_new_vec;
+    }
+
+    VECTOR_FOR_EACH(sub_grp_configs, iter)
+    {
+        neu_sub_grp_config_t *sgc = iterator_get(&iter);
+        adapter_id_t          adapter_id =
+            neu_manager_adapter_id_from_node_id(manager, sgc->node_id);
+        adapter_reg_entity_t *src_reg_entity =
+            find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+        if (NULL == src_reg_entity) {
+            rv = NEU_ERR_NODE_NOT_EXIST;
+            break;
+        }
+
+        char *group_config_name = strdup(sgc->group_config_name);
+        char *src_adapter_name =
+            strdup(neu_adapter_get_name(src_reg_entity->adapter));
+        char *sub_adapter_name =
+            strdup(neu_adapter_get_name(reg_entity->adapter));
+
+        neu_persist_subscription_info_t sub_info = {
+            .group_config_name = group_config_name,
+            .src_adapter_name  = src_adapter_name,
+            .sub_adapter_name  = sub_adapter_name, // TODO: we don't need these
+            .read_interval     = 0,
+        };
+
+        if (0 != vector_push_back(sub_infos, &sub_info)) {
+            free(group_config_name);
+            free(src_adapter_name);
+            free(sub_adapter_name);
+            rv = NEU_ERR_ENOMEM;
+            break;
+        }
+        if (NULL == group_config_name || NULL == src_adapter_name ||
+            NULL == sub_adapter_name) {
+            rv = NEU_ERR_ENOMEM;
+            break;
+        }
+    }
+
+    if (0 == rv) {
+        *result = sub_infos;
+    } else {
+        neu_persist_subscription_infos_free(sub_infos);
+    }
+
+error_new_vec:
+    vector_free(sub_grp_configs);
+final:
+    nng_mtx_unlock(manager->adapters_mtx); // TODO: reduce locking granularity
+
+    return rv;
 }
 
 int neu_manager_adapter_validate_tag(neu_manager_t *manager,

@@ -51,6 +51,9 @@ int neu_manager_subscribe_node(neu_manager_t *       manager,
                                subscribe_node_cmd_t *cmd);
 int neu_manager_unsubscribe_node(neu_manager_t *         manager,
                                  unsubscribe_node_cmd_t *cmd);
+int neu_manager_get_persist_subscription_infos(neu_manager_t *manager,
+                                               neu_node_id_t  node_id,
+                                               vector_t **    result);
 
 int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd);
