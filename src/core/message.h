@@ -216,4 +216,7 @@ void msg_external_data_uninit(message_t *msg);
 msg_type_e msg_get_type(message_t *msg);
 size_t     msg_get_buf_len(message_t *msg);
 void *     msg_get_buf_ptr(message_t *msg);
+
+nng_msg *nng_msg_inplace_from_buf(msg_type_e msg_type, void *buf, size_t size);
+
 #endif

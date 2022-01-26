@@ -149,3 +149,15 @@ void *msg_get_buf_ptr(message_t *msg)
         return msg->inp_buf.buf_ptr;
     }
 }
+
+nng_msg *nng_msg_inplace_from_buf(msg_type_e msg_type, void *buf, size_t size)
+{
+    nng_msg *msg      = NULL;
+    size_t   msg_size = msg_inplace_data_get_size(size);
+    int      rv       = nng_msg_alloc(&msg, msg_size);
+    if (rv == 0) {
+        message_t *msg_ptr = nng_msg_body(msg);
+        msg_with_struct_init(msg_ptr, msg_type, buf, size);
+    }
+    return msg;
+}
