@@ -134,6 +134,64 @@ static struct context *context_list_find(neu_plugin_t *plugin, const int id)
     return NULL;
 }
 
+static void mqtt_context_publish(neu_plugin_t *plugin)
+{
+    struct context *ctx    = NULL;
+    char *          result = NULL;
+    pthread_mutex_lock(&plugin->list_mutex);
+
+    ctx = neu_list_first(&plugin->context_list);
+    if (NULL != ctx) {
+        if (ctx->ready) {
+            neu_list_remove(&plugin->context_list, ctx);
+            if (NULL != ctx->result) {
+                result = strdup(ctx->result);
+            }
+
+            context_destroy(ctx);
+        }
+    }
+
+    pthread_mutex_unlock(&plugin->list_mutex);
+
+    if (NULL != result) {
+        neu_err_code_e error = neu_mqtt_client_publish(
+            plugin->client, plugin->option.respons_topic, 0,
+            (unsigned char *) result, strlen(result));
+        log_debug("Publish error code:%d, json:%s", error, result);
+        free(result);
+    }
+}
+
+static void mqtt_context_timeout_remove(neu_plugin_t *plugin)
+{
+    struct context *ctx = NULL;
+    pthread_mutex_lock(&plugin->list_mutex);
+
+    ctx = neu_list_first(&plugin->context_list);
+    if (NULL != ctx) {
+        if (!ctx->ready && (0 == context_timeout(ctx))) {
+            neu_list_remove(&plugin->context_list, ctx);
+            context_destroy(ctx);
+        }
+    }
+
+    pthread_mutex_unlock(&plugin->list_mutex);
+}
+
+static void mqtt_context_cleanup(neu_plugin_t *plugin)
+{
+    pthread_mutex_lock(&plugin->list_mutex);
+
+    while (!neu_list_empty(&plugin->context_list)) {
+        struct context *ctx = neu_list_first(&plugin->context_list);
+        neu_list_remove(&plugin->context_list, ctx);
+        context_destroy(ctx);
+    }
+
+    pthread_mutex_unlock(&plugin->list_mutex);
+}
+
 static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
                              neu_json_mqtt_t *parse_header, char *result,
                              bool ready)
@@ -171,40 +229,10 @@ static void *mqtt_send_loop(void *argument)
         }
 
         // Get context and publish
-        struct context *ctx    = NULL;
-        char *          result = NULL;
-        pthread_mutex_lock(&plugin->list_mutex);
-        ctx = neu_list_first(&plugin->context_list);
-        if (NULL != ctx) {
-            if (ctx->ready) {
-                neu_list_remove(&plugin->context_list, ctx);
-                if (NULL != ctx->result) {
-                    result = strdup(ctx->result);
-                }
-
-                context_destroy(ctx);
-            }
-        }
-        pthread_mutex_unlock(&plugin->list_mutex);
-
-        if (NULL != result) {
-            neu_err_code_e error = neu_mqtt_client_publish(
-                plugin->client, plugin->option.respons_topic, 0,
-                (unsigned char *) result, strlen(result));
-            log_debug("Publish error code:%d, json:%s", error, result);
-            free(result);
-        }
+        mqtt_context_publish(plugin);
 
         // Remove context of timeout
-        pthread_mutex_lock(&plugin->list_mutex);
-        ctx = neu_list_first(&plugin->context_list);
-        if (NULL != ctx) {
-            if (!ctx->ready && (0 == context_timeout(ctx))) {
-                neu_list_remove(&plugin->context_list, ctx);
-                context_destroy(ctx);
-            }
-        }
-        pthread_mutex_unlock(&plugin->list_mutex);
+        mqtt_context_timeout_remove(plugin);
 
         // If list empty -> delay(INTERVAL)
         int rc = 0;
@@ -224,13 +252,7 @@ static void *mqtt_send_loop(void *argument)
     }
 
     // Cleanup on quit
-    pthread_mutex_lock(&plugin->list_mutex);
-    while (!neu_list_empty(&plugin->context_list)) {
-        struct context *ctx = neu_list_first(&plugin->context_list);
-        neu_list_remove(&plugin->context_list, ctx);
-        context_destroy(ctx);
-    }
-    pthread_mutex_unlock(&plugin->list_mutex);
+    mqtt_context_cleanup(plugin);
     return NULL;
 }
 
@@ -275,6 +297,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     plugin->running = true;
     pthread_mutex_init(&plugin->running_mutex, NULL);
     pthread_mutex_init(&plugin->list_mutex, NULL);
+
     if (0 != pthread_create(&plugin->daemon, NULL, mqtt_send_loop, plugin)) {
         log_error("Failed to start thread daemon.");
         return -1;
