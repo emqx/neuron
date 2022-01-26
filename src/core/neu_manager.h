@@ -25,8 +25,9 @@
 
 #define DEFAULT_ADAPTER_REG_COUNT 8
 
-typedef struct neu_manager          neu_manager_t;
-typedef struct subscribe_driver_cmd subscribe_node_cmd_t;
+typedef struct neu_manager            neu_manager_t;
+typedef struct subscribe_driver_cmd   subscribe_node_cmd_t;
+typedef struct unsubscribe_driver_cmd unsubscribe_node_cmd_t;
 
 typedef void (*bind_notify_fun)(nng_pipe p, nng_pipe_ev ev, void *arg);
 
@@ -48,6 +49,8 @@ int neu_manager_get_node_name_by_id(neu_manager_t *manager,
                                     neu_node_id_t node_id, char **name);
 int neu_manager_subscribe_node(neu_manager_t *       manager,
                                subscribe_node_cmd_t *cmd);
+int neu_manager_unsubscribe_node(neu_manager_t *         manager,
+                                 unsubscribe_node_cmd_t *cmd);
 
 int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd);
