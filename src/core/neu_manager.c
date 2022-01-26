@@ -1401,13 +1401,37 @@ static void manager_loop(void *arg)
 
         case MSG_CMD_SUBSCRIBE_NODE: {
             subscribe_node_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
-            neu_manager_subscribe_node(manager, cmd_ptr);
+            rv = neu_manager_subscribe_node(manager, cmd_ptr);
+            if (0 != rv) {
+                break;
+            }
+
+            neu_node_id_t node_id  = cmd_ptr->dst_node_id;
+            msg_type_e    msg_type = MSG_EVENT_SUBSCRIBE_NODE;
+            rv = manager_send_msg_to_pipe(manager, persist_pipe, msg_type,
+                                          &node_id, sizeof(node_id));
+            if (0 == rv) {
+                log_info("Forward event %d to %s pipe: %d", msg_type,
+                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+            }
             break;
         }
 
         case MSG_CMD_UNSUBSCRIBE_NODE: {
             unsubscribe_node_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
-            neu_manager_unsubscribe_node(manager, cmd_ptr);
+            rv = neu_manager_unsubscribe_node(manager, cmd_ptr);
+            if (0 != rv) {
+                break;
+            }
+
+            neu_node_id_t node_id  = cmd_ptr->dst_node_id;
+            msg_type_e    msg_type = MSG_EVENT_UNSUBSCRIBE_NODE;
+            rv = manager_send_msg_to_pipe(manager, persist_pipe, msg_type,
+                                          &node_id, sizeof(node_id));
+            if (0 == rv) {
+                log_info("Forward event %d to %s pipe: %d", msg_type,
+                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+            }
             break;
         }
 
