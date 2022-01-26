@@ -896,25 +896,30 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
                                      const char *     adapter_name,
                                      vector_t **      subscription_infos)
 {
-    char *subs = NULL;
+    char path[PATH_MAX_SIZE] = { 0 };
 
-    char subs_file[128] = { 0 };
-    int  rv             = snprintf(subs_file, 128, "%s/%s/subscriptions.json",
-                      persister->persist_dir, adapter_name);
-    if (sizeof(subs_file) == rv) {
-        log_error("subs_file exceeds maximum value");
-        return -1;
+    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
     }
 
-    rv = read_file_string(subs_file, &subs);
+    n = path_cat(path, n, sizeof(path), "subscriptions.json");
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
+    }
+
+    char *json_str = NULL;
+    int   rv       = read_file_string(path, &json_str);
     if (rv != 0) {
         return rv;
     }
 
     neu_json_subscriptions_req_t *subs_req = NULL;
-    rv = neu_json_decode_subscriptions_req(subs, &subs_req);
-    if (rv != 0) {
-        free(subs);
+    rv = neu_json_decode_subscriptions_req(json_str, &subs_req);
+    free(json_str);
+    if (0 != rv) {
         return rv;
     }
 
@@ -922,16 +927,15 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
         subs_req->subscriptions, subs_req->n_subscription,
         subs_req->n_subscription, sizeof(neu_persist_subscription_info_t));
 
-    if (vec == NULL) {
-        free(subs);
-        neu_json_decode_subscriptions_req_free(subs_req);
-        return -1;
+    if (NULL != vec) {
+        subs_req->n_subscription = 0;
+        subs_req->subscriptions  = NULL;
+        *subscription_infos      = vec;
+    } else {
+        rv = NEU_ERR_ENOMEM;
     }
 
-    *subscription_infos = vec;
-
-    free(subs);
-    free(subs_req);
+    neu_json_decode_subscriptions_req_free(subs_req);
     return 0;
 }
 
