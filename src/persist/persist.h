@@ -88,6 +88,20 @@ static inline void neu_persist_datatag_infos_free(vector_t *datatag_infos)
     vector_free(datatag_infos);
 }
 
+static inline void
+neu_persist_subscription_infos_free(vector_t *subscription_infos)
+{
+    VECTOR_FOR_EACH(subscription_infos, iter)
+    {
+        neu_persist_subscription_info_t *p =
+            (neu_persist_subscription_info_t *) iterator_get(&iter);
+        free(p->src_adapter_name);
+        free(p->sub_adapter_name);
+        free(p->group_config_name);
+    }
+    vector_free(subscription_infos);
+}
+
 /**
  * Persister, provide methods to persist data */
 typedef struct neu_persister neu_persister_t;
