@@ -58,8 +58,6 @@ typedef enum neu_conn_tty_data {
     NEU_CONN_TTY_DATA_8,
 } neu_conn_tty_data_e;
 
-typedef struct neu_conn_tcp_client neu_conn_tcp_client_t;
-
 typedef struct neu_conn_param {
     neu_conn_type_e type;
 
@@ -97,18 +95,17 @@ typedef struct neu_conn neu_conn_t;
 typedef void (*neu_conn_conncted)(void *data);
 typedef void (*neu_conn_disconnected)(void *data);
 
-neu_conn_t *           neu_conn_new(neu_conn_param_t *param, void *data,
-                                    neu_conn_conncted     connected,
-                                    neu_conn_disconnected disconnected);
-void                   neu_conn_destory(neu_conn_t *conn);
-neu_conn_type_e        neu_conn_get_type(neu_conn_t *conn);
-int                    neu_conn_get_fd(neu_conn_t *conn);
-neu_conn_tcp_client_t *neu_conn_tcp_accept(neu_conn_t *conn);
-int neu_conn_tcp_client_get_fd(neu_conn_tcp_client_t *client);
+neu_conn_t *    neu_conn_new(neu_conn_param_t *param, void *data,
+                             neu_conn_conncted     connected,
+                             neu_conn_disconnected disconnected);
+neu_conn_t *    neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
+void            neu_conn_destory(neu_conn_t *conn);
+neu_conn_type_e neu_conn_get_type(neu_conn_t *conn);
+int             neu_conn_get_fd(neu_conn_t *conn);
+int             neu_conn_tcp_accept(neu_conn_t *conn);
+int             neu_conn_tcp_client_get_fd(neu_conn_t *conn);
 
-void    neu_conn_tcp_flush(neu_conn_t *conn, neu_conn_tcp_client_t *client);
-ssize_t neu_conn_send(neu_conn_t *conn, neu_conn_tcp_client_t *client,
-                      uint8_t *buf, ssize_t len);
-ssize_t neu_conn_recv(neu_conn_t *conn, neu_conn_tcp_client_t *client,
-                      uint8_t *buf, ssize_t len);
+void    neu_conn_tcp_flush(neu_conn_t *conn);
+ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len);
+ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len);
 #endif
