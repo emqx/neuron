@@ -1122,6 +1122,13 @@ static void manager_loop(void *arg)
     register_default_plugins(manager);
     reg_and_start_default_adapters(manager);
     add_default_grp_configs(manager);
+
+    nng_mtx_lock(manager->adapters_mtx);
+    adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
+        &manager->reg_adapters, DEFAULT_PERSIST_ADAPTER_NAME);
+    nng_mtx_unlock(manager->adapters_mtx);
+    nng_pipe persist_pipe = persist_reg_entity->adapter_pipe;
+
     log_info("Start message loop of neu_manager");
     while (1) {
         nng_msg *msg;
@@ -1363,14 +1370,8 @@ static void manager_loop(void *arg)
             // fall through
 
         case MSG_EVENT_DEL_PLUGIN: {
-            nng_mtx_lock(manager->adapters_mtx);
-            adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
-                &manager->reg_adapters, DEFAULT_PERSIST_ADAPTER_NAME);
-            nng_mtx_unlock(manager->adapters_mtx);
-            nng_pipe   persist_pipe = persist_reg_entity->adapter_pipe;
-            msg_type_e msg_type     = msg_get_type(pay_msg);
-
-            nng_msg *   out_msg;
+            nng_msg *   out_msg  = NULL;
+            msg_type_e  msg_type = msg_get_type(pay_msg);
             const char *name     = msg_get_buf_ptr(pay_msg);
             size_t      len      = msg_get_buf_len(pay_msg);
             size_t      msg_size = msg_inplace_data_get_size(len);
