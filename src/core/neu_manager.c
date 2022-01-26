@@ -1363,8 +1363,10 @@ static void manager_loop(void *arg)
             // fall through
 
         case MSG_EVENT_DEL_PLUGIN: {
+            nng_mtx_lock(manager->adapters_mtx);
             adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
                 &manager->reg_adapters, DEFAULT_PERSIST_ADAPTER_NAME);
+            nng_mtx_unlock(manager->adapters_mtx);
             nng_pipe   persist_pipe = persist_reg_entity->adapter_pipe;
             msg_type_e msg_type     = msg_get_type(pay_msg);
 
