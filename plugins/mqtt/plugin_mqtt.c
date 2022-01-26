@@ -324,6 +324,12 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
+    log_info("Config plugin: %s", neu_plugin_module.module_name);
+    return 0;
+}
+
+static int mqtt_plugin_start(neu_plugin_t *plugin)
+{
     // MQTT client setup
     neu_err_code_e error = neu_mqtt_client_open(
         (neu_mqtt_client_t *) &plugin->client, &plugin->option, plugin);
@@ -337,7 +343,14 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return -1;
     }
 
-    log_info("Config plugin: %s", neu_plugin_module.module_name);
+    return 0;
+}
+
+static int mqtt_plugin_stop(neu_plugin_t *plugin)
+{
+    // Close MQTT client
+    neu_mqtt_client_close(plugin->client);
+    plugin->client = NULL;
     return 0;
 }
 
@@ -410,18 +423,6 @@ static int mqtt_plugin_event_reply(neu_plugin_t *     plugin,
 {
     UNUSED(plugin);
     UNUSED(reply);
-    return 0;
-}
-
-static int mqtt_plugin_start(neu_plugin_t *plugin)
-{
-    (void) plugin;
-    return 0;
-}
-
-static int mqtt_plugin_stop(neu_plugin_t *plugin)
-{
-    (void) plugin;
     return 0;
 }
 
