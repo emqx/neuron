@@ -422,6 +422,23 @@ static adapter_id_t manager_new_adapter_id(neu_manager_t *manager)
     nng_mtx_unlock(manager->adapters_mtx);
     return adapter_id;
 }
+
+static inline int manager_send_msg_to_pipe(neu_manager_t *manager,
+                                           nng_pipe pipe, msg_type_e msg_type,
+                                           void *buf, size_t size)
+{
+    nng_msg *msg = nng_msg_inplace_from_buf(msg_type, buf, size);
+    if (NULL == msg) {
+        return NEU_ERR_ENOMEM;
+    }
+    nng_msg_set_pipe(msg, pipe);
+    int rv = nng_sendmsg(manager->bind_info.mng_sock, msg, 0);
+    if (0 != rv) {
+        nng_msg_free(msg);
+    }
+    return rv;
+}
+
 neu_node_id_t neu_manager_adapter_id_to_node_id(neu_manager_t *manager,
                                                 adapter_id_t   adapter_id)
 {
