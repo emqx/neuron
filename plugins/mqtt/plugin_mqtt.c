@@ -31,7 +31,40 @@
 #define INTERVAL 100000U
 #define TIMEOUT 5000000U
 
+#define TOPIC_PING_REQ "neuron/%s/ping"
+#define TOPIC_NODE_REQ "neuron/%s/node/req"
+#define TOPIC_GCONFIG_REQ "neuron/%s/gconfig/req"
+#define TOPIC_TAGS_REQ "neuron/%s/tags/req"
+#define TOPIC_PLUGIN_REQ "neuron/%s/plugin/req"
+#define TOPIC_SUBSCRIBE_REQ "neuron/%s/subscribe/req"
+#define TOPIC_READ_REQ "neuron/%s/read/req"
+#define TOPIC_WRITE_REQ "neuron/%s/write/req"
+#define TOPIC_TTYS_REQ "neuron/%s/ttys/req"
+#define TOPIC_SCHEMA_REQ "neuron/%s/schema/plugin/req"
+#define TOPIC_SETTING_REQ "neuron/%s/node/setting/req"
+#define TOPIC_CTR_REQ "neuron/%s/node/ctl/req"
+#define TOPIC_STATE_REQ "neuron/%s/node/state/req"
+
+#define TOPIC_STATUS_RES "neuron/%s/status"
+#define TOPIC_NODE_RES "neuron/%s/node/resp"
+#define TOPIC_GCONFIG_RES "neuron/%s/gconfig/resp"
+#define TOPIC_TAGS_RES "neuron/%s/tags/resp"
+#define TOPIC_PLUGIN_RES "neuron/%s/plugin/resp"
+#define TOPIC_SUBSCRIBE_RES "neuron/%s/subscribe/resp"
+#define TOPIC_READ_RES "neuron/%s/read/resp"
+#define TOPIC_WRITE_RES "neuron/%s/write/resp"
+#define TOPIC_TTYS_RES "neuron/%s/ttys/resp"
+#define TOPIC_SCHEMA_RES "neuron/%s/schema/plugin/resp"
+#define TOPIC_SETTING_RES "neuron/%s/node/setting/resp"
+#define TOPIC_CTR_RES "neuron/%s/node/ctl/resp"
+#define TOPIC_STATE_RES "neuron/%s/node/state/resp"
+
 const neu_plugin_module_t neu_plugin_module;
+
+struct topic_pair {
+    const char *request_topic;
+    const char *respons_topic;
+};
 
 struct context {
     neu_list_node   node;
