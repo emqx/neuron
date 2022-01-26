@@ -855,21 +855,24 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
                                       const char *     adapter_name,
                                       vector_t *       subscription_infos)
 {
-    char subs_path[128] = { 0 };
+    char path[PATH_MAX_SIZE] = { 0 };
 
-    int rv =
-        snprintf(subs_path, 128, "%s/%s", persister->persist_dir, adapter_name);
-    if (sizeof(subs_path) == rv) {
-        log_error("subs_path exceeds maximum value");
-        return -1;
+    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
     }
-    create_dir(subs_path);
 
-    char subs_file[128] = { 0 };
-    rv = snprintf(subs_file, 128, "%s/subscriptions.json", subs_path);
-    if (sizeof(subs_file) == rv) {
-        log_error("subs_file exceeds maximum value");
-        return -1;
+    int rv = create_dir(path);
+    if (0 != rv) {
+        log_error("fail to create dir: %s", path);
+        return rv;
+    }
+
+    n = path_cat(path, n, sizeof(path), "subscriptions.json");
+    if (sizeof(path) == n) {
+        log_error("path too long: %s", path);
+        return NEU_ERR_FAILURE;
     }
 
     neu_json_subscriptions_req_t subs_resp = {
@@ -880,14 +883,12 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
     char *result = NULL;
     rv = neu_json_encode_by_fn(&subs_resp, neu_json_encode_subscriptions_resp,
                                &result);
-    if (rv != 0) {
-        free(result);
-        return rv;
+    if (rv == 0) {
+        rv = write_file_string(path, result);
     }
 
-    rv = write_file_string(subs_file, result);
-
     free(result);
+
     return rv;
 }
 
