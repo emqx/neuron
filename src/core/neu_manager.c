@@ -1389,53 +1389,8 @@ static void manager_loop(void *arg)
         }
 
         case MSG_CMD_SUBSCRIBE_NODE: {
-            size_t       msg_size;
-            nng_msg *    out_msg;
-            nng_pipe     msg_pipe;
-            int          need_forward;
-            adapter_id_t src_adapter_id;
-            adapter_id_t sub_adapter_id;
-
-            subscribe_node_cmd_t *cmd_ptr;
-            adapter_reg_entity_t *src_reg_entity;
-            adapter_reg_entity_t *sub_reg_entity;
-
-            cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
-            nng_mtx_lock(manager->adapters_mtx);
-            src_adapter_id = neu_manager_adapter_id_from_node_id(
-                manager, cmd_ptr->src_node_id);
-            sub_adapter_id = neu_manager_adapter_id_from_node_id(
-                manager, cmd_ptr->dst_node_id);
-            src_reg_entity =
-                find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
-            sub_reg_entity =
-                find_reg_adapter_by_id(&manager->reg_adapters, sub_adapter_id);
-            neu_adapter_add_sub_grp_config(sub_reg_entity->adapter,
-                                           cmd_ptr->src_node_id,
-                                           cmd_ptr->grp_config);
-            msg_pipe = src_reg_entity->adapter_pipe;
-            nng_mtx_unlock(manager->adapters_mtx);
-            need_forward = sub_grp_config_with_pipe(
-                cmd_ptr->grp_config, sub_reg_entity->adapter_pipe);
-            if (0 == need_forward) {
-                break;
-            }
-
-            msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
-            rv       = nng_msg_alloc(&out_msg, msg_size);
-            if (rv == 0) {
-                message_t *           msg_ptr;
-                subscribe_node_cmd_t *out_cmd_ptr;
-                msg_ptr = (message_t *) nng_msg_body(out_msg);
-                msg_inplace_data_init(msg_ptr, MSG_CMD_SUBSCRIBE_NODE,
-                                      sizeof(subscribe_node_cmd_t));
-                out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
-                memcpy(out_cmd_ptr, cmd_ptr, sizeof(subscribe_node_cmd_t));
-                nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Forward subscribe driver command to driver pipe: %d",
-                         msg_pipe);
-                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
-            }
+            subscribe_node_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
+            neu_manager_subscribe_node(manager, cmd_ptr);
             break;
         }
 
@@ -1795,6 +1750,50 @@ int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd)
         }
     }
     nng_mtx_unlock(manager->adapters_mtx);
+
+    return rv;
+}
+
+int neu_manager_subscribe_node(neu_manager_t *       manager,
+                               subscribe_node_cmd_t *cmd)
+{
+    int rv = 0;
+
+    nng_mtx_lock(manager->adapters_mtx);
+    adapter_id_t src_adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, cmd->src_node_id);
+    adapter_id_t sub_adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, cmd->dst_node_id);
+    adapter_reg_entity_t *src_reg_entity =
+        find_reg_adapter_by_id(&manager->reg_adapters, src_adapter_id);
+    adapter_reg_entity_t *sub_reg_entity =
+        find_reg_adapter_by_id(&manager->reg_adapters, sub_adapter_id);
+    neu_adapter_add_sub_grp_config(sub_reg_entity->adapter, cmd->src_node_id,
+                                   cmd->grp_config);
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    int need_forward =
+        sub_grp_config_with_pipe(cmd->grp_config, sub_reg_entity->adapter_pipe);
+    if (0 == need_forward) {
+        return rv;
+    }
+
+    size_t   msg_size = msg_inplace_data_get_size(sizeof(*cmd));
+    nng_msg *out_msg  = NULL;
+    rv                = nng_msg_alloc(&out_msg, msg_size);
+    if (rv == 0) {
+        message_t *           msg_ptr;
+        subscribe_node_cmd_t *out_cmd_ptr;
+        msg_ptr = (message_t *) nng_msg_body(out_msg);
+        msg_inplace_data_init(msg_ptr, MSG_CMD_SUBSCRIBE_NODE,
+                              sizeof(subscribe_node_cmd_t));
+        out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
+        memcpy(out_cmd_ptr, cmd, sizeof(subscribe_node_cmd_t));
+        nng_msg_set_pipe(out_msg, src_reg_entity->adapter_pipe);
+        log_info("Forward subscribe driver command to driver pipe: %d",
+                 src_reg_entity->adapter_pipe);
+        nng_sendmsg(manager->bind_info.mng_sock, out_msg, 0);
+    }
 
     return rv;
 }
