@@ -1387,21 +1387,14 @@ static void manager_loop(void *arg)
             // fall through
 
         case MSG_EVENT_DEL_PLUGIN: {
-            nng_msg *   out_msg  = NULL;
-            msg_type_e  msg_type = msg_get_type(pay_msg);
-            const char *name     = msg_get_buf_ptr(pay_msg);
-            size_t      len      = msg_get_buf_len(pay_msg);
-            size_t      msg_size = msg_inplace_data_get_size(len);
-            rv                   = nng_msg_alloc(&out_msg, msg_size);
-            if (rv == 0) {
-                message_t *msg_ptr = nng_msg_body(out_msg);
-                msg_inplace_data_init(msg_ptr, msg_type, len);
-                char *out_buf = msg_get_buf_ptr(msg_ptr);
-                memcpy(out_buf, name, len);
-                nng_msg_set_pipe(out_msg, persist_pipe);
+            msg_type_e msg_type = msg_get_type(pay_msg);
+            void *     buf      = msg_get_buf_ptr(pay_msg);
+            size_t     size     = msg_get_buf_len(pay_msg);
+            rv = manager_send_msg_to_pipe(manager, persist_pipe, msg_type, buf,
+                                          size);
+            if (0 == rv) {
                 log_info("Forward event %d to %s pipe: %d", msg_type,
                          DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
-                nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
         }
