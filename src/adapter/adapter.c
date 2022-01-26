@@ -572,6 +572,38 @@ static int persister_singleton_handle_datatags(neu_adapter_t *adapter,
     return rv;
 }
 
+static int persister_singleton_handle_subscriptions(neu_adapter_t *adapter,
+                                                    neu_node_id_t  node_id)
+{
+    neu_persister_t *persister    = persister_singleton_get();
+    char *           adapter_name = NULL;
+    int rv = neu_manager_get_node_name_by_id(adapter->manager, node_id,
+                                             &adapter_name);
+    if (0 != rv) {
+        return rv;
+    }
+
+    vector_t *sub_infos = NULL;
+    rv = neu_manager_get_persist_subscription_infos(adapter->manager, node_id,
+                                                    &sub_infos);
+    if (0 != rv) {
+        log_error("%s fail get persist subscription infos", adapter->name);
+        free(adapter_name);
+        return rv;
+    }
+
+    rv = neu_persister_store_subscriptions(persister, adapter_name, sub_infos);
+    if (0 != rv) {
+        log_error("%s fail store adapter:%s subscription infos", adapter_name,
+                  adapter->name);
+    }
+
+    neu_persist_subscription_infos_free(sub_infos);
+    free(adapter_name);
+
+    return rv;
+}
+
 neu_plugin_running_state_e
 neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 {
@@ -769,6 +801,15 @@ static void adapter_loop(void *arg)
             persister_singleton_handle_grp_config(
                 adapter, pay_msg_type, cmd->node_id, cmd->config_name);
             free(cmd->config_name);
+            break;
+        }
+
+        case MSG_EVENT_SUBSCRIBE_NODE:
+            // fall through
+
+        case MSG_EVENT_UNSUBSCRIBE_NODE: {
+            const neu_node_id_t *node_id_p = msg_get_buf_ptr(pay_msg);
+            persister_singleton_handle_subscriptions(adapter, *node_id_p);
             break;
         }
 
