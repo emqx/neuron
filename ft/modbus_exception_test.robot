@@ -10,6 +10,8 @@ ${group}    config_modbus_tcp_sample_2
 
 *** Test Cases ***
 The connection between the modbus driver and the modbus simulator is disconnected, and when reconnected, the tag can be write correctly
+    Skip If Not Http API
+
 	Start Simulator Arg    ${MODBUS_TCP_SERVER_SIMULATOR}	${SIMULATOR_DIR}	9000
 
 	${tag1_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!000008", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
