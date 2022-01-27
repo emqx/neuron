@@ -170,6 +170,8 @@ struct neu_adapter {
     vector_t             sub_grp_configs; // neu_sub_grp_config_t
 };
 
+static uint32_t adapter_get_req_id(neu_adapter_t *adapter);
+
 static neu_persister_t *g_persister_singleton = NULL;
 
 static void persister_singleton_init()
@@ -376,6 +378,76 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
     }
 
     neu_persist_group_config_infos_free(group_config_infos);
+    return rv;
+}
+
+static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
+                                                  const char *   adapter_name)
+{
+    int              rv        = 0;
+    neu_persister_t *persister = persister_singleton_get();
+    vector_t *       sub_infos = NULL;
+
+    neu_node_id_t dst_node_id = 0;
+    rv = neu_manager_get_node_id_by_name(adapter->manager, adapter_name,
+                                         &dst_node_id);
+    if (0 != rv) {
+        log_error("%s fail get node id by name: %s", adapter->name,
+                  adapter_name);
+        return rv;
+    }
+
+    rv = neu_persister_load_subscriptions(persister, adapter_name, &sub_infos);
+    if (0 != rv) {
+        const char *fail_or_ignore = "fail";
+        if (NEU_ERR_ENOENT == rv) {
+            // ignore no subscriptions
+            rv             = 0;
+            fail_or_ignore = "ignore";
+        }
+        log_error("%s %s load subscription infos of %s", adapter->name,
+                  fail_or_ignore, adapter_name);
+        return rv;
+    }
+
+    VECTOR_FOR_EACH(sub_infos, iter)
+    {
+        neu_persist_subscription_info_t *p = iterator_get(&iter);
+
+        neu_node_id_t src_node_id = 0;
+        rv = neu_manager_get_node_id_by_name(adapter->manager,
+                                             p->src_adapter_name, &src_node_id);
+        if (0 != rv) {
+            log_error("%s fail get node id by name: %s", adapter->name,
+                      p->src_adapter_name);
+            break;
+        }
+
+        neu_taggrp_config_t *grp_config = NULL;
+        rv = neu_manager_adapter_get_grp_config_ref_by_name(
+            adapter->manager, src_node_id, p->group_config_name, &grp_config);
+        if (0 != rv) {
+            break;
+        }
+
+        subscribe_node_cmd_t cmd = {
+            .grp_config  = grp_config,
+            .dst_node_id = dst_node_id,
+            .src_node_id = src_node_id,
+            .sender_id   = adapter->id,
+            .req_id      = adapter_get_req_id(adapter),
+        };
+        rv = neu_manager_subscribe_node(adapter->manager, &cmd);
+        const char *ok_or_err = (0 == rv) ? "success" : "fail";
+        log_info("%s %s load subscription dst:%s src:%s grp:%s", adapter->name,
+                 ok_or_err, adapter_name, p->src_adapter_name,
+                 p->group_config_name);
+
+        neu_taggrp_cfg_free((neu_taggrp_config_t *) grp_config);
+    }
+
+    neu_persist_subscription_infos_free(sub_infos);
+
     return rv;
 }
 
