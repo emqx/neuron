@@ -510,9 +510,15 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         }
     }
 
-    neu_persist_adapter_infos_free(adapter_infos);
-
-    return rv;
+    VECTOR_FOR_EACH(adapter_infos, iter)
+    {
+        neu_persist_adapter_info_t *adapter_info = iterator_get(&iter);
+        rv =
+            persister_singleton_load_subscriptions(adapter, adapter_info->name);
+        if (0 != rv) {
+            break;
+        }
+    }
 
 error_add_adapters:
     neu_persist_adapter_infos_free(adapter_infos);
