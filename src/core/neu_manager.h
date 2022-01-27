@@ -47,6 +47,8 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
                           vector_t *result_nodes);
 int neu_manager_get_node_name_by_id(neu_manager_t *manager,
                                     neu_node_id_t node_id, char **name);
+int neu_manager_get_node_id_by_name(neu_manager_t *manager, const char *name,
+                                    neu_node_id_t *node_id_p);
 int neu_manager_subscribe_node(neu_manager_t *       manager,
                                subscribe_node_cmd_t *cmd);
 int neu_manager_unsubscribe_node(neu_manager_t *         manager,

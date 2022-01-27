@@ -1913,6 +1913,28 @@ int neu_manager_get_node_name_by_id(neu_manager_t *manager,
     return rv;
 }
 
+int neu_manager_get_node_id_by_name(neu_manager_t *manager, const char *name,
+                                    neu_node_id_t *node_id_p)
+{
+    int                   rv = 0;
+    adapter_reg_entity_t *reg_entity;
+
+    if (NULL == manager || NULL == name || NULL == node_id_p) {
+        return NEU_ERR_EINVAL;
+    }
+
+    nng_mtx_lock(manager->adapters_mtx);
+    reg_entity = find_reg_adapter_by_name(&manager->reg_adapters, name);
+    if (NULL != reg_entity) {
+        *node_id_p = neu_adapter_get_id(reg_entity->adapter);
+    } else {
+        rv = NEU_ERR_NODE_NOT_EXIST;
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return rv;
+}
+
 int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd)
 {
