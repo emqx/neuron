@@ -330,7 +330,14 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
     int rv = neu_persister_load_group_configs(persister, adapter_name,
                                               &group_config_infos);
     if (0 != rv) {
-        log_error("%s fail load grp config of %s", adapter->name, adapter_name);
+        const char *fail_or_ignore = "fail";
+        if (NEU_ERR_ENOENT == rv) {
+            // ignore no group configs
+            rv             = 0;
+            fail_or_ignore = "ignore";
+        }
+        log_error("%s %s load grp config of %s", adapter->name, fail_or_ignore,
+                  adapter_name);
         return rv;
     }
 

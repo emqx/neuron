@@ -255,7 +255,8 @@ static int file_tree_walk_(char *path_buf, size_t len, size_t size,
 
     // if not possible to read the directory for this user
     if ((dirp = opendir(path_buf)) == NULL) {
-        return -1;
+        rv = (ENOENT == errno) ? NEU_ERR_ENOENT : NEU_ERR_FAILURE;
+        return rv;
     }
 
     while (NULL != (dent = readdir(dirp))) {
