@@ -1415,11 +1415,15 @@ static void manager_loop(void *arg)
                                            cmd_ptr->grp_config);
             msg_pipe = src_reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
-            msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
-            rv       = nng_msg_alloc(&out_msg, msg_size);
             need_forward = sub_grp_config_with_pipe(
                 cmd_ptr->grp_config, sub_reg_entity->adapter_pipe);
-            if (rv == 0 && need_forward == 1) {
+            if (0 == need_forward) {
+                break;
+            }
+
+            msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
+            rv       = nng_msg_alloc(&out_msg, msg_size);
+            if (rv == 0) {
                 message_t *           msg_ptr;
                 subscribe_node_cmd_t *out_cmd_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
@@ -1462,12 +1466,16 @@ static void manager_loop(void *arg)
                                            cmd_ptr->grp_config);
             msg_pipe = src_reg_entity->adapter_pipe;
             nng_mtx_unlock(manager->adapters_mtx);
-            msg_size =
-                msg_inplace_data_get_size(sizeof(unsubscribe_node_cmd_t));
-            rv           = nng_msg_alloc(&out_msg, msg_size);
             need_forward = unsub_grp_config_with_pipe(
                 cmd_ptr->grp_config, sub_reg_entity->adapter_pipe);
-            if (rv == 0 && need_forward == 1) {
+            if (0 == need_forward) {
+                break;
+            }
+
+            msg_size =
+                msg_inplace_data_get_size(sizeof(unsubscribe_node_cmd_t));
+            rv = nng_msg_alloc(&out_msg, msg_size);
+            if (rv == 0) {
                 message_t *             msg_ptr;
                 unsubscribe_node_cmd_t *out_cmd_ptr;
                 msg_ptr = (message_t *) nng_msg_body(out_msg);
