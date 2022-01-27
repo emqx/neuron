@@ -2542,6 +2542,42 @@ int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
     return 0;
 }
 
+int neu_manager_adapter_get_grp_config_ref_by_name(
+    neu_manager_t *manager, neu_node_id_t node_id, const char *grp_config_name,
+    neu_taggrp_config_t **p_grp_config)
+{
+    int rv = 0;
+
+    if (NULL == manager || NULL == grp_config_name || NULL == p_grp_config) {
+        log_error(
+            "get nodes with NULL manager, grp_config_name or p_grp_config");
+        return NEU_ERR_EINVAL;
+    }
+
+    nng_mtx_lock(manager->adapters_mtx);
+    adapter_id_t adapter_id =
+        neu_manager_adapter_id_from_node_id(manager, node_id);
+    adapter_reg_entity_t *reg_entity =
+        find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (NULL == reg_entity) {
+        nng_mtx_unlock(manager->adapters_mtx);
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    neu_taggrp_config_t *grp_config =
+        (neu_taggrp_config_t *) neu_datatag_mng_ref_grp_config(
+            reg_entity->datatag_manager, grp_config_name);
+
+    if (NULL != grp_config) {
+        *p_grp_config = grp_config;
+    } else {
+        rv = NEU_ERR_GRP_CONFIG_NOT_EXIST;
+    }
+
+    nng_mtx_unlock(manager->adapters_mtx);
+    return rv;
+}
+
 int neu_manager_get_persist_subscription_infos(neu_manager_t *manager,
                                                neu_node_id_t  node_id,
                                                vector_t **    result)

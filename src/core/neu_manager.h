@@ -106,6 +106,9 @@ int neu_manager_uninit_adapter(neu_manager_t *manager, neu_adapter_t *adapter);
 int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
                                             neu_node_id_t  node_id,
                                             vector_t **    result_sgc);
+int neu_manager_adapter_get_grp_config_ref_by_name(
+    neu_manager_t *manager, neu_node_id_t node_id, const char *grp_config_name,
+    neu_taggrp_config_t **p_grp_config);
 
 int neu_manager_init_main_adapter(neu_manager_t * manager,
                                   bind_notify_fun bind_adapter,
