@@ -5,7 +5,7 @@
 
 void command_response_handle(mqtt_response_t *response)
 {
-    neu_plugin_t *plugin = (neu_plugin_t *) response->context;
+    neu_plugin_t *plugin = (neu_plugin_t *) response->plugin;
 
     if (NULL == response->topic_name || NULL == response->payload) {
         return;
