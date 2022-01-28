@@ -46,8 +46,9 @@ neu_event_timer_ctx_t *neu_event_add_timer(neu_event_ctx_t * events,
 int neu_event_del_timer(neu_event_ctx_t *events, neu_event_timer_ctx_t *timer);
 
 enum neu_event_io_type {
-    NEU_EVENT_IO_READ       = 0x1,
-    NEU_EVENT_IO_PEER_CLOSE = 0x2,
+    NEU_EVENT_IO_READ   = 0x1,
+    NEU_EVENT_IO_CLOSED = 0x2,
+    NEU_EVENT_IO_HUP    = 0x3,
 };
 typedef struct neu_event_io_ctx neu_event_io_ctx_t;
 typedef int (*neu_event_io_callback)(enum neu_event_io_type type, int fd,

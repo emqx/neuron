@@ -58,15 +58,19 @@ typedef enum neu_conn_tty_data {
     NEU_CONN_TTY_DATA_8,
 } neu_conn_tty_data_e;
 
+typedef void (*neu_conn_callback)(void *data, int fd);
+
 typedef struct neu_conn_param {
     neu_conn_type_e type;
 
     union {
         struct {
-            char *   ip;
-            uint16_t port;
-            uint16_t timeout; // millisecond
-            int      max_link;
+            char *            ip;
+            uint16_t          port;
+            uint16_t          timeout; // millisecond
+            int               max_link;
+            neu_conn_callback start_listen;
+            neu_conn_callback stop_listen;
         } tcp_server;
 
         struct {
@@ -92,12 +96,9 @@ typedef struct neu_conn_param {
 
 typedef struct neu_conn neu_conn_t;
 
-typedef void (*neu_conn_conncted)(void *data);
-typedef void (*neu_conn_disconnected)(void *data);
-
 neu_conn_t *    neu_conn_new(neu_conn_param_t *param, void *data,
-                             neu_conn_conncted     connected,
-                             neu_conn_disconnected disconnected);
+                             neu_conn_callback connected,
+                             neu_conn_callback disconnected);
 neu_conn_t *    neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
 void            neu_conn_destory(neu_conn_t *conn);
 neu_conn_type_e neu_conn_get_type(neu_conn_t *conn);
