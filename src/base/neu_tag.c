@@ -269,3 +269,142 @@ int neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
 
     return ret;
 }
+
+static int pre_num(unsigned char byte)
+{
+    unsigned char mask = 0x80;
+    int           num  = 0;
+    for (int i = 0; i < 8; i++) {
+        if ((byte & mask) == mask) {
+            mask = mask >> 1;
+            num++;
+        } else {
+            break;
+        }
+    }
+    return num;
+}
+
+bool neu_datatag_string_is_utf8(char *data, int len)
+{
+    int num = 0;
+    int i   = 0;
+
+    while (i < len) {
+        if ((data[i] & 0x80) == 0x00) {
+            // 0XXX_XXXX
+            i++;
+            continue;
+        } else if ((num = pre_num(data[i])) > 2) {
+            // 110X_XXXX 10XX_XXXX
+            // 1110_XXXX 10XX_XXXX 10XX_XXXX
+            // 1111_0XXX 10XX_XXXX 10XX_XXXX 10XX_XXXX
+            // 1111_10XX 10XX_XXXX 10XX_XXXX 10XX_XXXX 10XX_XXXX
+            // 1111_110X 10XX_XXXX 10XX_XXXX 10XX_XXXX 10XX_XXXX 10XX_XXXX
+            i++;
+            for (int j = 0; j < num - 1; j++) {
+                if ((data[i] & 0xc0) != 0x80) {
+                    return false;
+                }
+                i++;
+            }
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
+int neu_datatag_string_htol(char *str, int len)
+{
+    char t = 0;
+
+    for (int i = 0; i < len; i += 2) {
+        t          = str[i];
+        str[i]     = str[i + 1];
+        str[i + 1] = t;
+    }
+
+    return len;
+}
+
+int neu_datatag_string_ltoh(char *str, int len)
+{
+    return neu_datatag_string_htol(str, len);
+}
+
+int neu_datatag_string_etod(char *str, int len)
+{
+    for (int i = 0; i < len; i += 2) {
+        str[i + 1] = str[i];
+        str[i]     = 0;
+    }
+
+    return len;
+}
+
+int neu_datatag_string_dtoe(char *str, int len)
+{
+    for (int i = 0; i < len; i += 2) {
+        str[i]     = str[i + 1];
+        str[i + 1] = 0;
+    }
+
+    return len;
+}
+
+int neu_datatag_string_etoh(char *str, int len)
+{
+    char *t = calloc(len, sizeof(char));
+
+    for (int i = 0; i < len; i++) {
+        t[i] = str[i * 2];
+    }
+    memset(str, 0, len);
+    strncpy(str, t, strlen(t));
+
+    free(t);
+    return len / 2;
+}
+
+int neu_datatag_string_dtoh(char *str, int len)
+{
+    char *t = calloc(len, sizeof(char));
+
+    for (int i = 0; i < len; i++) {
+        t[i] = str[i * 2 + 1];
+    }
+    memset(str, 0, len);
+    strncpy(str, t, strlen(t));
+
+    free(t);
+    return len / 2;
+}
+
+int neu_datatag_string_tod(char *str, int len, int buf_len)
+{
+    assert(len * 2 < len);
+    char *t = strdup(str);
+
+    memset(str, 0, buf_len);
+    for (int i = 0; i < len; i++) {
+        str[i * 2 + 1] = t[i];
+    }
+
+    free(t);
+    return len * 2;
+}
+
+int neu_datatag_string_toe(char *str, int len, int buf_len)
+{
+    assert(len * 2 < len);
+    char *t = strdup(str);
+
+    memset(str, 0, buf_len);
+    for (int i = 0; i < len; i++) {
+        str[i * 2] = t[i];
+    }
+
+    free(t);
+    return len * 2;
+}

@@ -86,7 +86,17 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
                                   neu_datatag_addr_option_u *option);
 
 neu_data_val_t *neu_datatag_pack_create(int size);
-int neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
-                         uint32_t key, void *data);
+int  neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
+                          uint32_t key, void *data);
+bool neu_datatag_string_is_utf8(char *data, int len);
+
+int neu_datatag_string_htol(char *str, int len);
+int neu_datatag_string_ltoh(char *str, int len);
+int neu_datatag_string_etod(char *str, int len);
+int neu_datatag_string_dtoe(char *str, int len);
+int neu_datatag_string_etoh(char *str, int len);
+int neu_datatag_string_dtoh(char *str, int len);
+int neu_datatag_string_tod(char *str, int len, int buf_len);
+int neu_datatag_string_toe(char *str, int len, int buf_len);
 
 #endif
