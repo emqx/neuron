@@ -33,6 +33,22 @@ extern "C" {
 #include "plugin.h"
 #include "read_write.h"
 
+enum topic_type {
+    TOPIC_TYPE_PING = 0,
+    TOPIC_TYPE_NODE,
+    TOPIC_TYPE_GCONFIG,
+    TOPIC_TYPE_TAGS,
+    TOPIC_TYPE_PLUGIN,
+    TOPIC_TYPE_SUBSCRIBE,
+    TOPIC_TYPE_READ,
+    TOPIC_TYPE_WRITE,
+    TOPIC_TYPE_TTYS,
+    TOPIC_TYPE_SCHEMA,
+    TOPIC_TYPE_SETTING,
+    TOPIC_TYPE_CTR,
+    TOPIC_TYPE_STATE,
+};
+
 typedef void (*context_add_callback)(neu_plugin_t *plugin, uint32_t req_id,
                                      neu_json_mqtt_t *parse_head, char *result,
                                      bool ready);
@@ -42,7 +58,8 @@ typedef struct {
     size_t               topic_len;
     void *               payload;
     size_t               len;
-    void *               context;
+    void *               plugin;
+    void *               topic_pair;
     context_add_callback context_add;
 } mqtt_response_t;
 

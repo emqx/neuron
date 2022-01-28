@@ -59,6 +59,10 @@
 #define TOPIC_CTR_RES "neuron/%s/node/ctl/resp"
 #define TOPIC_STATE_RES "neuron/%s/node/state/resp"
 
+#define QOS0 0
+#define QOS1 1
+#define QOS2 2
+
 const neu_plugin_module_t neu_plugin_module;
 
 struct context {
@@ -76,6 +80,7 @@ struct topic_pair {
     char *        topic_respons;
     int           qos_request;
     int           qos_response;
+    int           type;
 };
 
 struct neu_plugin {
@@ -208,7 +213,8 @@ static void topic_pair_destory(struct topic_pair *pair)
     }
 }
 
-static void topic_list_add(neu_list *list, char *request, char *response)
+static void topic_list_add(neu_list *list, char *request, int qos_request,
+                           char *response, int qos_response, int type)
 {
     if (NULL == request) {
         return;
@@ -221,8 +227,9 @@ static void topic_list_add(neu_list *list, char *request, char *response)
 
     pair->topic_request = request;
     pair->topic_respons = response;
-    pair->qos_request   = 0;
-    pair->qos_response  = 0;
+    pair->qos_request   = qos_request;
+    pair->qos_response  = qos_response;
+    pair->type          = type;
 
     NEU_LIST_NODE_INIT(&pair->node);
     neu_list_append(list, pair);
@@ -255,32 +262,57 @@ static void topic_list_cleanup(neu_list *list)
 
 static void topic_list_generate(neu_list *list, char *name)
 {
-    topic_list_add(list, real_topic_generate(TOPIC_PING_REQ, name),
-                   real_topic_generate(TOPIC_STATUS_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_NODE_REQ, name),
-                   real_topic_generate(TOPIC_NODE_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_GCONFIG_REQ, name),
-                   real_topic_generate(TOPIC_GCONFIG_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_TAGS_REQ, name),
-                   real_topic_generate(TOPIC_TAGS_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_PLUGIN_REQ, name),
-                   real_topic_generate(TOPIC_PLUGIN_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_SUBSCRIBE_REQ, name),
-                   real_topic_generate(TOPIC_SUBSCRIBE_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_READ_REQ, name),
-                   real_topic_generate(TOPIC_READ_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_WRITE_REQ, name),
-                   real_topic_generate(TOPIC_WRITE_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_TTYS_REQ, name),
-                   real_topic_generate(TOPIC_TTYS_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_SCHEMA_REQ, name),
-                   real_topic_generate(TOPIC_SCHEMA_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_SETTING_REQ, name),
-                   real_topic_generate(TOPIC_SETTING_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_CTR_REQ, name),
-                   real_topic_generate(TOPIC_CTR_RES, name));
-    topic_list_add(list, real_topic_generate(TOPIC_STATE_REQ, name),
-                   real_topic_generate(TOPIC_STATE_RES, name));
+    topic_list_add(list, real_topic_generate(TOPIC_PING_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_STATUS_RES, name), QOS0,
+                   TOPIC_TYPE_PING);
+
+    topic_list_add(list, real_topic_generate(TOPIC_NODE_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_NODE_RES, name), QOS0,
+                   TOPIC_TYPE_NODE);
+
+    topic_list_add(list, real_topic_generate(TOPIC_GCONFIG_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_GCONFIG_RES, name), QOS0,
+                   TOPIC_TYPE_GCONFIG);
+
+    topic_list_add(list, real_topic_generate(TOPIC_TAGS_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_TAGS_RES, name), QOS0,
+                   TOPIC_TYPE_TAGS);
+
+    topic_list_add(list, real_topic_generate(TOPIC_PLUGIN_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_PLUGIN_RES, name), QOS0,
+                   TOPIC_TYPE_PLUGIN);
+
+    topic_list_add(list, real_topic_generate(TOPIC_SUBSCRIBE_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_SUBSCRIBE_RES, name), QOS0,
+                   TOPIC_TYPE_SUBSCRIBE);
+
+    topic_list_add(list, real_topic_generate(TOPIC_READ_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_READ_RES, name), QOS0,
+                   TOPIC_TYPE_READ);
+
+    topic_list_add(list, real_topic_generate(TOPIC_WRITE_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_WRITE_RES, name), QOS0,
+                   TOPIC_TYPE_WRITE);
+
+    topic_list_add(list, real_topic_generate(TOPIC_TTYS_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_TTYS_RES, name), QOS0,
+                   TOPIC_TYPE_TTYS);
+
+    topic_list_add(list, real_topic_generate(TOPIC_SCHEMA_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_SCHEMA_RES, name), QOS0,
+                   TOPIC_TYPE_SCHEMA);
+
+    topic_list_add(list, real_topic_generate(TOPIC_SETTING_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_SETTING_RES, name), QOS0,
+                   TOPIC_TYPE_SETTING);
+
+    topic_list_add(list, real_topic_generate(TOPIC_CTR_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_CTR_RES, name), QOS0,
+                   TOPIC_TYPE_CTR);
+
+    topic_list_add(list, real_topic_generate(TOPIC_STATE_REQ, name), QOS0,
+                   real_topic_generate(TOPIC_STATE_RES, name), QOS0,
+                   TOPIC_TYPE_STATE);
 }
 
 static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
@@ -296,11 +328,15 @@ static void mqtt_response_handle1(const char *topic_name, size_t topic_len,
                                   void *payload, const size_t len,
                                   void *context)
 {
+    neu_plugin_t *     plugin = (neu_plugin_t *) context;
+    struct topic_pair *pair = topic_list_find(&plugin->topic_list, topic_name);
+
     mqtt_response_t response = { .topic_name  = topic_name,
                                  .topic_len   = topic_len,
                                  .payload     = payload,
                                  .len         = len,
-                                 .context     = context,
+                                 .plugin      = context,
+                                 .topic_pair  = pair,
                                  .context_add = mqtt_context_add };
     command_response_handle(&response);
     return;
@@ -312,8 +348,8 @@ static void topic_list_subscribe(neu_list *list, neu_mqtt_client_t *client)
     NEU_LIST_FOREACH(list, item)
     {
         if (NULL != item) {
-            neu_mqtt_client_subscribe(client, item->topic_request, 0,
-                                      mqtt_response_handle1);
+            neu_mqtt_client_subscribe(client, item->topic_request,
+                                      item->qos_request, mqtt_response_handle1);
         }
     }
 }
@@ -383,7 +419,8 @@ static void mqtt_response_handle(const char *topic_name, size_t topic_len,
                                  .topic_len   = topic_len,
                                  .payload     = payload,
                                  .len         = len,
-                                 .context     = context,
+                                 .plugin      = context,
+                                 .topic_pair  = NULL,
                                  .context_add = mqtt_context_add };
     command_response_handle(&response);
     return;
