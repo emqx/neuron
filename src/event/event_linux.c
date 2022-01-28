@@ -84,9 +84,7 @@ static void *event_loop(void *arg)
             continue;
         }
         if (ret == -1) {
-            log_error("epoll wait error: %d(%s), fd: %d", errno,
-                      strerror(errno), events->epoll_fd);
-            continue;
+            break;
         }
 
         data = (struct event_data *) event.data.ptr;
@@ -103,14 +101,22 @@ static void *event_loop(void *arg)
             }
             break;
         case IO:
+            if ((event.events & EPOLLHUP) == EPOLLHUP) {
+                data->callback.io(NEU_EVENT_IO_HUP, data->fd, data->usr_data);
+                break;
+            }
+
+            if ((event.events & EPOLLRDHUP) == EPOLLRDHUP) {
+                data->callback.io(NEU_EVENT_IO_CLOSED, data->fd,
+                                  data->usr_data);
+                break;
+            }
+
             if ((event.events & EPOLLIN) == EPOLLIN) {
                 data->callback.io(NEU_EVENT_IO_READ, data->fd, data->usr_data);
+                break;
             }
-            if ((event.events & EPOLLHUP) == EPOLLHUP ||
-                (event.events & EPOLLRDHUP) == EPOLLRDHUP) {
-                data->callback.io(NEU_EVENT_IO_PEER_CLOSE, data->fd,
-                                  data->usr_data);
-            }
+
             break;
         }
 
@@ -240,7 +246,9 @@ neu_event_io_ctx_t *neu_event_add_io(neu_event_ctx_t *events, neu_event_io_t io)
     int                 ret    = 0;
     neu_event_io_ctx_t *io_ctx = calloc(1, sizeof(neu_event_io_ctx_t));
     struct event_data * data   = calloc(1, sizeof(struct event_data));
-    struct epoll_event  event  = { .events = EPOLLIN, .data.ptr = data };
+    struct epoll_event  event  = { .events =
+                                     EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP,
+                                 .data.ptr = data };
 
     data->type        = IO;
     data->fd          = io.fd;
