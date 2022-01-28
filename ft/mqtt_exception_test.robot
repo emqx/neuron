@@ -14,6 +14,7 @@ ${MQTT_CONFIG_ERR}         {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}",
 *** Test Cases ***
 The connection between the mqtt driver and the mqtt server is disconnected, and when reconnected, the command can be executed correctly
 	Skip If Not MQTT API
+	Skip If Not Http API
 	Ping
 
 	_Http LOGIN
