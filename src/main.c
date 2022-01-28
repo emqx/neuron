@@ -56,7 +56,7 @@ static void init()
 {
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
-    log_set_level(LOG_DEBUG);
+    log_set_level(NEU_LOG_DEBUG);
     g_logfile = fopen("neuron.log", "a");
     if (g_logfile == NULL) {
         fprintf(stderr,
@@ -65,7 +65,7 @@ static void init()
         abort();
     }
     // log_set_quiet(true);
-    log_add_fp(g_logfile, LOG_DEBUG);
+    log_add_fp(g_logfile, NEU_LOG_DEBUG);
 }
 
 static void uninit()
