@@ -18,6 +18,7 @@
  **/
 
 #include "neu_log.h"
+#include <syslog.h>
 
 #define MAX_CALLBACKS 32
 // #define LOG_USE_COLOR 1
@@ -60,6 +61,38 @@ static void stdout_callback(log_Event *ev)
     vfprintf(ev->udata, ev->fmt, ev->ap);
     fprintf(ev->udata, "\n");
     fflush(ev->udata);
+}
+
+static void syslog_callback(log_Event *ev)
+{
+    int level = LOG_ERR;
+    switch (ev->level) {
+    case NEU_LOG_TRACE:
+        // fall through
+    case NEU_LOG_DEBUG:
+        level = LOG_DEBUG;
+        break;
+    case NEU_LOG_INFO:
+        level = LOG_INFO;
+        break;
+    case NEU_LOG_WARN:
+        level = LOG_WARNING;
+        break;
+    case NEU_LOG_ERROR:
+        level = LOG_ERR;
+        break;
+    case NEU_LOG_FATAL:
+        level = LOG_ALERT;
+        break;
+    }
+    char   buf[1024] = { 0 };
+    size_t n         = snprintf(buf, sizeof(buf), "[%s] %s:%d %s: ", ev->label,
+                        ev->file, ev->line, ev->func);
+    if (n < sizeof(buf)) {
+        // may truncate, but don't care for now
+        vsnprintf(buf + n, sizeof(buf) - n, ev->fmt, ev->ap);
+    }
+    syslog(level, "%s", buf);
 }
 
 static void file_callback(log_Event *ev)
@@ -157,6 +190,10 @@ void log_log(int level, const char *file, int line, const char *func,
         init_event(&ev, stderr);
         va_start(ev.ap, fmt);
         stdout_callback(&ev);
+        va_end(ev.ap);
+
+        va_start(ev.ap, fmt);
+        syslog_callback(&ev);
         va_end(ev.ap);
     }
 
