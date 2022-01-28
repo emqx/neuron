@@ -134,6 +134,7 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         break;
     }
+    case NEU_DTYPE_FLOAT:
     case NEU_DTYPE_UINT32:
     case NEU_DTYPE_INT32: {
         char *op = strchr(datatag->addr_str, '#');
@@ -149,13 +150,13 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
                     option->value32.endian = NEU_DATATAG_ENDIAN_BB32;
                 }
                 if (e1 == 'B' && e2 == 'L') {
-                    option->value32.endian = NEU_DATATAG_ENDIAN_BB32;
+                    option->value32.endian = NEU_DATATAG_ENDIAN_BL32;
                 }
                 if (e1 == 'L' && e2 == 'L') {
-                    option->value32.endian = NEU_DATATAG_ENDIAN_BB32;
+                    option->value32.endian = NEU_DATATAG_ENDIAN_LL32;
                 }
                 if (e1 == 'L' && e2 == 'B') {
-                    option->value32.endian = NEU_DATATAG_ENDIAN_BB32;
+                    option->value32.endian = NEU_DATATAG_ENDIAN_LB32;
                 }
             }
         }
@@ -196,9 +197,8 @@ int neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
     neu_int_val_t      elem  = { 0 };
     neu_data_val_t *   tv    = NULL;
 
-    assert(neu_fixed_array_size(array) > index);
-    assert(neu_dvalue_get_value_type(val) == NEU_DTYPE_ARRAY);
     neu_dvalue_get_ref_array(val, &array);
+    assert(neu_fixed_array_size(array) > index);
 
     switch (type) {
     case NEU_DTYPE_ERRORCODE:
