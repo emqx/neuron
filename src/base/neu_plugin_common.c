@@ -455,9 +455,12 @@ neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
     {
         neu_taggrp_config_t *config =
             *(neu_taggrp_config_t **) iterator_get(&iter);
-        if (strncmp(neu_taggrp_cfg_get_name(config), name, strlen(name)) == 0) {
-            find_config = config;
-            break;
+        if (neu_taggrp_cfg_is_anchored(config)) {
+            if (strncmp(neu_taggrp_cfg_get_name(config), name, strlen(name)) ==
+                0) {
+                find_config = config;
+                break;
+            }
         }
     }
 
