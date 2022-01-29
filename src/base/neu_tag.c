@@ -20,6 +20,7 @@ config_ **/
 #include <assert.h>
 #include <string.h>
 
+#include "neu_errcodes.h"
 #include "neu_tag.h"
 
 bool neu_tag_check_attribute(neu_attribute_e attribute)
@@ -407,4 +408,45 @@ int neu_datatag_string_toe(char *str, int len, int buf_len)
 
     free(t);
     return len * 2;
+}
+
+void neu_datatag_unpack(neu_data_val_t *req_val, void *data,
+                        neu_datatag_write_value_unpack_callback fn)
+{
+    neu_fixed_array_t *req_array = NULL;
+
+    neu_dvalue_get_ref_array(req_val, &req_array);
+
+    for (uint32_t i = 0; i < req_array->length; i++) {
+        neu_int_val_t *int_val = neu_fixed_array_get(req_array, i);
+        neu_dtype_e    type =
+            neu_value_type_in_dtype(neu_dvalue_get_type(int_val->val));
+
+        switch (type) {
+        case NEU_DTYPE_INT64: {
+            int64_t value = 0;
+
+            neu_dvalue_get_int64(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_DOUBLE: {
+            double value = 0;
+
+            neu_dvalue_get_double(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_CSTR: {
+            char *value = NULL;
+
+            neu_dvalue_get_cstr(int_val->val, &value);
+            fn(data, i, int_val->key, value);
+            break;
+        }
+        default:
+            assert(1 == 0);
+            break;
+        }
+    }
 }

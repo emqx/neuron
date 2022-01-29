@@ -85,6 +85,14 @@ void           neu_datatag_free(neu_datatag_t *datatag);
 int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
                                   neu_datatag_addr_option_u *option);
 
+typedef void (*neu_datatag_write_value_unpack_callback)(void *   data,
+                                                        uint16_t index,
+                                                        uint32_t id,
+                                                        void *   value);
+
+void neu_datatag_unpack(neu_data_val_t *req_val, void *data,
+                        neu_datatag_write_value_unpack_callback fn);
+
 neu_data_val_t *neu_datatag_pack_create(int size);
 int  neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
                           uint32_t key, void *data);
