@@ -445,7 +445,7 @@ static void conn_connect(neu_conn_t *conn)
     case NEU_CONN_TCP_SERVER:
         break;
     case NEU_CONN_TCP_CLIENT: {
-        int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+        int                fd     = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         struct sockaddr_in remote = {
             .sin_family      = AF_INET,
             .sin_port        = htons(conn->param.params.tcp_client.port),
