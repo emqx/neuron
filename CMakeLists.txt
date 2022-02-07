@@ -84,11 +84,11 @@ aux_source_directory(src/parser NEURON_SRC_PARSE)
 aux_source_directory(src/schema NEURON_SRC_SCHEMA)
 set(PERSIST_SOURCES
     src/persist/persist.c
-    src/persist/json_adapter.c
-    src/persist/json_datatags.c
-    src/persist/json_group_configs.c
-    src/persist/json_plugin.c
-    src/persist/json_subs.c)
+    src/persist/json/json_adapter.c
+    src/persist/json/json_datatags.c
+    src/persist/json/json_group_configs.c
+    src/persist/json/json_plugin.c
+    src/persist/json/json_subs.c)
 set(NEURON_SOURCES
     src/main.c
     src/config.c

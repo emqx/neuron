@@ -1,0 +1,10 @@
+{
+    "subscriptions": [
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0000",
+            "src_adapter_name": "modbus-tcp-0000",
+            "read_interval": 1000
+        }
+    ]
+}

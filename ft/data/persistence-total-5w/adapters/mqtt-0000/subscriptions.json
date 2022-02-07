@@ -1,0 +1,58 @@
+{
+    "subscriptions": [
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0000",
+            "src_adapter_name": "modbus-tcp-0000",
+            "read_interval": 1000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0000",
+            "src_adapter_name": "modbus-tcp-0001",
+            "read_interval": 1000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0001",
+            "src_adapter_name": "modbus-tcp-0001",
+            "read_interval": 1000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0000",
+            "src_adapter_name": "modbus-tcp-0002",
+            "read_interval": 2000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0001",
+            "src_adapter_name": "modbus-tcp-0002",
+            "read_interval": 2000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0002",
+            "src_adapter_name": "modbus-tcp-0002",
+            "read_interval": 2000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0003",
+            "src_adapter_name": "modbus-tcp-0002",
+            "read_interval": 2000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0004",
+            "src_adapter_name": "modbus-tcp-0002",
+            "read_interval": 2000
+        },
+        {
+            "sub_adapter_name": "mqtt-0000",
+            "group_config_name": "group-0005",
+            "src_adapter_name": "modbus-tcp-0002",
+            "read_interval": 2000
+        }
+    ]
+}
