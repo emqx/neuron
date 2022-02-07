@@ -1,0 +1,10 @@
+{
+    "node": [
+        {
+            "type": 1,
+            "plugin_name": "modbus-tcp-plugin",
+            "name": "modbus-tcp-0000",
+            "state": 1
+        }
+    ]
+}

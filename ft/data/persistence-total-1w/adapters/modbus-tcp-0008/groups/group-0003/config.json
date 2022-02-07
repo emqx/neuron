@@ -1,0 +1,5 @@
+{
+    "read_interval": 1000,
+    "group_config_name": "group-0003",
+    "adapter_name": "modbus-tcp-0008"
+}

@@ -1,0 +1,1204 @@
+{
+    "tags": [
+        {
+            "name": "modbus2801",
+            "address": "1!402801",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2802",
+            "address": "1!402802",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2803",
+            "address": "1!402803",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2804",
+            "address": "1!402804",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2805",
+            "address": "1!402805",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2806",
+            "address": "1!402806",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2807",
+            "address": "1!402807",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2808",
+            "address": "1!402808",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2809",
+            "address": "1!402809",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2810",
+            "address": "1!402810",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2811",
+            "address": "1!402811",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2812",
+            "address": "1!402812",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2813",
+            "address": "1!402813",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2814",
+            "address": "1!402814",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2815",
+            "address": "1!402815",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2816",
+            "address": "1!402816",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2817",
+            "address": "1!402817",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2818",
+            "address": "1!402818",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2819",
+            "address": "1!402819",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2820",
+            "address": "1!402820",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2821",
+            "address": "1!402821",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2822",
+            "address": "1!402822",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2823",
+            "address": "1!402823",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2824",
+            "address": "1!402824",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2825",
+            "address": "1!402825",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2826",
+            "address": "1!402826",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2827",
+            "address": "1!402827",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2828",
+            "address": "1!402828",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2829",
+            "address": "1!402829",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2830",
+            "address": "1!402830",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2831",
+            "address": "1!402831",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2832",
+            "address": "1!402832",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2833",
+            "address": "1!402833",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2834",
+            "address": "1!402834",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2835",
+            "address": "1!402835",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2836",
+            "address": "1!402836",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2837",
+            "address": "1!402837",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2838",
+            "address": "1!402838",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2839",
+            "address": "1!402839",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2840",
+            "address": "1!402840",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2841",
+            "address": "1!402841",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2842",
+            "address": "1!402842",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2843",
+            "address": "1!402843",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2844",
+            "address": "1!402844",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2845",
+            "address": "1!402845",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2846",
+            "address": "1!402846",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2847",
+            "address": "1!402847",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2848",
+            "address": "1!402848",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2849",
+            "address": "1!402849",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2850",
+            "address": "1!402850",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2851",
+            "address": "1!402851",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2852",
+            "address": "1!402852",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2853",
+            "address": "1!402853",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2854",
+            "address": "1!402854",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2855",
+            "address": "1!402855",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2856",
+            "address": "1!402856",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2857",
+            "address": "1!402857",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2858",
+            "address": "1!402858",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2859",
+            "address": "1!402859",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2860",
+            "address": "1!402860",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2861",
+            "address": "1!402861",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2862",
+            "address": "1!402862",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2863",
+            "address": "1!402863",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2864",
+            "address": "1!402864",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2865",
+            "address": "1!402865",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2866",
+            "address": "1!402866",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2867",
+            "address": "1!402867",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2868",
+            "address": "1!402868",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2869",
+            "address": "1!402869",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2870",
+            "address": "1!402870",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2871",
+            "address": "1!402871",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2872",
+            "address": "1!402872",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2873",
+            "address": "1!402873",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2874",
+            "address": "1!402874",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2875",
+            "address": "1!402875",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2876",
+            "address": "1!402876",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2877",
+            "address": "1!402877",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2878",
+            "address": "1!402878",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2879",
+            "address": "1!402879",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2880",
+            "address": "1!402880",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2881",
+            "address": "1!402881",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2882",
+            "address": "1!402882",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2883",
+            "address": "1!402883",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2884",
+            "address": "1!402884",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2885",
+            "address": "1!402885",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2886",
+            "address": "1!402886",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2887",
+            "address": "1!402887",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2888",
+            "address": "1!402888",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2889",
+            "address": "1!402889",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2890",
+            "address": "1!402890",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2891",
+            "address": "1!402891",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2892",
+            "address": "1!402892",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2893",
+            "address": "1!402893",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2894",
+            "address": "1!402894",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2895",
+            "address": "1!402895",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2896",
+            "address": "1!402896",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2897",
+            "address": "1!402897",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2898",
+            "address": "1!402898",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2899",
+            "address": "1!402899",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2900",
+            "address": "1!402900",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2901",
+            "address": "1!402901",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2902",
+            "address": "1!402902",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2903",
+            "address": "1!402903",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2904",
+            "address": "1!402904",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2905",
+            "address": "1!402905",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2906",
+            "address": "1!402906",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2907",
+            "address": "1!402907",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2908",
+            "address": "1!402908",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2909",
+            "address": "1!402909",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2910",
+            "address": "1!402910",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2911",
+            "address": "1!402911",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2912",
+            "address": "1!402912",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2913",
+            "address": "1!402913",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2914",
+            "address": "1!402914",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2915",
+            "address": "1!402915",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2916",
+            "address": "1!402916",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2917",
+            "address": "1!402917",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2918",
+            "address": "1!402918",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2919",
+            "address": "1!402919",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2920",
+            "address": "1!402920",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2921",
+            "address": "1!402921",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2922",
+            "address": "1!402922",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2923",
+            "address": "1!402923",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2924",
+            "address": "1!402924",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2925",
+            "address": "1!402925",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2926",
+            "address": "1!402926",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2927",
+            "address": "1!402927",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2928",
+            "address": "1!402928",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2929",
+            "address": "1!402929",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2930",
+            "address": "1!402930",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2931",
+            "address": "1!402931",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2932",
+            "address": "1!402932",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2933",
+            "address": "1!402933",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2934",
+            "address": "1!402934",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2935",
+            "address": "1!402935",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2936",
+            "address": "1!402936",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2937",
+            "address": "1!402937",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2938",
+            "address": "1!402938",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2939",
+            "address": "1!402939",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2940",
+            "address": "1!402940",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2941",
+            "address": "1!402941",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2942",
+            "address": "1!402942",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2943",
+            "address": "1!402943",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2944",
+            "address": "1!402944",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2945",
+            "address": "1!402945",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2946",
+            "address": "1!402946",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2947",
+            "address": "1!402947",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2948",
+            "address": "1!402948",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2949",
+            "address": "1!402949",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2950",
+            "address": "1!402950",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2951",
+            "address": "1!402951",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2952",
+            "address": "1!402952",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2953",
+            "address": "1!402953",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2954",
+            "address": "1!402954",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2955",
+            "address": "1!402955",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2956",
+            "address": "1!402956",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2957",
+            "address": "1!402957",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2958",
+            "address": "1!402958",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2959",
+            "address": "1!402959",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2960",
+            "address": "1!402960",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2961",
+            "address": "1!402961",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2962",
+            "address": "1!402962",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2963",
+            "address": "1!402963",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2964",
+            "address": "1!402964",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2965",
+            "address": "1!402965",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2966",
+            "address": "1!402966",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2967",
+            "address": "1!402967",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2968",
+            "address": "1!402968",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2969",
+            "address": "1!402969",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2970",
+            "address": "1!402970",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2971",
+            "address": "1!402971",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2972",
+            "address": "1!402972",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2973",
+            "address": "1!402973",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2974",
+            "address": "1!402974",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2975",
+            "address": "1!402975",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2976",
+            "address": "1!402976",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2977",
+            "address": "1!402977",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2978",
+            "address": "1!402978",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2979",
+            "address": "1!402979",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2980",
+            "address": "1!402980",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2981",
+            "address": "1!402981",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2982",
+            "address": "1!402982",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2983",
+            "address": "1!402983",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2984",
+            "address": "1!402984",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2985",
+            "address": "1!402985",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2986",
+            "address": "1!402986",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2987",
+            "address": "1!402987",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2988",
+            "address": "1!402988",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2989",
+            "address": "1!402989",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2990",
+            "address": "1!402990",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2991",
+            "address": "1!402991",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2992",
+            "address": "1!402992",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2993",
+            "address": "1!402993",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2994",
+            "address": "1!402994",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2995",
+            "address": "1!402995",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2996",
+            "address": "1!402996",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2997",
+            "address": "1!402997",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2998",
+            "address": "1!402998",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus2999",
+            "address": "1!402999",
+            "attribute": 3,
+            "type": 4
+        },
+        {
+            "name": "modbus3000",
+            "address": "1!403000",
+            "attribute": 3,
+            "type": 4
+        }
+    ]
+}

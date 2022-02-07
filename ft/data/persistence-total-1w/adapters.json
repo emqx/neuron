@@ -1,0 +1,124 @@
+{
+  "nodes": [
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0000",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0001",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0002",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0003",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0004",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0005",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0006",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0007",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0008",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "modbus-tcp-plugin",
+      "name": "modbus-tcp-0009",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0000",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0001",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0002",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0003",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0004",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0005",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0006",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0007",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0008",
+      "state": 1
+    },
+    {
+      "type": 1,
+      "plugin_name": "neuron-opcua-plugin",
+      "name": "opcua-0009",
+      "state": 1
+    }
+  ]
+}
