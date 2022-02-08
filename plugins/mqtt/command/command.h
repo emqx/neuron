@@ -51,7 +51,7 @@ enum topic_type {
 
 typedef void (*context_add_callback)(neu_plugin_t *plugin, uint32_t req_id,
                                      neu_json_mqtt_t *parse_head, char *result,
-                                     bool ready);
+                                     void *pair, bool ready);
 
 typedef struct {
     const char *         topic_name;
@@ -60,10 +60,13 @@ typedef struct {
     size_t               len;
     void *               plugin;
     void *               topic_pair;
+    enum topic_type      type;
     context_add_callback context_add;
 } mqtt_response_t;
 
 void command_response_handle(mqtt_response_t *response);
+
+void command_response_handle1(mqtt_response_t *response);
 
 #ifdef __cplusplus
 }

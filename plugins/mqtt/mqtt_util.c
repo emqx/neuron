@@ -306,7 +306,8 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
 
     char uuid4_str[40] = { '\0' };
     neu_uuid_v4_gen(uuid4_str);
-    option->clientid = strdup(uuid4_str);
+    // option->clientid = strdup(uuid4_str);
+    option->clientid = strdup("123456");
     option->username = setting.username;
     option->password = setting.password;
     option->ca_path  = setting.ca_path;
