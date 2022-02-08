@@ -65,15 +65,6 @@
 
 const neu_plugin_module_t neu_plugin_module;
 
-struct context {
-    neu_list_node   node;
-    double          timestamp; // Armv7l support
-    int             req_id;
-    neu_json_mqtt_t parse_header;
-    char *          result;
-    bool            ready;
-};
-
 struct topic_pair {
     neu_list_node node;
     char *        topic_request;
@@ -81,6 +72,16 @@ struct topic_pair {
     int           qos_request;
     int           qos_response;
     int           type;
+};
+
+struct context {
+    neu_list_node      node;
+    double             timestamp; // Armv7l support
+    int                req_id;
+    neu_json_mqtt_t    parse_header;
+    char *             result;
+    struct topic_pair *pair;
+    bool               ready;
 };
 
 struct neu_plugin {
@@ -141,7 +142,7 @@ static int context_timeout(struct context *ctx)
 
 static void context_list_add(neu_plugin_t *plugin, int req_id,
                              neu_json_mqtt_t *parse_header, char *result,
-                             bool ready)
+                             void *pair, bool ready)
 {
     struct context *ctx = context_create();
     if (NULL == ctx) {
@@ -157,6 +158,7 @@ static void context_list_add(neu_plugin_t *plugin, int req_id,
     }
 
     ctx->result = result;
+    ctx->pair   = pair;
     ctx->ready  = ready;
 
     NEU_LIST_NODE_INIT(&ctx->node);
@@ -317,10 +319,10 @@ static void topic_list_generate(neu_list *list, char *name)
 
 static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
                              neu_json_mqtt_t *parse_header, char *result,
-                             bool ready)
+                             void *pair, bool ready)
 {
     pthread_mutex_lock(&plugin->list_mutex);
-    context_list_add(plugin, req_id, parse_header, result, ready);
+    context_list_add(plugin, req_id, parse_header, result, pair, ready);
     pthread_mutex_unlock(&plugin->list_mutex);
 }
 
@@ -337,8 +339,9 @@ static void mqtt_response_handle1(const char *topic_name, size_t topic_len,
                                  .len         = len,
                                  .plugin      = context,
                                  .topic_pair  = pair,
+                                 .type        = pair->type,
                                  .context_add = mqtt_context_add };
-    command_response_handle(&response);
+    command_response_handle1(&response);
     return;
 }
 
@@ -357,6 +360,7 @@ static void topic_list_subscribe(neu_list *list, neu_mqtt_client_t *client)
 static void mqtt_context_publish(neu_plugin_t *plugin)
 {
     struct context *ctx    = NULL;
+    char *          topic  = NULL;
     char *          result = NULL;
     pthread_mutex_lock(&plugin->list_mutex);
 
@@ -368,17 +372,21 @@ static void mqtt_context_publish(neu_plugin_t *plugin)
                 result = strdup(ctx->result);
             }
 
+            if (NULL != ctx->pair) {
+                topic = ctx->pair->topic_respons;
+            }
+
             context_destroy(ctx);
         }
     }
 
     pthread_mutex_unlock(&plugin->list_mutex);
 
-    if (NULL != result) {
+    if (NULL != result && NULL != topic) {
         neu_err_code_e error = neu_mqtt_client_publish(
-            plugin->client, plugin->option.respons_topic, 0,
-            (unsigned char *) result, strlen(result));
-        log_debug("Publish error code:%d, json:%s", error, result);
+            plugin->client, topic, 0, (unsigned char *) result, strlen(result));
+        log_debug("Publish error code:%d, topic('%s'): %s", error, topic,
+                  result);
         free(result);
     }
 }
@@ -648,7 +656,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
         char *json_str =
             command_read_cycle_response(plugin, neu_data->data_val);
-        mqtt_context_add(plugin, 0, NULL, json_str, true);
+        mqtt_context_add(plugin, 0, NULL, json_str, NULL, true);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {
