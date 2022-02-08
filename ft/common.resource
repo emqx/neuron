@@ -58,45 +58,74 @@ ${TAG_DATA_TYPE_STRING}	15
 ${PLUGIN_MODBUS_TCP}	modbus-tcp-plugin
 ${PLUGIN_MQTT}    mqtt-plugin
 
-${MQTT_FUNC_LOGIN}                         ${1}
-${MQTT_FUNC_LOGOUT}                        ${2}
-${MQTT_FUNC_READ}                          ${3}
-${MQTT_FUNC_WRITE}                         ${4}
-${MQTT_FUNC_GET_TTY}                       ${5}
-${MQTT_FUNC_ADD_GROUP_CONFIG}              ${6}
-${MQTT_FUNC_UPDATE_GROUP_CONFIG}           ${7}
-${MQTT_FUNC_DELETE_GROUP_CONFIG}           ${8}
-${MQTT_FUNC_GET_GROUP_CONFIG}              ${9}
-${MQTT_FUNC_SUBSCRIBE_GROUP_CONFIG}        ${10}
-${MQTT_FUNC_UNSUBSCRIBE_GROUP_CONFIG}      ${11}
-${MQTT_FUNC_GET_SUBSCRIBE_GROUP_CONFIG}    ${12}
-${MQTT_FUNC_ADD_TAGS}                      ${13}
-${MQTT_FUNC_UPDATE_TAGS}                   ${14}
-${MQTT_FUNC_DELETE_TAGS}                   ${15}
-${MQTT_FUNC_GET_TAGS}                      ${16}
-${MQTT_FUNC_ADD_NODES}                     ${17}
-${MQTT_FUNC_UPDATE_NODES}                  ${18}
-${MQTT_FUNC_DELETE_NODES}                  ${19}
-${MQTT_FUNC_GET_NODES}                     ${20}
-${MQTT_FUNC_NODE_SETTING}                  ${21}
-${MQTT_FUNC_GET_NODE_SETTING}              ${22}
-${MQTT_FUNC_NODE_CONTROL}                  ${23}
-${MQTT_FUNC_GET_NODE_STATE}                ${24}
-${MQTT_FUNC_ADD_PLUGIN}                    ${25}
-${MQTT_FUNC_UPDATE_PLUGIN}                 ${26}
-${MQTT_FUNC_DELETE_PLUGIN}                 ${27}
-${MQTT_FUNC_GET_PLUGIN}                    ${28}
-${MQTT_FUNC_PING}                          ${29}
+${MQTT_FUNC_LOGIN}                          ${1}
+${MQTT_FUNC_LOGOUT}                         ${2}
+${MQTT_FUNC_READ}                           ${3}
+${MQTT_FUNC_WRITE}                          ${4}
+${MQTT_FUNC_GET_TTY}                        ${5}
+${MQTT_FUNC_ADD_GROUP_CONFIG}               ${6}
+${MQTT_FUNC_UPDATE_GROUP_CONFIG}            ${7}
+${MQTT_FUNC_DELETE_GROUP_CONFIG}            ${8}
+${MQTT_FUNC_GET_GROUP_CONFIG}               ${9}
+${MQTT_FUNC_SUBSCRIBE_GROUP_CONFIG}         ${10}
+${MQTT_FUNC_UNSUBSCRIBE_GROUP_CONFIG}       ${11}
+${MQTT_FUNC_GET_SUBSCRIBE_GROUP_CONFIG}     ${12}
+${MQTT_FUNC_ADD_TAGS}                       ${13}
+${MQTT_FUNC_UPDATE_TAGS}                    ${14}
+${MQTT_FUNC_DELETE_TAGS}                    ${15}
+${MQTT_FUNC_GET_TAGS}                       ${16}
+${MQTT_FUNC_ADD_NODES}                      ${17}
+${MQTT_FUNC_UPDATE_NODES}                   ${18}
+${MQTT_FUNC_DELETE_NODES}                   ${19}
+${MQTT_FUNC_GET_NODES}                      ${20}
+${MQTT_FUNC_NODE_SETTING}                   ${21}
+${MQTT_FUNC_GET_NODE_SETTING}               ${22}
+${MQTT_FUNC_NODE_CONTROL}                   ${23}
+${MQTT_FUNC_GET_NODE_STATE}                 ${24}
+${MQTT_FUNC_ADD_PLUGIN}                     ${25}
+${MQTT_FUNC_UPDATE_PLUGIN}                  ${26}
+${MQTT_FUNC_DELETE_PLUGIN}                  ${27}
+${MQTT_FUNC_GET_PLUGIN}                     ${28}
+${MQTT_FUNC_PING}                           ${29}
 
-${MQTT_UUID}                123456-789abc-123456-aabbcc
-${MQTT_CONFIG_HOST}         127.0.0.1
-${MQTT_CONFIG_PORT}         ${1883}
-${MQTT_CONFIG_REQ_TOPIC}    neuronlite/request
-${MQTT_CONFIG_RES_TOPIC}    neuronlite/response
-${MQTT_CONFIG}              {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}",
-...                         "res-topic": "${MQTT_CONFIG_RES_TOPIC}",
-...                         "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
-...                         "username": "", "password": "", "ca-path":"", "ca-file": ""}
+${MQTT_CLIENTID}                            123456
+${TOPIC_PING_REQ}                           neuron/${MQTT_CLIENTID}/ping
+${TOPIC_NODE_REQ}                           neuron/${MQTT_CLIENTID}/node/req
+${TOPIC_GCONFIG_REQ}                        neuron/${MQTT_CLIENTID}/gconfig/req
+${TOPIC_TAGS_REQ}                           neuron/${MQTT_CLIENTID}/tags/req
+${TOPIC_PLUGIN_REQ}                         neuron/${MQTT_CLIENTID}/plugin/req
+${TOPIC_SUBSCRIBE_REQ}                      neuron/${MQTT_CLIENTID}/subscribe/req
+${TOPIC_READ_REQ}                           neuron/${MQTT_CLIENTID}/read/req
+${TOPIC_WRITE_REQ}                          neuron/${MQTT_CLIENTID}/write/req"
+${TOPIC_TTYS_REQ}                           neuron/${MQTT_CLIENTID}/ttys/req
+${TOPIC_SCHEMA_REQ}                         neuron/${MQTT_CLIENTID}/schema/plugin/req
+${TOPIC_SETTING_REQ}                        neuron/${MQTT_CLIENTID}/node/setting/req
+${TOPIC_CTR_REQ}                            neuron/${MQTT_CLIENTID}/node/ctl/req
+${TOPIC_STATE_REQ}                          neuron/${MQTT_CLIENTID}/node/state/req
+
+${TOPIC_STATUS_RES}                         neuron/${MQTT_CLIENTID}/status
+${TOPIC_NODE_RES}                           neuron/${MQTT_CLIENTID}/node/resp
+${TOPIC_GCONFIG_RES}                        neuron/${MQTT_CLIENTID}/gconfig/resp
+${TOPIC_TAGS_RES}                           neuron/${MQTT_CLIENTID}/tags/resp
+${TOPIC_PLUGIN_RES}                         neuron/${MQTT_CLIENTID}/plugin/resp"
+${TOPIC_SUBSCRIBE_RES}                      neuron/${MQTT_CLIENTID}/subscribe/resp
+${TOPIC_READ_RES}                           neuron/${MQTT_CLIENTID}/read/resp
+${TOPIC_WRITE_RES}                          neuron/${MQTT_CLIENTID}/write/resp
+${TOPIC_TTYS_RES}                           neuron/${MQTT_CLIENTID}/ttys/resp
+${TOPIC_SCHEMA_RES}                         neuron/${MQTT_CLIENTID}/schema/plugin/resp
+${TOPIC_SETTING_RES}                        neuron/${MQTT_CLIENTID}/node/setting/resp
+${TOPIC_CTR_RES}                            neuron/${MQTT_CLIENTID}/node/ctl/resp
+${TOPIC_STATE_RES}                          neuron/${MQTT_CLIENTID}/node/state/resp
+
+${MQTT_UUID}                                123456-789abc-123456-aabbcc
+${MQTT_CONFIG_HOST}                         127.0.0.1
+${MQTT_CONFIG_PORT}                         ${1883}
+${MQTT_CONFIG_REQ_TOPIC}                    neuronlite/request
+${MQTT_CONFIG_RES_TOPIC}                    neuronlite/response
+${MQTT_CONFIG}                              {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}",
+...                                          "res-topic": "${MQTT_CONFIG_RES_TOPIC}",
+...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
+...                                          "username": "", "password": "", "ca-path":"", "ca-file": ""}
 
 ${MODBUS_TCP_CONFIG}	{"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
 ${OPCUA_CONFIG}    {"host": "127.0.0.1", "port": 4840, "username": "user", "password": "123456"}
