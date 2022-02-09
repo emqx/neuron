@@ -66,8 +66,6 @@ typedef struct {
 
 void command_response_handle(mqtt_response_t *response);
 
-void command_response_handle1(mqtt_response_t *response);
-
 #ifdef __cplusplus
 }
 #endif
