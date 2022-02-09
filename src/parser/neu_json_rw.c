@@ -43,10 +43,16 @@ int neu_json_encode_read_resp(void *json_object, void *param)
                                             .v    = p_tag->value,
                                         },
                                         {
+                                            .name      = "error",
+                                            .t         = NEU_JSON_INT,
+                                            .v.val_int = p_tag->error,
+                                        },
+                                        {
                                             .name      = "id",
                                             .t         = NEU_JSON_INT,
                                             .v.val_int = p_tag->id,
                                         } };
+
         tag_array = neu_json_encode_array(tag_array, tag_elems,
                                           NEU_JSON_ELEM_SIZE(tag_elems));
         p_tag++;

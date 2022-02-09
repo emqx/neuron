@@ -3,14 +3,17 @@
 		"tags": [
 			{
 				"id": 1,
+				"error": 2014,
 				"value": 123
 			},
 			{
 				"id": 2,
+				"error": 0,
 				"value": 2.2
 			},
 			{
 				"id": 3,
+				"error": 0,
 				"value": true
 			}
 		]

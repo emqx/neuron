@@ -173,149 +173,102 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
                            neu_taggrp_config_t *   grp_config,
                            modbus_point_context_t *point_ctx)
 {
-    neu_data_val_t *   resp_val   = NULL;
-    int                read_count = 0;
-    modbus_data_t      data_tags  = { 0 };
-    vector_t *         ids        = neu_taggrp_cfg_get_datatag_ids(grp_config);
-    neu_fixed_array_t *array_resp = NULL;
-    int                index      = 1;
-    neu_data_val_t *   val_error_resp = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-    neu_int_val_t      int_val_resp   = { 0 };
-    neu_err_code_e     error          = NEU_ERR_SUCCESS;
-
-    read_count = neu_plugin_tag_count_by_attribute(grp_config, tag_table,
-                                                   NEU_ATTRIBUTE_READ);
-
-    resp_val = neu_dvalue_unit_new();
-    if (resp_val == NULL) {
-        log_error("Failed to allocate data value for response tags");
-        neu_dvalue_free(val_error_resp);
-        return NULL;
-    }
-
-    array_resp = neu_fixed_array_new(read_count + 1, sizeof(neu_int_val_t));
-    if (array_resp == NULL) {
-        log_error("Failed to allocate array for response tags");
-        neu_dvalue_free(resp_val);
-        neu_dvalue_free(val_error_resp);
-        return NULL;
-    }
+    vector_t *      ids      = neu_taggrp_cfg_get_datatag_ids(grp_config);
+    neu_data_val_t *resp_val = neu_datatag_pack_create(ids->size);
+    int             index    = -1;
 
     VECTOR_FOR_EACH(ids, iter_id)
     {
-        neu_datatag_id_t *id      = (neu_datatag_id_t *) iterator_get(&iter_id);
-        neu_datatag_t *   tag     = neu_datatag_tbl_get(tag_table, *id);
-        int               result  = 0;
-        neu_int_val_t     int_val = { 0 };
+        neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
+        neu_datatag_t *   tag = neu_datatag_tbl_get(tag_table, *id);
+        modbus_data_t     data_tags = { 0 };
+
+        index += 1;
 
         if (tag == NULL) {
             // The tag had been deleted by other node
+            neu_err_code_e error = NEU_ERR_TAG_NOT_EXIST;
+            neu_datatag_pack_add(resp_val, index, NEU_DTYPE_ERRORCODE, *id,
+                                 (void *) &error);
             continue;
         }
 
-        if ((tag->attribute & NEU_ATTRIBUTE_READ) == NEU_ATTRIBUTE_READ) {
+        if ((tag->attribute & NEU_ATTRIBUTE_READ) != NEU_ATTRIBUTE_READ) {
+            neu_err_code_e error = NEU_ERR_DEVICE_TAG_NOT_ALLOW_READ;
+            neu_datatag_pack_add(resp_val, index, NEU_DTYPE_ERRORCODE, *id,
+                                 (void *) &error);
+            continue;
+        }
+
+        switch (tag->type) {
+        case NEU_DTYPE_UINT32:
+        case NEU_DTYPE_INT32:
+        case NEU_DTYPE_FLOAT:
+            data_tags.type = MODBUS_B32;
+            break;
+        case NEU_DTYPE_UINT16:
+        case NEU_DTYPE_INT16:
+            data_tags.type = MODBUS_B16;
+            break;
+        case NEU_DTYPE_BIT:
+            data_tags.type = MODBUS_B8;
+            break;
+        default:
+            break;
+        }
+        if (modbus_point_find(point_ctx, tag->addr_str, &data_tags) == -1) {
+            log_error("Failed to find modbus point %s", tag->addr_str);
+
+            neu_err_code_e error = NEU_ERR_TAG_NOT_EXIST;
+            neu_datatag_pack_add(resp_val, index, NEU_DTYPE_ERRORCODE, *id,
+                                 (void *) &error);
+            continue;
+        }
+
+        switch (data_tags.type) {
+        case MODBUS_B8: {
+            neu_datatag_pack_add(resp_val, index, NEU_DTYPE_BIT, *id,
+                                 (void *) &data_tags.val.val_u8);
+            break;
+        }
+        case MODBUS_B16:
             switch (tag->type) {
-            case NEU_DTYPE_UINT32:
-            case NEU_DTYPE_INT32:
-            case NEU_DTYPE_FLOAT:
-                data_tags.type = MODBUS_B32;
+            case NEU_DTYPE_INT16: {
+                neu_datatag_pack_add(resp_val, index, NEU_DTYPE_INT16, *id,
+                                     (void *) &data_tags.val.val_u16);
                 break;
-            case NEU_DTYPE_UINT16:
-            case NEU_DTYPE_INT16:
-                data_tags.type = MODBUS_B16;
+            }
+            case NEU_DTYPE_UINT16: {
+                neu_datatag_pack_add(resp_val, index, NEU_DTYPE_UINT16, *id,
+                                     (void *) &data_tags.val.val_u16);
                 break;
-            case NEU_DTYPE_BIT:
-                data_tags.type = MODBUS_B8;
-                break;
+            }
             default:
                 break;
             }
-            result = modbus_point_find(point_ctx, tag->addr_str, &data_tags);
-            if (result == -1) {
-                neu_data_val_t *val_error = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-
-                log_error("Failed to find modbus point %s", tag->addr_str);
-                neu_dvalue_set_errorcode(val_error, result);
-                neu_int_val_init(&int_val, tag->id, val_error);
-                neu_fixed_array_set(array_resp, index, (void *) &int_val);
-
-                error = NEU_ERR_TAG_NOT_EXIST;
-            } else {
-                switch (data_tags.type) {
-                case MODBUS_B8: {
-                    neu_data_val_t *val_bit = neu_dvalue_new(NEU_DTYPE_BIT);
-                    neu_dvalue_set_bit(val_bit, data_tags.val.val_u8);
-                    neu_int_val_init(&int_val, tag->id, val_bit);
-                    neu_fixed_array_set(array_resp, index, (void *) &int_val);
-                    break;
-                }
-                case MODBUS_B16:
-                    switch (tag->type) {
-                    case NEU_DTYPE_INT16: {
-                        neu_data_val_t *val_i16 =
-                            neu_dvalue_new(NEU_DTYPE_INT16);
-                        neu_dvalue_set_int16(val_i16, data_tags.val.val_u16);
-                        neu_int_val_init(&int_val, tag->id, val_i16);
-                        neu_fixed_array_set(array_resp, index,
-                                            (void *) &int_val);
-                        break;
-                    }
-                    case NEU_DTYPE_UINT16: {
-                        neu_data_val_t *val_ui16 =
-                            neu_dvalue_new(NEU_DTYPE_UINT16);
-                        neu_dvalue_set_uint16(val_ui16, data_tags.val.val_u16);
-                        neu_int_val_init(&int_val, tag->id, val_ui16);
-                        neu_fixed_array_set(array_resp, index,
-                                            (void *) &int_val);
-                        break;
-                    }
-                    default:
-                        break;
-                    }
-                    break;
-                case MODBUS_B32:
-                    switch (tag->type) {
-                    case NEU_DTYPE_INT32: {
-                        neu_data_val_t *val_i32 =
-                            neu_dvalue_new(NEU_DTYPE_INT32);
-                        neu_dvalue_set_int32(val_i32, data_tags.val.val_u32);
-                        neu_int_val_init(&int_val, tag->id, val_i32);
-                        neu_fixed_array_set(array_resp, index,
-                                            (void *) &int_val);
-                        break;
-                    }
-                    case NEU_DTYPE_UINT32: {
-                        neu_data_val_t *val_ui32 =
-                            neu_dvalue_new(NEU_DTYPE_UINT32);
-                        neu_dvalue_set_uint32(val_ui32, data_tags.val.val_u32);
-                        neu_int_val_init(&int_val, tag->id, val_ui32);
-                        neu_fixed_array_set(array_resp, index,
-                                            (void *) &int_val);
-                        break;
-                    }
-                    case NEU_DTYPE_FLOAT: {
-                        neu_data_val_t *val_float =
-                            neu_dvalue_new(NEU_DTYPE_FLOAT);
-                        neu_dvalue_set_float(val_float, data_tags.val.val_f32);
-                        neu_int_val_init(&int_val, tag->id, val_float);
-                        neu_fixed_array_set(array_resp, index,
-                                            (void *) &int_val);
-                        break;
-                    }
-                    default:
-                        break;
-                    }
-                }
+            break;
+        case MODBUS_B32:
+            switch (tag->type) {
+            case NEU_DTYPE_INT32: {
+                neu_datatag_pack_add(resp_val, index, NEU_DTYPE_INT32, *id,
+                                     (void *) &data_tags.val.val_u32);
+                break;
+            }
+            case NEU_DTYPE_UINT32: {
+                neu_datatag_pack_add(resp_val, index, NEU_DTYPE_UINT32, *id,
+                                     (void *) &data_tags.val.val_u32);
+                break;
+            }
+            case NEU_DTYPE_FLOAT: {
+                neu_datatag_pack_add(resp_val, index, NEU_DTYPE_FLOAT, *id,
+                                     (void *) &data_tags.val.val_f32);
+                break;
+            }
+            default:
+                break;
             }
         }
-        index += 1;
     }
-
-    neu_dvalue_set_errorcode(val_error_resp, error);
-    neu_int_val_init(&int_val_resp, 0, val_error_resp);
-    neu_fixed_array_set(array_resp, 0, (void *) &int_val_resp);
-
-    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array_resp);
 
     return resp_val;
 }
@@ -323,47 +276,26 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
 static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
                                                    neu_plugin_t *  plugin)
 {
-    neu_fixed_array_t *array_req      = NULL;
-    neu_fixed_array_t *array_resp     = NULL;
-    neu_data_val_t *   resp_val       = NULL;
-    neu_data_val_t *   val_error_resp = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-    neu_int_val_t      int_val_resp   = { 0 };
-    neu_err_code_e     error          = NEU_ERR_SUCCESS;
+    neu_err_code_e error = NEU_ERR_SUCCESS;
 
+    neu_fixed_array_t *array_req = NULL;
     neu_dvalue_get_ref_array(write_val, &array_req);
 
-    resp_val = neu_dvalue_unit_new();
-    if (resp_val == NULL) {
-        log_error("Failed to allocate data value for response write data");
-        neu_dvalue_free(val_error_resp);
-        return NULL;
-    }
-
-    array_resp = neu_fixed_array_new(array_req->length, sizeof(neu_int_val_t));
-    if (array_resp == NULL) {
-        log_error("Failed to allocate array for response write data");
-        neu_dvalue_free(resp_val);
-        neu_dvalue_free(val_error_resp);
-        return NULL;
-    }
+    neu_data_val_t *resp_val = neu_datatag_pack_create(array_req->length);
 
     for (uint32_t i = 0; i < array_req->length; i++) {
         neu_int_val_t *int_val = neu_fixed_array_get(array_req, i);
         neu_dtype_e    val_type =
             neu_value_type_in_dtype(neu_dvalue_get_type(int_val->val));
-        modbus_data_t   data = { 0 };
-        neu_int_val_t   iv;
-        neu_data_val_t *val_error = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-        neu_datatag_t * tag =
+        modbus_data_t  data = { 0 };
+        neu_datatag_t *tag =
             neu_datatag_tbl_get(plugin->tag_table, int_val->key);
 
         if (tag == NULL) {
             // The tag had been deleted by other node
             error = NEU_ERR_TAG_NOT_EXIST;
-            neu_dvalue_set_errorcode(val_error, error);
-
-            neu_int_val_init(&iv, int_val->key, val_error);
-            neu_fixed_array_set(array_resp, i, (void *) &iv);
+            neu_datatag_pack_add(resp_val, i, NEU_DTYPE_ERRORCODE, int_val->key,
+                                 (void *) &error);
             continue;
         }
 
@@ -413,21 +345,13 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
             break;
         }
 
-        neu_dvalue_set_errorcode(val_error, error);
+        if (error == -1) {
+            error = NEU_ERR_DEVICE_WRITE_FAILURE;
+        }
 
-        neu_int_val_init(&iv, int_val->key, val_error);
-        neu_fixed_array_set(array_resp, i, (void *) &iv);
+        neu_datatag_pack_add(resp_val, i, NEU_DTYPE_ERRORCODE, int_val->key,
+                             (void *) &error);
     }
-
-    if (error == -1) {
-        error = NEU_ERR_DEVICE_WRITE_FAILURE;
-    }
-
-    neu_dvalue_set_errorcode(val_error_resp, error);
-    neu_int_val_init(&int_val_resp, 0, val_error_resp);
-    neu_fixed_array_set(array_resp, 0, (void *) &int_val_resp);
-
-    neu_dvalue_init_move_array(resp_val, NEU_DTYPE_INT_VAL, array_resp);
 
     return resp_val;
 }
@@ -615,18 +539,20 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
         }
         pthread_mutex_unlock(&plugin->mtx);
         if (data_resp.data_val == NULL) {
-            neu_data_val_t *val_error  = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
-            neu_data_val_t *array_resp = neu_dvalue_unit_new();
-            ;
-            neu_int_val_t      val = { 0 };
-            neu_fixed_array_t *array =
-                neu_fixed_array_new(1, sizeof(neu_int_val_t));
+            vector_t *ids =
+                neu_taggrp_cfg_get_datatag_ids(read_req->grp_config);
+            data_resp.data_val = neu_datatag_pack_create(ids->size);
+            int32_t error      = NEU_ERR_GRP_NOT_SUBSCRIBE;
+            int     index      = 0;
 
-            neu_dvalue_set_errorcode(val_error, NEU_ERR_GRP_NOT_SUBSCRIBE);
-            neu_int_val_init(&val, 0, val_error);
-            neu_fixed_array_set(array, 0, (void *) &val);
-            neu_dvalue_init_move_array(array_resp, NEU_DTYPE_INT_VAL, array);
-            data_resp.data_val = array_resp;
+            VECTOR_FOR_EACH(ids, iter)
+            {
+                neu_datatag_id_t *id = (neu_datatag_id_t *) iterator_get(&iter);
+                neu_datatag_pack_add(data_resp.data_val, index,
+                                     NEU_DTYPE_ERRORCODE, *id, (void *) &error);
+
+                index += 1;
+            }
         }
         data_resp.grp_config = read_req->grp_config;
         resp.req_id          = req->req_id;

@@ -206,6 +206,10 @@ int neu_datatag_pack_add(neu_data_val_t *val, uint16_t index, neu_dtype_e type,
         tv = neu_dvalue_new(NEU_DTYPE_ERRORCODE);
         neu_dvalue_set_errorcode(tv, *(int32_t *) data);
         break;
+    case NEU_DTYPE_BIT:
+        tv = neu_dvalue_new(NEU_DTYPE_BIT);
+        neu_dvalue_set_bit(tv, *(uint8_t *) data);
+        break;
     case NEU_DTYPE_INT8:
         tv = neu_dvalue_new(NEU_DTYPE_INT8);
         neu_dvalue_set_int8(tv, *(int8_t *) data);
