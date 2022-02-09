@@ -26,11 +26,13 @@ Neuron Context Ready
   LOGIN
 
   Sleep                         10s
+  Profile Neuron                interval=5                      result_dir=${OUTPUT_DIR}
 
 
 Neuron Context Stop
   LOGOUT
   Stop Neuron                   remove_persistence_data=True
+  Terminate All Processes       kill=false
 
 Read Write Loop
   [Arguments]                   ${interval_ms}
