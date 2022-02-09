@@ -1,10 +1,12 @@
 import random
 import subprocess
 import shutil
+import time
 
 
 class Neuron(object):
     process = 0
+    profiler_process = None
 
     def __init__(self):
         pass
@@ -13,9 +15,21 @@ class Neuron(object):
         self.process = subprocess.Popen(['./neuron'], cwd='build/')
 
     def Stop_Neuron(self, remove_persistence_data=True):
+        if self.profiler_process is not None:
+            # wait for plotting
+            time.sleep(5)
         self.process.kill()
         if remove_persistence_data:
             shutil.rmtree("build/persistence", ignore_errors=True)
+
+    def Profile_Neuron(self, interval, result_dir):
+        cmd = [
+            'psrecord', str(self.process.pid),
+            '--interval', str(interval),
+            '--plot', result_dir + '/cpu_mem.svg'
+        ]
+
+        self.profiler_process = subprocess.Popen(cmd)
 
 
 class Tool(object):
