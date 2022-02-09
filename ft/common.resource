@@ -96,7 +96,7 @@ ${TOPIC_TAGS_REQ}                           neuron/${MQTT_CLIENTID}/tags/req
 ${TOPIC_PLUGIN_REQ}                         neuron/${MQTT_CLIENTID}/plugin/req
 ${TOPIC_SUBSCRIBE_REQ}                      neuron/${MQTT_CLIENTID}/subscribe/req
 ${TOPIC_READ_REQ}                           neuron/${MQTT_CLIENTID}/read/req
-${TOPIC_WRITE_REQ}                          neuron/${MQTT_CLIENTID}/write/req"
+${TOPIC_WRITE_REQ}                          neuron/${MQTT_CLIENTID}/write/req
 ${TOPIC_TTYS_REQ}                           neuron/${MQTT_CLIENTID}/ttys/req
 ${TOPIC_SCHEMA_REQ}                         neuron/${MQTT_CLIENTID}/schema/plugin/req
 ${TOPIC_SETTING_REQ}                        neuron/${MQTT_CLIENTID}/node/setting/req

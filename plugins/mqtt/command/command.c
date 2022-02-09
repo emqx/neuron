@@ -473,7 +473,8 @@ void command_response_handle1(mqtt_response_t *response)
         if (0 == rc) {
             uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
-                response->context_add(plugin, req_id, mqtt, NULL, NULL, false);
+                response->context_add(plugin, req_id, mqtt, NULL,
+                                      response->topic_pair, false);
             }
 
             command_read_once_request(plugin, mqtt, req, req_id);
@@ -489,7 +490,8 @@ void command_response_handle1(mqtt_response_t *response)
         if (0 == rc) {
             uint32_t req_id = neu_plugin_get_event_id(plugin);
             if (0 < req_id) {
-                response->context_add(plugin, req_id, mqtt, NULL, NULL, false);
+                response->context_add(plugin, req_id, mqtt, NULL,
+                                      response->topic_pair, false);
             }
 
             command_write_request(plugin, mqtt, req, req_id);

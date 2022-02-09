@@ -250,6 +250,20 @@ static struct topic_pair *topic_list_find(neu_list *list, const char *topic)
     return NULL;
 }
 
+static struct topic_pair *topic_list_find_by_type(neu_list *list,
+                                                  const int type)
+{
+    struct topic_pair *item = NULL;
+    NEU_LIST_FOREACH(list, item)
+    {
+        if (item->type == type) {
+            return item;
+        }
+    }
+
+    return NULL;
+}
+
 static void topic_list_cleanup(neu_list *list)
 {
     while (!neu_list_empty(list)) {
@@ -653,10 +667,11 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_data_t *neu_data = NULL;
         neu_data                     = (neu_reqresp_data_t *) req->buf;
-
-        char *json_str =
-            command_read_cycle_response(plugin, neu_data->data_val);
-        mqtt_context_add(plugin, 0, NULL, json_str, NULL, true);
+        struct topic_pair *pair      = NULL;
+        char *             json_str  = NULL;
+        pair = topic_list_find_by_type(&plugin->topic_list, TOPIC_TYPE_READ);
+        json_str = command_read_cycle_response(plugin, neu_data->data_val);
+        mqtt_context_add(plugin, 0, NULL, json_str, pair, true);
         break;
     }
     case NEU_REQRESP_WRITE_DATA: {
