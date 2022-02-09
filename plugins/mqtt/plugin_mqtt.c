@@ -340,14 +340,12 @@ static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
     pthread_mutex_unlock(&plugin->list_mutex);
 }
 
-static void mqtt_response_handle1(const char *topic_name, size_t topic_len,
-                                  void *payload, const size_t len,
-                                  void *context)
+static void mqtt_response_handle(const char *topic_name, size_t topic_len,
+                                 void *payload, const size_t len, void *context)
 {
     neu_plugin_t *     plugin = (neu_plugin_t *) context;
     struct topic_pair *pair = topic_list_find(&plugin->topic_list, topic_name);
-
-    mqtt_response_t response = { .topic_name  = topic_name,
+    mqtt_response_t    response = { .topic_name  = topic_name,
                                  .topic_len   = topic_len,
                                  .payload     = payload,
                                  .len         = len,
@@ -355,8 +353,7 @@ static void mqtt_response_handle1(const char *topic_name, size_t topic_len,
                                  .topic_pair  = pair,
                                  .type        = pair->type,
                                  .context_add = mqtt_context_add };
-    command_response_handle1(&response);
-    return;
+    command_response_handle(&response);
 }
 
 static void topic_list_subscribe(neu_list *list, neu_mqtt_client_t *client)
@@ -366,7 +363,7 @@ static void topic_list_subscribe(neu_list *list, neu_mqtt_client_t *client)
     {
         if (NULL != item) {
             neu_mqtt_client_subscribe(client, item->topic_request,
-                                      item->qos_request, mqtt_response_handle1);
+                                      item->qos_request, mqtt_response_handle);
         }
     }
 }
@@ -432,20 +429,6 @@ static void mqtt_context_cleanup(neu_plugin_t *plugin)
     }
 
     pthread_mutex_unlock(&plugin->list_mutex);
-}
-
-static void mqtt_response_handle(const char *topic_name, size_t topic_len,
-                                 void *payload, const size_t len, void *context)
-{
-    mqtt_response_t response = { .topic_name  = topic_name,
-                                 .topic_len   = topic_len,
-                                 .payload     = payload,
-                                 .len         = len,
-                                 .plugin      = context,
-                                 .topic_pair  = NULL,
-                                 .context_add = mqtt_context_add };
-    command_response_handle(&response);
-    return;
 }
 
 static void *mqtt_send_loop(void *argument)
@@ -592,12 +575,8 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
     // MQTT client setup
     neu_err_code_e error = neu_mqtt_client_open(
         (neu_mqtt_client_t *) &plugin->client, &plugin->option, plugin);
-    error = neu_mqtt_client_subscribe(plugin->client, plugin->option.topic, 0,
-                                      mqtt_response_handle);
-
     if (NEU_ERR_MQTT_IS_NULL == error) {
-        log_error("Can not create mqtt client instance, initialize plugin "
-                  "failed: %s",
+        log_error("Can't create mqtt client instance, start plugin failed: %s",
                   neu_plugin_module.module_name);
         return -1;
     }
