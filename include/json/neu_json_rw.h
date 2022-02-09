@@ -33,6 +33,7 @@ extern "C" {
 
 typedef struct {
     int64_t              id;
+    int32_t              error;
     enum neu_json_type   t;
     union neu_json_value value;
 } neu_json_read_resp_tag_t;

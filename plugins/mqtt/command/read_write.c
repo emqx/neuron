@@ -43,127 +43,128 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
 {
     neu_int_val_t * int_val;
     neu_data_val_t *val;
-    int             length = array->length;
-    json->n_tag            = length - 1;
+    json->n_tag = array->length;
 
     if (0 == json->n_tag) {
         return -1;
     }
 
     json->tags = (neu_json_read_resp_tag_t *) calloc(
-        length - 1, sizeof(neu_json_read_resp_tag_t));
+        array->length, sizeof(neu_json_read_resp_tag_t));
 
-    for (int i = 1; i < length; i++) {
+    for (uint32_t i = 0; i < array->length; i++) {
         int_val          = neu_fixed_array_get(array, i);
         val              = int_val->val;
         neu_dtype_e type = neu_dvalue_get_value_type(val);
 
-        json->tags[i - 1].id = int_val->key;
+        json->tags[i].id    = int_val->key;
+        json->tags[i].error = NEU_ERR_SUCCESS;
 
         switch (type) {
         case NEU_DTYPE_ERRORCODE: {
             int32_t value;
             neu_dvalue_get_errorcode(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
+            json->tags[i].error         = value;
             break;
         }
         case NEU_DTYPE_BYTE: {
             uint8_t value;
             neu_dvalue_get_uint8(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_INT8: {
             int8_t value;
             neu_dvalue_get_int8(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_INT16: {
             int16_t value;
             neu_dvalue_get_int16(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_INT32: {
             int32_t value;
             neu_dvalue_get_int32(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_INT64: {
             int64_t value;
             neu_dvalue_get_int64(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_UINT8: {
             uint8_t value;
             neu_dvalue_get_uint8(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_UINT16: {
             uint16_t value;
             neu_dvalue_get_uint16(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_UINT32: {
             uint32_t value;
             neu_dvalue_get_uint32(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_UINT64: {
             uint64_t value;
             neu_dvalue_get_uint64(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_INT;
-            json->tags[i - 1].value.val_int = value;
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = value;
             break;
         }
         case NEU_DTYPE_FLOAT: {
             float value;
             neu_dvalue_get_float(val, &value);
-            json->tags[i - 1].t               = NEU_JSON_FLOAT;
-            json->tags[i - 1].value.val_float = value;
+            json->tags[i].t               = NEU_JSON_FLOAT;
+            json->tags[i].value.val_float = value;
             break;
         }
         case NEU_DTYPE_DOUBLE: {
             double value;
             neu_dvalue_get_double(val, &value);
-            json->tags[i - 1].t                = NEU_JSON_DOUBLE;
-            json->tags[i - 1].value.val_double = value;
+            json->tags[i].t                = NEU_JSON_DOUBLE;
+            json->tags[i].value.val_double = value;
             break;
         }
         case NEU_DTYPE_BOOL: {
             bool value;
             neu_dvalue_get_bool(val, &value);
-            json->tags[i - 1].t              = NEU_JSON_BOOL;
-            json->tags[i - 1].value.val_bool = value;
+            json->tags[i].t              = NEU_JSON_BOOL;
+            json->tags[i].value.val_bool = value;
             break;
         }
         case NEU_DTYPE_BIT: {
             uint8_t value;
             neu_dvalue_get_bit(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_BIT;
-            json->tags[i - 1].value.val_bit = value;
+            json->tags[i].t             = NEU_JSON_BIT;
+            json->tags[i].value.val_bit = value;
             break;
         }
         case NEU_DTYPE_CSTR: {
             char *value;
             neu_dvalue_get_ref_cstr(val, &value);
-            json->tags[i - 1].t             = NEU_JSON_STR;
-            json->tags[i - 1].value.val_str = value;
+            json->tags[i].t             = NEU_JSON_STR;
+            json->tags[i].value.val_str = value;
             break;
         }
         default:
@@ -204,22 +205,7 @@ char *command_read_once_response(neu_plugin_t *   plugin,
         return NULL;
     }
 
-    neu_int_val_t * int_val;
-    neu_data_val_t *val_err;
-    int32_t         errcode  = 0;
-    char *          json_str = NULL;
-
-    int_val = neu_fixed_array_get(array, 0);
-    val_err = int_val->val;
-    neu_dvalue_get_errorcode(val_err, &errcode);
-
-    if (0 != errcode) {
-        neu_json_error_resp_t error = { errcode };
-        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp,
-                                  parse_header, neu_json_encode_mqtt_resp,
-                                  &json_str);
-        return json_str;
-    }
+    char *json_str = NULL;
 
     neu_json_read_resp_t json;
     memset(&json, 0, sizeof(neu_json_read_resp_t));
@@ -339,22 +325,21 @@ static int wrap_write_response_json_object(neu_fixed_array_t *   array,
 {
     neu_int_val_t * int_val;
     neu_data_val_t *val;
-    int             length = array->length;
-    json->n_tag            = length - 1;
+    json->n_tag = array->length;
 
     json->tags = (neu_json_read_resp_tag_t *) calloc(
-        length - 1, sizeof(neu_json_read_resp_tag_t));
+        array->length, sizeof(neu_json_read_resp_tag_t));
 
-    for (int i = 1; i < length; i++) {
+    for (uint32_t i = 0; i < array->length; i++) {
         int_val = neu_fixed_array_get(array, i);
         val     = int_val->val;
 
-        json->tags[i - 1].id = int_val->key;
+        json->tags[i].id = int_val->key;
 
         int32_t value;
         neu_dvalue_get_errorcode(val, &value);
-        json->tags[i - 1].t             = NEU_JSON_INT;
-        json->tags[i - 1].value.val_int = value;
+        json->tags[i].t             = NEU_JSON_INT;
+        json->tags[i].value.val_int = value;
     }
 
     return 0;
@@ -381,14 +366,6 @@ char *command_write_response(neu_plugin_t *   plugin,
 
     neu_fixed_array_t *array;
     neu_dvalue_get_ref_array(resp_val, &array);
-
-    neu_int_val_t * int_val;
-    neu_data_val_t *val_err;
-    int32_t         error;
-
-    int_val = neu_fixed_array_get(array, 0);
-    val_err = int_val->val;
-    neu_dvalue_get_errorcode(val_err, &error);
 
     neu_json_read_resp_t json;
     wrap_write_response_json_object(array, &json);
