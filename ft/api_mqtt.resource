@@ -45,16 +45,24 @@ Recv Message
   Should Be Equal As Strings        ${res}[uuid]                      ${MQTT_UUID}
   [RETURN]                          ${res}
 
+Recv Message1
+  [Arguments]                       ${topic_res}
+  ${msg} =                          Listen                            ${topic_res}                            timeout=10
+  Should Not Be True                $msg == None
+  ${res} =                          evaluate                          json.loads('''${msg}''')                json
+  Should Be Equal As Strings        ${res}[uuid]                      ${MQTT_UUID}
+  [RETURN]                          ${res}
+
 Pub And Recv
-  [Arguments]                       ${func}                           ${payload}
+  [Arguments]                       ${func}                           ${payload}                              ${topic_req}                ${topic_res}
   ${payload} =                      evaluate                          json.loads('''${payload}''')            json
   Set To Dictionary                 ${payload}                        function                                ${func}                     uuid      ${MQTT_UUID}
   ${payload} =                      evaluate                          json.dumps(${payload})                  json
 
-  Publish                           ${MQTT_CONFIG_REQ_TOPIC}          ${payload}                              qos=0
+  Publish                           ${topic_req}          ${payload}                              qos=0
 
   # try to receive a message with a matching UUID
-  ${res} =                          Wait Until Keyword Succeeds       10s                                     0s                          Recv Message
+  ${res} =                          Wait Until Keyword Succeeds       10s                                     0s                          Recv Message1           ${topic_res}
   Should Be Equal As Integers       ${res}[function]                  ${func}
 
   # strip the `function` and `uuid` field
@@ -81,6 +89,20 @@ LOGIN
   Connect                           ${MQTT_CONFIG_HOST}               ${MQTT_CONFIG_PORT}                     client_id=neuron-ft         clean_session=${true}
   Subscribe                         ${MQTT_CONFIG_RES_TOPIC}          qos=0                                   timeout=5
 
+  Subscribe                         ${TOPIC_STATUS_RES}               qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_NODE_RES}                 qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_GCONFIG_RES}              qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_TAGS_RES}                 qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_PLUGIN_RES}               qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_SUBSCRIBE_RES}            qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_READ_RES}                 qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_WRITE_RES}                qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_TTYS_RES}                 qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_SCHEMA_RES}               qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_SETTING_RES}              qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_CTR_RES}                  qos=0                                   timeout=5
+  Subscribe                         ${TOPIC_STATE_RES}                qos=0                                   timeout=5
+
 LOGOUT
   Unsubscribe All And Clear Messages
   Disconnect
@@ -88,7 +110,7 @@ LOGOUT
 Add Node
   [Arguments]                       &{args}
   ${payload} =                      evaluate                          json.dumps(${args})                     json
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_NODES}                  ${payload}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_NODES}                  ${payload}                 ${TOPIC_NODE_REQ}                      ${TOPIC_NODE_RES}
 
   [RETURN]                          ${res}
 
@@ -104,19 +126,19 @@ Add Node And Return ID
 
 Get Nodes
   [Arguments]                       ${node_type}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_NODES}                  {"node_type": ${node_type} }
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_NODES}                  {"node_type": ${node_type} }                      ${TOPIC_NODE_REQ}                   ${TOPIC_NODE_RES}
 
   [RETURN]                          ${res}
 
 Update Node
   [Arguments]                       ${node_id}                        ${node_name}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UPDATE_NODES}               {"id": ${node_id}, "name": "${node_name}"}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UPDATE_NODES}               {"id": ${node_id}, "name": "${node_name}"}                      ${TOPIC_NODE_REQ}                   ${TOPIC_NODE_RES}
 
   [RETURN]                          ${res}
 
 Del Node
   [Arguments]                       ${node_id}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_DELETE_NODES}               {"id": ${node_id}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_DELETE_NODES}               {"id": ${node_id}}                      ${TOPIC_NODE_REQ}                   ${TOPIC_NODE_RES}
 
   [RETURN]                          ${res}
 
@@ -129,82 +151,82 @@ Get Node ID
 
 Node Setting
   [Arguments]                       ${node_id}                        ${config}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_NODE_SETTING}               {"node_id": ${node_id}, "params": ${config}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_NODE_SETTING}               {"node_id": ${node_id}, "params": ${config}}                      ${TOPIC_SETTING_REQ}                   ${TOPIC_SETTING_RES} 
 
   [RETURN]                          ${res}
 
 Get Node Setting
   [Arguments]                       ${node_id}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_NODE_SETTING}           {"node_id": ${node_id}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_NODE_SETTING}           {"node_id": ${node_id}}                      ${TOPIC_SETTING_REQ}                   ${TOPIC_SETTING_RES}
 
   [RETURN]                          ${res}
 
 Get Node State
   [Arguments]                       ${node_id}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_NODE_STATE}             {"node_id": ${node_id}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_NODE_STATE}             {"node_id": ${node_id}}                      ${TOPIC_STATE_REQ}                   ${TOPIC_STATE_RES}
 
   [RETURN]                          ${res}[running]                   ${res}[link]
 
 Node Ctl
   [Arguments]                       ${node_id}                        ${cmd}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_NODE_CONTROL}               {"id": ${node_id}, "cmd": ${cmd}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_NODE_CONTROL}               {"id": ${node_id}, "cmd": ${cmd}}                      ${TOPIC_CTR_REQ}                   ${TOPIC_CTR_RES}
 
   [RETURN]                          ${res}
 
 Ping
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_PING}                       {}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_PING}                       {}                      ${TOPIC_PING_REQ}                   ${TOPIC_STATUS_RES}
 
 Add Group Config
   [Arguments]                       ${node_id}                        ${grp_config_name}                      ${interval}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_GROUP_CONFIG}           {"name": "${grp_config_name}", "node_id": ${node_id}, "interval": ${interval}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_GROUP_CONFIG}           {"name": "${grp_config_name}", "node_id": ${node_id}, "interval": ${interval}}                      ${TOPIC_GCONFIG_REQ}                   ${TOPIC_GCONFIG_RES}
 
   [RETURN]                          ${res}
 
 Get Group Config
   [Arguments]                       ${node_id}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_GROUP_CONFIG}             {"node_id": ${node_id}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_GROUP_CONFIG}             {"node_id": ${node_id}}                      ${TOPIC_GCONFIG_REQ}                   ${TOPIC_GCONFIG_RES}
 
   [RETURN]                          ${res}
 
 Update Group Config
   [Arguments]                       ${node_id}                        ${grp_config_name}                        ${interval}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UPDATE_GROUP_CONFIG}          {"name": "${grp_config_name}", "node_id": ${node_id}, "interval": ${interval}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UPDATE_GROUP_CONFIG}          {"name": "${grp_config_name}", "node_id": ${node_id}, "interval": ${interval}}                      ${TOPIC_GCONFIG_REQ}                   ${TOPIC_GCONFIG_RES}
 
   [RETURN]                          ${res}
 
 Del Group Config
   [Arguments]                       ${node_id}                        ${grp_config_name}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_DELETE_GROUP_CONFIG}          {"name": "${grp_config_name}", "node_id": ${node_id}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_DELETE_GROUP_CONFIG}          {"name": "${grp_config_name}", "node_id": ${node_id}}                      ${TOPIC_GCONFIG_REQ}                   ${TOPIC_GCONFIG_RES}
 
   [RETURN]                          ${res}
 
 Subscribe Group
   [Arguments]                       ${driver_node_id}                 ${app_node_id}                            ${group_config_name}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_SUBSCRIBE_GROUP_CONFIG}       {"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "${group_config_name}"}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_SUBSCRIBE_GROUP_CONFIG}       {"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "${group_config_name}"}                      ${TOPIC_SUBSCRIBE_REQ}                   ${TOPIC_SUBSCRIBE_RES}
 
   [RETURN]                          ${res}
 
 Get Subscribe Group
   [Arguments]                       ${node_id}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_SUBSCRIBE_GROUP_CONFIG}   {"node_id": ${node_id}}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_SUBSCRIBE_GROUP_CONFIG}   {"node_id": ${node_id}}                      ${TOPIC_SUBSCRIBE_REQ}                   ${TOPIC_SUBSCRIBE_RES}
 
   [RETURN]                          ${res}
 
 Unsubscribe Group
   [Arguments]                       ${driver_node_id}                 ${app_node_id}                            ${group_config_name}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UNSUBSCRIBE_GROUP_CONFIG}     {"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "${group_config_name}"}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UNSUBSCRIBE_GROUP_CONFIG}     {"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "${group_config_name}"}                      ${TOPIC_SUBSCRIBE_REQ}                   ${TOPIC_SUBSCRIBE_RES}
 
   [RETURN]                          ${res}
 
 Add Tags
   [Arguments]                       ${node_id}                        ${group}                                  ${tags}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_TAGS}                     {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tags}]}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_TAGS}                     {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tags}]}                      ${TOPIC_TAGS_REQ}                   ${TOPIC_TAGS_RES}
 
   [RETURN]                          ${res}
 
 Add Tag And Return ID
   [Arguments]                       ${node_id}                        ${group}                                  ${tag}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_TAGS}                     {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tag}]}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_ADD_TAGS}                     {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tag}]}                      ${TOPIC_TAGS_REQ}                   ${TOPIC_TAGS_RES}
 
   Check Error Code                  ${res}                            ${ERR_SUCCESS}
   ${tmp} =                          evaluate                          json.loads('''${tag}''')                  json
@@ -213,19 +235,19 @@ Add Tag And Return ID
 
 Get Tags
   [Arguments]                       ${node_id}                        ${group}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_TAGS}                     {"node_id": ${node_id}, "group_config_name": "${group}"}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_GET_TAGS}                     {"node_id": ${node_id}, "group_config_name": "${group}"}                      ${TOPIC_TAGS_REQ}                   ${TOPIC_TAGS_RES}
 
   [Return]                          ${res}
 
 Update Tags
   [Arguments]                       ${node_id}                        ${group}                                  ${tags}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UPDATE_TAGS}                  {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tags}]}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_UPDATE_TAGS}                  {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tags}]}                      ${TOPIC_TAGS_REQ}                   ${TOPIC_TAGS_RES}
 
   [Return]                          ${res}
 
 Del Tags
   [Arguments]                       ${node_id}                        ${group}                                  ${ids}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_DELETE_TAGS}                  {"node_id": ${node_id}, "group_config_name": "${group}", "ids": [${ids}]}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_DELETE_TAGS}                  {"node_id": ${node_id}, "group_config_name": "${group}", "ids": [${ids}]}                      ${TOPIC_TAGS_REQ}                   ${TOPIC_TAGS_RES}
 
   [Return]                          ${res}
 
@@ -239,12 +261,12 @@ Get Tag ID
 
 Read Tags
   [Arguments]                       ${node_id}                        ${group}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_READ}                         {"node_id": ${node_id}, "group_config_name": "${group}"}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_READ}                         {"node_id": ${node_id}, "group_config_name": "${group}"}                      ${TOPIC_READ_REQ}                   ${TOPIC_READ_RES}
 
   [Return]                          ${res}
 
 Write Tags
   [Arguments]                       ${node_id}                        ${group}                                  ${tags}
-  ${res} =                          Pub And Recv                      ${MQTT_FUNC_WRITE}                        {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tags}]}
+  ${res} =                          Pub And Recv                      ${MQTT_FUNC_WRITE}                        {"node_id": ${node_id}, "group_config_name": "${group}", "tags": [${tags}]}                      ${TOPIC_WRITE_REQ}                   ${TOPIC_WRITE_RES}
 
   [Return]                          ${res}
