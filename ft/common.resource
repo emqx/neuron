@@ -88,6 +88,13 @@ ${MQTT_FUNC_DELETE_PLUGIN}                  ${27}
 ${MQTT_FUNC_GET_PLUGIN}                     ${28}
 ${MQTT_FUNC_PING}                           ${29}
 
+${MQTT_CMD_GET}                             get
+${MQTT_CMD_SET}                             set
+${MQTT_CMD_ADD}                             add
+${MQTT_CMD_UPDATE}                          update
+${MQTT_CMD_DELETE}                          delete 
+${MQTT_CMD_NONE}                             
+
 ${MQTT_CLIENTID}                            123456
 ${TOPIC_PING_REQ}                           neuron/${MQTT_CLIENTID}/ping
 ${TOPIC_NODE_REQ}                           neuron/${MQTT_CLIENTID}/node/req

@@ -233,7 +233,8 @@ char *command_read_cycle_response(neu_plugin_t *  plugin,
     parse_header.function        = NEU_MQTT_OP_READ;
     char uuid4_str[40]           = { '\0' };
     neu_uuid_v4_gen(uuid4_str);
-    parse_header.uuid = uuid4_str;
+    parse_header.uuid    = uuid4_str;
+    parse_header.command = "";
     return command_read_once_response(plugin, &parse_header, resp_val);
 }
 
