@@ -238,6 +238,12 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     switch (code) {
     case NEU_ERR_SUCCESS:
     case NEU_ERR_NODE_SETTING_NOT_FOUND:
+    case NEU_ERR_PLUGIN_READ_FAILURE:
+    case NEU_ERR_PLUGIN_WRITE_FAILURE:
+    case NEU_ERR_PLUGIN_DISCONNECTED:
+    case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_READ:
+    case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE:
+    case NEU_ERR_PLUGIN_TAG_NOT_EXIST:
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:
@@ -256,8 +262,6 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_BODY_IS_WRONG:
     case NEU_ERR_PARAM_IS_WRONG:
     case NEU_ERR_NODE_TYPE_INVALID:
-    case NEU_ERR_DEVICE_READ_FAILURE:
-    case NEU_ERR_DEVICE_WRITE_FAILURE:
     case NEU_ERR_NODE_SETTING_INVALID:
     case NEU_ERR_PLUGIN_LIBRARY_INFO_INVALID:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
@@ -290,8 +294,13 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         status = NNG_HTTP_STATUS_PRECONDITION_FAILED;
         break;
     default:
-        log_error("unhandle error code: %d", code);
-        assert(code == 0);
+        if (code >= NEU_ERR_PLUGIN_ERROR_START &&
+            code <= NEU_ERR_PLUGIN_ERROR_END) {
+            status = NNG_HTTP_STATUS_OK;
+        } else {
+            log_error("unhandle error code: %d", code);
+            assert(code == 0);
+        }
         break;
     }
 

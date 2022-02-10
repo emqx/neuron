@@ -194,7 +194,7 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
         }
 
         if ((tag->attribute & NEU_ATTRIBUTE_READ) != NEU_ATTRIBUTE_READ) {
-            neu_err_code_e error = NEU_ERR_DEVICE_TAG_NOT_ALLOW_READ;
+            neu_err_code_e error = NEU_ERR_PLUGIN_TAG_NOT_ALLOW_READ;
             neu_datatag_pack_add(resp_val, index, NEU_DTYPE_ERRORCODE, *id,
                                  (void *) &error);
             continue;
@@ -346,7 +346,7 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
         }
 
         if (error == -1) {
-            error = NEU_ERR_DEVICE_WRITE_FAILURE;
+            error = NEU_ERR_PLUGIN_WRITE_FAILURE;
         }
 
         neu_datatag_pack_add(resp_val, i, NEU_DTYPE_ERRORCODE, int_val->key,
