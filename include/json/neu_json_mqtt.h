@@ -31,49 +31,6 @@ extern "C" {
 
 #include <stdint.h>
 
-typedef enum neu_mqtt_function {
-    NEU_MQTT_OP_LOGIN = 1,
-    NEU_MQTT_OP_LOGOUT,
-
-    NEU_MQTT_OP_READ,
-    NEU_MQTT_OP_WRITE,
-    NEU_MQTT_OP_GET_TTY,
-
-    /*group config*/
-    NEU_MQTT_OP_ADD_GROUP_CONFIG,
-    NEU_MQTT_OP_UPDATE_GROUP_CONFIG,
-    NEU_MQTT_OP_DELETE_GROUP_CONFIG,
-    NEU_MQTT_OP_GET_GROUP_CONFIG,
-    NEU_MQTT_OP_SUBSCRIBE,
-    NEU_MQTT_OP_UNSUBSCRIBE,
-    NEU_MQTT_OP_GET_SUBSCRIBE_GRP_CONFIG,
-
-    /*tag */
-    NEU_MQTT_OP_ADD_TAGS,
-    NEU_MQTT_OP_UPDATE_TAGS,
-    NEU_MQTT_OP_DELETE_TAGS,
-    NEU_MQTT_OP_GET_TAGS,
-
-    /*nodes*/
-    NEU_MQTT_OP_ADD_NODES,
-    NEU_MQTT_OP_UPDATE_NODES,
-    NEU_MQTT_OP_DELETE_NODES,
-    NEU_MQTT_OP_GET_NODES,
-    NEU_MQTT_OP_NODE_SETTING,
-    NEU_MQTT_OP_GET_NODE_SETTING,
-    NEU_MQTT_OP_NODE_CTL,
-    NEU_MQTT_OP_GET_NODE_STATE,
-
-    /*plugin*/
-    NEU_MQTT_OP_ADD_PLUGIN,
-    NEU_MQTT_OP_UPDATE_PLUGIN,
-    NEU_MQTT_OP_DELETE_PLUGIN,
-    NEU_MQTT_OP_GET_PLUGIN,
-
-    NEU_MQTT_OP_PING,
-
-} neu_mqtt_function_e;
-
 #define NEU_MQTT_CMD_GET "get"
 #define NEU_MQTT_CMD_SET "set"
 #define NEU_MQTT_CMD_ADD "add"
@@ -82,9 +39,8 @@ typedef enum neu_mqtt_function {
 #define NEU_MQTT_CMD_NONE ""
 
 typedef struct {
-    neu_mqtt_function_e function;
-    char *              uuid;
-    char *              command;
+    char *uuid;
+    char *command;
 } neu_json_mqtt_t;
 
 int  neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result);

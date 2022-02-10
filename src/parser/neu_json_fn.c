@@ -120,21 +120,19 @@ int neu_json_encode_setting_with_mqtt(uint32_t node_id, char *setting,
     // Note that this is not an elegant solution due to the limitation of
     // the current implementation.
 
-    const char *fmt = "{\"node_id\": %u, \"function\": %d, \"uuid\": \"%s\", "
+    const char *fmt = "{\"node_id\": %u, \"uuid\": \"%s\", "
                       "\"command\":\"%s\", "
                       "%.*s, \"error\": 0}";
     // plus 1 for '\0'
     int size = 1 +
-        snprintf(NULL, 0, fmt, node_id, mqtt->function, mqtt->uuid,
-                 mqtt->command, i, params);
+        snprintf(NULL, 0, fmt, node_id, mqtt->uuid, mqtt->command, i, params);
 
     *result = calloc(size, sizeof(char));
     if (NULL == *result) {
         return -1;
     }
 
-    snprintf(*result, size, fmt, node_id, mqtt->function, mqtt->uuid,
-             mqtt->command, i, params);
+    snprintf(*result, size, fmt, node_id, mqtt->uuid, mqtt->command, i, params);
 
     return 0;
 }

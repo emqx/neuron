@@ -229,9 +229,8 @@ char *command_read_once_response(neu_plugin_t *   plugin,
 char *command_read_cycle_response(neu_plugin_t *  plugin,
                                   neu_data_val_t *resp_val)
 {
-    neu_json_mqtt_t parse_header = { 0 };
-    parse_header.function        = NEU_MQTT_OP_READ;
-    char uuid4_str[40]           = { '\0' };
+    neu_json_mqtt_t parse_header  = { 0 };
+    char            uuid4_str[40] = { '\0' };
     neu_uuid_v4_gen(uuid4_str);
     parse_header.uuid    = uuid4_str;
     parse_header.command = "";
