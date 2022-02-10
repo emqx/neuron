@@ -73,7 +73,7 @@ typedef union {
 
     struct {
         uint8_t bit;
-    } boolean;
+    } bit;
 } neu_datatag_addr_option_u;
 
 bool neu_tag_check_attribute(neu_attribute_e attribute);

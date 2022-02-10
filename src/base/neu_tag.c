@@ -164,11 +164,11 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         break;
     }
-    case NEU_DTYPE_BOOL: {
+    case NEU_DTYPE_BIT: {
         char *op = strchr(datatag->addr_str, '.');
 
         if (op != NULL) {
-            sscanf(op, ".%hhd", &option->boolean.bit);
+            sscanf(op, ".%hhd", &option->bit.bit);
         }
 
         break;
