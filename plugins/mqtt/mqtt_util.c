@@ -35,6 +35,7 @@ struct node_setting {
     uint32_t node_id;
     char *   req_topic;
     char *   res_topic;
+    char *   client_id;
     bool     ssl;
     char *   host;
     int      port;
@@ -123,6 +124,16 @@ static int decode_node_setting(const char *         json_str,
     }
     if (json_is_string(param)) {
         setting->res_topic = strdup(json_string_value(param));
+        json_decref(param);
+    }
+
+    // setting->res_topic
+    param = json_object_get(child, "client-id");
+    if (NULL == param) {
+        setting->client_id = NULL;
+    }
+    if (json_is_string(param)) {
+        setting->client_id = strdup(json_string_value(param));
         json_decref(param);
     }
 
@@ -227,6 +238,13 @@ static int valid_node_setting(const char *file, const char *plugin_name,
         return -3;
     }
 
+    rc = neu_schema_valid_param_string(valid, setting->client_id,
+                                       (char *) "client-id");
+    if (0 != rc) {
+        neu_schema_free(valid);
+        return -10;
+    }
+
     rc = neu_schema_valid_param_string(valid, setting->host, (char *) "host");
     if (0 != rc) {
         neu_schema_free(valid);
@@ -304,10 +322,7 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
         snprintf(option->port, 10, "%d", setting.port);
     }
 
-    char uuid4_str[40] = { '\0' };
-    neu_uuid_v4_gen(uuid4_str);
-    // option->clientid = strdup(uuid4_str);
-    option->clientid = strdup("123456");
+    option->clientid = setting.client_id;
     option->username = setting.username;
     option->password = setting.password;
     option->ca_path  = setting.ca_path;
