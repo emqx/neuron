@@ -326,7 +326,7 @@ int plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
     if (p_plugin_id->id_val == 0) {
         // There has same registered plugin
         log_warn("A plugin with same name has already been registered");
-        return NEU_ERR_PLUGIN_LIBRARY_NAME_CONFLICT;
+        return NEU_ERR_LIBRARY_NAME_CONFLICT;
     }
 
     reg_entity_init(&reg_entity, *p_plugin_id, param);

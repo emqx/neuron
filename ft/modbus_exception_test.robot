@@ -20,7 +20,7 @@ The connection between the modbus driver and the modbus simulator is disconnecte
 
 	Sleep         1s 500ms
 	Write Tags    ${test_node_id}        ${group}                       {"id": ${tag1_id}, "value": 1}
-	Integer       response body error    ${ERR_DEVICE_WRITE_FAILURE}
+	Integer       response body error    ${ERR_PLUGIN_WRITE_FAILURE}
 
 	Node Setting    ${test_node_id}    {"host": "127.0.0.1", "port": 9000, "connection_mode": 0}
 
