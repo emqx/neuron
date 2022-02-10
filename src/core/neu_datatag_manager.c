@@ -139,7 +139,7 @@ void neu_datatag_mng_destroy(neu_datatag_manager_t *datatag_manager)
 int neu_datatag_mng_add_grp_config(neu_datatag_manager_t *datatag_manager,
                                    neu_taggrp_config_t *  grp_config)
 {
-    int    rv = NEU_ERR_GRP_CONFIG_EXIST;
+    int    rv = NEU_ERR_GRP_CONFIG_CONFLICT;
     size_t index;
 
     pthread_mutex_lock(&datatag_manager->mtx);

@@ -539,7 +539,7 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
     }
     if (rv != 0) {
         log_error("Can't find plugin: %s", reg_param->plugin_name);
-        return NEU_ERR_PLUGIN_NAME_NOT_FOUND;
+        return NEU_ERR_LIBRARY_NOT_FOUND;
     }
 
     adapter_reg_entity_t *same_reg_entity;
@@ -2160,7 +2160,7 @@ int neu_manager_add_plugin_lib(neu_manager_t *           manager,
     handle = load_plugin_library((char *) cmd->plugin_lib_name,
                                  PLUGIN_KIND_SYSTEM, &module_info);
     if (handle == NULL) {
-        return NEU_ERR_PLUGIN_LIBRARY_NOT_FOUND;
+        return NEU_ERR_LIBRARY_NOT_FOUND;
     }
 
     reg_param.plugin_kind     = module_info->kind;
@@ -2173,12 +2173,12 @@ int neu_manager_add_plugin_lib(neu_manager_t *           manager,
     if (reg_param.plugin_kind != PLUGIN_KIND_STATIC &&
         reg_param.plugin_kind != PLUGIN_KIND_SYSTEM &&
         reg_param.plugin_kind != PLUGIN_KIND_CUSTOM) {
-        return NEU_ERR_PLUGIN_LIBRARY_INFO_INVALID;
+        return NEU_ERR_LIBRARY_INFO_INVALID;
     }
 
     if (reg_param.adapter_type <= ADAPTER_TYPE_UNKNOW ||
         reg_param.adapter_type >= ADAPTER_TYPE_MAX) {
-        return NEU_ERR_PLUGIN_LIBRARY_INFO_INVALID;
+        return NEU_ERR_LIBRARY_INFO_INVALID;
     }
 
     rv = plugin_manager_reg_plugin(manager->plugin_manager, &reg_param,

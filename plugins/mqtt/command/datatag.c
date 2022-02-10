@@ -164,7 +164,7 @@ char *command_add_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           "Add failed, tag name exists, uuid:%s, "
                           "node_id:%d, req_tag_name:%s",
                           mqtt->uuid, req->node_id, req->tags[i].name);
-            code = NEU_ERR_TAG_NAME_EXIST;
+            code = NEU_ERR_TAG_NAME_CONFLICT;
             free(tag);
         }
     }
@@ -245,7 +245,7 @@ char *command_update_tags(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           "node_id:%d, tag_id:%d, req_tag_name:%s",
                           mqtt->uuid, req->node_id, req->tags[i].id,
                           req->tags[i].name);
-            code = NEU_ERR_TAG_NAME_EXIST;
+            code = NEU_ERR_TAG_NAME_CONFLICT;
             free(tag);
         } else {
             updated = true;

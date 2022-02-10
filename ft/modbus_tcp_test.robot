@@ -33,9 +33,9 @@ Read unsubscribed point, it should return failure
     ${res} =                Add Tags    ${test_node_id}    xxgrp    ${tag_int16}
     Sleep                   1s 500ms
 
-    ${res} =                 Read Tags          ${test_node_id}             xxgrp
+    ${res} =                 Read Tags          ${test_node_id}                    xxgrp
     Check Response Status    ${res}             200
-    Integer                  $.tags[0].error    ${ERR_GRP_NOT_SUBSCRIBE}
+    Integer                  $.tags[0].error    ${ERR_PLUGIN_GRP_NOT_SUBSCRIBE}
 
     ${res} =                 Del Group Config    ${test_node_id}    xxgrp
     Check Response Status    ${res}              200

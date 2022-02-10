@@ -542,7 +542,7 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
             vector_t *ids =
                 neu_taggrp_cfg_get_datatag_ids(read_req->grp_config);
             data_resp.data_val = neu_datatag_pack_create(ids->size);
-            int32_t error      = NEU_ERR_GRP_NOT_SUBSCRIBE;
+            int32_t error      = NEU_ERR_PLUGIN_GRP_NOT_SUBSCRIBE;
             int     index      = 0;
 
             VECTOR_FOR_EACH(ids, iter)

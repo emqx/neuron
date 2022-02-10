@@ -87,7 +87,7 @@ void handle_add_tags(nng_aio *aio)
                                   "Add failed, tag name exits, node_id:%d, "
                                   "req_tag_name:%s",
                                   req->node_id, req->tags[i].name);
-                    code = NEU_ERR_TAG_NAME_EXIST;
+                    code = NEU_ERR_TAG_NAME_CONFLICT;
                     free(tag);
                 }
             }
@@ -218,7 +218,7 @@ void handle_update_tags(nng_aio *aio)
                                   "tag_id:%d, req_tag_name:%s",
                                   req->node_id, req->tags[i].id,
                                   req->tags[i].name);
-                    code = NEU_ERR_TAG_NAME_EXIST;
+                    code = NEU_ERR_TAG_NAME_CONFLICT;
                     free(tag);
                 } else {
                     updated = true;
