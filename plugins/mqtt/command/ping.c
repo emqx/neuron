@@ -26,7 +26,8 @@ char *command_ping(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
     UNUSED(plugin);
     log_info("Node control uuid:%s", mqtt->uuid);
     char *result = calloc(100, sizeof(char));
-    snprintf(result, 99, "{\"function\":%d, \"uuid\": \"%s\"}", mqtt->function,
-             mqtt->uuid);
+    snprintf(result, 99,
+             "{\"function\":%d, \"uuid\": \"%s\", \"command\":\"%s\"}",
+             mqtt->function, mqtt->uuid, "");
     return result;
 }

@@ -389,13 +389,13 @@ void command_response_handle(mqtt_response_t *response)
 
     case TOPIC_TYPE_NODE: {
         // Node GET/ADD/UPDATE/DELETE
-        if (mqtt->function == NEU_MQTT_OP_GET_NODES) {
+        if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
             rc = node_response_get(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_ADD_NODES) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_ADD, mqtt->command)) {
             rc = node_response_add(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_UPDATE_NODES) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_UPDATE, mqtt->command)) {
             rc = node_response_update(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_DELETE_NODES) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_DELETE, mqtt->command)) {
             rc = node_response_delete(&ret_str, plugin, mqtt, json_str);
         }
 
@@ -404,13 +404,13 @@ void command_response_handle(mqtt_response_t *response)
 
     case TOPIC_TYPE_GCONFIG: {
         // Group Config GET/ADD/UPDATE/DELETE
-        if (mqtt->function == NEU_MQTT_OP_GET_GROUP_CONFIG) {
+        if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
             rc = group_config_response_get(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_ADD_GROUP_CONFIG) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_ADD, mqtt->command)) {
             rc = group_config_response_add(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_UPDATE_GROUP_CONFIG) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_UPDATE, mqtt->command)) {
             rc = group_config_response_update(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_DELETE_GROUP_CONFIG) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_DELETE, mqtt->command)) {
             rc = group_config_response_delete(&ret_str, plugin, mqtt, json_str);
         }
 
@@ -419,13 +419,13 @@ void command_response_handle(mqtt_response_t *response)
 
     case TOPIC_TYPE_TAGS: {
         // Tag GET/ADD/UPDATE/DELETE
-        if (mqtt->function == NEU_MQTT_OP_GET_TAGS) {
+        if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
             rc = datatag_response_get(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_ADD_TAGS) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_ADD, mqtt->command)) {
             rc = datatag_response_add(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_UPDATE_TAGS) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_UPDATE, mqtt->command)) {
             rc = datatag_response_update(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_DELETE_TAGS) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_DELETE, mqtt->command)) {
             rc = datatag_response_delete(&ret_str, plugin, mqtt, json_str);
         }
 
@@ -434,11 +434,11 @@ void command_response_handle(mqtt_response_t *response)
 
     case TOPIC_TYPE_PLUGIN: {
         // Plugin GET/ADD/UPDATE/DELETE
-        if (mqtt->function == NEU_MQTT_OP_GET_PLUGIN) {
+        if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
             rc = plugin_response_get(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_ADD_PLUGIN) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_ADD, mqtt->command)) {
             rc = plugin_response_add(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_DELETE_PLUGIN) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_DELETE, mqtt->command)) {
             rc = plugin_response_delete(&ret_str, plugin, mqtt, json_str);
         }
 
@@ -447,11 +447,11 @@ void command_response_handle(mqtt_response_t *response)
 
     case TOPIC_TYPE_SUBSCRIBE: {
         // Subscribe GET/ADD/DELETE
-        if (mqtt->function == NEU_MQTT_OP_SUBSCRIBE) {
+        if (0 == strcmp(NEU_MQTT_CMD_ADD, mqtt->command)) {
             rc = subscribe_response_add(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_UNSUBSCRIBE) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_DELETE, mqtt->command)) {
             rc = subscribe_response_delete(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_GET_SUBSCRIBE_GRP_CONFIG) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
             rc = subscribe_response_get(&ret_str, plugin, mqtt, json_str);
         }
 
@@ -480,9 +480,9 @@ void command_response_handle(mqtt_response_t *response)
 
     case TOPIC_TYPE_SETTING: {
         // Setting SET/GET
-        if (mqtt->function == NEU_MQTT_OP_NODE_SETTING) {
+        if (0 == strcmp(NEU_MQTT_CMD_SET, mqtt->command)) {
             rc = setting_response_set(&ret_str, plugin, mqtt, json_str);
-        } else if (mqtt->function == NEU_MQTT_OP_GET_NODE_SETTING) {
+        } else if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
             rc = setting_response_get(&ret_str, plugin, mqtt, json_str);
         }
 
@@ -514,4 +514,6 @@ void command_response_handle(mqtt_response_t *response)
     if (NULL != json_str) {
         free(json_str);
     }
+
+    neu_json_decode_mqtt_req_free(mqtt);
 }

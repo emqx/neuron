@@ -41,6 +41,10 @@ int neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result)
                                     {
                                         .name = "function",
                                         .t    = NEU_JSON_INT,
+                                    },
+                                    {
+                                        .name = "command",
+                                        .t    = NEU_JSON_STR,
                                     } };
     ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
     if (ret != 0) {
@@ -49,6 +53,7 @@ int neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result)
 
     req->uuid     = req_elems[0].v.val_str;
     req->function = req_elems[1].v.val_int;
+    req->command  = req_elems[2].v.val_str;
 
     *result = req;
     return ret;
@@ -62,8 +67,17 @@ decode_fail:
 
 void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req)
 {
+    if (NULL == req) {
+        return;
+    }
 
-    free(req->uuid);
+    if (NULL != req->uuid) {
+        free(req->uuid);
+    }
+
+    if (NULL != req->command) {
+        free(req->command);
+    }
 
     free(req);
 }
@@ -82,6 +96,11 @@ int neu_json_encode_mqtt_resp(void *json_object, void *param)
                                          .name      = "function",
                                          .t         = NEU_JSON_INT,
                                          .v.val_int = resp->function,
+                                     },
+                                     {
+                                         .name      = "command",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->command,
                                      } };
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));

@@ -74,9 +74,17 @@ typedef enum neu_mqtt_function {
 
 } neu_mqtt_function_e;
 
+#define NEU_MQTT_CMD_GET "get"
+#define NEU_MQTT_CMD_SET "set"
+#define NEU_MQTT_CMD_ADD "add"
+#define NEU_MQTT_CMD_UPDATE "update"
+#define NEU_MQTT_CMD_DELETE "delete"
+#define NEU_MQTT_CMD_NONE ""
+
 typedef struct {
     neu_mqtt_function_e function;
     char *              uuid;
+    char *              command;
 } neu_json_mqtt_t;
 
 int  neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result);
