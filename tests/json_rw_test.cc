@@ -8,7 +8,7 @@
 
 TEST(JsonAPITest, ReadReqDecode)
 {
-    char *buf = (char *) "{\"function\":3, "
+    char *buf = (char *) "{\"command\":\"\", "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
                          "\"node_id\": 123 ,"
                          "\"group_config_name\": \"group1\"}";
@@ -18,7 +18,6 @@ TEST(JsonAPITest, ReadReqDecode)
     EXPECT_EQ(0, neu_json_decode_mqtt_req(buf, &mqtt));
     EXPECT_EQ(0, neu_json_decode_read_req(buf, &req));
 
-    EXPECT_EQ(NEU_MQTT_OP_READ, mqtt->function);
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", mqtt->uuid);
     EXPECT_EQ(123, req->node_id);
     EXPECT_STREQ("group1", req->group_config_name);

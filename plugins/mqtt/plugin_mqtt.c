@@ -157,9 +157,8 @@ static void context_list_add(neu_plugin_t *plugin, int req_id,
     ctx->req_id    = req_id;
 
     if (NULL != parse_header) {
-        ctx->parse_header.function = parse_header->function;
-        ctx->parse_header.uuid     = strdup(parse_header->uuid);
-        ctx->parse_header.command  = strdup(parse_header->command);
+        ctx->parse_header.uuid    = strdup(parse_header->uuid);
+        ctx->parse_header.command = strdup(parse_header->command);
     }
 
     ctx->result = result;
