@@ -25,6 +25,16 @@
 				"length": 100
 			}
 		},
+		"client-id": {
+			"name": "client-id",
+			"description": "Neuron client id",
+			"type": "string",
+			"attribute": "required",
+			"default": "",
+			"valid": {
+				"length": 100
+			}
+		},
 		"ssl": {
 			"name": "ssl",
 			"description": "Enable SSL connection",
