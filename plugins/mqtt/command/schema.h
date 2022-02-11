@@ -17,25 +17,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT_COMMON
-#define NEURON_PLUGIN_MQTT_COMMON
+#ifndef NEURON_PLUGIN_MQTT_COMMAND_SCHEMA
+#define NEURON_PLUGIN_MQTT_COMMAND_SCHEMA
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <neuron.h>
 
-#include "json/neu_json_error.h"
-#include "json/neu_json_fn.h"
-#include "json/neu_json_group_config.h"
-#include "json/neu_json_mqtt.h"
-#include "json/neu_json_node.h"
-#include "json/neu_json_plugin.h"
-#include "json/neu_json_rw.h"
-#include "json/neu_json_tag.h"
-#include "json/neu_json_tty.h"
+#include "common.h"
 
-#define UNUSED(x) (void) (x)
+char *command_schema_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt);
 
 #ifdef __cplusplus
 }

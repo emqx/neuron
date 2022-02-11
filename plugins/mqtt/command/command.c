@@ -297,8 +297,22 @@ static int write_response(mqtt_response_t *response, neu_plugin_t *plugin,
 }
 
 // Manipulate TTY
+static int tty_response_get(char **output_str, neu_plugin_t *plugin,
+                            neu_json_mqtt_t *mqtt, char *json_str)
+{
+    UNUSED(json_str);
+    *output_str = command_tty_get(plugin, mqtt);
+    return 0;
+}
 
 // Manipulate plugin schema
+static int schema_response_get(char **output_str, neu_plugin_t *plugin,
+                               neu_json_mqtt_t *mqtt, char *json_str)
+{
+    UNUSED(json_str);
+    *output_str = command_schema_get(plugin, mqtt);
+    return 0;
+}
 
 // Manipulate node setting
 static int setting_response_set(char **output_str, neu_plugin_t *plugin,
@@ -470,11 +484,17 @@ void command_response_handle(mqtt_response_t *response)
 
     case TOPIC_TYPE_TTYS: {
         // TTY GET
+        if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
+            rc = tty_response_get(&ret_str, plugin, mqtt, json_str);
+        }
         break;
     }
 
     case TOPIC_TYPE_SCHEMA: {
         // Schema GET
+        if (0 == strcmp(NEU_MQTT_CMD_GET, mqtt->command)) {
+            rc = schema_response_get(&ret_str, plugin, mqtt, json_str);
+        }
         break;
     }
 

@@ -11,6 +11,8 @@ set(src
 	command/node.c
 	command/ping.c
 	command/plugin.c
+	command/tty.c
+	command/schema.c
 	command/command.c)
 
 add_library(plugin-mqtt SHARED ${src})
