@@ -97,11 +97,7 @@ ${TOPIC_STATE_RES}                          neuron/${MQTT_CLIENTID}/node/state/r
 ${MQTT_UUID}                                123456-789abc-123456-aabbcc
 ${MQTT_CONFIG_HOST}                         127.0.0.1
 ${MQTT_CONFIG_PORT}                         ${1883}
-${MQTT_CONFIG_REQ_TOPIC}                    neuronlite/request
-${MQTT_CONFIG_RES_TOPIC}                    neuronlite/response
-${MQTT_CONFIG}                              {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}",
-...                                          "res-topic": "${MQTT_CONFIG_RES_TOPIC}",
-...                                          "client-id": "${MQTT_CLIENTID}",
+${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}",
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
 ...                                          "username": "", "password": "", "ca-path":"", "ca-file": ""}
 
