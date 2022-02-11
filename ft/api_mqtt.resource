@@ -79,7 +79,6 @@ LOGIN
   Sleep                             1s
 
   Connect                           ${MQTT_CONFIG_HOST}               ${MQTT_CONFIG_PORT}                     client_id=neuron-ft         clean_session=${true}
-  Subscribe                         ${MQTT_CONFIG_RES_TOPIC}          qos=0                                   timeout=5
 
   Subscribe                         ${TOPIC_STATUS_RES}               qos=0                                   timeout=5
   Subscribe                         ${TOPIC_NODE_RES}                 qos=0                                   timeout=5

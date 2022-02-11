@@ -5,8 +5,7 @@ Suite Teardown    Stop All Processes
 
 *** Variables ***
 ${MQTT_CONFIG_ERR_PORT}    ${1889}
-${MQTT_CONFIG_ERR}         {"req-topic": "${MQTT_CONFIG_REQ_TOPIC}",
-...                        "res-topic": "${MQTT_CONFIG_RES_TOPIC}",
+${MQTT_CONFIG_ERR}         {"client-id": "${MQTT_CLIENTID}",
 ...                        "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_ERR_PORT},
 ...                        "username": "", "password": "", "ca-path":"", "ca-file": ""}
 

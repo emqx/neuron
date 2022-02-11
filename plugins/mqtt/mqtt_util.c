@@ -107,25 +107,7 @@ static int decode_node_setting(const char *         json_str,
         return -2;
     }
 
-    // setting->req_topic
-    json_t *param = json_object_get(child, "req-topic");
-    if (NULL == param) {
-        setting->req_topic = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->req_topic = strdup(json_string_value(param));
-        json_decref(param);
-    }
-
-    // setting->res_topic
-    param = json_object_get(child, "res-topic");
-    if (NULL == param) {
-        setting->res_topic = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->res_topic = strdup(json_string_value(param));
-        json_decref(param);
-    }
+    json_t *param = NULL;
 
     // setting->res_topic
     param = json_object_get(child, "client-id");
@@ -224,25 +206,12 @@ static int valid_node_setting(const char *file, const char *plugin_name,
         return -1;
     }
 
-    int rc = neu_schema_valid_param_string(valid, setting->req_topic,
-                                           (char *) "req-topic");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -2;
-    }
-
-    rc = neu_schema_valid_param_string(valid, setting->res_topic,
-                                       (char *) "res-topic");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -3;
-    }
-
-    rc = neu_schema_valid_param_string(valid, setting->client_id,
+    int rc = 0;
+    rc     = neu_schema_valid_param_string(valid, setting->client_id,
                                        (char *) "client-id");
     if (0 != rc) {
         neu_schema_free(valid);
-        return -10;
+        return -2;
     }
 
     rc = neu_schema_valid_param_string(valid, setting->host, (char *) "host");
@@ -304,11 +273,8 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     rc = valid_node_setting(SCHEMA_FILE, MQTT_PLUGIN_NAME, &setting);
 
     // MQTT option
-    option->clientid      = NULL; // Use random id
-    option->MQTT_version  = 4;    // Version 3.1.1
-    option->topic         = setting.req_topic;
-    option->respons_topic = setting.res_topic;
-    option->qos           = 0;
+    option->clientid     = NULL; // Use random id
+    option->MQTT_version = 4;    // Version 3.1.1
 
     if (false == setting.ssl) {
         option->connection = strdup("tcp://");
