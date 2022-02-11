@@ -32,6 +32,8 @@ extern "C" {
 #include "ping.h"
 #include "plugin.h"
 #include "read_write.h"
+#include "schema.h"
+#include "tty.h"
 
 enum topic_type {
     TOPIC_TYPE_PING = 0,
