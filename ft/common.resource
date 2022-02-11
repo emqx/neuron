@@ -14,7 +14,6 @@ Resource    simulator.resource
 
 *** Variables ***
 ${test_data_dir}     ft/data
-${test_pdata_dir}    ${test_data_dir}/persistence
 
 ${NODE_UNKNOWN}	0
 ${NODE_DRIVER}	1
@@ -158,6 +157,10 @@ Skip If Not MQTT API
     Skip If    $NEURON_API != "mqtt"    Current API is not `mqtt`, just skip
 
 Copy Persistence Test Data
+    ${data_set} =                  Get Variable Value   ${DATASET}                       total-10k
+    ${data_dir} =                  Set Variable         ${test_data_dir}/persistence/${data_set}
+    Directory Should Exist         ${data_dir}
+
     Directory Should Exist         build
-    ${rc} =                        Run And Return Rc    cp -r ${test_pdata_dir} build/
+    ${rc} =                        Run And Return Rc    cp -r ${data_dir} build/
     Should Be Equal As Integers    ${rc}                0
