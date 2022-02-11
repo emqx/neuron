@@ -114,7 +114,28 @@ python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft
 
 ```
 
- 
+## 压力测试
+
+目录`ft/data/persistence/`下存放有用于压力测试的数据集。
+
+可运行以下命令进行压力测试
+
+```shell
+# 安装依赖
+pip3 install -r ft/requirements.txt
+
+# 使用http接口在数据集total-10k上进行测试
+python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-10k -d ft/http-total-10k ft/pressure.test
+# 使用http接口在数据集total-50k上进行测试
+python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-50k -d ft/http-total-50k ft/pressure.test
+
+# 如果使用mqtt接口则需要MQTT服务器，此例为mosquitto
+mosquitto -v &
+
+# 使用mqtt接口在数据集simple-1k上进行测试
+python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k -d ft/mqtt-simple-1k ft/pressure.test
+
+```
 
 ## 社区
 
