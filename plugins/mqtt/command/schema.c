@@ -23,6 +23,8 @@
 
 #include "schema.h"
 
+#define SCHEMA_PATH "./plugin_param_schema.json"
+
 static char *schema_inject(char *buf, neu_json_mqtt_t *mqtt)
 {
     json_error_t error;
@@ -46,11 +48,12 @@ static char *schema_inject(char *buf, neu_json_mqtt_t *mqtt)
 char *command_schema_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
 {
     UNUSED(plugin);
-    char  buf[4096] = { 0 };
-    FILE *fp        = fopen("./plugin_param_schema.json", "r");
 
-    if (fp == NULL) {
-        log_info("open ./plugin_param_schema.json error: %d", errno);
+    size_t len = 0;
+    char * buf = NULL;
+    buf        = file_string_read(&len, SCHEMA_PATH);
+    if (buf == NULL) {
+        log_info("open %s error: %d", SCHEMA_PATH, errno);
 
         char *                result = NULL;
         neu_json_error_resp_t error  = { 0 };
@@ -60,9 +63,7 @@ char *command_schema_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
         return result;
     }
 
-    fread(buf, 1, sizeof(buf), fp);
-    fclose(fp);
-
     char *ret_str = schema_inject(buf, mqtt);
+    free(buf);
     return ret_str;
 }

@@ -149,6 +149,7 @@ set(NEURON_BASE_SOURCES
     src/utils/common.c
     src/utils/neu_jwt.c
     src/utils/uuid4.c
+    src/utils/file.c
     src/config.c)
 
 if(USE_NNG_MQTT)
