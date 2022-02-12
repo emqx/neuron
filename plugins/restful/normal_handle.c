@@ -36,42 +36,10 @@
 #include "config.h"
 #include "handle.h"
 #include "http.h"
+#include "neu_file.h"
 #include "utils/neu_jwt.h"
 
 #include "normal_handle.h"
-
-#define DEV_TTY_LENTH 261
-
-static int get_tty_file_list(char ***tty_file)
-{
-    DIR *          dir    = NULL;
-    struct dirent *ptr    = NULL;
-    int            n_file = 0;
-
-    *tty_file = NULL;
-    dir       = opendir("/dev");
-    if (dir == NULL) {
-        log_error("Open dir error: %s", strerror(errno));
-        return -1;
-    }
-    ptr = readdir(dir);
-    while (ptr != NULL) {
-        if (ptr->d_type == 2) {
-            char dev_tty[DEV_TTY_LENTH] = { 0 };
-            if (strstr(ptr->d_name, "tty") != NULL) {
-                n_file += 1;
-                *tty_file = realloc(*tty_file, sizeof(char *) * n_file);
-                snprintf(dev_tty, sizeof(dev_tty), "/dev/%s", ptr->d_name);
-                (*tty_file)[n_file - 1] = strdup(dev_tty);
-            }
-        }
-        ptr = readdir(dir);
-    }
-
-    closedir(dir);
-
-    return n_file;
-}
 
 void handle_get_ttys(nng_aio *aio)
 {
@@ -79,7 +47,7 @@ void handle_get_ttys(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    ttys_res.n_tty = get_tty_file_list(&ttys_res.ttys);
+    ttys_res.n_tty = tty_file_list_get(&ttys_res.ttys);
     if (ttys_res.n_tty == -1) {
         http_bad_request(aio, "{\"error\": 400}");
         return;
@@ -155,19 +123,17 @@ void handle_logout(nng_aio *aio)
 
 void handle_get_plugin_schema(nng_aio *aio)
 {
-    char  buf[4096] = { 0 };
-    FILE *fp        = fopen("./plugin_param_schema.json", "r");
-
     VALIDATE_JWT(aio);
 
-    if (fp == NULL) {
+    size_t len = 0;
+    char * buf = NULL;
+    buf        = file_string_read(&len, "./plugin_param_schema.json");
+    if (NULL == buf) {
         log_info("open ./plugin_param_schema.json error: %d", errno);
         http_not_found(aio, "{\"status\": \"error\"}");
         return;
     }
 
-    fread(buf, 1, sizeof(buf), fp);
-    fclose(fp);
-
     http_ok(aio, buf);
+    free(buf);
 }

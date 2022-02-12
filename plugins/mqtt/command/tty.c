@@ -23,41 +23,6 @@
 
 #include "tty.h"
 
-// Copy from normal_handle.c
-
-#define DEV_TTY_LENTH 261
-
-static int get_tty_file_list(char ***tty_file)
-{
-    DIR *          dir    = NULL;
-    struct dirent *ptr    = NULL;
-    int            n_file = 0;
-
-    *tty_file = NULL;
-    dir       = opendir("/dev");
-    if (dir == NULL) {
-        log_error("Open dir error: %s", strerror(errno));
-        return -1;
-    }
-    ptr = readdir(dir);
-    while (ptr != NULL) {
-        if (ptr->d_type == 2) {
-            char dev_tty[DEV_TTY_LENTH] = { 0 };
-            if (strstr(ptr->d_name, "tty") != NULL) {
-                n_file += 1;
-                *tty_file = realloc(*tty_file, sizeof(char *) * n_file);
-                snprintf(dev_tty, sizeof(dev_tty), "/dev/%s", ptr->d_name);
-                (*tty_file)[n_file - 1] = strdup(dev_tty);
-            }
-        }
-        ptr = readdir(dir);
-    }
-
-    closedir(dir);
-
-    return n_file;
-}
-
 char *command_tty_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
 {
     log_info("Get tty uuid:%s", mqtt->uuid);
@@ -65,7 +30,7 @@ char *command_tty_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
     UNUSED(plugin);
     neu_json_get_tty_resp_t ttys_res = { 0 };
     char *                  result   = NULL;
-    ttys_res.n_tty                   = get_tty_file_list(&ttys_res.ttys);
+    ttys_res.n_tty                   = tty_file_list_get(&ttys_res.ttys);
     if (ttys_res.n_tty == -1) {
         neu_json_error_resp_t error = { 0 };
         error.error                 = NEU_ERR_FAILURE;
