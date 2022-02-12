@@ -92,7 +92,7 @@ struct neu_plugin {
     pthread_mutex_t     list_mutex;    // lock context state
     bool                running;
     neu_list            context_list; // publish context list
-    neu_list            topic_list;   // topic list
+    neu_vector_t        topics;       // topic list
     neu_mqtt_client_t   client;
 };
 
@@ -219,8 +219,8 @@ static void topic_pair_destory(struct topic_pair *pair)
     }
 }
 
-static void topic_list_add(neu_list *list, char *request, int qos_request,
-                           char *response, int qos_response, int type)
+static void topics_add(vector_t *topics, char *request, int qos_request,
+                       char *response, int qos_response, int type)
 {
     if (NULL == request) {
         return;
@@ -236,103 +236,75 @@ static void topic_list_add(neu_list *list, char *request, int qos_request,
     pair->qos_request   = qos_request;
     pair->qos_response  = qos_response;
     pair->type          = type;
-
-    NEU_LIST_NODE_INIT(&pair->node);
-    neu_list_append(list, pair);
+    vector_push_back(topics, pair);
 }
 
-static struct topic_pair *topic_list_find(neu_list *list, const char *topic)
+static void topics_cleanup(vector_t *topics)
 {
-    struct topic_pair *item = NULL;
-    NEU_LIST_FOREACH(list, item)
+    VECTOR_FOR_EACH(topics, item)
     {
-        if (0 == strcmp(item->topic_request, topic)) {
-            return item;
-        }
-    }
-
-    return NULL;
-}
-
-static struct topic_pair *topic_list_find_by_type(neu_list *list,
-                                                  const int type)
-{
-    struct topic_pair *item = NULL;
-    NEU_LIST_FOREACH(list, item)
-    {
-        if (item->type == type) {
-            return item;
-        }
-    }
-
-    return NULL;
-}
-
-static void topic_list_cleanup(neu_list *list)
-{
-    while (!neu_list_empty(list)) {
         struct topic_pair *pair = NULL;
-        pair                    = neu_list_first(list);
+        pair                    = iterator_get(&item);
         if (NULL != pair) {
-            neu_list_remove(list, pair);
             topic_pair_destory(pair);
         }
     }
+
+    vector_clear(topics);
 }
 
-static void topic_list_generate(neu_list *list, char *name)
+static void topics_generate(vector_t *topics, char *name)
 {
-    topic_list_add(list, real_topic_generate(TOPIC_PING_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_STATUS_RES, name), QOS0,
-                   TOPIC_TYPE_PING);
+    topics_add(topics, real_topic_generate(TOPIC_PING_REQ, name), QOS0,
+               real_topic_generate(TOPIC_STATUS_RES, name), QOS0,
+               TOPIC_TYPE_PING);
 
-    topic_list_add(list, real_topic_generate(TOPIC_NODE_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_NODE_RES, name), QOS0,
-                   TOPIC_TYPE_NODE);
+    topics_add(topics, real_topic_generate(TOPIC_NODE_REQ, name), QOS0,
+               real_topic_generate(TOPIC_NODE_RES, name), QOS0,
+               TOPIC_TYPE_NODE);
 
-    topic_list_add(list, real_topic_generate(TOPIC_GCONFIG_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_GCONFIG_RES, name), QOS0,
-                   TOPIC_TYPE_GCONFIG);
+    topics_add(topics, real_topic_generate(TOPIC_GCONFIG_REQ, name), QOS0,
+               real_topic_generate(TOPIC_GCONFIG_RES, name), QOS0,
+               TOPIC_TYPE_GCONFIG);
 
-    topic_list_add(list, real_topic_generate(TOPIC_TAGS_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_TAGS_RES, name), QOS0,
-                   TOPIC_TYPE_TAGS);
+    topics_add(topics, real_topic_generate(TOPIC_TAGS_REQ, name), QOS0,
+               real_topic_generate(TOPIC_TAGS_RES, name), QOS0,
+               TOPIC_TYPE_TAGS);
 
-    topic_list_add(list, real_topic_generate(TOPIC_PLUGIN_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_PLUGIN_RES, name), QOS0,
-                   TOPIC_TYPE_PLUGIN);
+    topics_add(topics, real_topic_generate(TOPIC_PLUGIN_REQ, name), QOS0,
+               real_topic_generate(TOPIC_PLUGIN_RES, name), QOS0,
+               TOPIC_TYPE_PLUGIN);
 
-    topic_list_add(list, real_topic_generate(TOPIC_SUBSCRIBE_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_SUBSCRIBE_RES, name), QOS0,
-                   TOPIC_TYPE_SUBSCRIBE);
+    topics_add(topics, real_topic_generate(TOPIC_SUBSCRIBE_REQ, name), QOS0,
+               real_topic_generate(TOPIC_SUBSCRIBE_RES, name), QOS0,
+               TOPIC_TYPE_SUBSCRIBE);
 
-    topic_list_add(list, real_topic_generate(TOPIC_READ_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_READ_RES, name), QOS0,
-                   TOPIC_TYPE_READ);
+    topics_add(topics, real_topic_generate(TOPIC_READ_REQ, name), QOS0,
+               real_topic_generate(TOPIC_READ_RES, name), QOS0,
+               TOPIC_TYPE_READ);
 
-    topic_list_add(list, real_topic_generate(TOPIC_WRITE_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_WRITE_RES, name), QOS0,
-                   TOPIC_TYPE_WRITE);
+    topics_add(topics, real_topic_generate(TOPIC_WRITE_REQ, name), QOS0,
+               real_topic_generate(TOPIC_WRITE_RES, name), QOS0,
+               TOPIC_TYPE_WRITE);
 
-    topic_list_add(list, real_topic_generate(TOPIC_TTYS_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_TTYS_RES, name), QOS0,
-                   TOPIC_TYPE_TTYS);
+    topics_add(topics, real_topic_generate(TOPIC_TTYS_REQ, name), QOS0,
+               real_topic_generate(TOPIC_TTYS_RES, name), QOS0,
+               TOPIC_TYPE_TTYS);
 
-    topic_list_add(list, real_topic_generate(TOPIC_SCHEMA_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_SCHEMA_RES, name), QOS0,
-                   TOPIC_TYPE_SCHEMA);
+    topics_add(topics, real_topic_generate(TOPIC_SCHEMA_REQ, name), QOS0,
+               real_topic_generate(TOPIC_SCHEMA_RES, name), QOS0,
+               TOPIC_TYPE_SCHEMA);
 
-    topic_list_add(list, real_topic_generate(TOPIC_SETTING_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_SETTING_RES, name), QOS0,
-                   TOPIC_TYPE_SETTING);
+    topics_add(topics, real_topic_generate(TOPIC_SETTING_REQ, name), QOS0,
+               real_topic_generate(TOPIC_SETTING_RES, name), QOS0,
+               TOPIC_TYPE_SETTING);
 
-    topic_list_add(list, real_topic_generate(TOPIC_CTR_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_CTR_RES, name), QOS0,
-                   TOPIC_TYPE_CTR);
+    topics_add(topics, real_topic_generate(TOPIC_CTR_REQ, name), QOS0,
+               real_topic_generate(TOPIC_CTR_RES, name), QOS0, TOPIC_TYPE_CTR);
 
-    topic_list_add(list, real_topic_generate(TOPIC_STATE_REQ, name), QOS0,
-                   real_topic_generate(TOPIC_STATE_RES, name), QOS0,
-                   TOPIC_TYPE_STATE);
+    topics_add(topics, real_topic_generate(TOPIC_STATE_REQ, name), QOS0,
+               real_topic_generate(TOPIC_STATE_RES, name), QOS0,
+               TOPIC_TYPE_STATE);
 }
 
 static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
@@ -344,12 +316,35 @@ static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
     pthread_mutex_unlock(&plugin->list_mutex);
 }
 
+static bool topic_match(const void *key, const void *item)
+{
+    char *             topic_name = (char *) key;
+    struct topic_pair *pair       = (struct topic_pair *) item;
+    if (0 == strcmp(pair->topic_request, topic_name)) {
+        return true;
+    }
+
+    return false;
+}
+
+static bool topic_type_match(const void *key, const void *item)
+{
+    int                type = *(int *) key;
+    struct topic_pair *pair = (struct topic_pair *) item;
+    if (type == pair->type) {
+        return true;
+    }
+
+    return false;
+}
+
 static void mqtt_response_handle(const char *topic_name, size_t topic_len,
                                  void *payload, const size_t len, void *context)
 {
     neu_plugin_t *     plugin = (neu_plugin_t *) context;
-    struct topic_pair *pair = topic_list_find(&plugin->topic_list, topic_name);
-    mqtt_response_t    response = { .topic_name  = topic_name,
+    struct topic_pair *pair =
+        vector_find_item(&plugin->topics, (void *) topic_name, topic_match);
+    mqtt_response_t response = { .topic_name  = topic_name,
                                  .topic_len   = topic_len,
                                  .payload     = payload,
                                  .len         = len,
@@ -360,14 +355,15 @@ static void mqtt_response_handle(const char *topic_name, size_t topic_len,
     command_response_handle(&response);
 }
 
-static void topic_list_subscribe(neu_list *list, neu_mqtt_client_t *client)
+static void topics_subscribe(vector_t *topics, neu_mqtt_client_t *client)
 {
-    struct topic_pair *item = NULL;
-    NEU_LIST_FOREACH(list, item)
+    VECTOR_FOR_EACH(topics, item)
     {
-        if (NULL != item) {
-            neu_mqtt_client_subscribe(client, item->topic_request,
-                                      item->qos_request, mqtt_response_handle);
+        struct topic_pair *pair = NULL;
+        pair                    = iterator_get(&item);
+        if (NULL != pair) {
+            neu_mqtt_client_subscribe(client, pair->topic_request,
+                                      pair->qos_request, mqtt_response_handle);
         }
     }
 }
@@ -513,7 +509,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     // Context list init
     NEU_LIST_INIT(&plugin->context_list, struct context, node);
-    NEU_LIST_INIT(&plugin->topic_list, struct topic_pair, node);
+    vector_init(&plugin->topics, 1, sizeof(struct topic_pair));
 
     // Publish thread init
     plugin->running = true;
@@ -534,7 +530,7 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     // Close MQTT client
     neu_mqtt_client_close(plugin->client);
     plugin->client = NULL;
-    topic_list_cleanup(&plugin->topic_list);
+    topics_cleanup(&plugin->topics);
     mqtt_option_uninit(&plugin->option);
 
     // Quit publish thread
@@ -586,10 +582,9 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
     }
 
     // Subscribe all topics
-    neu_list *topic_list = &plugin->topic_list;
-    topic_list_cleanup(topic_list); // Try to delete a previous subscription
-    topic_list_generate(topic_list, plugin->option.clientid);
-    topic_list_subscribe(topic_list, plugin->client);
+    topics_cleanup(&plugin->topics);
+    topics_generate(&plugin->topics, plugin->option.clientid);
+    topics_subscribe(&plugin->topics, plugin->client);
     return 0;
 }
 
@@ -598,7 +593,7 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
     // Close MQTT client
     neu_mqtt_client_close(plugin->client);
     plugin->client = NULL;
-    topic_list_cleanup(&plugin->topic_list);
+    topics_cleanup(&plugin->topics);
     return 0;
 }
 
@@ -652,7 +647,9 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_data                     = (neu_reqresp_data_t *) req->buf;
         struct topic_pair *pair      = NULL;
         char *             json_str  = NULL;
-        pair = topic_list_find_by_type(&plugin->topic_list, TOPIC_TYPE_READ);
+        int                type      = TOPIC_TYPE_READ;
+        pair =
+            vector_find_item(&plugin->topics, (void *) &type, topic_type_match);
         json_str = command_read_cycle_response(plugin, neu_data->data_val);
         mqtt_context_add(plugin, 0, NULL, json_str, pair, true);
         break;
