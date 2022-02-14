@@ -33,6 +33,11 @@
 #include "connection/neu_connection.h"
 #include "neu_log.h"
 
+struct tcp_client {
+    int                fd;
+    struct sockaddr_in client;
+};
+
 struct neu_conn {
     neu_conn_param_t param;
     void *           data;
@@ -44,14 +49,19 @@ struct neu_conn {
 
     pthread_mutex_t mtx;
 
-    int fd;
+    int  fd;
+    bool block;
 
     struct {
-        int                fd;
-        struct sockaddr_in client;
+        struct tcp_client *clients;
+        int                n_client;
         bool               is_listen;
     } tcp_server;
 };
+
+static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
+                                       struct sockaddr_in client);
+static void conn_tcp_server_del_client(neu_conn_t *conn, int fd);
 
 static void conn_tcp_server_listen(neu_conn_t *conn);
 static void conn_tcp_server_stop(neu_conn_t *conn);
@@ -86,8 +96,8 @@ neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
 {
     pthread_mutex_lock(&conn->mtx);
 
-    conn_free_param(conn);
     conn_disconnect(conn);
+    conn_free_param(conn);
     conn_tcp_server_stop(conn);
 
     conn_init_param(conn, param);
@@ -102,9 +112,9 @@ void neu_conn_destory(neu_conn_t *conn)
 {
     pthread_mutex_lock(&conn->mtx);
 
-    conn_free_param(conn);
-    conn_disconnect(conn);
     conn_tcp_server_stop(conn);
+    conn_disconnect(conn);
+    conn_free_param(conn);
 
     pthread_mutex_unlock(&conn->mtx);
 
@@ -142,7 +152,7 @@ int neu_conn_get_fd(neu_conn_t *conn)
     return fd;
 }
 
-int neu_conn_tcp_accept(neu_conn_t *conn)
+int neu_conn_tcp_server_accept(neu_conn_t *conn)
 {
     struct sockaddr_in client     = { 0 };
     socklen_t          client_len = 0;
@@ -162,16 +172,29 @@ int neu_conn_tcp_accept(neu_conn_t *conn)
         return -1;
     }
 
-    if (conn->tcp_server.fd > 0) {
-        conn->disconnected(conn->data, conn->tcp_server.fd);
-        close(conn->tcp_server.fd);
+    if (conn->tcp_server.n_client >= conn->param.params.tcp_server.max_link) {
+        close(fd);
+        log_warn("%s:%d accpet max link: %d, reject",
+                 conn->param.params.tcp_server.ip,
+                 conn->param.params.tcp_server.port,
+                 conn->param.params.tcp_server.max_link);
+        pthread_mutex_unlock(&conn->mtx);
+        return -1;
     }
 
-    conn->tcp_server.fd     = fd;
-    conn->tcp_server.client = client;
+    if (conn->block) {
+        struct timeval tv = {
+            .tv_sec  = conn->param.params.tcp_server.timeout / 1000,
+            .tv_usec = (conn->param.params.tcp_server.timeout % 1000) * 1000,
+        };
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    }
+
+    conn_tcp_server_add_client(conn, fd, client);
 
     conn->is_connected = true;
-    conn->connected(conn->data, conn->tcp_server.fd);
+    conn->connected(conn->data, fd);
     conn->callback_trigger = true;
 
     log_info("%s:%d accpet new client: %s:%d", conn->param.params.tcp_server.ip,
@@ -180,20 +203,56 @@ int neu_conn_tcp_accept(neu_conn_t *conn)
 
     pthread_mutex_unlock(&conn->mtx);
 
+    return fd;
+}
+
+int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd)
+{
+    pthread_mutex_lock(&conn->mtx);
+    if (conn->param.type != NEU_CONN_TCP_SERVER) {
+        pthread_mutex_unlock(&conn->mtx);
+        return -1;
+    }
+
+    conn->disconnected(conn->data, fd);
+    conn_tcp_server_del_client(conn, fd);
+
+    pthread_mutex_unlock(&conn->mtx);
     return 0;
 }
 
-int neu_conn_tcp_client_get_fd(neu_conn_t *conn)
+ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
+                                 ssize_t len)
 {
-    int fd = -1;
-
-    pthread_mutex_lock(&conn->mtx);
-    if (conn->is_connected) {
-        fd = conn->tcp_server.fd;
+    (void) conn;
+    ssize_t ret = send(fd, buf, len, MSG_NOSIGNAL);
+    if (ret != len) {
+        log_error("tcp server fd: %d, send buf len: %d, ret: %d, "
+                  "errno: %s(%d)",
+                  fd, len, ret, strerror(errno), errno);
+        return -1;
     }
-    pthread_mutex_unlock(&conn->mtx);
 
-    return fd;
+    return ret;
+}
+
+ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
+                                 ssize_t len)
+{
+    ssize_t ret = 0;
+
+    if (conn->block) {
+        ret = recv(fd, buf, len, MSG_WAITALL);
+    } else {
+        ret = recv(fd, buf, len, 0);
+    }
+    if (ret == -1) {
+        log_error("tcp server fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
+                  fd, len, ret, strerror(errno), errno);
+        return -1;
+    }
+
+    return ret;
 }
 
 ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
@@ -208,14 +267,8 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     if (conn->is_connected) {
         switch (conn->param.type) {
         case NEU_CONN_TCP_SERVER:
-            fd  = conn->tcp_server.fd;
-            ret = send(conn->tcp_server.fd, buf, len, MSG_NOSIGNAL);
-            if (ret != len) {
-                log_error("tcp server fd: %d, send buf len: %d, ret: %d, "
-                          "errno: %s(%d)",
-                          conn->tcp_server.fd, len, ret, strerror(errno),
-                          errno);
-            }
+            log_fatal("neu_conn_send cann't send tcp server msg");
+            assert(1 == 0);
             break;
         case NEU_CONN_TCP_CLIENT:
             fd  = conn->fd;
@@ -262,18 +315,17 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
-        fd  = conn->tcp_server.fd;
-        ret = recv(conn->tcp_server.fd, buf, len, MSG_WAITALL);
-        if (ret != len) {
-            log_error(
-                "tcp server fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
-                conn->tcp_server.fd, len, ret, strerror(errno), errno);
-        }
+        log_fatal("neu_conn_recv cann't recv tcp server msg");
+        assert(1 == 0);
         break;
     case NEU_CONN_TCP_CLIENT:
-        fd  = conn->fd;
-        ret = recv(conn->fd, buf, len, MSG_WAITALL);
-        if (ret != len) {
+        fd = conn->fd;
+        if (conn->block) {
+            ret = recv(conn->fd, buf, len, 0);
+        } else {
+            ret = recv(conn->fd, buf, len, MSG_WAITALL);
+        }
+        if (ret == -1) {
             log_error(
                 "tcp client fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
                 conn->fd, len, ret, strerror(errno), errno);
@@ -302,24 +354,31 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     return ret;
 }
 
-void neu_conn_tcp_flush(neu_conn_t *conn)
+void neu_conn_tcp_server_flush(neu_conn_t *conn, int fd)
+{
+    (void) conn;
+    ssize_t ret     = 1;
+    char    buf[64] = { 0 };
+
+    while (ret > 0) {
+        ret = recv(fd, &buf, sizeof(buf), 0);
+    }
+}
+
+void neu_conn_flush(neu_conn_t *conn)
 {
     ssize_t ret     = 1;
     char    buf[64] = { 0 };
 
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
-        while (ret > 0) {
-            pthread_mutex_lock(&conn->mtx);
-            ret = recv(conn->tcp_server.fd, &buf, sizeof(buf), 0);
-            pthread_mutex_unlock(&conn->mtx);
-        }
-
+        log_fatal("neu_conn_flush cann't flush tcp server msg");
+        assert(1 == 0);
         break;
     case NEU_CONN_TCP_CLIENT:
         while (ret > 0) {
             pthread_mutex_lock(&conn->mtx);
-            ret = recv(conn->fd, &buf, sizeof(buf), 0);
+            ret = recv(conn->fd, buf, sizeof(buf), 0);
             pthread_mutex_unlock(&conn->mtx);
         }
         break;
@@ -334,6 +393,8 @@ static void conn_free_param(neu_conn_t *conn)
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
         free(conn->param.params.tcp_server.ip);
+        free(conn->tcp_server.clients);
+        conn->tcp_server.n_client = 0;
         break;
     case NEU_CONN_TCP_CLIENT:
         free(conn->param.params.tcp_client.ip);
@@ -363,16 +424,29 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
             param->params.tcp_server.start_listen;
         conn->param.params.tcp_server.stop_listen =
             param->params.tcp_server.stop_listen;
+        conn->tcp_server.clients = calloc(
+            conn->param.params.tcp_server.max_link, sizeof(struct tcp_client));
+        if (conn->param.params.tcp_server.timeout > 0) {
+            conn->block = true;
+        } else {
+            conn->block = false;
+        }
         break;
     case NEU_CONN_TCP_CLIENT:
         conn->param.params.tcp_client.ip = strdup(param->params.tcp_client.ip);
         conn->param.params.tcp_client.port = param->params.tcp_client.port;
         conn->param.params.tcp_client.timeout =
             param->params.tcp_client.timeout;
+        if (conn->param.params.tcp_client.timeout > 0) {
+            conn->block = true;
+        } else {
+            conn->block = false;
+        }
         break;
     case NEU_CONN_UDP:
         conn->param.params.udp.ip   = strdup(param->params.udp.ip);
         conn->param.params.udp.port = param->params.udp.port;
+        conn->block                 = false;
         break;
     case NEU_CONN_TTY_CLIENT:
         conn->param.params.tty_client.device =
@@ -381,6 +455,7 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->param.params.tty_client.stop   = param->params.tty_client.stop;
         conn->param.params.tty_client.baud   = param->params.tty_client.baud;
         conn->param.params.tty_client.parity = param->params.tty_client.parity;
+        conn->block                          = false;
         break;
     }
 }
@@ -433,9 +508,14 @@ static void conn_tcp_server_stop(neu_conn_t *conn)
                  conn->param.params.tcp_server.ip,
                  conn->param.params.tcp_server.port, conn->fd);
 
-        conn->param.params.tcp_server.start_listen(conn->data, conn->fd);
+        conn->param.params.tcp_server.stop_listen(conn->data, conn->fd);
 
-        close(conn->tcp_server.fd);
+        for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
+            if (conn->tcp_server.clients[i].fd > 0) {
+                close(conn->tcp_server.clients[i].fd);
+            }
+        }
+
         close(conn->fd);
 
         conn->tcp_server.is_listen = false;
@@ -450,7 +530,20 @@ static void conn_connect(neu_conn_t *conn)
     case NEU_CONN_TCP_SERVER:
         break;
     case NEU_CONN_TCP_CLIENT: {
-        int                fd     = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        int fd = 0;
+        if (conn->block) {
+            struct timeval tv = {
+                .tv_sec = conn->param.params.tcp_server.timeout / 1000,
+                .tv_usec =
+                    (conn->param.params.tcp_server.timeout % 1000) * 1000,
+            };
+
+            fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+            setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+        } else {
+            fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+        }
         struct sockaddr_in remote = {
             .sin_family      = AF_INET,
             .sin_port        = htons(conn->param.params.tcp_client.port),
@@ -485,7 +578,11 @@ static void conn_disconnect(neu_conn_t *conn)
 {
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
-        close(conn->tcp_server.fd);
+        for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
+            if (conn->tcp_server.clients[i].fd > 0) {
+                close(conn->tcp_server.clients[i].fd);
+            }
+        }
         break;
     case NEU_CONN_TCP_CLIENT:
         close(conn->fd);
@@ -497,4 +594,33 @@ static void conn_disconnect(neu_conn_t *conn)
     }
 
     conn->is_connected = false;
+}
+
+static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
+                                       struct sockaddr_in client)
+{
+    for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
+        if (conn->tcp_server.clients[i].fd == 0) {
+            conn->tcp_server.clients[i].fd     = fd;
+            conn->tcp_server.clients[i].client = client;
+            return;
+        }
+    }
+
+    assert(1 == 0);
+    return;
+}
+
+static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
+{
+    for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
+        if (conn->tcp_server.clients[i].fd == fd) {
+            close(fd);
+            conn->tcp_server.clients[i].fd = 0;
+            return;
+        }
+    }
+
+    assert(1 == 0);
+    return;
 }

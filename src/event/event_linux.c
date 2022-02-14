@@ -72,14 +72,15 @@ struct neu_event_ctx {
 
 static void *event_loop(void *arg)
 {
-    neu_event_ctx_t *events  = (neu_event_ctx_t *) arg;
-    bool             running = events->running;
+    neu_event_ctx_t *events   = (neu_event_ctx_t *) arg;
+    bool             running  = events->running;
+    int              epoll_fd = events->epoll_fd;
 
     while (running) {
         struct epoll_event event = { 0 };
         struct event_data *data  = NULL;
 
-        int ret = epoll_wait(events->epoll_fd, &event, 1, 1000);
+        int ret = epoll_wait(epoll_fd, &event, 1, 1000);
         if (ret == 0) {
             continue;
         }
@@ -97,7 +98,6 @@ static void *event_loop(void *arg)
                 read(data->fd, &t, sizeof(t));
 
                 ret = data->callback.timer(data->usr_data);
-                log_debug("timer trigger: %d, ret: %d", data->fd, ret);
             }
             break;
         case IO:
@@ -121,7 +121,8 @@ static void *event_loop(void *arg)
         }
 
         pthread_mutex_lock(&events->mtx);
-        running = events->running;
+        running  = events->running;
+        epoll_fd = events->epoll_fd;
         pthread_mutex_unlock(&events->mtx);
     }
 
