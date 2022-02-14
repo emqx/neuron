@@ -59,17 +59,24 @@ int tty_file_list_get(char ***tty_file)
 
 char *file_string_read(size_t *length, const char *const path)
 {
-    char *data = NULL;
-    FILE *fp   = fopen(path, "rb");
+    FILE *fp = fopen(path, "rb");
     if (!fp) {
-        errno = 0;
+        errno   = 0;
+        *length = 0;
         return NULL;
     }
 
     fseek(fp, 0, SEEK_END);
     *length = (size_t) ftell(fp);
-    data    = (char *) malloc(*length * sizeof(char));
+    if (0 == *length) {
+        fclose(fp);
+        return NULL;
+    }
+
+    char *data = NULL;
+    data       = (char *) malloc((*length + 1) * sizeof(char));
     if (NULL != data) {
+        data[*length] = '\0';
         fseek(fp, 0, SEEK_SET);
         size_t read = fread(data, sizeof(char), *length, fp);
         if (read != *length) {
