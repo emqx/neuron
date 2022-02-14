@@ -25,6 +25,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifndef SOCK_NONBLOCK
+#include <fcntl.h>
+#define SOCK_NONBLOCK O_NONBLOCK
+#endif
+
 #include "connection/neu_connection.h"
 #include "neu_log.h"
 
