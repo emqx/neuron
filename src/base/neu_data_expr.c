@@ -2473,7 +2473,7 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
             }
         }
 
-        if (owned_ptr == NULL) {
+        if (owned_ptr == NULL && array->length != 0) {
             log_error("Failed to owner all sub values in fixed array, free all"
                       "sub values");
             if (!(type & NEU_DTYPE_OWNERED_PTR)) {
@@ -2535,7 +2535,7 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
             index++;
         }
 
-        if (owned_ptr == NULL) {
+        if (owned_ptr == NULL && vec->size != 0) {
             log_error("Failed to owner all sub values in vector, free all"
                       "sub values");
             if (!(type & NEU_DTYPE_OWNERED_PTR)) {
