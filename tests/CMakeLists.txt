@@ -43,6 +43,13 @@ target_include_directories(json_group_config_test PRIVATE
 )
 target_link_libraries(json_group_config_test neuron-base gtest_main gtest)
 
+add_executable(json_tty_test json_tty_test.cc ${SRC_PARSER})
+target_include_directories(json_tty_test PRIVATE
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(json_tty_test neuron-base gtest_main gtest pthread jansson)
+
 add_executable(variable_test variable_test.cc)
 target_include_directories(variable_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
@@ -171,6 +178,7 @@ gtest_discover_tests(json_datatag_table_test)
 gtest_discover_tests(json_nodes_test)
 gtest_discover_tests(json_plugin_test)
 gtest_discover_tests(json_group_config_test)
+gtest_discover_tests(json_tty_test)
 gtest_discover_tests(uuid_test)
 gtest_discover_tests(schema_valid_test)
 gtest_discover_tests(http_test)
