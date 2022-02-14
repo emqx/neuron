@@ -39,40 +39,12 @@
 static neu_manager_t *manager   = NULL;
 static nng_socket     main_sock = { 0 };
 
-static nng_mtx *log_mtx;
-FILE *          g_logfile;
-
-static void log_lock(bool lock, void *udata)
-{
-    nng_mtx *mutex = (nng_mtx *) (udata);
-    if (lock) {
-        nng_mtx_lock(mutex);
-    } else {
-        nng_mtx_unlock(mutex);
-    }
-}
-
 static void init()
 {
-    nng_mtx_alloc(&log_mtx);
-    log_set_lock(log_lock, log_mtx);
     log_set_level(NEU_LOG_DEBUG);
-    g_logfile = fopen("neuron.log", "a");
-    if (g_logfile == NULL) {
-        fprintf(stderr,
-                "Failed to open logfile when"
-                "initialize neuron main process");
-        abort();
-    }
-    // log_set_quiet(true);
-    log_add_fp(g_logfile, NEU_LOG_DEBUG);
 }
 
-static void uninit()
-{
-    fclose(g_logfile);
-    nng_mtx_free(log_mtx);
-}
+static void uninit() { }
 
 static void usage()
 {
