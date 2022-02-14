@@ -68,7 +68,7 @@ const neu_plugin_module_t neu_plugin_module;
 struct topic_pair {
     neu_list_node node;
     char *        topic_request;
-    char *        topic_respons;
+    char *        topic_response;
     int           qos_request;
     int           qos_response;
     int           type;
@@ -187,36 +187,11 @@ static char *real_topic_generate(char *format, char *name)
     char temp[256] = { '\0' };
     int  rc        = snprintf(temp, 256, format, name);
     if (-1 != rc) {
-        return strdup(temp);
+        char *topic = strdup(temp);
+        return topic;
     }
 
     return NULL;
-}
-
-static struct topic_pair *topic_pair_create()
-{
-    struct topic_pair *pair = NULL;
-    pair                    = malloc(sizeof(struct topic_pair));
-    if (NULL != pair) {
-        memset(pair, 0, sizeof(struct topic_pair));
-    }
-
-    return pair;
-}
-
-static void topic_pair_destory(struct topic_pair *pair)
-{
-    if (NULL != pair) {
-        if (NULL != pair->topic_request) {
-            free(pair->topic_request);
-        }
-
-        if (NULL != pair->topic_respons) {
-            free(pair->topic_respons);
-        }
-
-        free(pair);
-    }
 }
 
 static void topics_add(vector_t *topics, char *request, int qos_request,
@@ -226,17 +201,13 @@ static void topics_add(vector_t *topics, char *request, int qos_request,
         return;
     }
 
-    struct topic_pair *pair = topic_pair_create();
-    if (NULL == pair) {
-        return;
-    }
-
-    pair->topic_request = request;
-    pair->topic_respons = response;
-    pair->qos_request   = qos_request;
-    pair->qos_response  = qos_response;
-    pair->type          = type;
-    vector_push_back(topics, pair);
+    struct topic_pair pair = { 0 };
+    pair.topic_request     = request;
+    pair.topic_response    = response;
+    pair.qos_request       = qos_request;
+    pair.qos_response      = qos_response;
+    pair.type              = type;
+    vector_push_back(topics, &pair);
 }
 
 static void topics_cleanup(vector_t *topics)
@@ -244,9 +215,15 @@ static void topics_cleanup(vector_t *topics)
     VECTOR_FOR_EACH(topics, item)
     {
         struct topic_pair *pair = NULL;
-        pair                    = iterator_get(&item);
+        pair                    = (struct topic_pair *) iterator_get(&item);
         if (NULL != pair) {
-            topic_pair_destory(pair);
+            if (NULL != pair->topic_request) {
+                free(pair->topic_request);
+            }
+
+            if (NULL != pair->topic_response) {
+                free(pair->topic_response);
+            }
         }
     }
 
@@ -379,12 +356,13 @@ static void mqtt_context_publish(neu_plugin_t *plugin)
     if (NULL != ctx) {
         if (ctx->ready) {
             neu_list_remove(&plugin->context_list, ctx);
+
             if (NULL != ctx->result) {
                 result = strdup(ctx->result);
             }
 
             if (NULL != ctx->pair) {
-                topic = ctx->pair->topic_respons;
+                topic = ctx->pair->topic_response;
             }
 
             context_destroy(ctx);
@@ -507,11 +485,9 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
-    // Context list init
     NEU_LIST_INIT(&plugin->context_list, struct context, node);
     vector_init(&plugin->topics, 1, sizeof(struct topic_pair));
 
-    // Publish thread init
     plugin->running = true;
     pthread_mutex_init(&plugin->running_mutex, NULL);
     pthread_mutex_init(&plugin->list_mutex, NULL);
@@ -525,15 +501,13 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     return 0;
 }
 
+static int mqtt_plugin_stop(neu_plugin_t *plugin);
+
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
-    // Close MQTT client
-    neu_mqtt_client_close(plugin->client);
-    plugin->client = NULL;
-    topics_cleanup(&plugin->topics);
+    mqtt_plugin_stop(plugin);
     mqtt_option_uninit(&plugin->option);
 
-    // Quit publish thread
     pthread_mutex_lock(&plugin->running_mutex);
     plugin->running = false;
     pthread_mutex_unlock(&plugin->running_mutex);
@@ -541,30 +515,28 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     pthread_mutex_destroy(&plugin->list_mutex);
     pthread_mutex_destroy(&plugin->running_mutex);
 
+    topics_cleanup(&plugin->topics);
+    vector_uninit(&plugin->topics);
+
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 
 static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-    if (NULL == configs || NULL == configs->buf) {
-        return -1;
-    }
-
-    // Try close MQTT client
-    neu_mqtt_client_close(plugin->client);
-    plugin->client = NULL;
+    mqtt_plugin_stop(plugin);
 
     mqtt_option_uninit(&plugin->option);
-
-    // Use new config set MQTT option instance
     int rc = mqtt_option_init(configs, &plugin->option);
     if (0 != rc) {
-        log_error("MQTT option init fail:%d, initialize plugin failed: %s", rc,
-                  neu_plugin_module.module_name);
+        const char *name = neu_plugin_module.module_name;
+        log_error("MQTT option init fail:%d, %s", rc, name);
         mqtt_option_uninit(&plugin->option);
-        return -1;
+        return NEU_ERR_FAILURE;
     }
+
+    topics_cleanup(&plugin->topics);
+    topics_generate(&plugin->topics, plugin->option.clientid);
 
     log_info("Config plugin: %s", neu_plugin_module.module_name);
     return 0;
@@ -572,29 +544,23 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 
 static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
-    // MQTT client setup
     neu_err_code_e error = neu_mqtt_client_open(
         (neu_mqtt_client_t *) &plugin->client, &plugin->option, plugin);
     if (NEU_ERR_MQTT_IS_NULL == error) {
-        log_error("Can't create mqtt client instance, start plugin failed: %s",
-                  neu_plugin_module.module_name);
-        return -1;
+        const char *name = neu_plugin_module.module_name;
+        log_error("Start plugin failed: %s", name);
+        return NEU_ERR_PLUGIN_DISCONNECTED;
     }
 
-    // Subscribe all topics
-    topics_cleanup(&plugin->topics);
-    topics_generate(&plugin->topics, plugin->option.clientid);
     topics_subscribe(&plugin->topics, plugin->client);
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
-    // Close MQTT client
     neu_mqtt_client_close(plugin->client);
     plugin->client = NULL;
-    topics_cleanup(&plugin->topics);
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
