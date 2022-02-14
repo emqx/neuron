@@ -31,29 +31,29 @@
 
 int neu_json_encode_get_tty_resp(void *json_object, void *param)
 {
-    int ret = 0;
+    int                      ret  = 0;
+    neu_json_get_tty_resp_t *resp = (neu_json_get_tty_resp_t *) param;
 
-    neu_json_get_tty_resp_t *resp      = (neu_json_get_tty_resp_t *) param;
-    void *                   tty_array = NULL;
-
-    neu_json_get_tty_resp_tty_t *p_tty = resp->ttys;
+    void *                       tty_array = NULL;
+    neu_json_get_tty_resp_tty_t *p_tty     = resp->ttys;
     for (int i = 0; i < resp->n_tty; i++) {
-        neu_json_elem_t tty_elems = {
+        neu_json_elem_t tty_elems[] = { {
             .name      = NULL,
             .t         = NEU_JSON_STR,
             .v.val_str = *p_tty,
-        };
-
-        tty_array = neu_json_encode_array_value(tty_array, &tty_elems, 1);
+        } };
+        tty_array = neu_json_encode_array_value(tty_array, tty_elems,
+                                                NEU_JSON_ELEM_SIZE(tty_elems));
         p_tty++;
     }
 
-    neu_json_elem_t resp_elems = {
+    neu_json_elem_t resp_elems[] = { {
         .name         = "ttys",
         .t            = NEU_JSON_OBJECT,
         .v.val_object = tty_array,
-    };
-    ret = neu_json_encode_field(json_object, &resp_elems, 1);
+    } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
 
     return ret;
 }
