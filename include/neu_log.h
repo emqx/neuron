@@ -38,14 +38,9 @@ typedef struct {
     const char *file;
     const char *func;
     const char *label;
-    struct tm * time;
-    void *      udata;
     int         line;
     int         level;
 } log_Event;
-
-typedef void (*log_LogFn)(log_Event *ev);
-typedef void (*log_LockFn)(bool lock, void *udata);
 
 enum {
     NEU_LOG_TRACE,
@@ -57,11 +52,8 @@ enum {
 };
 
 extern const char *log_level_string(int level);
-extern void        log_set_lock(log_LockFn fn, void *udata);
 extern void        log_set_level(int level);
 extern void        log_set_quiet(bool enable);
-extern int         log_add_callback(log_LogFn fn, void *udata, int level);
-extern int         log_add_fp(FILE *fp, int level);
 extern void log_log(int level, const char *file, int line, const char *func,
                     const char *label, const char *fmt, ...);
 
