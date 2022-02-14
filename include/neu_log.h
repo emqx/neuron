@@ -32,16 +32,6 @@ extern "C" {
 
 #define LOG_VERSION "0.1.0"
 
-typedef struct {
-    va_list     ap;
-    const char *fmt;
-    const char *file;
-    const char *func;
-    const char *label;
-    int         line;
-    int         level;
-} log_Event;
-
 enum {
     NEU_LOG_TRACE,
     NEU_LOG_DEBUG,

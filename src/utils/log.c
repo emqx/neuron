@@ -28,10 +28,10 @@ static struct {
 static const char *level_strings[] = { "TRACE", "DEBUG", "INFO",
                                        "WARN",  "ERROR", "FATAL" };
 
-static void syslog_callback(log_Event *ev)
+static inline int to_syslog_priority(int level)
 {
-    int level = LOG_ERR;
-    switch (ev->level) {
+    int priority = LOG_ERR;
+    switch (level) {
     case NEU_LOG_TRACE:
         // fall through
     case NEU_LOG_DEBUG:
@@ -50,14 +50,8 @@ static void syslog_callback(log_Event *ev)
         level = LOG_ALERT;
         break;
     }
-    char   buf[1024] = { 0 };
-    size_t n         = snprintf(buf, sizeof(buf), "[%s] %s:%d %s: ", ev->label,
-                        ev->file, ev->line, ev->func);
-    if (n < sizeof(buf)) {
-        // may truncate, but don't care for now
-        vsnprintf(buf + n, sizeof(buf) - n, ev->fmt, ev->ap);
-    }
-    syslog(level, "%s", buf);
+
+    return priority;
 }
 
 const char *log_level_string(int level)
@@ -88,16 +82,20 @@ void log_log(int level, const char *file, int line, const char *func,
         return;
     }
 
+    va_list     ap;
     const char *file_name = file + PRJ_ROOT_DIR_LEN;
+    int         priority  = to_syslog_priority(level);
+    char        buf[1024] = { 0 };
 
-    log_Event ev = { .fmt   = fmt,
-                     .file  = file_name,
-                     .line  = line,
-                     .level = level,
-                     .func  = func,
-                     .label = label };
+    va_start(ap, fmt);
 
-    va_start(ev.ap, fmt);
-    syslog_callback(&ev);
-    va_end(ev.ap);
+    size_t n = snprintf(buf, sizeof(buf), "[%s] %s:%d %s: ", label, file_name,
+                        line, func);
+    if (n < sizeof(buf)) {
+        // may truncate, but don't care for now
+        vsnprintf(buf + n, sizeof(buf) - n, fmt, ap);
+    }
+    syslog(priority, "%s", buf);
+
+    va_end(ap);
 }
