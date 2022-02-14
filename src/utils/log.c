@@ -54,17 +54,17 @@ static inline int to_syslog_priority(int level)
     return priority;
 }
 
-const char *log_level_string(int level)
+const char *neu_log_level_string(int level)
 {
     return level_strings[level];
 }
 
-void log_set_level(int level)
+void neu_log_set_level(int level)
 {
     L.level = level;
 }
 
-void log_set_quiet(bool enable)
+void neu_log_set_quiet(bool enable)
 {
     L.quiet = enable;
 }
@@ -75,7 +75,7 @@ void log_set_quiet(bool enable)
 #define PRJ_ROOT_DIR_LEN 0
 #endif
 
-void log_log(int level, const char *file, int line, const char *func,
+void neu_log(int level, const char *file, int line, const char *func,
              const char *label, const char *fmt, ...)
 {
     if (L.quiet || level < L.level) {

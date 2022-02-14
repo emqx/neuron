@@ -41,7 +41,7 @@ static nng_socket     main_sock = { 0 };
 
 static void init()
 {
-    log_set_level(NEU_LOG_DEBUG);
+    neu_log_set_level(NEU_LOG_DEBUG);
 }
 
 static void uninit() { }
