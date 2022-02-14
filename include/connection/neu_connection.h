@@ -103,10 +103,17 @@ neu_conn_t *    neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
 void            neu_conn_destory(neu_conn_t *conn);
 neu_conn_type_e neu_conn_get_type(neu_conn_t *conn);
 int             neu_conn_get_fd(neu_conn_t *conn);
-int             neu_conn_tcp_accept(neu_conn_t *conn);
-int             neu_conn_tcp_client_get_fd(neu_conn_t *conn);
+int             neu_conn_tcp_server_accept(neu_conn_t *conn);
+int             neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd);
 
-void    neu_conn_tcp_flush(neu_conn_t *conn);
+void    neu_conn_flush(neu_conn_t *conn);
 ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len);
 ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len);
+
+void    neu_conn_tcp_server_flush(neu_conn_t *conn, int fd);
+ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
+                                 ssize_t len);
+ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
+                                 ssize_t len);
+
 #endif
