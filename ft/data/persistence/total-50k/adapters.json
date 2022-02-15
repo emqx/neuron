@@ -1,5 +1,5 @@
 {
-    "node": [
+    "nodes": [
         {
             "type": 1,
             "plugin_name": "modbus-tcp-plugin",
