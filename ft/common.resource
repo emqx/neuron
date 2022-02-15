@@ -165,5 +165,6 @@ Copy Persistence Test Data
     Directory Should Exist         ${data_dir}
 
     Directory Should Exist         build
-    ${rc} =                        Run And Return Rc    cp -r ${data_dir} build/
+    Directory Should Not Exist     build/persistence
+    ${rc} =                        Run And Return Rc    cp -r ${data_dir} build/persistence
     Should Be Equal As Integers    ${rc}                0
