@@ -59,8 +59,9 @@ Random Read Then Write Back
 
   Return From Keyword If        "tags" not in $res
 
-  ${vals} =                     Evaluate                        ",".join(map(json.dumps, ${res}[tags]))                     json
-  ${res} =                      Write Tags                      ${node_id}                      ${group}                    ${vals}
+  ${vals} =                     Evaluate                        [{'value':v['value'], 'id':v['id']} for v in ${res}[tags]]  json
+  ${tags} =                     Evaluate                        ",".join(map(json.dumps, ${vals}))                          json
+  ${res} =                      Write Tags                      ${node_id}                      ${group}                    ${tags}
   Check Response Status         ${res}                          200
   Check Error Code              ${res}                          ${ERR_SUCCESS}
 
