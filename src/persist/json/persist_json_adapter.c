@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "persist/json/json_adapter.h"
+#include "persist_json_adapter.h"
 
 int neu_json_encode_node_resp(void *json_object, void *param)
 {

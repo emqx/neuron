@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "persist/json/json_plugin.h"
+#include "persist_json_plugin.h"
 
 int neu_json_decode_plugin_req(char *buf, neu_json_plugin_req_t **result)
 {

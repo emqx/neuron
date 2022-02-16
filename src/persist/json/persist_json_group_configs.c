@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "persist/json/json_group_configs.h"
+#include "persist_json_group_configs.h"
 
 int neu_json_decode_group_configs_req(char *                         buf,
                                       neu_json_group_configs_req_t **result)

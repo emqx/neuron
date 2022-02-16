@@ -26,11 +26,11 @@ extern "C" {
 
 #include "adapter/adapter_info.h"
 #include "neu_vector.h"
-#include "persist/json/json_adapter.h"
-#include "persist/json/json_datatags.h"
-#include "persist/json/json_group_configs.h"
-#include "persist/json/json_plugin.h"
-#include "persist/json/json_subs.h"
+#include "persist/json/persist_json_adapter.h"
+#include "persist/json/persist_json_datatags.h"
+#include "persist/json/persist_json_group_configs.h"
+#include "persist/json/persist_json_plugin.h"
+#include "persist/json/persist_json_subs.h"
 
 typedef neu_json_node_req_node_t     neu_persist_adapter_info_t;
 typedef neu_json_plugin_req_plugin_t neu_persist_plugin_info_t;
