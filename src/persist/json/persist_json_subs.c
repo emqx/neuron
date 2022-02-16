@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "persist/json/json_subs.h"
+#include "persist_json_subs.h"
 
 int neu_json_decode_subscriptions_req(char *                         buf,
                                       neu_json_subscriptions_req_t **result)

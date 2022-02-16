@@ -31,11 +31,11 @@
 #include "neu_errcodes.h"
 #include "vector.h"
 
-#include "persist/json/json_adapter.h"
-#include "persist/json/json_datatags.h"
-#include "persist/json/json_group_configs.h"
-#include "persist/json/json_plugin.h"
-#include "persist/json/json_subs.h"
+#include "persist/json/persist_json_adapter.h"
+#include "persist/json/persist_json_datatags.h"
+#include "persist/json/persist_json_group_configs.h"
+#include "persist/json/persist_json_plugin.h"
+#include "persist/json/persist_json_subs.h"
 #include "persist/persist.h"
 
 #include "neu_vector.h"

@@ -2,11 +2,11 @@
 
 #include <gtest/gtest.h>
 
-#include "persist/json/json_adapter.h"
-#include "persist/json/json_datatags.h"
-#include "persist/json/json_group_configs.h"
-#include "persist/json/json_plugin.h"
-#include "persist/json/json_subs.h"
+#include "persist/json/persist_json_adapter.h"
+#include "persist/json/persist_json_datatags.h"
+#include "persist/json/persist_json_group_configs.h"
+#include "persist/json/persist_json_plugin.h"
+#include "persist/json/persist_json_subs.h"
 #include "json/neu_json_fn.h"
 
 TEST(JsonAdapter, AdapterPersistenceDecode)

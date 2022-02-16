@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "persist/json/json_datatags.h"
+#include "persist_json_datatags.h"
 
 int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
 {
