@@ -25,7 +25,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "jansson.h"
 #include "json/json.h"
 
 #include "persist/json/json_group_configs.h"
