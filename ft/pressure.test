@@ -1,4 +1,5 @@
 *** Settings ***
+Library           Collections
 Resource          common.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
@@ -66,12 +67,30 @@ Random Read Then Write Back
 Get Driver Nodes
   ${res} =                      Get Nodes                       ${NODE_DRIVER}
   Check Response Status         ${res}                          200
-  [Return]  ${res}[nodes]
+
+  ${nodes} =                    Set Variable                    ${res}[nodes]
+  FOR   ${index}  ${value}  IN ENUMERATE  @{nodes}
+    IF  $value["name"] == "sample-driver-adapter"
+      Remove From List          ${nodes}                        ${index}
+      Exit For Loop
+    END
+  END
+
+  [Return]  ${nodes}
 
 Get App Nodes
   ${res} =                      Get Nodes                       ${NODE_APP}
   Check Response Status         ${res}                          200
-  [Return]  ${res}[nodes]
+
+  ${nodes} =                    Set Variable                    ${res}[nodes]
+  FOR   ${index}  ${value}  IN ENUMERATE  @{nodes}
+    IF  $value["name"] == "sample-app-adapter"
+      Remove From List          ${nodes}                        ${index}
+      Exit For Loop
+    END
+  END
+
+  [Return]  ${nodes}
 
 Gen Tag Value
   [Arguments]                   ${type}
