@@ -25,8 +25,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <jansson.h>
-
 #include "json/json.h"
 
 #include "persist/json/json_adapter.h"
@@ -36,13 +34,18 @@ int neu_json_encode_node_resp(void *json_object, void *param)
     int                   ret  = 0;
     neu_json_node_resp_t *resp = (neu_json_node_resp_t *) param;
 
-    void *                     node_array = json_array();
+    void *                     node_array = neu_json_array();
     neu_json_node_resp_node_t *p_node     = resp->nodes;
     for (int i = 0; i < resp->n_node; i++) {
         neu_json_elem_t node_elems[] = { {
                                              .name      = "type",
                                              .t         = NEU_JSON_INT,
                                              .v.val_int = p_node->type,
+                                         },
+                                         {
+                                             .name      = "state",
+                                             .t         = NEU_JSON_INT,
+                                             .v.val_int = p_node->state,
                                          },
                                          {
                                              .name      = "plugin_name",
@@ -53,11 +56,6 @@ int neu_json_encode_node_resp(void *json_object, void *param)
                                              .name      = "name",
                                              .t         = NEU_JSON_STR,
                                              .v.val_str = p_node->name,
-                                         },
-                                         {
-                                             .name      = "state",
-                                             .t         = NEU_JSON_INT,
-                                             .v.val_int = p_node->state,
                                          } };
         node_array = neu_json_encode_array(node_array, node_elems,
                                            NEU_JSON_ELEM_SIZE(node_elems));
@@ -77,14 +75,8 @@ int neu_json_encode_node_resp(void *json_object, void *param)
 
 int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)
 {
-    int ret = 0;
-
+    int                  ret = 0;
     neu_json_node_req_t *req = calloc(1, sizeof(neu_json_node_req_t));
-    // neu_json_elem_t      req_elems[] = { {} };
-    // ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
-    // if (ret != 0) {
-    //     goto decode_fail;
-    // }
 
     req->n_node = neu_json_decode_array_size(buf, "nodes");
     req->nodes  = calloc(req->n_node, sizeof(neu_json_node_req_node_t));
@@ -95,16 +87,16 @@ int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)
                                              .t    = NEU_JSON_INT,
                                          },
                                          {
+                                             .name = "state",
+                                             .t    = NEU_JSON_INT,
+                                         },
+                                         {
                                              .name = "plugin_name",
                                              .t    = NEU_JSON_STR,
                                          },
                                          {
                                              .name = "name",
                                              .t    = NEU_JSON_STR,
-                                         },
-                                         {
-                                             .name = "state",
-                                             .t    = NEU_JSON_INT,
                                          } };
         ret                          = neu_json_decode_array(buf, "nodes", i,
                                     NEU_JSON_ELEM_SIZE(node_elems), node_elems);
@@ -113,9 +105,9 @@ int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)
         }
 
         p_node->type        = node_elems[0].v.val_int;
-        p_node->plugin_name = node_elems[1].v.val_str;
-        p_node->name        = node_elems[2].v.val_str;
-        p_node->state       = node_elems[3].v.val_int;
+        p_node->state       = node_elems[1].v.val_int;
+        p_node->plugin_name = node_elems[2].v.val_str;
+        p_node->name        = node_elems[3].v.val_str;
         p_node++;
     }
 
@@ -143,5 +135,6 @@ void neu_json_decode_node_req_free(neu_json_node_req_t *req)
     }
 
     free(req->nodes);
+
     free(req);
 }

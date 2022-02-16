@@ -13,13 +13,13 @@ TEST(JsonAdapter, AdapterPersistenceDecode)
 {
     char *buf =
         (char *) "{\"nodes\": "
-                 "[{\"state\": 1, \"type\":1, \"name\": "
+                 "[{\"type\":1, \"state\": 1, \"name\": "
                  "\"sample-driver-adapter\", \"plugin_name\": "
                  "\"sample-drv-plugin\"}, "
-                 "{\"state\": 2, \"type\":5, \"name\": "
+                 "{\"type\":5, \"state\": 2, \"name\": "
                  "\"sample-app-adapter\", \"plugin_name\": "
                  "\"sample-app-plugin\"}, "
-                 "{\"state\": 3, \"type\": 3, \"name\": "
+                 "{\"type\": 3, \"state\": 3, \"name\": "
                  "\"mqtt-adapter\", \"plugin_name\": \"mqtt-plugin\"}]}";
 
     neu_json_node_req_t *req = NULL;
@@ -173,12 +173,12 @@ TEST(JsonGroupConfigs, GroupConfigsPersistenceDecode)
 TEST(JsonAdapterTest, AdapterPersistenceEncode)
 {
     char *buf =
-        (char *) "{\"nodes\": [{\"type\": 1, \"plugin_name\": "
-                 "\"sample-drv-plugin\", \"name\": \"sample-driver-adapter\", "
-                 "\"state\": 1}, {\"type\": 5, \"plugin_name\": "
-                 "\"sample-app-plugin\", \"name\": \"sample-app-adapter\", "
-                 "\"state\": 2}, {\"type\": 3, \"plugin_name\": "
-                 "\"mqtt-plugin\", \"name\": \"mqtt-adapter\", \"state\": 3}]}";
+        (char *) "{\"nodes\": [{\"type\": 1, \"state\": 1, \"plugin_name\": "
+                 "\"sample-drv-plugin\", \"name\": \"sample-driver-adapter\"}, "
+                 "{\"type\": 5, \"state\": 2, \"plugin_name\": "
+                 "\"sample-app-plugin\", \"name\": \"sample-app-adapter\"}, "
+                 "{\"type\": 3, \"state\": 3, \"plugin_name\": "
+                 "\"mqtt-plugin\", \"name\": \"mqtt-adapter\"}]}";
     char *buf2 = (char *) "{\"nodes\": []}";
 
     char *result  = NULL;

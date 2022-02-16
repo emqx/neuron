@@ -145,6 +145,11 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     return 0;
 }
 
+void *neu_json_array()
+{
+    return json_array();
+}
+
 int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
 {
     json_error_t error;

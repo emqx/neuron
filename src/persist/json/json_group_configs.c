@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "jansson.h"
 #include "json/json.h"
 
 #include "persist/json/json_group_configs.h"
@@ -32,10 +33,10 @@
 int neu_json_decode_group_configs_req(char *                         buf,
                                       neu_json_group_configs_req_t **result)
 {
-    int ret = 0;
-
+    int                           ret = 0;
     neu_json_group_configs_req_t *req =
         calloc(1, sizeof(neu_json_group_configs_req_t));
+
     neu_json_elem_t req_elems[] = { {
                                         .name = "read_interval",
                                         .t    = NEU_JSON_INT,

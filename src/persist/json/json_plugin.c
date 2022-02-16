@@ -25,22 +25,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <jansson.h>
-
 #include "json/json.h"
 
 #include "persist/json/json_plugin.h"
 
 int neu_json_decode_plugin_req(char *buf, neu_json_plugin_req_t **result)
 {
-    int ret = 0;
-
+    int                    ret = 0;
     neu_json_plugin_req_t *req = calloc(1, sizeof(neu_json_plugin_req_t));
-    // neu_json_elem_t        req_elems[] = { {} };
-    // ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
-    // if (ret != 0) {
-    //     goto decode_fail;
-    // }
 
     req->n_plugin = neu_json_decode_array_size(buf, "plugins");
     req->plugins  = calloc(req->n_plugin, sizeof(neu_json_plugin_req_plugin_t));
@@ -108,7 +100,7 @@ int neu_json_encode_plugin_resp(void *json_object, void *param)
     int                     ret  = 0;
     neu_json_plugin_resp_t *resp = (neu_json_plugin_resp_t *) param;
 
-    void *                         plugin_array = json_array();
+    void *                         plugin_array = neu_json_array();
     neu_json_plugin_resp_plugin_t *p_plugin     = resp->plugins;
     for (int i = 0; i < resp->n_plugin; i++) {
         neu_json_elem_t plugin_elems[] = {
