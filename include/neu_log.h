@@ -44,8 +44,10 @@ enum {
 extern const char *neu_log_level_string(int level);
 extern void        neu_log_set_level(int level);
 extern void        neu_log_set_quiet(bool enable);
-extern void neu_log(int level, const char *file, int line, const char *func,
-                    const char *label, const char *fmt, ...);
+
+extern void neu_log_priv_impl_(int level, const char *file, int line,
+                               const char *func, const char *label,
+                               const char *fmt, ...);
 
 /*
 #define fatal(msg, rv)                             \
@@ -59,44 +61,44 @@ extern void neu_log(int level, const char *file, int line, const char *func,
 #define NEURON_LOG_LABEL "neuron"
 #endif
 
-#define log_trace(...)                                                         \
-    neu_log(NEU_LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
-            __VA_ARGS__)
-#define log_debug(...)                                                         \
-    neu_log(NEU_LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
-            __VA_ARGS__)
-#define log_info(...)                                                         \
-    neu_log(NEU_LOG_INFO, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
-            __VA_ARGS__)
-#define log_warn(...)                                                         \
-    neu_log(NEU_LOG_WARN, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
-            __VA_ARGS__)
-#define log_error(...)                                                         \
-    neu_log(NEU_LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
-            __VA_ARGS__)
-#define log_fatal(...)                                                         \
-    neu_log(NEU_LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, NEURON_LOG_LABEL, \
-            __VA_ARGS__)
+#define log_trace(...)                                                  \
+    neu_log_priv_impl_(NEU_LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, \
+                       NEURON_LOG_LABEL, __VA_ARGS__)
+#define log_debug(...)                                                  \
+    neu_log_priv_impl_(NEU_LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, \
+                       NEURON_LOG_LABEL, __VA_ARGS__)
+#define log_info(...)                                                  \
+    neu_log_priv_impl_(NEU_LOG_INFO, __FILE__, __LINE__, __FUNCTION__, \
+                       NEURON_LOG_LABEL, __VA_ARGS__)
+#define log_warn(...)                                                  \
+    neu_log_priv_impl_(NEU_LOG_WARN, __FILE__, __LINE__, __FUNCTION__, \
+                       NEURON_LOG_LABEL, __VA_ARGS__)
+#define log_error(...)                                                  \
+    neu_log_priv_impl_(NEU_LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, \
+                       NEURON_LOG_LABEL, __VA_ARGS__)
+#define log_fatal(...)                                                  \
+    neu_log_priv_impl_(NEU_LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, \
+                       NEURON_LOG_LABEL, __VA_ARGS__)
 
 // these will log the node name as the label
-#define log_trace_node(plugin, ...)                          \
-    neu_log(NEU_LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, \
-            neu_plugin_self_node_name(plugin), __VA_ARGS__)
-#define log_debug_node(plugin, ...)                          \
-    neu_log(NEU_LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, \
-            neu_plugin_self_node_name(plugin), __VA_ARGS__)
-#define log_info_node(plugin, ...)                          \
-    neu_log(NEU_LOG_INFO, __FILE__, __LINE__, __FUNCTION__, \
-            neu_plugin_self_node_name(plugin), __VA_ARGS__)
-#define log_warn_node(plugin, ...)                          \
-    neu_log(NEU_LOG_WARN, __FILE__, __LINE__, __FUNCTION__, \
-            neu_plugin_self_node_name(plugin), __VA_ARGS__)
-#define log_error_node(plugin, ...)                          \
-    neu_log(NEU_LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, \
-            neu_plugin_self_node_name(plugin), __VA_ARGS__)
-#define log_fatal_node(plugin, ...)                          \
-    neu_log(NEU_LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, \
-            neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_trace_node(plugin, ...)                                     \
+    neu_log_priv_impl_(NEU_LOG_TRACE, __FILE__, __LINE__, __FUNCTION__, \
+                       neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_debug_node(plugin, ...)                                     \
+    neu_log_priv_impl_(NEU_LOG_DEBUG, __FILE__, __LINE__, __FUNCTION__, \
+                       neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_info_node(plugin, ...)                                     \
+    neu_log_priv_impl_(NEU_LOG_INFO, __FILE__, __LINE__, __FUNCTION__, \
+                       neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_warn_node(plugin, ...)                                     \
+    neu_log_priv_impl_(NEU_LOG_WARN, __FILE__, __LINE__, __FUNCTION__, \
+                       neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_error_node(plugin, ...)                                     \
+    neu_log_priv_impl_(NEU_LOG_ERROR, __FILE__, __LINE__, __FUNCTION__, \
+                       neu_plugin_self_node_name(plugin), __VA_ARGS__)
+#define log_fatal_node(plugin, ...)                                     \
+    neu_log_priv_impl_(NEU_LOG_FATAL, __FILE__, __LINE__, __FUNCTION__, \
+                       neu_plugin_self_node_name(plugin), __VA_ARGS__)
 
 #ifdef __cplusplus
 }

@@ -75,8 +75,8 @@ void neu_log_set_quiet(bool enable)
 #define PRJ_ROOT_DIR_LEN 0
 #endif
 
-void neu_log(int level, const char *file, int line, const char *func,
-             const char *label, const char *fmt, ...)
+void neu_log_priv_impl_(int level, const char *file, int line, const char *func,
+                        const char *label, const char *fmt, ...)
 {
     if (L.quiet || level < L.level) {
         return;
