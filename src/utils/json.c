@@ -173,6 +173,22 @@ int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
     return 0;
 }
 
+int neu_json_decode_by_json(void *json, int size, neu_json_elem_t *ele)
+{
+    if (json == NULL) {
+        log_error("The param json is NULL");
+        return -1;
+    }
+
+    for (int i = 0; i < size; i++) {
+        if (decode_object(json, &ele[i]) == -1) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 int neu_json_decode_array(char *buf, char *name, int index, int size,
                           neu_json_elem_t *ele)
 {
