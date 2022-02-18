@@ -1811,6 +1811,9 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     if (adapter->name != NULL) {
         free(adapter->name);
     }
+    if (NULL != adapter->node_setting.buf) {
+        free(adapter->node_setting.buf);
+    }
     nng_mtx_lock(adapter->sub_grp_mtx);
     vector_uninit(&adapter->sub_grp_configs);
     nng_mtx_unlock(adapter->sub_grp_mtx);
