@@ -46,7 +46,7 @@ Random Read Then Write Back
   ${node_id} =                  Get Random Node                 ${nodes}
 
   ${res} =                      Get Group Config                ${node_id}
-  Return From Keyword If        "group_configs" not in $res
+  Return From Keyword If        ${res}[group_configs] == @{EMPTY}
   ${group} =                    Get Random Group Config         ${res}[group_configs]
 
   ${dashb_id} =                 Get Node ID                     ${NODE_WEB}                     default-dashboard-adapter
@@ -57,7 +57,7 @@ Random Read Then Write Back
   ${res} =                      Read Tags                       ${node_id}                      ${group}
   Check Response Status         ${res}                          200
 
-  Return From Keyword If        "tags" not in $res
+  Return From Keyword If        ${res}[tags] == @{EMPTY}
 
   ${vals} =                     Evaluate                        [{'value':v['value'], 'id':v['id']} for v in ${res}[tags]]  json
   ${tags} =                     Evaluate                        ",".join(map(json.dumps, ${vals}))                          json
