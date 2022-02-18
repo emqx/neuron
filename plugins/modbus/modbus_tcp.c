@@ -493,19 +493,21 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
 
     ret = neu_parse_param(configs->buf, &err_param, 3, &port, &connection_modem,
                           &host);
+    if (0 != ret) {
+        return ret;
+    }
 
-    if (ret == 0) {
-        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
-        plugin->client = neu_tcp_client_create(plugin->client, host.v.val_str,
-                                               port.v.val_int);
-        if (neu_tcp_client_is_connected(plugin->client)) {
-            plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
-        }
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->client =
+        neu_tcp_client_create(plugin->client, host.v.val_str, port.v.val_int);
+    if (neu_tcp_client_is_connected(plugin->client)) {
+        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
     }
 
     log_info("port = %d, connection_modem = %d, host = %s,ret = %d",
              port.v.val_int, connection_modem.v.val_int, host.v.val_str, ret);
 
+    free(host.v.val_str);
     return ret;
 }
 
