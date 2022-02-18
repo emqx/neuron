@@ -1,6 +1,6 @@
 #!/bin/sh
 
-outdir=${outc_dir:-"."}
+outdir=${outc_dir:-"../../src/persist/json"}
 
 json-autotype --clang --no-autounify --debug -t json_node ./json_adapter.json -o persist_json_adapter.c
 json-autotype --clang --no-autounify --debug -t json_datatags ./json_datatags.json -o persist_json_datatags.c
