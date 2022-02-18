@@ -34,7 +34,7 @@ int neu_json_encode_get_tty_resp(void *json_object, void *param)
     int                      ret  = 0;
     neu_json_get_tty_resp_t *resp = (neu_json_get_tty_resp_t *) param;
 
-    void *                       tty_array = NULL;
+    void *                       tty_array = neu_json_array();
     neu_json_get_tty_resp_tty_t *p_tty     = resp->ttys;
     for (int i = 0; i < resp->n_tty; i++) {
         neu_json_elem_t tty_elems[] = { {

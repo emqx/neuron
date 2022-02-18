@@ -32,17 +32,22 @@
 int neu_json_decode_add_plugin_req(char *                      buf,
                                    neu_json_add_plugin_req_t **result)
 {
-    int ret = 0;
-
+    int                        ret      = 0;
+    void *                     json_obj = NULL;
     neu_json_add_plugin_req_t *req =
         calloc(1, sizeof(neu_json_add_plugin_req_t));
-    neu_json_elem_t req_elems[] = {
-        {
-            .name = "lib_name",
-            .t    = NEU_JSON_STR,
-        },
-    };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = { {
+        .name = "lib_name",
+        .t    = NEU_JSON_STR,
+    } };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -50,13 +55,19 @@ int neu_json_decode_add_plugin_req(char *                      buf,
     req->lib_name = req_elems[0].v.val_str;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req)
@@ -70,15 +81,22 @@ void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req)
 int neu_json_decode_del_plugin_req(char *                      buf,
                                    neu_json_del_plugin_req_t **result)
 {
-    int ret = 0;
-
+    int                        ret      = 0;
+    void *                     json_obj = NULL;
     neu_json_del_plugin_req_t *req =
         calloc(1, sizeof(neu_json_del_plugin_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
     neu_json_elem_t req_elems[] = { {
         .name = "id",
         .t    = NEU_JSON_INT,
     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -86,13 +104,19 @@ int neu_json_decode_del_plugin_req(char *                      buf,
     req->id = req_elems[0].v.val_int;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req)
@@ -104,15 +128,22 @@ void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req)
 int neu_json_decode_get_plugin_req(char *                      buf,
                                    neu_json_get_plugin_req_t **result)
 {
-    int ret = 0;
-
+    int                        ret      = 0;
+    void *                     json_obj = NULL;
     neu_json_get_plugin_req_t *req =
         calloc(1, sizeof(neu_json_get_plugin_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
     neu_json_elem_t req_elems[] = { {
         .name = "id",
         .t    = NEU_JSON_INT,
     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -120,13 +151,19 @@ int neu_json_decode_get_plugin_req(char *                      buf,
     req->id = req_elems[0].v.val_int;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_get_plugin_req_free(neu_json_get_plugin_req_t *req)
@@ -140,7 +177,7 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
     int                         ret  = 0;
     neu_json_get_plugin_resp_t *resp = (neu_json_get_plugin_resp_t *) param;
 
-    void *                                 plugin_lib_array = NULL;
+    void *                                 plugin_lib_array = neu_json_array();
     neu_json_get_plugin_resp_plugin_lib_t *p_plugin_lib     = resp->plugin_libs;
     for (int i = 0; i < resp->n_plugin_lib; i++) {
         neu_json_elem_t plugin_lib_elems[] = {

@@ -31,10 +31,16 @@
 
 int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
 {
-    int ret = 0;
-
+    int                      ret      = 0;
+    void *                   json_obj = NULL;
     neu_json_add_node_req_t *req = calloc(1, sizeof(neu_json_add_node_req_t));
-    neu_json_elem_t          req_elems[] = { {
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = { {
                                         .name = "type",
                                         .t    = NEU_JSON_INT,
                                     },
@@ -46,7 +52,8 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
                                         .name = "name",
                                         .t    = NEU_JSON_STR,
                                     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -56,13 +63,19 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
     req->name        = req_elems[2].v.val_str;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
@@ -76,14 +89,21 @@ void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
 
 int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
 {
-    int ret = 0;
-
+    int                      ret      = 0;
+    void *                   json_obj = NULL;
     neu_json_del_node_req_t *req = calloc(1, sizeof(neu_json_del_node_req_t));
-    neu_json_elem_t          req_elems[] = { {
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = { {
         .name = "id",
         .t    = NEU_JSON_INT,
     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -91,13 +111,19 @@ int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
     req->id = req_elems[0].v.val_int;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req)
@@ -130,14 +156,21 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
 
 int neu_json_decode_get_nodes_req(char *buf, neu_json_get_nodes_req_t **result)
 {
-    int ret = 0;
-
+    int                       ret      = 0;
+    void *                    json_obj = NULL;
     neu_json_get_nodes_req_t *req = calloc(1, sizeof(neu_json_get_nodes_req_t));
-    neu_json_elem_t           req_elems[] = { {
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = { {
         .name = "node_type",
         .t    = NEU_JSON_INT,
     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -145,13 +178,19 @@ int neu_json_decode_get_nodes_req(char *buf, neu_json_get_nodes_req_t **result)
     req->node_type = req_elems[0].v.val_int;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_get_nodes_req_free(neu_json_get_nodes_req_t *req)
@@ -165,7 +204,7 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
     int                        ret  = 0;
     neu_json_get_nodes_resp_t *resp = (neu_json_get_nodes_resp_t *) param;
 
-    void *                          node_array = NULL;
+    void *                          node_array = neu_json_array();
     neu_json_get_nodes_resp_node_t *p_node     = resp->nodes;
     for (int i = 0; i < resp->n_node; i++) {
         neu_json_elem_t node_elems[] = { {
@@ -202,10 +241,16 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
 int neu_json_decode_update_node_req(char *                       buf,
                                     neu_json_update_node_req_t **result)
 {
-    int ret = 0;
-
+    int                         ret      = 0;
+    void *                      json_obj = NULL;
     neu_json_update_node_req_t *req =
         calloc(1, sizeof(neu_json_update_node_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
     neu_json_elem_t req_elems[] = { {
                                         .name = "name",
                                         .t    = NEU_JSON_STR,
@@ -214,7 +259,8 @@ int neu_json_decode_update_node_req(char *                       buf,
                                         .name = "id",
                                         .t    = NEU_JSON_INT,
                                     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -223,13 +269,19 @@ int neu_json_decode_update_node_req(char *                       buf,
     req->id   = req_elems[1].v.val_int;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req)
@@ -242,10 +294,16 @@ void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req)
 
 int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
 {
-    int ret = 0;
-
+    int                      ret      = 0;
+    void *                   json_obj = NULL;
     neu_json_node_ctl_req_t *req = calloc(1, sizeof(neu_json_node_ctl_req_t));
-    neu_json_elem_t          req_elems[] = { {
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
+    neu_json_elem_t req_elems[] = { {
                                         .name = "id",
                                         .t    = NEU_JSON_INT,
                                     },
@@ -253,7 +311,8 @@ int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
                                         .name = "cmd",
                                         .t    = NEU_JSON_INT,
                                     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -262,13 +321,19 @@ int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
     req->cmd = req_elems[1].v.val_int;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req)
@@ -280,15 +345,22 @@ void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req)
 int neu_json_decode_node_setting_req(char *                        buf,
                                      neu_json_node_setting_req_t **result)
 {
-    int ret = 0;
-
+    int                          ret      = 0;
+    void *                       json_obj = NULL;
     neu_json_node_setting_req_t *req =
         calloc(1, sizeof(neu_json_node_setting_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+
     neu_json_elem_t req_elems[] = { {
         .name = "node_id",
         .t    = NEU_JSON_INT,
     } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
@@ -296,13 +368,19 @@ int neu_json_decode_node_setting_req(char *                        buf,
     req->node_id = req_elems[0].v.val_int;
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_node_setting_req_free(neu_json_node_setting_req_t *req)

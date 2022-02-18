@@ -74,7 +74,7 @@ Get STREAM PROCESSOR node, it should return all STREAM PROCESSOR node
     ${res} =    Get Nodes    ${NODE_STREAM_PROCESSOR}
 
     Check Response Status    ${res}                200
-    Run Keyword If           ${res} != &{EMPTY}    Fail    not an empty object
+    Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
 
 Get APP node, it should return all APP node
     ${res} =    Get Nodes    ${NODE_APP}
@@ -87,7 +87,7 @@ Get UNKNOWN type node, it should return empty node
     ${res} =    Get Nodes    ${NODE_UNKNOWN}
 
     Check Response Status    ${res}                200
-    Run Keyword If           ${res} != &{EMPTY}    Fail    not an empty object
+    Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
 
 Get INVALID type node, it should return failure
     ${res} =    Get Nodes    ${123456}

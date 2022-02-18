@@ -32,12 +32,19 @@
 int neu_json_decode_subscriptions_req(char *                         buf,
                                       neu_json_subscriptions_req_t **result)
 {
-    int                           ret = 0;
+    int                           ret      = 0;
+    void *                        json_obj = NULL;
     neu_json_subscriptions_req_t *req =
         calloc(1, sizeof(neu_json_subscriptions_req_t));
+    if (req == NULL) {
+        return -1;
+    }
 
-    req->n_subscription = neu_json_decode_array_size(buf, "subscriptions");
-    req->subscriptions  = calloc(
+    json_obj = neu_json_decode_new(buf);
+
+    req->n_subscription =
+        neu_json_decode_array_size_by_json(json_obj, "subscriptions");
+    req->subscriptions = calloc(
         req->n_subscription, sizeof(neu_json_subscriptions_req_subscription_t));
     neu_json_subscriptions_req_subscription_t *p_subscription =
         req->subscriptions;
@@ -59,9 +66,9 @@ int neu_json_decode_subscriptions_req(char *                         buf,
                                                          "group_config_name",
                                                      .t = NEU_JSON_STR,
                                                  } };
-        ret = neu_json_decode_array(buf, "subscriptions", i,
-                                    NEU_JSON_ELEM_SIZE(subscription_elems),
-                                    subscription_elems);
+        ret                                  = neu_json_decode_array_by_json(
+            json_obj, "subscriptions", i,
+            NEU_JSON_ELEM_SIZE(subscription_elems), subscription_elems);
         if (ret != 0) {
             goto decode_fail;
         }
@@ -74,7 +81,7 @@ int neu_json_decode_subscriptions_req(char *                         buf,
     }
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req->subscriptions != NULL) {
@@ -83,7 +90,13 @@ decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_subscriptions_req_free(neu_json_subscriptions_req_t *req)

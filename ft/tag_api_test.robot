@@ -129,7 +129,7 @@ Delete tags, it should return success
 
   ${res} =                        Get Tags      ${test_node_id}       ${test_gconfig}
   Check Response Status           ${res}        200
-  Run Keyword If  ${res} != &{EMPTY}            Fail  not an empty object
+  Run Keyword If  ${res}[tags] != @{EMPTY}            Fail  not an empty object
 
 
 #When the address format of the tag added does not match the driver, it should return failure

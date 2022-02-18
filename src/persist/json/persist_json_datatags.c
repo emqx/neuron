@@ -31,10 +31,16 @@
 
 int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
 {
-    int                     ret = 0;
+    int                     ret      = 0;
+    void *                  json_obj = NULL;
     neu_json_datatag_req_t *req = calloc(1, sizeof(neu_json_datatag_req_t));
+    if (req == NULL) {
+        return -1;
+    }
 
-    req->n_tag = neu_json_decode_array_size(buf, "tags");
+    json_obj = neu_json_decode_new(buf);
+
+    req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
     req->tags  = calloc(req->n_tag, sizeof(neu_json_datatag_req_tag_t));
     neu_json_datatag_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
@@ -54,8 +60,8 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
                                             .name = "address",
                                             .t    = NEU_JSON_STR,
                                         } };
-        ret                         = neu_json_decode_array(buf, "tags", i,
-                                    NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
+        ret                         = neu_json_decode_array_by_json(
+            json_obj, "tags", i, NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
         if (ret != 0) {
             goto decode_fail;
         }
@@ -68,7 +74,7 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
     }
 
     *result = req;
-    return ret;
+    goto decode_exit;
 
 decode_fail:
     if (req->tags != NULL) {
@@ -77,7 +83,13 @@ decode_fail:
     if (req != NULL) {
         free(req);
     }
-    return -1;
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
 }
 
 void neu_json_decode_datatag_req_free(neu_json_datatag_req_t *req)
