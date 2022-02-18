@@ -10,12 +10,12 @@ TEST(PersistenceAdapterTest, Adapter)
     const char *adapters_fname   = neu_persister_get_adapters_fname(persister);
     const char *plugins_fname    = neu_persister_get_plugins_fname(persister);
 
-    neu_json_node_req_node_t node1 = { (char *) "sample-driver-adapter", 1, 1,
-                                       (char *) "sample-drv-plugin" };
-    neu_json_node_req_node_t node2 = { (char *) "sample-app-adapter", 5, 2,
-                                       (char *) "sample-app-plugin" };
-    neu_json_node_req_node_t node3 = { (char *) "mqtt-adapter", 3, 3,
-                                       (char *) "mqtt-plugin" };
+    neu_json_node_req_node_t node1 = { (char *) "sample-driver-adapter", 1,
+                                       (char *) "sample-drv-plugin", 1 };
+    neu_json_node_req_node_t node2 = { (char *) "sample-app-adapter", 5,
+                                       (char *) "sample-app-plugin", 2 };
+    neu_json_node_req_node_t node3 = { (char *) "mqtt-adapter", 3,
+                                       (char *) "mqtt-plugin", 3 };
 
     neu_json_node_req_t *req =
         (neu_json_node_req_t *) malloc(sizeof(neu_json_node_req_t));
@@ -152,12 +152,12 @@ TEST(PersistenceDatatagTest, Datatag)
     const char *grp_config_name  = "test-group";
     const char *plugins_fname    = neu_persister_get_plugins_fname(persister);
 
-    neu_json_datatag_req_tag_t tag1 = { (char *) "modbus1", 3, 1,
-                                        (char *) "1!400001" };
-    neu_json_datatag_req_tag_t tag2 = { (char *) "modbus2", 4, 1,
-                                        (char *) "1!400002" };
-    neu_json_datatag_req_tag_t tag3 = { (char *) "modbus3", 5, 1,
-                                        (char *) "1!400003" };
+    neu_json_datatag_req_tag_t tag1 = { (char *) "1!400001", (char *) "modbus1",
+                                        3, 1 };
+    neu_json_datatag_req_tag_t tag2 = { (char *) "1!400002", (char *) "modbus2",
+                                        4, 1 };
+    neu_json_datatag_req_tag_t tag3 = { (char *) "1!400003", (char *) "modbus3",
+                                        5, 1 };
 
     neu_json_datatag_req_t *req =
         (neu_json_datatag_req_t *) malloc(sizeof(neu_json_datatag_req_t));
