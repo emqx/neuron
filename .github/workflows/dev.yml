@@ -50,6 +50,8 @@ jobs:
       - name: Run function test
         run: |
           mosquitto -v &
+          service rsyslog start
+          tail -f /var/log/neuron.log &
           python3 -m pip install -U pip
           python3 -m pip install -r ft/requirements.txt
           python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
