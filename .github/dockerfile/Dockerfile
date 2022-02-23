@@ -6,7 +6,10 @@ RUN apt-get update -y \
        libssl-dev libghc-zlib-dev libcurl4-gnutls-dev libexpat1-dev gettext \
        pkg-config \
        python3 python3-pip \
-       mosquitto
+       mosquitto rsyslog
+
+RUN echo "if \$programname contains 'neuron' then /var/log/neuron.log" > /etc/rsyslog.d/neuron.conf \
+    && install -m 0640 -o syslog -g adm /dev/null /var/log/neuron.log
 
 COPY install-libs.sh install-libs.sh
 
