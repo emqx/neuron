@@ -71,6 +71,19 @@ void neu_datatag_free(neu_datatag_t *datatag)
     free(datatag);
 }
 
+static char *find_last_character(char *str, char character)
+{
+    char *find = strchr(str, character);
+    char *ret  = find;
+
+    while (find != NULL) {
+        ret  = find;
+        find = strchr(find + 1, character);
+    }
+
+    return ret;
+}
+
 int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
                                   neu_datatag_addr_option_u *option)
 {
@@ -78,7 +91,7 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
     switch (datatag->type) {
     case NEU_DTYPE_CSTR: {
-        char *op = strchr(datatag->addr_str, '.');
+        char *op = find_last_character(datatag->addr_str, '.');
 
         if (op == NULL) {
             ret = -1;
@@ -113,7 +126,7 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
     }
     case NEU_DTYPE_INT16:
     case NEU_DTYPE_UINT16: {
-        char *op = strchr(datatag->addr_str, '#');
+        char *op = find_last_character(datatag->addr_str, '#');
 
         option->value16.endian = NEU_DATATAG_ENDIAN_L16;
         if (op != NULL) {
@@ -138,7 +151,7 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
     case NEU_DTYPE_FLOAT:
     case NEU_DTYPE_UINT32:
     case NEU_DTYPE_INT32: {
-        char *op = strchr(datatag->addr_str, '#');
+        char *op = find_last_character(datatag->addr_str, '#');
 
         option->value32.endian = NEU_DATATAG_ENDIAN_LL32;
         if (op != NULL) {
@@ -165,7 +178,7 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
         break;
     }
     case NEU_DTYPE_BIT: {
-        char *op = strchr(datatag->addr_str, '.');
+        char *op = find_last_character(datatag->addr_str, '.');
 
         if (op != NULL) {
             sscanf(op, ".%hhd", &option->bit.bit);
