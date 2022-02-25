@@ -318,6 +318,19 @@ typedef struct neu_reqresp_sub_grp_configs {
     vector_t *sub_grp_configs;
 } neu_reqresp_sub_grp_configs_t;
 
+/* NEU_REQRESP_GET_LIC_VAL */
+typedef struct {
+    const char *lic_fname; // don't take ownership
+    const char *key_name;  // don't take ownership
+} neu_reqresp_get_lic_val_t;
+
+/* NEU_REQRESP_LIC_VAL */
+typedef struct {
+    const char *    lic_fname; // don't take ownership
+    const char *    key_name;  // don't take ownership
+    neu_data_val_t *val;
+} neu_reqresp_lic_val_t;
+
 typedef enum neu_adapter_ctl {
     NEU_ADAPTER_CTL_START = 0,
     NEU_ADAPTER_CTL_STOP,
