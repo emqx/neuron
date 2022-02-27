@@ -39,6 +39,7 @@ typedef enum msg_type {
     MSG_CMD_SUBSCRIBE_NODE,
     MSG_CMD_UNSUBSCRIBE_NODE,
     MSG_CMD_GROUP_CONFIG_CHANGED,
+    MSG_CMD_GET_LIC_VAL,
     MSG_CMD_PERSISTENCE_LOAD,
     MSG_CMD_EXIT_LOOP,
     MSG_CMD_RESP_PONG, // response pong for ping
@@ -81,6 +82,7 @@ typedef enum msg_type {
     MSG_DATA_NEURON_TRANS_DATA = MSG_TYPE_DATA_START,
     MSG_DATA_READ_RESP,
     MSG_DATA_WRITE_RESP,
+    MSG_DATA_LIC_RESP,
     MSG_TYPE_DATA_END,
 
     // User customer message types
