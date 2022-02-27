@@ -114,6 +114,8 @@ void          neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
                                         neu_node_id_t        node_id,
                                         neu_taggrp_config_t *grp_configs,
                                         neu_data_val_t *     data);
+void          neu_plugin_send_lic_cmd(neu_plugin_t *plugin, uint32_t event_id,
+                                      const char *license_fname, const char *key);
 void          neu_plugin_response_trans_data(neu_plugin_t *       plugin,
                                              neu_taggrp_config_t *grp_config,
                                              neu_data_val_t *data, uint32_t event_id);

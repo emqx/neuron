@@ -301,6 +301,18 @@ void neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
     PLUGIN_SEND_CMD(plugin, NEU_REQRESP_WRITE_DATA, write_req, event_id)
 }
 
+void neu_plugin_send_lic_cmd(neu_plugin_t *plugin, uint32_t event_id,
+                             const char *license_fname, const char *key)
+{
+
+    neu_reqresp_get_lic_val_t lic_req = {
+        .lic_fname = license_fname,
+        .key_name  = key,
+    };
+
+    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_GET_LIC_VAL, lic_req, event_id)
+}
+
 static inline int plugin_notify_tags_event(neu_plugin_t *   plugin,
                                            uint32_t         event_id,
                                            neu_event_type_e type,
