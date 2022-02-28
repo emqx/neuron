@@ -143,6 +143,16 @@
 				"max": 65535
 			}
 		},
+		"name": {
+			"name": "name",
+			"description": "OPCUA server name",
+			"attribute": "optional",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 30
+			}
+		},
 		"username": {
 			"name": "username",
 			"description": "User name",
@@ -161,6 +171,26 @@
 			"default": "",
 			"valid": {
 				"length": 30
+			}
+		},
+		"cert": {
+			"name": "cert",
+			"description": "cert file path",
+			"attribute": "optional",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 256
+			}
+		},
+		"key": {
+			"name": "key",
+			"description": "key file path",
+			"attribute": "optional",
+			"type": "string",
+			"default": "",
+			"valid": {
+				"length": 256
 			}
 		}
 	},
