@@ -110,15 +110,6 @@ target_include_directories(uuid_test PRIVATE
 )
 target_link_libraries(uuid_test neuron-base gtest_main gtest crypto)
 
-#copy schema for test
-file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema_test.json DESTINATION ${CMAKE_BINARY_DIR}/tests)
-add_executable(schema_valid_test schema_valid_test.cc ${CMAKE_SOURCE_DIR}/src/schema/schema.c)
-target_include_directories(schema_valid_test PRIVATE 
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/include       
-)
-target_link_libraries(schema_valid_test neuron-base gtest_main gtest jansson)
-
 add_executable(http_test http_test.cc 
 	${CMAKE_SOURCE_DIR}/plugins/restful/http.c)
 	
@@ -128,10 +119,9 @@ target_include_directories(http_test PRIVATE
 	${CMAKE_SOURCE_DIR}/plugins/restful)
 target_link_libraries(http_test neuron-base gtest_main gtest yaml jansson nng)
 
-file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINARY_DIR}/tests)
+#file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINARY_DIR}/tests)
 add_executable(mqtt_test mqtt_test.cc 
 	${CMAKE_SOURCE_DIR}/src/config.c
-	${CMAKE_SOURCE_DIR}/src/schema/schema.c
 	${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt_util.c
 	${CMAKE_SOURCE_DIR}/plugins/mqtt/command/node.c)
 target_include_directories(mqtt_test PRIVATE 
@@ -187,7 +177,6 @@ gtest_discover_tests(json_plugin_test)
 gtest_discover_tests(json_group_config_test)
 gtest_discover_tests(json_tty_test)
 gtest_discover_tests(uuid_test)
-gtest_discover_tests(schema_valid_test)
 gtest_discover_tests(http_test)
 gtest_discover_tests(mqtt_test)
 gtest_discover_tests(jwt_test)

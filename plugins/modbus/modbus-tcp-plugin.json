@@ -1,0 +1,30 @@
+{
+	"tag_type": [
+		4,
+		5,
+		8,
+		9,
+		11,
+		14
+	],
+	"host": {
+		"name": "host",
+		"description": "remote device ip",
+		"attribute": "required",
+		"type": "string",
+		"valid": {
+			"length": 30
+		}
+	},
+	"port": {
+		"name": "port",
+		"description": "remote device port",
+		"attribute": "required",
+		"type": "int",
+		"default": 502,
+		"valid": {
+			"min": 1,
+			"max": 65535
+		}
+	}
+}

@@ -49,7 +49,8 @@ cp ${lib_path}/libyaml.so ${package_name}/
 cp build/lib*.so \
     build/neuron \
     build/neuron.yaml \
-    build/plugin_param_schema.json \
+    build/schema/mqtt-plugin.json \
+    build/schema/modbus-tcp-plugin.json \
     ${package_name}/
 
 tar czf ${package_name}.tar.gz ${package_name}/

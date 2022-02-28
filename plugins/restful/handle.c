@@ -90,7 +90,7 @@ struct neu_rest_handler cors_handler[] = {
         .url = "/api/v2/subscribe",
     },
     {
-        .url = "/api/v2/schema/plugin",
+        .url = "/api/v2/schema",
     },
     {
         .url = "/api/v2/node/setting",
@@ -253,7 +253,7 @@ struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/schema/plugin",
+        .url           = "/api/v2/schema",
         .value.handler = handle_get_plugin_schema,
     },
     {

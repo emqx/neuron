@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "mqtt_util.h"
-#include "schema.h"
 #include "json/json.h"
 #include <config.h>
 #include <neuron.h>
@@ -193,71 +192,6 @@ static int decode_node_setting(const char *         json_str,
     return 0;
 }
 
-static int valid_node_setting(const char *file, const char *plugin_name,
-                              struct node_setting *setting)
-{
-    char  buf[40960] = { 0 };
-    FILE *fp         = fopen(file, "r");
-    fread(buf, 1, sizeof(buf), fp);
-    fclose(fp);
-
-    neu_schema_valid_t *valid = neu_schema_load(buf, (char *) plugin_name);
-    if (NULL == valid) {
-        return -1;
-    }
-
-    int rc = 0;
-    rc     = neu_schema_valid_param_string(valid, setting->client_id,
-                                       (char *) "client-id");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -2;
-    }
-
-    rc = neu_schema_valid_param_string(valid, setting->host, (char *) "host");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -4;
-    }
-
-    rc = neu_schema_valid_param_int(valid, setting->port, (char *) "port");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -5;
-    }
-
-    rc = neu_schema_valid_param_string(valid, setting->username,
-                                       (char *) "username");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -6;
-    }
-
-    rc = neu_schema_valid_param_string(valid, setting->password,
-                                       (char *) "password");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -7;
-    }
-
-    rc = neu_schema_valid_param_string(valid, setting->ca_file,
-                                       (char *) "ca-file");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -8;
-    }
-
-    rc = neu_schema_valid_param_string(valid, setting->ca_path,
-                                       (char *) "ca-path");
-    if (0 != rc) {
-        neu_schema_free(valid);
-        return -9;
-    }
-
-    neu_schema_free(valid);
-    return 0;
-}
-
 int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
 {
     if (NULL == config || NULL == option) {
@@ -269,8 +203,6 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     if (0 != rc) {
         return -2;
     }
-
-    rc = valid_node_setting(SCHEMA_FILE, MQTT_PLUGIN_NAME, &setting);
 
     // MQTT option
     option->clientid     = NULL; // Use random id

@@ -183,7 +183,8 @@ target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc y
 
 #copy file for run and unit test
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/plugins/modbus/modbus-tcp-plugin.json DESTINATION ${CMAKE_BINARY_DIR}/schema/)
+file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt-plugin.json DESTINATION ${CMAKE_BINARY_DIR}/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/private_test.key DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY ${CMAKE_SOURCE_DIR}/public_test.pem DESTINATION ${CMAKE_BINARY_DIR})
 
