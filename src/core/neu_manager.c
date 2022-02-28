@@ -1529,6 +1529,24 @@ static void manager_loop(void *arg)
             break;
         }
 
+        case MSG_DATA_LIC_RESP: {
+            lic_val_resp_t *lic_resp = msg_get_buf_ptr(pay_msg);
+
+            nng_mtx_lock(manager->adapters_mtx);
+            adapter_reg_entity_t *reg_entity = find_reg_adapter_by_id(
+                &manager->reg_adapters, lic_resp->recver_id);
+            nng_mtx_unlock(manager->adapters_mtx);
+
+            nng_pipe msg_pipe = reg_entity->adapter_pipe;
+            rv = manager_send_msg_to_pipe(manager, msg_pipe, MSG_DATA_LIC_RESP,
+                                          lic_resp, sizeof(*lic_resp));
+            if (0 == rv) {
+                log_info("Forward license val resp to pipe: %d", msg_pipe);
+            }
+
+            break;
+        }
+
         default:
             log_warn("Receive a not supported message(type: %d)",
                      msg_get_type(pay_msg));
