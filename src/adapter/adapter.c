@@ -1091,6 +1091,26 @@ static void adapter_loop(void *arg)
             break;
         }
 
+        case MSG_CMD_GET_LIC_VAL: {
+            get_lic_val_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
+
+            const neu_plugin_intf_funs_t *intf_funs;
+            neu_request_t                 req;
+            neu_reqresp_get_lic_val_t     lic_req;
+
+            lic_req.lic_fname = cmd_ptr->lic_fname;
+            lic_req.key_name  = cmd_ptr->key_name;
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = cmd_ptr->req_id;
+            req.req_type  = NEU_REQRESP_GET_LIC_VAL;
+            req.sender_id = cmd_ptr->sender_id;
+            req.buf_len   = sizeof(lic_req);
+            req.buf       = (void *) &lic_req;
+            intf_funs->request(adapter->plugin, &req);
+            break;
+        }
+
         case MSG_CMD_EXIT_LOOP: {
             uint32_t exit_code;
 
