@@ -1512,6 +1512,23 @@ static void manager_loop(void *arg)
             break;
         }
 
+        case MSG_CMD_GET_LIC_VAL: {
+            if (NULL == license_reg_entity) {
+                log_warn("Drop license command due to no license adapter");
+                break;
+            }
+            nng_pipe   lic_pipe = license_reg_entity->adapter_pipe;
+            msg_type_e msg_type = msg_get_type(pay_msg);
+            void *     buf      = msg_get_buf_ptr(pay_msg);
+            size_t     size     = msg_get_buf_len(pay_msg);
+            rv = manager_send_msg_to_pipe(manager, lic_pipe, msg_type, buf,
+                                          size);
+            if (0 == rv) {
+                log_info("Forward license command to pipe: %d", lic_pipe);
+            }
+            break;
+        }
+
         default:
             log_warn("Receive a not supported message(type: %d)",
                      msg_get_type(pay_msg));
