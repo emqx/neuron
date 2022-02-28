@@ -1536,6 +1536,19 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_GET_LIC_VAL: {
+        neu_reqresp_get_lic_val_t *lic_req = cmd->buf;
+        get_lic_val_cmd_t          lic_cmd = {};
+        lic_cmd.sender_id                  = to_node_id(adapter, adapter->id);
+        lic_cmd.req_id                     = cmd->req_id;
+        lic_cmd.lic_fname                  = lic_req->lic_fname;
+        lic_cmd.key_name                   = lic_req->key_name;
+
+        ADAPTER_SEND_BUF(adapter, rv, MSG_CMD_GET_LIC_VAL, &lic_cmd,
+                         sizeof(lic_cmd));
+        break;
+    }
+
     default:
         rv = -1;
         break;
