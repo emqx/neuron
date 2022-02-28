@@ -95,13 +95,13 @@ void handle_login(nng_aio *aio)
                     });
                 }
 
-                login_resp.token = calloc(strlen(token), sizeof(char));
                 login_resp.token = token;
 
                 neu_json_encode_by_fn(&login_resp, neu_json_encode_login_resp,
                                       &result);
                 http_ok(aio, result);
-                free(login_resp.token);
+                jwt_free_str(token);
+                free(result);
             } else {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
                     http_response(aio, error_code.error, result_error);

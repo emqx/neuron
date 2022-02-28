@@ -284,7 +284,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             break;
         }
 
-        if (ret == -1) {
+        if (ret == -1 && errno != EAGAIN) {
             conn_disconnect(conn);
             if (conn->callback_trigger == true) {
                 conn->disconnected(conn->data, fd);
