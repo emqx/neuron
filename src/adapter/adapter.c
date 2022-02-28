@@ -1111,6 +1111,28 @@ static void adapter_loop(void *arg)
             break;
         }
 
+        case MSG_DATA_LIC_RESP: {
+            lic_val_resp_t *lic_resp = msg_get_buf_ptr(pay_msg);
+
+            const neu_plugin_intf_funs_t *intf_funs;
+            neu_request_t                 req;
+            neu_reqresp_lic_val_t         lic_val;
+
+            lic_val.lic_fname = lic_resp->lic_fname;
+            lic_val.key_name  = lic_resp->key_name;
+            lic_val.val       = lic_resp->val; // don't take ownership
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = lic_resp->req_id;
+            req.req_type  = NEU_REQRESP_LIC_VAL;
+            req.sender_id = 0;
+            req.buf_len   = sizeof(lic_val);
+            req.buf       = (void *) &lic_val;
+            intf_funs->request(adapter->plugin, &req);
+            neu_dvalue_free(lic_val.val);
+            break;
+        }
+
         case MSG_CMD_EXIT_LOOP: {
             uint32_t exit_code;
 
