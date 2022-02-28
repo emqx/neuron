@@ -31,6 +31,7 @@ typedef enum adapter_type {
     ADAPTER_TYPE_MQTT,
     ADAPTER_TYPE_STREAM_PROCESSOR,
     ADAPTER_TYPE_APP,
+    ADAPTER_TYPE_LICENSE,
     ADAPTER_TYPE_MAX,
 } adapter_type_e;
 
