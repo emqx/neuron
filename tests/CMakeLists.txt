@@ -166,6 +166,13 @@ target_include_directories(jwt_test PRIVATE
 	${CMAKE_SOURCE_DIR}/src/utils)
 target_link_libraries(jwt_test neuron-base gtest_main gtest yaml jansson ssl crypto jwt)
 
+add_executable(base64_test base64_test.cc ${CMAKE_SOURCE_DIR}/src/utils/base64.c)
+target_include_directories(base64_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(base64_test neuron-base gtest_main gtest crypto)
+
 include(GoogleTest)
 gtest_discover_tests(data_val_test)
 gtest_discover_tests(modbus_point_test)
@@ -186,3 +193,4 @@ gtest_discover_tests(mqtt_test)
 gtest_discover_tests(jwt_test)
 gtest_discover_tests(json_persistence_test)
 gtest_discover_tests(persistence_test)
+gtest_discover_tests(base64_test)
