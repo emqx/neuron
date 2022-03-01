@@ -76,6 +76,7 @@ typedef enum msg_type {
     MSG_EVENT_ADD_TAGS,
     MSG_EVENT_UPDATE_TAGS,
     MSG_EVENT_DEL_TAGS,
+    MSG_EVENT_LIC_UPDATED,
     MSG_TYPE_EVENT_END,
 
     MSG_TYPE_DATA_START        = 0x3000,
