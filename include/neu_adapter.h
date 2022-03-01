@@ -332,6 +332,11 @@ typedef struct {
     neu_data_val_t *val;
 } neu_reqresp_lic_val_t;
 
+/* NEU_REQRESP_UPDATE_LIC */
+typedef struct {
+    const char *lic_fname; // don't take ownership
+} neu_reqresp_update_lic_t;
+
 typedef enum neu_adapter_ctl {
     NEU_ADAPTER_CTL_START = 0,
     NEU_ADAPTER_CTL_STOP,
