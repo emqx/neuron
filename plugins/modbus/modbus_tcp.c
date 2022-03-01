@@ -480,19 +480,15 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
 
 static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-    int             ret              = 0;
-    char *          err_param        = NULL;
-    neu_json_elem_t port             = { .name = "port", .t = NEU_JSON_INT };
-    neu_json_elem_t connection_modem = { .name = "connection_mode",
-                                         .t    = NEU_JSON_INT };
-    ;
-    neu_json_elem_t host = { .name = "host", .t = NEU_JSON_STR };
+    int             ret       = 0;
+    char *          err_param = NULL;
+    neu_json_elem_t port      = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t host      = { .name = "host", .t = NEU_JSON_STR };
 
     log_info("modbus config............. type: %d, config: %s", configs->type,
              configs->buf);
 
-    ret = neu_parse_param(configs->buf, &err_param, 3, &port, &connection_modem,
-                          &host);
+    ret = neu_parse_param(configs->buf, &err_param, 2, &port, &host);
     if (0 != ret) {
         return ret;
     }
@@ -504,8 +500,8 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
         plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
     }
 
-    log_info("port = %d, connection_modem = %d, host = %s,ret = %d",
-             port.v.val_int, connection_modem.v.val_int, host.v.val_str, ret);
+    log_info("port = %d, host = %s,ret = %d", port.v.val_int, host.v.val_str,
+             ret);
 
     free(host.v.val_str);
     return ret;
