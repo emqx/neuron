@@ -551,6 +551,18 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         break;
     }
 
+    case NEU_REQRESP_UPDATE_LIC: {
+        neu_reqresp_update_lic_t *lic_update = req->buf;
+        assert(req->buf_len == sizeof(*lic_update));
+        log_info("sample app receive license update request:`%s`",
+                 lic_update->lic_fname);
+        neu_plugin_send_lic_cmd(plugin, plugin_get_event_id(plugin),
+                                NEURON_LIC_FNAME, NEURON_LIC_KEY_LICENSE_TYPE);
+        log_info("Send get license:`%s` key:`%s`", NEURON_LIC_FNAME,
+                 NEURON_LIC_KEY_LICENSE_TYPE);
+        break;
+    }
+
     default:
         break;
     }
