@@ -1,3 +1,4 @@
+from os import remove
 import random
 import subprocess
 import shutil
@@ -13,6 +14,7 @@ class Neuron(object):
 
     def Start_Neuron(self):
         self.process = subprocess.Popen(['./neuron'], cwd='build/')
+        return self.process
 
     def Stop_Neuron(self, remove_persistence_data=True):
         if self.profiler_process is not None:
@@ -20,6 +22,12 @@ class Neuron(object):
             time.sleep(5)
         self.process.kill()
         if remove_persistence_data:
+            shutil.rmtree("build/persistence", ignore_errors=True)
+
+    def End_Neuron(self, process):
+        process.kill()
+    
+    def Remove_Persistence(self):
             shutil.rmtree("build/persistence", ignore_errors=True)
 
     def Profile_Neuron(self, interval, result_dir):
@@ -39,6 +47,24 @@ class Tool(object):
 
     def Array_Len(self, array):
         return len(array)
+
+
+class Plugin(object):
+
+    def __init__(self):
+        pass
+    
+    def Get_Plugin_By_Name(self, splugins, name):
+        for plugin in splugins:
+            if plugin['name'] == name:
+                return plugin['id']
+        return 0
+
+    def Plugin_With_Name_Sholud_Exist(self, splugins, name):
+        assert 0 != self.Get_Plugin_By_Name(splugins, name)
+
+    def Plugin_With_Name_Should_Not_Exist(self, splugins, name):
+        assert 0 == self.Get_Plugin_By_Name(splugins, name)
 
 
 class GrpConfig(object):
@@ -61,6 +87,21 @@ class GrpConfig(object):
     def Get_Random_Group_Config(self, gconfigs):
         return random.choice(gconfigs)['name']
 
+    def Group_Config_Check(self, gconfigs, name, interval):
+        ret = -1
+        for gconfig in gconfigs:
+            if gconfig['name'] == name:
+                if gconfig['interval'] == int(interval):
+                    ret = 0
+                break
+        return ret
+
+    def Get_Group_Config_By_Name(self, sgconfigs, name):
+        for gconfig in sgconfigs:
+            if gconfig['name'] == name:
+                return gconfig['name']
+        return 0
+
 
 class Node(object):
 
@@ -75,6 +116,9 @@ class Node(object):
 
     def Node_With_Name_Should_Exist(self, snodes, name):
         assert 0 != self.Get_Node_By_Name(snodes, name)
+
+    def Node_With_Name_Should_Not_Exist(self, snodes, name):
+        assert 0 == self.Get_Node_By_Name(snodes, name)
 
     def Get_Random_Node(self, snodes):
         return random.choice(snodes)['id']
