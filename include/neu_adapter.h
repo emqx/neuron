@@ -85,6 +85,7 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_VALIDATE_TAG,
     NEU_REQRESP_GET_LIC_VAL,
     NEU_REQRESP_LIC_VAL,
+    NEU_REQRESP_UPDATE_LIC,
 } neu_reqresp_type_e;
 
 typedef uint32_t neu_node_id_t;
