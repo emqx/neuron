@@ -17,27 +17,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEURON_H_
-#define _NEURON_H_
+#ifndef __NEU_BASE64_H__
+#define __NEU_BASE64_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "neu_adapter.h"
-#include "neu_base64.h"
-#include "neu_file.h"
-#include "neu_license.h"
-#include "neu_list.h"
-#include "neu_log.h"
-#include "neu_panic.h"
-#include "neu_plugin.h"
-#include "neu_types.h"
-#include "neu_uuid.h"
-#include "neu_vector.h"
+char *         neu_encode64(const unsigned char *input, int length);
+unsigned char *neu_decode64(int *length, const char *input);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // __NEU_BASE64_H__
