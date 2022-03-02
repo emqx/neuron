@@ -53,7 +53,7 @@ Get DRIVER node, it should return all DRIVER node
 
     Check Response Status    ${res}    200
 
-    FOR                            ${name}          IN         sample-driver-adapter    test-node
+    FOR                            ${name}          IN         test-node
     Node With Name Should Exist    ${res}[nodes]    ${name}
     END
 
@@ -76,13 +76,6 @@ Get STREAM PROCESSOR node, it should return all STREAM PROCESSOR node
 
     Check Response Status    ${res}                       200
     Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
-
-Get APP node, it should return all APP node
-    ${res} =    Get Nodes    ${NODE_APP}
-
-    Check Response Status          ${res}           200
-    Node With Name Should Exist    ${res}[nodes]    sample-app-adapter
-
 
 Get UNKNOWN type node, it should return empty node
     ${res} =    Get Nodes    ${NODE_UNKNOWN}
