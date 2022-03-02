@@ -182,7 +182,7 @@ class Read(object):
         ret = -1
         for tag in tags:
             if tag['id'] == int(id):
-                if tag['value'] == int(value):
+                if int(tag['value']) == int(value):
                     ret = 0
                 break
         return ret
@@ -191,7 +191,7 @@ class Read(object):
         ret = -1
         for tag in tags:
             if tag['id'] == int(id):
-                if tag['value'] <= float(value) + 0.1 and tag['value'] >= float(value) - 0.1:
+                if float(tag['value']) <= float(value) + 0.1 and float(tag['value']) >= float(value) - 0.1:
                     ret = 0
                 break
         return ret

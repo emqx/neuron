@@ -84,7 +84,7 @@ ${TOPIC_STATUS_RES}                         neuron/${MQTT_CLIENTID}/status
 ${TOPIC_NODE_RES}                           neuron/${MQTT_CLIENTID}/node/resp
 ${TOPIC_GCONFIG_RES}                        neuron/${MQTT_CLIENTID}/gconfig/resp
 ${TOPIC_TAGS_RES}                           neuron/${MQTT_CLIENTID}/tags/resp
-${TOPIC_PLUGIN_RES}                         neuron/${MQTT_CLIENTID}/plugin/resp"
+${TOPIC_PLUGIN_RES}                         neuron/${MQTT_CLIENTID}/plugin/resp
 ${TOPIC_SUBSCRIBE_RES}                      neuron/${MQTT_CLIENTID}/subscribe/resp
 ${TOPIC_READ_RES}                           neuron/${MQTT_CLIENTID}/read/resp
 ${TOPIC_WRITE_RES}                          neuron/${MQTT_CLIENTID}/write/resp
@@ -101,8 +101,7 @@ ${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}",
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
 ...                                          "username": "", "password": "", "ca-path":"", "ca-file": ""}
 
-${MODBUS_TCP_CONFIG}	{"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
-${OPCUA_CONFIG}    {"host": "127.0.0.1", "port": 4840, "username": "user", "password": "123456"}
+${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
 
 *** Keywords ***
 To Array
