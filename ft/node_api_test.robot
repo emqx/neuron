@@ -9,7 +9,7 @@ Suite Teardown    Neuron Context Stop
 POST ping, status can be ok
     Ping
 
-Use the wrong body to crate a node, it should return failure
+Use the wrong body to create a node, it should return failure
     ${res} =    Add Node    type=${${NODE_DRIVER}}    namexx=test-node    plugin_name=test-plugin-name
 
     Check Response Status    ${res}    400
