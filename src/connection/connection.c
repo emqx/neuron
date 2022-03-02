@@ -284,7 +284,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             break;
         }
 
-        if (ret == -1) {
+        if (ret == -1 && errno != EAGAIN) {
             conn_disconnect(conn);
             if (conn->callback_trigger == true) {
                 conn->disconnected(conn->data, fd);
@@ -292,7 +292,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             }
         }
 
-        if (ret == len && conn->callback_trigger == false) {
+        if (ret > 0 && conn->callback_trigger == false) {
             conn->connected(conn->data, fd);
             conn->callback_trigger = true;
         }
@@ -321,9 +321,9 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     case NEU_CONN_TCP_CLIENT:
         fd = conn->fd;
         if (conn->block) {
-            ret = recv(conn->fd, buf, len, 0);
-        } else {
             ret = recv(conn->fd, buf, len, MSG_WAITALL);
+        } else {
+            ret = recv(conn->fd, buf, len, 0);
         }
         if (ret == -1) {
             log_error(
@@ -344,7 +344,7 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         }
     }
 
-    if (ret == len && conn->callback_trigger == false) {
+    if (ret > 0 && conn->callback_trigger == false) {
         conn->connected(conn->data, fd);
         conn->callback_trigger = true;
     }

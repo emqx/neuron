@@ -95,13 +95,13 @@ void handle_login(nng_aio *aio)
                     });
                 }
 
-                login_resp.token = calloc(strlen(token), sizeof(char));
                 login_resp.token = token;
 
                 neu_json_encode_by_fn(&login_resp, neu_json_encode_login_resp,
                                       &result);
                 http_ok(aio, result);
-                free(login_resp.token);
+                jwt_free_str(token);
+                free(result);
             } else {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
                     http_response(aio, error_code.error, result_error);
@@ -123,13 +123,24 @@ void handle_logout(nng_aio *aio)
 
 void handle_get_plugin_schema(nng_aio *aio)
 {
+    size_t len              = 0;
+    char   schema_path[256] = { 0 };
+
     VALIDATE_JWT(aio);
 
-    size_t len = 0;
-    char * buf = NULL;
-    buf        = file_string_read(&len, "./plugin_param_schema.json");
+    const char *plugin_name = http_get_param(aio, "plugin_name", &len);
+    if (plugin_name == NULL || len <= 0) {
+        http_bad_request(aio, "{\"error\": 1002}");
+        return;
+    }
+
+    snprintf(schema_path, sizeof(schema_path) - 1, "./schema/%s.json",
+             plugin_name);
+
+    char *buf = NULL;
+    buf       = file_string_read(&len, schema_path);
     if (NULL == buf) {
-        log_info("open ./plugin_param_schema.json error: %d", errno);
+        log_info("open %s error: %d", schema_path, errno);
         http_not_found(aio, "{\"status\": \"error\"}");
         return;
     }

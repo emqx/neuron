@@ -360,12 +360,15 @@ Neuron Context Ready
 
     LOGIN
 
-    ${id} =    Get Node ID    ${NODE_DRIVER}    modbus-tcp-adapter
+    Add Node    type=${${NODE_DRIVER}}    name=modbus-tcp-adapter    plugin_name=modbus-tcp-plugin
+    ${id} =     Get Node ID               ${NODE_DRIVER}             modbus-tcp-adapter
+    ${mqtt_id} =     Get Node ID               ${NODE_MQTT}             mqtt-adapter
 
     Set Global Variable    ${test_node_id}    ${id}
 
-    Node Setting           ${test_node_id}    ${MODBUS_TCP_CONFIG}
-    Update Group Config    ${test_node_id}    ${group}                300
+    Node Setting        ${test_node_id}      ${MODBUS_TCP_CONFIG}
+    Add Group Config    ${test_node_id}      ${group}                300
+    Subscribe Group     ${test_node_id}    ${mqtt_id}          ${group}
 
 Stop All Processes
     LOGOUT

@@ -18,6 +18,14 @@ _Http LOGOUT
   POST                              /api/v2/logout
   Integer                           response status                   200
 
+_Http Add Node
+  [Arguments]         &{args}
+  POST                /api/v2/node            ${args}
+
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+
 _Http Get Node ID
   [Arguments]                       ${node_type}                      ${node_name}
   GET                               /api/v2/node?type=${node_type}
@@ -72,6 +80,7 @@ Check Response Status
 
 LOGIN
   ${token} =                        _Http LOGIN
+  Add MQTT Node
   ${mqtt_node} =                    _Http Get Node ID                 ${NODE_MQTT}                            mqtt-adapter
   _Http Node Setting                ${mqtt_node}                      ${MQTT_CONFIG}
   _Http Node Ctl                    ${mqtt_node}                      ${NODE_CTL_START}
@@ -97,6 +106,9 @@ LOGIN
 LOGOUT
   Unsubscribe All And Clear Messages
   Disconnect
+
+Add MQTT Node
+    _Http Add Node    type=${${NODE_MQTT}}      name=mqtt-adapter          plugin_name=mqtt-plugin
 
 Add Node
   [Arguments]                       &{args}

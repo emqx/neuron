@@ -37,6 +37,12 @@ else
     rm -rf ${package_name}/*
 fi
 
+if [ ! -d $package_name/schema ];then 
+    mkdir -p $package_name/schema
+else 
+    rm -rf ${package_name}/schema/*
+fi
+
 case "$arch" in
     "arm-linux-gnueabihf") lib_path="/opt/externs/libs/arm-linux-gnueabihf/lib"
     ;;
@@ -49,8 +55,10 @@ cp ${lib_path}/libyaml.so ${package_name}/
 cp build/lib*.so \
     build/neuron \
     build/neuron.yaml \
-    build/plugin_param_schema.json \
     ${package_name}/
+cp build/schema/mqtt-plugin.json \
+    build/schema/modbus-tcp-plugin.json \
+    ${package_name}/schema/
 
 tar czf ${package_name}.tar.gz ${package_name}/
 ls ${package_name}

@@ -389,6 +389,8 @@ static int write_file_string(const char *fn, const char *s)
 
     fclose(f);
 
+    log_debug("pwersister write %s to %s", s, tmp);
+
     // rename the temporary file to the destination file
     if (0 != rename(tmp, fn)) {
         log_error("persister failed rename %s to %s", tmp, fn);

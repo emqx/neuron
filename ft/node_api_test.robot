@@ -53,7 +53,7 @@ Get DRIVER node, it should return all DRIVER node
 
     Check Response Status    ${res}    200
 
-    FOR                            ${name}          IN         sample-driver-adapter    modbus-tcp-adapter    test-node
+    FOR                            ${name}          IN         test-node
     Node With Name Should Exist    ${res}[nodes]    ${name}
     END
 
@@ -64,6 +64,7 @@ Get WEB node, it should return all WEB node
     Node With Name Should Exist    ${res}[nodes]    default-dashboard-adapter
 
 Get MQTT node, it should return all mqtt node
+    ${res} =    Add Node     type=${${NODE_MQTT}}    name=mqtt-adapter    plugin_name=mqtt-plugin
     ${res} =    Get Nodes    ${NODE_MQTT}
 
     Check Response Status          ${res}           200
@@ -73,20 +74,13 @@ Get MQTT node, it should return all mqtt node
 Get STREAM PROCESSOR node, it should return all STREAM PROCESSOR node
     ${res} =    Get Nodes    ${NODE_STREAM_PROCESSOR}
 
-    Check Response Status    ${res}                200
+    Check Response Status    ${res}                       200
     Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
-
-Get APP node, it should return all APP node
-    ${res} =    Get Nodes    ${NODE_APP}
-
-    Check Response Status          ${res}           200
-    Node With Name Should Exist    ${res}[nodes]    sample-app-adapter
-
 
 Get UNKNOWN type node, it should return empty node
     ${res} =    Get Nodes    ${NODE_UNKNOWN}
 
-    Check Response Status    ${res}                200
+    Check Response Status    ${res}                       200
     Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
 
 Get INVALID type node, it should return failure

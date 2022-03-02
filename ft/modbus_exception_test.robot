@@ -37,6 +37,7 @@ Neuron Context Ready
 
     LOGIN
 
+    Add Node    type=${${NODE_DRIVER}}    name=modbus-tcp-adapter    plugin_name=modbus-tcp-plugin
     ${id} =    Get Node ID    ${NODE_DRIVER}    modbus-tcp-adapter
 
     Set Global Variable    ${test_node_id}    ${id}

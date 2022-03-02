@@ -61,14 +61,15 @@ void handle_del_plugin(nng_aio *aio)
 
 void handle_get_plugin(nng_aio *aio)
 {
-    neu_plugin_t *             plugin      = neu_rest_get_plugin();
-    neu_json_get_plugin_resp_t plugin_res  = { 0 };
-    char *                     result      = NULL;
-    int                        index       = 0;
-    uint32_t                   plugin_id   = 0;
-    vector_t                   plugin_libs = neu_system_get_plugin(plugin);
+    neu_plugin_t *             plugin     = neu_rest_get_plugin();
+    neu_json_get_plugin_resp_t plugin_res = { 0 };
+    char *                     result     = NULL;
+    int                        index      = 0;
+    uint32_t                   plugin_id  = 0;
 
     VALIDATE_JWT(aio);
+
+    vector_t plugin_libs = neu_system_get_plugin(plugin);
 
     http_get_param_uint32(aio, "plugin_id", &plugin_id);
 

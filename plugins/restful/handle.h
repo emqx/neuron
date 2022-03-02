@@ -50,6 +50,7 @@
         NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
             if (error_code.error != NEU_ERR_SUCCESS) {                       \
                 http_response(aio, error_code.error, result_error);          \
+                free(result_error);                                          \
                 return;                                                      \
             }                                                                \
         })                                                                   \
@@ -63,6 +64,7 @@
         NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
             if (error_code.error != NEU_ERR_SUCCESS) {                       \
                 http_response(aio, error_code.error, result_error);          \
+                free(result_error);                                          \
                 return;                                                      \
             }                                                                \
         });                                                                  \

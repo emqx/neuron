@@ -143,6 +143,7 @@ typedef enum neu_node_type {
     NEU_NODE_TYPE_STREAM_PROCESSOR,
     NEU_NODE_TYPE_APP,
     NEU_NODE_TYPE_LICENSE,
+    NEU_NODE_TYPE_FUNCTIONAL,
     NEU_NODE_TYPE_MAX,
 } neu_node_type_e;
 

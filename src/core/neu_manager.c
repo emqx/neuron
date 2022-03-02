@@ -83,15 +83,9 @@ struct neu_manager {
 
 static const char *const manager_url = "inproc://neu_manager";
 
-#define NEU_HAS_SAMPLE_ADAPTER 1
-
 // definition for plugin lib names
 #if defined(__APPLE__)
 
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-#define SAMPLE_DRV_PLUGIN_LIB_NAME "libplugin-sample-drv.dylib"
-#define SAMPLE_APP_PLUGIN_LIB_NAME "libplugin-sample-app.dylib"
-#endif
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.dylib"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.dylib"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.dylib"
@@ -99,10 +93,6 @@ static const char *const manager_url = "inproc://neu_manager";
 
 #else
 
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-#define SAMPLE_DRV_PLUGIN_LIB_NAME "libplugin-sample-drv.so"
-#define SAMPLE_APP_PLUGIN_LIB_NAME "libplugin-sample-app.so"
-#endif
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.so"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.so"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.so"
@@ -111,26 +101,16 @@ static const char *const manager_url = "inproc://neu_manager";
 #endif
 
 // definition for plugin names
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-#define SAMPLE_DRV_PLUGIN_NAME "sample-drv-plugin"
-#define SAMPLE_APP_PLUGIN_NAME "sample-app-plugin"
-#endif
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
 #define MODBUS_TCP_PLUGIN_NAME "modbus-tcp-plugin"
 #define LICENSE_PLUGIN_NAME "license-plugin"
 
 // definition for adapter names
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-#define SAMPLE_DRV_ADAPTER_NAME "sample-driver-adapter"
-#define SAMPLE_APP_ADAPTER_NAME "sample-app-adapter"
-#endif
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
 #define DEFAULT_PERSIST_ADAPTER_NAME "default-persist-adapter"
 #define DEFAULT_LICENSE_ADAPTER_NAME "default-license-adapter"
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
-#define MQTT_ADAPTER_NAME "mqtt-adapter"
-#define MODBUS_TCP_ADAPTER_NAME "modbus-tcp-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 90
 #define GRP_CONFIG_NAME_MAX_LEN 90
@@ -145,33 +125,6 @@ typedef struct adapter_reg_cmd {
 } adapter_reg_cmd_t;
 
 static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-    {
-        .adapter_type = ADAPTER_TYPE_DRIVER,
-        .adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .plugin_name  = SAMPLE_DRV_PLUGIN_NAME,
-        .plugin_id    = { 0 } // The plugin_id is nothing
-    },
-    {
-        .adapter_type = ADAPTER_TYPE_APP,
-        .adapter_name = SAMPLE_APP_ADAPTER_NAME,
-        .plugin_name  = SAMPLE_APP_PLUGIN_NAME,
-        .plugin_id    = { 0 } // The plugin_id is nothing
-    },
-#endif
-
-    {
-        .adapter_type = ADAPTER_TYPE_MQTT,
-        .adapter_name = MQTT_ADAPTER_NAME,
-        .plugin_name  = MQTT_PLUGIN_NAME,
-        .plugin_id    = { 0 } // The plugin_id is nothing
-    },
-    {
-        .adapter_type = ADAPTER_TYPE_DRIVER,
-        .adapter_name = "modbus-tcp-adapter",
-        .plugin_name  = MODBUS_TCP_PLUGIN_NAME,
-        .plugin_id    = { 0 } // The plugin_id is nothing
-    },
     {
         .adapter_type = ADAPTER_TYPE_WEBSERVER,
         .adapter_name = DEFAULT_DASHBOARD_ADAPTER_NAME,
@@ -179,54 +132,24 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
     {
-        .adapter_type = ADAPTER_TYPE_APP,
+        .adapter_type = ADAPTER_TYPE_FUNCTIONAL,
         .adapter_name = DEFAULT_PERSIST_ADAPTER_NAME,
         .plugin_name  = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
-    /*
-    {   // for remote customize webserver by user, the plugin is a proxy
-        .adapter_type    = ADAPTER_TYPE_WEBSERVER,
-        .adapter_name    = WEBSERVER_ADAPTER_NAME,
-        .plugin_name     = WEBSERVER_PLUGIN_NAME,
-        .plugin_id       = { 0 }    // The plugin_id is nothing
-    },
-    */
 };
 #define DEFAULT_ADAPTER_ADD_INFO_SIZE \
     (sizeof(default_adapter_reg_cmds) / sizeof(default_adapter_reg_cmds[0]))
 
 static const char *default_plugin_lib_names[] = {
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-    SAMPLE_DRV_PLUGIN_LIB_NAME, SAMPLE_APP_PLUGIN_LIB_NAME,
-#endif
-
-    MQTT_PLUGIN_LIB_NAME, MODBUS_TCP_PLUGIN_LIB_NAME,
-    /*
-    WEBSERVER_PLUGIN_LIB_NAME,
-    MODBUS_PLUGIN_LIB_NAME,
-     */
+    MQTT_PLUGIN_LIB_NAME,
+    MODBUS_TCP_PLUGIN_LIB_NAME,
 };
 #define DEFAULT_PLUGIN_COUNT \
     (sizeof(default_plugin_lib_names) / sizeof(default_plugin_lib_names[0]))
 
 // clang-format off
 static const plugin_reg_param_t default_plugin_infos[] = {
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_DRIVER,
-        .plugin_name     = SAMPLE_DRV_PLUGIN_NAME,
-        .plugin_lib_name = SAMPLE_DRV_PLUGIN_LIB_NAME
-    },
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_APP,
-        .plugin_name     = SAMPLE_APP_PLUGIN_NAME,
-        .plugin_lib_name = SAMPLE_APP_PLUGIN_LIB_NAME
-    },
-#endif
-
     {
         .plugin_kind     = PLUGIN_KIND_SYSTEM,
         .adapter_type    = ADAPTER_TYPE_MQTT,
@@ -251,14 +174,6 @@ static const plugin_reg_param_t default_plugin_infos[] = {
         .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME
     },
-    /*
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_WEBSERVER,
-        .plugin_name     = WEBSERVER_PLUGIN_NAME,
-        .plugin_lib_name = WEBSERVER_PLUGIN_LIB_NAME
-    },
-    */
 };
 // clang-format on
 #define DEFAULT_PLUGIN_INFO_SIZE \
@@ -271,48 +186,6 @@ typedef struct config_add_cmd {
     uint32_t             read_interval;
     neu_taggrp_config_t *grp_config;
 } config_add_cmd_t;
-
-static config_add_cmd_t default_config_add_cmds[] = {
-#ifdef NEU_HAS_SAMPLE_ADAPTER
-    {
-        .config_name      = "config_drv_sample",
-        .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .sub_adapter_name = SAMPLE_APP_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_app_sample",
-        .src_adapter_name = SAMPLE_APP_ADAPTER_NAME,
-        .sub_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_mqtt_sample",
-        .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .sub_adapter_name = MQTT_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_modbus_tcp_sample",
-        .src_adapter_name = SAMPLE_APP_ADAPTER_NAME,
-        .sub_adapter_name = MODBUS_TCP_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_modbus_tcp_sample_2",
-        .src_adapter_name = MODBUS_TCP_ADAPTER_NAME,
-        .sub_adapter_name = MQTT_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-#endif
-};
-#define DEFAULT_GROUP_CONFIG_COUNT \
-    (sizeof(default_config_add_cmds) / sizeof(default_config_add_cmds[0]))
 
 static int init_bind_info(manager_bind_info_t *mng_bind_info)
 {
@@ -862,22 +735,22 @@ static int sub_grp_config_with_pipe(neu_taggrp_config_t *grp_config,
     return sub_pipes->size == 1 ? 1 : 0;
 }
 
-static int sub_grp_config_with_adapter(neu_manager_t *       manager,
-                                       neu_taggrp_config_t * grp_config,
-                                       adapter_reg_entity_t *reg_entity)
-{
-    manager_bind_info_t *bind_info;
+// static int sub_grp_config_with_adapter(neu_manager_t *       manager,
+// neu_taggrp_config_t * grp_config,
+// adapter_reg_entity_t *reg_entity)
+//{
+// manager_bind_info_t *bind_info;
 
-    bind_info = &manager->bind_info;
-    nng_mtx_lock(bind_info->mtx);
-    // wait manager bind the adapter
-    while (reg_entity->bind_count == 0) {
-        nng_cv_wait(reg_entity->cv);
-    }
-    nng_mtx_unlock(bind_info->mtx);
+// bind_info = &manager->bind_info;
+// nng_mtx_lock(bind_info->mtx);
+//// wait manager bind the adapter
+// while (reg_entity->bind_count == 0) {
+// nng_cv_wait(reg_entity->cv);
+//}
+// nng_mtx_unlock(bind_info->mtx);
 
-    return sub_grp_config_with_pipe(grp_config, reg_entity->adapter_pipe);
-}
+// return sub_grp_config_with_pipe(grp_config, reg_entity->adapter_pipe);
+//}
 
 static int unsub_grp_config_with_pipe(neu_taggrp_config_t *grp_config,
                                       nng_pipe             sub_pipe)
@@ -902,22 +775,22 @@ static int unsub_grp_config_with_pipe(neu_taggrp_config_t *grp_config,
     return sub_pipes->size == 0 ? 1 : 0;
 }
 
-static int unsub_grp_config_with_adapter(neu_manager_t *       manager,
-                                         neu_taggrp_config_t * grp_config,
-                                         adapter_reg_entity_t *reg_entity)
-{
-    manager_bind_info_t *bind_info;
+// static int unsub_grp_config_with_adapter(neu_manager_t *       manager,
+// neu_taggrp_config_t * grp_config,
+// adapter_reg_entity_t *reg_entity)
+//{
+// manager_bind_info_t *bind_info;
 
-    bind_info = &manager->bind_info;
-    nng_mtx_lock(bind_info->mtx);
-    // wait manager bind the adapter
-    while (reg_entity->bind_count == 0) {
-        nng_cv_wait(reg_entity->cv);
-    }
-    nng_mtx_unlock(bind_info->mtx);
+// bind_info = &manager->bind_info;
+// nng_mtx_lock(bind_info->mtx);
+//// wait manager bind the adapter
+// while (reg_entity->bind_count == 0) {
+// nng_cv_wait(reg_entity->cv);
+//}
+// nng_mtx_unlock(bind_info->mtx);
 
-    return unsub_grp_config_with_pipe(grp_config, reg_entity->adapter_pipe);
-}
+// return unsub_grp_config_with_pipe(grp_config, reg_entity->adapter_pipe);
+//}
 
 static int add_grp_config_to_adapter(adapter_reg_entity_t *reg_entity,
                                      neu_taggrp_config_t * grp_config)
@@ -958,92 +831,92 @@ add_config_by_name_exit:
 }
 */
 
-static void add_default_grp_configs(neu_manager_t *manager)
-{
-    uint32_t              i;
-    config_add_cmd_t *    config_add_cmd;
-    neu_taggrp_config_t * grp_config;
-    adapter_reg_entity_t *src_reg_entity;
-    adapter_reg_entity_t *sub_reg_entity;
+// static void add_default_grp_configs(neu_manager_t *manager)
+//{
+// uint32_t              i;
+// config_add_cmd_t *    config_add_cmd;
+// neu_taggrp_config_t * grp_config;
+// adapter_reg_entity_t *src_reg_entity;
+// adapter_reg_entity_t *sub_reg_entity;
 
-    size_t   msg_size;
-    nng_msg *out_msg;
-    int      need_send;
-    int      rv;
+// size_t   msg_size;
+// nng_msg *out_msg;
+// int      need_send;
+// int      rv;
 
-    for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
-        config_add_cmd = &default_config_add_cmds[i];
-        grp_config     = neu_taggrp_cfg_new(config_add_cmd->config_name);
-        neu_taggrp_cfg_set_interval(grp_config, config_add_cmd->read_interval);
-        config_add_cmd->grp_config = grp_config;
-        src_reg_entity             = find_reg_adapter_by_name(
-            &manager->reg_adapters, config_add_cmd->src_adapter_name);
-        sub_reg_entity = find_reg_adapter_by_name(
-            &manager->reg_adapters, config_add_cmd->sub_adapter_name);
-        add_grp_config_to_adapter(src_reg_entity, grp_config);
-        neu_adapter_add_sub_grp_config(sub_reg_entity->adapter,
-                                       neu_manager_adapter_id_to_node_id(
-                                           manager, src_reg_entity->adapter_id),
-                                       grp_config);
-        need_send =
-            sub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
+// for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
+// config_add_cmd = &default_config_add_cmds[i];
+// grp_config     = neu_taggrp_cfg_new(config_add_cmd->config_name);
+// neu_taggrp_cfg_set_interval(grp_config, config_add_cmd->read_interval);
+// config_add_cmd->grp_config = grp_config;
+// src_reg_entity             = find_reg_adapter_by_name(
+//&manager->reg_adapters, config_add_cmd->src_adapter_name);
+// sub_reg_entity = find_reg_adapter_by_name(
+//&manager->reg_adapters, config_add_cmd->sub_adapter_name);
+// add_grp_config_to_adapter(src_reg_entity, grp_config);
+// neu_adapter_add_sub_grp_config(sub_reg_entity->adapter,
+// neu_manager_adapter_id_to_node_id(
+// manager, src_reg_entity->adapter_id),
+// grp_config);
+// need_send =
+// sub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
 
-        /* Send the subscribe node message to driver
-         */
-        msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
-        rv       = nng_msg_alloc(&out_msg, msg_size);
-        if (rv == 0 && need_send == 1) {
-            message_t *           msg_ptr;
-            subscribe_node_cmd_t *out_cmd_ptr;
-            msg_ptr = (message_t *) nng_msg_body(out_msg);
-            msg_inplace_data_init(msg_ptr, MSG_CMD_SUBSCRIBE_NODE,
-                                  sizeof(subscribe_node_cmd_t));
-            out_cmd_ptr              = msg_get_buf_ptr(msg_ptr);
-            out_cmd_ptr->grp_config  = grp_config;
-            out_cmd_ptr->sender_id   = 0;
-            out_cmd_ptr->dst_node_id = neu_manager_adapter_id_to_node_id(
-                manager, src_reg_entity->adapter_id);
-            nng_msg_set_pipe(out_msg, src_reg_entity->adapter_pipe);
-            log_info("Send subscribe driver command to driver pipe: %d",
-                     src_reg_entity->adapter_pipe);
-            nng_sendmsg(manager->bind_info.mng_sock, out_msg, 0);
-        }
-    }
-    return;
-}
+///* Send the subscribe node message to driver
+//*/
+// msg_size = msg_inplace_data_get_size(sizeof(subscribe_node_cmd_t));
+// rv       = nng_msg_alloc(&out_msg, msg_size);
+// if (rv == 0 && need_send == 1) {
+// message_t *           msg_ptr;
+// subscribe_node_cmd_t *out_cmd_ptr;
+// msg_ptr = (message_t *) nng_msg_body(out_msg);
+// msg_inplace_data_init(msg_ptr, MSG_CMD_SUBSCRIBE_NODE,
+// sizeof(subscribe_node_cmd_t));
+// out_cmd_ptr              = msg_get_buf_ptr(msg_ptr);
+// out_cmd_ptr->grp_config  = grp_config;
+// out_cmd_ptr->sender_id   = 0;
+// out_cmd_ptr->dst_node_id = neu_manager_adapter_id_to_node_id(
+// manager, src_reg_entity->adapter_id);
+// nng_msg_set_pipe(out_msg, src_reg_entity->adapter_pipe);
+// log_info("Send subscribe driver command to driver pipe: %d",
+// src_reg_entity->adapter_pipe);
+// nng_sendmsg(manager->bind_info.mng_sock, out_msg, 0);
+//}
+//}
+// return;
+//}
 
-static void remove_default_grp_configs(neu_manager_t *manager)
-{
-    uint32_t              i;
-    config_add_cmd_t *    config_add_cmd;
-    neu_taggrp_config_t * grp_config;
-    adapter_reg_entity_t *src_reg_entity;
-    adapter_reg_entity_t *sub_reg_entity;
+// static void remove_default_grp_configs(neu_manager_t *manager)
+//{
+// uint32_t              i;
+// config_add_cmd_t *    config_add_cmd;
+// neu_taggrp_config_t * grp_config;
+// adapter_reg_entity_t *src_reg_entity;
+// adapter_reg_entity_t *sub_reg_entity;
 
-    for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
-        config_add_cmd = &default_config_add_cmds[i];
-        grp_config     = config_add_cmd->grp_config;
+// for (i = 0; i < DEFAULT_GROUP_CONFIG_COUNT; i++) {
+// config_add_cmd = &default_config_add_cmds[i];
+// grp_config     = config_add_cmd->grp_config;
 
-        nng_mtx_lock(manager->adapters_mtx);
-        src_reg_entity = find_reg_adapter_by_name(
-            &manager->reg_adapters, config_add_cmd->src_adapter_name);
-        sub_reg_entity = find_reg_adapter_by_name(
-            &manager->reg_adapters, config_add_cmd->sub_adapter_name);
-        neu_adapter_del_sub_grp_config(sub_reg_entity->adapter,
-                                       neu_manager_adapter_id_to_node_id(
-                                           manager, src_reg_entity->adapter_id),
-                                       grp_config);
-        unsub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
-        neu_datatag_mng_del_grp_config(src_reg_entity->datatag_manager,
-                                       config_add_cmd->config_name);
-        nng_mtx_unlock(manager->adapters_mtx);
+// nng_mtx_lock(manager->adapters_mtx);
+// src_reg_entity = find_reg_adapter_by_name(
+//&manager->reg_adapters, config_add_cmd->src_adapter_name);
+// sub_reg_entity = find_reg_adapter_by_name(
+//&manager->reg_adapters, config_add_cmd->sub_adapter_name);
+// neu_adapter_del_sub_grp_config(sub_reg_entity->adapter,
+// neu_manager_adapter_id_to_node_id(
+// manager, src_reg_entity->adapter_id),
+// grp_config);
+// unsub_grp_config_with_adapter(manager, grp_config, sub_reg_entity);
+// neu_datatag_mng_del_grp_config(src_reg_entity->datatag_manager,
+// config_add_cmd->config_name);
+// nng_mtx_unlock(manager->adapters_mtx);
 
-        /* The neuron manager should be shutdown, so there is no need to
-         * send the unsubscribe node message to driver.
-         */
-    }
-    return;
-}
+///* The neuron manager should be shutdown, so there is no need to
+//* send the unsubscribe node message to driver.
+//*/
+//}
+// return;
+//}
 
 static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
                                         neuron_trans_data_t *neu_trans_data)
@@ -1052,27 +925,28 @@ static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
     vector_t *sub_pipes;
 
     manager_bind_info_t *manager_bind = &manager->bind_info;
-    if (neu_trans_data->grp_config == NULL) {
-        nng_pipe              msg_pipe;
-        adapter_reg_entity_t *reg_entity;
+    assert(neu_trans_data->grp_config != NULL);
+    // if (neu_trans_data->grp_config == NULL) {
+    // nng_pipe              msg_pipe;
+    // adapter_reg_entity_t *reg_entity;
 
-        sub_pipes = vector_new(DEFAULT_ADAPTER_REG_COUNT, sizeof(nng_pipe));
+    // sub_pipes = vector_new(DEFAULT_ADAPTER_REG_COUNT, sizeof(nng_pipe));
 
-        nng_mtx_lock(manager->adapters_mtx);
-        reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
-                                              SAMPLE_APP_ADAPTER_NAME);
-        msg_pipe   = reg_entity->adapter_pipe;
-        vector_push_back(sub_pipes, &msg_pipe);
+    // nng_mtx_lock(manager->adapters_mtx);
+    // reg_entity = find_reg_adapter_by_name(&manager->reg_adapters,
+    // SAMPLE_APP_ADAPTER_NAME);
+    // msg_pipe   = reg_entity->adapter_pipe;
+    // vector_push_back(sub_pipes, &msg_pipe);
 
-        reg_entity =
-            find_reg_adapter_by_name(&manager->reg_adapters, MQTT_ADAPTER_NAME);
-        msg_pipe = reg_entity->adapter_pipe;
-        vector_push_back(sub_pipes, &msg_pipe);
-        nng_mtx_unlock(manager->adapters_mtx);
-    } else {
-        sub_pipes = (vector_t *) neu_taggrp_cfg_ref_subpipes(
-            neu_trans_data->grp_config);
-    }
+    // reg_entity =
+    // find_reg_adapter_by_name(&manager->reg_adapters, MQTT_ADAPTER_NAME);
+    // msg_pipe = reg_entity->adapter_pipe;
+    // vector_push_back(sub_pipes, &msg_pipe);
+    //    nng_mtx_unlock(manager->adapters_mtx);
+    //} else {
+    //}
+    sub_pipes =
+        (vector_t *) neu_taggrp_cfg_ref_subpipes(neu_trans_data->grp_config);
 
     neu_trans_buf_t *trans_buf;
     trans_buf = &neu_trans_data->trans_buf;
@@ -1166,7 +1040,7 @@ static void manager_loop(void *arg)
     log_info("Register and start all default adapters");
     register_default_plugins(manager);
     reg_and_start_default_adapters(manager);
-    add_default_grp_configs(manager);
+    // add_default_grp_configs(manager);
 
     nng_mtx_lock(manager->adapters_mtx);
     adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
@@ -1576,7 +1450,7 @@ static void manager_loop(void *arg)
     }
 
     log_info("End message loop of neu_manager");
-    remove_default_grp_configs(manager);
+    // remove_default_grp_configs(manager);
     stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
     nng_close(manager_bind->mng_sock);
@@ -1713,6 +1587,10 @@ static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
 
     case NEU_NODE_TYPE_LICENSE:
         adapter_type = ADAPTER_TYPE_LICENSE;
+        break;
+
+    case NEU_NODE_TYPE_FUNCTIONAL:
+        adapter_type = ADAPTER_TYPE_FUNCTIONAL;
         break;
 
     default:
