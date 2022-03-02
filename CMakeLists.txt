@@ -100,6 +100,7 @@ set(NEURON_SOURCES
     src/core/neu_datatag_manager.c
     src/adapter/adapter.c
     plugins/restful/handle.c
+    plugins/restful/log_handle.c
     plugins/restful/normal_handle.c
     plugins/restful/rw_handle.c
     plugins/restful/adapter_handle.c
