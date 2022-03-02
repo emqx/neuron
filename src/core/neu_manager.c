@@ -132,7 +132,7 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
     {
-        .adapter_type = ADAPTER_TYPE_APP,
+        .adapter_type = ADAPTER_TYPE_FUNCTIONAL,
         .adapter_name = DEFAULT_PERSIST_ADAPTER_NAME,
         .plugin_name  = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
@@ -1587,6 +1587,10 @@ static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
 
     case NEU_NODE_TYPE_LICENSE:
         adapter_type = ADAPTER_TYPE_LICENSE;
+        break;
+
+    case NEU_NODE_TYPE_FUNCTIONAL:
+        adapter_type = ADAPTER_TYPE_FUNCTIONAL;
         break;
 
     default:
