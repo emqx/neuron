@@ -170,7 +170,7 @@ static const plugin_reg_param_t default_plugin_infos[] = {
     },
     {
         .plugin_kind     = PLUGIN_KIND_STATIC,
-        .adapter_type    = ADAPTER_TYPE_APP,
+        .adapter_type    = ADAPTER_TYPE_FUNCTIONAL,
         .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME
     },
