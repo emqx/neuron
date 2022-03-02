@@ -80,8 +80,8 @@ Check Response Status
 
 LOGIN
   ${token} =                        _Http LOGIN
-  ${mqtt_node} =                    _Http Get Node ID                 ${NODE_MQTT}                            mqtt-adapter
   Add MQTT Node
+  ${mqtt_node} =                    _Http Get Node ID                 ${NODE_MQTT}                            mqtt-adapter
   _Http Node Setting                ${mqtt_node}                      ${MQTT_CONFIG}
   _Http Node Ctl                    ${mqtt_node}                      ${NODE_CTL_START}
   _Http LOGOUT
