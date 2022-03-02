@@ -129,8 +129,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define DEFAULT_PERSIST_ADAPTER_NAME "default-persist-adapter"
 #define DEFAULT_LICENSE_ADAPTER_NAME "default-license-adapter"
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
-#define MQTT_ADAPTER_NAME "mqtt-adapter"
-#define MODBUS_TCP_ADAPTER_NAME "modbus-tcp-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 90
 #define GRP_CONFIG_NAME_MAX_LEN 90
@@ -159,19 +157,6 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
 #endif
-
-    {
-        .adapter_type = ADAPTER_TYPE_MQTT,
-        .adapter_name = MQTT_ADAPTER_NAME,
-        .plugin_name  = MQTT_PLUGIN_NAME,
-        .plugin_id    = { 0 } // The plugin_id is nothing
-    },
-    {
-        .adapter_type = ADAPTER_TYPE_DRIVER,
-        .adapter_name = "modbus-tcp-adapter",
-        .plugin_name  = MODBUS_TCP_PLUGIN_NAME,
-        .plugin_id    = { 0 } // The plugin_id is nothing
-    },
     {
         .adapter_type = ADAPTER_TYPE_WEBSERVER,
         .adapter_name = DEFAULT_DASHBOARD_ADAPTER_NAME,
@@ -285,27 +270,6 @@ static config_add_cmd_t default_config_add_cmds[] = {
         .config_name      = "config_app_sample",
         .src_adapter_name = SAMPLE_APP_ADAPTER_NAME,
         .sub_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_mqtt_sample",
-        .src_adapter_name = SAMPLE_DRV_ADAPTER_NAME,
-        .sub_adapter_name = MQTT_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_modbus_tcp_sample",
-        .src_adapter_name = SAMPLE_APP_ADAPTER_NAME,
-        .sub_adapter_name = MODBUS_TCP_ADAPTER_NAME,
-        .read_interval    = 2000,
-        .grp_config       = NULL,
-    },
-    {
-        .config_name      = "config_modbus_tcp_sample_2",
-        .src_adapter_name = MODBUS_TCP_ADAPTER_NAME,
-        .sub_adapter_name = MQTT_ADAPTER_NAME,
         .read_interval    = 2000,
         .grp_config       = NULL,
     },
@@ -1064,10 +1028,10 @@ static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
         msg_pipe   = reg_entity->adapter_pipe;
         vector_push_back(sub_pipes, &msg_pipe);
 
-        reg_entity =
-            find_reg_adapter_by_name(&manager->reg_adapters, MQTT_ADAPTER_NAME);
-        msg_pipe = reg_entity->adapter_pipe;
-        vector_push_back(sub_pipes, &msg_pipe);
+        // reg_entity =
+        // find_reg_adapter_by_name(&manager->reg_adapters, MQTT_ADAPTER_NAME);
+        // msg_pipe = reg_entity->adapter_pipe;
+        // vector_push_back(sub_pipes, &msg_pipe);
         nng_mtx_unlock(manager->adapters_mtx);
     } else {
         sub_pipes = (vector_t *) neu_taggrp_cfg_ref_subpipes(
