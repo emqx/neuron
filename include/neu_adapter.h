@@ -85,6 +85,7 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_VALIDATE_TAG,
     NEU_REQRESP_GET_LIC_VAL,
     NEU_REQRESP_LIC_VAL,
+    NEU_REQRESP_UPDATE_LIC,
 } neu_reqresp_type_e;
 
 typedef uint32_t neu_node_id_t;
@@ -331,6 +332,11 @@ typedef struct {
     neu_data_val_t *val;
 } neu_reqresp_lic_val_t;
 
+/* NEU_REQRESP_UPDATE_LIC */
+typedef struct {
+    const char *lic_fname; // don't take ownership
+} neu_reqresp_update_lic_t;
+
 typedef enum neu_adapter_ctl {
     NEU_ADAPTER_CTL_START = 0,
     NEU_ADAPTER_CTL_STOP,
@@ -374,6 +380,7 @@ typedef enum neu_event_type {
     NEU_EVENT_ADD_TAGS,
     NEU_EVENT_UPDATE_TAGS,
     NEU_EVENT_DEL_TAGS,
+    NEU_EVENT_LIC_UPDATED,
 } neu_event_type_e;
 
 typedef struct neu_event_notify {
@@ -394,6 +401,11 @@ typedef struct neu_event_tags {
     neu_node_id_t node_id;
     char *        grp_config_name;
 } neu_event_tags_t;
+
+typedef struct {
+    neu_node_id_t node_id;
+    const char *  lic_fname; // don't take ownership
+} neu_event_lic_updated_t;
 
 /**
  * definition enum and structure for neuron config

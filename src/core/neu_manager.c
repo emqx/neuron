@@ -1429,6 +1429,25 @@ static void manager_loop(void *arg)
             break;
         }
 
+        case MSG_EVENT_LIC_UPDATED: {
+            neu_event_lic_updated_t *lic_event = msg_get_buf_ptr(pay_msg);
+
+            nng_mtx_lock(manager->adapters_mtx);
+            adapter_reg_entity_t *reg_entity = find_reg_adapter_by_id(
+                &manager->reg_adapters, lic_event->node_id);
+            nng_mtx_unlock(manager->adapters_mtx);
+
+            nng_pipe msg_pipe = reg_entity->adapter_pipe;
+            rv                = manager_send_msg_to_pipe(manager, msg_pipe,
+                                          MSG_EVENT_LIC_UPDATED, lic_event,
+                                          sizeof(*lic_event));
+            if (0 == rv) {
+                log_info("Forward license update event to pipe: %d", msg_pipe);
+            }
+
+            break;
+        }
+
         case MSG_CMD_SUBSCRIBE_NODE: {
             subscribe_node_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
             rv = neu_manager_subscribe_node(manager, cmd_ptr);
