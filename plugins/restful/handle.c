@@ -32,6 +32,7 @@
 #include "datatag_handle.h"
 #include "group_config_handle.h"
 #include "http.h"
+#include "log_handle.h"
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
@@ -100,6 +101,9 @@ struct neu_rest_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/node/state",
+    },
+    {
+        .url = "/api/v2/log",
     },
 };
 
@@ -279,6 +283,12 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/node/state",
         .value.handler = handle_get_node_state,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/log",
+        .value.handler = handle_get_log,
     },
 };
 

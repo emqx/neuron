@@ -53,6 +53,7 @@ const char *http_get_param(nng_aio *aio, const char *name, size_t *len);
 //    NEU_ERR_EINVAL if the query parameter value is not valid.
 int http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param);
 int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param);
+int http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param);
 int http_get_param_node_type(nng_aio *aio, const char *name,
                              neu_node_type_e *param);
 int http_get_param_node_id(nng_aio *aio, const char *name,
