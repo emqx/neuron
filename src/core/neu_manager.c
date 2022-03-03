@@ -1105,6 +1105,7 @@ static void manager_loop(void *arg)
                 message_t *msg_ptr = (message_t *) nng_msg_body(out_msg);
                 msg_inplace_data_init(msg_ptr, MSG_CMD_PERSISTENCE_LOAD, 0);
                 nng_msg_set_pipe(out_msg, msg_pipe);
+                persist_pipe = msg_pipe;
                 log_info("Send persistence load to pipe: %d", msg_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
@@ -1625,7 +1626,9 @@ static neu_node_type_e adapter_type_to_node_type(adapter_type_e adapter_type)
     case ADAPTER_TYPE_APP:
         node_type = NEU_NODE_TYPE_APP;
         break;
-
+    case ADAPTER_TYPE_FUNCTIONAL:
+        node_type = NEU_NODE_TYPE_FUNCTIONAL;
+        break;
     default:
         node_type = NEU_NODE_TYPE_UNKNOW;
         break;
