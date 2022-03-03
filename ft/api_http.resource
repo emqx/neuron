@@ -31,6 +31,13 @@ LOGOUT
 Add MQTT Node
     Add Node    type=${${NODE_MQTT}}      name=mqtt-adapter          plugin_name=mqtt-plugin
 
+Add Plugin
+  [Arguments]         ${node_type}            ${name}                      ${kind}                      ${lib_name}
+  POST                /api/v2/plugin          {"node_type": ${node_type}, "name": ${name}, "kind": ${kind}, "lib_name": ${lib_name}}
+
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
 Add Node
   [Arguments]         &{args}
   POST                /api/v2/node            ${args}
