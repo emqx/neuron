@@ -616,7 +616,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         int                type      = TOPIC_TYPE_READ;
         pair =
             vector_find_item(&plugin->topics, (void *) &type, topic_type_match);
-        json_str = command_read_cycle_response(plugin, neu_data->data_val);
+        json_str = command_read_periodic_response(plugin, neu_data->data_val);
         mqtt_context_add(plugin, 0, NULL, json_str, pair, true);
         break;
     }

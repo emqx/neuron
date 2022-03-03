@@ -23,8 +23,8 @@
 
 #include "read_write.h"
 
-int command_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                              neu_json_read_req_t *req, uint32_t req_id)
+int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                                 neu_json_read_req_t *req, uint32_t req_id)
 {
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
     neu_taggrp_config_t *config = neu_system_find_group_config(
@@ -188,9 +188,9 @@ static void clean_read_response_json_object(neu_json_read_resp_t *json)
     free(json->tags);
 }
 
-char *command_read_once_response(neu_plugin_t *   plugin,
-                                 neu_json_mqtt_t *parse_header,
-                                 neu_data_val_t * resp_val)
+char *command_rw_read_once_response(neu_plugin_t *   plugin,
+                                    neu_json_mqtt_t *parse_header,
+                                    neu_data_val_t * resp_val)
 {
     UNUSED(plugin);
 
@@ -226,15 +226,15 @@ char *command_read_once_response(neu_plugin_t *   plugin,
     return json_str;
 }
 
-char *command_read_cycle_response(neu_plugin_t *  plugin,
-                                  neu_data_val_t *resp_val)
+char *command_rw_read_cycle_response(neu_plugin_t *  plugin,
+                                     neu_data_val_t *resp_val)
 {
     neu_json_mqtt_t parse_header  = { 0 };
     char            uuid4_str[40] = { '\0' };
     neu_uuid_v4_gen(uuid4_str);
     parse_header.uuid    = uuid4_str;
     parse_header.command = "";
-    return command_read_once_response(plugin, &parse_header, resp_val);
+    return command_rw_read_once_response(plugin, &parse_header, resp_val);
 }
 
 static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
@@ -252,8 +252,8 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
     return 0;
 }
 
-int command_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                          neu_json_write_req_t *write_req, uint32_t req_id)
+int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                             neu_json_write_req_t *write_req, uint32_t req_id)
 {
     log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
              write_req->group_config_name);
@@ -358,9 +358,9 @@ static void clean_write_response_json_object(neu_json_read_resp_t *json)
     free(json->tags);
 }
 
-char *command_write_response(neu_plugin_t *   plugin,
-                             neu_json_mqtt_t *parse_header,
-                             neu_data_val_t * resp_val)
+char *command_rw_write_response(neu_plugin_t *   plugin,
+                                neu_json_mqtt_t *parse_header,
+                                neu_data_val_t * resp_val)
 {
     UNUSED(plugin);
 
