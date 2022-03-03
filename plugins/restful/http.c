@@ -179,6 +179,23 @@ int http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
     return 0;
 }
 
+int http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param)
+{
+    uintmax_t val;
+
+    int rv = http_get_param_uintmax(aio, name, &val);
+    if (0 != rv) {
+        return rv;
+    }
+
+    if (val > UINT64_MAX) {
+        return NEU_ERR_EINVAL;
+    }
+
+    *param = (uint64_t) val;
+    return 0;
+}
+
 int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
 {
     uintmax_t val;
