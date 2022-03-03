@@ -554,10 +554,11 @@ char *command_read_once_response(neu_plugin_t *   plugin,
     return command_rw_read_once_response(plugin, parse_header, resp_val);
 }
 
-char *command_read_periodic_response(neu_plugin_t *  plugin,
-                                     neu_data_val_t *resp_val)
+char *command_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
+                                     neu_taggrp_config_t *config,
+                                     neu_data_val_t *     resp_val)
 {
-    return command_rw_read_cycle_response(plugin, resp_val);
+    return command_rw_read_cycle_response(plugin, sender, config, resp_val);
 }
 
 char *command_write_response(neu_plugin_t *   plugin,

@@ -609,14 +609,17 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
-        neu_reqresp_data_t *neu_data = NULL;
-        neu_data                     = (neu_reqresp_data_t *) req->buf;
-        struct topic_pair *pair      = NULL;
-        char *             json_str  = NULL;
-        int                type      = TOPIC_TYPE_READ;
+        neu_reqresp_data_t *neu_data  = NULL;
+        neu_data                      = (neu_reqresp_data_t *) req->buf;
+        struct topic_pair *  pair     = NULL;
+        char *               json_str = NULL;
+        int                  type     = TOPIC_TYPE_READ;
+        uint64_t             sender   = req->sender_id;
+        neu_taggrp_config_t *config   = neu_data->grp_config;
         pair =
             vector_find_item(&plugin->topics, (void *) &type, topic_type_match);
-        json_str = command_read_periodic_response(plugin, neu_data->data_val);
+        json_str = command_read_periodic_response(plugin, sender, config,
+                                                  neu_data->data_val);
         mqtt_context_add(plugin, 0, NULL, json_str, pair, true);
         break;
     }
