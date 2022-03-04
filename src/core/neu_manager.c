@@ -2458,7 +2458,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
     adapter_id_t          adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
     neu_adapter_t *       adapter;
-    int                   ret = -1;
+    int                   ret = NEU_ERR_SUCCESS;
 
     nng_mtx_lock(manager->adapters_mtx);
 
@@ -2468,7 +2468,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
     if (reg_entity == NULL) {
         nng_mtx_unlock(manager->adapters_mtx);
         log_error("Can't find matched src registered adapter");
-        return -1;
+        return NEU_ERR_NODE_NOT_EXIST;
     }
 
     adapter = reg_entity->adapter;
