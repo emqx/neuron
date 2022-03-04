@@ -32,6 +32,13 @@ extern "C" {
 #endif
 
 typedef struct {
+    char *   config_name;
+    char *   node_name;
+    uint32_t node_id;
+    uint64_t timestamp;
+} neu_json_read_periodic_t;
+
+typedef struct {
     int64_t              error;
     int64_t              id;
     enum neu_json_type   t;
@@ -68,6 +75,8 @@ typedef struct {
 
 int  neu_json_decode_read_req(char *buf, neu_json_read_req_t **result);
 void neu_json_decode_read_req_free(neu_json_read_req_t *req);
+
+int neu_json_encode_read_periodic_resp(void *json_object, void *param);
 
 #ifdef __cplusplus
 }

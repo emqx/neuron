@@ -26,14 +26,7 @@ extern "C" {
 
 #include <neuron.h>
 
-#include "datatag.h"
-#include "group_config.h"
-#include "node.h"
-#include "ping.h"
-#include "plugin.h"
-#include "read_write.h"
-#include "schema.h"
-#include "tty.h"
+#include "common.h"
 
 enum topic_type {
     TOPIC_TYPE_PING = 0,
@@ -66,7 +59,17 @@ typedef struct {
     context_add_callback context_add;
 } mqtt_response_t;
 
-void command_response_handle(mqtt_response_t *response);
+void  command_response_handle(mqtt_response_t *response);
+char *command_read_once_response(neu_plugin_t *   plugin,
+                                 neu_json_mqtt_t *parse_header,
+                                 neu_data_val_t * resp_val);
+char *command_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
+                                     const char *         node_name,
+                                     neu_taggrp_config_t *config,
+                                     neu_data_val_t *     resp_val);
+char *command_write_response(neu_plugin_t *   plugin,
+                             neu_json_mqtt_t *parse_header,
+                             neu_data_val_t * resp_val);
 
 #ifdef __cplusplus
 }

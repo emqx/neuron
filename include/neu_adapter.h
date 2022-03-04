@@ -359,6 +359,7 @@ typedef struct neu_request {
     uint32_t           req_id;
     neu_reqresp_type_e req_type;
     uint64_t           sender_id; // adapter_id of sender
+    char *             node_name; // adapter name of sender
     uint32_t           buf_len;
     void *             buf;
 } neu_request_t;

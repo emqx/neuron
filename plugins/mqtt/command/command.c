@@ -1,6 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "datatag.h"
+#include "group_config.h"
+#include "node.h"
+#include "ping.h"
+#include "plugin.h"
+#include "read_write.h"
+#include "schema.h"
+#include "tty.h"
+
 #include "command.h"
 
 // Ping topic
@@ -269,7 +278,7 @@ static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
                                   response->topic_pair, false);
         }
 
-        command_read_once_request(plugin, mqtt, req, req_id);
+        command_rw_read_once_request(plugin, mqtt, req, req_id);
         neu_json_decode_read_req_free(req);
     }
 
@@ -289,7 +298,7 @@ static int write_response(mqtt_response_t *response, neu_plugin_t *plugin,
                                   response->topic_pair, false);
         }
 
-        command_write_request(plugin, mqtt, req, req_id);
+        command_rw_write_request(plugin, mqtt, req, req_id);
         neu_json_decode_write_req_free(req);
     }
 
@@ -536,4 +545,27 @@ void command_response_handle(mqtt_response_t *response)
     }
 
     neu_json_decode_mqtt_req_free(mqtt);
+}
+
+char *command_read_once_response(neu_plugin_t *   plugin,
+                                 neu_json_mqtt_t *parse_header,
+                                 neu_data_val_t * resp_val)
+{
+    return command_rw_read_once_response(plugin, parse_header, resp_val);
+}
+
+char *command_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
+                                     const char *         node_name,
+                                     neu_taggrp_config_t *config,
+                                     neu_data_val_t *     resp_val)
+{
+    return command_rw_read_periodic_response(plugin, sender, node_name, config,
+                                             resp_val);
+}
+
+char *command_write_response(neu_plugin_t *   plugin,
+                             neu_json_mqtt_t *parse_header,
+                             neu_data_val_t * resp_val)
+{
+    return command_rw_write_response(plugin, parse_header, resp_val);
 }

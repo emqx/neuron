@@ -968,6 +968,8 @@ static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
             out_neu_trans_data->grp_config =
                 (neu_taggrp_config_t *) neu_taggrp_cfg_ref(
                     neu_trans_data->grp_config);
+            out_neu_trans_data->sender_id = neu_trans_data->sender_id;
+            out_neu_trans_data->node_name = neu_trans_data->node_name;
             neu_trans_buf_copy(&out_neu_trans_data->trans_buf, trans_buf);
             nng_msg_set_pipe(out_msg, msg_pipe);
             log_debug("Forward databuf to pipe: %d", msg_pipe);

@@ -20,11 +20,20 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include "read_write.h"
 
-int command_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                              neu_json_read_req_t *req, uint32_t req_id)
+static uint64_t current_time()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t ms = tv.tv_sec;
+    return ms * 1000 + tv.tv_usec / 1000;
+}
+
+int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                                 neu_json_read_req_t *req, uint32_t req_id)
 {
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
     neu_taggrp_config_t *config = neu_system_find_group_config(
@@ -188,9 +197,9 @@ static void clean_read_response_json_object(neu_json_read_resp_t *json)
     free(json->tags);
 }
 
-char *command_read_once_response(neu_plugin_t *   plugin,
-                                 neu_json_mqtt_t *parse_header,
-                                 neu_data_val_t * resp_val)
+char *command_rw_read_once_response(neu_plugin_t *   plugin,
+                                    neu_json_mqtt_t *parse_header,
+                                    neu_data_val_t * resp_val)
 {
     UNUSED(plugin);
 
@@ -226,15 +235,40 @@ char *command_read_once_response(neu_plugin_t *   plugin,
     return json_str;
 }
 
-char *command_read_cycle_response(neu_plugin_t *  plugin,
-                                  neu_data_val_t *resp_val)
+char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
+                                        const char *         node_name,
+                                        neu_taggrp_config_t *config,
+                                        neu_data_val_t *     resp_val)
 {
-    neu_json_mqtt_t parse_header  = { 0 };
-    char            uuid4_str[40] = { '\0' };
-    neu_uuid_v4_gen(uuid4_str);
-    parse_header.uuid    = uuid4_str;
-    parse_header.command = "";
-    return command_read_once_response(plugin, &parse_header, resp_val);
+    UNUSED(plugin);
+
+    neu_fixed_array_t *array = NULL;
+    neu_dvalue_get_ref_array(resp_val, &array);
+    assert(NULL != array);
+
+    if (0 >= array->length) {
+        return NULL;
+    }
+
+    char *                   json_str = NULL;
+    neu_json_read_periodic_t header   = {
+        .config_name = (char *) neu_taggrp_cfg_get_name(config),
+        .node_id     = sender,
+        .node_name   = (char *) node_name,
+        .timestamp   = current_time()
+    };
+
+    log_debug("config:%s, node:%s, self_id:%ld, "
+              "sender:%ld, time:%u",
+              header.config_name, header.node_name, header.node_id, sender,
+              header.timestamp);
+
+    neu_json_read_resp_t json = { 0 };
+    wrap_read_response_json_object(array, &json);
+    neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+                              neu_json_encode_read_periodic_resp, &json_str);
+    clean_read_response_json_object(&json);
+    return json_str;
 }
 
 static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
@@ -252,8 +286,8 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
     return 0;
 }
 
-int command_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                          neu_json_write_req_t *write_req, uint32_t req_id)
+int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                             neu_json_write_req_t *write_req, uint32_t req_id)
 {
     log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
              write_req->group_config_name);
@@ -358,9 +392,9 @@ static void clean_write_response_json_object(neu_json_read_resp_t *json)
     free(json->tags);
 }
 
-char *command_write_response(neu_plugin_t *   plugin,
-                             neu_json_mqtt_t *parse_header,
-                             neu_data_val_t * resp_val)
+char *command_rw_write_response(neu_plugin_t *   plugin,
+                                neu_json_mqtt_t *parse_header,
+                                neu_data_val_t * resp_val)
 {
     UNUSED(plugin);
 
