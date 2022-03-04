@@ -43,18 +43,10 @@ typedef struct {
     char *command;
 } neu_json_mqtt_t;
 
-typedef struct {
-    char *   config_name;
-    char *   node_name;
-    uint32_t node_id;
-    uint64_t timestamp;
-} neu_json_mqtt_periodic_t;
-
 int  neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result);
 void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req);
 
 int neu_json_encode_mqtt_resp(void *json_object, void *param);
-int neu_json_encode_mqtt_periodic_resp(void *json_object, void *param);
 
 #ifdef __cplusplus
 }

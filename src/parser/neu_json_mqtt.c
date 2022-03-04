@@ -97,34 +97,3 @@ int neu_json_encode_mqtt_resp(void *json_object, void *param)
 
     return ret;
 }
-
-int neu_json_encode_mqtt_periodic_resp(void *json_object, void *param)
-{
-    int                       ret  = 0;
-    neu_json_mqtt_periodic_t *resp = (neu_json_mqtt_periodic_t *) param;
-
-    neu_json_elem_t resp_elems[] = { {
-                                         .name      = "node_id",
-                                         .t         = NEU_JSON_INT,
-                                         .v.val_int = resp->node_id,
-                                     },
-                                     {
-                                         .name      = "node_name",
-                                         .t         = NEU_JSON_STR,
-                                         .v.val_str = resp->node_name,
-                                     },
-                                     {
-                                         .name      = "group_config_name",
-                                         .t         = NEU_JSON_STR,
-                                         .v.val_str = resp->config_name,
-                                     },
-                                     {
-                                         .name      = "timestamp",
-                                         .t         = NEU_JSON_INT,
-                                         .v.val_int = resp->timestamp,
-                                     } };
-    ret = neu_json_encode_field(json_object, resp_elems,
-                                NEU_JSON_ELEM_SIZE(resp_elems));
-
-    return ret;
-}

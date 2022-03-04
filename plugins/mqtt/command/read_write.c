@@ -242,28 +242,21 @@ static bool node_match(const void *key, const void *item)
     return (id == info->node_id) ? true : false;
 }
 
-char *command_rw_read_cycle_response(neu_plugin_t *plugin, uint64_t sender,
-                                     neu_taggrp_config_t *config,
-                                     neu_data_val_t *     resp_val)
+char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
+                                        neu_taggrp_config_t *config,
+                                        neu_data_val_t *     resp_val)
 {
-    UNUSED(plugin);
-
-    neu_fixed_array_t *array;
-    int                rc = neu_dvalue_get_ref_array(resp_val, &array);
-    if (0 != rc) {
-        log_info("Get array ref error");
-        return NULL;
-    }
-
-    if (0 >= array->length) {
+    neu_fixed_array_t *array = NULL;
+    neu_dvalue_get_ref_array(resp_val, &array);
+    if (NULL == array || 0 >= array->length) {
+        log_error("Get array error");
         return NULL;
     }
 
     char *                   json_str = NULL;
-    neu_json_mqtt_periodic_t header   = {
+    neu_json_read_periodic_t header   = {
         .config_name = (char *) neu_taggrp_cfg_get_name(config),
-        .node_name   = "",
-        .node_id     = neu_plugin_self_node_id(plugin),
+        .node_id     = sender,
         .timestamp   = current_time()
     };
 
@@ -271,7 +264,15 @@ char *command_rw_read_cycle_response(neu_plugin_t *plugin, uint64_t sender,
     neu_node_info_t *info  = NULL;
     info = vector_find_item(&nodes, (void *) &sender, node_match);
     if (NULL != info) {
-        header.node_name = info->node_name;
+        header.node_name = strdup(info->node_name);
+    } else {
+        header.node_name = strdup("");
+    }
+
+    VECTOR_FOR_EACH(&nodes, iter)
+    {
+        neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
+        free(info->node_name);
     }
 
     vector_uninit(&nodes);
@@ -282,21 +283,12 @@ char *command_rw_read_cycle_response(neu_plugin_t *plugin, uint64_t sender,
               header.timestamp);
 
     neu_json_read_resp_t json = { 0 };
-    rc                        = wrap_read_response_json_object(array, &json);
-    if (0 != rc) {
-        return NULL;
-    }
-
-    rc = neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
-                                   neu_json_encode_mqtt_periodic_resp,
-                                   &json_str);
+    wrap_read_response_json_object(array, &json);
+    neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+                              neu_json_encode_read_periodic_resp, &json_str);
     clean_read_response_json_object(&json);
 
-    if (0 != rc) {
-        log_info("Json string parse error:%d", rc);
-        return NULL;
-    }
-
+    free(header.node_name);
     return json_str;
 }
 

@@ -630,6 +630,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     default:
         break;
     }
+
     return rv;
 }
 
