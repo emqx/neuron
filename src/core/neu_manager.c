@@ -89,7 +89,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.dylib"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.dylib"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.dylib"
-#define LICENSE_PLUGIN_LIB_NAME "libplugin-license.dylib"
 
 #else
 
@@ -104,7 +103,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
 #define MQTT_PLUGIN_NAME "mqtt-plugin"
 #define MODBUS_TCP_PLUGIN_NAME "modbus-tcp-plugin"
-#define LICENSE_PLUGIN_NAME "license-plugin"
 
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
@@ -1013,29 +1011,6 @@ static void manager_loop(void *arg)
         nng_cv_wait(manager->cv);
     }
     nng_mtx_unlock(manager->mtx);
-
-    // begin add license adapter
-    // TODO: move to persistence data instead
-    plugin_id_t              plugin_id      = {};
-    neu_cmd_add_plugin_lib_t add_plugin_cmd = {
-        .plugin_lib_name = LICENSE_PLUGIN_LIB_NAME,
-    };
-
-    rv = neu_manager_add_plugin_lib(manager, &add_plugin_cmd, &plugin_id);
-    if (0 == rv) {
-        neu_cmd_add_node_t add_node_cmd = {
-            .node_type    = NEU_NODE_TYPE_LICENSE,
-            .adapter_name = DEFAULT_LICENSE_ADAPTER_NAME,
-            .plugin_name  = LICENSE_PLUGIN_NAME,
-        };
-
-        neu_node_id_t node_id = 0;
-        rv = neu_manager_add_node(manager, &add_node_cmd, &node_id);
-        if (rv != 0) {
-            neu_panic("Neuron manager can't add license adapter");
-        }
-    }
-    // end add license adapter
 
     log_info("Register and start all default adapters");
     register_default_plugins(manager);
