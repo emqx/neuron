@@ -235,21 +235,18 @@ char *command_rw_read_once_response(neu_plugin_t *   plugin,
     return json_str;
 }
 
-static bool node_match(const void *key, const void *item)
-{
-    neu_node_id_t    id   = *(neu_node_id_t *) key;
-    neu_node_info_t *info = (neu_node_info_t *) item;
-    return (id == info->node_id) ? true : false;
-}
-
 char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
+                                        const char *         node_name,
                                         neu_taggrp_config_t *config,
                                         neu_data_val_t *     resp_val)
 {
+    UNUSED(plugin);
+
     neu_fixed_array_t *array = NULL;
     neu_dvalue_get_ref_array(resp_val, &array);
-    if (NULL == array || 0 >= array->length) {
-        log_error("Get array error");
+    assert(NULL != array);
+
+    if (0 >= array->length) {
         return NULL;
     }
 
@@ -257,25 +254,9 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
     neu_json_read_periodic_t header   = {
         .config_name = (char *) neu_taggrp_cfg_get_name(config),
         .node_id     = sender,
+        .node_name   = (char *) node_name,
         .timestamp   = current_time()
     };
-
-    vector_t         nodes = neu_system_get_nodes(plugin, NEU_NODE_TYPE_DRIVER);
-    neu_node_info_t *info  = NULL;
-    info = vector_find_item(&nodes, (void *) &sender, node_match);
-    if (NULL != info) {
-        header.node_name = strdup(info->node_name);
-    } else {
-        header.node_name = strdup("");
-    }
-
-    VECTOR_FOR_EACH(&nodes, iter)
-    {
-        neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
-        free(info->node_name);
-    }
-
-    vector_uninit(&nodes);
 
     log_debug("config:%s, node:%s, self_id:%ld, "
               "sender:%ld, time:%u",
@@ -287,8 +268,6 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
     neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
                               neu_json_encode_read_periodic_resp, &json_str);
     clean_read_response_json_object(&json);
-
-    free(header.node_name);
     return json_str;
 }
 

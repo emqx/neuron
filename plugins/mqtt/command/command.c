@@ -555,10 +555,12 @@ char *command_read_once_response(neu_plugin_t *   plugin,
 }
 
 char *command_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
+                                     const char *         node_name,
                                      neu_taggrp_config_t *config,
                                      neu_data_val_t *     resp_val)
 {
-    return command_rw_read_periodic_response(plugin, sender, config, resp_val);
+    return command_rw_read_periodic_response(plugin, sender, node_name, config,
+                                             resp_val);
 }
 
 char *command_write_response(neu_plugin_t *   plugin,

@@ -175,6 +175,7 @@ typedef struct grp_config_changed_event {
 typedef struct neuron_trans_data {
     neu_taggrp_config_t *grp_config;
     adapter_id_t         sender_id; // adapter_id of sender
+    char *               node_name;
     neu_trans_buf_t      trans_buf;
 } neuron_trans_data_t;
 

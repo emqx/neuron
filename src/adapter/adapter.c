@@ -820,6 +820,7 @@ static void adapter_loop(void *arg)
             req.buf_len   = sizeof(neu_reqresp_data_t);
             req.buf       = (void *) &data_req;
             req.sender_id = trans_data->sender_id;
+            req.node_name = trans_data->node_name;
             intf_funs->request(adapter->plugin, &req);
             if (is_need_free) {
                 neu_dvalue_free(data_req.data_val);
@@ -1650,6 +1651,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
             trans_data->grp_config = neu_data->grp_config;
             trans_data->sender_id  = to_node_id((adapter), (adapter)->id);
+            trans_data->node_name  = adapter->name;
             trans_buf              = &trans_data->trans_buf;
             rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
                                     neu_data->data_val);
