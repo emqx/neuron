@@ -50,8 +50,6 @@ case "$arch" in
     ;;
 esac
 
-cp ${lib_path}/libyaml.so ${package_name}/
-
 cp build/lib*.so \
     build/neuron \
     build/neuron.yaml \
