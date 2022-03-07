@@ -58,19 +58,6 @@ Neuron的层次结构图如下图所示：
 
 ### 安装依赖
 
-Clone 本仓库后，使用脚本一键安装依赖：
-
-```shell
-# Get Neuron repository
-git clone --recurse-submodules https://github.com/neugates/neuron.git
-
-# Script to install all libraries
-cd neuron 
-./install-libs.sh
-```
-
-您也可以参考下面的文档根据实际需要手动安装所需依赖。
-
 [Source code to install dependent libraries](https://github.com/neugates/neuron/blob/main/Install-dependent-libraries.md)
 
 ### 编译
