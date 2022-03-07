@@ -10,3 +10,6 @@ compile_commands.json
 ft/reports
 include/csptr/
 __pycache__
+tmp
+*.deb
+*.rpm
