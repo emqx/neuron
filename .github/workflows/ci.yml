@@ -30,9 +30,9 @@ jobs:
     strategy:
       matrix:
         arch:
-          - [aarch64-linux-gnu, aarch64, gcc-aarch64-linux-gnu, g++-aarch64-linux-gnu, /opt/externs/libs]
-          - [arm-linux-gnueabihf, armv4, gcc-arm-linux-gnueabihf, g++-arm-linux-gnueabihf, /opt/externs/libs]
-          - [x86_64-linux-gnu, x86_64, gcc, g++, /usr/local]
+          - [aarch64-linux-gnu, aarch64, gcc-aarch64-linux-gnu, g++-aarch64-linux-gnu, /opt/externs/libs, arm64]
+          - [arm-linux-gnueabihf, armv4, gcc-arm-linux-gnueabihf, g++-arm-linux-gnueabihf, /opt/externs/libs, arm]
+          - [x86_64-linux-gnu, x86_64, gcc, g++, /usr/local, amd64]
 
     steps:
       - uses: actions/checkout@v2
@@ -58,11 +58,18 @@ jobs:
           ARCH: ${{ matrix.arch[0] }}
         run: |
           ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF##*/}-${ARCH%%-*}
+          cd package
+          python3 create_deb.py 2.0.0-Beta2 ${{ matrix.arch[5] }}
 
       - uses: actions/upload-artifact@v2
         with:
-          name: ${{ matrix.arch[0] }}
+          name: ${{ matrix.arch[0] }}_tar
           path: "*.tar.gz"
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.arch[0] }}_deb
+          path: "package/*.deb"
   
   ut:
     runs-on: ubuntu-20.04
