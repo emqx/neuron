@@ -30,5 +30,5 @@ mkdeb.create_deb_file(rules)
 mkdeb.create_control("neuron", sys.argv[1], sys.argv[2], "neuron", "")
 
 cmd = 'dpkg-deb -b tmp/ ' + 'neuron' + '-' + \
-    sys.argv[1] + '-'+sys.argv[3] + '_'+sys.argv[2] + ".deb"
+    sys.argv[1] + '-'+sys.argv[2] + ".deb"
 os.system(cmd)

@@ -61,8 +61,8 @@ cp build/schema/mqtt-plugin.json \
 cp private_test.key ${package_name}/
 cp public_test.pem ${package_name}/
 
-tar czf ${package_name}.tar.gz ${package_name}/
+tar czf ${package_name}-${arch}.tar.gz ${package_name}/
 ls ${package_name}
 rm -rf ${package_name}
 
-echo "${package_name}.tar.gz"
+echo "${package_name}-${arch}.tar.gz"
