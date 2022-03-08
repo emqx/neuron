@@ -13,3 +13,4 @@ __pycache__
 tmp
 *.deb
 *.rpm
+neuron-sdk
