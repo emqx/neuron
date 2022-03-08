@@ -150,6 +150,23 @@ jobs:
           python3 -m pip install -r ft/requirements.txt
           python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/http_reports ft
   
+  create_latest:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+    needs: cross-build
+
+    steps:
+      - name: create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: latest
+          release_name: Release latest
+          draft: false
+          prerelease: true
+  
   release:
     runs-on: ubuntu-20.04
     if: github.event_name == 'release'
