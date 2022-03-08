@@ -27,6 +27,6 @@ rules.append(mkdeb.FileMap(
 mkdeb.create_deb_file(rules)
 mkdeb.create_control("neuron", sys.argv[1], sys.argv[2], "neuron", "")
 
-cmd = 'dpkg-deb -b tmp/ ' + 'neuron' + '_' + \
-    sys.argv[1] + '_'+sys.argv[2] + ".deb"
+cmd = 'dpkg-deb -b tmp/ ' + 'neuron' + '-' + \
+    sys.argv[1] + '-'+sys.argv[3] + '_'+sys.argv[2] + ".deb"
 os.system(cmd)

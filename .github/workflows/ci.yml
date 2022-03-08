@@ -35,12 +35,16 @@ jobs:
           - [x86_64-linux-gnu, x86_64, gcc, g++, /usr/local, amd64]
 
     steps:
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
       
       - name: install
-        run: sudo apt-get install -y ${{ matrix.arch[2] }} ${{ matrix.arch[3] }} ninja-build pkg-config
+        run: sudo apt-get install -y ${{ matrix.arch[2] }} ${{ matrix.arch[3] }} ninja-build pkg-config alien
       
       - name: install dep
         run: |
@@ -57,20 +61,22 @@ jobs:
         env:
           ARCH: ${{ matrix.arch[0] }}
         run: |
-          ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF##*/}-${ARCH%%-*}
+          ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF##*/}-${{ steps.date.outputs.date }}_${ARCH%%-*}
           cd package
-          python3 create_deb.py 2.0.0-Beta2 ${{ matrix.arch[5] }}
+          python3 create_deb.py 2.${GITHUB_REF##*/} ${{ matrix.arch[5] }} ${{ steps.date.outputs.date }}
+          sudo alien --scripts -k -r *.deb
+          mv *.rpm neuron-2.${GITHUB_REF##*/}-${{ steps.date.outputs.date }}_${{ matrix.arch[5] }}.rpm
+          mv *.rpm ../
+          mv *.deb ../
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.arch[0] }}_tar
-          path: "*.tar.gz"
+          name: neuron-${{ matrix.arch[5] }}-${{ steps.date.outputs.date }}
+          path: |
+            *.tar.gz
+            *.deb
+            *.rpm
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ matrix.arch[0] }}_deb
-          path: "package/*.deb"
-  
   ut:
     runs-on: ubuntu-20.04
 
