@@ -10,6 +10,8 @@ rules.append(mkdeb.FileMap("deb/preinst", "/DEBIAN/", "r", "preinst"))
 rules.append(mkdeb.FileMap("deb/prerm", "/DEBIAN/", "r", "prerm"))
 
 rules.append(mkdeb.FileMap("../build/neuron", "/opt/neuron/bin/", "x"))
+rules.append(mkdeb.FileMap("../private_test.key", "/opt/neuron/bin/"))
+rules.append(mkdeb.FileMap("../public_test.pem", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../build/libneuron-base.so", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../neuron.yaml", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../default_plugin.json",
