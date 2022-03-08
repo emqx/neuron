@@ -156,14 +156,22 @@ jobs:
     needs: cross-build
 
     steps:
-      - name: create release
+      - name: delete old daily-pre-release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: create daily-pre-release
         id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: latest
-          release_name: Release latest
+          tag_name: daily
+          release_name: Daily Release
           draft: false
           prerelease: true
   
