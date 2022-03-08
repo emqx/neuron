@@ -1,51 +1,17 @@
 set(CMAKE_SYSTEM_NAME Linux)
-set(CMAKE_SYSTEM_VERSION 1)
+set(COMPILER_PREFIX arm-linux-gnueabihf)
 set(CMAKE_SYSTEM_PROCESSOR armv7l)
+set(LIBRARY_DIR /opt/externs/libs)
 
-set(triple arm-linux-gnueabihf)
-set(DISABLE_UT ON)
-
-if(NOT CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX .cross/${triple})
-endif()
-
-set(CMAKE_STAGING_PREFIX /opt/externs/libs/${triple})
+set(CMAKE_C_COMPILER ${COMPILER_PREFIX}-gcc)
+set(CMAKE_CXX_COMPILER ${COMPILER_PREFIX}-g++)
+set(CMAKE_AR ${COMPILER_PREFIX}-ar)
+set(CMAKE_LINKER ${COMPILER_PREFIX}-ld)
+set(CMAKE_NM ${COMPILER_PREFIX}-nm)
+set(CMAKE_OBJDUMP ${COMPILER_PREFIX}-objdump)
+set(CMAKE_RANLIB ${COMPILER_PREFIX}-ranlib)
+set(CMAKE_STAGING_PREFIX ${LIBRARY_DIR}/${COMPILER_PREFIX})
 set(CMAKE_PREFIX_PATH ${CMAKE_STAGING_PREFIX})
-
-set(CMAKE_C_COMPILER ${triple}-gcc)
-set(CMAKE_C_FLAGS
-    "-O3 -fPIC"
-    CACHE INTERNAL "")
-set(CMAKE_C_FLAGS_DEBUG
-    "${CMAKE_C_FLAGS} -g -Wall"
-    CACHE INTERNAL "")
-set(CMAKE_C_FLAGS_MINSIZEREL
-    "${CMAKE_C_FLAGS} -Os -DNDEBUG"
-    CACHE INTERNAL "")
-set(CMAKE_C_FLAGS_RELEASE
-    "${CMAKE_C_FLAGS} -O4 -DNDEBUG"
-    CACHE INTERNAL "")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO
-    "${CMAKE_C_FLAGS} -O2 -g"
-    CACHE INTERNAL "")
-
-# set(CMAKE_CXX_COMPILER ${triple}-g++) set(CMAKE_CXX_FLAGS "-O3 -fPIC" CACHE
-# INTERNAL "") set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -g -Wall" CACHE
-# INTERNAL "") set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS} -Os -DNDEBUG"
-# CACHE INTERNAL "") set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O4
-# -DNDEBUG" CACHE INTERNAL "") set(CMAKE_CXX_FLAGS_RELWITHDEBINFO
-# "${CMAKE_CXX_FLAGS} -O2 -g" CACHE INTERNAL "")
-# include_directories(/opt/externs/libs/${triple}/include)
-# include_directories(/opt/externs/libs/${triple}/openssl/include)
-
-# set(CMAKE_C_COMPILER ${triple}-gcc) set(CMAKE_CXX_COMPILER ${triple}-g++)
-
-set(CMAKE_AR ${triple}-ar)
-set(CMAKE_AR ${triple}-ar)
-set(CMAKE_LINKER ${triple}-ld)
-set(CMAKE_NM ${triple}-nm)
-set(CMAKE_OBJDUMP ${triple}-objdump)
-set(CMAKE_RANLIB ${triple}-ranlib)
 
 include_directories(SYSTEM ${CMAKE_STAGING_PREFIX}/include)
 include_directories(SYSTEM ${CMAKE_STAGING_PREFIX}/openssl/include)

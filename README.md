@@ -55,20 +55,7 @@ The hierarchical layer diagram of Neuron is shown in the figure below:
 
 ## Installation
 
-###  Clone repository and install dependent libraries
-
-After clone this repository, you can use bellow script to install all dependent libraries：
-
-```shell
-# Get Neuron repository
-git clone --recurse-submodules https://github.com/neugates/neuron.git
-
-# Script to install all libraries
-cd neuron 
-./install-libs.sh
-```
-
-You also can reference bellow manual to custom install some needed dependent libraries：
+###  Install dependent libraries
 
 [Source code to install dependent libraries](https://github.com/neugates/neuron/blob/main/Install-dependent-libraries.md)
 
