@@ -68,6 +68,7 @@ jobs:
           mv *.rpm neuron-2.${GITHUB_REF##*/}-${{ steps.date.outputs.date }}_${{ matrix.arch[5] }}.rpm
           mv *.rpm ../
           mv *.deb ../
+          ./package-sdk.sh -p ${{ matrix.arch[5] }}
 
       - uses: actions/upload-artifact@v3
         with:
@@ -76,6 +77,16 @@ jobs:
             *.tar.gz
             *.deb
             *.rpm
+
+      - name: Create sdk package
+        run: |
+          ./package-sdk.sh -p ${{ matrix.arch[5] }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: neuron-sdk_${{ matrix.arch[5] }}
+          path: |
+            neuron-sdk_*.tar.gz
 
   ut:
     runs-on: ubuntu-20.04

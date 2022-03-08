@@ -70,8 +70,8 @@ cp ft/api_mqtt.resource ${package_name}/ft/
 cp ft/common.resource ${package_name}/ft/
 cp ft/error.resource ${package_name}/ft/
 
-tar czf ${package_name}.tar.gz ${package_name}/
+tar czf ${package_name}_${arch}.tar.gz ${package_name}/
 ls ${package_name}
 rm -rf ${package_name}
 
-echo "${package_name}.tar.gz"
+echo "${package_name}_${arch}.tar.gz"
