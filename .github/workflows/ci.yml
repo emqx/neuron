@@ -53,13 +53,13 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release -DDISABLE_UT=ON
           make -j4
 
-      - name: Create package
+      - name: Create neuron package
         env:
           ARCH: ${{ matrix.arch[5] }}
         run: |
           ./package.sh -p ${ARCH} -n neuron-2.${GITHUB_REF##*/}
           cd package
-          python3 create_deb.py 2.${GITHUB_REF##*/} ${{ matrix.arch[5] }}
+          python3 create_neuron_deb.py 2.${GITHUB_REF##*/} ${{ matrix.arch[5] }}
           sudo alien --scripts -k -r *.deb
           mv *.rpm neuron-2.${GITHUB_REF##*/}-${{ matrix.arch[5] }}.rpm
           mv *.rpm ../
@@ -73,15 +73,23 @@ jobs:
             *.deb
             *.rpm
 
-      - name: Create sdk package
+      - name: Create neuron sdk package
         run: |
           ./package-sdk.sh -p ${{ matrix.arch[5] }} -n neuron-sdk-2.${GITHUB_REF##*/}
+          cd package
+          python3 create_neuron_sdk_deb.py 2.${GITHUB_REF##*/} ${{ matrix.arch[5] }}
+          sudo alien --scripts -k -r *.deb
+          mv *.rpm neuron-sdk-2.${GITHUB_REF##*/}-${{ matrix.arch[5] }}.rpm
+          mv *.rpm ../
+          mv *.deb ../
 
       - uses: actions/upload-artifact@v3
         with:
           name: neuron-sdk-${{ matrix.arch[5] }}
           path: |
             neuron-sdk-*.tar.gz
+            neuron-sdk-*.deb
+            neuron-sdk-*.rpm
 
   ut:
     runs-on: ubuntu-20.04
@@ -199,11 +207,6 @@ jobs:
         arch: [arm64, arm, amd64]
         type: [neuron, neuron-sdk]
         package: [tar.gz, deb, rpm]
-        exclude:
-          - type: neuron-sdk
-            package: deb
-          - type: neuron-sdk
-            package: rpm
 
     steps:
       - uses: actions/download-artifact@v2

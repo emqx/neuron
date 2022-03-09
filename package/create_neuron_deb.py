@@ -4,10 +4,11 @@ import sys
 
 rules = []
 
-rules.append(mkdeb.FileMap("deb/conffiles", "/DEBIAN/", "r", "conffiles"))
-rules.append(mkdeb.FileMap("deb/postinst", "/DEBIAN/", "r", "postinst"))
-rules.append(mkdeb.FileMap("deb/preinst", "/DEBIAN/", "r", "preinst"))
-rules.append(mkdeb.FileMap("deb/prerm", "/DEBIAN/", "r", "prerm"))
+rules.append(mkdeb.FileMap("deb/neuron/conffiles",
+             "/DEBIAN/", "r", "conffiles"))
+rules.append(mkdeb.FileMap("deb/neuron/postinst", "/DEBIAN/", "r", "postinst"))
+rules.append(mkdeb.FileMap("deb/neuron/preinst", "/DEBIAN/", "r", "preinst"))
+rules.append(mkdeb.FileMap("deb/neuron/prerm", "/DEBIAN/", "r", "prerm"))
 
 rules.append(mkdeb.FileMap("../build/neuron", "/opt/neuron/bin/", "x"))
 rules.append(mkdeb.FileMap("../private_test.key", "/opt/neuron/bin/"))
