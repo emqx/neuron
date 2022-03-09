@@ -10,6 +10,8 @@ rules.append(mkdeb.FileMap("deb/preinst", "/DEBIAN/", "r", "preinst"))
 rules.append(mkdeb.FileMap("deb/prerm", "/DEBIAN/", "r", "prerm"))
 
 rules.append(mkdeb.FileMap("../build/neuron", "/opt/neuron/bin/", "x"))
+rules.append(mkdeb.FileMap("../private_test.key", "/opt/neuron/bin/"))
+rules.append(mkdeb.FileMap("../public_test.pem", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../build/libneuron-base.so", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../neuron.yaml", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../default_plugin.json",
@@ -28,5 +30,5 @@ mkdeb.create_deb_file(rules)
 mkdeb.create_control("neuron", sys.argv[1], sys.argv[2], "neuron", "")
 
 cmd = 'dpkg-deb -b tmp/ ' + 'neuron' + '-' + \
-    sys.argv[1] + '-'+sys.argv[3] + '_'+sys.argv[2] + ".deb"
+    sys.argv[1] + '-'+sys.argv[2] + ".deb"
 os.system(cmd)

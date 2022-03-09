@@ -1,4 +1,4 @@
-name: EMQX Neuron dev
+name: EMQX neuron dev
 
 on: 
   push:
@@ -35,16 +35,12 @@ jobs:
           - [x86_64-linux-gnu, x86_64, gcc, g++, /usr/local, amd64]
 
     steps:
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      
+
       - name: install
-        run: sudo apt-get install -y ${{ matrix.arch[2] }} ${{ matrix.arch[3] }} ninja-build pkg-config alien
+        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.arch[2] }} ${{ matrix.arch[3] }} pkg-config alien
       
       - name: install dep
         run: |
@@ -59,23 +55,33 @@ jobs:
 
       - name: Create package
         env:
-          ARCH: ${{ matrix.arch[0] }}
+          ARCH: ${{ matrix.arch[5] }}
         run: |
-          ./package.sh -p ${ARCH} -n neuron-${GITHUB_REF##*/}-${{ steps.date.outputs.date }}_${ARCH%%-*}
+          ./package.sh -p ${ARCH} -n neuron-2.${GITHUB_REF##*/}
           cd package
-          python3 create_deb.py 2.${GITHUB_REF##*/} ${{ matrix.arch[5] }} ${{ steps.date.outputs.date }}
+          python3 create_deb.py 2.${GITHUB_REF##*/} ${{ matrix.arch[5] }}
           sudo alien --scripts -k -r *.deb
-          mv *.rpm neuron-2.${GITHUB_REF##*/}-${{ steps.date.outputs.date }}_${{ matrix.arch[5] }}.rpm
+          mv *.rpm neuron-2.${GITHUB_REF##*/}-${{ matrix.arch[5] }}.rpm
           mv *.rpm ../
           mv *.deb ../
 
       - uses: actions/upload-artifact@v3
         with:
-          name: neuron-${{ matrix.arch[5] }}-${{ steps.date.outputs.date }}
+          name: neuron-${{ matrix.arch[5] }}
           path: |
             *.tar.gz
             *.deb
             *.rpm
+
+      - name: Create sdk package
+        run: |
+          ./package-sdk.sh -p ${{ matrix.arch[5] }} -n neuron-sdk-2.${GITHUB_REF##*/}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: neuron-sdk-${{ matrix.arch[5] }}
+          path: |
+            neuron-sdk-*.tar.gz
 
   ut:
     runs-on: ubuntu-20.04
@@ -150,27 +156,101 @@ jobs:
           python3 -m pip install -r ft/requirements.txt
           python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/http_reports ft
   
+  create_daily_release:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+    needs: cross-build
+
+    steps:
+      - name: delete old daily-pre-release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: daily
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: create daily-pre-release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: daily
+          release_name: Daily Release
+          draft: false
+          prerelease: true
+
+      - shell: bash
+        run: |
+          echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: release_url
+          path: release_url.txt
+        
+  upload_daily_release_asset:
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+    needs: create_daily_release
+    strategy:
+      matrix:
+        arch: [arm64, arm, amd64]
+        type: [neuron, neuron-sdk]
+        package: [tar.gz, deb, rpm]
+        exclude:
+          - type: neuron-sdk
+            package: deb
+          - type: neuron-sdk
+            package: rpm
+
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: release_url
+
+      - id: release_url
+        run: |
+          value=`cat release_url.txt`
+          echo "::set-output name=name::$value"
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.type }}-${{ matrix.arch }}
+      
+      - id: package
+        run: echo "::set-output name=name::${{ matrix.type }}-2.${GITHUB_REF##*/}-${{ matrix.arch }}.${{ matrix.package }}"
+
+      - name: upload daily release asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_url.outputs.name }}
+          asset_path: ./${{ steps.package.outputs.name }}
+          asset_name: ${{ steps.package.outputs.name }}
+          asset_content_type: application/octet-stream
+  
   release:
     runs-on: ubuntu-20.04
     if: github.event_name == 'release'
     needs: cross-build
     strategy:
       matrix:
-        arch:
-          - "arm-linux-gnueabihf"
-          - "aarch64-linux-gnu"
-          - "x86_64-linux-gnu"
+        arch: [arm64, arm, amd64]
 
     steps:
       - uses: actions/download-artifact@v2
         id: download
         with:
-          name: ${{ matrix.arch }}
+          name: neuron-${{ matrix.arch }}
 
       - id: package
         env:
           ARCH: ${{ matrix.arch }}
-        run: echo "::set-output name=name::neuron-${GITHUB_REF##*/}-${ARCH%%-*}.tar.gz"
+        run: echo "::set-output name=name::neuron-2.${GITHUB_REF##*/}-${ARCH%%-*}.tar.gz"
 
       - uses: actions/upload-release-asset@v1
         if: github.event_name == 'release'
