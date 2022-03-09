@@ -38,7 +38,7 @@ else
 fi
 
 if [ ! -d $package_name/include ];then 
-    mkdir -p $package_name/include
+    mkdir -p $package_name/include/neuron/
 else 
     rm -rf ${package_name}/include/*
 fi
@@ -62,7 +62,7 @@ case "$arch" in
     ;;
 esac
 
-cp -r include ${package_name}/
+cp -r include/* ${package_name}/include/neuron/
 cp build/libneuron-base.so ${package_name}/lib
 cp -r ft/Keyword ${package_name}/ft/
 cp ft/api_http.resource ${package_name}/ft/
