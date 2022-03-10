@@ -15,8 +15,8 @@ rules.append(mkdeb.FileMap("../private_test.key", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../public_test.pem", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../build/libneuron-base.so", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap("../neuron.yaml", "/opt/neuron/bin/"))
-rules.append(mkdeb.FileMap("../default_plugin.json",
-             "/opt/neuron/bin/persistence/", "r", "plugin.json"))
+rules.append(mkdeb.FileMap("../default_plugins.json",
+             "/opt/neuron/bin/persistence/", "r", "plugins.json"))
 
 rules.append(mkdeb.FileMap("../build/libplugin-mqtt.so", "/opt/neuron/bin/"))
 rules.append(mkdeb.FileMap(

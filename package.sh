@@ -32,7 +32,7 @@ while getopts "p:n:h-:" OPT; do
 done
 
 if [ ! -d $package_name ];then 
-    mkdir -p $package_name
+    mkdir -p $package_name/persistence
 else 
     rm -rf ${package_name}/*
 fi
@@ -50,6 +50,7 @@ case "$arch" in
     ;;
 esac
 
+cp default_plugins.json ${package_name}/persistence/plugins.json
 cp build/lib*.so \
     build/neuron \
     build/neuron.yaml \
