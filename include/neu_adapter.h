@@ -404,11 +404,6 @@ typedef struct neu_event_tags {
     char *        grp_config_name;
 } neu_event_tags_t;
 
-typedef struct {
-    neu_node_id_t node_id;
-    const char *  lic_fname; // don't take ownership
-} neu_event_lic_updated_t;
-
 /**
  * definition enum and structure for neuron config
  */
