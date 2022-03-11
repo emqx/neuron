@@ -1778,12 +1778,6 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
         break;
     }
 
-    case NEU_EVENT_LIC_UPDATED: {
-        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_LIC_UPDATED, event->buf,
-                         event->buf_len);
-        break;
-    }
-
     default:
         break;
     }
