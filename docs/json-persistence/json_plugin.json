@@ -1,46 +1,14 @@
 {
     "plugin_req": {
         "plugins": [
-            {
-                "kind": 1,
-                "adapter_type": 1,
-                "name": "sample-drv-plugin",
-                "plugin_lib_name": "libplugin-sample-drv.so"
-            },
-            {
-                "kind": 1,
-                "adapter_type": 5,
-                "name": "sample-app-plugin",
-                "plugin_lib_name": "libplugin-sample-app.so"
-            },
-            {
-                "kind": 1,
-                "adapter_type": 3,
-                "name": "mqtt-plugin",
-                "plugin_lib_name": "libplugin-mqtt.so"
-            }
+            "libplugin-mqtt.so",
+            "libplugin-modbus-tcp.so"
         ]
     },
     "plugin_resp": {
         "plugins": [
-            {
-                "kind": 1,
-                "adapter_type": 1,
-                "name": "sample-drv-plugin",
-                "plugin_lib_name": "libplugin-sample-drv.so"
-            },
-            {
-                "kind": 1,
-                "adapter_type": 5,
-                "name": "sample-app-plugin",
-                "plugin_lib_name": "libplugin-sample-app.so"
-            },
-            {
-                "kind": 1,
-                "adapter_type": 3,
-                "name": "mqtt-plugin",
-                "plugin_lib_name": "libplugin-mqtt.so"
-            }
+            "libplugin-mqtt.so",
+            "libplugin-modbus-tcp.so"
         ]
     }
 }

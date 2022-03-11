@@ -57,8 +57,7 @@ static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
     {
         neu_persist_plugin_info_t *p =
             (neu_persist_plugin_info_t *) iterator_get(&iter);
-        free(p->name);
-        free(p->plugin_lib_name);
+        free(*p);
     }
     vector_free(plugin_infos);
 }

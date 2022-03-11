@@ -47,35 +47,17 @@ TEST(JsonAdapter, AdapterPersistenceDecode)
 TEST(JsonPlugin, PluginPersistenceDecode)
 {
     char *buf =
-        (char
-             *) "{\"plugins\": "
-                "[{\"kind\": 1, \"adapter_type\": 1, \"name\": "
-                "\"sample-drv-plugin\", \"plugin_lib_name\": "
-                "\"libplugin-sample-drv.so\"}, "
-                "{\"kind\": 1, \"adapter_type\": 5, \"name\": "
-                "\"sample-app-plugin\", \"plugin_lib_name\": "
-                "\"libplugin-sample-app.so\"}, "
-                "{\"kind\": 1, \"adapter_type\": 3, \"name\": \"mqtt-plugin\", "
-                "\"plugin_lib_name\": \"libplugin-mqtt.so\" }]}";
+        (char *) "{\"plugins\": "
+                 "[ \"libplugin-sample-drv.so\", \"libplugin-sample-app.so\", "
+                 "\"libplugin-mqtt.so\" ]}";
 
     neu_json_plugin_req_t *req = NULL;
 
     EXPECT_EQ(0, neu_json_decode_plugin_req(buf, &req));
 
-    EXPECT_EQ(1, req->plugins[0].kind);
-    EXPECT_EQ(1, req->plugins[0].adapter_type);
-    EXPECT_STREQ("sample-drv-plugin", req->plugins[0].name);
-    EXPECT_STREQ("libplugin-sample-drv.so", req->plugins[0].plugin_lib_name);
-
-    EXPECT_EQ(1, req->plugins[1].kind);
-    EXPECT_EQ(5, req->plugins[1].adapter_type);
-    EXPECT_STREQ("sample-app-plugin", req->plugins[1].name);
-    EXPECT_STREQ("libplugin-sample-app.so", req->plugins[1].plugin_lib_name);
-
-    EXPECT_EQ(1, req->plugins[2].kind);
-    EXPECT_EQ(3, req->plugins[2].adapter_type);
-    EXPECT_STREQ("mqtt-plugin", req->plugins[2].name);
-    EXPECT_STREQ("libplugin-mqtt.so", req->plugins[2].plugin_lib_name);
+    EXPECT_STREQ("libplugin-sample-drv.so", req->plugins[0]);
+    EXPECT_STREQ("libplugin-sample-app.so", req->plugins[1]);
+    EXPECT_STREQ("libplugin-mqtt.so", req->plugins[2]);
 
     neu_json_decode_plugin_req_free(req);
 }
@@ -229,14 +211,8 @@ TEST(JsonAdapterTest, AdapterPersistenceEncode)
 
 TEST(JsonPluginTest, PluginPersistenceEncode)
 {
-    char *buf =
-        (char *) "{\"plugins\": [{\"plugin_lib_name\": "
-                 "\"libplugin-sample-drv.so\", \"name\": "
-                 "\"sample-drv-plugin\", \"kind\": 1, \"adapter_type\": 1}, "
-                 "{\"plugin_lib_name\": \"libplugin-sample-app.so\", \"name\": "
-                 "\"sample-app-plugin\", \"kind\": 1, \"adapter_type\": 5}, "
-                 "{\"plugin_lib_name\": \"libplugin-mqtt.so\", \"name\": "
-                 "\"mqtt-plugin\", \"kind\": 1, \"adapter_type\": 3}]}";
+    char *buf = (char *) "{\"plugins\": [\"libplugin-sample-drv.so\", "
+                         "\"libplugin-sample-app.so\", \"libplugin-mqtt.so\"]}";
     char *buf2 = (char *) "{\"plugins\": []}";
 
     char *result  = NULL;
@@ -251,20 +227,10 @@ TEST(JsonPluginTest, PluginPersistenceEncode)
 
     resp.plugins = (neu_json_plugin_resp_plugin_t *) calloc(
         3, sizeof(neu_json_plugin_resp_plugin_t));
-    resp.plugins[0].kind            = 1;
-    resp.plugins[0].adapter_type    = 1;
-    resp.plugins[0].name            = strdup("sample-drv-plugin");
-    resp.plugins[0].plugin_lib_name = strdup("libplugin-sample-drv.so");
 
-    resp.plugins[1].kind            = 1;
-    resp.plugins[1].adapter_type    = 5;
-    resp.plugins[1].name            = strdup("sample-app-plugin");
-    resp.plugins[1].plugin_lib_name = strdup("libplugin-sample-app.so");
-
-    resp.plugins[2].kind            = 1;
-    resp.plugins[2].adapter_type    = 3;
-    resp.plugins[2].name            = strdup("mqtt-plugin");
-    resp.plugins[2].plugin_lib_name = strdup("libplugin-mqtt.so");
+    resp.plugins[0] = strdup("libplugin-sample-drv.so");
+    resp.plugins[1] = strdup("libplugin-sample-app.so");
+    resp.plugins[2] = strdup("libplugin-mqtt.so");
 
     EXPECT_EQ(
         0, neu_json_encode_by_fn(&resp, neu_json_encode_plugin_resp, &result));
@@ -275,12 +241,9 @@ TEST(JsonPluginTest, PluginPersistenceEncode)
     EXPECT_STREQ(buf, result);
     EXPECT_STREQ(buf2, result2);
 
-    free(resp.plugins[0].name);
-    free(resp.plugins[0].plugin_lib_name);
-    free(resp.plugins[1].name);
-    free(resp.plugins[1].plugin_lib_name);
-    free(resp.plugins[2].name);
-    free(resp.plugins[2].plugin_lib_name);
+    free(resp.plugins[0]);
+    free(resp.plugins[1]);
+    free(resp.plugins[2]);
     free(resp.plugins);
 
     free(result);
