@@ -1692,34 +1692,6 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
         break;
     }
 
-    case NEU_REQRESP_LIC_VAL: {
-        neu_reqresp_lic_val_t *lic_val = resp->buf;
-        assert(resp->buf_len == sizeof(*lic_val));
-
-        lic_val_resp_t lic_resp;
-        lic_resp.recver_id = resp->recver_id;
-        lic_resp.req_id    = resp->req_id;
-        lic_resp.lic_fname = lic_val->lic_fname;
-        lic_resp.key_name  = lic_val->key_name;
-        lic_resp.val       = lic_val->val; // ownership transferred
-
-        nng_msg *msg = nng_msg_inplace_from_buf(MSG_DATA_LIC_RESP, &lic_resp,
-                                                sizeof(lic_resp));
-        if (NULL == msg) {
-            log_error("unable to allocate NEU_REQRESP_LIC_VAL message.");
-            neu_dvalue_free(lic_resp.val);
-            break;
-        }
-
-        rv = nng_sendmsg(adapter->sock, msg, 0);
-        if (0 != rv) {
-            neu_dvalue_free(lic_resp.val);
-            nng_msg_free(msg);
-            log_error("fail to send NEU_REQRESP_LIC_VAL message.");
-        }
-        break;
-    }
-
     default:
         break;
     }
