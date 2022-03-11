@@ -95,7 +95,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.so"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.so"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.so"
-#define LICENSE_PLUGIN_LIB_NAME "libplugin-license.so"
 
 #endif
 
@@ -107,7 +106,6 @@ static const char *const manager_url = "inproc://neu_manager";
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
 #define DEFAULT_PERSIST_ADAPTER_NAME "default-persist-adapter"
-#define DEFAULT_LICENSE_ADAPTER_NAME "default-license-adapter"
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 90
@@ -1022,8 +1020,6 @@ static void manager_loop(void *arg)
     nng_mtx_lock(manager->adapters_mtx);
     adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
         &manager->reg_adapters, DEFAULT_PERSIST_ADAPTER_NAME);
-    adapter_reg_entity_t *license_reg_entity = find_reg_adapter_by_name(
-        &manager->reg_adapters, DEFAULT_LICENSE_ADAPTER_NAME);
     nng_mtx_unlock(manager->adapters_mtx);
     nng_pipe persist_pipe = persist_reg_entity->adapter_pipe;
 
