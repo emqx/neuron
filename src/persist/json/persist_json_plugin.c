@@ -45,21 +45,9 @@ int neu_json_decode_plugin_req(char *buf, neu_json_plugin_req_t **result)
     neu_json_plugin_req_plugin_t *p_plugin = req->plugins;
     for (int i = 0; i < req->n_plugin; i++) {
         neu_json_elem_t plugin_elems[] = { {
-                                               .name = "plugin_lib_name",
-                                               .t    = NEU_JSON_STR,
-                                           },
-                                           {
-                                               .name = "name",
-                                               .t    = NEU_JSON_STR,
-                                           },
-                                           {
-                                               .name = "kind",
-                                               .t    = NEU_JSON_INT,
-                                           },
-                                           {
-                                               .name = "adapter_type",
-                                               .t    = NEU_JSON_INT,
-                                           } };
+            .name = NULL,
+            .t    = NEU_JSON_STR,
+        } };
         ret = neu_json_decode_array_by_json(json_obj, "plugins", i,
                                             NEU_JSON_ELEM_SIZE(plugin_elems),
                                             plugin_elems);
@@ -67,10 +55,7 @@ int neu_json_decode_plugin_req(char *buf, neu_json_plugin_req_t **result)
             goto decode_fail;
         }
 
-        p_plugin->plugin_lib_name = plugin_elems[0].v.val_str;
-        p_plugin->name            = plugin_elems[1].v.val_str;
-        p_plugin->kind            = plugin_elems[2].v.val_int;
-        p_plugin->adapter_type    = plugin_elems[3].v.val_int;
+        *p_plugin = plugin_elems[0].v.val_str;
         p_plugin++;
     }
 
@@ -98,8 +83,7 @@ void neu_json_decode_plugin_req_free(neu_json_plugin_req_t *req)
 
     neu_json_plugin_req_plugin_t *p_plugin = req->plugins;
     for (int i = 0; i < req->n_plugin; i++) {
-        free(p_plugin->plugin_lib_name);
-        free(p_plugin->name);
+        free(*p_plugin);
         p_plugin++;
     }
 
@@ -116,30 +100,13 @@ int neu_json_encode_plugin_resp(void *json_object, void *param)
     void *                         plugin_array = neu_json_array();
     neu_json_plugin_resp_plugin_t *p_plugin     = resp->plugins;
     for (int i = 0; i < resp->n_plugin; i++) {
-        neu_json_elem_t plugin_elems[] = {
-            {
-                .name      = "plugin_lib_name",
-                .t         = NEU_JSON_STR,
-                .v.val_str = p_plugin->plugin_lib_name,
-            },
-            {
-                .name      = "name",
-                .t         = NEU_JSON_STR,
-                .v.val_str = p_plugin->name,
-            },
-            {
-                .name      = "kind",
-                .t         = NEU_JSON_INT,
-                .v.val_int = p_plugin->kind,
-            },
-            {
-                .name      = "adapter_type",
-                .t         = NEU_JSON_INT,
-                .v.val_int = p_plugin->adapter_type,
-            }
-        };
-        plugin_array = neu_json_encode_array(plugin_array, plugin_elems,
-                                             NEU_JSON_ELEM_SIZE(plugin_elems));
+        neu_json_elem_t plugin_elems[] = { {
+            .name      = NULL,
+            .t         = NEU_JSON_STR,
+            .v.val_str = *p_plugin,
+        } };
+        plugin_array                   = neu_json_encode_array_value(
+            plugin_array, plugin_elems, NEU_JSON_ELEM_SIZE(plugin_elems));
         p_plugin++;
     }
 

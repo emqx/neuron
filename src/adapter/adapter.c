@@ -213,19 +213,17 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
     }
     VECTOR_FOR_EACH(plugin_infos, iter)
     {
-        neu_persist_plugin_info_t *plugin_info    = iterator_get(&iter);
-        plugin_id_t                plugin_id      = {};
-        neu_cmd_add_plugin_lib_t   add_plugin_cmd = {
-            .plugin_lib_name = plugin_info->plugin_lib_name,
+        char **                  plugin_info    = (char **) iterator_get(&iter);
+        plugin_id_t              plugin_id      = {};
+        neu_cmd_add_plugin_lib_t add_plugin_cmd = {
+            .plugin_lib_name = *plugin_info,
         };
 
         rv = neu_manager_add_plugin_lib(adapter->manager, &add_plugin_cmd,
                                         &plugin_id);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        log_info("%s load plugin %s type:%d, kind:%d name:%s lib:%s",
-                 adapter->name, ok_or_err, plugin_info->adapter_type,
-                 plugin_info->kind, plugin_info->name,
-                 plugin_info->plugin_lib_name);
+        log_info("%s load plugin %s , lib:%s", adapter->name, ok_or_err,
+                 *plugin_info);
         if (0 != rv) {
             break;
         }

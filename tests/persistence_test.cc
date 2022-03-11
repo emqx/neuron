@@ -81,14 +81,11 @@ TEST(PersistencePluginTest, Plugin)
     const char *adapters_fname   = neu_persister_get_adapters_fname(persister);
     const char *plugins_fname    = neu_persister_get_plugins_fname(persister);
 
-    neu_json_plugin_req_plugin_t plugin1 = { (char *) "sample-drv-plugin", 1,
-                                             (char *) "libplugin-sample-drv.so",
-                                             1 };
-    neu_json_plugin_req_plugin_t plugin2 = { (char *) "sample-app-plugin", 5,
-                                             (char *) "libplugin-sample-app.so",
-                                             1 };
-    neu_json_plugin_req_plugin_t plugin3 = { (char *) "mqtt-plugin", 3,
-                                             (char *) "libplugin-mqtt.so", 1 };
+    neu_json_plugin_req_plugin_t plugin1 = { (
+        char *) "libplugin-sample-drv.so" };
+    neu_json_plugin_req_plugin_t plugin2 = { (
+        char *) "libplugin-sample-app.so" };
+    neu_json_plugin_req_plugin_t plugin3 = { (char *) "libplugin-mqtt.so" };
 
     neu_json_plugin_req_t *req =
         (neu_json_plugin_req_t *) malloc(sizeof(neu_json_plugin_req_t));
@@ -112,24 +109,16 @@ TEST(PersistencePluginTest, Plugin)
         neu_json_plugin_req_plugin_t *info =
             (neu_json_plugin_req_plugin_t *) iterator_get(&iter);
 
-        if (strcmp(info->name, "sample-drv-plugin") == 0) {
-            EXPECT_STREQ("libplugin-sample-drv.so", info->plugin_lib_name);
-            EXPECT_EQ(1, info->adapter_type);
-            EXPECT_EQ(1, info->kind);
-        } else if (strcmp(info->name, "sample-app-plugin") == 0) {
-            EXPECT_STREQ("libplugin-sample-app.so", info->plugin_lib_name);
-            EXPECT_EQ(5, info->adapter_type);
-            EXPECT_EQ(1, info->kind);
-        } else if (strcmp(info->name, "mqtt-plugin") == 0) {
-            EXPECT_STREQ("libplugin-mqtt.so", info->plugin_lib_name);
-            EXPECT_EQ(3, info->adapter_type);
-            EXPECT_EQ(1, info->kind);
+        if (strcmp(*info, "libplugin-sample-drv.so") == 0) {
+            EXPECT_STREQ("libplugin-sample-drv.so", *info);
+        } else if (strcmp(*info, "libplugin-sample-app.so") == 0) {
+            EXPECT_STREQ("libplugin-sample-app.so", *info);
+        } else if (strcmp(*info, "libplugin-mqtt.so") == 0) {
+            EXPECT_STREQ("libplugin-mqtt.so", *info);
         } else {
             EXPECT_EQ(1, 2);
         }
-
-        free(info->name);
-        free(info->plugin_lib_name);
+        free(*info);
     }
 
     vector_free(plugins);
