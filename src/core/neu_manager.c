@@ -1505,10 +1505,6 @@ static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
         adapter_type = ADAPTER_TYPE_APP;
         break;
 
-    case NEU_NODE_TYPE_LICENSE:
-        adapter_type = ADAPTER_TYPE_LICENSE;
-        break;
-
     case NEU_NODE_TYPE_FUNCTIONAL:
         adapter_type = ADAPTER_TYPE_FUNCTIONAL;
         break;
