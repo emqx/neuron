@@ -24,7 +24,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "neu_license.h"
 #include "neuron.h"
 
 const neu_plugin_module_t neu_plugin_module;
@@ -317,14 +316,6 @@ get_grp_configs_retry:
     usleep(500000);
     log_info("Restart a node(%d)", dst_node_id);
     neu_plugin_node_ctl(plugin, dst_node_id, NEU_ADAPTER_CTL_START);
-
-    /* example of get license key value */
-    neu_plugin_send_lic_cmd(plugin, plugin_get_event_id(plugin),
-                            NEURON_LIC_FNAME, NEURON_LIC_KEY_LICENSE_TYPE);
-    log_info("Send get license:`%s` key:`%s`", NEURON_LIC_FNAME,
-             NEURON_LIC_KEY_LICENSE_TYPE);
-    usleep(500000);
-
     return NULL;
 }
 
@@ -536,18 +527,6 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         write_resp = (neu_reqresp_write_resp_t *) req->buf;
 
         handle_write_resp_value(write_resp->data_val);
-        break;
-    }
-
-    case NEU_REQRESP_LIC_VAL: {
-        char *                 val     = NULL;
-        neu_reqresp_lic_val_t *lic_val = req->buf;
-        assert(req->buf_len == sizeof(neu_reqresp_lic_val_t));
-        if (NULL != lic_val->val) {
-            neu_dvalue_get_ref_cstr(lic_val->val, &val);
-        }
-        log_info("sample app receive license:`%s` key:`%s`, val:`%s`",
-                 lic_val->lic_fname, lic_val->key_name, val);
         break;
     }
 
