@@ -382,7 +382,6 @@ typedef enum neu_event_type {
     NEU_EVENT_ADD_TAGS,
     NEU_EVENT_UPDATE_TAGS,
     NEU_EVENT_DEL_TAGS,
-    NEU_EVENT_LIC_UPDATED,
 } neu_event_type_e;
 
 typedef struct neu_event_notify {
