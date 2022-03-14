@@ -86,13 +86,11 @@ static const char *const manager_url = "inproc://neu_manager";
 // definition for plugin lib names
 #if defined(__APPLE__)
 
-#define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.dylib"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.dylib"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.dylib"
 
 #else
 
-#define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.so"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.so"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.so"
 
