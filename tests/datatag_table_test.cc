@@ -82,6 +82,7 @@ TEST(DatatageTableTest, DatatagTableAdd)
     EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag1));
     EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag2));
     EXPECT_EQ(0, neu_datatag_tbl_add(datatag_table, datatag3));
+    EXPECT_EQ(3, neu_datatag_tbl_size(datatag_table));
 
     neu_datatag_tbl_destroy(datatag_table);
 }
@@ -101,9 +102,11 @@ TEST(DatatageTableTest, DatatagTableRemove)
     neu_datatag_t *datatag_id_return3 = NULL;
 
     datatag_id1 = neu_datatag_tbl_add(datatag_table, datatag1);
+    EXPECT_EQ(1, neu_datatag_tbl_size(datatag_table));
     EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table, datatag_id1));
     datatag_id_return1 = neu_datatag_tbl_get(datatag_table, datatag_id1);
     EXPECT_EQ(NULL, datatag_id_return1);
+    EXPECT_EQ(0, neu_datatag_tbl_size(datatag_table));
 
     datatag1 = rand_tag(addr_str, "tag1");
 
@@ -161,6 +164,7 @@ TEST(DatatageTableTest, DatatagTableUpdate)
     EXPECT_EQ(datatag_id_return->type, datatag4->type);
     EXPECT_EQ(datatag_id_return->id, datatag4->id);
     EXPECT_EQ(datatag_id_return->addr_str, datatag4->addr_str);
+    EXPECT_EQ(2, neu_datatag_tbl_size(datatag_table));
 
     EXPECT_EQ(0, neu_datatag_tbl_remove(datatag_table, datatag_id2));
     EXPECT_EQ(0, neu_datatag_tbl_update(datatag_table, datatag_id1, datatag3));
