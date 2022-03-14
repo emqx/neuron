@@ -923,24 +923,6 @@ static void adapter_loop(void *arg)
             break;
         }
 
-        case MSG_EVENT_LIC_UPDATED: {
-            neu_event_lic_updated_t *lic_event  = msg_get_buf_ptr(pay_msg);
-            neu_reqresp_update_lic_t lic_update = {};
-            lic_update.lic_fname                = lic_event->lic_fname;
-
-            const neu_plugin_intf_funs_t *intf_funs;
-            neu_request_t                 req;
-
-            intf_funs     = adapter->plugin_module->intf_funs;
-            req.req_id    = adapter_get_req_id(adapter);
-            req.req_type  = NEU_REQRESP_UPDATE_LIC;
-            req.sender_id = 0;
-            req.buf_len   = sizeof(lic_update);
-            req.buf       = &lic_update;
-            intf_funs->request(adapter->plugin, &req);
-            break;
-        }
-
         case MSG_CMD_SUBSCRIBE_NODE: {
             subscribe_node_cmd_t *cmd_ptr;
             cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
@@ -1106,48 +1088,6 @@ static void adapter_loop(void *arg)
                 neu_dvalue_free(write_resp.data_val);
             }
             neu_trans_buf_uninit(trans_buf);
-            break;
-        }
-
-        case MSG_CMD_GET_LIC_VAL: {
-            get_lic_val_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
-
-            const neu_plugin_intf_funs_t *intf_funs;
-            neu_request_t                 req;
-            neu_reqresp_get_lic_val_t     lic_req;
-
-            lic_req.lic_fname = cmd_ptr->lic_fname;
-            lic_req.key_name  = cmd_ptr->key_name;
-
-            intf_funs     = adapter->plugin_module->intf_funs;
-            req.req_id    = cmd_ptr->req_id;
-            req.req_type  = NEU_REQRESP_GET_LIC_VAL;
-            req.sender_id = cmd_ptr->sender_id;
-            req.buf_len   = sizeof(lic_req);
-            req.buf       = (void *) &lic_req;
-            intf_funs->request(adapter->plugin, &req);
-            break;
-        }
-
-        case MSG_DATA_LIC_RESP: {
-            lic_val_resp_t *lic_resp = msg_get_buf_ptr(pay_msg);
-
-            const neu_plugin_intf_funs_t *intf_funs;
-            neu_request_t                 req;
-            neu_reqresp_lic_val_t         lic_val;
-
-            lic_val.lic_fname = lic_resp->lic_fname;
-            lic_val.key_name  = lic_resp->key_name;
-            lic_val.val       = lic_resp->val; // don't take ownership
-
-            intf_funs     = adapter->plugin_module->intf_funs;
-            req.req_id    = lic_resp->req_id;
-            req.req_type  = NEU_REQRESP_LIC_VAL;
-            req.sender_id = 0;
-            req.buf_len   = sizeof(lic_val);
-            req.buf       = (void *) &lic_val;
-            intf_funs->request(adapter->plugin, &req);
-            neu_dvalue_free(lic_val.val);
             break;
         }
 
@@ -1596,19 +1536,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
-    case NEU_REQRESP_GET_LIC_VAL: {
-        neu_reqresp_get_lic_val_t *lic_req = cmd->buf;
-        get_lic_val_cmd_t          lic_cmd = {};
-        lic_cmd.sender_id                  = to_node_id(adapter, adapter->id);
-        lic_cmd.req_id                     = cmd->req_id;
-        lic_cmd.lic_fname                  = lic_req->lic_fname;
-        lic_cmd.key_name                   = lic_req->key_name;
-
-        ADAPTER_SEND_BUF(adapter, rv, MSG_CMD_GET_LIC_VAL, &lic_cmd,
-                         sizeof(lic_cmd));
-        break;
-    }
-
     default:
         rv = -1;
         break;
@@ -1730,34 +1657,6 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
         break;
     }
 
-    case NEU_REQRESP_LIC_VAL: {
-        neu_reqresp_lic_val_t *lic_val = resp->buf;
-        assert(resp->buf_len == sizeof(*lic_val));
-
-        lic_val_resp_t lic_resp;
-        lic_resp.recver_id = resp->recver_id;
-        lic_resp.req_id    = resp->req_id;
-        lic_resp.lic_fname = lic_val->lic_fname;
-        lic_resp.key_name  = lic_val->key_name;
-        lic_resp.val       = lic_val->val; // ownership transferred
-
-        nng_msg *msg = nng_msg_inplace_from_buf(MSG_DATA_LIC_RESP, &lic_resp,
-                                                sizeof(lic_resp));
-        if (NULL == msg) {
-            log_error("unable to allocate NEU_REQRESP_LIC_VAL message.");
-            neu_dvalue_free(lic_resp.val);
-            break;
-        }
-
-        rv = nng_sendmsg(adapter->sock, msg, 0);
-        if (0 != rv) {
-            neu_dvalue_free(lic_resp.val);
-            nng_msg_free(msg);
-            log_error("fail to send NEU_REQRESP_LIC_VAL message.");
-        }
-        break;
-    }
-
     default:
         break;
     }
@@ -1790,12 +1689,6 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 
     case NEU_EVENT_DEL_TAGS: {
         ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_ADD_TAGS, event->buf,
-                         event->buf_len);
-        break;
-    }
-
-    case NEU_EVENT_LIC_UPDATED: {
-        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_LIC_UPDATED, event->buf,
                          event->buf_len);
         break;
     }

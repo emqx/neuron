@@ -301,18 +301,6 @@ void neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
     PLUGIN_SEND_CMD(plugin, NEU_REQRESP_WRITE_DATA, write_req, event_id)
 }
 
-void neu_plugin_send_lic_cmd(neu_plugin_t *plugin, uint32_t event_id,
-                             const char *license_fname, const char *key)
-{
-
-    neu_reqresp_get_lic_val_t lic_req = {
-        .lic_fname = license_fname,
-        .key_name  = key,
-    };
-
-    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_GET_LIC_VAL, lic_req, event_id)
-}
-
 static inline int plugin_notify_tags_event(neu_plugin_t *   plugin,
                                            uint32_t         event_id,
                                            neu_event_type_e type,
@@ -361,27 +349,6 @@ int neu_plugin_notify_event_update_tags(neu_plugin_t *plugin, uint32_t event_id,
 {
     return plugin_notify_tags_event(plugin, event_id, NEU_EVENT_UPDATE_TAGS,
                                     node_id, grp_config_name);
-}
-
-int neu_plugin_notify_event_update_lic(neu_plugin_t *plugin, uint32_t event_id,
-                                       neu_node_id_t node_id,
-                                       const char *  lic_fname)
-{
-    neu_event_lic_updated_t lic_event = {
-        .node_id   = node_id,
-        .lic_fname = lic_fname,
-    };
-
-    neu_event_notify_t event = {
-        .event_id = event_id,
-        .type     = NEU_EVENT_LIC_UPDATED,
-        .buf      = &lic_event,
-        .buf_len  = sizeof(lic_event),
-    };
-
-    neu_plugin_common_t *plugin_common = neu_plugin_to_plugin_common(plugin);
-    return plugin_common->adapter_callbacks->event_notify(
-        plugin_common->adapter, &event);
 }
 
 void neu_plugin_response_trans_data(neu_plugin_t *       plugin,

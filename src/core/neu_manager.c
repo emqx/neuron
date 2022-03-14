@@ -95,7 +95,6 @@ static const char *const manager_url = "inproc://neu_manager";
 #define WEBSERVER_PLUGIN_LIB_NAME "libplugin-webserver-proxy.so"
 #define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.so"
 #define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.so"
-#define LICENSE_PLUGIN_LIB_NAME "libplugin-license.so"
 
 #endif
 
@@ -107,7 +106,6 @@ static const char *const manager_url = "inproc://neu_manager";
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
 #define DEFAULT_PERSIST_ADAPTER_NAME "default-persist-adapter"
-#define DEFAULT_LICENSE_ADAPTER_NAME "default-license-adapter"
 #define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 90
@@ -1022,8 +1020,6 @@ static void manager_loop(void *arg)
     nng_mtx_lock(manager->adapters_mtx);
     adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
         &manager->reg_adapters, DEFAULT_PERSIST_ADAPTER_NAME);
-    adapter_reg_entity_t *license_reg_entity = find_reg_adapter_by_name(
-        &manager->reg_adapters, DEFAULT_LICENSE_ADAPTER_NAME);
     nng_mtx_unlock(manager->adapters_mtx);
     nng_pipe persist_pipe = persist_reg_entity->adapter_pipe;
 
@@ -1281,25 +1277,6 @@ static void manager_loop(void *arg)
             break;
         }
 
-        case MSG_EVENT_LIC_UPDATED: {
-            neu_event_lic_updated_t *lic_event = msg_get_buf_ptr(pay_msg);
-
-            nng_mtx_lock(manager->adapters_mtx);
-            adapter_reg_entity_t *reg_entity = find_reg_adapter_by_id(
-                &manager->reg_adapters, lic_event->node_id);
-            nng_mtx_unlock(manager->adapters_mtx);
-
-            nng_pipe msg_pipe = reg_entity->adapter_pipe;
-            rv                = manager_send_msg_to_pipe(manager, msg_pipe,
-                                          MSG_EVENT_LIC_UPDATED, lic_event,
-                                          sizeof(*lic_event));
-            if (0 == rv) {
-                log_info("Forward license update event to pipe: %d", msg_pipe);
-            }
-
-            break;
-        }
-
         case MSG_CMD_SUBSCRIBE_NODE: {
             subscribe_node_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
             rv = neu_manager_subscribe_node(manager, cmd_ptr);
@@ -1380,41 +1357,6 @@ static void manager_loop(void *arg)
 
             neu_trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
             rv = dispatch_databuf_to_adapters(manager, neu_trans_data);
-            break;
-        }
-
-        case MSG_CMD_GET_LIC_VAL: {
-            if (NULL == license_reg_entity) {
-                log_warn("Drop license command due to no license adapter");
-                break;
-            }
-            nng_pipe   lic_pipe = license_reg_entity->adapter_pipe;
-            msg_type_e msg_type = msg_get_type(pay_msg);
-            void *     buf      = msg_get_buf_ptr(pay_msg);
-            size_t     size     = msg_get_buf_len(pay_msg);
-            rv = manager_send_msg_to_pipe(manager, lic_pipe, msg_type, buf,
-                                          size);
-            if (0 == rv) {
-                log_info("Forward license command to pipe: %d", lic_pipe);
-            }
-            break;
-        }
-
-        case MSG_DATA_LIC_RESP: {
-            lic_val_resp_t *lic_resp = msg_get_buf_ptr(pay_msg);
-
-            nng_mtx_lock(manager->adapters_mtx);
-            adapter_reg_entity_t *reg_entity = find_reg_adapter_by_id(
-                &manager->reg_adapters, lic_resp->recver_id);
-            nng_mtx_unlock(manager->adapters_mtx);
-
-            nng_pipe msg_pipe = reg_entity->adapter_pipe;
-            rv = manager_send_msg_to_pipe(manager, msg_pipe, MSG_DATA_LIC_RESP,
-                                          lic_resp, sizeof(*lic_resp));
-            if (0 == rv) {
-                log_info("Forward license val resp to pipe: %d", msg_pipe);
-            }
-
             break;
         }
 
@@ -1561,10 +1503,6 @@ static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
 
     case NEU_NODE_TYPE_APP:
         adapter_type = ADAPTER_TYPE_APP;
-        break;
-
-    case NEU_NODE_TYPE_LICENSE:
-        adapter_type = ADAPTER_TYPE_LICENSE;
         break;
 
     case NEU_NODE_TYPE_FUNCTIONAL:

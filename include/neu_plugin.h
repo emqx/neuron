@@ -114,8 +114,6 @@ void          neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
                                         neu_node_id_t        node_id,
                                         neu_taggrp_config_t *grp_configs,
                                         neu_data_val_t *     data);
-void          neu_plugin_send_lic_cmd(neu_plugin_t *plugin, uint32_t event_id,
-                                      const char *license_fname, const char *key);
 void          neu_plugin_response_trans_data(neu_plugin_t *       plugin,
                                              neu_taggrp_config_t *grp_config,
                                              neu_data_val_t *data, uint32_t event_id);
@@ -134,9 +132,6 @@ int neu_plugin_notify_event_del_tags(neu_plugin_t *plugin, uint32_t event_id,
 int neu_plugin_notify_event_update_tags(neu_plugin_t *plugin, uint32_t event_id,
                                         neu_node_id_t node_id,
                                         const char *  grp_config_name);
-int neu_plugin_notify_event_update_lic(neu_plugin_t *plugin, uint32_t event_id,
-                                       neu_node_id_t node_id,
-                                       const char *  lic_fname);
 
 intptr_t neu_system_del_plugin(neu_plugin_t *plugin, plugin_id_t plugin_id);
 intptr_t neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,

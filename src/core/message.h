@@ -39,7 +39,6 @@ typedef enum msg_type {
     MSG_CMD_SUBSCRIBE_NODE,
     MSG_CMD_UNSUBSCRIBE_NODE,
     MSG_CMD_GROUP_CONFIG_CHANGED,
-    MSG_CMD_GET_LIC_VAL,
     MSG_CMD_PERSISTENCE_LOAD,
     MSG_CMD_EXIT_LOOP,
     MSG_CMD_RESP_PONG, // response pong for ping
@@ -76,14 +75,12 @@ typedef enum msg_type {
     MSG_EVENT_ADD_TAGS,
     MSG_EVENT_UPDATE_TAGS,
     MSG_EVENT_DEL_TAGS,
-    MSG_EVENT_LIC_UPDATED,
     MSG_TYPE_EVENT_END,
 
     MSG_TYPE_DATA_START        = 0x3000,
     MSG_DATA_NEURON_TRANS_DATA = MSG_TYPE_DATA_START,
     MSG_DATA_READ_RESP,
     MSG_DATA_WRITE_RESP,
-    MSG_DATA_LIC_RESP,
     MSG_TYPE_DATA_END,
 
     // User customer message types
@@ -156,14 +153,6 @@ typedef struct grp_config_changed_cmd {
     neu_node_id_t        dst_node_id;
 } grp_config_changed_cmd_t;
 
-/* MSG_CMD_GET_LIC_VAL */
-typedef struct {
-    adapter_id_t sender_id;
-    uint32_t     req_id;
-    const char * lic_fname; // don't take ownership
-    const char * key_name;  // don't take ownership
-} get_lic_val_cmd_t;
-
 /* MSG_EVENT_GROUP_CONFIG_CHANGED */
 typedef struct grp_config_changed_event {
     neu_taggrp_config_t *grp_config;
@@ -194,15 +183,6 @@ typedef struct write_data_resp {
     adapter_id_t         recver_id;
     uint32_t             req_id;
 } write_data_resp_t;
-
-/* MSG_DATA_LIC_RESP */
-typedef struct {
-    adapter_id_t    recver_id;
-    uint32_t        req_id;
-    const char *    lic_fname; // don't take ownership
-    const char *    key_name;  // don't take ownership
-    neu_data_val_t *val;
-} lic_val_resp_t;
 
 typedef struct message message_t;
 

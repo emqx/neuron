@@ -27,7 +27,6 @@ extern "C" {
 #include "neu_adapter.h"
 #include "neu_base64.h"
 #include "neu_file.h"
-#include "neu_license.h"
 #include "neu_list.h"
 #include "neu_log.h"
 #include "neu_panic.h"
