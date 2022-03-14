@@ -31,6 +31,7 @@ typedef struct neu_datatag_table neu_datatag_table_t;
 
 neu_datatag_table_t *neu_datatag_tbl_create(void);
 void                 neu_datatag_tbl_destroy(neu_datatag_table_t *);
+size_t               neu_datatag_tbl_size(neu_datatag_table_t *);
 neu_datatag_t *      neu_datatag_tbl_get(neu_datatag_table_t *, datatag_id_t);
 
 // We take ownership of the datatag, this implies that the datatag and the

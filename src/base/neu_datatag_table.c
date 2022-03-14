@@ -60,6 +60,11 @@ void neu_datatag_tbl_destroy(neu_datatag_table_t *tag_tbl)
     return;
 }
 
+size_t neu_datatag_tbl_size(neu_datatag_table_t *tbl)
+{
+    return tbl->datatag_table.id_count;
+}
+
 neu_datatag_t *neu_datatag_tbl_get(neu_datatag_table_t *tag_tbl,
                                    datatag_id_t         tag_id)
 {
