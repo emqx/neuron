@@ -1775,7 +1775,13 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->plugin_module = plugin_module;
     plugin = plugin_module->intf_funs->open(adapter, &callback_funs);
     if (plugin == NULL) {
-        neu_panic("Can't to open plugin(%s)", plugin_module->module_name);
+        log_error("Can't to open plugin(%s)", plugin_module->module_name);
+        free(adapter->name);
+        nng_mtx_free(adapter->mtx);
+        nng_mtx_free(adapter->sub_grp_mtx);
+        vector_uninit(&adapter->sub_grp_configs);
+        free(adapter);
+        return NULL;
     }
 
     if (!neu_plugin_common_check(plugin)) {
