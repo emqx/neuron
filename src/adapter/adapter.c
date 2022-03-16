@@ -289,9 +289,9 @@ static int persister_singleton_load_datatags(neu_adapter_t *      adapter,
     vector_t *ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
     VECTOR_FOR_EACH(datatag_infos, iter)
     {
-        neu_persist_datatag_info_t *p = iterator_get(&iter);
-        neu_datatag_t *             tag =
-            neu_datatag_alloc(p->attribute, p->type, p->address, p->name);
+        neu_persist_datatag_info_t *p   = iterator_get(&iter);
+        neu_datatag_t *             tag = neu_datatag_alloc_with_id(
+            p->attribute, p->type, p->address, p->name, p->id);
         if (NULL == tag) {
             rv = NEU_ERR_ENOMEM;
             break;

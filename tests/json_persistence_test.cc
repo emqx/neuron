@@ -65,10 +65,11 @@ TEST(JsonPlugin, PluginPersistenceDecode)
 TEST(JsonDatatags, DatatagPersistenceDecode)
 {
     char *buf =
-        (char *) "{\"tags\": [{\"attribute\": 1, \"type\": 3, "
+        (char *) "{\"tags\": [{\"id\": 1, \"attribute\": 1, \"type\": 3, "
                  "\"address\": \"1!400001\", \"name\": \"modbus1\"}, "
-                 "{\"attribute\": 1, \"type\": 4, \"address\": \"1!400002\", "
-                 "\"name\": \"modbus2\"}, {\"attribute\": 1, "
+                 "{\"id\": 2, \"attribute\": 1, \"type\": 4, \"address\": "
+                 "\"1!400002\", "
+                 "\"name\": \"modbus2\"}, {\"id\": 3, \"attribute\": 1, "
                  "\"type\": 4, \"address\": \"1!400003\", \"name\": "
                  "\"modbus3\"}]}";
 
@@ -76,16 +77,19 @@ TEST(JsonDatatags, DatatagPersistenceDecode)
 
     EXPECT_EQ(0, neu_json_decode_datatag_req(buf, &req));
 
+    EXPECT_EQ(1, req->tags[0].id);
     EXPECT_EQ(1, req->tags[0].attribute);
     EXPECT_EQ(3, req->tags[0].type);
     EXPECT_STREQ("1!400001", req->tags[0].address);
     EXPECT_STREQ("modbus1", req->tags[0].name);
 
+    EXPECT_EQ(2, req->tags[1].id);
     EXPECT_EQ(1, req->tags[1].attribute);
     EXPECT_EQ(4, req->tags[1].type);
     EXPECT_STREQ("1!400002", req->tags[1].address);
     EXPECT_STREQ("modbus2", req->tags[1].name);
 
+    EXPECT_EQ(3, req->tags[2].id);
     EXPECT_EQ(1, req->tags[2].attribute);
     EXPECT_EQ(4, req->tags[2].type);
     EXPECT_STREQ("1!400003", req->tags[2].address);
@@ -321,10 +325,12 @@ TEST(JsonDatatags, DatatagPersistenceEncode)
 {
     char *buf =
         (char *) "{\"tags\": [{\"type\": 3, \"name\": \"modbus1\", "
-                 "\"attribute\": 1, \"address\": \"1!400001\"}, {\"type\": 4, "
+                 "\"attribute\": 1, \"address\": \"1!400001\", \"id\": 1}, {"
+                 "\"type\": 4, "
                  "\"name\": \"modbus2\", \"attribute\": 1, \"address\": "
-                 "\"1!400002\"}, {\"type\": 4, \"name\": \"modbus3\", "
-                 "\"attribute\": 1, \"address\": \"1!400003\"}]}";
+                 "\"1!400002\", \"id\": 2}, {\"type\": 4, \"name\": "
+                 "\"modbus3\", "
+                 "\"attribute\": 1, \"address\": \"1!400003\", \"id\": 3}]}";
     char *buf2 = (char *) "{\"tags\": []}";
 
     char *result  = NULL;
@@ -343,16 +349,19 @@ TEST(JsonDatatags, DatatagPersistenceEncode)
     resp.tags[0].type      = 3;
     resp.tags[0].address   = strdup("1!400001");
     resp.tags[0].name      = strdup("modbus1");
+    resp.tags[0].id        = 1;
 
     resp.tags[1].attribute = 1;
     resp.tags[1].type      = 4;
     resp.tags[1].address   = strdup("1!400002");
     resp.tags[1].name      = strdup("modbus2");
+    resp.tags[1].id        = 2;
 
     resp.tags[2].attribute = 1;
     resp.tags[2].type      = 4;
     resp.tags[2].address   = strdup("1!400003");
     resp.tags[2].name      = strdup("modbus3");
+    resp.tags[2].id        = 3;
 
     EXPECT_EQ(
         0, neu_json_encode_by_fn(&resp, neu_json_encode_datatag_resp, &result));

@@ -32,6 +32,7 @@ extern "C" {
 #endif
 
 typedef struct {
+    int64_t id;
     char *  address;
     char *  name;
     int64_t type;
@@ -47,6 +48,7 @@ int  neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result);
 void neu_json_decode_datatag_req_free(neu_json_datatag_req_t *req);
 
 typedef struct {
+    int64_t id;
     char *  address;
     char *  name;
     int64_t type;

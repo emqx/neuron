@@ -121,8 +121,21 @@ datatag_id_t neu_datatag_tbl_add(neu_datatag_table_t *tag_tbl,
     datatag_id_t id = 0;
 
     pthread_mutex_lock(&tag_tbl->mtx);
-    if (NULL == neu_hash_table_get(&tag_tbl->tag_name_table, datatag->name) &&
-        neu_id_alloc(&tag_tbl->datatag_table, &datatag->id, datatag) == 0) {
+
+    if (NULL == neu_hash_table_get(&tag_tbl->tag_name_table, datatag->name)) {
+        if (datatag->id > 0) {
+            if (neu_id_set(&tag_tbl->datatag_table, datatag->id, datatag) !=
+                0) {
+                log_error("Failed to set tag_id");
+                pthread_mutex_unlock(&tag_tbl->mtx);
+                return id;
+            }
+        } else if (neu_id_alloc(&tag_tbl->datatag_table, &datatag->id,
+                                datatag) != 0) {
+            log_error("Failed to alloc tag_id");
+            pthread_mutex_unlock(&tag_tbl->mtx);
+            return id;
+        }
         id = datatag->id;
         neu_hash_table_set(&tag_tbl->tag_name_table, datatag->name, datatag);
     }

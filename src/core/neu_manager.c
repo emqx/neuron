@@ -1839,6 +1839,7 @@ int neu_manager_get_persist_datatag_infos(neu_manager_t *manager,
             .attribute = tag->attribute,
             .name      = strdup(tag->name),
             .address   = strdup(tag->addr_str),
+            .id        = tag->id,
 
         };
         if (0 != vector_push_back(datatag_infos, &datatag_info)) {
