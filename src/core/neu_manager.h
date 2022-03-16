@@ -23,8 +23,6 @@
 #include "adapter/adapter_info.h"
 #include "neu_adapter.h"
 
-#define DEFAULT_ADAPTER_REG_COUNT 8
-
 typedef struct neu_manager            neu_manager_t;
 typedef struct subscribe_driver_cmd   subscribe_node_cmd_t;
 typedef struct unsubscribe_driver_cmd unsubscribe_node_cmd_t;
