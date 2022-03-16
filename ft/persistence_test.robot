@@ -15,6 +15,11 @@ ${mqtt-1}           mqtt-1
 ${tag1}             {"name": "tag1", "address": "1!400001", "attribute": 1, "type": 4}
 ${tag2}             {"name": "tag2", "address": "1!00001", "attribute": 3, "type": 14}
 ${tag3}             {"name": "tag3", "address": "2!400003", "attribute": 1, "type": 5}
+${tag4}             {"name": "tag4", "address": "2!400005", "attribute": 1, "type": 4}
+${tag5}             {"name": "tag5", "address": "2!400006", "attribute": 1, "type": 4}
+${tag6}             {"name": "tag6", "address": "2!400007", "attribute": 1, "type": 4}
+${tag7}             {"name": "tag7", "address": "2!400008", "attribute": 1, "type": 4}
+${tag8}             {"name": "tag8", "address": "2!400009", "attribute": 1, "type": 4}
 
 *** Test Cases ***
 Get the newly added adapters after stopping and restarting Neuron, it should return success
@@ -214,6 +219,48 @@ Get the updated group_configs after stopping and restarting Neuron, it should re
     Should Be Equal As Integers    ${ret}                0
     ${ret} =                       Group Config Check    ${res}[group_configs]    ${test_gconfig2}    1500
     Should Be Equal As Integers    ${ret}                0
+
+    [Teardown]    Neuron Stop Running    ${process}
+
+Get the newly added tag_id duplicated with the tag_id in the loaded persistence file, it should return a failure
+    Skip If Not Http API
+
+    ${process} =    Neuron Start Running
+
+    ${node_id} =                       Get Node ID    ${NODE_DRIVER}    modbus-tcp-1
+    Should Not Be Equal As Integers    ${node_id}     0
+
+    ${res} =                 Add Tags    ${node_id}    ${test_gconfig1}    ${tag4},${tag5},${tag6}
+    Check Response Status    ${res}      200
+
+    ${res} =                       Get Tags      ${node_id}    ${test_gconfig1}
+    Check Response Status          ${res}        200
+    ${tag4_id} =                   Get Tag ID    ${node_id}    ${test_gconfig1}    tag4
+    Should Be Equal As Integers    ${tag4_id}    1
+    ${tag5_id} =                   Get Tag ID    ${node_id}    ${test_gconfig1}    tag5
+    Should Be Equal As Integers    ${tag5_id}    2
+    ${tag6_id} =                   Get Tag ID    ${node_id}    ${test_gconfig1}    tag6
+    Should Be Equal As Integers    ${tag6_id}    3
+
+    ${res} =    Del Tags    ${node_id}    ${test_gconfig1}    ${tag4_id}
+
+    Neuron Stop Running    ${process}
+    ${process} =           Neuron Start Running
+
+    ${res} =                 Add Tags    ${node_id}    ${test_gconfig1}    ${tag7},${tag8}
+    Check Response Status    ${res}      200
+
+    ${res} =                       Get Tags      ${node_id}    ${test_gconfig1}
+    Check Response Status          ${res}        200
+    ${tag5_id} =                   Get Tag ID    ${node_id}    ${test_gconfig1}    tag5
+    Should Be Equal As Integers    ${tag5_id}    2
+    ${tag6_id} =                   Get Tag ID    ${node_id}    ${test_gconfig1}    tag6
+    Should Be Equal As Integers    ${tag6_id}    3
+    ${tag7_id} =                   Get Tag ID    ${node_id}    ${test_gconfig1}    tag7
+    Should Be Equal As Integers    ${tag7_id}    1
+    ${tag8_id} =                   Get Tag ID    ${node_id}    ${test_gconfig1}    tag8
+    Should Be Equal As Integers    ${tag8_id}    4
+
 
     [Teardown]    Neuron Stop Running    ${process}
 

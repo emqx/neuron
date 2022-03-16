@@ -141,12 +141,12 @@ TEST(PersistenceDatatagTest, Datatag)
     const char *grp_config_name  = "test-group";
     const char *plugins_fname    = neu_persister_get_plugins_fname(persister);
 
-    neu_json_datatag_req_tag_t tag1 = { (char *) "1!400001", (char *) "modbus1",
-                                        3, 1 };
-    neu_json_datatag_req_tag_t tag2 = { (char *) "1!400002", (char *) "modbus2",
-                                        4, 1 };
-    neu_json_datatag_req_tag_t tag3 = { (char *) "1!400003", (char *) "modbus3",
-                                        5, 1 };
+    neu_json_datatag_req_tag_t tag1 = { 1, (char *) "1!400001",
+                                        (char *) "modbus1", 3, 1 };
+    neu_json_datatag_req_tag_t tag2 = { 2, (char *) "1!400002",
+                                        (char *) "modbus2", 4, 1 };
+    neu_json_datatag_req_tag_t tag3 = { 3, (char *) "1!400003",
+                                        (char *) "modbus3", 5, 1 };
 
     neu_json_datatag_req_t *req =
         (neu_json_datatag_req_t *) malloc(sizeof(neu_json_datatag_req_t));
@@ -178,14 +178,17 @@ TEST(PersistenceDatatagTest, Datatag)
             EXPECT_STREQ("1!400001", info->address);
             EXPECT_EQ(3, info->type);
             EXPECT_EQ(1, info->attribute);
+            EXPECT_EQ(1, info->id);
         } else if (strcmp(info->name, "modbus2") == 0) {
             EXPECT_STREQ("1!400002", info->address);
             EXPECT_EQ(4, info->type);
             EXPECT_EQ(1, info->attribute);
+            EXPECT_EQ(2, info->id);
         } else if (strcmp(info->name, "modbus3") == 0) {
             EXPECT_STREQ("1!400003", info->address);
             EXPECT_EQ(5, info->type);
             EXPECT_EQ(1, info->attribute);
+            EXPECT_EQ(3, info->id);
         } else {
             EXPECT_EQ(1, 2);
         }

@@ -62,6 +62,39 @@ error:
     return NULL;
 }
 
+neu_datatag_t *neu_datatag_alloc_with_id(neu_attribute_e attr, neu_dtype_e type,
+                                         neu_addr_str_t addr, const char *name,
+                                         neu_datatag_id_t id)
+{
+    neu_datatag_t *tag = malloc(sizeof(neu_datatag_t));
+
+    if (NULL == tag) {
+        return NULL;
+    }
+
+    tag->id        = id;
+    tag->attribute = attr;
+    tag->type      = type;
+
+    tag->addr_str = strdup(addr);
+    if (NULL == tag->addr_str) {
+        goto error;
+    }
+
+    tag->name = strdup(name);
+    if (NULL == tag->name) {
+        goto error;
+    }
+
+    return tag;
+
+error:
+    free(tag->addr_str);
+    free(tag->name);
+    free(tag);
+    return NULL;
+}
+
 void neu_datatag_free(neu_datatag_t *datatag)
 {
     if (datatag) {
