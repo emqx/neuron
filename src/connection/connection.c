@@ -155,7 +155,7 @@ int neu_conn_get_fd(neu_conn_t *conn)
 int neu_conn_tcp_server_accept(neu_conn_t *conn)
 {
     struct sockaddr_in client     = { 0 };
-    socklen_t          client_len = 0;
+    socklen_t          client_len = sizeof(struct sockaddr_in);
     int                fd         = 0;
 
     pthread_mutex_lock(&conn->mtx);
@@ -197,9 +197,10 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
     conn->connected(conn->data, fd);
     conn->callback_trigger = true;
 
-    log_info("%s:%d accpet new client: %s:%d", conn->param.params.tcp_server.ip,
+    log_info("%s:%d accpet new client: %s:%d, fd: %d",
+             conn->param.params.tcp_server.ip,
              conn->param.params.tcp_server.port, inet_ntoa(client.sin_addr),
-             ntohs(client.sin_port));
+             ntohs(client.sin_port), fd);
 
     pthread_mutex_unlock(&conn->mtx);
 
@@ -224,7 +225,7 @@ int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd)
 ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len)
 {
-    (void) conn;
+    conn_tcp_server_listen(conn);
     ssize_t ret = send(fd, buf, len, MSG_NOSIGNAL);
     if (ret != len) {
         log_error("tcp server fd: %d, send buf len: %d, ret: %d, "
@@ -261,8 +262,6 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     int     fd  = 0;
 
     pthread_mutex_lock(&conn->mtx);
-
-    conn_tcp_server_listen(conn);
 
     if (conn->is_connected) {
         switch (conn->param.type) {
