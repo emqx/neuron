@@ -603,6 +603,7 @@ static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
         if (conn->tcp_server.clients[i].fd == 0) {
             conn->tcp_server.clients[i].fd     = fd;
             conn->tcp_server.clients[i].client = client;
+            conn->tcp_server.n_client += 1;
             return;
         }
     }
@@ -617,6 +618,7 @@ static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
         if (conn->tcp_server.clients[i].fd == fd) {
             close(fd);
             conn->tcp_server.clients[i].fd = 0;
+            conn->tcp_server.n_client -= 1;
             return;
         }
     }
