@@ -118,28 +118,28 @@ int neu_datatag_tbl_update(neu_datatag_table_t *tag_tbl, datatag_id_t tag_id,
 datatag_id_t neu_datatag_tbl_add(neu_datatag_table_t *tag_tbl,
                                  neu_datatag_t *      datatag)
 {
-    datatag_id_t id = 0;
+    int          ret = -1;
+    datatag_id_t id  = 0;
 
     pthread_mutex_lock(&tag_tbl->mtx);
 
     if (NULL == neu_hash_table_get(&tag_tbl->tag_name_table, datatag->name)) {
         if (datatag->id > 0) {
-            if (neu_id_set(&tag_tbl->datatag_table, datatag->id, datatag) !=
-                0) {
-                log_error("Failed to set tag_id");
-                pthread_mutex_unlock(&tag_tbl->mtx);
-                return id;
-            }
-        } else if (neu_id_alloc(&tag_tbl->datatag_table, &datatag->id,
-                                datatag) != 0) {
-            log_error("Failed to alloc tag_id");
-            pthread_mutex_unlock(&tag_tbl->mtx);
-            return id;
+            ret = neu_id_set(&tag_tbl->datatag_table, datatag->id, datatag);
+        } else {
+            ret = neu_id_alloc(&tag_tbl->datatag_table, &datatag->id, datatag);
         }
-        id = datatag->id;
-        neu_hash_table_set(&tag_tbl->tag_name_table, datatag->name, datatag);
     }
+
+    if (ret != 0) {
+        pthread_mutex_unlock(&tag_tbl->mtx);
+        return 0;
+    }
+
+    neu_hash_table_set(&tag_tbl->tag_name_table, datatag->name, datatag);
+    id = datatag->id;
     pthread_mutex_unlock(&tag_tbl->mtx);
+
     return id;
 }
 
