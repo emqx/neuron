@@ -83,28 +83,12 @@ struct neu_manager {
 
 static const char *const manager_url = "inproc://neu_manager";
 
-// definition for plugin lib names
-#if defined(__APPLE__)
-
-#define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.dylib"
-#define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.dylib"
-
-#else
-
-#define MQTT_PLUGIN_LIB_NAME "libplugin-mqtt.so"
-#define MODBUS_TCP_PLUGIN_LIB_NAME "libplugin-modbus-tcp.so"
-
-#endif
-
 // definition for plugin names
 #define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
-#define MQTT_PLUGIN_NAME "mqtt-plugin"
-#define MODBUS_TCP_PLUGIN_NAME "modbus-tcp-plugin"
 
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
 #define DEFAULT_PERSIST_ADAPTER_NAME "default-persist-adapter"
-#define WEBSERVER_ADAPTER_NAME "webserver-adapter"
 
 #define ADAPTER_NAME_MAX_LEN 90
 #define GRP_CONFIG_NAME_MAX_LEN 90
@@ -118,7 +102,7 @@ typedef struct adapter_reg_cmd {
     plugin_id_t plugin_id;
 } adapter_reg_cmd_t;
 
-static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
+static const adapter_reg_cmd_t static_adapter_reg_cmds[] = {
     {
         .adapter_type = ADAPTER_TYPE_WEBSERVER,
         .adapter_name = DEFAULT_DASHBOARD_ADAPTER_NAME,
@@ -132,30 +116,11 @@ static const adapter_reg_cmd_t default_adapter_reg_cmds[] = {
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
 };
-#define DEFAULT_ADAPTER_ADD_INFO_SIZE \
-    (sizeof(default_adapter_reg_cmds) / sizeof(default_adapter_reg_cmds[0]))
-
-static const char *default_plugin_lib_names[] = {
-    MQTT_PLUGIN_LIB_NAME,
-    MODBUS_TCP_PLUGIN_LIB_NAME,
-};
-#define DEFAULT_PLUGIN_COUNT \
-    (sizeof(default_plugin_lib_names) / sizeof(default_plugin_lib_names[0]))
+#define STATIC_ADAPTER_ADD_INFO_SIZE \
+    (sizeof(static_adapter_reg_cmds) / sizeof(static_adapter_reg_cmds[0]))
 
 // clang-format off
-static const plugin_reg_param_t default_plugin_infos[] = {
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_MQTT,
-        .plugin_name     = MQTT_PLUGIN_NAME,
-        .plugin_lib_name = MQTT_PLUGIN_LIB_NAME
-    },
-    {
-        .plugin_kind     = PLUGIN_KIND_SYSTEM,
-        .adapter_type    = ADAPTER_TYPE_DRIVER,
-        .plugin_name     = MODBUS_TCP_PLUGIN_NAME,
-        .plugin_lib_name = MODBUS_TCP_PLUGIN_LIB_NAME
-    },
+static const plugin_reg_param_t static_plugin_infos[] = {
     {
         .plugin_kind     = PLUGIN_KIND_STATIC,
         .adapter_type    = ADAPTER_TYPE_WEBSERVER,
@@ -170,8 +135,8 @@ static const plugin_reg_param_t default_plugin_infos[] = {
     },
 };
 // clang-format on
-#define DEFAULT_PLUGIN_INFO_SIZE \
-    (sizeof(default_plugin_infos) / sizeof(default_plugin_infos[0]))
+#define STATIC_PLUGIN_INFO_SIZE \
+    (sizeof(static_plugin_infos) / sizeof(static_plugin_infos[0]))
 
 typedef struct config_add_cmd {
     char *               config_name;
@@ -264,21 +229,21 @@ static adapter_reg_entity_t *find_reg_adapter_by_pipe(vector_t *adapters,
     return vector_find_item(adapters, &p, match_pipe_reg_adapter);
 }
 
-static bool is_default_adapter(const char *adapter_name)
+static bool is_static_adapter(const char *adapter_name)
 {
-    for (size_t i = 0; i < DEFAULT_ADAPTER_ADD_INFO_SIZE; ++i) {
+    for (size_t i = 0; i < STATIC_ADAPTER_ADD_INFO_SIZE; ++i) {
         if (0 ==
-            strcmp(default_adapter_reg_cmds[i].adapter_name, adapter_name)) {
+            strcmp(static_adapter_reg_cmds[i].adapter_name, adapter_name)) {
             return true;
         }
     }
     return false;
 }
 
-static bool is_default_plugin(const char *plugin_name)
+static bool is_static_plugin(const char *plugin_name)
 {
-    for (size_t i = 0; i < DEFAULT_PLUGIN_INFO_SIZE; ++i) {
-        if (0 == strcmp(default_plugin_infos[i].plugin_name, plugin_name)) {
+    for (size_t i = 0; i < STATIC_PLUGIN_INFO_SIZE; ++i) {
+        if (0 == strcmp(static_plugin_infos[i].plugin_name, plugin_name)) {
             return true;
         }
     }
@@ -627,28 +592,17 @@ int neu_manager_stop_adapter(neu_adapter_t *adapter)
 }
 
 // Call this function before start manager loop, so it don't need lock
-static int register_default_plugins(neu_manager_t *manager)
+static int register_static_plugins(neu_manager_t *manager)
 {
     int                rv = 0;
-    uint32_t           i, j;
     plugin_id_t        plugin_id;
     plugin_reg_param_t reg_param;
 
-    for (i = 0; i < DEFAULT_PLUGIN_COUNT; i++) {
+    for (uint32_t j = 0; j < STATIC_PLUGIN_INFO_SIZE; j++) {
         plugin_id.id_val = 0;
-        for (j = 0; j < DEFAULT_PLUGIN_INFO_SIZE; j++) {
-            if (strcmp(default_plugin_infos[j].plugin_lib_name,
-                       default_plugin_lib_names[i]) == 0) {
-                break;
-            }
-        }
-
-        if (j < DEFAULT_PLUGIN_INFO_SIZE) {
-            reg_param = default_plugin_infos[j];
-
-            rv = plugin_manager_reg_plugin(manager->plugin_manager, &reg_param,
-                                           &plugin_id);
-        }
+        reg_param        = static_plugin_infos[j];
+        rv = plugin_manager_reg_plugin(manager->plugin_manager, &reg_param,
+                                       &plugin_id);
     }
 
     return rv;
@@ -662,16 +616,16 @@ static void unregister_all_reg_plugins(neu_manager_t *manager)
 }
 
 // Call this function before start manager loop, so it don't need lock
-static void reg_and_start_default_adapters(neu_manager_t *manager)
+static void reg_and_start_static_adapters(neu_manager_t *manager)
 {
     uint32_t       i;
     adapter_id_t   id;
     neu_adapter_t *p_adapter;
 
-    for (i = 0; i < DEFAULT_ADAPTER_ADD_INFO_SIZE; i++) {
+    for (i = 0; i < STATIC_ADAPTER_ADD_INFO_SIZE; i++) {
         p_adapter = NULL;
         manager_reg_adapter(manager,
-                            (adapter_reg_cmd_t *) &default_adapter_reg_cmds[i],
+                            (adapter_reg_cmd_t *) &static_adapter_reg_cmds[i],
                             &p_adapter, &id);
         if (id != 0 && p_adapter != NULL) {
             neu_manager_init_adapter(manager, p_adapter);
@@ -847,10 +801,9 @@ static void manager_loop(void *arg)
     }
     nng_mtx_unlock(manager->mtx);
 
-    log_info("Register and start all default adapters");
-    register_default_plugins(manager);
-    reg_and_start_default_adapters(manager);
-    // add_default_grp_configs(manager);
+    log_info("Register and start all static adapters");
+    register_static_plugins(manager);
+    reg_and_start_static_adapters(manager);
 
     nng_mtx_lock(manager->adapters_mtx);
     adapter_reg_entity_t *persist_reg_entity = find_reg_adapter_by_name(
@@ -1205,7 +1158,6 @@ static void manager_loop(void *arg)
     }
 
     log_info("End message loop of neu_manager");
-    // remove_default_grp_configs(manager);
     stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
     nng_close(manager_bind->mng_sock);
@@ -1241,8 +1193,7 @@ neu_manager_t *neu_manager_create()
                   "and vector of adapters");
     }
 
-    rv = vector_init(&manager->reg_adapters, DEFAULT_ADAPTER_REG_COUNT,
-                     sizeof(adapter_reg_entity_t));
+    rv = vector_init(&manager->reg_adapters, 8, sizeof(adapter_reg_entity_t));
     if (rv != 0) {
         neu_panic("Failed to initialize vector of registered adapters");
     }
@@ -1976,8 +1927,8 @@ int neu_manager_get_persist_plugin_infos(neu_manager_t *manager,
     }
 
     size_t count = plugin_regs->size;
-    if (count >= DEFAULT_PLUGIN_INFO_SIZE) {
-        count -= DEFAULT_PLUGIN_INFO_SIZE;
+    if (count >= STATIC_PLUGIN_INFO_SIZE) {
+        count -= STATIC_PLUGIN_INFO_SIZE;
     }
     vector_t *plugin_infos = vector_new(count, sizeof(char *));
     if (NULL == plugin_infos) {
@@ -1990,7 +1941,7 @@ int neu_manager_get_persist_plugin_infos(neu_manager_t *manager,
     VECTOR_FOR_EACH(plugin_regs, iter)
     {
         plugin_reg_info = (plugin_reg_info_t *) iterator_get(&iter);
-        if (is_default_plugin(plugin_reg_info->plugin_name)) {
+        if (is_static_plugin(plugin_reg_info->plugin_name)) {
             continue;
         }
         plugin_info = strdup(plugin_reg_info->plugin_lib_name);
@@ -2087,8 +2038,8 @@ int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
     }
 
     size_t count = manager->reg_adapters.size;
-    if (count >= DEFAULT_ADAPTER_ADD_INFO_SIZE) {
-        count -= DEFAULT_ADAPTER_ADD_INFO_SIZE;
+    if (count >= STATIC_ADAPTER_ADD_INFO_SIZE) {
+        count -= STATIC_ADAPTER_ADD_INFO_SIZE;
     }
     adapter_infos = vector_new(count, sizeof(neu_persist_adapter_info_t));
     if (NULL == adapter_infos) {
@@ -2103,7 +2054,7 @@ int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
         const char *plugin_name =
             find_adapter_plugin_name(manager, reg_entity->adapter);
 
-        if (is_default_adapter(adapter_name)) {
+        if (is_static_adapter(adapter_name)) {
             continue;
         }
 

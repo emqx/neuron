@@ -1,4 +1,5 @@
 from os import remove
+import os
 import random
 import subprocess
 import shutil
@@ -13,6 +14,8 @@ class Neuron(object):
         pass
 
     def Start_Neuron(self):
+        os.system("mkdir -p build/persistence")
+        os.system("cp default_plugins.json build/persistence/plugins.json")
         self.process = subprocess.Popen(['./neuron'], cwd='build/')
         return self.process
 
@@ -23,12 +26,16 @@ class Neuron(object):
         self.process.kill()
         if remove_persistence_data:
             shutil.rmtree("build/persistence", ignore_errors=True)
+            os.system("mkdir -p build/persistence")
+            os.system("cp default_plugins.json build/persistence/plugins.json")
 
     def End_Neuron(self, process):
         process.kill()
-    
+
     def Remove_Persistence(self):
-            shutil.rmtree("build/persistence", ignore_errors=True)
+        shutil.rmtree("build/persistence", ignore_errors=True)
+        os.system("mkdir -p build/persistence")
+        os.system("cp default_plugins.json build/persistence/plugins.json")
 
     def Profile_Neuron(self, interval, result_dir):
         cmd = [
@@ -53,7 +60,7 @@ class Plugin(object):
 
     def __init__(self):
         pass
-    
+
     def Get_Plugin_By_Name(self, splugins, name):
         for plugin in splugins:
             if plugin['name'] == name:

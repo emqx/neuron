@@ -1225,8 +1225,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     break;
                 }
 
-                vector_init(&ret->nodes, DEFAULT_ADAPTER_REG_COUNT,
-                            sizeof(neu_node_info_t));
+                vector_init(&ret->nodes, 8, sizeof(neu_node_info_t));
                 rv = neu_manager_get_nodes(adapter->manager, req_cmd->node_type,
                                            &ret->nodes);
                 if (rv < 0) {
@@ -1371,8 +1370,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     break;
                 }
 
-                vector_init(&ret->plugin_libs, DEFAULT_ADAPTER_REG_COUNT,
-                            sizeof(plugin_lib_info_t));
+                vector_init(&ret->plugin_libs, 8, sizeof(plugin_lib_info_t));
                 rv = neu_manager_get_plugin_libs(adapter->manager,
                                                  &ret->plugin_libs);
                 if (rv < 0) {
