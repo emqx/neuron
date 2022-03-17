@@ -98,6 +98,14 @@ static int set_license(const char *lic_str)
 
     if (0 > rename(fname_tmp, LICENSE_PATH)) {
         rv = NEU_ERR_EINTERNAL;
+        goto final;
+    }
+
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+    rv                   = neu_plugin_notify_event_update_license(
+        plugin, neu_plugin_get_event_id(plugin));
+    if (0 != rv) {
+        rv = NEU_ERR_EINTERNAL;
     }
 
 final:
