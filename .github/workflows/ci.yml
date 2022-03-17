@@ -253,7 +253,7 @@ jobs:
     needs: cross-build
     strategy:
       matrix:
-        arch: [arm64, arm, amd64]
+        arch: [arm64, armhf, amd64]
         type: [neuron]
         package: [tar.gz, deb, rpm]
 
