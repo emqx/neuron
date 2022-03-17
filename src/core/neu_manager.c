@@ -1112,6 +1112,32 @@ static void manager_loop(void *arg)
             break;
         }
 
+        case MSG_EVENT_UPDATE_LICENSE: {
+            // broadcast license update event
+            adapter_reg_entity_t *reg_entity = NULL;
+            nng_pipe              src_pipe   = nng_msg_get_pipe(msg);
+            VECTOR_FOR_EACH(&manager->reg_adapters, iter)
+            {
+                reg_entity        = iterator_get(&iter);
+                nng_pipe dst_pipe = reg_entity->adapter_pipe;
+
+                if (src_pipe.id == dst_pipe.id) {
+                    // filter out the originator
+                    continue;
+                }
+                rv = manager_send_msg_to_pipe(
+                    manager, dst_pipe, MSG_EVENT_UPDATE_LICENSE, NULL, 0);
+                if (0 == rv) {
+                    log_info("Forward license update event to pipe: %d",
+                             dst_pipe);
+                } else {
+                    log_error("Fail send license update event to pipe: %d",
+                              dst_pipe);
+                }
+            }
+            break;
+        }
+
         case MSG_CMD_SUBSCRIBE_NODE: {
             subscribe_node_cmd_t *cmd_ptr = msg_get_buf_ptr(pay_msg);
             rv = neu_manager_subscribe_node(manager, cmd_ptr);
