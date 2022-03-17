@@ -57,7 +57,7 @@ static void init()
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
     log_set_level(NEU_LOG_DEBUG);
-    g_logfile = fopen("neuron.log", "a");
+    g_logfile = fopen("./logs/neuron.log", "a");
     if (g_logfile == NULL) {
         fprintf(stderr,
                 "Failed to open logfile when"
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
     }
 
     if (config_file == NULL) {
-        config_file = strdup("./neuron.yaml");
+        config_file = strdup("./config/neuron.yaml");
     }
 
     rv = read_neuron_config(config_file);

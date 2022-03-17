@@ -229,14 +229,7 @@ static int dashb_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    char *private_key_path =
-        neu_config_get_value(2, (char *) "api", (char *) "private_key");
-    char *public_key_path =
-        neu_config_get_value(2, (char *) "api", (char *) "public_key");
-    rv = neu_jwt_init(public_key_path, private_key_path);
-
-    free(private_key_path);
-    free(public_key_path);
+    rv = neu_jwt_init("./config/public.pem", "./config/private.key");
 
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;

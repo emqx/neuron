@@ -21,12 +21,4 @@ TEST(ConfigTest, ReadConfig)
     result = neu_config_get_value(2, (char *) "api", (char *) "port");
     EXPECT_STREQ("7001", result);
     free(result);
-
-    result = neu_config_get_value(2, (char *) "api", (char *) "public_key");
-    EXPECT_STREQ("./public_test.pem", result);
-    free(result);
-
-    result = neu_config_get_value(2, (char *) "api", (char *) "private_key");
-    EXPECT_STREQ("./private_test.key", result);
-    free(result);
 }

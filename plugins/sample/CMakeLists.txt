@@ -1,5 +1,5 @@
 # sample driver plugin
-set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
 set(SAMPLE_PLUGIN_SOURCES plugin_sample_drv.c)
 add_library(plugin-sample-drv SHARED)
@@ -15,6 +15,3 @@ target_sources(plugin-sample-app PRIVATE ${SAMPLE_PLUGIN_SOURCES})
 target_include_directories(plugin-sample-app PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(plugin-sample-app neuron-base dl)
 target_link_libraries(plugin-sample-app ${CMAKE_THREAD_LIBS_INIT})
-
-install(TARGETS plugin-sample-drv plugin-sample-app
-	LIBRARY DESTINATION lib/neuron)

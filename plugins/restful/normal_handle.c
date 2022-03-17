@@ -67,8 +67,6 @@ void handle_get_ttys(nng_aio *aio)
 
 void handle_ping(nng_aio *aio)
 {
-    VALIDATE_JWT(aio);
-
     http_ok(aio, "{}");
 }
 
@@ -134,7 +132,7 @@ void handle_get_plugin_schema(nng_aio *aio)
         return;
     }
 
-    snprintf(schema_path, sizeof(schema_path) - 1, "./schema/%s.json",
+    snprintf(schema_path, sizeof(schema_path) - 1, "./plugins/schema/%s.json",
              plugin_name);
 
     char *buf = NULL;

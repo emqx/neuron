@@ -44,7 +44,7 @@
 #include "log_handle.h"
 
 #define LOG_TIME_FMT "%Y-%m-%d %H:%M:%S"
-#define LOG_FILE "neuron.log"
+#define LOG_FILE "./logs/neuron.log"
 #define LOG_PAGE_SIZE_MIN 200
 #define LOG_PAGE_SIZE_MAX 10000
 

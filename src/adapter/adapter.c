@@ -176,19 +176,13 @@ static neu_persister_t *g_persister_singleton = NULL;
 
 static void persister_singleton_init()
 {
-    const char *persistence_dir =
-        neu_config_get_value(2, (char *) "persistence", (char *) "dir");
-    if (NULL == persistence_dir) {
-        log_error("can't get persistence dir from config");
-        exit(EXIT_FAILURE);
-    }
+    const char *persistence_dir = "persistence";
 
     neu_persister_t *persister = neu_persister_create(persistence_dir);
     if (NULL == persister) {
         log_error("can't create persister");
         exit(EXIT_FAILURE);
     }
-    free((char *) persistence_dir);
     g_persister_singleton = persister;
 }
 

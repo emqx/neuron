@@ -1,5 +1,5 @@
 # MQTT Plugin
-set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
 set(src 
 	plugin_mqtt.c 
@@ -22,6 +22,3 @@ target_include_directories(plugin-mqtt PRIVATE
 
 target_link_libraries(plugin-mqtt neuron-base)
 target_link_libraries(plugin-mqtt ${CMAKE_THREAD_LIBS_INIT})
-
-install(TARGETS plugin-mqtt
-	LIBRARY DESTINATION lib/neuron)
