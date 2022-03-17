@@ -67,8 +67,6 @@ void handle_get_ttys(nng_aio *aio)
 
 void handle_ping(nng_aio *aio)
 {
-    VALIDATE_JWT(aio);
-
     http_ok(aio, "{}");
 }
 
