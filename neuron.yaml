@@ -1,12 +1,8 @@
-driver:
-  path: ./
 web:
   host: 0.0.0.0
   port: 7000
 api:
   host: 0.0.0.0
   port: 7001
-  private_key: ./private_test.key
-  public_key: ./public_test.pem
 persistence:
   dir: persistence

@@ -677,10 +677,7 @@ static int unload_static_plugin(void *lib_handle)
 void *load_plugin_library(char *plugin_lib_name, plugin_kind_e plugin_kind,
                           neu_plugin_module_t **p_plugin_module)
 {
-    char *path   = NULL;
     void *result = NULL;
-
-    path = neu_config_get_value(2, "driver", "path");
 
     switch (plugin_kind) {
     case PLUGIN_KIND_STATIC:
@@ -688,14 +685,11 @@ void *load_plugin_library(char *plugin_lib_name, plugin_kind_e plugin_kind,
         break;
     case PLUGIN_KIND_SYSTEM:
     case PLUGIN_KIND_CUSTOM:
-        result =
-            load_dyn_plugin_library(path, plugin_lib_name, p_plugin_module);
+        result = load_dyn_plugin_library("./plugins/", plugin_lib_name,
+                                         p_plugin_module);
         break;
     }
 
-    if (path != NULL) {
-        free(path);
-    }
     return result;
 }
 

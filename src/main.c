@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
     }
 
     if (config_file == NULL) {
-        config_file = strdup("./neuron.yaml");
+        config_file = strdup("./config/neuron.yaml");
     }
 
     rv = read_neuron_config(config_file);

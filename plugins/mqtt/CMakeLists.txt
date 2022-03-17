@@ -1,5 +1,5 @@
 # MQTT Plugin
-set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
 set(src 
 	plugin_mqtt.c 

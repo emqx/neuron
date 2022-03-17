@@ -132,7 +132,7 @@ void handle_get_plugin_schema(nng_aio *aio)
         return;
     }
 
-    snprintf(schema_path, sizeof(schema_path) - 1, "./schema/%s.json",
+    snprintf(schema_path, sizeof(schema_path) - 1, "./plugins/schema/%s.json",
              plugin_name);
 
     char *buf = NULL;

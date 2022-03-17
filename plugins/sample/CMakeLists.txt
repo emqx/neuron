@@ -1,5 +1,5 @@
 # sample driver plugin
-set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}")
+set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
 set(SAMPLE_PLUGIN_SOURCES plugin_sample_drv.c)
 add_library(plugin-sample-drv SHARED)
