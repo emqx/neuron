@@ -11,7 +11,3 @@ else()
 target_link_libraries(${MODBUS_TCP_PLUGIN} nng neuron-base)
 endif()
 target_link_libraries(${MODBUS_TCP_PLUGIN} ${CMAKE_THREAD_LIBS_INIT})
-
-
-install(TARGETS ${MODBUS_TCP_PLUGIN}
-	LIBRARY DESTINATION lib/neuron)
