@@ -1693,6 +1693,12 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
         break;
     }
 
+    case NEU_EVENT_UPDATE_LICENSE: {
+        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UPDATE_LICENSE, event->buf,
+                         event->buf_len);
+        break;
+    }
+
     default:
         break;
     }
