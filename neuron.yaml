@@ -4,5 +4,3 @@ web:
 api:
   host: 0.0.0.0
   port: 7001
-persistence:
-  dir: persistence
