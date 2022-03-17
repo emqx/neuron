@@ -182,7 +182,8 @@ endif()
 target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc yaml jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 
-#copy file for run and unit test
+#copy file for run
+file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/modbus/modbus-tcp-plugin.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt-plugin.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)

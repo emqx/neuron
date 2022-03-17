@@ -35,10 +35,12 @@ if [ ! -d $package_name ];then
     mkdir -p $package_name/persistence
     mkdir -p $package_name/config
     mkdir -p $package_name/plugins/schema
+    mkdir -p $package_name/logs
 else 
     rm -rf ${package_name}/*
 fi
 
+cp .gitkeep ${package_name}/logs/
 cp default_plugins.json ${package_name}/persistence/plugins.json
 
 cp build/libneuron-base.so \
