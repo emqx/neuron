@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,12 @@
 #ifndef _NEU_FILE_H_
 #define _NEU_FILE_H_
 
+#include <stdbool.h>
 #include <stdlib.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +38,12 @@ extern "C" {
 
 int   tty_file_list_get(char ***tty_file);
 char *file_string_read(size_t *length, const char *const path);
+
+static inline bool file_exists(const char *const path)
+{
+    struct stat buf = { 0 };
+    return -1 != stat(path, &buf);
+}
 
 #ifdef __cplusplus
 }
