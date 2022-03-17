@@ -207,7 +207,7 @@ jobs:
     needs: create_daily_release
     strategy:
       matrix:
-        arch: [arm64, arm, amd64]
+        arch: [arm64, armhf, amd64]
         type: [neuron, neuron-sdk]
         package: [tar.gz, deb, rpm]
 

@@ -29,9 +29,9 @@ rules.append(mkdeb.FileMap(
     "../build/plugins/libplugin-modbus-tcp.so", "/opt/neuron/plugins/"))
 
 rules.append(mkdeb.FileMap(
-    "../plugins/mqtt/mqtt-plugin.json", "/opt/neuron/plugins/schema/"))
+    "../plugins/mqtt/mqtt.json", "/opt/neuron/plugins/schema/"))
 rules.append(mkdeb.FileMap(
-    "../plugins/modbus/modbus-tcp-plugin.json", "/opt/neuron/plugins/schema/"))
+    "../plugins/modbus/modbus-tcp.json", "/opt/neuron/plugins/schema/"))
 
 
 mkdeb.create_deb_file(rules)

@@ -27,12 +27,12 @@ Get the newly added adapters after stopping and restarting Neuron, it should ret
 
     ${process} =    Neuron Start Running
 
-    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-1}}    plugin_name=modbus-tcp-plugin
-    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-2}}    plugin_name=modbus-tcp-plugin
-    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-3}}    plugin_name=modbus-tcp-plugin
-    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-4}}    plugin_name=modbus-tcp-plugin
+    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-1}}    plugin_name=modbus-tcp
+    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-2}}    plugin_name=modbus-tcp
+    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-3}}    plugin_name=modbus-tcp
+    Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-4}}    plugin_name=modbus-tcp
 
-    ${res} =                 Add Node    type=${${NODE_MQTT}}    name=${${mqtt-1}}    plugin_name=mqtt-plugin
+    ${res} =                 Add Node    type=${${NODE_MQTT}}    name=${${mqtt-1}}    plugin_name=mqtt
     Check Response Status    ${res}      200
     Check Error Code         ${res}      ${ERR_SUCCESS}
 

@@ -29,7 +29,7 @@ LOGOUT
   Integer             response status         200
 
 Add MQTT Node
-    Add Node    type=${${NODE_MQTT}}      name=mqtt-adapter          plugin_name=mqtt-plugin
+    Add Node    type=${${NODE_MQTT}}      name=mqtt-adapter          plugin_name=mqtt
 
 Add Plugin
   [Arguments]         ${node_type}            ${name}                      ${kind}                      ${lib_name}

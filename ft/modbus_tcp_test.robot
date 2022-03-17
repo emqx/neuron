@@ -360,7 +360,7 @@ Neuron Context Ready
 
     LOGIN
 
-    Add Node    type=${${NODE_DRIVER}}    name=modbus-tcp-adapter    plugin_name=modbus-tcp-plugin
+    Add Node    type=${${NODE_DRIVER}}    name=modbus-tcp-adapter    plugin_name=modbus-tcp
     ${id} =     Get Node ID               ${NODE_DRIVER}             modbus-tcp-adapter
     ${mqtt_id} =     Get Node ID               ${NODE_MQTT}             mqtt-adapter
 
