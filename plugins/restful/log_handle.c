@@ -43,6 +43,16 @@
 
 #include "log_handle.h"
 
+#ifdef __GNUC__
+#define thread_local __thread
+#elif __STDC_VERSION__ >= 201112L
+#define thread_local _Thread_local
+#elif defined(_MSC_VER)
+#define thread_local __declspec(thread)
+#else
+#error Cannot define thread_local
+#endif
+
 #define LOG_TIME_FMT "%Y-%m-%d %H:%M:%S"
 #define LOG_FILE "neuron.log"
 #define LOG_PAGE_SIZE_MIN 200
@@ -108,6 +118,52 @@ void handle_get_log(nng_aio *aio)
     free(result);
 }
 
+static thread_local struct {
+    int      level; // This three indicates a same get log query,
+    uint64_t since; // without taking page and page size into account.
+    uint64_t until; //
+
+    time_t time;         // time stamp in last query result line
+    size_t line_start;   // last query result start line number
+    size_t line_end;     // last query result end line number
+    size_t line_tot;     // total number of result log lines
+    size_t offset_start; // file offset corresponding to line_start
+    size_t offset_end;   // file offset corresponding to line_end
+} g_log_cache_;
+
+static inline bool validate_cache(FILE *fp, int level, uint64_t since,
+                                  uint64_t until)
+{
+    char      buf[20] = { 0 };
+    struct tm tm      = { .tm_isdst = -1 };
+    time_t    ts      = 0;
+
+    if (since == g_log_cache_.since && until == g_log_cache_.until &&
+        level == g_log_cache_.level) {
+
+        // check against file modification, maybe due to log rotation
+        fseek(fp, g_log_cache_.offset_end, SEEK_SET);
+        fgets(buf, sizeof(buf), fp);
+        if (NULL != strptime(buf, LOG_TIME_FMT, &tm)) {
+            ts = mktime(&tm);
+            if (ts == g_log_cache_.time) {
+                return true;
+            }
+        }
+
+        // clear cache
+        g_log_cache_.since        = 1;
+        g_log_cache_.until        = 0;
+        g_log_cache_.time         = 0;
+        g_log_cache_.line_start   = 0;
+        g_log_cache_.line_end     = 0;
+        g_log_cache_.offset_start = 0;
+        g_log_cache_.offset_end   = 0;
+    }
+
+    return false;
+}
+
 // Find log lines within time range.
 static int get_log(const char *fname, uint64_t since, uint64_t until, int level,
                    uint32_t page, uint32_t page_size, vector_t *lines)
@@ -137,15 +193,29 @@ static int get_log(const char *fname, uint64_t since, uint64_t until, int level,
     size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
 
-    i = binary_search(fp, 0, size, since);
+    bool cached = validate_cache(fp, level, since, until);
+    if (cached && g_log_cache_.line_start <= start &&
+        start < g_log_cache_.line_end + LOG_PAGE_SIZE_MAX) {
+        // continue from last file offset
+        if (g_log_cache_.line_end <= start) {
+            i     = g_log_cache_.offset_end;
+            nline = g_log_cache_.line_end;
+        } else {
+            i     = g_log_cache_.offset_start;
+            nline = g_log_cache_.line_start;
+        }
+    } else {
+        i = binary_search(fp, 0, size, since);
+    }
+
     fseek(fp, i, SEEK_SET);
 
     while (i < size) {
-        int rv = getline(&lineptr, &n, fp);
-        if (rv < 0) {
+        int len = getline(&lineptr, &n, fp);
+        if (len <= 0) {
             break;
         }
-        i += rv;
+        i += len;
 
         if (get_log_level(lineptr) < level) {
             continue;
@@ -161,27 +231,51 @@ static int get_log(const char *fname, uint64_t since, uint64_t until, int level,
         if (ts >= until) {
             break;
         }
-        if (nline++ < start) {
+        if (nline < start) {
+            ++nline;
             continue;
+        } else if (nline == start) {
+            g_log_cache_.line_start   = nline;
+            g_log_cache_.offset_start = i - len;
         }
 
-        char *line = strdup(lineptr);
-        if (NULL == line) {
-            rv = NEU_ERR_ENOMEM;
-            break;
-        }
-        if (0 != vector_push_back(lines, &line)) {
-            rv = NEU_ERR_ENOMEM;
-            break;
+        if (nline < end) {
+            char *line = strdup(lineptr);
+            if (NULL == line) {
+                rv = NEU_ERR_ENOMEM;
+                break;
+            }
+            if (0 != vector_push_back(lines, &line)) {
+                rv = NEU_ERR_ENOMEM;
+                break;
+            }
+
+            g_log_cache_.line_end   = nline;
+            g_log_cache_.offset_end = i - len;
+            g_log_cache_.time       = ts;
         }
 
-        if (nline >= end) {
-            break;
+        ++nline;
+
+        if (nline == end) {
+            if (cached && nline < g_log_cache_.line_tot) {
+                // no need to count total number of lines.
+                break;
+            } else {
+                cached = false;
+            }
         }
-        // printf("ts: %lu rv:%d\n", ts, rv);
+    }
+
+    if (0 != rv || !cached) {
+        g_log_cache_.level    = level;
+        g_log_cache_.since    = since;
+        g_log_cache_.until    = until;
+        g_log_cache_.line_tot = nline;
     }
 
     free(lineptr);
+    fclose(fp);
     return rv;
 }
 
