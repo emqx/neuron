@@ -664,7 +664,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 const neu_plugin_module_t neu_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,
-    .module_name  = "modbus-tcp-plugin",
+    .module_name  = "modbus-tcp",
     .module_descr = "modbus tcp driver plugin",
     .intf_funs    = &plugin_intf_funs,
     .kind         = PLUGIN_KIND_SYSTEM,

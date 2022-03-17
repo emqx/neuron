@@ -31,7 +31,7 @@ jobs:
       matrix:
         arch:
           - [aarch64-linux-gnu, aarch64, gcc-aarch64-linux-gnu, g++-aarch64-linux-gnu, /opt/externs/libs, arm64]
-          - [arm-linux-gnueabihf, armv4, gcc-arm-linux-gnueabihf, g++-arm-linux-gnueabihf, /opt/externs/libs, arm]
+          - [arm-linux-gnueabihf, armv4, gcc-arm-linux-gnueabihf, g++-arm-linux-gnueabihf, /opt/externs/libs, armhf]
           - [x86_64-linux-gnu, x86_64, gcc, g++, /usr/local, amd64]
 
     steps:
@@ -207,7 +207,7 @@ jobs:
     needs: create_daily_release
     strategy:
       matrix:
-        arch: [arm64, arm, amd64]
+        arch: [arm64, armhf, amd64]
         type: [neuron, neuron-sdk]
         package: [tar.gz, deb, rpm]
 

@@ -2,61 +2,61 @@
   "nodes": [
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0000",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0001",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0002",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0003",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0004",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0005",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0006",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0007",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0008",
       "state": 1
     },
     {
       "type": 1,
-      "plugin_name": "modbus-tcp-plugin",
+      "plugin_name": "modbus-tcp",
       "name": "modbus-tcp-0009",
       "state": 1
     },

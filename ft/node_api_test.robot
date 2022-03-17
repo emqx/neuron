@@ -24,19 +24,19 @@ Use a plugin name that does not exist to create a node, it should return failure
 
 
 Use a invalid node type to create a node, it should return failure
-    ${res} =    Add Node    type=${10}    name=test-node    plugin_name=modbus-tcp-plugin
+    ${res} =    Add Node    type=${10}    name=test-node    plugin_name=modbus-tcp
 
     Check Response Status    ${res}    400
     Check Error Code         ${res}    ${ERR_NODE_TYPE_INVALID}
 
 Create a node with the correct body, it should return success
-    ${res} =    Add Node    type=${${NODE_DRIVER}}    name=test-node    plugin_name=modbus-tcp-plugin
+    ${res} =    Add Node    type=${${NODE_DRIVER}}    name=test-node    plugin_name=modbus-tcp
 
     Check Response Status    ${res}    200
     Check Error Code         ${res}    ${ERR_SUCCESS}
 
 Create an existing node, it should return failure
-    ${res} =    Add Node    type=${${NODE_DRIVER}}    name=test-node    plugin_name=modbus-tcp-plugin
+    ${res} =    Add Node    type=${${NODE_DRIVER}}    name=test-node    plugin_name=modbus-tcp
 
     Check Response Status    ${res}    409
     Check Error Code         ${res}    ${ERR_NODE_EXIST}
@@ -64,7 +64,7 @@ Get WEB node, it should return all WEB node
     Node With Name Should Exist    ${res}[nodes]    default-dashboard-adapter
 
 Get MQTT node, it should return all mqtt node
-    ${res} =    Add Node     type=${${NODE_MQTT}}    name=mqtt-adapter    plugin_name=mqtt-plugin
+    ${res} =    Add Node     type=${${NODE_MQTT}}    name=mqtt-adapter    plugin_name=mqtt
     ${res} =    Get Nodes    ${NODE_MQTT}
 
     Check Response Status          ${res}           200

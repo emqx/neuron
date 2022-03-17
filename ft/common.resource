@@ -55,8 +55,8 @@ ${TAG_DATA_TYPE_BOOL}	13
 ${TAG_DATA_TYPE_BIT}	14
 ${TAG_DATA_TYPE_STRING}	15
 
-${PLUGIN_MODBUS_TCP}	modbus-tcp-plugin
-${PLUGIN_MQTT}    mqtt-plugin
+${PLUGIN_MODBUS_TCP}	modbus-tcp
+${PLUGIN_MQTT}    mqtt
 
 ${MQTT_CMD_GET}                             get
 ${MQTT_CMD_SET}                             set

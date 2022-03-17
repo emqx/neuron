@@ -52,8 +52,8 @@ cp build/config/neuron.yaml \
     public.pem \
     ${package_name}/config/
 
-cp build/plugins/schema/mqtt-plugin.json \
-    build/plugins/schema/modbus-tcp-plugin.json \
+cp build/plugins/schema/mqtt.json \
+    build/plugins/schema/modbus-tcp.json \
     ${package_name}/plugins/schema/
 
 cp build/plugins/libplugin-modbus-tcp.so \
