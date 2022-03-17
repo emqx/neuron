@@ -61,7 +61,8 @@
 static size_t binary_search(FILE *fp, size_t lo, size_t hi, uint64_t ts);
 static int    get_log_level(const char *line);
 static int get_log(const char *fname, uint64_t since, uint64_t until, int level,
-                   uint32_t page, uint32_t page_size, vector_t *lines);
+                   uint32_t page, uint32_t page_size, vector_t *lines,
+                   size_t *line_tot);
 static int string_to_log_level(const char *s, size_t n, int *level);
 
 void handle_get_log(nng_aio *aio)
@@ -74,6 +75,7 @@ void handle_get_log(nng_aio *aio)
     int                     level     = NEU_LOG_TRACE;
     uint32_t                page      = 0;
     uint32_t                page_size = 0;
+    size_t                  line_tot  = 0;
 
     VALIDATE_JWT(aio);
 
@@ -100,11 +102,14 @@ void handle_get_log(nng_aio *aio)
 
     vector_t lines;
     vector_init(&lines, 1, sizeof(char *));
-    if (0 != get_log(LOG_FILE, since, until, level, page, page_size, &lines)) {
+    if (0 !=
+        get_log(LOG_FILE, since, until, level, page, page_size, &lines,
+                &line_tot)) {
         resp.error = NEU_ERR_EINTERNAL;
     }
-    resp.n_row = lines.size;
-    resp.rows  = lines.data;
+    resp.n_row      = lines.size;
+    resp.rows       = lines.data;
+    resp.page_count = (line_tot + page_size - 1) / page_size;
 
     char *result = NULL;
     neu_json_encode_by_fn(&resp, neu_json_encode_get_log_resp, &result);
@@ -166,7 +171,8 @@ static inline bool validate_cache(FILE *fp, int level, uint64_t since,
 
 // Find log lines within time range.
 static int get_log(const char *fname, uint64_t since, uint64_t until, int level,
-                   uint32_t page, uint32_t page_size, vector_t *lines)
+                   uint32_t page, uint32_t page_size, vector_t *lines,
+                   size_t *line_tot)
 {
     FILE *fp = fopen(fname, "r");
 
@@ -272,6 +278,10 @@ static int get_log(const char *fname, uint64_t since, uint64_t until, int level,
         g_log_cache_.since    = since;
         g_log_cache_.until    = until;
         g_log_cache_.line_tot = nline;
+    }
+
+    if (NULL != line_tot) {
+        *line_tot = g_log_cache_.line_tot;
     }
 
     free(lineptr);
