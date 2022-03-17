@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -34,6 +34,7 @@ extern "C" {
 typedef char *neu_json_get_log_resp_row_t;
 
 typedef struct {
+    int64_t                      page_count;
     int                          n_row;
     neu_json_get_log_resp_row_t *rows;
     int64_t                      error;
