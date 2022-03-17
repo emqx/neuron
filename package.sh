@@ -47,7 +47,7 @@ cp build/libneuron-base.so \
     build/neuron \
     ${package_name}
 
-cp build/neuron.yaml \
+cp build/config/neuron.yaml \
     private.key \
     public.pem \
     ${package_name}/config/
