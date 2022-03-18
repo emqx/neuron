@@ -24,6 +24,7 @@
 #include "neu_errcodes.h"
 #include "neu_file.h"
 #include "neu_plugin.h"
+#include "neu_vector.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_license.h"
@@ -37,6 +38,72 @@
 
 static int set_license(const char *lic_str);
 int        backup_license_file(const char *lic_fname);
+int        get_plugin_names(const license_t *lic, vector_t *plugin_names);
+
+void handle_get_license(nng_aio *aio)
+{
+    int                         rv              = 0;
+    license_t                   lic             = {};
+    neu_json_get_license_resp_t resp            = {};
+    time_t                      since           = 0;
+    time_t                      until           = 0;
+    char                        valid_since[20] = {};
+    char                        valid_until[20] = {};
+    struct tm                   tm              = {};
+    vector_t                    plugin_names    = {};
+    char *                      result          = NULL;
+
+    VALIDATE_JWT(aio);
+
+    vector_init(&plugin_names, PLUGIN_BIT_MAX, sizeof(char *));
+    license_init(&lic);
+    rv = license_read(&lic, LICENSE_PATH);
+    if (0 != rv) {
+        goto final;
+    }
+
+    since = license_not_before(&lic);
+    gmtime_r(&since, &tm);
+    if (0 ==
+        strftime(valid_since, sizeof(valid_since), "%Y-%m-%d %H:%M:%S", &tm)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto final;
+    }
+
+    until = license_not_after(&lic);
+    gmtime_r(&until, &tm);
+    if (0 ==
+        strftime(valid_until, sizeof(valid_until), "%Y-%m-%d %H:%M:%S", &tm)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto final;
+    }
+
+    resp.license_type  = (char *) license_type_str(license_get_type(&lic));
+    resp.valid         = !license_is_expired(&lic);
+    resp.valid_since   = valid_since;
+    resp.valid_until   = valid_until;
+    resp.max_nodes     = license_get_max_nodes(&lic);
+    resp.max_node_tags = license_get_max_node_tags(&lic);
+
+    rv = get_plugin_names(&lic, &plugin_names);
+    if (0 != rv) {
+        goto final;
+    }
+    resp.n_enabled_plugin = plugin_names.size;
+    resp.enabled_plugins  = plugin_names.data;
+
+final:
+    if (0 == rv) {
+        neu_json_encode_by_fn(&resp, neu_json_encode_get_license_resp, &result);
+    } else {
+        neu_json_error_resp_t error_code = { .error = rv };
+        neu_json_encode_by_fn(&error_code, neu_json_encode_error_resp, &result);
+    }
+    http_response(aio, rv, result);
+    free(result);
+    license_fini(&lic);
+    vector_uninit(&plugin_names);
+}
 
 void handle_set_license(nng_aio *aio)
 {
@@ -132,4 +199,20 @@ int backup_license_file(const char *lic_fname)
     }
 
     return link(lic_fname, fname_bak);
+}
+
+int get_plugin_names(const license_t *lic, vector_t *plugin_names)
+{
+    for (plugin_bit_e b = PLUGIN_BIT_MODBUS_PLUS_TCP; b < PLUGIN_BIT_MAX; ++b) {
+        if (license_is_plugin_enabled(lic, b)) {
+            const char *s = plugin_bit_str(b);
+            if (NULL == s) {
+                return NEU_ERR_EINTERNAL;
+            }
+            if (0 != vector_push_back(plugin_names, &s)) {
+                return NEU_ERR_ENOMEM;
+            }
+        }
+    }
+    return 0;
 }

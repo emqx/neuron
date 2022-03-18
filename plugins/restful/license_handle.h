@@ -22,6 +22,7 @@
 
 #include <nng/nng.h>
 
+void handle_get_license(nng_aio *aio);
 void handle_set_license(nng_aio *aio);
 
 #endif
