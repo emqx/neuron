@@ -164,6 +164,8 @@ static const char *const g_plugin_bit_str_map[] = {
     [PLUGIN_BIT_MODBUS_RTU]      = "modbus-rtu",
     [PLUGIN_BIT_OPCUA]           = "opcua",
     [PLUGIN_BIT_S7COMM]          = "s7comm",
+    [PLUGIN_BIT_FINS]            = "fins",
+    [PLUGIN_BIT_QNA3E]           = "QnA3E",
     [PLUGIN_BIT_MAX]             = NULL,
 };
 
