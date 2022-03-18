@@ -159,6 +159,14 @@ static const char *const g_license_type_str_map_[] = {
     [LICENSE_TYPE_SME]    = "small-enterprise",
 };
 
+static const char *const g_plugin_bit_str_map[] = {
+    [PLUGIN_BIT_MODBUS_PLUS_TCP] = "modbus-plus-tcp",
+    [PLUGIN_BIT_MODBUS_RTU]      = "modbus-rtu",
+    [PLUGIN_BIT_OPCUA]           = "opcua",
+    [PLUGIN_BIT_S7COMM]          = "s7comm",
+    [PLUGIN_BIT_MAX]             = NULL,
+};
+
 static license_type_e scan_licese_type(const char *s)
 {
     license_type_e t = LICENSE_TYPE_MAX;
@@ -305,6 +313,11 @@ final:
 const char *license_type_str(license_type_e t)
 {
     return g_license_type_str_map_[t];
+}
+
+const char *plugin_bit_str(plugin_bit_e b)
+{
+    return g_plugin_bit_str_map[b];
 }
 
 void license_print(license_t *license)

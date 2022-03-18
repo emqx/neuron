@@ -75,7 +75,10 @@ typedef enum {
     PLUGIN_BIT_MODBUS_RTU      = 1,
     PLUGIN_BIT_OPCUA           = 2,
     PLUGIN_BIT_S7COMM          = 3,
+    PLUGIN_BIT_MAX,
 } plugin_bit_e;
+
+const char *plugin_bit_str(plugin_bit_e);
 
 // Representing a single license.
 typedef struct {
