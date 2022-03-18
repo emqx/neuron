@@ -2,3 +2,4 @@
 
 echo "postinst"
 ldconfig
+systemctl daemon-reload
