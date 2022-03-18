@@ -106,6 +106,9 @@ struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/log",
     },
+    {
+        .url = "/api/v2/license",
+    },
 };
 
 struct neu_rest_handler api_handlers[] = {
@@ -296,6 +299,12 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/license",
         .value.handler = handle_set_license,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/license",
+        .value.handler = handle_get_license,
     },
 };
 

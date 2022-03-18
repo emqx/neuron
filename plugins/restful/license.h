@@ -75,7 +75,10 @@ typedef enum {
     PLUGIN_BIT_MODBUS_RTU      = 1,
     PLUGIN_BIT_OPCUA           = 2,
     PLUGIN_BIT_S7COMM          = 3,
+    PLUGIN_BIT_MAX,
 } plugin_bit_e;
+
+const char *plugin_bit_str(plugin_bit_e);
 
 // Representing a single license.
 typedef struct {
@@ -104,8 +107,19 @@ static inline const char *license_get_file_name(const license_t *license)
     return license->fname_;
 }
 
+static inline license_type_e license_get_type(const license_t *license)
+{
+    return license->type_;
+}
+
 // Get license expiry date.
-static inline uint64_t license_get_expiry_timestamp(const license_t *license)
+static inline uint64_t license_not_before(const license_t *license)
+{
+    return license->since_;
+}
+
+// Get license expiry date.
+static inline uint64_t license_not_after(const license_t *license)
 {
     return license->until_;
 }

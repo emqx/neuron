@@ -29,6 +29,72 @@
 
 #include "json/neu_json_license.h"
 
+int neu_json_encode_get_license_resp(void *json_object, void *param)
+{
+    int                          ret  = 0;
+    neu_json_get_license_resp_t *resp = (neu_json_get_license_resp_t *) param;
+
+    void *enabled_plugin_array = neu_json_array();
+    neu_json_get_license_resp_enabled_plugin_t *p_enabled_plugin =
+        resp->enabled_plugins;
+    for (int i = 0; i < resp->n_enabled_plugin; i++) {
+        neu_json_elem_t enabled_plugin_elems[] = { {
+            .name      = NULL,
+            .t         = NEU_JSON_STR,
+            .v.val_str = *p_enabled_plugin,
+        } };
+        enabled_plugin_array                   = neu_json_encode_array_value(
+            enabled_plugin_array, enabled_plugin_elems,
+            NEU_JSON_ELEM_SIZE(enabled_plugin_elems));
+        p_enabled_plugin++;
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+                                         .name      = "valid_until",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->valid_until,
+                                     },
+                                     {
+                                         .name      = "valid_since",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->valid_since,
+                                     },
+                                     {
+                                         .name       = "valid",
+                                         .t          = NEU_JSON_BOOL,
+                                         .v.val_bool = resp->valid,
+                                     },
+                                     {
+                                         .name      = "max_nodes",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->max_nodes,
+                                     },
+                                     {
+                                         .name      = "max_node_tags",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->max_node_tags,
+                                     },
+                                     {
+                                         .name      = "license_type",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->license_type,
+                                     },
+                                     {
+                                         .name      = "error",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->error,
+                                     },
+                                     {
+                                         .name         = "enabled_plugins",
+                                         .t            = NEU_JSON_OBJECT,
+                                         .v.val_object = enabled_plugin_array,
+                                     } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
 int neu_json_decode_set_license_req(char *                       buf,
                                     neu_json_set_license_req_t **result)
 {
