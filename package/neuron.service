@@ -1,0 +1,16 @@
+[Unit]
+Description=Neuron daemon
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/neuron
+ExecStart=/opt/neuron/neuron
+Restart=on-failure
+RestartSec=5
+Group=root
+LimitCORE=infinity
+ExecStartPre=-/opt/neuron/neuron.sh
+
+[Install]
+WantedBy=multi-user.target

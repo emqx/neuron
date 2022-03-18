@@ -10,9 +10,13 @@ rules.append(mkdeb.FileMap("deb/neuron/postinst", "/DEBIAN/", "r", "postinst"))
 rules.append(mkdeb.FileMap("deb/neuron/preinst", "/DEBIAN/", "r", "preinst"))
 rules.append(mkdeb.FileMap("deb/neuron/prerm", "/DEBIAN/", "r", "prerm"))
 
+rules.append(mkdeb.FileMap("neuron.service", "/etc/systemd/system/"))
+
+rules.append(mkdeb.FileMap("neuron.sh", "/opt/neuron/", "x"))
 rules.append(mkdeb.FileMap("../build/neuron", "/opt/neuron/", "x"))
 
 rules.append(mkdeb.FileMap("../.gitkeep", "/opt/neuron/logs/"))
+rules.append(mkdeb.FileMap("../.gitkeep", "/opt/neuron/core/"))
 
 rules.append(mkdeb.FileMap("../private.key", "/opt/neuron/config/"))
 rules.append(mkdeb.FileMap("../public.pem", "/opt/neuron/config/"))
