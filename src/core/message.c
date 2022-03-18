@@ -67,7 +67,7 @@ size_t msg_external_data_get_size()
 void msg_with_struct_init(message_t *msg, msg_type_e type, void *struct_ptr,
                           size_t struct_size)
 {
-    if (!(msg != NULL && struct_ptr != NULL)) {
+    if (!(msg != NULL && struct_ptr != NULL && 0 != struct_size)) {
         log_error("msg_with_struct_init called with NULL pointr");
         return;
     }

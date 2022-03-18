@@ -351,6 +351,20 @@ int neu_plugin_notify_event_update_tags(neu_plugin_t *plugin, uint32_t event_id,
                                     node_id, grp_config_name);
 }
 
+int neu_plugin_notify_event_update_license(neu_plugin_t *plugin,
+                                           uint32_t      event_id)
+{
+    neu_event_notify_t event = {
+        .event_id = event_id,
+        .type     = NEU_EVENT_UPDATE_LICENSE,
+        .buf      = NULL,
+        .buf_len  = 0,
+    };
+    neu_plugin_common_t *plugin_common = neu_plugin_to_plugin_common(plugin);
+    return plugin_common->adapter_callbacks->event_notify(
+        plugin_common->adapter, &event);
+}
+
 void neu_plugin_response_trans_data(neu_plugin_t *       plugin,
                                     neu_taggrp_config_t *grp_config,
                                     neu_data_val_t *data, uint32_t event_id)

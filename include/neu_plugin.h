@@ -132,6 +132,8 @@ int neu_plugin_notify_event_del_tags(neu_plugin_t *plugin, uint32_t event_id,
 int neu_plugin_notify_event_update_tags(neu_plugin_t *plugin, uint32_t event_id,
                                         neu_node_id_t node_id,
                                         const char *  grp_config_name);
+int neu_plugin_notify_event_update_license(neu_plugin_t *plugin,
+                                           uint32_t      event_id);
 
 intptr_t neu_system_del_plugin(neu_plugin_t *plugin, plugin_id_t plugin_id);
 intptr_t neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,

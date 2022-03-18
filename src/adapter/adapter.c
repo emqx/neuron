@@ -917,6 +917,20 @@ static void adapter_loop(void *arg)
             break;
         }
 
+        case MSG_EVENT_UPDATE_LICENSE: {
+            const neu_plugin_intf_funs_t *intf_funs = NULL;
+            neu_request_t                 req       = {};
+
+            intf_funs     = adapter->plugin_module->intf_funs;
+            req.req_id    = adapter_get_req_id(adapter);
+            req.req_type  = NEU_REQRESP_UPDATE_LICENSE;
+            req.sender_id = 0;
+            req.buf_len   = 0;
+            req.buf       = NULL;
+            intf_funs->request(adapter->plugin, &req);
+            break;
+        }
+
         case MSG_CMD_SUBSCRIBE_NODE: {
             subscribe_node_cmd_t *cmd_ptr;
             cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
@@ -1681,6 +1695,12 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
 
     case NEU_EVENT_DEL_TAGS: {
         ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_ADD_TAGS, event->buf,
+                         event->buf_len);
+        break;
+    }
+
+    case NEU_EVENT_UPDATE_LICENSE: {
+        ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UPDATE_LICENSE, event->buf,
                          event->buf_len);
         break;
     }

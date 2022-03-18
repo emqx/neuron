@@ -32,6 +32,7 @@
 #include "datatag_handle.h"
 #include "group_config_handle.h"
 #include "http.h"
+#include "license_handle.h"
 #include "log_handle.h"
 #include "normal_handle.h"
 #include "plugin_handle.h"
@@ -289,6 +290,12 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/log",
         .value.handler = handle_get_log,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/license",
+        .value.handler = handle_set_license,
     },
 };
 

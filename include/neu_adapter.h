@@ -83,6 +83,7 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_GET_SUB_GRP_CONFIGS,
     NEU_REQRESP_SUB_GRP_CONFIGS_RESP,
     NEU_REQRESP_VALIDATE_TAG,
+    NEU_REQRESP_UPDATE_LICENSE,
 } neu_reqresp_type_e;
 
 typedef uint32_t neu_node_id_t;
@@ -360,6 +361,7 @@ typedef enum neu_event_type {
     NEU_EVENT_ADD_TAGS,
     NEU_EVENT_UPDATE_TAGS,
     NEU_EVENT_DEL_TAGS,
+    NEU_EVENT_UPDATE_LICENSE,
 } neu_event_type_e;
 
 typedef struct neu_event_notify {
