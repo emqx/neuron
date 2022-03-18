@@ -100,19 +100,15 @@ static int rest_add_handler(nng_http_server *              server,
 static nng_http_server *server_init(char *type)
 {
     nng_url *        url;
-    char *           host           = NULL;
-    char *           port           = NULL;
     char             host_port[128] = { 0 };
     nng_http_server *server;
 
-    host = neu_config_get_value(2, type, "host");
-    port = neu_config_get_value(2, type, "port");
-
-    snprintf(host_port, sizeof(host_port), "http://%s:%s", host, port);
+    if (strncmp(type, "api", strlen("api")) == 0) {
+        snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7001");
+    } else {
+        snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7000");
+    }
     log_info("%s bind url: %s", type, host_port);
-
-    free(host);
-    free(port);
 
     int ret = nng_url_parse(&url, host_port);
     if (ret != 0) {
