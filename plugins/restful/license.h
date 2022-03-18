@@ -107,8 +107,19 @@ static inline const char *license_get_file_name(const license_t *license)
     return license->fname_;
 }
 
+static inline license_type_e license_get_type(const license_t *license)
+{
+    return license->type_;
+}
+
 // Get license expiry date.
-static inline uint64_t license_get_expiry_timestamp(const license_t *license)
+static inline uint64_t license_not_before(const license_t *license)
+{
+    return license->since_;
+}
+
+// Get license expiry date.
+static inline uint64_t license_not_after(const license_t *license)
 {
     return license->until_;
 }
