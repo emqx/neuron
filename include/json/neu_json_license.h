@@ -31,6 +31,22 @@
 extern "C" {
 #endif
 
+typedef char *neu_json_get_license_resp_enabled_plugin_t;
+
+typedef struct {
+    bool                                        valid;
+    int                                         n_enabled_plugin;
+    neu_json_get_license_resp_enabled_plugin_t *enabled_plugins;
+    int64_t                                     max_node_tags;
+    char *                                      license_type;
+    int64_t                                     error;
+    char *                                      valid_until;
+    char *                                      valid_since;
+    int64_t                                     max_nodes;
+} neu_json_get_license_resp_t;
+
+int neu_json_encode_get_license_resp(void *json_object, void *param);
+
 typedef struct {
     char *license;
 } neu_json_set_license_req_t;
