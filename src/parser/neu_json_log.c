@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,11 @@ int neu_json_encode_get_log_resp(void *json_object, void *param)
                                          .name         = "rows",
                                          .t            = NEU_JSON_OBJECT,
                                          .v.val_object = row_array,
+                                     },
+                                     {
+                                         .name      = "page_count",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->page_count,
                                      },
                                      {
                                          .name      = "error",
