@@ -75,6 +75,8 @@ typedef enum {
     PLUGIN_BIT_MODBUS_RTU      = 1,
     PLUGIN_BIT_OPCUA           = 2,
     PLUGIN_BIT_S7COMM          = 3,
+    PLUGIN_BIT_FINS            = 4,
+    PLUGIN_BIT_QNA3E           = 5,
     PLUGIN_BIT_MAX,
 } plugin_bit_e;
 
