@@ -12,6 +12,5 @@ Group=root
 LimitCORE=infinity
 ExecStartPre=-/opt/neuron/neuron.sh
 
-
 [Install]
-Alias=neuron.service
+WantedBy=multi-user.target
