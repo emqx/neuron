@@ -97,7 +97,11 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
     req->group_config_name = req_elems[1].v.val_str;
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    req->tags  = calloc(req->n_tag, sizeof(neu_json_write_req_tag_t));
+    if (req->n_tag < 0) {
+        goto decode_fail;
+    }
+
+    req->tags = calloc(req->n_tag, sizeof(neu_json_write_req_tag_t));
     neu_json_write_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = { {

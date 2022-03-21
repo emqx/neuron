@@ -58,7 +58,11 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
     req->group_config_name = req_elems[1].v.val_str;
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    req->tags  = calloc(req->n_tag, sizeof(neu_json_add_tags_req_tag_t));
+    if (req->n_tag < 0) {
+        goto decode_fail;
+    }
+
+    req->tags = calloc(req->n_tag, sizeof(neu_json_add_tags_req_tag_t));
     neu_json_add_tags_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = { {
@@ -154,7 +158,11 @@ int neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result)
     req->group_config_name = req_elems[1].v.val_str;
 
     req->n_id = neu_json_decode_array_size_by_json(json_obj, "ids");
-    req->ids  = calloc(req->n_id, sizeof(neu_json_del_tags_req_id_t));
+    if (req->n_id < 0) {
+        goto decode_fail;
+    }
+
+    req->ids = calloc(req->n_id, sizeof(neu_json_del_tags_req_id_t));
     neu_json_del_tags_req_id_t *p_id = req->ids;
     for (int i = 0; i < req->n_id; i++) {
         neu_json_elem_t id_elems[] = { {
@@ -337,7 +345,11 @@ int neu_json_decode_update_tags_req(char *                       buf,
     req->group_config_name = req_elems[1].v.val_str;
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    req->tags  = calloc(req->n_tag, sizeof(neu_json_update_tags_req_tag_t));
+    if (req->n_tag < 0) {
+        goto decode_fail;
+    }
+
+    req->tags = calloc(req->n_tag, sizeof(neu_json_update_tags_req_tag_t));
     neu_json_update_tags_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = { {

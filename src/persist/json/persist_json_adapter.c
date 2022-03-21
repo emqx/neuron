@@ -85,7 +85,11 @@ int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     req->n_node = neu_json_decode_array_size_by_json(json_obj, "nodes");
-    req->nodes  = calloc(req->n_node, sizeof(neu_json_node_req_node_t));
+    if (req->n_node < 0) {
+        goto decode_fail;
+    }
+
+    req->nodes = calloc(req->n_node, sizeof(neu_json_node_req_node_t));
     neu_json_node_req_node_t *p_node = req->nodes;
     for (int i = 0; i < req->n_node; i++) {
         neu_json_elem_t node_elems[] = { {

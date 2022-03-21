@@ -44,6 +44,10 @@ int neu_json_decode_subscriptions_req(char *                         buf,
 
     req->n_subscription =
         neu_json_decode_array_size_by_json(json_obj, "subscriptions");
+    if (req->n_subscription < 0) {
+        goto decode_fail;
+    }
+
     req->subscriptions = calloc(
         req->n_subscription, sizeof(neu_json_subscriptions_req_subscription_t));
     neu_json_subscriptions_req_subscription_t *p_subscription =

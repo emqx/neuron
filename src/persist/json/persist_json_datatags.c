@@ -41,7 +41,11 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    req->tags  = calloc(req->n_tag, sizeof(neu_json_datatag_req_tag_t));
+    if (req->n_tag < 0) {
+        goto decode_fail;
+    }
+
+    req->tags = calloc(req->n_tag, sizeof(neu_json_datatag_req_tag_t));
     neu_json_datatag_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = { {
