@@ -413,15 +413,14 @@ static void *mqtt_send_loop(void *argument)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) argument;
 
-    bool run_flag = true;
     while (1) {
         // Get run state
         pthread_mutex_lock(&plugin->running_mutex);
-        run_flag = plugin->running;
-        pthread_mutex_unlock(&plugin->running_mutex);
-        if (!run_flag) {
+        if (!plugin->running) {
+            pthread_mutex_unlock(&plugin->running_mutex);
             break;
         }
+        pthread_mutex_unlock(&plugin->running_mutex);
 
         // Get context and publish
         mqtt_context_publish(plugin);
@@ -488,30 +487,36 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     NEU_LIST_INIT(&plugin->context_list, struct context, node);
     vector_init(&plugin->topics, 1, sizeof(struct topic_pair));
 
-    plugin->running = true;
     pthread_mutex_init(&plugin->running_mutex, NULL);
     pthread_mutex_init(&plugin->list_mutex, NULL);
 
+    pthread_mutex_lock(&plugin->running_mutex);
+    plugin->running = true;
+    pthread_mutex_unlock(&plugin->running_mutex);
+
     if (0 != pthread_create(&plugin->daemon, NULL, mqtt_send_loop, plugin)) {
-        log_error("Failed to start thread daemon.");
-        return -1;
+        log_error("Failed to start send thread daemon.");
+        return NEU_ERR_FAILURE;
     }
 
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_stop(neu_plugin_t *plugin);
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
-    mqtt_plugin_stop(plugin);
+    neu_mqtt_client_close(plugin->client);
+    plugin->client = NULL;
+
     mqtt_option_uninit(&plugin->option);
 
     pthread_mutex_lock(&plugin->running_mutex);
     plugin->running = false;
     pthread_mutex_unlock(&plugin->running_mutex);
     pthread_join(plugin->daemon, NULL);
+
     pthread_mutex_destroy(&plugin->list_mutex);
     pthread_mutex_destroy(&plugin->running_mutex);
 
@@ -524,7 +529,11 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
 static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
-    mqtt_plugin_stop(plugin);
+    neu_mqtt_client_close(plugin->client);
+    plugin->client = NULL;
+
+    mqtt_context_cleanup(plugin);    // clean publish queue
+    topics_cleanup(&plugin->topics); // clean topic pair
 
     mqtt_option_uninit(&plugin->option);
     int rc = mqtt_option_init(configs, &plugin->option);
@@ -535,8 +544,13 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
         return NEU_ERR_FAILURE;
     }
 
-    topics_cleanup(&plugin->topics);
+    neu_err_code_e error = neu_mqtt_client_open(
+        (neu_mqtt_client_t *) &plugin->client, &plugin->option, plugin);
+    log_info("Open mqtt client: %s:%s, code:%d", plugin->option.host,
+             plugin->option.port, error);
+
     topics_generate(&plugin->topics, plugin->option.clientid);
+    topics_subscribe(&plugin->topics, plugin->client);
 
     log_info("Config plugin: %s", neu_plugin_module.module_name);
     return 0;
@@ -544,22 +558,11 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 
 static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
-    neu_err_code_e error = neu_mqtt_client_open(
-        (neu_mqtt_client_t *) &plugin->client, &plugin->option, plugin);
-    if (NEU_ERR_MQTT_IS_NULL == error) {
-        const char *name = neu_plugin_module.module_name;
-        log_error("Start plugin failed: %s", name);
-        return NEU_ERR_PLUGIN_DISCONNECTED;
-    }
-
-    topics_subscribe(&plugin->topics, plugin->client);
     return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
-    neu_mqtt_client_close(plugin->client);
-    plugin->client = NULL;
     return NEU_ERR_SUCCESS;
 }
 

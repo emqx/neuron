@@ -225,15 +225,13 @@ static void *client_refresher(void *context)
     mqtt_c_client_t *   client = (mqtt_c_client_t *) context;
     struct mqtt_client *mqtt   = &client->mqtt;
 
-    bool run_flag = true;
     while (1) {
         pthread_mutex_lock(&client->mutex);
-        run_flag = client->running;
-        pthread_mutex_unlock(&client->mutex);
-
-        if (!run_flag) {
+        if (!client->running) {
+            pthread_mutex_unlock(&client->mutex);
             break;
         }
+        pthread_mutex_unlock(&client->mutex);
 
         mqtt_sync((struct mqtt_client *) mqtt);
         usleep(INTERVAL);
