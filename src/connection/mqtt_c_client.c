@@ -58,6 +58,8 @@ struct mqtt_c_client {
     uint8_t                  recv_buf[RECV_BUF_SIZE];
     pthread_t                client_daemon;
     pthread_mutex_t          mutex;
+    pthread_mutex_t          working_mutex;
+    bool                     working;
     void *                   user_data;
 };
 
@@ -196,6 +198,17 @@ static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
 static void publish_callback(void **                       p_reconnect_state,
                              struct mqtt_response_publish *published)
 {
+    struct reconnect_state *state =
+        *((struct reconnect_state **) p_reconnect_state);
+    mqtt_c_client_t *client = state->client;
+
+    pthread_mutex_lock(&client->working_mutex);
+    if (!client->working) {
+        pthread_mutex_unlock(&client->working_mutex);
+        return;
+    }
+    pthread_mutex_unlock(&client->working_mutex);
+
     char *topic_name = (char *) malloc(published->topic_name_size + 1);
     memcpy(topic_name, published->topic_name, published->topic_name_size);
     topic_name[published->topic_name_size] = '\0';
@@ -203,10 +216,7 @@ static void publish_callback(void **                       p_reconnect_state,
     log_info("Received publish('%s'): %s", topic_name,
              (const char *) published->application_message);
 
-    struct reconnect_state *state =
-        *((struct reconnect_state **) p_reconnect_state);
-    mqtt_c_client_t *       client = state->client;
-    struct subscribe_tuple *item   = NULL;
+    struct subscribe_tuple *item = NULL;
     NEU_LIST_FOREACH(&client->subscribe_list, item)
     {
         if (0 == strcmp(item->topic, topic_name) && NULL != item->handle) {
@@ -251,9 +261,11 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
     memset(client, 0, sizeof(mqtt_c_client_t));
 
     pthread_mutex_init(&client->mutex, NULL);
+    pthread_mutex_init(&client->working_mutex, NULL);
     client->option    = option;
     client->running   = true;
     client->user_data = context;
+    client->working   = true;
 
     struct reconnect_state *state = &client->state;
     state->hostname               = client->option->host;
@@ -384,6 +396,7 @@ static neu_err_code_e client_disconnect(mqtt_c_client_t *client)
 static neu_err_code_e client_destroy(mqtt_c_client_t *client)
 {
     pthread_mutex_destroy(&client->mutex);
+    pthread_mutex_destroy(&client->working_mutex);
     free(client);
     return NEU_ERR_SUCCESS;
 }
@@ -506,6 +519,13 @@ neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
         return error;
     }
 
+    pthread_mutex_lock(&client->working_mutex);
+    if (!client->working) {
+        pthread_mutex_unlock(&client->working_mutex);
+        return NEU_ERR_MQTT_SUSPENDED;
+    }
+    pthread_mutex_unlock(&client->working_mutex);
+
     error = mqtt_publish(&client->mqtt, topic, payload, len, qos);
     if (1 != error) {
         log_error("Failed to start send message, return code %d", error);
@@ -513,6 +533,22 @@ neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
     }
 
     log_info("Publish to topic %s for using QoS%d", topic, qos);
+    return NEU_ERR_SUCCESS;
+}
+
+neu_err_code_e mqtt_c_client_suspend(mqtt_c_client_t *client)
+{
+    pthread_mutex_lock(&client->working_mutex);
+    client->working = false;
+    pthread_mutex_unlock(&client->working_mutex);
+    return NEU_ERR_SUCCESS;
+}
+
+neu_err_code_e mqtt_c_client_continue(mqtt_c_client_t *client)
+{
+    pthread_mutex_lock(&client->working_mutex);
+    client->working = true;
+    pthread_mutex_unlock(&client->working_mutex);
     return NEU_ERR_SUCCESS;
 }
 

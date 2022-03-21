@@ -42,6 +42,8 @@ neu_err_code_e mqtt_c_client_unsubscribe(mqtt_c_client_t *client,
 neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
                                      int qos, unsigned char *payload,
                                      size_t len);
+neu_err_code_e mqtt_c_client_suspend(mqtt_c_client_t *client);
+neu_err_code_e mqtt_c_client_continue(mqtt_c_client_t *client);
 neu_err_code_e mqtt_c_client_close(mqtt_c_client_t *client);
 
 #ifdef __cplusplus

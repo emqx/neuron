@@ -82,6 +82,10 @@ neu_err_code_e neu_mqtt_client_publish(neu_mqtt_client_t client,
                                        const char *topic, int qos,
                                        unsigned char *payload, size_t len);
 
+neu_err_code_e neu_mqtt_client_suspend(neu_mqtt_client_t client);
+
+neu_err_code_e neu_mqtt_client_continue(neu_mqtt_client_t client);
+
 neu_err_code_e neu_mqtt_client_close(neu_mqtt_client_t client);
 
 #ifdef __cplusplus

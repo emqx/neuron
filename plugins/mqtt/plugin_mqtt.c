@@ -546,6 +546,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 
     neu_err_code_e error = neu_mqtt_client_open(
         (neu_mqtt_client_t *) &plugin->client, &plugin->option, plugin);
+    neu_mqtt_client_continue(plugin->client);
     log_info("Open mqtt client: %s:%s, code:%d", plugin->option.host,
              plugin->option.port, error);
 
@@ -558,11 +559,13 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 
 static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
+    neu_mqtt_client_continue(plugin->client);
     return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
+    neu_mqtt_client_suspend(plugin->client);
     return NEU_ERR_SUCCESS;
 }
 
