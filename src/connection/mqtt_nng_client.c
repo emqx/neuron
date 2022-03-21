@@ -656,6 +656,18 @@ static void client_destroy(mqtt_nng_client_t *client)
     free(client);
 }
 
+neu_err_code_e mqtt_nng_client_suspend(mqtt_nng_client_t *client)
+{
+    // TODO: suspend logic
+    return NEU_ERR_SUCCESS;
+}
+
+neu_err_code_e mqtt_nng_client_continue(mqtt_nng_client_t *client)
+{
+    // TODO: continue logic
+    return NEU_ERR_SUCCESS;
+}
+
 neu_err_code_e mqtt_nng_client_close(mqtt_nng_client_t *client)
 {
     if (NULL == client) {

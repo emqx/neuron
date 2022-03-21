@@ -77,6 +77,24 @@ neu_err_code_e neu_mqtt_client_publish(neu_mqtt_client_t client,
 #endif
 }
 
+neu_err_code_e neu_mqtt_client_suspend(neu_mqtt_client_t client)
+{
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_suspend(client);
+#else
+    return mqtt_c_client_suspend(client);
+#endif
+}
+
+neu_err_code_e neu_mqtt_client_continue(neu_mqtt_client_t client)
+{
+#ifdef USE_NNG_MQTT
+    return mqtt_nng_client_continue(client);
+#else
+    return mqtt_c_client_continue(client);
+#endif
+}
+
 neu_err_code_e neu_mqtt_client_close(neu_mqtt_client_t client)
 {
 #ifdef USE_NNG_MQTT
