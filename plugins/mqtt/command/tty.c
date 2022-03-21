@@ -44,7 +44,6 @@ char *command_tty_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
             free(ttys_res.ttys[i]);
         }
 
-        free(result);
         free(ttys_res.ttys);
     }
 
