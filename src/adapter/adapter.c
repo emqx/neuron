@@ -551,6 +551,37 @@ static int persister_singleton_handle_nodes(neu_adapter_t *adapter,
     return rv;
 }
 
+static int
+persister_singleton_handle_update_node(neu_adapter_t *          adapter,
+                                       neu_event_update_node_t *event)
+{
+    neu_persister_t *persister     = persister_singleton_get();
+    vector_t *       adapter_infos = NULL;
+
+    log_info("%s handling update node event of %s", adapter->name,
+             event->src_name);
+
+    int rv =
+        neu_manager_get_persist_adapter_infos(adapter->manager, &adapter_infos);
+    if (0 != rv) {
+        log_error("%s unable to get adapter infos", adapter->name);
+        return rv;
+    }
+
+    // store the current set of adapter infos
+    rv = neu_persister_store_adapters(persister, adapter_infos);
+    if (0 == rv) {
+        rv = neu_persister_update_adapter(persister, event->src_name,
+                                          event->dst_name);
+    } else {
+        log_error("%s failed to store adapter infos", adapter->name);
+    }
+
+    neu_persist_adapter_infos_free(adapter_infos);
+
+    return rv;
+}
+
 static int persister_singleton_handle_plugins(neu_adapter_t *adapter,
                                               msg_type_e     event)
 {
@@ -829,12 +860,17 @@ static void adapter_loop(void *arg)
         case MSG_EVENT_ADD_NODE:
             // fall through
 
-        case MSG_EVENT_UPDATE_NODE:
-            // fall through
-
         case MSG_EVENT_DEL_NODE: {
             const char *node_name = msg_get_buf_ptr(pay_msg);
             persister_singleton_handle_nodes(adapter, pay_msg_type, node_name);
+            break;
+        }
+
+        case MSG_EVENT_UPDATE_NODE: {
+            neu_event_update_node_t *event = msg_get_buf_ptr(pay_msg);
+            persister_singleton_handle_update_node(adapter, event);
+            free(event->src_name);
+            free(event->dst_name);
             break;
         }
 
@@ -1212,10 +1248,27 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         ADAPTER_RESP_CODE(
             adapter, cmd, intptr_t, neu_cmd_update_node_t, rv,
             NEU_REQRESP_ERR_CODE, p_result, {
-                ret = neu_manager_update_node(adapter->manager, req_cmd);
+                neu_event_update_node_t event    = {};
+                char *                  src_name = NULL;
+                char *                  dst_name = NULL;
+
+                ret = neu_manager_get_node_name_by_id(
+                    adapter->manager, req_cmd->node_id, &src_name);
                 if (0 == ret) {
-                    ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_UPDATE_NODE,
-                                            req_cmd->node_name);
+                    dst_name = strdup(req_cmd->node_name);
+                    ret      = NULL == dst_name ? NEU_ERR_ENOMEM : 0;
+                }
+                if (0 == ret) {
+                    ret = neu_manager_update_node(adapter->manager, req_cmd);
+                }
+                if (0 == ret) {
+                    event.src_name = src_name;
+                    event.dst_name = dst_name;
+                    ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UPDATE_NODE, &event,
+                                     sizeof(event));
+                } else {
+                    free(src_name);
+                    free(dst_name);
                 }
             });
         break;
@@ -1510,8 +1563,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     rv              = neu_manager_get_node_name_by_id(
                         adapter->manager, req_cmd->node_id, &node_name);
                     if (0 == rv) {
-                        ADAPTER_SEND_NODE_EVENT(
-                            adapter, rv, MSG_EVENT_UPDATE_NODE, node_name);
+                        ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_ADD_NODE,
+                                                node_name);
                         free(node_name);
                     }
                 }
