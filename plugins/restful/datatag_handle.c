@@ -197,9 +197,9 @@ void handle_update_tags(nng_aio *aio)
                     break;
                 }
 
-                tag =
-                    neu_datatag_alloc(req->tags[i].attribute, req->tags[i].type,
-                                      req->tags[i].address, req->tags[i].name);
+                tag = neu_datatag_alloc_with_id(
+                    req->tags[i].attribute, req->tags[i].type,
+                    req->tags[i].address, req->tags[i].name, req->tags[i].id);
 
                 if (NULL == tag) {
                     code = NEU_ERR_ENOMEM;
