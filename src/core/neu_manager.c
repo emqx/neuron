@@ -1540,6 +1540,8 @@ static bool adapter_match_node_type(neu_adapter_t * adapter,
         return ADAPTER_TYPE_STREAM_PROCESSOR == neu_adapter_get_type(adapter);
     case NEU_NODE_TYPE_APP:
         return ADAPTER_TYPE_APP == neu_adapter_get_type(adapter);
+    case NEU_NODE_TYPE_FUNCTIONAL:
+        return ADAPTER_TYPE_FUNCTIONAL == neu_adapter_get_type(adapter);
     default:
         return false;
     }
