@@ -704,6 +704,30 @@ int neu_persister_delete_adapter(neu_persister_t *persister,
     return 0;
 }
 
+int neu_persister_update_adapter(neu_persister_t *persister,
+                                 const char *adapter_name, const char *new_name)
+{
+    char path[PATH_MAX_SIZE] = { 0 };
+    int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return NEU_ERR_FAILURE;
+    }
+
+    char new_path[PATH_MAX_SIZE] = { 0 };
+    n = persister_adapter_dir(new_path, sizeof(new_path), persister, new_name);
+    if (sizeof(new_path) == n) {
+        log_error("persister new path too long: %s", new_path);
+        return NEU_ERR_FAILURE;
+    }
+
+    if (0 != rename(path, new_path)) {
+        return NEU_ERR_FAILURE;
+    }
+
+    return 0;
+}
+
 int neu_persister_store_plugins(neu_persister_t *persister,
                                 vector_t *       plugin_infos)
 {

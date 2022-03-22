@@ -147,6 +147,17 @@ int neu_persister_delete_adapter(neu_persister_t *persister,
                                  const char *     adapter_name);
 
 /**
+ * Update adapter.
+ * @param persister                 persiter object.
+ * @param adapter_name              name of the adapter to update.
+ * @param new_name                  new name of the adapter.
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_adapter(neu_persister_t *persister,
+                                 const char *     adapter_name,
+                                 const char *     new_name);
+
+/**
  * Persist plugins.
  * @param persister                 persiter object.
  * @param plugin_infos              vector of neu_persist_plugin_info_t.
