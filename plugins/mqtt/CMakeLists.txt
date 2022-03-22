@@ -2,8 +2,8 @@
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
 set(src 
-	plugin_mqtt.c 
-	mqtt_util.c
+	mqtt.c 
+	util.c
 	command/read_write.c
 	command/group_config.c
 	command/datatag.c

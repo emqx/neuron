@@ -24,7 +24,7 @@
 
 #include "command/command.h"
 #include "connection/mqtt_client_intf.h"
-#include "mqtt_util.h"
+#include "util.h"
 #include <neuron.h>
 
 #define UNUSED(x) (void) (x)
@@ -350,6 +350,7 @@ static void mqtt_context_publish(neu_plugin_t *plugin)
     struct context *ctx    = NULL;
     char *          topic  = NULL;
     char *          result = NULL;
+
     pthread_mutex_lock(&plugin->list_mutex);
 
     ctx = neu_list_first(&plugin->context_list);
@@ -374,8 +375,8 @@ static void mqtt_context_publish(neu_plugin_t *plugin)
     if (NULL != result && NULL != topic) {
         neu_err_code_e error = neu_mqtt_client_publish(
             plugin->client, topic, 0, (unsigned char *) result, strlen(result));
-        log_debug("Publish error code:%d, topic('%s'): %s", error, topic,
-                  result);
+        log_debug_node(plugin, "Publish error code:%d, topic('%s'): %s", error,
+                       topic, result);
         free(result);
     }
 }
@@ -453,37 +454,37 @@ static void *mqtt_send_loop(void *argument)
 static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
                                       const adapter_callbacks_t *callbacks)
 {
-    if (NULL == adapter || NULL == callbacks) {
-        log_error("Open plugin with NULL adapter or callbacks");
-        return NULL;
-    }
+    assert(NULL != adapter);
+    assert(NULL != callbacks);
 
     neu_plugin_t *plugin = NULL;
-    plugin               = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
-    if (NULL == plugin) {
-        log_error("Failed to allocate plugin %s",
-                  neu_plugin_module.module_name);
-        return NULL;
-    }
-    memset(plugin, 0, sizeof(neu_plugin_t));
+    plugin               = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
+    assert(NULL != plugin);
 
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
 
-    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    log_info_node(plugin, "Success to create plugin: %s",
+                  neu_plugin_module.module_name);
     return plugin;
 }
 
 static int mqtt_plugin_close(neu_plugin_t *plugin)
 {
+    assert(NULL != plugin);
+
+    log_info_node(plugin, "Success to free plugin:%s",
+                  neu_plugin_module.module_name);
+
     free(plugin);
-    log_info("Success to free plugin:%s", neu_plugin_module.module_name);
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
+    assert(NULL != plugin);
+
     NEU_LIST_INIT(&plugin->context_list, struct context, node);
     vector_init(&plugin->topics, 1, sizeof(struct topic_pair));
 
@@ -495,18 +496,19 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     pthread_mutex_unlock(&plugin->running_mutex);
 
     if (0 != pthread_create(&plugin->daemon, NULL, mqtt_send_loop, plugin)) {
-        log_error("Failed to start send thread daemon.");
+        log_error_node(plugin, "Failed to start send thread daemon.");
         return NEU_ERR_FAILURE;
     }
 
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    log_info_node(plugin, "Initialize plugin: %s",
+                  neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_stop(neu_plugin_t *plugin);
-
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
+    assert(NULL != plugin);
+
     neu_mqtt_client_close(plugin->client);
     plugin->client = NULL;
 
@@ -523,12 +525,16 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     topics_cleanup(&plugin->topics);
     vector_uninit(&plugin->topics);
 
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
-    return 0;
+    log_info_node(plugin, "Uninitialize plugin: %s",
+                  neu_plugin_module.module_name);
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 {
+    assert(NULL != plugin);
+    assert(NULL != configs);
+
     neu_mqtt_client_close(plugin->client);
     plugin->client = NULL;
 
@@ -539,47 +545,46 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     int rc = mqtt_option_init(configs, &plugin->option);
     if (0 != rc) {
         const char *name = neu_plugin_module.module_name;
-        log_error("MQTT option init fail:%d, %s", rc, name);
+        log_error_node(plugin, "MQTT option init fail:%d, %s", rc, name);
         mqtt_option_uninit(&plugin->option);
         return NEU_ERR_FAILURE;
     }
 
-    neu_err_code_e error = neu_mqtt_client_open(
-        (neu_mqtt_client_t *) &plugin->client, &plugin->option, plugin);
+    neu_mqtt_client_t *client = (neu_mqtt_client_t *) &plugin->client;
+    neu_err_code_e     error  = NEU_ERR_SUCCESS;
+    error = neu_mqtt_client_open(client, &plugin->option, plugin);
     neu_mqtt_client_continue(plugin->client);
-    log_info("Open mqtt client: %s:%s, code:%d", plugin->option.host,
-             plugin->option.port, error);
+
+    log_info_node(plugin, "Open mqtt client: %s:%s, code:%d",
+                  plugin->option.host, plugin->option.port, error);
 
     topics_generate(&plugin->topics, plugin->option.clientid);
     topics_subscribe(&plugin->topics, plugin->client);
 
-    log_info("Config plugin: %s", neu_plugin_module.module_name);
-    return 0;
+    log_info_node(plugin, "Config plugin: %s", neu_plugin_module.module_name);
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
+    assert(NULL != plugin);
+
     neu_mqtt_client_continue(plugin->client);
     return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
+    assert(NULL != plugin);
+
     neu_mqtt_client_suspend(plugin->client);
     return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 {
-    int rv = 0;
-
-    if (plugin == NULL || req == NULL) {
-        log_warn("The plugin pointer or request is NULL");
-        return (-1);
-    }
-
-    log_info_node(plugin, "send request to plugin: %s, type:%d",
-                  neu_plugin_module.module_name, req->req_type);
+    assert(NULL != plugin);
+    assert(NULL != req);
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_RESP: {
@@ -638,7 +643,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         break;
     }
 
-    return rv;
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_event_reply(neu_plugin_t *     plugin,
@@ -646,15 +651,14 @@ static int mqtt_plugin_event_reply(neu_plugin_t *     plugin,
 {
     UNUSED(plugin);
     UNUSED(reply);
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 {
     (void) plugin;
     (void) tag;
-
-    return 0;
+    return NEU_ERR_SUCCESS;
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
