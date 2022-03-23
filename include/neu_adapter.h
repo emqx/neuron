@@ -383,6 +383,11 @@ typedef struct neu_event_tags {
     char *        grp_config_name;
 } neu_event_tags_t;
 
+typedef struct {
+    char *src_name;
+    char *dst_name;
+} neu_event_update_node_t;
+
 /**
  * definition enum and structure for neuron config
  */
