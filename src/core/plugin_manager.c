@@ -67,7 +67,7 @@ static const plugin_reg_entity_t builtin_static_plugins[] = {
     {
         .plugin_id       = { 2 },
         .plugin_kind     = PLUGIN_KIND_STATIC,
-        .adapter_type    = ADAPTER_TYPE_APP,
+        .adapter_type    = ADAPTER_TYPE_FUNCTIONAL,
         .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME,
     },
