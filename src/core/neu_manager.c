@@ -1392,6 +1392,26 @@ int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
     adapter_id_t          adapter_id;
     neu_adapter_t *       adapter = NULL;
     adapter_reg_entity_t *reg_entity;
+    vector_t              group_config;
+
+    vector_init(&group_config, 1, sizeof(neu_taggrp_config_t *));
+
+    if (neu_manager_get_grp_configs(manager, node_id, &group_config) == 0) {
+        VECTOR_FOR_EACH(&group_config, iter)
+        {
+            neu_taggrp_config_t *config =
+                *(neu_taggrp_config_t **) iterator_get(&iter);
+            if (neu_taggrp_cfg_get_subpipes(config)->size != 0) {
+                rv = NEU_ERR_GRP_CONFIG_IN_USE;
+                break;
+            }
+        }
+    }
+    vector_uninit(&group_config);
+
+    if (rv != 0) {
+        return rv;
+    }
 
     adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
 
