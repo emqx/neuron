@@ -85,7 +85,7 @@ void handle_get_log(nng_aio *aio)
         0 != http_get_param_uint32(aio, "page", &page) ||
         0 != http_get_param_uint32(aio, "page_size", &page_size) ||
         page_size < LOG_PAGE_SIZE_MIN || LOG_PAGE_SIZE_MAX < page_size) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_BODY_IS_WRONG, {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         });
         return;
@@ -94,7 +94,7 @@ void handle_get_log(nng_aio *aio)
     // optional param
     level_str = http_get_param(aio, "level", &len);
     if (NULL != level_str && 0 != string_to_log_level(level_str, len, &level)) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_BODY_IS_WRONG, {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         });
         return;
