@@ -177,6 +177,10 @@ void log_log(int level, const char *file, int line, const char *func,
 {
     const char *file_name = file + PRJ_ROOT_DIR_LEN;
 
+    if (L.quiet || level < L.level) {
+        return;
+    }
+
     log_Event ev = { .fmt   = fmt,
                      .file  = file_name,
                      .line  = line,
@@ -186,16 +190,14 @@ void log_log(int level, const char *file, int line, const char *func,
 
     lock();
 
-    if (!L.quiet && level >= L.level) {
-        init_event(&ev, stderr);
-        va_start(ev.ap, fmt);
-        stdout_callback(&ev);
-        va_end(ev.ap);
+    init_event(&ev, stderr);
+    va_start(ev.ap, fmt);
+    stdout_callback(&ev);
+    va_end(ev.ap);
 
-        va_start(ev.ap, fmt);
-        syslog_callback(&ev);
-        va_end(ev.ap);
-    }
+    va_start(ev.ap, fmt);
+    syslog_callback(&ev);
+    va_end(ev.ap);
 
     for (int i = 0; i < MAX_CALLBACKS && L.callbacks[i].fn; i++) {
         Callback *cb = &L.callbacks[i];
