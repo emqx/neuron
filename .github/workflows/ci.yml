@@ -273,6 +273,19 @@ jobs:
       - id: package
         run: echo "::set-output name=name::${{ matrix.type }}-${{ steps.get_version.outputs.version }}-${{ matrix.arch }}.${{ matrix.package }}"
 
+      - name: gen packages sha256
+        run: sudo bash -c "echo $(sha256sum ./${{ steps.package.outputs.name }} | awk '{print $1}') > ./${{ steps.package.outputs.name }}.sha256"
+
+      - uses: actions/upload-release-asset@v1
+        if: github.event_name == 'release'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ steps.package.outputs.name}}.sha256
+          asset_name: ${{ matrix.type }}-${{ steps.get_version.outputs.version }}-linux-${{ matrix.arch }}.${{ matrix.package }}.sha256
+          asset_content_type: application/octet-stream
+
       - uses: actions/upload-release-asset@v1
         if: github.event_name == 'release'
         env:
