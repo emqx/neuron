@@ -36,11 +36,31 @@
 #include "neu_panic.h"
 #include "restful/rest.h"
 
+#define STDOUT_FILE "/dev/stdout"
+
+#define OPTIONAL_ARGUMENT_IS_PRESENT                             \
+    ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
+         ? (bool) (optarg = argv[optind++])                      \
+         : (optarg != NULL))
+
 static neu_manager_t *manager   = NULL;
 static nng_socket     main_sock = { 0 };
 
 static nng_mtx *log_mtx;
 FILE *          g_logfile;
+
+// clang-format off
+const char *usage_text =
+"USAGE:\n"
+"    neuron [OPTIONS]\n\n"
+"OPTIONS:\n"
+"    -c, --config [FILE]  neuron configuration file (default ./config/neuron.yaml)\n"
+"    -d, --daemon         run as daemon process\n"
+"    -h, --help           show this help message\n"
+"    --log [FILE]         log to the given file, or stdout if no FILE argument\n"
+"                         without this option, default log to ./logs/neuron.log\n"
+"\n";
+// clang-format on
 
 static void log_lock(bool lock, void *udata)
 {
@@ -52,12 +72,16 @@ static void log_lock(bool lock, void *udata)
     }
 }
 
-static void init()
+static void init(const char *log_file)
 {
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
     log_set_level(NEU_LOG_DEBUG);
-    g_logfile = fopen("./logs/neuron.log", "a");
+    if (0 == strcmp(log_file, STDOUT_FILE)) {
+        g_logfile = stdout;
+    } else {
+        g_logfile = fopen(log_file, "a");
+    }
     if (g_logfile == NULL) {
         fprintf(stderr,
                 "Failed to open logfile when"
@@ -76,7 +100,7 @@ static void uninit()
 
 static void usage()
 {
-    fprintf(stderr, "neuron [--help] [--config] [--daemon]\n");
+    fprintf(stderr, usage_text);
 }
 
 static int read_neuron_config(const char *config)
@@ -144,14 +168,14 @@ int main(int argc, char *argv[])
     int   rv          = 0;
     bool  is_daemon   = false;
     char *config_file = NULL;
-
-    init();
+    char *log_file    = NULL;
 
     char *        opts           = "c::hd:W;";
     struct option long_options[] = {
         { "help", no_argument, NULL, 1 },
         { "config", optional_argument, NULL, 'c' },
         { "daemon", required_argument, NULL, 1 },
+        { "log", optional_argument, NULL, 'l' },
         { NULL, 0, NULL, 0 },
     };
 
@@ -175,6 +199,15 @@ int main(int argc, char *argv[])
                 config_file = strdup(argv[2]);
             }
             break;
+        case 'l':
+            if (OPTIONAL_ARGUMENT_IS_PRESENT) {
+                // log to file
+                log_file = strdup(optarg);
+            } else {
+                // log to stdout
+                log_file = strdup(STDOUT_FILE);
+            }
+            break;
         case '?':
         default:
             fprintf(stderr, "%s: option '-%c' is invalid: ignored\n", argv[0],
@@ -187,6 +220,12 @@ int main(int argc, char *argv[])
     if (config_file == NULL) {
         config_file = strdup("./config/neuron.yaml");
     }
+
+    if (log_file == NULL) {
+        log_file = strdup("./logs/neuron.log");
+    }
+
+    init(log_file);
 
     rv = read_neuron_config(config_file);
     if (rv < 0) {
@@ -234,5 +273,6 @@ int main(int argc, char *argv[])
 main_end:
     uninit();
     free(config_file);
+    free(log_file);
     return rv;
 }
