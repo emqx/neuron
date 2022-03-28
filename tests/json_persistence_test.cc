@@ -13,13 +13,13 @@ TEST(JsonAdapter, AdapterPersistenceDecode)
 {
     char *buf =
         (char *) "{\"nodes\": "
-                 "[{\"type\":1, \"state\": 1, \"name\": "
+                 "[{\"id\":1, \"type\":1, \"state\": 1, \"name\": "
                  "\"sample-driver-adapter\", \"plugin_name\": "
                  "\"sample-drv-plugin\"}, "
-                 "{\"type\":5, \"state\": 2, \"name\": "
+                 "{\"id\":2, \"type\":5, \"state\": 2, \"name\": "
                  "\"sample-app-adapter\", \"plugin_name\": "
                  "\"sample-app-plugin\"}, "
-                 "{\"type\": 3, \"state\": 3, \"name\": "
+                 "{\"id\":3, \"type\": 3, \"state\": 3, \"name\": "
                  "\"mqtt-adapter\", \"plugin_name\": \"mqtt-plugin\"}]}";
 
     neu_json_node_req_t *req = NULL;
@@ -160,11 +160,11 @@ TEST(JsonAdapterTest, AdapterPersistenceEncode)
 {
     char *buf =
         (char *) "{\"nodes\": [{\"type\": 1, \"state\": 1, \"plugin_name\": "
-                 "\"sample-drv-plugin\", \"name\": \"sample-driver-adapter\"}, "
-                 "{\"type\": 5, \"state\": 2, \"plugin_name\": "
-                 "\"sample-app-plugin\", \"name\": \"sample-app-adapter\"}, "
-                 "{\"type\": 3, \"state\": 3, \"plugin_name\": "
-                 "\"mqtt-plugin\", \"name\": \"mqtt-adapter\"}]}";
+                 "\"sample-drv-plugin\", \"name\": \"sample-driver-adapter\", "
+                 "\"id\": 1}, {\"type\": 5, \"state\": 2, \"plugin_name\": "
+                 "\"sample-app-plugin\", \"name\": \"sample-app-adapter\", "
+                 "\"id\": 2}, {\"type\": 3, \"state\": 3, \"plugin_name\": "
+                 "\"mqtt-plugin\", \"name\": \"mqtt-adapter\", \"id\": 3}]}";
     char *buf2 = (char *) "{\"nodes\": []}";
 
     char *result  = NULL;
@@ -179,16 +179,19 @@ TEST(JsonAdapterTest, AdapterPersistenceEncode)
 
     resp.nodes = (neu_json_node_resp_node_t *) calloc(
         3, sizeof(neu_json_node_resp_node_t));
+    resp.nodes[0].id          = 1;
     resp.nodes[0].state       = 1;
     resp.nodes[0].type        = 1;
     resp.nodes[0].name        = strdup((char *) "sample-driver-adapter");
     resp.nodes[0].plugin_name = strdup((char *) "sample-drv-plugin");
 
+    resp.nodes[1].id          = 2;
     resp.nodes[1].state       = 2;
     resp.nodes[1].type        = 5;
     resp.nodes[1].name        = strdup((char *) "sample-app-adapter");
     resp.nodes[1].plugin_name = strdup((char *) "sample-app-plugin");
 
+    resp.nodes[2].id          = 3;
     resp.nodes[2].state       = 3;
     resp.nodes[2].type        = 3;
     resp.nodes[2].name        = strdup((char *) "mqtt-adapter");

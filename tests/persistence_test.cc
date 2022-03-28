@@ -10,11 +10,11 @@ TEST(PersistenceAdapterTest, Adapter)
     const char *adapters_fname   = neu_persister_get_adapters_fname(persister);
     const char *plugins_fname    = neu_persister_get_plugins_fname(persister);
 
-    neu_json_node_req_node_t node1 = { (char *) "sample-driver-adapter", 1,
+    neu_json_node_req_node_t node1 = { 1, (char *) "sample-driver-adapter", 1,
                                        (char *) "sample-drv-plugin", 1 };
-    neu_json_node_req_node_t node2 = { (char *) "sample-app-adapter", 5,
+    neu_json_node_req_node_t node2 = { 2, (char *) "sample-app-adapter", 5,
                                        (char *) "sample-app-plugin", 2 };
-    neu_json_node_req_node_t node3 = { (char *) "mqtt-adapter", 3,
+    neu_json_node_req_node_t node3 = { 3, (char *) "mqtt-adapter", 3,
                                        (char *) "mqtt-plugin", 3 };
 
     neu_json_node_req_t *req =
