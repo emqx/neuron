@@ -154,7 +154,8 @@ int log_add_callback(log_LogFn fn, void *udata, int level)
 
 int log_add_fp(FILE *fp, int level)
 {
-    return log_add_callback(file_callback, fp, level);
+    log_LogFn callback = (stdout == fp) ? stdout_callback : file_callback;
+    return log_add_callback(callback, fp, level);
 }
 
 static void init_event(log_Event *ev, void *udata)
@@ -177,6 +178,10 @@ void log_log(int level, const char *file, int line, const char *func,
 {
     const char *file_name = file + PRJ_ROOT_DIR_LEN;
 
+    if (L.quiet || level < L.level) {
+        return;
+    }
+
     log_Event ev = { .fmt   = fmt,
                      .file  = file_name,
                      .line  = line,
@@ -186,16 +191,7 @@ void log_log(int level, const char *file, int line, const char *func,
 
     lock();
 
-    if (!L.quiet && level >= L.level) {
-        init_event(&ev, stderr);
-        va_start(ev.ap, fmt);
-        stdout_callback(&ev);
-        va_end(ev.ap);
-
-        va_start(ev.ap, fmt);
-        syslog_callback(&ev);
-        va_end(ev.ap);
-    }
+    (void) syslog_callback; // mitigate unused warning
 
     for (int i = 0; i < MAX_CALLBACKS && L.callbacks[i].fn; i++) {
         Callback *cb = &L.callbacks[i];

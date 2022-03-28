@@ -16,7 +16,7 @@ class Neuron(object):
     def Start_Neuron(self):
         os.system("mkdir -p build/persistence")
         os.system("cp default_plugins.json build/persistence/plugins.json")
-        self.process = subprocess.Popen(['./neuron'], cwd='build/')
+        self.process = subprocess.Popen(['./neuron', '--log'], cwd='build/')
         return self.process
 
     def Stop_Neuron(self, remove_persistence_data=True):
