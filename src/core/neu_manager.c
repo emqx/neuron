@@ -1386,6 +1386,47 @@ int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
     return rv;
 }
 
+// NOTE: Do NOT expose this function in header files, use for persistence only!
+int neu_manager_update_node_id(neu_manager_t *manager, neu_node_id_t node_id,
+                               neu_node_id_t new_node_id)
+{
+    int                   rv = 0;
+    adapter_id_t          adapter_id;
+    adapter_id_t          new_adapter_id;
+    adapter_reg_entity_t *reg_entity;
+
+    // declaration for neu_adapter_set_id since it is not exposed
+    adapter_id_t neu_adapter_set_id(neu_adapter_t * adapter, adapter_id_t id);
+
+    if (0 == new_node_id) {
+        return NEU_ERR_EINVAL;
+    }
+
+    adapter_id     = neu_manager_adapter_id_from_node_id(manager, node_id);
+    new_adapter_id = neu_manager_adapter_id_from_node_id(manager, new_node_id);
+
+    nng_mtx_lock(manager->adapters_mtx);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, new_adapter_id);
+    if (NULL != reg_entity) {
+        rv = NEU_ERR_NODE_EXIST;
+    } else {
+        reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+        if (reg_entity != NULL) {
+            reg_entity->adapter_id = new_adapter_id;
+            neu_adapter_set_id(reg_entity->adapter, new_adapter_id);
+            if (new_adapter_id >= manager->new_adapter_id) {
+                // update new available adapter id
+                manager->new_adapter_id = new_adapter_id + 1;
+            }
+        } else {
+            rv = NEU_ERR_NODE_NOT_EXIST;
+        }
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return rv;
+}
+
 int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
 {
     int                   rv = 0;
@@ -2107,6 +2148,8 @@ int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
         }
 
         neu_persist_adapter_info_t adapter_info = {};
+        adapter_info.id =
+            neu_manager_adapter_id_to_node_id(manager, reg_entity->adapter_id);
         adapter_info.type  = neu_adapter_get_type(reg_entity->adapter);
         adapter_info.state = neu_adapter_get_state(reg_entity->adapter).running;
         adapter_info.name  = strdup(adapter_name);

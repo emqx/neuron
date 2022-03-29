@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,6 +32,7 @@ extern "C" {
 #endif
 
 typedef struct {
+    int64_t id;
     char *  name;
     int64_t type;
     char *  plugin_name;
@@ -46,6 +47,7 @@ typedef struct {
 int neu_json_encode_node_resp(void *json_object, void *param);
 
 typedef struct {
+    int64_t id;
     char *  name;
     int64_t type;
     char *  plugin_name;

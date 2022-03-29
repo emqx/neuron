@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -56,6 +56,11 @@ int neu_json_encode_node_resp(void *json_object, void *param)
                                              .name      = "name",
                                              .t         = NEU_JSON_STR,
                                              .v.val_str = p_node->name,
+                                         },
+                                         {
+                                             .name      = "id",
+                                             .t         = NEU_JSON_INT,
+                                             .v.val_int = p_node->id,
                                          } };
         node_array = neu_json_encode_array(node_array, node_elems,
                                            NEU_JSON_ELEM_SIZE(node_elems));
@@ -75,21 +80,11 @@ int neu_json_encode_node_resp(void *json_object, void *param)
 
 int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)
 {
-    int                  ret      = 0;
-    void *               json_obj = NULL;
-    neu_json_node_req_t *req      = calloc(1, sizeof(neu_json_node_req_t));
-    if (req == NULL) {
-        return -1;
-    }
+    int                  ret = 0;
+    neu_json_node_req_t *req = calloc(1, sizeof(neu_json_node_req_t));
 
-    json_obj = neu_json_decode_new(buf);
-
-    req->n_node = neu_json_decode_array_size_by_json(json_obj, "nodes");
-    if (req->n_node < 0) {
-        goto decode_fail;
-    }
-
-    req->nodes = calloc(req->n_node, sizeof(neu_json_node_req_node_t));
+    req->n_node = neu_json_decode_array_size(buf, "nodes");
+    req->nodes  = calloc(req->n_node, sizeof(neu_json_node_req_node_t));
     neu_json_node_req_node_t *p_node = req->nodes;
     for (int i = 0; i < req->n_node; i++) {
         neu_json_elem_t node_elems[] = { {
@@ -107,9 +102,13 @@ int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)
                                          {
                                              .name = "name",
                                              .t    = NEU_JSON_STR,
+                                         },
+                                         {
+                                             .name = "id",
+                                             .t    = NEU_JSON_INT,
                                          } };
-        ret                          = neu_json_decode_array_by_json(
-            json_obj, "nodes", i, NEU_JSON_ELEM_SIZE(node_elems), node_elems);
+        ret                          = neu_json_decode_array(buf, "nodes", i,
+                                    NEU_JSON_ELEM_SIZE(node_elems), node_elems);
         if (ret != 0) {
             goto decode_fail;
         }
@@ -118,11 +117,12 @@ int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)
         p_node->state       = node_elems[1].v.val_int;
         p_node->plugin_name = node_elems[2].v.val_str;
         p_node->name        = node_elems[3].v.val_str;
+        p_node->id          = node_elems[4].v.val_int;
         p_node++;
     }
 
     *result = req;
-    goto decode_exit;
+    return ret;
 
 decode_fail:
     if (req->nodes != NULL) {
@@ -131,13 +131,7 @@ decode_fail:
     if (req != NULL) {
         free(req);
     }
-    ret = -1;
-
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
-    }
-    return ret;
+    return -1;
 }
 
 void neu_json_decode_node_req_free(neu_json_node_req_t *req)

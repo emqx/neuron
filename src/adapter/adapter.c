@@ -443,10 +443,21 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
     return rv;
 }
 
+static int persist_adapter_info_cmp(const void *a, const void *b)
+{
+    return ((neu_persist_adapter_info_t *) a)->id -
+        ((neu_persist_adapter_info_t *) b)->id;
+}
+
 static int persister_singleton_load_data(neu_adapter_t *adapter)
 {
     vector_t *       adapter_infos = NULL;
     neu_persister_t *persister     = persister_singleton_get();
+
+    // declaration for neu_manager_update_node_id since it is not exposed
+    int neu_manager_update_node_id(neu_manager_t * manager,
+                                   neu_node_id_t node_id,
+                                   neu_node_id_t new_node_id);
 
     log_info("%s start persistence loading", adapter->name);
 
@@ -460,6 +471,10 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         log_error("%s failed to load adapter infos", adapter->name);
         goto error_load_adapters;
     }
+
+    // sort by adapter id
+    qsort(adapter_infos->data, adapter_infos->size,
+          sizeof(neu_persist_adapter_info_t), persist_adapter_info_cmp);
 
     VECTOR_FOR_EACH(adapter_infos, iter)
     {
@@ -478,6 +493,13 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
                  adapter_info->plugin_name);
         if (0 != rv) {
             goto error_add_adapters;
+        }
+
+        if (node_id != adapter_info->id) {
+            // set to persisted adapter id
+            neu_manager_update_node_id(adapter->manager, node_id,
+                                       adapter_info->id);
+            node_id = adapter_info->id;
         }
 
         rv = persister_singleton_load_setting(adapter, adapter_info->name,
@@ -2056,6 +2078,18 @@ adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
     }
 
     return adapter->id;
+}
+
+// NOTE: Do NOT expose this function in header files, use for persistence only!
+adapter_id_t neu_adapter_set_id(neu_adapter_t *adapter, adapter_id_t id)
+{
+    if (adapter == NULL) {
+        return 0;
+    }
+
+    adapter_id_t old = adapter->id;
+    adapter->id      = id;
+    return old;
 }
 
 adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter)
