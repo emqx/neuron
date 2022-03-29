@@ -115,6 +115,7 @@ set(NEURON_SOURCES
     plugins/dummy/dummy.c
     ${PERSIST_SOURCES})
 
+set(CMAKE_BUILD_RPATH ./)
 set(NEURON_INCLUDE_DIRECTORIES include src plugins)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
