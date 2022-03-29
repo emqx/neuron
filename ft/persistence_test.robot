@@ -93,7 +93,7 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     Node Setting           ${modbus_tcp2_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
 
     ${mqtt_id} =    Get Node ID    ${NODE_MQTT}                                                                                                                                           mqtt-1
-    Node Setting    ${mqtt_id}     {"req-topic": "Neuron/req", "res-topic": "Neuron/resp", "ssl": "false", "host": "127.0.0.1", "port": 1883, "username": "admin", "password": "0000"}
+    Node Setting    ${mqtt_id}     {"client-id":"upload123","ssl":false,"host":"127.0.0.1","port":1883,"username":"admin","password":"0000","ca-path":"","ca-file":""}
 
     Neuron Stop Running    ${process}
     ${process} =           Neuron Start Running
@@ -119,12 +119,13 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     Check Response Status          ${res}                  200
     Should Be Equal As Integers    ${res}[node_id]         ${mqtt_id}
     Should Be Equal As Integers    ${params}[port]         1883
-    Should Be Equal As Strings     ${params}[req-topic]    Neuron/req
-    Should Be Equal As Strings     ${params}[res-topic]    Neuron/resp
-    Should Be Equal As Strings     ${params}[ssl]          false
+    Should Be Equal As Strings     ${params}[client-id]    upload123
+    Should Not Be True             ${params}[ssl]          
     Should Be Equal As Strings     ${params}[host]         127.0.0.1
     Should Be Equal As Strings     ${params}[username]     admin
     Should Be Equal As Strings     ${params}[password]     0000
+    Should Be Empty                ${params}[ca-path]       
+    Should Be Empty                ${params}[ca-file]      
 
     [Teardown]    Neuron Stop Running    ${process}
 
