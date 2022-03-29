@@ -23,26 +23,10 @@
 #include <string.h>
 
 #include "util.h"
-#include "json/json.h"
 #include <config.h>
+#include <json/json.h>
+#include <json/neu_json_param.h>
 #include <neuron.h>
-
-#define MQTT_PLUGIN_NAME "mqtt-plugin"
-#define SCHEMA_FILE "plugin_param_schema.json"
-
-struct node_setting {
-    uint32_t node_id;
-    char *   req_topic;
-    char *   res_topic;
-    char *   client_id;
-    bool     ssl;
-    char *   host;
-    int      port;
-    char *   username;
-    char *   password;
-    char *   ca_path;
-    char *   ca_file;
-};
 
 void mqtt_option_uninit(neu_mqtt_option_t *option)
 {
@@ -87,147 +71,51 @@ void mqtt_option_uninit(neu_mqtt_option_t *option)
     }
 }
 
-static int decode_node_setting(const char *         json_str,
-                               struct node_setting *setting)
-{
-    json_error_t error;
-    json_t *     root = json_loads(json_str, 0, &error);
-
-    if (NULL == root) {
-        log_debug("json error, column:%d, line:%d, pos:%d, %s, %s",
-                  error.column, error.line, error.position, error.source,
-                  error.text);
-        return -1;
-    }
-
-    json_t *child = json_object_get(root, "params");
-    if (NULL == child) {
-        json_decref(root);
-        return -2;
-    }
-
-    json_t *param = NULL;
-
-    // setting->res_topic
-    param = json_object_get(child, "client-id");
-    if (NULL == param) {
-        setting->client_id = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->client_id = strdup(json_string_value(param));
-        json_decref(param);
-    }
-
-    // setting->ssl
-    param = json_object_get(child, "ssl");
-    if (NULL == param) {
-        setting->ssl = false;
-    }
-    if (json_is_boolean(param)) {
-        setting->ssl = json_boolean_value(param);
-        json_decref(param);
-    }
-
-    // setting->host
-    param = json_object_get(child, "host");
-    if (NULL == param) {
-        setting->host = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->host = strdup(json_string_value(param));
-        json_decref(param);
-    }
-
-    // setting->port
-    param = json_object_get(child, "port");
-    if (NULL == param) {
-        setting->port = 1883;
-    }
-    if (json_is_integer(param)) {
-        setting->port = json_integer_value(param);
-        json_decref(param);
-    }
-
-    // setting->username
-    param = json_object_get(child, "username");
-    if (NULL == param) {
-        setting->username = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->username = strdup(json_string_value(param));
-        json_decref(param);
-    }
-
-    // setting->password
-    param = json_object_get(child, "password");
-    if (NULL == param) {
-        setting->password = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->password = strdup(json_string_value(param));
-        json_decref(param);
-    }
-
-    // setting->ca_path
-    param = json_object_get(child, "ca-path");
-    if (NULL == param) {
-        setting->ca_path = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->ca_path = strdup(json_string_value(param));
-        json_decref(param);
-    }
-
-    param = json_object_get(child, "ca-file");
-    if (NULL == param) {
-        setting->ca_file = NULL;
-    }
-    if (json_is_string(param)) {
-        setting->ca_file = strdup(json_string_value(param));
-        json_decref(param);
-    }
-
-    json_decref(child);
-    json_decref(root);
-    return 0;
-}
-
 int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
 {
     if (NULL == config || NULL == option) {
         return -1;
     }
 
-    struct node_setting setting = { 0 };
-    int rc = decode_node_setting((char *) config->buf, &setting);
-    if (0 != rc) {
-        return -2;
+    int             ret      = 0;
+    char *          error    = NULL;
+    neu_json_elem_t id       = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t ssl      = { .name = "ssl", .t = NEU_JSON_BOOL };
+    neu_json_elem_t host     = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t port     = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t username = { .name = "username", .t = NEU_JSON_STR };
+    neu_json_elem_t password = { .name = "password", .t = NEU_JSON_STR };
+    neu_json_elem_t ca_path  = { .name = "ca-path", .t = NEU_JSON_STR };
+    neu_json_elem_t ca_file  = { .name = "ca-file", .t = NEU_JSON_STR };
+
+    ret = neu_parse_param(config->buf, &error, 8, &id, &ssl, &host, &port,
+                          &username, &password, &ca_path, &ca_file);
+    if (0 != ret) {
+        return ret;
     }
 
     // MQTT option
     option->clientid     = NULL; // Use random id
     option->MQTT_version = 4;    // Version 3.1.1
 
-    if (false == setting.ssl) {
+    if (false == ssl.v.val_bool) {
         option->connection = strdup("tcp://");
     } else {
         option->connection = strdup("ssl://");
     }
 
-    option->host = setting.host;
+    option->host = host.v.val_str;
+    int32_t p    = (int) port.v.val_int;
     option->port = calloc(10, sizeof(char));
-    if (NULL != option->port) {
-        snprintf(option->port, 10, "%d", setting.port);
-    }
-
-    option->clientid = setting.client_id;
-    option->username = setting.username;
-    option->password = setting.password;
-    option->ca_path  = setting.ca_path;
-    option->ca_file  = setting.ca_file;
+    snprintf(option->port, 10, "%d", p);
+    option->clientid = id.v.val_str;
+    option->username = username.v.val_str;
+    option->password = password.v.val_str;
+    option->ca_path  = ca_path.v.val_str;
+    option->ca_file  = ca_file.v.val_str;
 
     if (0 == strcmp(option->connection, "ssl://") && NULL == option->ca_file) {
-        return -6;
+        return -1;
     }
 
     if (0 == strcmp(option->connection, "ssl://")) { }
