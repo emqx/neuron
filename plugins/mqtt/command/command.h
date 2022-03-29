@@ -42,6 +42,7 @@ enum topic_type {
     TOPIC_TYPE_SETTING,
     TOPIC_TYPE_CTR,
     TOPIC_TYPE_STATE,
+    TOPIC_TYPE_UPLOAD,
 };
 
 typedef void (*context_add_callback)(neu_plugin_t *plugin, uint32_t req_id,
