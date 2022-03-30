@@ -53,8 +53,8 @@ typedef struct {
     int   will_retain;
     /* TLS options */
     char *ca_path;
-    char *cert;
     char *ca_file;
+    char *cert;
     char *key;
     char *keypass;
 } neu_mqtt_option_t;
