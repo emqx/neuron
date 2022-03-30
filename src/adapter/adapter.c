@@ -1198,7 +1198,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         return -1;
     }
 
-    log_info("Get command from plugin %d, %s", cmd->req_type, adapter->name);
+    log_trace("Get command from plugin %d, %s", cmd->req_type, adapter->name);
     switch (cmd->req_type) {
     case NEU_REQRESP_SUBSCRIBE_NODE: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_SUBSCRIBE_NODE,
