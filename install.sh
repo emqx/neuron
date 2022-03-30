@@ -47,7 +47,7 @@ function build_openssl() {
     if [ $compiler_prefix == "x86_64-linux-gnu" ]; then
         sudo apt-get install -y openssl libssl-dev
     else
-        git clone -b OpenSSL_1_1_1-stable https://github.com/openssl/openssl.git
+        git clone -b OpenSSL_1_1_1 https://github.com/openssl/openssl.git
         cd openssl
         mkdir -p ${install_dir}/openssl/ssl
         ./Configure linux-${arch} no-asm shared \
