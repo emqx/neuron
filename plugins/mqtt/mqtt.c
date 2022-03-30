@@ -375,7 +375,7 @@ static void mqtt_context_publish(neu_plugin_t *plugin)
     if (NULL != result && NULL != topic) {
         neu_err_code_e error = neu_mqtt_client_publish(
             plugin->client, topic, 0, (unsigned char *) result, strlen(result));
-        log_debug_node(plugin, "Publish error code:%d, topic('%s'): %s", error,
+        log_trace_node(plugin, "Publish error code:%d, topic('%s'): %s", error,
                        topic, result);
         free(result);
     }
