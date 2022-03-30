@@ -31,7 +31,7 @@
 
 #define UNUSED(x) (void) (x)
 #define INTERVAL 100000U
-#define SEND_BUF_SIZE 8192
+#define SEND_BUF_SIZE 1024 * 1024
 #define RECV_BUF_SIZE 8192
 
 struct reconnect_state {
