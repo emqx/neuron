@@ -61,14 +61,14 @@ typedef struct {
 } mqtt_response_t;
 
 void  command_response_handle(mqtt_response_t *response);
-char *command_read_once_response(neu_plugin_t *   plugin,
+char *command_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
                                  neu_json_mqtt_t *parse_header,
                                  neu_data_val_t * resp_val);
 char *command_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
                                      const char *         node_name,
                                      neu_taggrp_config_t *config,
                                      neu_data_val_t *     resp_val);
-char *command_write_response(neu_plugin_t *   plugin,
+char *command_write_response(neu_plugin_t *plugin, uint32_t node_id,
                              neu_json_mqtt_t *parse_header,
                              neu_data_val_t * resp_val);
 

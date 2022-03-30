@@ -181,8 +181,9 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req)
         neu_fixed_array_new(req->n_tag, sizeof(neu_int_val_t));
 
     for (int i = 0; i < req->n_tag; i++) {
-        neu_int_val_t   iv;
-        neu_data_val_t *v;
+        // neu_int_val_t    iv;
+        neu_string_val_t name_val;
+        neu_data_val_t * v;
 
         switch (req->tags[i].t) {
         case NEU_JSON_INT:
@@ -214,10 +215,12 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req)
             break;
         }
 
-        neu_int_val_init(&iv, req->tags[i].id, v);
-        neu_fixed_array_set(array, i, &iv);
+        // neu_int_val_init(&iv, req->tags[i].id, v);
+        // neu_fixed_array_set(array, i, &iv);
+        neu_string_val_init(&name_val, (neu_string_t *) req->tags[i].name, v);
+        neu_fixed_array_set(array, i, &name_val);
     }
 
-    neu_dvalue_init_move_array(val, NEU_DTYPE_INT_VAL, array);
+    neu_dvalue_init_move_array(val, NEU_DTYPE_STRING_VAL, array);
     return val;
 }
