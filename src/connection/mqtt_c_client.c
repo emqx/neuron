@@ -513,6 +513,10 @@ neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
                                      int qos, unsigned char *payload,
                                      size_t len)
 {
+    if (SEND_BUF_SIZE < len) {
+        return NEU_ERR_MQTT_PUBLISH_OVER_LENGTH;
+    }
+
     neu_err_code_e error = mqtt_c_client_is_connected(client);
     if (0 != error) {
         log_error("Failed to start send message, return code %d", error);
