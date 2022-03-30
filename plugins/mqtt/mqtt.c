@@ -58,6 +58,7 @@
 #define TOPIC_SETTING_RES "neuron/%s/node/setting/resp"
 #define TOPIC_CTR_RES "neuron/%s/node/ctl/resp"
 #define TOPIC_STATE_RES "neuron/%s/node/state/resp"
+#define TOPIC_UPLOAD_RES "neuron/%s/upload"
 
 #define QOS0 0
 #define QOS1 1
@@ -197,10 +198,6 @@ static char *real_topic_generate(char *format, char *name)
 static void topics_add(vector_t *topics, char *request, int qos_request,
                        char *response, int qos_response, int type)
 {
-    if (NULL == request) {
-        return;
-    }
-
     struct topic_pair pair = { 0 };
     pair.topic_request     = request;
     pair.topic_response    = response;
@@ -282,6 +279,9 @@ static void topics_generate(vector_t *topics, char *name)
     topics_add(topics, real_topic_generate(TOPIC_STATE_REQ, name), QOS0,
                real_topic_generate(TOPIC_STATE_RES, name), QOS0,
                TOPIC_TYPE_STATE);
+
+    topics_add(topics, NULL, QOS0, real_topic_generate(TOPIC_UPLOAD_RES, name),
+               QOS0, TOPIC_TYPE_UPLOAD);
 }
 
 static void mqtt_context_add(neu_plugin_t *plugin, uint32_t req_id,
@@ -338,7 +338,7 @@ static void topics_subscribe(vector_t *topics, neu_mqtt_client_t *client)
     {
         struct topic_pair *pair = NULL;
         pair                    = iterator_get(&item);
-        if (NULL != pair) {
+        if (NULL != pair && NULL != pair->topic_request) {
             neu_mqtt_client_subscribe(client, pair->topic_request,
                                       pair->qos_request, mqtt_response_handle);
         }
@@ -624,7 +624,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         neu_data                       = (neu_reqresp_data_t *) req->buf;
         struct topic_pair *  pair      = NULL;
         char *               json_str  = NULL;
-        int                  type      = TOPIC_TYPE_READ;
+        int                  type      = TOPIC_TYPE_UPLOAD;
         uint64_t             sender    = req->sender_id;
         const char *         node_name = req->node_name;
         neu_taggrp_config_t *config    = neu_data->grp_config;
