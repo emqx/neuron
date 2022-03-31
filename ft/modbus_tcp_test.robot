@@ -81,14 +81,14 @@ Read multiple points in the coil area, the point address includes continuous and
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int    ${res}[tags]    ${tag1_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag2_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag3_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag4_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag5_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag6_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag7_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag8_id}    0
+    Compare Tag Value As Int    ${res}[tags]    tag1    1
+    Compare Tag Value As Int    ${res}[tags]    tag2    0
+    Compare Tag Value As Int    ${res}[tags]    tag3    0
+    Compare Tag Value As Int    ${res}[tags]    tag4    0
+    Compare Tag Value As Int    ${res}[tags]    tag5    0
+    Compare Tag Value As Int    ${res}[tags]    tag6    0
+    Compare Tag Value As Int    ${res}[tags]    tag7    0
+    Compare Tag Value As Int    ${res}[tags]    tag8    0
 
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 1}
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag3_id}, "value": 1}
@@ -99,14 +99,14 @@ Read multiple points in the coil area, the point address includes continuous and
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int    ${res}[tags]    ${tag1_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag2_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag3_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag4_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag5_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag6_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag7_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag8_id}    0
+    Compare Tag Value As Int    ${res}[tags]    tag1    1
+    Compare Tag Value As Int    ${res}[tags]    tag2    1
+    Compare Tag Value As Int    ${res}[tags]    tag3    1
+    Compare Tag Value As Int    ${res}[tags]    tag4    1
+    Compare Tag Value As Int    ${res}[tags]    tag5    1
+    Compare Tag Value As Int    ${res}[tags]    tag6    0
+    Compare Tag Value As Int    ${res}[tags]    tag7    1
+    Compare Tag Value As Int    ${res}[tags]    tag8    0
 
     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
@@ -132,14 +132,14 @@ Read multiple points in the input area, the point address includes continuous an
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int    ${res}[tags]    ${tag1_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag2_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag3_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag4_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag5_id}    0
-    Compare Tag Value As Int    ${res}[tags]    ${tag6_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag7_id}    1
-    Compare Tag Value As Int    ${res}[tags]    ${tag8_id}    1
+    Compare Tag Value As Int    ${res}[tags]    tag1    0
+    Compare Tag Value As Int    ${res}[tags]    tag2    1
+    Compare Tag Value As Int    ${res}[tags]    tag3    1
+    Compare Tag Value As Int    ${res}[tags]    tag4    1
+    Compare Tag Value As Int    ${res}[tags]    tag5    0
+    Compare Tag Value As Int    ${res}[tags]    tag6    1
+    Compare Tag Value As Int    ${res}[tags]    tag7    1
+    Compare Tag Value As Int    ${res}[tags]    tag8    1
 
     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
@@ -166,14 +166,14 @@ Read multiple points in the input reg area, the point address includes continuou
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int      ${res}[tags]    ${tag1_id}    0
-    Compare Tag Value As Int      ${res}[tags]    ${tag2_id}    1
-    Compare Tag Value As Int      ${res}[tags]    ${tag3_id}    9
-    Compare Tag Value As Int      ${res}[tags]    ${tag4_id}    11
-    Compare Tag Value As Int      ${res}[tags]    ${tag5_id}    6946923
-    Compare Tag Value As Int      ${res}[tags]    ${tag6_id}    7143534
-    Compare Tag Value As Int      ${res}[tags]    ${tag7_id}    66651130
-    Compare Tag Value As Float    ${res}[tags]    ${tag8_id}    1.475336887045722e-36
+    Compare Tag Value As Int      ${res}[tags]    tag1    0
+    Compare Tag Value As Int      ${res}[tags]    tag2    1
+    Compare Tag Value As Int      ${res}[tags]    tag3    9
+    Compare Tag Value As Int      ${res}[tags]    tag4    11
+    Compare Tag Value As Int      ${res}[tags]    tag5    6946923
+    Compare Tag Value As Int      ${res}[tags]    tag6    7143534
+    Compare Tag Value As Int      ${res}[tags]    tag7    66651130
+    Compare Tag Value As Float    ${res}[tags]    tag8    1.475336887045722e-36
 
     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
@@ -199,14 +199,14 @@ Read multiple points in the hold reg area, the point address includes continuous
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int      ${res}[tags]    ${tag1_id}    123
-    Compare Tag Value As Int      ${res}[tags]    ${tag2_id}    456
-    Compare Tag Value As Int      ${res}[tags]    ${tag3_id}    0
-    Compare Tag Value As Int      ${res}[tags]    ${tag4_id}    0
-    Compare Tag Value As Int      ${res}[tags]    ${tag5_id}    0
-    Compare Tag Value As Int      ${res}[tags]    ${tag6_id}    0
-    Compare Tag Value As Int      ${res}[tags]    ${tag7_id}    0
-    Compare Tag Value As Float    ${res}[tags]    ${tag8_id}    0.0
+    Compare Tag Value As Int      ${res}[tags]    tag1    123
+    Compare Tag Value As Int      ${res}[tags]    tag2    456
+    Compare Tag Value As Int      ${res}[tags]    tag3    0
+    Compare Tag Value As Int      ${res}[tags]    tag4    0
+    Compare Tag Value As Int      ${res}[tags]    tag5    0
+    Compare Tag Value As Int      ${res}[tags]    tag6    0
+    Compare Tag Value As Int      ${res}[tags]    tag7    0
+    Compare Tag Value As Float    ${res}[tags]    tag8    0.0
 
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag1_id}, "value": 1}
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 2}
@@ -220,14 +220,14 @@ Read multiple points in the hold reg area, the point address includes continuous
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int      ${res}[tags]    ${tag1_id}    1
-    Compare Tag Value As Int      ${res}[tags]    ${tag2_id}    2
-    Compare Tag Value As Int      ${res}[tags]    ${tag3_id}    10
-    Compare Tag Value As Int      ${res}[tags]    ${tag4_id}    12
-    Compare Tag Value As Int      ${res}[tags]    ${tag5_id}    6946924
-    Compare Tag Value As Int      ${res}[tags]    ${tag6_id}    7143536
-    Compare Tag Value As Int      ${res}[tags]    ${tag7_id}    66651131
-    Compare Tag Value As Float    ${res}[tags]    ${tag8_id}    11.234
+    Compare Tag Value As Int      ${res}[tags]    tag1    1
+    Compare Tag Value As Int      ${res}[tags]    tag2    2
+    Compare Tag Value As Int      ${res}[tags]    tag3    10
+    Compare Tag Value As Int      ${res}[tags]    tag4    12
+    Compare Tag Value As Int      ${res}[tags]    tag5    6946924
+    Compare Tag Value As Int      ${res}[tags]    tag6    7143536
+    Compare Tag Value As Int      ${res}[tags]    tag7    66651131
+    Compare Tag Value As Float    ${res}[tags]    tag8    11.234
 
     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id}
 
@@ -257,16 +257,16 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int      ${res}[tags]    ${tag1_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag2_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag3_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag4_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag5_id}     7
-    Compare Tag Value As Int      ${res}[tags]    ${tag6_id}     524297
-    Compare Tag Value As Float    ${res}[tags]    ${tag7_id}     1.010207273319475e-39
-    Compare Tag Value As Int      ${res}[tags]    ${tag8_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag9_id}     0
-    Compare Tag Value As Float    ${res}[tags]    ${tag10_id}    0.0
+    Compare Tag Value As Int      ${res}[tags]    tag1     0
+    Compare Tag Value As Int      ${res}[tags]    tag2     0
+    Compare Tag Value As Int      ${res}[tags]    tag3     0
+    Compare Tag Value As Int      ${res}[tags]    tag4     1
+    Compare Tag Value As Int      ${res}[tags]    tag5     7
+    Compare Tag Value As Int      ${res}[tags]    tag6     524297
+    Compare Tag Value As Float    ${res}[tags]    tag7     1.010207273319475e-39
+    Compare Tag Value As Int      ${res}[tags]    tag8     0
+    Compare Tag Value As Int      ${res}[tags]    tag9     0
+    Compare Tag Value As Float    ${res}[tags]    tag10    0.0
 
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag1_id}, "value": 1}
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 1}
@@ -278,16 +278,16 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int      ${res}[tags]    ${tag1_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag2_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag3_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag4_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag5_id}     7
-    Compare Tag Value As Int      ${res}[tags]    ${tag6_id}     524297
-    Compare Tag Value As Float    ${res}[tags]    ${tag7_id}     1.010207273319475e-39
-    Compare Tag Value As Int      ${res}[tags]    ${tag8_id}     62225
-    Compare Tag Value As Int      ${res}[tags]    ${tag9_id}     66651134
-    Compare Tag Value As Float    ${res}[tags]    ${tag10_id}    11.123
+    Compare Tag Value As Int      ${res}[tags]    tag1     1
+    Compare Tag Value As Int      ${res}[tags]    tag2     1
+    Compare Tag Value As Int      ${res}[tags]    tag3     1
+    Compare Tag Value As Int      ${res}[tags]    tag4     1
+    Compare Tag Value As Int      ${res}[tags]    tag5     7
+    Compare Tag Value As Int      ${res}[tags]    tag6     524297
+    Compare Tag Value As Float    ${res}[tags]    tag7     1.010207273319475e-39
+    Compare Tag Value As Int      ${res}[tags]    tag8     62225
+    Compare Tag Value As Int      ${res}[tags]    tag9     66651134
+    Compare Tag Value As Float    ${res}[tags]    tag10    11.123
 
     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
 
@@ -317,16 +317,16 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int      ${res}[tags]    ${tag1_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag2_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag3_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag4_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag5_id}     17
-    Compare Tag Value As Int      ${res}[tags]    ${tag6_id}     1114130
-    Compare Tag Value As Float    ${res}[tags]    ${tag7_id}     1.928576247884031e-39
-    Compare Tag Value As Int      ${res}[tags]    ${tag8_id}     0
-    Compare Tag Value As Int      ${res}[tags]    ${tag9_id}     0
-    Compare Tag Value As Float    ${res}[tags]    ${tag10_id}    0.0
+    Compare Tag Value As Int      ${res}[tags]    tag1     0
+    Compare Tag Value As Int      ${res}[tags]    tag2     0
+    Compare Tag Value As Int      ${res}[tags]    tag3     0
+    Compare Tag Value As Int      ${res}[tags]    tag4     1
+    Compare Tag Value As Int      ${res}[tags]    tag5     17
+    Compare Tag Value As Int      ${res}[tags]    tag6     1114130
+    Compare Tag Value As Float    ${res}[tags]    tag7     1.928576247884031e-39
+    Compare Tag Value As Int      ${res}[tags]    tag8     0
+    Compare Tag Value As Int      ${res}[tags]    tag9     0
+    Compare Tag Value As Float    ${res}[tags]    tag10    0.0
 
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag1_id}, "value": 1}
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 1}
@@ -338,16 +338,16 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_id}    ${group}
 
-    Compare Tag Value As Int      ${res}[tags]    ${tag1_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag2_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag3_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag4_id}     1
-    Compare Tag Value As Int      ${res}[tags]    ${tag5_id}     17
-    Compare Tag Value As Int      ${res}[tags]    ${tag6_id}     1114130
-    Compare Tag Value As Float    ${res}[tags]    ${tag7_id}     1.928576247884031e-39
-    Compare Tag Value As Int      ${res}[tags]    ${tag8_id}     62226
-    Compare Tag Value As Int      ${res}[tags]    ${tag9_id}     66651136
-    Compare Tag Value As Float    ${res}[tags]    ${tag10_id}    11.789
+    Compare Tag Value As Int      ${res}[tags]    tag1     1
+    Compare Tag Value As Int      ${res}[tags]    tag2     1
+    Compare Tag Value As Int      ${res}[tags]    tag3     1
+    Compare Tag Value As Int      ${res}[tags]    tag4     1
+    Compare Tag Value As Int      ${res}[tags]    tag5     17
+    Compare Tag Value As Int      ${res}[tags]    tag6     1114130
+    Compare Tag Value As Float    ${res}[tags]    tag7     1.928576247884031e-39
+    Compare Tag Value As Int      ${res}[tags]    tag8     62226
+    Compare Tag Value As Int      ${res}[tags]    tag9     66651136
+    Compare Tag Value As Float    ${res}[tags]    tag10    11.789
 
     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
 
@@ -360,15 +360,15 @@ Neuron Context Ready
 
     LOGIN
 
-    Add Node    type=${${NODE_DRIVER}}    name=modbus-tcp-adapter    plugin_name=modbus-tcp
-    ${id} =     Get Node ID               ${NODE_DRIVER}             modbus-tcp-adapter
-    ${mqtt_id} =     Get Node ID               ${NODE_MQTT}             mqtt-adapter
+    Add Node        type=${${NODE_DRIVER}}    name=modbus-tcp-adapter    plugin_name=modbus-tcp
+    ${id} =         Get Node ID               ${NODE_DRIVER}             modbus-tcp-adapter
+    ${mqtt_id} =    Get Node ID               ${NODE_MQTT}               mqtt-adapter
 
     Set Global Variable    ${test_node_id}    ${id}
 
-    Node Setting        ${test_node_id}      ${MODBUS_TCP_CONFIG}
-    Add Group Config    ${test_node_id}      ${group}                300
-    Subscribe Group     ${test_node_id}    ${mqtt_id}          ${group}
+    Node Setting        ${test_node_id}    ${MODBUS_TCP_CONFIG}
+    Add Group Config    ${test_node_id}    ${group}                300
+    Subscribe Group     ${test_node_id}    ${mqtt_id}              ${group}
 
 Stop All Processes
     LOGOUT
@@ -395,7 +395,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
     ${res} =                 Read Tags    ${node_id}      ${group}
     Check Response Status    ${res}       200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
-    Run Keyword              ${cmp}       ${res}[tags]    ${tag_id}    0
+    Run Keyword              ${cmp}       ${res}[tags]    ${res}[tags][0][name]    0
 
     ${res} =    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": ${value}}
 
@@ -403,7 +403,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
     ${res} =                 Read Tags    ${node_id}      ${group}
     Check Response Status    ${res}       200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
-    Run Keyword              ${cmp}       ${res}[tags]    ${tag_id}    ${value}
+    Run Keyword              ${cmp}       ${res}[tags]    ${res}[tags][0][name]    ${value}
 
 
     [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
@@ -430,8 +430,8 @@ Read A Point In The Input Or Input Reg Area Should Return Success
     Check Response Status    ${res}       200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
 
-    Run Keyword    ${cmp}    ${res}[tags]    ${tag1_id}    ${value1}
-    Run Keyword    ${cmp}    ${res}[tags]    ${tag2_id}    ${value2}
+    Run Keyword    ${cmp}    ${res}[tags]    ${res}[tags][0][name]    ${value1}
+    Run Keyword    ${cmp}    ${res}[tags]    ${res}[tags][1][name]    ${value2}
 
     [Teardown]    Del Tags    ${node_id}    ${group}    ${tag1_id},${tag2_id}
 
