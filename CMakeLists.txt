@@ -219,3 +219,4 @@ install(FILES "${CMAKE_SOURCE_DIR}/cmake/neuron-config.cmake"
 install(TARGETS neuron-base
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin)
+
