@@ -43,9 +43,9 @@ int neu_json_encode_read_resp(void *json_object, void *param)
                                             .v    = p_tag->value,
                                         },
                                         {
-                                            .name      = "id",
-                                            .t         = NEU_JSON_INT,
-                                            .v.val_int = p_tag->id,
+                                            .name      = "name",
+                                            .t         = NEU_JSON_STR,
+                                            .v.val_str = p_tag->name,
                                         },
                                         {
                                             .name      = "error",

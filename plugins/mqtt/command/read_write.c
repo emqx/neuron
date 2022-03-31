@@ -48,10 +48,14 @@ int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 }
 
 static int wrap_read_response_json_object(neu_fixed_array_t *   array,
-                                          neu_json_read_resp_t *json)
+                                          neu_json_read_resp_t *json,
+                                          neu_plugin_t *        plugin,
+                                          uint32_t              node_id)
 {
-    neu_int_val_t * int_val;
-    neu_data_val_t *val;
+    neu_int_val_t *      int_val;
+    neu_data_val_t *     val;
+    neu_datatag_table_t *datatag_table =
+        neu_system_get_datatags_table(plugin, node_id);
     json->n_tag = array->length;
 
     if (0 == json->n_tag) {
@@ -66,7 +70,9 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
         val              = int_val->val;
         neu_dtype_e type = neu_dvalue_get_value_type(val);
 
-        json->tags[i].id    = int_val->key;
+        neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
+
+        json->tags[i].name  = tag->name;
         json->tags[i].error = NEU_ERR_SUCCESS;
 
         switch (type) {
@@ -197,7 +203,7 @@ static void clean_read_response_json_object(neu_json_read_resp_t *json)
     free(json->tags);
 }
 
-char *command_rw_read_once_response(neu_plugin_t *   plugin,
+char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
                                     neu_json_mqtt_t *parse_header,
                                     neu_data_val_t * resp_val)
 {
@@ -218,7 +224,7 @@ char *command_rw_read_once_response(neu_plugin_t *   plugin,
 
     neu_json_read_resp_t json;
     memset(&json, 0, sizeof(neu_json_read_resp_t));
-    rc = wrap_read_response_json_object(array, &json);
+    rc = wrap_read_response_json_object(array, &json, plugin, node_id);
     if (0 != rc) {
         return NULL;
     }
@@ -264,7 +270,7 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
               header.timestamp);
 
     neu_json_read_resp_t json = { 0 };
-    wrap_read_response_json_object(array, &json);
+    wrap_read_response_json_object(array, &json, plugin, (uint32_t) sender);
     neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
                               neu_json_encode_read_periodic_resp, &json_str);
     clean_read_response_json_object(&json);
@@ -355,10 +361,14 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 }
 
 static int wrap_write_response_json_object(neu_fixed_array_t *   array,
-                                           neu_json_read_resp_t *json)
+                                           neu_json_read_resp_t *json,
+                                           neu_plugin_t *        plugin,
+                                           uint32_t              node_id)
 {
-    neu_int_val_t * int_val;
-    neu_data_val_t *val;
+    neu_int_val_t *      int_val;
+    neu_data_val_t *     val;
+    neu_datatag_table_t *datatag_table =
+        neu_system_get_datatags_table(plugin, node_id);
     json->n_tag = array->length;
 
     json->tags = (neu_json_read_resp_tag_t *) calloc(
@@ -368,7 +378,9 @@ static int wrap_write_response_json_object(neu_fixed_array_t *   array,
         int_val = neu_fixed_array_get(array, i);
         val     = int_val->val;
 
-        json->tags[i].id = int_val->key;
+        neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
+
+        json->tags[i].name = tag->name;
 
         int32_t value;
         neu_dvalue_get_errorcode(val, &value);
@@ -392,7 +404,7 @@ static void clean_write_response_json_object(neu_json_read_resp_t *json)
     free(json->tags);
 }
 
-char *command_rw_write_response(neu_plugin_t *   plugin,
+char *command_rw_write_response(neu_plugin_t *plugin, uint32_t node_id,
                                 neu_json_mqtt_t *parse_header,
                                 neu_data_val_t * resp_val)
 {
@@ -402,7 +414,7 @@ char *command_rw_write_response(neu_plugin_t *   plugin,
     neu_dvalue_get_ref_array(resp_val, &array);
 
     neu_json_read_resp_t json;
-    wrap_write_response_json_object(array, &json);
+    wrap_write_response_json_object(array, &json, plugin, node_id);
 
     char *json_str = NULL;
     neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, parse_header,

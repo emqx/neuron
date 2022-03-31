@@ -13,8 +13,10 @@
 #include "rw_handle.h"
 
 struct cmd_ctx {
-    uint32_t event_id;
-    nng_aio *aio;
+    uint32_t      event_id;
+    nng_aio *     aio;
+    neu_plugin_t *plugin;
+    uint32_t      node_id;
 
     TAILQ_ENTRY(cmd_ctx) node;
 };
@@ -24,8 +26,9 @@ TAILQ_HEAD(, cmd_ctx) write_cmd_ctxs;
 static pthread_mutex_t read_ctx_mtx;
 static pthread_mutex_t write_ctx_mtx;
 
-static void            read_add_ctx(uint32_t event_id, nng_aio *aio);
-static void            write_add_ctx(uint32_t event_id, nng_aio *aio);
+static void read_add_ctx(uint32_t event_id, nng_aio *aio, neu_plugin_t *plugin,
+                         neu_node_id_t node_id);
+static void write_add_ctx(uint32_t event_id, nng_aio *aio);
 static struct cmd_ctx *read_find_ctx(uint32_t event_id);
 static struct cmd_ctx *write_find_ctx(uint32_t event_id);
 
@@ -66,7 +69,8 @@ void handle_rw_uninit()
     pthread_mutex_destroy(&write_ctx_mtx);
 }
 
-static void read_add_ctx(uint32_t event_id, nng_aio *aio)
+static void read_add_ctx(uint32_t event_id, nng_aio *aio, neu_plugin_t *plugin,
+                         neu_node_id_t node_id)
 {
     struct cmd_ctx *ctx = calloc(1, sizeof(struct cmd_ctx));
 
@@ -74,6 +78,8 @@ static void read_add_ctx(uint32_t event_id, nng_aio *aio)
 
     ctx->aio      = aio;
     ctx->event_id = event_id;
+    ctx->node_id  = node_id;
+    ctx->plugin   = plugin;
 
     TAILQ_INSERT_TAIL(&read_cmd_ctxs, ctx, node);
 
@@ -144,7 +150,7 @@ void handle_read(nng_aio *aio)
             neu_taggrp_config_t *config = neu_system_find_group_config(
                 plugin, req->node_id, req->group_config_name);
             uint32_t event_id = neu_plugin_get_event_id(plugin);
-            read_add_ctx(event_id, aio);
+            read_add_ctx(event_id, aio, plugin, req->node_id);
             neu_plugin_send_read_cmd(plugin, event_id, req->node_id, config);
         })
 }
@@ -174,6 +180,8 @@ void handle_read_resp(void *cmd_resp)
     neu_json_read_resp_t     api_res = { 0 };
     char *                   result  = NULL;
     neu_int_val_t *          iv      = NULL;
+    neu_datatag_table_t *    datatag_table =
+        neu_system_get_datatags_table(ctx->plugin, ctx->node_id);
 
     log_info("read resp id: %d, ctx: %p", req->req_id, ctx);
     assert(ctx != NULL);
@@ -186,7 +194,10 @@ void handle_read_resp(void *cmd_resp)
     for (size_t i = 0; i < array->length; i++) {
         iv = (neu_int_val_t *) neu_fixed_array_get(array, i);
 
-        api_res.tags[i].id    = iv->key;
+        neu_datatag_t *tag =
+            neu_datatag_tbl_get(datatag_table, (datatag_id_t) iv->key);
+
+        api_res.tags[i].name  = tag->name;
         api_res.tags[i].error = NEU_ERR_SUCCESS;
 
         switch (neu_dvalue_get_value_type(iv->val)) {

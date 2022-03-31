@@ -172,10 +172,10 @@ class Read(object):
     def __init__(self):
         pass
 
-    def Compare_Tag_Value_Bool(self, tags, id, value):
+    def Compare_Tag_Value_Bool(self, tags, name, value):
         ret = -1
         for tag in tags:
-            if tag['id'] == int(id):
+            if tag['name'] == name:
                 if isinstance(value, str):
                     if (tag['value'] == False and value.lower() == "false" or
                             tag['value'] == True and value.lower() == "true"):
@@ -185,28 +185,28 @@ class Read(object):
                 break
         return ret
 
-    def Compare_Tag_Value_Int(self, tags, id, value):
+    def Compare_Tag_Value_Int(self, tags, name, value):
         ret = -1
         for tag in tags:
-            if tag['id'] == int(id):
+            if tag['name'] == name:
                 if int(tag['value']) == int(value):
                     ret = 0
                 break
         return ret
 
-    def Compare_Tag_Value_Float(self, tags, id, value):
+    def Compare_Tag_Value_Float(self, tags, name, value):
         ret = -1
         for tag in tags:
-            if tag['id'] == int(id):
+            if tag['name'] == name:
                 if float(tag['value']) <= float(value) + 0.1 and float(tag['value']) >= float(value) - 0.1:
                     ret = 0
                 break
         return ret
 
-    def Compare_Tag_Value_String(self, tags, id, value):
+    def Compare_Tag_Value_String(self, tags, name, value):
         ret = -1
         for tag in tags:
-            if tag['id'] == int(id):
+            if tag['name'] == name:
                 if tag['value'] == str(value):
                     ret = 0
                 break

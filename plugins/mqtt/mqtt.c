@@ -595,10 +595,11 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         struct context *ctx = NULL;
         ctx                 = context_list_find(plugin, req->req_id);
         if (NULL != ctx) {
-            char *json_str = command_read_once_response(
-                plugin, &ctx->parse_header, read_resp->data_val);
-            ctx->result = json_str;
-            ctx->ready  = true;
+            char *json_str = command_read_once_response(plugin, req->sender_id,
+                                                        &ctx->parse_header,
+                                                        read_resp->data_val);
+            ctx->result    = json_str;
+            ctx->ready     = true;
         }
         pthread_mutex_unlock(&plugin->list_mutex);
         break;
@@ -611,7 +612,8 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
         struct context *ctx = NULL;
         ctx                 = context_list_find(plugin, req->req_id);
         if (NULL != ctx) {
-            char *json_str = command_write_response(plugin, &ctx->parse_header,
+            char *json_str = command_write_response(plugin, req->sender_id,
+                                                    &ctx->parse_header,
                                                     write_resp->data_val);
             ctx->result    = json_str;
             ctx->ready     = true;

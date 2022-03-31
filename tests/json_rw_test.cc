@@ -28,9 +28,10 @@ TEST(JsonAPITest, ReadReqDecode)
 
 TEST(JsonAPITest, ReadResEncode)
 {
-    char *buf =
-        (char *) "{\"tags\": [{\"value\": 123, \"id\": 1, \"error\": 0}, "
-                 "{\"value\": 11.123456789, \"id\": 2, \"error\": 0}]}";
+    char *buf = (char *) "{\"tags\": [{\"value\": 123, \"name\": \"data1\", "
+                         "\"error\": 0}, "
+                         "{\"value\": 11.123456789, \"name\": \"data2\", "
+                         "\"error\": 0}]}";
     char *               result = NULL;
     neu_json_read_resp_t res    = {
         .n_tag = 2,
@@ -38,11 +39,11 @@ TEST(JsonAPITest, ReadResEncode)
 
     res.tags = (neu_json_read_resp_tag_t *) calloc(
         2, sizeof(neu_json_read_resp_tag_t));
-    res.tags[0].id            = 1;
+    res.tags[0].name          = strdup((char *) "data1");
     res.tags[0].t             = NEU_JSON_INT;
     res.tags[0].value.val_int = 123;
 
-    res.tags[1].id               = 2;
+    res.tags[1].name             = strdup((char *) "data2");
     res.tags[1].t                = NEU_JSON_DOUBLE;
     res.tags[1].value.val_double = 11.123456789;
 
@@ -50,6 +51,8 @@ TEST(JsonAPITest, ReadResEncode)
               neu_json_encode_by_fn(&res, neu_json_encode_read_resp, &result));
     EXPECT_STREQ(buf, result);
 
+    free(res.tags[0].name);
+    free(res.tags[1].name);
     free(res.tags);
     free(result);
 }

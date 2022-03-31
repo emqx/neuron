@@ -114,30 +114,30 @@ Neuron Ready
     Sleep           3
 
 Compare Tag Value As Bool
-    [Arguments]    ${tags}    ${id}    ${value}
+    [Arguments]    ${tags}    ${name}    ${value}
 
-    ${ret} =    Compare Tag Value Bool    ${tags}    ${id}    ${value}
+    ${ret} =    Compare Tag Value Bool    ${tags}    ${name}    ${value}
 
     Should Be Equal As Integers    ${ret}    0
 
 Compare Tag Value As Int
-    [Arguments]    ${tags}    ${id}    ${value}
+    [Arguments]    ${tags}    ${name}    ${value}
 
-    ${ret} =    Compare Tag Value Int    ${tags}    ${id}    ${value}
+    ${ret} =    Compare Tag Value Int    ${tags}    ${name}    ${value}
 
     Should Be Equal As Integers    ${ret}    0
 
 Compare Tag Value As Float
-    [Arguments]    ${tags}    ${id}    ${value}
+    [Arguments]    ${tags}    ${name}    ${value}
 
-    ${ret} =    Compare Tag Value Float    ${tags}    ${id}    ${value}
+    ${ret} =    Compare Tag Value Float    ${tags}    ${name}    ${value}
 
     Should Be Equal As Integers    ${ret}    0
 
 Compare Tag Value As String
-    [Arguments]    ${tags}    ${id}    ${value}
+    [Arguments]    ${tags}    ${name}    ${value}
 
-    ${ret} =    Compare Tag Value String    ${tags}    ${id}    ${value}
+    ${ret} =    Compare Tag Value String    ${tags}    ${name}    ${value}
 
     Should Be Equal As Integers    ${ret}    0
 

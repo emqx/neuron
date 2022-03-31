@@ -40,7 +40,7 @@ typedef struct {
 
 typedef struct {
     int64_t              error;
-    int64_t              id;
+    char *               name;
     enum neu_json_type   t;
     union neu_json_value value;
 } neu_json_read_resp_tag_t;
