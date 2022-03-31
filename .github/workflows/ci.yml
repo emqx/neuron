@@ -165,7 +165,7 @@ jobs:
           mosquitto -v &
           python3 -m pip install -U pip
           python3 -m pip install -r ft/requirements.txt
-          python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/http_reports ft
+          python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/http_reports ft/modbus_tcp_test.robot
   
   create_daily_release:
     runs-on: ubuntu-20.04
