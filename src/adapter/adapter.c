@@ -1077,7 +1077,7 @@ static void adapter_loop(void *arg)
             intf_funs     = adapter->plugin_module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
             req.req_type  = NEU_REQRESP_READ_RESP;
-            req.sender_id = 0;
+            req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_read_resp_t);
             req.buf       = (void *) &read_resp;
             intf_funs->request(adapter->plugin, &req);
