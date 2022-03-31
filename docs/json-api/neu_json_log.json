@@ -1,9 +1,0 @@
-{
-    "get_log_resp": {
-          "error": 0,
-          "page_count": 1,
-          "rows": [
-                "2022-02-11 15:30:57 WARN  [neuron] src/main.c:90: recv sig: 2"
-          ]
-    }
-}
