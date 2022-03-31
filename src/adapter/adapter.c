@@ -1692,6 +1692,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             read_data_resp->grp_config = read_resp->grp_config;
             read_data_resp->recver_id  = resp->recver_id;
             read_data_resp->req_id     = resp->req_id;
+            read_data_resp->sender_id  = to_node_id((adapter), (adapter)->id);
             trans_buf                  = &read_data_resp->trans_buf;
             rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
                                     read_resp->data_val);
