@@ -18,9 +18,9 @@
  **/
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include "hash_table.h"
-#include "mem_alloc.h"
 #include "neu_errcodes.h"
 
 struct neu_hash_table_entry {
@@ -66,7 +66,7 @@ void neu_hash_table_fini(neu_hash_table *tbl)
                 }
             }
         }
-        NEU_FREE_STRUCTS(tbl->entries, tbl->cap);
+        free(tbl->entries);
         tbl->entries = NULL;
         tbl->cap = tbl->count = 0;
         tbl->load = tbl->min_load = tbl->max_load = 0;
@@ -146,7 +146,7 @@ static int hash_table_resize(neu_hash_table *tbl)
     }
 
     old_entries = tbl->entries;
-    new_entries = NEU_ALLOC_STRUCTS(new_entries, new_cap);
+    new_entries = calloc(new_cap, sizeof(*new_entries));
     if (new_entries == NULL) {
         return NEU_ERR_ENOMEM;
     }
@@ -176,7 +176,7 @@ static int hash_table_resize(neu_hash_table *tbl)
             if (new_entries[index].key == NULL) {
                 // As we are hitting this entry for the first
                 // time, it won't have any skips.
-                NEU_ASSERT(new_entries[index].skips == 0);
+                assert(new_entries[index].skips == 0);
                 new_entries[index].hash = old_entries[i].hash;
                 new_entries[index].key  = old_entries[i].key;
                 new_entries[index].val  = old_entries[i].val;
@@ -187,7 +187,7 @@ static int hash_table_resize(neu_hash_table *tbl)
         }
     }
     if (old_cap != 0) {
-        NEU_FREE_STRUCTS(old_entries, old_cap);
+        free(old_entries);
     }
     return (0);
 }
@@ -224,7 +224,7 @@ int neu_hash_table_remove(neu_hash_table *tbl, const char *key)
             entry->key = NULL; // invalid key
             break;
         }
-        NEU_ASSERT(entry->skips > 0);
+        assert(entry->skips > 0);
         entry->skips--;
         probe = ID_NEXT(tbl, probe);
     }

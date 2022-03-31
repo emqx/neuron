@@ -1101,7 +1101,7 @@ int neu_persister_load_adapter_setting(neu_persister_t *  persister,
 int neu_persister_delete_adapter_setting(neu_persister_t *persister,
                                          const char *     adapter_name)
 {
-    (void *) persister;
-    (void *) adapter_name;
+    (void) persister;
+    (void) adapter_name;
     return 0;
 }

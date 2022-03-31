@@ -55,8 +55,6 @@ rules.append(mkdeb.FileMap("../include/hash_table.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/idhash.h",
              "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/mem_alloc.h",
-             "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neu_adapter.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neu_atomic_data.h",

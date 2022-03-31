@@ -17,8 +17,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
+#include <stdlib.h>
+
 #include "idhash.h"
-#include "mem_alloc.h"
 
 struct neu_id_entry {
     uint32_t key;
@@ -34,8 +36,8 @@ void neu_id_map_init(neu_id_map *m, uint32_t lo, uint32_t hi)
     if (hi == 0) {
         hi = 0xffffffffu;
     }
-    NEU_ASSERT(lo != 0);
-    NEU_ASSERT(hi > lo);
+    assert(lo != 0);
+    assert(hi > lo);
     m->id_entries  = NULL;
     m->id_count    = 0;
     m->id_load     = 0;
@@ -50,7 +52,7 @@ void neu_id_map_init(neu_id_map *m, uint32_t lo, uint32_t hi)
 void neu_id_map_fini(neu_id_map *m)
 {
     if (m->id_entries != NULL) {
-        NEU_FREE_STRUCTS(m->id_entries, m->id_cap);
+        free(m->id_entries);
         m->id_entries = NULL;
         m->id_cap = m->id_count = 0;
         m->id_load = m->id_min_load = m->id_max_load = 0;
@@ -125,7 +127,7 @@ static int id_resize(neu_id_map *m)
     }
 
     old_entries = m->id_entries;
-    new_entries = NEU_ALLOC_STRUCTS(new_entries, new_cap);
+    new_entries = calloc(new_cap, sizeof(*new_entries));
     if (new_entries == NULL) {
         return -2;
     }
@@ -155,7 +157,7 @@ static int id_resize(neu_id_map *m)
             if (new_entries[index].val == NULL) {
                 // As we are hitting this entry for the first
                 // time, it won't have any skips.
-                NEU_ASSERT(new_entries[index].skips == 0);
+                assert(new_entries[index].skips == 0);
                 new_entries[index].val = old_entries[i].val;
                 new_entries[index].key = old_entries[i].key;
                 break;
@@ -165,7 +167,7 @@ static int id_resize(neu_id_map *m)
         }
     }
     if (old_cap != 0) {
-        NEU_FREE_STRUCTS(old_entries, old_cap);
+        free(old_entries);
     }
     return (0);
 }
@@ -196,7 +198,7 @@ int neu_id_remove(neu_id_map *m, uint32_t id)
             entry->key = 0; // invalid key
             break;
         }
-        NEU_ASSERT(entry->skips > 0);
+        assert(entry->skips > 0);
         entry->skips--;
         probe = ID_NEXT(m, probe);
     }
@@ -254,7 +256,7 @@ int neu_id_alloc(neu_id_map *m, uint32_t *idp, void *val)
     uint32_t id;
     int      rv;
 
-    NEU_ASSERT(val != NULL);
+    assert(val != NULL);
 
     // range is inclusive, so > to get +1 effect.
     if (m->id_count > (m->id_max_val - m->id_min_val)) {

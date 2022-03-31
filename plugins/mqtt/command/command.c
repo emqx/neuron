@@ -527,6 +527,9 @@ void command_response_handle(mqtt_response_t *response)
         rc = state_response(&ret_str, plugin, mqtt, json_str);
         break;
     }
+    default:
+        assert(1 == 0);
+        break;
     }
 
     if (0 != rc) {
