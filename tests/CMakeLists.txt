@@ -103,13 +103,6 @@ target_include_directories(plugin_manager_test PRIVATE
 )
 target_link_libraries(plugin_manager_test neuron-base gtest_main gtest pthread jansson dl nng yaml)
 
-add_executable(uuid_test uuid_test.cc ${CMAKE_SOURCE_DIR}/src/utils/uuid4.c)
-target_include_directories(uuid_test PRIVATE 
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/include       
-)
-target_link_libraries(uuid_test neuron-base gtest_main gtest crypto)
-
 add_executable(http_test http_test.cc 
 	${CMAKE_SOURCE_DIR}/plugins/restful/http.c)
 	
@@ -176,7 +169,6 @@ gtest_discover_tests(json_nodes_test)
 gtest_discover_tests(json_plugin_test)
 gtest_discover_tests(json_group_config_test)
 gtest_discover_tests(json_tty_test)
-gtest_discover_tests(uuid_test)
 gtest_discover_tests(http_test)
 gtest_discover_tests(mqtt_test)
 gtest_discover_tests(jwt_test)

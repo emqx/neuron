@@ -32,6 +32,8 @@ if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
       CACHE INTERNAL "No dev warnings")
 endif()
 
+configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/utils/uthash.h)
+
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(extern/libcsptr)
@@ -152,7 +154,6 @@ set(NEURON_BASE_SOURCES
     src/utils/json.c
     src/utils/common.c
     src/utils/neu_jwt.c
-    src/utils/uuid4.c
     src/utils/file.c
     src/utils/base64.c
     src/config.c)
