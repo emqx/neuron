@@ -24,8 +24,8 @@
 extern "C" {
 #endif
 
+#include "utils/base64.h"
 #include "neu_adapter.h"
-#include "neu_base64.h"
 #include "neu_file.h"
 #include "neu_list.h"
 #include "neu_log.h"

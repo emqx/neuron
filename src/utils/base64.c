@@ -17,21 +17,20 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <openssl/evp.h>
-
-#include "neuron.h"
 
 char *neu_encode64(const unsigned char *input, int length)
 {
     const int      pl     = 4 * ((length + 2) / 3);
     unsigned char *output = calloc(pl + 1, 1);
     const int      ol     = EVP_EncodeBlock(output, input, length);
-    if (ol != pl) {
-        log_error("Encode predicted %d but we got %d\n", pl, ol);
-    }
+
+    assert(pl == ol);
 
     return (char *) output;
 }
@@ -42,9 +41,8 @@ unsigned char *neu_decode64(int *length, const char *input)
     const int      pl     = 3 * len / 4;
     unsigned char *output = calloc(pl, 1);
     const int ol = EVP_DecodeBlock(output, (const unsigned char *) input, len);
-    if (pl != ol) {
-        log_error("Decode predicted %d but we got %d\n", pl, ol);
-    }
+
+    assert(pl == ol);
 
     *length = ol;
     return output;

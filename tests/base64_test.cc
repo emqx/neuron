@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "neu_base64.h"
+#include "utils/base64.h"
 
 TEST(Base64Test, neu_encode64_test)
 {
