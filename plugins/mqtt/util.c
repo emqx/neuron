@@ -18,6 +18,7 @@
  **/
 
 #include <jansson.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,47 +29,87 @@
 #include <json/neu_json_param.h>
 #include <neuron.h>
 
+#define MQTT_CERT_PATH "config"
+#define MQTT_CA_FILE "mqtt_ca.crt"
+
 void mqtt_option_uninit(neu_mqtt_option_t *option)
 {
     if (NULL != option->clientid) {
         free(option->clientid);
+        option->clientid = NULL;
     }
 
     if (NULL != option->topic) {
         free(option->topic);
+        option->topic = NULL;
     }
 
     if (NULL != option->respons_topic) {
         free(option->respons_topic);
+        option->respons_topic = NULL;
     }
 
     if (NULL != option->connection) {
         free(option->connection);
+        option->connection = NULL;
     }
 
     if (NULL != option->host) {
         free(option->host);
+        option->host = NULL;
     }
 
     if (NULL != option->port) {
         free(option->port);
+        option->port = NULL;
     }
 
     if (NULL != option->username) {
         free(option->username);
+        option->username = NULL;
     }
 
     if (NULL != option->password) {
         free(option->password);
+        option->password = NULL;
     }
 
     if (NULL != option->ca_path) {
         free(option->ca_path);
+        option->ca_path = NULL;
     }
 
     if (NULL != option->ca_file) {
         free(option->ca_file);
+        option->ca_file = NULL;
     }
+}
+
+static int b64_file_store(const char *in, const char *file_name)
+{
+    unsigned char *result  = NULL;
+    int            out_len = 0;
+    result                 = neu_decode64(&out_len, in);
+    if (NULL == result) {
+        return -1;
+    }
+
+    FILE *fp = fopen(file_name, "w+");
+    if (NULL == fp) {
+        free(result);
+        return -1;
+    }
+
+    size_t write_len = fwrite(result, sizeof(unsigned char), out_len, fp);
+    if (0 == write_len) {
+        free(result);
+        fclose(fp);
+        return -1;
+    }
+
+    free(result);
+    fclose(fp);
+    return 0;
 }
 
 int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
@@ -85,14 +126,16 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     neu_json_elem_t port     = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t username = { .name = "username", .t = NEU_JSON_STR };
     neu_json_elem_t password = { .name = "password", .t = NEU_JSON_STR };
-    neu_json_elem_t ca_path  = { .name = "ca-path", .t = NEU_JSON_STR };
-    neu_json_elem_t ca_file  = { .name = "ca-file", .t = NEU_JSON_STR };
+    neu_json_elem_t ca = { .name = "ca", .t = NEU_JSON_STR, .v.val_str = NULL };
 
-    ret = neu_parse_param(config->buf, &error, 8, &id, &ssl, &host, &port,
-                          &username, &password, &ca_path, &ca_file);
+    ret = neu_parse_param(config->buf, &error, 7, &id, &ssl, &host, &port,
+                          &username, &password, &ca);
     if (0 != ret) {
         return ret;
     }
+
+    char ca_path[PATH_MAX + 1] = { 0 };
+    char ca_file[PATH_MAX + 1] = { 0 };
 
     // MQTT option
     option->clientid     = NULL; // Use random id
@@ -104,23 +147,44 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
         option->connection = strdup("ssl://");
     }
 
+    if (0 == strcmp(option->connection, "ssl://")) {
+        if (NULL == ca.v.val_str) {
+            return -1;
+        }
+
+        if (0 == strlen(ca.v.val_str)) {
+            free(ca.v.val_str);
+            return -1;
+        }
+
+        char workdir[PATH_MAX + 1] = { 0 };
+        getcwd(workdir, sizeof(workdir));
+        sprintf(ca_file, "%s/%s/%s", workdir, MQTT_CERT_PATH, MQTT_CA_FILE);
+        sprintf(ca_path, "%s/%s", workdir, MQTT_CERT_PATH);
+
+        ret = b64_file_store(ca.v.val_str, ca_file);
+        free(ca.v.val_str);
+
+        if (0 != ret) {
+            return -1;
+        }
+    }
+
     option->host = host.v.val_str;
     int32_t p    = (int) port.v.val_int;
     option->port = calloc(10, sizeof(char));
     snprintf(option->port, 10, "%d", p);
-    option->clientid = id.v.val_str;
-    option->username = username.v.val_str;
-    option->password = password.v.val_str;
-    option->ca_path  = ca_path.v.val_str;
-    option->ca_file  = ca_file.v.val_str;
-
-    if (0 == strcmp(option->connection, "ssl://") && NULL == option->ca_file) {
-        return -1;
-    }
-
-    if (0 == strcmp(option->connection, "ssl://")) { }
-
+    option->clientid           = id.v.val_str;
+    option->username           = username.v.val_str;
+    option->password           = password.v.val_str;
+    option->ca_path            = strdup(ca_path);
+    option->ca_file            = strdup(ca_file);
     option->keepalive_interval = 20;
     option->clean_session      = 1;
+
+    if (NULL != ca.v.val_str) {
+        free(ca.v.val_str);
+    }
+
     return 0;
 }

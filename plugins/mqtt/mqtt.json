@@ -58,32 +58,18 @@
 			"length": 30
 		}
 	},
-	"ca-path": {
-		"name": "ca-path",
-		"description": "",
+	"ca": {
+		"name": "CA",
+		"description": "CA certificate file",
 		"attribute": "required",
-		"type": "string",
-		"default": "",
-		"condition": {
-			"field": "ssl",
-			"value": true
-		},
-		"valid": {
-			"length": 100
-		}
-	},
-	"ca-file": {
-		"name": "ca-file",
-		"description": "",
-		"attribute": "required",
-		"type": "string",
+		"type": "file",
 		"condition": {
 			"field": "ssl",
 			"value": true
 		},
 		"default": "",
 		"valid": {
-			"length": 100
+			"length": 81960
 		}
 	}
 }

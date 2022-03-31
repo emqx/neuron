@@ -93,7 +93,7 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     Node Setting           ${modbus_tcp2_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
 
     ${mqtt_id} =    Get Node ID    ${NODE_MQTT}                                                                                                                                           mqtt-1
-    Node Setting    ${mqtt_id}     {"client-id":"upload123","ssl":false,"host":"127.0.0.1","port":1883,"username":"admin","password":"0000","ca-path":"","ca-file":""}
+    Node Setting    ${mqtt_id}     {"client-id":"upload123","ssl":false,"host":"127.0.0.1","port":1883,"username":"admin","password":"0000","ca":""}
 
     Neuron Stop Running    ${process}
     ${process} =           Neuron Start Running
@@ -124,8 +124,7 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     Should Be Equal As Strings     ${params}[host]         127.0.0.1
     Should Be Equal As Strings     ${params}[username]     admin
     Should Be Equal As Strings     ${params}[password]     0000
-    Should Be Empty                ${params}[ca-path]       
-    Should Be Empty                ${params}[ca-file]      
+    Should Be Empty                ${params}[ca]      
 
     [Teardown]    Neuron Stop Running    ${process}
 
