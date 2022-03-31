@@ -69,6 +69,7 @@ cp ft/api_http.resource ${package_name}/ft/
 cp ft/api_mqtt.resource ${package_name}/ft/
 cp ft/common.resource ${package_name}/ft/
 cp ft/error.resource ${package_name}/ft/
+cp ft/requirements.txt ${package_name}/ft/
 
 tar czf ${package_name}-${arch}.tar.gz ${package_name}/
 ls ${package_name}
