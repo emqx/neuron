@@ -144,7 +144,6 @@ set(NEURON_BASE_SOURCES
     src/event/event_linux.c
     src/event/event_unix.c
     src/utils/atomic_data.c
-    src/utils/mem_alloc.c
     src/utils/idhash.c
     src/utils/hash_table.c
     src/utils/list.c

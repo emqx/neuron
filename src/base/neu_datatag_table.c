@@ -21,7 +21,6 @@
 
 #include "hash_table.h"
 #include "idhash.h"
-#include "mem_alloc.h"
 #include "neu_datatag_table.h"
 
 struct neu_datatag_table {
@@ -34,13 +33,13 @@ neu_datatag_table_t *neu_datatag_tbl_create(void)
 {
     neu_datatag_table_t *tag_tbl;
 
-    tag_tbl = NEU_ALLOC_STRUCT(tag_tbl);
+    tag_tbl = calloc(1, sizeof(neu_datatag_table_t));
     if (tag_tbl == NULL) {
         return NULL;
     }
 
     if (pthread_mutex_init(&tag_tbl->mtx, NULL) != 0) {
-        NEU_FREE_STRUCT(tag_tbl);
+        free(tag_tbl);
         return NULL;
     }
 
@@ -56,7 +55,7 @@ void neu_datatag_tbl_destroy(neu_datatag_table_t *tag_tbl)
     // release all tags and its name
     neu_hash_table_fini(&tag_tbl->tag_name_table);
     pthread_mutex_destroy(&tag_tbl->mtx);
-    NEU_FREE_STRUCT(tag_tbl);
+    free(tag_tbl);
     return;
 }
 

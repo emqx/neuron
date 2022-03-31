@@ -100,7 +100,7 @@ static void uninit()
 
 static void usage()
 {
-    fprintf(stderr, usage_text);
+    fprintf(stderr, "%s", usage_text);
 }
 
 static int read_neuron_config(const char *config)
