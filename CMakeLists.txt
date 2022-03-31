@@ -154,7 +154,6 @@ set(NEURON_BASE_SOURCES
     src/utils/json.c
     src/utils/common.c
     src/utils/neu_jwt.c
-    src/utils/uuid4.c
     src/utils/file.c
     src/utils/base64.c
     src/config.c)

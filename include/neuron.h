@@ -24,7 +24,6 @@
 extern "C" {
 #endif
 
-#include "utils/base64.h"
 #include "neu_adapter.h"
 #include "neu_file.h"
 #include "neu_list.h"
@@ -32,8 +31,8 @@ extern "C" {
 #include "neu_panic.h"
 #include "neu_plugin.h"
 #include "neu_types.h"
-#include "neu_uuid.h"
 #include "neu_vector.h"
+#include "utils/base64.h"
 
 #ifdef __cplusplus
 }

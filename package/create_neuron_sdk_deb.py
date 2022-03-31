@@ -92,8 +92,6 @@ rules.append(mkdeb.FileMap("../include/neu_tag.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neu_types.h",
              "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_uuid.h",
-             "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neu_vector.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron.h",
