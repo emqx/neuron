@@ -1146,7 +1146,7 @@ static void adapter_loop(void *arg)
             intf_funs     = adapter->plugin_module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
             req.req_type  = NEU_REQRESP_WRITE_RESP;
-            req.sender_id = 0;
+            req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_write_resp_t);
             req.buf       = (void *) &write_resp;
             intf_funs->request(adapter->plugin, &req);
@@ -1727,6 +1727,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
             write_data_resp->grp_config = write_resp->grp_config;
             write_data_resp->recver_id  = resp->recver_id;
             write_data_resp->req_id     = resp->req_id;
+            write_data_resp->sender_id  = to_node_id((adapter), (adapter)->id);
             trans_buf                   = &write_data_resp->trans_buf;
             rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
                                     write_resp->data_val);

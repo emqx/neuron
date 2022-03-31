@@ -182,6 +182,7 @@ typedef struct read_data_resp {
 typedef struct write_data_resp {
     neu_taggrp_config_t *grp_config;
     neu_trans_buf_t      trans_buf;
+    adapter_id_t         sender_id;
     adapter_id_t         recver_id;
     uint32_t             req_id;
 } write_data_resp_t;
