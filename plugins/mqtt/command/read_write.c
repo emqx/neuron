@@ -269,14 +269,13 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = {
         .config_name = (char *) neu_taggrp_cfg_get_name(config),
-        .node_id     = sender,
         .node_name   = (char *) node_name,
         .timestamp   = current_time()
     };
 
     log_debug("config:%s, node:%s, self_id:%ld, "
               "sender:%ld, time:%u",
-              header.config_name, header.node_name, header.node_id, sender,
+              header.config_name, header.node_name, sender, sender,
               header.timestamp);
 
     neu_json_read_resp_t json = { 0 };
