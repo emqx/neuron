@@ -4,6 +4,7 @@ Suite Setup       Neuron Context Ready
 Suite Teardown    Stop All Processes
 
 *** Variables ***
+${test_node_name}       modbus-tcp-adapter
 ${test_node_id}
 ${group}    config_modbus_tcp_sample_2
 
@@ -19,12 +20,12 @@ The connection between the modbus driver and the modbus simulator is disconnecte
 	Should Not Be Equal As Integers    ${tag1_id}    -1
 
 	Sleep         1s 500ms
-	Write Tags    ${test_node_id}        ${group}                       {"id": ${tag1_id}, "value": 1}
+	Write Tags    ${test_node_name}        ${group}                       {"id": ${tag1_id}, "value": 1}
 	Integer       response body error    ${ERR_PLUGIN_WRITE_FAILURE}
 
 	Node Setting    ${test_node_id}    {"host": "127.0.0.1", "port": 9000, "connection_mode": 0}
 
-	Write Tags    ${test_node_id}        ${group}          {"id": ${tag1_id}, "value": 1}
+	Write Tags    ${test_node_name}        ${group}          {"id": ${tag1_id}, "value": 1}
 	Integer       response body error    ${ERR_SUCCESS}
 
 	[Teardown]	Terminate All Processes    kill=false

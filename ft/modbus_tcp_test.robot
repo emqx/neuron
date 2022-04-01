@@ -91,11 +91,11 @@ Read multiple points in the coil area, the point address includes continuous and
     Compare Tag Value As Int    ${res}[tags]    tag7    0
     Compare Tag Value As Int    ${res}[tags]    tag8    0
 
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag3_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag4_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag5_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag7_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag2_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag3_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag4_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag5_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag7_id}, "value": 1}
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -209,14 +209,14 @@ Read multiple points in the hold reg area, the point address includes continuous
     Compare Tag Value As Int      ${res}[tags]    tag7    0
     Compare Tag Value As Float    ${res}[tags]    tag8    0.0
 
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag1_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 2}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag3_id}, "value": 10}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag4_id}, "value": 12}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag5_id}, "value": 6946924}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag6_id}, "value": 7143536}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag7_id}, "value": 66651131}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag8_id}, "value": 11.234}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag1_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag2_id}, "value": 2}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag3_id}, "value": 10}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag4_id}, "value": 12}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag5_id}, "value": 6946924}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag6_id}, "value": 7143536}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag7_id}, "value": 66651131}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag8_id}, "value": 11.234}
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -269,12 +269,12 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Compare Tag Value As Int      ${res}[tags]    tag9     0
     Compare Tag Value As Float    ${res}[tags]    tag10    0.0
 
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag1_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag3_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag8_id}, "value": 62225}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag9_id}, "value": 66651134}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag10_id}, "value": 11.123}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag1_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag2_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag3_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag8_id}, "value": 62225}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag9_id}, "value": 66651134}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag10_id}, "value": 11.123}
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -329,12 +329,12 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Compare Tag Value As Int      ${res}[tags]    tag9     0
     Compare Tag Value As Float    ${res}[tags]    tag10    0.0
 
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag1_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag2_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag3_id}, "value": 1}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag8_id}, "value": 62226}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag9_id}, "value": 66651136}
-    Write Tags    ${test_node_id}    ${group}    {"id": ${tag10_id}, "value": 11.789}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag1_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag2_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag3_id}, "value": 1}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag8_id}, "value": 62226}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag9_id}, "value": 66651136}
+    Write Tags    ${test_node_name}    ${group}    {"id": ${tag10_id}, "value": 11.789}
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -398,7 +398,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
     Run Keyword              ${cmp}       ${res}[tags]    ${res}[tags][0][name]    0
 
-    ${res} =    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": ${value}}
+    ${res} =    Write Tags    ${node_name}    ${group}    {"id": ${tag_id}, "value": ${value}}
 
     Sleep                    1s 500ms
     ${res} =                 Read Tags    ${node_name}      ${group}

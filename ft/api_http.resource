@@ -227,8 +227,8 @@ Read Tags
   [RETURN]            ${res}[0]
 
 Write Tags
-  [Arguments]         ${node_id}              ${group}                      ${tags}
-  POST                /api/v2/write           {"node_id": ${node_id}, "group_config_name": "${group}", "tags":[${tags}]}
+  [Arguments]         ${node_name}              ${group}                      ${tags}
+  POST                /api/v2/write           {"node_name": "${node_name}", "group_config_name": "${group}", "tags":[${tags}]}
   ${res} =            Object  response body
 
   [RETURN]            ${res}[0]
