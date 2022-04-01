@@ -300,46 +300,42 @@ static neu_data_val_t *setup_write_resp_data_value(neu_data_val_t *write_val,
         }
 
         switch (val_type) {
-        case NEU_DTYPE_INT64: {
-            int64_t i64 = 0;
-            neu_dvalue_get_int64(int_val->val, &i64);
-
-            switch (tag->type) {
-            case NEU_DTYPE_UINT16:
-            case NEU_DTYPE_INT16:
-                data.type        = MODBUS_B16;
-                data.val.val_u16 = (uint16_t) i64;
-                error            = modbus_point_write(tag->addr_str, &data,
-                                           send_recv_callback, plugin);
-                break;
-            case NEU_DTYPE_INT32:
-            case NEU_DTYPE_UINT32:
-                data.type        = MODBUS_B32;
-                data.val.val_u32 = (uint32_t) i64;
-                error            = modbus_point_write(tag->addr_str, &data,
-                                           send_recv_callback, plugin);
-                break;
-            case NEU_DTYPE_BIT:
-                data.type       = MODBUS_B8;
-                data.val.val_u8 = (uint8_t) i64;
-                error           = modbus_point_write(tag->addr_str, &data,
-                                           send_recv_callback, plugin);
-                break;
-            default:
-                error = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
-                break;
-            }
-            break;
-        }
-        case NEU_DTYPE_DOUBLE: {
-            double db = 0;
-            neu_dvalue_get_double(int_val->val, &db);
-            data.type        = MODBUS_B32;
-            data.val.val_f32 = (float) db;
+        case NEU_DTYPE_UINT16:
+            data.type = MODBUS_B16;
+            neu_dvalue_get_uint16(int_val->val, &data.val.val_u16);
             error = modbus_point_write(tag->addr_str, &data, send_recv_callback,
                                        plugin);
             break;
-        }
+        case NEU_DTYPE_INT16:
+            data.type = MODBUS_B16;
+            neu_dvalue_get_int16(int_val->val, &data.val.val_i16);
+            error = modbus_point_write(tag->addr_str, &data, send_recv_callback,
+                                       plugin);
+            break;
+        case NEU_DTYPE_INT32:
+            data.type = MODBUS_B32;
+            neu_dvalue_get_int32(int_val->val, &data.val.val_i32);
+            error = modbus_point_write(tag->addr_str, &data, send_recv_callback,
+                                       plugin);
+            break;
+        case NEU_DTYPE_UINT32:
+            data.type = MODBUS_B32;
+            neu_dvalue_get_uint32(int_val->val, &data.val.val_u32);
+            error = modbus_point_write(tag->addr_str, &data, send_recv_callback,
+                                       plugin);
+            break;
+        case NEU_DTYPE_BIT:
+            data.type = MODBUS_B8;
+            neu_dvalue_get_bit(int_val->val, &data.val.val_u8);
+            error = modbus_point_write(tag->addr_str, &data, send_recv_callback,
+                                       plugin);
+            break;
+        case NEU_DTYPE_FLOAT:
+            data.type = MODBUS_B32;
+            neu_dvalue_get_float(int_val->val, &data.val.val_f32);
+            error = modbus_point_write(tag->addr_str, &data, send_recv_callback,
+                                       plugin);
+            break;
         default:
             error = NEU_ERR_EINTERNAL;
             break;

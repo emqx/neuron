@@ -344,32 +344,59 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 
         neu_datatag_id_t id = tag->id;
 
-        switch (type) {
-        case NEU_JSON_INT: {
+        switch (tag->type) {
+        case NEU_DTYPE_UINT8:
+            val = neu_dvalue_new(NEU_DTYPE_UINT8);
+            neu_dvalue_set_uint8(val, (uint8_t) value.val_int);
+            break;
+        case NEU_DTYPE_INT8:
+            val = neu_dvalue_new(NEU_DTYPE_INT8);
+            neu_dvalue_set_int8(val, (int8_t) value.val_int);
+            break;
+        case NEU_DTYPE_UINT16:
+            val = neu_dvalue_new(NEU_DTYPE_UINT16);
+            neu_dvalue_set_uint16(val, (uint16_t) value.val_int);
+            break;
+        case NEU_DTYPE_INT16:
+            val = neu_dvalue_new(NEU_DTYPE_INT16);
+            neu_dvalue_set_int16(val, (int16_t) value.val_int);
+            break;
+        case NEU_DTYPE_INT32:
+            val = neu_dvalue_new(NEU_DTYPE_INT32);
+            neu_dvalue_set_int32(val, (int32_t) value.val_int);
+            break;
+        case NEU_DTYPE_UINT32:
+            val = neu_dvalue_new(NEU_DTYPE_UINT32);
+            neu_dvalue_set_uint32(val, (uint32_t) value.val_int);
+            break;
+        case NEU_DTYPE_INT64:
             val = neu_dvalue_new(NEU_DTYPE_INT64);
-            neu_dvalue_set_int64(val, value.val_int);
+            neu_dvalue_set_int64(val, (int64_t) value.val_int);
             break;
-        }
-        case NEU_JSON_BIT: {
-            val = neu_dvalue_new(NEU_DTYPE_BIT);
-            neu_dvalue_set_bit(val, value.val_bit);
+        case NEU_DTYPE_UINT64:
+            val = neu_dvalue_new(NEU_DTYPE_UINT64);
+            neu_dvalue_set_uint64(val, (uint64_t) value.val_int);
             break;
-        }
-        case NEU_JSON_STR: {
-            val = neu_dvalue_new(NEU_DTYPE_CSTR);
-            neu_dvalue_set_cstr(val, value.val_str);
+        case NEU_DTYPE_FLOAT:
+            val = neu_dvalue_new(NEU_DTYPE_FLOAT);
+            neu_dvalue_set_float(val, (float) value.val_double);
             break;
-        }
-        case NEU_JSON_DOUBLE: {
+        case NEU_DTYPE_DOUBLE:
             val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
             neu_dvalue_set_double(val, value.val_double);
             break;
-        }
-        case NEU_JSON_BOOL: {
+        case NEU_DTYPE_BIT:
+            val = neu_dvalue_new(NEU_DTYPE_BIT);
+            neu_dvalue_set_bit(val, (uint8_t) value.val_int);
+            break;
+        case NEU_DTYPE_BOOL:
             val = neu_dvalue_new(NEU_DTYPE_BOOL);
             neu_dvalue_set_bool(val, value.val_bool);
             break;
-        }
+        case NEU_DTYPE_CSTR:
+            val = neu_dvalue_new(NEU_DTYPE_CSTR);
+            neu_dvalue_set_cstr(val, value.val_str);
+            break;
         default:
             break;
         }
