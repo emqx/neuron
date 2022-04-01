@@ -31,27 +31,36 @@
 
 int neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result)
 {
-    int ret = 0;
+    int              ret = 0;
+    neu_json_mqtt_t *req = calloc(1, sizeof(neu_json_mqtt_t));
 
-    neu_json_mqtt_t *req         = calloc(1, sizeof(neu_json_mqtt_t));
-    neu_json_elem_t  req_elems[] = { {
-                                        .name = "uuid",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "command",
-                                        .t    = NEU_JSON_STR,
-                                    } };
-    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
-    if (ret != 0) {
+    neu_json_elem_t elems_uuid[] = { {
+        .name = "uuid",
+        .t    = NEU_JSON_STR,
+    } };
+
+    neu_json_elem_t elems_command[] = { {
+        .name = "command",
+        .t    = NEU_JSON_STR,
+    } };
+
+    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elems_uuid), elems_uuid);
+    if (ret == 0) {
+        req->uuid = elems_uuid[0].v.val_str;
+    } else {
         goto decode_fail;
     }
 
-    req->uuid    = req_elems[0].v.val_str;
-    req->command = req_elems[1].v.val_str;
+    ret =
+        neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elems_command), elems_command);
+    if (ret == 0) {
+        req->command = elems_command[0].v.val_str;
+    } else {
+        req->command = strdup("");
+    }
 
     *result = req;
-    return ret;
+    return 0;
 
 decode_fail:
     if (req != NULL) {
@@ -83,15 +92,11 @@ int neu_json_encode_mqtt_resp(void *json_object, void *param)
     neu_json_mqtt_t *resp = (neu_json_mqtt_t *) param;
 
     neu_json_elem_t resp_elems[] = { {
-                                         .name      = "uuid",
-                                         .t         = NEU_JSON_STR,
-                                         .v.val_str = resp->uuid,
-                                     },
-                                     {
-                                         .name      = "command",
-                                         .t         = NEU_JSON_STR,
-                                         .v.val_str = resp->command,
-                                     } };
+        .name      = "uuid",
+        .t         = NEU_JSON_STR,
+        .v.val_str = resp->uuid,
+    } };
+
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
 
