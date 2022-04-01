@@ -28,10 +28,8 @@ TEST(JsonAPITest, ReadReqDecode)
 
 TEST(JsonAPITest, ReadResEncode)
 {
-    char *buf = (char *) "{\"tags\": [{\"value\": 123, \"name\": \"data1\", "
-                         "\"error\": 0}, "
-                         "{\"value\": 11.123456789, \"name\": \"data2\", "
-                         "\"error\": 0}]}";
+    char *buf = (char *) "{\"tags\": [{\"name\": \"data1\", \"value\": 123}, "
+                         "{\"name\": \"data2\", \"value\": 11.123456789}]}";
     char *               result = NULL;
     neu_json_read_resp_t res    = {
         .n_tag = 2,

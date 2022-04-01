@@ -34,7 +34,6 @@ extern "C" {
 typedef struct {
     char *   config_name;
     char *   node_name;
-    uint32_t node_id;
     uint64_t timestamp;
 } neu_json_read_periodic_t;
 

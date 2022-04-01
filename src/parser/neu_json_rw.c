@@ -37,21 +37,22 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     void *                    tag_array = neu_json_array();
     neu_json_read_resp_tag_t *p_tag     = resp->tags;
     for (int i = 0; i < resp->n_tag; i++) {
-        neu_json_elem_t tag_elems[] = { {
-                                            .name = "value",
-                                            .t    = p_tag->t,
-                                            .v    = p_tag->value,
-                                        },
-                                        {
-                                            .name      = "name",
-                                            .t         = NEU_JSON_STR,
-                                            .v.val_str = p_tag->name,
-                                        },
-                                        {
-                                            .name      = "error",
-                                            .t         = NEU_JSON_INT,
-                                            .v.val_int = p_tag->error,
-                                        } };
+        neu_json_elem_t tag_elems[2] = { 0 };
+
+        tag_elems[0].name      = "name";
+        tag_elems[0].t         = NEU_JSON_STR;
+        tag_elems[0].v.val_str = p_tag->name;
+
+        if (p_tag->error != 0) {
+            tag_elems[1].name      = "error";
+            tag_elems[1].t         = NEU_JSON_INT;
+            tag_elems[1].v.val_int = p_tag->error;
+        } else {
+            tag_elems[1].name = "value";
+            tag_elems[1].t    = p_tag->t;
+            tag_elems[1].v    = p_tag->value;
+        }
+
         tag_array = neu_json_encode_array(tag_array, tag_elems,
                                           NEU_JSON_ELEM_SIZE(tag_elems));
         p_tag++;
@@ -240,11 +241,6 @@ int neu_json_encode_read_periodic_resp(void *json_object, void *param)
     neu_json_read_periodic_t *resp = (neu_json_read_periodic_t *) param;
 
     neu_json_elem_t resp_elems[] = { {
-                                         .name      = "node_id",
-                                         .t         = NEU_JSON_INT,
-                                         .v.val_int = resp->node_id,
-                                     },
-                                     {
                                          .name      = "node_name",
                                          .t         = NEU_JSON_STR,
                                          .v.val_str = resp->node_name,
