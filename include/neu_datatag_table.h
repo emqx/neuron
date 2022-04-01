@@ -33,6 +33,8 @@ neu_datatag_table_t *neu_datatag_tbl_create(void);
 void                 neu_datatag_tbl_destroy(neu_datatag_table_t *);
 size_t               neu_datatag_tbl_size(neu_datatag_table_t *);
 neu_datatag_t *      neu_datatag_tbl_get(neu_datatag_table_t *, datatag_id_t);
+neu_datatag_t *      neu_datatag_tbl_get_by_name(neu_datatag_table_t *,
+                                                 const char *name);
 
 // We take ownership of the datatag, this implies that the datatag and the
 // tag name should reside in heap.
