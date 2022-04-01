@@ -195,8 +195,9 @@ void handle_write(nng_aio *aio)
                 })
                 return;
             }
-            neu_data_val_t *data     = neu_parse_write_req_to_val(req);
-            uint32_t        event_id = neu_plugin_get_event_id(plugin);
+            neu_data_val_t *data =
+                neu_parse_write_req_to_val(plugin, node_id, req);
+            uint32_t event_id = neu_plugin_get_event_id(plugin);
             write_add_ctx(event_id, aio);
             neu_plugin_send_write_cmd(plugin, event_id, node_id, config, data);
         })

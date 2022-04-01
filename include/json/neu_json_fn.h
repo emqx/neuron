@@ -30,6 +30,8 @@ extern "C" {
 #include "neu_json_error.h"
 #include "neu_json_rw.h"
 
+#include "neu_plugin.h"
+
 typedef int (*neu_json_encode_fn)(void *object, void *param);
 
 int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result);
@@ -41,7 +43,9 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
 int neu_json_encode_setting_with_mqtt(uint32_t node_id, char *setting,
                                       void *mqtt_param, char **result);
 
-neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req);
+neu_data_val_t *neu_parse_write_req_to_val(neu_plugin_t *        plugin,
+                                           neu_node_id_t         node_id,
+                                           neu_json_write_req_t *req);
 
 #define NEU_JSON_RESPONSE_ERROR(err, func)                             \
     {                                                                  \

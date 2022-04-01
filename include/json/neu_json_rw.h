@@ -53,7 +53,7 @@ typedef struct {
 int neu_json_encode_read_resp(void *json_object, void *param);
 
 typedef struct {
-    int64_t              id;
+    char *               name;
     enum neu_json_type   t;
     union neu_json_value value;
 } neu_json_write_req_tag_t;

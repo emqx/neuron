@@ -109,8 +109,8 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
                                             .t    = NEU_JSON_VALUE,
                                         },
                                         {
-                                            .name = "id",
-                                            .t    = NEU_JSON_INT,
+                                            .name = "name",
+                                            .t    = NEU_JSON_STR,
                                         } };
         ret                         = neu_json_decode_array_by_json(
             json_obj, "tags", i, NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
@@ -137,8 +137,8 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
         default:
             break;
         }
-        p_tag->t  = tag_elems[0].t;
-        p_tag->id = tag_elems[1].v.val_int;
+        p_tag->t    = tag_elems[0].t;
+        p_tag->name = tag_elems[1].v.val_str;
         p_tag++;
     }
 
