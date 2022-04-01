@@ -190,8 +190,8 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "node_id",
-                                        .t    = NEU_JSON_INT,
+                                        .name = "node_name",
+                                        .t    = NEU_JSON_STR,
                                     },
                                     {
                                         .name = "group_config_name",
@@ -203,7 +203,7 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
         goto decode_fail;
     }
 
-    req->node_id           = req_elems[0].v.val_int;
+    req->node_name         = req_elems[0].v.val_str;
     req->group_config_name = req_elems[1].v.val_str;
 
     *result = req;
@@ -226,6 +226,7 @@ void neu_json_decode_read_req_free(neu_json_read_req_t *req)
 {
 
     free(req->group_config_name);
+    free(req->node_name);
 
     free(req);
 }

@@ -5,6 +5,7 @@ Suite Teardown    Stop All Processes
 
 *** Variables ***
 ${test_node_id}
+${test_node_name}   modbus-tcp-adapter
 ${group}    config_modbus_tcp_sample_2
 
 ${tag_bit}       {"name": "tag_bit", "address": "1!000001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
@@ -33,7 +34,7 @@ Read unsubscribed point, it should return failure
     ${res} =                Add Tags    ${test_node_id}    xxgrp    ${tag_int16}
     Sleep                   1s 500ms
 
-    ${res} =                 Read Tags          ${test_node_id}                    xxgrp
+    ${res} =                 Read Tags          ${test_node_name}                    xxgrp
     Check Response Status    ${res}             200
     Integer                  $.tags[0].error    ${ERR_PLUGIN_GRP_NOT_SUBSCRIBE}
 
@@ -43,21 +44,21 @@ Read unsubscribed point, it should return failure
 
 Read/Write a point in the hold reg or coil area, and the data as bit/int16/uint16/int32/uint32/float type, it should return success
     [Template]         Read Write A Point In The hold/coil Reg Area Should Success
-    ${test_node_id}    ${group}                                                       ${tag_bit}       coil        bit       1
-    ${test_node_id}    ${group}                                                       ${tag_int16}     hold reg    int16     123
-    ${test_node_id}    ${group}                                                       ${tag_uint16}    hold reg    uint16    456
-    ${test_node_id}    ${group}                                                       ${tag_int32}     hold reg    int32     66778899
-    ${test_node_id}    ${group}                                                       ${tag_uint32}    hold reg    int32     667788995
-    ${test_node_id}    ${group}                                                       ${tag_float}     hold reg    float     11.22
+    ${test_node_id}    ${test_node_name}            ${group}                                                       ${tag_bit}       coil        bit       1
+    ${test_node_id}    ${test_node_name}            ${group}                                                       ${tag_int16}     hold reg    int16     123
+    ${test_node_id}    ${test_node_name}            ${group}                                                       ${tag_uint16}    hold reg    uint16    456
+    ${test_node_id}    ${test_node_name}            ${group}                                                       ${tag_int32}     hold reg    int32     66778899
+    ${test_node_id}    ${test_node_name}            ${group}                                                       ${tag_uint32}    hold reg    int32     667788995
+    ${test_node_id}    ${test_node_name}            ${group}                                                       ${tag_float}     hold reg    float     11.22
 
 Read a point in the input or input reg area, and the data as bit/int16/uint16/int32/uint32/float type, it should return success
     [Template]         Read A Point In The Input Or Input Reg Area Should Return Success
-    ${test_node_id}    ${group}                                                             input        bit       ${tag1_bit}       0                        ${tag2_bit}       1
-    ${test_node_id}    ${group}                                                             input reg    int16     ${tag1_int16}     1020                     ${tag2_int16}     1021
-    ${test_node_id}    ${group}                                                             input reg    uint16    ${tag1_uint16}    1018                     ${tag2_uint16}    1019
-    ${test_node_id}    ${group}                                                             input reg    int32     ${tag1_int32}     66126834                 ${tag2_int32}     66191360
-    ${test_node_id}    ${group}                                                             input reg    uint32    ${tag1_uint32}    66585593                 ${tag2_uint32}    66650112
-    ${test_node_id}    ${group}                                                             input reg    float     ${tag1_float}     7.346839692639297e-40    ${tag2_float}     6.428596834936531e-40
+    ${test_node_id}    ${test_node_name}            ${group}                                                             input        bit       ${tag1_bit}       0                        ${tag2_bit}       1
+    ${test_node_id}    ${test_node_name}            ${group}                                                             input reg    int16     ${tag1_int16}     1020                     ${tag2_int16}     1021
+    ${test_node_id}    ${test_node_name}            ${group}                                                             input reg    uint16    ${tag1_uint16}    1018                     ${tag2_uint16}    1019
+    ${test_node_id}    ${test_node_name}            ${group}                                                             input reg    int32     ${tag1_int32}     66126834                 ${tag2_int32}     66191360
+    ${test_node_id}    ${test_node_name}            ${group}                                                             input reg    uint32    ${tag1_uint32}    66585593                 ${tag2_uint32}    66650112
+    ${test_node_id}    ${test_node_name}            ${group}                                                             input reg    float     ${tag1_float}     7.346839692639297e-40    ${tag2_float}     6.428596834936531e-40
 
 Read multiple points in the coil area, the point address includes continuous and non-continuous, and the data as bit type, it should return success
     ${tag1_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!000001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
@@ -79,7 +80,7 @@ Read multiple points in the coil area, the point address includes continuous and
     Should Not Be Equal As Integers    ${tag8_id}    -1
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int    ${res}[tags]    tag1    1
     Compare Tag Value As Int    ${res}[tags]    tag2    0
@@ -97,7 +98,7 @@ Read multiple points in the coil area, the point address includes continuous and
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag7_id}, "value": 1}
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int    ${res}[tags]    tag1    1
     Compare Tag Value As Int    ${res}[tags]    tag2    1
@@ -130,7 +131,7 @@ Read multiple points in the input area, the point address includes continuous an
     Should Not Be Equal As Integers    ${tag8_id}    -1
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int    ${res}[tags]    tag1    0
     Compare Tag Value As Int    ${res}[tags]    tag2    1
@@ -164,7 +165,7 @@ Read multiple points in the input reg area, the point address includes continuou
     Should Not Be Equal As Integers    ${tag8_id}    -1
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int      ${res}[tags]    tag1    0
     Compare Tag Value As Int      ${res}[tags]    tag2    1
@@ -197,7 +198,7 @@ Read multiple points in the hold reg area, the point address includes continuous
     Should Not Be Equal As Integers    ${tag8_id}    -1
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int      ${res}[tags]    tag1    123
     Compare Tag Value As Int      ${res}[tags]    tag2    456
@@ -218,7 +219,7 @@ Read multiple points in the hold reg area, the point address includes continuous
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag8_id}, "value": 11.234}
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int      ${res}[tags]    tag1    1
     Compare Tag Value As Int      ${res}[tags]    tag2    2
@@ -255,7 +256,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Should Not Be Equal As Integers    ${tag10_id}    -1
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int      ${res}[tags]    tag1     0
     Compare Tag Value As Int      ${res}[tags]    tag2     0
@@ -276,7 +277,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag10_id}, "value": 11.123}
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int      ${res}[tags]    tag1     1
     Compare Tag Value As Int      ${res}[tags]    tag2     1
@@ -315,7 +316,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Should Not Be Equal As Integers    ${tag10_id}    -1
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int      ${res}[tags]    tag1     0
     Compare Tag Value As Int      ${res}[tags]    tag2     0
@@ -336,7 +337,7 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Write Tags    ${test_node_id}    ${group}    {"id": ${tag10_id}, "value": 11.789}
 
     Sleep       1s 500ms
-    ${res} =    Read Tags    ${test_node_id}    ${group}
+    ${res} =    Read Tags    ${test_node_name}    ${group}
 
     Compare Tag Value As Int      ${res}[tags]    tag1     1
     Compare Tag Value As Int      ${res}[tags]    tag2     1
@@ -360,7 +361,7 @@ Neuron Context Ready
 
     LOGIN
 
-    Add Node        type=${${NODE_DRIVER}}    name=modbus-tcp-adapter    plugin_name=modbus-tcp
+    Add Node        type=${${NODE_DRIVER}}    name=${test_node_name}    plugin_name=modbus-tcp
     ${id} =         Get Node ID               ${NODE_DRIVER}             modbus-tcp-adapter
     ${mqtt_id} =    Get Node ID               ${NODE_MQTT}               mqtt-adapter
 
@@ -378,7 +379,7 @@ Stop All Processes
     Terminate All Processes    kill=false
 
 Read Write A Point In The hold/coil Reg Area Should Success
-    [Arguments]       ${node_id}                                                                                 ${group}    ${tag}    ${area}    ${type}    ${value}
+    [Arguments]       ${node_id}        ${node_name}                                                                                 ${group}    ${tag}    ${area}    ${type}    ${value}
     Log               Read a point in the ${area} reg area, and the data as ${type}, it should return success
     Log To Console    Read a point in the ${area} reg area, and the data as ${type}, it should return success
 
@@ -392,7 +393,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
     Should Not Be Equal As Integers    ${tag_id}                -1
 
     Sleep                    1s 500ms
-    ${res} =                 Read Tags    ${node_id}      ${group}
+    ${res} =                 Read Tags    ${node_name}      ${group}
     Check Response Status    ${res}       200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
     Run Keyword              ${cmp}       ${res}[tags]    ${res}[tags][0][name]    0
@@ -400,7 +401,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
     ${res} =    Write Tags    ${node_id}    ${group}    {"id": ${tag_id}, "value": ${value}}
 
     Sleep                    1s 500ms
-    ${res} =                 Read Tags    ${node_id}      ${group}
+    ${res} =                 Read Tags    ${node_name}      ${group}
     Check Response Status    ${res}       200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
     Run Keyword              ${cmp}       ${res}[tags]    ${res}[tags][0][name]    ${value}
@@ -409,7 +410,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
     [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
 
 Read A Point In The Input Or Input Reg Area Should Return Success
-    [Arguments]       ${node_id}                                                                             ${group}    ${area}    ${type}    ${tag1}    ${value1}    ${tag2}    ${value2}
+    [Arguments]       ${node_id}        ${node_name}                                                                       ${group}    ${area}    ${type}    ${tag1}    ${value1}    ${tag2}    ${value2}
     Log               Read a point in the ${area} area, and the data as ${type}, it should return success
     Log To Console    Read a point in the ${area} area, and the data as ${type}, it should return success
 
@@ -426,7 +427,7 @@ Read A Point In The Input Or Input Reg Area Should Return Success
     Should Not Be Equal As Integers    ${tag2_id}               -1
 
     Sleep                    1s 500ms
-    ${res} =                 Read Tags    ${node_id}    ${group}
+    ${res} =                 Read Tags    ${node_name}    ${group}
     Check Response Status    ${res}       200
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
 

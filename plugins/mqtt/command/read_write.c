@@ -35,15 +35,21 @@ static uint64_t current_time()
 int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                  neu_json_read_req_t *req, uint32_t req_id)
 {
-    log_info("READ uuid:%s, node id:%u", mqtt->uuid, req->node_id);
-    neu_taggrp_config_t *config = neu_system_find_group_config(
-        plugin, req->node_id, req->group_config_name);
+    neu_node_id_t node_id =
+        neu_plugin_get_node_id_by_node_name(plugin, req->node_name);
+    if (node_id == 0) {
+        log_debug("node %s does not exist", req->node_name);
+        return -1;
+    }
+    log_info("READ uuid:%s, node id:%u", mqtt->uuid, node_id);
+    neu_taggrp_config_t *config =
+        neu_system_find_group_config(plugin, node_id, req->group_config_name);
     if (NULL == config) {
         log_debug("The requested config does not exist");
         return -2;
     }
 
-    neu_plugin_send_read_cmd(plugin, req_id, req->node_id, config);
+    neu_plugin_send_read_cmd(plugin, req_id, node_id, config);
     return 0;
 }
 
@@ -71,6 +77,10 @@ static int wrap_read_response_json_object(neu_fixed_array_t *   array,
         neu_dtype_e type = neu_dvalue_get_value_type(val);
 
         neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
+
+        if (tag == NULL) {
+            continue;
+        }
 
         json->tags[i].name  = tag->name;
         json->tags[i].error = NEU_ERR_SUCCESS;

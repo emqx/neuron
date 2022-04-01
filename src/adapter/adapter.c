@@ -1510,6 +1510,18 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
+    case NEU_REQRESP_GET_NODE_ID_BY_NAME: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_node_id_t, neu_cmd_get_node_id_by_name_t,
+            rv, NEU_REQRESP_NODE_ID, p_result, {
+                ret     = calloc(1, sizeof(neu_reqresp_node_id_t));
+                int err = neu_manager_get_node_id_by_name(
+                    adapter->manager, req_cmd->name, &ret->node_id);
+                (void) err;
+            })
+        break;
+    }
+
     case NEU_REQRESP_SELF_NODE_NAME: {
         ADAPTER_RESP_CMD(
             adapter, cmd, neu_reqresp_node_name_t, neu_cmd_self_node_name_t, rv,
