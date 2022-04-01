@@ -329,12 +329,21 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return -2;
     }
 
+    neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
+
     neu_int_val_t   int_val;
     neu_data_val_t *val;
     for (int i = 0; i < write_req->n_tag; i++) {
         enum neu_json_type   type  = write_req->tags[i].t;
         union neu_json_value value = write_req->tags[i].value;
-        neu_datatag_id_t     id    = write_req->tags[i].id;
+        neu_datatag_t *      tag =
+            neu_datatag_tbl_get_by_name(table, write_req->tags[i].name);
+
+        if (tag == NULL) {
+            continue;
+        }
+
+        neu_datatag_id_t id = tag->id;
 
         switch (type) {
         case NEU_JSON_INT: {

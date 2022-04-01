@@ -59,11 +59,12 @@ TEST(JsonAPITest, ReadResEncode)
 
 TEST(JsonAPITest, WriteReqDecode)
 {
-    char *buf = (char *) "{\"node_name\": \"name1\", \"group_config_name\": "
-                         "\"config_opcua_sample\", \"tags\": "
-                         "[{\"id\":1, \"value\":8877},{\"id\":2, "
-                         "\"value\":11.22},{\"id\":3, \"value\": \"hello "
-                         "world\"}]}";
+    char *buf =
+        (char *) "{\"node_name\": \"name1\", \"group_config_name\": "
+                 "\"config_opcua_sample\", \"tags\": "
+                 "[{\"name\":\"name1\", \"value\":8877},{\"name\":\"name2\", "
+                 "\"value\":11.22},{\"name\":\"name3\", \"value\": \"hello "
+                 "world\"}]}";
     neu_json_write_req_t *req = NULL;
 
     EXPECT_EQ(0, neu_json_decode_write_req(buf, &req));
@@ -73,15 +74,15 @@ TEST(JsonAPITest, WriteReqDecode)
 
     EXPECT_STREQ("config_opcua_sample", req->group_config_name);
 
-    EXPECT_EQ(1, req->tags[0].id);
+    EXPECT_STREQ("name1", req->tags[0].name);
     EXPECT_EQ(NEU_JSON_INT, req->tags[0].t);
     EXPECT_EQ(8877, req->tags[0].value.val_int);
 
-    EXPECT_EQ(2, req->tags[1].id);
+    EXPECT_STREQ("name2", req->tags[1].name);
     EXPECT_EQ(NEU_JSON_DOUBLE, req->tags[1].t);
     EXPECT_EQ(11.22, req->tags[1].value.val_double);
 
-    EXPECT_EQ(3, req->tags[2].id);
+    EXPECT_STREQ("name3", req->tags[2].name);
     EXPECT_EQ(NEU_JSON_STR, req->tags[2].t);
     EXPECT_STREQ("hello world", req->tags[2].value.val_str);
 

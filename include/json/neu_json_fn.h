@@ -26,6 +26,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "neu_datatag_table.h"
+
 #include "neu_data_expr.h"
 #include "neu_json_error.h"
 #include "neu_json_rw.h"
@@ -41,7 +43,8 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
 int neu_json_encode_setting_with_mqtt(uint32_t node_id, char *setting,
                                       void *mqtt_param, char **result);
 
-neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req);
+neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req,
+                                           neu_datatag_table_t *);
 
 #define NEU_JSON_RESPONSE_ERROR(err, func)                             \
     {                                                                  \

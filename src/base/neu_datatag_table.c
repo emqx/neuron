@@ -75,6 +75,18 @@ neu_datatag_t *neu_datatag_tbl_get(neu_datatag_table_t *tag_tbl,
     return datatag;
 }
 
+neu_datatag_t *neu_datatag_tbl_get_by_name(neu_datatag_table_t *tag_tbl,
+                                           const char *         name)
+{
+    neu_datatag_t *datatag;
+
+    pthread_mutex_lock(&tag_tbl->mtx);
+    datatag = neu_hash_table_get(&tag_tbl->tag_name_table, name);
+    pthread_mutex_unlock(&tag_tbl->mtx);
+
+    return datatag;
+}
+
 int neu_datatag_tbl_update(neu_datatag_table_t *tag_tbl, datatag_id_t tag_id,
                            neu_datatag_t *datatag)
 {
