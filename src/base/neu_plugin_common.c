@@ -400,6 +400,18 @@ const char *neu_plugin_self_node_name(neu_plugin_t *plugin)
     return node_name;
 }
 
+neu_node_id_t neu_plugin_get_node_id_by_node_name(neu_plugin_t *plugin,
+                                                  const char *  node_name)
+{
+    neu_cmd_get_node_id_by_name_t get_id  = { .name = node_name };
+    neu_node_id_t                 node_id = { 0 };
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_NODE_ID_BY_NAME, get_id,
+                    neu_reqresp_node_id_t, { node_id = resp->node_id; })
+
+    return node_id;
+}
+
 intptr_t neu_system_add_plugin(neu_plugin_t *plugin,
                                const char *  plugin_lib_name)
 {

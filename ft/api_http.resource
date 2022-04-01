@@ -220,8 +220,8 @@ Get Tag ID
   [Return]            ${id}
 
 Read Tags
-  [Arguments]         ${node_id}              ${group}
-  POST                /api/v2/read            {"node_id": ${node_id}, "group_config_name": "${group}"}
+  [Arguments]         ${node_name}              ${group}
+  POST                /api/v2/read            {"node_name": "${node_name}", "group_config_name": "${group}"}
   ${res} =            Object  response body
 
   [RETURN]            ${res}[0]

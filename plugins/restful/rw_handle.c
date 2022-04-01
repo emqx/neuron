@@ -147,11 +147,28 @@ void handle_read(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_read_req_t, neu_json_decode_read_req, {
+            neu_node_id_t node_id =
+                neu_plugin_get_node_id_by_node_name(plugin, req->node_name);
+            if (node_id == 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+                    http_response(aio, NEU_ERR_NODE_NOT_EXIST, result_error);
+                })
+                return;
+            }
+
             neu_taggrp_config_t *config = neu_system_find_group_config(
-                plugin, req->node_id, req->group_config_name);
+                plugin, node_id, req->group_config_name);
+            if (config == NULL) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_NOT_EXIST, {
+                    http_response(aio, NEU_ERR_GRP_CONFIG_NOT_EXIST,
+                                  result_error);
+                })
+                return;
+            }
+
             uint32_t event_id = neu_plugin_get_event_id(plugin);
-            read_add_ctx(event_id, aio, plugin, req->node_id);
-            neu_plugin_send_read_cmd(plugin, event_id, req->node_id, config);
+            read_add_ctx(event_id, aio, plugin, node_id);
+            neu_plugin_send_read_cmd(plugin, event_id, node_id, config);
         })
 }
 

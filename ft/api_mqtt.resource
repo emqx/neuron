@@ -263,8 +263,8 @@ Get Tag ID
   [Return]                          ${id}
 
 Read Tags
-  [Arguments]                       ${node_id}                        ${group}
-  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_id": ${node_id}, "group_config_name": "${group}"}                      ${TOPIC_READ_REQ}                   ${TOPIC_READ_RES}
+  [Arguments]                       ${node_name}                        ${group}
+  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_name": "${node_name}", "group_config_name": "${group}"}                      ${TOPIC_READ_REQ}                   ${TOPIC_READ_RES}
 
   [Return]                          ${res}
 
