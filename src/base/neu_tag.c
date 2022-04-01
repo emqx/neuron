@@ -561,7 +561,7 @@ void neu_datatag_unpack(neu_data_val_t *req_val, void *data,
             char *value = NULL;
 
             neu_dvalue_get_cstr(int_val->val, &value);
-            fn(data, i, int_val->key, &value);
+            fn(data, i, int_val->key, value);
             free(value);
             break;
         }
