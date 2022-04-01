@@ -307,6 +307,12 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 {
     log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
              write_req->group_config_name);
+    neu_node_id_t node_id =
+        neu_plugin_get_node_id_by_node_name(plugin, write_req->node_name);
+    if (node_id == 0) {
+        log_error("node %s does not exist", write_req->node_name);
+        return -1;
+    }
 
     neu_data_val_t *   write_val;
     neu_fixed_array_t *array;
@@ -365,8 +371,8 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     }
 
     neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
-    write_command(plugin, write_req->node_id, write_req->group_config_name,
-                  write_val, req_id);
+    write_command(plugin, node_id, write_req->group_config_name, write_val,
+                  req_id);
     return 0;
 }
 

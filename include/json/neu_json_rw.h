@@ -62,7 +62,7 @@ typedef struct {
     int                       n_tag;
     neu_json_write_req_tag_t *tags;
     char *                    group_config_name;
-    int64_t                   node_id;
+    char *                    node_name;
 } neu_json_write_req_t;
 
 int  neu_json_decode_write_req(char *buf, neu_json_write_req_t **result);
