@@ -473,10 +473,66 @@ void neu_datatag_unpack(neu_data_val_t *req_val, void *data,
             neu_value_type_in_dtype(neu_dvalue_get_type(int_val->val));
 
         switch (type) {
+        case NEU_DTYPE_INT8: {
+            int8_t value = 0;
+
+            neu_dvalue_get_int8(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_UINT8: {
+            uint8_t value = 0;
+
+            neu_dvalue_get_uint8(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_INT16: {
+            int16_t value = 0;
+
+            neu_dvalue_get_int16(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_UINT16: {
+            uint16_t value = 0;
+
+            neu_dvalue_get_uint16(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_UINT32: {
+            uint32_t value = 0;
+
+            neu_dvalue_get_uint32(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_INT32: {
+            int32_t value = 0;
+
+            neu_dvalue_get_int32(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
         case NEU_DTYPE_INT64: {
             int64_t value = 0;
 
             neu_dvalue_get_int64(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_UINT64: {
+            uint64_t value = 0;
+
+            neu_dvalue_get_uint64(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_FLOAT: {
+            float value = 0;
+
+            neu_dvalue_get_float(int_val->val, &value);
             fn(data, i, int_val->key, &value);
             break;
         }
@@ -487,11 +543,26 @@ void neu_datatag_unpack(neu_data_val_t *req_val, void *data,
             fn(data, i, int_val->key, &value);
             break;
         }
+        case NEU_DTYPE_BIT: {
+            uint8_t value = 0;
+
+            neu_dvalue_get_bit(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
+        case NEU_DTYPE_BOOL: {
+            bool value = false;
+
+            neu_dvalue_get_bool(int_val->val, &value);
+            fn(data, i, int_val->key, &value);
+            break;
+        }
         case NEU_DTYPE_CSTR: {
             char *value = NULL;
 
             neu_dvalue_get_cstr(int_val->val, &value);
-            fn(data, i, int_val->key, value);
+            fn(data, i, int_val->key, &value);
+            free(value);
             break;
         }
         default:

@@ -192,33 +192,60 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req,
             continue;
         }
 
-        switch (req->tags[i].t) {
-        case NEU_JSON_INT:
+        switch (tag->type) {
+        case NEU_DTYPE_UINT8:
+            v = neu_dvalue_new(NEU_DTYPE_UINT8);
+            neu_dvalue_set_uint8(v, (uint8_t) req->tags[i].value.val_int);
+            break;
+        case NEU_DTYPE_INT8:
+            v = neu_dvalue_new(NEU_DTYPE_INT8);
+            neu_dvalue_set_int8(v, (int8_t) req->tags[i].value.val_int);
+            break;
+        case NEU_DTYPE_UINT16:
+            v = neu_dvalue_new(NEU_DTYPE_UINT16);
+            neu_dvalue_set_uint16(v, (uint16_t) req->tags[i].value.val_int);
+            break;
+        case NEU_DTYPE_INT16:
+            v = neu_dvalue_new(NEU_DTYPE_INT16);
+            neu_dvalue_set_int16(v, (int16_t) req->tags[i].value.val_int);
+            break;
+        case NEU_DTYPE_INT32:
+            v = neu_dvalue_new(NEU_DTYPE_INT32);
+            neu_dvalue_set_int32(v, (int32_t) req->tags[i].value.val_int);
+            break;
+        case NEU_DTYPE_UINT32:
+            v = neu_dvalue_new(NEU_DTYPE_UINT32);
+            neu_dvalue_set_uint32(v, (uint32_t) req->tags[i].value.val_int);
+            break;
+        case NEU_DTYPE_INT64:
             v = neu_dvalue_new(NEU_DTYPE_INT64);
-            neu_dvalue_set_int64(v, req->tags[i].value.val_int);
+            neu_dvalue_set_int64(v, (int64_t) req->tags[i].value.val_int);
             break;
-        case NEU_JSON_BIT:
-            v = neu_dvalue_new(NEU_DTYPE_BIT);
-            neu_dvalue_set_bit(v, req->tags[i].value.val_bit);
+        case NEU_DTYPE_UINT64:
+            v = neu_dvalue_new(NEU_DTYPE_UINT64);
+            neu_dvalue_set_uint64(v, (uint64_t) req->tags[i].value.val_int);
             break;
-        case NEU_JSON_STR:
-            v = neu_dvalue_new(NEU_DTYPE_CSTR);
-            neu_dvalue_set_cstr(v, req->tags[i].value.val_str);
+        case NEU_DTYPE_FLOAT:
+            v = neu_dvalue_new(NEU_DTYPE_FLOAT);
+            neu_dvalue_set_float(v, (float) req->tags[i].value.val_double);
             break;
-        case NEU_JSON_DOUBLE:
+        case NEU_DTYPE_DOUBLE:
             v = neu_dvalue_new(NEU_DTYPE_DOUBLE);
             neu_dvalue_set_double(v, req->tags[i].value.val_double);
             break;
-        case NEU_JSON_FLOAT:
-            v = neu_dvalue_new(NEU_DTYPE_FLOAT);
-            neu_dvalue_set_float(v, req->tags[i].value.val_float);
+        case NEU_DTYPE_BIT:
+            v = neu_dvalue_new(NEU_DTYPE_BIT);
+            neu_dvalue_set_bit(v, (uint8_t) req->tags[i].value.val_int);
             break;
-        case NEU_JSON_BOOL:
+        case NEU_DTYPE_BOOL:
             v = neu_dvalue_new(NEU_DTYPE_BOOL);
             neu_dvalue_set_bool(v, req->tags[i].value.val_bool);
             break;
+        case NEU_DTYPE_CSTR:
+            v = neu_dvalue_new(NEU_DTYPE_CSTR);
+            neu_dvalue_set_cstr(v, req->tags[i].value.val_str);
+            break;
         default:
-            assert(false);
             break;
         }
 
