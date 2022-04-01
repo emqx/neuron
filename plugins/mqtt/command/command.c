@@ -403,6 +403,16 @@ void command_response_handle(mqtt_response_t *response)
         return;
     }
 
+    if (0 != strcmp(mqtt->command, NEU_MQTT_CMD_GET) &&
+        0 != strcmp(mqtt->command, NEU_MQTT_CMD_SET) &&
+        0 != strcmp(mqtt->command, NEU_MQTT_CMD_ADD) &&
+        0 != strcmp(mqtt->command, NEU_MQTT_CMD_UPDATE) &&
+        0 != strcmp(mqtt->command, NEU_MQTT_CMD_DELETE) &&
+        0 != strcmp(mqtt->command, NEU_MQTT_CMD_NONE)) {
+        log_error("Unsupported command");
+        return;
+    }
+
     switch (response->type) {
     case TOPIC_TYPE_PING: {
         // Ping
