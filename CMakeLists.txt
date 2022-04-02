@@ -32,7 +32,7 @@ if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
       CACHE INTERNAL "No dev warnings")
 endif()
 
-configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/utils/uthash.h)
+configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
 
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -133,6 +133,7 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 # define neuron base library
 set(NEURON_BASE_SOURCES
     src/types.c
+    src/base/tag_table.c
     src/base/neu_tag.c
     src/base/neu_datatag_table.c
     src/base/neu_tag_group_config.c
@@ -171,7 +172,7 @@ else()
       src/connection/mqtt_c_client.c)
 endif()
 
-set(NEURON_BASE_INCLUDE_DIRECTORIES include src)
+set(NEURON_BASE_INCLUDE_DIRECTORIES include include/neuron src)
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_SCHEMA})
 target_include_directories(neuron-base
