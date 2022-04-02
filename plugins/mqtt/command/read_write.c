@@ -333,7 +333,6 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_int_val_t   int_val;
     neu_data_val_t *val;
     for (int i = 0; i < write_req->n_tag; i++) {
-        enum neu_json_type   type  = write_req->tags[i].t;
         union neu_json_value value = write_req->tags[i].value;
         neu_datatag_t *      tag =
             neu_datatag_tbl_get_by_name(table, write_req->tags[i].name);
@@ -429,7 +428,11 @@ static int wrap_write_response_json_object(neu_fixed_array_t *   array,
         int_val = neu_fixed_array_get(array, i);
         val     = int_val->val;
 
-        neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
+        neu_datatag_t *tag = NULL;
+        tag                = neu_datatag_tbl_get(datatag_table, int_val->key);
+        if (NULL == tag) {
+            continue;
+        }
 
         json->tags[i].name = tag->name;
 
