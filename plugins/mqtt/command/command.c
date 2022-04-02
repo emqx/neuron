@@ -293,12 +293,13 @@ static int write_response(mqtt_response_t *response, neu_plugin_t *plugin,
     int                   rc  = neu_json_decode_write_req(json_str, &req);
     if (0 == rc) {
         uint32_t req_id = neu_plugin_get_event_id(plugin);
-        if (0 < req_id) {
+        int      ret    = command_rw_write_request(plugin, mqtt, req, req_id);
+
+        if (0 < req_id && ret == 0) {
             response->context_add(plugin, req_id, mqtt, NULL,
                                   response->topic_pair, false);
         }
 
-        command_rw_write_request(plugin, mqtt, req, req_id);
         neu_json_decode_write_req_free(req);
     }
 
