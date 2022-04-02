@@ -44,12 +44,12 @@ Read unsubscribed point, it should return failure
 
 Read/Write a point in the hold reg or coil area, and the data as bit/int16/uint16/int32/uint32/float type, it should return success
     [Template]         Read Write A Point In The hold/coil Reg Area Should Success
-    ${test_node_id}    ${test_node_name}            "tag_bit"               ${group}                                                       ${tag_bit}       coil        bit       1
-    ${test_node_id}    ${test_node_name}            "tag_int16"             ${group}                                                       ${tag_int16}     hold reg    int16     123
-    ${test_node_id}    ${test_node_name}            "tag_uint16"            ${group}                                                       ${tag_uint16}    hold reg    uint16    456
-    ${test_node_id}    ${test_node_name}            "tag_int32"             ${group}                                                       ${tag_int32}     hold reg    int32     66778899
-    ${test_node_id}    ${test_node_name}            "tag_uint32"            ${group}                                                       ${tag_uint32}    hold reg    int32     667788995
-    ${test_node_id}    ${test_node_name}            "tag_float"             ${group}                                                       ${tag_float}     hold reg    float     11.22
+    ${test_node_id}    ${test_node_name}                tag_bit               ${group}                                                       ${tag_bit}       coil        bit       1
+    ${test_node_id}    ${test_node_name}                tag_int16             ${group}                                                       ${tag_int16}     hold reg    int16     123
+    ${test_node_id}    ${test_node_name}                tag_uint16            ${group}                                                       ${tag_uint16}    hold reg    uint16    456
+    ${test_node_id}    ${test_node_name}                tag_int32             ${group}                                                       ${tag_int32}     hold reg    int32     66778899
+    ${test_node_id}    ${test_node_name}                tag_uint32            ${group}                                                       ${tag_uint32}    hold reg    int32     667788995
+    ${test_node_id}    ${test_node_name}                tag_float             ${group}                                                       ${tag_float}     hold reg    float     11.22
 
 Read a point in the input or input reg area, and the data as bit/int16/uint16/int32/uint32/float type, it should return success
     [Template]         Read A Point In The Input Or Input Reg Area Should Return Success
@@ -91,11 +91,11 @@ Read multiple points in the coil area, the point address includes continuous and
     Compare Tag Value As Int    ${res}[tags]    tag7    0
     Compare Tag Value As Int    ${res}[tags]    tag8    0
 
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag2", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag3", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag4", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag5", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag7", "value": 1}
+    Write Tags    ${test_node_name}    ${group}    tag2     1
+    Write Tags    ${test_node_name}    ${group}    tag3     1
+    Write Tags    ${test_node_name}    ${group}    tag4     1
+    Write Tags    ${test_node_name}    ${group}    tag5     1
+    Write Tags    ${test_node_name}    ${group}    tag7     1
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -209,14 +209,14 @@ Read multiple points in the hold reg area, the point address includes continuous
     Compare Tag Value As Int      ${res}[tags]    tag7    0
     Compare Tag Value As Float    ${res}[tags]    tag8    0.0
 
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag1", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag2", "value": 2}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag3", "value": 10}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag4", "value": 12}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag5", "value": 6946924}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag6", "value": 7143536}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag7", "value": 66651131}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag8", "value": 11.234}
+    Write Tags    ${test_node_name}    ${group}         tag1          1
+    Write Tags    ${test_node_name}    ${group}         tag2          2
+    Write Tags    ${test_node_name}    ${group}         tag3          10
+    Write Tags    ${test_node_name}    ${group}         tag4          12
+    Write Tags    ${test_node_name}    ${group}         tag5          6946924
+    Write Tags    ${test_node_name}    ${group}         tag6          7143536
+    Write Tags    ${test_node_name}    ${group}         tag7          66651131
+    Write Tags    ${test_node_name}    ${group}         tag8          11.234
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -269,12 +269,12 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Compare Tag Value As Int      ${res}[tags]    tag9     0
     Compare Tag Value As Float    ${res}[tags]    tag10    0.0
 
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag1", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag2", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag3", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag8", "value": 62225}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag9", "value": 66651134}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag10", "value": 11.123}
+    Write Tags    ${test_node_name}    ${group}     tag1        1
+    Write Tags    ${test_node_name}    ${group}     tag2        1
+    Write Tags    ${test_node_name}    ${group}     tag3        1
+    Write Tags    ${test_node_name}    ${group}     tag8        62225
+    Write Tags    ${test_node_name}    ${group}     tag9        66651134
+    Write Tags    ${test_node_name}    ${group}     tag10       11.123
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -329,12 +329,12 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     Compare Tag Value As Int      ${res}[tags]    tag9     0
     Compare Tag Value As Float    ${res}[tags]    tag10    0.0
 
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag1", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag2", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag3", "value": 1}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag8", "value": 62226}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag9", "value": 66651136}
-    Write Tags    ${test_node_name}    ${group}    {"name": "tag10", "value": 11.789}
+    Write Tags    ${test_node_name}    ${group}         tag1            1
+    Write Tags    ${test_node_name}    ${group}         tag2            1
+    Write Tags    ${test_node_name}    ${group}         tag3            1
+    Write Tags    ${test_node_name}    ${group}         tag8            62226
+    Write Tags    ${test_node_name}    ${group}         tag9            66651136
+    Write Tags    ${test_node_name}    ${group}         tag10           11.789
 
     Sleep       1s 500ms
     ${res} =    Read Tags    ${test_node_name}    ${group}
@@ -398,7 +398,7 @@ Read Write A Point In The hold/coil Reg Area Should Success
   #Check Error Code          ${res}                          ${ERR_SUCCESS}
     Run Keyword              ${cmp}       ${res}[tags]    ${res}[tags][0][name]    0
 
-    ${res} =    Write Tags    ${node_name}    ${group}    {"name": ${tag_name}, "value": ${value}}
+    ${res} =    Write Tags    ${node_name}    ${group}      ${tag_name}       ${value}
 
     Sleep                    1s 500ms
     ${res} =                 Read Tags    ${node_name}      ${group}

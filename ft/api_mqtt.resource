@@ -269,7 +269,7 @@ Read Tags
   [Return]                          ${res}
 
 Write Tags
-  [Arguments]                       ${node_name}                        ${group}                                  ${tags}
-  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_name": "${node_name}", "group_config_name": "${group}", "tags": [${tags}]}                      ${TOPIC_WRITE_REQ}                   ${TOPIC_WRITE_RES}
+  [Arguments]                       ${node_name}                        ${group}                                  ${tag_name}       ${value}
+  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_name": "${node_name}", "group_config_name": "${group}", "tag_name": "${tag_name}", "value": ${value}}                      ${TOPIC_WRITE_REQ}                   ${TOPIC_WRITE_RES}
 
   [Return]                          ${res}

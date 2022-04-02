@@ -321,7 +321,7 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return -1;
     }
 
-    array = neu_fixed_array_new(write_req->n_tag, sizeof(neu_int_val_t));
+    array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
     if (array == NULL) {
         log_error("Failed to allocate array for write data");
         neu_dvalue_free(write_val);
@@ -330,80 +330,73 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
 
-    neu_int_val_t   int_val;
-    neu_data_val_t *val;
-    for (int i = 0; i < write_req->n_tag; i++) {
-        enum neu_json_type   type  = write_req->tags[i].t;
-        union neu_json_value value = write_req->tags[i].value;
-        neu_datatag_t *      tag =
-            neu_datatag_tbl_get_by_name(table, write_req->tags[i].name);
+    neu_int_val_t        int_val;
+    neu_data_val_t *     val;
+    union neu_json_value value = write_req->value;
+    neu_datatag_t *      tag =
+        neu_datatag_tbl_get_by_name(table, write_req->tag_name);
 
-        if (tag == NULL) {
-            continue;
-        }
+    neu_datatag_id_t id = tag->id;
 
-        neu_datatag_id_t id = tag->id;
-
-        switch (tag->type) {
-        case NEU_DTYPE_UINT8:
-            val = neu_dvalue_new(NEU_DTYPE_UINT8);
-            neu_dvalue_set_uint8(val, (uint8_t) value.val_int);
-            break;
-        case NEU_DTYPE_INT8:
-            val = neu_dvalue_new(NEU_DTYPE_INT8);
-            neu_dvalue_set_int8(val, (int8_t) value.val_int);
-            break;
-        case NEU_DTYPE_UINT16:
-            val = neu_dvalue_new(NEU_DTYPE_UINT16);
-            neu_dvalue_set_uint16(val, (uint16_t) value.val_int);
-            break;
-        case NEU_DTYPE_INT16:
-            val = neu_dvalue_new(NEU_DTYPE_INT16);
-            neu_dvalue_set_int16(val, (int16_t) value.val_int);
-            break;
-        case NEU_DTYPE_INT32:
-            val = neu_dvalue_new(NEU_DTYPE_INT32);
-            neu_dvalue_set_int32(val, (int32_t) value.val_int);
-            break;
-        case NEU_DTYPE_UINT32:
-            val = neu_dvalue_new(NEU_DTYPE_UINT32);
-            neu_dvalue_set_uint32(val, (uint32_t) value.val_int);
-            break;
-        case NEU_DTYPE_INT64:
-            val = neu_dvalue_new(NEU_DTYPE_INT64);
-            neu_dvalue_set_int64(val, (int64_t) value.val_int);
-            break;
-        case NEU_DTYPE_UINT64:
-            val = neu_dvalue_new(NEU_DTYPE_UINT64);
-            neu_dvalue_set_uint64(val, (uint64_t) value.val_int);
-            break;
-        case NEU_DTYPE_FLOAT:
-            val = neu_dvalue_new(NEU_DTYPE_FLOAT);
-            neu_dvalue_set_float(val, (float) value.val_double);
-            break;
-        case NEU_DTYPE_DOUBLE:
-            val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
-            neu_dvalue_set_double(val, value.val_double);
-            break;
-        case NEU_DTYPE_BIT:
-            val = neu_dvalue_new(NEU_DTYPE_BIT);
-            neu_dvalue_set_bit(val, (uint8_t) value.val_int);
-            break;
-        case NEU_DTYPE_BOOL:
-            val = neu_dvalue_new(NEU_DTYPE_BOOL);
-            neu_dvalue_set_bool(val, value.val_bool);
-            break;
-        case NEU_DTYPE_CSTR:
-            val = neu_dvalue_new(NEU_DTYPE_CSTR);
-            neu_dvalue_set_cstr(val, value.val_str);
-            break;
-        default:
-            break;
-        }
-
-        neu_int_val_init(&int_val, id, val);
-        neu_fixed_array_set(array, i, (void *) &int_val);
+    switch (tag->type) {
+    case NEU_DTYPE_UINT8:
+        val = neu_dvalue_new(NEU_DTYPE_UINT8);
+        neu_dvalue_set_uint8(val, (uint8_t) value.val_int);
+        break;
+    case NEU_DTYPE_INT8:
+        val = neu_dvalue_new(NEU_DTYPE_INT8);
+        neu_dvalue_set_int8(val, (int8_t) value.val_int);
+        break;
+    case NEU_DTYPE_UINT16:
+        val = neu_dvalue_new(NEU_DTYPE_UINT16);
+        neu_dvalue_set_uint16(val, (uint16_t) value.val_int);
+        break;
+    case NEU_DTYPE_INT16:
+        val = neu_dvalue_new(NEU_DTYPE_INT16);
+        neu_dvalue_set_int16(val, (int16_t) value.val_int);
+        break;
+    case NEU_DTYPE_INT32:
+        val = neu_dvalue_new(NEU_DTYPE_INT32);
+        neu_dvalue_set_int32(val, (int32_t) value.val_int);
+        break;
+    case NEU_DTYPE_UINT32:
+        val = neu_dvalue_new(NEU_DTYPE_UINT32);
+        neu_dvalue_set_uint32(val, (uint32_t) value.val_int);
+        break;
+    case NEU_DTYPE_INT64:
+        val = neu_dvalue_new(NEU_DTYPE_INT64);
+        neu_dvalue_set_int64(val, (int64_t) value.val_int);
+        break;
+    case NEU_DTYPE_UINT64:
+        val = neu_dvalue_new(NEU_DTYPE_UINT64);
+        neu_dvalue_set_uint64(val, (uint64_t) value.val_int);
+        break;
+    case NEU_DTYPE_FLOAT:
+        val = neu_dvalue_new(NEU_DTYPE_FLOAT);
+        neu_dvalue_set_float(val, (float) value.val_double);
+        break;
+    case NEU_DTYPE_DOUBLE:
+        val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
+        neu_dvalue_set_double(val, value.val_double);
+        break;
+    case NEU_DTYPE_BIT:
+        val = neu_dvalue_new(NEU_DTYPE_BIT);
+        neu_dvalue_set_bit(val, (uint8_t) value.val_int);
+        break;
+    case NEU_DTYPE_BOOL:
+        val = neu_dvalue_new(NEU_DTYPE_BOOL);
+        neu_dvalue_set_bool(val, value.val_bool);
+        break;
+    case NEU_DTYPE_CSTR:
+        val = neu_dvalue_new(NEU_DTYPE_CSTR);
+        neu_dvalue_set_cstr(val, value.val_str);
+        break;
+    default:
+        break;
     }
+
+    neu_int_val_init(&int_val, id, val);
+    neu_fixed_array_set(array, 0, (void *) &int_val);
 
     neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
     write_command(plugin, node_id, write_req->group_config_name, write_val,
@@ -411,65 +404,22 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return 0;
 }
 
-static int wrap_write_response_json_object(neu_fixed_array_t *   array,
-                                           neu_json_read_resp_t *json,
-                                           neu_plugin_t *        plugin,
-                                           uint32_t              node_id)
-{
-    neu_int_val_t *      int_val;
-    neu_data_val_t *     val;
-    neu_datatag_table_t *datatag_table =
-        neu_system_get_datatags_table(plugin, node_id);
-    json->n_tag = array->length;
-
-    json->tags = (neu_json_read_resp_tag_t *) calloc(
-        array->length, sizeof(neu_json_read_resp_tag_t));
-
-    for (uint32_t i = 0; i < array->length; i++) {
-        int_val = neu_fixed_array_get(array, i);
-        val     = int_val->val;
-
-        neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
-
-        json->tags[i].name = tag->name;
-
-        int32_t value;
-        neu_dvalue_get_errorcode(val, &value);
-        json->tags[i].t             = NEU_JSON_INT;
-        json->tags[i].value.val_int = value;
-    }
-
-    return 0;
-}
-
-static void clean_write_response_json_object(neu_json_read_resp_t *json)
-{
-    if (NULL == json) {
-        return;
-    }
-
-    if (NULL == json->tags) {
-        return;
-    }
-
-    free(json->tags);
-}
-
-char *command_rw_write_response(neu_plugin_t *plugin, uint32_t node_id,
-                                neu_json_mqtt_t *parse_header,
+char *command_rw_write_response(neu_json_mqtt_t *parse_header,
                                 neu_data_val_t * resp_val)
 {
-    UNUSED(plugin);
+    neu_int_val_t *       iv    = NULL;
+    neu_json_error_resp_t error = { 0 };
+    neu_fixed_array_t *   array;
 
-    neu_fixed_array_t *array;
     neu_dvalue_get_ref_array(resp_val, &array);
 
-    neu_json_read_resp_t json;
-    wrap_write_response_json_object(array, &json, plugin, node_id);
+    iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
+    assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
+    neu_dvalue_get_errorcode(iv->val, (int32_t *) &error.error);
 
     char *json_str = NULL;
-    neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, parse_header,
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, parse_header,
                               neu_json_encode_mqtt_resp, &json_str);
-    clean_write_response_json_object(&json);
+
     return json_str;
 }
