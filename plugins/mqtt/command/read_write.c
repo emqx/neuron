@@ -336,6 +336,10 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_datatag_t *      tag =
         neu_datatag_tbl_get_by_name(table, write_req->tag_name);
 
+    if (tag == NULL) {
+        return -1;
+    }
+
     neu_datatag_id_t id = tag->id;
 
     switch (tag->type) {

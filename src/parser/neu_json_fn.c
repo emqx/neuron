@@ -178,12 +178,17 @@ int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
 neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req,
                                            neu_datatag_table_t * tbl)
 {
+    neu_datatag_t *tag = neu_datatag_tbl_get_by_name(tbl, req->tag_name);
+
+    if (tag == NULL) {
+        return NULL;
+    }
+
     neu_data_val_t *   val   = neu_dvalue_unit_new();
     neu_fixed_array_t *array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
 
     neu_int_val_t   iv;
     neu_data_val_t *v;
-    neu_datatag_t * tag = neu_datatag_tbl_get_by_name(tbl, req->tag_name);
 
     switch (tag->type) {
     case NEU_DTYPE_UINT8:

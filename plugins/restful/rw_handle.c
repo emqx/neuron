@@ -198,8 +198,14 @@ void handle_write(nng_aio *aio)
             neu_datatag_table_t *table =
                 neu_system_get_datatags_table(plugin, node_id);
 
-            neu_data_val_t *data     = neu_parse_write_req_to_val(req, table);
-            uint32_t        event_id = neu_plugin_get_event_id(plugin);
+            neu_data_val_t *data = neu_parse_write_req_to_val(req, table);
+            if (data == NULL) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_TAG_NOT_EXIST, {
+                    http_response(aio, NEU_ERR_TAG_NOT_EXIST, result_error);
+                })
+                return;
+            }
+            uint32_t event_id = neu_plugin_get_event_id(plugin);
             write_add_ctx(event_id, aio);
             neu_plugin_send_write_cmd(plugin, event_id, node_id, config, data);
         })
