@@ -231,6 +231,10 @@ void handle_read_resp(void *cmd_resp)
         neu_datatag_t *tag =
             neu_datatag_tbl_get(datatag_table, (datatag_id_t) iv->key);
 
+        if (tag == NULL) {
+            continue;
+        }
+
         api_res.tags[i].name  = tag->name;
         api_res.tags[i].error = NEU_ERR_SUCCESS;
 
