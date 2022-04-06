@@ -60,7 +60,7 @@ if(NOT CMAKE_STAGING_PREFIX)
 else()
   set(CMAKE_PREFIX_PATH ${CMAKE_STAGING_PREFIX})
   include_directories(${CMAKE_STAGING_PREFIX}/include ${CMAKE_STAGING_PREFIX}/openssl/include)
-  link_directories(${CMAKE_STAGING_PREFIX} ${CMAKE_STAGING_PREFIX}/lib ${CMAKE_STAGING_PREFIX}/openssl/lib)
+  link_directories(${CMAKE_STAGING_PREFIX} ${CMAKE_STAGING_PREFIX}/lib ${CMAKE_STAGING_PREFIX}/lib/${COMPILER_PREFIX} ${CMAKE_STAGING_PREFIX}/openssl/lib)
 endif()
 
 
