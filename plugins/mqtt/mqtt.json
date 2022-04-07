@@ -71,5 +71,33 @@
 		"valid": {
 			"length": 81960
 		}
+	},
+	"cert": {
+		"name": "client cert",
+		"description": "client x509 certificate file",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "ssl",
+			"value": true
+		},
+		"default": "",
+		"valid": {
+			"length": 81960
+		}
+	},
+	"key": {
+		"name": "client key",
+		"description": "client key file",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "ssl",
+			"value": true
+		},
+		"default": "",
+		"valid": {
+			"length": 81960
+		}
 	}
 }

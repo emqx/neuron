@@ -72,6 +72,11 @@ struct subscribe_tuple {
     mqtt_c_client_t *    client;
 };
 
+static neu_err_code_e client_destroy(mqtt_c_client_t *client);
+
+static neu_err_code_e client_subscribe_send(mqtt_c_client_t *       client,
+                                            struct subscribe_tuple *tuple);
+
 static void ssl_ctx_uninit(SSL_CTX *ssl_ctx)
 {
     if (NULL != ssl_ctx) {
@@ -79,23 +84,122 @@ static void ssl_ctx_uninit(SSL_CTX *ssl_ctx)
     }
 }
 
-static SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path)
+static X509 *ssl_ctx_load_cert(const char *cert_file)
+{
+    BIO * bio  = NULL;
+    X509 *cert = NULL;
+    bio        = BIO_new(BIO_s_file());
+    if (NULL == bio) {
+        return NULL;
+    }
+
+    int ret = BIO_read_filename(bio, cert_file);
+    if (0 >= ret) {
+        BIO_free_all(bio);
+        return NULL;
+    }
+
+    cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+    BIO_free_all(bio);
+    return cert;
+}
+
+static EVP_PKEY *ssl_ctx_load_key(const char *key_file)
+{
+    EVP_PKEY *key = NULL;
+    FILE *    fp  = NULL;
+    key           = EVP_PKEY_new();
+    fp            = fopen(key_file, "r");
+    if (NULL == fp) {
+        EVP_PKEY_free(key);
+        return NULL;
+    }
+
+    PEM_read_PrivateKey(fp, &key, NULL, NULL);
+    fclose(fp);
+    return key;
+}
+
+static SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path,
+                             const char *cert_file, const char *key_file)
 {
     assert(NULL != ca_file && 0 < strlen(ca_file));
     assert(NULL != ca_path && 0 < strlen(ca_path));
 
-    SSL_CTX *ssl_ctx = NULL;
-    ssl_ctx          = SSL_CTX_new(SSLv23_client_method());
-    assert(NULL != ssl_ctx);
+    SSL_CTX * ssl_ctx = NULL;
+    X509 *    cert    = NULL;
+    EVP_PKEY *key     = NULL;
+    ssl_ctx           = SSL_CTX_new(SSLv23_client_method());
+    if (NULL == ssl_ctx) {
+        return NULL;
+    }
+
+    if (NULL != cert_file && 0 < strlen(cert_file)) {
+        cert = ssl_ctx_load_cert(cert_file);
+        if (NULL != cert) {
+            int rc = SSL_CTX_use_certificate(ssl_ctx, cert);
+            if (0 >= rc) {
+                log_error("failed to use certificate");
+                ssl_ctx_uninit(ssl_ctx);
+                return NULL;
+            }
+        } else {
+            log_error("failed to load certificate");
+            ssl_ctx_uninit(ssl_ctx);
+            return NULL;
+        }
+    }
+
+    if (NULL != key_file && 0 < strlen(key_file)) {
+        key = ssl_ctx_load_key(key_file);
+        if (NULL != key) {
+            int rc = SSL_CTX_use_PrivateKey(ssl_ctx, key);
+            if (0 >= rc) {
+                log_error("failed to use privatekey");
+                ssl_ctx_uninit(ssl_ctx);
+                return NULL;
+            }
+        } else {
+            log_error("failed to load privatekey");
+            ssl_ctx_uninit(ssl_ctx);
+            return NULL;
+        }
+    }
+
+    if (NULL != cert && NULL != key) {
+        if (!SSL_CTX_check_private_key(ssl_ctx)) {
+            log_error("failed to check privatekey");
+            ssl_ctx_uninit(ssl_ctx);
+            return NULL;
+        }
+    }
 
     if (!SSL_CTX_load_verify_locations(ssl_ctx, ca_file, ca_path)) {
-        log_error("Failed to load certificate");
+        log_error("failed to load certificate");
         ssl_ctx_uninit(ssl_ctx);
         return NULL;
     }
 
     return ssl_ctx;
 }
+
+// static SSL_CTX *ssl_ctx_init(const char *ca_file, const char *ca_path)
+// {
+//     assert(NULL != ca_file && 0 < strlen(ca_file));
+//     assert(NULL != ca_path && 0 < strlen(ca_path));
+
+//     SSL_CTX *ssl_ctx = NULL;
+//     ssl_ctx          = SSL_CTX_new(SSLv23_client_method());
+//     assert(NULL != ssl_ctx);
+
+//     if (!SSL_CTX_load_verify_locations(ssl_ctx, ca_file, ca_path)) {
+//         log_error("failed to load certificate");
+//         ssl_ctx_uninit(ssl_ctx);
+//         return NULL;
+//     }
+
+//     return ssl_ctx;
+// }
 
 static BIO *bio_tcp_create(const char *addr, const char *port)
 {
@@ -148,14 +252,12 @@ static int bio_connect(BIO *bio)
     }
 
     if (do_connect_rv <= 0) {
+        log_error("bio connect error:%d", do_connect_rv);
         return -1;
     }
 
     return 0;
 }
-
-static neu_err_code_e client_subscribe_send(mqtt_c_client_t *       client,
-                                            struct subscribe_tuple *tuple);
 
 static void subscribe_all_topic(mqtt_c_client_t *client)
 {
@@ -314,16 +416,19 @@ static neu_err_code_e client_init(mqtt_c_client_t *client)
 {
     SSL_load_error_strings();
     ERR_load_BIO_strings();
+    ERR_load_crypto_strings();
     OpenSSL_add_all_algorithms();
     SSL_library_init();
 
     BIO *                    bio     = NULL;
     SSL_CTX *                ssl_ctx = NULL;
     const neu_mqtt_option_t *option  = client->option;
-    // if (0 == strcmp(option->connection, "tcp://")) { }
-
     if (0 == strcmp(option->connection, "ssl://")) {
-        ssl_ctx = ssl_ctx_init(option->ca_file, option->ca_path);
+        ssl_ctx = ssl_ctx_init(option->ca_file, option->ca_path, option->cert,
+                               option->key);
+        if (NULL == ssl_ctx) {
+            return NEU_ERR_FAILURE;
+        }
     }
 
     client->ssl_ctx = ssl_ctx;
@@ -355,12 +460,25 @@ neu_err_code_e mqtt_c_client_open(mqtt_c_client_t **       p_client,
 
     mqtt_c_client_t *client = client_create(option, context);
     if (NULL == client) {
+        *p_client = NULL;
         return NEU_ERR_MQTT_IS_NULL;
     }
 
     neu_err_code_e rc = client_init(client);
-    rc                = client_connect(client);
-    *p_client         = client;
+    if (NEU_ERR_SUCCESS != rc) {
+        client_destroy(client);
+        *p_client = NULL;
+        return rc;
+    }
+
+    rc = client_connect(client);
+    if (NEU_ERR_SUCCESS != rc) {
+        client_destroy(client);
+        *p_client = NULL;
+        return rc;
+    }
+
+    *p_client = client;
     return rc;
 }
 

@@ -455,7 +455,6 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
 
     routine->plugin = plugin;
     TAILQ_INIT(&routine->head);
-    vector_init(&routine->topics, 1, sizeof(struct topic_pair));
     pthread_mutex_init(&routine->contexts_mtx, NULL);
     pthread_mutex_init(&routine->running_mtx, NULL);
 
@@ -469,6 +468,13 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     // MQTT client start
     int rc = mqtt_option_init(config, &routine->option);
     if (0 != rc) {
+        pthread_mutex_lock(&routine->running_mtx);
+        routine->running = false;
+        pthread_mutex_unlock(&routine->running_mtx);
+        pthread_join(routine->daemon, NULL);
+        pthread_mutex_destroy(&routine->contexts_mtx);
+        pthread_mutex_destroy(&routine->running_mtx);
+
         mqtt_option_uninit(&routine->option);
         free(routine);
         return NULL;
@@ -477,11 +483,25 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     neu_mqtt_client_t *client = (neu_mqtt_client_t *) &routine->client;
     neu_err_code_e     error  = NEU_ERR_SUCCESS;
     error = neu_mqtt_client_open(client, &routine->option, plugin);
+    if (NEU_ERR_SUCCESS != error) {
+        pthread_mutex_lock(&routine->running_mtx);
+        routine->running = false;
+        pthread_mutex_unlock(&routine->running_mtx);
+        pthread_join(routine->daemon, NULL);
+        pthread_mutex_destroy(&routine->contexts_mtx);
+        pthread_mutex_destroy(&routine->running_mtx);
+
+        mqtt_option_uninit(&routine->option);
+        free(routine);
+        return NULL;
+    }
+
     neu_mqtt_client_continue(routine->client);
 
     log_info_node(plugin, "try open mqtt client: %s:%s, code:%d",
                   routine->option.host, routine->option.port, error);
 
+    vector_init(&routine->topics, 1, sizeof(struct topic_pair));
     topics_generate(&routine->topics, routine->option.clientid);
     topics_subscribe(&routine->topics, routine->client);
     return routine;
@@ -605,6 +625,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *config)
 
     mqtt_routine_t *routine = mqtt_routine_start(plugin, config);
     if (NULL == routine) {
+        plugin->routine = NULL;
         return NEU_ERR_FAILURE;
     }
 
