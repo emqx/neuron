@@ -23,8 +23,8 @@
 
 #include "errcodes.h"
 #include "file.h"
-#include "neu_plugin.h"
 #include "neu_vector.h"
+#include "plugin.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_license.h"

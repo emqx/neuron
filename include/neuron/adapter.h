@@ -26,6 +26,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "type.h"
+
 typedef uint32_t neu_node_id_t;
 
 typedef enum neu_node_type {
@@ -55,11 +57,40 @@ typedef struct neu_config {
     void *            buf;
 } neu_config_t;
 
+typedef enum {
+    NEU_NODE_LINK_STATUS_DISCONNECTED = 0,
+    NEU_NODE_LINK_STATUS_CONNECTING   = 1,
+    NEU_NODE_LINK_STATUS_CONNECTED    = 2,
+} neu_node_link_status_e;
+
+typedef enum {
+    NEU_NODE_RUNNING_STATUS_IDLE    = 0,
+    NEU_NODE_RUNNING_STATUS_INIT    = 1,
+    NEU_NODE_RUNNING_STATUS_READY   = 2,
+    NEU_NODE_RUNNING_STATUS_RUNNING = 3,
+    NEU_NODE_RUNNING_STATUS_STOPPED = 4,
+} neu_node_running_status_e;
+
+typedef struct {
+    neu_node_running_status_e running;
+    neu_node_link_status_e    link;
+} neu_node_status_t;
+
 typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_request_t *cmd,
                    neu_response_t **p_result);
     int (*response)(neu_adapter_t *adapter, neu_response_t *resp);
     int (*event_notify)(neu_adapter_t *adapter, neu_event_notify_t *event);
+
+    void (*set_link_status)(neu_adapter_t *        adapter,
+                            neu_node_link_status_e link_status);
+
+    union {
+        struct {
+            int (*update)(neu_adapter_t *adapter, const char *tag_name,
+                          neu_value_u value);
+        } driver;
+    };
 } adapter_callbacks_t;
 
 #ifdef __cplusplus

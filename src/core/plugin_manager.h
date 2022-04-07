@@ -27,7 +27,7 @@ extern "C" {
 #include <stdint.h>
 
 #include "adapter/adapter_internal.h"
-#include "neu_plugin.h"
+#include "plugin.h"
 #include "plugin_info.h"
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard-plugin"

@@ -22,7 +22,7 @@
 
 #include <stdlib.h>
 
-#include "neu_plugin.h"
+#include "plugin.h"
 #include "utils/neu_jwt.h"
 #include "json/neu_json_error.h"
 

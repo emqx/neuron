@@ -21,7 +21,7 @@
 
 #include "vector.h"
 
-#include "neu_plugin.h"
+#include "plugin.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_plugin.h"
 

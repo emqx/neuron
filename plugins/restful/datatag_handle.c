@@ -22,7 +22,7 @@
 
 #include "datatag_table.h"
 #include "log.h"
-#include "neu_plugin.h"
+#include "plugin.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_tag.h"
