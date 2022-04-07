@@ -27,7 +27,7 @@
 #include "config.h"
 #include "handle.h"
 #include "http.h"
-#include "neu_log.h"
+#include "log.h"
 #include "rest.h"
 #include "rw_handle.h"
 #include "utils/neu_jwt.h"

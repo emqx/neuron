@@ -20,8 +20,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "hash_table.h"
-#include "neu_errcodes.h"
+#include "errcodes.h"
+#include "utils/hash_table.h"
 
 struct neu_hash_table_entry {
     size_t hash;

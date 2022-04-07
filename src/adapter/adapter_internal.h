@@ -25,13 +25,13 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "neu_plugin.h"
-#include "neu_plugin_info.h"
+#include "plugin_info.h"
 
 #include "adapter_info.h"
 #include "core/databuf.h"
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
-#include "neu_plugin_info.h"
+#include "plugin_info.h"
 
 typedef enum adapter_state {
     ADAPTER_STATE_IDLE = 0,

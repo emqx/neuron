@@ -20,7 +20,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#include "idhash.h"
+#include "utils/idhash.h"
 
 struct neu_id_entry {
     uint32_t key;

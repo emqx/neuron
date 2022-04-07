@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "neu_datatag_table.h"
+#include "datatag_table.h"
 #include "json/json.h"
 
 #include "json/neu_json_fn.h"

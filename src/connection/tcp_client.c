@@ -24,7 +24,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "neu_log.h"
+#include "log.h"
 
 #include "connection/neu_tcp.h"
 

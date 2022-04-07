@@ -29,12 +29,12 @@ extern "C" {
 #include <unistd.h>
 
 //#include "adapter.h"
-#include "neu_data_expr.h"
-#include "neu_datatag_table.h"
-#include "neu_errcodes.h"
-#include "neu_plugin_info.h"
-#include "neu_tag_group_config.h"
-#include "neu_types.h"
+#include "data_expr.h"
+#include "datatag_table.h"
+#include "errcodes.h"
+#include "plugin_info.h"
+#include "tag_group_config.h"
+#include "types.h"
 
 #define DEFAULT_TAG_GROUP_COUNT 8
 

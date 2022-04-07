@@ -31,7 +31,7 @@
 #endif
 
 #include "connection/neu_connection.h"
-#include "neu_log.h"
+#include "log.h"
 
 struct tcp_client {
     int                fd;

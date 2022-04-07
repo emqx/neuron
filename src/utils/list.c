@@ -20,9 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <neu_panic.h>
+#include <panic.h>
 
-#include "neu_list.h"
+#include "list.h"
 
 // Linked list implementation.  We implement a doubly linked list.
 // Using pointer arithmetic, we can operate as a list of "anything".

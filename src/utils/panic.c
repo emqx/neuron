@@ -28,8 +28,8 @@
 #include <execinfo.h>
 #endif
 
-#include "neu_log.h"
-#include "neu_panic.h"
+#include "log.h"
+#include "panic.h"
 
 void neu_show_backtrace(void)
 {

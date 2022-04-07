@@ -31,8 +31,8 @@
 #include "adapter/adapter_internal.h"
 #include "config.h"
 #include "dummy/dummy.h"
-#include "neu_panic.h"
 #include "neu_vector.h"
+#include "panic.h"
 #include "plugin_manager.h"
 #include "restful/rest.h"
 

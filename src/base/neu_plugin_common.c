@@ -21,7 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "neu_errcodes.h"
+#include "errcodes.h"
 #include "neu_plugin.h"
 
 #define NEU_PLUGIN_MAGIC_NUMBER 0x43474d50 // a string "PMGC"

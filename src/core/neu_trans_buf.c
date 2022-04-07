@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 #include "csptr/smart_ptr.h"
-#include "neu_log.h"
+#include "log.h"
 
 #include "core/databuf.h"
 #include "core/message.h"

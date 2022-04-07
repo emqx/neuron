@@ -28,7 +28,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "neu_errcodes.h"
+#include "errcodes.h"
 #include "vector.h"
 
 #include "persist/json/persist_json_adapter.h"

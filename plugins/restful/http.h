@@ -23,7 +23,7 @@
 #include <nng/nng.h>
 
 #include "adapter.h"
-#include "neu_errcodes.h"
+#include "errcodes.h"
 
 #ifdef __cplusplus
 extern "C" {

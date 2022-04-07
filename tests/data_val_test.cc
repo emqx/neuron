@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "neu_data_expr.h"
-#include "neu_types.h"
+#include "data_expr.h"
+#include "types.h"
 
 TEST(DataValueTest, neu_dvalue_init_set_get_prim_val)
 {

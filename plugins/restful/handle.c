@@ -24,8 +24,8 @@
 
 #include "vector.h"
 
-#include "neu_datatag_table.h"
-#include "neu_log.h"
+#include "datatag_table.h"
+#include "log.h"
 #include "neu_plugin.h"
 
 #include "adapter_handle.h"

@@ -2,7 +2,7 @@
 #include <pthread.h>
 #include <random>
 
-#include "neu_datatag_table.h"
+#include "datatag_table.h"
 #include "neu_tag.h"
 #include "neu_vector.h"
 

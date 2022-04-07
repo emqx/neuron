@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "neu_types.h"
+#include "types.h"
 
 TEST(VariableTest, neu_variable_create)
 {

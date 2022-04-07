@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "neu_log.h"
+#include "log.h"
 
 #include "modbus_point.h"
 

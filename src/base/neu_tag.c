@@ -20,7 +20,7 @@ config_ **/
 #include <assert.h>
 #include <string.h>
 
-#include "neu_errcodes.h"
+#include "errcodes.h"
 #include "neu_tag.h"
 
 bool neu_tag_check_attribute(neu_attribute_e attribute)

@@ -19,7 +19,7 @@
 
 #include <stdatomic.h>
 
-#include "neu_atomic_data.h"
+#include "utils/atomic_data.h"
 
 /*
  * atomic flag functions

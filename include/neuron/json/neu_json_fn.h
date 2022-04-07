@@ -26,9 +26,9 @@ extern "C" {
 
 #include <stdint.h>
 
-#include "neu_datatag_table.h"
+#include "datatag_table.h"
 
-#include "neu_data_expr.h"
+#include "data_expr.h"
 #include "neu_json_error.h"
 #include "neu_json_rw.h"
 

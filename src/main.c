@@ -31,10 +31,10 @@
 #include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
-#include "idhash.h"
-#include "neu_log.h"
-#include "neu_panic.h"
+#include "log.h"
+#include "panic.h"
 #include "restful/rest.h"
+#include "utils/idhash.h"
 
 #define STDOUT_FILE "/dev/stdout"
 

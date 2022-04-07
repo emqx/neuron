@@ -35,13 +35,13 @@
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
 #include "core/plugin_manager.h"
-#include "neu_log.h"
-#include "neu_panic.h"
+#include "log.h"
 #include "neu_plugin.h"
-#include "neu_plugin_info.h"
-#include "neu_subscribe.h"
-#include "neu_tag_group_config.h"
+#include "panic.h"
 #include "persist/persist.h"
+#include "plugin_info.h"
+#include "subscribe.h"
+#include "tag_group_config.h"
 
 #define to_node_id(adapter, id) \
     neu_manager_adapter_id_to_node_id((adapter)->manager, id);

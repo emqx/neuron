@@ -25,12 +25,12 @@
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>
 
-#include "neu_atomic_data.h"
-#include "neu_log.h"
+#include "log.h"
 #include "neu_vector.h"
+#include "utils/atomic_data.h"
 
-#include "neu_datatag_table.h"
-#include "neu_tag_group_config.h"
+#include "datatag_table.h"
+#include "tag_group_config.h"
 
 #define DEFAULT_SUB_PIPE_COUNT 4
 #define DEFAULT_DATATAG_IDS_COUNT 16

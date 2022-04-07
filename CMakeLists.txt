@@ -38,7 +38,7 @@ configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuro
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(extern/libcsptr)
-configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
+configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/neuron/vector.h
                COPYONLY)
 configure_file(extern/libcsptr/include/csptr/smart_ptr.h ${CMAKE_SOURCE_DIR}/include/csptr/smart_ptr.h
                COPYONLY)
@@ -215,7 +215,7 @@ endif()
 
 install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION /etc/ld.so.conf.d)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
-        DESTINATION include/neuron
+        DESTINATION include
         FILES_MATCHING
         PATTERN "*.h")
 install(FILES "${CMAKE_SOURCE_DIR}/cmake/neuron-config.cmake"

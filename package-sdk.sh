@@ -62,7 +62,7 @@ case "$arch" in
     ;;
 esac
 
-cp -r include/* ${package_name}/include/neuron/
+cp -r include/* ${package_name}/include/
 cp build/libneuron-base.so ${package_name}/lib
 cp -r ft/Keyword ${package_name}/ft/
 cp ft/api_http.resource ${package_name}/ft/

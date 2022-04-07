@@ -23,9 +23,9 @@
 #include <sys/time.h>
 
 #include "config.h"
-#include "neu_errcodes.h"
+#include "errcodes.h"
+#include "log.h"
 #include "neu_jwt.h"
-#include "neu_log.h"
 
 char   public_key[4096]  = { 0 };
 char   private_key[4096] = { 0 };

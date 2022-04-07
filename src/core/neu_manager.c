@@ -29,17 +29,17 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "adapter.h"
+#include "errcodes.h"
+#include "log.h"
 #include "message.h"
 #include "neu_datatag_manager.h"
-#include "neu_errcodes.h"
-#include "neu_log.h"
 #include "neu_manager.h"
-#include "neu_panic.h"
-#include "neu_subscribe.h"
 #include "neu_trans_buf.h"
 #include "neu_vector.h"
+#include "panic.h"
 #include "persist/persist.h"
 #include "plugin_manager.h"
+#include "subscribe.h"
 
 typedef struct adapter_reg_entity {
     adapter_id_t           adapter_id;

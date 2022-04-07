@@ -35,8 +35,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "neu_errcodes.h"
-#include "neu_log.h"
+#include "errcodes.h"
+#include "log.h"
 
 #include "license.h"
 
