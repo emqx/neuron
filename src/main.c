@@ -54,7 +54,8 @@ const char *usage_text =
 "USAGE:\n"
 "    neuron [OPTIONS]\n\n"
 "OPTIONS:\n"
-"    -c, --config [FILE]  neuron configuration file (default ./config/neuron.yaml)\n"
+"    -c, --config <FILE>  neuron configuration file\n"
+"                         without this option, default from ./config/neuron.yaml\n"
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
 "    --log [FILE]         log to the given file, or stdout if no FILE argument\n"
@@ -170,11 +171,11 @@ int main(int argc, char *argv[])
     char *config_file = NULL;
     char *log_file    = NULL;
 
-    char *        opts           = "c::hd:W;";
+    char *        opts           = "c:dh";
     struct option long_options[] = {
         { "help", no_argument, NULL, 1 },
-        { "config", optional_argument, NULL, 'c' },
-        { "daemon", required_argument, NULL, 1 },
+        { "config", required_argument, NULL, 'c' },
+        { "daemon", no_argument, NULL, 'd' },
         { "log", optional_argument, NULL, 'l' },
         { NULL, 0, NULL, 0 },
     };
@@ -195,9 +196,7 @@ int main(int argc, char *argv[])
             usage();
             exit(0);
         case 'c':
-            if (argc == 3) {
-                config_file = strdup(argv[2]);
-            }
+            config_file = strdup(optarg);
             break;
         case 'l':
             if (OPTIONAL_ARGUMENT_IS_PRESENT) {
