@@ -59,6 +59,17 @@ neu_tag_table_t *neu_tag_table_create(void)
 
 void neu_tag_table_destory(neu_tag_table_t *tbl)
 {
+    struct tag_elem *elem = NULL;
+    struct tag_elem *tmp  = NULL;
+
+    pthread_mutex_lock(&tbl->mtx);
+    HASH_ITER(hh, tbl->tags, elem, tmp)
+    {
+        HASH_DEL(tbl->tags, elem);
+        free(elem);
+    }
+    pthread_mutex_unlock(&tbl->mtx);
+
     pthread_mutex_destroy(&tbl->mtx);
 
     free(tbl);

@@ -1489,7 +1489,6 @@ int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd)
         adapter    = reg_entity->adapter;
 
         if (adapter != NULL) {
-
             neu_adapter_rename(adapter, cmd->node_name);
             rv = NEU_ERR_SUCCESS;
         }

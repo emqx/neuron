@@ -33,6 +33,7 @@ if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
 endif()
 
 configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
+configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
 
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
@@ -102,6 +103,7 @@ set(NEURON_SOURCES
     src/core/plugin_manager.c
     src/core/neu_datatag_manager.c
     src/adapter/adapter.c
+    src/adapter/cache.c
     plugins/restful/handle.c
     plugins/restful/license.c
     plugins/restful/license_handle.c
@@ -118,7 +120,7 @@ set(NEURON_SOURCES
     ${PERSIST_SOURCES})
 
 set(CMAKE_BUILD_RPATH ./)
-set(NEURON_INCLUDE_DIRECTORIES include src plugins)
+set(NEURON_INCLUDE_DIRECTORIES include include/neuron src plugins)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
