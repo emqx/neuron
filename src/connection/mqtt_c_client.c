@@ -449,11 +449,6 @@ client_subscribe_create(mqtt_c_client_t *client, const char *topic,
 static neu_err_code_e client_subscribe_send(mqtt_c_client_t *       client,
                                             struct subscribe_tuple *tuple)
 {
-    neu_err_code_e error = mqtt_c_client_is_connected(client);
-    if (0 != error) {
-        return error;
-    }
-
     int rc = mqtt_subscribe(&client->mqtt, tuple->topic, tuple->qos);
     if (1 != rc) {
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
@@ -484,7 +479,13 @@ neu_err_code_e mqtt_c_client_subscribe(mqtt_c_client_t *client,
     }
 
     client_subscribe_add(client, tuple);
-    neu_err_code_e error = client_subscribe_send(client, tuple);
+
+    neu_err_code_e error = mqtt_c_client_is_connected(client);
+    if (0 != error) {
+        return error;
+    }
+
+    error = client_subscribe_send(client, tuple);
     if (NEU_ERR_SUCCESS != error) {
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
     }

@@ -179,7 +179,7 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     option->password           = password.v.val_str;
     option->ca_path            = strdup(ca_path);
     option->ca_file            = strdup(ca_file);
-    option->keepalive_interval = 20;
+    option->keepalive_interval = 30;
     option->clean_session      = 1;
 
     if (NULL != ca.v.val_str) {
