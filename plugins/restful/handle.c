@@ -26,7 +26,7 @@
 
 #include "datatag_table.h"
 #include "log.h"
-#include "neu_plugin.h"
+#include "plugin.h"
 
 #include "adapter_handle.h"
 #include "datatag_handle.h"

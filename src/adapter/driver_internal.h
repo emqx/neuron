@@ -17,19 +17,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_NODE_DRIVER_INTERNAL_H_
-#define _NEU_NODE_DRIVER_INTERNAL_H_
+#ifndef _NEU_ADAPTER_DRIVER_INTERNAL_H_
+#define _NEU_ADAPTER_DRIVER_INTERNAL_H_
 
-#include "node.h"
+#include "adapter.h"
 
-neu_node_driver_t *neu_node_driver_create(neu_node_t *node);
+neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter);
 
-void neu_node_driver_destroy(neu_node_driver_t *driver);
-int  neu_node_driver_start(neu_node_driver_t *driver);
-int  neu_node_driver_stop(neu_node_driver_t *driver);
-int  neu_node_driver_init(neu_node_driver_t *driver);
-int  neu_node_driver_uninit(neu_node_driver_t *driver);
+void neu_adapter_driver_destroy(neu_adapter_driver_t *driver);
+int  neu_adapter_driver_start(neu_adapter_driver_t *driver);
+int  neu_adapter_driver_stop(neu_adapter_driver_t *driver);
+int  neu_adapter_driver_init(neu_adapter_driver_t *driver);
+int  neu_adapter_driver_uninit(neu_adapter_driver_t *driver);
 
-void neu_node_driver_process_msg(neu_node_driver_t *driver);
+void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver);
 
 #endif

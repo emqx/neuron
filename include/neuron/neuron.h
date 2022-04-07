@@ -27,7 +27,7 @@ extern "C" {
 #include "file.h"
 #include "list.h"
 #include "log.h"
-#include "neu_plugin.h"
+#include "plugin.h"
 #include "neu_vector.h"
 #include "neuron/adapter.h"
 #include "panic.h"

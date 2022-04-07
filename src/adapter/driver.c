@@ -20,12 +20,12 @@
 
 #include "event/event.h"
 
+#include "adapter.h"
+#include "adapter_internal.h"
 #include "cache.h"
-#include "node.h"
-#include "node_internal.h"
 
-struct neu_node_driver {
-    neu_node_t node;
+struct neu_adapter_driver {
+    neu_adapter_t adapter;
 
     neu_driver_cache_t *cache;
 
@@ -33,12 +33,12 @@ struct neu_node_driver {
     neu_event_ctx_t *driver_events;
 };
 
-neu_node_driver_t *neu_node_driver_create(neu_node_t *node)
+neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter)
 {
-    neu_node_driver_t *driver = calloc(1, sizeof(neu_node_driver_t));
+    neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
 
-    driver->node = *node;
-    free(node);
+    driver->adapter = *adapter;
+    free(adapter);
 
     driver->cache         = neu_driver_cache_new();
     driver->msg_events    = neu_event_new();
@@ -47,38 +47,38 @@ neu_node_driver_t *neu_node_driver_create(neu_node_t *node)
     return driver;
 }
 
-void neu_node_driver_destroy(neu_node_driver_t *driver)
+void neu_adapter_driver_destroy(neu_adapter_driver_t *driver)
 {
     neu_event_close(driver->driver_events);
     neu_event_close(driver->msg_events);
     neu_driver_cache_destroy(driver->cache);
 }
 
-int neu_node_driver_start(neu_node_driver_t *driver)
+int neu_adapter_driver_start(neu_adapter_driver_t *driver)
 {
     (void) driver;
     return 0;
 }
 
-int neu_node_driver_stop(neu_node_driver_t *driver)
+int neu_adapter_driver_stop(neu_adapter_driver_t *driver)
 {
     (void) driver;
     return 0;
 }
 
-int neu_node_driver_init(neu_node_driver_t *driver)
+int neu_adapter_driver_init(neu_adapter_driver_t *driver)
 {
     (void) driver;
     return 0;
 }
 
-int neu_node_driver_uninit(neu_node_driver_t *driver)
+int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 {
     (void) driver;
     return 0;
 }
 
-void neu_node_driver_process_msg(neu_node_driver_t *driver)
+void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver)
 {
     (void) driver;
 }

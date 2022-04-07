@@ -20,7 +20,7 @@
 #ifndef _NEU_PLUGIN_DUMMY_H_
 #define _NEU_PLUGIN_DUMMY_H_
 
-#include "neu_plugin.h"
+#include "plugin.h"
 
 extern const neu_plugin_module_t default_dummy_plugin_module;
 

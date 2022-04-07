@@ -91,9 +91,9 @@ rules.append(mkdeb.FileMap("../include/neuron/tag_group_config.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/types.h",
              "/usr/local/include/neuron/"))
-
-rules.append(mkdeb.FileMap("../include/neuron/neu_plugin.h",
+rules.append(mkdeb.FileMap("../include/neuron/plugin.h",
              "/usr/local/include/neuron/"))
+
 rules.append(mkdeb.FileMap("../include/neuron/neu_tag.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/neu_vector.h",

@@ -35,10 +35,11 @@
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
 #include "core/plugin_manager.h"
+#include "driver_internal.h"
 #include "log.h"
-#include "neu_plugin.h"
 #include "panic.h"
 #include "persist/persist.h"
+#include "plugin.h"
 #include "plugin_info.h"
 #include "subscribe.h"
 #include "tag_group_config.h"
@@ -1869,6 +1870,10 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     nng_setopt(adapter->sock, NNG_OPT_RECVTIMEO, &recv_timeout,
                sizeof(recv_timeout));
 
+    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+        adapter = (neu_adapter_t *) neu_adapter_driver_create(adapter);
+    }
+
     log_info("Success to create adapter: %s", adapter->name);
     return adapter;
 }
@@ -1877,6 +1882,10 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
 {
     if (adapter == NULL) {
         neu_panic("Destroied adapter is NULL");
+    }
+
+    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+        neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
     nng_close(adapter->sock);

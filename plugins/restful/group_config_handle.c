@@ -22,7 +22,7 @@
 #include "vector.h"
 
 #include "log.h"
-#include "neu_plugin.h"
+#include "plugin.h"
 #include "subscribe.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"

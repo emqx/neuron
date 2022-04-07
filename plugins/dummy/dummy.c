@@ -27,7 +27,7 @@
 #include "config.h"
 #include "dummy.h"
 #include "log.h"
-#include "neu_plugin.h"
+#include "plugin.h"
 
 #define neu_plugin_module default_dummy_plugin_module
 

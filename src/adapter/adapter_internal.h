@@ -24,7 +24,7 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
-#include "neu_plugin.h"
+#include "plugin.h"
 #include "plugin_info.h"
 
 #include "adapter_info.h"
@@ -72,6 +72,7 @@ int            neu_adapter_start(neu_adapter_t *adapter);
 int            neu_adapter_stop(neu_adapter_t *adapter);
 int            neu_adapter_init(neu_adapter_t *adapter);
 int            neu_adapter_uninit(neu_adapter_t *adapter);
+
 const char *   neu_adapter_get_name(neu_adapter_t *adapter);
 void           neu_adapter_rename(neu_adapter_t *adapter, const char *name);
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter);
