@@ -28,8 +28,8 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "adapter.h"
 #include "message.h"
-#include "neu_adapter.h"
 #include "neu_datatag_manager.h"
 #include "neu_errcodes.h"
 #include "neu_log.h"

@@ -22,7 +22,7 @@
 
 #include <nng/nng.h>
 
-#include "neu_adapter.h"
+#include "adapter.h"
 #include "neu_errcodes.h"
 
 #ifdef __cplusplus

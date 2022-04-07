@@ -20,7 +20,7 @@
 #ifndef NEURON_DATATAG_CONFIGS_H
 #define NEURON_DATATAG_CONFIGS_H
 
-#include "neu_adapter.h"
+#include "adapter.h"
 #include "neu_tag_group_config.h"
 
 typedef struct neu_datatag_manager neu_datatag_manager_t;

@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#include "neu_adapter.h"
+#include "adapter.h"
 
 typedef struct neu_sub_grp_config {
     neu_node_id_t node_id;

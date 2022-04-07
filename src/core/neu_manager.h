@@ -20,8 +20,8 @@
 #ifndef NEURON_MANAGER_H
 #define NEURON_MANAGER_H
 
+#include "adapter.h"
 #include "adapter/adapter_info.h"
-#include "neu_adapter.h"
 
 typedef struct neu_manager            neu_manager_t;
 typedef struct subscribe_driver_cmd   subscribe_node_cmd_t;

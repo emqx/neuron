@@ -5,7 +5,7 @@
 #include "json/neu_json_fn.h"
 #include "json/neu_json_plugin.h"
 
-#include "neu_adapter.h"
+#include "adapter.h"
 
 TEST(JsonPluginTest, AddPluginDecode)
 {

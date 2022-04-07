@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#include "neu_adapter.h"
+#include "adapter.h"
 
 #define NEURON_PLUGIN_VER_1_0 100
 #define NEURON_PLUGIN_VER_2_0 200

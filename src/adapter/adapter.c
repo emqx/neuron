@@ -28,13 +28,13 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "adapter.h"
 #include "adapter_internal.h"
 #include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
 #include "core/plugin_manager.h"
-#include "neu_adapter.h"
 #include "neu_log.h"
 #include "neu_panic.h"
 #include "neu_plugin.h"

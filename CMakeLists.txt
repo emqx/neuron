@@ -198,6 +198,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/private.key DESTINATION ${CMAKE_BINARY_DIR}/config
 file(COPY ${CMAKE_SOURCE_DIR}/public.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
 
 # define for plugins
+include_directories(include/neuron)
 add_subdirectory(plugins/sample)
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)

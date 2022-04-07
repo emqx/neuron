@@ -28,7 +28,7 @@
 #include "neu_log.h"
 #include "neu_vector.h"
 
-#include "neu_adapter.h"
+#include "adapter.h"
 #include "neu_datatag_manager.h"
 
 /**

@@ -51,16 +51,22 @@ rules.append(mkdeb.FileMap("../include/json/neu_json_tag.h",
 rules.append(mkdeb.FileMap("../include/json/neu_json_tty.h",
              "/usr/local/include/neuron/json/"))
 
-rules.append(mkdeb.FileMap("../include/utils/uthash.h",
+rules.append(mkdeb.FileMap("../include/neuron/utils/uthash.h",
              "/usr/local/include/neuron/utils/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/utarray.h",
+             "/usr/local/include/neuron/utils/"))
+rules.append(mkdeb.FileMap("../include/neuron/adapter.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/adapter_msg.h",
+             "/usr/local/include/neuron/"))
+
 rules.append(mkdeb.FileMap("../include/utils/base64.h",
              "/usr/local/include/neuron/utils/"))
+
 
 rules.append(mkdeb.FileMap("../include/hash_table.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/idhash.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_adapter.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neu_atomic_data.h",
              "/usr/local/include/neuron/"))
