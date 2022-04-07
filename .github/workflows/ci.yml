@@ -21,7 +21,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.12
         with:
           source: 'src plugins include tests'
-          exclude: 'include/vector.h include/neuron/utils/uthash.h'
+          exclude: 'include/vector.h include/neuron/utils/uthash.h include/neuron/utils/utarray.h'
           clangFormatVersion: 10
           style: file
 
