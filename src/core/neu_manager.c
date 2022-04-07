@@ -1309,12 +1309,12 @@ static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
         adapter_type = ADAPTER_TYPE_MQTT;
         break;
 
-    case NEU_NODE_TYPE_STREAM_PROCESSOR:
-        adapter_type = ADAPTER_TYPE_STREAM_PROCESSOR;
-        break;
-
     case NEU_NODE_TYPE_APP:
         adapter_type = ADAPTER_TYPE_APP;
+        break;
+
+    case NEU_NODE_TYPE_DRIVERX:
+        adapter_type = ADAPTER_TYPE_DRIVERX;
         break;
 
     case NEU_NODE_TYPE_FUNCTIONAL:
@@ -1346,8 +1346,8 @@ static neu_node_type_e adapter_type_to_node_type(adapter_type_e adapter_type)
         node_type = NEU_NODE_TYPE_MQTT;
         break;
 
-    case ADAPTER_TYPE_STREAM_PROCESSOR:
-        node_type = NEU_NODE_TYPE_STREAM_PROCESSOR;
+    case ADAPTER_TYPE_DRIVERX:
+        node_type = NEU_NODE_TYPE_DRIVERX;
         break;
 
     case ADAPTER_TYPE_APP:
@@ -1596,8 +1596,8 @@ static bool adapter_match_node_type(neu_adapter_t * adapter,
         return ADAPTER_TYPE_DRIVER == neu_adapter_get_type(adapter);
     case NEU_NODE_TYPE_MQTT:
         return ADAPTER_TYPE_MQTT == neu_adapter_get_type(adapter);
-    case NEU_NODE_TYPE_STREAM_PROCESSOR:
-        return ADAPTER_TYPE_STREAM_PROCESSOR == neu_adapter_get_type(adapter);
+    case NEU_NODE_TYPE_DRIVERX:
+        return ADAPTER_TYPE_DRIVERX == neu_adapter_get_type(adapter);
     case NEU_NODE_TYPE_APP:
         return ADAPTER_TYPE_APP == neu_adapter_get_type(adapter);
     case NEU_NODE_TYPE_FUNCTIONAL:
