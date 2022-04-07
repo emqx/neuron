@@ -20,11 +20,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "neu_panic.h"
-// #include "smart_ptr.h"
+#include "panic.h"
 
-#include "neu_data_expr.h"
-#include "neu_log.h"
+#include "data_expr.h"
+#include "log.h"
 #include "neu_vector.h"
 
 #define NEU_VALUE_UNION_FIELDS \

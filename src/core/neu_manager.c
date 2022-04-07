@@ -28,18 +28,18 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "adapter.h"
+#include "errcodes.h"
+#include "log.h"
 #include "message.h"
-#include "neu_adapter.h"
 #include "neu_datatag_manager.h"
-#include "neu_errcodes.h"
-#include "neu_log.h"
 #include "neu_manager.h"
-#include "neu_panic.h"
-#include "neu_subscribe.h"
 #include "neu_trans_buf.h"
 #include "neu_vector.h"
+#include "panic.h"
 #include "persist/persist.h"
 #include "plugin_manager.h"
+#include "subscribe.h"
 
 typedef struct adapter_reg_entity {
     adapter_id_t           adapter_id;
@@ -1309,12 +1309,12 @@ static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
         adapter_type = ADAPTER_TYPE_MQTT;
         break;
 
-    case NEU_NODE_TYPE_STREAM_PROCESSOR:
-        adapter_type = ADAPTER_TYPE_STREAM_PROCESSOR;
-        break;
-
     case NEU_NODE_TYPE_APP:
         adapter_type = ADAPTER_TYPE_APP;
+        break;
+
+    case NEU_NODE_TYPE_DRIVERX:
+        adapter_type = ADAPTER_TYPE_DRIVERX;
         break;
 
     case NEU_NODE_TYPE_FUNCTIONAL:
@@ -1346,8 +1346,8 @@ static neu_node_type_e adapter_type_to_node_type(adapter_type_e adapter_type)
         node_type = NEU_NODE_TYPE_MQTT;
         break;
 
-    case ADAPTER_TYPE_STREAM_PROCESSOR:
-        node_type = NEU_NODE_TYPE_STREAM_PROCESSOR;
+    case ADAPTER_TYPE_DRIVERX:
+        node_type = NEU_NODE_TYPE_DRIVERX;
         break;
 
     case ADAPTER_TYPE_APP:
@@ -1489,7 +1489,6 @@ int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd)
         adapter    = reg_entity->adapter;
 
         if (adapter != NULL) {
-
             neu_adapter_rename(adapter, cmd->node_name);
             rv = NEU_ERR_SUCCESS;
         }
@@ -1597,8 +1596,8 @@ static bool adapter_match_node_type(neu_adapter_t * adapter,
         return ADAPTER_TYPE_DRIVER == neu_adapter_get_type(adapter);
     case NEU_NODE_TYPE_MQTT:
         return ADAPTER_TYPE_MQTT == neu_adapter_get_type(adapter);
-    case NEU_NODE_TYPE_STREAM_PROCESSOR:
-        return ADAPTER_TYPE_STREAM_PROCESSOR == neu_adapter_get_type(adapter);
+    case NEU_NODE_TYPE_DRIVERX:
+        return ADAPTER_TYPE_DRIVERX == neu_adapter_get_type(adapter);
     case NEU_NODE_TYPE_APP:
         return ADAPTER_TYPE_APP == neu_adapter_get_type(adapter);
     case NEU_NODE_TYPE_FUNCTIONAL:

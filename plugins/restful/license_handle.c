@@ -21,8 +21,8 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "neu_errcodes.h"
-#include "neu_file.h"
+#include "errcodes.h"
+#include "file.h"
 #include "neu_plugin.h"
 #include "neu_vector.h"
 #include "json/neu_json_error.h"

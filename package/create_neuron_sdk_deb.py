@@ -51,52 +51,56 @@ rules.append(mkdeb.FileMap("../include/json/neu_json_tag.h",
 rules.append(mkdeb.FileMap("../include/json/neu_json_tty.h",
              "/usr/local/include/neuron/json/"))
 
-rules.append(mkdeb.FileMap("../include/utils/uthash.h",
+rules.append(mkdeb.FileMap("../include/neuron/utils/uthash.h",
              "/usr/local/include/neuron/utils/"))
-rules.append(mkdeb.FileMap("../include/utils/base64.h",
+rules.append(mkdeb.FileMap("../include/neuron/utils/utarray.h",
              "/usr/local/include/neuron/utils/"))
+rules.append(mkdeb.FileMap("../include/neuron/adapter.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/adapter_msg.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/base64.h",
+             "/usr/local/include/neuron/utils/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/hash_table.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/idhash.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/atomic_data.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/data_expr.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/datatag_table.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/errcodes.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/file.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/license.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/list.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/log.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/panic.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/plugin_info.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/subscribe.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/tag_group_config.h",
+             "/usr/local/include/neuron/"))
+rules.append(mkdeb.FileMap("../include/neuron/types.h",
+             "/usr/local/include/neuron/"))
 
-rules.append(mkdeb.FileMap("../include/hash_table.h",
+rules.append(mkdeb.FileMap("../include/neuron/neu_plugin.h",
              "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/idhash.h",
+rules.append(mkdeb.FileMap("../include/neuron/neu_tag.h",
              "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_adapter.h",
+rules.append(mkdeb.FileMap("../include/neuron/neu_vector.h",
              "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_atomic_data.h",
+rules.append(mkdeb.FileMap("../include/neuron/neuron.h",
              "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_data_expr.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_datatag_table.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_errcodes.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_file.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_license.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_list.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_log.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_panic.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_plugin_info.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_plugin.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_subscribe.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_tag_group_config.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_tag.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_types.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neu_vector.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neuron.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/vector.h",
+rules.append(mkdeb.FileMap("../include/neuron/vector.h",
              "/usr/local/include/neuron/"))
 
 mkdeb.create_deb_file(rules)

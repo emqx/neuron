@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
+#include "adapter.h"
 #include "http.h"
-#include "neu_adapter.h"
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 

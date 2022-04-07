@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,20 +28,20 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "adapter.h"
 #include "adapter_internal.h"
 #include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
 #include "core/plugin_manager.h"
-#include "neu_adapter.h"
-#include "neu_log.h"
-#include "neu_panic.h"
+#include "log.h"
 #include "neu_plugin.h"
-#include "neu_plugin_info.h"
-#include "neu_subscribe.h"
-#include "neu_tag_group_config.h"
+#include "panic.h"
 #include "persist/persist.h"
+#include "plugin_info.h"
+#include "subscribe.h"
+#include "tag_group_config.h"
 
 #define to_node_id(adapter, id) \
     neu_manager_adapter_id_to_node_id((adapter)->manager, id);
@@ -137,38 +138,6 @@
         _ADAPTER_RESP(adapter, cmd, ret_type, req_type, rv, resp_type_code,    \
                       p_result, func)                                          \
     }
-
-typedef enum adapter_state {
-    ADAPTER_STATE_IDLE = 0,
-    ADAPTER_STATE_INIT,
-    ADAPTER_STATE_READY,
-    ADAPTER_STATE_RUNNING,
-    ADAPTER_STATE_STOPPED,
-} adapter_state_e;
-
-struct neu_adapter {
-    adapter_id_t         id;
-    adapter_type_e       type;
-    nng_mtx *            mtx;
-    nng_mtx *            sub_grp_mtx;
-    adapter_state_e      state;
-    bool                 stop;
-    char *               name;
-    neu_manager_t *      manager;
-    nng_pipe             pipe;
-    nng_socket           sock;
-    nng_thread *         thrd;
-    uint32_t             new_req_id;
-    plugin_id_t          plugin_id;
-    plugin_kind_e        plugin_kind;
-    void *               plugin_lib; // handle of dynamic lib
-    neu_plugin_module_t *plugin_module;
-    neu_plugin_t *       plugin;
-    neu_trans_kind_e     trans_kind;
-    adapter_callbacks_t  cb_funs;
-    neu_config_t         node_setting;
-    vector_t             sub_grp_configs; // neu_sub_grp_config_t
-};
 
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter);
 
@@ -2071,18 +2040,6 @@ neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
     }
 
     return (neu_manager_t *) adapter->manager;
-}
-
-nng_socket neu_adapter_get_sock(neu_adapter_t *adapter)
-{
-    if (adapter == NULL) {
-        nng_socket sock;
-
-        sock.id = 0;
-        return sock;
-    }
-
-    return adapter->sock;
 }
 
 adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)

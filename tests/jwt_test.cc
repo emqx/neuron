@@ -4,8 +4,8 @@
 
 #include "config.h"
 #include "jwt.h"
+#include "log.h"
 #include "neu_jwt.h"
-#include "neu_log.h"
 
 TEST(JsonTest, SetJwt)
 {

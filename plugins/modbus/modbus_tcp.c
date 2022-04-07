@@ -26,11 +26,11 @@
 #include <nng/nng.h>
 
 #include "connection/neu_tcp.h"
-#include "neu_data_expr.h"
-#include "neu_datatag_table.h"
-#include "neu_tag_group_config.h"
+#include "data_expr.h"
+#include "datatag_table.h"
 #include "neu_vector.h"
 #include "neuron.h"
+#include "tag_group_config.h"
 #include "json/neu_json_param.h"
 
 #include "modbus.h"

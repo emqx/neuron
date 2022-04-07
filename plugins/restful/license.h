@@ -59,7 +59,7 @@ extern "C" {
 #include <stdint.h>
 #include <time.h>
 
-#include "neu_errcodes.h"
+#include "errcodes.h"
 
 typedef enum {
     LICENSE_TYPE_TRIAL  = 0, // trial

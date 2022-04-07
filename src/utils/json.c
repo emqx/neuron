@@ -22,7 +22,7 @@
 
 #include <jansson.h>
 
-#include "neu_log.h"
+#include "log.h"
 #include "json/json.h"
 
 static json_t *encode_object_value(neu_json_elem_t *ele)

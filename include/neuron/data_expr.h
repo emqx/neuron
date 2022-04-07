@@ -26,8 +26,8 @@ extern "C" {
 
 #include <assert.h>
 
-#include "neu_types.h"
 #include "neu_vector.h"
+#include "types.h"
 
 /**
  * define data type of expression

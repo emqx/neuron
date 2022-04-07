@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <sys/queue.h>
 
-#include "neu_log.h"
+#include "log.h"
 #include "neu_plugin.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_rw.h"

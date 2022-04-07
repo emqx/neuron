@@ -21,9 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "neu_errcodes.h"
-#include "neu_panic.h"
-#include "neu_types.h"
+#include "errcodes.h"
+#include "panic.h"
+#include "types.h"
 
 /*****************/
 /* Decimal Types */

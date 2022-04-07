@@ -33,11 +33,12 @@ if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
 endif()
 
 configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
+configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
 
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(extern/libcsptr)
-configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/vector.h
+configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/neuron/vector.h
                COPYONLY)
 configure_file(extern/libcsptr/include/csptr/smart_ptr.h ${CMAKE_SOURCE_DIR}/include/csptr/smart_ptr.h
                COPYONLY)
@@ -102,6 +103,7 @@ set(NEURON_SOURCES
     src/core/plugin_manager.c
     src/core/neu_datatag_manager.c
     src/adapter/adapter.c
+    src/adapter/cache.c
     plugins/restful/handle.c
     plugins/restful/license.c
     plugins/restful/license_handle.c
@@ -118,7 +120,7 @@ set(NEURON_SOURCES
     ${PERSIST_SOURCES})
 
 set(CMAKE_BUILD_RPATH ./)
-set(NEURON_INCLUDE_DIRECTORIES include src plugins)
+set(NEURON_INCLUDE_DIRECTORIES include include/neuron src plugins)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
@@ -196,6 +198,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/private.key DESTINATION ${CMAKE_BINARY_DIR}/config
 file(COPY ${CMAKE_SOURCE_DIR}/public.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
 
 # define for plugins
+include_directories(include/neuron)
 add_subdirectory(plugins/sample)
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
@@ -212,7 +215,7 @@ endif()
 
 install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION /etc/ld.so.conf.d)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
-        DESTINATION include/neuron
+        DESTINATION include
         FILES_MATCHING
         PATTERN "*.h")
 install(FILES "${CMAKE_SOURCE_DIR}/cmake/neuron-config.cmake"

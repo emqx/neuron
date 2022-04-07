@@ -17,26 +17,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PANIC_H
-#define NEURON_PANIC_H
+#ifndef NEURON_SUB_GROUP_CONFIG_H
+#define NEURON_SUB_GROUP_CONFIG_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "neu_log.h"
-#include <stdarg.h>
+#include "adapter.h"
 
-void neu_show_backtrace(void);
-void neu_panic(const char *fmt, ...);
-
-#ifndef NDEBUG
-#define NEU_ASSERT(x) \
-    if (!(x))         \
-    neu_panic("%s: %d: assert err: %s", __FILE__, __LINE__, #x)
-#else
-#define NEU_ASSERT(x) (0)
-#endif
+typedef struct neu_sub_grp_config {
+    neu_node_id_t node_id;
+    char *        group_config_name;
+} neu_sub_grp_config_t;
 
 #ifdef __cplusplus
 }

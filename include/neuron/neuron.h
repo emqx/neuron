@@ -17,33 +17,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef ADAPTER_INFO_H
-#define ADAPTER_INFO_H
+#ifndef _NEURON_H_
+#define _NEURON_H_
 
-#include <stdint.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "plugin_info.h"
+#include "file.h"
+#include "list.h"
+#include "log.h"
+#include "neu_plugin.h"
+#include "neu_vector.h"
+#include "neuron/adapter.h"
+#include "panic.h"
+#include "types.h"
+#include "utils/base64.h"
 
-typedef enum adapter_type {
-    ADAPTER_TYPE_UNKNOW = 0,
-    ADAPTER_TYPE_DRIVER,
-    ADAPTER_TYPE_WEBSERVER,
-    ADAPTER_TYPE_MQTT,
-    ADAPTER_TYPE_DRIVERX,
-    ADAPTER_TYPE_APP,
-    ADAPTER_TYPE_FUNCTIONAL,
-
-    ADAPTER_TYPE_MAX,
-} adapter_type_e;
-
-typedef uint32_t adapter_id_t;
-typedef struct neu_adapter_info {
-    adapter_id_t   id;
-    adapter_type_e type;
-    plugin_id_t    plugin_id;
-    const char *   name;
-    plugin_kind_e  plugin_kind;
-    const char *   plugin_lib_name;
-} neu_adapter_info_t;
+#ifdef __cplusplus
+}
+#endif
 
 #endif

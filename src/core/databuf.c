@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 #include "core/databuf.h"
-#include "neu_atomic_data.h"
+#include "utils/atomic_data.h"
 
 struct core_databuf {
     neu_atomic_int ref_count;

@@ -19,9 +19,9 @@
 
 #include <pthread.h>
 
-#include "hash_table.h"
-#include "idhash.h"
-#include "neu_datatag_table.h"
+#include "datatag_table.h"
+#include "utils/hash_table.h"
+#include "utils/idhash.h"
 
 struct neu_datatag_table {
     pthread_mutex_t mtx;

@@ -25,10 +25,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "neu_log.h"
+#include "log.h"
 #include "neu_vector.h"
 
-#include "neu_adapter.h"
+#include "adapter.h"
 #include "neu_datatag_manager.h"
 
 /**

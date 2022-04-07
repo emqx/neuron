@@ -29,7 +29,7 @@
 #define SOCK_NONBLOCK O_NONBLOCK
 #endif
 
-#include "neu_log.h"
+#include "log.h"
 
 #include "connection/neu_tcp.h"
 

@@ -17,7 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include "neu_log.h"
+#include "log.h"
 #include <syslog.h>
 
 #define MAX_CALLBACKS 32

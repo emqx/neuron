@@ -17,22 +17,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_SUB_GROUP_CONFIG_H
-#define NEURON_SUB_GROUP_CONFIG_H
+#ifndef _NEU_NODE_DRIVER_INTERNAL_H_
+#define _NEU_NODE_DRIVER_INTERNAL_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "node.h"
 
-#include "neu_adapter.h"
+neu_node_driver_t *neu_node_driver_create(neu_node_t *node);
 
-typedef struct neu_sub_grp_config {
-    neu_node_id_t node_id;
-    char *        group_config_name;
-} neu_sub_grp_config_t;
+void neu_node_driver_destroy(neu_node_driver_t *driver);
+int  neu_node_driver_start(neu_node_driver_t *driver);
+int  neu_node_driver_stop(neu_node_driver_t *driver);
+int  neu_node_driver_init(neu_node_driver_t *driver);
+int  neu_node_driver_uninit(neu_node_driver_t *driver);
 
-#ifdef __cplusplus
-}
-#endif
+void neu_node_driver_process_msg(neu_node_driver_t *driver);
 
 #endif

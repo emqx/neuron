@@ -46,4 +46,4 @@ int64_t neu_tag_table_change_foreach(neu_tag_table_t *tbl, int64_t timestamp,
 }
 #endif
 
-#endif //__DATATAG_TABLE_H__
+#endif

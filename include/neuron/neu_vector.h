@@ -26,7 +26,7 @@ extern "C" {
 
 #include <stdlib.h>
 
-#include "neu_types.h"
+#include "types.h"
 #include "vector.h"
 
 typedef struct Vector   vector_t;

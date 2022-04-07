@@ -22,8 +22,8 @@
 
 #include <nng/nng.h>
 
-#include "neu_adapter.h"
-#include "neu_errcodes.h"
+#include "adapter.h"
+#include "errcodes.h"
 
 #ifdef __cplusplus
 extern "C" {

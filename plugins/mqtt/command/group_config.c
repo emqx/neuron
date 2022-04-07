@@ -20,7 +20,7 @@
 #include <stdlib.h>
 
 #include "group_config.h"
-#include "neu_subscribe.h"
+#include "subscribe.h"
 #include "json/neu_json_error.h"
 
 char *command_group_config_get(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,

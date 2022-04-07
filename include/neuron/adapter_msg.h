@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_ADAPTER_H
-#define NEURON_ADAPTER_H
+#ifndef _NEU_ADAPTER_MSG_H_
+#define _NEU_ADAPTER_MSG_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,16 +28,15 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
-#include "neu_data_expr.h"
-#include "neu_datatag_table.h"
-#include "neu_errcodes.h"
-#include "neu_plugin_info.h"
-#include "neu_tag_group_config.h"
-#include "neu_types.h"
+//#include "adapter.h"
+#include "data_expr.h"
+#include "datatag_table.h"
+#include "errcodes.h"
+#include "plugin_info.h"
+#include "tag_group_config.h"
+#include "types.h"
 
 #define DEFAULT_TAG_GROUP_COUNT 8
-
-typedef struct neu_adapter neu_adapter_t;
 
 /**
  * definition enum and structure for neuron request and response
@@ -87,8 +86,6 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_UPDATE_LICENSE,
 } neu_reqresp_type_e;
 
-typedef uint32_t neu_node_id_t;
-
 /* NEU_REQRESP_READ_DATA */
 typedef struct neu_reqresp_read {
     neu_taggrp_config_t *grp_config;
@@ -133,17 +130,6 @@ typedef struct neu_reqresp_data {
     neu_taggrp_config_t *grp_config;
     neu_data_val_t *     data_val;
 } neu_reqresp_data_t;
-
-typedef enum neu_node_type {
-    NEU_NODE_TYPE_UNKNOW = 0,
-    NEU_NODE_TYPE_DRIVER,
-    NEU_NODE_TYPE_WEBSERVER,
-    NEU_NODE_TYPE_MQTT,
-    NEU_NODE_TYPE_STREAM_PROCESSOR,
-    NEU_NODE_TYPE_APP,
-    NEU_NODE_TYPE_FUNCTIONAL,
-    NEU_NODE_TYPE_MAX,
-} neu_node_type_e;
 
 typedef struct neu_node_info {
     neu_node_id_t node_id;
@@ -340,24 +326,6 @@ typedef struct neu_cmd_validate_tag {
     neu_datatag_t *tag;
 } neu_cmd_validate_tag_t;
 
-typedef struct neu_request {
-    uint32_t           req_id;
-    neu_reqresp_type_e req_type;
-    uint64_t           sender_id; // adapter_id of sender
-    char *             node_name; // adapter name of sender
-    uint32_t           buf_len;
-    void *             buf;
-} neu_request_t;
-
-typedef struct neu_response {
-    uint32_t           req_id;
-    neu_reqresp_type_e resp_type;
-    uint64_t           recver_id; // adapter_id of reciever, it is same as
-                                  // sender_id in neu_request_t
-    uint32_t buf_len;
-    void *   buf;
-} neu_response_t;
-
 /**
  * definition enum and structure for neuron event
  */
@@ -394,27 +362,23 @@ typedef struct {
     char *dst_name;
 } neu_event_update_node_t;
 
-/**
- * definition enum and structure for neuron config
- */
-typedef enum neu_config_type {
-    NEU_CONFIG_UNKNOW,
-    NEU_CONFIG_SETTING,
-} neu_config_type_e;
+typedef struct neu_request {
+    uint32_t           req_id;
+    neu_reqresp_type_e req_type;
+    uint64_t           sender_id; // adapter_id of sender
+    char *             node_name; // adapter name of sender
+    uint32_t           buf_len;
+    void *             buf;
+} neu_request_t;
 
-typedef struct neu_config {
-    neu_config_type_e type;
-    uint32_t          buf_len;
-    void *            buf;
-} neu_config_t;
-
-typedef struct adapter_callbacks {
-    int (*command)(neu_adapter_t *adapter, neu_request_t *cmd,
-                   neu_response_t **p_result);
-    int (*response)(neu_adapter_t *adapter, neu_response_t *resp);
-    int (*event_notify)(neu_adapter_t *adapter, neu_event_notify_t *event);
-} adapter_callbacks_t;
-
+typedef struct neu_response {
+    uint32_t           req_id;
+    neu_reqresp_type_e resp_type;
+    uint64_t           recver_id; // adapter_id of reciever, it is same as
+                                  // sender_id in neu_request_t
+    uint32_t buf_len;
+    void *   buf;
+} neu_response_t;
 #ifdef __cplusplus
 }
 #endif

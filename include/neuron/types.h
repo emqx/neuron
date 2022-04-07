@@ -31,7 +31,7 @@ extern "C" {
 #include <string.h>
 #include <time.h>
 
-#include "neu_log.h"
+#include "log.h"
 
 /**
  * Order

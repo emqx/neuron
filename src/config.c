@@ -23,7 +23,7 @@
 
 #include <yaml.h>
 
-#include "neu_log.h"
+#include "log.h"
 
 #include "config.h"
 

@@ -28,9 +28,9 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "errcodes.h"
 #include "http.h"
-#include "neu_errcodes.h"
-#include "neu_log.h"
+#include "log.h"
 
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {

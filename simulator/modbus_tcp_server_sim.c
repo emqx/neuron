@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "include/connection/neu_tcp.h"
-#include "include/neu_log.h"
+#include "connection/neu_tcp.h"
+#include "log.h"
 #include "plugins/modbus/modbus.h"
 
 static bool run = true;
