@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,38 +138,6 @@
         _ADAPTER_RESP(adapter, cmd, ret_type, req_type, rv, resp_type_code,    \
                       p_result, func)                                          \
     }
-
-typedef enum adapter_state {
-    ADAPTER_STATE_IDLE = 0,
-    ADAPTER_STATE_INIT,
-    ADAPTER_STATE_READY,
-    ADAPTER_STATE_RUNNING,
-    ADAPTER_STATE_STOPPED,
-} adapter_state_e;
-
-struct neu_adapter {
-    adapter_id_t         id;
-    adapter_type_e       type;
-    nng_mtx *            mtx;
-    nng_mtx *            sub_grp_mtx;
-    adapter_state_e      state;
-    bool                 stop;
-    char *               name;
-    neu_manager_t *      manager;
-    nng_pipe             pipe;
-    nng_socket           sock;
-    nng_thread *         thrd;
-    uint32_t             new_req_id;
-    plugin_id_t          plugin_id;
-    plugin_kind_e        plugin_kind;
-    void *               plugin_lib; // handle of dynamic lib
-    neu_plugin_module_t *plugin_module;
-    neu_plugin_t *       plugin;
-    neu_trans_kind_e     trans_kind;
-    adapter_callbacks_t  cb_funs;
-    neu_config_t         node_setting;
-    vector_t             sub_grp_configs; // neu_sub_grp_config_t
-};
 
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter);
 

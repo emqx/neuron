@@ -20,6 +20,7 @@
 #ifndef NEURON_TRANS_BUF_H
 #define NEURON_TRANS_BUF_H
 
+#include "databuf.h"
 #include "neu_data_expr.h"
 
 typedef enum neu_trans_kind {
