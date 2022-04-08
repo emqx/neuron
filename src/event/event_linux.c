@@ -31,12 +31,12 @@
 #include <sys/epoll.h>
 #include <sys/timerfd.h>
 
-struct neu_event_timer_ctx {
+struct neu_event_timer {
     int   fd;
     void *event_data;
 };
 
-struct neu_event_io_ctx {
+struct neu_event_io {
     int   fd;
     void *event_data;
 };
@@ -51,8 +51,8 @@ struct event_data {
         neu_event_timer_callback timer;
     } callback;
     union {
-        struct neu_event_io_ctx *   io;
-        struct neu_event_timer_ctx *timer;
+        struct neu_event_io *   io;
+        struct neu_event_timer *timer;
     } ctx;
 
     void *usr_data;
@@ -61,7 +61,7 @@ struct event_data {
     TAILQ_ENTRY(event_data) node;
 };
 
-struct neu_event_ctx {
+struct neu_events {
     int             epoll_fd;
     bool            running;
     pthread_t       thread;
@@ -72,9 +72,9 @@ struct neu_event_ctx {
 
 static void *event_loop(void *arg)
 {
-    neu_event_ctx_t *events   = (neu_event_ctx_t *) arg;
-    bool             running  = events->running;
-    int              epoll_fd = events->epoll_fd;
+    neu_events_t *events   = (neu_events_t *) arg;
+    bool          running  = events->running;
+    int           epoll_fd = events->epoll_fd;
 
     while (running) {
         struct epoll_event event = { 0 };
@@ -129,9 +129,9 @@ static void *event_loop(void *arg)
     return NULL;
 };
 
-neu_event_ctx_t *neu_event_new(void)
+neu_events_t *neu_event_new(void)
 {
-    neu_event_ctx_t *events = calloc(1, sizeof(struct neu_event_ctx));
+    neu_events_t *events = calloc(1, sizeof(struct neu_events));
 
     events->epoll_fd = epoll_create(1);
     events->running  = true;
@@ -144,7 +144,7 @@ neu_event_ctx_t *neu_event_new(void)
     return events;
 };
 
-int neu_event_close(neu_event_ctx_t *events)
+int neu_event_close(neu_events_t *events)
 {
     struct event_data *data = NULL;
 
@@ -178,8 +178,8 @@ int neu_event_close(neu_event_ctx_t *events)
     return 0;
 }
 
-neu_event_timer_ctx_t *neu_event_add_timer(neu_event_ctx_t * events,
-                                           neu_event_timer_t timer)
+neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
+                                       neu_event_timer_param_t timer)
 {
     int               ret      = 0;
     int               timer_fd = timerfd_create(CLOCK_MONOTONIC, 0);
@@ -189,9 +189,9 @@ neu_event_timer_ctx_t *neu_event_add_timer(neu_event_ctx_t * events,
         .it_interval.tv_sec  = timer.second,
         .it_interval.tv_nsec = timer.millisecond * 1000 * 1000,
     };
-    struct event_data *    data      = calloc(1, sizeof(struct event_data));
-    struct epoll_event     event     = { .events = EPOLLIN, .data.ptr = data };
-    neu_event_timer_ctx_t *timer_ctx = calloc(1, sizeof(neu_event_timer_ctx_t));
+    struct event_data *data      = calloc(1, sizeof(struct event_data));
+    struct epoll_event event     = { .events = EPOLLIN, .data.ptr = data };
+    neu_event_timer_t *timer_ctx = calloc(1, sizeof(neu_event_timer_t));
 
     timerfd_settime(timer_fd, 0, &value, NULL);
 
@@ -217,7 +217,7 @@ neu_event_timer_ctx_t *neu_event_add_timer(neu_event_ctx_t * events,
     return timer_ctx;
 }
 
-int neu_event_del_timer(neu_event_ctx_t *events, neu_event_timer_ctx_t *timer)
+int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
 {
     struct event_data *data = NULL;
     log_info("del timer: %d from epoll: %d", timer->fd, events->epoll_fd);
@@ -242,12 +242,12 @@ int neu_event_del_timer(neu_event_ctx_t *events, neu_event_timer_ctx_t *timer)
     return 0;
 }
 
-neu_event_io_ctx_t *neu_event_add_io(neu_event_ctx_t *events, neu_event_io_t io)
+neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 {
-    int                 ret    = 0;
-    neu_event_io_ctx_t *io_ctx = calloc(1, sizeof(neu_event_io_ctx_t));
-    struct event_data * data   = calloc(1, sizeof(struct event_data));
-    struct epoll_event  event  = { .events =
+    int                ret    = 0;
+    neu_event_io_t *   io_ctx = calloc(1, sizeof(neu_event_io_t));
+    struct event_data *data   = calloc(1, sizeof(struct event_data));
+    struct epoll_event event  = { .events =
                                      EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP,
                                  .data.ptr = data };
 
@@ -272,7 +272,7 @@ neu_event_io_ctx_t *neu_event_add_io(neu_event_ctx_t *events, neu_event_io_t io)
     return io_ctx;
 }
 
-int neu_event_del_io(neu_event_ctx_t *events, neu_event_io_ctx_t *io)
+int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
 {
     struct event_data *data = NULL;
     log_info("del io: %d from epoll: %d", io->fd, events->epoll_fd);

@@ -31,16 +31,16 @@
 
 #include <sys/event.h>
 
-struct neu_event_timer_ctx {
+struct neu_event_timer {
     int                      id;
     void *                   usr_data;
     neu_event_timer_callback timer;
 };
 
-struct neu_event_io_ctx {
+struct neu_event_io {
 };
 
-struct neu_event_ctx {
+struct neu_events {
     int             kq;
     bool            running;
     pthread_t       thread;
@@ -50,8 +50,8 @@ struct neu_event_ctx {
 
 static void *event_loop(void *arg)
 {
-    neu_event_ctx_t *events  = (neu_event_ctx_t *) arg;
-    bool             running = events->running;
+    neu_events_t *events  = (neu_events_t *) arg;
+    bool          running = events->running;
 
     while (running) {
         struct kevent   event   = { 0 };
@@ -69,7 +69,7 @@ static void *event_loop(void *arg)
         }
 
         if (event.filter == EVFILT_TIMER) {
-            neu_event_timer_ctx_t *ctx = (neu_event_timer_ctx_t *) event.udata;
+            neu_event_timer_t *ctx = (neu_event_timer_t *) event.udata;
 
             ret = ctx->timer(ctx->usr_data);
             log_debug("timer trigger: %d, ret: %d", ctx->id, ret);
@@ -83,9 +83,9 @@ static void *event_loop(void *arg)
     return NULL;
 }
 
-neu_event_ctx_t *neu_event_new(void)
+neu_events_t *neu_event_new(void)
 {
-    neu_event_ctx_t *events = calloc(1, sizeof(neu_event_ctx_t));
+    neu_events_t *events = calloc(1, sizeof(neu_events_t));
 
     pthread_mutex_init(&events->mtx, NULL);
 
@@ -98,7 +98,7 @@ neu_event_ctx_t *neu_event_new(void)
     return events;
 };
 
-int neu_event_close(neu_event_ctx_t *events)
+int neu_event_close(neu_events_t *events)
 {
     pthread_mutex_lock(&events->mtx);
     events->running = false;
@@ -111,12 +111,12 @@ int neu_event_close(neu_event_ctx_t *events)
     return 0;
 }
 
-neu_event_timer_ctx_t *neu_event_add_timer(neu_event_ctx_t * events,
-                                           neu_event_timer_t timer)
+neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
+                                       neu_event_timer_param_t timer)
 {
-    struct kevent          ke  = { 0 };
-    neu_event_timer_ctx_t *ctx = calloc(1, sizeof(neu_event_timer_ctx_t));
-    int                    ret = 0;
+    struct kevent      ke  = { 0 };
+    neu_event_timer_t *ctx = calloc(1, sizeof(neu_event_timer_t));
+    int                ret = 0;
 
     ctx->id       = events->timer_id++;
     ctx->usr_data = timer.usr_data;
@@ -133,7 +133,7 @@ neu_event_timer_ctx_t *neu_event_add_timer(neu_event_ctx_t * events,
     return ctx;
 }
 
-int neu_event_del_timer(neu_event_ctx_t *events, neu_event_timer_ctx_t *timer)
+int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
 {
     struct kevent ke = { 0 };
 
@@ -145,14 +145,14 @@ int neu_event_del_timer(neu_event_ctx_t *events, neu_event_timer_ctx_t *timer)
     return 0;
 }
 
-neu_event_io_ctx_t *neu_event_add_io(neu_event_ctx_t *events, neu_event_io_t io)
+neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 {
     (void) events;
     (void) io;
     return NULL;
 }
 
-int neu_event_del_io(neu_event_ctx_t *events, neu_event_io_ctx_t *io)
+int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
 {
     (void) events;
     (void) io;

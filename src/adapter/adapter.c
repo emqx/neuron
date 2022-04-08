@@ -977,7 +977,12 @@ static void adapter_loop(void *arg)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_subscribe_node_t);
             req.buf       = (void *) &sub_node_req;
-            intf_funs->request(adapter->plugin, &req);
+            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+                neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
+                                               pay_msg_type, &req);
+            } else {
+                intf_funs->request(adapter->plugin, &req);
+            }
             break;
         }
 
@@ -999,7 +1004,12 @@ static void adapter_loop(void *arg)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_unsubscribe_node_t);
             req.buf       = (void *) &unsub_node_req;
-            intf_funs->request(adapter->plugin, &req);
+            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+                neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
+                                               pay_msg_type, &req);
+            } else {
+                intf_funs->request(adapter->plugin, &req);
+            }
             break;
         }
 
@@ -1020,7 +1030,12 @@ static void adapter_loop(void *arg)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_read_t);
             req.buf       = (void *) &read_req;
-            intf_funs->request(adapter->plugin, &req);
+            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+                neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
+                                               pay_msg_type, &req);
+            } else {
+                intf_funs->request(adapter->plugin, &req);
+            }
             break;
         }
 
@@ -1085,7 +1100,12 @@ static void adapter_loop(void *arg)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_write_t);
             req.buf       = (void *) &write_req;
-            intf_funs->request(adapter->plugin, &req);
+            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+                neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
+                                               pay_msg_type, &req);
+            } else {
+                intf_funs->request(adapter->plugin, &req);
+            }
             if (is_need_free) {
                 neu_dvalue_free(write_req.data_val);
             }
