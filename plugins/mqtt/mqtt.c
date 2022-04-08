@@ -135,55 +135,41 @@ static void topics_generate(vector_t *topics, char *name)
     topics_add(topics, real_topic_generate(TOPIC_PING_REQ, name), QOS0,
                real_topic_generate(TOPIC_STATUS_RES, name), QOS0,
                TOPIC_TYPE_PING);
-
-    // topics_add(topics, real_topic_generate(TOPIC_NODE_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_NODE_RES, name), QOS0,
-    //            TOPIC_TYPE_NODE);
-
-    // topics_add(topics, real_topic_generate(TOPIC_GCONFIG_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_GCONFIG_RES, name), QOS0,
-    //            TOPIC_TYPE_GCONFIG);
-
-    // topics_add(topics, real_topic_generate(TOPIC_TAGS_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_TAGS_RES, name), QOS0,
-    //            TOPIC_TYPE_TAGS);
-
-    // topics_add(topics, real_topic_generate(TOPIC_PLUGIN_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_PLUGIN_RES, name), QOS0,
-    //            TOPIC_TYPE_PLUGIN);
-
-    // topics_add(topics, real_topic_generate(TOPIC_SUBSCRIBE_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_SUBSCRIBE_RES, name), QOS0,
-    //            TOPIC_TYPE_SUBSCRIBE);
-
+    topics_add(topics, real_topic_generate(TOPIC_NODE_REQ, name), QOS0,
+               real_topic_generate(TOPIC_NODE_RES, name), QOS0,
+               TOPIC_TYPE_NODE);
+    topics_add(topics, real_topic_generate(TOPIC_GCONFIG_REQ, name), QOS0,
+               real_topic_generate(TOPIC_GCONFIG_RES, name), QOS0,
+               TOPIC_TYPE_GCONFIG);
+    topics_add(topics, real_topic_generate(TOPIC_TAGS_REQ, name), QOS0,
+               real_topic_generate(TOPIC_TAGS_RES, name), QOS0,
+               TOPIC_TYPE_TAGS);
+    topics_add(topics, real_topic_generate(TOPIC_PLUGIN_REQ, name), QOS0,
+               real_topic_generate(TOPIC_PLUGIN_RES, name), QOS0,
+               TOPIC_TYPE_PLUGIN);
+    topics_add(topics, real_topic_generate(TOPIC_SUBSCRIBE_REQ, name), QOS0,
+               real_topic_generate(TOPIC_SUBSCRIBE_RES, name), QOS0,
+               TOPIC_TYPE_SUBSCRIBE);
     topics_add(topics, real_topic_generate(TOPIC_READ_REQ, name), QOS0,
                real_topic_generate(TOPIC_READ_RES, name), QOS0,
                TOPIC_TYPE_READ);
-
     topics_add(topics, real_topic_generate(TOPIC_WRITE_REQ, name), QOS0,
                real_topic_generate(TOPIC_WRITE_RES, name), QOS0,
                TOPIC_TYPE_WRITE);
-
-    // topics_add(topics, real_topic_generate(TOPIC_TTYS_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_TTYS_RES, name), QOS0,
-    //            TOPIC_TYPE_TTYS);
-
-    // topics_add(topics, real_topic_generate(TOPIC_SCHEMA_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_SCHEMA_RES, name), QOS0,
-    //            TOPIC_TYPE_SCHEMA);
-
-    // topics_add(topics, real_topic_generate(TOPIC_SETTING_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_SETTING_RES, name), QOS0,
-    //            TOPIC_TYPE_SETTING);
-
-    // topics_add(topics, real_topic_generate(TOPIC_CTR_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_CTR_RES, name), QOS0,
-    //            TOPIC_TYPE_CTR);
-
-    // topics_add(topics, real_topic_generate(TOPIC_STATE_REQ, name), QOS0,
-    //            real_topic_generate(TOPIC_STATE_RES, name), QOS0,
-    //            TOPIC_TYPE_STATE);
-
+    topics_add(topics, real_topic_generate(TOPIC_TTYS_REQ, name), QOS0,
+               real_topic_generate(TOPIC_TTYS_RES, name), QOS0,
+               TOPIC_TYPE_TTYS);
+    topics_add(topics, real_topic_generate(TOPIC_SCHEMA_REQ, name), QOS0,
+               real_topic_generate(TOPIC_SCHEMA_RES, name), QOS0,
+               TOPIC_TYPE_SCHEMA);
+    topics_add(topics, real_topic_generate(TOPIC_SETTING_REQ, name), QOS0,
+               real_topic_generate(TOPIC_SETTING_RES, name), QOS0,
+               TOPIC_TYPE_SETTING);
+    topics_add(topics, real_topic_generate(TOPIC_CTR_REQ, name), QOS0,
+               real_topic_generate(TOPIC_CTR_RES, name), QOS0, TOPIC_TYPE_CTR);
+    topics_add(topics, real_topic_generate(TOPIC_STATE_REQ, name), QOS0,
+               real_topic_generate(TOPIC_STATE_RES, name), QOS0,
+               TOPIC_TYPE_STATE);
     topics_add(topics, NULL, QOS0, real_topic_generate(TOPIC_UPLOAD_RES, name),
                QOS0, TOPIC_TYPE_UPLOAD);
 }
