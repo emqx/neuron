@@ -137,38 +137,26 @@ static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     return;
 }
 
-int main(int argc, char *argv[])
+static int neuron_run(const neu_cli_args_t *args)
 {
-    int            rv   = 0;
-    neu_cli_args_t args = { 0 };
-
-    neu_cli_args_init(&args, argc, argv);
-
-    init(args.log_file);
-
-    rv = read_neuron_config(args.conf_file);
-    if (rv < 0) {
-        log_error("Failed to get neuron configuration.");
-        goto main_end;
-    }
+    int rv = 0;
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
     signal(SIGABRT, sig_handler);
 
-    log_info("running neuron main process, daemon: %d", args.daemonized);
+    log_info("neuron process, daemon: %d", args->daemonized);
     g_manager = neu_manager_create();
     if (g_manager == NULL) {
-        log_error("Failed to create neuron manager, exit!");
-        rv = -1;
-        goto main_end;
+        log_error("neuron process failed to create neuron manager, exit!");
+        return -1;
     }
     neu_manager_wait_ready(g_manager);
 
     nng_duration recv_timeout = 100;
     rv                        = nng_pair1_open(&g_sock);
     if (rv != 0) {
-        neu_panic("The main process can't open pipe");
+        neu_panic("neuron process can't open pipe");
     }
 
     nng_setopt(g_sock, NNG_OPT_RECVTIMEO, &recv_timeout, sizeof(recv_timeout));
@@ -180,13 +168,33 @@ int main(int argc, char *argv[])
     manager_url        = neu_manager_get_url(g_manager);
     rv                 = nng_dial(g_sock, manager_url, &dialer, 0);
     if (rv != 0) {
-        neu_panic("The main process can't dial to %s", manager_url);
+        neu_panic("neuron process can't dial to %s", manager_url);
     }
 
-    log_info("neuron main process wait for exit");
+    log_info("neuron process wait for exit");
     neu_manager_destroy(g_manager);
-    log_info("neuron main process close dialer");
+    log_info("neuron process close dialer");
     nng_dialer_close(dialer);
+
+    return rv;
+}
+
+int main(int argc, char *argv[])
+{
+    int            rv   = 0;
+    neu_cli_args_t args = { 0 };
+
+    neu_cli_args_init(&args, argc, argv);
+
+    init(args.log_file);
+
+    rv = read_neuron_config(args.conf_file);
+    if (rv < 0) {
+        log_error("failed to get neuron configuration.");
+        goto main_end;
+    }
+
+    rv = neuron_run(&args);
 
 main_end:
     uninit();
