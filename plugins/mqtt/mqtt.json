@@ -6,7 +6,7 @@
 		"attribute": "required",
 		"default": "",
 		"valid": {
-			"length": 100
+			"length": 255
 		}
 	},
 	"ssl": {
@@ -24,7 +24,7 @@
 		"type": "string",
 		"default": "broker.emqx.io",
 		"valid": {
-			"length": 30
+			"length": 255
 		}
 	},
 	"port": {
@@ -45,7 +45,7 @@
 		"type": "string",
 		"default": "",
 		"valid": {
-			"length": 30
+			"length": 255
 		}
 	},
 	"password": {
@@ -55,7 +55,7 @@
 		"type": "string",
 		"default": "",
 		"valid": {
-			"length": 30
+			"length":255 
 		}
 	},
 	"ca": {
