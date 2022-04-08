@@ -77,6 +77,7 @@ typedef enum {
     PLUGIN_BIT_S7COMM          = 3,
     PLUGIN_BIT_FINS            = 4,
     PLUGIN_BIT_QNA3E           = 5,
+    PLUGIN_BIT_IEC60870_5_104  = 6,
     PLUGIN_BIT_MAX,
 } plugin_bit_e;
 

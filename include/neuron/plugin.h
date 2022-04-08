@@ -24,6 +24,8 @@
 extern "C" {
 #endif
 
+#include "utils/utarray.h"
+
 #include "adapter.h"
 #include "tag_group_config.h"
 #include "type.h"
@@ -42,8 +44,10 @@ typedef struct neu_plugin_common {
 typedef struct neu_plugin neu_plugin_t;
 
 typedef struct neu_plugin_group {
-    neu_taggrp_config_t *group;
-    void *               ctx;
+    char *    group_name;
+    UT_array *tags;
+
+    void *ctx;
 } neu_plugin_group_t;
 
 typedef struct neu_plugin_intf_funs {
@@ -67,12 +71,9 @@ typedef struct neu_plugin_intf_funs {
                               neu_plugin_group_t *new_group);
             void (*del_group)(neu_plugin_t *      plugin,
                               neu_plugin_group_t *old_group);
-            void (*group_group)(neu_plugin_t *      plugin,
-                                neu_plugin_group_t *old_group,
-                                neu_plugin_group_t *new_group);
             int (*group_timer)(neu_plugin_t *plugin, neu_plugin_group_t *group);
-            int (*write_tag)(neu_plugin_t *plugin, neu_datatag_t *tag,
-                             neu_value_u value);
+            int (*write_tag)(neu_plugin_t *plugin, uint32_t req_id,
+                             neu_datatag_t *tag, neu_value_u value);
         } driver;
     };
 

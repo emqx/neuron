@@ -389,8 +389,8 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
     }
 
     adapter_info.id              = manager_new_adapter_id(manager);
-    adapter_info.type            = reg_param->adapter_type;
     adapter_info.name            = reg_param->adapter_name;
+    adapter_info.type            = plugin_reg_info.adapter_type;
     adapter_info.plugin_id       = plugin_reg_info.plugin_id;
     adapter_info.plugin_kind     = plugin_reg_info.plugin_kind;
     adapter_info.plugin_lib_name = plugin_reg_info.plugin_lib_name;

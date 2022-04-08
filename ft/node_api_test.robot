@@ -71,12 +71,6 @@ Get MQTT node, it should return all mqtt node
     Node With Name Should Exist    ${res}[nodes]    mqtt-adapter
 
 
-Get STREAM PROCESSOR node, it should return all STREAM PROCESSOR node
-    ${res} =    Get Nodes    ${NODE_STREAM_PROCESSOR}
-
-    Check Response Status    ${res}                       200
-    Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
-
 Get UNKNOWN type node, it should return empty node
     ${res} =    Get Nodes    ${NODE_UNKNOWN}
 
@@ -163,13 +157,13 @@ Update a node that does not exist, it should return failure
     Check Error Code         ${res}    ${ERR_NODE_NOT_EXIST}
 
 Update the name of the node, it should return success
-    ${app_node_id} =    Add Node And Return ID    ${NODE_APP}       app-node     ${PLUGIN_MQTT}
+    ${app_node_id} =    Add Node And Return ID    ${NODE_MQTT}       app-node     ${PLUGIN_MQTT}
     ${res} =            Update Node               ${app_node_id}    test-name
 
     Check Response Status    ${res}    200
     Check Error Code         ${res}    ${ERR_SUCCESS}
 
-    ${res} =                       Get Nodes        ${NODE_APP}
+    ${res} =                       Get Nodes        ${NODE_MQTT}
     Check Response Status          ${res}           200
     Node With Name Should Exist    ${res}[nodes]    test-name
 
