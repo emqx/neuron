@@ -26,43 +26,42 @@
 extern "C" {
 #endif
 
-typedef struct neu_event_ctx neu_event_ctx_t;
+typedef struct neu_events neu_events_t;
 
-neu_event_ctx_t *neu_event_new(void);
-int              neu_event_close(neu_event_ctx_t *events);
+neu_events_t *neu_event_new(void);
+int           neu_event_close(neu_events_t *events);
 
-typedef struct neu_event_timer_ctx neu_event_timer_ctx_t;
+typedef struct neu_event_timer neu_event_timer_t;
 typedef int (*neu_event_timer_callback)(void *usr_data);
 
-typedef struct neu_event_timer {
+typedef struct neu_event_timer_param {
     int64_t                  second;
     int64_t                  millisecond;
     void *                   usr_data;
     neu_event_timer_callback cb;
-} neu_event_timer_t;
+} neu_event_timer_param_t;
 
-neu_event_timer_ctx_t *neu_event_add_timer(neu_event_ctx_t * events,
-                                           neu_event_timer_t timer);
-int neu_event_del_timer(neu_event_ctx_t *events, neu_event_timer_ctx_t *timer);
+neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
+                                       neu_event_timer_param_t timer);
+int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer);
 
 enum neu_event_io_type {
     NEU_EVENT_IO_READ   = 0x1,
     NEU_EVENT_IO_CLOSED = 0x2,
     NEU_EVENT_IO_HUP    = 0x3,
 };
-typedef struct neu_event_io_ctx neu_event_io_ctx_t;
+typedef struct neu_event_io neu_event_io_t;
 typedef int (*neu_event_io_callback)(enum neu_event_io_type type, int fd,
                                      void *usr_data);
 
-typedef struct neu_event_io {
+typedef struct neu_event_io_param {
     int                   fd;
     void *                usr_data;
     neu_event_io_callback cb;
-} neu_event_io_t;
+} neu_event_io_param_t;
 
-neu_event_io_ctx_t *neu_event_add_io(neu_event_ctx_t *events,
-                                     neu_event_io_t   io);
-int neu_event_del_io(neu_event_ctx_t *events, neu_event_io_ctx_t *io);
+neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io);
+int             neu_event_del_io(neu_events_t *events, neu_event_io_t *io);
 
 #ifdef __cplusplus
 }

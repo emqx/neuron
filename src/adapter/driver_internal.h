@@ -21,6 +21,7 @@
 #define _NEU_ADAPTER_DRIVER_INTERNAL_H_
 
 #include "adapter.h"
+#include "core/message.h"
 
 neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter);
 
@@ -30,6 +31,7 @@ int  neu_adapter_driver_stop(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_init(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_uninit(neu_adapter_driver_t *driver);
 
-void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver);
+void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
+                                    msg_type_e type, neu_request_t *req);
 
 #endif
