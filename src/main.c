@@ -28,6 +28,7 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "argparse.h"
 #include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
@@ -36,32 +37,11 @@
 #include "neu_panic.h"
 #include "restful/rest.h"
 
-#define STDOUT_FILE "/dev/stdout"
-
-#define OPTIONAL_ARGUMENT_IS_PRESENT                             \
-    ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
-         ? (bool) (optarg = argv[optind++])                      \
-         : (optarg != NULL))
-
 static neu_manager_t *manager   = NULL;
 static nng_socket     main_sock = { 0 };
 
 static nng_mtx *log_mtx;
 FILE *          g_logfile;
-
-// clang-format off
-const char *usage_text =
-"USAGE:\n"
-"    neuron [OPTIONS]\n\n"
-"OPTIONS:\n"
-"    -c, --config <FILE>  neuron configuration file\n"
-"                         without this option, default from ./config/neuron.yaml\n"
-"    -d, --daemon         run as daemon process\n"
-"    -h, --help           show this help message\n"
-"    --log [FILE]         log to the given file, or stdout if no FILE argument\n"
-"                         without this option, default log to ./logs/neuron.log\n"
-"\n";
-// clang-format on
 
 static void log_lock(bool lock, void *udata)
 {
@@ -78,7 +58,7 @@ static void init(const char *log_file)
     nng_mtx_alloc(&log_mtx);
     log_set_lock(log_lock, log_mtx);
     log_set_level(NEU_LOG_DEBUG);
-    if (0 == strcmp(log_file, STDOUT_FILE)) {
+    if (0 == strcmp(log_file, NEU_LOG_STDOUT_FNAME)) {
         g_logfile = stdout;
     } else {
         g_logfile = fopen(log_file, "a");
@@ -97,11 +77,6 @@ static void uninit()
 {
     fclose(g_logfile);
     nng_mtx_free(log_mtx);
-}
-
-static void usage()
-{
-    fprintf(stderr, "%s", usage_text);
 }
 
 static int read_neuron_config(const char *config)
@@ -165,68 +140,14 @@ static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 
 int main(int argc, char *argv[])
 {
+    int            rv   = 0;
+    neu_cli_args_t args = { 0 };
 
-    int   rv          = 0;
-    bool  is_daemon   = false;
-    char *config_file = NULL;
-    char *log_file    = NULL;
+    neu_cli_args_init(&args, argc, argv);
 
-    char *        opts           = "c:dh";
-    struct option long_options[] = {
-        { "help", no_argument, NULL, 1 },
-        { "config", required_argument, NULL, 'c' },
-        { "daemon", no_argument, NULL, 'd' },
-        { "log", optional_argument, NULL, 'l' },
-        { NULL, 0, NULL, 0 },
-    };
+    init(args.log_file);
 
-    int c;
-
-    while ((c = getopt_long(argc, argv, opts, long_options, NULL)) != -1) {
-        switch (c) {
-        case 'h':
-            usage();
-            exit(0);
-        case 'd':
-            is_daemon = true;
-            break;
-        case ':':
-            fprintf(stderr, "%s: option '-%c' requires an argument\n", argv[0],
-                    optopt);
-            usage();
-            exit(0);
-        case 'c':
-            config_file = strdup(optarg);
-            break;
-        case 'l':
-            if (OPTIONAL_ARGUMENT_IS_PRESENT) {
-                // log to file
-                log_file = strdup(optarg);
-            } else {
-                // log to stdout
-                log_file = strdup(STDOUT_FILE);
-            }
-            break;
-        case '?':
-        default:
-            fprintf(stderr, "%s: option '-%c' is invalid: ignored\n", argv[0],
-                    optopt);
-            usage();
-            exit(0);
-        }
-    }
-
-    if (config_file == NULL) {
-        config_file = strdup("./config/neuron.yaml");
-    }
-
-    if (log_file == NULL) {
-        log_file = strdup("./logs/neuron.log");
-    }
-
-    init(log_file);
-
-    rv = read_neuron_config(config_file);
+    rv = read_neuron_config(args.conf_file);
     if (rv < 0) {
         log_error("Failed to get neuron configuration.");
         goto main_end;
@@ -236,7 +157,7 @@ int main(int argc, char *argv[])
     signal(SIGTERM, sig_handler);
     signal(SIGABRT, sig_handler);
 
-    log_info("running neuron main process, daemon: %d", is_daemon);
+    log_info("running neuron main process, daemon: %d", args.daemonized);
     manager = neu_manager_create();
     if (manager == NULL) {
         log_error("Failed to create neuron manager, exit!");
@@ -271,7 +192,6 @@ int main(int argc, char *argv[])
 
 main_end:
     uninit();
-    free(config_file);
-    free(log_file);
+    neu_cli_args_fini(&args);
     return rv;
 }

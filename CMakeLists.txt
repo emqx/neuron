@@ -94,6 +94,7 @@ set(PERSIST_SOURCES
     src/persist/json/persist_json_subs.c)
 set(NEURON_SOURCES
     src/main.c
+    src/argparse.c
     src/config.c
     src/core/message.c
     src/core/databuf.c
