@@ -447,34 +447,14 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     assert(NULL != plugin);
     assert(NULL != config);
 
-    // routine start
     mqtt_routine_t *routine = calloc(1, sizeof(mqtt_routine_t));
     if (NULL == routine) {
-        return NULL;
-    }
-
-    routine->plugin = plugin;
-    TAILQ_INIT(&routine->head);
-    pthread_mutex_init(&routine->contexts_mtx, NULL);
-    pthread_mutex_init(&routine->running_mtx, NULL);
-
-    if (0 !=
-        pthread_create(&routine->daemon, NULL, mqtt_routine_loop, routine)) {
-        log_error_node(plugin, "routine create error");
-        free(routine);
         return NULL;
     }
 
     // MQTT client start
     int rc = mqtt_option_init(config, &routine->option);
     if (0 != rc) {
-        pthread_mutex_lock(&routine->running_mtx);
-        routine->running = false;
-        pthread_mutex_unlock(&routine->running_mtx);
-        pthread_join(routine->daemon, NULL);
-        pthread_mutex_destroy(&routine->contexts_mtx);
-        pthread_mutex_destroy(&routine->running_mtx);
-
         mqtt_option_uninit(&routine->option);
         free(routine);
         return NULL;
@@ -484,13 +464,6 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     neu_err_code_e     error  = NEU_ERR_SUCCESS;
     error = neu_mqtt_client_open(client, &routine->option, plugin);
     if (NEU_ERR_SUCCESS != error) {
-        pthread_mutex_lock(&routine->running_mtx);
-        routine->running = false;
-        pthread_mutex_unlock(&routine->running_mtx);
-        pthread_join(routine->daemon, NULL);
-        pthread_mutex_destroy(&routine->contexts_mtx);
-        pthread_mutex_destroy(&routine->running_mtx);
-
         mqtt_option_uninit(&routine->option);
         free(routine);
         return NULL;
@@ -500,6 +473,20 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
 
     log_info_node(plugin, "try open mqtt client: %s:%s, code:%d",
                   routine->option.host, routine->option.port, error);
+
+    // routine start
+    routine->plugin = plugin;
+    TAILQ_INIT(&routine->head);
+    pthread_mutex_init(&routine->contexts_mtx, NULL);
+    pthread_mutex_init(&routine->running_mtx, NULL);
+
+    if (0 !=
+        pthread_create(&routine->daemon, NULL, mqtt_routine_loop, routine)) {
+        log_error_node(plugin, "routine create error");
+        neu_mqtt_client_close(client);
+        free(routine);
+        return NULL;
+    }
 
     vector_init(&routine->topics, 1, sizeof(struct topic_pair));
     topics_generate(&routine->topics, routine->option.clientid);
@@ -537,6 +524,20 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
     topics_cleanup(&routine->topics);
     vector_uninit(&routine->topics);
     mqtt_option_uninit(&routine->option);
+}
+
+static void mqtt_routine_continue(mqtt_routine_t *routine)
+{
+    assert(NULL != routine && NULL != routine->client);
+
+    neu_mqtt_client_continue(routine->client);
+}
+
+static void mqtt_routine_suspend(mqtt_routine_t *routine)
+{
+    assert(NULL != routine && NULL != routine->client);
+
+    neu_mqtt_client_suspend(routine->client);
 }
 
 static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
@@ -643,7 +644,12 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    // neu_mqtt_client_continue(plugin->client);
+    pthread_mutex_lock(&plugin->routine_mtx);
+    if (plugin->routine_running) {
+        mqtt_routine_continue(plugin->routine);
+    }
+    pthread_mutex_unlock(&plugin->routine_mtx);
+
     return NEU_ERR_SUCCESS;
 }
 
@@ -651,7 +657,12 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    // neu_mqtt_client_suspend(plugin->client);
+    pthread_mutex_lock(&plugin->routine_mtx);
+    if (plugin->routine_running) {
+        mqtt_routine_suspend(plugin->routine);
+    }
+    pthread_mutex_unlock(&plugin->routine_mtx);
+
     return NEU_ERR_SUCCESS;
 }
 
