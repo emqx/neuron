@@ -17,6 +17,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#ifndef NEURON_ARGPARSE_H
+#define NEURON_ARGPARSE_H
+
 #define NEU_LOG_STDOUT_FNAME "/dev/stdout"
 
 #ifdef __cplusplus
@@ -43,4 +46,6 @@ void neu_cli_args_fini(neu_cli_args_t *args);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
