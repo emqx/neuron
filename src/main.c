@@ -32,6 +32,7 @@
 #include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
+#include "daemon.h"
 #include "log.h"
 #include "panic.h"
 #include "restful/rest.h"
@@ -186,11 +187,23 @@ int main(int argc, char *argv[])
 
     neu_cli_args_init(&args, argc, argv);
 
+    if (args.daemonized) {
+        // become a daemon, this should be before calling `init`
+        daemonize();
+    }
+
     init(args.log_file);
+
+    if (neuron_already_running()) {
+        log_error("neuron process already running, exit.");
+        rv = -1;
+        goto main_end;
+    }
 
     rv = read_neuron_config(args.conf_file);
     if (rv < 0) {
         log_error("failed to get neuron configuration.");
+        rv = -1;
         goto main_end;
     }
 
