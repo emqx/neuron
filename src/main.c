@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -181,8 +182,11 @@ static int neuron_run(const neu_cli_args_t *args)
 
 int main(int argc, char *argv[])
 {
-    int            rv   = 0;
-    neu_cli_args_t args = { 0 };
+    int            rv     = 0;
+    int            status = 0;
+    int            signum = 0;
+    pid_t          pid    = 0;
+    neu_cli_args_t args   = { 0 };
 
     neu_cli_args_init(&args, argc, argv);
 
@@ -204,6 +208,37 @@ int main(int argc, char *argv[])
         log_error("failed to get neuron configuration.");
         rv = -1;
         goto main_end;
+    }
+
+    for (size_t i = 0; i < args.restart; ++i) {
+        // flush log
+        fflush(g_log_file);
+
+        if ((pid = fork()) < 0) {
+            log_error("cannot fork neuron daemon");
+            goto main_end;
+        } else if (pid == 0) { // child
+            break;
+        }
+
+        // block waiting for child
+        if (pid != waitpid(pid, &status, 0)) {
+            log_error("cannot wait for neuron daemon");
+            goto main_end;
+        }
+
+        if (WIFEXITED(status)) {
+            status = WEXITSTATUS(status);
+            log_info("detect neuron daemon exit with status:%d", status);
+            if (NEU_RESTART_ONFAILURE == args.restart && 0 == status) {
+                goto main_end;
+            }
+        } else if (WIFSIGNALED(status)) {
+            signum = WTERMSIG(status);
+            log_info("detect neuron daemon term with signal:%d", signum);
+        }
+
+        // sleep(1);
     }
 
     rv = neuron_run(&args);
