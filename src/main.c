@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -140,11 +141,18 @@ static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 
 static int neuron_run(const neu_cli_args_t *args)
 {
-    int rv = 0;
+    int           rv = 0;
+    struct rlimit rl;
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
     signal(SIGABRT, sig_handler);
+
+    // try to enable core dump
+    rl.rlim_cur = rl.rlim_max = RLIM_INFINITY;
+    if (setrlimit(RLIMIT_CORE, &rl) < 0) {
+        log_error("neuron process failed enable core dump, ignore");
+    }
 
     log_info("neuron process, daemon: %d", args->daemonized);
     g_manager = neu_manager_create();
