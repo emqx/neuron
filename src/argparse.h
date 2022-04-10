@@ -22,18 +22,24 @@
 
 #define NEU_LOG_STDOUT_FNAME "/dev/stdout"
 
+#define NEU_RESTART_NEVER 0
+#define NEU_RESTART_ALWAYS ((size_t) -2)
+#define NEU_RESTART_ONFAILURE ((size_t) -1)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdbool.h>
+#include <stdlib.h>
 
 /** Neuron command line arguments.
  */
 typedef struct {
-    bool  daemonized; // flag indicating whether to run as daemon process
-    char *conf_file;  // configuration file path
-    char *log_file;   // log file path
+    bool   daemonized; // flag indicating whether to run as daemon process
+    char * conf_file;  // configuration file path
+    char * log_file;   // log file path
+    size_t restart;    // restart policy
 } neu_cli_args_t;
 
 /** Parse command line arguments.

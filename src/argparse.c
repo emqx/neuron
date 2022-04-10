@@ -19,6 +19,7 @@
 
 #include <errno.h>
 #include <getopt.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,12 +54,37 @@ const char *usage_text =
 "    -h, --help           show this help message\n"
 "    --log [FILE]         log to the given file, or stdout if no FILE argument\n"
 "                         without this option, default log to ./logs/neuron.log\n"
+"    --restart <POLICY>   restart policy to apply when neuron daemon terminates,\n"
+"                           - never,      never restart (default)\n"
+"                           - always,     always restart\n"
+"                           - on-failure, restart only if failure\n"
+"                           - NUMBER,     restart max NUMBER of times\n"
 "\n";
 // clang-format on
 
 static inline void usage()
 {
     fprintf(stderr, "%s", usage_text);
+}
+
+static inline size_t parse_restart_policy(const char *s, size_t *out)
+{
+    if (0 == strcmp(s, "always")) {
+        *out = NEU_RESTART_ALWAYS;
+    } else if (0 == strcmp(s, "never")) {
+        *out = NEU_RESTART_NEVER;
+    } else if (0 == strcmp(s, "on-failure")) {
+        *out = NEU_RESTART_ONFAILURE;
+    } else {
+        errno       = 0;
+        uintmax_t n = strtoumax(s, NULL, 0);
+        if (0 != errno || n > NEU_RESTART_ALWAYS) {
+            return -1;
+        }
+        *out = n;
+    }
+
+    return 0;
 }
 
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
@@ -69,6 +95,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "config", required_argument, NULL, 'c' },
         { "daemon", no_argument, NULL, 'd' },
         { "log", optional_argument, NULL, 'l' },
+        { "restart", required_argument, NULL, 'r' },
         { NULL, 0, NULL, 0 },
     };
 
@@ -100,6 +127,13 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
                 STRDUP(args->log_file, NEU_LOG_STDOUT_FNAME);
             }
             break;
+        case 'r':
+            if (0 != parse_restart_policy(optarg, &args->restart)) {
+                fprintf(stderr, "%s: option '--restart' invalid policy: `%s`\n",
+                        argv[0], optarg);
+                goto quit;
+            }
+            break;
         case '?':
         default:
             fprintf(stderr, "%s: option '-%c' is invalid: ignored\n", argv[0],
@@ -115,6 +149,13 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 
     if (NULL == args->log_file) {
         STRDUP(args->log_file, "./logs/neuron.log");
+    }
+
+    if (!args->daemonized && args->restart != NEU_RESTART_NEVER) {
+        fprintf(stderr,
+                "%s: option '--restart' has no effects without '--daemon'\n",
+                argv[0]);
+        args->restart = NEU_RESTART_NEVER;
     }
 
     return;
