@@ -18,6 +18,7 @@
  **/
 
 #include <getopt.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,25 +39,24 @@
 #include "restful/rest.h"
 #include "utils/idhash.h"
 
-static neu_manager_t *g_manager = NULL;
-static nng_socket     g_sock    = { 0 };
-static nng_mtx *      g_log_mtx;
-static FILE *         g_log_file;
+static neu_manager_t * g_manager = NULL;
+static nng_socket      g_sock    = { 0 };
+static pthread_mutex_t g_log_mtx = PTHREAD_MUTEX_INITIALIZER;
+static FILE *          g_log_file;
 
 static void log_lock(bool lock, void *udata)
 {
-    nng_mtx *mutex = (nng_mtx *) (udata);
+    pthread_mutex_t *mutex = udata;
     if (lock) {
-        nng_mtx_lock(mutex);
+        pthread_mutex_lock(mutex);
     } else {
-        nng_mtx_unlock(mutex);
+        pthread_mutex_unlock(mutex);
     }
 }
 
 static void init(const char *log_file)
 {
-    nng_mtx_alloc(&g_log_mtx);
-    log_set_lock(log_lock, g_log_mtx);
+    log_set_lock(log_lock, &g_log_mtx);
     log_set_level(NEU_LOG_DEBUG);
     if (0 == strcmp(log_file, NEU_LOG_STDOUT_FNAME)) {
         g_log_file = stdout;
@@ -76,7 +76,6 @@ static void init(const char *log_file)
 static void uninit()
 {
     fclose(g_log_file);
-    nng_mtx_free(g_log_mtx);
 }
 
 static int read_neuron_config(const char *config)
