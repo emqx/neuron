@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/queue.h>
 #include <unistd.h>
 
 #include <neuron.h>
@@ -33,10 +34,18 @@
 #define UNUSED(x) (void) (x)
 #define MAX_URL_LEN 256
 
+struct subscribe_tuple {
+    char *               topic;
+    int                  qos;
+    neu_subscribe_handle handle;
+    bool                 subscribed;
+    mqtt_nng_client_t *  client;
+    TAILQ_ENTRY(subscribe_tuple) entry;
+};
+
 struct mqtt_nng_client {
     const neu_mqtt_option_t *option;
     void *                   user_data;
-    neu_list                 subscribe_list;
     nng_thread *             daemon;
     nng_mtx *                mtx;
     bool                     running;
@@ -52,15 +61,7 @@ struct mqtt_nng_client {
     char *                   key;
     char *                   keypass;
     nng_tls_config *         config;
-};
-
-struct subscribe_tuple {
-    neu_list_node        node;
-    char *               topic;
-    int                  qos;
-    neu_subscribe_handle handle;
-    bool                 subscribed;
-    mqtt_nng_client_t *  client;
+    TAILQ_HEAD(, subscribe_tuple) head;
 };
 
 struct string {
@@ -82,7 +83,7 @@ static void client_on_connected(void *arg, nng_msg *ack_msg)
 
     if (1 == client->connected) {
         struct subscribe_tuple *tuple = NULL;
-        NEU_LIST_FOREACH(&client->subscribe_list, tuple)
+        TAILQ_FOREACH(tuple, &client->head, entry)
         {
             client_subscribe_send(client, tuple);
         }
@@ -199,7 +200,7 @@ static void client_refresher(void *context)
         log_info("Received: topic:%s,test", topic_name);
 
         struct subscribe_tuple *item = NULL;
-        NEU_LIST_FOREACH(&client->subscribe_list, item)
+        TAILQ_FOREACH(item, &client->head, entry)
         {
             if (0 == strcmp(item->topic, topic_name) && NULL != item->handle) {
                 item->handle(topic_name, strlen(topic_name), (void *) payload,
@@ -284,7 +285,7 @@ static mqtt_nng_client_t *client_create(const neu_mqtt_option_t *option,
     client->callback.connect_arg     = client;
     client->callback.disconn_arg     = client;
 
-    NEU_LIST_INIT(&client->subscribe_list, struct subscribe_tuple, node);
+    TAILQ_INIT(&client->head);
     return client;
 }
 
@@ -478,8 +479,7 @@ static neu_err_code_e client_subscribe_send(mqtt_nng_client_t *     client,
 static void client_subscribe_add(mqtt_nng_client_t *     client,
                                  struct subscribe_tuple *tuple)
 {
-    NEU_LIST_NODE_INIT(&tuple->node);
-    neu_list_append(&client->subscribe_list, tuple);
+    TAILQ_INSERT_TAIL(&client->head, tuple, entry);
 }
 
 neu_err_code_e mqtt_nng_client_subscribe(mqtt_nng_client_t *client,
@@ -514,7 +514,7 @@ static struct subscribe_tuple *
 client_unsubscribe_create(mqtt_nng_client_t *client, const char *topic)
 {
     struct subscribe_tuple *item = NULL;
-    NEU_LIST_FOREACH(&client->subscribe_list, item)
+    TAILQ_FOREACH(item, &client->head, entry)
     {
         if (0 == strcmp(item->topic, topic)) {
             return item;
@@ -548,7 +548,7 @@ static neu_err_code_e client_unsubscribe_send(mqtt_nng_client_t *     client,
 static void client_unsubscribe_remove(mqtt_nng_client_t *     client,
                                       struct subscribe_tuple *tuple)
 {
-    neu_list_remove(&client->subscribe_list, tuple);
+    TAILQ_REMOVE(&client->head, tuple, entry);
     client_subscribe_destroy(tuple);
 }
 
@@ -605,9 +605,8 @@ neu_err_code_e mqtt_nng_client_publish(mqtt_nng_client_t *client,
 
 static void client_disconnect(mqtt_nng_client_t *client)
 {
-    while (!neu_list_empty(&client->subscribe_list)) {
-        struct subscribe_tuple *tuple = NULL;
-        tuple                         = neu_list_first(&client->subscribe_list);
+    while (!TAILQ_EMPTY(&client->head)) {
+        struct subscribe_tuple *tuple = TAILQ_FIRST(&client->head);
         if (NULL != tuple) {
             mqtt_nng_client_unsubscribe(client, tuple->topic);
         }

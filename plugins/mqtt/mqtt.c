@@ -31,12 +31,11 @@
 const neu_plugin_module_t neu_plugin_module;
 
 struct topic_pair {
-    neu_list_node node;
-    char *        topic_request;
-    char *        topic_response;
-    int           qos_request;
-    int           qos_response;
-    int           type;
+    char *topic_request;
+    char *topic_response;
+    int   qos_request;
+    int   qos_response;
+    int   type;
 };
 
 struct context {
@@ -63,7 +62,6 @@ typedef struct mqtt_routine {
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    pthread_mutex_t     routine_mtx;
     bool                routine_running;
     mqtt_routine_t *    routine;
 };
@@ -394,8 +392,10 @@ static void mqtt_routine_cleanup(mqtt_routine_t *routine)
     while (!TAILQ_EMPTY(&routine->head)) {
         struct context *item = NULL;
         item                 = TAILQ_FIRST(&routine->head);
-        TAILQ_REMOVE(&routine->head, item, entry);
-        mqtt_routine_context_destroy(item);
+        if (NULL != item) {
+            TAILQ_REMOVE(&routine->head, item, entry);
+            mqtt_routine_context_destroy(item);
+        }
     }
 }
 
@@ -561,11 +561,8 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    pthread_mutex_init(&plugin->routine_mtx, NULL);
-    plugin->routine = NULL;
-    pthread_mutex_lock(&plugin->routine_mtx);
+    plugin->routine         = NULL;
     plugin->routine_running = false;
-    pthread_mutex_unlock(&plugin->routine_mtx);
 
     const char *name = neu_plugin_module.module_name;
     log_info_node(plugin, "initialize plugin: %s", name);
@@ -576,7 +573,6 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    pthread_mutex_lock(&plugin->routine_mtx);
     if (plugin->routine_running) {
         mqtt_routine_stop(plugin->routine);
         plugin->routine_running = false;
@@ -585,9 +581,6 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
             plugin->routine = NULL;
         }
     }
-    pthread_mutex_unlock(&plugin->routine_mtx);
-
-    pthread_mutex_destroy(&plugin->routine_mtx);
 
     const char *name = neu_plugin_module.module_name;
     log_info_node(plugin, "uninitialize plugin: %s", name);
@@ -599,7 +592,6 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *config)
     assert(NULL != plugin);
     assert(NULL != config);
 
-    pthread_mutex_lock(&plugin->routine_mtx);
     if (plugin->routine_running) {
         mqtt_routine_stop(plugin->routine);
         plugin->routine_running = false;
@@ -608,7 +600,6 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *config)
             plugin->routine = NULL;
         }
     }
-    pthread_mutex_unlock(&plugin->routine_mtx);
 
     mqtt_routine_t *routine = mqtt_routine_start(plugin, config);
     if (NULL == routine) {
@@ -616,11 +607,8 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *config)
         return NEU_ERR_FAILURE;
     }
 
-    plugin->routine = routine;
-
-    pthread_mutex_lock(&plugin->routine_mtx);
+    plugin->routine         = routine;
     plugin->routine_running = true;
-    pthread_mutex_unlock(&plugin->routine_mtx);
 
     log_info_node(plugin, "config plugin: %s", neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
@@ -630,11 +618,9 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    pthread_mutex_lock(&plugin->routine_mtx);
     if (plugin->routine_running) {
         mqtt_routine_continue(plugin->routine);
     }
-    pthread_mutex_unlock(&plugin->routine_mtx);
 
     return NEU_ERR_SUCCESS;
 }
@@ -643,11 +629,9 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    pthread_mutex_lock(&plugin->routine_mtx);
     if (plugin->routine_running) {
         mqtt_routine_suspend(plugin->routine);
     }
-    pthread_mutex_unlock(&plugin->routine_mtx);
 
     return NEU_ERR_SUCCESS;
 }
@@ -708,12 +692,9 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     assert(NULL != plugin);
     assert(NULL != req);
 
-    pthread_mutex_lock(&plugin->routine_mtx);
     if (!plugin->routine_running) {
-        pthread_mutex_unlock(&plugin->routine_mtx);
         return NEU_ERR_FAILURE;
     }
-    pthread_mutex_unlock(&plugin->routine_mtx);
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_RESP:
