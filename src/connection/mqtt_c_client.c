@@ -69,7 +69,6 @@ struct subscribe_tuple {
     char *               topic;
     int                  qos;
     neu_subscribe_handle handle;
-    bool                 subscribed;
     mqtt_c_client_t *    client;
     TAILQ_ENTRY(subscribe_tuple) entry;
 };
@@ -338,7 +337,7 @@ static void reconnect_state_uninit(struct reconnect_state *state)
     pthread_mutex_destroy(&state->working_mutex);
 }
 
-static void subscribe_all_topic(mqtt_c_client_t *client)
+static void subscribe_on_reconnect(mqtt_c_client_t *client)
 {
     assert(NULL != client);
 
@@ -380,7 +379,7 @@ static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
         return;
     }
 
-    subscribe_all_topic(client);
+    subscribe_on_reconnect(client);
 }
 
 static void publish_callback(void **                       p_reconnect_state,
@@ -434,6 +433,8 @@ static void *client_refresher(void *context)
     struct mqtt_client *    mqtt   = &client->mqtt;
     struct reconnect_state *state  = mqtt->reconnect_state;
 
+    usleep(500); // Waiting for caller initialization to complete
+
     while (1) {
         pthread_mutex_lock(&state->running_mutex);
         if (!state->running) {
@@ -465,6 +466,7 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
 
     client->option    = option;
     client->user_data = context;
+    TAILQ_INIT(&client->head);
 
     struct reconnect_state *state = &client->state;
     state->hostname               = strdup(client->option->host);
@@ -493,8 +495,6 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
     pthread_mutex_init(&state->working_mutex, NULL);
 
     client->mqtt.publish_response_callback_state = state;
-
-    TAILQ_INIT(&client->head);
     return client;
 }
 
@@ -595,16 +595,6 @@ static neu_err_code_e client_subscribe_destroy(struct subscribe_tuple *tuple)
 
 static neu_err_code_e client_disconnect(mqtt_c_client_t *client)
 {
-    while (!TAILQ_EMPTY(&client->head)) {
-        struct subscribe_tuple *item = NULL;
-        item                         = TAILQ_FIRST(&client->head);
-        if (NULL != item) {
-            mqtt_c_client_unsubscribe(client, item->topic);
-            TAILQ_REMOVE(&client->head, item, entry);
-            client_subscribe_destroy(item);
-        }
-    }
-
     neu_err_code_e error = mqtt_c_client_is_connected(client);
     if (NEU_ERR_SUCCESS == error) {
         mqtt_disconnect(&client->mqtt);
@@ -615,6 +605,15 @@ static neu_err_code_e client_disconnect(mqtt_c_client_t *client)
 
 static neu_err_code_e client_destroy(mqtt_c_client_t *client)
 {
+    while (!TAILQ_EMPTY(&client->head)) {
+        struct subscribe_tuple *item = NULL;
+        item                         = TAILQ_FIRST(&client->head);
+        if (NULL != item) {
+            TAILQ_REMOVE(&client->head, item, entry);
+            client_subscribe_destroy(item);
+        }
+    }
+
     free(client);
     return NEU_ERR_SUCCESS;
 }
@@ -629,11 +628,10 @@ client_subscribe_create(mqtt_c_client_t *client, const char *topic,
         return NULL;
     }
 
-    tuple->topic      = strdup(topic);
-    tuple->qos        = qos;
-    tuple->handle     = handle;
-    tuple->subscribed = false;
-    tuple->client     = client;
+    tuple->topic  = strdup(topic);
+    tuple->qos    = qos;
+    tuple->handle = handle;
+    tuple->client = client;
     return tuple;
 }
 
