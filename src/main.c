@@ -18,10 +18,13 @@
  **/
 
 #include <getopt.h>
+#include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -38,25 +41,24 @@
 #include "restful/rest.h"
 #include "utils/idhash.h"
 
-static neu_manager_t *g_manager = NULL;
-static nng_socket     g_sock    = { 0 };
-static nng_mtx *      g_log_mtx;
-static FILE *         g_log_file;
+static neu_manager_t * g_manager = NULL;
+static nng_socket      g_sock    = { 0 };
+static pthread_mutex_t g_log_mtx = PTHREAD_MUTEX_INITIALIZER;
+static FILE *          g_log_file;
 
 static void log_lock(bool lock, void *udata)
 {
-    nng_mtx *mutex = (nng_mtx *) (udata);
+    pthread_mutex_t *mutex = udata;
     if (lock) {
-        nng_mtx_lock(mutex);
+        pthread_mutex_lock(mutex);
     } else {
-        nng_mtx_unlock(mutex);
+        pthread_mutex_unlock(mutex);
     }
 }
 
 static void init(const char *log_file)
 {
-    nng_mtx_alloc(&g_log_mtx);
-    log_set_lock(log_lock, g_log_mtx);
+    log_set_lock(log_lock, &g_log_mtx);
     log_set_level(NEU_LOG_DEBUG);
     if (0 == strcmp(log_file, NEU_LOG_STDOUT_FNAME)) {
         g_log_file = stdout;
@@ -76,7 +78,6 @@ static void init(const char *log_file)
 static void uninit()
 {
     fclose(g_log_file);
-    nng_mtx_free(g_log_mtx);
 }
 
 static int read_neuron_config(const char *config)
@@ -140,11 +141,18 @@ static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 
 static int neuron_run(const neu_cli_args_t *args)
 {
-    int rv = 0;
+    int           rv = 0;
+    struct rlimit rl;
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
     signal(SIGABRT, sig_handler);
+
+    // try to enable core dump
+    rl.rlim_cur = rl.rlim_max = RLIM_INFINITY;
+    if (setrlimit(RLIMIT_CORE, &rl) < 0) {
+        log_error("neuron process failed enable core dump, ignore");
+    }
 
     log_info("neuron process, daemon: %d", args->daemonized);
     g_manager = neu_manager_create();
@@ -182,8 +190,11 @@ static int neuron_run(const neu_cli_args_t *args)
 
 int main(int argc, char *argv[])
 {
-    int            rv   = 0;
-    neu_cli_args_t args = { 0 };
+    int            rv     = 0;
+    int            status = 0;
+    int            signum = 0;
+    pid_t          pid    = 0;
+    neu_cli_args_t args   = { 0 };
 
     neu_cli_args_init(&args, argc, argv);
 
@@ -205,6 +216,37 @@ int main(int argc, char *argv[])
         log_error("failed to get neuron configuration.");
         rv = -1;
         goto main_end;
+    }
+
+    for (size_t i = 0; i < args.restart; ++i) {
+        // flush log
+        fflush(g_log_file);
+
+        if ((pid = fork()) < 0) {
+            log_error("cannot fork neuron daemon");
+            goto main_end;
+        } else if (pid == 0) { // child
+            break;
+        }
+
+        // block waiting for child
+        if (pid != waitpid(pid, &status, 0)) {
+            log_error("cannot wait for neuron daemon");
+            goto main_end;
+        }
+
+        if (WIFEXITED(status)) {
+            status = WEXITSTATUS(status);
+            log_info("detect neuron daemon exit with status:%d", status);
+            if (NEU_RESTART_ONFAILURE == args.restart && 0 == status) {
+                goto main_end;
+            }
+        } else if (WIFSIGNALED(status)) {
+            signum = WTERMSIG(status);
+            log_info("detect neuron daemon term with signal:%d", signum);
+        }
+
+        // sleep(1);
     }
 
     rv = neuron_run(&args);
