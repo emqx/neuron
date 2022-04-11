@@ -17,32 +17,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_ARGPARSE_H
-#define NEURON_ARGPARSE_H
+#ifndef NEURON_DAEMON_H
+#define NEURON_DAEMON_H
 
-#define NEU_LOG_STDOUT_FNAME "/dev/stdout"
+#define NEURON_DAEMON_LOCK_FNAME "/tmp/neuron.pid"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdbool.h>
-
-/** Neuron command line arguments.
+/** Turn the calling process into a daemon.
  */
-typedef struct {
-    bool  daemonized; // flag indicating whether to run as daemon process
-    char *conf_file;  // configuration file path
-    char *log_file;   // log file path
-} neu_cli_args_t;
+void daemonize();
 
-/** Parse command line arguments.
+/** Check if neuron is already running.
  */
-void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[]);
-
-/** Clean up the command line arguments.
- */
-void neu_cli_args_fini(neu_cli_args_t *args);
+int neuron_already_running();
 
 #ifdef __cplusplus
 }

@@ -32,16 +32,16 @@
 #include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
+#include "daemon.h"
 #include "log.h"
 #include "panic.h"
 #include "restful/rest.h"
 #include "utils/idhash.h"
 
-static neu_manager_t *manager   = NULL;
-static nng_socket     main_sock = { 0 };
-
-static nng_mtx *log_mtx;
-FILE *          g_logfile;
+static neu_manager_t *g_manager = NULL;
+static nng_socket     g_sock    = { 0 };
+static nng_mtx *      g_log_mtx;
+static FILE *         g_log_file;
 
 static void log_lock(bool lock, void *udata)
 {
@@ -55,28 +55,28 @@ static void log_lock(bool lock, void *udata)
 
 static void init(const char *log_file)
 {
-    nng_mtx_alloc(&log_mtx);
-    log_set_lock(log_lock, log_mtx);
+    nng_mtx_alloc(&g_log_mtx);
+    log_set_lock(log_lock, g_log_mtx);
     log_set_level(NEU_LOG_DEBUG);
     if (0 == strcmp(log_file, NEU_LOG_STDOUT_FNAME)) {
-        g_logfile = stdout;
+        g_log_file = stdout;
     } else {
-        g_logfile = fopen(log_file, "a");
+        g_log_file = fopen(log_file, "a");
     }
-    if (g_logfile == NULL) {
+    if (g_log_file == NULL) {
         fprintf(stderr,
                 "Failed to open logfile when"
                 "initialize neuron main process");
         abort();
     }
     // log_set_quiet(true);
-    log_add_fp(g_logfile, NEU_LOG_DEBUG);
+    log_add_fp(g_log_file, NEU_LOG_DEBUG);
 }
 
 static void uninit()
 {
-    fclose(g_logfile);
-    nng_mtx_free(log_mtx);
+    fclose(g_log_file);
+    nng_mtx_free(g_log_mtx);
 }
 
 static int read_neuron_config(const char *config)
@@ -106,14 +106,14 @@ static void sig_handler(int sig)
     buf_ptr               = msg_get_buf_ptr(pay_msg);
     *(uint32_t *) buf_ptr = 0; // exit_code is 0
 
-    if (main_sock.id != 0) {
-        nng_sendmsg(main_sock, msg, 0);
+    if (g_sock.id != 0) {
+        nng_sendmsg(g_sock, msg, 0);
     } else {
         nng_msg_free(msg);
     }
 
-    if (manager != NULL) {
-        neu_manager_stop(manager);
+    if (g_manager != NULL) {
+        neu_manager_stop(g_manager);
     }
 }
 
@@ -138,6 +138,48 @@ static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     return;
 }
 
+static int neuron_run(const neu_cli_args_t *args)
+{
+    int rv = 0;
+
+    signal(SIGINT, sig_handler);
+    signal(SIGTERM, sig_handler);
+    signal(SIGABRT, sig_handler);
+
+    log_info("neuron process, daemon: %d", args->daemonized);
+    g_manager = neu_manager_create();
+    if (g_manager == NULL) {
+        log_error("neuron process failed to create neuron manager, exit!");
+        return -1;
+    }
+    neu_manager_wait_ready(g_manager);
+
+    nng_duration recv_timeout = 100;
+    rv                        = nng_pair1_open(&g_sock);
+    if (rv != 0) {
+        neu_panic("neuron process can't open pipe");
+    }
+
+    nng_setopt(g_sock, NNG_OPT_RECVTIMEO, &recv_timeout, sizeof(recv_timeout));
+    rv = neu_manager_init_main_adapter(g_manager, bind_main_adapter,
+                                       unbind_main_adapter);
+
+    const char *manager_url;
+    nng_dialer  dialer = { 0 };
+    manager_url        = neu_manager_get_url(g_manager);
+    rv                 = nng_dial(g_sock, manager_url, &dialer, 0);
+    if (rv != 0) {
+        neu_panic("neuron process can't dial to %s", manager_url);
+    }
+
+    log_info("neuron process wait for exit");
+    neu_manager_destroy(g_manager);
+    log_info("neuron process close dialer");
+    nng_dialer_close(dialer);
+
+    return rv;
+}
+
 int main(int argc, char *argv[])
 {
     int            rv   = 0;
@@ -145,50 +187,27 @@ int main(int argc, char *argv[])
 
     neu_cli_args_init(&args, argc, argv);
 
-    init(args.log_file);
-
-    rv = read_neuron_config(args.conf_file);
-    if (rv < 0) {
-        log_error("Failed to get neuron configuration.");
-        goto main_end;
+    if (args.daemonized) {
+        // become a daemon, this should be before calling `init`
+        daemonize();
     }
 
-    signal(SIGINT, sig_handler);
-    signal(SIGTERM, sig_handler);
-    signal(SIGABRT, sig_handler);
+    init(args.log_file);
 
-    log_info("running neuron main process, daemon: %d", args.daemonized);
-    manager = neu_manager_create();
-    if (manager == NULL) {
-        log_error("Failed to create neuron manager, exit!");
+    if (neuron_already_running()) {
+        log_error("neuron process already running, exit.");
         rv = -1;
         goto main_end;
     }
-    neu_manager_wait_ready(manager);
 
-    nng_duration recv_timeout = 100;
-    rv                        = nng_pair1_open(&main_sock);
-    if (rv != 0) {
-        neu_panic("The main process can't open pipe");
+    rv = read_neuron_config(args.conf_file);
+    if (rv < 0) {
+        log_error("failed to get neuron configuration.");
+        rv = -1;
+        goto main_end;
     }
 
-    nng_setopt(main_sock, NNG_OPT_RECVTIMEO, &recv_timeout,
-               sizeof(recv_timeout));
-    rv = neu_manager_init_main_adapter(manager, bind_main_adapter,
-                                       unbind_main_adapter);
-
-    const char *manager_url;
-    nng_dialer  dialer = { 0 };
-    manager_url        = neu_manager_get_url(manager);
-    rv                 = nng_dial(main_sock, manager_url, &dialer, 0);
-    if (rv != 0) {
-        neu_panic("The main process can't dial to %s", manager_url);
-    }
-
-    log_info("neuron main process wait for exit");
-    neu_manager_destroy(manager);
-    log_info("neuron main process close dialer");
-    nng_dialer_close(dialer);
+    rv = neuron_run(&args);
 
 main_end:
     uninit();
