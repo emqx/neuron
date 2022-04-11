@@ -273,10 +273,10 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
         .timestamp   = current_time()
     };
 
-    log_debug("config:%s, node:%s, self_id:%ld, "
-              "sender:%ld, time:%u",
-              header.config_name, header.node_name, sender, sender,
-              header.timestamp);
+    // log_debug("config:%s, node:%s, self_id:%ld, "
+    //           "sender:%ld, time:%u",
+    //           header.config_name, header.node_name, sender, sender,
+    //           header.timestamp);
 
     neu_json_read_resp_t json = { 0 };
     wrap_read_response_json_object(array, &json, plugin, (uint32_t) sender);

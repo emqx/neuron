@@ -99,7 +99,7 @@ ${MQTT_CONFIG_HOST}                         127.0.0.1
 ${MQTT_CONFIG_PORT}                         ${1883}
 ${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}",
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
-...                                          "username": "", "password": "", "ca":""}
+...                                          "username": "", "password": "", "ca":"", "cert":"", "key":""}
 
 ${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
 

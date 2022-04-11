@@ -13,7 +13,7 @@ TEST(MQTTTest, mqtt_option_init_by_config)
     config.buf = (char *) "{\"node_id\":5,\"params\":{\"client-id\":"
                           "\"upload123\",\"ssl\":false,\"host\":\"192.168.10."
                           "116\",\"port\":1883,\"username\":\"\",\"password\":"
-                          "\"\",\"ca\":\"\"}}";
+                          "\"\",\"ca\":\"\", \"cert\":\"\", \"key\":\"\"}}";
 
     int rc = mqtt_option_init(&config, &option);
     EXPECT_EQ(0, rc);
