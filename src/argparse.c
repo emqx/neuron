@@ -76,9 +76,12 @@ static inline size_t parse_restart_policy(const char *s, size_t *out)
     } else if (0 == strcmp(s, "on-failure")) {
         *out = NEU_RESTART_ONFAILURE;
     } else {
-        errno       = 0;
-        uintmax_t n = strtoumax(s, NULL, 0);
-        if (0 != errno || n > NEU_RESTART_ALWAYS) {
+        errno         = 0;
+        char *    end = NULL;
+        uintmax_t n   = strtoumax(s, &end, 0);
+        // the entire string should be a number within range
+        if (0 != errno || '\0' == *s || '\0' != *end ||
+            n > NEU_RESTART_ALWAYS) {
             return -1;
         }
         *out = n;
