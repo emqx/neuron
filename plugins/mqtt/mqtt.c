@@ -582,7 +582,8 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
         }
     }
 
-    const char *name = neu_plugin_module.module_name;
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+    const char *name          = neu_plugin_module.module_name;
     log_info_node(plugin, "uninitialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
 }
@@ -607,8 +608,9 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *config)
         return NEU_ERR_FAILURE;
     }
 
-    plugin->routine         = routine;
-    plugin->routine_running = true;
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->routine           = routine;
+    plugin->routine_running   = true;
 
     log_info_node(plugin, "config plugin: %s", neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
