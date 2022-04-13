@@ -17,20 +17,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <nng/nng.h>
-#include <nng/protocol/pair0/pair.h>
-
 #include "errcodes.h"
 #include "neuron.h"
+
+#include "plugin_ekuiper.h"
+#include "read_write.h"
 
 #define EKUIPER_PLUGIN_URL "ipc:///tmp/neuron-ekuiper.ipc"
 
 const neu_plugin_module_t neu_plugin_module;
-
-struct neu_plugin {
-    neu_plugin_common_t common;
-    nng_socket          sock;
-};
 
 static neu_plugin_t *ekuiper_plugin_open(neu_adapter_t *            adapter,
                                          const adapter_callbacks_t *callbacks)
@@ -140,7 +135,7 @@ static int ekuiper_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_TRANS_DATA: {
-        // handle data
+        send_data(plugin, req);
         break;
     }
 
