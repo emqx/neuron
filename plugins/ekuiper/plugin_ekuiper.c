@@ -21,6 +21,7 @@
 #include "neuron.h"
 
 #include "plugin_ekuiper.h"
+#include "read_write.h"
 
 #define EKUIPER_PLUGIN_URL "ipc:///tmp/neuron-ekuiper.ipc"
 
@@ -134,7 +135,7 @@ static int ekuiper_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
 
     switch (req->req_type) {
     case NEU_REQRESP_TRANS_DATA: {
-        // handle data
+        send_data(plugin, req);
         break;
     }
 
