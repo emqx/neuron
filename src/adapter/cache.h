@@ -22,6 +22,8 @@
 
 #include <stdint.h>
 
+#include "type.h"
+
 typedef struct neu_driver_cache neu_driver_cache_t;
 
 neu_driver_cache_t *neu_driver_cache_new();
@@ -34,10 +36,9 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
                              uint8_t *bytes);
 void neu_driver_cache_del(neu_driver_cache_t *cache, const char *key);
 
-#define NEU_DRIVER_VALUE_SIZE 256
 typedef struct {
-    uint16_t n_byte;
-    uint8_t  bytes[NEU_DRIVER_VALUE_SIZE];
+    uint16_t    n_byte;
+    neu_value_u value;
 
     int32_t error;
     int64_t timestamp;

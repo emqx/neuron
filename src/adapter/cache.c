@@ -62,6 +62,9 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     HASH_ITER(hh, cache->table, elem, tmp)
     {
         HASH_DEL(cache->table, elem);
+        if (elem->n_byte > 0) {
+            free(elem->bytes);
+        }
         free(elem);
     }
     pthread_mutex_unlock(&cache->mtx);
@@ -79,10 +82,13 @@ void neu_driver_cache_error(neu_driver_cache_t *cache, const char *key,
     pthread_mutex_lock(&cache->mtx);
     HASH_FIND_STR(cache->table, key, elem);
 
-    if (elem != NULL) {
-        elem->timestamp = timestamp;
-        elem->error     = error;
+    if (elem == NULL) {
+        elem = calloc(1, sizeof(struct elem));
+        strncpy(elem->name, key, sizeof(elem->name));
+        HASH_ADD_STR(cache->table, name, elem);
     }
+    elem->timestamp = timestamp;
+    elem->error     = error;
 
     pthread_mutex_unlock(&cache->mtx);
 }
@@ -99,7 +105,7 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
         elem = calloc(1, sizeof(struct elem));
         strncpy(elem->name, key, sizeof(elem->name));
         assert(n_byte != 0);
-        assert(n_byte <= NEU_DRIVER_VALUE_SIZE);
+        assert(n_byte <= NEU_VALUE_SIZE);
         elem->n_byte = n_byte;
         elem->bytes  = calloc(elem->n_byte, 1);
         HASH_ADD_STR(cache->table, name, elem);
@@ -108,7 +114,15 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
     elem->error     = 0;
     elem->timestamp = timestamp;
 
-    assert(n_byte == elem->n_byte);
+    if (elem->n_byte == 0) {
+        assert(n_byte != 0);
+        assert(n_byte <= NEU_VALUE_SIZE);
+        elem->n_byte = n_byte;
+        elem->bytes  = calloc(elem->n_byte, 1);
+    } else {
+        assert(n_byte == elem->n_byte);
+    }
+
     memcpy(elem->bytes, bytes, elem->n_byte);
 
     pthread_mutex_unlock(&cache->mtx);
@@ -127,7 +141,7 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *key,
         value->error     = elem->error;
         value->n_byte    = elem->n_byte;
         value->timestamp = elem->timestamp;
-        memcpy(value->bytes, elem->bytes, elem->n_byte);
+        memcpy(value->value.bytes, elem->bytes, elem->n_byte);
 
         ret = 0;
     }

@@ -979,7 +979,7 @@ static void adapter_loop(void *arg)
             req.buf       = (void *) &sub_node_req;
             if (adapter->type == ADAPTER_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
-                                               pay_msg_type, &req);
+                                               &req);
             } else {
                 intf_funs->request(adapter->plugin, &req);
             }
@@ -1006,7 +1006,7 @@ static void adapter_loop(void *arg)
             req.buf       = (void *) &unsub_node_req;
             if (adapter->type == ADAPTER_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
-                                               pay_msg_type, &req);
+                                               &req);
             } else {
                 intf_funs->request(adapter->plugin, &req);
             }
@@ -1032,7 +1032,7 @@ static void adapter_loop(void *arg)
             req.buf       = (void *) &read_req;
             if (adapter->type == ADAPTER_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
-                                               pay_msg_type, &req);
+                                               &req);
             } else {
                 intf_funs->request(adapter->plugin, &req);
             }
@@ -1102,7 +1102,7 @@ static void adapter_loop(void *arg)
             req.buf       = (void *) &write_req;
             if (adapter->type == ADAPTER_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
-                                               pay_msg_type, &req);
+                                               &req);
             } else {
                 intf_funs->request(adapter->plugin, &req);
             }
@@ -1839,6 +1839,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->plugin_kind = info->plugin_kind;
     adapter->manager     = manager;
     adapter->trans_kind  = NEURON_TRANS_DATAVAL;
+    adapter->node_id     = neu_manager_adapter_id_to_node_id(manager, info->id);
 
     if (adapter->name == NULL || info->plugin_lib_name == NULL) {
         if (adapter->name != NULL) {
@@ -1861,10 +1862,15 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
                   info->plugin_lib_name, adapter->name);
     }
 
+    adapter->cb_funs = callback_funs;
+    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+        adapter = (neu_adapter_t *) neu_adapter_driver_create(adapter);
+    }
+
     neu_plugin_t *plugin;
     adapter->plugin_lib    = handle;
     adapter->plugin_module = plugin_module;
-    plugin = plugin_module->intf_funs->open(adapter, &callback_funs);
+    plugin = plugin_module->intf_funs->open(adapter, &adapter->cb_funs);
     if (plugin == NULL) {
         log_error("Can't to open plugin(%s)", plugin_module->module_name);
         free(adapter->name);
@@ -1889,10 +1895,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
 
     nng_setopt(adapter->sock, NNG_OPT_RECVTIMEO, &recv_timeout,
                sizeof(recv_timeout));
-
-    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
-        adapter = (neu_adapter_t *) neu_adapter_driver_create(adapter);
-    }
 
     log_info("Success to create adapter: %s", adapter->name);
     return adapter;
@@ -1940,6 +1942,10 @@ int neu_adapter_init(neu_adapter_t *adapter)
         return (-1);
     }
 
+    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+        neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
+    }
+
     if (adapter->plugin_module != NULL) {
         const neu_plugin_intf_funs_t *intf_funs;
         intf_funs = adapter->plugin_module->intf_funs;
@@ -1959,6 +1965,10 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     if (adapter == NULL) {
         log_error("Stop adapter with NULL adapter");
         return -1;
+    }
+
+    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+        neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
     }
 
     log_info("Stop the adapter(%s)", adapter->name);
