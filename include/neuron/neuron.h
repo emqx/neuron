@@ -25,7 +25,6 @@ extern "C" {
 #endif
 
 #include "file.h"
-#include "list.h"
 #include "log.h"
 #include "neu_vector.h"
 #include "neuron/adapter.h"
