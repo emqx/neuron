@@ -2,6 +2,7 @@
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
 set(src
+  json_rw.c
   plugin_ekuiper.c)
 
 add_library(plugin-ekuiper SHARED ${src})
