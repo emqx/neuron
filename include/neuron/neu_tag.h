@@ -25,6 +25,9 @@ config_ **/
 
 #include "data_expr.h"
 
+#define NEU_TAG_NAME_SIZE 128
+#define NEU_TAG_ADDRESS_SIZE 128
+
 typedef uint32_t neu_datatag_id_t;
 typedef char *   neu_addr_str_t;
 typedef char *   neu_tag_name;

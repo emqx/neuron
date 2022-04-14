@@ -64,8 +64,7 @@ static void load_tags(neu_adapter_driver_t *driver, neu_taggrp_config_t *group,
                       UT_array **tags);
 static void free_tags(UT_array *tags);
 
-static int update(neu_adapter_t *adapter, const char *address,
-                  neu_dvalue_t value)
+static int update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
 {
     neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
     uint16_t              n_byte = 0;
@@ -101,9 +100,9 @@ static int update(neu_adapter_t *adapter, const char *address,
     }
 
     if (value.type == NEU_TYPE_ERROR) {
-        neu_driver_cache_error(driver->cache, address, 0, value.value.i32);
+        neu_driver_cache_error(driver->cache, name, 0, value.value.i32);
     } else {
-        neu_driver_cache_update(driver->cache, address, 0, n_byte,
+        neu_driver_cache_update(driver->cache, name, 0, n_byte,
                                 value.value.bytes);
     }
     return 0;
@@ -375,7 +374,7 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
             continue;
         }
 
-        if (neu_driver_cache_get(driver->cache, tag->addr_str, &value) != 0) {
+        if (neu_driver_cache_get(driver->cache, tag->name, &value) != 0) {
             error = NEU_ERR_TAG_NOT_EXIST;
             neu_datatag_pack_add(val, index, NEU_DTYPE_ERRORCODE, *id,
                                  (void *) &error);
