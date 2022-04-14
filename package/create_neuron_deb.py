@@ -28,10 +28,14 @@ rules.append(mkdeb.FileMap("../default_plugins.json",
 rules.append(mkdeb.FileMap("../build/libneuron-base.so", "/usr/local/lib/"))
 
 rules.append(mkdeb.FileMap(
+    "../build/plugins/libplugin-ekuiper.so", "/opt/neuron/plugins/"))
+rules.append(mkdeb.FileMap(
     "../build/plugins/libplugin-mqtt.so", "/opt/neuron/plugins/"))
 rules.append(mkdeb.FileMap(
     "../build/plugins/libplugin-modbus-tcp.so", "/opt/neuron/plugins/"))
 
+rules.append(mkdeb.FileMap(
+    "../plugins/ekuiper/ekuiper.json", "/opt/neuron/plugins/schema/"))
 rules.append(mkdeb.FileMap(
     "../plugins/mqtt/mqtt.json", "/opt/neuron/plugins/schema/"))
 rules.append(mkdeb.FileMap(
