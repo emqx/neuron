@@ -52,11 +52,13 @@ cp build/config/neuron.yaml \
     public.pem \
     ${package_name}/config/
 
-cp build/plugins/schema/mqtt.json \
+cp build/plugins/schema/ekuiper.json \
+    build/plugins/schema/mqtt.json \
     build/plugins/schema/modbus-tcp.json \
     ${package_name}/plugins/schema/
 
-cp build/plugins/libplugin-modbus-tcp.so \
+cp build/plugins/libplugin-ekuiper.so \
+    build/plugins/libplugin-modbus-tcp.so \
     build/plugins/libplugin-mqtt.so \
     ${package_name}/plugins/
 
