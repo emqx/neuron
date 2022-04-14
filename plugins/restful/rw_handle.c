@@ -156,8 +156,8 @@ void handle_read(nng_aio *aio)
                 return;
             }
 
-            neu_taggrp_config_t *config = neu_system_find_group_config(
-                plugin, node_id, req->group_config_name);
+            neu_taggrp_config_t *config =
+                neu_system_find_group_config(plugin, node_id, req->group_name);
             if (config == NULL) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_NOT_EXIST, {
                     http_response(aio, NEU_ERR_GRP_CONFIG_NOT_EXIST,
@@ -186,8 +186,8 @@ void handle_write(nng_aio *aio)
                 })
                 return;
             }
-            neu_taggrp_config_t *config = neu_system_find_group_config(
-                plugin, node_id, req->group_config_name);
+            neu_taggrp_config_t *config =
+                neu_system_find_group_config(plugin, node_id, req->group_name);
             if (config == NULL) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_NOT_EXIST, {
                     http_response(aio, NEU_ERR_GRP_CONFIG_NOT_EXIST,

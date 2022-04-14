@@ -86,7 +86,7 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
             .t    = NEU_JSON_STR,
         },
         {
-            .name = "group_config_name",
+            .name = "group_name",
             .t    = NEU_JSON_STR,
         },
         {
@@ -104,11 +104,11 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
         goto decode_fail;
     }
 
-    req->node_name         = req_elems[0].v.val_str;
-    req->group_config_name = req_elems[1].v.val_str;
-    req->tag_name          = req_elems[2].v.val_str;
-    req->t                 = req_elems[3].t;
-    req->value             = req_elems[3].v;
+    req->node_name  = req_elems[0].v.val_str;
+    req->group_name = req_elems[1].v.val_str;
+    req->tag_name   = req_elems[2].v.val_str;
+    req->t          = req_elems[3].t;
+    req->value      = req_elems[3].v;
 
     *result = req;
     goto decode_exit;
@@ -128,7 +128,7 @@ decode_exit:
 
 void neu_json_decode_write_req_free(neu_json_write_req_t *req)
 {
-    free(req->group_config_name);
+    free(req->group_name);
     free(req->node_name);
     free(req->tag_name);
     if (req->t == NEU_JSON_STR) {
@@ -154,7 +154,7 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "group_config_name",
+                                        .name = "group_name",
                                         .t    = NEU_JSON_STR,
                                     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -163,8 +163,8 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
         goto decode_fail;
     }
 
-    req->node_name         = req_elems[0].v.val_str;
-    req->group_config_name = req_elems[1].v.val_str;
+    req->node_name  = req_elems[0].v.val_str;
+    req->group_name = req_elems[1].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -184,8 +184,7 @@ decode_exit:
 
 void neu_json_decode_read_req_free(neu_json_read_req_t *req)
 {
-
-    free(req->group_config_name);
+    free(req->group_name);
     free(req->node_name);
 
     free(req);
@@ -202,9 +201,9 @@ int neu_json_encode_read_periodic_resp(void *json_object, void *param)
                                          .v.val_str = resp->node_name,
                                      },
                                      {
-                                         .name      = "group_config_name",
+                                         .name      = "group_name",
                                          .t         = NEU_JSON_STR,
-                                         .v.val_str = resp->config_name,
+                                         .v.val_str = resp->group_name,
                                      },
                                      {
                                          .name      = "timestamp",
