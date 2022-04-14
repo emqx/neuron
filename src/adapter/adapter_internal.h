@@ -24,6 +24,7 @@
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "event/event.h"
 #include "plugin.h"
 #include "plugin_info.h"
 
@@ -53,6 +54,8 @@ struct neu_adapter {
     neu_manager_t *      manager;
     nng_pipe             pipe;
     nng_socket           sock;
+    nng_dialer           dialer;
+    int                  recv_fd;
     nng_thread *         thrd;
     uint32_t             new_req_id;
     plugin_id_t          plugin_id;
@@ -64,6 +67,9 @@ struct neu_adapter {
     adapter_callbacks_t  cb_funs;
     neu_config_t         node_setting;
     vector_t             sub_grp_configs; // neu_sub_grp_config_t
+
+    neu_events_t *  events;
+    neu_event_io_t *nng_io;
 };
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
