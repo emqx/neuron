@@ -32,6 +32,7 @@ extern "C" {
 struct neu_plugin {
     neu_plugin_common_t common;
     nng_socket          sock;
+    nng_aio *           recv_aio;
 };
 
 #ifdef __cplusplus
