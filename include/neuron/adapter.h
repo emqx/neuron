@@ -87,7 +87,7 @@ typedef struct adapter_callbacks {
 
     union {
         struct {
-            int (*update)(neu_adapter_t *adapter, const char *address,
+            int (*update)(neu_adapter_t *adapter, const char *name,
                           neu_dvalue_t value);
         } driver;
     };
