@@ -46,7 +46,7 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
     }
 
     nng_msg *msg      = NULL;
-    size_t   json_len = strlen(json_str) + 1; // for terminating null byte
+    size_t   json_len = strlen(json_str);
     rv                = nng_msg_alloc(&msg, json_len);
     if (0 != rv) {
         log_error("nng cannot allocate msg");
@@ -54,7 +54,7 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
         return;
     }
 
-    memcpy(nng_msg_body(msg), json_str, json_len);
+    memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
     rv = nng_sendmsg(plugin->sock, msg, 0); // TODO: use aio to send message
     if (0 != rv) {
         log_error("nng cannot send msg");
