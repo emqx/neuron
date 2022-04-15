@@ -43,7 +43,7 @@ int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     }
     log_info("READ uuid:%s, node id:%u", mqtt->uuid, node_id);
     neu_taggrp_config_t *config =
-        neu_system_find_group_config(plugin, node_id, req->group_config_name);
+        neu_system_find_group_config(plugin, node_id, req->group_name);
     if (NULL == config) {
         log_debug("The requested config does not exist");
         return -2;
@@ -254,7 +254,8 @@ char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
 char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
                                         const char *         node_name,
                                         neu_taggrp_config_t *config,
-                                        neu_data_val_t *     resp_val)
+                                        neu_data_val_t *     resp_val,
+                                        int                  upload_format)
 {
     UNUSED(plugin);
 
@@ -268,20 +269,27 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
 
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = {
-        .config_name = (char *) neu_taggrp_cfg_get_name(config),
-        .node_name   = (char *) node_name,
-        .timestamp   = current_time()
+        .group_name = (char *) neu_taggrp_cfg_get_name(config),
+        .node_name  = (char *) node_name,
+        .timestamp  = current_time()
     };
-
-    // log_debug("config:%s, node:%s, self_id:%ld, "
-    //           "sender:%ld, time:%u",
-    //           header.config_name, header.node_name, sender, sender,
-    //           header.timestamp);
 
     neu_json_read_resp_t json = { 0 };
     wrap_read_response_json_object(array, &json, plugin, (uint32_t) sender);
-    neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
-                              neu_json_encode_read_periodic_resp, &json_str);
+
+    if (0 == upload_format) {
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+    } else if (1 == upload_format) {
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+    } else {
+        clean_read_response_json_object(&json);
+        return NULL;
+    }
+
     clean_read_response_json_object(&json);
     return json_str;
 }
@@ -305,7 +313,7 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                              neu_json_write_req_t *write_req, uint32_t req_id)
 {
     log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
-             write_req->group_config_name);
+             write_req->group_name);
     neu_node_id_t node_id =
         neu_plugin_get_node_id_by_node_name(plugin, write_req->node_name);
     if (node_id == 0) {
@@ -403,8 +411,7 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_fixed_array_set(array, 0, (void *) &int_val);
 
     neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
-    write_command(plugin, node_id, write_req->group_config_name, write_val,
-                  req_id);
+    write_command(plugin, node_id, write_req->group_name, write_val, req_id);
     return 0;
 }
 

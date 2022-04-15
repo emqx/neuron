@@ -572,10 +572,11 @@ char *command_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
 char *command_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
                                      const char *         node_name,
                                      neu_taggrp_config_t *config,
-                                     neu_data_val_t *     resp_val)
+                                     neu_data_val_t *     resp_val,
+                                     int                  upload_format)
 {
     return command_rw_read_periodic_response(plugin, sender, node_name, config,
-                                             resp_val);
+                                             resp_val, upload_format);
 }
 
 char *command_write_response(neu_json_mqtt_t *parse_header,

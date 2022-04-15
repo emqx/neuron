@@ -11,7 +11,7 @@ TEST(JsonAPITest, ReadReqDecode)
     char *buf = (char *) "{\"command\":\"\", "
                          "\"uuid\":\"554f5fd8-f437-11eb-975c-7704b9e17821\", "
                          "\"node_name\": \"name1\" ,"
-                         "\"group_config_name\": \"group1\"}";
+                         "\"group_name\": \"group1\"}";
     neu_json_read_req_t *req  = NULL;
     neu_json_mqtt_t *    mqtt = NULL;
 
@@ -20,7 +20,7 @@ TEST(JsonAPITest, ReadReqDecode)
 
     EXPECT_STREQ("554f5fd8-f437-11eb-975c-7704b9e17821", mqtt->uuid);
     EXPECT_STREQ("name1", req->node_name);
-    EXPECT_STREQ("group1", req->group_config_name);
+    EXPECT_STREQ("group1", req->group_name);
 
     neu_json_decode_mqtt_req_free(mqtt);
     neu_json_decode_read_req_free(req);
@@ -57,7 +57,7 @@ TEST(JsonAPITest, ReadResEncode)
 
 TEST(JsonAPITest, WriteReqDecode)
 {
-    char *buf = (char *) "{\"node_name\": \"name1\", \"group_config_name\": "
+    char *buf = (char *) "{\"node_name\": \"name1\", \"group_name\": "
                          "\"config_opcua_sample\", \"tag_name\": \"name1\", "
                          "\"value\": \"hello world\"}";
     neu_json_write_req_t *req = NULL;
@@ -66,7 +66,7 @@ TEST(JsonAPITest, WriteReqDecode)
 
     EXPECT_STREQ("name1", req->node_name);
 
-    EXPECT_STREQ("config_opcua_sample", req->group_config_name);
+    EXPECT_STREQ("config_opcua_sample", req->group_name);
 
     EXPECT_STREQ("name1", req->tag_name);
     EXPECT_STREQ("hello world", req->value.val_str);

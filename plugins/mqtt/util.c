@@ -133,6 +133,7 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     int             ret      = 0;
     char *          error    = NULL;
     neu_json_elem_t id       = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t format   = { .name = "format", .t = NEU_JSON_INT };
     neu_json_elem_t ssl      = { .name = "ssl", .t = NEU_JSON_BOOL };
     neu_json_elem_t host     = { .name = "host", .t = NEU_JSON_STR };
     neu_json_elem_t port     = { .name = "port", .t = NEU_JSON_INT };
@@ -146,8 +147,8 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
                             .t         = NEU_JSON_STR,
                             .v.val_str = NULL };
 
-    ret = neu_parse_param(config->buf, &error, 9, &id, &ssl, &host, &port,
-                          &username, &password, &ca, &cert, &key);
+    ret = neu_parse_param(config->buf, &error, 10, &id, &format, &ssl, &host,
+                          &port, &username, &password, &ca, &cert, &key);
     if (0 != ret) {
         return ret;
     }
@@ -255,6 +256,7 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     option->port = calloc(10, sizeof(char));
     snprintf(option->port, 10, "%d", p);
     option->clientid           = id.v.val_str;
+    option->format             = format.v.val_int;
     option->username           = username.v.val_str;
     option->password           = password.v.val_str;
     option->ca_path            = strdup(ca_path);
