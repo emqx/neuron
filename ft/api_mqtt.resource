@@ -133,12 +133,6 @@ Get Nodes
 
   [RETURN]                          ${res}
 
-Update Node
-  [Arguments]                       ${node_id}                        ${node_name}
-  ${res} =                          Pub And Recv                      ${MQTT_CMD_UPDATE}                      {"id": ${node_id}, "name": "${node_name}"}                      ${TOPIC_NODE_REQ}                   ${TOPIC_NODE_RES}
-
-  [RETURN]                          ${res}
-
 Del Node
   [Arguments]                       ${node_id}
   ${res} =                          Pub And Recv                      ${MQTT_CMD_DELETE}                      {"id": ${node_id}}                      ${TOPIC_NODE_REQ}                   ${TOPIC_NODE_RES}

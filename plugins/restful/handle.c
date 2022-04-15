@@ -187,12 +187,6 @@ struct neu_rest_handler api_handlers[] = {
         .value.handler = handle_add_adapter,
     },
     {
-        .method        = NEU_REST_METHOD_PUT,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/node",
-        .value.handler = handle_update_adapter,
-    },
-    {
         .method        = NEU_REST_METHOD_DELETE,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/node",

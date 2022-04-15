@@ -68,7 +68,7 @@
             cmd_ptr->grp_config  = reqresp_cmd->grp_config;                  \
             cmd_ptr->req_id      = cmd->req_id;                              \
             { func };                                                        \
-            nng_sendmsg((adapter)->sock, msg, 0);                            \
+            nng_sendmsg((adapter)->nng.sock, msg, 0);                        \
         }                                                                    \
     }
 
@@ -84,7 +84,7 @@
             msg_inplace_data_init(msg_ptr, (msg_type), (len)); \
             char *dst = msg_get_buf_ptr(msg_ptr);              \
             memcpy(dst, (src), len);                           \
-            nng_sendmsg((adapter)->sock, msg, 0);              \
+            nng_sendmsg((adapter)->nng.sock, msg, 0);          \
         }                                                      \
     }
 
@@ -740,15 +740,7 @@ neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
 {
-    uint32_t req_id;
-
-    adapter->new_req_id++;
-    if (adapter->new_req_id == 0) {
-        adapter->new_req_id = 1;
-    }
-
-    req_id = adapter->new_req_id;
-    return req_id;
+    return adapter->req_id += 2;
 }
 
 static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
@@ -830,36 +822,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                     }
                 }
                 free(name);
-            });
-        break;
-    }
-
-    case NEU_REQRESP_UPDATE_NODE: {
-        ADAPTER_RESP_CODE(
-            adapter, cmd, intptr_t, neu_cmd_update_node_t, rv,
-            NEU_REQRESP_ERR_CODE, p_result, {
-                neu_event_update_node_t event    = {};
-                char *                  src_name = NULL;
-                char *                  dst_name = NULL;
-
-                ret = neu_manager_get_node_name_by_id(
-                    adapter->manager, req_cmd->node_id, &src_name);
-                if (0 == ret) {
-                    dst_name = strdup(req_cmd->node_name);
-                    ret      = NULL == dst_name ? NEU_ERR_ENOMEM : 0;
-                }
-                if (0 == ret) {
-                    ret = neu_manager_update_node(adapter->manager, req_cmd);
-                }
-                if (0 == ret) {
-                    event.src_name = src_name;
-                    event.dst_name = dst_name;
-                    ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UPDATE_NODE, &event,
-                                     sizeof(event));
-                } else {
-                    free(src_name);
-                    free(dst_name);
-                }
             });
         break;
     }
@@ -1245,7 +1207,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
                 nng_msg_free(trans_data_msg);
                 break;
             }
-            nng_sendmsg(adapter->sock, trans_data_msg, 0);
+            nng_sendmsg(adapter->nng.sock, trans_data_msg, 0);
         }
         break;
     }
@@ -1280,7 +1242,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
                 nng_msg_free(read_resp_msg);
                 break;
             }
-            nng_sendmsg(adapter->sock, read_resp_msg, 0);
+            nng_sendmsg(adapter->nng.sock, read_resp_msg, 0);
         }
         break;
     }
@@ -1315,7 +1277,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
                 nng_msg_free(write_resp_msg);
                 break;
             }
-            nng_sendmsg(adapter->sock, write_resp_msg, 0);
+            nng_sendmsg(adapter->nng.sock, write_resp_msg, 0);
         }
         break;
     }
@@ -1396,35 +1358,32 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
         break;
     }
 
-    adapter->plugin_lib =
+    adapter->plugin_info.handle =
         load_plugin_library((char *) info->plugin_lib_name, info->plugin_kind,
-                            &adapter->plugin_module);
-    assert(adapter->plugin_lib != NULL);
+                            &adapter->plugin_info.module);
+    assert(adapter->plugin_info.handle != NULL);
 
-    adapter->id          = info->id;
-    adapter->type        = info->type;
-    adapter->name        = strdup(info->name);
-    adapter->state       = ADAPTER_STATE_IDLE;
-    adapter->new_req_id  = 1;
-    adapter->plugin_id   = info->plugin_id;
-    adapter->plugin_kind = info->plugin_kind;
-    adapter->manager     = manager;
-    adapter->trans_kind  = NEURON_TRANS_DATAVAL;
-    adapter->node_id     = neu_manager_adapter_id_to_node_id(manager, info->id);
-    adapter->stop        = false;
-    adapter->cb_funs     = callback_funs;
+    adapter->id               = info->id;
+    adapter->name             = strdup(info->name);
+    adapter->state            = ADAPTER_STATE_IDLE;
+    adapter->req_id           = 1;
+    adapter->plugin_info.id   = info->plugin_id;
+    adapter->plugin_info.kind = info->plugin_kind;
+    adapter->manager          = manager;
+    adapter->trans_kind       = NEURON_TRANS_DATAVAL;
+    adapter->cb_funs          = callback_funs;
 
-    rv = nng_mtx_alloc(&adapter->mtx);
+    rv = nng_mtx_alloc(&adapter->nng.mtx);
     assert(rv == 0);
-    rv = nng_mtx_alloc(&adapter->sub_grp_mtx);
+    rv = nng_mtx_alloc(&adapter->nng.sub_grp_mtx);
     assert(rv == 0);
 
     vector_init(&adapter->sub_grp_configs, 0, sizeof(neu_sub_grp_config_t));
 
-    adapter->plugin =
-        adapter->plugin_module->intf_funs->open(adapter, &adapter->cb_funs);
-    assert(adapter->plugin != NULL);
-    assert(neu_plugin_common_check(adapter->plugin));
+    adapter->plugin_info.plugin = adapter->plugin_info.module->intf_funs->open(
+        adapter, &adapter->cb_funs);
+    assert(adapter->plugin_info.plugin != NULL);
+    assert(neu_plugin_common_check(adapter->plugin_info.plugin));
 
     adapter->events = neu_event_new();
 
@@ -1437,28 +1396,27 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
 {
     assert(adapter != NULL);
 
-    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+    if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
-    if (adapter->plugin_module != NULL) {
-        adapter->plugin_module->intf_funs->close(adapter->plugin);
-    }
-    if (adapter->plugin_lib != NULL) {
-        unload_plugin_library(adapter->plugin_lib, adapter->plugin_kind);
+    adapter->plugin_info.module->intf_funs->close(adapter->plugin_info.plugin);
+    if (adapter->plugin_info.handle != NULL) {
+        unload_plugin_library(adapter->plugin_info.handle,
+                              adapter->plugin_info.kind);
     }
     if (adapter->name != NULL) {
         free(adapter->name);
     }
-    if (NULL != adapter->node_setting.buf) {
-        free(adapter->node_setting.buf);
+    if (NULL != adapter->setting.buf) {
+        free(adapter->setting.buf);
     }
-    nng_mtx_lock(adapter->sub_grp_mtx);
+    nng_mtx_lock(adapter->nng.sub_grp_mtx);
     vector_uninit(&adapter->sub_grp_configs);
-    nng_mtx_unlock(adapter->sub_grp_mtx);
+    nng_mtx_unlock(adapter->nng.sub_grp_mtx);
 
-    nng_mtx_free(adapter->mtx);
-    nng_mtx_free(adapter->sub_grp_mtx);
+    nng_mtx_free(adapter->nng.mtx);
+    nng_mtx_free(adapter->nng.sub_grp_mtx);
     neu_event_close(adapter->events);
     free(adapter);
 }
@@ -1473,12 +1431,11 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     switch (type) {
     case NEU_EVENT_IO_READ:
-        rv = nng_recvmsg(adapter->sock, &msg, 0);
+        rv = nng_recvmsg(adapter->nng.sock, &msg, 0);
         if (rv == NNG_ECLOSED) {
-            nng_mtx_lock(adapter->mtx);
+            nng_mtx_lock(adapter->nng.mtx);
             adapter->state = ADAPTER_STATE_IDLE;
-            adapter->stop  = true;
-            nng_mtx_unlock(adapter->mtx);
+            nng_mtx_unlock(adapter->nng.mtx);
 
             log_warn("nng socket closed.");
             return 0;
@@ -1491,7 +1448,8 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case MSG_CMD_RESP_PONG: {
             char *buf_ptr = msg_get_buf_ptr(pay_msg);
 
-            adapter->plugin_module->intf_funs->init(adapter->plugin);
+            adapter->plugin_info.module->intf_funs->init(
+                adapter->plugin_info.plugin);
             adapter->state = ADAPTER_STATE_INIT;
             log_info("Adapter(%s) received pong: %s\n", adapter->name, buf_ptr);
             break;
@@ -1499,11 +1457,9 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case MSG_CMD_EXIT_LOOP: {
             uint32_t exit_code = *(uint32_t *) msg_get_buf_ptr(pay_msg);
 
-            adapter->plugin_module->intf_funs->uninit(adapter->plugin);
-            nng_mtx_lock(adapter->mtx);
+            nng_mtx_lock(adapter->nng.mtx);
             adapter->state = ADAPTER_STATE_IDLE;
-            adapter->stop  = true;
-            nng_mtx_unlock(adapter->mtx);
+            nng_mtx_unlock(adapter->nng.mtx);
 
             log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
                      exit_code);
@@ -1528,14 +1484,14 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 break;
             }
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = adapter_get_req_id(adapter);
             req.req_type  = NEU_REQRESP_TRANS_DATA;
             req.buf_len   = sizeof(neu_reqresp_data_t);
             req.buf       = (void *) &data_req;
             req.sender_id = trans_data->sender_id;
             req.node_name = trans_data->node_name;
-            intf_funs->request(adapter->plugin, &req);
+            intf_funs->request(adapter->plugin_info.plugin, &req);
             if (is_need_free) {
                 neu_dvalue_free(data_req.data_val);
             }
@@ -1648,13 +1604,13 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             const neu_plugin_intf_funs_t *intf_funs = NULL;
             neu_request_t                 req       = {};
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = adapter_get_req_id(adapter);
             req.req_type  = NEU_REQRESP_UPDATE_LICENSE;
             req.sender_id = 0;
             req.buf_len   = 0;
             req.buf       = NULL;
-            intf_funs->request(adapter->plugin, &req);
+            intf_funs->request(adapter->plugin_info.plugin, &req);
             break;
         }
 
@@ -1670,17 +1626,17 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             sub_node_req.dst_node_id = cmd_ptr->dst_node_id;
             sub_node_req.src_node_id = cmd_ptr->src_node_id;
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = adapter_get_req_id(adapter);
             req.req_type  = NEU_REQRESP_SUBSCRIBE_NODE;
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_subscribe_node_t);
             req.buf       = (void *) &sub_node_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
-                intf_funs->request(adapter->plugin, &req);
+                intf_funs->request(adapter->plugin_info.plugin, &req);
             }
             break;
         }
@@ -1697,17 +1653,17 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             unsub_node_req.dst_node_id = cmd_ptr->dst_node_id;
             unsub_node_req.src_node_id = cmd_ptr->src_node_id;
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = adapter_get_req_id(adapter);
             req.req_type  = NEU_REQRESP_UNSUBSCRIBE_NODE;
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_unsubscribe_node_t);
             req.buf       = (void *) &unsub_node_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
-                intf_funs->request(adapter->plugin, &req);
+                intf_funs->request(adapter->plugin_info.plugin, &req);
             }
             break;
         }
@@ -1723,17 +1679,17 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             read_req.grp_config  = cmd_ptr->grp_config;
             read_req.dst_node_id = cmd_ptr->dst_node_id;
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
             req.req_type  = NEU_REQRESP_READ_DATA;
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_read_t);
             req.buf       = (void *) &read_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
-                intf_funs->request(adapter->plugin, &req);
+                intf_funs->request(adapter->plugin_info.plugin, &req);
             }
             break;
         }
@@ -1758,13 +1714,13 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 break;
             }
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
             req.req_type  = NEU_REQRESP_READ_RESP;
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_read_resp_t);
             req.buf       = (void *) &read_resp;
-            intf_funs->request(adapter->plugin, &req);
+            intf_funs->request(adapter->plugin_info.plugin, &req);
             if (is_need_free) {
                 neu_dvalue_free(read_resp.data_val);
             }
@@ -1793,17 +1749,17 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 break;
             }
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
             req.req_type  = NEU_REQRESP_WRITE_DATA;
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_write_t);
             req.buf       = (void *) &write_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
-                intf_funs->request(adapter->plugin, &req);
+                intf_funs->request(adapter->plugin_info.plugin, &req);
             }
             if (is_need_free) {
                 neu_dvalue_free(write_req.data_val);
@@ -1832,13 +1788,13 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 break;
             }
 
-            intf_funs     = adapter->plugin_module->intf_funs;
+            intf_funs     = adapter->plugin_info.module->intf_funs;
             req.req_id    = cmd_ptr->req_id;
             req.req_type  = NEU_REQRESP_WRITE_RESP;
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_write_resp_t);
             req.buf       = (void *) &write_resp;
-            intf_funs->request(adapter->plugin, &req);
+            intf_funs->request(adapter->plugin_info.plugin, &req);
             if (is_need_free) {
                 neu_dvalue_free(write_resp.data_val);
             }
@@ -1865,7 +1821,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
 int neu_adapter_init(neu_adapter_t *adapter)
 {
-    int rv = nng_pair1_open(&adapter->sock);
+    int rv = nng_pair1_open(&adapter->nng.sock);
 
     neu_event_io_param_t param = {
         .usr_data = (void *) adapter,
@@ -1874,17 +1830,17 @@ int neu_adapter_init(neu_adapter_t *adapter)
 
     assert(rv == 0);
 
-    nng_socket_get_int(adapter->sock, NNG_OPT_RECVFD, &adapter->recv_fd);
+    nng_socket_get_int(adapter->nng.sock, NNG_OPT_RECVFD, &adapter->recv_fd);
     param.fd = adapter->recv_fd;
 
     adapter->nng_io = neu_event_add_io(adapter->events, param);
 
-    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+    if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
     }
 
-    rv = nng_dial(adapter->sock, neu_manager_get_url(adapter->manager),
-                  &adapter->dialer, 0);
+    rv = nng_dial(adapter->nng.sock, neu_manager_get_url(adapter->manager),
+                  &adapter->nng.dialer, 0);
     assert(rv == 0);
 
     nng_msg *out_msg;
@@ -1899,7 +1855,7 @@ int neu_adapter_init(neu_adapter_t *adapter)
         buf_ptr = msg_get_buf_ptr(msg_ptr);
         memcpy(buf_ptr, adapter->name, strlen(adapter->name));
         buf_ptr[strlen(adapter->name)] = 0;
-        nng_sendmsg(adapter->sock, out_msg, 0);
+        nng_sendmsg(adapter->nng.sock, out_msg, 0);
     }
     return rv;
 }
@@ -1908,18 +1864,15 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     int rv = 0;
 
-    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+    adapter->plugin_info.module->intf_funs->uninit(adapter->plugin_info.plugin);
+    if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_uninit((neu_adapter_driver_t *) adapter);
     }
 
-    nng_mtx_lock(adapter->mtx);
-    adapter->stop = true;
-    nng_mtx_unlock(adapter->mtx);
-
     neu_event_del_io(adapter->events, adapter->nng_io);
 
-    nng_dialer_close(adapter->dialer);
-    nng_close(adapter->sock);
+    nng_dialer_close(adapter->nng.dialer);
+    nng_close(adapter->nng.sock);
 
     log_info("Stop the adapter(%s)", adapter->name);
     return rv;
@@ -1928,10 +1881,11 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
 int neu_adapter_start(neu_adapter_t *adapter)
 {
     // TODO  start by send msg
-    const neu_plugin_intf_funs_t *intf_funs = adapter->plugin_module->intf_funs;
-    neu_err_code_e                error     = NEU_ERR_SUCCESS;
+    const neu_plugin_intf_funs_t *intf_funs =
+        adapter->plugin_info.module->intf_funs;
+    neu_err_code_e error = NEU_ERR_SUCCESS;
 
-    nng_mtx_lock(adapter->mtx);
+    nng_mtx_lock(adapter->nng.mtx);
     switch (adapter->state) {
     case ADAPTER_STATE_IDLE:
     case ADAPTER_STATE_INIT:
@@ -1944,17 +1898,17 @@ int neu_adapter_start(neu_adapter_t *adapter)
     case ADAPTER_STATE_STOPPED:
         break;
     }
-    nng_mtx_unlock(adapter->mtx);
+    nng_mtx_unlock(adapter->nng.mtx);
 
     if (error != NEU_ERR_SUCCESS) {
         return error;
     }
 
-    error = intf_funs->start(adapter->plugin);
+    error = intf_funs->start(adapter->plugin_info.plugin);
     if (error == NEU_ERR_SUCCESS) {
-        nng_mtx_lock(adapter->mtx);
+        nng_mtx_lock(adapter->nng.mtx);
         adapter->state = ADAPTER_STATE_RUNNING;
-        nng_mtx_unlock(adapter->mtx);
+        nng_mtx_unlock(adapter->nng.mtx);
     }
 
     return error;
@@ -1964,10 +1918,11 @@ int neu_adapter_stop(neu_adapter_t *adapter)
 {
     // TODO  stop by send msg
 
-    const neu_plugin_intf_funs_t *intf_funs = adapter->plugin_module->intf_funs;
-    neu_err_code_e                error     = NEU_ERR_SUCCESS;
+    const neu_plugin_intf_funs_t *intf_funs =
+        adapter->plugin_info.module->intf_funs;
+    neu_err_code_e error = NEU_ERR_SUCCESS;
 
-    nng_mtx_lock(adapter->mtx);
+    nng_mtx_lock(adapter->nng.mtx);
     switch (adapter->state) {
     case ADAPTER_STATE_IDLE:
     case ADAPTER_STATE_INIT:
@@ -1980,17 +1935,17 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     case ADAPTER_STATE_RUNNING:
         break;
     }
-    nng_mtx_unlock(adapter->mtx);
+    nng_mtx_unlock(adapter->nng.mtx);
 
     if (error != NEU_ERR_SUCCESS) {
         return error;
     }
 
-    error = intf_funs->stop(adapter->plugin);
+    error = intf_funs->stop(adapter->plugin_info.plugin);
     if (error == NEU_ERR_SUCCESS) {
-        nng_mtx_lock(adapter->mtx);
+        nng_mtx_lock(adapter->nng.mtx);
         adapter->state = ADAPTER_STATE_STOPPED;
-        nng_mtx_unlock(adapter->mtx);
+        nng_mtx_unlock(adapter->nng.mtx);
     }
 
     return error;
@@ -2005,12 +1960,6 @@ const char *neu_adapter_get_name(neu_adapter_t *adapter)
     return (const char *) adapter->name;
 }
 
-void neu_adapter_rename(neu_adapter_t *adapter, const char *name)
-{
-    free(adapter->name);
-    adapter->name = strdup(name);
-}
-
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
 {
     if (adapter == NULL) {
@@ -2020,7 +1969,7 @@ neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
     return (neu_manager_t *) adapter->manager;
 }
 
-adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
+neu_adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
 {
     if (adapter == NULL) {
         return 0;
@@ -2030,14 +1979,14 @@ adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
 }
 
 // NOTE: Do NOT expose this function in header files, use for persistence only!
-adapter_id_t neu_adapter_set_id(neu_adapter_t *adapter, adapter_id_t id)
+neu_adapter_id_t neu_adapter_set_id(neu_adapter_t *adapter, neu_adapter_id_t id)
 {
     if (adapter == NULL) {
         return 0;
     }
 
-    adapter_id_t old = adapter->id;
-    adapter->id      = id;
+    neu_adapter_id_t old = adapter->id;
+    adapter->id          = id;
     return old;
 }
 
@@ -2047,7 +1996,7 @@ adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter)
         return 0;
     }
 
-    return adapter->type;
+    return (adapter_type_e) adapter->plugin_info.module->type;
 }
 
 plugin_id_t neu_adapter_get_plugin_id(neu_adapter_t *adapter)
@@ -2057,37 +2006,30 @@ plugin_id_t neu_adapter_get_plugin_id(neu_adapter_t *adapter)
         return id;
     }
 
-    return adapter->plugin_id;
+    return adapter->plugin_info.id;
 }
 
 int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
 {
     int rv = -1;
 
-    if (adapter == NULL) {
-        log_error("Config adapter with NULL adapter");
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
+    const neu_plugin_intf_funs_t *intf_funs;
 
-    if (adapter->plugin_module != NULL) {
-        const neu_plugin_intf_funs_t *intf_funs;
+    intf_funs = adapter->plugin_info.module->intf_funs;
+    rv        = intf_funs->config(adapter->plugin_info.plugin, config);
+    if (rv == 0) {
+        adapter->setting.buf_len = config->buf_len;
+        adapter->setting.type    = config->type;
 
-        intf_funs = adapter->plugin_module->intf_funs;
-        rv        = intf_funs->config(adapter->plugin, config);
-        if (rv == 0) {
-            adapter->node_setting.buf_len = config->buf_len;
-            adapter->node_setting.type    = config->type;
-
-            if (adapter->node_setting.buf != NULL)
-                free(adapter->node_setting.buf);
-            adapter->node_setting.buf = strdup(config->buf);
-            if (adapter->state == ADAPTER_STATE_INIT) {
-                adapter->state = ADAPTER_STATE_READY;
-            }
-
-        } else {
-            rv = NEU_ERR_NODE_SETTING_INVALID;
+        if (adapter->setting.buf != NULL)
+            free(adapter->setting.buf);
+        adapter->setting.buf = strdup(config->buf);
+        if (adapter->state == ADAPTER_STATE_INIT) {
+            adapter->state = ADAPTER_STATE_READY;
         }
+
+    } else {
+        rv = NEU_ERR_NODE_SETTING_INVALID;
     }
 
     return rv;
@@ -2100,8 +2042,8 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
         return NEU_ERR_NODE_NOT_EXIST;
     }
 
-    if (adapter->node_setting.buf != NULL) {
-        *config = strdup(adapter->node_setting.buf);
+    if (adapter->setting.buf != NULL) {
+        *config = strdup(adapter->setting.buf);
         return NEU_ERR_SUCCESS;
     }
 
@@ -2110,8 +2052,9 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
 
 neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter)
 {
-    neu_plugin_state_t   state  = { 0 };
-    neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
+    neu_plugin_state_t   state = { 0 };
+    neu_plugin_common_t *common =
+        neu_plugin_to_plugin_common(adapter->plugin_info.plugin);
 
     state.link    = common->link_state;
     state.running = neu_adapter_state_to_plugin_state(adapter);
@@ -2126,7 +2069,7 @@ void neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,
     bool  find = false;
     char *name = (char *) neu_taggrp_cfg_get_name(grp_config);
 
-    nng_mtx_lock(adapter->sub_grp_mtx);
+    nng_mtx_lock(adapter->nng.sub_grp_mtx);
 
     VECTOR_FOR_EACH(&adapter->sub_grp_configs, iter)
     {
@@ -2147,7 +2090,7 @@ void neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,
         vector_push_back(&adapter->sub_grp_configs, &sgc);
     }
 
-    nng_mtx_unlock(adapter->sub_grp_mtx);
+    nng_mtx_unlock(adapter->nng.sub_grp_mtx);
 }
 
 void neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
@@ -2156,7 +2099,7 @@ void neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
 {
     char *name = (char *) neu_taggrp_cfg_get_name(grp_config);
 
-    nng_mtx_lock(adapter->sub_grp_mtx);
+    nng_mtx_lock(adapter->nng.sub_grp_mtx);
 
     VECTOR_FOR_EACH(&adapter->sub_grp_configs, iter)
     {
@@ -2170,26 +2113,27 @@ void neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
         }
     }
 
-    nng_mtx_unlock(adapter->sub_grp_mtx);
+    nng_mtx_unlock(adapter->nng.sub_grp_mtx);
 }
 
 vector_t *neu_adapter_get_sub_grp_configs(neu_adapter_t *adapter)
 {
     vector_t *sgc = NULL;
 
-    nng_mtx_lock(adapter->sub_grp_mtx);
+    nng_mtx_lock(adapter->nng.sub_grp_mtx);
     sgc = vector_clone(&adapter->sub_grp_configs);
-    nng_mtx_unlock(adapter->sub_grp_mtx);
+    nng_mtx_unlock(adapter->nng.sub_grp_mtx);
 
     return sgc;
 }
 
 int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag)
 {
-    const neu_plugin_intf_funs_t *intf_funs = adapter->plugin_module->intf_funs;
-    neu_err_code_e                error     = NEU_ERR_SUCCESS;
+    const neu_plugin_intf_funs_t *intf_funs =
+        adapter->plugin_info.module->intf_funs;
+    neu_err_code_e error = NEU_ERR_SUCCESS;
 
-    error = intf_funs->validate_tag(adapter->plugin, tag);
+    error = intf_funs->validate_tag(adapter->plugin_info.plugin, tag);
 
     return error;
 }

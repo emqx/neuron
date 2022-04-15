@@ -64,17 +64,6 @@ void handle_del_adapter(nng_aio *aio)
         })
 }
 
-void handle_update_adapter(nng_aio *aio)
-{
-    neu_plugin_t *plugin = neu_rest_get_plugin();
-
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
-        aio, neu_json_update_node_req_t, neu_json_decode_update_node_req,
-        { NEU_JSON_RESPONSE_ERROR(
-            neu_system_update_node(plugin, req->id, req->name),
-            { http_response(aio, error_code.error, result_error); }) })
-}
-
 void handle_get_adapter(nng_aio *aio)
 {
     neu_plugin_t *  plugin    = neu_rest_get_plugin();

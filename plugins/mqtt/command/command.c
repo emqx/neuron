@@ -47,19 +47,6 @@ static int node_response_add(char **output_str, neu_plugin_t *plugin,
     return rc;
 }
 
-static int node_response_update(char **output_str, neu_plugin_t *plugin,
-                                neu_json_mqtt_t *mqtt, char *json_str)
-{
-    neu_json_update_node_req_t *req = NULL;
-    int rc = neu_json_decode_update_node_req(json_str, &req);
-    if (0 == rc) {
-        *output_str = command_node_update(plugin, mqtt, req);
-        neu_json_decode_update_node_req_free(req);
-    }
-
-    return rc;
-}
-
 static int node_response_delete(char **output_str, neu_plugin_t *plugin,
                                 neu_json_mqtt_t *mqtt, char *json_str)
 {
@@ -427,8 +414,6 @@ void command_response_handle(mqtt_response_t *response)
             rc = node_response_get(&ret_str, plugin, mqtt, json_str);
         } else if (0 == strcmp(NEU_MQTT_CMD_ADD, mqtt->command)) {
             rc = node_response_add(&ret_str, plugin, mqtt, json_str);
-        } else if (0 == strcmp(NEU_MQTT_CMD_UPDATE, mqtt->command)) {
-            rc = node_response_update(&ret_str, plugin, mqtt, json_str);
         } else if (0 == strcmp(NEU_MQTT_CMD_DELETE, mqtt->command)) {
             rc = node_response_delete(&ret_str, plugin, mqtt, json_str);
         }

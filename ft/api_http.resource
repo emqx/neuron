@@ -64,13 +64,6 @@ Get Nodes
 
   [RETURN]            ${res}[0]
 
-Update Node
-  [Arguments]         ${node_id}            ${node_name}
-  PUT                 /api/v2/node            {"id": ${node_id}, "name": "${node_name}"}
-  ${res} =            Object  response body
-
-  [RETURN]            ${res}[0]
-
 Del Node
   [Arguments]         ${node_id}
   Delete              /api/v2/node            {"id": ${node_id}}
