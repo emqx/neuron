@@ -35,7 +35,7 @@
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
 #include "core/plugin_manager.h"
-#include "driver_internal.h"
+#include "driver/driver_internal.h"
 #include "log.h"
 #include "panic.h"
 #include "persist/persist.h"

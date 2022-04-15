@@ -105,8 +105,10 @@ set(NEURON_SOURCES
     src/core/plugin_manager.c
     src/core/neu_datatag_manager.c
     src/adapter/adapter.c
-    src/adapter/cache.c
-    src/adapter/driver.c
+    src/adapter/driver/cache.c
+    src/adapter/driver/driver.c
+    src/adapter/config/config.c
+    src/adapter/control/control.c
     plugins/restful/handle.c
     plugins/restful/license.c
     plugins/restful/license_handle.c

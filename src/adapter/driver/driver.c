@@ -25,7 +25,7 @@
 #include "utils/uthash.h"
 
 #include "adapter.h"
-#include "adapter_internal.h"
+#include "adapter/adapter_internal.h"
 #include "cache.h"
 #include "driver_internal.h"
 
