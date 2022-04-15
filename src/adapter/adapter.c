@@ -1402,7 +1402,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     assert(adapter->plugin_lib != NULL);
 
     adapter->id          = info->id;
-    adapter->type        = info->type;
     adapter->name        = strdup(info->name);
     adapter->state       = ADAPTER_STATE_IDLE;
     adapter->new_req_id  = 1;
@@ -1437,7 +1436,7 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
 {
     assert(adapter != NULL);
 
-    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+    if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
@@ -1676,7 +1675,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_subscribe_node_t);
             req.buf       = (void *) &sub_node_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
@@ -1703,7 +1702,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_unsubscribe_node_t);
             req.buf       = (void *) &unsub_node_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
@@ -1729,7 +1728,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_read_t);
             req.buf       = (void *) &read_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
@@ -1799,7 +1798,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             req.sender_id = cmd_ptr->sender_id;
             req.buf_len   = sizeof(neu_reqresp_write_t);
             req.buf       = (void *) &write_req;
-            if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+            if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
                 neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
                                                &req);
             } else {
@@ -1879,7 +1878,7 @@ int neu_adapter_init(neu_adapter_t *adapter)
 
     adapter->nng_io = neu_event_add_io(adapter->events, param);
 
-    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+    if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
     }
 
@@ -1908,7 +1907,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     int rv = 0;
 
-    if (adapter->type == ADAPTER_TYPE_DRIVERX) {
+    if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_uninit((neu_adapter_driver_t *) adapter);
     }
 
@@ -2047,7 +2046,7 @@ adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter)
         return 0;
     }
 
-    return adapter->type;
+    return (adapter_type_e) adapter->plugin_module->type;
 }
 
 plugin_id_t neu_adapter_get_plugin_id(neu_adapter_t *adapter)

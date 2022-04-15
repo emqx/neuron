@@ -44,8 +44,7 @@ typedef enum adapter_state {
 
 struct neu_adapter {
     adapter_id_t         id;
-    neu_node_id_t        node_id;
-    adapter_type_e       type;
+    neu_adapter_id_t     node_id;
     nng_mtx *            mtx;
     nng_mtx *            sub_grp_mtx;
     adapter_state_e      state;
