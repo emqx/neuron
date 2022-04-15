@@ -1441,7 +1441,6 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
-    //    nng_close(adapter->sock);
     if (adapter->plugin_module != NULL) {
         adapter->plugin_module->intf_funs->close(adapter->plugin);
     }
@@ -1462,7 +1461,6 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     nng_mtx_free(adapter->sub_grp_mtx);
     neu_event_close(adapter->events);
     free(adapter);
-    return;
 }
 
 int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
@@ -1919,13 +1917,6 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     nng_mtx_unlock(adapter->mtx);
 
     neu_event_del_io(adapter->events, adapter->nng_io);
-    // nng_thread_destroy(adapter->thrd);
-
-    // if (adapter->plugin_module != NULL) {
-    // const neu_plugin_intf_funs_t *intf_funs;
-    // intf_funs = adapter->plugin_module->intf_funs;
-    // intf_funs->uninit(adapter->plugin);
-    //}
 
     nng_dialer_close(adapter->dialer);
     nng_close(adapter->sock);
@@ -2201,4 +2192,15 @@ int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag)
     error = intf_funs->validate_tag(adapter->plugin, tag);
 
     return error;
+}
+
+neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,
+                                         neu_event_timer_param_t param)
+{
+    return neu_event_add_timer(adapter->events, param);
+}
+
+void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer)
+{
+    neu_event_del_timer(adapter->events, timer);
 }
