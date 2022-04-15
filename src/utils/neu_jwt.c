@@ -107,7 +107,7 @@ int neu_jwt_new(char **token)
     }
 
     *token = str_jwt;
-    strncpy(token_local, *token, strlen(*token));
+    strncpy(token_local, *token, sizeof(token_local) - 1);
 
     jwt_free(jwt);
 

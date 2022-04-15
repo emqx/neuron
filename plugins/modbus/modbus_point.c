@@ -414,8 +414,8 @@ static void insert_point(modbus_point_context_t *ctx, modbus_point_t *point)
 
 static void insert_cmd(modbus_point_context_t *ctx, modbus_point_t *point)
 {
-    bool              exist = false;
-    modbus_function_e function;
+    bool              exist    = false;
+    modbus_function_e function = 0;
 
     switch (point->area) {
     case MODBUS_AREA_COIL:

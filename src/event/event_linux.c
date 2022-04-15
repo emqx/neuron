@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include <assert.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -95,7 +96,8 @@ static void *event_loop(void *arg)
             if ((event.events & EPOLLIN) == EPOLLIN) {
                 uint64_t t;
 
-                read(data->fd, &t, sizeof(t));
+                ssize_t size = read(data->fd, &t, sizeof(t));
+                assert(size != -1);
 
                 ret = data->callback.timer(data->usr_data);
             }

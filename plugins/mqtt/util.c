@@ -177,10 +177,25 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
             return -1;
         }
 
-        char workdir[PATH_MAX + 1] = { 0 };
-        getcwd(workdir, sizeof(workdir));
-        sprintf(ca_file, "%s/%s/%s", workdir, MQTT_CERT_PATH, MQTT_CA_FILE);
-        sprintf(ca_path, "%s/%s", workdir, MQTT_CERT_PATH);
+        char  workdir[PATH_MAX + 1] = { 0 };
+        char *ret_dir               = getcwd(workdir, sizeof(workdir));
+        if (NULL == ret_dir) {
+            free(ca.v.val_str);
+            return -1;
+        }
+        ret = snprintf(ca_file, sizeof(ca_file), "%s/%s/%s", workdir,
+                       MQTT_CERT_PATH, MQTT_CA_FILE);
+        if (ret < 0) {
+            free(ca.v.val_str);
+            return -1;
+        }
+
+        ret = snprintf(ca_path, sizeof(ca_path), "%s/%s", workdir,
+                       MQTT_CERT_PATH);
+        if (ret < 0) {
+            free(ca.v.val_str);
+            return -1;
+        }
 
         ret = b64_file_store(ca.v.val_str, ca_file);
         free(ca.v.val_str);
@@ -192,12 +207,20 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     }
 
     if (0 == strcmp(option->connection, "ssl://")) {
-        char workdir[PATH_MAX + 1] = { 0 };
-        getcwd(workdir, sizeof(workdir));
+        char  workdir[PATH_MAX + 1] = { 0 };
+        char *ret_dir               = getcwd(workdir, sizeof(workdir));
+        if (NULL == ret_dir) {
+            return -1;
+        }
 
         if (NULL != cert.v.val_str && 0 < strlen(cert.v.val_str)) {
-            sprintf(cert_file, "%s/%s/%s", workdir, MQTT_CERT_PATH,
-                    MQTT_CERT_FILE);
+            ret = snprintf(cert_file, sizeof(cert_file), "%s/%s/%s", workdir,
+                           MQTT_CERT_PATH, MQTT_CERT_FILE);
+            if (ret < 0) {
+                free(cert.v.val_str);
+                cert.v.val_str = NULL;
+                return -1;
+            }
 
             ret = b64_file_store(cert.v.val_str, cert_file);
             free(cert.v.val_str);
@@ -209,8 +232,13 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
         }
 
         if (NULL != key.v.val_str && 0 < strlen(key.v.val_str)) {
-            sprintf(key_file, "%s/%s/%s", workdir, MQTT_CERT_PATH,
-                    MQTT_KEY_FILE);
+            ret = snprintf(key_file, sizeof(key_file), "%s/%s/%s", workdir,
+                           MQTT_CERT_PATH, MQTT_KEY_FILE);
+            if (ret < 0) {
+                free(key.v.val_str);
+                key.v.val_str = NULL;
+                return -1;
+            }
 
             ret = b64_file_store(key.v.val_str, key_file);
             free(key.v.val_str);

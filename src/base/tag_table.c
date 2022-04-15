@@ -113,7 +113,8 @@ int neu_tag_table_add(neu_tag_table_t *tbl, neu_tag_t *tag)
         elem = calloc(1, sizeof(struct tag_elem));
 
         elem->tag = *tag;
-        strncpy(elem->name, tag->name, strlen(tag->name));
+        strncpy(elem->name, tag->name, sizeof(elem->name));
+
         HASH_ADD_STR(tbl->tags, name, elem);
 
         update_timestamp(tbl);

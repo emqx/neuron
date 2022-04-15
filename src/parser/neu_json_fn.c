@@ -188,7 +188,7 @@ neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req,
     neu_fixed_array_t *array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
 
     neu_int_val_t   iv;
-    neu_data_val_t *v;
+    neu_data_val_t *v = NULL;
 
     switch (tag->type) {
     case NEU_DTYPE_UINT8:

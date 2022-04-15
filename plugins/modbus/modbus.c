@@ -182,7 +182,7 @@ int modbus_m_write_req(char *buf, uint8_t device_address,
     uint8_t * data8  = (uint8_t *) &request[1];
     uint16_t *data16 = (uint16_t *) &request[1];
     uint32_t *data32 = (uint32_t *) &request[1];
-    uint16_t *crc;
+    uint16_t *crc    = NULL;
 
     uint16_t len = sizeof(*code) + sizeof(*request) + sizeof(*crc);
 

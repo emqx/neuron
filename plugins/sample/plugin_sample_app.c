@@ -206,8 +206,8 @@ static void *sample_app_work_loop(void *arg)
     /* example of get group configs */
     neu_cmd_get_grp_configs_t  get_grps_cmd;
     neu_reqresp_grp_configs_t *resp_grps;
-    neu_taggrp_config_t *      grp_config;
-    result = NULL;
+    neu_taggrp_config_t *      grp_config = NULL;
+    result                                = NULL;
 
     get_grps_cmd.node_id = dst_node_id;
     sync_cmd.req_type    = NEU_REQRESP_GET_GRP_CONFIGS;
