@@ -1410,7 +1410,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->manager     = manager;
     adapter->trans_kind  = NEURON_TRANS_DATAVAL;
     adapter->node_id     = neu_manager_adapter_id_to_node_id(manager, info->id);
-    adapter->stop        = false;
     adapter->cb_funs     = callback_funs;
 
     rv = nng_mtx_alloc(&adapter->mtx);
@@ -1476,7 +1475,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (rv == NNG_ECLOSED) {
             nng_mtx_lock(adapter->mtx);
             adapter->state = ADAPTER_STATE_IDLE;
-            adapter->stop  = true;
             nng_mtx_unlock(adapter->mtx);
 
             log_warn("nng socket closed.");
@@ -1501,7 +1499,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             adapter->plugin_module->intf_funs->uninit(adapter->plugin);
             nng_mtx_lock(adapter->mtx);
             adapter->state = ADAPTER_STATE_IDLE;
-            adapter->stop  = true;
             nng_mtx_unlock(adapter->mtx);
 
             log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
@@ -1910,10 +1907,6 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     if (adapter->plugin_module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_uninit((neu_adapter_driver_t *) adapter);
     }
-
-    nng_mtx_lock(adapter->mtx);
-    adapter->stop = true;
-    nng_mtx_unlock(adapter->mtx);
 
     neu_event_del_io(adapter->events, adapter->nng_io);
 

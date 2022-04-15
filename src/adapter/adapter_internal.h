@@ -48,14 +48,11 @@ struct neu_adapter {
     nng_mtx *            mtx;
     nng_mtx *            sub_grp_mtx;
     adapter_state_e      state;
-    bool                 stop;
     char *               name;
     neu_manager_t *      manager;
-    nng_pipe             pipe;
     nng_socket           sock;
     nng_dialer           dialer;
     int                  recv_fd;
-    nng_thread *         thrd;
     uint32_t             new_req_id;
     plugin_id_t          plugin_id;
     plugin_kind_e        plugin_kind;
