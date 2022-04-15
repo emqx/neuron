@@ -740,15 +740,7 @@ neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 
 static uint32_t adapter_get_req_id(neu_adapter_t *adapter)
 {
-    uint32_t req_id;
-
-    adapter->new_req_id++;
-    if (adapter->new_req_id == 0) {
-        adapter->new_req_id = 1;
-    }
-
-    req_id = adapter->new_req_id;
-    return req_id;
+    return adapter->req_id += 2;
 }
 
 static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
@@ -1404,13 +1396,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->id               = info->id;
     adapter->name             = strdup(info->name);
     adapter->state            = ADAPTER_STATE_IDLE;
-    adapter->new_req_id       = 1;
+    adapter->req_id           = 1;
     adapter->plugin_info.id   = info->plugin_id;
     adapter->plugin_info.kind = info->plugin_kind;
     adapter->manager          = manager;
     adapter->trans_kind       = NEURON_TRANS_DATAVAL;
-    adapter->node_id = neu_manager_adapter_id_to_node_id(manager, info->id);
-    adapter->cb_funs = callback_funs;
+    adapter->cb_funs          = callback_funs;
 
     rv = nng_mtx_alloc(&adapter->nng.mtx);
     assert(rv == 0);

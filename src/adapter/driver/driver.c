@@ -143,7 +143,7 @@ int neu_adapter_driver_stop(neu_adapter_driver_t *driver)
 int neu_adapter_driver_init(neu_adapter_driver_t *driver)
 {
     driver->tag_table = neu_manager_get_datatag_tbl(driver->adapter.manager,
-                                                    driver->adapter.node_id);
+                                                    driver->adapter.id);
 
     return 0;
 }
@@ -319,7 +319,7 @@ static int read_callback(void *usr_data)
             sg->driver->adapter.plugin_info.plugin, &sg->grp);
     } else {
         neu_taggrp_config_t *new_config = neu_system_find_group_config(
-            sg->driver->adapter.plugin_info.plugin, sg->driver->adapter.node_id,
+            sg->driver->adapter.plugin_info.plugin, sg->driver->adapter.id,
             neu_taggrp_cfg_get_name(sg->group));
         assert(new_config != NULL);
 

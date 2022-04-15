@@ -43,14 +43,13 @@ typedef enum adapter_state {
 } adapter_state_e;
 
 struct neu_adapter {
-    adapter_id_t     id;
-    neu_adapter_id_t node_id;
-    adapter_state_e  state;
-    char *           name;
-    neu_manager_t *  manager;
+    adapter_id_t    id;
+    adapter_state_e state;
+    char *          name;
+    neu_manager_t * manager;
 
-    int                 recv_fd;
-    uint32_t            new_req_id;
+    uint32_t req_id;
+
     neu_trans_kind_e    trans_kind;
     adapter_callbacks_t cb_funs;
     neu_config_t        node_setting;
@@ -73,6 +72,7 @@ struct neu_adapter {
 
     neu_events_t *  events;
     neu_event_io_t *nng_io;
+    int             recv_fd;
 };
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
