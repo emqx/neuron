@@ -1457,8 +1457,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case MSG_CMD_EXIT_LOOP: {
             uint32_t exit_code = *(uint32_t *) msg_get_buf_ptr(pay_msg);
 
-            adapter->plugin_info.module->intf_funs->uninit(
-                adapter->plugin_info.plugin);
             nng_mtx_lock(adapter->nng.mtx);
             adapter->state = ADAPTER_STATE_IDLE;
             nng_mtx_unlock(adapter->nng.mtx);
@@ -1866,6 +1864,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     int rv = 0;
 
+    adapter->plugin_info.module->intf_funs->uninit(adapter->plugin_info.plugin);
     if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_uninit((neu_adapter_driver_t *) adapter);
     }
