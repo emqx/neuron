@@ -64,11 +64,18 @@ static int ekuiper_plugin_close(neu_plugin_t *plugin)
 
 static int ekuiper_plugin_init(neu_plugin_t *plugin)
 {
-    int rv = 0;
+    int      rv       = 0;
+    nng_aio *recv_aio = NULL;
 
-    (void) plugin;
+    rv = nng_aio_alloc(&recv_aio, recv_data_callback, plugin);
+    if (rv < 0) {
+        log_error("cannot allocate recv_aio: %s", nng_strerror(rv));
+        return rv;
+    }
 
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    plugin->recv_aio = recv_aio;
+
+    log_info("Initialized plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -76,7 +83,7 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    (void) plugin;
+    nng_aio_free(plugin->recv_aio);
 
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
@@ -96,6 +103,8 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
         log_error("nng_listen: %s", nng_strerror(rv));
         return NEU_ERR_FAILURE;
     }
+
+    nng_recv_aio(plugin->sock, plugin->recv_aio);
 
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
     return NEU_ERR_SUCCESS;

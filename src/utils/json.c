@@ -364,6 +364,21 @@ void *neu_json_decode_new(char *buf)
     return root;
 }
 
+void *neu_json_decode_newb(char *buf, size_t len)
+{
+    json_error_t error;
+    json_t *     root = json_loadb(buf, len, 0, &error);
+
+    if (root == NULL) {
+        log_error(
+            "json load error, line: %d, column: %d, position: %d, info: %s",
+            error.line, error.column, error.position, error.text);
+        return NULL;
+    }
+
+    return root;
+}
+
 void neu_json_decode_free(void *ob)
 {
     json_decref(ob);

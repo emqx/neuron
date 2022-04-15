@@ -23,7 +23,9 @@
 #include <sys/time.h>
 
 #include "neuron.h"
+#include "neuron/data_expr.h"
 #include "neuron/datatag_table.h"
+#include "neuron/errcodes.h"
 #include "neuron/tag_group_config.h"
 #include "json/neu_json_rw.h"
 
@@ -80,6 +82,23 @@ int json_encode_read_resp_tags(void *json_object, void *param);
 //    "errors": { "tag1": 3000 }
 // }
 int json_encode_read_resp(void *json_object, void *param);
+
+typedef struct {
+    char *               node_name;
+    char *               group_name;
+    char *               tag_name;
+    enum neu_json_type   t;
+    union neu_json_value value;
+} json_write_req_t;
+
+int  unwrap_write_req_val(json_write_req_t *   req,
+                          neu_datatag_table_t *datatag_table,
+                          neu_data_val_t **    data_val);
+int  json_decode_write_req(char *buf, size_t len, json_write_req_t **result);
+void json_decode_write_req_free(json_write_req_t *req);
+
+int plugin_send_write_cmd_from_write_req(neu_plugin_t *plugin, uint32_t req_id,
+                                         json_write_req_t *write_req);
 
 #ifdef __cplusplus
 }

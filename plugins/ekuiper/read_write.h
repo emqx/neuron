@@ -22,6 +22,7 @@
 
 #include "neuron.h"
 
+#include "json_rw.h"
 #include "plugin_ekuiper.h"
 
 #ifdef __cplusplus
@@ -29,6 +30,9 @@ extern "C" {
 #endif
 
 void send_data(neu_plugin_t *plugin, neu_request_t *req);
+
+void recv_data_callback(void *arg);
+int  write_data(neu_plugin_t *plugin, json_write_req_t *write_req);
 
 #ifdef __cplusplus
 }

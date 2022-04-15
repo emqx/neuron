@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include "json/neu_json_rw.h"
 #include <nng/nng.h>
 
 #include "json/neu_json_fn.h"
@@ -46,7 +47,7 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
     }
 
     nng_msg *msg      = NULL;
-    size_t   json_len = strlen(json_str) + 1; // for terminating null byte
+    size_t   json_len = strlen(json_str);
     rv                = nng_msg_alloc(&msg, json_len);
     if (0 != rv) {
         log_error("nng cannot allocate msg");
@@ -54,7 +55,7 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
         return;
     }
 
-    memcpy(nng_msg_body(msg), json_str, json_len);
+    memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
     rv = nng_sendmsg(plugin->sock, msg, 0); // TODO: use aio to send message
     if (0 != rv) {
         log_error("nng cannot send msg");
@@ -62,4 +63,44 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
     }
 
     free(json_str);
+}
+
+void recv_data_callback(void *arg)
+{
+    int               rv       = 0;
+    neu_plugin_t *    plugin   = arg;
+    nng_msg *         msg      = NULL;
+    char *            json_str = NULL;
+    json_write_req_t *req      = NULL;
+
+    rv = nng_aio_result(plugin->recv_aio);
+    if (0 != rv) {
+        log_error("receive error: %s", nng_strerror(rv));
+        return;
+    }
+
+    msg      = nng_aio_get_msg(plugin->recv_aio);
+    json_str = nng_msg_body(msg);
+    // log_info("receive cmd: %s\n", json_str);
+    if (json_decode_write_req(json_str, nng_msg_len(msg), &req) < 0) {
+        log_error("cannot decode write request");
+        goto recv_data_callback_end;
+    }
+
+    rv = write_data(plugin, req);
+    if (0 != rv) {
+        log_error("failed to write data");
+        goto recv_data_callback_end;
+    }
+
+recv_data_callback_end:
+    nng_msg_free(msg);
+    json_decode_write_req_free(req);
+    nng_recv_aio(plugin->sock, plugin->recv_aio);
+}
+
+int write_data(neu_plugin_t *plugin, json_write_req_t *write_req)
+{
+    uint32_t req_id = neu_plugin_get_event_id(plugin);
+    return plugin_send_write_cmd_from_write_req(plugin, req_id, write_req);
 }

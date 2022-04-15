@@ -26,6 +26,7 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef enum neu_json_type {
     NEU_JSON_UNDEFINE = 0,
@@ -69,6 +70,7 @@ int   neu_json_decode_array_size(char *buf, char *child);
 int   neu_json_decode_array(char *buf, char *name, int index, int size,
                             neu_json_elem_t *ele);
 void *neu_json_decode_new(char *buf);
+void *neu_json_decode_newb(char *buf, size_t len);
 void  neu_json_decode_free(void *ob);
 int   neu_json_decode_value(void *object, neu_json_elem_t *ele);
 
