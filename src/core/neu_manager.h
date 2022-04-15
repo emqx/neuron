@@ -82,8 +82,8 @@ int neu_manager_get_persist_plugin_infos(neu_manager_t *manager,
 neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
                                                  neu_node_id_t  node_id);
 neu_node_id_t        neu_manager_adapter_id_to_node_id(neu_manager_t *manager,
-                                                       adapter_id_t   adapter_id);
-adapter_id_t         neu_manager_adapter_id_from_node_id(neu_manager_t *manager,
+                                                       neu_adapter_id_t   adapter_id);
+neu_adapter_id_t         neu_manager_adapter_id_from_node_id(neu_manager_t *manager,
                                                          neu_node_id_t  node_id);
 int                  neu_manager_adapter_set_setting(neu_manager_t *manager,
                                                      neu_node_id_t node_id, const char *config);
