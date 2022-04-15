@@ -25,7 +25,7 @@
 #include "utils/uthash.h"
 
 #include "adapter.h"
-#include "adapter_internal.h"
+#include "adapter/adapter_internal.h"
 #include "cache.h"
 #include "driver_internal.h"
 
@@ -49,7 +49,6 @@ struct neu_adapter_driver {
 
     neu_driver_cache_t *cache;
 
-    neu_events_t *msg_events;
     neu_events_t *driver_events;
 
     pthread_mutex_t         grp_mtx;
@@ -117,7 +116,6 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 
     pthread_mutex_init(&driver->grp_mtx, NULL);
     driver->cache                         = neu_driver_cache_new();
-    driver->msg_events                    = neu_event_new();
     driver->driver_events                 = neu_event_new();
     driver->adapter.cb_funs.driver.update = update;
 
@@ -127,7 +125,6 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 void neu_adapter_driver_destroy(neu_adapter_driver_t *driver)
 {
     neu_event_close(driver->driver_events);
-    neu_event_close(driver->msg_events);
     neu_driver_cache_destroy(driver->cache);
 }
 
@@ -162,7 +159,7 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
         driver->adapter.plugin_module->intf_funs->driver.del_group(
             driver->adapter.plugin, &sg->grp);
         HASH_DEL(driver->grps, sg);
-        neu_event_del_timer(driver->msg_events, sg->report);
+        neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
         neu_event_del_timer(driver->driver_events, sg->read);
         free(sg);
     }
@@ -255,7 +252,7 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
         HASH_ADD_STR(driver->grps, name, sg);
 
         param.cb   = report_callback;
-        sg->report = neu_event_add_timer(driver->msg_events, param);
+        sg->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
         param.cb   = read_callback;
         sg->read   = neu_event_add_timer(driver->driver_events, param);
         pthread_mutex_unlock(&driver->grp_mtx);
@@ -274,7 +271,7 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
             driver->adapter.plugin_module->intf_funs->driver.del_group(
                 driver->adapter.plugin, &sg->grp);
             HASH_DEL(driver->grps, sg);
-            neu_event_del_timer(driver->msg_events, sg->report);
+            neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
             neu_event_del_timer(driver->driver_events, sg->read);
             free(sg);
         }

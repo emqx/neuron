@@ -13,7 +13,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Wextra -g")
+set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
 set(CMAKE_C_FLAGS_DEBUG
     "${CMAKE_C_FLAGS} -O0 -fsanitize=address \
@@ -105,8 +105,10 @@ set(NEURON_SOURCES
     src/core/plugin_manager.c
     src/core/neu_datatag_manager.c
     src/adapter/adapter.c
-    src/adapter/cache.c
-    src/adapter/driver.c
+    src/adapter/driver/cache.c
+    src/adapter/driver/driver.c
+    src/adapter/config/config.c
+    src/adapter/control/control.c
     plugins/restful/handle.c
     plugins/restful/license.c
     plugins/restful/license_handle.c

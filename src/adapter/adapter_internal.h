@@ -80,6 +80,10 @@ int            neu_adapter_stop(neu_adapter_t *adapter);
 int            neu_adapter_init(neu_adapter_t *adapter);
 int            neu_adapter_uninit(neu_adapter_t *adapter);
 
+neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,
+                                         neu_event_timer_param_t param);
+void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer);
+
 const char *   neu_adapter_get_name(neu_adapter_t *adapter);
 void           neu_adapter_rename(neu_adapter_t *adapter, const char *name);
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter);
