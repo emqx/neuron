@@ -54,7 +54,6 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_ADD_NODE,
     NEU_REQRESP_DEL_NODE,
-    NEU_REQRESP_UPDATE_NODE,
     NEU_REQRESP_GET_NODES,
     NEU_REQRESP_NODES,
     NEU_REQRESP_ADD_GRP_CONFIG,
@@ -151,12 +150,6 @@ typedef struct neu_cmd_add_node {
 typedef struct neu_cmd_del_node {
     neu_node_id_t node_id;
 } neu_cmd_del_node_t;
-
-/* NEU_REQRESP_UPDATE_NODE */
-typedef struct neu_cmd_update_node {
-    neu_node_id_t node_id;
-    const char *  node_name;
-} neu_cmd_update_node_t;
 
 /* NEU_REQRESP_GET_NODES */
 typedef struct neu_cmd_get_nodes {

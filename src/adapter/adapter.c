@@ -826,36 +826,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         break;
     }
 
-    case NEU_REQRESP_UPDATE_NODE: {
-        ADAPTER_RESP_CODE(
-            adapter, cmd, intptr_t, neu_cmd_update_node_t, rv,
-            NEU_REQRESP_ERR_CODE, p_result, {
-                neu_event_update_node_t event    = {};
-                char *                  src_name = NULL;
-                char *                  dst_name = NULL;
-
-                ret = neu_manager_get_node_name_by_id(
-                    adapter->manager, req_cmd->node_id, &src_name);
-                if (0 == ret) {
-                    dst_name = strdup(req_cmd->node_name);
-                    ret      = NULL == dst_name ? NEU_ERR_ENOMEM : 0;
-                }
-                if (0 == ret) {
-                    ret = neu_manager_update_node(adapter->manager, req_cmd);
-                }
-                if (0 == ret) {
-                    event.src_name = src_name;
-                    event.dst_name = dst_name;
-                    ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UPDATE_NODE, &event,
-                                     sizeof(event));
-                } else {
-                    free(src_name);
-                    free(dst_name);
-                }
-            });
-        break;
-    }
-
     case NEU_REQRESP_GET_NODES: {
         ADAPTER_RESP_CMD(
             adapter, cmd, neu_reqresp_nodes_t, neu_cmd_get_nodes_t, rv,
@@ -1991,12 +1961,6 @@ const char *neu_adapter_get_name(neu_adapter_t *adapter)
     return (const char *) adapter->name;
 }
 
-void neu_adapter_rename(neu_adapter_t *adapter, const char *name)
-{
-    free(adapter->name);
-    adapter->name = strdup(name);
-}
-
 neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
 {
     if (adapter == NULL) {
@@ -2023,7 +1987,7 @@ neu_adapter_id_t neu_adapter_set_id(neu_adapter_t *adapter, neu_adapter_id_t id)
     }
 
     neu_adapter_id_t old = adapter->id;
-    adapter->id      = id;
+    adapter->id          = id;
     return old;
 }
 

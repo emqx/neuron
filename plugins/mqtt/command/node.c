@@ -77,19 +77,6 @@ char *command_node_add(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return result;
 }
 
-char *command_node_update(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                          neu_json_update_node_req_t *req)
-{
-    log_info("Update node uuid:%s, node name:%s", mqtt->uuid, req->name);
-    neu_json_error_resp_t error = { 0 };
-    error.error = neu_system_update_node(plugin, req->id, req->name);
-
-    char *result = NULL;
-    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                              neu_json_encode_mqtt_resp, &result);
-    return result;
-}
-
 char *command_node_delete(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_del_node_req_t *req)
 {

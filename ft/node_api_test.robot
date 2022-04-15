@@ -150,26 +150,6 @@ Add wrong settings to node, it should return failure
     Check Response Status    ${res}    400
     Check Error Code         ${res}    ${ERR_NODE_SETTING_INVALID}
 
-Update a node that does not exist, it should return failure
-    ${res} =    Update Node    ${99}    test-name
-
-    Check Response Status    ${res}    404
-    Check Error Code         ${res}    ${ERR_NODE_NOT_EXIST}
-
-Update the name of the node, it should return success
-    ${app_node_id} =    Add Node And Return ID    ${NODE_MQTT}       app-node     ${PLUGIN_MQTT}
-    ${res} =            Update Node               ${app_node_id}    test-name
-
-    Check Response Status    ${res}    200
-    Check Error Code         ${res}    ${ERR_SUCCESS}
-
-    ${res} =                       Get Nodes        ${NODE_MQTT}
-    Check Response Status          ${res}           200
-    Node With Name Should Exist    ${res}[nodes]    test-name
-
-    [Teardown]    Del Node Check    ${app_node_id}
-
-
 Start an unconfigured node, it should return failure
     ${modbus_node_id} =    Add Node And Return ID    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
 

@@ -42,7 +42,7 @@
 #include "subscribe.h"
 
 typedef struct adapter_reg_entity {
-    neu_adapter_id_t           adapter_id;
+    neu_adapter_id_t       adapter_id;
     neu_adapter_t *        adapter;
     neu_datatag_manager_t *datatag_manager;
     nng_cv *               cv;
@@ -184,7 +184,8 @@ static int uninit_bind_info(manager_bind_info_t *mng_bind_info)
 
 static bool match_id_reg_adapter(const void *key, const void *item)
 {
-    return *(neu_adapter_id_t *) key == ((adapter_reg_entity_t *) item)->adapter_id;
+    return *(neu_adapter_id_t *) key ==
+        ((adapter_reg_entity_t *) item)->adapter_id;
 }
 
 static bool match_name_reg_adapter(const void *key, const void *item)
@@ -206,12 +207,13 @@ static bool match_pipe_reg_adapter(const void *key, const void *item)
 }
 
 // Return SIZE_MAX if can't find a adapter
-static size_t find_reg_adapter_index_by_id(vector_t *adapters, neu_adapter_id_t id)
+static size_t find_reg_adapter_index_by_id(vector_t *       adapters,
+                                           neu_adapter_id_t id)
 {
     return vector_find_index(adapters, &id, match_id_reg_adapter);
 }
 
-static adapter_reg_entity_t *find_reg_adapter_by_id(vector_t *   adapters,
+static adapter_reg_entity_t *find_reg_adapter_by_id(vector_t *       adapters,
                                                     neu_adapter_id_t id)
 {
     return vector_find_item(adapters, &id, match_id_reg_adapter);
@@ -276,14 +278,14 @@ static inline int manager_send_msg_to_pipe(neu_manager_t *manager,
     return rv;
 }
 
-neu_node_id_t neu_manager_adapter_id_to_node_id(neu_manager_t *manager,
-                                                neu_adapter_id_t   adapter_id)
+neu_node_id_t neu_manager_adapter_id_to_node_id(neu_manager_t *  manager,
+                                                neu_adapter_id_t adapter_id)
 {
     (void) manager;
     return adapter_id;
 }
 neu_adapter_id_t neu_manager_adapter_id_from_node_id(neu_manager_t *manager,
-                                                 neu_node_id_t  node_id)
+                                                     neu_node_id_t  node_id)
 {
     (void) manager;
     return node_id;
@@ -291,7 +293,7 @@ neu_adapter_id_t neu_manager_adapter_id_from_node_id(neu_manager_t *manager,
 
 static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
     neu_adapter_t *       adapter;
     neu_manager_t *       manager;
     adapter_reg_entity_t *reg_entity;
@@ -354,7 +356,7 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
                                           adapter_reg_cmd_t *reg_param,
                                           neu_adapter_t **   p_adapter,
-                                          neu_adapter_id_t *     adapter_id)
+                                          neu_adapter_id_t * adapter_id)
 {
     int                rv = NEU_ERR_SUCCESS;
     neu_adapter_t *    adapter;
@@ -540,7 +542,7 @@ int neu_manager_uninit_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
 
     nng_pipe              msg_pipe = { 0 };
     adapter_reg_entity_t *reg_entity;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
 
     adapter_id = neu_adapter_get_id(adapter);
     nng_mtx_lock(manager->adapters_mtx);
@@ -618,9 +620,9 @@ static void unregister_all_reg_plugins(neu_manager_t *manager)
 // Call this function before start manager loop, so it don't need lock
 static void reg_and_start_static_adapters(neu_manager_t *manager)
 {
-    uint32_t       i;
-    neu_adapter_id_t   id;
-    neu_adapter_t *p_adapter;
+    uint32_t         i;
+    neu_adapter_id_t id;
+    neu_adapter_t *  p_adapter;
 
     for (i = 0; i < STATIC_ADAPTER_ADD_INFO_SIZE; i++) {
         p_adapter = NULL;
@@ -889,7 +891,7 @@ static void manager_loop(void *arg)
             size_t                msg_size;
             nng_msg *             out_msg;
             nng_pipe              msg_pipe;
-            neu_adapter_id_t          adapter_id;
+            neu_adapter_id_t      adapter_id;
             read_data_cmd_t *     cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
@@ -922,7 +924,7 @@ static void manager_loop(void *arg)
             size_t                msg_size;
             nng_msg *             out_msg;
             nng_pipe              msg_pipe;
-            neu_adapter_id_t          adapter_id;
+            neu_adapter_id_t      adapter_id;
             read_data_resp_t *    cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
@@ -955,7 +957,7 @@ static void manager_loop(void *arg)
             size_t                msg_size;
             nng_msg *             out_msg;
             nng_pipe              msg_pipe;
-            neu_adapter_id_t          adapter_id;
+            neu_adapter_id_t      adapter_id;
             write_data_cmd_t *    cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
@@ -988,7 +990,7 @@ static void manager_loop(void *arg)
             size_t                msg_size;
             nng_msg *             out_msg;
             nng_pipe              msg_pipe;
-            neu_adapter_id_t          adapter_id;
+            neu_adapter_id_t      adapter_id;
             write_data_resp_t *   cmd_ptr;
             adapter_reg_entity_t *reg_entity;
 
@@ -1128,9 +1130,9 @@ static void manager_loop(void *arg)
         }
 
         case MSG_EVENT_GROUP_CONFIG_CHANGED: {
-            size_t       msg_size;
-            nng_msg *    out_msg;
-            nng_pipe     msg_pipe;
+            size_t           msg_size;
+            nng_msg *        out_msg;
+            nng_pipe         msg_pipe;
             neu_adapter_id_t adapter_id;
 
             grp_config_changed_event_t *event_ptr;
@@ -1368,7 +1370,7 @@ int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
                          neu_node_id_t *p_node_id)
 {
     int               rv = 0;
-    neu_adapter_id_t      adapter_id;
+    neu_adapter_id_t  adapter_id;
     neu_adapter_t *   adapter = NULL;
     adapter_reg_cmd_t reg_cmd;
 
@@ -1391,12 +1393,13 @@ int neu_manager_update_node_id(neu_manager_t *manager, neu_node_id_t node_id,
                                neu_node_id_t new_node_id)
 {
     int                   rv = 0;
-    neu_adapter_id_t          adapter_id;
-    neu_adapter_id_t          new_adapter_id;
+    neu_adapter_id_t      adapter_id;
+    neu_adapter_id_t      new_adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     // declaration for neu_adapter_set_id since it is not exposed
-    neu_adapter_id_t neu_adapter_set_id(neu_adapter_t * adapter, neu_adapter_id_t id);
+    neu_adapter_id_t neu_adapter_set_id(neu_adapter_t * adapter,
+                                        neu_adapter_id_t id);
 
     if (0 == new_node_id) {
         return NEU_ERR_EINVAL;
@@ -1430,7 +1433,7 @@ int neu_manager_update_node_id(neu_manager_t *manager, neu_node_id_t node_id,
 int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
 {
     int                   rv = 0;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
     neu_adapter_t *       adapter = NULL;
     adapter_reg_entity_t *reg_entity;
     vector_t              group_config;
@@ -1468,33 +1471,6 @@ int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
     }
 
     rv = manager_unreg_adapter(manager, adapter_id, true);
-    return rv;
-}
-
-int neu_manager_update_node(neu_manager_t *manager, neu_cmd_update_node_t *cmd)
-{
-    int            rv           = NEU_ERR_NODE_NOT_EXIST;
-    size_t         index        = 0;
-    neu_adapter_t *adapter      = NULL;
-    vector_t *     reg_adapters = &manager->reg_adapters;
-    neu_adapter_id_t   adapter_id =
-        neu_manager_adapter_id_from_node_id(manager, cmd->node_id);
-
-    nng_mtx_lock(manager->adapters_mtx);
-    index = find_reg_adapter_index_by_id(reg_adapters, adapter_id);
-    if (index != SIZE_MAX) {
-        adapter_reg_entity_t *reg_entity;
-
-        reg_entity = (adapter_reg_entity_t *) vector_get(reg_adapters, index);
-        adapter    = reg_entity->adapter;
-
-        if (adapter != NULL) {
-            neu_adapter_rename(adapter, cmd->node_name);
-            rv = NEU_ERR_SUCCESS;
-        }
-    }
-    nng_mtx_unlock(manager->adapters_mtx);
-
     return rv;
 }
 
@@ -1623,9 +1599,9 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
     {
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
         if (adapter_match_node_type(reg_entity->adapter, node_type)) {
-            neu_node_info_t node_info;
-            neu_adapter_id_t    adapter_id;
-            const char *    adapter_name;
+            neu_node_info_t  node_info;
+            neu_adapter_id_t adapter_id;
+            const char *     adapter_name;
 
             adapter_name = neu_adapter_get_name(reg_entity->adapter);
             adapter_id   = neu_adapter_get_id(reg_entity->adapter);
@@ -1646,7 +1622,7 @@ int neu_manager_get_node_name_by_id(neu_manager_t *manager,
                                     neu_node_id_t node_id, char **name)
 {
     int                   rv = 0;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     if (NULL == name) {
@@ -1696,7 +1672,7 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd)
 {
     int                   rv = NEU_ERR_SUCCESS;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
@@ -1728,7 +1704,7 @@ int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
                                const char *config_name)
 {
     int                   rv = NEU_ERR_SUCCESS;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || config_name == NULL) {
@@ -1760,7 +1736,7 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
                                   neu_cmd_update_grp_config_t *cmd)
 {
     int                   rv = NEU_ERR_SUCCESS;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
@@ -1801,7 +1777,7 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
 {
     int                   rv = 0;
     adapter_reg_entity_t *reg_entity;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
 
     if (manager == NULL || result_grp_configs == NULL) {
         log_error("get nodes with NULL manager or result_nodes");
@@ -1830,7 +1806,7 @@ int neu_manager_get_persist_datatag_infos(neu_manager_t *manager,
 {
     int                   rv = 0;
     adapter_reg_entity_t *reg_entity;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
 
     if (manager == NULL || result == NULL) {
         log_error("get persist datatag infos with NULL manager or result");
@@ -2050,7 +2026,7 @@ neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
 {
     adapter_reg_entity_t *reg_entity;
     neu_datatag_table_t * tag_table;
-    neu_adapter_id_t          adapter_id;
+    neu_adapter_id_t      adapter_id;
 
     if (manager == NULL) {
         log_error("get datatag table with NULL manager");
@@ -2076,7 +2052,7 @@ neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
 int neu_manager_adapter_set_setting(neu_manager_t *manager,
                                     neu_node_id_t node_id, const char *config)
 {
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
     int                   ret        = 0;
     neu_config_t          neu_config = { .type = NEU_CONFIG_SETTING };
@@ -2170,7 +2146,7 @@ int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
 int neu_manager_adapter_get_setting(neu_manager_t *manager,
                                     neu_node_id_t node_id, char **config)
 {
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
     int                   ret        = 0;
 
@@ -2194,7 +2170,7 @@ int neu_manager_adapter_get_setting(neu_manager_t *manager,
 int neu_manager_start_adapter_with_id(neu_manager_t *manager,
                                       neu_node_id_t  node_id)
 {
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -2219,7 +2195,7 @@ int neu_manager_start_adapter_with_id(neu_manager_t *manager,
 int neu_manager_adapter_get_state(neu_manager_t *manager, neu_node_id_t node_id,
                                   neu_plugin_state_t *state)
 {
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -2242,7 +2218,7 @@ int neu_manager_adapter_get_state(neu_manager_t *manager, neu_node_id_t node_id,
 int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
                             neu_adapter_ctl_e ctl)
 {
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
     neu_adapter_t *       adapter;
     int                   ret = NEU_ERR_SUCCESS;
@@ -2277,7 +2253,7 @@ int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
                                             neu_node_id_t  node_id,
                                             vector_t **    result_sgc)
 {
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -2344,7 +2320,7 @@ int neu_manager_get_persist_subscription_infos(neu_manager_t *manager,
         return NEU_ERR_EINTERNAL;
     }
 
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
 
     nng_mtx_lock(manager->adapters_mtx);
@@ -2374,7 +2350,7 @@ int neu_manager_get_persist_subscription_infos(neu_manager_t *manager,
     VECTOR_FOR_EACH(sub_grp_configs, iter)
     {
         neu_sub_grp_config_t *sgc = iterator_get(&iter);
-        neu_adapter_id_t          adapter_id =
+        neu_adapter_id_t      adapter_id =
             neu_manager_adapter_id_from_node_id(manager, sgc->node_id);
         adapter_reg_entity_t *src_reg_entity =
             find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
@@ -2427,7 +2403,7 @@ final:
 int neu_manager_adapter_validate_tag(neu_manager_t *manager,
                                      neu_node_id_t node_id, neu_datatag_t *tags)
 {
-    neu_adapter_id_t          adapter_id = { 0 };
+    neu_adapter_id_t      adapter_id = { 0 };
     adapter_reg_entity_t *reg_entity = NULL;
     neu_adapter_t *       adapter;
     int                   ret = -1;
