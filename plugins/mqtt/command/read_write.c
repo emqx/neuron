@@ -254,7 +254,8 @@ char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
 char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
                                         const char *         node_name,
                                         neu_taggrp_config_t *config,
-                                        neu_data_val_t *     resp_val)
+                                        neu_data_val_t *     resp_val,
+                                        int                  upload_format)
 {
     UNUSED(plugin);
 
@@ -275,8 +276,20 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
 
     neu_json_read_resp_t json = { 0 };
     wrap_read_response_json_object(array, &json, plugin, (uint32_t) sender);
-    neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
-                              neu_json_encode_read_periodic_resp, &json_str);
+
+    if (0 == upload_format) {
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+    } else if (1 == upload_format) {
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+    } else {
+        clean_read_response_json_object(&json);
+        return NULL;
+    }
+
     clean_read_response_json_object(&json);
     return json_str;
 }

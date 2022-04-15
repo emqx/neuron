@@ -69,6 +69,49 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_encode_read_resp1(void *json_object, void *param)
+{
+    int                   ret  = 0;
+    neu_json_read_resp_t *resp = (neu_json_read_resp_t *) param;
+
+    void *                    values = neu_json_encode_new();
+    void *                    errors = neu_json_encode_new();
+    neu_json_read_resp_tag_t *p_tag  = resp->tags;
+    for (int i = 0; i < resp->n_tag; i++) {
+        neu_json_elem_t tag_elem = { 0 };
+
+        if (p_tag->error == 0) {
+            tag_elem.name = p_tag->name;
+            tag_elem.t    = p_tag->t;
+            tag_elem.v    = p_tag->value;
+            neu_json_encode_field(values, &tag_elem, 1);
+        } else {
+            tag_elem.name      = p_tag->name;
+            tag_elem.t         = NEU_JSON_INT;
+            tag_elem.v.val_int = p_tag->error;
+            neu_json_encode_field(errors, &tag_elem, 1);
+        }
+
+        p_tag++;
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+                                         .name         = "values",
+                                         .t            = NEU_JSON_OBJECT,
+                                         .v.val_object = values,
+                                     },
+                                     {
+                                         .name         = "errors",
+                                         .t            = NEU_JSON_OBJECT,
+                                         .v.val_object = errors,
+
+                                     } };
+
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+    return ret;
+}
+
 int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
 {
     int                   ret      = 0;

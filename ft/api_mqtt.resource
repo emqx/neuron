@@ -264,12 +264,12 @@ Get Tag ID
 
 Read Tags
   [Arguments]                       ${node_name}                        ${group}
-  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_name": "${node_name}", "group_config_name": "${group}"}                      ${TOPIC_READ_REQ}                   ${TOPIC_READ_RES}
+  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_name": "${node_name}", "group_name": "${group}"}                      ${TOPIC_READ_REQ}                   ${TOPIC_READ_RES}
 
   [Return]                          ${res}
 
 Write Tags
   [Arguments]                       ${node_name}                        ${group}                                  ${tag_name}       ${value}
-  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_name": "${node_name}", "group_config_name": "${group}", "tag_name": "${tag_name}", "value": ${value}}                      ${TOPIC_WRITE_REQ}                   ${TOPIC_WRITE_RES}
+  ${res} =                          Pub And Recv                      ${MQTT_CMD_NONE}                          {"node_name": "${node_name}", "group_name": "${group}", "tag_name": "${tag_name}", "value": ${value}}                      ${TOPIC_WRITE_REQ}                   ${TOPIC_WRITE_RES}
 
   [Return]                          ${res}

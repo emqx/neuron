@@ -50,6 +50,7 @@ typedef struct {
 } neu_json_read_resp_t;
 
 int neu_json_encode_read_resp(void *json_object, void *param);
+int neu_json_encode_read_resp1(void *json_object, void *param);
 
 typedef struct {
     char *               group_name;

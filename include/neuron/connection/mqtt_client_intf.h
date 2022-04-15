@@ -57,6 +57,9 @@ typedef struct {
     char *cert;
     char *key;
     char *keypass;
+
+    /*application*/
+    int format;
 } neu_mqtt_option_t;
 
 typedef void *neu_mqtt_client_t;

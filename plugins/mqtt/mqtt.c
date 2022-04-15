@@ -682,7 +682,8 @@ static void trans_data(neu_plugin_t *plugin, neu_request_t *req)
     neu_taggrp_config_t *config    = neu_data->grp_config;
     pair = vector_find_item(&routine->topics, (void *) &type, topic_type_match);
     char *json = command_read_periodic_response(plugin, sender, node_name,
-                                                config, neu_data->data_val);
+                                                config, neu_data->data_val,
+                                                plugin->routine->option.format);
     struct context *c = mqtt_routine_context_create(0, NULL, json, pair, true);
     if (NULL != c) {
         mqtt_routine_send(routine, c);

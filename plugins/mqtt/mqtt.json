@@ -9,6 +9,25 @@
 			"length": 255
 		}
 	},
+	"format": {
+		"name": "upload format",
+		"description": "Upload format on mqtt",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "format-tags",
+					"value": 0
+				},
+				{
+					"key": "format-values",
+					"value": 1
+				}
+			]
+		}
+	},
 	"ssl": {
 		"name": "ssl",
 		"description": "Enable SSL connection",
