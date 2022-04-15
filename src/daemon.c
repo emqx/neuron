@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <fcntl.h>
 #include <signal.h>
 #include <sys/resource.h>
@@ -37,6 +38,7 @@ void daemonize()
     pid_t            pid;
     struct rlimit    rl;
     struct sigaction sa;
+    int              ret = -1;
 
     // clear file creation mask
     umask(0);
@@ -75,8 +77,10 @@ void daemonize()
 
     // attach file descriptors 0, 1 and 2 to /dev/null
     open("/dev/null", O_RDWR);
-    dup(0);
-    dup(0);
+    ret = dup(0);
+    assert(ret != -1);
+    ret = dup(0);
+    assert(ret != -1);
 }
 
 static inline int lock_file(int fd)
@@ -91,8 +95,10 @@ static inline int lock_file(int fd)
 
 int neuron_already_running()
 {
-    int  fd      = -1;
-    char buf[16] = { 0 };
+    int     fd      = -1;
+    char    buf[16] = { 0 };
+    int     ret     = -1;
+    ssize_t size    = -1;
 
     fd = open(NEURON_DAEMON_LOCK_FNAME, O_RDWR | O_CREAT,
               S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
@@ -111,8 +117,12 @@ int neuron_already_running()
     }
 
     // write process id to file
-    ftruncate(fd, 0);
+    ret = ftruncate(fd, 0);
+    assert(ret != -1);
+
     snprintf(buf, sizeof(buf), "%ld", (long) getpid());
-    write(fd, buf, strlen(buf) + 1);
+    size = write(fd, buf, strlen(buf) + 1);
+    assert(size != -1);
+
     return 0;
 }

@@ -148,7 +148,11 @@ static inline bool validate_cache(FILE *fp, int level, uint64_t since,
 
         // check against file modification, maybe due to log rotation
         fseek(fp, g_log_cache_.offset_end, SEEK_SET);
-        fgets(buf, sizeof(buf), fp);
+        char *ret = fgets(buf, sizeof(buf), fp);
+        if (NULL == ret) {
+            return false;
+        }
+
         if (NULL != strptime(buf, LOG_TIME_FMT, &tm)) {
             ts = mktime(&tm);
             if (ts == g_log_cache_.time) {

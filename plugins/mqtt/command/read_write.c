@@ -331,7 +331,7 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
 
     neu_int_val_t        int_val;
-    neu_data_val_t *     val;
+    neu_data_val_t *     val   = NULL;
     union neu_json_value value = write_req->value;
     neu_datatag_t *      tag =
         neu_datatag_tbl_get_by_name(table, write_req->tag_name);

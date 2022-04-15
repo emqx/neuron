@@ -412,7 +412,7 @@ int neu_datatag_string_etoh(char *str, int len)
         t[i] = str[i * 2];
     }
     memset(str, 0, len);
-    strncpy(str, t, strlen(t));
+    strncpy(str, t, strlen(str));
 
     free(t);
     return len / 2;
@@ -426,7 +426,7 @@ int neu_datatag_string_dtoh(char *str, int len)
         t[i] = str[i * 2 + 1];
     }
     memset(str, 0, len);
-    strncpy(str, t, strlen(t));
+    strncpy(str, t, strlen(str));
 
     free(t);
     return len / 2;
