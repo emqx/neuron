@@ -1448,8 +1448,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case MSG_CMD_RESP_PONG: {
             char *buf_ptr = msg_get_buf_ptr(pay_msg);
 
-            adapter->plugin_info.module->intf_funs->init(
-                adapter->plugin_info.plugin);
             adapter->state = ADAPTER_STATE_INIT;
             log_info("Adapter(%s) received pong: %s\n", adapter->name, buf_ptr);
             break;
@@ -1857,6 +1855,7 @@ int neu_adapter_init(neu_adapter_t *adapter)
         buf_ptr[strlen(adapter->name)] = 0;
         nng_sendmsg(adapter->nng.sock, out_msg, 0);
     }
+    adapter->plugin_info.module->intf_funs->init(adapter->plugin_info.plugin);
     return rv;
 }
 
