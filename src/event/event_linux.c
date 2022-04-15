@@ -63,10 +63,8 @@ struct event_data {
 };
 
 struct neu_events {
-    int             epoll_fd;
-    bool            running;
-    pthread_t       thread;
-    pthread_mutex_t mtx;
+    int       epoll_fd;
+    pthread_t thread;
 
     TAILQ_HEAD(, event_data) datas;
 };
@@ -74,10 +72,9 @@ struct neu_events {
 static void *event_loop(void *arg)
 {
     neu_events_t *events   = (neu_events_t *) arg;
-    bool          running  = events->running;
     int           epoll_fd = events->epoll_fd;
 
-    while (running) {
+    while (true) {
         struct epoll_event event = { 0 };
         struct event_data *data  = NULL;
 
@@ -86,6 +83,7 @@ static void *event_loop(void *arg)
             continue;
         }
         if (ret == -1) {
+            log_warn("event loop exit, errno: %d", errno);
             break;
         }
 
@@ -121,11 +119,6 @@ static void *event_loop(void *arg)
 
             break;
         }
-
-        pthread_mutex_lock(&events->mtx);
-        running  = events->running;
-        epoll_fd = events->epoll_fd;
-        pthread_mutex_unlock(&events->mtx);
     }
 
     return NULL;
@@ -136,10 +129,8 @@ neu_events_t *neu_event_new(void)
     neu_events_t *events = calloc(1, sizeof(struct neu_events));
 
     events->epoll_fd = epoll_create(1);
-    events->running  = true;
 
     TAILQ_INIT(&events->datas);
-    pthread_mutex_init(&events->mtx, NULL);
 
     pthread_create(&events->thread, NULL, event_loop, events);
 
@@ -150,12 +141,14 @@ int neu_event_close(neu_events_t *events)
 {
     struct event_data *data = NULL;
 
-    pthread_mutex_lock(&events->mtx);
-    events->running = false;
+    close(events->epoll_fd);
+
+    log_info("wait events loop exit: %d", events->epoll_fd);
+    pthread_join(events->thread, NULL);
+    log_info("events loop has exited: %d", events->epoll_fd);
 
     data = TAILQ_FIRST(&events->datas);
     while (data != NULL) {
-        epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, data->fd, NULL);
         TAILQ_REMOVE(&events->datas, data, node);
         close(data->fd);
         switch (data->type) {
@@ -170,11 +163,6 @@ int neu_event_close(neu_events_t *events)
 
         data = TAILQ_FIRST(&events->datas);
     }
-
-    pthread_mutex_unlock(&events->mtx);
-
-    close(events->epoll_fd);
-    pthread_mutex_destroy(&events->mtx);
 
     free(events);
     return 0;
@@ -206,9 +194,7 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     timer_ctx->fd         = timer_fd;
     timer_ctx->event_data = data;
 
-    pthread_mutex_lock(&events->mtx);
     TAILQ_INSERT_TAIL(&events->datas, data, node);
-    pthread_mutex_unlock(&events->mtx);
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, timer_fd, &event);
 
@@ -221,25 +207,9 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
 
 int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
 {
-    struct event_data *data = NULL;
     log_info("del timer: %d from epoll: %d", timer->fd, events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);
-
-    pthread_mutex_lock(&events->mtx);
-    TAILQ_FOREACH(data, &events->datas, node)
-    {
-        if (data->fd == timer->fd) {
-            TAILQ_REMOVE(&events->datas, data, node);
-            close(timer->fd);
-
-            free(timer->event_data);
-            free(timer);
-            break;
-        }
-    }
-
-    pthread_mutex_unlock(&events->mtx);
 
     return 0;
 }
@@ -262,9 +232,7 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
     io_ctx->fd         = io.fd;
     io_ctx->event_data = data;
 
-    pthread_mutex_lock(&events->mtx);
     TAILQ_INSERT_TAIL(&events->datas, data, node);
-    pthread_mutex_unlock(&events->mtx);
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, io.fd, &event);
 
@@ -276,24 +244,9 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 
 int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
 {
-    struct event_data *data = NULL;
     log_info("del io: %d from epoll: %d", io->fd, events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
-
-    pthread_mutex_lock(&events->mtx);
-    TAILQ_FOREACH(data, &events->datas, node)
-    {
-        if (data->fd == io->fd) {
-            TAILQ_REMOVE(&events->datas, data, node);
-
-            free(io->event_data);
-            free(io);
-            break;
-        }
-    }
-
-    pthread_mutex_unlock(&events->mtx);
 
     return 0;
 }

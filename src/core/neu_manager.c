@@ -1466,9 +1466,7 @@ int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id)
     }
     nng_mtx_unlock(manager->adapters_mtx);
 
-    if (adapter != NULL) {
-        neu_manager_uninit_adapter(manager, adapter);
-    }
+    neu_manager_uninit_adapter(manager, adapter);
 
     rv = manager_unreg_adapter(manager, adapter_id, true);
     return rv;
