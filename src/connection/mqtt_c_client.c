@@ -87,40 +87,125 @@ static neu_err_code_e client_destroy(mqtt_c_client_t *client);
 static neu_err_code_e client_subscribe_send(mqtt_c_client_t *       client,
                                             struct subscribe_tuple *tuple);
 
-static X509 *ssl_ctx_load_cert(const char *cert_file)
+// static X509 *ssl_ctx_load_cert(const char *cert_file)
+// {
+//     BIO * bio  = NULL;
+//     X509 *cert = NULL;
+//     bio        = BIO_new(BIO_s_file());
+//     if (NULL == bio) {
+//         return NULL;
+//     }
+
+//     int ret = BIO_read_filename(bio, cert_file);
+//     if (0 >= ret) {
+//         BIO_free_all(bio);
+//         return NULL;
+//     }
+
+//     cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+//     BIO_free_all(bio);
+//     return cert;
+// }
+
+static X509 *ssl_ctx_load_cert(const char *b64)
 {
-    BIO * bio  = NULL;
+    unsigned char *bin     = NULL;
+    int            out_len = 0;
+    bin                    = neu_decode64(&out_len, b64);
+    if (NULL == bin) {
+        return NULL;
+    }
+
     X509 *cert = NULL;
-    bio        = BIO_new(BIO_s_file());
-    if (NULL == bio) {
-        return NULL;
-    }
-
-    int ret = BIO_read_filename(bio, cert_file);
-    if (0 >= ret) {
-        BIO_free_all(bio);
-        return NULL;
-    }
-
-    cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+    BIO * bio  = NULL;
+    bio        = BIO_new_mem_buf((void *) bin, -1);
+    cert       = PEM_read_bio_X509(bio, NULL, 0, NULL);
     BIO_free_all(bio);
     return cert;
 }
 
-static EVP_PKEY *ssl_ctx_load_key(const char *key_file)
+// static EVP_PKEY *ssl_ctx_load_key(const char *key_file)
+// {
+//     EVP_PKEY *key = NULL;
+//     FILE *    fp  = NULL;
+//     key           = EVP_PKEY_new();
+//     fp            = fopen(key_file, "r");
+//     if (NULL == fp) {
+//         EVP_PKEY_free(key);
+//         return NULL;
+//     }
+
+//     PEM_read_PrivateKey(fp, &key, NULL, NULL);
+//     fclose(fp);
+//     return key;
+// }
+
+static EVP_PKEY *ssl_ctx_load_key(const char *b64)
 {
-    EVP_PKEY *key = NULL;
-    FILE *    fp  = NULL;
-    key           = EVP_PKEY_new();
-    fp            = fopen(key_file, "r");
-    if (NULL == fp) {
-        EVP_PKEY_free(key);
+    unsigned char *bin     = NULL;
+    int            out_len = 0;
+    bin                    = neu_decode64(&out_len, b64);
+    if (NULL == bin) {
         return NULL;
     }
 
-    PEM_read_PrivateKey(fp, &key, NULL, NULL);
-    fclose(fp);
+    EVP_PKEY *key = NULL;
+    BIO *     bio = NULL;
+    bio           = BIO_new_mem_buf((void *) bin, -1);
+    key           = PEM_read_bio_PrivateKey(bio, NULL, 0, NULL);
+    BIO_free_all(bio);
     return key;
+}
+
+bool ssl_ctx_load_cert_chain(SSL_CTX *context, const char *cert_buffer)
+{
+    BIO *cbio = BIO_new_mem_buf((void *) cert_buffer, -1);
+    if (!cbio)
+        return false;
+
+    X509_INFO *itmp          = NULL;
+    int        i             = 0; //, count = 0, type = X509_FILETYPE_PEM;
+    STACK_OF(X509_INFO) *inf = PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL);
+
+    if (!inf) {
+        BIO_free(cbio);
+        return false;
+    }
+
+    bool first = true;
+    for (i = 0; i < sk_X509_INFO_num(inf); i++) {
+        itmp = sk_X509_INFO_value(inf, i);
+        if (itmp->x509) {
+            if (first) {
+                first = false;
+
+                if (!SSL_CTX_use_certificate(context, itmp->x509)) {
+                    goto Error;
+                }
+
+                if (ERR_peek_error() != 0) {
+                    goto Error;
+                }
+
+                SSL_CTX_clear_chain_certs(context);
+            } else {
+                if (!SSL_CTX_add0_chain_cert(context, itmp->x509)) {
+                    goto Error;
+                }
+
+                itmp->x509 = NULL;
+            }
+        }
+    }
+
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    BIO_free(cbio);
+    return true;
+
+Error:
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    BIO_free(cbio);
+    return false;
 }
 
 static void ssl_ctx_init(struct reconnect_state *state)
