@@ -27,9 +27,9 @@ Neuron 的主要功能和特性如下：
 - 和 EMQ 的其他产品高度融合，包括 EMQ X、NanoMQ、eKuiper（由 EMQ 发起，现归属于 LF Edge 基金会维护运营） 等；
 - 支持 Neuron 运行期更新设备驱动。
 
-功能的完整列表，请参阅[应用和驱动使用介绍](https://github.com/neugates/nep/blob/main/docs/neuron2.x-driver.md)。
+功能的完整列表，请参阅[应用和驱动使用介绍](https://neugates.io/plugins)。
 
-获取更多信息，请访问[官网](https://www.emqx.com/zh/products/neuron)。
+获取更多信息，请访问[官网](https://neugates.io)。
 
 ## 架构设计
 
