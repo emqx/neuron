@@ -346,8 +346,6 @@ static void mqtt_routine_publish(mqtt_routine_t *routine)
         }
 
         free(result);
-    } else {
-        log_error_node(routine->plugin, "payload or topic is null");
     }
 }
 

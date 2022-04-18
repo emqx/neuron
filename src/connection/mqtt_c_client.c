@@ -315,7 +315,6 @@ static int bio_connect(struct reconnect_state *state)
     }
 
     if (do_connect_rv <= 0) {
-        log_error("bio connect error:%d", do_connect_rv);
         return -1;
     }
 
@@ -402,7 +401,6 @@ enum MQTTErrors inspector_callback(struct mqtt_client *mqtt)
         SSL *ssl = NULL;
         BIO_get_ssl(state->sock_fd, &ssl);
         if (X509_V_OK != SSL_get_verify_result(ssl)) {
-            log_error("x509 certificate verification failed");
             mqtt->error = MQTT_ERROR_SOCKET_ERROR;
         }
     }
