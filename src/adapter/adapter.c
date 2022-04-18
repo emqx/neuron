@@ -1433,10 +1433,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_EVENT_IO_READ:
         rv = nng_recvmsg(adapter->nng.sock, &msg, 0);
         if (rv == NNG_ECLOSED) {
-            nng_mtx_lock(adapter->nng.mtx);
-            adapter->state = ADAPTER_STATE_IDLE;
-            nng_mtx_unlock(adapter->nng.mtx);
-
             log_warn("nng socket closed.");
             return 0;
         }
