@@ -1349,12 +1349,13 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     assert(info->plugin_lib_name != NULL);
     assert(info->name != NULL);
 
+    adapter          = calloc(1, sizeof(neu_adapter_t));
+    adapter->cb_funs = callback_funs;
     switch (info->type) {
     case ADAPTER_TYPE_DRIVERX:
-        adapter = (neu_adapter_t *) neu_adapter_driver_create();
+        adapter = (neu_adapter_t *) neu_adapter_driver_create(adapter);
         break;
     default:
-        adapter = calloc(1, sizeof(neu_adapter_t));
         break;
     }
 
@@ -1371,7 +1372,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->plugin_info.kind = info->plugin_kind;
     adapter->manager          = manager;
     adapter->trans_kind       = NEURON_TRANS_DATAVAL;
-    adapter->cb_funs          = callback_funs;
 
     rv = nng_mtx_alloc(&adapter->nng.mtx);
     assert(rv == 0);
