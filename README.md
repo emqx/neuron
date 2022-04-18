@@ -27,9 +27,9 @@ The following is some important features of Neuron:
 - Highly integrated with other EMQ products, including EMQ X, NanoMQ, eKuiper(Initiated by EMQ and now maintained and operated by LF Edge).
 - Support updating device drivers during Neuron runtime.
 
-For a full list of new features, please read [Instructions for application and driver](https://github.com/neugates/nep/blob/main/docs/neuron2.x-driver.md)。
+For a full list of new features, please read [Instructions for application and driver](https://neugates.io/plugins)。
 
-For more information, please visit [Homepage](https://www.emqx.com/zh/products/neuron)。
+For more information, please visit [Homepage](https://neugates.io)。
 
 ## Architecture design
 
