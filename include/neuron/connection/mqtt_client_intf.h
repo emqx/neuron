@@ -53,7 +53,7 @@ typedef struct {
     int   will_retain;
     /* TLS options */
     char *ca_path;
-    char *ca_file;
+    char *ca;
     char *cert;
     char *key;
     char *keypass;

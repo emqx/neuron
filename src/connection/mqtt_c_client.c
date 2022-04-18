@@ -87,40 +87,91 @@ static neu_err_code_e client_destroy(mqtt_c_client_t *client);
 static neu_err_code_e client_subscribe_send(mqtt_c_client_t *       client,
                                             struct subscribe_tuple *tuple);
 
-static X509 *ssl_ctx_load_cert(const char *cert_file)
+static X509 *ssl_ctx_load_cert(const char *b64)
 {
-    BIO * bio  = NULL;
+    unsigned char *bin = NULL;
+    int            len = 0;
+    bin                = neu_decode64(&len, b64);
+    if (NULL == bin) {
+        return NULL;
+    }
+
     X509 *cert = NULL;
-    bio        = BIO_new(BIO_s_file());
-    if (NULL == bio) {
-        return NULL;
-    }
-
-    int ret = BIO_read_filename(bio, cert_file);
-    if (0 >= ret) {
-        BIO_free_all(bio);
-        return NULL;
-    }
-
-    cert = PEM_read_bio_X509(bio, NULL, 0, NULL);
+    BIO * bio  = NULL;
+    bio        = BIO_new_mem_buf((void *) bin, len);
+    cert       = PEM_read_bio_X509(bio, NULL, 0, NULL);
     BIO_free_all(bio);
+    free(bin);
     return cert;
 }
 
-static EVP_PKEY *ssl_ctx_load_key(const char *key_file)
+static EVP_PKEY *ssl_ctx_load_key(const char *b64)
 {
-    EVP_PKEY *key = NULL;
-    FILE *    fp  = NULL;
-    key           = EVP_PKEY_new();
-    fp            = fopen(key_file, "r");
-    if (NULL == fp) {
-        EVP_PKEY_free(key);
+    unsigned char *bin = NULL;
+    int            len = 0;
+    bin                = neu_decode64(&len, b64);
+    if (NULL == bin) {
         return NULL;
     }
 
-    PEM_read_PrivateKey(fp, &key, NULL, NULL);
-    fclose(fp);
+    EVP_PKEY *key = NULL;
+    BIO *     bio = NULL;
+    bio           = BIO_new_mem_buf((void *) bin, len);
+    key           = PEM_read_bio_PrivateKey(bio, NULL, 0, NULL);
+    BIO_free_all(bio);
+    free(bin);
     return key;
+}
+
+bool ssl_ctx_load_ca(SSL_CTX *ctx, const char *b64)
+{
+    unsigned char *bin = NULL;
+    int            len = 0;
+    bin                = neu_decode64(&len, b64);
+    if (NULL == bin) {
+        return false;
+    }
+
+    BIO *cbio = BIO_new_mem_buf((void *) bin, len);
+    if (!cbio) {
+        free(bin);
+        return false;
+    }
+
+    X509_STORE *cts = SSL_CTX_get_cert_store(ctx);
+    if (!cts) {
+        free(bin);
+        return false;
+    }
+
+    X509_INFO *itmp          = NULL;
+    int        i             = 0;
+    int        count         = 0;
+    STACK_OF(X509_INFO) *inf = PEM_X509_INFO_read_bio(cbio, NULL, NULL, NULL);
+
+    if (!inf) {
+        BIO_free(cbio);
+        free(bin);
+        return false;
+    }
+
+    for (i = 0; i < sk_X509_INFO_num(inf); i++) {
+        itmp = sk_X509_INFO_value(inf, i);
+        if (itmp->x509) {
+            X509_STORE_add_cert(cts, itmp->x509);
+            count++;
+        }
+
+        if (itmp->crl) {
+            X509_STORE_add_crl(cts, itmp->crl);
+            count++;
+        }
+    }
+
+    sk_X509_INFO_pop_free(inf, X509_INFO_free);
+    BIO_free(cbio);
+    free(bin);
+    return true;
 }
 
 static void ssl_ctx_init(struct reconnect_state *state)
@@ -128,26 +179,23 @@ static void ssl_ctx_init(struct reconnect_state *state)
     assert(NULL != state);
 
     const char *ca_file   = state->ca_file;
-    const char *ca_path   = state->ca_path;
     const char *cert_file = state->cert_file;
     const char *key_file  = state->key_file;
 
     assert(NULL != ca_file && 0 < strlen(ca_file));
-    assert(NULL != ca_path && 0 < strlen(ca_path));
 
     SSL_load_error_strings();
     ERR_load_BIO_strings();
     ERR_load_crypto_strings();
     OpenSSL_add_all_algorithms();
     SSL_library_init();
-
     state->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
 
+    // setup cert
     if (NULL != cert_file && 0 < strlen(cert_file)) {
         state->cert = ssl_ctx_load_cert(cert_file);
         if (NULL != state->cert) {
-            int rc = SSL_CTX_use_certificate(state->ssl_ctx, state->cert);
-            if (0 >= rc) {
+            if (0 >= SSL_CTX_use_certificate(state->ssl_ctx, state->cert)) {
                 log_error("failed to use certificate");
             }
         } else {
@@ -155,11 +203,11 @@ static void ssl_ctx_init(struct reconnect_state *state)
         }
     }
 
+    // setup key
     if (NULL != key_file && 0 < strlen(key_file)) {
         state->key = ssl_ctx_load_key(key_file);
         if (NULL != state->key) {
-            int rc = SSL_CTX_use_PrivateKey(state->ssl_ctx, state->key);
-            if (0 >= rc) {
+            if (0 >= SSL_CTX_use_PrivateKey(state->ssl_ctx, state->key)) {
                 log_error("failed to use privatekey");
             }
         } else {
@@ -173,7 +221,8 @@ static void ssl_ctx_init(struct reconnect_state *state)
         }
     }
 
-    if (!SSL_CTX_load_verify_locations(state->ssl_ctx, ca_file, ca_path)) {
+    // setup ca from base64
+    if (!ssl_ctx_load_ca(state->ssl_ctx, ca_file)) {
         log_error("failed to load ca");
     }
 }
@@ -227,11 +276,6 @@ static BIO *bio_ssl_create(SSL_CTX *ssl_ctx, const char *addr, const char *port)
     BIO_set_conn_hostname(bio, addr);
     BIO_set_nbio(bio, 1);
     BIO_set_conn_port(bio, port);
-
-    if (SSL_get_verify_result(ssl) != X509_V_OK) {
-        log_error("error: x509 certificate verification failed");
-    }
-
     return bio;
 }
 
@@ -351,6 +395,21 @@ static void subscribe_on_reconnect(mqtt_c_client_t *client)
     }
 }
 
+enum MQTTErrors inspector_callback(struct mqtt_client *mqtt)
+{
+    struct reconnect_state *state = mqtt->reconnect_state;
+    if (0 == strcmp(state->connection, "ssl://")) {
+        SSL *ssl = NULL;
+        BIO_get_ssl(state->sock_fd, &ssl);
+        if (X509_V_OK != SSL_get_verify_result(ssl)) {
+            log_error("x509 certificate verification failed");
+            mqtt->error = MQTT_ERROR_SOCKET_ERROR;
+        }
+    }
+
+    return mqtt->error;
+}
+
 static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
 {
     assert(NULL != mqtt);
@@ -358,7 +417,8 @@ static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
 
     struct reconnect_state *state =
         *((struct reconnect_state **) p_reconnect_state);
-    mqtt_c_client_t *client = state->client;
+    mqtt_c_client_t *client  = state->client;
+    mqtt->inspector_callback = inspector_callback;
 
     bio_update_connection(state);
 
@@ -477,8 +537,7 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
     state->password               = strdup(client->option->password);
     state->keepalive              = client->option->keepalive_interval;
     state->clean                  = client->option->clean_session;
-    state->ca_file                = strdup(client->option->ca_file);
-    state->ca_path                = strdup(client->option->ca_path);
+    state->ca_file                = strdup(client->option->ca);
     state->cert_file              = strdup(client->option->cert);
     state->key_file               = strdup(client->option->key);
     state->client                 = client;
