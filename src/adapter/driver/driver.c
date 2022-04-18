@@ -107,12 +107,12 @@ static int update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
     return 0;
 }
 
-neu_adapter_driver_t *neu_adapter_driver_create()
+neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter)
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
 
-    // driver->adapter = *adapter;
-    // free(adapter);
+    driver->adapter = *adapter;
+    free(adapter);
 
     pthread_mutex_init(&driver->grp_mtx, NULL);
     driver->cache                         = neu_driver_cache_new();
