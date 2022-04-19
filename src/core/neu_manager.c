@@ -737,7 +737,8 @@ static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
 
     neu_trans_buf_t *trans_buf;
     trans_buf = &neu_trans_data->trans_buf;
-    log_info("dispatch databuf to %d subscribes in sub_pipes", sub_pipes->size);
+    log_trace("dispatch databuf to %d subscribes in sub_pipes",
+              sub_pipes->size);
     VECTOR_FOR_EACH(sub_pipes, iter)
     {
         size_t   msg_size;
@@ -761,7 +762,7 @@ static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
             out_neu_trans_data->node_name = neu_trans_data->node_name;
             neu_trans_buf_copy(&out_neu_trans_data->trans_buf, trans_buf);
             nng_msg_set_pipe(out_msg, msg_pipe);
-            log_debug("Forward databuf to pipe: %d", msg_pipe);
+            log_trace("Forward databuf to pipe: %d", msg_pipe);
             nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
         }
     }
