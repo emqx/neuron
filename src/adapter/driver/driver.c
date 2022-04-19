@@ -270,6 +270,13 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
         if (sg != NULL) {
             driver->adapter.plugin_info.module->intf_funs->driver.del_group(
                 driver->adapter.plugin_info.plugin, &sg->grp);
+            for (neu_datatag_t **tag =
+                     (neu_datatag_t **) utarray_front(sg->grp.tags);
+                 tag != NULL;
+                 tag = (neu_datatag_t **) utarray_next(sg->grp.tags, tag)) {
+                neu_driver_cache_del(driver->cache, (*tag)->name);
+            }
+
             HASH_DEL(driver->grps, sg);
             neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
             neu_event_del_timer(driver->driver_events, sg->read);
@@ -326,6 +333,12 @@ static int read_callback(void *usr_data)
         sg->driver->adapter.plugin_info.module->intf_funs->driver.del_group(
             sg->driver->adapter.plugin_info.plugin, &sg->grp);
 
+        for (neu_datatag_t **tag =
+                 (neu_datatag_t **) utarray_front(sg->grp.tags);
+             tag != NULL;
+             tag = (neu_datatag_t **) utarray_next(sg->grp.tags, tag)) {
+            neu_driver_cache_del(sg->driver->cache, (*tag)->name);
+        }
         neu_plugin_group_t grp = { .group_name = sg->grp.group_name };
         load_tags(sg->driver, new_config, &grp.tags);
 
