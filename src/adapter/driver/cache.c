@@ -153,6 +153,18 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *key,
 
 void neu_driver_cache_del(neu_driver_cache_t *cache, const char *key)
 {
-    (void) cache;
-    (void) key;
+    struct elem *elem = NULL;
+
+    pthread_mutex_lock(&cache->mtx);
+    HASH_FIND_STR(cache->table, key, elem);
+
+    if (elem != NULL) {
+        HASH_DEL(cache->table, elem);
+        if (elem->n_byte != 0) {
+            free(elem->bytes);
+        }
+        free(elem);
+    }
+
+    pthread_mutex_unlock(&cache->mtx);
 }
