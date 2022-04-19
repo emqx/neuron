@@ -34,6 +34,7 @@ endif()
 
 configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
 configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
+configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utlist.h)
 
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)

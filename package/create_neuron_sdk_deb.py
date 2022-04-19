@@ -55,6 +55,8 @@ rules.append(mkdeb.FileMap("../include/neuron/utils/uthash.h",
              "/usr/local/include/neuron/utils/"))
 rules.append(mkdeb.FileMap("../include/neuron/utils/utarray.h",
              "/usr/local/include/neuron/utils/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/utlist.h",
+             "/usr/local/include/neuron/utils/"))
 rules.append(mkdeb.FileMap("../include/neuron/adapter.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/adapter_msg.h",
