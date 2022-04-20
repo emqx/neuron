@@ -65,6 +65,7 @@ struct event_data {
 struct neu_events {
     int       epoll_fd;
     pthread_t thread;
+    bool      stop;
 
     TAILQ_HEAD(, event_data) datas;
 };
@@ -82,8 +83,9 @@ static void *event_loop(void *arg)
         if (ret == 0) {
             continue;
         }
-        if (ret == -1) {
-            log_warn("event loop exit, errno: %d", errno);
+        if (ret == -1 || events->stop) {
+            log_warn("event loop exit, errno: %d, stop: %d", errno,
+                     events->stop);
             break;
         }
 
@@ -129,6 +131,7 @@ neu_events_t *neu_event_new(void)
     neu_events_t *events = calloc(1, sizeof(struct neu_events));
 
     events->epoll_fd = epoll_create(1);
+    events->stop     = false;
 
     TAILQ_INIT(&events->datas);
 
@@ -141,6 +144,7 @@ int neu_event_close(neu_events_t *events)
 {
     struct event_data *data = NULL;
 
+    events->stop = true;
     close(events->epoll_fd);
 
     log_info("wait events loop exit: %d", events->epoll_fd);
