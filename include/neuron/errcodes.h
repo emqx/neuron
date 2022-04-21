@@ -24,6 +24,10 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
+typedef int32_t neu_error;
+
 typedef enum {
     NEU_ERR_SUCCESS = 0,
 
