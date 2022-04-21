@@ -93,13 +93,15 @@ typedef struct adapter_callbacks {
     int (*response)(neu_adapter_t *adapter, neu_response_t *resp);
     int (*event_notify)(neu_adapter_t *adapter, neu_event_notify_t *event);
 
-    void (*set_link_status)(neu_adapter_t *        adapter,
-                            neu_node_link_status_e link_status);
+    void (*link_status)(neu_adapter_t *        adapter,
+                        neu_node_link_status_e link_status);
 
     union {
         struct {
-            int (*update)(neu_adapter_t *adapter, const char *name,
-                          neu_dvalue_t value);
+            void (*update)(neu_adapter_t *adapter, const char *name,
+                           neu_dvalue_t value);
+            void (*write_response)(neu_adapter_t *adapter, uint32_t req_id,
+                                   neu_error error);
         } driver;
     };
 } adapter_callbacks_t;

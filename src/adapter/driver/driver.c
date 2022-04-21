@@ -62,8 +62,31 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
 static void load_tags(neu_adapter_driver_t *driver, neu_taggrp_config_t *group,
                       UT_array **tags);
 static void free_tags(UT_array *tags);
+static void update(neu_adapter_t *adapter, const char *name,
+                   neu_dvalue_t value);
+static void write_response(neu_adapter_t *adapter, uint32_t req_id,
+                           neu_error error);
+static void write_response(neu_adapter_t *adapter, uint32_t req_id,
+                           neu_error error)
+{
+    neu_reqresp_write_resp_t data = {
+        .grp_config = NULL,
+        .data_val   = neu_datatag_pack_create(1),
+    };
+    neu_response_t resp = {
+        .req_id    = req_id,
+        .resp_type = NEU_REQRESP_WRITE_RESP,
+        .buf       = &data,
+        .buf_len   = sizeof(neu_reqresp_write_resp_t),
+        .recver_id = 0,
+    };
 
-static int update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
+    neu_datatag_pack_add(data.data_val, 0, NEU_DTYPE_ERRORCODE, 0,
+                         (void *) &error);
+    adapter->cb_funs.response(adapter, &resp);
+}
+
+static void update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
 {
     neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
     uint16_t              n_byte = 0;
@@ -104,7 +127,6 @@ static int update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
         neu_driver_cache_update(driver->cache, name, 0, n_byte,
                                 value.value.bytes);
     }
-    return 0;
 }
 
 neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter)
@@ -115,9 +137,10 @@ neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter)
     free(adapter);
 
     pthread_mutex_init(&driver->grp_mtx, NULL);
-    driver->cache                         = neu_driver_cache_new();
-    driver->driver_events                 = neu_event_new();
-    driver->adapter.cb_funs.driver.update = update;
+    driver->cache                                 = neu_driver_cache_new();
+    driver->driver_events                         = neu_event_new();
+    driver->adapter.cb_funs.driver.update         = update;
+    driver->adapter.cb_funs.driver.write_response = write_response;
 
     return driver;
 }
