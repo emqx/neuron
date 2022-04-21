@@ -200,8 +200,8 @@ file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR}/config
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/ekuiper/ekuiper.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/modbus/modbus-tcp.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
-file(COPY ${CMAKE_SOURCE_DIR}/private.key DESTINATION ${CMAKE_BINARY_DIR}/config)
-file(COPY ${CMAKE_SOURCE_DIR}/public.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/config)
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
 
 # define for plugins
 include_directories(include/neuron)

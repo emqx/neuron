@@ -48,8 +48,8 @@ cp build/libneuron-base.so \
     ${package_name}
 
 cp build/config/neuron.yaml \
-    private.key \
-    public.pem \
+    neuron.key \
+    neuron.pem \
     ${package_name}/config/
 
 cp build/plugins/schema/ekuiper.json \

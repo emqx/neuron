@@ -16,48 +16,48 @@ login with username and password, it should return success
     Integer    response status    200
     output     $.token
 
-logout without token, it should return ERR_NEED_TOKEN
-    POST       /api/v2/logout
-    Integer    response status    401
-    Integer    $.error            ${ERR_NEED_TOKEN}
+# logout without token, it should return ERR_NEED_TOKEN
+#    POST       /api/v2/logout
+#    Integer    response status    401
+#    Integer    $.error            ${ERR_NEED_TOKEN}
 
-logout with invalid token, it should return ERR_DECODE_TOKEN
-    Set Headers    {"Authorization":"Bearer xxxxxxxx"}
-    POST           /api/v2/logout
+# logout with invalid token, it should return ERR_DECODE_TOKEN
+#    Set Headers    {"Authorization":"Bearer xxxxxxxx"}
+#    POST           /api/v2/logout
 
-    Integer    response status    401
-    Integer    $.error            ${ERR_DECODE_TOKEN}
+#    Integer    response status    401
+#    Integer    $.error            ${ERR_DECODE_TOKEN}
 
-logout with invalid token, it should return ERR_EXPIRED_TOKEN
-    Set Headers    {"Authorization":"Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MzgzNTczODh9.AQPun0sh20cJ-S8JOH3zAJu_CkjLGOdV-jghtkqyN3RCBSMAyPhSAP2L2H22sZF_id6l-EYVFvJXVFi9vVZ1qT1xTHpakze84Kbf_KkWfg_SbhywTZ8HgLhkf0_9en2eyoCPUA7NxM0l6_JZJbrTLMlb2b8bPq-CjXbNv-vt4yjyovZTmWuU379aCU4rc4FPYGvBucLVRTxNBGFzJwHQ22pAtkbByIrb5pPOqOT8-73-D6NwawPXAHouNUSjrXuqTIlf_tG6FZld0CGekm1EI93m1IoJ_Y-z4M419BAHpFFD-uUVXqnZPc3AgRhrXvs98IsE5tvwzuZqNaYh34iHiQ"}
-    POST           /api/v2/logout
+# logout with invalid token, it should return ERR_EXPIRED_TOKEN
+#    Set Headers    {"Authorization":"Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJOZXVyb24iLCJib2R5RW5jb2RlIjowLCJleHAiOjE2NTA2MTc5NTYsImlhdCI6MTY1MDYxNDM1NiwiaXNzIjoiTmV1cm9uIn0.Xzosngbxnww0kG9MOE-_m5POhms0hkrigXO1aXqIdbmW8yToVVzzRsPdeLBh8NdzzZzAER7VDSzArjTlJskfVbn9kCt_8UzJEEl-zesCLqSj9rUccUXLvRMzqumIci-cZTvPiD8RPpT5IStZAwpbnPg0VMeU7zYV61EZj3fdvf3LNqwr6uzY-6JNt-dOgqc-knY_ibPW5Z_r-I_Y5jvNi7tR-OAokzbvbTJyEas4pxfGhsB-A6vFFnvIpO-PwnZLWbLMuqyrJTH1cGWZyjQfsezYr5QNNHiqHLhoMtsQS2umQO4QA69xjb_sWioM2_-coBeFw1p0vRpOu2ES5aILEQ"}
+#    POST           /api/v2/logout
 
-    Integer    response status    403
-    Integer    $.error            ${ERR_EXPIRED_TOKEN}
+#    Integer    response status    403
+#    Integer    $.error            ${ERR_EXPIRED_TOKEN}
 
-logout with invalid token, it should return ERR_INVALID_TOKEN
-    ${token} =     LOGIN
-    ${jwt} =       Catenate                       Bearer    ${token}
-    Set Headers    {"Authorization": "${jwt}"}
-    LOGOUT
+# logout with invalid token, it should return ERR_INVALID_TOKEN
+#    ${token} =     LOGIN
+#    ${jwt} =       Catenate                       Bearer    ${token}
+#    Set Headers    {"Authorization": "${jwt}"}
+#    LOGOUT
 
-    Set Headers    {"Authorization": "${jwt}"}
-    POST           /api/v2/logout
-    Integer        response status                403
-    Integer        $.error                        ${ERR_INVALID_TOKEN}
+#    Set Headers    {"Authorization": "${jwt}"}
+#    POST           /api/v2/logout
+#    Integer        response status                403
+#    Integer        $.error                        ${ERR_INVALID_TOKEN}
 
-logout with valid token, it should return success
-    ${token} =     LOGIN
-    ${jwt} =       Catenate                      Bearer    ${token}
-    Set Headers    {"Authorization":"${jwt}"}
-    LOGOUT
+# logout with valid token, it should return success
+#    ${token} =     LOGIN
+#    ${jwt} =       Catenate                      Bearer    ${token}
+#    Set Headers    {"Authorization":"${jwt}"}
+#    LOGOUT
 
 *** Keywords ***
 Neuron Context Ready
-  Import Neuron API Resource
-  Skip If Not Http API
+    Import Neuron API Resource
+    Skip If Not Http API
 
-  Neuron Ready
+    Neuron Ready
 
 Neuron Context Stop
-  Stop Neuron      remove_persistence_data=True
+    Stop Neuron    remove_persistence_data=True

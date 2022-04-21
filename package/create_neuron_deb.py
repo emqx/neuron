@@ -18,8 +18,8 @@ rules.append(mkdeb.FileMap("../build/neuron", "/opt/neuron/", "x"))
 rules.append(mkdeb.FileMap("../.gitkeep", "/opt/neuron/logs/"))
 rules.append(mkdeb.FileMap("../.gitkeep", "/opt/neuron/core/"))
 
-rules.append(mkdeb.FileMap("../private.key", "/opt/neuron/config/"))
-rules.append(mkdeb.FileMap("../public.pem", "/opt/neuron/config/"))
+rules.append(mkdeb.FileMap("../neuron.key", "/opt/neuron/config/"))
+rules.append(mkdeb.FileMap("../neuron.pem", "/opt/neuron/config/"))
 rules.append(mkdeb.FileMap("../neuron.yaml", "/opt/neuron/config/"))
 
 rules.append(mkdeb.FileMap("../default_plugins.json",

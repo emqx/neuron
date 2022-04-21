@@ -25,10 +25,11 @@ extern "C" {
 
 #include <jwt.h>
 
-int  neu_jwt_init(char *pub_key_path, char *priv_key_path);
+int  neu_jwt_init(char *dir_path);
 int  neu_jwt_new(char **token);
 int  neu_jwt_validate(char *b_token);
 void neu_jwt_destroy();
+
 #ifdef __cplusplus
 }
 #endif
