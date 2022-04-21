@@ -18,11 +18,11 @@
 		"valid": {
 			"map": [
 				{
-					"key": "format-tags",
+					"key": "format-values",
 					"value": 0
 				},
 				{
-					"key": "format-values",
+					"key": "format-tags",
 					"value": 1
 				}
 			]

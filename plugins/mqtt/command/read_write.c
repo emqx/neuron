@@ -277,12 +277,12 @@ char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
     neu_json_read_resp_t json = { 0 };
     wrap_read_response_json_object(array, &json, plugin, (uint32_t) sender);
 
-    if (0 == upload_format) {
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+    if (0 == upload_format) { // values
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
-    } else if (1 == upload_format) {
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
+    } else if (1 == upload_format) { // tags
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
     } else {
