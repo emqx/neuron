@@ -226,7 +226,7 @@ ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len)
 {
     conn_tcp_server_listen(conn);
-    ssize_t ret = send(fd, buf, len, MSG_NOSIGNAL);
+    ssize_t ret = send(fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
     if (ret != len) {
         log_error("tcp server fd: %d, send buf len: %d, ret: %d, "
                   "errno: %s(%d)",
@@ -271,7 +271,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             break;
         case NEU_CONN_TCP_CLIENT:
             fd  = conn->fd;
-            ret = send(conn->fd, buf, len, MSG_NOSIGNAL);
+            ret = send(conn->fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
             if (ret != len) {
                 log_error("tcp client fd: %d, send buf len: %d, ret: %d, "
                           "errno: %s(%d)",
