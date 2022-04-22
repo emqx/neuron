@@ -115,8 +115,7 @@ target_link_libraries(http_test neuron-base gtest_main gtest yaml jansson nng)
 #file(COPY ${CMAKE_SOURCE_DIR}/plugin_param_schema.json DESTINATION ${CMAKE_BINARY_DIR}/tests)
 add_executable(mqtt_test mqtt_test.cc 
 	${CMAKE_SOURCE_DIR}/src/config.c
-	${CMAKE_SOURCE_DIR}/plugins/mqtt/util.c
-	${CMAKE_SOURCE_DIR}/plugins/mqtt/command/node.c)
+	${CMAKE_SOURCE_DIR}/plugins/mqtt/util.c)
 target_include_directories(mqtt_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src
 	${CMAKE_SOURCE_DIR}/include       

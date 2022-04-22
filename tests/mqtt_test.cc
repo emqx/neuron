@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include "command/node.h"
 #include "util.h"
 #include <neuron.h>
 

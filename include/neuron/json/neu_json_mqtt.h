@@ -31,13 +31,6 @@ extern "C" {
 
 #include <stdint.h>
 
-#define NEU_MQTT_CMD_GET "get"
-#define NEU_MQTT_CMD_SET "set"
-#define NEU_MQTT_CMD_ADD "add"
-#define NEU_MQTT_CMD_UPDATE "update"
-#define NEU_MQTT_CMD_DELETE "delete"
-#define NEU_MQTT_CMD_NONE ""
-
 typedef struct {
     char *uuid;
     char *command;
