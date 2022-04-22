@@ -12,48 +12,64 @@ ${app_node}       app-node
 
 *** Test Cases ***
 Add group config under non-existent node, it should return failure
+  Skip If MQTT API
+
   ${res} =                  Add Group Config                ${1234}               ${test_gconfig}             1000
 
   Check Response Status     ${res}                          404
   Check Error Code          ${res}                          ${ERR_NODE_NOT_EXIST}
 
 Add group config under existent node, it should return success
+  Skip If MQTT API
+
   ${res} =                  Add Group Config                ${test_node_id}       ${test_gconfig}             1000
 
   Check Response Status     ${res}                          200
   Check Error Code          ${res}                          ${ERR_SUCCESS}
 
 Delete a non-existent group config, it should return failure
+  Skip If MQTT API
+
   ${res} =                  Del Group Config                ${test_node_id}       xxxx
 
   Check Response Status     ${res}                          404
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 Delete a group config from non-existent node, it should return failure
+  Skip If MQTT API
+
   ${res} =                  Del Group Config                ${1234}               ${test_gconfig}
 
   Check Response Status     ${res}                          404
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 Delete a group config, it should return success
+  Skip If MQTT API
+
   ${res} =                  Del Group Config                ${test_node_id}        ${test_gconfig}
 
   Check Response Status     ${res}                          200
   Check Error Code          ${res}                          ${ERR_SUCCESS}
 
 Update a non-existent group config, it should return failure
+  Skip If MQTT API
+
   ${res} =                  Update Group Config             ${test_node_id}       xxxx                      2000
 
   Check Response Status     ${res}                          404
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 Update a group config from non-existent node, it should return failure
+  Skip If MQTT API
+
   ${res} =                  Update Group Config             ${1234}               ${test_gconfig}           2000
 
   Check Response Status     ${res}                          404
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 Add a group config to the node, then get the group config from this node, it should return the group config
+  Skip If MQTT API
+
   ${res} =                  Add Group Config                ${test_node_id}       ${test_gconfig}           1000
 
   Check Response Status     ${res}                          200
@@ -67,6 +83,8 @@ Add a group config to the node, then get the group config from this node, it sho
   Should Be Equal As Integers                               ${config}[interval]  1000
 
 Update the interval of the test group config, it should return success
+  Skip If MQTT API
+
   ${res} =                  Update Group Config             ${test_node_id}       ${test_gconfig}           2000
 
   Check Response Status     ${res}                          200
@@ -80,6 +98,8 @@ Update the interval of the test group config, it should return success
   Should Be Equal As Integers                               ${config}[interval]  2000
 
 North APP subscribe non-existent group config, it should return failure
+  Skip If MQTT API
+
   ${app_node_id} =          Add Node And Return ID          ${NODE_MQTT}           ${app_node}               ${PLUGIN_MQTT}
   ${driver_node_id} =       Add Node And Return ID          ${NODE_DRIVER}        ${driver_node}            ${PLUGIN_MODBUS_TCP}
 
@@ -89,6 +109,8 @@ North APP subscribe non-existent group config, it should return failure
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 North APP subscribe group config, it should return success
+  Skip If MQTT API
+
   ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
   ${driver_node_id} =       Get Node ID                     ${NODE_DRIVER}        ${driver_node}
   ${res} =                  Add Group Config                ${driver_node_id}     grp_config                1000
@@ -99,6 +121,8 @@ North APP subscribe group config, it should return success
   Check Error Code          ${res}                          ${ERR_SUCCESS}
 
 Query the subscribers of the group config, it should return all nodes subscribed to this group
+  Skip If MQTT API
+
   ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
   ${driver_node_id1} =      Get Node ID                     ${NODE_DRIVER}        ${driver_node}
 
@@ -139,6 +163,8 @@ Query the subscribers of the group config, it should return all nodes subscribed
 
 
 Delete the subscribe group config, it should return failure
+  Skip If MQTT API
+
   ${driver_node_id1} =      Get Node ID                     ${NODE_DRIVER}        ${driver_node}
 
   ${res} =                  Del Group Config                ${driver_node_id1}    grp_config
@@ -147,6 +173,8 @@ Delete the subscribe group config, it should return failure
   Check Error Code          ${res}                          ${ERR_GRP_CONFIG_IN_USE}
 
 North APP unsubscribe non-existent group config, it should return failure
+  Skip If MQTT API
+
   ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
   ${driver_node_id} =       Get Node ID                     ${NODE_DRIVER}        ${driver_node}
   ${res} =                  Unsubscribe Group               ${driver_node_id}     ${app_node_id}            xxgrp_config
@@ -155,6 +183,8 @@ North APP unsubscribe non-existent group config, it should return failure
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 North APP unsubscribe group config, it should return success
+  Skip If MQTT API
+
   ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
   ${driver_node_id1} =      Get Node ID                     ${NODE_DRIVER}        ${driver_node}
   ${driver_node_id2} =      Get Node ID                     ${NODE_DRIVER}        driver-node2

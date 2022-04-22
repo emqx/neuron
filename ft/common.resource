@@ -58,41 +58,17 @@ ${TAG_DATA_TYPE_STRING}	15
 ${PLUGIN_MODBUS_TCP}	modbus-tcp
 ${PLUGIN_MQTT}    mqtt
 
-${MQTT_CMD_GET}                             get
-${MQTT_CMD_SET}                             set
-${MQTT_CMD_ADD}                             add
-${MQTT_CMD_UPDATE}                          update
-${MQTT_CMD_DELETE}                          delete 
 ${MQTT_CMD_NONE}                             
 
 ${MQTT_CLIENTID}                            123456
 ${TOPIC_PING_REQ}                           neuron/${MQTT_CLIENTID}/ping
-${TOPIC_NODE_REQ}                           neuron/${MQTT_CLIENTID}/node/req
-${TOPIC_GCONFIG_REQ}                        neuron/${MQTT_CLIENTID}/gconfig/req
-${TOPIC_TAGS_REQ}                           neuron/${MQTT_CLIENTID}/tags/req
-${TOPIC_PLUGIN_REQ}                         neuron/${MQTT_CLIENTID}/plugin/req
-${TOPIC_SUBSCRIBE_REQ}                      neuron/${MQTT_CLIENTID}/subscribe/req
 ${TOPIC_READ_REQ}                           neuron/${MQTT_CLIENTID}/read/req
 ${TOPIC_WRITE_REQ}                          neuron/${MQTT_CLIENTID}/write/req
-${TOPIC_TTYS_REQ}                           neuron/${MQTT_CLIENTID}/ttys/req
-${TOPIC_SCHEMA_REQ}                         neuron/${MQTT_CLIENTID}/schema/plugin/req
-${TOPIC_SETTING_REQ}                        neuron/${MQTT_CLIENTID}/node/setting/req
-${TOPIC_CTR_REQ}                            neuron/${MQTT_CLIENTID}/node/ctl/req
-${TOPIC_STATE_REQ}                          neuron/${MQTT_CLIENTID}/node/state/req
 
 ${TOPIC_STATUS_RES}                         neuron/${MQTT_CLIENTID}/status
-${TOPIC_NODE_RES}                           neuron/${MQTT_CLIENTID}/node/resp
-${TOPIC_GCONFIG_RES}                        neuron/${MQTT_CLIENTID}/gconfig/resp
-${TOPIC_TAGS_RES}                           neuron/${MQTT_CLIENTID}/tags/resp
-${TOPIC_PLUGIN_RES}                         neuron/${MQTT_CLIENTID}/plugin/resp
-${TOPIC_SUBSCRIBE_RES}                      neuron/${MQTT_CLIENTID}/subscribe/resp
 ${TOPIC_READ_RES}                           neuron/${MQTT_CLIENTID}/read/resp
 ${TOPIC_WRITE_RES}                          neuron/${MQTT_CLIENTID}/write/resp
 ${TOPIC_TTYS_RES}                           neuron/${MQTT_CLIENTID}/ttys/resp
-${TOPIC_SCHEMA_RES}                         neuron/${MQTT_CLIENTID}/schema/plugin/resp
-${TOPIC_SETTING_RES}                        neuron/${MQTT_CLIENTID}/node/setting/resp
-${TOPIC_CTR_RES}                            neuron/${MQTT_CLIENTID}/node/ctl/resp
-${TOPIC_STATE_RES}                          neuron/${MQTT_CLIENTID}/node/state/resp
 
 ${MQTT_UUID}                                123456-789abc-123456-aabbcc
 ${MQTT_CONFIG_HOST}                         127.0.0.1
@@ -157,6 +133,9 @@ Skip If Not Http API
 
 Skip If Not MQTT API
     Skip If    $NEURON_API != "mqtt"    Current API is not `mqtt`, just skip
+
+Skip If MQTT API
+    Skip If    $NEURON_API == "mqtt"    Current API is not `mqtt`, just skip
 
 Copy Persistence Test Data
     ${data_set} =                  Get Variable Value   ${DATASET}                       total-10k
