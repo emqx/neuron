@@ -1886,7 +1886,10 @@ int neu_adapter_start(neu_adapter_t *adapter)
     switch (adapter->state) {
     case ADAPTER_STATE_IDLE:
     case ADAPTER_STATE_INIT:
-        error = NEU_ERR_NODE_NOT_READY;
+        if (strncmp(adapter->plugin_info.module->module_name, "ekuiper",
+                    strlen("ekuiper")) != 0) {
+            error = NEU_ERR_NODE_NOT_READY;
+        }
         break;
     case ADAPTER_STATE_RUNNING:
         error = NEU_ERR_NODE_IS_RUNNING;
