@@ -63,6 +63,7 @@ else()
   set(CMAKE_PREFIX_PATH ${CMAKE_STAGING_PREFIX})
   include_directories(${CMAKE_STAGING_PREFIX}/include ${CMAKE_STAGING_PREFIX}/openssl/include)
   link_directories(${CMAKE_STAGING_PREFIX} ${CMAKE_STAGING_PREFIX}/lib ${CMAKE_STAGING_PREFIX}/lib/${COMPILER_PREFIX} ${CMAKE_STAGING_PREFIX}/openssl/lib)
+  message(STATUS ${CMAKE_STAGING_PREFIX})
 endif()
 
 
@@ -136,7 +137,7 @@ if(APPLE)
 else()
   target_link_libraries(neuron dl nng jansson yaml neuron-base)
 endif()
-target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron libzlog.so ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES

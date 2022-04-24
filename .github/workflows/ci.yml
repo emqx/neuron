@@ -134,6 +134,7 @@ jobs:
           mkdir -p build && cd build
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           make -j4
+          ldd neuron
 
       - name: function test
         run: |

@@ -64,10 +64,23 @@ function build_openssl() {
     fi
 }
 
+function build_zlog() {
+    git clone -b 1.2.15 https://github.com/HardySimpson/zlog.git
+    cd zlog
+    make CC=${compiler_prefix}-gcc
+    if [ $compiler_prefix == "x86_64-linux-gnu" ]; then
+        sudo make install
+        sudo make PREFIX=${install_dir} install
+    else
+        sudo make PREFIX=${install_dir} install
+    fi
+}
+
 ssl_lib_flag="-DOPENSSL_ROOT_DIR=${install_dir}/openssl \
     -DOPENSSL_INCLUDE_DIR=${install_dir}/openssl/include \
     -DOPENSSL_LIBRARIES='${install_dir}/openssl/lib'"
 
+build_zlog
 compile_source yaml/libyaml.git 0.2.5 "-DBUILD_SHARED_LIBS=OFF"
 compile_source madler/zlib.git v1.2.11
 compile_source akheron/jansson.git v2.14 "-DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF"
