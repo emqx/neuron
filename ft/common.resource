@@ -68,12 +68,12 @@ ${TOPIC_WRITE_REQ}                          neuron/${MQTT_CLIENTID}/write/req
 ${TOPIC_STATUS_RES}                         neuron/${MQTT_CLIENTID}/status
 ${TOPIC_READ_RES}                           neuron/${MQTT_CLIENTID}/read/resp
 ${TOPIC_WRITE_RES}                          neuron/${MQTT_CLIENTID}/write/resp
-${TOPIC_TTYS_RES}                           neuron/${MQTT_CLIENTID}/ttys/resp
+${TOPIC_UPLOAD}                             neuron/${MQTT_CLIENTID}/upload
 
 ${MQTT_UUID}                                123456-789abc-123456-aabbcc
 ${MQTT_CONFIG_HOST}                         127.0.0.1
 ${MQTT_CONFIG_PORT}                         ${1883}
-${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "format": 0, 
+${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "format": 1, 
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
 ...                                          "username": "", "password": "", "ca":"", "cert":"", "key":""}
 

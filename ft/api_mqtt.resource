@@ -50,7 +50,7 @@ Recv Message
   ${msg} =                          Listen                            ${topic_res}                            timeout=10
   Should Not Be True                $msg == None
   ${res} =                          evaluate                          json.loads('''${msg}''')                json
-  Should Be Equal As Strings        ${res}[uuid]                      ${MQTT_UUID}
+
   [RETURN]                          ${res}
 
 Pub And Recv
@@ -63,7 +63,7 @@ Pub And Recv
 
   # try to receive a message with a matching UUID
   ${res} =                          Wait Until Keyword Succeeds       10s                                     0s                          Recv Message           ${topic_res}
-  # Should Be Equal As Strings        ${res}[command]                   ${cmd}
+  Should Be Equal As Strings        ${res}[uuid]                      ${MQTT_UUID}
 
   # strip the `function` and `uuid` field
   Remove From Dictionary            ${res}                            uuid                                    command
@@ -156,6 +156,13 @@ Update Group Config
 Subscribe Group
   [Arguments]         ${driver_node_id}       ${app_node_id}                ${group_config_name}
   POST                /api/v2/subscribe  {"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "${group_config_name}"}
+  ${res} =            Object  response body
+
+  [RETURN]            ${res}[0]
+
+Unsubscribe Group
+  [Arguments]         ${driver_node_id}       ${app_node_id}                ${group_config_name}
+  DELETE              /api/v2/subscribe       {"src_node_id": ${driver_node_id}, "dst_node_id": ${app_node_id}, "name": "${group_config_name}"}
   ${res} =            Object  response body
 
   [RETURN]            ${res}[0]
