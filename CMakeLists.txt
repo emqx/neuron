@@ -137,7 +137,7 @@ if(APPLE)
 else()
   target_link_libraries(neuron dl nng jansson yaml neuron-base)
 endif()
-target_link_libraries(neuron libzlog.so ssl crypto ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron zlog ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
@@ -161,7 +161,6 @@ set(NEURON_BASE_SOURCES
     src/utils/panic.c
     src/utils/log.c
     src/utils/json.c
-    src/utils/common.c
     src/utils/neu_jwt.c
     src/utils/file.c
     src/utils/base64.c
