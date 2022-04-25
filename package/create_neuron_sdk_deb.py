@@ -12,6 +12,7 @@ rules.append(mkdeb.FileMap("deb/sdk/prerm", "/DEBIAN/", "r", "prerm"))
 rules.append(mkdeb.FileMap("../cmake/neuron-config.cmake",
              "/usr/local/lib/cmake/neuron/"))
 rules.append(mkdeb.FileMap("../build/libneuron-base.so", "/usr/local/lib/"))
+rules.append(mkdeb.FileMap("../zlog/src/libzlog.so.1.2", "/usr/local/lib/"))
 
 rules.append(mkdeb.FileMap("../include/connection/mqtt_client_intf.h",
              "/usr/local/include/neuron/connection/"))
@@ -56,6 +57,8 @@ rules.append(mkdeb.FileMap("../include/neuron/utils/uthash.h",
 rules.append(mkdeb.FileMap("../include/neuron/utils/utarray.h",
              "/usr/local/include/neuron/utils/"))
 rules.append(mkdeb.FileMap("../include/neuron/utils/utlist.h",
+             "/usr/local/include/neuron/utils/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/zlog.h",
              "/usr/local/include/neuron/utils/"))
 rules.append(mkdeb.FileMap("../include/neuron/adapter.h",
              "/usr/local/include/neuron/"))

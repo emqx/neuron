@@ -137,7 +137,7 @@ if(APPLE)
 else()
   target_link_libraries(neuron dl nng jansson yaml neuron-base)
 endif()
-target_link_libraries(neuron zlog ssl crypto ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
@@ -191,10 +191,11 @@ if(USE_NNG_MQTT)
   target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto nng)
 endif()
 
-target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc yaml jwt
+target_link_libraries(neuron-base libzlog.so vector-static csptr jansson crypto ssl mqttc yaml jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 
 #copy file for run
+file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/ekuiper/ekuiper.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)

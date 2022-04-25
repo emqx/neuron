@@ -27,6 +27,8 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#include <zlog.h>
+
 #include <nng/nng.h>
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
@@ -196,6 +198,7 @@ int main(int argc, char *argv[])
     pid_t          pid    = 0;
     neu_cli_args_t args   = { 0 };
 
+    zlog_init("./config/zlog.conf");
     neu_cli_args_init(&args, argc, argv);
 
     if (args.daemonized) {

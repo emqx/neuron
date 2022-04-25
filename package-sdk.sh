@@ -71,6 +71,8 @@ cp ft/common.resource ${package_name}/ft/
 cp ft/error.resource ${package_name}/ft/
 cp ft/requirements.txt ${package_name}/ft/
 
+cp zlog/src/libzlog.so.1.2 ${package_name}/lib
+
 tar czf ${package_name}-${arch}.tar.gz ${package_name}/
 ls ${package_name}
 rm -rf ${package_name}
