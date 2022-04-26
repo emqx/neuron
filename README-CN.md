@@ -97,7 +97,6 @@ cd -
 mosquitto -v &
 pip3 install -r ft/requirements.txt
 python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
-python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft
 
 ```
 
