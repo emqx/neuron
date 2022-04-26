@@ -353,48 +353,48 @@ Read multiple points belonging to different areas(coil/input/input reg/hold reg)
     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
 
 
-Recv multiple points belonging to different areas(coil/input/input reg/hold reg) and different sites, the point address includes continuous and non-continuous, and the data include int16/uint16/int32/uint32/float type, it should return success
-    Skip If Not MQTT API
+# Recv multiple points belonging to different areas(coil/input/input reg/hold reg) and different sites, the point address includes continuous and non-continuous, and the data include int16/uint16/int32/uint32/float type, it should return success
+#     Skip If Not MQTT API
 
-    ${tag1_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!000018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    ${tag2_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "2!000018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    ${tag3_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "3!000021", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    ${tag4_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "4!100018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    ${tag5_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "5!300018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-    ${tag6_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "6!300018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-    ${tag7_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "7!300022", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    ${tag8_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "8!400018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-    ${tag9_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "9!400040", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    ${tag10_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag10", "address": "10!400022", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
+#     ${tag1_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!000018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
+#     ${tag2_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "2!000018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
+#     ${tag3_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "3!000021", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
+#     ${tag4_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "4!100018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
+#     ${tag5_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "5!300018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
+#     ${tag6_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "6!300018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
+#     ${tag7_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "7!300022", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
+#     ${tag8_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "8!400018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
+#     ${tag9_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "9!400040", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
+#     ${tag10_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag10", "address": "10!400022", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
 
-    Should Not Be Equal As Integers    ${tag1_id}     -1
-    Should Not Be Equal As Integers    ${tag2_id}     -1
-    Should Not Be Equal As Integers    ${tag3_id}     -1
-    Should Not Be Equal As Integers    ${tag4_id}     -1
-    Should Not Be Equal As Integers    ${tag5_id}     -1
-    Should Not Be Equal As Integers    ${tag6_id}     -1
-    Should Not Be Equal As Integers    ${tag7_id}     -1
-    Should Not Be Equal As Integers    ${tag8_id}     -1
-    Should Not Be Equal As Integers    ${tag9_id}     -1
-    Should Not Be Equal As Integers    ${tag10_id}    -1
+#     Should Not Be Equal As Integers    ${tag1_id}     -1
+#     Should Not Be Equal As Integers    ${tag2_id}     -1
+#     Should Not Be Equal As Integers    ${tag3_id}     -1
+#     Should Not Be Equal As Integers    ${tag4_id}     -1
+#     Should Not Be Equal As Integers    ${tag5_id}     -1
+#     Should Not Be Equal As Integers    ${tag6_id}     -1
+#     Should Not Be Equal As Integers    ${tag7_id}     -1
+#     Should Not Be Equal As Integers    ${tag8_id}     -1
+#     Should Not Be Equal As Integers    ${tag9_id}     -1
+#     Should Not Be Equal As Integers    ${tag10_id}    -1
 
-    Subscribe           ${TOPIC_UPLOAD}      qos=0                 timeout=5
-    Sleep               1s 500ms
-    ${res} =            Recv Message         ${TOPIC_UPLOAD}
-    Log                 ${res}[tags]
+#     Subscribe           ${TOPIC_UPLOAD}      qos=0                 timeout=5
+#     Sleep               1s 500ms
+#     ${res} =            Recv Message         ${TOPIC_UPLOAD}
+#     Log                 ${res}[tags]
 
-    Compare Tag Value As Int      ${res}[tags]    tag1     1
-    Compare Tag Value As Int      ${res}[tags]    tag2     1
-    Compare Tag Value As Int      ${res}[tags]    tag3     1
-    Compare Tag Value As Int      ${res}[tags]    tag4     1
-    Compare Tag Value As Int      ${res}[tags]    tag5     17
-    Compare Tag Value As Int      ${res}[tags]    tag6     1114130
-    Compare Tag Value As Float    ${res}[tags]    tag7     1.928576247884031e-39
-    Compare Tag Value As Int      ${res}[tags]    tag8     62226
-    Compare Tag Value As Int      ${res}[tags]    tag9     66651136
-    Compare Tag Value As Float    ${res}[tags]    tag10    11.789
+#     Compare Tag Value As Int      ${res}[tags]    tag1     1
+#     Compare Tag Value As Int      ${res}[tags]    tag2     1
+#     Compare Tag Value As Int      ${res}[tags]    tag3     1
+#     Compare Tag Value As Int      ${res}[tags]    tag4     1
+#     Compare Tag Value As Int      ${res}[tags]    tag5     17
+#     Compare Tag Value As Int      ${res}[tags]    tag6     1114130
+#     Compare Tag Value As Float    ${res}[tags]    tag7     1.928576247884031e-39
+#     Compare Tag Value As Int      ${res}[tags]    tag8     62226
+#     Compare Tag Value As Int      ${res}[tags]    tag9     66651136
+#     Compare Tag Value As Float    ${res}[tags]    tag10    11.789
 
-    [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
+#     [Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id}
 
 *** Keywords ***
 Neuron Context Ready

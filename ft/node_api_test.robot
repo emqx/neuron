@@ -7,13 +7,9 @@ Suite Teardown    Neuron Context Stop
 
 *** Test Cases ***
 POST ping, status can be ok
-    Skip If MQTT API
-
     Ping
 
 Use the wrong body to create a node, it should return failure
-    Skip If MQTT API
-
     ${res} =    Add Node    type=${${NODE_DRIVER}}    namexx=test-node    plugin_name=test-plugin-name
 
     Check Response Status    ${res}    400
@@ -21,8 +17,6 @@ Use the wrong body to create a node, it should return failure
 
 
 Use a plugin name that does not exist to create a node, it should return failure
-    Skip If MQTT API
-
     ${res} =    Add Node    type=${${NODE_DRIVER}}    name=test-node    plugin_name=test-plugin-name
 
     Check Response Status    ${res}    404
@@ -30,24 +24,18 @@ Use a plugin name that does not exist to create a node, it should return failure
 
 
 Use a invalid node type to create a node, it should return failure
-    Skip If MQTT API
-
     ${res} =    Add Node    type=${10}    name=test-node    plugin_name=modbus-tcp
 
     Check Response Status    ${res}    400
     Check Error Code         ${res}    ${ERR_NODE_TYPE_INVALID}
 
 Create a node with the correct body, it should return success
-    Skip If MQTT API
-
     ${res} =    Add Node    type=${${NODE_DRIVER}}    name=test-node    plugin_name=modbus-tcp
 
     Check Response Status    ${res}    200
     Check Error Code         ${res}    ${ERR_SUCCESS}
 
 Create an existing node, it should return failure
-    Skip If MQTT API
-
     ${res} =    Add Node    type=${${NODE_DRIVER}}    name=test-node    plugin_name=modbus-tcp
 
     Check Response Status    ${res}    409
@@ -61,8 +49,6 @@ Get node with wrong parameters, it will return failure
     Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
 
 Get DRIVER node, it should return all DRIVER node
-    Skip If MQTT API
-
     ${res} =    Get Nodes    ${NODE_DRIVER}
 
     Check Response Status    ${res}    200
@@ -72,16 +58,12 @@ Get DRIVER node, it should return all DRIVER node
     END
 
 Get WEB node, it should return all WEB node
-    Skip If MQTT API
-
     ${res} =    Get Nodes    ${NODE_WEB}
 
     Check Response Status          ${res}           200
     Node With Name Should Exist    ${res}[nodes]    default-dashboard-adapter
 
 Get MQTT node, it should return all mqtt node
-    Skip If MQTT API
-
     ${res} =    Add Node     type=${${NODE_MQTT}}    name=mqtt-adapter    plugin_name=mqtt
     ${res} =    Get Nodes    ${NODE_MQTT}
 
@@ -90,24 +72,18 @@ Get MQTT node, it should return all mqtt node
 
 
 Get UNKNOWN type node, it should return empty node
-    Skip If MQTT API
-
     ${res} =    Get Nodes    ${NODE_UNKNOWN}
 
     Check Response Status    ${res}                       200
     Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
 
 Get INVALID type node, it should return failure
-    Skip If MQTT API
-
     ${res} =    Get Nodes    ${123456}
 
     Check Response Status    ${res}    400
     Check Error Code         ${res}    ${ERR_REQUEST_PARAM_INVALID}
 
 Delete the existing node, it will return success
-    Skip If MQTT API
-
     ${res} =    Get Nodes    ${NODE_DRIVER}
 
     Check Response Status              ${res}              200
@@ -123,32 +99,24 @@ Delete the existing node, it will return success
     Should Be Equal As Integers    ${node_id}          0
 
 Delete a non-existent node, it will return failure
-    Skip If MQTT API
-
     ${res} =    Del Node    ${1000}
 
     Check Response Status    ${res}    404
     Check Error Code         ${res}    ${ERR_NODE_NOT_EXIST}
 
 Add setting to non-existent node, it should return failure
-    Skip If MQTT API
-
     ${res} =    Node Setting    ${999}    {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}
 
     Check Response Status    ${res}    404
     Check Error Code         ${res}    ${ERR_NODE_NOT_EXIST}
 
 Get setting from non-existent node, it should return failure
-    Skip If MQTT API
-
     ${res} =    Get Node Setting    ${999}
 
     Check Response Status    ${res}    404
     Check Error Code         ${res}    ${ERR_NODE_NOT_EXIST}
 
 Get setting from a node that has never been set, it should return failure
-    Skip If MQTT API
-
     ${driver_node_id} =    Add Node And Return ID    ${NODE_DRIVER}       driver-node    ${PLUGIN_MODBUS_TCP}
     ${res} =               Get Node Setting          ${driver_node_id}
 
@@ -158,8 +126,6 @@ Get setting from a node that has never been set, it should return failure
     [Teardown]    Del Node Check    ${driver_node_id}
 
 Add the correct settings to the node, it should return success
-    Skip If MQTT API
-
     ${driver_node_id} =    Add Node And Return ID    ${NODE_DRIVER}       driver-node                                                ${PLUGIN_MODBUS_TCP}
     ${res} =               Node Setting              ${driver_node_id}    {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}
 
@@ -167,8 +133,6 @@ Add the correct settings to the node, it should return success
     Check Error Code         ${res}    ${ERR_SUCCESS}
 
 Get the setting of node, it should return to the previous setting
-    Skip If MQTT API
-
     ${driver_node_id} =    Get Node ID         ${NODE_DRIVER}       driver-node
     ${res} =               Get Node Setting    ${driver_node_id}
     ${params} =            Set Variable        ${res}[params]
@@ -180,8 +144,6 @@ Get the setting of node, it should return to the previous setting
     Should Be Equal As Integers    ${params}[connection_mode]    0
 
 Add wrong settings to node, it should return failure
-    Skip If MQTT API
-
     ${driver_node_id} =    Get Node ID     ${NODE_DRIVER}       driver-node
     ${res} =               Node Setting    ${driver_node_id}    {"xxhost": "1.1.1.1", "port": 6677, "connection_mode": 0}
 
@@ -189,8 +151,6 @@ Add wrong settings to node, it should return failure
     Check Error Code         ${res}    ${ERR_NODE_SETTING_INVALID}
 
 Start an unconfigured node, it should return failure
-    Skip If MQTT API
-
     ${modbus_node_id} =    Add Node And Return ID    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s
@@ -208,8 +168,6 @@ Start an unconfigured node, it should return failure
     [Teardown]    Del Node Check    ${modbus_node_id}
 
 Start the configured node, it should return success
-    Skip If MQTT API
-
     ${modbus_node_id} =    Add Node And Return ID    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s
@@ -230,8 +188,6 @@ Start the configured node, it should return success
     Should Be Equal As Integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
 Start the stopped node, it should return success
-    Skip If MQTT API
-    
     ${modbus_node_id} =    Get Node ID    ${NODE_DRIVER}    modbus-test-node
 
     Node Ctl    ${modbus_node_id}    ${NODE_CTL_STOP}
@@ -252,8 +208,6 @@ Start the stopped node, it should return success
     Should Be Equal As Integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
 Start the running node, it should return failure
-    Skip If MQTT API
-
     ${modbus_node_id} =    Get Node ID    ${NODE_DRIVER}       modbus-test-node
     ${res} =               Node Ctl       ${modbus_node_id}    ${NODE_CTL_START}
 
@@ -265,8 +219,6 @@ Start the running node, it should return failure
     Check Error Code         ${res}      ${ERR_SUCCESS}
 
 Stop node that is stopped, it should return failure
-    Skip If MQTT API
-
     ${modbus_node_id} =    Get Node ID    ${NODE_DRIVER}    modbus-test-node
 
     ${res} =                 Node Ctl    ${modbus_node_id}        ${NODE_CTL_STOP}
@@ -276,8 +228,6 @@ Stop node that is stopped, it should return failure
     [Teardown]    Del Node Check    ${modbus_node_id}
 
 Stop node that is ready(init/idle), it should return failure
-    Skip If MQTT API
-
     ${modbus_node_id} =    Add Node And Return ID    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s
@@ -296,8 +246,6 @@ Stop node that is ready(init/idle), it should return failure
     [Teardown]    Del Node Check    ${modbus_node_id}
 
 When setting up a READY/RUNNING/STOPED node, the node status will not change
-    Skip If MQTT API
-
     ${modbus_node_id} =    Add Node And Return ID    ${NODE_DRIVER}    modbus-test-node    ${PLUGIN_MODBUS_TCP}
 
     Sleep    1s

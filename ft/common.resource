@@ -134,9 +134,6 @@ Skip If Not Http API
 Skip If Not MQTT API
     Skip If    $NEURON_API != "mqtt"    Current API is not `mqtt`, just skip
 
-Skip If MQTT API
-    Skip If    $NEURON_API == "mqtt"    Current API is not `mqtt`, just skip
-
 Copy Persistence Test Data
     ${data_set} =                  Get Variable Value   ${DATASET}                       total-10k
     ${data_dir} =                  Set Variable         ${test_data_dir}/persistence/${data_set}

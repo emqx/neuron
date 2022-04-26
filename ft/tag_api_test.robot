@@ -11,8 +11,6 @@ ${tag2}             {"name": "tag2", "address": "1!00001", "attribute": 3, "type
 
 *** Test Cases ***
 Add different types of tags to the group, it should return success
-  Skip If MQTT API
-  
   Add Group Config                ${test_node_id}                     ${test_gconfig}   1000
 
   ${res} =                        Add Tags      ${test_node_id}       ${test_gconfig}   ${tag1},${tag2}
@@ -22,8 +20,6 @@ Add different types of tags to the group, it should return success
   [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
 
 Add tags to the non-existent group, the group will be created automatically
-  Skip If MQTT API
-
   ${res} =                        Add Tags      ${test_node_id}       ${test_gconfig}   ${tag1},${tag2}
 
   Check Response Status           ${res}        200
@@ -32,8 +28,6 @@ Add tags to the non-existent group, the group will be created automatically
   [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
 
 When the attribute of the tag added is incorrect, it should return partial success
-  Skip If MQTT API
-
   ${res} =                        Add Tags      ${test_node_id}       ${test_gconfig}   {"name": "tag1", "address": "1!400001", "attribute": 8, "type": 4},{"name": "tag2", "address": "1!00001", "attribute": 3, "type": 14}
 
   Check Response Status           ${res}        206
@@ -42,24 +36,18 @@ When the attribute of the tag added is incorrect, it should return partial succe
   [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
 
 Add tags to non-existent node, it should return failure
-  Skip If MQTT API
-
   ${res} =                        Add Tags      ${999}                ${test_gconfig}   ${tag1},${tag2}
 
   Check Response Status           ${res}        404
   Check Error Code                ${res}        ${ERR_NODE_NOT_EXIST}
 
 Delete tag from non-existent group config, it should return failure
-  Skip If MQTT API
-
   ${res} =                        Del Tags      ${test_node_id}       ${test_gconfig}   1,2,3
 
   Check Response Status           ${res}        404
   Check Error Code                ${res}        ${ERR_NODE_NOT_EXIST}
 
 Delete non-existent tags, it should return success
-  Skip If MQTT API
-
   Add Group Config                ${test_node_id}                     ${test_gconfig}   1000
 
   ${res} =                        Del Tags      ${test_node_id}       ${test_gconfig}   1,2,3
@@ -68,16 +56,12 @@ Delete non-existent tags, it should return success
   Check Error Code                ${res}        ${ERR_SUCCESS}
 
 Query tag from non-existent node, it should return failure
-  Skip If MQTT API
-
   ${res} =                        Get Tags      ${999}                ${test_gconfig}
 
   Check Response Status           ${res}        404
   Check Error Code                ${res}        ${ERR_NODE_NOT_EXIST}
 
 After adding the tag, query the tag, it should return the added tag
-  Skip If MQTT API
-
   ${res} =                        Add Tags      ${test_node_id}       ${test_gconfig}   ${tag1},${tag2}
 
   Check Response Status           ${res}        200
@@ -96,8 +80,6 @@ After adding the tag, query the tag, it should return the added tag
   Should Be Equal As Integers     ${ret}        0
 
 Update tags, it should return success
-  Skip If MQTT API
-
   ${tag1_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}   tag1
   ${tag2_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}   tag2
 
@@ -118,8 +100,6 @@ Update tags, it should return success
   Should Be Equal As Integers     ${ret}        0
 
 Update non-existent tags, it should return partial success
-  Skip If MQTT API
-
   ${tag1_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}   tag11
 
   ${res} =                        Update Tags   ${test_node_id}       ${test_gconfig}   {"id": ${tag1_id}, "name": "tag11", "type": 4, "attribute": 1, "address": "1!400002"},{"id": 7788, "name": "tag22", "type": 4, "attribute": 1, "address": "3!100001"}
@@ -139,8 +119,6 @@ Update non-existent tags, it should return partial success
   Should Be Equal As Integers     ${ret}        0
 
 Delete tags, it should return success
-  Skip If MQTT API
-
   ${tag1_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}  tag11
   ${tag2_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}  tag22
 
