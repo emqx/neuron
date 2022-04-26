@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
@@ -29,86 +30,71 @@
 #include "log.h"
 #include "neu_jwt.h"
 
-typedef struct {
-    char   name[256];
-    char   key[4096];
-    size_t len;
-} public_key_t;
+struct public_key_store {
+    struct {
+        char name[257];
+        char key[1024];
+    } key[8];
+    int size;
+};
 
-int n_pub_file = 0;
+static struct public_key_store key_store;
+static char                    private_key[2048] = { 0 };
 
-public_key_t pub_key_files[8];
-
-size_t priv_key_len      = 0;
-char   private_key[4096] = { 0 };
-
-static int handle_public_key(char *dir_path, char *public_name)
+static int find_key(const char *name)
 {
-    FILE *fp_pub_key    = NULL;
-    char  pub_path[512] = { 0 };
-
-    snprintf((char *) pub_path, sizeof(pub_path), "%s/%s", dir_path,
-             public_name);
-
-    fp_pub_key = fopen(pub_path, "r");
-    if (fp_pub_key == NULL) {
-        log_error("Failed to open public key file: %s, errno: %d", public_name,
-                  errno);
-        return -1;
+    for (int i = 0; i < key_store.size; i++) {
+        if (strncmp(name, key_store.key[i].name, strlen(name)) == 0) {
+            return i;
+        }
     }
 
-    pub_key_files[n_pub_file].len =
-        fread(pub_key_files[n_pub_file].key, 1,
-              sizeof(pub_key_files[n_pub_file].key), fp_pub_key);
-    if (pub_key_files[n_pub_file].len <= 0) {
-        log_error("Failed to read public key file: %s, errno: %d", public_name,
-                  errno);
-
-        fclose(fp_pub_key);
-        return -1;
-    }
-
-    strncpy(pub_key_files[n_pub_file].name, public_name,
-            sizeof(pub_key_files[n_pub_file].name) - 1);
-
-    n_pub_file += 1;
-
-    fclose(fp_pub_key);
-    return 0;
+    return -1;
 }
 
-static int handle_private_key(char *dir_path, char *private_name)
+static void add_key(char *name, char *value)
 {
-    FILE *fp_priv_key     = NULL;
-    char  priv_path[1024] = { 0 };
+    key_store.size += 1;
+    assert(key_store.size <= 8);
 
-    snprintf((char *) priv_path, sizeof(priv_path), "%s/%s", dir_path,
-             private_name);
+    strncpy(key_store.key[key_store.size - 1].name, name,
+            sizeof(key_store.key[key_store.size - 1].name) - 1);
+    strncpy(key_store.key[key_store.size - 1].key, value,
+            sizeof(key_store.key[key_store.size - 1].key) - 1);
+}
 
-    fp_priv_key = fopen(priv_path, "r");
-    if (fp_priv_key == NULL) {
-        log_error("Failed to open private key file: %s, errno: %d",
-                  private_name, errno);
-        return -1;
+static char *load_key(char *dir, char *name)
+{
+    FILE *      f             = NULL;
+    int         len           = 0;
+    char        path[256]     = { 0 };
+    static char content[2047] = { 0 };
+
+    snprintf((char *) path, sizeof(path), "%s/%s", dir, name);
+    memset(content, 0, sizeof(content));
+
+    f = fopen(path, "r");
+    if (f == NULL) {
+        log_error("Failed to open file: %s, errno: %d", name, errno);
+        return NULL;
     }
 
-    priv_key_len = fread(private_key, 1, sizeof(private_key), fp_priv_key);
-    if (priv_key_len <= 0) {
-        log_error("Failed to read key file: %s, error: %d", priv_path, errno);
+    len = fread(content, 1, sizeof(content), f);
+    if (len <= 0) {
+        log_error("Failed to read  file: %s, errno: %d", name, errno);
 
-        fclose(fp_priv_key);
-        return -1;
+        fclose(f);
+        return NULL;
     }
 
-    fclose(fp_priv_key);
-    return 0;
+    fclose(f);
+    return content;
 }
 
 int neu_jwt_init(char *dir_path)
 {
     DIR *          dir = NULL;
     struct dirent *ptr = NULL;
-    int            ret = -1;
 
     dir = opendir(dir_path);
     if (dir == NULL) {
@@ -117,34 +103,28 @@ int neu_jwt_init(char *dir_path)
     }
 
     while (NULL != (ptr = readdir(dir))) {
+        char *content = NULL;
+
         if (!strcmp((char *) ptr->d_name, ".") ||
             !strcmp((char *) ptr->d_name, "..") ||
             !strcmp((char *) ptr->d_name, "neuron.yaml")) {
             continue;
         }
 
-        if (strstr((char *) ptr->d_name, ".key") != NULL) {
-            ret = handle_private_key(dir_path, (char *) ptr->d_name);
-            if (ret != 0) {
-                closedir(dir);
-                return ret;
-            }
+        if (strncmp("neuron.key", (char *) ptr->d_name, strlen("neuron.key")) ==
+            0) {
+            content = load_key(dir_path, (char *) ptr->d_name);
+            assert(content != NULL);
+
+            strncpy(private_key, content, sizeof(private_key) - 1);
         }
 
-        if (strstr((char *) ptr->d_name, ".pem") != NULL) {
-            ret = handle_public_key(dir_path, (char *) ptr->d_name);
-            if (ret != 0) {
-                closedir(dir);
-                return ret;
-            }
+        if (strstr((char *) ptr->d_name, ".pem") != NULL ||
+            strstr((char *) ptr->d_name, ".pub") != NULL) {
+            content = load_key(dir_path, (char *) ptr->d_name);
+            assert(content != NULL);
+            add_key((char *) ptr->d_name, content);
         }
-    }
-
-    if (n_pub_file == 0) {
-        log_error("Don't find key files");
-
-        closedir(dir);
-        return -1;
     }
 
     closedir(dir);
@@ -192,7 +172,7 @@ int neu_jwt_new(char **token)
     }
 
     ret = jwt_set_alg(jwt, opt_alg, (const unsigned char *) private_key,
-                      priv_key_len);
+                      strlen(private_key));
     if (ret != 0) {
         jwt_free(jwt);
         log_error("jwt incorrect algorithm: %d, errno: %d", ret, errno);
@@ -224,7 +204,6 @@ static void *neu_jwt_decode(char *token)
     jwt_t *     jwt      = NULL;
     jwt_t *     jwt_test = NULL;
     int         ret      = -1;
-    int         count    = 0;
     const char *name     = NULL;
 
     ret = jwt_decode(&jwt_test, token, NULL, 0);
@@ -240,27 +219,22 @@ static void *neu_jwt_decode(char *token)
         return NULL;
     }
 
-    for (int i = 0; i < n_pub_file; i++) {
-        if (NULL != strstr((char *) pub_key_files[i].name, name)) {
-            ret = jwt_decode(&jwt, token,
-                             (const unsigned char *) pub_key_files[i].key,
-                             pub_key_files[i].len);
-            if (ret != 0) {
-                log_error("jwt decode error: %d", ret);
-                jwt_free(jwt_test);
-                jwt_free(jwt);
-                return NULL;
-            }
-        } else {
-            count += 1;
-
-            if (count == n_pub_file) {
-                log_error("Don't find public key file: %s", name);
-                jwt_free(jwt_test);
-                jwt_free(jwt);
-                return NULL;
-            }
+    ret = find_key(name);
+    if (ret >= 0) {
+        ret = jwt_decode(&jwt, token,
+                         (const unsigned char *) key_store.key[ret].key,
+                         strlen(key_store.key[ret].key));
+        if (ret != 0) {
+            log_error("jwt decode error: %d", ret);
+            jwt_free(jwt_test);
+            jwt_free(jwt);
+            return NULL;
         }
+    } else {
+        log_error("Don't find public key file: %s", name);
+        jwt_free(jwt_test);
+        jwt_free(jwt);
+        return NULL;
     }
 
     if (jwt_get_alg(jwt) != JWT_ALG_RS256) {

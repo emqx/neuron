@@ -63,6 +63,7 @@ else()
   set(CMAKE_PREFIX_PATH ${CMAKE_STAGING_PREFIX})
   include_directories(${CMAKE_STAGING_PREFIX}/include ${CMAKE_STAGING_PREFIX}/openssl/include)
   link_directories(${CMAKE_STAGING_PREFIX} ${CMAKE_STAGING_PREFIX}/lib ${CMAKE_STAGING_PREFIX}/lib/${COMPILER_PREFIX} ${CMAKE_STAGING_PREFIX}/openssl/lib)
+  message(STATUS ${CMAKE_STAGING_PREFIX})
 endif()
 
 
@@ -160,7 +161,6 @@ set(NEURON_BASE_SOURCES
     src/utils/panic.c
     src/utils/log.c
     src/utils/json.c
-    src/utils/common.c
     src/utils/neu_jwt.c
     src/utils/file.c
     src/utils/base64.c
@@ -191,10 +191,11 @@ if(USE_NNG_MQTT)
   target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto nng)
 endif()
 
-target_link_libraries(neuron-base vector-static csptr jansson crypto ssl mqttc yaml jwt
+target_link_libraries(neuron-base libzlog.so vector-static csptr jansson crypto ssl mqttc yaml jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 
 #copy file for run
+file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/ekuiper/ekuiper.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)

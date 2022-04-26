@@ -15,6 +15,9 @@ rules.append(mkdeb.FileMap("neuron.service", "/etc/systemd/system/"))
 rules.append(mkdeb.FileMap("neuron.sh", "/opt/neuron/", "x"))
 rules.append(mkdeb.FileMap("../build/neuron", "/opt/neuron/", "x"))
 
+rules.append(mkdeb.FileMap("../zlog.conf", "/opt/neuron/config/"))
+rules.append(mkdeb.FileMap("../zlog/src/libzlog.so.1.2", "/usr/local/lib/"))
+
 rules.append(mkdeb.FileMap("../.gitkeep", "/opt/neuron/logs/"))
 rules.append(mkdeb.FileMap("../.gitkeep", "/opt/neuron/core/"))
 

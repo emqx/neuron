@@ -40,8 +40,11 @@ else
     rm -rf ${package_name}/*
 fi
 
+cp zlog/src/libzlog.so.1.2 ${package_name}
+
 cp .gitkeep ${package_name}/logs/
 cp default_plugins.json ${package_name}/persistence/plugins.json
+cp zlog.conf ${package_name}/config/
 
 cp build/libneuron-base.so \
     build/neuron \
