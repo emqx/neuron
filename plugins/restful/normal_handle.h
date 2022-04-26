@@ -22,7 +22,6 @@
 
 #include <nng/nng.h>
 
-void handle_get_ttys(nng_aio *aio);
 void handle_ping(nng_aio *aio);
 void handle_login(nng_aio *aio);
 void handle_logout(nng_aio *aio);

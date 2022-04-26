@@ -41,30 +41,6 @@
 
 #include "normal_handle.h"
 
-void handle_get_ttys(nng_aio *aio)
-{
-    neu_json_get_tty_resp_t ttys_res = { 0 };
-
-    VALIDATE_JWT(aio);
-
-    ttys_res.n_tty = tty_file_list_get(&ttys_res.ttys);
-    if (ttys_res.n_tty == -1) {
-        http_bad_request(aio, "{\"error\": 400}");
-        return;
-    } else {
-        char *result = NULL;
-
-        neu_json_encode_by_fn(&ttys_res, neu_json_encode_get_tty_resp, &result);
-        http_ok(aio, result);
-
-        for (int i = 0; i < ttys_res.n_tty; i++) {
-            free(ttys_res.ttys[i]);
-        }
-        free(result);
-        free(ttys_res.ttys);
-    }
-}
-
 void handle_ping(nng_aio *aio)
 {
     http_ok(aio, "{}");
