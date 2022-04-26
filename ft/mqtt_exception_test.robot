@@ -35,8 +35,6 @@ Neuron Context Ready
     LOGIN
 
 Stop All Processes
-    LOGOUT
-
     Stop Neuron                remove_persistence_data=True
     sleep                      1s
     Terminate All Processes    kill=false

@@ -24,10 +24,6 @@ LOGIN
 
   [Return]            ${token}[0]
 
-LOGOUT
-  POST                /api/v2/logout
-  Integer             response status         200
-
 Add MQTT Node
     Add Node    type=${${NODE_MQTT}}      name=mqtt-adapter          plugin_name=mqtt
 

@@ -14,10 +14,6 @@ _Http LOGIN
   ${jwt} =                          Catenate                          Bearer                                  ${token}[0]
   Set Headers                       {"Authorization":"${jwt}"}
 
-_Http LOGOUT
-  POST                              /api/v2/logout
-  Integer                           response status                   200
-
 _Http Add Node
   [Arguments]         &{args}
   POST                /api/v2/node            ${args}
@@ -84,7 +80,6 @@ LOGIN
   ${mqtt_node} =                    _Http Get Node ID                 ${NODE_MQTT}                            mqtt-adapter
   _Http Node Setting                ${mqtt_node}                      ${MQTT_CONFIG}
   _Http Node Ctl                    ${mqtt_node}                      ${NODE_CTL_START}
-  _Http LOGOUT
   Sleep                             1s
 
   Connect                           ${MQTT_CONFIG_HOST}               ${MQTT_CONFIG_PORT}                     client_id=neuron-ft         clean_session=${true}

@@ -47,8 +47,6 @@ Neuron Context Ready
     Update Group Config    ${test_node_id}    ${group}                300
 
 Stop All Processes
-    LOGOUT
-
     Stop Neuron                remove_persistence_data=True
     sleep                      1s
     Terminate All Processes    kill=false

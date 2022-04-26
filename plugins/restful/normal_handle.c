@@ -30,7 +30,6 @@
 
 #include "json/neu_json_fn.h"
 #include "json/neu_json_login.h"
-#include "json/neu_json_logout.h"
 #include "json/neu_json_tty.h"
 
 #include "config.h"
@@ -82,17 +81,6 @@ void handle_login(nng_aio *aio)
                 });
             }
         })
-}
-
-void handle_logout(nng_aio *aio)
-{
-    char *jwt = (char *) http_get_header(aio, (char *) "Authorization");
-    NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {
-        if (error_code.error == NEU_ERR_SUCCESS) {
-            neu_jwt_destroy();
-        }
-        http_response(aio, error_code.error, result_error);
-    });
 }
 
 void handle_get_plugin_schema(nng_aio *aio)
