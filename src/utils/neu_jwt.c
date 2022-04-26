@@ -234,6 +234,11 @@ static void *neu_jwt_decode(char *token)
     }
 
     name = jwt_get_grant(jwt_test, "iss");
+    if (NULL == name) {
+        log_error("jwt get iss grant error, the token is: %s", token);
+        jwt_free(jwt_test);
+        return NULL;
+    }
 
     for (int i = 0; i < n_pub_file; i++) {
         if (NULL != strstr((char *) pub_key_files[i].name, name)) {
