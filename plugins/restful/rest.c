@@ -225,7 +225,7 @@ static int dashb_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    rv = neu_jwt_init("./config/public.pem", "./config/private.key");
+    rv = neu_jwt_init("./config");
 
     log_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;

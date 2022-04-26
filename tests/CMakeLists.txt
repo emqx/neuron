@@ -140,8 +140,8 @@ target_include_directories(persistence_test PRIVATE
 )
 target_link_libraries(persistence_test neuron-base gtest_main gtest)
 
-file(COPY ${CMAKE_SOURCE_DIR}/private.key DESTINATION ${CMAKE_BINARY_DIR}/tests)
-file(COPY ${CMAKE_SOURCE_DIR}/public.pem DESTINATION ${CMAKE_BINARY_DIR}/tests)
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/tests/config)
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/tests/config)
 add_executable(jwt_test jwt_test.cc)
 target_include_directories(jwt_test PRIVATE 
     ${CMAKE_SOURCE_DIR}/src 
