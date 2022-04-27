@@ -64,21 +64,21 @@ static void load_tags(neu_adapter_driver_t *driver, neu_taggrp_config_t *group,
 static void free_tags(UT_array *tags);
 static void update(neu_adapter_t *adapter, const char *name,
                    neu_dvalue_t value);
-static void write_response(neu_adapter_t *adapter, uint32_t req_id,
-                           neu_error error);
-static void write_response(neu_adapter_t *adapter, uint32_t req_id,
-                           neu_error error)
+static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
+static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 {
+    neu_request_t *req = (neu_request_t *) r;
+
     neu_reqresp_write_resp_t data = {
         .grp_config = NULL,
         .data_val   = neu_datatag_pack_create(1),
     };
     neu_response_t resp = {
-        .req_id    = req_id,
+        .req_id    = req->req_id,
         .resp_type = NEU_REQRESP_WRITE_RESP,
         .buf       = &data,
         .buf_len   = sizeof(neu_reqresp_write_resp_t),
-        .recver_id = 0,
+        .recver_id = req->sender_id,
     };
 
     neu_datatag_pack_add(data.data_val, 0, NEU_DTYPE_ERRORCODE, 0,
@@ -245,7 +245,7 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
             driver->adapter.cb_funs.response(&driver->adapter, &resp);
         } else {
             driver->adapter.plugin_info.module->intf_funs->driver.write_tag(
-                driver->adapter.plugin_info.plugin, req->req_id, tag, value);
+                driver->adapter.plugin_info.plugin, (void *) req, tag, value);
         }
 
         break;

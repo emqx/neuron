@@ -71,7 +71,7 @@ typedef struct neu_plugin_intf_funs {
         struct {
             int (*validate_tag)(neu_plugin_t *plugin, neu_datatag_t *tag);
             int (*group_timer)(neu_plugin_t *plugin, neu_plugin_group_t *group);
-            int (*write_tag)(neu_plugin_t *plugin, uint32_t req_id,
+            int (*write_tag)(neu_plugin_t *plugin, void *req,
                              neu_datatag_t *tag, neu_value_u value);
         } driver;
     };
