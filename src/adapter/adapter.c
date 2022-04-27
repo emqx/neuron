@@ -1384,6 +1384,16 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
         adapter, &adapter->cb_funs);
     assert(adapter->plugin_info.plugin != NULL);
     assert(neu_plugin_common_check(adapter->plugin_info.plugin));
+    neu_plugin_common_t *common =
+        neu_plugin_to_plugin_common(adapter->plugin_info.plugin);
+    common->adapter           = adapter;
+    common->adapter_callbacks = &adapter->cb_funs;
+    common->link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+    common->default_category  = zlog_get_category(adapter->name);
+
+    char pc[NEU_ADAPTER_NAME_SIZE + 10] = { 0 };
+    snprintf(pc, sizeof(pc), "%s-protocol", adapter->name);
+    common->protocol_category = zlog_get_category(pc);
 
     adapter->events = neu_event_new();
 
