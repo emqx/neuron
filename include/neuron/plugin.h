@@ -43,12 +43,15 @@ typedef struct neu_plugin_common {
 
 typedef struct neu_plugin neu_plugin_t;
 
-typedef struct neu_plugin_group {
+typedef struct neu_plugin_group neu_plugin_group_t;
+typedef void (*neu_plugin_group_free)(neu_plugin_group_t *pgp);
+struct neu_plugin_group {
     char *    group_name;
     UT_array *tags;
 
-    void *ctx;
-} neu_plugin_group_t;
+    void *                user_data;
+    neu_plugin_group_free group_free;
+};
 
 typedef struct neu_plugin_intf_funs {
     neu_plugin_t *(*open)(neu_adapter_t *            adapter,
@@ -67,10 +70,6 @@ typedef struct neu_plugin_intf_funs {
     union {
         struct {
             int (*validate_tag)(neu_plugin_t *plugin, neu_datatag_t *tag);
-            void (*add_group)(neu_plugin_t *      plugin,
-                              neu_plugin_group_t *new_group);
-            void (*del_group)(neu_plugin_t *      plugin,
-                              neu_plugin_group_t *old_group);
             int (*group_timer)(neu_plugin_t *plugin, neu_plugin_group_t *group);
             int (*write_tag)(neu_plugin_t *plugin, uint32_t req_id,
                              neu_datatag_t *tag, neu_value_u value);

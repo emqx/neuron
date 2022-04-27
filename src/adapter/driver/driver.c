@@ -179,11 +179,10 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
     pthread_mutex_lock(&driver->grp_mtx);
     HASH_ITER(hh, driver->grps, sg, tmp)
     {
-        driver->adapter.plugin_info.module->intf_funs->driver.del_group(
-            driver->adapter.plugin_info.plugin, &sg->grp);
         HASH_DEL(driver->grps, sg);
         neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
         neu_event_del_timer(driver->driver_events, sg->read);
+        sg->grp.group_free(&sg->grp);
         free(sg);
     }
 
@@ -268,8 +267,6 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
         sg->name           = strdup(neu_taggrp_cfg_get_name(sg->group));
         sg->grp.group_name = strdup(neu_taggrp_cfg_get_name(sg->group));
         load_tags(driver, sg->group, &sg->grp.tags);
-        driver->adapter.plugin_info.module->intf_funs->driver.add_group(
-            driver->adapter.plugin_info.plugin, &sg->grp);
 
         pthread_mutex_lock(&driver->grp_mtx);
         HASH_ADD_STR(driver->grps, name, sg);
@@ -291,18 +288,17 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
         HASH_FIND_STR(driver->grps,
                       neu_taggrp_cfg_get_name(unsub_req->grp_config), sg);
         if (sg != NULL) {
-            driver->adapter.plugin_info.module->intf_funs->driver.del_group(
-                driver->adapter.plugin_info.plugin, &sg->grp);
+            HASH_DEL(driver->grps, sg);
+            neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
+            neu_event_del_timer(driver->driver_events, sg->read);
+            sg->grp.group_free(&sg->grp);
+
             for (neu_datatag_t **tag =
                      (neu_datatag_t **) utarray_front(sg->grp.tags);
                  tag != NULL;
                  tag = (neu_datatag_t **) utarray_next(sg->grp.tags, tag)) {
                 neu_driver_cache_del(driver->cache, (*tag)->name);
             }
-
-            HASH_DEL(driver->grps, sg);
-            neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
-            neu_event_del_timer(driver->driver_events, sg->read);
             free(sg);
         }
         // assert(sg != NULL);
@@ -353,8 +349,7 @@ static int read_callback(void *usr_data)
             neu_taggrp_cfg_get_name(sg->group));
         assert(new_config != NULL);
 
-        sg->driver->adapter.plugin_info.module->intf_funs->driver.del_group(
-            sg->driver->adapter.plugin_info.plugin, &sg->grp);
+        sg->grp.group_free(&sg->grp);
 
         for (neu_datatag_t **tag =
                  (neu_datatag_t **) utarray_front(sg->grp.tags);
@@ -362,11 +357,12 @@ static int read_callback(void *usr_data)
              tag = (neu_datatag_t **) utarray_next(sg->grp.tags, tag)) {
             neu_driver_cache_del(sg->driver->cache, (*tag)->name);
         }
-        neu_plugin_group_t grp = { .group_name = sg->grp.group_name };
+        neu_plugin_group_t grp = {
+            .group_name = sg->grp.group_name,
+            .group_free = NULL,
+            .user_data  = NULL,
+        };
         load_tags(sg->driver, new_config, &grp.tags);
-
-        sg->driver->adapter.plugin_info.module->intf_funs->driver.add_group(
-            sg->driver->adapter.plugin_info.plugin, &grp);
 
         sg->group = new_config;
         free_tags(sg->grp.tags);
