@@ -65,9 +65,6 @@ struct neu_rest_handler cors_handler[] = {
         .url = "/api/v2/login",
     },
     {
-        .url = "/api/v2/logout",
-    },
-    {
         .url = "/api/v2/tags",
     },
     {
@@ -123,12 +120,6 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/login",
         .value.handler = handle_login,
-    },
-    {
-        .method        = NEU_REST_METHOD_POST,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/logout",
-        .value.handler = handle_logout,
     },
     {
         .method        = NEU_REST_METHOD_POST,
@@ -215,12 +206,6 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/plugin",
         .value.handler = handle_del_plugin,
-    },
-    {
-        .method        = NEU_REST_METHOD_GET,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/tty",
-        .value.handler = handle_get_ttys,
     },
     {
         .method        = NEU_REST_METHOD_POST,

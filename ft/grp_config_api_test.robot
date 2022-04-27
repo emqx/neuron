@@ -188,5 +188,4 @@ Neuron Context Ready
   Set Global Variable       ${test_node_id}                 ${node_id}
 
 Neuron Context Stop
-  LOGOUT
   Stop Neuron               remove_persistence_data=True

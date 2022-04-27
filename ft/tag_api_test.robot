@@ -151,7 +151,6 @@ Neuron Context Ready
   Set Global Variable               ${test_node_id}  ${id}
 
 Neuron Context Stop
-  LOGOUT
   Stop Neuron                       remove_persistence_data=True
 
 Del Group Config Check

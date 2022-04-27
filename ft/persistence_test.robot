@@ -413,5 +413,4 @@ Neuron Start Running
 Neuron Stop Running
     [Arguments]    ${p}
     Sleep          1
-    LOGOUT
     End Neuron     ${p}

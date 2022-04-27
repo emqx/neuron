@@ -283,7 +283,6 @@ Neuron Context Ready
     LOGIN
 
 Neuron Context Stop
-    LOGOUT
     Stop Neuron    remove_persistence_data=True
 
 Del Node Check

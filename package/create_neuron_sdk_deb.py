@@ -35,8 +35,6 @@ rules.append(mkdeb.FileMap("../include/json/neu_json_log.h",
              "/usr/local/include/neuron/json/"))
 rules.append(mkdeb.FileMap("../include/json/neu_json_login.h",
              "/usr/local/include/neuron/json/"))
-rules.append(mkdeb.FileMap("../include/json/neu_json_logout.h",
-             "/usr/local/include/neuron/json/"))
 rules.append(mkdeb.FileMap("../include/json/neu_json_mqtt.h",
              "/usr/local/include/neuron/json/"))
 rules.append(mkdeb.FileMap("../include/json/neu_json_node.h",

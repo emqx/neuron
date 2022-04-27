@@ -14,10 +14,6 @@ _Http LOGIN
   ${jwt} =                          Catenate                          Bearer                                  ${token}[0]
   Set Headers                       {"Authorization":"${jwt}"}
 
-_Http LOGOUT
-  POST                              /api/v2/logout
-  Integer                           response status                   200
-
 _Http Add Node
   [Arguments]         &{args}
   POST                /api/v2/node            ${args}
