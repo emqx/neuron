@@ -182,7 +182,8 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
         HASH_DEL(driver->grps, sg);
         neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
         neu_event_del_timer(driver->driver_events, sg->read);
-        sg->grp.group_free(&sg->grp);
+        if (sg->grp.group_free != NULL)
+            sg->grp.group_free(&sg->grp);
         free(sg);
     }
 
@@ -291,7 +292,8 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
             HASH_DEL(driver->grps, sg);
             neu_adapter_del_timer((neu_adapter_t *) driver, sg->report);
             neu_event_del_timer(driver->driver_events, sg->read);
-            sg->grp.group_free(&sg->grp);
+            if (sg->grp.group_free != NULL)
+                sg->grp.group_free(&sg->grp);
 
             for (neu_datatag_t **tag =
                      (neu_datatag_t **) utarray_front(sg->grp.tags);
@@ -349,7 +351,8 @@ static int read_callback(void *usr_data)
             neu_taggrp_cfg_get_name(sg->group));
         assert(new_config != NULL);
 
-        sg->grp.group_free(&sg->grp);
+        if (sg->grp.group_free != NULL)
+            sg->grp.group_free(&sg->grp);
 
         for (neu_datatag_t **tag =
                  (neu_datatag_t **) utarray_front(sg->grp.tags);
