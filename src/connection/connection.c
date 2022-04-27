@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #ifndef SOCK_NONBLOCK
 #include <fcntl.h>
@@ -121,35 +122,6 @@ void neu_conn_destory(neu_conn_t *conn)
     pthread_mutex_destroy(&conn->mtx);
 
     free(conn);
-}
-
-neu_conn_type_e neu_conn_get_type(neu_conn_t *conn)
-{
-    neu_conn_type_e type = { 0 };
-    pthread_mutex_lock(&conn->mtx);
-    type = conn->param.type;
-    pthread_mutex_unlock(&conn->mtx);
-
-    return type;
-}
-
-int neu_conn_get_fd(neu_conn_t *conn)
-{
-    int fd = -1;
-
-    pthread_mutex_lock(&conn->mtx);
-    if (conn->param.type == NEU_CONN_TCP_SERVER) {
-        if (conn->tcp_server.is_listen) {
-            fd = conn->fd;
-        }
-    } else {
-        if (conn->is_connected) {
-            fd = conn->fd;
-        }
-    }
-    pthread_mutex_unlock(&conn->mtx);
-
-    return fd;
 }
 
 int neu_conn_tcp_server_accept(neu_conn_t *conn)
@@ -259,7 +231,6 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
 ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 {
     ssize_t ret = 0;
-    int     fd  = 0;
 
     pthread_mutex_lock(&conn->mtx);
 
@@ -270,15 +241,14 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             assert(1 == 0);
             break;
         case NEU_CONN_TCP_CLIENT:
-            fd  = conn->fd;
+        case NEU_CONN_UDP:
             ret = send(conn->fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
             if (ret != len) {
-                log_error("tcp client fd: %d, send buf len: %d, ret: %d, "
+                log_error("conn fd: %d, send buf len: %d, ret: %d, "
                           "errno: %s(%d)",
                           conn->fd, len, ret, strerror(errno), errno);
             }
             break;
-        case NEU_CONN_UDP:
         case NEU_CONN_TTY_CLIENT:
             break;
         }
@@ -286,13 +256,13 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         if (ret == -1 && errno != EAGAIN) {
             conn_disconnect(conn);
             if (conn->callback_trigger == true) {
-                conn->disconnected(conn->data, fd);
+                conn->disconnected(conn->data, conn->fd);
                 conn->callback_trigger = false;
             }
         }
 
         if (ret > 0 && conn->callback_trigger == false) {
-            conn->connected(conn->data, fd);
+            conn->connected(conn->data, conn->fd);
             conn->callback_trigger = true;
         }
 
@@ -308,7 +278,6 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 {
     ssize_t ret = 0;
-    int     fd  = 0;
 
     pthread_mutex_lock(&conn->mtx);
 
@@ -318,7 +287,7 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         assert(1 == 0);
         break;
     case NEU_CONN_TCP_CLIENT:
-        fd = conn->fd;
+    case NEU_CONN_UDP:
         if (conn->block) {
             ret = recv(conn->fd, buf, len, MSG_WAITALL);
         } else {
@@ -330,7 +299,6 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                 conn->fd, len, ret, strerror(errno), errno);
         }
         break;
-    case NEU_CONN_UDP:
     case NEU_CONN_TTY_CLIENT:
         break;
     }
@@ -338,13 +306,13 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     if (errno == EPIPE || ret <= 0) {
         conn_disconnect(conn);
         if (conn->callback_trigger == true) {
-            conn->disconnected(conn->data, fd);
+            conn->disconnected(conn->data, conn->fd);
             conn->callback_trigger = false;
         }
     }
 
     if (ret > 0 && conn->callback_trigger == false) {
-        conn->connected(conn->data, fd);
+        conn->connected(conn->data, conn->fd);
         conn->callback_trigger = true;
     }
 
@@ -375,13 +343,13 @@ void neu_conn_flush(neu_conn_t *conn)
         assert(1 == 0);
         break;
     case NEU_CONN_TCP_CLIENT:
+    case NEU_CONN_UDP:
         while (ret > 0) {
             pthread_mutex_lock(&conn->mtx);
             ret = recv(conn->fd, buf, sizeof(buf), 0);
             pthread_mutex_unlock(&conn->mtx);
         }
         break;
-    case NEU_CONN_UDP:
     case NEU_CONN_TTY_CLIENT:
         break;
     }
@@ -399,7 +367,8 @@ static void conn_free_param(neu_conn_t *conn)
         free(conn->param.params.tcp_client.ip);
         break;
     case NEU_CONN_UDP:
-        free(conn->param.params.udp.ip);
+        free(conn->param.params.udp.src_ip);
+        free(conn->param.params.udp.dst_ip);
         break;
     case NEU_CONN_TTY_CLIENT:
         free(conn->param.params.tty_client.device);
@@ -436,16 +405,14 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->param.params.tcp_client.port = param->params.tcp_client.port;
         conn->param.params.tcp_client.timeout =
             param->params.tcp_client.timeout;
-        if (conn->param.params.tcp_client.timeout > 0) {
-            conn->block = true;
-        } else {
-            conn->block = false;
-        }
+        conn->block = conn->param.params.tcp_client.timeout > 0;
         break;
     case NEU_CONN_UDP:
-        conn->param.params.udp.ip   = strdup(param->params.udp.ip);
-        conn->param.params.udp.port = param->params.udp.port;
-        conn->block                 = false;
+        conn->param.params.udp.src_ip   = strdup(param->params.udp.src_ip);
+        conn->param.params.udp.src_port = param->params.udp.src_port;
+        conn->param.params.udp.dst_ip   = strdup(param->params.udp.dst_ip);
+        conn->param.params.udp.dst_port = param->params.udp.dst_port;
+        conn->block                     = conn->param.params.udp.timeout > 0;
         break;
     case NEU_CONN_TTY_CLIENT:
         conn->param.params.tty_client.device =
@@ -524,17 +491,17 @@ static void conn_tcp_server_stop(neu_conn_t *conn)
 static void conn_connect(neu_conn_t *conn)
 {
     int ret = 0;
+    int fd  = 0;
 
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
         break;
     case NEU_CONN_TCP_CLIENT: {
-        int fd = 0;
         if (conn->block) {
             struct timeval tv = {
-                .tv_sec = conn->param.params.tcp_server.timeout / 1000,
+                .tv_sec = conn->param.params.tcp_client.timeout / 1000,
                 .tv_usec =
-                    (conn->param.params.tcp_server.timeout % 1000) * 1000,
+                    (conn->param.params.tcp_client.timeout % 1000) * 1000,
             };
 
             fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -566,8 +533,41 @@ static void conn_connect(neu_conn_t *conn)
         }
         break;
     }
-    case NEU_CONN_UDP:
+    case NEU_CONN_UDP: {
+        if (conn->block) {
+            struct timeval tv = {
+                .tv_sec  = conn->param.params.udp.timeout / 1000,
+                .tv_usec = (conn->param.params.udp.timeout % 1000) * 1000,
+            };
+
+            fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+            setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+        } else {
+            fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+        }
+        struct sockaddr_in remote = {
+            .sin_family      = AF_INET,
+            .sin_port        = htons(conn->param.params.udp.dst_port),
+            .sin_addr.s_addr = inet_addr(conn->param.params.udp.dst_ip),
+        };
+        ret = connect(fd, (struct sockaddr *) &remote,
+                      sizeof(struct sockaddr_in));
+        if (ret != 0 && errno != EINPROGRESS) {
+            close(fd);
+            log_error("connect %s:%d error: %s(%d)",
+                      conn->param.params.udp.dst_ip,
+                      conn->param.params.udp.dst_port, strerror(errno), errno);
+            conn->is_connected = false;
+            return;
+        } else {
+            log_info("connect %s:%d success", conn->param.params.udp.dst_ip,
+                     conn->param.params.udp.dst_port);
+            conn->is_connected = true;
+            conn->fd           = fd;
+        }
         break;
+    }
     case NEU_CONN_TTY_CLIENT:
         break;
     }
@@ -584,9 +584,8 @@ static void conn_disconnect(neu_conn_t *conn)
         }
         break;
     case NEU_CONN_TCP_CLIENT:
-        close(conn->fd);
-        break;
     case NEU_CONN_UDP:
+        close(conn->fd);
         break;
     case NEU_CONN_TTY_CLIENT:
         break;
@@ -623,5 +622,4 @@ static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
     }
 
     assert(1 == 0);
-    return;
 }

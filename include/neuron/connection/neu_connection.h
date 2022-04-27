@@ -80,8 +80,11 @@ typedef struct neu_conn_param {
         } tcp_client;
 
         struct {
-            char *   ip;
-            uint16_t port;
+            char *   src_ip;
+            uint16_t src_port;
+            char *   dst_ip;
+            uint16_t dst_port;
+            uint16_t timeout; // millisecond
         } udp;
 
         struct {
@@ -96,15 +99,13 @@ typedef struct neu_conn_param {
 
 typedef struct neu_conn neu_conn_t;
 
-neu_conn_t *    neu_conn_new(neu_conn_param_t *param, void *data,
-                             neu_conn_callback connected,
-                             neu_conn_callback disconnected);
-neu_conn_t *    neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
-void            neu_conn_destory(neu_conn_t *conn);
-neu_conn_type_e neu_conn_get_type(neu_conn_t *conn);
-int             neu_conn_get_fd(neu_conn_t *conn);
-int             neu_conn_tcp_server_accept(neu_conn_t *conn);
-int             neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd);
+neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
+                         neu_conn_callback connected,
+                         neu_conn_callback disconnected);
+neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
+void        neu_conn_destory(neu_conn_t *conn);
+int         neu_conn_tcp_server_accept(neu_conn_t *conn);
+int         neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd);
 
 void    neu_conn_flush(neu_conn_t *conn);
 ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len);
