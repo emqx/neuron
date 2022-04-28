@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "utils/protocol_buf.h"
+
 typedef enum neu_conn_type {
     NEU_CONN_TCP_SERVER = 1,
     NEU_CONN_TCP_CLIENT,
@@ -116,5 +118,31 @@ ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len);
 ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len);
+
+#define NEU_STREAM_CONSUME(buf, size)                           \
+    neu_protocol_unpack_buf_t protocol_buf = { 0 };             \
+    neu_protocol_unpack_buf_init(&protocol_buf, (buf), (size)); \
+    while (neu_protocol_unpack_buf_unused_size(&protocol_buf) > 0)
+
+#define NEU_STREAM_CONSUME_USED_SIZE(used) \
+    offset -= used;                        \
+    memmove(recv_buf, recv_buf + used, offset);
+
+#define NEU_TCP_CLIENT_CONSUME(conn)                                         \
+    static __thread uint8_t  recv_buf[2048] = { 0 };                         \
+    static __thread uint16_t offset         = 0;                             \
+    ssize_t                  ret =                                           \
+        neu_conn_recv((conn), recv_buf + offset, sizeof(recv_buf) - offset); \
+    if (ret > 0)                                                             \
+        offset += ret;                                                       \
+    if (ret > 0)                                                             \
+    NEU_STREAM_CONSUME(recv_buf, offset)
+
+typedef int (*neu_conn_stream_consume_fn)(
+    void *context, neu_protocol_unpack_buf_t *protocol_buf);
+void neu_conn_stream_consume(neu_conn_t *conn, void *context,
+                             neu_conn_stream_consume_fn fn);
+void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
+                                        neu_conn_stream_consume_fn fn);
 
 #endif

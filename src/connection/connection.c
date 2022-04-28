@@ -623,3 +623,61 @@ static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
 
     assert(1 == 0);
 }
+
+void neu_conn_stream_consume(neu_conn_t *conn, void *context,
+                             neu_conn_stream_consume_fn fn)
+{
+    static __thread uint8_t  recv_buf[2048] = { 0 };
+    static __thread uint16_t offset         = 0;
+    ssize_t                  ret =
+        neu_conn_recv(conn, recv_buf + offset, sizeof(recv_buf) - offset);
+    if (ret > 0) {
+        offset += ret;
+        neu_protocol_unpack_buf_t protocol_buf = { 0 };
+        neu_protocol_unpack_buf_init(&protocol_buf, recv_buf, offset);
+        while (neu_protocol_unpack_buf_unused_size(&protocol_buf) > 0) {
+            int used = fn(context, &protocol_buf);
+
+            if (used == 0) {
+                break;
+            } else if (used == -1) {
+                memset(recv_buf, 0, sizeof(recv_buf));
+                offset = 0;
+                break;
+            } else {
+                assert(used > 0);
+                offset -= used;
+                memmove(recv_buf, recv_buf + used, offset);
+            }
+        }
+    }
+}
+
+void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
+                                        neu_conn_stream_consume_fn fn)
+{
+    static __thread uint8_t  recv_buf[2048] = { 0 };
+    static __thread uint16_t offset         = 0;
+    ssize_t ret = neu_conn_tcp_server_recv(conn, fd, recv_buf + offset,
+                                           sizeof(recv_buf) - offset);
+    if (ret > 0) {
+        offset += ret;
+        neu_protocol_unpack_buf_t protocol_buf = { 0 };
+        neu_protocol_unpack_buf_init(&protocol_buf, recv_buf, offset);
+        while (neu_protocol_unpack_buf_unused_size(&protocol_buf) > 0) {
+            int used = fn(context, &protocol_buf);
+
+            if (used == 0) {
+                break;
+            } else if (used == -1) {
+                memset(recv_buf, 0, sizeof(recv_buf));
+                offset = 0;
+                break;
+            } else {
+                assert(used > 0);
+                offset -= used;
+                memmove(recv_buf, recv_buf + used, offset);
+            }
+        }
+    }
+}
