@@ -434,8 +434,6 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
             assert(value.n_byte == sizeof(uint16_t));
             uint16_t v = value.value.u16;
 
-            v = ntohs(v);
-
             neu_datatag_pack_add(val, index, tag->type, tag->id, (void *) &v);
             break;
         }
@@ -445,8 +443,6 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
             assert(value.n_byte == sizeof(uint32_t));
             uint32_t v = value.value.u32;
 
-            v = ntohl(v);
-
             neu_datatag_pack_add(val, index, tag->type, tag->id, (void *) &v);
             break;
         }
@@ -455,8 +451,6 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
         case NEU_DTYPE_DOUBLE: {
             assert(value.n_byte == sizeof(uint64_t));
             uint64_t v = value.value.u64;
-
-            v = neu_ntohll(v);
 
             neu_datatag_pack_add(val, index, tag->type, tag->id, (void *) &v);
             break;
