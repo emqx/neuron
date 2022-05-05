@@ -55,27 +55,24 @@ The hierarchical layer diagram of Neuron is shown in the figure below:
 
 ## Installation
 
-###  Install dependent libraries
+###  Required Dependencies
 
-[Source code to install dependent libraries](https://github.com/neugates/neuron/blob/main/Install-dependent-libraries.md)
+[Install Required Dependencies](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
 
 ## Build
 
 ```shell
-# build
-cd neuron && mkdir build 
-cd build
-cmake .. && make
-cd -
+$ git clone https://github.com/emqx/neuron
+$ git submodule update --init
+$ cd neuron && mkdir build && cd build
+$ cmake .. && make
 ```
 
 ## Quick Start
 
 ```shell
-# Start neuron
-cd build
-./neuron
-cd -
+$ cd build
+$ ./neuron
 ```
 
 ## Test
@@ -83,9 +80,8 @@ cd -
 To run all unit testers
 
 ```shell
-cd build
-ctest --output-on-failure
-cd -
+$ cd build
+$ ctest --output-on-failure
 ```
 
 ## Functional test

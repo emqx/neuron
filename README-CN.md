@@ -58,25 +58,22 @@ Neuron的层次结构图如下图所示：
 
 ### 安装依赖
 
-[Source code to install dependent libraries](https://github.com/neugates/neuron/blob/main/Install-dependent-libraries.md)
+[Install Required Dependencies](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
 
 ### 编译
 
 ```shell
-# build
-cd neuron && mkdir build 
-cd build
-cmake .. && make
-cd -
+$ git clone https://github.com/emqx/neuron
+$ git submodule update --init
+$ cd neuron && mkdir build && cd build
+$ cmake .. && make
 ```
 
 ## 快速开始
 
 ```shell
-# Start neuron
-cd build
-./neuron
-cd -
+$ cd build
+$ ./neuron
 ```
 
 ## 单元测试
@@ -84,9 +81,8 @@ cd -
 运行所有单元测试
 
 ```shell
-cd build
-ctest --output-on-failure
-cd -
+$ cd build
+$ ctest --output-on-failure
 ```
 
 ## 功能测试
