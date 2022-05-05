@@ -1,5 +1,3 @@
-# Script to install dependent libraries
-
 [openssl](https://github.com/openssl/openssl)
 
 ```shell
