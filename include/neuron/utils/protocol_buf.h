@@ -100,6 +100,16 @@ inline static uint8_t *neu_protocol_unpack_buf(neu_protocol_unpack_buf_t *buf,
     return buf->base + buf->offset - size;
 }
 
+inline static uint8_t *
+neu_protocol_unpack_buf_get(neu_protocol_unpack_buf_t *buf, uint16_t size)
+{
+    if (buf->size - buf->offset < size) {
+        return NULL;
+    }
+
+    return buf->base + buf->offset;
+}
+
 inline static uint8_t *neu_protocol_pack_buf(neu_protocol_pack_buf_t *buf,
                                              uint16_t                 size)
 {
@@ -116,6 +126,12 @@ inline static uint16_t
 neu_protocol_pack_buf_unused_size(neu_protocol_pack_buf_t *buf)
 {
     return buf->offset;
+}
+
+inline static uint16_t
+neu_protocol_pack_buf_used_size(neu_protocol_pack_buf_t *buf)
+{
+    return buf->size - buf->offset;
 }
 
 inline static uint16_t
