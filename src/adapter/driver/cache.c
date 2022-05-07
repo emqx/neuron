@@ -120,7 +120,7 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
         elem->n_byte = n_byte;
         elem->bytes  = calloc(elem->n_byte, 1);
     } else {
-        assert(n_byte == elem->n_byte);
+        // assert(n_byte == elem->n_byte);
     }
 
     memcpy(elem->bytes, bytes, elem->n_byte);
