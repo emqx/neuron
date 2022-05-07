@@ -20,13 +20,6 @@ $ cmake DBUILD_SHARED_LIBS=1 .. && make
 $ sudo make install
 ```
 
-[zlib](https://github.com/madler/zlib.git)
-```shell
-$ git clone -b v1.2.11 https://github.com/madler/zlib.git
-$ cd zlib && mkdir build && cd build
-$ cmake .. && make && sudo make install
-```
-
 [jansson](https://github.com/akheron/jansson)
 ```shell
 $ git clone -b v2.14 https://github.com/akheron/jansson.git
