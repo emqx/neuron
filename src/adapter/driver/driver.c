@@ -486,12 +486,27 @@ static void load_tags(neu_adapter_driver_t *driver, neu_taggrp_config_t *group,
 
         neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter);
         neu_datatag_t *   tag = neu_datatag_tbl_get(driver->tag_table, *id);
+        neu_datatag_t *   tmp = calloc(1, sizeof(neu_datatag_t));
+        memcpy(tmp, tag, sizeof(neu_datatag_t));
+        tmp->name     = strdup(tag->name);
+        tmp->addr_str = strdup(tag->addr_str);
 
-        utarray_push_back(*tags, (void *) &tag);
+        utarray_push_back(*tags, (void *) &tmp);
     }
 }
 
 static void free_tags(UT_array *tags)
 {
+    neu_datatag_t **tag = (neu_datatag_t **) utarray_back(tags);
+
+    while (tag != NULL) {
+        utarray_pop_back(tags);
+
+        free((*tag)->addr_str);
+        free((*tag)->name);
+        free(*tag);
+
+        tag = (neu_datatag_t **) utarray_back(tags);
+    }
     utarray_free(tags);
 }
