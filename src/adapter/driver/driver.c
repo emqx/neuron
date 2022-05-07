@@ -113,7 +113,7 @@ static void update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
         n_byte = 8;
         break;
     case NEU_TYPE_STRING:
-        n_byte = strlen(value.value.str);
+        n_byte = sizeof(value.value.str);
         break;
     case NEU_TYPE_BYTES:
         break;
