@@ -129,7 +129,7 @@ static void topics_cleanup(vector_t *topics)
     vector_clear(topics);
 }
 
-static void topics_generate(vector_t *topics, char *name)
+static void topics_generate(vector_t *topics, char *name, char *upload_topic)
 {
     char *ping_req = real_topic_generate(TOPIC_PING_REQ, name);
     char *ping_res = real_topic_generate(TOPIC_STATUS_RES, name);
@@ -143,8 +143,15 @@ static void topics_generate(vector_t *topics, char *name)
     char *write_res = real_topic_generate(TOPIC_WRITE_RES, name);
     topics_add(topics, write_req, QOS0, write_res, QOS0, TOPIC_TYPE_WRITE);
 
+    /// UPLOAD TOPIC SETTING
     char *upload_req = NULL;
-    char *upload_res = real_topic_generate(TOPIC_UPLOAD_RES, name);
+    char *upload_res = NULL;
+    if (NULL != upload_topic && 0 < strlen(upload_topic)) {
+        upload_res = upload_topic;
+    } else {
+        upload_res = real_topic_generate(TOPIC_UPLOAD_RES, name);
+    }
+
     topics_add(topics, upload_req, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
 }
 
@@ -460,7 +467,8 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     }
 
     vector_init(&routine->topics, 1, sizeof(struct topic_pair));
-    topics_generate(&routine->topics, routine->option.clientid);
+    topics_generate(&routine->topics, routine->option.clientid,
+                    routine->option.upload_topic);
     topics_subscribe(&routine->topics, routine->client);
     return routine;
 }
