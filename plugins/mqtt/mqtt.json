@@ -1,9 +1,19 @@
 {
 	"client-id": {
-		"name": "client-id",
+		"name": "client id",
 		"description": "Neuron MQTT client ID",
 		"type": "string",
 		"attribute": "required",
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
+	"upload-topic": {
+		"name": "upload topic",
+		"description": "User-defined upload topic",
+		"type": "string",
+		"attribute": "optional",
 		"default": "",
 		"valid": {
 			"length": 255
