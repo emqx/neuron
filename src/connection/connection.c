@@ -287,7 +287,6 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         assert(1 == 0);
         break;
     case NEU_CONN_TCP_CLIENT:
-    case NEU_CONN_UDP:
         if (conn->block) {
             ret = recv(conn->fd, buf, len, MSG_WAITALL);
         } else {
@@ -297,6 +296,13 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             log_error(
                 "tcp client fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
                 conn->fd, len, ret, strerror(errno), errno);
+        }
+        break;
+    case NEU_CONN_UDP:
+        ret = recv(conn->fd, buf, len, 0);
+        if (ret == -1) {
+            log_error("udp fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
+                      conn->fd, len, ret, strerror(errno), errno);
         }
         break;
     case NEU_CONN_TTY_CLIENT:
@@ -367,8 +373,7 @@ static void conn_free_param(neu_conn_t *conn)
         free(conn->param.params.tcp_client.ip);
         break;
     case NEU_CONN_UDP:
-        free(conn->param.params.udp.src_ip);
-        free(conn->param.params.udp.dst_ip);
+        free(conn->param.params.udp.ip);
         break;
     case NEU_CONN_TTY_CLIENT:
         free(conn->param.params.tty_client.device);
@@ -408,11 +413,9 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->block = conn->param.params.tcp_client.timeout > 0;
         break;
     case NEU_CONN_UDP:
-        conn->param.params.udp.src_ip   = strdup(param->params.udp.src_ip);
-        conn->param.params.udp.src_port = param->params.udp.src_port;
-        conn->param.params.udp.dst_ip   = strdup(param->params.udp.dst_ip);
-        conn->param.params.udp.dst_port = param->params.udp.dst_port;
-        conn->block                     = conn->param.params.udp.timeout > 0;
+        conn->param.params.udp.ip   = strdup(param->params.udp.ip);
+        conn->param.params.udp.port = param->params.udp.port;
+        conn->block                 = conn->param.params.udp.timeout > 0;
         break;
     case NEU_CONN_TTY_CLIENT:
         conn->param.params.tty_client.device =
@@ -548,21 +551,20 @@ static void conn_connect(neu_conn_t *conn)
         }
         struct sockaddr_in remote = {
             .sin_family      = AF_INET,
-            .sin_port        = htons(conn->param.params.udp.dst_port),
-            .sin_addr.s_addr = inet_addr(conn->param.params.udp.dst_ip),
+            .sin_port        = htons(conn->param.params.udp.port),
+            .sin_addr.s_addr = inet_addr(conn->param.params.udp.ip),
         };
         ret = connect(fd, (struct sockaddr *) &remote,
                       sizeof(struct sockaddr_in));
         if (ret != 0 && errno != EINPROGRESS) {
             close(fd);
-            log_error("connect %s:%d error: %s(%d)",
-                      conn->param.params.udp.dst_ip,
-                      conn->param.params.udp.dst_port, strerror(errno), errno);
+            log_error("connect %s:%d error: %s(%d)", conn->param.params.udp.ip,
+                      conn->param.params.udp.port, strerror(errno), errno);
             conn->is_connected = false;
             return;
         } else {
-            log_info("connect %s:%d success", conn->param.params.udp.dst_ip,
-                     conn->param.params.udp.dst_port);
+            log_info("connect %s:%d success", conn->param.params.udp.ip,
+                     conn->param.params.udp.port);
             conn->is_connected = true;
             conn->fd           = fd;
         }

@@ -82,10 +82,8 @@ typedef struct neu_conn_param {
         } tcp_client;
 
         struct {
-            char *   src_ip;
-            uint16_t src_port;
-            char *   dst_ip;
-            uint16_t dst_port;
+            char *   ip;
+            uint16_t port;
             uint16_t timeout; // millisecond
         } udp;
 
