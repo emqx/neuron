@@ -62,9 +62,8 @@ The hierarchical layer diagram of Neuron is shown in the figure below:
 ## Build
 
 ```shell
-$ git clone https://github.com/emqx/neuron
+$ git clone -- recursive https://github.com/emqx/neuron
 $ cd neuron
-$ git submodule update --init
 $ mkdir build && cd build
 $ cmake .. && make
 ```
