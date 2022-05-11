@@ -221,13 +221,30 @@ if(NOT DISABLE_UT)
 endif()
 
 
-install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION /etc/ld.so.conf.d)
+# Set sane defaults for multi-lib linux systems
+include(GNUInstallDirs)
+if(UNIX)
+	mark_as_advanced(CLEAR
+	    CMAKE_INSTALL_BINDIR
+		CMAKE_INSTALL_INCLUDEDIR
+		CMAKE_INSTALL_LIBDIR
+		CMAKE_INSTALL_SYSCONFDIR)
+else()
+	set(CMAKE_INSTALL_BINDIR bin)
+	set(CMAKE_INSTALL_INCLUDEDIR include)
+	set(CMAKE_INSTALL_LIBDIR lib)
+	set(CMAKE_INSTALL_SYSCONFDIR etc)
+endif()
+
+# Should work, but CMake incorrectly prepends /usr to etc...
+#install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/ld.so.conf.d)
+install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION etc/ld.so.conf.d)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
-        DESTINATION include
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         FILES_MATCHING
         PATTERN "*.h")
 install(FILES "${CMAKE_SOURCE_DIR}/cmake/neuron-config.cmake"
-	DESTINATION lib/cmake/neuron)
-install(TARGETS neuron-base
-  LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/neuron)
+install(TARGETS neuron neuron-base
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
