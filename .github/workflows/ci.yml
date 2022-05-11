@@ -141,6 +141,14 @@ jobs:
           python3 -m pip install -r ft/requirements.txt
           python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: http_ft_result
+          path: |
+            ft/http_reports/log.html
+            ft/http_reports/output.xml
+            ft/http_reports/report.html
+
   mqtt_ft:
     runs-on: ubuntu-20.04
 
@@ -165,7 +173,15 @@ jobs:
           mosquitto -v &
           python3 -m pip install -U pip
           python3 -m pip install -r ft/requirements.txt
-          python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/http_reports ft/modbus_tcp_test.robot
+          python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft/modbus_tcp_test.robot
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: mqtt_ft_result
+          path: |
+            ft/mqtt_reports/log.html
+            ft/mqtt_reports/output.xml
+            ft/mqtt_reports/report.html
   
   create_daily_release:
     runs-on: ubuntu-20.04
