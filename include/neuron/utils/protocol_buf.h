@@ -122,6 +122,11 @@ inline static uint8_t *neu_protocol_pack_buf(neu_protocol_pack_buf_t *buf,
     return buf->base + buf->offset;
 }
 
+inline static uint8_t *neu_protocol_pack_buf_get(neu_protocol_pack_buf_t *buf)
+{
+    return buf->base + buf->offset;
+}
+
 inline static uint16_t
 neu_protocol_pack_buf_unused_size(neu_protocol_pack_buf_t *buf)
 {
