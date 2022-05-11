@@ -124,7 +124,7 @@ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k 
 您可通过以下途径与 Neuron 社区及开发者联系。
 
 - 论坛：https://askemq.com/c/neuron/8 
-- GitHub Discussions：https://github.com/neugates/neuron/discussions
+- GitHub Discussions：https://github.com/emqx/neuron/discussions
 - Slack：https://slack-invite.emqx.io/
 - Discord：https://discord.gg/xYGf3fQnES 
 

@@ -122,6 +122,6 @@ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k 
 
 You can connect with the Neuron community and developers in the following ways.
 
-- Discussions：https://github.com/neugates/neuron/discussions
+- Discussions：https://github.com/emqx/neuron/discussions
 - Slack：https://slack-invite.emqx.io/
 - Discord：https://discord.gg/xYGf3fQnES 
