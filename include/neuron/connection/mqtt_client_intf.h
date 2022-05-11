@@ -33,8 +33,6 @@ typedef struct {
     int verbose;
     /* MQTT options */
     int   MQTT_version; // 3-3_1, 4-3_3_1, 5-5
-    char *topic;
-    char *respons_topic;
     char *clientid;
     int   qos;
     int   retained;
@@ -52,7 +50,6 @@ typedef struct {
     int   will_qos;
     int   will_retain;
     /* TLS options */
-    char *ca_path;
     char *ca;
     char *cert;
     char *key;
