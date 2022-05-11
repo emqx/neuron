@@ -29,11 +29,6 @@
 #include <json/neu_json_param.h>
 #include <neuron.h>
 
-#define MQTT_CERT_PATH "config"
-#define MQTT_CA_FILE "mqtt_ca.crt"
-#define MQTT_CERT_FILE "mqtt_cert.crt"
-#define MQTT_KEY_FILE "mqtt_key.key"
-
 void mqtt_option_uninit(neu_mqtt_option_t *option)
 {
     if (NULL != option->clientid) {
@@ -44,16 +39,6 @@ void mqtt_option_uninit(neu_mqtt_option_t *option)
     if (NULL != option->upload_topic) {
         free(option->upload_topic);
         option->upload_topic = NULL;
-    }
-
-    if (NULL != option->topic) {
-        free(option->topic);
-        option->topic = NULL;
-    }
-
-    if (NULL != option->respons_topic) {
-        free(option->respons_topic);
-        option->respons_topic = NULL;
     }
 
     if (NULL != option->connection) {
@@ -79,11 +64,6 @@ void mqtt_option_uninit(neu_mqtt_option_t *option)
     if (NULL != option->password) {
         free(option->password);
         option->password = NULL;
-    }
-
-    if (NULL != option->ca_path) {
-        free(option->ca_path);
-        option->ca_path = NULL;
     }
 
     if (NULL != option->ca) {

@@ -147,7 +147,7 @@ static void topics_generate(vector_t *topics, char *name, char *upload_topic)
     char *upload_req = NULL;
     char *upload_res = NULL;
     if (NULL != upload_topic && 0 < strlen(upload_topic)) {
-        upload_res = upload_topic;
+        upload_res = strdup(upload_topic);
     } else {
         upload_res = real_topic_generate(TOPIC_UPLOAD_RES, name);
     }
