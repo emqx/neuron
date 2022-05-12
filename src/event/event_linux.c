@@ -33,8 +33,9 @@
 #include <sys/timerfd.h>
 
 struct neu_event_timer {
-    int   fd;
-    void *event_data;
+    int               fd;
+    void *            event_data;
+    struct itimerspec value;
 };
 
 struct neu_event_io {
@@ -99,7 +100,10 @@ static void *event_loop(void *arg)
                 ssize_t size = read(data->fd, &t, sizeof(t));
                 assert(size != -1);
 
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, data->fd, NULL);
                 ret = data->callback.timer(data->usr_data);
+                timerfd_settime(data->fd, 0, &data->ctx.timer->value, NULL);
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, data->fd, &event);
             }
             break;
         case IO:
@@ -195,6 +199,7 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     data->callback.timer = timer.cb;
     data->ctx.timer      = timer_ctx;
 
+    timer_ctx->value      = value;
     timer_ctx->fd         = timer_fd;
     timer_ctx->event_data = data;
 
