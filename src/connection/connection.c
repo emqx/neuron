@@ -373,7 +373,8 @@ static void conn_free_param(neu_conn_t *conn)
         free(conn->param.params.tcp_client.ip);
         break;
     case NEU_CONN_UDP:
-        free(conn->param.params.udp.ip);
+        free(conn->param.params.udp.src_ip);
+        free(conn->param.params.udp.dst_ip);
         break;
     case NEU_CONN_TTY_CLIENT:
         free(conn->param.params.tty_client.device);
@@ -413,9 +414,11 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->block = conn->param.params.tcp_client.timeout > 0;
         break;
     case NEU_CONN_UDP:
-        conn->param.params.udp.ip   = strdup(param->params.udp.ip);
-        conn->param.params.udp.port = param->params.udp.port;
-        conn->block                 = conn->param.params.udp.timeout > 0;
+        conn->param.params.udp.src_ip   = strdup(param->params.udp.src_ip);
+        conn->param.params.udp.src_port = param->params.udp.src_port;
+        conn->param.params.udp.dst_ip   = strdup(param->params.udp.dst_ip);
+        conn->param.params.udp.dst_port = param->params.udp.dst_port;
+        conn->block                     = conn->param.params.udp.timeout > 0;
         break;
     case NEU_CONN_TTY_CLIENT:
         conn->param.params.tty_client.device =
@@ -549,22 +552,41 @@ static void conn_connect(neu_conn_t *conn)
         } else {
             fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
         }
+        int so_broadcast = 1;
+        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &so_broadcast,
+                   sizeof(so_broadcast));
+        struct sockaddr_in local = {
+            .sin_family      = AF_INET,
+            .sin_port        = htons(conn->param.params.udp.src_port),
+            .sin_addr.s_addr = inet_addr(conn->param.params.udp.src_ip),
+        };
+
+        ret = bind(fd, (struct sockaddr *) &local, sizeof(struct sockaddr_in));
+        if (ret != 0) {
+            close(fd);
+            log_error("bind %s:%d error: %s(%d)", conn->param.params.udp.src_ip,
+                      conn->param.params.udp.src_port, strerror(errno), errno);
+            conn->is_connected = false;
+            return;
+        }
+
         struct sockaddr_in remote = {
             .sin_family      = AF_INET,
-            .sin_port        = htons(conn->param.params.udp.port),
-            .sin_addr.s_addr = inet_addr(conn->param.params.udp.ip),
+            .sin_port        = htons(conn->param.params.udp.dst_port),
+            .sin_addr.s_addr = inet_addr(conn->param.params.udp.dst_ip),
         };
         ret = connect(fd, (struct sockaddr *) &remote,
                       sizeof(struct sockaddr_in));
         if (ret != 0 && errno != EINPROGRESS) {
             close(fd);
-            log_error("connect %s:%d error: %s(%d)", conn->param.params.udp.ip,
-                      conn->param.params.udp.port, strerror(errno), errno);
+            log_error("connect %s:%d error: %s(%d)",
+                      conn->param.params.udp.dst_ip,
+                      conn->param.params.udp.dst_port, strerror(errno), errno);
             conn->is_connected = false;
             return;
         } else {
-            log_info("connect %s:%d success", conn->param.params.udp.ip,
-                     conn->param.params.udp.port);
+            log_info("connect %s:%d success", conn->param.params.udp.dst_ip,
+                     conn->param.params.udp.dst_port);
             conn->is_connected = true;
             conn->fd           = fd;
         }
