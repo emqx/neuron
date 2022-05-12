@@ -44,6 +44,9 @@ struct reconnect_state {
     char *           password;
     int              keepalive;
     int              clean;
+    char *           will_topic;
+    char *           will_payload;
+    int              will_payload_len;
     char *           ca_file;
     char *           ca_path;
     char *           cert_file;
@@ -378,6 +381,14 @@ static void reconnect_state_uninit(struct reconnect_state *state)
     pthread_mutex_destroy(&state->sock_state_mutex);
     pthread_mutex_destroy(&state->running_mutex);
     pthread_mutex_destroy(&state->working_mutex);
+
+    if (NULL != state->will_topic) {
+        free(state->will_topic);
+    }
+
+    if (NULL != state->will_payload) {
+        free(state->will_payload);
+    }
 }
 
 static void subscribe_on_reconnect(mqtt_c_client_t *client)
@@ -429,9 +440,13 @@ static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
         connect_flags = MQTT_CONNECT_CLEAN_SESSION;
     }
 
-    enum MQTTErrors rc =
-        mqtt_connect(mqtt, client_id, NULL, NULL, 0, state->username,
-                     state->password, connect_flags, state->keepalive);
+    const char *will_topic   = state->will_topic;
+    const char *will_payload = state->will_payload;
+    size_t      payload_len  = state->will_payload_len;
+
+    enum MQTTErrors rc = mqtt_connect(
+        mqtt, client_id, will_topic, will_payload, payload_len, state->username,
+        state->password, connect_flags, state->keepalive);
 
     if (MQTT_OK != rc) {
         return;
@@ -550,6 +565,14 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
     pthread_mutex_init(&state->sock_state_mutex, NULL);
     pthread_mutex_init(&state->running_mutex, NULL);
     pthread_mutex_init(&state->working_mutex, NULL);
+
+    if (NULL != client->option->will_topic) {
+        state->will_topic = strdup(option->will_topic);
+        if (NULL != client->option->will_payload) {
+            state->will_payload     = strdup(client->option->will_payload);
+            state->will_payload_len = strlen(state->will_payload);
+        }
+    }
 
     client->mqtt.publish_response_callback_state = state;
     return client;

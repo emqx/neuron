@@ -137,5 +137,7 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     option->key                = key.v.val_str;
     option->keepalive_interval = 30;
     option->clean_session      = 1;
+    option->will_topic         = NULL;
+    option->will_payload       = NULL;
     return 0;
 }
