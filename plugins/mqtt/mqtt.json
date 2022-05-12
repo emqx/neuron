@@ -128,5 +128,19 @@
 		"valid": {
 			"length": 81960
 		}
+	},
+	"keypass": {
+		"name": "keypass",
+		"description": "key password",
+		"attribute": "optional",
+		"type": "file",
+		"condition": {
+			"field": "ssl",
+			"value": true
+		},
+		"default": "",
+		"valid": {
+			"length": 256
+		}
 	}
 }

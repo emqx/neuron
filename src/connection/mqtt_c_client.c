@@ -51,6 +51,7 @@ struct reconnect_state {
     char *           ca_path;
     char *           cert_file;
     char *           key_file;
+    char *           keypass;
     mqtt_c_client_t *client;
     uint8_t          send_buf[SEND_BUF_SIZE];
     uint8_t          recv_buf[RECV_BUF_SIZE];
@@ -90,7 +91,7 @@ static neu_err_code_e client_destroy(mqtt_c_client_t *client);
 static neu_err_code_e client_subscribe_send(mqtt_c_client_t *       client,
                                             struct subscribe_tuple *tuple);
 
-static X509 *ssl_ctx_load_cert(const char *b64)
+static X509 *ssl_ctx_load_cert(const char *b64, const char *password)
 {
     unsigned char *bin = NULL;
     int            len = 0;
@@ -102,13 +103,13 @@ static X509 *ssl_ctx_load_cert(const char *b64)
     X509 *cert = NULL;
     BIO * bio  = NULL;
     bio        = BIO_new_mem_buf((void *) bin, len);
-    cert       = PEM_read_bio_X509(bio, NULL, 0, NULL);
+    cert       = PEM_read_bio_X509(bio, NULL, 0, (void *) password);
     BIO_free_all(bio);
     free(bin);
     return cert;
 }
 
-static EVP_PKEY *ssl_ctx_load_key(const char *b64)
+static EVP_PKEY *ssl_ctx_load_key(const char *b64, const char *password)
 {
     unsigned char *bin = NULL;
     int            len = 0;
@@ -120,7 +121,7 @@ static EVP_PKEY *ssl_ctx_load_key(const char *b64)
     EVP_PKEY *key = NULL;
     BIO *     bio = NULL;
     bio           = BIO_new_mem_buf((void *) bin, len);
-    key           = PEM_read_bio_PrivateKey(bio, NULL, 0, NULL);
+    key           = PEM_read_bio_PrivateKey(bio, NULL, 0, (void *) password);
     BIO_free_all(bio);
     free(bin);
     return key;
@@ -196,7 +197,7 @@ static void ssl_ctx_init(struct reconnect_state *state)
 
     // setup cert
     if (NULL != cert_file && 0 < strlen(cert_file)) {
-        state->cert = ssl_ctx_load_cert(cert_file);
+        state->cert = ssl_ctx_load_cert(cert_file, NULL);
         if (NULL != state->cert) {
             if (0 >= SSL_CTX_use_certificate(state->ssl_ctx, state->cert)) {
                 log_error("failed to use certificate");
@@ -208,7 +209,8 @@ static void ssl_ctx_init(struct reconnect_state *state)
 
     // setup key
     if (NULL != key_file && 0 < strlen(key_file)) {
-        state->key = ssl_ctx_load_key(key_file);
+        const char *keypass = state->keypass;
+        state->key          = ssl_ctx_load_key(key_file, keypass);
         if (NULL != state->key) {
             if (0 >= SSL_CTX_use_PrivateKey(state->ssl_ctx, state->key)) {
                 log_error("failed to use privatekey");
@@ -388,6 +390,10 @@ static void reconnect_state_uninit(struct reconnect_state *state)
 
     if (NULL != state->will_payload) {
         free(state->will_payload);
+    }
+
+    if (NULL != state->keypass) {
+        free(state->keypass);
     }
 }
 
@@ -572,6 +578,13 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
             state->will_payload     = strdup(client->option->will_payload);
             state->will_payload_len = strlen(state->will_payload);
         }
+    }
+
+    if (NULL != client->option->keypass &&
+        0 < strlen(client->option->keypass)) {
+        state->keypass = strdup(client->option->keypass);
+    } else {
+        state->keypass = NULL;
     }
 
     client->mqtt.publish_response_callback_state = state;
