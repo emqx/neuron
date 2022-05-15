@@ -27,7 +27,7 @@
 #include "event/event.h"
 #include "log.h"
 
-#ifdef NEU_PLATFORM_DRAWIN
+#ifdef NEU_PLATFORM_DARWIN
 
 #include <sys/event.h>
 
