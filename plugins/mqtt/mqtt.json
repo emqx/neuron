@@ -133,7 +133,7 @@
 		"name": "keypass",
 		"description": "key password",
 		"attribute": "optional",
-		"type": "file",
+		"type": "string",
 		"condition": {
 			"field": "ssl",
 			"value": true
