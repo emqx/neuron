@@ -467,55 +467,69 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
             continue;
         }
 
+        int ret = -1;
         switch (tag->type) {
         case NEU_DTYPE_BOOL:
         case NEU_DTYPE_BIT:
         case NEU_DTYPE_INT8:
         case NEU_DTYPE_UINT8:
-            assert(value.n_byte == sizeof(uint8_t));
+            if (value.n_byte == sizeof(uint8_t)) {
+                ret = neu_datatag_pack_add(val, index, tag->type, tag->id,
+                                           (void *) &value.value.u8);
+            }
 
-            neu_datatag_pack_add(val, index, tag->type, tag->id,
-                                 (void *) &value.value.u8);
             break;
         case NEU_DTYPE_INT16:
         case NEU_DTYPE_UINT16: {
-            assert(value.n_byte == sizeof(uint16_t));
-            uint16_t v = value.value.u16;
+            if (value.n_byte == sizeof(uint16_t)) {
+                uint16_t v = value.value.u16;
 
-            neu_datatag_pack_add(val, index, tag->type, tag->id, (void *) &v);
+                ret = neu_datatag_pack_add(val, index, tag->type, tag->id,
+                                           (void *) &v);
+            }
             break;
         }
         case NEU_DTYPE_FLOAT:
         case NEU_DTYPE_INT32:
         case NEU_DTYPE_UINT32: {
-            assert(value.n_byte == sizeof(uint32_t));
-            uint32_t v = value.value.u32;
+            if (value.n_byte == sizeof(uint32_t)) {
+                uint32_t v = value.value.u32;
 
-            neu_datatag_pack_add(val, index, tag->type, tag->id, (void *) &v);
+                ret = neu_datatag_pack_add(val, index, tag->type, tag->id,
+                                           (void *) &v);
+            }
             break;
         }
         case NEU_DTYPE_INT64:
         case NEU_DTYPE_UINT64:
         case NEU_DTYPE_DOUBLE: {
-            assert(value.n_byte == sizeof(uint64_t));
-            uint64_t v = value.value.u64;
+            if (value.n_byte == sizeof(uint64_t)) {
+                uint64_t v = value.value.u64;
 
-            neu_datatag_pack_add(val, index, tag->type, tag->id, (void *) &v);
+                ret = neu_datatag_pack_add(val, index, tag->type, tag->id,
+                                           (void *) &v);
+            }
             break;
         }
         case NEU_DTYPE_CSTR:
             if (neu_datatag_string_is_utf8(value.value.str, value.n_byte)) {
-                neu_datatag_pack_add(val, index, tag->type, tag->id,
-                                     (void *) value.value.str);
+                ret = neu_datatag_pack_add(val, index, tag->type, tag->id,
+                                           (void *) value.value.str);
             } else {
                 char *unknown = "?";
-                neu_datatag_pack_add(val, index, tag->type, tag->id,
-                                     (void *) unknown);
+                ret = neu_datatag_pack_add(val, index, tag->type, tag->id,
+                                           (void *) unknown);
             }
             break;
         default:
             assert(tag->type == 0);
             break;
+        }
+
+        if (ret != 0) {
+            error = NEU_ERR_PLUGIN_READ_FAILURE;
+            neu_datatag_pack_add(val, index, NEU_DTYPE_ERRORCODE, *id,
+                                 (void *) &error);
         }
     }
 

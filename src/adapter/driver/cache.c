@@ -118,9 +118,13 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
         assert(n_byte != 0);
         assert(n_byte <= NEU_VALUE_SIZE);
         elem->n_byte = n_byte;
-        elem->bytes  = calloc(elem->n_byte, 1);
+        elem->bytes  = calloc(elem->n_byte, n_byte);
     } else {
-        assert(n_byte == elem->n_byte);
+        if (n_byte != elem->n_byte) {
+            elem->n_byte = n_byte;
+            elem->bytes  = realloc(elem->bytes, n_byte);
+            memset(elem->bytes, 0, elem->n_byte);
+        }
     }
 
     memcpy(elem->bytes, bytes, elem->n_byte);
