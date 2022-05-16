@@ -80,6 +80,11 @@ void mqtt_option_uninit(neu_mqtt_option_t *option)
         free(option->key);
         option->key = NULL;
     }
+
+    if (NULL != option->keypass) {
+        free(option->keypass);
+        option->keypass = NULL;
+    }
 }
 
 int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
@@ -101,9 +106,11 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     neu_json_elem_t ca       = { .name = "ca", .t = NEU_JSON_STR };
     neu_json_elem_t cert     = { .name = "cert", .t = NEU_JSON_STR };
     neu_json_elem_t key      = { .name = "key", .t = NEU_JSON_STR };
+    neu_json_elem_t keypass  = { .name = "keypass", .t = NEU_JSON_STR };
 
-    ret = neu_parse_param(config->buf, &error, 11, &id, &upload, &format, &ssl,
-                          &host, &port, &username, &password, &ca, &cert, &key);
+    ret = neu_parse_param(config->buf, &error, 12, &id, &upload, &format, &ssl,
+                          &host, &port, &username, &password, &ca, &cert, &key,
+                          &keypass);
     if (0 != ret) {
         return ret;
     }
@@ -137,5 +144,8 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     option->key                = key.v.val_str;
     option->keepalive_interval = 30;
     option->clean_session      = 1;
+    option->will_topic         = NULL;
+    option->will_payload       = NULL;
+    option->keypass            = keypass.v.val_str;
     return 0;
 }
