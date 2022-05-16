@@ -475,7 +475,7 @@ static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
     rv = neu_json_decode_group_configs_req(json_str, &group_config_req);
     free(json_str);
     if (0 != rv) {
-        return rv;
+        return 0; // ignore bad group config data
     }
 
     log_info("read %s", fpath);

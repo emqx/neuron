@@ -188,9 +188,6 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
         log_info("%s load plugin %s , lib:%s", adapter->name, ok_or_err,
                  *plugin_info);
-        if (0 != rv) {
-            break;
-        }
     }
 
     neu_persist_plugin_infos_free(plugin_infos);
@@ -212,8 +209,8 @@ static int persister_singleton_load_setting(neu_adapter_t *adapter,
             rv             = 0;
             fail_or_ignore = "ignore";
         }
-        log_error("%s %s load setting of %s", adapter->name, fail_or_ignore,
-                  adapter_name);
+        log_info("%s %s load setting of %s", adapter->name, fail_or_ignore,
+                 adapter_name);
         return rv;
     }
 
@@ -245,8 +242,8 @@ static int persister_singleton_load_datatags(neu_adapter_t *      adapter,
             rv             = 0;
             fail_or_ignore = "ignore";
         }
-        log_error("%s %s load datatags of adapter:%s grp:%s", adapter->name,
-                  fail_or_ignore, adapter_name, grp_config_name);
+        log_info("%s %s load datatags info of adapter:%s grp:%s", adapter->name,
+                 fail_or_ignore, adapter_name, grp_config_name);
         return rv;
     }
 
@@ -320,8 +317,8 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
         rv = persister_singleton_load_datatags(adapter, adapter_name,
                                                grp_config, tag_tbl);
         if (0 != rv) {
-            neu_taggrp_cfg_free(grp_config);
-            break;
+            log_warn("%s load datatags of adapter:%s grp:%s fail, ignore",
+                     adapter->name, adapter_name, p->group_config_name);
         }
 
         neu_cmd_add_grp_config_t cmd = {
@@ -462,7 +459,7 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
                  ok_or_err, adapter_info->type, adapter_info->name,
                  adapter_info->plugin_name);
         if (0 != rv) {
-            goto error_add_adapters;
+            continue;
         }
 
         if (node_id != adapter_info->id) {
@@ -472,16 +469,14 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
             node_id = adapter_info->id;
         }
 
+        rv = persister_singleton_load_grp_and_tags(adapter, adapter_info->name,
+                                                   node_id);
+        // ignore error
+
         rv = persister_singleton_load_setting(adapter, adapter_info->name,
                                               node_id);
         if (0 != rv) {
-            goto error_add_adapters;
-        }
-
-        rv = persister_singleton_load_grp_and_tags(adapter, adapter_info->name,
-                                                   node_id);
-        if (0 != rv) {
-            goto error_add_adapters;
+            continue;
         }
 
         if (ADAPTER_STATE_RUNNING == adapter_info->state) {
@@ -489,7 +484,6 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
             if (0 != rv) {
                 log_error("%s fail start adapter %s", adapter->name,
                           adapter_info->name);
-                goto error_add_adapters;
             }
         }
     }
@@ -500,11 +494,10 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         rv =
             persister_singleton_load_subscriptions(adapter, adapter_info->name);
         if (0 != rv) {
-            break;
+            continue;
         }
     }
 
-error_add_adapters:
     neu_persist_adapter_infos_free(adapter_infos);
 error_load_adapters:
     return rv;
