@@ -26,6 +26,7 @@ extern "C" {
 
 #include <assert.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef enum {
@@ -48,6 +49,7 @@ typedef enum {
 
 #define NEU_VALUE_SIZE 128
 typedef union {
+    bool     boolean;
     int8_t   i8;
     uint8_t  u8;
     int16_t  i16;

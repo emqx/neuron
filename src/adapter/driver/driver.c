@@ -244,6 +244,54 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
                                  int_val->key, (void *) &error);
             driver->adapter.cb_funs.response(&driver->adapter, &resp);
         } else {
+            neu_dtype_e type =
+                neu_value_type_in_dtype(neu_dvalue_get_type(int_val->val));
+
+            switch (type) {
+            case NEU_DTYPE_INT8:
+                neu_dvalue_get_int8(int_val->val, &value.i8);
+                break;
+            case NEU_DTYPE_UINT8:
+                neu_dvalue_get_uint8(int_val->val, &value.u8);
+                break;
+            case NEU_DTYPE_INT16:
+                neu_dvalue_get_int16(int_val->val, &value.i16);
+                break;
+            case NEU_DTYPE_UINT16:
+                neu_dvalue_get_uint16(int_val->val, &value.u16);
+                break;
+            case NEU_DTYPE_UINT32:
+                neu_dvalue_get_uint32(int_val->val, &value.u32);
+                break;
+            case NEU_DTYPE_INT32:
+                neu_dvalue_get_int32(int_val->val, &value.i32);
+                break;
+            case NEU_DTYPE_INT64:
+                neu_dvalue_get_int64(int_val->val, &value.i64);
+                break;
+            case NEU_DTYPE_UINT64:
+                neu_dvalue_get_uint64(int_val->val, &value.u64);
+                break;
+            case NEU_DTYPE_FLOAT:
+                neu_dvalue_get_float(int_val->val, &value.f32);
+                break;
+            case NEU_DTYPE_DOUBLE:
+                neu_dvalue_get_double(int_val->val, &value.d64);
+                break;
+            case NEU_DTYPE_BIT:
+                neu_dvalue_get_bit(int_val->val, &value.u8);
+                break;
+            case NEU_DTYPE_BOOL:
+                neu_dvalue_get_bool(int_val->val, &value.boolean);
+                break;
+            case NEU_DTYPE_CSTR:
+                neu_dvalue_get_ref_cstr(int_val->val, (char **) &value.str);
+                break;
+            default:
+                assert(1 == 0);
+                break;
+            }
+
             driver->adapter.plugin_info.module->intf_funs->driver.write_tag(
                 driver->adapter.plugin_info.plugin, (void *) req, tag, value);
         }
@@ -407,7 +455,7 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
         }
 
         if (neu_driver_cache_get(driver->cache, tag->name, &value) != 0) {
-            error = NEU_ERR_TAG_NOT_EXIST;
+            error = NEU_ERR_PLUGIN_READ_FAILURE;
             neu_datatag_pack_add(val, index, NEU_DTYPE_ERRORCODE, *id,
                                  (void *) &error);
             continue;
