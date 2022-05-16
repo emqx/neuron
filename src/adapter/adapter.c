@@ -1871,10 +1871,10 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     int rv = 0;
 
-    adapter->plugin_info.module->intf_funs->uninit(adapter->plugin_info.plugin);
     if (adapter->plugin_info.module->type == NEU_NODE_TYPE_DRIVERX) {
         neu_adapter_driver_uninit((neu_adapter_driver_t *) adapter);
     }
+    adapter->plugin_info.module->intf_funs->uninit(adapter->plugin_info.plugin);
 
     neu_event_del_io(adapter->events, adapter->nng_io);
 
