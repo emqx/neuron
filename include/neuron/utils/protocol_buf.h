@@ -46,6 +46,11 @@ inline static void neu_protocol_unpack_buf_init(neu_protocol_unpack_buf_t *buf,
     buf->offset = 0;
 }
 
+inline static uint16_t neu_protocol_buf_size(neu_protocol_buf_t *buf)
+{
+    return buf->size;
+}
+
 inline static neu_protocol_unpack_buf_t *
 neu_protocol_unpack_buf_new(uint16_t size)
 {
