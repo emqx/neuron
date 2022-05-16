@@ -221,7 +221,13 @@ void handle_update_tags(nng_aio *aio)
                     code = NEU_ERR_TAG_NAME_CONFLICT;
                     free(tag);
                 } else {
-                    updated = true;
+                    updated                     = true;
+                    neu_taggrp_config_t *config = neu_system_find_group_config(
+                        plugin, req->node_id, req->group_config_name);
+                    neu_taggrp_config_t *new_config =
+                        neu_taggrp_cfg_clone(config);
+                    neu_system_update_group_config(plugin, req->node_id,
+                                                   new_config);
                 }
             }
 
