@@ -277,10 +277,11 @@ void handle_get_tags(nng_aio *aio)
     {
         neu_taggrp_config_t *config =
             *(neu_taggrp_config_t **) iterator_get(&iter);
-        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+        const char *group_name = neu_taggrp_cfg_get_name(config);
+        vector_t *  ids        = neu_taggrp_cfg_get_datatag_ids(config);
         if (s_grp_name != NULL &&
-            strncmp(neu_taggrp_cfg_get_name(config), s_grp_name,
-                    s_grp_name_len) != 0) {
+            (strlen(group_name) != s_grp_name_len ||
+             strncmp(group_name, s_grp_name, s_grp_name_len) != 0)) {
             continue;
         }
 
@@ -297,7 +298,8 @@ void handle_get_tags(nng_aio *aio)
         const char *group_name = neu_taggrp_cfg_get_name(config);
 
         if (s_grp_name != NULL &&
-            strncmp(group_name, s_grp_name, strlen(s_grp_name)) != 0) {
+            (strlen(group_name) != s_grp_name_len ||
+             strncmp(group_name, s_grp_name, strlen(s_grp_name)) != 0)) {
             continue;
         }
 
