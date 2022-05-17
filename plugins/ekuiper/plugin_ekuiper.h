@@ -22,6 +22,7 @@
 
 #include <nng/nng.h>
 #include <nng/protocol/pair0/pair.h>
+#include <nng/supplemental/util/platform.h>
 
 #include "neuron.h"
 
@@ -32,6 +33,7 @@ extern "C" {
 struct neu_plugin {
     neu_plugin_common_t common;
     nng_socket          sock;
+    nng_mtx *           mtx;
     nng_aio *           recv_aio;
 };
 
