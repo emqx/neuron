@@ -62,10 +62,37 @@ static int ekuiper_plugin_close(neu_plugin_t *plugin)
     return rv;
 }
 
+static void pipe_add_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
+{
+    (void) p;
+    (void) ev;
+    neu_plugin_t *plugin = arg;
+    nng_mtx_lock(plugin->mtx);
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
+    nng_mtx_unlock(plugin->mtx);
+}
+
+static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
+{
+    (void) p;
+    (void) ev;
+    neu_plugin_t *plugin = arg;
+    nng_mtx_lock(plugin->mtx);
+    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+    nng_mtx_unlock(plugin->mtx);
+}
+
 static int ekuiper_plugin_init(neu_plugin_t *plugin)
 {
     int      rv       = 0;
     nng_aio *recv_aio = NULL;
+
+    plugin->mtx = NULL;
+    rv          = nng_mtx_alloc(&plugin->mtx);
+    if (0 != rv) {
+        log_error("cannot allocate nng_mtx");
+        return rv;
+    }
 
     rv = nng_aio_alloc(&recv_aio, recv_data_callback, plugin);
     if (rv < 0) {
@@ -84,6 +111,7 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
     int rv = 0;
 
     nng_aio_free(plugin->recv_aio);
+    nng_mtx_free(plugin->mtx);
 
     log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
@@ -99,6 +127,9 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
         return NEU_ERR_FAILURE;
     }
 
+    nng_pipe_notify(plugin->sock, NNG_PIPE_EV_ADD_POST, pipe_add_cb, plugin);
+    nng_pipe_notify(plugin->sock, NNG_PIPE_EV_REM_POST, pipe_rm_cb, plugin);
+
     if ((rv = nng_listen(plugin->sock, EKUIPER_PLUGIN_URL, NULL, 0)) != 0) {
         log_error("nng_listen: %s", nng_strerror(rv));
         return NEU_ERR_FAILURE;
@@ -106,14 +137,12 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
 
     nng_recv_aio(plugin->sock, plugin->recv_aio);
 
-    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
     return NEU_ERR_SUCCESS;
 }
 
 static int ekuiper_plugin_stop(neu_plugin_t *plugin)
 {
     nng_close(plugin->sock);
-    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
     return NEU_ERR_SUCCESS;
 }
 
