@@ -17,8 +17,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 config_ **/
 
-#ifndef _NEU_TAG_CLASS_H_
-#define _NEU_TAG_CLASS_H_
+#ifndef _NEU_TAG_SORT_H_
+#define _NEU_TAG_SORT_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -26,35 +30,38 @@ config_ **/
 #include "utils/utarray.h"
 #include "utils/utlist.h"
 
-typedef struct neu_tag_class_el {
-    void *                   tag;
-    struct neu_tag_class_el *next, *prev;
-} neu_tag_class_el;
+typedef struct neu_tag_sort_elem {
+    void *                    tag;
+    struct neu_tag_sort_elem *next, *prev;
+} neu_tag_sort_elem_t;
 
-typedef int (*neu_tag_el_sort_fn)(neu_tag_class_el *tag1,
-                                  neu_tag_class_el *tag2);
-
-typedef struct neu_tag_class_info {
-    uint16_t size;
-    void *   context;
-} neu_tag_class_info_t;
+typedef int (*neu_tag_sort_cmp)(neu_tag_sort_elem_t *tag1,
+                                neu_tag_sort_elem_t *tag2);
 
 typedef struct {
-    neu_tag_class_info_t info;
-    UT_array *           tags;
-} neu_tag_class_t;
+    struct {
+        uint16_t size;
+        void *   context;
+    } info;
+
+    UT_array *tags;
+} neu_tag_sort_t;
 
 typedef struct {
-    uint16_t n_class;
-    neu_tag_class_t *class;
-} neu_tag_class_result_t;
+    uint16_t        n_sort;
+    neu_tag_sort_t *sorts;
+} neu_tag_sort_result_t;
 
-typedef bool (*neu_tag_class_fn)(neu_tag_class_info_t *info, void *tag,
-                                 void *tag_to_be_classified);
+typedef bool (*neu_tag_sort_fn)(neu_tag_sort_t *sort, void *tag,
+                                void *tag_to_be_sorted);
 
-neu_tag_class_result_t *neu_tag_class(UT_array *tags, neu_tag_class_fn class_fn,
-                                      neu_tag_el_sort_fn sort_fn);
+neu_tag_sort_result_t *neu_tag_sort(UT_array *tags, neu_tag_sort_fn sort,
+                                    neu_tag_sort_cmp cmp);
 
-void neu_tag_class_free(neu_tag_class_result_t *result);
+void neu_tag_sort_free(neu_tag_sort_result_t *result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

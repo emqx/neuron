@@ -25,7 +25,6 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "config.h"
 #include "errcodes.h"
 #include "log.h"
 #include "neu_jwt.h"
@@ -106,8 +105,7 @@ int neu_jwt_init(char *dir_path)
         char *content = NULL;
 
         if (!strcmp((char *) ptr->d_name, ".") ||
-            !strcmp((char *) ptr->d_name, "..") ||
-            !strcmp((char *) ptr->d_name, "neuron.yaml")) {
+            !strcmp((char *) ptr->d_name, "..")) {
             continue;
         }
 

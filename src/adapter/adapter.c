@@ -30,7 +30,6 @@
 
 #include "adapter.h"
 #include "adapter_internal.h"
-#include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"

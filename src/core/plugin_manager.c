@@ -29,7 +29,6 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "adapter/adapter_internal.h"
-#include "config.h"
 #include "dummy/dummy.h"
 #include "neu_vector.h"
 #include "panic.h"

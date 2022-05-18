@@ -35,7 +35,6 @@
 #include "json/neu_json_fn.h"
 #include "json/neu_json_log.h"
 
-#include "config.h"
 #include "handle.h"
 #include "http.h"
 #include "neu_vector.h"

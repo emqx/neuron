@@ -81,7 +81,6 @@ ssl_lib_flag="-DOPENSSL_ROOT_DIR=${install_dir}/openssl \
     -DOPENSSL_LIBRARIES='${install_dir}/openssl/lib'"
 
 build_zlog
-compile_source yaml/libyaml.git 0.2.5 "-DBUILD_SHARED_LIBS=OFF"
 compile_source madler/zlib.git v1.2.11
 compile_source akheron/jansson.git v2.14 "-DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF"
 build_openssl 
