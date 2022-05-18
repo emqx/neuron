@@ -63,8 +63,9 @@ Neuron的层次结构图如下图所示：
 ### 编译
 
 ```shell
-$ git clone -- recursive https://github.com/emqx/neuron
+$ git clone https://github.com/emqx/neuron
 $ cd neuron
+$ git submodule update --init
 $ mkdir build && cd build
 $ cmake .. && make
 ```
