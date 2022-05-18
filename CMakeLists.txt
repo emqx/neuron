@@ -98,7 +98,6 @@ set(PERSIST_SOURCES
 set(NEURON_SOURCES
     src/main.c
     src/argparse.c
-    src/config.c
     src/daemon.c
     src/core/message.c
     src/core/databuf.c
@@ -133,9 +132,9 @@ target_sources(neuron PRIVATE ${NEURON_SOURCES})
 target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
 target_include_directories(neuron PUBLIC ${CMAKE_STAGING_PREFIX})
 if(APPLE)
-  target_link_libraries(neuron nng::nng jansson yaml neuron-base)
+  target_link_libraries(neuron nng::nng jansson neuron-base)
 else()
-  target_link_libraries(neuron dl nng jansson yaml neuron-base)
+  target_link_libraries(neuron dl nng jansson neuron-base)
 endif()
 target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
@@ -163,8 +162,7 @@ set(NEURON_BASE_SOURCES
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/file.c
-    src/utils/base64.c
-    src/config.c)
+    src/utils/base64.c)
 
 if(USE_NNG_MQTT)
   message("-- USE_NNG_MQTT is defined")
@@ -191,13 +189,12 @@ if(USE_NNG_MQTT)
   target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto nng)
 endif()
 
-target_link_libraries(neuron-base libzlog.so vector-static csptr jansson crypto ssl mqttc yaml jwt
+target_link_libraries(neuron-base libzlog.so vector-static csptr jansson crypto ssl mqttc jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
-file(COPY ${CMAKE_SOURCE_DIR}/neuron.yaml DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/ekuiper/ekuiper.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/modbus/modbus-tcp.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)

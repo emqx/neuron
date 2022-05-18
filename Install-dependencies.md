@@ -12,14 +12,6 @@ $ cd zlog
 $ make && sudo make install
 ```
 
-[yaml](https://github.com/yaml/libyaml.git)
-```shell
-$ git clone -b 0.2.5 https://github.com/yaml/libyaml.git
-$ cd libyaml && mkdir build && cd build 
-$ cmake DBUILD_SHARED_LIBS=OFF .. && make
-$ sudo make install
-```
-
 [jansson](https://github.com/akheron/jansson)
 ```shell
 $ git clone -b v2.14 https://github.com/akheron/jansson.git

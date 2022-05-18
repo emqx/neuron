@@ -24,7 +24,6 @@
 #include <string.h>
 
 #include "util.h"
-#include <config.h>
 #include <json/json.h>
 #include <json/neu_json_param.h>
 #include <neuron.h>

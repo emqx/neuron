@@ -24,7 +24,6 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
-#include "config.h"
 #include "dummy.h"
 #include "log.h"
 #include "plugin.h"

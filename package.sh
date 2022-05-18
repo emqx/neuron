@@ -50,8 +50,7 @@ cp build/libneuron-base.so \
     build/neuron \
     ${package_name}
 
-cp build/config/neuron.yaml \
-    neuron.key \
+cp neuron.key \
     neuron.pem \
     ${package_name}/config/
 

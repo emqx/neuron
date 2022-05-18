@@ -34,7 +34,6 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "argparse.h"
-#include "config.h"
 #include "core/message.h"
 #include "core/neu_manager.h"
 #include "daemon.h"
@@ -80,11 +79,6 @@ static void init(const char *log_file)
 static void uninit()
 {
     fclose(g_log_file);
-}
-
-static int read_neuron_config(const char *config)
-{
-    return neu_config_init(config);
 }
 
 static void sig_handler(int sig)
@@ -210,13 +204,6 @@ int main(int argc, char *argv[])
 
     if (neuron_already_running()) {
         log_error("neuron process already running, exit.");
-        rv = -1;
-        goto main_end;
-    }
-
-    rv = read_neuron_config(args.conf_file);
-    if (rv < 0) {
-        log_error("failed to get neuron configuration.");
         rv = -1;
         goto main_end;
     }

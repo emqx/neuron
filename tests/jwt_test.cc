@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include "config.h"
 #include "jwt.h"
 #include "log.h"
 #include "neu_jwt.h"
