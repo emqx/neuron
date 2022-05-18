@@ -17,20 +17,9 @@ TEST(PersistenceAdapterTest, Adapter)
     neu_json_node_req_node_t node3 = { 3, (char *) "mqtt-adapter", 3,
                                        (char *) "mqtt-plugin", 3 };
 
-    neu_json_node_req_t *req =
-        (neu_json_node_req_t *) malloc(sizeof(neu_json_node_req_t));
-    req->nodes = (neu_json_node_req_node_t *) calloc(
-        3, sizeof(neu_json_node_req_node_t));
-
-    req->n_node   = 3;
-    req->nodes[0] = node1;
-    req->nodes[1] = node2;
-    req->nodes[2] = node3;
-
-    vector_t *vec = vector_new_move_from_buf(
-        req->nodes, req->n_node, req->n_node, sizeof(neu_json_node_req_node_t));
-
-    EXPECT_EQ(0, neu_persister_store_adapters(persister, vec));
+    EXPECT_EQ(0, neu_persister_store_adapter(persister, &node1));
+    EXPECT_EQ(0, neu_persister_store_adapter(persister, &node2));
+    EXPECT_EQ(0, neu_persister_store_adapter(persister, &node3));
 
     vector_t *nodes = NULL;
     EXPECT_EQ(0, neu_persister_load_adapters(persister, &nodes));
@@ -62,15 +51,12 @@ TEST(PersistenceAdapterTest, Adapter)
 
     vector_free(nodes);
 
-    vector_free(vec);
     free((char *) dir_name);
 
     free((char *) persist_dir);
     free((char *) adapters_fname);
     free((char *) plugins_fname);
     free(persister);
-
-    free(req);
 }
 
 TEST(PersistencePluginTest, Plugin)

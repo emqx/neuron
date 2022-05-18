@@ -29,6 +29,43 @@
 
 #include "persist_json_adapter.h"
 
+int neu_json_encode_node_resp_node(void *json_object, void *param)
+{
+    int                        ret  = 0;
+    neu_json_node_resp_node_t *resp = (neu_json_node_resp_node_t *) param;
+
+    neu_json_elem_t resp_elems[] = { {
+                                         .name      = "type",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->type,
+                                     },
+                                     {
+                                         .name      = "state",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->state,
+                                     },
+                                     {
+                                         .name      = "plugin_name",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->plugin_name,
+                                     },
+                                     {
+                                         .name      = "name",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->name,
+                                     },
+                                     {
+                                         .name      = "id",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->id,
+                                     } };
+
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
 int neu_json_encode_node_resp(void *json_object, void *param)
 {
     int                   ret  = 0;
@@ -76,6 +113,57 @@ int neu_json_encode_node_resp(void *json_object, void *param)
                                 NEU_JSON_ELEM_SIZE(resp_elems));
 
     return ret;
+}
+
+int neu_json_decode_node_req_node(char *buf, neu_json_node_req_node_t **result)
+{
+
+    int                       ret = 0;
+    neu_json_node_req_node_t *req = calloc(1, sizeof(neu_json_node_req_node_t));
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name = "type",
+                                        .t    = NEU_JSON_INT,
+                                    },
+                                    {
+                                        .name = "state",
+                                        .t    = NEU_JSON_INT,
+                                    },
+                                    {
+                                        .name = "plugin_name",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "name",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "id",
+                                        .t    = NEU_JSON_INT,
+                                    } };
+    ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(req_elems), req_elems);
+    if (ret != 0) {
+        free(req);
+        return -1;
+    }
+
+    req->type        = req_elems[0].v.val_int;
+    req->state       = req_elems[1].v.val_int;
+    req->plugin_name = req_elems[2].v.val_str;
+    req->name        = req_elems[3].v.val_str;
+    req->id          = req_elems[4].v.val_int;
+
+    *result = req;
+    return ret;
+}
+
+void neu_json_decode_node_req_node_free(neu_json_node_req_node_t *req)
+{
+    if (NULL != req) {
+        free(req->plugin_name);
+        free(req->name);
+        free(req);
+    }
 }
 
 int neu_json_decode_node_req(char *buf, neu_json_node_req_t **result)

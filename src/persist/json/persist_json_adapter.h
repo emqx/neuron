@@ -39,6 +39,8 @@ typedef struct {
     int64_t state;
 } neu_json_node_resp_node_t;
 
+int neu_json_encode_node_resp_node(void *json_object, void *param);
+
 typedef struct {
     int                        n_node;
     neu_json_node_resp_node_t *nodes;
@@ -53,6 +55,9 @@ typedef struct {
     char *  plugin_name;
     int64_t state;
 } neu_json_node_req_node_t;
+
+int neu_json_decode_node_req_node(char *buf, neu_json_node_req_node_t **result);
+void neu_json_decode_node_req_node_free(neu_json_node_req_node_t *req);
 
 typedef struct {
     int                       n_node;

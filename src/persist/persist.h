@@ -39,6 +39,13 @@ typedef neu_json_group_configs_req_t neu_persist_group_config_info_t;
 typedef neu_json_subscriptions_req_subscription_t
     neu_persist_subscription_info_t;
 
+static inline void
+neu_persist_adapter_info_fini(neu_persist_adapter_info_t *adapter_info)
+{
+    free(adapter_info->name);
+    free(adapter_info->plugin_name);
+}
+
 static inline void neu_persist_adapter_infos_free(vector_t *adapter_infos)
 {
     VECTOR_FOR_EACH(adapter_infos, iter)
@@ -123,11 +130,11 @@ void neu_persister_destroy(neu_persister_t *persiter);
 /**
  * Persist adapters.
  * @param persister                 persiter object.
- * @param adapter_infos             vector of neu_persist_adapter_info_t.
+ * @param adapter_infos             neu_persist_adapter_info_t.
  * @return 0 on success, non-zero on failure
  */
-int neu_persister_store_adapters(neu_persister_t *persister,
-                                 vector_t *       adapter_infos);
+int neu_persister_store_adapter(neu_persister_t *           persister,
+                                neu_persist_adapter_info_t *info);
 /**
  * Load adapter infos.
  * @param persister                 persiter object.

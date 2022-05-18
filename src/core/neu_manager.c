@@ -231,17 +231,6 @@ static adapter_reg_entity_t *find_reg_adapter_by_pipe(vector_t *adapters,
     return vector_find_item(adapters, &p, match_pipe_reg_adapter);
 }
 
-static bool is_static_adapter(const char *adapter_name)
-{
-    for (size_t i = 0; i < STATIC_ADAPTER_ADD_INFO_SIZE; ++i) {
-        if (0 ==
-            strcmp(static_adapter_reg_cmds[i].adapter_name, adapter_name)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 static bool is_static_plugin(const char *plugin_name)
 {
     for (size_t i = 0; i < STATIC_PLUGIN_INFO_SIZE; ++i) {
@@ -2089,55 +2078,34 @@ const char *find_adapter_plugin_name(neu_manager_t *manager,
     return reg_info.plugin_name;
 }
 
-int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
-                                          vector_t **    result)
+int neu_manager_get_persist_adapter_info(neu_manager_t *             manager,
+                                         const char *                name,
+                                         neu_persist_adapter_info_t *result)
 {
-    adapter_reg_entity_t *reg_entity    = NULL;
-    vector_t *            adapter_infos = NULL;
+    adapter_reg_entity_t *reg_entity = NULL;
 
-    if (NULL == manager || NULL == result) {
-        log_error("get persist adapter infos with NULL manager or NULL result");
+    if (NULL == manager || NULL == name || NULL == result) {
+        log_error("get persist adapter info with NULL arguments");
         return NEU_ERR_EINVAL;
     }
 
-    size_t count = manager->reg_adapters.size;
-    if (count >= STATIC_ADAPTER_ADD_INFO_SIZE) {
-        count -= STATIC_ADAPTER_ADD_INFO_SIZE;
-    }
-    adapter_infos = vector_new(count, sizeof(neu_persist_adapter_info_t));
-    if (NULL == adapter_infos) {
-        return NEU_ERR_ENOMEM;
-    }
-
     nng_mtx_lock(manager->adapters_mtx);
-    VECTOR_FOR_EACH(&manager->reg_adapters, iter)
-    {
-        reg_entity               = (adapter_reg_entity_t *) iterator_get(&iter);
-        const char *adapter_name = neu_adapter_get_name(reg_entity->adapter);
-        const char *plugin_name =
-            find_adapter_plugin_name(manager, reg_entity->adapter);
-
-        if (is_static_adapter(adapter_name)) {
-            continue;
-        }
-
-        neu_persist_adapter_info_t adapter_info = {};
-        adapter_info.id =
-            neu_manager_adapter_id_to_node_id(manager, reg_entity->adapter_id);
-        adapter_info.type  = neu_adapter_get_type(reg_entity->adapter);
-        adapter_info.state = neu_adapter_get_state(reg_entity->adapter).running;
-        adapter_info.name  = strdup(adapter_name);
-        adapter_info.plugin_name = strdup(plugin_name);
-
-        if (0 != vector_push_back(adapter_infos, &adapter_info)) {
-            neu_persist_adapter_infos_free(adapter_infos);
-            nng_mtx_unlock(manager->adapters_mtx);
-            return NEU_ERR_ENOMEM;
-        }
+    reg_entity = find_reg_adapter_by_name(&manager->reg_adapters, name);
+    if (NULL == reg_entity) {
+        nng_mtx_unlock(manager->adapters_mtx);
+        return NEU_ERR_NODE_NOT_EXIST;
     }
-    nng_mtx_unlock(manager->adapters_mtx);
 
-    *result = adapter_infos;
+    const char *adapter_name = neu_adapter_get_name(reg_entity->adapter);
+    const char *plugin_name =
+        find_adapter_plugin_name(manager, reg_entity->adapter);
+    result->id =
+        neu_manager_adapter_id_to_node_id(manager, reg_entity->adapter_id);
+    result->type        = neu_adapter_get_type(reg_entity->adapter);
+    result->state       = neu_adapter_get_state(reg_entity->adapter).running;
+    result->name        = strdup(adapter_name);
+    result->plugin_name = strdup(plugin_name);
+    nng_mtx_unlock(manager->adapters_mtx);
 
     return NEU_ERR_SUCCESS;
 }

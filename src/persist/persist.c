@@ -451,6 +451,47 @@ error_open:
     return rv;
 }
 
+// file tree walking callback for collecting adapter infos
+static int read_adapter_cb(const char *fpath, bool is_dir, void *arg)
+{
+    vector_t *adapter_infos = arg;
+    int       rv            = 0;
+
+    if (is_dir) {
+        return 0;
+    }
+
+    if (!ends_with(fpath, "adapter.json")) {
+        return 0;
+    }
+
+    char *json_str = NULL;
+    rv             = read_file_string(fpath, &json_str);
+    if (0 != rv) {
+        return rv;
+    }
+
+    neu_json_node_req_node_t *node = NULL;
+    rv = neu_json_decode_node_req_node(json_str, &node);
+    free(json_str);
+    if (0 != rv) {
+        return 0; // ignore bad adapter data
+    }
+
+    log_info("read %s", fpath);
+
+    if (0 == vector_push_back(adapter_infos, node)) {
+        // NOTE: do not call neu_json_decode_node_req_node_free
+        //       since member ownership was transferred to vector
+        free(node);
+    } else {
+        neu_json_decode_node_req_node_free(node);
+        rv = NEU_ERR_ENOMEM;
+    }
+
+    return rv;
+}
+
 // file tree walking callback for collecting adapter group config infos
 static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
 {
@@ -539,11 +580,6 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         goto error;
     }
 
-    if (0 != ensure_file_exist(adapters_fname, "{\"nodes\": []}")) {
-        log_error("persister failed to ensure file exist: %s", adapters_fname);
-        goto error;
-    }
-
     n = path_cat(path, dir_len, sizeof(path), "plugins.json");
     if (sizeof(path) == n) {
         log_error("path too long: %s", path);
@@ -579,9 +615,8 @@ error:
     return NULL;
 }
 
-static inline int persister_adapter_dir(char *buf, size_t size,
-                                        neu_persister_t *persister,
-                                        const char *     adapter_name)
+static inline int persister_adapters_dir(char *buf, size_t size,
+                                         neu_persister_t *persister)
 {
     size_t n = path_cat(buf, 0, size, persister->persist_dir);
     if (size == n) {
@@ -589,6 +624,14 @@ static inline int persister_adapter_dir(char *buf, size_t size,
     }
 
     n = path_cat(buf, n, size, "adapters");
+    return n;
+}
+
+static inline int persister_adapter_dir(char *buf, size_t size,
+                                        neu_persister_t *persister,
+                                        const char *     adapter_name)
+{
+    size_t n = persister_adapters_dir(buf, size, persister);
     if (size == n) {
         return n;
     }
@@ -632,22 +675,71 @@ void neu_persister_destroy(neu_persister_t *persister)
     free(persister);
 }
 
-int neu_persister_store_adapters(neu_persister_t *persister,
-                                 vector_t *       adapter_infos)
+static int migrate_adapters_file(neu_persister_t *persister)
 {
-    neu_json_node_resp_t node_resp = {
-        .n_node = adapter_infos->size,
-        .nodes  = adapter_infos->data,
-    };
+    char *json_str = NULL;
+    int   rv       = read_file_string(persister->adapters_fname, &json_str);
+    if (rv != 0) {
+        return 0;
+    }
+
+    neu_json_node_req_t *node_req = NULL;
+    rv = neu_json_decode_node_req(json_str, &node_req);
+    free(json_str);
+    json_str = NULL;
+    if (rv != 0) {
+        log_error("decode adapters json file fail");
+        return rv;
+    }
+
+    bool all_migrated = true;
+    for (int i = 0; i < node_req->n_node; ++i) {
+        neu_json_node_req_node_t *node = &node_req->nodes[i];
+        rv = neu_persister_store_adapter(persister, node);
+        if (0 != rv) {
+            log_error("migrate adapter %s fail", node->name);
+            all_migrated = false;
+        }
+    }
+
+    if (all_migrated) {
+        log_info("remove %s", persister->adapters_fname);
+        remove(persister->adapters_fname);
+    }
+
+    neu_json_decode_node_req_free(node_req);
+    return rv;
+}
+
+int neu_persister_store_adapter(neu_persister_t *           persister,
+                                neu_persist_adapter_info_t *info)
+{
+    char path[PATH_MAX_SIZE] = { 0 };
+
+    int n = persister_adapter_dir(path, sizeof(path), persister, info->name);
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
+    if (0 != create_dir_recursive(path)) {
+        log_error("persister failed to create dir: %s", path);
+        return -1;
+    }
+
+    n = path_cat(path, n, sizeof(path), "adapter.json");
+    if (sizeof(path) == n) {
+        log_error("persister path too long: %s", path);
+        return -1;
+    }
 
     char *result = NULL;
     int   rv =
-        neu_json_encode_by_fn(&node_resp, neu_json_encode_node_resp, &result);
+        neu_json_encode_by_fn(info, neu_json_encode_node_resp_node, &result);
     if (rv != 0) {
         return rv;
     }
 
-    rv = write_file_string(persister->adapters_fname, result);
+    rv = write_file_string(path, result);
 
     free(result);
     return rv;
@@ -656,38 +748,26 @@ int neu_persister_store_adapters(neu_persister_t *persister,
 int neu_persister_load_adapters(neu_persister_t *persister,
                                 vector_t **      adapter_infos)
 {
-    char *json_str = NULL;
-    int   rv       = read_file_string(persister->adapters_fname, &json_str);
-    if (rv != 0) {
-        return rv;
+    char path[PATH_MAX_SIZE] = { 0 };
+
+    migrate_adapters_file(persister);
+
+    if (sizeof(path) == persister_adapters_dir(path, sizeof(path), persister)) {
+        return -1;
     }
 
-    neu_json_node_req_t *node_req = NULL;
-    rv = neu_json_decode_node_req(json_str, &node_req);
-    if (rv != 0) {
-        free(json_str);
-        return rv;
+    vector_t *result = vector_new(0, sizeof(neu_persist_adapter_info_t));
+    if (NULL == result) {
+        return NEU_ERR_ENOMEM;
     }
 
-    rv            = 0;
-    vector_t *vec = vector_new_move_from_buf(
-        node_req->nodes, node_req->n_node, node_req->n_node,
-        sizeof(neu_persist_adapter_info_t));
-    if (vec == NULL) {
-        free(json_str);
-        neu_json_decode_node_req_free(node_req);
-        rv = -1;
-        goto load_adapters_exit;
+    int rv = file_tree_walk(path, read_adapter_cb, result);
+    if (0 == rv) {
+        *adapter_infos = result;
+    } else {
+        neu_persist_adapter_infos_free(result);
     }
 
-    *adapter_infos = vec;
-
-    free(json_str);
-    free(node_req);
-    return 0;
-
-load_adapters_exit:
-    neu_json_decode_node_req_free(node_req);
     return rv;
 }
 
