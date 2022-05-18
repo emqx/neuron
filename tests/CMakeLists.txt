@@ -155,6 +155,15 @@ target_include_directories(base64_test PRIVATE
 )
 target_link_libraries(base64_test neuron-base gtest_main gtest crypto)
 
+aux_source_directory(${CMAKE_SOURCE_DIR}/src/base/tag_sort.c SRC_SORT)
+add_executable(tag_sort_test tag_sort_test.cc ${SRC_SORT})
+target_include_directories(tag_sort_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(tag_sort_test neuron-base gtest_main gtest)
+#target_link_directories(modbus_point_test PRIVATE /usr/local/lib)
+
 include(GoogleTest)
 gtest_discover_tests(data_val_test)
 gtest_discover_tests(modbus_point_test)
@@ -174,3 +183,4 @@ gtest_discover_tests(jwt_test)
 gtest_discover_tests(json_persistence_test)
 gtest_discover_tests(persistence_test)
 gtest_discover_tests(base64_test)
+gtest_discover_tests(tag_sort_test)
