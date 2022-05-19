@@ -22,6 +22,7 @@
 
 #include "adapter.h"
 #include "adapter/adapter_info.h"
+#include "persist/persist.h"
 
 typedef struct neu_manager            neu_manager_t;
 typedef struct subscribe_driver_cmd   subscribe_node_cmd_t;
@@ -92,8 +93,9 @@ int neu_manager_adapter_get_state(neu_manager_t *manager, neu_node_id_t node_id,
                                   neu_plugin_state_t *state);
 int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
                             neu_adapter_ctl_e ctl);
-int neu_manager_get_persist_adapter_infos(neu_manager_t *manager,
-                                          vector_t **    result);
+int neu_manager_get_persist_adapter_info(neu_manager_t *             manager,
+                                         const char *                name,
+                                         neu_persist_adapter_info_t *result);
 int neu_manager_start_adapter(neu_adapter_t *adapter);
 int neu_manager_start_adapter_with_id(neu_manager_t *manager,
                                       neu_node_id_t  node_id);
