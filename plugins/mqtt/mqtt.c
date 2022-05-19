@@ -221,7 +221,7 @@ static void mqtt_routine_response(const char *topic_name, size_t topic_len,
     command_response_handle(&response);
 }
 
-static void topics_subscribe(vector_t *topics, neu_mqtt_client_t *client)
+static void topics_subscribe(vector_t *topics, neu_mqtt_client_t client)
 {
     VECTOR_FOR_EACH(topics, item)
     {
