@@ -54,10 +54,10 @@ inline static uint16_t neu_protocol_buf_size(neu_protocol_buf_t *buf)
 inline static neu_protocol_unpack_buf_t *
 neu_protocol_unpack_buf_new(uint16_t size)
 {
-    neu_protocol_unpack_buf_t *buf =
-        calloc(1, sizeof(neu_protocol_unpack_buf_t));
+    neu_protocol_unpack_buf_t *buf = (neu_protocol_unpack_buf_t *) calloc(
+        1, sizeof(neu_protocol_unpack_buf_t));
 
-    buf->base   = calloc(size, sizeof(uint8_t));
+    buf->base   = (uint8_t *) calloc(size, sizeof(uint8_t));
     buf->size   = size;
     buf->offset = 0;
 
@@ -66,9 +66,10 @@ neu_protocol_unpack_buf_new(uint16_t size)
 
 inline static neu_protocol_pack_buf_t *neu_protocol_pack_buf_new(uint16_t size)
 {
-    neu_protocol_pack_buf_t *buf = calloc(1, sizeof(neu_protocol_pack_buf_t));
+    neu_protocol_pack_buf_t *buf =
+        (neu_protocol_pack_buf_t *) calloc(1, sizeof(neu_protocol_pack_buf_t));
 
-    buf->base   = calloc(size, sizeof(uint8_t));
+    buf->base   = (uint8_t *) calloc(size, sizeof(uint8_t));
     buf->size   = size;
     buf->offset = size;
 
@@ -125,6 +126,16 @@ inline static uint8_t *neu_protocol_pack_buf(neu_protocol_pack_buf_t *buf,
     buf->offset -= size;
 
     return buf->base + buf->offset;
+}
+
+inline static uint8_t *neu_protocol_pack_buf_set(neu_protocol_pack_buf_t *buf,
+                                                 uint16_t offset, uint16_t size)
+{
+    if (buf->offset + offset + size - 1 > buf->size) {
+        return NULL;
+    }
+
+    return buf->base + buf->offset + offset;
 }
 
 inline static uint8_t *neu_protocol_pack_buf_get(neu_protocol_pack_buf_t *buf)
