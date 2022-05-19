@@ -15,35 +15,32 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- **/
+config_ **/
 
-#ifndef _NEURON_H_
-#define _NEURON_H_
+#ifndef _NEU_UT_EXTEND_H_
+#define _NEU_UT_EXTEND_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdlib.h>
 
-#include "file.h"
-#include "log.h"
-#include "neu_vector.h"
-#include "neuron/adapter.h"
-#include "panic.h"
-#include "plugin.h"
-#include "types.h"
-#include "utils/base64.h"
+#include "utarray.h"
+#include "uthash.h"
+#include "utlist.h"
 
-#include "connection/neu_connection.h"
-#include "event/event.h"
+static inline UT_array *utarray_clone(UT_array *array)
+{
+    UT_array *result = (UT_array *) calloc(1, sizeof(UT_array));
 
-#include "json/neu_json_param.h"
+    result->i   = array->i;
+    result->n   = array->n;
+    result->icd = array->icd;
+    result->d   = (char *) calloc(1, array->n * array->icd.sz);
+    memcpy(result->d, array->d, array->n * array->icd.sz);
 
-#include "utils/utextend.h"
-
-#include "tag_sort.h"
-
-#ifdef __cplusplus
+    return result;
 }
-#endif
+
+#define utarray_foreach(array, type, elem)               \
+    for (type elem = utarray_front(array); elem != NULL; \
+         elem      = utarray_next(array, elem))
 
 #endif

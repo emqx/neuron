@@ -90,5 +90,8 @@ static void tag_sort(neu_tag_sort_result_t *result, void *tag,
         utarray_new(result->sorts[result->n_sort - 1].tags, &icd);
         utarray_push_back(result->sorts[result->n_sort - 1].tags, &tag);
         result->sorts[result->n_sort - 1].info.size = 1;
+        fn(&result->sorts[result->n_sort - 1],
+           *(void **) utarray_back(result->sorts[result->n_sort - 1].tags),
+           tag);
     }
 }

@@ -284,9 +284,13 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
             case NEU_DTYPE_BOOL:
                 neu_dvalue_get_bool(int_val->val, &value.boolean);
                 break;
-            case NEU_DTYPE_CSTR:
-                neu_dvalue_get_ref_cstr(int_val->val, (char **) &value.str);
+            case NEU_DTYPE_CSTR: {
+                char *str = NULL;
+                neu_dvalue_get_cstr(int_val->val, &str);
+                strncpy(value.str, str, sizeof(value.str) - 1);
+                free(str);
                 break;
+            }
             default:
                 assert(1 == 0);
                 break;
