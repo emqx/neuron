@@ -56,6 +56,26 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     return 0;
 }
 
+ssize_t url_decode(const char *s, size_t len, char *buf, size_t size)
+{
+    size_t i = 0, j = 0;
+    int    c = 0, n = 0;
+    while (i < len && j < size) {
+        c = s[i++];
+        if ('+' == c) {
+            c = ' ';
+        } else if ('%' == c) {
+            if (i + 2 > len || !sscanf(s + i, "%2x%n", &c, &n) || 2 != n) {
+                return -1;
+            }
+            i += 2, n = 0;
+        }
+        buf[j++] = c;
+    }
+    buf[(j < size) ? j : --j] = '\0';
+    return j;
+}
+
 const char *http_get_header(nng_aio *aio, char *name)
 {
     nng_http_req *req = nng_aio_get_input(aio, 0);
@@ -151,6 +171,17 @@ const char *http_get_param(nng_aio *aio, const char *name, size_t *len)
     const char *val = get_param(uri, name, len);
 
     return val;
+}
+
+ssize_t http_get_param_str(nng_aio *aio, const char *name, char *buf,
+                           size_t size)
+{
+    size_t      len = 0;
+    const char *s   = http_get_param(aio, name, &len);
+    if (NULL == s) {
+        return -2;
+    }
+    return url_decode(s, len, buf, size);
 }
 
 int http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
