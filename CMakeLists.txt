@@ -204,6 +204,10 @@ file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt.json DESTINATION ${CMAKE_BINARY_
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
 
+#setup default plugins for persistence
+file(COPY ${CMAKE_SOURCE_DIR}/default_plugins.json DESTINATION ${CMAKE_BINARY_DIR}/persistence)
+file(RENAME ${CMAKE_BINARY_DIR}/persistence/default_plugins.json ${CMAKE_BINARY_DIR}/persistence/plugins.json)
+
 # define for plugins
 include_directories(include/neuron)
 add_subdirectory(plugins/sample)
