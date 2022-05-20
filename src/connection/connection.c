@@ -228,22 +228,6 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
     return ret;
 }
 
-static ssize_t neu_conn_tcp_server_recv_msg(neu_conn_t *conn, int fd,
-                                            uint8_t *buf, ssize_t len)
-{
-    ssize_t ret = 0;
-    assert(conn->param.type == NEU_CONN_TCP_SERVER);
-
-    ret = recv(fd, buf, len, 0);
-    if (ret == -1) {
-        log_error("tcp server fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
-                  fd, len, ret, strerror(errno), errno);
-        return -1;
-    }
-
-    return ret;
-}
-
 ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 {
     ssize_t ret = 0;
@@ -323,38 +307,6 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         break;
     case NEU_CONN_TTY_CLIENT:
         break;
-    }
-
-    if (errno == EPIPE || ret <= 0) {
-        conn_disconnect(conn);
-        if (conn->callback_trigger == true) {
-            conn->disconnected(conn->data, conn->fd);
-            conn->callback_trigger = false;
-        }
-    }
-
-    if (ret > 0 && conn->callback_trigger == false) {
-        conn->connected(conn->data, conn->fd);
-        conn->callback_trigger = true;
-    }
-
-    pthread_mutex_unlock(&conn->mtx);
-
-    return ret;
-}
-
-static ssize_t neu_conn_tcp_client_recv_msg(neu_conn_t *conn, uint8_t *buf,
-                                            ssize_t len)
-{
-    ssize_t ret = 0;
-
-    pthread_mutex_lock(&conn->mtx);
-
-    assert(conn->param.type == NEU_CONN_TCP_CLIENT);
-    ret = recv(conn->fd, buf, len, 0);
-    if (ret == -1) {
-        log_error("tcp client fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
-                  conn->fd, len, ret, strerror(errno), errno);
     }
 
     if (errno == EPIPE || ret <= 0) {
@@ -701,8 +653,8 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
 {
     static __thread uint8_t  recv_buf[2048] = { 0 };
     static __thread uint16_t offset         = 0;
-    ssize_t ret = neu_conn_tcp_client_recv_msg(conn, recv_buf + offset,
-                                               sizeof(recv_buf) - offset);
+    ssize_t                  ret =
+        neu_conn_recv(conn, recv_buf + offset, sizeof(recv_buf) - offset);
     if (ret > 0) {
         offset += ret;
         neu_protocol_unpack_buf_t protocol_buf = { 0 };
@@ -710,6 +662,7 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
         while (neu_protocol_unpack_buf_unused_size(&protocol_buf) > 0) {
             int used = fn(context, &protocol_buf);
 
+            log_info("xxxxxxx offset: %d, used: %d", offset, used);
             if (used == 0) {
                 break;
             } else if (used == -1) {
@@ -730,8 +683,8 @@ void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
 {
     static __thread uint8_t  recv_buf[2048] = { 0 };
     static __thread uint16_t offset         = 0;
-    ssize_t ret = neu_conn_tcp_server_recv_msg(conn, fd, recv_buf + offset,
-                                               sizeof(recv_buf) - offset);
+    ssize_t ret = neu_conn_tcp_server_recv(conn, fd, recv_buf + offset,
+                                           sizeof(recv_buf) - offset);
     if (ret > 0) {
         offset += ret;
         neu_protocol_unpack_buf_t protocol_buf = { 0 };
