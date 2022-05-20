@@ -58,6 +58,7 @@ typedef struct {
     /*application*/
     int   format;
     char *upload_topic;
+    char *group_id;
 } neu_mqtt_option_t;
 
 typedef void *neu_mqtt_client_t;
