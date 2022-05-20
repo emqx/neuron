@@ -69,6 +69,43 @@ TEST(HTTPTest, http_get_param)
     nng_url_free(url);
 }
 
+TEST(HTTPTest, http_get_param_str)
+{
+    nng_aio *     aio = NULL;
+    nng_http_req *req = NULL;
+    nng_url *     url = NULL;
+    ssize_t       ret = 0;
+
+    char buf[256] = { 0 };
+    nng_aio_alloc(&aio, NULL, NULL);
+    nng_url_parse(&url, "http://127.0.0.1");
+    nng_http_req_alloc(&req, url);
+    nng_aio_set_input(aio, 0, req);
+
+    nng_http_req_set_uri(req, "/?node_id");
+    ret = http_get_param_str(aio, "group", buf, sizeof(buf));
+    EXPECT_EQ(ret, -2);
+
+    nng_http_req_set_uri(req, "/?group");
+    ret = http_get_param_str(aio, "group", buf, sizeof(buf));
+    EXPECT_EQ(ret, 0);
+    EXPECT_EQ(0, strcmp("", buf));
+
+    nng_http_req_set_uri(req, "/?group=%EZ%BB%84");
+    ret = http_get_param_str(aio, "group", buf, 3);
+    EXPECT_EQ(ret, -1);
+    EXPECT_EQ(0, strcmp("", buf));
+
+    nng_http_req_set_uri(req, "/?group=%E7%BB%84");
+    ret = http_get_param_str(aio, "group", buf, 4);
+    EXPECT_EQ(ret, 3);
+    EXPECT_EQ(0, strcmp("组", buf));
+
+    nng_aio_free(aio);
+    nng_http_req_free(req);
+    nng_url_free(url);
+}
+
 TEST(HTTPTest, http_get_param_node_id)
 {
     nng_aio *     aio     = NULL;

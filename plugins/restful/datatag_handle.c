@@ -257,9 +257,15 @@ void handle_get_tags(nng_aio *aio)
         return;
     }
 
-    size_t      s_grp_name_len = 0;
-    const char *s_grp_name =
-        http_get_param(aio, "group_config_name", &s_grp_name_len);
+    char s_grp_name[256]   = { 0 }; // should be large enough for the time being
+    ssize_t s_grp_name_len = http_get_param_str(aio, "group_config_name",
+                                                s_grp_name, sizeof(s_grp_name));
+    if (-1 == s_grp_name_len || sizeof(s_grp_name) == s_grp_name_len) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+        })
+        return;
+    }
 
     neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
     if (table == NULL) {
@@ -279,9 +285,9 @@ void handle_get_tags(nng_aio *aio)
             *(neu_taggrp_config_t **) iterator_get(&iter);
         const char *group_name = neu_taggrp_cfg_get_name(config);
         vector_t *  ids        = neu_taggrp_cfg_get_datatag_ids(config);
-        if (s_grp_name != NULL &&
-            (strlen(group_name) != s_grp_name_len ||
-             strncmp(group_name, s_grp_name, s_grp_name_len) != 0)) {
+        log_info("cai grp:%s s_grp_len:%zd s_grp:%.*s, ", group_name,
+                 s_grp_name_len, s_grp_name);
+        if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
             continue;
         }
 
@@ -297,9 +303,7 @@ void handle_get_tags(nng_aio *aio)
             *(neu_taggrp_config_t **) iterator_get(&iter);
         const char *group_name = neu_taggrp_cfg_get_name(config);
 
-        if (s_grp_name != NULL &&
-            (strlen(group_name) != s_grp_name_len ||
-             strncmp(group_name, s_grp_name, strlen(s_grp_name)) != 0)) {
+        if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
             continue;
         }
 

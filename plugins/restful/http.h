@@ -29,6 +29,12 @@
 extern "C" {
 #endif
 
+// Decode url encoded string.
+// Return -1 if decode fails, otherwise return the number of bytes written to
+// `buf` excluding the terminating NULL byte. A return value of `size` indicates
+// buffer overflow.
+ssize_t url_decode(const char *s, size_t len, char *buf, size_t size);
+
 int http_get_body(nng_aio *aio, void **data, size_t *data_size);
 
 // Find query parameter value of the given name.
@@ -46,6 +52,13 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size);
 // 3. http_get_param("/?foo=bar", "key", &len) will return NULL and will not
 //    touch len.
 const char *http_get_param(nng_aio *aio, const char *name, size_t *len);
+
+// Get query parameter as url decoded string.
+// Return -2 if param does not exist, -1 if url decode fail, otherwise return
+// the number of bytes written to `buf` excluding the terminating NULL byte. A
+// return value of `size` indicates buffer overflow.
+ssize_t http_get_param_str(nng_aio *aio, const char *name, char *buf,
+                           size_t size);
 
 // Returns 0 on success.
 // On failure returns
