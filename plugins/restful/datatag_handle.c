@@ -285,8 +285,6 @@ void handle_get_tags(nng_aio *aio)
             *(neu_taggrp_config_t **) iterator_get(&iter);
         const char *group_name = neu_taggrp_cfg_get_name(config);
         vector_t *  ids        = neu_taggrp_cfg_get_datatag_ids(config);
-        log_info("cai grp:%s s_grp_len:%zd s_grp:%.*s, ", group_name,
-                 s_grp_name_len, s_grp_name);
         if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
             continue;
         }
