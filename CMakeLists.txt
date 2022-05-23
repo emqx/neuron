@@ -14,7 +14,7 @@ endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O2")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
 set(CMAKE_C_FLAGS_DEBUG
     "${CMAKE_C_FLAGS} -O0 -fsanitize=address \
   -fsanitize-recover=address -fsanitize-address-use-after-scope \
