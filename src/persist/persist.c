@@ -53,7 +53,7 @@ static inline bool ends_with(const char *str, const char *suffix)
 {
     size_t m = strlen(str);
     size_t n = strlen(suffix);
-    return m >= n && !strncmp(str + m - n, suffix, n);
+    return m >= n && !strcmp(str + m - n, suffix);
 }
 
 typedef struct neu_persister {

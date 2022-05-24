@@ -850,9 +850,8 @@ static void manager_loop(void *arg)
                 log_info("Reply pong to pipe: %d", msg_pipe);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
-            if (0 ==
-                strncmp(DEFAULT_PERSIST_ADAPTER_NAME, buf_ptr,
-                        msg_get_buf_len(pay_msg))) {
+            // buf_ptr contains NULL terminated adapter name
+            if (0 == strcmp(DEFAULT_PERSIST_ADAPTER_NAME, buf_ptr)) {
                 msg_size           = msg_inplace_data_get_size(0);
                 rv                 = nng_msg_alloc(&out_msg, msg_size);
                 message_t *msg_ptr = (message_t *) nng_msg_body(out_msg);
