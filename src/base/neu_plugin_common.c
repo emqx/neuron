@@ -28,27 +28,27 @@
 
 #define NEU_SELF_NODE_NAME_UNKNOWN "unknown-adapter"
 
-#define PLUGIN_CALL_CMD(plugin, type, req_buff, resp_struct, func)            \
-    {                                                                         \
-        neu_request_t        cmd    = { 0 };                                  \
-        neu_response_t *     result = NULL;                                   \
-        neu_plugin_common_t *plugin_common =                                  \
-            neu_plugin_to_plugin_common(plugin);                              \
-        cmd.req_type = (type);                                                \
-        cmd.req_id   = neu_plugin_get_event_id(plugin);                       \
-        cmd.buf      = (void *) &(req_buff);                                  \
-        cmd.buf_len  = sizeof(req_buff);                                      \
-        if (plugin_common->adapter_callbacks->command(                        \
-                plugin_common->adapter, &(cmd), &(result)) == 0) {            \
-            assert((result)->buf_len == sizeof(resp_struct));                 \
-            resp_struct *resp = NULL;                                         \
-            resp              = (resp_struct *) (result)->buf;                \
-            { func };                                                         \
-            if (strncmp("intptr_t", #resp_struct, strlen("intptr_t")) != 0) { \
-                free(resp);                                                   \
-            }                                                                 \
-            free(result);                                                     \
-        }                                                                     \
+#define PLUGIN_CALL_CMD(plugin, type, req_buff, resp_struct, func) \
+    {                                                              \
+        neu_request_t        cmd    = { 0 };                       \
+        neu_response_t *     result = NULL;                        \
+        neu_plugin_common_t *plugin_common =                       \
+            neu_plugin_to_plugin_common(plugin);                   \
+        cmd.req_type = (type);                                     \
+        cmd.req_id   = neu_plugin_get_event_id(plugin);            \
+        cmd.buf      = (void *) &(req_buff);                       \
+        cmd.buf_len  = sizeof(req_buff);                           \
+        if (plugin_common->adapter_callbacks->command(             \
+                plugin_common->adapter, &(cmd), &(result)) == 0) { \
+            assert((result)->buf_len == sizeof(resp_struct));      \
+            resp_struct *resp = NULL;                              \
+            resp              = (resp_struct *) (result)->buf;     \
+            { func };                                              \
+            if (strcmp("intptr_t", #resp_struct) != 0) {           \
+                free(resp);                                        \
+            }                                                      \
+            free(result);                                          \
+        }                                                          \
     }
 
 #define PLUGIN_SEND_CMD(plugin, type, req_buff, event_id)                 \
@@ -490,7 +490,7 @@ neu_taggrp_config_t *neu_system_ref_group_config(neu_plugin_t *plugin,
     {
         neu_taggrp_config_t *config =
             *(neu_taggrp_config_t **) iterator_get(&iter);
-        if (strncmp(neu_taggrp_cfg_get_name(config), name, strlen(name)) == 0) {
+        if (strcmp(neu_taggrp_cfg_get_name(config), name) == 0) {
             find_config = config;
             break;
         }

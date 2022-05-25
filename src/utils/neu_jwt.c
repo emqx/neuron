@@ -109,8 +109,7 @@ int neu_jwt_init(char *dir_path)
             continue;
         }
 
-        if (strncmp("neuron.key", (char *) ptr->d_name, strlen("neuron.key")) ==
-            0) {
+        if (strcmp("neuron.key", (char *) ptr->d_name) == 0) {
             content = load_key(dir_path, (char *) ptr->d_name);
             assert(content != NULL);
 

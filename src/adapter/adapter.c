@@ -1894,8 +1894,7 @@ int neu_adapter_start(neu_adapter_t *adapter)
     switch (adapter->state) {
     case ADAPTER_STATE_IDLE:
     case ADAPTER_STATE_INIT:
-        if (strncmp(adapter->plugin_info.module->module_name, "ekuiper",
-                    strlen("ekuiper")) != 0) {
+        if (strcmp(adapter->plugin_info.module->module_name, "ekuiper") != 0) {
             error = NEU_ERR_NODE_NOT_READY;
         }
         break;
@@ -2084,7 +2083,7 @@ void neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,
         neu_sub_grp_config_t *sgc =
             (neu_sub_grp_config_t *) iterator_get(&iter);
         if (sgc->node_id == node_id &&
-            strncmp(name, sgc->group_config_name, strlen(name)) == 0) {
+            strcmp(name, sgc->group_config_name) == 0) {
             find = true;
             break;
         }
@@ -2114,7 +2113,7 @@ void neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
         neu_sub_grp_config_t *sgc =
             (neu_sub_grp_config_t *) iterator_get(&iter);
         if (sgc->node_id == node_id &&
-            strncmp(name, sgc->group_config_name, strlen(name)) == 0) {
+            strcmp(name, sgc->group_config_name) == 0) {
 
             iterator_erase(&adapter->sub_grp_configs, &iter);
             break;
