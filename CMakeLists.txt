@@ -162,7 +162,8 @@ set(NEURON_BASE_SOURCES
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/file.c
-    src/utils/base64.c)
+    src/utils/base64.c
+    src/utils/async_queue.c)
 
 if(USE_NNG_MQTT)
   message("-- USE_NNG_MQTT is defined")
@@ -189,7 +190,7 @@ if(USE_NNG_MQTT)
   target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto nng)
 endif()
 
-target_link_libraries(neuron-base libzlog.so vector-static csptr jansson crypto ssl mqttc jwt
+target_link_libraries(neuron-base nng libzlog.so vector-static csptr jansson crypto ssl mqttc jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 
 #copy file for run
