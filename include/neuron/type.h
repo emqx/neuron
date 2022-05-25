@@ -348,10 +348,14 @@ static inline uint64_t neu_htonll(uint64_t u)
     uint64_t ret       = 0;
     uint8_t *ret_bytes = (uint8_t *) &ret;
 
-    ret_bytes[0] = bytes[3];
-    ret_bytes[1] = bytes[2];
-    ret_bytes[2] = bytes[1];
-    ret_bytes[3] = bytes[0];
+    ret_bytes[0] = bytes[7];
+    ret_bytes[1] = bytes[6];
+    ret_bytes[2] = bytes[5];
+    ret_bytes[3] = bytes[4];
+    ret_bytes[4] = bytes[3];
+    ret_bytes[5] = bytes[2];
+    ret_bytes[6] = bytes[1];
+    ret_bytes[7] = bytes[0];
 
     return ret;
 }
