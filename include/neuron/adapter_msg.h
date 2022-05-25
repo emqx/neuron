@@ -54,6 +54,8 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_ADD_NODE,
     NEU_REQRESP_DEL_NODE,
+    NEU_REQRESP_GET_NODE_BY_ID,
+    NEU_REQRESP_NODE_INFO,
     NEU_REQRESP_GET_NODES,
     NEU_REQRESP_NODES,
     NEU_REQRESP_ADD_GRP_CONFIG,
@@ -131,9 +133,10 @@ typedef struct neu_reqresp_data {
 } neu_reqresp_data_t;
 
 typedef struct neu_node_info {
-    neu_node_id_t node_id;
-    char *        node_name;
-    plugin_id_t   plugin_id;
+    neu_node_id_t   node_id;
+    neu_node_type_e node_type;
+    char *          node_name;
+    plugin_id_t     plugin_id;
     // TODO: add node attribute
 } neu_node_info_t;
 
@@ -150,6 +153,17 @@ typedef struct neu_cmd_add_node {
 typedef struct neu_cmd_del_node {
     neu_node_id_t node_id;
 } neu_cmd_del_node_t;
+
+/* NEU_REQRESP_GET_NODE_BY_ID */
+typedef struct neu_cmd_get_node_by_id {
+    neu_node_id_t node_id;
+} neu_cmd_get_node_by_id_t;
+
+/* NEU_REQRESP_NODE_INFO */
+typedef struct {
+    int32_t         result;
+    neu_node_info_t node_info;
+} neu_reqresp_node_info_t;
 
 /* NEU_REQRESP_GET_NODES */
 typedef struct neu_cmd_get_nodes {

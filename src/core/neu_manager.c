@@ -1570,6 +1570,43 @@ static bool adapter_match_node_type(neu_adapter_t * adapter,
     }
 }
 
+int neu_manager_get_node_by_id(neu_manager_t *manager, neu_node_id_t node_id,
+                               neu_node_info_t *result)
+{
+    int                   rv = NEU_ERR_SUCCESS;
+    neu_adapter_id_t      adapter_id;
+    adapter_reg_entity_t *reg_entity;
+
+    if (manager == NULL || result == NULL) {
+        log_error("get nodes with NULL manager or result");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
+
+    nng_mtx_lock(manager->adapters_mtx);
+    reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
+    if (NULL != reg_entity) {
+        neu_adapter_id_t adapter_id;
+        adapter_type_e   adapter_type;
+        const char *     adapter_name;
+
+        adapter_type = neu_adapter_get_type(reg_entity->adapter);
+        adapter_name = neu_adapter_get_name(reg_entity->adapter);
+        adapter_id   = neu_adapter_get_id(reg_entity->adapter);
+        result->node_id =
+            neu_manager_adapter_id_to_node_id(manager, adapter_id);
+        result->node_type = adapter_type_to_node_type(adapter_type);
+        result->node_name = strdup(adapter_name);
+        result->plugin_id = neu_adapter_get_plugin_id(reg_entity->adapter);
+    } else {
+        rv = NEU_ERR_NODE_NOT_EXIST;
+    }
+    nng_mtx_unlock(manager->adapters_mtx);
+
+    return rv;
+}
+
 int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
                           vector_t *result_nodes)
 {
@@ -1594,6 +1631,7 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
             adapter_id   = neu_adapter_get_id(reg_entity->adapter);
             node_info.node_id =
                 neu_manager_adapter_id_to_node_id(manager, adapter_id);
+            node_info.node_type = node_type;
             node_info.node_name = strdup(adapter_name);
             node_info.plugin_id =
                 neu_adapter_get_plugin_id(reg_entity->adapter);
