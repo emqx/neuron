@@ -41,6 +41,8 @@ void        neu_manager_trigger_running(neu_manager_t *manager);
 int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
                          neu_node_id_t *p_node_id);
 int neu_manager_del_node(neu_manager_t *manager, neu_node_id_t node_id);
+int neu_manager_get_node_by_id(neu_manager_t *manager, neu_node_id_t node_id,
+                               neu_node_info_t *result);
 int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
                           vector_t *result_nodes);
 int neu_manager_get_node_name_by_id(neu_manager_t *manager,

@@ -257,7 +257,7 @@ int http_get_param_node_id(nng_aio *aio, const char *name, neu_node_id_t *param)
         return NEU_ERR_EINVAL;
     }
 
-    *param = (neu_node_type_e) val;
+    *param = (neu_node_id_t) val;
     return 0;
 }
 

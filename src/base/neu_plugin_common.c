@@ -150,6 +150,23 @@ intptr_t neu_system_del_node(neu_plugin_t *plugin, neu_node_id_t node_id)
     return errorcode;
 }
 
+int32_t neu_system_get_node_by_id(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                  neu_node_info_t *node_info)
+{
+    int32_t                  ret          = -1;
+    neu_cmd_get_node_by_id_t get_node_cmd = { 0 };
+
+    get_node_cmd.node_id = node_id;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_NODE_BY_ID, get_node_cmd,
+                    neu_reqresp_node_info_t, {
+                        ret        = resp->result;
+                        *node_info = resp->node_info;
+                    });
+
+    return ret;
+}
+
 vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type)
 {
     vector_t            nodes         = { 0 };

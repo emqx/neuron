@@ -106,6 +106,8 @@ neu_datatag_table_t *neu_system_get_datatags_table(neu_plugin_t *plugin,
 intptr_t neu_system_add_node(neu_plugin_t *plugin, neu_node_type_e node_type,
                              const char *adapter_name, const char *plugin_name);
 intptr_t neu_system_del_node(neu_plugin_t *plugin, neu_node_id_t node_id);
+int32_t  neu_system_get_node_by_id(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                   neu_node_info_t *node_info);
 // uninit vector
 vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
 intptr_t neu_system_add_group_config(neu_plugin_t *       plugin,

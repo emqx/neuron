@@ -48,14 +48,45 @@ Get node with wrong parameters, it will return failure
     Integer    response status        400
     Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
 
+Get node by nonexistent id, it should failure
+    Skip If Not Http API
+    GET        /api/v2/node?id=123456
+
+    Integer    response status        404
+    Integer    response body error    ${ERR_NODE_NOT_EXIST}
+
 Get DRIVER node, it should return all DRIVER node
     ${res} =    Get Nodes    ${NODE_DRIVER}
 
     Check Response Status    ${res}    200
 
-    FOR                            ${name}          IN         test-node
-    Node With Name Should Exist    ${res}[nodes]    ${name}
-    END
+    Node With Name Should Exist    ${res}[nodes]    test-node
+
+Get DRIVER node by id, it should return the DRIVER node
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
+
+    GET        /api/v2/node?id=${id}
+    Integer    response status                      200
+    Integer    response body nodes 0 id             ${id}
+    String     response body nodes 0 name           test-node
+
+Get DRIVER node by id with correct type, it should return the DRIVER node
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
+
+    GET        /api/v2/node?type=${NODE_DRIVER}&id=${id}
+    Integer    response status                      200
+    Integer    response body nodes 0 id             ${id}
+    String     response body nodes 0 name           test-node
+
+Get DRIVER node by id with wrong type, it should return failure
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
+
+    GET        /api/v2/node?type=${NODE_WEB}&id=${id}
+    Integer    response status                      404
+    Integer    response body error                  ${ERR_NODE_NOT_EXIST}
 
 Get WEB node, it should return all WEB node
     ${res} =    Get Nodes    ${NODE_WEB}
@@ -63,12 +94,64 @@ Get WEB node, it should return all WEB node
     Check Response Status          ${res}           200
     Node With Name Should Exist    ${res}[nodes]    default-dashboard-adapter
 
+Get WEB node by id, it should return the WEB node
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
+
+    GET        /api/v2/node?id=${id}
+    Integer    response status                      200
+    Integer    response body nodes 0 id             ${id}
+    String     response body nodes 0 name           default-dashboard-adapter
+
+Get WEB node by id with correct type, it should return the WEB node
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
+
+    GET        /api/v2/node?type=${NODE_WEB}&id=${id}
+    Integer    response status                      200
+    Integer    response body nodes 0 id             ${id}
+    String     response body nodes 0 name           default-dashboard-adapter
+
+Get WEB node by id with wrong type, it should return failure
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
+
+    GET        /api/v2/node?type=${NODE_DRIVER}&id=${id}
+    Integer    response status                      404
+    Integer    response body error                  ${ERR_NODE_NOT_EXIST}
+
 Get MQTT node, it should return all mqtt node
     ${res} =    Add Node     type=${${NODE_MQTT}}    name=mqtt-adapter    plugin_name=mqtt
     ${res} =    Get Nodes    ${NODE_MQTT}
 
     Check Response Status          ${res}           200
     Node With Name Should Exist    ${res}[nodes]    mqtt-adapter
+
+Get MQTT node by id, it should return the MQTT node
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
+
+    GET        /api/v2/node?id=${id}
+    Integer    response status                      200
+    Integer    response body nodes 0 id             ${id}
+    String     response body nodes 0 name           mqtt-adapter
+
+Get MQTT node by id with correct type, it should return the MQTT node
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
+
+    GET        /api/v2/node?type=${NODE_MQTT}&id=${id}
+    Integer    response status                      200
+    Integer    response body nodes 0 id             ${id}
+    String     response body nodes 0 name           mqtt-adapter
+
+Get MQTT node by id with wrong type, it should return failure
+    Skip If Not Http API
+    ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
+
+    GET        /api/v2/node?type=${NODE_WEB}&id=${id}
+    Integer    response status                      404
+    Integer    response body error                  ${ERR_NODE_NOT_EXIST}
 
 
 Get UNKNOWN type node, it should return empty node
