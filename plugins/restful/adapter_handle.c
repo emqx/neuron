@@ -18,6 +18,7 @@
  **/
 
 #include <stdlib.h>
+#include <string.h>
 
 #include "vector.h"
 
@@ -64,8 +65,9 @@ void handle_del_adapter(nng_aio *aio)
         })
 }
 
-static void handle_get_adapter_by_id(nng_aio *aio, neu_node_type_e node_type,
-                                     neu_node_id_t node_id)
+static void handle_get_adapter_by_id(nng_aio *aio, neu_node_id_t node_id,
+                                     neu_node_type_e node_type,
+                                     const char *    node_name_substr)
 {
     int             rv        = 0;
     neu_plugin_t *  plugin    = neu_rest_get_plugin();
@@ -78,7 +80,10 @@ static void handle_get_adapter_by_id(nng_aio *aio, neu_node_type_e node_type,
         return;
     }
 
-    if (NEU_NODE_TYPE_MAX != node_type && node_type != node_info.node_type) {
+    if ((NEU_NODE_TYPE_MAX != node_type && node_type != node_info.node_type) ||
+        (NULL != node_name_substr &&
+         NULL == strstr(node_info.node_name, node_name_substr))) {
+        // `type` or `name_contains` param must comply when present
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
             http_response(aio, error_code.error, result_error);
         })
@@ -114,14 +119,20 @@ static void handle_get_adapter_by_id(nng_aio *aio, neu_node_type_e node_type,
 
 void handle_get_adapter(nng_aio *aio)
 {
-    neu_plugin_t *  plugin    = neu_rest_get_plugin();
-    char *          result    = NULL;
-    neu_node_type_e node_type = NEU_NODE_TYPE_MAX;
-    neu_node_id_t   node_id   = 0;
+    neu_plugin_t *  plugin          = neu_rest_get_plugin();
+    char *          result          = NULL;
+    neu_node_type_e node_type       = NEU_NODE_TYPE_MAX;
+    neu_node_id_t   node_id         = 0;
+    char            name_substr[64] = {};
+    ssize_t         name_substr_len = 0;
 
     VALIDATE_JWT(aio);
 
-    if (NEU_ERR_EINVAL == http_get_param_node_type(aio, "type", &node_type) ||
+    name_substr_len = http_get_param_str(aio, "name_contains", name_substr,
+                                         sizeof(name_substr));
+
+    if (-1 == name_substr_len || sizeof(name_substr) == name_substr_len ||
+        NEU_ERR_EINVAL == http_get_param_node_type(aio, "type", &node_type) ||
         NEU_ERR_EINVAL == http_get_param_node_id(aio, "id", &node_id)) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
@@ -130,10 +141,14 @@ void handle_get_adapter(nng_aio *aio)
     }
 
     if (0 != node_id) {
-        return handle_get_adapter_by_id(aio, node_type, node_id);
+        // `id` param presents, then filter by id
+        return handle_get_adapter_by_id(aio, node_id, node_type,
+                                        (-2 != name_substr_len) ? name_substr
+                                                                : NULL);
     }
 
     if (NEU_NODE_TYPE_MAX == node_type) {
+        // `type` query param is required if `id` param not present
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
@@ -152,11 +167,18 @@ void handle_get_adapter(nng_aio *aio)
     {
         neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
 
+        if (-2 != name_substr_len &&
+            NULL == strstr(info->node_name, name_substr)) {
+            // `name_contains` param presents, then filter by name sub string
+            continue;
+        }
+
         nodes_res.nodes[index].id        = info->node_id;
         nodes_res.nodes[index].name      = info->node_name;
         nodes_res.nodes[index].plugin_id = info->plugin_id.id_val;
         index += 1;
     }
+    nodes_res.n_node = index;
 
     neu_json_encode_by_fn(&nodes_res, neu_json_encode_get_nodes_resp, &result);
 
