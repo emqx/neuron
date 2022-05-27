@@ -117,6 +117,8 @@ static void update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
         break;
     case NEU_TYPE_BYTES:
         break;
+    case NEU_TYPE_ERROR:
+        break;
     default:
         assert(value.type == NEU_TYPE_INT8);
         break;

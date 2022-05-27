@@ -3,6 +3,7 @@
 *.swp
 tags
 build
+_build
 compile_commands.json
 .vscode
 *.log
