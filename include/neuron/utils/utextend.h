@@ -43,6 +43,10 @@ static inline UT_array *utarray_clone(UT_array *array)
     for (type elem = (type) utarray_front(array); elem != NULL; \
          elem      = (type) utarray_next(array, elem))
 
+#define utarray_reverse_foreach(array, type, elem)             \
+    for (type elem = (type) utarray_back(array); elem != NULL; \
+         elem      = (type) utarray_prev(array, elem))
+
 #define DL_LAST(head) ((head) != NULL) ? (head)->prev : NULL;
 #define DL_PREV(el) ((el) != NULL) ? (el)->prev : NULL;
 
