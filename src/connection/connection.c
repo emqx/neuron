@@ -662,7 +662,6 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
         while (neu_protocol_unpack_buf_unused_size(&protocol_buf) > 0) {
             int used = fn(context, &protocol_buf);
 
-            log_info("xxxxxxx offset: %d, used: %d", offset, used);
             if (used == 0) {
                 break;
             } else if (used == -1) {
