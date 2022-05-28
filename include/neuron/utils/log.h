@@ -22,7 +22,7 @@ config_ **/
 
 #include <inttypes.h>
 
-#include <zlog.h>
+#include "utils/zlog.h"
 
 extern zlog_category_t *neuron;
 
