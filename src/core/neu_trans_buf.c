@@ -22,7 +22,7 @@
 #include <stdlib.h>
 
 #include "csptr/smart_ptr.h"
-#include "log.h"
+#include "utils/log.h"
 
 #include "core/databuf.h"
 #include "core/message.h"
@@ -36,7 +36,7 @@ neu_trans_buf_t *neu_trans_buf_new(neu_trans_kind_e trans_kind,
 
     trans_buf = (neu_trans_buf_t *) malloc(sizeof(neu_trans_buf_t));
     if (trans_buf == NULL) {
-        log_error("Failed to allocate trans data");
+        zlog_error(neuron, "Failed to allocate trans data");
         neu_dvalue_free(data_val);
         return NULL;
     }
@@ -52,7 +52,7 @@ neu_trans_buf_t *neu_trans_buf_new(neu_trans_kind_e trans_kind,
 void neu_trans_buf_free(neu_trans_buf_t *trans_buf)
 {
     if (trans_buf == NULL) {
-        log_error("Free neuron trans_buf with NULL pointer");
+        zlog_error(neuron, "Free neuron trans_buf with NULL pointer");
         return;
     }
 
@@ -78,7 +78,7 @@ int neu_trans_buf_init(neu_trans_buf_t *trans_buf, neu_trans_kind_e trans_kind,
     neu_data_val_t *owned_data_val;
 
     if (trans_buf == NULL || data_val == NULL) {
-        log_error("Init neuron trans_buf with NULL pointer");
+        zlog_error(neuron, "Init neuron trans_buf with NULL pointer");
         neu_dvalue_free(data_val);
         return -1;
     }
@@ -90,8 +90,9 @@ int neu_trans_buf_init(neu_trans_buf_t *trans_buf, neu_trans_kind_e trans_kind,
         databuf = core_databuf_new_with_buf(buf, buf_len);
         neu_dvalue_free(data_val);
         if (databuf == NULL) {
-            log_error(
-                "Failed to serialize data value(%p) or new buf with len(%d)",
+            zlog_error(
+                neuron,
+                "Failed to serialize data value(%p) or new buf with len(%zu)",
                 data_val, buf_len);
             rv = -1;
             break;
@@ -103,7 +104,7 @@ int neu_trans_buf_init(neu_trans_buf_t *trans_buf, neu_trans_kind_e trans_kind,
         owned_data_val = neu_dvalue_to_owned(data_val);
         if (owned_data_val == NULL) {
             neu_dvalue_free(data_val);
-            log_error("Failed to owner the data value(%p)", data_val);
+            zlog_error(neuron, "Failed to owner the data value(%p)", data_val);
             rv = -1;
             break;
         }
@@ -113,7 +114,7 @@ int neu_trans_buf_init(neu_trans_buf_t *trans_buf, neu_trans_kind_e trans_kind,
         break;
     default:
         neu_dvalue_free(data_val);
-        log_error("Not support trans data kind: %d", trans_kind);
+        zlog_error(neuron, "Not support trans data kind: %d", trans_kind);
         rv = -1;
         break;
     }
@@ -126,7 +127,7 @@ void neu_trans_buf_uninit(neu_trans_buf_t *trans_buf)
     neu_trans_kind_e trans_kind;
 
     if (trans_buf == NULL) {
-        log_error("Uninit neuron trans_buf with NULL pointer");
+        zlog_error(neuron, "Uninit neuron trans_buf with NULL pointer");
         return;
     }
 
@@ -139,7 +140,7 @@ void neu_trans_buf_uninit(neu_trans_buf_t *trans_buf)
         sfree(trans_buf->shared_dataval);
         break;
     default:
-        log_error("Not support trans data kind: %d", trans_kind);
+        zlog_error(neuron, "Not support trans data kind: %d", trans_kind);
         break;
     }
 
@@ -153,7 +154,7 @@ neu_data_val_t *neu_trans_buf_get_data_val(neu_trans_buf_t *trans_buf,
     neu_data_val_t * data_val = NULL;
 
     if (trans_buf == NULL || is_need_free == NULL) {
-        log_error("Get data value from trans_buf with NULL pointer");
+        zlog_error(neuron, "Get data value from trans_buf with NULL pointer");
         return NULL;
     }
 
@@ -172,7 +173,7 @@ neu_data_val_t *neu_trans_buf_get_data_val(neu_trans_buf_t *trans_buf,
         *is_need_free = false;
         break;
     default:
-        log_error("Not support trans data kind: %d", trans_kind);
+        zlog_error(neuron, "Not support trans data kind: %d", trans_kind);
         break;
     }
 
@@ -184,7 +185,7 @@ void neu_trans_buf_copy(neu_trans_buf_t *dst, neu_trans_buf_t *src)
     neu_trans_kind_e trans_kind;
 
     if (dst == NULL || src == NULL) {
-        log_error("Copy trans data with NULL pointer");
+        zlog_error(neuron, "Copy trans data with NULL pointer");
         return;
     }
 
@@ -198,7 +199,7 @@ void neu_trans_buf_copy(neu_trans_buf_t *dst, neu_trans_buf_t *src)
         dst->shared_dataval = sref(src->shared_dataval);
         break;
     default:
-        log_error("Not support trans data kind: %d", trans_kind);
+        zlog_error(neuron, "Not support trans data kind: %d", trans_kind);
         break;
     }
 

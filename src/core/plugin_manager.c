@@ -31,9 +31,9 @@
 #include "adapter/adapter_internal.h"
 #include "dummy/dummy.h"
 #include "neu_vector.h"
-#include "panic.h"
 #include "plugin_manager.h"
 #include "restful/rest.h"
+#include "utils/log.h"
 
 typedef struct plugin_reg_entity {
     plugin_id_t    plugin_id;
@@ -248,13 +248,13 @@ plugin_manager_t *plugin_manager_create()
 
     plugin_mng = (plugin_manager_t *) malloc(sizeof(plugin_manager_t));
     if (plugin_mng == NULL) {
-        log_error("Out of memory for create plugin manager");
+        nlog_error("Out of memory for create plugin manager");
         return NULL;
     }
 
     rv = nng_mtx_alloc(&plugin_mng->mtx);
     if (rv != 0) {
-        log_error("Failed to initialize mutex in plugin manager");
+        nlog_error("Failed to initialize mutex in plugin manager");
         return NULL;
     }
 
@@ -262,14 +262,14 @@ plugin_manager_t *plugin_manager_create()
     rv  = init_system_plugins(&plugin_mng->system_plugins);
     rv1 = init_custom_plugins(&plugin_mng->custom_plugins);
     if (rv != 0 || rv1 != 0) {
-        log_error("Failed to initialize register table of plugins");
+        nlog_error("Failed to initialize register table of plugins");
         return NULL;
     }
 
     rv = vector_init(&plugin_mng->available_ids, CUSTOM_PLUGIN_COUNT_DEFAULT,
                      sizeof(plugin_id_t));
     if (rv != 0) {
-        log_error("Failed to initialize vector of available ids");
+        nlog_error("Failed to initialize vector of available ids");
         return NULL;
     }
 
@@ -301,7 +301,7 @@ int plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
     plugin_reg_entity_t reg_entity;
 
     if (plugin_mng == NULL || param == NULL || p_plugin_id == NULL) {
-        log_error("Register plugin with NULL pointer");
+        nlog_error("Register plugin with NULL pointer");
         return -1;
     }
 
@@ -324,7 +324,7 @@ int plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
     *p_plugin_id = plugin_manager_get_plugin_id(plugin_mng, param);
     if (p_plugin_id->id_val == 0) {
         // There has same registered plugin
-        log_warn("A plugin with same name has already been registered");
+        nlog_warn("A plugin with same name has already been registered");
         return NEU_ERR_LIBRARY_NAME_CONFLICT;
     }
 
@@ -343,9 +343,9 @@ int plugin_manager_reg_plugin(plugin_manager_t *        plugin_mng,
         }
     }
     if (rv == 0) {
-        log_info("Register the plugin: %s", reg_entity.plugin_name);
+        nlog_info("Register the plugin: %s", reg_entity.plugin_name);
     } else {
-        log_error("Failed to register plugin: %s", reg_entity.plugin_name);
+        nlog_error("Failed to register plugin: %s", reg_entity.plugin_name);
     }
     return rv;
 }
@@ -371,7 +371,7 @@ int plugin_manager_unreg_plugin(plugin_manager_t *plugin_mng,
         index = find_plugin_by_id(plugins, plugin_id);
         if (index != SIZE_MAX) {
             reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
-            log_info("Unregister the plugin: %s", reg_entity->plugin_name);
+            nlog_info("Unregister the plugin: %s", reg_entity->plugin_name);
             reg_entity_uninit(reg_entity);
             vector_erase(plugins, index);
             nng_mtx_unlock(plugin_mng->mtx);
@@ -380,7 +380,7 @@ int plugin_manager_unreg_plugin(plugin_manager_t *plugin_mng,
         nng_mtx_unlock(plugin_mng->mtx);
     }
 
-    log_warn("Can't find plugin with plugin_id: %d", plugin_id.id_val);
+    nlog_warn("Can't find plugin with plugin_id: %d", plugin_id.id_val);
     return -1;
 }
 
@@ -435,10 +435,10 @@ int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
 
         reg_entity_init(&reg_entity, plugin_id, param);
         vector_assign(plugins, index, &reg_entity);
-        log_info("Update the plugin: %s", reg_entity.plugin_name);
+        nlog_info("Update the plugin: %s", reg_entity.plugin_name);
     } else {
         // Nothing to update
-        log_error("Failed to update the plugin: %s", param->plugin_name);
+        nlog_error("Failed to update the plugin: %s", param->plugin_name);
         rv = -1;
     }
     nng_mtx_unlock(plugin_mng->mtx);
@@ -548,7 +548,7 @@ vector_t *plugin_manager_get_all_plugins(plugin_manager_t *plugin_mng)
     count += plugin_mng->system_plugins.size + plugin_mng->custom_plugins.size;
     plugin_info_vec = vector_new(count, sizeof(plugin_reg_info_t));
     if (plugin_info_vec == NULL) {
-        log_error("No memory to new vector of plugin infos");
+        nlog_error("No memory to new vector of plugin infos");
         return NULL;
     }
 
@@ -602,8 +602,8 @@ static void *load_dyn_plugin_library(char *driver_path, char *plugin_lib_name,
     }
 
     if (lib_handle == NULL) {
-        log_error("Failed to open dynamic library %s: %s", plugin_lib_name,
-                  dlerror());
+        nlog_error("Failed to open dynamic library %s: %s", plugin_lib_name,
+                   dlerror());
 
         return NULL;
     }
@@ -612,7 +612,7 @@ static void *load_dyn_plugin_library(char *driver_path, char *plugin_lib_name,
     module_info = dlsym(lib_handle, "neu_plugin_module");
     if (module_info == NULL) {
         dlclose(lib_handle);
-        log_error("Failed to get neu_plugin_module from %s", plugin_lib_name);
+        nlog_error("Failed to get neu_plugin_module from %s", plugin_lib_name);
         return NULL;
     }
 

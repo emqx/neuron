@@ -31,8 +31,6 @@ extern "C" {
 #include <string.h>
 #include <time.h>
 
-#include "log.h"
-
 /**
  * Order
  * -----

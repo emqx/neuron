@@ -21,7 +21,6 @@
 
 #include "vector.h"
 
-#include "log.h"
 #include "plugin.h"
 #include "subscribe.h"
 #include "json/neu_json_error.h"

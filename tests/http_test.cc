@@ -5,6 +5,9 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
 #define INVAL ((size_t) -1)
 
 typedef struct {
@@ -196,4 +199,12 @@ TEST(HTTPTest, http_get_param_node_type)
     nng_aio_free(aio);
     nng_http_req_free(req);
     nng_url_free(url);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

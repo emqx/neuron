@@ -26,8 +26,8 @@
 #include <sys/time.h>
 
 #include "errcodes.h"
-#include "log.h"
 #include "neu_jwt.h"
+#include "utils/log.h"
 
 struct public_key_store {
     struct {
@@ -74,13 +74,13 @@ static char *load_key(char *dir, char *name)
 
     f = fopen(path, "r");
     if (f == NULL) {
-        log_error("Failed to open file: %s, errno: %d", name, errno);
+        zlog_error(neuron, "Failed to open file: %s, errno: %d", name, errno);
         return NULL;
     }
 
     len = fread(content, 1, sizeof(content), f);
     if (len <= 0) {
-        log_error("Failed to read  file: %s, errno: %d", name, errno);
+        zlog_error(neuron, "Failed to read  file: %s, errno: %d", name, errno);
 
         fclose(f);
         return NULL;
@@ -97,7 +97,7 @@ int neu_jwt_init(char *dir_path)
 
     dir = opendir(dir_path);
     if (dir == NULL) {
-        log_error("Open dir error: %s", strerror(errno));
+        zlog_error(neuron, "Open dir error: %s", strerror(errno));
         return -1;
     }
 
@@ -137,7 +137,7 @@ int neu_jwt_new(char **token)
 
     int ret = jwt_new(&jwt);
     if (ret != 0 || jwt == NULL) {
-        log_error("Invalid jwt: %d, errno: %d", ret, errno);
+        zlog_error(neuron, "Invalid jwt: %d, errno: %d", ret, errno);
         return -1;
     }
 
@@ -172,14 +172,15 @@ int neu_jwt_new(char **token)
                       strlen(private_key));
     if (ret != 0) {
         jwt_free(jwt);
-        log_error("jwt incorrect algorithm: %d, errno: %d", ret, errno);
+        zlog_error(neuron, "jwt incorrect algorithm: %d, errno: %d", ret,
+                   errno);
         return -1;
     }
 
     str_jwt = jwt_encode_str(jwt);
     if (str_jwt == NULL) {
         jwt_free(jwt);
-        log_error("jwt incorrect algorithm, errno: %d", errno);
+        zlog_error(neuron, "jwt incorrect algorithm, errno: %d", errno);
         return -1;
     }
 
@@ -190,7 +191,7 @@ int neu_jwt_new(char **token)
     return 0;
 
 err_out:
-    log_error("Failed to add a grant: %d, errno: %d", ret, errno);
+    zlog_error(neuron, "Failed to add a grant: %d, errno: %d", ret, errno);
 
     jwt_free(jwt);
     return -1;
@@ -205,13 +206,13 @@ static void *neu_jwt_decode(char *token)
 
     ret = jwt_decode(&jwt_test, token, NULL, 0);
     if (ret != 0) {
-        log_error("jwt decode error: %d", ret);
+        zlog_error(neuron, "jwt decode error: %d", ret);
         return NULL;
     }
 
     name = jwt_get_grant(jwt_test, "iss");
     if (NULL == name) {
-        log_error("jwt get iss grant error, the token is: %s", token);
+        zlog_error(neuron, "jwt get iss grant error, the token is: %s", token);
         jwt_free(jwt_test);
         return NULL;
     }
@@ -222,20 +223,20 @@ static void *neu_jwt_decode(char *token)
                          (const unsigned char *) key_store.key[ret].key,
                          strlen(key_store.key[ret].key));
         if (ret != 0) {
-            log_error("jwt decode error: %d", ret);
+            zlog_error(neuron, "jwt decode error: %d", ret);
             jwt_free(jwt_test);
             jwt_free(jwt);
             return NULL;
         }
     } else {
-        log_error("Don't find public key file: %s", name);
+        zlog_error(neuron, "Don't find public key file: %s", name);
         jwt_free(jwt_test);
         jwt_free(jwt);
         return NULL;
     }
 
     if (jwt_get_alg(jwt) != JWT_ALG_RS256) {
-        log_error("jwt decode alg: %d", jwt_get_alg(jwt));
+        zlog_error(neuron, "jwt decode alg: %d", jwt_get_alg(jwt));
         jwt_free(jwt_test);
         jwt_free(jwt);
         return NULL;
@@ -265,7 +266,7 @@ int neu_jwt_validate(char *b_token)
 
     int ret = jwt_valid_new(&jwt_valid, opt_alg);
     if (ret != 0 || jwt_valid == NULL) {
-        log_error("Failed to allocate jwt_valid: %d", ret);
+        zlog_error(neuron, "Failed to allocate jwt_valid: %d", ret);
         jwt_valid_free(jwt_valid);
         jwt_free(jwt);
         return NEU_ERR_EINTERNAL;
@@ -273,7 +274,7 @@ int neu_jwt_validate(char *b_token)
 
     ret = jwt_valid_set_headers(jwt_valid, 1);
     if (ret != 0 || jwt_valid == NULL) {
-        log_error("Failed to set jwt headers: %d", ret);
+        zlog_error(neuron, "Failed to set jwt headers: %d", ret);
         jwt_valid_free(jwt_valid);
         jwt_free(jwt);
         return NEU_ERR_EINTERNAL;
@@ -281,7 +282,7 @@ int neu_jwt_validate(char *b_token)
 
     ret = jwt_valid_set_now(jwt_valid, time(NULL));
     if (ret != 0 || jwt_valid == NULL) {
-        log_error("Failed to set time: %d", ret);
+        zlog_error(neuron, "Failed to set time: %d", ret);
         jwt_valid_free(jwt_valid);
         jwt_free(jwt);
         return NEU_ERR_EINTERNAL;
@@ -289,7 +290,7 @@ int neu_jwt_validate(char *b_token)
 
     ret = jwt_validate(jwt, jwt_valid);
     if (ret != 0) {
-        log_error("Jwt failed to validate : %d", ret);
+        zlog_error(neuron, "Jwt failed to validate : %d", ret);
         jwt_valid_free(jwt_valid);
         jwt_free(jwt);
         if (ret == JWT_VALIDATION_EXPIRED) {

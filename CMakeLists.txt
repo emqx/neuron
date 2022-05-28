@@ -157,8 +157,6 @@ set(NEURON_BASE_SOURCES
     src/utils/atomic_data.c
     src/utils/idhash.c
     src/utils/hash_table.c
-    src/utils/panic.c
-    src/utils/log.c
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/file.c
@@ -195,6 +193,7 @@ target_link_libraries(neuron-base nng libzlog.so vector-static csptr jansson cry
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
+file(COPY ${CMAKE_SOURCE_DIR}/dev.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/ekuiper/ekuiper.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/modbus/modbus-tcp.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)

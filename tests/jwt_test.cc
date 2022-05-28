@@ -3,9 +3,11 @@
 #include <gtest/gtest.h>
 
 #include "jwt.h"
-#include "log.h"
 #include "neu_jwt.h"
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
 TEST(JwtTest, SetJwt)
 {
     char *        token            = NULL;
@@ -36,4 +38,11 @@ TEST(JwtTest, JwtValidate)
     EXPECT_EQ(0, neu_jwt_validate(b_token));
 
     jwt_free_str(token);
+}
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

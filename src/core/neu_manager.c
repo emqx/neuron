@@ -30,16 +30,15 @@
 
 #include "adapter.h"
 #include "errcodes.h"
-#include "log.h"
 #include "message.h"
 #include "neu_datatag_manager.h"
 #include "neu_manager.h"
 #include "neu_trans_buf.h"
 #include "neu_vector.h"
-#include "panic.h"
 #include "persist/persist.h"
 #include "plugin_manager.h"
 #include "subscribe.h"
+#include "utils/log.h"
 
 typedef struct adapter_reg_entity {
     neu_adapter_id_t       adapter_id;
@@ -155,14 +154,10 @@ static int init_bind_info(manager_bind_info_t *mng_bind_info)
     }
 
     rv = nng_mtx_alloc(&mng_bind_info->mtx);
-    if (rv != 0) {
-        neu_panic("Failed to initialize mutex in manager_bind_info");
-    }
+    assert(rv == 0);
 
     rv = nng_cv_alloc(&mng_bind_info->cv, mng_bind_info->mtx);
-    if (rv != 0) {
-        neu_panic("Failed to initialize condition(cv) in manager_bind_info");
-    }
+    assert(rv == 0);
 
     mng_bind_info->bind_count        = 0;
     mng_bind_info->expect_bind_count = 0;
@@ -172,7 +167,7 @@ static int init_bind_info(manager_bind_info_t *mng_bind_info)
 static int uninit_bind_info(manager_bind_info_t *mng_bind_info)
 {
     if (mng_bind_info->bind_count > 0) {
-        log_warn("It has some bound adapter in manager");
+        nlog_warn("It has some bound adapter in manager");
     }
 
     nng_cv_free(mng_bind_info->cv);
@@ -194,7 +189,7 @@ static bool match_name_reg_adapter(const void *key, const void *item)
 
     adapter = ((adapter_reg_entity_t *) item)->adapter;
     if (adapter == NULL) {
-        log_warn("The adapter had been removed");
+        nlog_warn("The adapter had been removed");
         return false;
     }
     return strcmp((const char *) key, neu_adapter_get_name(adapter)) == 0;
@@ -303,8 +298,8 @@ static void manager_bind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
         nng_cv_wake(reg_entity->cv);
         nng_cv_wake(manager->bind_info.cv);
         nng_mtx_unlock(manager->bind_info.mtx);
-        log_info("The manager bind the adapter(%s) with pipe(%d)",
-                 neu_adapter_get_name(adapter), p);
+        nlog_info("The manager bind the adapter(%s) with pipe(%d)",
+                  neu_adapter_get_name(adapter), p.id);
     }
 
     return;
@@ -328,8 +323,8 @@ static void manager_unbind_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     nng_mtx_unlock(manager->adapters_mtx);
     if (reg_entity != NULL) {
         cur_adapter = reg_entity->adapter;
-        log_info("The manager unbind the adapter(%s)",
-                 neu_adapter_get_name(cur_adapter));
+        nlog_info("The manager unbind the adapter(%s)",
+                  neu_adapter_get_name(cur_adapter));
         nng_mtx_lock(manager->bind_info.mtx);
         reg_entity->bind_count = 0;
         manager->bind_info.bind_count--;
@@ -365,7 +360,7 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
             manager->plugin_manager, reg_param->plugin_name, &plugin_reg_info);
     }
     if (rv != 0) {
-        log_error("Can't find plugin: %s", reg_param->plugin_name);
+        nlog_error("Can't find plugin: %s", reg_param->plugin_name);
         return NEU_ERR_LIBRARY_NOT_FOUND;
     }
 
@@ -375,7 +370,7 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
                                                reg_param->adapter_name);
     nng_mtx_unlock(manager->adapters_mtx);
     if (same_reg_entity != NULL) {
-        log_warn("A adapter with same name has already been registered");
+        nlog_warn("A adapter with same name has already been registered");
         return NEU_ERR_NODE_EXIST;
     }
 
@@ -402,7 +397,7 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
     mng_bind_info = &manager->bind_info;
     rv            = nng_cv_alloc(&reg_entity.cv, mng_bind_info->mtx);
     if (rv != 0) {
-        log_error("Failed to new cv for register adapter");
+        nlog_error("Failed to new cv for register adapter");
         neu_datatag_mng_destroy(datatag_manager);
         neu_adapter_destroy(adapter);
         return NEU_ERR_EINTERNAL;
@@ -422,8 +417,8 @@ static neu_err_code_e manager_reg_adapter(neu_manager_t *    manager,
         *p_adapter = adapter;
     }
 
-    log_debug("register adapter id: %d, type: %d, name: %s",
-              reg_entity.adapter_id, adapter_info.type, adapter_info.name);
+    nlog_debug("register adapter id: %d, type: %d, name: %s",
+               reg_entity.adapter_id, adapter_info.type, adapter_info.name);
 
     *adapter_id = reg_entity.adapter_id;
     return rv;
@@ -542,8 +537,8 @@ int neu_manager_uninit_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     nng_mtx_unlock(manager->adapters_mtx);
 
     if (msg_pipe.id == 0) {
-        log_warn("The adapter(%s) had been unbound",
-                 neu_adapter_get_name(adapter));
+        nlog_warn("The adapter(%s) had been unbound",
+                  neu_adapter_get_name(adapter));
         goto stop_adapter;
     }
 
@@ -551,10 +546,7 @@ int neu_manager_uninit_adapter(neu_manager_t *manager, neu_adapter_t *adapter)
     nng_msg *msg;
     msg_size = msg_inplace_data_get_size(sizeof(uint32_t));
     rv       = nng_msg_alloc(&msg, msg_size);
-    if (rv != 0) {
-        neu_panic("Can't allocate msg for stop adapter(%s)",
-                  neu_adapter_get_name(adapter));
-    }
+    assert(rv == 0);
 
     void *     buf_ptr;
     message_t *pay_msg;
@@ -666,7 +658,7 @@ static int sub_grp_config_with_pipe(neu_taggrp_config_t *grp_config,
 
     rv = vector_push_back(sub_pipes, &sub_pipe);
     if (rv != 0) {
-        log_error("Can't add pipe to vector of subscribe pipes");
+        nlog_error("Can't add pipe to vector of subscribe pipes");
         return -1;
     }
 
@@ -689,7 +681,7 @@ static int unsub_grp_config_with_pipe(neu_taggrp_config_t *grp_config,
 
     rv = vector_erase(sub_pipes, index);
     if (rv != 0) {
-        log_error("Can't remove pipe from vector of subscribe pipes");
+        nlog_error("Can't remove pipe from vector of subscribe pipes");
         return -1;
     }
 
@@ -706,8 +698,8 @@ static int add_grp_config_to_adapter(adapter_reg_entity_t *reg_entity,
     datatag_mng = reg_entity->datatag_manager;
     rv          = neu_datatag_mng_add_grp_config(datatag_mng, grp_config);
     if (rv != 0) {
-        log_error("Failed to add datatag group config: %s",
-                  neu_taggrp_cfg_get_name(grp_config));
+        nlog_error("Failed to add datatag group config: %s",
+                   neu_taggrp_cfg_get_name(grp_config));
         return rv;
     }
     return rv;
@@ -726,8 +718,8 @@ static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
 
     neu_trans_buf_t *trans_buf;
     trans_buf = &neu_trans_data->trans_buf;
-    log_trace("dispatch databuf to %d subscribes in sub_pipes",
-              sub_pipes->size);
+    nlog_debug("dispatch databuf to %zu subscribes in sub_pipes",
+               sub_pipes->size);
     VECTOR_FOR_EACH(sub_pipes, iter)
     {
         size_t   msg_size;
@@ -751,7 +743,7 @@ static int dispatch_databuf_to_adapters(neu_manager_t *      manager,
             out_neu_trans_data->node_name = neu_trans_data->node_name;
             neu_trans_buf_copy(&out_neu_trans_data->trans_buf, trans_buf);
             nng_msg_set_pipe(out_msg, msg_pipe);
-            log_trace("Forward databuf to pipe: %d", msg_pipe);
+            nlog_debug("Forward databuf to pipe: %d", msg_pipe.id);
             nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
         }
     }
@@ -772,14 +764,10 @@ static void manager_loop(void *arg)
     manager                           = (neu_manager_t *) arg;
     manager_bind_info_t *manager_bind = &manager->bind_info;
     rv = nng_pair1_open_poly(&manager_bind->mng_sock);
-    if (rv != 0) {
-        neu_panic("Can't open the manager pipe");
-    }
+    assert(rv == 0);
 
     rv = nng_listen(manager_bind->mng_sock, manager->listen_url, NULL, 0);
-    if (rv != 0) {
-        neu_panic("Neuron manager can't listen on %s", manager->listen_url);
-    }
+    assert(rv == 0);
 
     nng_mtx_lock(manager->mtx);
     manager->state = MANAGER_STATE_READY;
@@ -793,7 +781,7 @@ static void manager_loop(void *arg)
     }
     nng_mtx_unlock(manager->mtx);
 
-    log_info("Register and start all static adapters");
+    nlog_info("Register and start all static adapters");
     register_static_plugins(manager);
     reg_and_start_static_adapters(manager);
 
@@ -803,7 +791,7 @@ static void manager_loop(void *arg)
     nng_mtx_unlock(manager->adapters_mtx);
     nng_pipe persist_pipe = persist_reg_entity->adapter_pipe;
 
-    log_info("Start message loop of neu_manager");
+    nlog_info("Start message loop of neu_manager");
     while (1) {
         nng_msg *msg;
 
@@ -811,14 +799,14 @@ static void manager_loop(void *arg)
         if (manager->stop) {
             manager->state = MANAGER_STATE_NULL;
             nng_mtx_unlock(manager->mtx);
-            log_info("Exit loop of the manager");
+            nlog_info("Exit loop of the manager");
             break;
         }
         nng_mtx_unlock(manager->mtx);
 
         rv = nng_recvmsg(manager_bind->mng_sock, &msg, 0);
         if (rv != 0) {
-            log_warn("Manage pipe no message received");
+            nlog_warn("Manage pipe no message received");
             continue;
         }
 
@@ -828,7 +816,7 @@ static void manager_loop(void *arg)
         case MSG_EVENT_NODE_PING: {
             char *buf_ptr;
             buf_ptr = msg_get_buf_ptr(pay_msg);
-            log_debug("Recieve ping: %s", buf_ptr);
+            nlog_debug("Recieve ping: %s", buf_ptr);
 
             const char *adapter_str = "manager recv reply";
             nng_msg *   out_msg;
@@ -847,7 +835,7 @@ static void manager_loop(void *arg)
                 memcpy(buf_ptr, adapter_str, strlen(adapter_str));
                 buf_ptr[strlen(adapter_str)] = 0;
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Reply pong to pipe: %d", msg_pipe);
+                nlog_info("Reply pong to pipe: %d", msg_pipe.id);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             // buf_ptr contains NULL terminated adapter name
@@ -858,7 +846,7 @@ static void manager_loop(void *arg)
                 msg_inplace_data_init(msg_ptr, MSG_CMD_PERSISTENCE_LOAD, 0);
                 nng_msg_set_pipe(out_msg, msg_pipe);
                 persist_pipe = msg_pipe;
-                log_info("Send persistence load to pipe: %d", msg_pipe);
+                nlog_info("Send persistence load to pipe: %d", msg_pipe.id);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -868,7 +856,7 @@ static void manager_loop(void *arg)
             uint32_t exit_code;
 
             exit_code = *(uint32_t *) msg_get_buf_ptr(pay_msg);
-            log_info("manager exit loop by exit_code=%d", exit_code);
+            nlog_info("manager exit loop by exit_code=%d", exit_code);
             nng_mtx_lock(manager->mtx);
             manager->state = MANAGER_STATE_NULL;
             manager->stop  = true;
@@ -903,7 +891,8 @@ static void manager_loop(void *arg)
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_cmd_ptr, cmd_ptr, sizeof(read_data_cmd_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Forward read command to driver pipe: %d", msg_pipe);
+                nlog_info("Forward read command to driver pipe: %d",
+                          msg_pipe.id);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -936,7 +925,7 @@ static void manager_loop(void *arg)
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_cmd_ptr, cmd_ptr, sizeof(read_data_resp_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Forward read response to app pipe: %d", msg_pipe);
+                nlog_info("Forward read response to app pipe: %d", msg_pipe.id);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -969,7 +958,8 @@ static void manager_loop(void *arg)
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_cmd_ptr, cmd_ptr, sizeof(write_data_cmd_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Forward write command to driver pipe: %d", msg_pipe);
+                nlog_info("Forward write command to driver pipe: %d",
+                          msg_pipe.id);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -1002,7 +992,8 @@ static void manager_loop(void *arg)
                 out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
                 memcpy(out_cmd_ptr, cmd_ptr, sizeof(write_data_resp_t));
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info("Forward write response to app pipe: %d", msg_pipe);
+                nlog_info("Forward write response to app pipe: %d",
+                          msg_pipe.id);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -1050,8 +1041,8 @@ static void manager_loop(void *arg)
             rv = manager_send_msg_to_pipe(manager, persist_pipe, msg_type, buf,
                                           size);
             if (0 == rv) {
-                log_info("Forward event %d to %s pipe: %d", msg_type,
-                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+                nlog_info("Forward event %d to %s pipe: %d", msg_type,
+                          DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe.id);
             }
             break;
         }
@@ -1072,11 +1063,11 @@ static void manager_loop(void *arg)
                 rv = manager_send_msg_to_pipe(
                     manager, dst_pipe, MSG_EVENT_UPDATE_LICENSE, NULL, 0);
                 if (0 == rv) {
-                    log_info("Forward license update event to pipe: %d",
-                             dst_pipe);
+                    nlog_info("Forward license update event to pipe: %d",
+                              dst_pipe.id);
                 } else {
-                    log_error("Fail send license update event to pipe: %d",
-                              dst_pipe);
+                    nlog_error("Fail send license update event to pipe: %d",
+                               dst_pipe.id);
                 }
             }
             break;
@@ -1094,8 +1085,8 @@ static void manager_loop(void *arg)
             rv = manager_send_msg_to_pipe(manager, persist_pipe, msg_type,
                                           &node_id, sizeof(node_id));
             if (0 == rv) {
-                log_info("Forward event %d to %s pipe: %d", msg_type,
-                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+                nlog_info("Forward event %d to %s pipe: %d", msg_type,
+                          DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe.id);
             }
             break;
         }
@@ -1112,8 +1103,8 @@ static void manager_loop(void *arg)
             rv = manager_send_msg_to_pipe(manager, persist_pipe, msg_type,
                                           &node_id, sizeof(node_id));
             if (0 == rv) {
-                log_info("Forward event %d to %s pipe: %d", msg_type,
-                         DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe);
+                nlog_info("Forward event %d to %s pipe: %d", msg_type,
+                          DEFAULT_PERSIST_ADAPTER_NAME, persist_pipe.id);
             }
             break;
         }
@@ -1149,9 +1140,9 @@ static void manager_loop(void *arg)
                 out_cmd_ptr->sender_id   = event_ptr->sender_id;
                 out_cmd_ptr->dst_node_id = event_ptr->dst_node_id;
                 nng_msg_set_pipe(out_msg, msg_pipe);
-                log_info(
+                nlog_info(
                     "Forward group config changed command to driver pipe: %d",
-                    msg_pipe);
+                    msg_pipe.id);
                 nng_sendmsg(manager_bind->mng_sock, out_msg, 0);
             }
             break;
@@ -1166,15 +1157,15 @@ static void manager_loop(void *arg)
         }
 
         default:
-            log_warn("Receive a not supported message(type: %d)",
-                     msg_get_type(pay_msg));
+            nlog_warn("Receive a not supported message(type: %d)",
+                      msg_get_type(pay_msg));
             break;
         }
 
         nng_msg_free(msg);
     }
 
-    log_info("End message loop of neu_manager");
+    nlog_info("End message loop of neu_manager");
     stop_and_unreg_bind_adapters(manager);
     unregister_all_reg_plugins(manager);
     nng_close(manager_bind->mng_sock);
@@ -1186,9 +1177,7 @@ neu_manager_t *neu_manager_create()
     neu_manager_t *manager;
 
     manager = malloc(sizeof(neu_manager_t));
-    if (manager == NULL) {
-        neu_panic("Out of memeory for create neuron manager");
-    }
+    assert(manager != NULL);
 
     manager->state               = MANAGER_STATE_NULL;
     manager->stop                = false;
@@ -1199,27 +1188,18 @@ neu_manager_t *neu_manager_create()
     int rv, rv1;
     rv  = nng_mtx_alloc(&manager->mtx);
     rv1 = nng_mtx_alloc(&manager->adapters_mtx);
-    if (rv != 0 || rv1 != 0) {
-        neu_panic("Can't allocate mutex for manager");
-    }
+    assert(rv == 0 && rv1 == 0);
 
     rv  = nng_cv_alloc(&manager->cv, manager->mtx);
     rv1 = nng_cv_alloc(&manager->adapters_cv, manager->adapters_mtx);
-    if (rv != 0 || rv1 != 0) {
-        neu_panic("Failed to initialize condition(cv) for manager"
-                  "and vector of adapters");
-    }
+    assert(rv == 0 && rv1 == 0);
 
     rv = vector_init(&manager->reg_adapters, 8, sizeof(adapter_reg_entity_t));
-    if (rv != 0) {
-        neu_panic("Failed to initialize vector of registered adapters");
-    }
+    assert(rv == 0);
 
     init_bind_info(&manager->bind_info);
     manager->plugin_manager = plugin_manager_create();
-    if (manager->plugin_manager == NULL) {
-        neu_panic("Failed to create plugin manager");
-    }
+    assert(manager->plugin_manager != NULL);
 
     nng_thread_create(&manager->thrd, manager_loop, manager);
     return manager;
@@ -1497,8 +1477,8 @@ int neu_manager_subscribe_node(neu_manager_t *       manager,
         out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
         memcpy(out_cmd_ptr, cmd, sizeof(subscribe_node_cmd_t));
         nng_msg_set_pipe(out_msg, src_reg_entity->adapter_pipe);
-        log_info("Forward subscribe driver command to driver pipe: %d",
-                 src_reg_entity->adapter_pipe);
+        nlog_info("Forward subscribe driver command to driver pipe: %d",
+                  src_reg_entity->adapter_pipe.id);
         nng_sendmsg(manager->bind_info.mng_sock, out_msg, 0);
     }
 
@@ -1541,8 +1521,8 @@ int neu_manager_unsubscribe_node(neu_manager_t *         manager,
         out_cmd_ptr = msg_get_buf_ptr(msg_ptr);
         memcpy(out_cmd_ptr, cmd, sizeof(unsubscribe_node_cmd_t));
         nng_msg_set_pipe(out_msg, src_reg_entity->adapter_pipe);
-        log_info("Forward unsubscribe driver command to driver pipe: %d",
-                 src_reg_entity->adapter_pipe);
+        nlog_info("Forward unsubscribe driver command to driver pipe: %d",
+                  src_reg_entity->adapter_pipe.id);
         nng_sendmsg(manager->bind_info.mng_sock, out_msg, 0);
     }
 
@@ -1578,7 +1558,7 @@ int neu_manager_get_node_by_id(neu_manager_t *manager, neu_node_id_t node_id,
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || result == NULL) {
-        log_error("get nodes with NULL manager or result");
+        nlog_error("get nodes with NULL manager or result");
         return NEU_ERR_EINTERNAL;
     }
 
@@ -1614,7 +1594,7 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || result_nodes == NULL) {
-        log_error("get nodes with NULL manager or result_nodes");
+        nlog_error("get nodes with NULL manager or result_nodes");
         return NEU_ERR_EINTERNAL;
     }
 
@@ -1701,12 +1681,12 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
-        log_error("Add group config with NULL manager or command");
+        nlog_error("Add group config with NULL manager or command");
         return NEU_ERR_EINTERNAL;
     }
 
     if (cmd->grp_config == NULL) {
-        log_error("group config is NULL");
+        nlog_error("group config is NULL");
         return NEU_ERR_EINTERNAL;
     }
 
@@ -1714,7 +1694,7 @@ int neu_manager_add_grp_config(neu_manager_t *           manager,
     adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->node_id);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         rv = NEU_ERR_NODE_NOT_EXIST;
         goto add_grp_config_exit;
     }
@@ -1733,7 +1713,7 @@ int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || config_name == NULL) {
-        log_error("Delete group config NULL manager or config_name");
+        nlog_error("Delete group config NULL manager or config_name");
         return NEU_ERR_EINTERNAL;
     }
 
@@ -1741,7 +1721,7 @@ int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
     adapter_id = neu_manager_adapter_id_from_node_id(manager, node_id);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
-        log_error("Can't find matched registered adapter");
+        nlog_error("Can't find matched registered adapter");
         rv = NEU_ERR_NODE_NOT_EXIST;
         goto del_grp_config_exit;
     }
@@ -1749,7 +1729,7 @@ int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
     rv = neu_datatag_mng_del_grp_config(reg_entity->datatag_manager,
                                         config_name);
     if (rv != 0) {
-        log_error("Failed to delete datatag group config: %s", config_name);
+        nlog_error("Failed to delete datatag group config: %s", config_name);
         rv = NEU_ERR_EINTERNAL;
     }
 del_grp_config_exit:
@@ -1765,12 +1745,12 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
     adapter_reg_entity_t *reg_entity;
 
     if (manager == NULL || cmd == NULL) {
-        log_error("Update group config with NULL manager or command");
+        nlog_error("Update group config with NULL manager or command");
         return NEU_ERR_EINTERNAL;
     }
 
     if (cmd->grp_config == NULL) {
-        log_error("group config is NULL");
+        nlog_error("group config is NULL");
         return NEU_ERR_EINTERNAL;
     }
 
@@ -1778,7 +1758,7 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
     adapter_id = neu_manager_adapter_id_from_node_id(manager, cmd->node_id);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (reg_entity == NULL) {
-        log_error("Can't find matched src or dst registered adapter");
+        nlog_error("Can't find matched src or dst registered adapter");
         rv = NEU_ERR_NODE_NOT_EXIST;
         goto update_grp_config_exit;
     }
@@ -1786,8 +1766,8 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
     rv = neu_datatag_mng_update_grp_config(reg_entity->datatag_manager,
                                            cmd->grp_config);
     if (rv != 0) {
-        log_error("Failed to update datatag group config: %s",
-                  neu_taggrp_cfg_get_name(cmd->grp_config));
+        nlog_error("Failed to update datatag group config: %s",
+                   neu_taggrp_cfg_get_name(cmd->grp_config));
         neu_taggrp_cfg_free(cmd->grp_config);
         rv = NEU_ERR_EINTERNAL;
     }
@@ -1805,7 +1785,7 @@ int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
     neu_adapter_id_t      adapter_id;
 
     if (manager == NULL || result_grp_configs == NULL) {
-        log_error("get nodes with NULL manager or result_nodes");
+        nlog_error("get nodes with NULL manager or result_nodes");
         return -1;
     }
 
@@ -1834,7 +1814,7 @@ int neu_manager_get_persist_datatag_infos(neu_manager_t *manager,
     neu_adapter_id_t      adapter_id;
 
     if (manager == NULL || result == NULL) {
-        log_error("get persist datatag infos with NULL manager or result");
+        nlog_error("get persist datatag infos with NULL manager or result");
         return NEU_ERR_EINTERNAL;
     }
 
@@ -1971,7 +1951,7 @@ int neu_manager_get_plugin_libs(neu_manager_t *manager,
                                 vector_t *     plugin_lib_infos)
 {
     if (manager == NULL || plugin_lib_infos == NULL) {
-        log_error("get plugin libs with NULL manager or plugin_lib_infos");
+        nlog_error("get plugin libs with NULL manager or plugin_lib_infos");
         return -1;
     }
 
@@ -2005,7 +1985,7 @@ int neu_manager_get_persist_plugin_infos(neu_manager_t *manager,
                                          vector_t **    result)
 {
     if (NULL == manager || NULL == result) {
-        log_error("get persist plugin infos with NULL manager or result");
+        nlog_error("get persist plugin infos with NULL manager or result");
         return NEU_ERR_EINVAL;
     }
 
@@ -2054,7 +2034,7 @@ neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
     neu_adapter_id_t      adapter_id;
 
     if (manager == NULL) {
-        log_error("get datatag table with NULL manager");
+        nlog_error("get datatag table with NULL manager");
         return NULL;
     }
 
@@ -2088,7 +2068,7 @@ int neu_manager_adapter_set_setting(neu_manager_t *manager,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
 
     if (reg_entity == NULL) {
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
         return NEU_ERR_NODE_NOT_EXIST;
     }
@@ -2122,7 +2102,7 @@ int neu_manager_get_persist_adapter_info(neu_manager_t *             manager,
     adapter_reg_entity_t *reg_entity = NULL;
 
     if (NULL == manager || NULL == name || NULL == result) {
-        log_error("get persist adapter info with NULL arguments");
+        nlog_error("get persist adapter info with NULL arguments");
         return NEU_ERR_EINVAL;
     }
 
@@ -2160,7 +2140,7 @@ int neu_manager_adapter_get_setting(neu_manager_t *manager,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
 
     if (reg_entity == NULL) {
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
         return NEU_ERR_NODE_NOT_EXIST;
     }
@@ -2183,7 +2163,7 @@ int neu_manager_start_adapter_with_id(neu_manager_t *manager,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
 
     if (reg_entity == NULL) {
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
         return NEU_ERR_NODE_NOT_EXIST;
     }
@@ -2208,7 +2188,7 @@ int neu_manager_adapter_get_state(neu_manager_t *manager, neu_node_id_t node_id,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
 
     if (reg_entity == NULL) {
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
         return NEU_ERR_NODE_NOT_EXIST;
     }
@@ -2234,7 +2214,7 @@ int neu_manager_adapter_ctl(neu_manager_t *manager, neu_node_id_t node_id,
 
     if (reg_entity == NULL) {
         nng_mtx_unlock(manager->adapters_mtx);
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         return NEU_ERR_NODE_NOT_EXIST;
     }
 
@@ -2266,7 +2246,7 @@ int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
 
     if (reg_entity == NULL) {
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         nng_mtx_unlock(manager->adapters_mtx);
         return -1;
     }
@@ -2284,7 +2264,7 @@ int neu_manager_adapter_get_grp_config_ref_by_name(
     int rv = 0;
 
     if (NULL == manager || NULL == grp_config_name || NULL == p_grp_config) {
-        log_error(
+        nlog_error(
             "get nodes with NULL manager, grp_config_name or p_grp_config");
         return NEU_ERR_EINVAL;
     }
@@ -2320,7 +2300,8 @@ int neu_manager_get_persist_subscription_infos(neu_manager_t *manager,
     int rv = 0;
 
     if (NULL == manager || NULL == result) {
-        log_error("get persist subscription infos with NULL manager or result");
+        nlog_error(
+            "get persist subscription infos with NULL manager or result");
         return NEU_ERR_EINTERNAL;
     }
 
@@ -2419,7 +2400,7 @@ int neu_manager_adapter_validate_tag(neu_manager_t *manager,
 
     if (reg_entity == NULL) {
         nng_mtx_unlock(manager->adapters_mtx);
-        log_error("Can't find matched src registered adapter");
+        nlog_error("Can't find matched src registered adapter");
         return -1;
     }
 

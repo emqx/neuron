@@ -22,6 +22,7 @@
 #include "datatag_table.h"
 #include "utils/hash_table.h"
 #include "utils/idhash.h"
+#include "utils/log.h"
 
 struct neu_datatag_table {
     pthread_mutex_t mtx;
@@ -195,7 +196,7 @@ int neu_datatag_tbl_to_vector(neu_datatag_table_t *tag_tbl,
 
     vec = vector_new(tag_tbl->datatag_table.id_count, sizeof(neu_datatag_t));
     if (vec == NULL) {
-        log_error("Failed to allocate vecotr for store datatags");
+        zlog_error(neuron, "Failed to allocate vecotr for store datatags");
         return -1;
     }
 

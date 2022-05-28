@@ -5,6 +5,9 @@
 #include "datatag_table.h"
 #include "neu_tag.h"
 #include "neu_vector.h"
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
 
 #define MAX_NAME_LEN 128
 #define NUM_DATATAGTABLE_MODIFY 100
@@ -305,6 +308,8 @@ TEST(DatatageTableTest, DatatagTablePthread)
 
 int main(int argc, char **argv)
 {
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

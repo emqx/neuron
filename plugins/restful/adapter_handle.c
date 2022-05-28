@@ -23,6 +23,7 @@
 #include "vector.h"
 
 #include "plugin.h"
+#include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_node.h"
@@ -105,7 +106,7 @@ static void handle_get_adapter_by_id(nng_aio *aio, neu_node_id_t node_id,
     if (0 == rv) {
         http_ok(aio, result);
     } else {
-        log_error("encode node info json response fail");
+        nlog_error("encode node info json response fail");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
             http_response(aio, error_code.error, result_error);
         })

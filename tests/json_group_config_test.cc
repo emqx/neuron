@@ -1,8 +1,11 @@
 #include <cstdlib>
 #include <gtest/gtest.h>
 
+#include "utils/log.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_group_config.h"
+
+zlog_category_t *neuron = NULL;
 
 TEST(TagGroupConfigTest, neu_parse_decode_get_group_config_req)
 {
@@ -100,4 +103,12 @@ TEST(TagGroupConfigTest, neu_parse_decode_delete_group_config_req)
     EXPECT_EQ(123456, req->node_id);
 
     neu_json_decode_del_group_config_req_free(req);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

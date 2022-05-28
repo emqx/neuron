@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "utils/base64.h"
+#include "utils/log.h"
 
+zlog_category_t *neuron = NULL;
 TEST(Base64Test, neu_encode64_test)
 {
     const char *input = "hello world!";
@@ -22,4 +24,12 @@ TEST(Base64Test, neu_decode64_test)
     free(data);
     EXPECT_STREQ(temp, output);
     EXPECT_EQ(len, strlen(output));
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

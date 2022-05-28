@@ -25,8 +25,8 @@
 #include <nng/supplemental/http/http.h>
 
 #include "dummy.h"
-#include "log.h"
 #include "plugin.h"
+#include "utils/log.h"
 
 #define neu_plugin_module default_dummy_plugin_module
 
@@ -40,14 +40,14 @@ static neu_plugin_t *dummy_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_t *plugin;
 
     if (adapter == NULL || callbacks == NULL) {
-        log_error("Open plugin with NULL adapter or callbacks");
+        nlog_error("Open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        log_error("Failed to allocate plugin %s",
-                  neu_plugin_module.module_name);
+        nlog_error("Failed to allocate plugin %s",
+                   neu_plugin_module.module_name);
         return NULL;
     }
 
@@ -55,14 +55,14 @@ static neu_plugin_t *dummy_plugin_open(neu_adapter_t *            adapter,
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
 
-    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
 
 static int dummy_plugin_close(neu_plugin_t *plugin)
 {
     free(plugin);
-    log_info("Success to free plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
     return 0;
 }
 
@@ -72,7 +72,7 @@ static int dummy_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -82,7 +82,7 @@ static int dummy_plugin_uninit(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -93,7 +93,7 @@ static int dummy_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     (void) configs;
 
-    log_info("config plugin: %s", neu_plugin_module.module_name);
+    nlog_info("config plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -102,13 +102,13 @@ static int dummy_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     int rv = 0;
 
     if (plugin == NULL || req == NULL) {
-        log_warn("The plugin pointer or request is NULL");
+        nlog_warn("The plugin pointer or request is NULL");
         return (-1);
     }
 
-    log_info("send request to plugin: %s", neu_plugin_module.module_name);
-    log_info("%s received request %d\n", neu_plugin_module.module_name,
-             req->req_type);
+    nlog_info("send request to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("%s received request %d\n", neu_plugin_module.module_name,
+              req->req_type);
 
     return rv;
 }
@@ -121,7 +121,7 @@ static int dummy_plugin_event_reply(neu_plugin_t *     plugin,
     (void) plugin;
     (void) reply;
 
-    log_info("reply event to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("reply event to plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 

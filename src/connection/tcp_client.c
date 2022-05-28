@@ -23,10 +23,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-
-#include "log.h"
+#include <unistd.h>
 
 #include "connection/neu_tcp.h"
+#include "utils/log.h"
 
 struct neu_tcp_client {
     in_addr_t       server;
@@ -106,8 +106,9 @@ ssize_t neu_tcp_client_send_recv(neu_tcp_client_t *client, char *send_buf,
 
     ssize_t ret = send(client->fd, send_buf, send_len, 0);
     if (ret != send_len) {
-        log_error("tcp client send error, ret: %d, len: %d, errno: %d", ret,
-                  send_len, errno);
+        zlog_error(neuron,
+                   "tcp client send error, ret: %zu, len: %zd, errno: %d", ret,
+                   send_len, errno);
         close(client->fd);
         client->fd = -1;
         pthread_mutex_unlock(&client->mtx);
@@ -116,8 +117,9 @@ ssize_t neu_tcp_client_send_recv(neu_tcp_client_t *client, char *send_buf,
 
     ret = recv(client->fd, recv_buf, recv_len, 0);
     if (ret == -1) {
-        log_error("tcp client recv error, ret: %d, len: %d, errno: %d", ret,
-                  recv_len, errno);
+        zlog_error(neuron,
+                   "tcp client recv error, ret: %zu, len: %zd, errno: %d", ret,
+                   recv_len, errno);
         close(client->fd);
         client->fd = -1;
         pthread_mutex_unlock(&client->mtx);
@@ -149,8 +151,8 @@ static int client_connect(neu_tcp_client_t *client)
 
     if (ret != 0) {
         struct in_addr tmp = { .s_addr = client->server };
-        log_error("connect %s:%d error: %s", inet_ntoa(tmp),
-                  ntohs(client->port), strerror(errno));
+        zlog_error(neuron, "connect %s:%d error: %s", inet_ntoa(tmp),
+                   ntohs(client->port), strerror(errno));
         return -1;
     }
 

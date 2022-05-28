@@ -26,13 +26,14 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include "utils/log.h"
+
 #ifndef SOCK_NONBLOCK
 #include <fcntl.h>
 #define SOCK_NONBLOCK O_NONBLOCK
 #endif
 
 #include "connection/neu_connection.h"
-#include "log.h"
 
 struct tcp_client {
     int                fd;
@@ -138,18 +139,19 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
 
     fd = accept(conn->fd, (struct sockaddr *) &client, &client_len);
     if (fd <= 0) {
-        log_error("%s:%d accpet error: %s", conn->param.params.tcp_server.ip,
-                  conn->param.params.tcp_server.port, strerror(errno));
+        zlog_error(neuron, "%s:%d accpet error: %s",
+                   conn->param.params.tcp_server.ip,
+                   conn->param.params.tcp_server.port, strerror(errno));
         pthread_mutex_unlock(&conn->mtx);
         return -1;
     }
 
     if (conn->tcp_server.n_client >= conn->param.params.tcp_server.max_link) {
         close(fd);
-        log_warn("%s:%d accpet max link: %d, reject",
-                 conn->param.params.tcp_server.ip,
-                 conn->param.params.tcp_server.port,
-                 conn->param.params.tcp_server.max_link);
+        zlog_warn(neuron, "%s:%d accpet max link: %d, reject",
+                  conn->param.params.tcp_server.ip,
+                  conn->param.params.tcp_server.port,
+                  conn->param.params.tcp_server.max_link);
         pthread_mutex_unlock(&conn->mtx);
         return -1;
     }
@@ -169,10 +171,10 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
     conn->connected(conn->data, fd);
     conn->callback_trigger = true;
 
-    log_info("%s:%d accpet new client: %s:%d, fd: %d",
-             conn->param.params.tcp_server.ip,
-             conn->param.params.tcp_server.port, inet_ntoa(client.sin_addr),
-             ntohs(client.sin_port), fd);
+    zlog_info(neuron, "%s:%d accpet new client: %s:%d, fd: %d",
+              conn->param.params.tcp_server.ip,
+              conn->param.params.tcp_server.port, inet_ntoa(client.sin_addr),
+              ntohs(client.sin_port), fd);
 
     pthread_mutex_unlock(&conn->mtx);
 
@@ -200,9 +202,10 @@ ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
     conn_tcp_server_listen(conn);
     ssize_t ret = send(fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
     if (ret != len) {
-        log_error("tcp server fd: %d, send buf len: %d, ret: %d, "
-                  "errno: %s(%d)",
-                  fd, len, ret, strerror(errno), errno);
+        zlog_error(neuron,
+                   "tcp server fd: %d, send buf len: %zd, ret: %zd, "
+                   "errno: %s(%d)",
+                   fd, len, ret, strerror(errno), errno);
         return -1;
     }
 
@@ -220,8 +223,10 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
         ret = recv(fd, buf, len, 0);
     }
     if (ret == -1) {
-        log_error("tcp server fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
-                  fd, len, ret, strerror(errno), errno);
+        zlog_error(
+            neuron,
+            "tcp server fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)", fd,
+            len, ret, strerror(errno), errno);
         return -1;
     }
 
@@ -237,16 +242,17 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     if (conn->is_connected) {
         switch (conn->param.type) {
         case NEU_CONN_TCP_SERVER:
-            log_fatal("neu_conn_send cann't send tcp server msg");
+            zlog_fatal(neuron, "neu_conn_send cann't send tcp server msg");
             assert(1 == 0);
             break;
         case NEU_CONN_TCP_CLIENT:
         case NEU_CONN_UDP:
             ret = send(conn->fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
             if (ret != len) {
-                log_error("conn fd: %d, send buf len: %d, ret: %d, "
-                          "errno: %s(%d)",
-                          conn->fd, len, ret, strerror(errno), errno);
+                zlog_error(neuron,
+                           "conn fd: %d, send buf len: %zd, ret: %zd, "
+                           "errno: %s(%d)",
+                           conn->fd, len, ret, strerror(errno), errno);
             }
             break;
         case NEU_CONN_TTY_CLIENT:
@@ -283,7 +289,7 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
-        log_fatal("neu_conn_recv cann't recv tcp server msg");
+        zlog_fatal(neuron, "neu_conn_recv cann't recv tcp server msg");
         assert(1 == 0);
         break;
     case NEU_CONN_TCP_CLIENT:
@@ -293,16 +299,18 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             ret = recv(conn->fd, buf, len, 0);
         }
         if (ret == -1) {
-            log_error(
-                "tcp client fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
+            zlog_error(
+                neuron,
+                "tcp client fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
                 conn->fd, len, ret, strerror(errno), errno);
         }
         break;
     case NEU_CONN_UDP:
         ret = recv(conn->fd, buf, len, 0);
         if (ret == -1) {
-            log_error("udp fd: %d, recv buf len %d, ret: %d, errno: %s(%d)",
-                      conn->fd, len, ret, strerror(errno), errno);
+            zlog_error(neuron,
+                       "udp fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
+                       conn->fd, len, ret, strerror(errno), errno);
         }
         break;
     case NEU_CONN_TTY_CLIENT:
@@ -345,7 +353,7 @@ void neu_conn_flush(neu_conn_t *conn)
 
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
-        log_fatal("neu_conn_flush cann't flush tcp server msg");
+        zlog_fatal(neuron, "neu_conn_flush cann't flush tcp server msg");
         assert(1 == 0);
         break;
     case NEU_CONN_TCP_CLIENT:
@@ -447,18 +455,18 @@ static void conn_tcp_server_listen(neu_conn_t *conn)
         ret = bind(fd, (struct sockaddr *) &local, sizeof(local));
         if (ret != 0) {
             close(fd);
-            log_error("tcp bind %s:%d fail, errno: %s",
-                      conn->param.params.tcp_server.ip,
-                      conn->param.params.tcp_server.port, strerror(errno));
+            zlog_error(neuron, "tcp bind %s:%d fail, errno: %s",
+                       conn->param.params.tcp_server.ip,
+                       conn->param.params.tcp_server.port, strerror(errno));
             return;
         }
 
         ret = listen(fd, 1);
         if (ret != 0) {
             close(fd);
-            log_error("tcp bind %s:%d fail, errno: %s",
-                      conn->param.params.tcp_server.ip,
-                      conn->param.params.tcp_server.port, strerror(errno));
+            zlog_error(neuron, "tcp bind %s:%d fail, errno: %s",
+                       conn->param.params.tcp_server.ip,
+                       conn->param.params.tcp_server.port, strerror(errno));
             return;
         }
 
@@ -466,9 +474,9 @@ static void conn_tcp_server_listen(neu_conn_t *conn)
         conn->tcp_server.is_listen = true;
 
         conn->param.params.tcp_server.start_listen(conn->data, fd);
-        log_info("tcp server listen %s:%d success, fd: %d",
-                 conn->param.params.tcp_server.ip,
-                 conn->param.params.tcp_server.port, fd);
+        zlog_info(neuron, "tcp server listen %s:%d success, fd: %d",
+                  conn->param.params.tcp_server.ip,
+                  conn->param.params.tcp_server.port, fd);
     }
 }
 
@@ -476,9 +484,9 @@ static void conn_tcp_server_stop(neu_conn_t *conn)
 {
     if (conn->param.type == NEU_CONN_TCP_SERVER &&
         conn->tcp_server.is_listen == true) {
-        log_info("tcp server close %s:%d, fd: %d",
-                 conn->param.params.tcp_server.ip,
-                 conn->param.params.tcp_server.port, conn->fd);
+        zlog_info(neuron, "tcp server close %s:%d, fd: %d",
+                  conn->param.params.tcp_server.ip,
+                  conn->param.params.tcp_server.port, conn->fd);
 
         conn->param.params.tcp_server.stop_listen(conn->data, conn->fd);
 
@@ -526,14 +534,16 @@ static void conn_connect(neu_conn_t *conn)
                       sizeof(struct sockaddr_in));
         if (ret != 0 && errno != EINPROGRESS) {
             close(fd);
-            log_error(
-                "connect %s:%d error: %s(%d)", conn->param.params.tcp_client.ip,
-                conn->param.params.tcp_client.port, strerror(errno), errno);
+            zlog_error(neuron, "connect %s:%d error: %s(%d)",
+                       conn->param.params.tcp_client.ip,
+                       conn->param.params.tcp_client.port, strerror(errno),
+                       errno);
             conn->is_connected = false;
             return;
         } else {
-            log_info("connect %s:%d success", conn->param.params.tcp_client.ip,
-                     conn->param.params.tcp_client.port);
+            zlog_info(neuron, "connect %s:%d success",
+                      conn->param.params.tcp_client.ip,
+                      conn->param.params.tcp_client.port);
             conn->is_connected = true;
             conn->fd           = fd;
         }
@@ -564,8 +574,9 @@ static void conn_connect(neu_conn_t *conn)
         ret = bind(fd, (struct sockaddr *) &local, sizeof(struct sockaddr_in));
         if (ret != 0) {
             close(fd);
-            log_error("bind %s:%d error: %s(%d)", conn->param.params.udp.src_ip,
-                      conn->param.params.udp.src_port, strerror(errno), errno);
+            zlog_error(neuron, "bind %s:%d error: %s(%d)",
+                       conn->param.params.udp.src_ip,
+                       conn->param.params.udp.src_port, strerror(errno), errno);
             conn->is_connected = false;
             return;
         }
@@ -579,14 +590,15 @@ static void conn_connect(neu_conn_t *conn)
                       sizeof(struct sockaddr_in));
         if (ret != 0 && errno != EINPROGRESS) {
             close(fd);
-            log_error("connect %s:%d error: %s(%d)",
-                      conn->param.params.udp.dst_ip,
-                      conn->param.params.udp.dst_port, strerror(errno), errno);
+            zlog_error(neuron, "connect %s:%d error: %s(%d)",
+                       conn->param.params.udp.dst_ip,
+                       conn->param.params.udp.dst_port, strerror(errno), errno);
             conn->is_connected = false;
             return;
         } else {
-            log_info("connect %s:%d success", conn->param.params.udp.dst_ip,
-                     conn->param.params.udp.dst_port);
+            zlog_info(neuron, "connect %s:%d success",
+                      conn->param.params.udp.dst_ip,
+                      conn->param.params.udp.dst_port);
             conn->is_connected = true;
             conn->fd           = fd;
         }

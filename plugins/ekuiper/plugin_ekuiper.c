@@ -33,14 +33,14 @@ static neu_plugin_t *ekuiper_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_t *plugin;
 
     if (adapter == NULL || callbacks == NULL) {
-        log_error("Open plugin with NULL adapter or callbacks");
+        zlog_error(neuron, "Open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        log_error("Failed to allocate plugin %s",
-                  neu_plugin_module.module_name);
+        zlog_error(neuron, "Failed to allocate plugin %s",
+                   neu_plugin_module.module_name);
         return NULL;
     }
 
@@ -49,7 +49,8 @@ static neu_plugin_t *ekuiper_plugin_open(neu_adapter_t *            adapter,
     plugin->common.adapter_callbacks = callbacks;
     plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
 
-    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    zlog_info(neuron, "Success to create plugin: %s",
+              neu_plugin_module.module_name);
     return plugin;
 }
 
@@ -58,7 +59,8 @@ static int ekuiper_plugin_close(neu_plugin_t *plugin)
     int rv = 0;
 
     free(plugin);
-    log_info("Success to free plugin: %s", neu_plugin_module.module_name);
+    zlog_info(neuron, "Success to free plugin: %s",
+              neu_plugin_module.module_name);
     return rv;
 }
 
@@ -90,19 +92,19 @@ static int ekuiper_plugin_init(neu_plugin_t *plugin)
     plugin->mtx = NULL;
     rv          = nng_mtx_alloc(&plugin->mtx);
     if (0 != rv) {
-        log_error("cannot allocate nng_mtx");
+        zlog_error(neuron, "cannot allocate nng_mtx");
         return rv;
     }
 
     rv = nng_aio_alloc(&recv_aio, recv_data_callback, plugin);
     if (rv < 0) {
-        log_error("cannot allocate recv_aio: %s", nng_strerror(rv));
+        zlog_error(neuron, "cannot allocate recv_aio: %s", nng_strerror(rv));
         return rv;
     }
 
     plugin->recv_aio = recv_aio;
 
-    log_info("Initialized plugin: %s", neu_plugin_module.module_name);
+    zlog_info(neuron, "Initialized plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -113,7 +115,7 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
     nng_aio_free(plugin->recv_aio);
     nng_mtx_free(plugin->mtx);
 
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    zlog_info(neuron, "Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -123,7 +125,7 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
 
     rv = nng_pair0_open(&plugin->sock);
     if (rv != 0) {
-        log_error("nng_pair0_open: %s", nng_strerror(rv));
+        zlog_error(neuron, "nng_pair0_open: %s", nng_strerror(rv));
         return NEU_ERR_FAILURE;
     }
 
@@ -131,7 +133,7 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
     nng_pipe_notify(plugin->sock, NNG_PIPE_EV_REM_POST, pipe_rm_cb, plugin);
 
     if ((rv = nng_listen(plugin->sock, EKUIPER_PLUGIN_URL, NULL, 0)) != 0) {
-        log_error("nng_listen: %s", nng_strerror(rv));
+        zlog_error(neuron, "nng_listen: %s", nng_strerror(rv));
         return NEU_ERR_FAILURE;
     }
 
@@ -153,7 +155,7 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     (void) configs;
 
-    log_info("config plugin: %s", neu_plugin_module.module_name);
+    zlog_info(neuron, "config plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -162,11 +164,12 @@ static int ekuiper_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     int rv = 0;
 
     if (plugin == NULL || req == NULL) {
-        log_warn("The plugin pointer or request is NULL");
+        zlog_warn(neuron, "The plugin pointer or request is NULL");
         return (-1);
     }
 
-    log_info("send request to plugin: %s", neu_plugin_module.module_name);
+    zlog_info(neuron, "send request to plugin: %s",
+              neu_plugin_module.module_name);
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
     (void) adapter_callbacks;
@@ -191,7 +194,8 @@ static int ekuiper_plugin_event_reply(neu_plugin_t *     plugin,
     (void) plugin;
     (void) reply;
 
-    log_info("reply event to plugin: %s", neu_plugin_module.module_name);
+    zlog_info(neuron, "reply event to plugin: %s",
+              neu_plugin_module.module_name);
     return rv;
 }
 

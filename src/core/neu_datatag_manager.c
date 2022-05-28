@@ -25,8 +25,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "log.h"
 #include "neu_vector.h"
+#include "utils/log.h"
 
 #include "adapter.h"
 #include "neu_datatag_manager.h"
@@ -80,35 +80,35 @@ neu_datatag_manager_t *neu_datatag_mng_create(neu_adapter_t *adapter)
     neu_datatag_manager_t *datatag_manager;
 
     if (adapter == NULL) {
-        log_error("Get NULL adapter for create datatag manager");
+        zlog_error(neuron, "Get NULL adapter for create datatag manager");
         return NULL;
     }
 
     datatag_manager =
         (neu_datatag_manager_t *) malloc(sizeof(neu_datatag_manager_t));
     if (datatag_manager == NULL) {
-        log_error("No memory to allocate datatag manager");
+        zlog_error(neuron, "No memory to allocate datatag manager");
         return NULL;
     }
 
     rv = vector_init(&datatag_manager->p_configs, DEFAULT_TAG_GROUP_COUNT,
                      sizeof(neu_taggrp_config_t *));
     if (rv != 0) {
-        log_error("Failed to initialize p_configs in datatag manager");
+        zlog_error(neuron, "Failed to initialize p_configs in datatag manager");
         goto init_p_configs_fail;
     }
 
     neu_datatag_table_t *tag_table;
     tag_table = neu_datatag_tbl_create();
     if (tag_table == NULL) {
-        log_error("Failed to create datatag table in datatag manager");
+        zlog_error(neuron, "Failed to create datatag table in datatag manager");
         goto create_tag_table_fail;
     }
     datatag_manager->tag_table = tag_table;
 
     datatag_manager->adapter = adapter;
     if (pthread_mutex_init(&datatag_manager->mtx, NULL) != 0) {
-        log_error("Failed to initialize mutex in datatag manager");
+        zlog_error(neuron, "Failed to initialize mutex in datatag manager");
         goto alloc_mtx_fail;
     }
     return datatag_manager;
@@ -152,7 +152,8 @@ int neu_datatag_mng_add_grp_config(neu_datatag_manager_t *datatag_manager,
     pthread_mutex_unlock(&datatag_manager->mtx);
 
     if (rv == NEU_ERR_SUCCESS) {
-        log_info("Add group config: %s", neu_taggrp_cfg_get_name(grp_config));
+        zlog_info(neuron, "Add group config: %s",
+                  neu_taggrp_cfg_get_name(grp_config));
     }
     return rv;
 }
@@ -177,7 +178,7 @@ int neu_datatag_mng_del_grp_config(neu_datatag_manager_t *datatag_manager,
     pthread_mutex_unlock(&datatag_manager->mtx);
 
     if (rv == 0) {
-        log_info("Delete group config: %s", config_name);
+        zlog_info(neuron, "Delete group config: %s", config_name);
     }
     return rv;
 }
@@ -208,8 +209,8 @@ int neu_datatag_mng_update_grp_config(neu_datatag_manager_t *datatag_manager,
     pthread_mutex_unlock(&datatag_manager->mtx);
 
     if (rv == 0) {
-        log_info("Update group config: %s",
-                 neu_taggrp_cfg_get_name(new_grp_config));
+        zlog_info(neuron, "Update group config: %s",
+                  neu_taggrp_cfg_get_name(new_grp_config));
     }
     return rv;
 }
@@ -253,7 +254,7 @@ neu_datatag_mng_get_grp_config(neu_datatag_manager_t *datatag_manager,
     if (grp_config != NULL) {
         ret_grp_config = neu_taggrp_cfg_clone(grp_config);
         if (ret_grp_config == NULL) {
-            log_error("No memory to clone datatag group config");
+            zlog_error(neuron, "No memory to clone datatag group config");
         }
         neu_taggrp_cfg_free(grp_config);
     }

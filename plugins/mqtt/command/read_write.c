@@ -23,6 +23,7 @@
 #include <sys/time.h>
 
 #include "read_write.h"
+#include "utils/log.h"
 
 static uint64_t current_time()
 {
@@ -38,14 +39,14 @@ int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_node_id_t node_id =
         neu_plugin_get_node_id_by_node_name(plugin, req->node_name);
     if (node_id == 0) {
-        log_debug("node %s does not exist", req->node_name);
+        zlog_debug(neuron, "node %s does not exist", req->node_name);
         return -1;
     }
-    log_info("READ uuid:%s, node id:%u", mqtt->uuid, node_id);
+    zlog_info(neuron, "READ uuid:%s, node id:%u", mqtt->uuid, node_id);
     neu_taggrp_config_t *config =
         neu_system_find_group_config(plugin, node_id, req->group_name);
     if (NULL == config) {
-        log_debug("The requested config does not exist");
+        zlog_debug(neuron, "The requested config does not exist");
         return -2;
     }
 
@@ -222,7 +223,7 @@ char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
     neu_fixed_array_t *array;
     int                rc = neu_dvalue_get_ref_array(resp_val, &array);
     if (0 != rc) {
-        log_info("Get array ref error");
+        zlog_info(neuron, "Get array ref error");
         return NULL;
     }
 
@@ -244,7 +245,7 @@ char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
                                    &json_str);
     clean_read_response_json_object(&json);
     if (0 != rc) {
-        log_info("Json string parse error:%d", rc);
+        zlog_info(neuron, "Json string parse error:%d", rc);
         return NULL;
     }
 
@@ -312,12 +313,12 @@ static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
 int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                              neu_json_write_req_t *write_req, uint32_t req_id)
 {
-    log_info("WRITE uuid:%s, group config name:%s", mqtt->uuid,
-             write_req->group_name);
+    zlog_info(neuron, "WRITE uuid:%s, group config name:%s", mqtt->uuid,
+              write_req->group_name);
     neu_node_id_t node_id =
         neu_plugin_get_node_id_by_node_name(plugin, write_req->node_name);
     if (node_id == 0) {
-        log_error("node %s does not exist", write_req->node_name);
+        zlog_error(neuron, "node %s does not exist", write_req->node_name);
         return -1;
     }
 
@@ -325,13 +326,13 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     neu_fixed_array_t *array;
     write_val = neu_dvalue_unit_new();
     if (write_val == NULL) {
-        log_error("Failed to allocate data value for write data");
+        zlog_error(neuron, "Failed to allocate data value for write data");
         return -1;
     }
 
     array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
     if (array == NULL) {
-        log_error("Failed to allocate array for write data");
+        zlog_error(neuron, "Failed to allocate array for write data");
         neu_dvalue_free(write_val);
         return -2;
     }

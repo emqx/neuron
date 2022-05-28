@@ -37,8 +37,6 @@ extern "C" {
  */
 typedef struct {
     bool   daemonized; // flag indicating whether to run as daemon process
-    char * conf_file;  // configuration file path
-    char * log_file;   // log file path
     size_t restart;    // restart policy
 } neu_cli_args_t;
 

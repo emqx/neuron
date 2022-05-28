@@ -137,8 +137,8 @@ static void start_periodic_read(neu_plugin_t *       plugin,
     TAILQ_INSERT_TAIL(&plugin->sub_instances, sub_inst, node);
     pthread_mutex_unlock(&plugin->mtx);
 
-    log_info("start periodic read, grp: %s(%p), interval: %d", sub_inst->name,
-             grp_config, interval);
+    nlog_info("start periodic read, grp: %s(%p), interval: %d", sub_inst->name,
+              grp_config, interval);
     nng_aio_defer(aio, tags_periodic_read, sub_inst);
 }
 
@@ -161,7 +161,7 @@ static void stop_periodic_read(neu_plugin_t *       plugin,
         if (sub_inst->grp_configs == grp_config) {
             TAILQ_REMOVE(&plugin->sub_instances, sub_inst, node);
             nng_aio_cancel(sub_inst->aio);
-            log_info("stop periodic read, grp: %p", grp_config);
+            nlog_info("stop periodic read, grp: %p", grp_config);
             break;
         }
     }
@@ -217,7 +217,7 @@ setup_read_resp_data_value(neu_datatag_table_t *   tag_table,
             break;
         }
         if (modbus_point_find(point_ctx, tag->addr_str, &data_tags) == -1) {
-            log_error("Failed to find modbus point %s", tag->addr_str);
+            nlog_error("Failed to find modbus point %s", tag->addr_str);
 
             neu_err_code_e error = NEU_ERR_TAG_NOT_EXIST;
             neu_datatag_pack_add(resp_val, index, NEU_DTYPE_ERRORCODE, *id,
@@ -396,12 +396,12 @@ static void tags_periodic_read(nng_aio *aio, void *arg, int code)
     }
     case NNG_ECANCELED:
         free_sub_instance(arg);
-        log_warn("aio: %p cancel", aio);
+        nlog_warn("aio: %p cancel", aio);
         nng_aio_free(aio);
         break;
     default:
         free_sub_instance(arg);
-        log_warn("aio: %p, skip error: %d", aio, code);
+        nlog_warn("aio: %p, skip error: %d", aio, code);
         nng_aio_free(aio);
         break;
     }
@@ -413,14 +413,14 @@ static neu_plugin_t *modbus_tcp_open(neu_adapter_t *            adapter,
     neu_plugin_t *plugin;
 
     if (adapter == NULL || callbacks == NULL) {
-        log_error("Open plugin with NULL adapter or callbacks");
+        nlog_error("Open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
     plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        log_error("Failed to allocate plugin %s",
-                  neu_plugin_module.module_name);
+        nlog_error("Failed to allocate plugin %s",
+                   neu_plugin_module.module_name);
         return NULL;
     }
 
@@ -443,7 +443,7 @@ static int modbus_tcp_close(neu_plugin_t *plugin)
 static int modbus_tcp_init(neu_plugin_t *plugin)
 {
     pthread_mutex_init(&plugin->mtx, NULL);
-    log_info("modbus tcp init.....");
+    nlog_info("modbus tcp init.....");
 
     return 0;
 }
@@ -452,7 +452,7 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
 {
     struct subscribe_instance *sub_inst = NULL;
 
-    log_info("modbus uninit start...");
+    nlog_info("modbus uninit start...");
     pthread_mutex_lock(&plugin->mtx);
     sub_inst = TAILQ_FIRST(&plugin->sub_instances);
 
@@ -469,7 +469,7 @@ static int modbus_tcp_uninit(neu_plugin_t *plugin)
 
     pthread_mutex_destroy(&plugin->mtx);
 
-    log_info("modbus uninit end...");
+    nlog_info("modbus uninit end...");
 
     return 0;
 }
@@ -481,8 +481,8 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
     neu_json_elem_t port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t host      = { .name = "host", .t = NEU_JSON_STR };
 
-    log_info("modbus config............. type: %d, config: %s", configs->type,
-             configs->buf);
+    nlog_info("modbus config............. type: %d, config: %s", configs->type,
+              (char *) configs->buf);
 
     ret = neu_parse_param(configs->buf, &err_param, 2, &port, &host);
     if (0 != ret) {
@@ -496,8 +496,8 @@ static int modbus_tcp_config(neu_plugin_t *plugin, neu_config_t *configs)
         plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
     }
 
-    log_info("port = %d, host = %s,ret = %d", port.v.val_int, host.v.val_str,
-             ret);
+    nlog_info("port = %" PRId64 ", host = %s,ret = %d", port.v.val_int,
+              host.v.val_str, ret);
 
     free(host.v.val_str);
     return ret;
@@ -527,7 +527,7 @@ static int modbus_tcp_request(neu_plugin_t *plugin, neu_request_t *req)
                     plugin->tag_table, read_req->grp_config,
                     sub_inst->point_ctx);
 
-                log_info("find read grp: %p", read_req->grp_config);
+                nlog_info("find read grp: %p", read_req->grp_config);
                 break;
             }
         }

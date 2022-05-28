@@ -23,13 +23,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <unistd.h>
+
+#include "utils/log.h"
 
 #ifndef SOCK_NONBLOCK
 #include <fcntl.h>
 #define SOCK_NONBLOCK O_NONBLOCK
 #endif
-
-#include "log.h"
 
 #include "connection/neu_tcp.h"
 
@@ -54,7 +55,7 @@ neu_tcp_server_t *neu_tcp_server_create(char *local_host, uint16_t local_port)
     //    signal(SIGPIPE, SIG_IGN);
 
     if (server->listen_fd < 0) {
-        log_error("new socket fail, errno: %s", strerror(errno));
+        zlog_error(neuron, "new socket fail, errno: %s", strerror(errno));
         free(server);
         return NULL;
     }
@@ -66,8 +67,8 @@ neu_tcp_server_t *neu_tcp_server_create(char *local_host, uint16_t local_port)
     ret = bind(server->listen_fd, (struct sockaddr *) &local, sizeof(local));
 
     if (ret != 0) {
-        log_error("bind: %s:%d fail, errno: %s", local_host, local_port,
-                  strerror(errno));
+        zlog_error(neuron, "bind: %s:%d fail, errno: %s", local_host,
+                   local_port, strerror(errno));
         close(server->listen_fd);
         free(server);
         return NULL;
@@ -76,15 +77,15 @@ neu_tcp_server_t *neu_tcp_server_create(char *local_host, uint16_t local_port)
     ret = listen(server->listen_fd, 1);
 
     if (ret != 0) {
-        log_error("listen: %s:%d fail, errno: %s", local_host, local_port,
-                  strerror(errno));
+        zlog_error(neuron, "listen: %s:%d fail, errno: %s", local_host,
+                   local_port, strerror(errno));
         close(server->listen_fd);
         free(server);
         return NULL;
     }
 
-    log_info("listen: %s:%d success, listen fd: %d", local_host, local_port,
-             server->listen_fd);
+    zlog_info(neuron, "listen: %s:%d success, listen fd: %d", local_host,
+              local_port, server->listen_fd);
     return server;
 }
 
@@ -102,7 +103,7 @@ int neu_tcp_server_wait_client(neu_tcp_server_t *server)
 
     fd = accept(server->listen_fd, (struct sockaddr *) &client, &client_len);
     if (fd <= 0) {
-        log_error("accept error: %s", strerror(errno));
+        zlog_error(neuron, "accept error: %s", strerror(errno));
         return -1;
     }
 
@@ -111,9 +112,9 @@ int neu_tcp_server_wait_client(neu_tcp_server_t *server)
 
     server->client_fd = fd;
 
-    log_info("accept new client: %s:%d, client fd: %d, listen fd: %d",
-             inet_ntoa(client.sin_addr), ntohs(client.sin_port), fd,
-             server->listen_fd);
+    zlog_info(neuron, "accept new client: %s:%d, client fd: %d, listen fd: %d",
+              inet_ntoa(client.sin_addr), ntohs(client.sin_port), fd,
+              server->listen_fd);
 
     return 0;
 }
@@ -133,22 +134,22 @@ ssize_t neu_tcp_server_send_recv(neu_tcp_server_t *server, char *send_buf,
     ssize_t ret = 0;
 
     if (server->client_fd <= 0) {
-        log_error("no client connected to the server, listen fd: %d",
-                  server->listen_fd);
+        zlog_error(neuron, "no client connected to the server, listen fd: %d",
+                   server->listen_fd);
         return -1;
     }
 
     ret = send(server->client_fd, send_buf, send_len, MSG_NOSIGNAL);
     if (ret <= 0 || ret != send_len) {
-        log_error("send buf error, ret: %d, errno: %s, len: %d", ret,
-                  strerror(errno), send_len);
+        zlog_error(neuron, "send buf error, ret: %zd, errno: %s, len: %zd", ret,
+                   strerror(errno), send_len);
         return -1;
     }
 
     ret = recv(server->client_fd, recv_buf, recv_len, MSG_WAITALL);
     if (ret <= 0 || ret != recv_len) {
-        log_error("recv buf error, ret: %d, errno: %s, len: %d", ret,
-                  strerror(errno), recv_len);
+        zlog_error(neuron, "recv buf error, ret: %zd, errno: %s, len: %zd", ret,
+                   strerror(errno), recv_len);
         return -1;
     }
 
@@ -161,8 +162,8 @@ ssize_t neu_tcp_server_recv(neu_tcp_server_t *server, char *recv_buf,
     ssize_t ret = 0;
 
     if (server->client_fd <= 0) {
-        log_error("no client connected to the server, listen fd: %d",
-                  server->listen_fd);
+        zlog_error(neuron, "no client connected to the server, listen fd: %d",
+                   server->listen_fd);
         return -1;
     }
 
@@ -173,8 +174,8 @@ ssize_t neu_tcp_server_recv(neu_tcp_server_t *server, char *recv_buf,
     }
 
     if (ret <= 0) {
-        log_error("recv buf error, ret: %d, errno: %s, len: %d", ret,
-                  strerror(errno), recv_len);
+        zlog_error(neuron, "recv buf error, ret: %zd, errno: %s, len: %zd", ret,
+                   strerror(errno), recv_len);
         return -1;
     }
 
@@ -187,15 +188,15 @@ ssize_t neu_tcp_server_send(neu_tcp_server_t *server, char *send_buf,
     ssize_t ret = 0;
 
     if (server->client_fd <= 0) {
-        log_error("no client connected to the server, listen fd: %d",
-                  server->listen_fd);
+        zlog_error(neuron, "no client connected to the server, listen fd: %d",
+                   server->listen_fd);
         return -1;
     }
 
     ret = send(server->client_fd, send_buf, send_len, MSG_NOSIGNAL);
     if (ret <= 0 || ret != send_len) {
-        log_error("send buf error, ret: %d, errno: %s, len: %d", ret,
-                  strerror(errno), send_len);
+        zlog_error(neuron, "send buf error, ret: %zd, errno: %s, len: %zd", ret,
+                   strerror(errno), send_len);
         return -1;
     }
 

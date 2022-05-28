@@ -20,6 +20,7 @@
 #include <jansson.h>
 
 #include "neuron/tag.h"
+#include "utils/log.h"
 
 #include "json_rw.h"
 
@@ -443,7 +444,7 @@ int plugin_send_write_cmd_from_write_req(neu_plugin_t *plugin, uint32_t req_id,
     neu_node_id_t node_id =
         neu_plugin_get_node_id_by_node_name(plugin, write_req->node_name);
     if (node_id == 0) {
-        log_error("node %s does not exist", write_req->node_name);
+        nlog_error("node %s does not exist", write_req->node_name);
         return NEU_ERR_NODE_NOT_EXIST;
     }
 
@@ -462,14 +463,14 @@ int plugin_send_write_cmd_from_write_req(neu_plugin_t *plugin, uint32_t req_id,
 
     neu_data_val_t *write_val = neu_dvalue_unit_new();
     if (write_val == NULL) {
-        log_error("Failed to allocate data value for write data");
+        nlog_error("Failed to allocate data value for write data");
         neu_taggrp_cfg_free(config);
         return NEU_ERR_ENOMEM;
     }
 
     neu_fixed_array_t *array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
     if (array == NULL) {
-        log_error("Failed to allocate array for write data");
+        nlog_error("Failed to allocate array for write data");
         neu_dvalue_free(write_val);
         neu_taggrp_cfg_free(config);
         return NEU_ERR_ENOMEM;

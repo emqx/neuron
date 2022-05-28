@@ -17,10 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include "json/neu_json_rw.h"
 #include <nng/nng.h>
 
+#include "utils/log.h"
 #include "json/neu_json_fn.h"
+#include "json/neu_json_rw.h"
 
 #include "json_rw.h"
 #include "read_write.h"
@@ -42,7 +43,7 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
     char *json_str = NULL;
     rv = neu_json_encode_by_fn(&resp, json_encode_read_resp, &json_str);
     if (0 != rv) {
-        log_error("cannot encode read resp");
+        zlog_error(neuron, "cannot encode read resp");
         return;
     }
 
@@ -50,7 +51,7 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
     size_t   json_len = strlen(json_str);
     rv                = nng_msg_alloc(&msg, json_len);
     if (0 != rv) {
-        log_error("nng cannot allocate msg");
+        zlog_error(neuron, "nng cannot allocate msg");
         free(json_str);
         return;
     }
@@ -58,7 +59,7 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
     memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
     rv = nng_sendmsg(plugin->sock, msg, 0); // TODO: use aio to send message
     if (0 != rv) {
-        log_error("nng cannot send msg");
+        zlog_error(neuron, "nng cannot send msg");
         nng_msg_free(msg);
     }
 
@@ -75,7 +76,7 @@ void recv_data_callback(void *arg)
 
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
-        log_error("receive error: %s", nng_strerror(rv));
+        zlog_error(neuron, "receive error: %s", nng_strerror(rv));
         return;
     }
 
@@ -83,13 +84,13 @@ void recv_data_callback(void *arg)
     json_str = nng_msg_body(msg);
     // log_info("receive cmd: %s\n", json_str);
     if (json_decode_write_req(json_str, nng_msg_len(msg), &req) < 0) {
-        log_error("cannot decode write request");
+        zlog_error(neuron, "cannot decode write request");
         goto recv_data_callback_end;
     }
 
     rv = write_data(plugin, req);
     if (0 != rv) {
-        log_error("failed to write data");
+        zlog_error(neuron, "failed to write data");
         goto recv_data_callback_end;
     }
 

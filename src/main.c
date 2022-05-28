@@ -27,8 +27,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <zlog.h>
-
 #include <nng/nng.h>
 #include <nng/protocol/pair1/pair.h>
 #include <nng/supplemental/util/platform.h>
@@ -37,63 +35,25 @@
 #include "core/message.h"
 #include "core/neu_manager.h"
 #include "daemon.h"
-#include "log.h"
-#include "panic.h"
 #include "restful/rest.h"
 #include "utils/idhash.h"
+#include "utils/log.h"
 
-static neu_manager_t * g_manager = NULL;
-static nng_socket      g_sock    = { 0 };
-static pthread_mutex_t g_log_mtx = PTHREAD_MUTEX_INITIALIZER;
-static FILE *          g_log_file;
-
-static void log_lock(bool lock, void *udata)
-{
-    pthread_mutex_t *mutex = udata;
-    if (lock) {
-        pthread_mutex_lock(mutex);
-    } else {
-        pthread_mutex_unlock(mutex);
-    }
-}
-
-static void init(const char *log_file)
-{
-    log_set_lock(log_lock, &g_log_mtx);
-    log_set_level(NEU_LOG_DEBUG);
-    if (0 == strcmp(log_file, NEU_LOG_STDOUT_FNAME)) {
-        g_log_file = stdout;
-    } else {
-        g_log_file = fopen(log_file, "a");
-    }
-    if (g_log_file == NULL) {
-        fprintf(stderr,
-                "Failed to open logfile when"
-                "initialize neuron main process");
-        abort();
-    }
-    // log_set_quiet(true);
-    log_add_fp(g_log_file, NEU_LOG_DEBUG);
-}
-
-static void uninit()
-{
-    fclose(g_log_file);
-}
+static neu_manager_t *g_manager = NULL;
+static nng_socket     g_sock    = { 0 };
+zlog_category_t *     neuron    = NULL;
 
 static void sig_handler(int sig)
 {
     // Receive abort signal, exit the neuron
-    log_warn("recv sig: %d", sig);
+    nlog_warn("recv sig: %d", sig);
 
     int      rv;
     size_t   msg_size;
     nng_msg *msg;
     msg_size = msg_inplace_data_get_size(sizeof(uint32_t));
     rv       = nng_msg_alloc(&msg, msg_size);
-    if (rv != 0) {
-        neu_panic("Can't allocate msg for stop neuron manager");
-    }
+    assert(rv == 0);
 
     void *     buf_ptr;
     message_t *pay_msg;
@@ -112,6 +72,7 @@ static void sig_handler(int sig)
     if (g_manager != NULL) {
         neu_manager_stop(g_manager);
     }
+    zlog_fini();
 }
 
 static void bind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
@@ -122,7 +83,7 @@ static void bind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
 
     manager = (neu_manager_t *) arg;
     neu_manager_trigger_running(manager);
-    log_info("Bind the main adapter to neuron manager with pipe(%d)", p);
+    nlog_notice("Bind the main adapter to neuron manager with pipe(%d)", p.id);
     return;
 }
 
@@ -131,7 +92,8 @@ static void unbind_main_adapter(nng_pipe p, nng_pipe_ev ev, void *arg)
     (void) ev;
     (void) arg;
 
-    log_info("Unbind the main adapter from neuron manager with pipe(%d)", p);
+    nlog_notice("Unbind the main adapter from neuron manager with pipe(%d)",
+                p.id);
     return;
 }
 
@@ -147,24 +109,22 @@ static int neuron_run(const neu_cli_args_t *args)
     // try to enable core dump
     rl.rlim_cur = rl.rlim_max = RLIM_INFINITY;
     if (setrlimit(RLIMIT_CORE, &rl) < 0) {
-        log_error("neuron process failed enable core dump, ignore");
+        nlog_warn("neuron process failed enable core dump, ignore");
     }
 
-    log_info("neuron process, daemon: %d", args->daemonized);
+    zlog_notice(neuron, "neuron process, daemon: %d", args->daemonized);
     g_manager = neu_manager_create();
     if (g_manager == NULL) {
-        log_error("neuron process failed to create neuron manager, exit!");
+        nlog_fatal("neuron process failed to create neuron manager, exit!");
         return -1;
     }
     neu_manager_wait_ready(g_manager);
 
     nng_duration recv_timeout = 100;
     rv                        = nng_pair1_open(&g_sock);
-    if (rv != 0) {
-        neu_panic("neuron process can't open pipe");
-    }
+    assert(rv == 0);
 
-    nng_setopt(g_sock, NNG_OPT_RECVTIMEO, &recv_timeout, sizeof(recv_timeout));
+    nng_setopt_ms(g_sock, NNG_OPT_RECVTIMEO, recv_timeout);
     rv = neu_manager_init_main_adapter(g_manager, bind_main_adapter,
                                        unbind_main_adapter);
 
@@ -172,13 +132,11 @@ static int neuron_run(const neu_cli_args_t *args)
     nng_dialer  dialer = { 0 };
     manager_url        = neu_manager_get_url(g_manager);
     rv                 = nng_dial(g_sock, manager_url, &dialer, 0);
-    if (rv != 0) {
-        neu_panic("neuron process can't dial to %s", manager_url);
-    }
+    assert(rv == 0);
 
-    log_info("neuron process wait for exit");
+    nlog_notice("neuron process wait for exit");
     neu_manager_destroy(g_manager);
-    log_info("neuron process close dialer");
+    nlog_notice("neuron process close dialer");
     nng_dialer_close(dialer);
 
     return rv;
@@ -192,28 +150,23 @@ int main(int argc, char *argv[])
     pid_t          pid    = 0;
     neu_cli_args_t args   = { 0 };
 
-    zlog_init("./config/zlog.conf");
     neu_cli_args_init(&args, argc, argv);
 
     if (args.daemonized) {
         // become a daemon, this should be before calling `init`
         daemonize();
     }
-
-    init(args.log_file);
+    neuron = zlog_get_category("neuron");
 
     if (neuron_already_running()) {
-        log_error("neuron process already running, exit.");
+        nlog_fatal("neuron process already running, exit.");
         rv = -1;
         goto main_end;
     }
 
     for (size_t i = 0; i < args.restart; ++i) {
-        // flush log
-        fflush(g_log_file);
-
         if ((pid = fork()) < 0) {
-            log_error("cannot fork neuron daemon");
+            nlog_error("cannot fork neuron daemon");
             goto main_end;
         } else if (pid == 0) { // child
             break;
@@ -221,19 +174,20 @@ int main(int argc, char *argv[])
 
         // block waiting for child
         if (pid != waitpid(pid, &status, 0)) {
-            log_error("cannot wait for neuron daemon");
+            nlog_error("cannot wait for neuron daemon");
             goto main_end;
         }
 
         if (WIFEXITED(status)) {
             status = WEXITSTATUS(status);
-            log_info("detect neuron daemon exit with status:%d", status);
+            nlog_error("detect neuron daemon exit with status:%d", status);
             if (NEU_RESTART_ONFAILURE == args.restart && 0 == status) {
                 goto main_end;
             }
         } else if (WIFSIGNALED(status)) {
             signum = WTERMSIG(status);
-            log_info("detect neuron daemon term with signal:%d", signum);
+            zlog_notice(neuron, "detect neuron daemon term with signal:%d",
+                        signum);
         }
 
         // sleep(1);
@@ -242,7 +196,7 @@ int main(int argc, char *argv[])
     rv = neuron_run(&args);
 
 main_end:
-    uninit();
     neu_cli_args_fini(&args);
+    zlog_fini();
     return rv;
 }

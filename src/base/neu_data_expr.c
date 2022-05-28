@@ -16,15 +16,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "panic.h"
-
 #include "data_expr.h"
-#include "log.h"
 #include "neu_vector.h"
+#include "utils/log.h"
 
 #define NEU_VALUE_UNION_FIELDS \
     bool     val_bool;         \
@@ -265,7 +264,7 @@ neu_data_val_t *neu_dvalue_new(neu_dtype_e type)
 /* new a void type neu_data_val_t, it should be panic. */
 neu_data_val_t *neu_dvalue_void_new()
 {
-    neu_panic("An void value is not exist, let be crash!");
+    assert(false);
     return NULL;
 }
 
@@ -322,10 +321,10 @@ void neu_dvalue_uninit(neu_data_val_t *val)
             // free value data that pointed by val->val_data
             free_value_data(val->val_data, val->type, false);
         } else if (val->type & NEU_DTYPE_SPTR) {
-            neu_panic("Smart pointer for data vlaue hasn't implemented");
+            assert(false);
             // sfree(val->val_data);
         } else {
-            log_warn("The data type is invalid");
+            zlog_warn(neuron, "The data type is invalid");
         }
     }
 }
@@ -1450,8 +1449,8 @@ int neu_dvalue_get_ref_array(neu_data_val_t *val, neu_fixed_array_t **p_array)
         return 0;
     } else {
         *p_array = NULL;
-        log_error("value type: 0x%08x not match expect type: 0x%08x", val_type,
-                  type);
+        zlog_error(neuron, "value type: 0x%08x not match expect type: 0x%08x",
+                   val_type, type);
         return -1;
     }
 }
@@ -1471,8 +1470,8 @@ int neu_dvalue_get_ref_vec(neu_data_val_t *val, vector_t **p_vec)
         return 0;
     } else {
         *p_vec = NULL;
-        log_error("value type: 0x%08x not match expect type: 0x%08x", val_type,
-                  type);
+        zlog_error(neuron, "value type: 0x%08x not match expect type: 0x%08x",
+                   val_type, type);
         return -1;
     }
 }
@@ -1578,8 +1577,8 @@ int neu_dvalue_get_move_array(neu_data_val_t *val, neu_fixed_array_t **p_array)
         return 0;
     } else {
         *p_array = NULL;
-        log_error("value type: 0x%08x not match expect type: 0x%08x", val_type,
-                  type);
+        zlog_error(neuron, "value type: 0x%08x not match expect type: 0x%08x",
+                   val_type, type);
         return -1;
     }
 }
@@ -1601,8 +1600,8 @@ int neu_dvalue_get_move_vec(neu_data_val_t *val, vector_t **p_vec)
         return 0;
     } else {
         *p_vec = NULL;
-        log_error("value type: 0x%08x not match expect type: 0x%08x", val_type,
-                  type);
+        zlog_error(neuron, "value type: 0x%08x not match expect type: 0x%08x",
+                   val_type, type);
         return -1;
     }
 }
@@ -1697,8 +1696,9 @@ static size_t value_data_serialized_size(void **p_val_data, neu_dtype_e type)
         }
 
         default:
-            log_error("Not support base type(%d) of data value in sized",
-                      valid_type);
+            zlog_error(neuron,
+                       "Not support base type(%d) of data value in sized",
+                       valid_type);
             size = 0;
             break;
         }
@@ -1770,7 +1770,8 @@ static size_t value_data_serialized_size(void **p_val_data, neu_dtype_e type)
             }
         }
     } else {
-        log_error("Not support type(%d) of data value in sized", valid_type);
+        zlog_error(neuron, "Not support type(%d) of data value in sized",
+                   valid_type);
         size = 0;
     }
 
@@ -1895,8 +1896,9 @@ static ssize_t value_data_serialize(void **p_val_data, uint8_t *buf,
         }
 
         default:
-            log_error("Not support type(%d) of data value in serialize",
-                      valid_type);
+            zlog_error(neuron,
+                       "Not support type(%d) of data value in serialize",
+                       valid_type);
             size = -1;
             break;
         }
@@ -1982,8 +1984,8 @@ static ssize_t value_data_serialize(void **p_val_data, uint8_t *buf,
             cur_ptr += data_size;
         }
     } else {
-        log_error("Not support type(%d) of data value in serialize",
-                  valid_type);
+        zlog_error(neuron, "Not support type(%d) of data value in serialize",
+                   valid_type);
         size = -1;
     }
 
@@ -2015,7 +2017,7 @@ ssize_t neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
 {
     assert(val != NULL && p_buf != NULL);
     if (val == NULL || p_buf == NULL) {
-        log_error("Serialize the data value with NULL value or buf");
+        zlog_error(neuron, "Serialize the data value with NULL value or buf");
         return -1;
     }
 
@@ -2025,10 +2027,10 @@ ssize_t neu_dvalue_serialize(neu_data_val_t *val, uint8_t **p_buf)
     ssize_t  size;
 
     size = dvalue_get_serialized_size(val);
-    log_debug("type(0x%x) serialized size is %d", val->type, size);
+    nlog_debug("type(0x%x) serialized size is %zd", val->type, size);
     out_buf = (uint8_t *) malloc(size);
     if (out_buf == NULL) {
-        log_error("Failed to allocate buffer for serialize value");
+        zlog_error(neuron, "Failed to allocate buffer for serialize value");
         return -1;
     }
 
@@ -2162,8 +2164,9 @@ static ssize_t value_data_deserialize(uint8_t *buf, size_t buf_len,
         }
 
         default:
-            log_error("Not support type(%d) of data value in deserialize",
-                      type);
+            zlog_error(neuron,
+                       "Not support type(%d) of data value in deserialize",
+                       type);
             size = -1;
             break;
         }
@@ -2260,7 +2263,8 @@ static ssize_t value_data_deserialize(uint8_t *buf, size_t buf_len,
         }
         p_value->val_data = vec;
     } else {
-        log_error("Not support type(%d) of data value in deserialize", type);
+        zlog_error(neuron, "Not support type(%d) of data value in deserialize",
+                   type);
         size = -1;
     }
     return size;
@@ -2302,12 +2306,13 @@ ssize_t neu_dvalue_deserialize(uint8_t *buf, size_t buf_len,
 
     assert(buf != NULL && p_val != NULL);
     if (buf == NULL || p_val == NULL) {
-        log_error("Deserialize the data value with NULL buf or value pointer");
+        zlog_error(neuron,
+                   "Deserialize the data value with NULL buf or value pointer");
         return -1;
     }
 
     if (buf_len == 0) {
-        log_error("Deserialize the data value with 0 length buffer");
+        zlog_error(neuron, "Deserialize the data value with 0 length buffer");
         return -1;
     }
 
@@ -2316,7 +2321,8 @@ ssize_t neu_dvalue_deserialize(uint8_t *buf, size_t buf_len,
     neu_data_val_t *out_val;
     out_val = neu_dvalue_unit_new();
     if (out_val == NULL) {
-        log_error("Failed to allocate datat value for deserialize value");
+        zlog_error(neuron,
+                   "Failed to allocate datat value for deserialize value");
         return -1;
     }
 
@@ -2425,8 +2431,9 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
         }
 
         default:
-            log_error("Not support base type(%d) of data value in to owned",
-                      valid_type);
+            zlog_error(neuron,
+                       "Not support base type(%d) of data value in to owned",
+                       valid_type);
             return NULL;
         }
     } else if (valid_type & NEU_DTYPE_ARRAY) {
@@ -2441,7 +2448,8 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
         if (!(type & NEU_DTYPE_OWNERED_PTR)) {
             array = neu_fixed_array_clone(org_array);
             if (array == NULL) {
-                log_error("Failed to clone fixed array for owner data value");
+                zlog_error(neuron,
+                           "Failed to clone fixed array for owner data value");
                 return NULL;
             }
         }
@@ -2465,16 +2473,18 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
             }
 
             if (owned_ptr == NULL) {
-                log_error(
-                    "Failed to owned item(%d) in fixed array with type(0x%08x)",
-                    index, type);
+                zlog_error(neuron,
+                           "Failed to owned item(%zu) in fixed array with "
+                           "type(0x%08x)",
+                           index, type);
                 break;
             }
         }
 
         if (owned_ptr == NULL && array->length != 0) {
-            log_error("Failed to owner all sub values in fixed array, free all"
-                      "sub values");
+            zlog_error(neuron,
+                       "Failed to owner all sub values in fixed array, free all"
+                       "sub values");
             if (!(type & NEU_DTYPE_OWNERED_PTR)) {
                 /* free all sub values in fixed array of this data value, and
                  * then this data value will not be used in future. */
@@ -2501,7 +2511,8 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
         if (!(type & NEU_DTYPE_OWNERED_PTR)) {
             vec = vector_clone(org_vec);
             if (vec == NULL) {
-                log_error("Failed to clone vector for owner data value");
+                zlog_error(neuron,
+                           "Failed to clone vector for owner data value");
                 return NULL;
             }
         }
@@ -2526,8 +2537,9 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
             }
 
             if (owned_ptr == NULL) {
-                log_error(
-                    "Failed to owned item(%d) in vector with type(0x%08x)",
+                zlog_error(
+                    neuron,
+                    "Failed to owned item(%zu) in vector with type(0x%08x)",
                     index, type);
                 break;
             }
@@ -2535,8 +2547,9 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
         }
 
         if (owned_ptr == NULL && vec->size != 0) {
-            log_error("Failed to owner all sub values in vector, free all"
-                      "sub values");
+            zlog_error(neuron,
+                       "Failed to owner all sub values in vector, free all"
+                       "sub values");
             if (!(type & NEU_DTYPE_OWNERED_PTR)) {
                 /* free all sub values in vector of this data value, and then
                  * this data value will not be used in future. */
@@ -2552,7 +2565,8 @@ static void *value_data_to_owned(void **p_val_data, neu_dtype_e type)
         *(vector_t **) p_val_data = vec;
         return vec;
     } else {
-        log_error("Not support type(%d) of data value in to owned", valid_type);
+        zlog_error(neuron, "Not support type(%d) of data value in to owned",
+                   valid_type);
         return NULL;
     }
 }
@@ -2576,7 +2590,8 @@ neu_data_val_t *neu_dvalue_to_owned(neu_data_val_t *val)
 {
     assert(val != NULL);
     if (val == NULL) {
-        log_error("Owned all data in data value with NULL value pointer");
+        zlog_error(neuron,
+                   "Owned all data in data value with NULL value pointer");
         return NULL;
     }
 

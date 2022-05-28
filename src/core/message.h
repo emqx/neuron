@@ -23,7 +23,6 @@
 #include <assert.h>
 
 #include "databuf.h"
-#include "log.h"
 #include "neu_trans_buf.h"
 
 #include "adapter/adapter_internal.h"

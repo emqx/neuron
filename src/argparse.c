@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <zlog.h>
+
 #include "argparse.h"
 
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
@@ -48,12 +50,9 @@ const char *usage_text =
 "USAGE:\n"
 "    neuron [OPTIONS]\n\n"
 "OPTIONS:\n"
-"    -c, --config <FILE>  neuron configuration file\n"
-"                         without this option, default from ./config/neuron.yaml\n"
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
-"    --log [FILE]         log to the given file, or stdout if no FILE argument\n"
-"                         without this option, default log to ./logs/neuron.log\n"
+"    --log                log to the stdout\n"
 "    --restart <POLICY>   restart policy to apply when neuron daemon terminates,\n"
 "                           - never,      never restart (default)\n"
 "                           - always,     always restart\n"
@@ -93,11 +92,11 @@ static inline size_t parse_restart_policy(const char *s, size_t *out)
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 {
     char *        opts           = "c:dh";
+    bool          dev_log        = false;
     struct option long_options[] = {
         { "help", no_argument, NULL, 1 },
-        { "config", required_argument, NULL, 'c' },
         { "daemon", no_argument, NULL, 'd' },
-        { "log", optional_argument, NULL, 'l' },
+        { "log", no_argument, NULL, 'l' },
         { "restart", required_argument, NULL, 'r' },
         { NULL, 0, NULL, 0 },
     };
@@ -118,17 +117,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
                     optopt);
             usage();
             goto quit;
-        case 'c':
-            STRDUP(args->conf_file, optarg);
-            break;
         case 'l':
-            if (OPTIONAL_ARGUMENT_IS_PRESENT) {
-                // log to file
-                STRDUP(args->log_file, optarg);
-            } else {
-                // log to stdout
-                STRDUP(args->log_file, NEU_LOG_STDOUT_FNAME);
-            }
+            zlog_init("./config/dev.conf");
+            dev_log = true;
             break;
         case 'r':
             if (0 != parse_restart_policy(optarg, &args->restart)) {
@@ -146,12 +137,8 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         }
     }
 
-    if (NULL == args->conf_file) {
-        STRDUP(args->conf_file, "./config/neuron.yaml");
-    }
-
-    if (NULL == args->log_file) {
-        STRDUP(args->log_file, "./logs/neuron.log");
+    if (!dev_log) {
+        zlog_init("./config/zlog.con");
     }
 
     if (!args->daemonized && args->restart != NEU_RESTART_NEVER) {
@@ -170,8 +157,5 @@ quit:
 
 void neu_cli_args_fini(neu_cli_args_t *args)
 {
-    free(args->conf_file);
-    args->conf_file = NULL;
-    free(args->log_file);
-    args->log_file = NULL;
+    (void) args;
 }

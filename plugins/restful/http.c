@@ -30,7 +30,7 @@
 
 #include "errcodes.h"
 #include "http.h"
-#include "log.h"
+#include "utils/log.h"
 
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {
@@ -93,7 +93,7 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     } else {
         char *buf = calloc(*data_size + 1, sizeof(char));
         memcpy(buf, *data, *data_size);
-        log_info("body: %s", buf);
+        nlog_info("body: %s", buf);
         *data = buf;
         return 0;
     }
@@ -350,7 +350,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
             code <= NEU_ERR_PLUGIN_ERROR_END) {
             status = NNG_HTTP_STATUS_OK;
         } else {
-            log_error("unhandle error code: %d", code);
+            nlog_error("unhandle error code: %d", code);
             assert(code == 0);
         }
         break;

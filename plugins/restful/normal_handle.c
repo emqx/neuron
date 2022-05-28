@@ -28,6 +28,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "utils/log.h"
+
 #include "json/neu_json_fn.h"
 #include "json/neu_json_login.h"
 #include "json/neu_json_tty.h"
@@ -101,7 +103,7 @@ void handle_get_plugin_schema(nng_aio *aio)
     char *buf = NULL;
     buf       = file_string_read(&len, schema_path);
     if (NULL == buf) {
-        log_info("open %s error: %d", schema_path, errno);
+        nlog_info("open %s error: %d", schema_path, errno);
         http_not_found(aio, "{\"status\": \"error\"}");
         return;
     }

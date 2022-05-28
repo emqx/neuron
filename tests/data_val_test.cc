@@ -3,6 +3,9 @@
 #include "data_expr.h"
 #include "types.h"
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
 TEST(DataValueTest, neu_dvalue_init_set_get_prim_val)
 {
     neu_data_val_t *val;
@@ -2478,4 +2481,12 @@ TEST(DataValueTest, neu_dvalue_vec_deser)
     free(buf);
     vector_free(vec_get);
     neu_dvalue_free(val1);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

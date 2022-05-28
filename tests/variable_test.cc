@@ -2,6 +2,10 @@
 
 #include "types.h"
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
+
 TEST(VariableTest, neu_variable_create)
 {
     neu_variable_t *v = neu_variable_create();
@@ -281,4 +285,12 @@ TEST(VariableTest, neu_variable_set_key)
     neu_variable_add_item(v, i2);
 
     neu_variable_destroy(v);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

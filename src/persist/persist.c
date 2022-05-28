@@ -29,6 +29,7 @@
 #include <unistd.h>
 
 #include "errcodes.h"
+#include "utils/log.h"
 #include "vector.h"
 
 #include "persist/json/persist_json_adapter.h"
@@ -326,7 +327,7 @@ static int remove_cb(const char *fpath, bool is_dir, void *arg)
         // we are being defensive here, ignoring non-json files
         return 0;
     }
-    log_info("remove %s", fpath);
+    nlog_info("remove %s", fpath);
     return remove(fpath);
 }
 
@@ -369,31 +370,31 @@ static int write_file_string(const char *fn, const char *s)
 {
     char tmp[PATH_MAX_SIZE] = { 0 };
     if (sizeof(tmp) == snprintf(tmp, sizeof(tmp), "%s.tmp", fn)) {
-        log_error("persister too long file name:%s", fn);
+        nlog_error("persister too long file name:%s", fn);
         return NEU_ERR_FAILURE;
     }
 
     FILE *f = fopen(tmp, "w+");
     if (NULL == f) {
-        log_error("persister failed to open file:%s", fn);
+        nlog_error("persister failed to open file:%s", fn);
         return NEU_ERR_FAILURE;
     }
 
     // write to a temporary file first
     int n = strlen(s);
     if (((size_t) n) != fwrite(s, 1, n, f)) {
-        log_error("persister failed to write file:%s", fn);
+        nlog_error("persister failed to write file:%s", fn);
         fclose(f);
         return NEU_ERR_FAILURE;
     }
 
     fclose(f);
 
-    log_debug("pwersister write %s to %s", s, tmp);
+    nlog_debug("pwersister write %s to %s", s, tmp);
 
     // rename the temporary file to the destination file
     if (0 != rename(tmp, fn)) {
-        log_error("persister failed rename %s to %s", tmp, fn);
+        nlog_error("persister failed rename %s to %s", tmp, fn);
         return NEU_ERR_FAILURE;
     }
 
@@ -447,7 +448,7 @@ error_buf:
 error_fstat:
     close(fd);
 error_open:
-    log_error("persister fail to read %s, reason: %s", fn, strerror(errno));
+    nlog_error("persister fail to read %s, reason: %s", fn, strerror(errno));
     return rv;
 }
 
@@ -478,7 +479,7 @@ static int read_adapter_cb(const char *fpath, bool is_dir, void *arg)
         return 0; // ignore bad adapter data
     }
 
-    log_info("read %s", fpath);
+    nlog_info("read %s", fpath);
 
     if (0 == vector_push_back(adapter_infos, node)) {
         // NOTE: do not call neu_json_decode_node_req_node_free
@@ -519,7 +520,7 @@ static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
         return 0; // ignore bad group config data
     }
 
-    log_info("read %s", fpath);
+    nlog_info("read %s", fpath);
 
     if (0 == vector_push_back(group_config_infos, group_config_req)) {
         // NOTE: do not call neu_json_decode_group_configs_req_free,
@@ -543,62 +544,62 @@ neu_persister_t *neu_persister_create(const char *dir_name)
 
     int dir_len = path_cat(path, 0, sizeof(path), dir_name);
     if (sizeof(path) == dir_len) {
-        log_error("path too long: %s", dir_name);
+        nlog_error("path too long: %s", dir_name);
         goto error;
     }
     persist_dir = strdup(dir_name);
     if (NULL == persist_dir) {
-        log_error("fail to strdup: %s", dir_name);
+        nlog_error("fail to strdup: %s", dir_name);
         goto error;
     }
 
     rv = create_dir(persist_dir);
     if (rv != 0) {
-        log_error("failed to create directory: %s", persist_dir);
+        nlog_error("failed to create directory: %s", persist_dir);
         goto error;
     }
 
     int n = path_cat(path, dir_len, sizeof(path), "adapters");
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         goto error;
     }
     rv = create_dir(path);
     if (rv != 0) {
-        log_error("failed to create directory: %s", path);
+        nlog_error("failed to create directory: %s", path);
         goto error;
     }
 
     n = path_cat(path, dir_len, sizeof(path), "adapters.json");
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         goto error;
     }
     adapters_fname = strdup(path);
     if (NULL == adapters_fname) {
-        log_error("fail to strdup: %s", path);
+        nlog_error("fail to strdup: %s", path);
         goto error;
     }
 
     n = path_cat(path, dir_len, sizeof(path), "plugins.json");
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         goto error;
     }
     plugins_fname = strdup(path);
     if (NULL == plugins_fname) {
-        log_error("fail to strdup: %s", path);
+        nlog_error("fail to strdup: %s", path);
         goto error;
     }
 
     if (0 != ensure_file_exist(plugins_fname, "{\"plugins\": []}")) {
-        log_error("persister failed to ensure file exist: %s", plugins_fname);
+        nlog_error("persister failed to ensure file exist: %s", plugins_fname);
         goto error;
     }
 
     neu_persister_t *persister = malloc(sizeof(neu_persister_t));
     if (NULL == persister) {
-        log_error("failed to alloc memory for persister struct");
+        nlog_error("failed to alloc memory for persister struct");
         goto error;
     }
 
@@ -688,7 +689,7 @@ static int migrate_adapters_file(neu_persister_t *persister)
     free(json_str);
     json_str = NULL;
     if (rv != 0) {
-        log_error("decode adapters json file fail");
+        nlog_error("decode adapters json file fail");
         return rv;
     }
 
@@ -697,13 +698,13 @@ static int migrate_adapters_file(neu_persister_t *persister)
         neu_json_node_req_node_t *node = &node_req->nodes[i];
         rv = neu_persister_store_adapter(persister, node);
         if (0 != rv) {
-            log_error("migrate adapter %s fail", node->name);
+            nlog_error("migrate adapter %s fail", node->name);
             all_migrated = false;
         }
     }
 
     if (all_migrated) {
-        log_info("remove %s", persister->adapters_fname);
+        nlog_info("remove %s", persister->adapters_fname);
         remove(persister->adapters_fname);
     }
 
@@ -718,17 +719,17 @@ int neu_persister_store_adapter(neu_persister_t *           persister,
 
     int n = persister_adapter_dir(path, sizeof(path), persister, info->name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
     if (0 != create_dir_recursive(path)) {
-        log_error("persister failed to create dir: %s", path);
+        nlog_error("persister failed to create dir: %s", path);
         return -1;
     }
 
     n = path_cat(path, n, sizeof(path), "adapter.json");
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 
@@ -777,7 +778,7 @@ int neu_persister_delete_adapter(neu_persister_t *persister,
     char path[PATH_MAX_SIZE] = { 0 };
     int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
     rmdir_recursive(path);
@@ -790,14 +791,14 @@ int neu_persister_update_adapter(neu_persister_t *persister,
     char path[PATH_MAX_SIZE] = { 0 };
     int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
     char new_path[PATH_MAX_SIZE] = { 0 };
     n = persister_adapter_dir(new_path, sizeof(new_path), persister, new_name);
     if (sizeof(new_path) == n) {
-        log_error("persister new path too long: %s", new_path);
+        nlog_error("persister new path too long: %s", new_path);
         return NEU_ERR_FAILURE;
     }
 
@@ -874,19 +875,19 @@ int neu_persister_store_datatags(neu_persister_t *persister,
     int n = persister_group_config_dir(path, sizeof(path), persister,
                                        adapter_name, group_config_name);
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
     int rv = create_dir_recursive(path);
     if (0 != rv) {
-        log_error("fail to create dir: %s", path);
+        nlog_error("fail to create dir: %s", path);
         return NEU_ERR_FAILURE;
     }
 
     n = path_cat(path, n, sizeof(path), "datatags.json");
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
@@ -918,13 +919,13 @@ int neu_persister_load_datatags(neu_persister_t *persister,
     int n = persister_group_config_dir(path, sizeof(path), persister,
                                        adapter_name, group_config_name);
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
     n = path_cat(path, n, sizeof(path), "datatags.json");
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
@@ -966,19 +967,19 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
 
     int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
     int rv = create_dir(path);
     if (0 != rv) {
-        log_error("fail to create dir: %s", path);
+        nlog_error("fail to create dir: %s", path);
         return rv;
     }
 
     n = path_cat(path, n, sizeof(path), "subscriptions.json");
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
@@ -1007,13 +1008,13 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
 
     int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
     n = path_cat(path, n, sizeof(path), "subscriptions.json");
     if (sizeof(path) == n) {
-        log_error("path too long: %s", path);
+        nlog_error("path too long: %s", path);
         return NEU_ERR_FAILURE;
     }
 
@@ -1056,19 +1057,19 @@ int neu_persister_store_group_config(
         persister_group_config_dir(path, sizeof(path), persister, adapter_name,
                                    group_config_info->group_config_name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 
     int rv = create_dir_recursive(path);
     if (0 != rv) {
-        log_error("persister failed to create dir: %s", path);
+        nlog_error("persister failed to create dir: %s", path);
         return rv;
     }
 
     n = path_cat(path, n, sizeof(path), "config.json");
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 
@@ -1092,7 +1093,7 @@ int neu_persister_load_group_configs(neu_persister_t *persister,
     int n = persister_group_configs_dir(path, sizeof(path), persister,
                                         adapter_name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 
@@ -1120,7 +1121,7 @@ int neu_persister_delete_group_config(neu_persister_t *persister,
     int n = persister_group_config_dir(path, sizeof(path), persister,
                                        adapter_name, group_config_name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 
@@ -1136,17 +1137,17 @@ int neu_persister_store_adapter_setting(neu_persister_t *persister,
 
     int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
     if (0 != create_dir(path)) {
-        log_error("persister failed to create dir: %s", path);
+        nlog_error("persister failed to create dir: %s", path);
         return -1;
     }
 
     n = path_cat(path, n, sizeof(path), "settings.json");
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 
@@ -1163,13 +1164,13 @@ int neu_persister_load_adapter_setting(neu_persister_t *  persister,
 
     int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 
     n = path_cat(path, n, sizeof(path), "settings.json");
     if (sizeof(path) == n) {
-        log_error("persister path too long: %s", path);
+        nlog_error("persister path too long: %s", path);
         return -1;
     }
 

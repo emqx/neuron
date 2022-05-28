@@ -19,6 +19,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,13 +36,12 @@
 #include "core/neu_trans_buf.h"
 #include "core/plugin_manager.h"
 #include "driver/driver_internal.h"
-#include "log.h"
-#include "panic.h"
 #include "persist/persist.h"
 #include "plugin.h"
 #include "plugin_info.h"
 #include "subscribe.h"
 #include "tag_group_config.h"
+#include "utils/log.h"
 
 #define to_node_id(adapter, id) \
     neu_manager_adapter_id_to_node_id((adapter)->manager, id);
@@ -105,7 +105,7 @@
         assert((cmd)->buf_len == sizeof(req_type));                         \
         result = malloc(sizeof(neu_response_t));                            \
         if (result == NULL) {                                               \
-            log_error("Failed to allocate result for resp cmd");            \
+            nlog_error("Failed to allocate result for resp cmd");           \
             rv = -1;                                                        \
         } else {                                                            \
             req_type *req_cmd = (req_type *) (cmd)->buf;                    \
@@ -149,7 +149,7 @@ static void persister_singleton_init()
 
     neu_persister_t *persister = neu_persister_create(persistence_dir);
     if (NULL == persister) {
-        log_error("can't create persister");
+        nlog_error("can't create persister");
         exit(EXIT_FAILURE);
     }
     g_persister_singleton = persister;
@@ -171,7 +171,7 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
 
     int rv = neu_persister_load_plugins(persister, &plugin_infos);
     if (0 != rv) {
-        log_error("%s failed to load plugin infos", adapter->name);
+        nlog_error("%s failed to load plugin infos", adapter->name);
         return -1;
     }
     VECTOR_FOR_EACH(plugin_infos, iter)
@@ -185,8 +185,8 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
         rv = neu_manager_add_plugin_lib(adapter->manager, &add_plugin_cmd,
                                         &plugin_id);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        log_info("%s load plugin %s , lib:%s", adapter->name, ok_or_err,
-                 *plugin_info);
+        nlog_info("%s load plugin %s , lib:%s", adapter->name, ok_or_err,
+                  *plugin_info);
     }
 
     neu_persist_plugin_infos_free(plugin_infos);
@@ -208,15 +208,15 @@ static int persister_singleton_load_setting(neu_adapter_t *adapter,
             rv             = 0;
             fail_or_ignore = "ignore";
         }
-        log_info("%s %s load setting of %s", adapter->name, fail_or_ignore,
-                 adapter_name);
+        nlog_info("%s %s load setting of %s", adapter->name, fail_or_ignore,
+                  adapter_name);
         return rv;
     }
 
     rv = neu_manager_adapter_set_setting(adapter->manager, node_id, setting);
     const char *ok_or_err = (0 == rv) ? "success" : "fail";
-    log_info("%s %s set setting of %s %s", adapter->name, ok_or_err,
-             adapter_name, setting);
+    nlog_info("%s %s set setting of %s %s", adapter->name, ok_or_err,
+              adapter_name, setting);
 
     free((char *) setting);
 
@@ -241,8 +241,8 @@ static int persister_singleton_load_datatags(neu_adapter_t *      adapter,
             rv             = 0;
             fail_or_ignore = "ignore";
         }
-        log_info("%s %s load datatags info of adapter:%s grp:%s", adapter->name,
-                 fail_or_ignore, adapter_name, grp_config_name);
+        nlog_info("%s %s load datatags info of adapter:%s grp:%s",
+                  adapter->name, fail_or_ignore, adapter_name, grp_config_name);
         return rv;
     }
 
@@ -282,8 +282,8 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
     neu_datatag_table_t *tag_tbl =
         neu_manager_get_datatag_tbl(adapter->manager, node_id);
     if (NULL == tag_tbl) {
-        log_error("%s fail get datatag table of %s", adapter->name,
-                  adapter_name);
+        nlog_error("%s fail get datatag table of %s", adapter->name,
+                   adapter_name);
         return NEU_ERR_EINTERNAL;
     }
 
@@ -296,8 +296,8 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
             rv             = 0;
             fail_or_ignore = "ignore";
         }
-        log_error("%s %s load grp config of %s", adapter->name, fail_or_ignore,
-                  adapter_name);
+        nlog_error("%s %s load grp config of %s", adapter->name, fail_or_ignore,
+                   adapter_name);
         return rv;
     }
 
@@ -316,8 +316,8 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
         rv = persister_singleton_load_datatags(adapter, adapter_name,
                                                grp_config, tag_tbl);
         if (0 != rv) {
-            log_warn("%s load datatags of adapter:%s grp:%s fail, ignore",
-                     adapter->name, adapter_name, p->group_config_name);
+            nlog_warn("%s load datatags of adapter:%s grp:%s fail, ignore",
+                      adapter->name, adapter_name, p->group_config_name);
         }
 
         neu_cmd_add_grp_config_t cmd = {
@@ -327,8 +327,8 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
 
         rv = neu_manager_add_grp_config(adapter->manager, &cmd);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        log_info("%s %s load group config %s interval:%d", adapter->name,
-                 ok_or_err, p->group_config_name, p->read_interval);
+        nlog_info("%s %s load group config %s interval:%" PRId64, adapter->name,
+                  ok_or_err, p->group_config_name, p->read_interval);
         if (0 != rv) {
             neu_taggrp_cfg_free(grp_config);
             break;
@@ -350,8 +350,8 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
     rv = neu_manager_get_node_id_by_name(adapter->manager, adapter_name,
                                          &dst_node_id);
     if (0 != rv) {
-        log_error("%s fail get node id by name: %s", adapter->name,
-                  adapter_name);
+        nlog_error("%s fail get node id by name: %s", adapter->name,
+                   adapter_name);
         return rv;
     }
 
@@ -363,8 +363,8 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
             rv             = 0;
             fail_or_ignore = "ignore";
         }
-        log_error("%s %s load subscription infos of %s", adapter->name,
-                  fail_or_ignore, adapter_name);
+        nlog_error("%s %s load subscription infos of %s", adapter->name,
+                   fail_or_ignore, adapter_name);
         return rv;
     }
 
@@ -376,8 +376,8 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
         rv = neu_manager_get_node_id_by_name(adapter->manager,
                                              p->src_adapter_name, &src_node_id);
         if (0 != rv) {
-            log_error("%s fail get node id by name: %s", adapter->name,
-                      p->src_adapter_name);
+            nlog_error("%s fail get node id by name: %s", adapter->name,
+                       p->src_adapter_name);
             break;
         }
 
@@ -397,9 +397,9 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
         };
         rv = neu_manager_subscribe_node(adapter->manager, &cmd);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        log_info("%s %s load subscription dst:%s src:%s grp:%s", adapter->name,
-                 ok_or_err, adapter_name, p->src_adapter_name,
-                 p->group_config_name);
+        nlog_info("%s %s load subscription dst:%s src:%s grp:%s", adapter->name,
+                  ok_or_err, adapter_name, p->src_adapter_name,
+                  p->group_config_name);
 
         neu_taggrp_cfg_free((neu_taggrp_config_t *) grp_config);
     }
@@ -425,7 +425,7 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
                                    neu_node_id_t node_id,
                                    neu_node_id_t new_node_id);
 
-    log_info("%s start persistence loading", adapter->name);
+    nlog_info("%s start persistence loading", adapter->name);
 
     int rv = persister_singleton_load_plugins(adapter);
     if (0 != rv) {
@@ -434,7 +434,7 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
 
     rv = neu_persister_load_adapters(persister, &adapter_infos);
     if (0 != rv) {
-        log_error("%s failed to load adapter infos", adapter->name);
+        nlog_error("%s failed to load adapter infos", adapter->name);
         goto error_load_adapters;
     }
 
@@ -454,9 +454,9 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         neu_node_id_t node_id = 0;
         rv = neu_manager_add_node(adapter->manager, &add_node_cmd, &node_id);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        log_info("%s load adapter %s type:%d, name:%s plugin:%s", adapter->name,
-                 ok_or_err, adapter_info->type, adapter_info->name,
-                 adapter_info->plugin_name);
+        nlog_info("%s load adapter %s type:%" PRId64 ", name:%s plugin:%s",
+                  adapter->name, ok_or_err, adapter_info->type,
+                  adapter_info->name, adapter_info->plugin_name);
         if (0 != rv) {
             continue;
         }
@@ -481,8 +481,8 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         if (ADAPTER_STATE_RUNNING == adapter_info->state) {
             rv = neu_manager_start_adapter_with_id(adapter->manager, node_id);
             if (0 != rv) {
-                log_error("%s fail start adapter %s", adapter->name,
-                          adapter_info->name);
+                nlog_error("%s fail start adapter %s", adapter->name,
+                           adapter_info->name);
             }
         }
     }
@@ -510,13 +510,13 @@ static int persister_singleton_handle_nodes(neu_adapter_t *adapter,
     neu_persister_t *          persister    = persister_singleton_get();
     neu_persist_adapter_info_t adapter_info = {};
 
-    log_info("%s handling node event %d of %s", adapter->name, event,
-             node_name);
+    nlog_info("%s handling node event %d of %s", adapter->name, event,
+              node_name);
 
     if (MSG_EVENT_DEL_NODE == event) {
         rv = neu_persister_delete_adapter(persister, node_name);
         if (0 != rv) {
-            log_error("%s failed to del adapter %s", adapter->name, node_name);
+            nlog_error("%s failed to del adapter %s", adapter->name, node_name);
         }
         return rv;
     }
@@ -525,13 +525,14 @@ static int persister_singleton_handle_nodes(neu_adapter_t *adapter,
     rv = neu_manager_get_persist_adapter_info(adapter->manager, node_name,
                                               &adapter_info);
     if (0 != rv) {
-        log_error("%s unable to get adapter:%s info", adapter->name, node_name);
+        nlog_error("%s unable to get adapter:%s info", adapter->name,
+                   node_name);
         return rv;
     }
 
     rv = neu_persister_store_adapter(persister, &adapter_info);
     if (0 != rv) {
-        log_error("%s failed to store adapter info", adapter->name);
+        nlog_error("%s failed to store adapter info", adapter->name);
     }
 
     neu_persist_adapter_info_fini(&adapter_info);
@@ -545,27 +546,27 @@ persister_singleton_handle_update_node(neu_adapter_t *          adapter,
     neu_persister_t *          persister    = persister_singleton_get();
     neu_persist_adapter_info_t adapter_info = {};
 
-    log_info("%s handling update node event of %s", adapter->name,
-             event->src_name);
+    nlog_info("%s handling update node event of %s", adapter->name,
+              event->src_name);
 
     int rv = neu_manager_get_persist_adapter_info(
         adapter->manager, event->dst_name, &adapter_info);
     if (0 != rv) {
-        log_error("%s unable to get adapter info", adapter->name);
+        nlog_error("%s unable to get adapter info", adapter->name);
         return rv;
     }
 
     rv = neu_persister_update_adapter(persister, event->src_name,
                                       event->dst_name);
     if (0 != rv) {
-        log_error("%s failed to update adapter info", adapter->name);
+        nlog_error("%s failed to update adapter info", adapter->name);
         neu_persist_adapter_info_fini(&adapter_info);
         return rv;
     }
 
     rv = neu_persister_store_adapter(persister, &adapter_info);
     if (0 != rv) {
-        log_error("%s failed to store adapter info", adapter->name);
+        nlog_error("%s failed to store adapter info", adapter->name);
     }
 
     neu_persist_adapter_info_fini(&adapter_info);
@@ -578,19 +579,19 @@ static int persister_singleton_handle_plugins(neu_adapter_t *adapter,
     neu_persister_t *persister    = persister_singleton_get();
     vector_t *       plugin_infos = NULL;
 
-    log_info("%s handling plugin event %d", adapter->name, event);
+    nlog_info("%s handling plugin event %d", adapter->name, event);
 
     int rv =
         neu_manager_get_persist_plugin_infos(adapter->manager, &plugin_infos);
     if (0 != rv) {
-        log_error("%s unable to get plugin infos", adapter->name);
+        nlog_error("%s unable to get plugin infos", adapter->name);
         return rv;
     }
 
     // store the current set of plugin infos
     rv = neu_persister_store_plugins(persister, plugin_infos);
     if (0 != rv) {
-        log_error("%s failed to store plugins infos", adapter->name);
+        nlog_error("%s failed to store plugins infos", adapter->name);
     }
 
     neu_persist_plugin_infos_free(plugin_infos);
@@ -605,7 +606,7 @@ static int persister_singleton_handle_grp_config(neu_adapter_t *adapter,
     neu_persister_t *persister    = persister_singleton_get();
     char *           adapter_name = NULL;
 
-    log_info("%s handling grp config event %d", adapter->name, event);
+    nlog_info("%s handling grp config event %d", adapter->name, event);
 
     int rv = neu_manager_get_node_name_by_id(adapter->manager, node_id,
                                              &adapter_name);
@@ -622,14 +623,14 @@ static int persister_singleton_handle_grp_config(neu_adapter_t *adapter,
         };
         rv = neu_persister_store_group_config(persister, adapter_name, &info);
         if (0 != rv) {
-            log_error("% failed to store group config infos", adapter->name);
+            nlog_error("%s failed to store group config infos", adapter->name);
         }
     } else {
         const char *group_config_name = arg;
         rv = neu_persister_delete_group_config(persister, adapter_name,
                                                group_config_name);
         if (0 != rv) {
-            log_error("% failed to del group config infos", adapter->name);
+            nlog_error("%s failed to del group config infos", adapter->name);
         }
     }
 
@@ -653,7 +654,7 @@ static int persister_singleton_handle_datatags(neu_adapter_t *adapter,
     rv = neu_manager_get_persist_datatag_infos(adapter->manager, node_id,
                                                grp_config_name, &datatag_infos);
     if (0 != rv) {
-        log_error("%s fail get persist datatag infos", adapter->name);
+        nlog_error("%s fail get persist datatag infos", adapter->name);
         free(adapter_name);
         return rv;
     }
@@ -661,8 +662,8 @@ static int persister_singleton_handle_datatags(neu_adapter_t *adapter,
     rv = neu_persister_store_datatags(persister, adapter_name, grp_config_name,
                                       datatag_infos);
     if (0 != rv) {
-        log_error("%s fail store adapter:% grp:%s datatag infos", adapter_name,
-                  grp_config_name);
+        nlog_error("fail store adapter:%s grp:%s datatag infos", adapter_name,
+                   grp_config_name);
     }
 
     neu_persist_datatag_infos_free(datatag_infos);
@@ -685,15 +686,15 @@ static int persister_singleton_handle_subscriptions(neu_adapter_t *adapter,
     rv = neu_manager_get_persist_subscription_infos(adapter->manager, node_id,
                                                     &sub_infos);
     if (0 != rv) {
-        log_error("%s fail get persist subscription infos", adapter->name);
+        nlog_error("%s fail get persist subscription infos", adapter->name);
         free(adapter_name);
         return rv;
     }
 
     rv = neu_persister_store_subscriptions(persister, adapter_name, sub_infos);
     if (0 != rv) {
-        log_error("%s fail store adapter:%s subscription infos", adapter_name,
-                  adapter->name);
+        nlog_error("%s fail store adapter:%s subscription infos", adapter_name,
+                   adapter->name);
     }
 
     neu_persist_subscription_infos_free(sub_infos);
@@ -747,16 +748,16 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     int rv = 0;
 
     if (adapter == NULL || cmd == NULL) {
-        log_warn("The adapter or command is NULL");
+        nlog_warn("The adapter or command is NULL");
         return (-1);
     }
 
     if (adapter->state == ADAPTER_STATE_IDLE) {
-        log_warn("The adapter loop not running");
+        nlog_warn("The adapter loop not running");
         return -1;
     }
 
-    log_trace("Get command from plugin %d, %s", cmd->req_type, adapter->name);
+    nlog_debug("Get command from plugin %d, %s", cmd->req_type, adapter->name);
     switch (cmd->req_type) {
     case NEU_REQRESP_SUBSCRIBE_NODE: {
         ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_SUBSCRIBE_NODE,
@@ -842,7 +843,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             NEU_REQRESP_NODES, p_result, {
                 ret = malloc(sizeof(neu_reqresp_nodes_t));
                 if (ret == NULL) {
-                    log_error("Failed to allocate result of get nodes");
+                    nlog_error("Failed to allocate result of get nodes");
                     rv = NEU_ERR_EINTERNAL;
                     free(result);
                     break;
@@ -914,7 +915,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             rv, NEU_REQRESP_GRP_CONFIGS, p_result, {
                 ret = malloc(sizeof(neu_reqresp_grp_configs_t));
                 if (ret == NULL) {
-                    log_error("Failed to allocate result of get grp configs");
+                    nlog_error("Failed to allocate result of get grp configs");
                     rv = -1;
                     free(result);
                     break;
@@ -987,7 +988,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                 (void) req_cmd;
                 ret = malloc(sizeof(neu_reqresp_plugin_libs_t));
                 if (ret == NULL) {
-                    log_error("Failed to allocate result of get nodes");
+                    nlog_error("Failed to allocate result of get nodes");
                     rv = -1;
                     free(result);
                     break;
@@ -1013,7 +1014,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
             NEU_REQRESP_DATATAGS, p_result, {
                 ret = malloc(sizeof(neu_reqresp_datatags_t));
                 if (ret == NULL) {
-                    log_error("Failed to allocate result of get datatags");
+                    nlog_error("Failed to allocate result of get datatags");
                     rv = -1;
                     free(result);
                     break;
@@ -1038,7 +1039,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                 (void) req_cmd;
                 ret = malloc(sizeof(neu_reqresp_node_id_t));
                 if (ret == NULL) {
-                    log_error("Failed to allocate result of get node id");
+                    nlog_error("Failed to allocate result of get node id");
                     rv = -1;
                     free(result);
                     break;
@@ -1069,7 +1070,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                 (void) req_cmd;
                 ret = malloc(sizeof(neu_reqresp_node_name_t));
                 if (ret == NULL) {
-                    log_error("Failed to allocate result of get node name");
+                    nlog_error("Failed to allocate result of get node name");
                     rv = -1;
                     free(result);
                     break;
@@ -1182,11 +1183,11 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
     int rv = 0;
 
     if (adapter == NULL || resp == NULL) {
-        log_warn("The adapter or response is NULL");
+        nlog_warn("The adapter or response is NULL");
         return (-1);
     }
 
-    log_info("Get response from plugin %s", adapter->name);
+    nlog_info("Get response from plugin %s", adapter->name);
     switch (resp->resp_type) {
     case NEU_REQRESP_TRANS_DATA: {
         size_t              msg_size;
@@ -1304,11 +1305,11 @@ static int adapter_event_notify(neu_adapter_t *     adapter,
     int rv = 0;
 
     if (adapter == NULL || event == NULL) {
-        log_warn("The adapter or event is NULL");
+        nlog_warn("The adapter or event is NULL");
         return (-1);
     }
 
-    log_info("Get event notify from plugin");
+    nlog_info("Get event notify from plugin");
     switch (event->type) {
     case NEU_EVENT_ADD_TAGS: {
         ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_ADD_TAGS, event->buf,
@@ -1399,15 +1400,11 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     common->adapter           = adapter;
     common->adapter_callbacks = &adapter->cb_funs;
     common->link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
-    common->default_category  = zlog_get_category(adapter->name);
-
-    char pc[NEU_ADAPTER_NAME_SIZE + 10] = { 0 };
-    snprintf(pc, sizeof(pc), "%s-protocol", adapter->name);
-    common->protocol_category = zlog_get_category(pc);
+    common->log               = zlog_get_category(adapter->name);
 
     adapter->events = neu_event_new();
 
-    log_info("Success to create adapter: %s", adapter->name);
+    nlog_info("Success to create adapter: %s", adapter->name);
 
     return adapter;
 }
@@ -1453,7 +1450,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_EVENT_IO_READ:
         rv = nng_recvmsg(adapter->nng.sock, &msg, 0);
         if (rv == NNG_ECLOSED) {
-            log_warn("nng socket closed.");
+            nlog_warn("nng socket closed.");
             return 0;
         }
 
@@ -1464,7 +1461,8 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case MSG_CMD_RESP_PONG: {
             char *buf_ptr = msg_get_buf_ptr(pay_msg);
 
-            log_info("Adapter(%s) received pong: %s\n", adapter->name, buf_ptr);
+            nlog_info("Adapter(%s) received pong: %s\n", adapter->name,
+                      buf_ptr);
             break;
         }
         case MSG_CMD_EXIT_LOOP: {
@@ -1474,8 +1472,8 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             adapter->state = ADAPTER_STATE_IDLE;
             nng_mtx_unlock(adapter->nng.mtx);
 
-            log_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
-                     exit_code);
+            nlog_info("adapter(%s) exit loop by exit_code=%d", adapter->name,
+                      exit_code);
             break;
         }
         case MSG_DATA_NEURON_TRANS_DATA: {
@@ -1493,7 +1491,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 neu_trans_buf_get_data_val(trans_buf, &is_need_free);
             if (data_req.data_val == NULL) {
                 neu_trans_buf_uninit(trans_buf);
-                log_error("Failed to get data value from trans data");
+                nlog_error("Failed to get data value from trans data");
                 break;
             }
 
@@ -1547,8 +1545,8 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             rv = neu_persister_store_adapter_setting(persister, adapter_name,
                                                      cmd->setting);
             if (0 != rv) {
-                log_error("%s fail to store adapter:%s setting:%s",
-                          adapter->name, adapter_name, cmd->setting);
+                nlog_error("%s fail to store adapter:%s setting:%s",
+                           adapter->name, adapter_name, cmd->setting);
             }
             free((char *) cmd->setting);
             free(adapter_name);
@@ -1723,7 +1721,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 neu_trans_buf_get_data_val(trans_buf, &is_need_free);
             if (read_resp.data_val == NULL) {
                 neu_trans_buf_uninit(trans_buf);
-                log_error("Failed to get data value from read response");
+                nlog_error("Failed to get data value from read response");
                 break;
             }
 
@@ -1758,7 +1756,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 neu_trans_buf_get_data_val(trans_buf, &is_need_free);
             if (write_req.data_val == NULL) {
                 neu_trans_buf_uninit(trans_buf);
-                log_error("Failed to get data value from write request");
+                nlog_error("Failed to get data value from write request");
                 break;
             }
 
@@ -1797,7 +1795,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 neu_trans_buf_get_data_val(trans_buf, &is_need_free);
             if (write_resp.data_val == NULL) {
                 neu_trans_buf_uninit(trans_buf);
-                log_error("Failed to get data value from write request");
+                nlog_error("Failed to get data value from write request");
                 break;
             }
 
@@ -1815,8 +1813,8 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
         default:
-            log_warn("Receive a not supported message(type: %d)",
-                     msg_get_type(pay_msg));
+            nlog_warn("Receive a not supported message(type: %d)",
+                      msg_get_type(pay_msg));
             break;
         }
 
@@ -1825,7 +1823,7 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     case NEU_EVENT_IO_CLOSED:
     case NEU_EVENT_IO_HUP:
-        log_warn("adapter %s, fd: %d, recv closed or hup.", adapter->name, fd);
+        nlog_warn("adapter %s, fd: %d, recv closed or hup.", adapter->name, fd);
         break;
     }
 
@@ -1891,7 +1889,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     nng_dialer_close(adapter->nng.dialer);
     nng_close(adapter->nng.sock);
 
-    log_info("Stop the adapter(%s)", adapter->name);
+    nlog_info("Stop the adapter(%s)", adapter->name);
     return rv;
 }
 
@@ -2057,7 +2055,7 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
 {
     if (adapter == NULL) {
-        log_error("Get Config adapter with NULL adapter");
+        nlog_error("Get Config adapter with NULL adapter");
         return NEU_ERR_NODE_NOT_EXIST;
     }
 

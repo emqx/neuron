@@ -6,6 +6,9 @@
 #include "json/neu_json_plugin.h"
 
 #include "adapter.h"
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
 
 TEST(JsonPluginTest, AddPluginDecode)
 {
@@ -81,4 +84,12 @@ TEST(JsonPluginTest, GetPluginEncode)
     free(res.plugin_libs);
 
     free(result);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

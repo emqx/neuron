@@ -25,9 +25,9 @@
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>
 
-#include "log.h"
 #include "neu_vector.h"
 #include "utils/atomic_data.h"
+#include "utils/log.h"
 
 #include "datatag_table.h"
 #include "tag_group_config.h"
@@ -53,13 +53,13 @@ neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)
 
     grp_config = (neu_taggrp_config_t *) malloc(sizeof(neu_taggrp_config_t));
     if (grp_config == NULL) {
-        log_error("No memory to allocate datatag group config");
+        zlog_error(neuron, "No memory to allocate datatag group config");
         return NULL;
     }
 
     grp_config->config_name = strdup(config_name);
     if (grp_config->config_name == NULL) {
-        log_error("No memory to duplicate config name");
+        zlog_error(neuron, "No memory to duplicate config name");
         goto set_config_name_fail;
     }
 
@@ -70,14 +70,16 @@ neu_taggrp_config_t *neu_taggrp_cfg_new(char *config_name)
     rv = vector_init(&grp_config->sub_pipes, DEFAULT_SUB_PIPE_COUNT,
                      sizeof(nng_pipe));
     if (rv != 0) {
-        log_error("Failed to initialize subscribe pipes in tag group config");
+        zlog_error(neuron,
+                   "Failed to initialize subscribe pipes in tag group config");
         goto init_sub_pipes_fail;
     }
 
     rv = vector_init(&grp_config->datatag_ids, DEFAULT_DATATAG_IDS_COUNT,
                      sizeof(datatag_id_t));
     if (rv != 0) {
-        log_error("Failed to initialize datatag ids in tag group config");
+        zlog_error(neuron,
+                   "Failed to initialize datatag ids in tag group config");
         goto init_datatag_ids_fail;
     }
 

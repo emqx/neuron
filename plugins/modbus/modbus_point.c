@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "log.h"
+#include "neuron.h"
 
 #include "modbus_point.h"
 
@@ -109,12 +109,12 @@ int modbus_point_add(modbus_point_context_t *ctx, char *addr,
         point->value.type = type;
         insert_point(ctx, point);
     } else {
-        log_error("modbus parse addr: %s error", addr);
+        zlog_error(neuron, "modbus parse addr: %s error", addr);
         free(point);
         return -1;
     }
 
-    log_info("add tag: %s success", addr);
+    zlog_info(neuron, "add tag: %s success", addr);
     return 0;
 }
 
@@ -277,23 +277,27 @@ int modbus_point_all_read(modbus_point_context_t *ctx, bool with_head,
         recv_len =
             callback(ctx->arg, send_buf, send_len, recv_buf, sizeof(recv_buf));
         if (recv_len <= 0) {
-            log_error("cmd trans fail, id: %hd, function: %hd, addr: %hd, "
-                      "n_reg: %hd",
-                      ctx->cmds[i].id, ctx->cmds[i].function,
-                      ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
+            zlog_error(neuron,
+                       "cmd trans fail, id: %hd, function: %hd, addr: %hd, "
+                       "n_reg: %hd",
+                       ctx->cmds[i].id, ctx->cmds[i].function,
+                       ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
             result = -1;
         } else {
-            log_debug("cmd trans success, id: %hd, function: %hd, addr: %hd, "
-                      "n_reg: %hd",
-                      ctx->cmds[i].id, ctx->cmds[i].function,
-                      ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
+            zlog_debug(neuron,
+                       "cmd trans success, id: %hd, function: %hd, addr: %hd, "
+                       "n_reg: %hd",
+                       ctx->cmds[i].id, ctx->cmds[i].function,
+                       ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
             ret = process_read_res(&ctx->cmds[i], recv_buf, recv_len);
             if (ret != 0) {
                 result = -1;
-                log_error("cmd parse error, id: %hd, function: %hd, addr: %hd, "
-                          "n_reg: %hd",
-                          ctx->cmds[i].id, ctx->cmds[i].function,
-                          ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
+                zlog_error(
+                    neuron,
+                    "cmd parse error, id: %hd, function: %hd, addr: %hd, "
+                    "n_reg: %hd",
+                    ctx->cmds[i].id, ctx->cmds[i].function,
+                    ctx->cmds[i].start_addr, ctx->cmds[i].n_reg);
             }
         }
     }
@@ -524,9 +528,9 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
             cmd->points[i]->value.val.val_u8 =
                 (((*ptr) >> (cmd->points[i]->addr - cmd->start_addr) % 8) & 1) >
                 0;
-            log_info("get result bit.... %d, %d %d",
-                     cmd->points[i]->value.val.val_u8, cmd->start_addr,
-                     cmd->points[i]->addr);
+            zlog_info(neuron, "get result bit.... %d, %d %d",
+                      cmd->points[i]->value.val.val_u8, cmd->start_addr,
+                      cmd->points[i]->addr);
         }
     }
 
@@ -539,9 +543,9 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
                     (uint16_t *) ((uint16_t *) data + cmd->points[i]->addr -
                                   cmd->start_addr);
                 cmd->points[i]->value.val.val_u16 = ntohs(*ptr);
-                log_info("get result16.... %d, %d %d",
-                         cmd->points[i]->value.val.val_u16, cmd->start_addr,
-                         cmd->points[i]->addr);
+                zlog_info(neuron, "get result16.... %d, %d %d",
+                          cmd->points[i]->value.val.val_u16, cmd->start_addr,
+                          cmd->points[i]->addr);
                 break;
             }
             case MODBUS_B32: {
@@ -554,9 +558,9 @@ static int process_read_res(modbus_cmd_t *cmd, char *buf, ssize_t len)
                 cmd->points[i]->value.val.val_u32 =
                     ntohs(*ptrl) << 16 | ntohs(*ptrh);
 
-                log_info("get result32.... %f, %d %d",
-                         cmd->points[i]->value.val.val_f32, cmd->start_addr,
-                         cmd->points[i]->addr);
+                zlog_info(neuron, "get result32.... %f, %d %d",
+                          cmd->points[i]->value.val.val_f32, cmd->start_addr,
+                          cmd->points[i]->addr);
                 break;
             }
             default:
@@ -604,8 +608,8 @@ static int process_write_res(modbus_point_t *point, modbus_function_e function,
         return -1;
     }
 
-    log_info("write success, start addr: %d, n reg: %d", ntohs(pdu->start_addr),
-             ntohs(pdu->n_reg));
+    zlog_info(neuron, "write success, start addr: %d, n reg: %d",
+              ntohs(pdu->start_addr), ntohs(pdu->n_reg));
 
     return 0;
 }

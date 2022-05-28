@@ -23,6 +23,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "utils/log.h"
+
 #include "core/databuf.h"
 #include "core/message.h"
 
@@ -68,7 +70,7 @@ void msg_with_struct_init(message_t *msg, msg_type_e type, void *struct_ptr,
                           size_t struct_size)
 {
     if (msg == NULL || (struct_ptr == NULL && 0 != struct_size)) {
-        log_error("msg_with_struct_init called with NULL pointr");
+        nlog_error("msg_with_struct_init called with NULL pointr");
         return;
     }
 
@@ -82,7 +84,7 @@ void msg_with_struct_init(message_t *msg, msg_type_e type, void *struct_ptr,
 void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len)
 {
     if (msg == NULL) {
-        log_error("msg_inplace_data_init called with NULL pointr");
+        nlog_error("msg_inplace_data_init called with NULL pointr");
         return;
     }
 
@@ -95,7 +97,7 @@ void msg_external_data_init(message_t *msg, msg_type_e type,
                             core_databuf_t *data_buf)
 {
     if (msg == NULL) {
-        log_error("msg_external_data_init called with NULL pointr");
+        nlog_error("msg_external_data_init called with NULL pointr");
         return;
     }
 
@@ -107,7 +109,7 @@ void msg_external_data_init(message_t *msg, msg_type_e type,
 void msg_external_data_uninit(message_t *msg)
 {
     if (!(msg != NULL && msg->ext_buf != NULL)) {
-        log_error("msg_external_data_uninit called with NULL pointr");
+        nlog_error("msg_external_data_uninit called with NULL pointr");
         return;
     }
 

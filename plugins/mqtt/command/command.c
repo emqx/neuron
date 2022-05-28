@@ -3,6 +3,7 @@
 
 #include "ping.h"
 #include "read_write.h"
+#include "utils/log.h"
 
 #include "command.h"
 
@@ -76,7 +77,7 @@ void command_response_handle(mqtt_response_t *response)
     int              rc      = neu_json_decode_mqtt_req(json_str, &mqtt);
 
     if (0 != rc) {
-        log_error("JSON parsing mqtt failed");
+        zlog_error(neuron, "JSON parsing mqtt failed");
         return;
     }
 

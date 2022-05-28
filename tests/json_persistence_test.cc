@@ -9,6 +9,9 @@
 #include "persist/json/persist_json_subs.h"
 #include "json/neu_json_fn.h"
 
+#include "utils/log.h"
+zlog_category_t *neuron = NULL;
+
 TEST(JsonAdapter, AdapterPersistenceDecode)
 {
     char *buf =
@@ -428,4 +431,12 @@ TEST(JsonGroupConfigTest, GroupConfigPersistenceEncode)
 
     free(result);
     free(result2);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

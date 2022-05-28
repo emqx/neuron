@@ -6,6 +6,10 @@
 #include "json/neu_json_mqtt.h"
 #include "json/neu_json_rw.h"
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
+
 TEST(JsonAPITest, ReadReqDecode)
 {
     char *buf = (char *) "{\"command\":\"\", "
@@ -72,4 +76,12 @@ TEST(JsonAPITest, WriteReqDecode)
     EXPECT_STREQ("hello world", req->value.val_str);
 
     neu_json_decode_write_req_free(req);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

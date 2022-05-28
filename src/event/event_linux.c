@@ -18,15 +18,17 @@
  **/
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/queue.h>
+#include <unistd.h>
 
 #include "event/event.h"
-#include "log.h"
+#include "utils/log.h"
 
 #ifdef NEU_PLATFORM_LINUX
 #include <sys/epoll.h>
@@ -85,8 +87,8 @@ static void *event_loop(void *arg)
             continue;
         }
         if (ret == -1 || events->stop) {
-            log_warn("event loop exit, errno: %d, stop: %d", errno,
-                     events->stop);
+            zlog_warn(neuron, "event loop exit, errno: %d, stop: %d", errno,
+                      events->stop);
             break;
         }
 
@@ -151,9 +153,9 @@ int neu_event_close(neu_events_t *events)
     events->stop = true;
     close(events->epoll_fd);
 
-    log_info("wait events loop exit: %d", events->epoll_fd);
+    zlog_info(neuron, "wait events loop exit: %d", events->epoll_fd);
     pthread_join(events->thread, NULL);
-    log_info("events loop has exited: %d", events->epoll_fd);
+    zlog_info(neuron, "events loop has exited: %d", events->epoll_fd);
 
     data = TAILQ_FIRST(&events->datas);
     while (data != NULL) {
@@ -207,16 +209,19 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, timer_fd, &event);
 
-    log_info("add timer, second: %ld, millisecond: %ld, timer: %d in epoll %d, "
-             "ret: %d",
-             timer.second, timer.millisecond, timer_fd, events->epoll_fd, ret);
+    zlog_info(neuron,
+              "add timer, second: %" PRId64 ", millisecond: %" PRId64
+              ", timer: %d in epoll %d, "
+              "ret: %d",
+              timer.second, timer.millisecond, timer_fd, events->epoll_fd, ret);
 
     return timer_ctx;
 }
 
 int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
 {
-    log_info("del timer: %d from epoll: %d", timer->fd, events->epoll_fd);
+    zlog_info(neuron, "del timer: %d from epoll: %d", timer->fd,
+              events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);
 
@@ -245,15 +250,15 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, io.fd, &event);
 
-    log_info("add io, fd: %d, epoll: %d, ret: %d", io.fd, events->epoll_fd,
-             ret);
+    zlog_info(neuron, "add io, fd: %d, epoll: %d, ret: %d", io.fd,
+              events->epoll_fd, ret);
 
     return io_ctx;
 }
 
 int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
 {
-    log_info("del io: %d from epoll: %d", io->fd, events->epoll_fd);
+    zlog_info(neuron, "del io: %d from epoll: %d", io->fd, events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
 
