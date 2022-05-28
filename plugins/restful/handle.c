@@ -25,7 +25,6 @@
 #include "vector.h"
 
 #include "datatag_table.h"
-#include "log.h"
 #include "plugin.h"
 
 #include "adapter_handle.h"

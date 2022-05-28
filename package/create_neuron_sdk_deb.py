@@ -58,6 +58,8 @@ rules.append(mkdeb.FileMap("../include/neuron/utils/utlist.h",
              "/usr/local/include/neuron/utils/"))
 rules.append(mkdeb.FileMap("../include/neuron/utils/zlog.h",
              "/usr/local/include/neuron/utils/"))
+rules.append(mkdeb.FileMap("../include/neuron/utils/log.h",
+             "/usr/local/include/neuron/utils/"))
 rules.append(mkdeb.FileMap("../include/neuron/utils/protocol_buf.h",
              "/usr/local/include/neuron/utils/"))
 rules.append(mkdeb.FileMap("../include/neuron/adapter.h",

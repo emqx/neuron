@@ -333,8 +333,8 @@ static void mqtt_routine_publish(mqtt_routine_t *routine)
             neu_mqtt_client_publish(routine->client, topic, 0,
                                     (unsigned char *) result, strlen(result));
         if (NEU_ERR_SUCCESS != error) {
-            log_error_node(routine->plugin, "publish error code :%d, topoic:%s",
-                           error, topic);
+            plog_error(routine->plugin, "publish error code :%d, topoic:%s",
+                       error, topic);
         }
 
         free(result);
@@ -449,8 +449,8 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
 
     neu_mqtt_client_continue(routine->client);
 
-    log_info_node(plugin, "try open mqtt client: %s:%s, code:%d",
-                  routine->option.host, routine->option.port, error);
+    plog_info(plugin, "try open mqtt client: %s:%s, code:%d",
+              routine->option.host, routine->option.port, error);
 
     // routine start
     routine->plugin = plugin;
@@ -460,7 +460,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
 
     if (0 !=
         pthread_create(&routine->daemon, NULL, mqtt_routine_loop, routine)) {
-        log_error_node(plugin, "routine create error");
+        plog_error(plugin, "routine create error");
         neu_mqtt_client_close(client);
         free(routine);
         return NULL;
@@ -534,8 +534,6 @@ static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
 
-    const char *name = neu_plugin_module.module_name;
-    log_info_node(plugin, "success to create plugin: %s", name);
     return plugin;
 }
 
@@ -544,7 +542,7 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
     assert(NULL != plugin);
 
     const char *name = neu_plugin_module.module_name;
-    log_info_node(plugin, "success to free plugin:%s", name);
+    plog_info(plugin, "success to free plugin:%s", name);
 
     free(plugin);
     return NEU_ERR_SUCCESS;
@@ -559,7 +557,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     pthread_mutex_init(&plugin->mutex, NULL);
 
     const char *name = neu_plugin_module.module_name;
-    log_info_node(plugin, "initialize plugin: %s", name);
+    plog_info(plugin, "initialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
 }
 
@@ -581,7 +579,7 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     pthread_mutex_destroy(&plugin->mutex);
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
     const char *name          = neu_plugin_module.module_name;
-    log_info_node(plugin, "uninitialize plugin: %s", name);
+    plog_info(plugin, "uninitialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
 }
 
@@ -617,7 +615,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *config)
 
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
 
-    log_info_node(plugin, "config plugin: %s", neu_plugin_module.module_name);
+    plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
 }
 

@@ -3,6 +3,10 @@
 #include "util.h"
 #include <neuron.h>
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
+
 TEST(MQTTTest, mqtt_option_init_by_config)
 {
     neu_config_t config;
@@ -19,4 +23,12 @@ TEST(MQTTTest, mqtt_option_init_by_config)
     int rc = mqtt_option_init(&config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(&option);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

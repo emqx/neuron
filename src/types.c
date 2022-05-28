@@ -17,12 +17,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "errcodes.h"
-#include "panic.h"
 #include "types.h"
 
 /*****************/
@@ -893,7 +893,7 @@ neu_fixed_array_t *neu_fixed_array_new(size_t length, size_t esize)
     neu_fixed_array_t *array;
 
     if (esize > FIXED_ARRAY_ESIZE_MAX) {
-        neu_panic("The length of fixed array is not less then 64K Byte");
+        assert(false);
         return NULL;
     }
 

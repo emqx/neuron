@@ -2,6 +2,10 @@
 
 #include "persist/persist.h"
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
+
 TEST(PersistenceAdapterTest, Adapter)
 {
     const char *     dir_name    = strdup("./persistence");
@@ -277,4 +281,12 @@ TEST(PersistenceSubscriptionTest, Subscription)
     free(req);
     free(adapter_name);
     vector_free(vec);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

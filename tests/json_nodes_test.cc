@@ -6,6 +6,10 @@
 #include "json/neu_json_fn.h"
 #include "json/neu_json_node.h"
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
+
 TEST(JsonNodesTest, AddNodesDecode)
 {
     char *buf = (char *) "{\"type\": 1, "
@@ -93,4 +97,12 @@ TEST(JsonNodesTest, UpdateNodesDecode)
     EXPECT_STREQ("adapter1", req->name);
 
     neu_json_decode_update_node_req_free(req);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

@@ -5,6 +5,9 @@
 
 #include "tag_sort.h"
 
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
 struct tag {
     uint8_t  station;
     uint8_t  area;
@@ -215,4 +218,12 @@ TEST(TagSortTest, SortDiff)
     free(tag2);
     free(tag3);
     free(tag4);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

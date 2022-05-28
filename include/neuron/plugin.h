@@ -40,8 +40,7 @@ typedef struct neu_plugin_common {
     neu_adapter_t *            adapter;
     const adapter_callbacks_t *adapter_callbacks;
     uint32_t                   event_id;
-    zlog_category_t *          default_category;
-    zlog_category_t *          protocol_category;
+    zlog_category_t *          log;
 } neu_plugin_common_t;
 
 typedef struct neu_plugin neu_plugin_t;

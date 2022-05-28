@@ -7,14 +7,15 @@
 #include <unistd.h>
 
 #include "connection/neu_tcp.h"
-#include "log.h"
 #include "plugins/modbus/modbus.h"
+#include "utils/log.h"
 
-static bool run = true;
+static bool      run    = true;
+zlog_category_t *neuron = NULL;
 
 static void sig_handle(int sig)
 {
-    log_warn("recv sig: %d", sig);
+    printf("recv sig: %d\n", sig);
     run = false;
 }
 
@@ -48,6 +49,9 @@ int main(int argc, char *argv[])
             port = t_port;
         }
     }
+
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
 
     neu_tcp_server_t *server     = neu_tcp_server_create("127.0.0.1", port);
     bool              new_client = true;
@@ -97,14 +101,14 @@ int main(int argc, char *argv[])
                                   sizeof(struct modbus_header),
                                   sizeof(struct modbus_header));
         if (len <= 0) {
-            log_warn("recv header error, %d", len);
+            printf("recv header error, %zd\n", len);
             new_client = true;
             sleep(1);
             continue;
         }
 
         if (ntohs(header->len) <= 2) {
-            log_warn("head len error, %d", ntohs(header->len));
+            printf("head len error, %d\n", ntohs(header->len));
             new_client = true;
             sleep(1);
             continue;
@@ -113,7 +117,7 @@ int main(int argc, char *argv[])
         len = neu_tcp_server_recv(server, body_buf, sizeof(body_buf),
                                   ntohs(header->len));
         if (len <= 0) {
-            log_warn("recv code error, %d", len);
+            printf("recv code error, %zd\n", len);
             new_client = true;
             sleep(1);
             continue;
@@ -153,18 +157,18 @@ int main(int argc, char *argv[])
                 if (code->function_code == MODBUS_READ_COIL) {
                     byte[i / 8] = byte[i / 8] |
                         coil[ntohs(r_req->start_addr) + i] << (i % 8);
-                    log_info("read coil, addr: %d, value: %d, index: %d",
-                             ntohs(r_req->start_addr) + i, byte[i / 8], i / 8);
+                    printf("read coil, addr: %d, value: %d, index: %d\n",
+                           ntohs(r_req->start_addr) + i, byte[i / 8], i / 8);
                 } else {
                     byte[i / 8] = byte[i / 8] |
                         input[ntohs(r_req->start_addr) + i] << (i % 8);
-                    log_info("read, addr: %d, i: %d, value: %d, n_reg: %d, "
-                             "byte: %d, "
-                             "dvluae: %d",
-                             ntohs(r_req->start_addr) + i, i,
-                             input[ntohs(r_req->start_addr) + i],
-                             ntohs(r_req->n_reg), byte[i / 8],
-                             input[ntohs(r_req->start_addr) + i] << (i % 8));
+                    printf("read, addr: %d, i: %d, value: %d, n_reg: %d, "
+                           "byte: %d, "
+                           "dvluae: %d\n",
+                           ntohs(r_req->start_addr) + i, i,
+                           input[ntohs(r_req->start_addr) + i],
+                           ntohs(r_req->n_reg), byte[i / 8],
+                           input[ntohs(r_req->start_addr) + i] << (i % 8));
                 }
             }
 
@@ -184,12 +188,12 @@ int main(int argc, char *argv[])
                 } else {
                     byte[i] = htons(input_reg[ntohs(r_req->start_addr) + i]);
                 }
-                // log_info("read addr: %d, value: %d, i:%d",
+                // nlog_info("read addr: %d, value: %d, i:%d",
                 // ntohs(r_req->start_addr) + i, byte[i], i);
             }
 
             res_len += r_res->n_byte;
-            //            log_info("read resp: n_byte: %d,len :%d",
+            //            nlog_info("read resp: n_byte: %d,len :%d",
             //            r_res->n_byte, res_len);
 
             break;
@@ -213,9 +217,9 @@ int main(int argc, char *argv[])
                     hold_reg[ntohs(w_req->start_addr) + i / 2] =
                         hold_reg[ntohs(w_req->start_addr) + i / 2] | w_u8[i];
                 }
-                log_info("write coil addr: %d, value: %X, reg: %d",
-                         ntohs(w_req->start_addr) + i / 2, w_u8[i],
-                         hold_reg[ntohs(w_req->start_addr) + i / 2]);
+                printf("write coil addr: %d, value: %X, reg: %d\n",
+                       ntohs(w_req->start_addr) + i / 2, w_u8[i],
+                       hold_reg[ntohs(w_req->start_addr) + i / 2]);
             }
 
             res_len += sizeof(struct modbus_pdu_write_response);
@@ -232,8 +236,8 @@ int main(int argc, char *argv[])
                 } else {
                     coil[ntohs(w_req->start_addr) + i] = 0;
                 }
-                log_info("write coil addr: %d, value: %d",
-                         ntohs(w_req->start_addr) + i, x > 0 ? 1 : 0);
+                printf("write coil addr: %d, value: %d\n",
+                       ntohs(w_req->start_addr) + i, x > 0 ? 1 : 0);
             }
 
             res_len += sizeof(struct modbus_pdu_write_response);
@@ -249,7 +253,7 @@ int main(int argc, char *argv[])
 
         len = neu_tcp_server_send(server, response, res_len);
         if (len <= 0) {
-            log_warn("send response %d", res_len);
+            printf("send response %zd\n", res_len);
             new_client = true;
             sleep(1);
             continue;

@@ -21,8 +21,8 @@
 #include "vector.h"
 
 #include "datatag_table.h"
-#include "log.h"
 #include "plugin.h"
+#include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_tag.h"
@@ -83,10 +83,10 @@ void handle_add_tags(nng_aio *aio)
                     vector_push_back(ids, &tag->id);
                     added = true;
                 } else {
-                    log_warn_node(plugin,
-                                  "Add failed, tag name exits, node_id:%d, "
-                                  "req_tag_name:%s",
-                                  req->node_id, req->tags[i].name);
+                    nlog_warn("Add failed, tag name exits, node_id:%" PRId64
+                              ", "
+                              "req_tag_name:%s",
+                              req->node_id, req->tags[i].name);
                     code = NEU_ERR_TAG_NAME_CONFLICT;
                     free(tag);
                 }
@@ -213,11 +213,10 @@ void handle_update_tags(nng_aio *aio)
                 }
 
                 if (0 != neu_datatag_tbl_update(table, req->tags[i].id, tag)) {
-                    log_warn_node(plugin,
-                                  "Update failed, tag name exists, node_id:%d, "
-                                  "tag_id:%d, req_tag_name:%s",
-                                  req->node_id, req->tags[i].id,
-                                  req->tags[i].name);
+                    nlog_warn("Update failed, tag name exists, node_id:%" PRId64
+                              ", "
+                              "tag_id:%" PRId64 ", req_tag_name:%s",
+                              req->node_id, req->tags[i].id, req->tags[i].name);
                     code = NEU_ERR_TAG_NAME_CONFLICT;
                     free(tag);
                 } else {

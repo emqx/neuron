@@ -29,6 +29,7 @@
 #include <neuron.h>
 
 #include "mqtt_c_client.h"
+#include "utils/log.h"
 
 #define UNUSED(x) (void) (x)
 #define INTERVAL 100000U
@@ -200,10 +201,10 @@ static void ssl_ctx_init(struct reconnect_state *state)
         state->cert = ssl_ctx_load_cert(cert_file, NULL);
         if (NULL != state->cert) {
             if (0 >= SSL_CTX_use_certificate(state->ssl_ctx, state->cert)) {
-                log_error("failed to use certificate");
+                zlog_error(neuron, "failed to use certificate");
             }
         } else {
-            log_error("failed to load certificate");
+            zlog_error(neuron, "failed to load certificate");
         }
     }
 
@@ -213,22 +214,22 @@ static void ssl_ctx_init(struct reconnect_state *state)
         state->key          = ssl_ctx_load_key(key_file, keypass);
         if (NULL != state->key) {
             if (0 >= SSL_CTX_use_PrivateKey(state->ssl_ctx, state->key)) {
-                log_error("failed to use privatekey");
+                zlog_error(neuron, "failed to use privatekey");
             }
         } else {
-            log_error("failed to load privatekey");
+            zlog_error(neuron, "failed to load privatekey");
         }
     }
 
     if (NULL != state->cert && NULL != state->key) {
         if (!SSL_CTX_check_private_key(state->ssl_ctx)) {
-            log_error("failed to check privatekey");
+            zlog_error(neuron, "failed to check privatekey");
         }
     }
 
     // setup ca from base64
     if (!ssl_ctx_load_ca(state->ssl_ctx, ca_file)) {
-        log_error("failed to load ca");
+        zlog_error(neuron, "failed to load ca");
     }
 }
 
@@ -406,7 +407,8 @@ static void subscribe_on_reconnect(mqtt_c_client_t *client)
     {
         neu_err_code_e error = client_subscribe_send(client, item);
         if (NEU_ERR_SUCCESS != error) {
-            log_error("send subscribe %s error:%d", item->topic, error);
+            zlog_error(neuron, "send subscribe %s error:%d", item->topic,
+                       error);
         }
     }
 }
@@ -480,15 +482,15 @@ static void publish_callback(void **                       p_reconnect_state,
 
     char *topic_name = (char *) malloc(published->topic_name_size + 1);
     if (NULL == topic_name) {
-        log_error("topic name alloc error");
+        zlog_error(neuron, "topic name alloc error");
         return;
     }
 
     memcpy(topic_name, published->topic_name, published->topic_name_size);
     topic_name[published->topic_name_size] = '\0';
 
-    log_trace("received publish('%s'): %s", topic_name,
-              (const char *) published->application_message);
+    zlog_debug(neuron, "received publish('%s'): %s", topic_name,
+               (const char *) published->application_message);
 
     struct subscribe_tuple *item = NULL;
     TAILQ_FOREACH(item, &client->head, entry)
@@ -539,7 +541,7 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
 {
     mqtt_c_client_t *client = calloc(1, sizeof(mqtt_c_client_t));
     if (NULL == client) {
-        log_error("mqtt c client alloc error");
+        zlog_error(neuron, "mqtt c client alloc error");
         return NULL;
     }
 
@@ -615,7 +617,7 @@ static neu_err_code_e client_connect(mqtt_c_client_t *client)
                         publish_callback);
 
     if (0 != pthread_create(&client->daemon, NULL, client_refresher, client)) {
-        log_error("pthread create error");
+        zlog_error(neuron, "pthread create error");
         return NEU_ERR_MQTT_CONNECT_FAILURE;
     }
 
@@ -717,7 +719,7 @@ client_subscribe_create(mqtt_c_client_t *client, const char *topic,
 {
     struct subscribe_tuple *tuple = calloc(1, sizeof(struct subscribe_tuple));
     if (NULL == tuple) {
-        log_error("tuple alloc error");
+        zlog_error(neuron, "tuple alloc error");
         return NULL;
     }
 

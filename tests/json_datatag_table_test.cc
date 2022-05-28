@@ -2,8 +2,11 @@
 
 #include <gtest/gtest.h>
 
+#include "utils/log.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_tag.h"
+
+zlog_category_t *neuron = NULL;
 
 TEST(JsonDatatagTableTest, AddTagDecode)
 {
@@ -139,4 +142,12 @@ TEST(JsonDatatagTableTest, UpdateTagDecode)
     EXPECT_EQ(1, req->tags[1].attribute);
 
     neu_json_decode_update_tags_req_free(req);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

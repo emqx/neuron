@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/queue.h>
 
-#include "log.h"
 #include "plugin.h"
+#include "utils/log.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_rw.h"
 
@@ -223,7 +223,7 @@ void handle_read_resp(void *cmd_resp)
     neu_datatag_table_t *    datatag_table =
         neu_system_get_datatags_table(ctx->plugin, ctx->node_id);
 
-    log_info("read resp id: %d, ctx: %p", req->req_id, ctx);
+    nlog_info("read resp id: %d, ctx: %p", req->req_id, ctx);
     assert(ctx != NULL);
 
     neu_dvalue_get_ref_array(resp->data_val, &array);
@@ -379,7 +379,7 @@ void handle_write_resp(void *cmd_resp)
     neu_int_val_t *           iv    = NULL;
     int32_t                   error = 0;
 
-    log_info("write resp id: %d, ctx: %p", req->req_id, ctx);
+    nlog_info("write resp id: %d, ctx: %p", req->req_id, ctx);
 
     neu_dvalue_get_ref_array(resp->data_val, &array);
     iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);

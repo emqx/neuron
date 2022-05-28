@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "neuron/log.h"
+#include "utils/log.h"
 
 #include "daemon.h"
 
@@ -106,8 +106,8 @@ int neuron_already_running()
     fd = open(NEURON_DAEMON_LOCK_FNAME, O_RDWR | O_CREAT,
               S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if (fd < 0) {
-        log_error("cannot open %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
-                  strerror(errno));
+        nlog_error("cannot open %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
+                   strerror(errno));
         exit(1);
     }
 
@@ -118,8 +118,8 @@ int neuron_already_running()
             close(fd);
             return 1;
         }
-        log_error("cannot lock %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
-                  strerror(errno));
+        nlog_error("cannot lock %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
+                   strerror(errno));
         exit(1);
     }
 

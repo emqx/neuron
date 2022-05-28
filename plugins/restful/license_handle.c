@@ -25,6 +25,7 @@
 #include "file.h"
 #include "neu_vector.h"
 #include "plugin.h"
+#include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_license.h"
@@ -129,14 +130,14 @@ static int set_license(const char *lic_str)
 
     FILE *fp = fopen(fname_tmp, "w");
     if (NULL == fp) {
-        log_error("unable to create license tmp file `%s`", fname_tmp);
+        nlog_error("unable to create license tmp file `%s`", fname_tmp);
         return NEU_ERR_EINTERNAL;
     }
 
     rv = fputs(lic_str, fp);
 
     if (rv < 0) {
-        log_error("unable to write license to file `%s`", fname_tmp);
+        nlog_error("unable to write license to file `%s`", fname_tmp);
         rv = NEU_ERR_EINTERNAL;
         goto final;
     }
@@ -147,18 +148,18 @@ static int set_license(const char *lic_str)
     rv = license_read(&new_lic, fname_tmp);
     license_fini(&new_lic);
     if (0 != rv) {
-        log_error("bad license string");
+        nlog_error("bad license string");
         goto final;
     }
 
     if (license_is_expired(&new_lic)) {
-        log_error("expired license string");
+        nlog_error("expired license string");
         rv = NEU_ERR_LICENSE_EXPIRED;
         goto final;
     }
 
     if (file_exists(LICENSE_PATH) && 0 > backup_license_file(LICENSE_PATH)) {
-        log_error("unable to backup license file `%s`", LICENSE_PATH);
+        nlog_error("unable to backup license file `%s`", LICENSE_PATH);
         rv = NEU_ERR_EINTERNAL;
         goto final;
     }

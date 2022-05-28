@@ -36,7 +36,7 @@
 #include <time.h>
 
 #include "errcodes.h"
-#include "log.h"
+#include "utils/log.h"
 
 #include "license.h"
 
@@ -218,7 +218,7 @@ static int extract_license(const char *license_fname, const char *pub_key,
         goto final;
     }
     if (!(cert = PEM_read_bio_X509(certbio, NULL, NULL, NULL))) {
-        log_warn("loading certificate into memory");
+        nlog_warn("loading certificate into memory");
         rv = NEU_ERR_LICENSE_INVALID;
         goto final;
     }
@@ -227,14 +227,14 @@ static int extract_license(const char *license_fname, const char *pub_key,
     keybio = BIO_new(BIO_s_mem());
     BIO_puts(keybio, pub_key);
     if (!(pkey = PEM_read_bio_PUBKEY(keybio, NULL, NULL, NULL))) {
-        log_warn("loading pubkey into memory");
+        nlog_warn("loading pubkey into memory");
         rv = NEU_ERR_EINTERNAL;
         goto final;
     }
 
     /* Verify the certificates */
     if (X509_verify(cert, pkey) == 0) {
-        log_warn("certification verification failure");
+        nlog_warn("certification verification failure");
         rv = NEU_ERR_LICENSE_INVALID;
         goto final;
     }
@@ -243,14 +243,14 @@ static int extract_license(const char *license_fname, const char *pub_key,
     not_after       = X509_get_notAfter(cert);
     license->since_ = get_asn1_ts(not_before);
     license->until_ = get_asn1_ts(not_after);
-    log_info("certificate expire date: %s", not_after->data);
+    nlog_info("certificate expire date: %s", not_after->data);
 
     subj = X509_get_subject_name(cert);
     for (i = 0; i < X509_NAME_entry_count(subj); i++) {
         entry = X509_NAME_get_entry(subj, i);
         str   = X509_NAME_ENTRY_get_data(entry);
         value = ASN1_STRING_get0_data(str);
-        log_info("certificate subject: %s", value);
+        nlog_info("certificate subject: %s", value);
     }
 
     issuer = X509_get_issuer_name(cert);
@@ -258,7 +258,7 @@ static int extract_license(const char *license_fname, const char *pub_key,
         entry = X509_NAME_get_entry(issuer, i);
         str   = X509_NAME_ENTRY_get_data(entry);
         value = ASN1_STRING_get0_data(str);
-        log_info("certificate issuer: %s", value);
+        nlog_info("certificate issuer: %s", value);
     }
 
     /* extract the certificate's extensions */
@@ -275,14 +275,14 @@ static int extract_license(const char *license_fname, const char *pub_key,
         str = X509_EXTENSION_get_data(ext);
         OBJ_obj2txt(buf, sizeof buf, obj, 1);
         value = ASN1_STRING_get0_data(str);
-        log_info("certificate OID: %s => %s", buf, &value[2]);
+        nlog_info("certificate OID: %s => %s", buf, &value[2]);
 
         const char *val = (char *) &value[2];
 
         if (0 == strcmp(buf, LICENSE_KEY_TYPE)) {
             license->type_ = scan_licese_type(val);
             if (LICENSE_TYPE_MAX == license->type_) {
-                log_error("invalid license type:`%s`", val);
+                zlog_error(neuron, "invalid license type:`%s`", val);
                 rv = NEU_ERR_LICENSE_INVALID;
             }
         } else if (0 == strcmp(buf, LICENSE_KEY_MAX_NODES)) {
@@ -293,13 +293,14 @@ static int extract_license(const char *license_fname, const char *pub_key,
             if (0 !=
                 scan_bitvec(license->plugin_flag_,
                             sizeof(license->plugin_flag_), val)) {
-                log_error("fail to scan license plugin flag:`%s`", val);
+                zlog_error(neuron, "fail to scan license plugin flag:`%s`",
+                           val);
                 rv = NEU_ERR_LICENSE_INVALID;
             }
         }
     }
 
-    log_info("certification verification success");
+    nlog_info("certification verification success");
 
 final:
     if (pkey)
@@ -341,10 +342,10 @@ void license_print(license_t *license)
     print_bitvec(flag, sizeof(flag), license->plugin_flag_,
                  sizeof(license->plugin_flag_));
 
-    log_info("license `%s` for %s, from %s to %s, max_nodes:%" PRIu32
-             ", max_node_tags:%" PRIu32 ", flag:0x%s",
-             license->fname_, license_type_str(license->type_), start, end,
-             license->max_nodes_, license->max_node_tags_, flag);
+    nlog_info("license `%s` for %s, from %s to %s, max_nodes:%" PRIu32
+              ", max_node_tags:%" PRIu32 ", flag:0x%s",
+              license->fname_, license_type_str(license->type_), start, end,
+              license->max_nodes_, license->max_node_tags_, flag);
 }
 
 void license_init(license_t *license)

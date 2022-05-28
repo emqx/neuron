@@ -25,7 +25,6 @@
 #include <sys/queue.h>
 
 #include "event/event.h"
-#include "log.h"
 
 #ifdef NEU_PLATFORM_DARWIN
 

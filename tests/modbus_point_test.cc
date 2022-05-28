@@ -4,6 +4,9 @@
 
 #include "modbus/modbus_point.h"
 
+#include "utils/log.h"
+zlog_category_t *neuron = NULL;
+
 TEST(ModbusPointTest, AddPoint)
 {
     modbus_point_context_t *ctx = modbus_point_init(NULL);
@@ -529,4 +532,12 @@ TEST(ModbusPointTest, ReadInputRegisterPoint)
     EXPECT_EQ(0, modbus_point_all_read(ctx, true, read_input_register));
 
     modbus_point_destory(ctx);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

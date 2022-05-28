@@ -20,11 +20,12 @@
 #include <stdlib.h>
 
 #include "ping.h"
+#include "utils/log.h"
 
 char *command_ping(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt)
 {
     UNUSED(plugin);
-    log_info("Node control uuid:%s", mqtt->uuid);
+    zlog_info(neuron, "Node control uuid:%s", mqtt->uuid);
     char *result = calloc(100, sizeof(char));
     snprintf(result, 99, "{\"uuid\": \"%s\", \"command\":\"%s\"}", mqtt->uuid,
              "");

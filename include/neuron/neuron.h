@@ -24,11 +24,13 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+
 #include "file.h"
-#include "log.h"
 #include "neu_vector.h"
 #include "neuron/adapter.h"
-#include "panic.h"
 #include "plugin.h"
 #include "types.h"
 #include "utils/base64.h"
@@ -38,6 +40,7 @@ extern "C" {
 
 #include "json/neu_json_param.h"
 
+#include "utils/log.h"
 #include "utils/utextend.h"
 
 #include "tag_sort.h"

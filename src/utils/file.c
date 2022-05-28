@@ -16,13 +16,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-
-#include "file.h"
-#include "log.h"
 #include <dirent.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+
+#include "file.h"
+#include "utils/log.h"
 
 #define DEV_TTY_LENTH 261
 
@@ -35,7 +35,7 @@ int tty_file_list_get(char ***tty_file)
     *tty_file = NULL;
     dir       = opendir("/dev");
     if (dir == NULL) {
-        log_error("Open dir error: %s", strerror(errno));
+        zlog_error(neuron, "Open dir error: %s", strerror(errno));
         return -1;
     }
     ptr = readdir(dir);

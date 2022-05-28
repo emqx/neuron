@@ -54,13 +54,13 @@ static neu_data_val_t *setup_write_data_val()
 
     write_val = neu_dvalue_unit_new();
     if (write_val == NULL) {
-        log_error("Failed to allocate data value for write data");
+        nlog_error("Failed to allocate data value for write data");
         return NULL;
     }
 
     array = neu_fixed_array_new(3, sizeof(neu_int_val_t));
     if (array == NULL) {
-        log_error("Failed to allocate array for write data");
+        nlog_error("Failed to allocate array for write data");
         neu_dvalue_free(write_val);
         return NULL;
     }
@@ -110,14 +110,14 @@ static void *sample_app_work_loop(void *arg)
     sync_cmd.req_id   = plugin_get_event_id(plugin);
     sync_cmd.buf      = (void *) &plugin_add_cmd;
     sync_cmd.buf_len  = sizeof(neu_cmd_add_plugin_lib_t);
-    log_info("Add a new plugin lib");
+    nlog_info("Add a new plugin lib");
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
-        log_error("Failed to add plugin lib with name: %s",
-                  plugin_add_cmd.plugin_lib_name);
+        nlog_error("Failed to add plugin lib with name: %s",
+                   plugin_add_cmd.plugin_lib_name);
         return NULL;
     }
-    log_info("Result of add command is %d", (intptr_t) result->buf);
+    nlog_info("Result of add command is %p", result->buf);
     free(result);
 
     /* example of get plugin libs */
@@ -129,7 +129,7 @@ static void *sample_app_work_loop(void *arg)
     sync_cmd.req_id   = plugin_get_event_id(plugin);
     sync_cmd.buf      = (void *) &get_plugins_cmd;
     sync_cmd.buf_len  = sizeof(neu_cmd_get_plugin_libs_t);
-    log_info("Get list of driver plugins");
+    nlog_info("Get list of driver plugins");
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
         return NULL;
@@ -142,8 +142,8 @@ static void *sample_app_work_loop(void *arg)
     plugin_info =
         (plugin_lib_info_t *) vector_get(&resp_plugins->plugin_libs, 0);
     plugin_id = plugin_info->plugin_id;
-    log_info("The first plugin(%d) of plugin list, name:%s", plugin_id,
-             plugin_info->plugin_name);
+    nlog_info("The first plugin(%d) of plugin list, name:%s", plugin_id.id_val,
+              plugin_info->plugin_name);
     vector_uninit(&resp_plugins->plugin_libs);
     free(resp_plugins);
     free(result);
@@ -161,13 +161,13 @@ static void *sample_app_work_loop(void *arg)
     sync_cmd.req_id   = plugin_get_event_id(plugin);
     sync_cmd.buf      = (void *) &node_add_cmd;
     sync_cmd.buf_len  = sizeof(neu_cmd_add_node_t);
-    log_info("Add a new node");
+    nlog_info("Add a new node");
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
-        log_error("Failed to add node with adapter: %s, plugin: %s",
-                  node_add_cmd.adapter_name, node_add_cmd.plugin_name);
+        nlog_error("Failed to add node with adapter: %s, plugin: %s",
+                   node_add_cmd.adapter_name, node_add_cmd.plugin_name);
     }
-    log_info("Result of add command is %d", (intptr_t) result->buf);
+    nlog_info("Result of add command is %p", result->buf);
     free(result);
 
     /* example of get nodes */
@@ -180,7 +180,7 @@ static void *sample_app_work_loop(void *arg)
     sync_cmd.req_id         = plugin_get_event_id(plugin);
     sync_cmd.buf            = (void *) &get_nodes_cmd;
     sync_cmd.buf_len        = sizeof(neu_cmd_get_nodes_t);
-    log_info("Get list of driver nodes");
+    nlog_info("Get list of driver nodes");
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
         return NULL;
@@ -192,8 +192,8 @@ static void *sample_app_work_loop(void *arg)
     resp_nodes  = (neu_reqresp_nodes_t *) result->buf;
     node_info   = (neu_node_info_t *) vector_get(&resp_nodes->nodes, 0);
     dst_node_id = node_info->node_id;
-    log_info("The first node(%d) of driver nodes list, name:%s", dst_node_id,
-             node_info->node_name);
+    nlog_info("The first node(%d) of driver nodes list, name:%s", dst_node_id,
+              node_info->node_name);
     VECTOR_FOR_EACH(&resp_nodes->nodes, iter)
     {
         node_info = (neu_node_info_t *) iterator_get(&iter);
@@ -214,7 +214,7 @@ static void *sample_app_work_loop(void *arg)
     sync_cmd.req_id      = plugin_get_event_id(plugin);
     sync_cmd.buf         = (void *) &get_grps_cmd;
     sync_cmd.buf_len     = sizeof(neu_cmd_get_grp_configs_t);
-    log_info("Get list of group configs");
+    nlog_info("Get list of group configs");
     int retry_count = 3;
 get_grp_configs_retry:
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
@@ -239,8 +239,8 @@ get_grp_configs_retry:
         grp_config =
             *(neu_taggrp_config_t **) vector_get(&resp_grps->grp_configs, 0);
         neu_taggrp_cfg_ref(grp_config);
-        log_info("The first group config(%s) of node(%d)",
-                 neu_taggrp_cfg_get_name(grp_config), dst_node_id);
+        nlog_info("The first group config(%s) of node(%d)",
+                  neu_taggrp_cfg_get_name(grp_config), dst_node_id);
         VECTOR_FOR_EACH(&resp_grps->grp_configs, iter)
         {
             neu_taggrp_config_t *cur_grp_config;
@@ -262,7 +262,7 @@ get_grp_configs_retry:
     sync_cmd.req_id      = plugin_get_event_id(plugin);
     sync_cmd.buf         = (void *) &get_tags_cmd;
     sync_cmd.buf_len     = sizeof(neu_cmd_get_datatags_t);
-    log_info("Get datatag table of node(%d)", dst_node_id);
+    nlog_info("Get datatag table of node(%d)", dst_node_id);
     rv = adapter_callbacks->command(plugin->common.adapter, &sync_cmd, &result);
     if (rv < 0) {
         return NULL;
@@ -272,7 +272,7 @@ get_grp_configs_retry:
     assert(result->buf_len == sizeof(neu_reqresp_datatags_t));
     resp_tags = (neu_reqresp_datatags_t *) result->buf;
     tag_table = resp_tags->datatag_tbl;
-    log_info("Get the tag_table(%p)", tag_table);
+    nlog_info("Get the tag_table(%p)", tag_table);
     free(resp_tags);
     free(result);
 
@@ -287,7 +287,7 @@ get_grp_configs_retry:
     cmd.req_id           = plugin_get_event_id(plugin);
     cmd.buf              = (void *) &read_req;
     cmd.buf_len          = sizeof(neu_reqresp_read_t);
-    log_info("Send a read command to node: %d", dst_node_id);
+    nlog_info("Send a read command to node: %d", dst_node_id);
     adapter_callbacks->command(plugin->common.adapter, &cmd, NULL);
 
     usleep(100000);
@@ -305,16 +305,16 @@ get_grp_configs_retry:
     cmd1.req_id           = plugin_get_event_id(plugin);
     cmd1.buf              = (void *) &write_req;
     cmd1.buf_len          = sizeof(neu_reqresp_write_t);
-    log_info("Send a write command to node: %d", dst_node_id);
+    nlog_info("Send a write command to node: %d", dst_node_id);
     adapter_callbacks->command(plugin->common.adapter, &cmd1, NULL);
 
     neu_taggrp_cfg_free(grp_config);
 
     usleep(500000);
-    log_info("Stop a node(%d)", dst_node_id);
+    nlog_info("Stop a node(%d)", dst_node_id);
     neu_plugin_node_ctl(plugin, dst_node_id, NEU_ADAPTER_CTL_STOP);
     usleep(500000);
-    log_info("Restart a node(%d)", dst_node_id);
+    nlog_info("Restart a node(%d)", dst_node_id);
     neu_plugin_node_ctl(plugin, dst_node_id, NEU_ADAPTER_CTL_START);
     return NULL;
 }
@@ -326,14 +326,14 @@ sample_app_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_t *plugin;
 
     if (adapter == NULL || callbacks == NULL) {
-        log_error("Open plugin with NULL adapter or callbacks");
+        nlog_error("Open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        log_error("Failed to allocate plugin %s",
-                  neu_plugin_module.module_name);
+        nlog_error("Failed to allocate plugin %s",
+                   neu_plugin_module.module_name);
         return NULL;
     }
 
@@ -345,11 +345,11 @@ sample_app_plugin_open(neu_adapter_t *            adapter,
     int rv;
     rv = pthread_create(&plugin->work_tid, NULL, sample_app_work_loop, plugin);
     if (rv != 0) {
-        log_error("Failed to create work thread for sample app plugin");
+        nlog_error("Failed to create work thread for sample app plugin");
         free(plugin);
         return NULL;
     }
-    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
 
@@ -359,7 +359,7 @@ static int sample_app_plugin_close(neu_plugin_t *plugin)
 
     pthread_join(plugin->work_tid, NULL);
     free(plugin);
-    log_info("Success to free plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -369,7 +369,7 @@ static int sample_app_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -379,7 +379,7 @@ static int sample_app_plugin_uninit(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -390,7 +390,7 @@ static int sample_app_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     (void) configs;
 
-    log_info("config plugin: %s", neu_plugin_module.module_name);
+    nlog_info("config plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -418,9 +418,9 @@ static int handle_trans_data_value(neu_data_val_t *trans_val)
     val_cstr = int_val->val;
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
 
-    log_info("The sample driver report data, i64: %" PRIi64
-             ", f64: %f, cstr: %s",
-             i64, f64, cstr);
+    nlog_info("The sample driver report data, i64: %" PRIi64
+              ", f64: %f, cstr: %s",
+              i64, f64, cstr);
     return 0;
 }
 
@@ -454,12 +454,12 @@ static int handle_read_resp_value(neu_data_val_t *data_val)
     val_cstr = int_val->val;
     neu_dvalue_get_ref_cstr(val_cstr, &cstr);
 
-    log_info("The sample driver read status: %d", err);
+    nlog_info("The sample driver read status: %d", err);
 
     if (err == 0) {
-        log_info("The sample driver read data, i64: %" PRIi64
-                 ", f64: %f, cstr: %s",
-                 i64, f64, cstr);
+        nlog_info("The sample driver read data, i64: %" PRIi64
+                  ", f64: %f, cstr: %s",
+                  i64, f64, cstr);
     }
     return 0;
 }
@@ -479,8 +479,8 @@ static int handle_write_resp_value(neu_data_val_t *data_value)
         int_val = neu_fixed_array_get(array, i);
         val_err = int_val->val;
         neu_dvalue_get_errorcode(val_err, &err);
-        log_info("The sample driver write datatag(%d) return result(%d)",
-                 int_val->key, err);
+        nlog_info("The sample driver write datatag(%d) return result(%d)",
+                  int_val->key, err);
     }
     return 0;
 }
@@ -490,11 +490,11 @@ static int sample_app_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     int rv = 0;
 
     if (plugin == NULL || req == NULL) {
-        log_warn("The plugin pointer or request is NULL");
+        nlog_warn("The plugin pointer or request is NULL");
         return (-1);
     }
 
-    log_info("send request to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("send request to plugin: %s", neu_plugin_module.module_name);
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
     (void) adapter_callbacks;
@@ -544,7 +544,7 @@ static int sample_app_plugin_event_reply(neu_plugin_t *     plugin,
     (void) plugin;
     (void) reply;
 
-    log_info("reply event to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("reply event to plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 

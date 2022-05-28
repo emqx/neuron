@@ -26,9 +26,9 @@
 
 #include "handle.h"
 #include "http.h"
-#include "log.h"
 #include "rest.h"
 #include "rw_handle.h"
+#include "utils/log.h"
 #include "utils/neu_jwt.h"
 
 #define neu_plugin_module default_dashboard_plugin_module
@@ -90,8 +90,8 @@ static int rest_add_handler(nng_http_server *              server,
     }
 
     ret = nng_http_server_add_handler(server, handler);
-    log_info("rest add handler, method: %s, url: %s, ret: %d", method,
-             rest_handler->url, ret);
+    nlog_info("rest add handler, method: %s, url: %s, ret: %d", method,
+              rest_handler->url, ret);
 
     return ret;
 }
@@ -107,7 +107,7 @@ static nng_http_server *server_init(char *type)
     } else {
         snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7000");
     }
-    log_info("%s bind url: %s", type, host_port);
+    nlog_info("%s bind url: %s", type, host_port);
 
     int ret = nng_url_parse(&url, host_port);
     if (ret != 0) {
@@ -134,14 +134,14 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     const struct neu_rest_handler *cors          = NULL;
 
     if (adapter == NULL || callbacks == NULL) {
-        log_error("Open plugin with NULL adapter or callbacks");
+        nlog_error("Open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        log_error("Failed to allocate plugin %s",
-                  neu_plugin_module.module_name);
+        nlog_error("Failed to allocate plugin %s",
+                   neu_plugin_module.module_name);
         return NULL;
     }
 
@@ -155,7 +155,7 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     plugin->api_server = server_init("api");
 
     if (plugin->web_server == NULL || plugin->api_server == NULL) {
-        log_error("Failed to create web server and api server");
+        nlog_error("Failed to create web server and api server");
         goto server_init_fail;
     }
 
@@ -168,7 +168,7 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
         rest_add_handler(plugin->api_server, &cors[i]);
     }
     if ((rv = nng_http_server_start(plugin->api_server)) != 0) {
-        log_error("Failed to start api server, error=%d", rv);
+        nlog_error("Failed to start api server, error=%d", rv);
         goto api_server_start_fail;
     }
 
@@ -178,12 +178,12 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
     }
 
     if ((rv = nng_http_server_start(plugin->web_server)) != 0) {
-        log_error("Failed to start web server, error=%d", rv);
+        nlog_error("Failed to start web server, error=%d", rv);
         goto web_server_start_fail;
     }
 
     handle_rw_init();
-    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 
 web_server_start_fail:
@@ -214,7 +214,7 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
     neu_rest_free_ctx(plugin->handle_ctx);
 
     free(plugin);
-    log_info("Success to free plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -226,7 +226,7 @@ static int dashb_plugin_init(neu_plugin_t *plugin)
 
     rv = neu_jwt_init("./config");
 
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -236,7 +236,7 @@ static int dashb_plugin_uninit(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -247,7 +247,7 @@ static int dashb_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     (void) configs;
 
-    log_info("config plugin: %s", neu_plugin_module.module_name);
+    nlog_info("config plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -256,11 +256,11 @@ static int dashb_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     int rv = 0;
 
     if (plugin == NULL || req == NULL) {
-        log_warn("The plugin pointer or request is NULL");
-        return (-1);
+        nlog_warn("The plugin pointer or request is NULL");
+        return -1;
     }
 
-    log_info("send request to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("send request to plugin: %s", neu_plugin_module.module_name);
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
     (void) adapter_callbacks;
@@ -286,7 +286,7 @@ static int dashb_plugin_event_reply(neu_plugin_t *     plugin,
     (void) plugin;
     (void) reply;
 
-    log_info("reply event to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("reply event to plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 

@@ -41,21 +41,21 @@ sample_drv_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_t *plugin;
 
     if (adapter == NULL || callbacks == NULL) {
-        log_error("Open plugin with NULL adapter or callbacks");
+        nlog_error("Open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        log_error("Failed to allocate plugin %s",
-                  neu_plugin_module.module_name);
+        nlog_error("Failed to allocate plugin %s",
+                   neu_plugin_module.module_name);
         return NULL;
     }
 
     neu_plugin_common_init(&plugin->common);
     plugin->common.adapter           = adapter;
     plugin->common.adapter_callbacks = callbacks;
-    log_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 }
 
@@ -64,7 +64,7 @@ static int sample_drv_plugin_close(neu_plugin_t *plugin)
     int rv = 0;
 
     free(plugin);
-    log_info("Success to free plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -74,7 +74,7 @@ static int sample_drv_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    log_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -84,7 +84,7 @@ static int sample_drv_plugin_uninit(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    log_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -95,7 +95,7 @@ static int sample_drv_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     (void) configs;
 
-    log_info("config plugin: %s", neu_plugin_module.module_name);
+    nlog_info("config plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -106,7 +106,7 @@ static neu_data_val_t *setup_read_resp_data_value()
 
     resp_val = neu_dvalue_unit_new();
     if (resp_val == NULL) {
-        log_error("Failed to allocate data value for response tags");
+        nlog_error("Failed to allocate data value for response tags");
         return NULL;
     }
 
@@ -115,7 +115,7 @@ static neu_data_val_t *setup_read_resp_data_value()
     // In this case, length is 3 + 1 = 4.
     array = neu_fixed_array_new(4, sizeof(neu_int_val_t));
     if (array == NULL) {
-        log_error("Failed to allocate array for response tags");
+        nlog_error("Failed to allocate array for response tags");
         neu_dvalue_free(resp_val);
         return NULL;
     }
@@ -163,7 +163,7 @@ static int handle_write_data_value(neu_data_val_t * write_val,
     neu_data_val_t *val_cstr;
     char *          cstr;
 
-    log_info("Write data values to driver cache");
+    nlog_info("Write data values to driver cache");
     int_val = neu_fixed_array_get(array, 0);
     val_i64 = int_val->val;
     neu_dvalue_get_int64(val_i64, &tag001);
@@ -180,7 +180,7 @@ static int handle_write_data_value(neu_data_val_t * write_val,
     *p_resp_val = NULL;
     resp_val    = neu_dvalue_unit_new();
     if (resp_val == NULL) {
-        log_error("Failed to allocate data value for response write data");
+        nlog_error("Failed to allocate data value for response write data");
         return -1;
     }
 
@@ -189,7 +189,7 @@ static int handle_write_data_value(neu_data_val_t * write_val,
     // In this case, length is 3 + 1 = 4.
     array = neu_fixed_array_new(4, sizeof(neu_int_val_t));
     if (array == NULL) {
-        log_error("Failed to allocate array for response write data");
+        nlog_error("Failed to allocate array for response write data");
         neu_dvalue_free(resp_val);
         return -1;
     }
@@ -217,11 +217,11 @@ static int sample_drv_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     int rv = 0;
 
     if (plugin == NULL || req == NULL) {
-        log_warn("The plugin pointer or request is NULL");
+        nlog_warn("The plugin pointer or request is NULL");
         return (-1);
     }
 
-    log_info("send request to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("send request to plugin: %s", neu_plugin_module.module_name);
     const adapter_callbacks_t *adapter_callbacks;
     adapter_callbacks = plugin->common.adapter_callbacks;
 
@@ -301,7 +301,7 @@ static int sample_drv_plugin_event_reply(neu_plugin_t *     plugin,
     (void) plugin;
     (void) reply;
 
-    log_info("reply event to plugin: %s", neu_plugin_module.module_name);
+    nlog_info("reply event to plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 

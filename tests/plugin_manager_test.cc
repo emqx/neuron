@@ -4,6 +4,9 @@
 #include "core/plugin_manager.h"
 
 #define NUM_DATATAGTABLE_MODIFY 100
+#include "utils/log.h"
+
+zlog_category_t *neuron = NULL;
 
 TEST(PluginManagerTest, RegPluginManagerTest)
 {
@@ -416,4 +419,12 @@ TEST(PluginManagerTest, PluginManagerPthread)
 
     EXPECT_EQ(0, ret1);
     EXPECT_EQ(0, ret2);
+}
+
+int main(int argc, char **argv)
+{
+    zlog_init("./config/dev.conf");
+    neuron = zlog_get_category("neuron");
+    ::testing::InitGoogleTest(&argc, argv);
+    return RUN_ALL_TESTS();
 }

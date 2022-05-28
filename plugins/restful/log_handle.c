@@ -64,6 +64,14 @@ static int get_log(const char *fname, uint64_t since, uint64_t until, int level,
                    size_t *line_tot);
 static int string_to_log_level(const char *s, size_t n, int *level);
 
+enum {
+    NEU_LOG_TRACE,
+    NEU_LOG_DEBUG,
+    NEU_LOG_INFO,
+    NEU_LOG_WARN,
+    NEU_LOG_ERROR,
+    NEU_LOG_FATAL
+};
 void handle_get_log(nng_aio *aio)
 {
     neu_json_get_log_resp_t resp      = {};
@@ -365,24 +373,25 @@ static int get_log_level(const char *line)
 
 static int string_to_log_level(const char *s, size_t n, int *level)
 {
-    if (NULL == level) {
-        return -1;
-    }
-    if (0 == strncasecmp(s, "trace", n)) {
-        *level = NEU_LOG_TRACE;
-    } else if (0 == strncasecmp(s, "debug", n)) {
-        *level = NEU_LOG_DEBUG;
-    } else if (0 == strncasecmp(s, "info", n)) {
-        *level = NEU_LOG_INFO;
-    } else if (0 == strncasecmp(s, "warn", n)) {
-        *level = NEU_LOG_WARN;
-    } else if (0 == strncasecmp(s, "error", n)) {
-        *level = NEU_LOG_ERROR;
-    } else if (0 == strncasecmp(s, "fatal", n)) {
-        *level = NEU_LOG_FATAL;
-    } else {
-        return -1;
-    }
+    (void) s;
+    (void) n;
+    (void) level;
+    return -1;
+    // if (0 == strncasecmp(s, "trace", n)) {
+    //*level = NEU_LOG_TRACE;
+    //} else if (0 == strncasecmp(s, "debug", n)) {
+    //*level = NEU_LOG_DEBUG;
+    //} else if (0 == strncasecmp(s, "info", n)) {
+    //*level = NEU_LOG_INFO;
+    //} else if (0 == strncasecmp(s, "warn", n)) {
+    //*level = NEU_LOG_WARN;
+    //} else if (0 == strncasecmp(s, "error", n)) {
+    //*level = NEU_LOG_ERROR;
+    //} else if (0 == strncasecmp(s, "fatal", n)) {
+    //*level = NEU_LOG_FATAL;
+    //} else {
+    // return -1;
+    //}
 
-    return 0;
+    // return 0;
 }

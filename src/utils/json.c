@@ -22,7 +22,7 @@
 
 #include <jansson.h>
 
-#include "log.h"
+#include "utils/log.h"
 #include "json/json.h"
 
 static json_t *encode_object_value(neu_json_elem_t *ele)
@@ -99,7 +99,7 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     }
 
     if (ob == NULL) {
-        log_error("json decode: %s failed", ele->name);
+        zlog_error(neuron, "json decode: %s failed", ele->name);
         return -1;
     }
 
@@ -138,7 +138,7 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         ele->v.val_object = ob;
         break;
     default:
-        log_error("json decode unknown type: %d", ele->t);
+        zlog_error(neuron, "json decode unknown type: %d", ele->t);
         return -1;
     }
 
@@ -156,9 +156,10 @@ int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
     json_t *     root = json_loads(buf, 0, &error);
 
     if (root == NULL) {
-        log_error("json load error, line: %d, column: %d, position: %d, info: "
-                  "%s",
-                  error.line, error.column, error.position, error.text);
+        zlog_error(neuron,
+                   "json load error, line: %d, column: %d, position: %d, info: "
+                   "%s",
+                   error.line, error.column, error.position, error.text);
         return -1;
     }
 
@@ -176,7 +177,7 @@ int neu_json_decode(char *buf, int size, neu_json_elem_t *ele)
 int neu_json_decode_by_json(void *json, int size, neu_json_elem_t *ele)
 {
     if (json == NULL) {
-        log_error("The param json is NULL");
+        zlog_error(neuron, "The param json is NULL");
         return -1;
     }
 
@@ -198,7 +199,8 @@ int neu_json_decode_array(char *buf, char *name, int index, int size,
     json_t *     root = json_loads(buf, 0, &error);
 
     if (root == NULL) {
-        log_error(
+        zlog_error(
+            neuron,
             "json load error, line: %d, column: %d, position: %d, info: %s",
             error.line, error.column, error.position, error.text);
         return -1;
@@ -261,7 +263,7 @@ int neu_json_decode_array_size_by_json(void *json, char *child)
     if (ob != NULL && json_is_array(ob)) {
         ret = json_array_size(ob);
     } else {
-        log_error("json get array object fail, %s", child);
+        zlog_error(neuron, "json get array object fail, %s", child);
     }
 
     return ret;
@@ -275,7 +277,8 @@ int neu_json_decode_array_size(char *buf, char *child)
     int          ret = -1;
 
     if (root == NULL) {
-        log_error(
+        zlog_error(
+            neuron,
             "json load error, line: %d, column: %d, position: %d, info: %s",
             error.line, error.column, error.position, error.text);
         return -1;
@@ -285,7 +288,7 @@ int neu_json_decode_array_size(char *buf, char *child)
     if (ob != NULL && json_is_array(ob)) {
         ret = json_array_size(ob);
     } else {
-        log_error("json get array object fail, %s", child);
+        zlog_error(neuron, "json get array object fail, %s", child);
     }
 
     json_decref(root);
@@ -355,7 +358,8 @@ void *neu_json_decode_new(char *buf)
     json_t *     root = json_loads(buf, 0, &error);
 
     if (root == NULL) {
-        log_error(
+        zlog_error(
+            neuron,
             "json load error, line: %d, column: %d, position: %d, info: %s",
             error.line, error.column, error.position, error.text);
         return NULL;
@@ -370,7 +374,8 @@ void *neu_json_decode_newb(char *buf, size_t len)
     json_t *     root = json_loadb(buf, len, 0, &error);
 
     if (root == NULL) {
-        log_error(
+        zlog_error(
+            neuron,
             "json load error, line: %d, column: %d, position: %d, info: %s",
             error.line, error.column, error.position, error.text);
         return NULL;
