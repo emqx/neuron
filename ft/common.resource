@@ -16,7 +16,7 @@ Resource    simulator.resource
 ${test_data_dir}     ft/data
 
 ${NODE_UNKNOWN}	0
-${NODE_DRIVER}	1
+${NODE_DRIVER}	4
 ${NODE_WEB}	2
 ${NODE_MQTT}	3
 ${NODE_DRIVERX}	4
@@ -77,7 +77,7 @@ ${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "u
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
 ...                                          "username": "", "password": "", "ca":"", "cert":"", "key":"", "keypass":""}
 
-${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "connection_mode": 0}
+${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "timeout": 3000}
 
 *** Keywords ***
 To Array
@@ -117,22 +117,16 @@ Compare Tag Value As String
 
     Should Be Equal As Integers    ${ret}    0
 
-Import Neuron API Resource
-    ${api} =       Get Variable Value                                                    ${NEURON_API}    http
-    IF             $api.lower() not in ["mqtt", "http"]
-    Fatal Error    Neuron API should be `http` or `mqtt`, `${NEURON_API}` unsupported
-    END
+#Import Neuron API Resource
+    #${api} =       Get Variable Value                                                    ${NEURON_API}    http
+    #IF             $api.lower() not in ["mqtt", "http"]
+    #Fatal Error    Neuron API should be `http` or `mqtt`, `${NEURON_API}` unsupported
+    #END
 
-    Set Global Variable    ${NEURON_API}                                                            ${api}
-    Set Global Variable    ${NEURON_API_RESOURCE}                                                   api_${api}.resource
-    Log To Console         Neuron API is `${NEURON_API}`, load resource `${NEURON_API_RESOURCE}`
-    Import Resource        ${NEURON_API_RESOURCE}
-
-Skip If Not Http API
-    Skip If    $NEURON_API != "http"    Current API is not `http`, just skip
-
-Skip If Not MQTT API
-    Skip If    $NEURON_API != "mqtt"    Current API is not `mqtt`, just skip
+    #Set Global Variable    ${NEURON_API}                                                            ${api}
+    #Set Global Variable    ${NEURON_API_RESOURCE}                                                   api_${api}.resource
+    #Log To Console         Neuron API is `${NEURON_API}`, load resource `${NEURON_API_RESOURCE}`
+    #Import Resource        ${NEURON_API_RESOURCE}
 
 Copy Persistence Test Data
     ${data_set} =                  Get Variable Value   ${DATASET}                       total-10k

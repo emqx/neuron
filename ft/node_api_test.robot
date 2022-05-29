@@ -1,4 +1,5 @@
 *** Settings ***
+Resource          api_http.resource
 Resource          common.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
@@ -42,7 +43,6 @@ Create an existing node, it should return failure
     Check Error Code         ${res}    ${ERR_NODE_EXIST}
 
 Get node with wrong parameters, it will return failure
-    Skip If Not Http API
     GET        /api/v2/node?tt=${NODE_DRIVER}
     Integer    response status        400
     Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
@@ -52,7 +52,6 @@ Get node with wrong parameters, it will return failure
     Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
 
 Get node by nonexistent id, it should failure
-    Skip If Not Http API
     GET        /api/v2/node?id=123456
 
     Integer    response status        404
@@ -66,7 +65,6 @@ Get DRIVER node, it should return all DRIVER node
     Node With Name Should Exist    ${res}[nodes]    test-node
 
 Get DRIVER node by id, it should return the DRIVER node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
 
     GET        /api/v2/node?id=${id}
@@ -75,7 +73,6 @@ Get DRIVER node by id, it should return the DRIVER node
     String     response body nodes 0 name           test-node
 
 Get DRIVER node by name substring, it should return the DRIVER node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
 
     GET        /api/v2/node?type=${NODE_DRIVER}&name_contains=test-node
@@ -84,7 +81,6 @@ Get DRIVER node by name substring, it should return the DRIVER node
     String     response body nodes 0 name           test-node
 
 Get DRIVER node by id with correct type and name substring, it should return the DRIVER node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
 
     GET        /api/v2/node?type=${NODE_DRIVER}&id=${id}&name_contains=test-node
@@ -93,7 +89,6 @@ Get DRIVER node by id with correct type and name substring, it should return the
     String     response body nodes 0 name           test-node
 
 Get DRIVER node by id with wrong type, it should return failure
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
 
     GET        /api/v2/node?type=${NODE_WEB}&id=${id}
@@ -101,7 +96,6 @@ Get DRIVER node by id with wrong type, it should return failure
     Integer    response body error                  ${ERR_NODE_NOT_EXIST}
 
 Get DRIVER node by id with wrong name substring, it should return failure
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
 
     GET        /api/v2/node?id=${id}&name_contains=xxx
@@ -115,7 +109,6 @@ Get WEB node, it should return all WEB node
     Node With Name Should Exist    ${res}[nodes]    default-dashboard-adapter
 
 Get WEB node by id, it should return the WEB node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
 
     GET        /api/v2/node?id=${id}
@@ -124,7 +117,6 @@ Get WEB node by id, it should return the WEB node
     String     response body nodes 0 name           default-dashboard-adapter
 
 Get WEB node by name substring, it should return the WEB node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
 
     GET        /api/v2/node?type=${NODE_WEB}&name_contains=dashboard
@@ -133,7 +125,6 @@ Get WEB node by name substring, it should return the WEB node
     String     response body nodes 0 name           default-dashboard-adapter
 
 Get WEB node by id with correct type and name substring, it should return the WEB node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
 
     GET        /api/v2/node?type=${NODE_WEB}&id=${id}&name_contains=dashboard
@@ -142,7 +133,6 @@ Get WEB node by id with correct type and name substring, it should return the WE
     String     response body nodes 0 name           default-dashboard-adapter
 
 Get WEB node by id with wrong type, it should return failure
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
 
     GET        /api/v2/node?type=${NODE_DRIVER}&id=${id}
@@ -150,7 +140,6 @@ Get WEB node by id with wrong type, it should return failure
     Integer    response body error                  ${ERR_NODE_NOT_EXIST}
 
 Get WEB node by id with wrong name substring, it should return failure
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
 
     GET        /api/v2/node?id=${id}&name_contains=xxx
@@ -165,7 +154,6 @@ Get MQTT node, it should return all mqtt node
     Node With Name Should Exist    ${res}[nodes]    mqtt-adapter
 
 Get MQTT node by id, it should return the MQTT node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
 
     GET        /api/v2/node?id=${id}
@@ -174,7 +162,6 @@ Get MQTT node by id, it should return the MQTT node
     String     response body nodes 0 name           mqtt-adapter
 
 Get MQTT node by name substring, it should return the MQTT node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
 
     GET        /api/v2/node?type=${NODE_MQTT}&name_contains=mqtt
@@ -183,7 +170,6 @@ Get MQTT node by name substring, it should return the MQTT node
     String     response body nodes 0 name           mqtt-adapter
 
 Get MQTT node by id with correct type and name substring, it should return the MQTT node
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
 
     GET        /api/v2/node?type=${NODE_MQTT}&id=${id}&name_contains=mqtt
@@ -192,7 +178,6 @@ Get MQTT node by id with correct type and name substring, it should return the M
     String     response body nodes 0 name           mqtt-adapter
 
 Get MQTT node by id with wrong type, it should return failure
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
 
     GET        /api/v2/node?type=${NODE_WEB}&id=${id}
@@ -200,7 +185,6 @@ Get MQTT node by id with wrong type, it should return failure
     Integer    response body error                  ${ERR_NODE_NOT_EXIST}
 
 Get MQTT node by id with wrong name substring, it should return failure
-    Skip If Not Http API
     ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
 
     GET        /api/v2/node?id=${id}&name_contains=xxx
@@ -242,7 +226,7 @@ Delete a non-existent node, it will return failure
     Check Error Code         ${res}    ${ERR_NODE_NOT_EXIST}
 
 Add setting to non-existent node, it should return failure
-    ${res} =    Node Setting    ${999}    {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}
+    ${res} =    Node Setting    ${999}    {"host": "1.1.1.1", "port": 6677, "timeout": 3000}
 
     Check Response Status    ${res}    404
     Check Error Code         ${res}    ${ERR_NODE_NOT_EXIST}
@@ -264,7 +248,7 @@ Get setting from a node that has never been set, it should return failure
 
 Add the correct settings to the node, it should return success
     ${driver_node_id} =    Add Node And Return ID    ${NODE_DRIVER}       driver-node                                                ${PLUGIN_MODBUS_TCP}
-    ${res} =               Node Setting              ${driver_node_id}    {"host": "1.1.1.1", "port": 6677, "connection_mode": 0}
+    ${res} =               Node Setting              ${driver_node_id}    {"host": "1.1.1.1", "port": 6677, "timeout": 3000}
 
     Check Response Status    ${res}    200
     Check Error Code         ${res}    ${ERR_SUCCESS}
@@ -278,11 +262,11 @@ Get the setting of node, it should return to the previous setting
     Should Be Equal As Integers    ${res}[node_id]               ${driver_node_id}
     Should Be Equal As Integers    ${params}[port]               6677
     Should Be Equal As Strings     ${params}[host]               1.1.1.1
-    Should Be Equal As Integers    ${params}[connection_mode]    0
+    Should Be Equal As Integers    ${params}[timeout]            3000
 
 Add wrong settings to node, it should return failure
     ${driver_node_id} =    Get Node ID     ${NODE_DRIVER}       driver-node
-    ${res} =               Node Setting    ${driver_node_id}    {"xxhost": "1.1.1.1", "port": 6677, "connection_mode": 0}
+    ${res} =               Node Setting    ${driver_node_id}    {"xxhost": "1.1.1.1", "port": 6677, "timeout": 3000}
 
     Check Response Status    ${res}    400
     Check Error Code         ${res}    ${ERR_NODE_SETTING_INVALID}
@@ -309,7 +293,7 @@ Start the configured node, it should return success
 
     Sleep    1s
 
-    Node Setting        ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Node Setting        ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "timeout": 3000}
     ${running_state}    ${link_state} =      Get Node State                                              ${modbus_node_id}
 
     Should Be Equal As Integers    ${running_state}    ${NODE_STATE_READY}
@@ -387,13 +371,13 @@ When setting up a READY/RUNNING/STOPED node, the node status will not change
 
     Sleep    1s
 
-    Node Setting        ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Node Setting        ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "timeout": 3000}
     ${running_state}    ${link_state} =      Get Node State                                              ${modbus_node_id}
 
     Should Be Equal As Integers    ${running_state}    ${NODE_STATE_READY}
     Should Be Equal As Integers    ${link_state}       ${NODE_LINK_STATE_CONNECTING}
 
-    Node Setting        ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Node Setting        ${modbus_node_id}    {"host": "127.0.0.1", "port": 502, "timeout": 3000}
     ${running_state}    ${link_state} =      Get Node State                                              ${modbus_node_id}
 
     Should Be Equal As Integers    ${running_state}    ${NODE_STATE_READY}
@@ -413,8 +397,6 @@ When setting up a READY/RUNNING/STOPED node, the node status will not change
 
 *** Keywords ***
 Neuron Context Ready
-    Import Neuron API Resource
-
     Neuron Ready
 
     LOGIN

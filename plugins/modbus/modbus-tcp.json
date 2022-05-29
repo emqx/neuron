@@ -5,11 +5,12 @@
 		8,
 		9,
 		11,
-		14
+		14,
+		15
 	],
 	"host": {
 		"name": "host",
-		"description": "remote device ip",
+		"description": "local ip in server mode, remote device ip in client mode",
 		"attribute": "required",
 		"type": "string",
 		"valid": {
@@ -18,12 +19,23 @@
 	},
 	"port": {
 		"name": "port",
-		"description": "remote device port",
+		"description": "local port in server mode, remote device port in client mode",
 		"attribute": "required",
 		"type": "int",
 		"default": 502,
 		"valid": {
 			"min": 1,
+			"max": 65535
+		}
+	},
+	"timeout": {
+		"name": "timeout",
+		"description": "recv msg timeout(ms)",
+		"attribute": "required",
+		"type": "int",
+		"default": 3000,
+		"valid": {
+			"min": 1000,
 			"max": 65535
 		}
 	}

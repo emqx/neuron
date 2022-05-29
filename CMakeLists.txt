@@ -148,8 +148,6 @@ set(NEURON_BASE_SOURCES
     src/base/neu_plugin_common.c
     src/base/neu_data_expr.c
     src/base/tag_sort.c
-    src/connection/tcp_client.c
-    src/connection/tcp_server.c
     src/connection/connection.c
     src/connection/mqtt_client_intf.c
     src/event/event_linux.c

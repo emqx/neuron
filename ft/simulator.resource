@@ -3,14 +3,14 @@ Library    Process
 
 *** Variables ***
 ${SIMULATOR_DIR}                  build/simulator
-${MODBUS_TCP_SERVER_SIMULATOR}    ./modbus_tcp_server_simulator
+${MODBUS_TCP_SERVER_SIMULATOR}    ./modbus_simulator
 ${OPCUA_SERVER_SIMULATOR}         ./opcua_simulator
 
 *** Keywords ***
 Start Simulator Arg
-	[Arguments]	${simulator}	${cwd}		${arg}
+	[Arguments]	${simulator}	${cwd}
 
-	${handle} =	Start Process    ${simulator}	${arg}   cwd=${cwd}
+	${handle} =	Start Process    ${simulator}	tcp	60502   cwd=${cwd}
 	[Return]	${handle}
 
 Start Simulator
