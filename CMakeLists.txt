@@ -205,7 +205,6 @@ file(RENAME ${CMAKE_BINARY_DIR}/persistence/default_plugins.json ${CMAKE_BINARY_
 
 # define for plugins
 include_directories(include/neuron)
-add_subdirectory(plugins/sample)
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/ekuiper)
