@@ -1,4 +1,5 @@
 *** Settings ***
+Resource          api_http.resource
 Resource          common.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
@@ -24,14 +25,6 @@ Add tags to the non-existent group, the group will be created automatically
 
   Check Response Status           ${res}        200
   Check Error Code                ${res}        ${ERR_SUCCESS}
-
-  [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
-
-When the attribute of the tag added is incorrect, it should return partial success
-  ${res} =                        Add Tags      ${test_node_id}       ${test_gconfig}   {"name": "tag1", "address": "1!400001", "attribute": 8, "type": 4},{"name": "tag2", "address": "1!00001", "attribute": 3, "type": 14}
-
-  Check Response Status           ${res}        206
-  Check Error Code                ${res}        ${ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
 
   [Teardown]                      Del Group Config Check              ${test_node_id}   ${test_gconfig}
 
@@ -83,7 +76,7 @@ Update tags, it should return success
   ${tag1_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}   tag1
   ${tag2_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}   tag2
 
-  ${res} =                        Update Tags   ${test_node_id}       ${test_gconfig}   {"id": ${tag1_id}, "name": "tag11", "type": 14, "attribute": 3, "address": "2!400002"},{"id": ${tag2_id}, "name": "tag22", "type": 4, "attribute": 1, "address": "3!100001"}
+  ${res} =                        Update Tags   ${test_node_id}       ${test_gconfig}   {"id": ${tag1_id}, "name": "tag11", "type": 4, "attribute": 1, "address": "2!400002"},{"id": ${tag2_id}, "name": "tag22", "type": 14, "attribute": 1, "address": "3!100001"}
 
   Check Response Status           ${res}        200
   Check Error Code                ${res}        ${ERR_SUCCESS}
@@ -93,16 +86,16 @@ Update tags, it should return success
   ${len} =                        Get Length    ${res}[tags]
   Should Be Equal As Integers     ${len}        2
 
-  ${ret} =                        Tag Check     ${res}[tags]          tag11             14        test_grp_config    3    2!400002
+  ${ret} =                        Tag Check     ${res}[tags]          tag11             4        test_grp_config    1    2!400002
   Should Be Equal As Integers     ${ret}        0
 
-  ${ret} =                        Tag Check     ${res}[tags]          tag22             4         test_grp_config    1    3!100001
+  ${ret} =                        Tag Check     ${res}[tags]          tag22             14         test_grp_config    1    3!100001
   Should Be Equal As Integers     ${ret}        0
 
 Update non-existent tags, it should return partial success
   ${tag1_id} =                    Get Tag ID    ${test_node_id}       ${test_gconfig}   tag11
 
-  ${res} =                        Update Tags   ${test_node_id}       ${test_gconfig}   {"id": ${tag1_id}, "name": "tag11", "type": 4, "attribute": 1, "address": "1!400002"},{"id": 7788, "name": "tag22", "type": 4, "attribute": 1, "address": "3!100001"}
+  ${res} =                        Update Tags   ${test_node_id}       ${test_gconfig}   {"id": ${tag1_id}, "name": "tag11", "type": 4, "attribute": 1, "address": "1!400002"},{"id": 7788, "name": "tag22", "type": 14, "attribute": 1, "address": "3!100001"}
   Check Response Status           ${res}        404
   Check Error Code                ${res}        ${ERR_TAG_NOT_EXIST}
 
@@ -115,7 +108,7 @@ Update non-existent tags, it should return partial success
   ${ret} =                        Tag Check     ${res}[tags]          tag11   4  test_grp_config    1	1!400002
   Should Be Equal As Integers     ${ret}        0
 
-  ${ret} =                        Tag Check     ${res}[tags]          tag22   4  test_grp_config    1	3!100001
+  ${ret} =                        Tag Check     ${res}[tags]          tag22   14  test_grp_config    1	3!100001
   Should Be Equal As Integers     ${ret}        0
 
 Delete tags, it should return success
@@ -140,8 +133,6 @@ Delete tags, it should return success
 
 *** Keywords ***
 Neuron Context Ready
-  Import Neuron API Resource
-
   Neuron Ready
   LOGIN
 

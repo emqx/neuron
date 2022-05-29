@@ -97,6 +97,7 @@ neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
 neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
 {
     pthread_mutex_lock(&conn->mtx);
+    (void) param;
 
     conn_disconnect(conn);
     conn_free_param(conn);
@@ -621,7 +622,9 @@ static void conn_disconnect(neu_conn_t *conn)
         break;
     case NEU_CONN_TCP_CLIENT:
     case NEU_CONN_UDP:
-        close(conn->fd);
+        if (conn->fd > 0) {
+            close(conn->fd);
+        }
         break;
     case NEU_CONN_TTY_CLIENT:
         break;

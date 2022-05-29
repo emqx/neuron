@@ -1,4 +1,5 @@
 *** Settings ***
+Resource          api_http.resource
 Resource          common.resource
 Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
@@ -18,9 +19,6 @@ login with username and password, it should return success
 
 *** Keywords ***
 Neuron Context Ready
-    Import Neuron API Resource
-    Skip If Not Http API
-
     Neuron Ready
 
 Neuron Context Stop

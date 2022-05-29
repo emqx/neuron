@@ -1,3 +1,7 @@
+cmake_minimum_required(VERSION 3.12)
+
+project(simulator)
+
 if(NOT CMAKE_STAGING_PREFIX)
   if(APPLE)
   include_directories(/usr/local/include /usr/local/opt/openssl/include)
@@ -12,6 +16,7 @@ else()
 endif()
 find_package(Threads)
 
-add_executable(modbus_tcp_server_simulator modbus_tcp_server_sim.c)
-target_include_directories(modbus_tcp_server_simulator PRIVATE ${CMAKE_SOURCE_DIR})
-target_link_libraries(modbus_tcp_server_simulator neuron-base ${CMAKE_THREAD_LIBS_INIT} dl)
+
+add_executable(modbus_simulator modbus_simulator.c modbus_s.c)
+target_include_directories(modbus_simulator PRIVATE ${CMAKE_SOURCE_DIR})
+target_link_libraries(modbus_simulator neuron-base ${CMAKE_THREAD_LIBS_INIT} dl zlog)

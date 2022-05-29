@@ -28,9 +28,11 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "adapter.h"
+#include "errcodes.h"
 #include "file.h"
+#include "neu_tag.h"
 #include "neu_vector.h"
-#include "neuron/adapter.h"
 #include "plugin.h"
 #include "types.h"
 #include "utils/base64.h"
@@ -41,6 +43,7 @@ extern "C" {
 #include "json/neu_json_param.h"
 
 #include "utils/log.h"
+#include "utils/protocol_buf.h"
 #include "utils/utextend.h"
 
 #include "tag_sort.h"

@@ -1,4 +1,5 @@
 *** Settings ***
+Resource          api_http.resource
 Resource          common.resource
 Suite Setup       Neuron Context Ready 
 Suite Teardown    Neuron Context Stop
@@ -23,8 +24,6 @@ ${tag8}             {"name": "tag8", "address": "2!400009", "attribute": 1, "typ
 
 *** Test Cases ***
 Get the newly added adapters after stopping and restarting Neuron, it should return success
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-1}}    plugin_name=modbus-tcp
@@ -53,8 +52,6 @@ Get the newly added adapters after stopping and restarting Neuron, it should ret
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the deleted adapter after stopping and restarting Neuron, it should return failure
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp4_id} =    Get Node ID          ${NODE_DRIVER}    ${modbus-tcp-4}
@@ -82,15 +79,13 @@ Get the deleted adapter after stopping and restarting Neuron, it should return f
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the setted adapters information after stopping and restarting Neuron, it should return the correct information
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID          ${NODE_DRIVER}                                              ${modbus-tcp-1}
-    Node Setting           ${modbus_tcp1_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Node Setting           ${modbus_tcp1_id}    {"host": "127.0.0.1", "port": 502, "timeout": 3000}
 
     ${modbus_tcp2_id} =    Get Node ID          ${NODE_DRIVER}                                              ${modbus-tcp-2}
-    Node Setting           ${modbus_tcp2_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 0}
+    Node Setting           ${modbus_tcp2_id}    {"host": "127.0.0.1", "port": 502, "timeout": 3000}
 
     ${mqtt_id} =    Get Node ID    ${NODE_MQTT}                                                                                                                                           mqtt-1
     Node Setting    ${mqtt_id}     {"client-id":"upload123", "upload-topic":"", "format": 0, "ssl":false,"host":"127.0.0.1","port":1883,"username":"admin","password":"0000","ca":"", "cert":"", "key":"", "keypass":""}
@@ -103,7 +98,7 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     Check Response Status          ${res}                        200
     Should Be Equal As Integers    ${res}[node_id]               ${modbus_tcp1_id}
     Should Be Equal As Integers    ${params}[port]               502
-    Should Be Equal As Integers    ${params}[connection_mode]    0
+    Should Be Equal As Integers    ${params}[timeout]            3000
     Should Be Equal As Strings     ${params}[host]               127.0.0.1
 
     ${res} =                       Get Node Setting              ${modbus_tcp2_id}
@@ -111,7 +106,7 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     Check Response Status          ${res}                        200
     Should Be Equal As Integers    ${res}[node_id]               ${modbus_tcp2_id}
     Should Be Equal As Integers    ${params}[port]               502
-    Should Be Equal As Integers    ${params}[connection_mode]    0
+    Should Be Equal As Integers    ${params}[timeout]            3000
     Should Be Equal As Strings     ${params}[host]               127.0.0.1
 
     ${res} =                       Get Node Setting        ${mqtt_id}
@@ -129,13 +124,11 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the updated adapters settings information after stopping and restarting Neuron, it should return the correct information
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp2_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-2}
 
-    Node Setting    ${modbus_tcp2_id}    {"host": "127.0.0.1", "port": 502, "connection_mode": 1}
+    Node Setting    ${modbus_tcp2_id}    {"host": "127.0.0.1", "port": 502, "timeout": 3000}
 
     Neuron Stop Running    ${process}
     ${process} =           Neuron Start Running
@@ -146,14 +139,12 @@ Get the updated adapters settings information after stopping and restarting Neur
     Check Response Status          ${res}                        200
     Should Be Equal As Integers    ${res}[node_id]               ${modbus_tcp2_id}
     Should Be Equal As Integers    ${params}[port]               502
-    Should Be Equal As Integers    ${params}[connection_mode]    1
+    Should Be Equal As Integers    ${params}[timeout]            3000
     Should Be Equal As Strings     ${params}[host]               127.0.0.1
 
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the newly add group_configs after stopping and restarting Neuron, it should return success
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
@@ -178,8 +169,6 @@ Get the newly add group_configs after stopping and restarting Neuron, it should 
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the deleted group_configs after stopping and restarting Neuron, it should return failure
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
@@ -203,8 +192,6 @@ Get the deleted group_configs after stopping and restarting Neuron, it should re
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the updated group_configs after stopping and restarting Neuron, it should return the correct configurations
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID          ${NODE_DRIVER}      ${modbus-tcp-1}
@@ -223,8 +210,6 @@ Get the updated group_configs after stopping and restarting Neuron, it should re
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the newly added tag_id duplicated with the tag_id in the loaded persistence file, it should return a failure
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${node_id} =                       Get Node ID    ${NODE_DRIVER}    modbus-tcp-1
@@ -265,8 +250,6 @@ Get the newly added tag_id duplicated with the tag_id in the loaded persistence 
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the newly add tags after stopping and restarting Neuron, it should return success
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
@@ -289,8 +272,6 @@ Get the newly add tags after stopping and restarting Neuron, it should return su
     [Teardown]    Neuron Stop Running    ${process} 
 
 Get the deleted tags after stopping and restarting Neuron, it should return success
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
@@ -316,8 +297,6 @@ Get the deleted tags after stopping and restarting Neuron, it should return succ
     [Teardown]    Neuron Stop Running    ${process}
 
 Get the update tags after stopping ande restarting Neuron, it should return the correct information
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
@@ -342,8 +321,6 @@ Get the update tags after stopping ande restarting Neuron, it should return the 
     [Teardown]    Neuron Stop Running    ${process} 
 
 Get the subscribed groups after stopping and restarting Neuron, it should return success
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
@@ -369,8 +346,6 @@ Get the subscribed groups after stopping and restarting Neuron, it should return
     [Teardown]    Neuron Stop Running    ${process} 
 
 Get the unsubscribed groups after stopping ande restarting Neuron, it should return failure
-    Skip If Not Http API
-
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
@@ -395,8 +370,6 @@ Get the unsubscribed groups after stopping ande restarting Neuron, it should ret
 
 *** Keywords ***
 Neuron Context Ready
-    Import Neuron API Resource
-
     Remove Persistence
 
 Neuron Context Stop

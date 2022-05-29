@@ -1,38 +1,28 @@
-/**
- * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- **/
-
-#ifndef _NEU_MODBUS_H_
-#define _NEU_MODBUS_H_
+#ifndef _NEU_M_PLUGIN_MODBUS_H_
+#define _NEU_M_PLUGIN_MODBUS_H_
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <sys/queue.h>
+
+#include <neuron.h>
+
+/* LL -> LE 1,2,3,4
+   LB -> LE 2,1,4,3
+   BB -> BE 3,4,1,2
+   BL -> BE 4,3,2,1
+*/
+
+/* big-endian order */
 
 typedef enum modbus_function {
-    MODBUS_READ_COIL          = 0x1,  // bit
-    MODBUS_READ_INPUT_CONTACT = 0x02, // bit
-    MODBUS_READ_HOLD_REG      = 0x03, // word
-    MODBUS_READ_INPUT_REG     = 0x04, // word
-    MODBUS_WRITE_S_COIL       = 0x05, // bit
-    MODBUS_WRITE_S_HOLD_REG   = 0x06, // word
-    MODBUS_WRITE_M_HOLD_REG   = 0x10, // bit
-    MODBUS_WRITE_M_COIL       = 0x0F  // word
+    MODBUS_READ_COIL        = 0x1,
+    MODBUS_READ_INPUT       = 0x02,
+    MODBUS_READ_HOLD_REG    = 0x03,
+    MODBUS_READ_INPUT_REG   = 0x04,
+    MODBUS_WRITE_S_COIL     = 0x05,
+    MODBUS_WRITE_S_HOLD_REG = 0x06,
+    MODBUS_WRITE_M_HOLD_REG = 0x10,
+    MODBUS_WRITE_M_COIL     = 0x0F
 } modbus_function_e;
 
 typedef enum modbus_area {
@@ -42,93 +32,55 @@ typedef enum modbus_area {
     MODBUS_AREA_HOLD_REGISTER  = 4,
 } modbus_area_e;
 
-typedef enum modbus_endian {
-    MODBUS_ENDIAN_UNDEFINE   = -1,
-    MODBUS_ENDIAN_BIG4321    = 0,
-    MODBUS_ENDIAN_BIG3412    = 1,
-    MODBUS_ENDIAN_LITTLE1234 = 2,
-    MODBUS_ENDIAN_LITTLE2143 = 3
-} modbus_endian_e;
-
 struct modbus_header {
-    uint16_t process_no;
-    uint16_t flag;
+    uint16_t seq;
+    uint16_t protocol;
     uint16_t len;
 } __attribute__((packed));
 
+void modbus_header_wrap(neu_protocol_pack_buf_t *buf, uint16_t seq);
+int  modbus_header_unwrap(neu_protocol_unpack_buf_t *buf,
+                          struct modbus_header *     out_header);
+
 struct modbus_code {
-    uint8_t device_address;
-    uint8_t function_code;
+    uint8_t slave_id;
+    uint8_t function;
 } __attribute__((packed));
 
-struct modbus_pdu_read_request {
-    uint16_t start_addr;
+void modbus_code_wrap(neu_protocol_pack_buf_t *buf, uint8_t slave_id,
+                      uint8_t function);
+int  modbus_code_unwrap(neu_protocol_unpack_buf_t *buf,
+                        struct modbus_code *       out_code);
+
+struct modbus_address {
+    uint16_t start_address;
     uint16_t n_reg;
 } __attribute__((packed));
 
-struct modbus_pdu_read_response {
+void modbus_address_wrap(neu_protocol_pack_buf_t *buf, uint16_t start,
+                         uint16_t n_register);
+int  modbus_address_unwrap(neu_protocol_unpack_buf_t *buf,
+                           struct modbus_address *    out_address);
+
+struct modbus_data {
     uint8_t n_byte;
     uint8_t byte[];
 } __attribute__((packed));
 
-struct modbus_pdu_s_write_request {
-    uint16_t start_addr;
-    uint16_t value;
+void modbus_data_wrap(neu_protocol_pack_buf_t *buf, uint8_t n_byte,
+                      uint8_t *bytes);
+int  modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
+                        struct modbus_data *       out_data);
+
+struct modbus_crc {
+    uint16_t crc;
 } __attribute__((packed));
 
-struct modbus_pdu_m_write_request {
-    uint16_t start_addr;
-    uint16_t n_reg;
-    uint8_t  n_byte;
-    uint8_t  byte[];
-} __attribute__((packed));
+void modbus_crc_set(neu_protocol_pack_buf_t *buf);
+void modbus_crc_wrap(neu_protocol_pack_buf_t *buf);
+int  modbus_crc_unwrap(neu_protocol_unpack_buf_t *buf,
+                       struct modbus_crc *        out_crc);
 
-struct modbus_pdu_write_response {
-    uint16_t start_addr;
-    uint16_t n_reg;
-} __attribute__((packed));
-
-typedef enum modbus_data_type {
-    MODBUS_B8  = 1,
-    MODBUS_B16 = 2,
-    MODBUS_B32 = 4,
-} modbus_data_type_t;
-
-typedef struct modbus_data {
-    enum modbus_data_type type;
-    union {
-        uint8_t  val_u8;
-        int16_t  val_i16;
-        int32_t  val_i32;
-        uint16_t val_u16;
-        uint32_t val_u32;
-        float    val_f32;
-    } val;
-    modbus_endian_e endian;
-} modbus_data_t;
-
-int modbus_read_req_with_head(char *buf, uint16_t id, uint8_t device,
-                              modbus_function_e function_code, uint16_t addr,
-                              uint16_t n_reg);
-
-int modbus_read_req(char *buf, uint8_t device_address,
-                    modbus_function_e function_code, uint16_t addr,
-                    uint16_t n_reg);
-
-int modbus_s_write_req_with_head(char *buf, uint8_t device_address,
-                                 modbus_function_e function_code, uint16_t addr,
-                                 uint16_t value);
-
-int modbus_s_write_req(char *buf, uint8_t device_address,
-                       modbus_function_e function_code, uint16_t addr,
-                       uint16_t value);
-
-int modbus_m_write_req_with_head(char *buf, uint8_t device_address,
-                                 modbus_function_e function_code, uint16_t addr,
-                                 uint16_t n_reg, struct modbus_data *mdata);
-
-int modbus_m_write_req(char *buf, uint8_t device_address,
-                       modbus_function_e function_code, uint16_t addr,
-                       uint16_t n_reg, struct modbus_data *mdata);
+const char *modbus_area_to_str(modbus_area_e area);
 
 #endif

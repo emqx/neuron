@@ -50,16 +50,6 @@ target_include_directories(variable_test PRIVATE
 )
 target_link_libraries(variable_test neuron-base gtest_main gtest)
 
-aux_source_directory(${CMAKE_SOURCE_DIR}/plugins/modbus SRC_MODBUS)
-add_executable(modbus_point_test modbus_point_test.cc ${SRC_MODBUS})
-target_include_directories(modbus_point_test PRIVATE 
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/plugins
-)
-target_link_libraries(modbus_point_test neuron-base gtest_main gtest pthread nng)
-target_link_directories(modbus_point_test PRIVATE /usr/local/lib)
-
 add_executable(datatag_table_test datatag_table_test.cc ${CMAKE_SOURCE_DIR}/src/base/neu_datatag_table.c)
 target_include_directories(datatag_table_test PRIVATE
 	${CMAKE_SOURCE_DIR}/src
@@ -148,7 +138,6 @@ target_link_libraries(tag_sort_test neuron-base gtest_main gtest)
 
 include(GoogleTest)
 gtest_discover_tests(data_val_test)
-gtest_discover_tests(modbus_point_test)
 gtest_discover_tests(plugin_manager_test)
 gtest_discover_tests(datatag_table_test)
 gtest_discover_tests(json_test)

@@ -117,39 +117,7 @@ jobs:
           cd build
           ctest --output-on-failure
 
-  http_ft:
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      
-      - name: install dep
-        run: |
-          ./install.sh -d /usr/local -a x86_64 -c x86_64-linux-gnu
-
-      - name: compile
-        run: |
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
-          make -j4
-
-      - name: function test
-        run: |
-          python3 -m pip install -U pip
-          python3 -m pip install -r ft/requirements.txt
-          python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: http_ft_result
-          path: |
-            ft/http_reports/log.html
-            ft/http_reports/output.xml
-            ft/http_reports/report.html
-
-  mqtt_ft:
+  ft:
     runs-on: ubuntu-20.04
 
     steps:
@@ -173,16 +141,16 @@ jobs:
           mosquitto -v &
           python3 -m pip install -U pip
           python3 -m pip install -r ft/requirements.txt
-          python3 -m robot -P ft/ --variable neuron_api:mqtt -d ft/mqtt_reports ft/modbus_tcp_test.robot
+          python3 -m robot -P ft/ -d ft/reports ft
 
       - uses: actions/upload-artifact@v3
         with:
-          name: mqtt_ft_result
+          name: http_ft_result
           path: |
-            ft/mqtt_reports/log.html
-            ft/mqtt_reports/output.xml
-            ft/mqtt_reports/report.html
-  
+            ft/reports/log.html
+            ft/reports/output.xml
+            ft/reports/report.html
+
   create_daily_release:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'

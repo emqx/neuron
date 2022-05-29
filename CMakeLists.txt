@@ -148,8 +148,6 @@ set(NEURON_BASE_SOURCES
     src/base/neu_plugin_common.c
     src/base/neu_data_expr.c
     src/base/tag_sort.c
-    src/connection/tcp_client.c
-    src/connection/tcp_server.c
     src/connection/connection.c
     src/connection/mqtt_client_intf.c
     src/event/event_linux.c
@@ -207,7 +205,6 @@ file(RENAME ${CMAKE_BINARY_DIR}/persistence/default_plugins.json ${CMAKE_BINARY_
 
 # define for plugins
 include_directories(include/neuron)
-add_subdirectory(plugins/sample)
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/ekuiper)

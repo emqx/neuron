@@ -18,8 +18,6 @@ rules.append(mkdeb.FileMap("../include/connection/mqtt_client_intf.h",
              "/usr/local/include/neuron/connection/"))
 rules.append(mkdeb.FileMap("../include/connection/neu_connection.h",
              "/usr/local/include/neuron/connection/"))
-rules.append(mkdeb.FileMap("../include/connection/neu_tcp.h",
-             "/usr/local/include/neuron/connection/"))
 rules.append(mkdeb.FileMap("../include/event/event.h",
              "/usr/local/include/neuron/event/"))
 

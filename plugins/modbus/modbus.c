@@ -1,30 +1,11 @@
-/**
- * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- **/
-
+#include <assert.h>
 #include <netinet/in.h>
-#include <stdio.h>
+
+#include <neuron.h>
 
 #include "modbus.h"
 
-static uint16_t calcrc(char *buf, int len);
-
-uint16_t calcrc(char *buf, int len)
+static uint16_t calcrc(uint8_t *buf, int len)
 {
     uint16_t crc     = 0xffff;
     uint16_t crcpoly = 0xa001;
@@ -43,172 +24,178 @@ uint16_t calcrc(char *buf, int len)
     return crc;
 }
 
-int modbus_read_req_with_head(char *buf, uint16_t id, uint8_t device_address,
-                              modbus_function_e function_code, uint16_t addr,
-                              uint16_t n_reg)
+void modbus_header_wrap(neu_protocol_pack_buf_t *buf, uint16_t seq)
 {
-    struct modbus_header *          header = (struct modbus_header *) buf;
-    struct modbus_code *            code   = (struct modbus_code *) &header[1];
-    struct modbus_pdu_read_request *request =
-        (struct modbus_pdu_read_request *) &code[1];
-    uint16_t len = sizeof(*header) + sizeof(*code) + sizeof(*request);
+    assert(neu_protocol_pack_buf_unused_size(buf) >=
+           sizeof(struct modbus_header));
+    struct modbus_header *header =
+        (struct modbus_header *) neu_protocol_pack_buf(
+            buf, sizeof(struct modbus_header));
 
-    header->process_no = htons(id);
-    header->flag       = 0x0000;
-    header->len        = htons(len - sizeof(*header));
-
-    code->device_address = device_address;
-    code->function_code  = function_code;
-
-    request->start_addr = htons(addr);
-    request->n_reg      = htons(n_reg);
-
-    return len;
+    header->seq      = htons(seq);
+    header->protocol = 0x0;
+    header->len      = htons(neu_protocol_pack_buf_used_size(buf) -
+                        sizeof(struct modbus_header));
 }
 
-int modbus_read_req(char *buf, uint8_t device_address,
-                    modbus_function_e function_code, uint16_t addr,
-                    uint16_t n_reg)
+int modbus_header_unwrap(neu_protocol_unpack_buf_t *buf,
+                         struct modbus_header *     out_header)
 {
-    struct modbus_code *            code = (struct modbus_code *) buf;
-    struct modbus_pdu_read_request *request =
-        (struct modbus_pdu_read_request *) &code[1];
-    uint16_t *crc = (uint16_t *) &request[1];
-    uint16_t  len = sizeof(*code) + sizeof(*request) + sizeof(*crc);
+    struct modbus_header *header =
+        (struct modbus_header *) neu_protocol_unpack_buf(
+            buf, sizeof(struct modbus_header));
 
-    code->device_address = device_address;
-    code->function_code  = function_code;
-
-    request->start_addr = htons(addr);
-    request->n_reg      = htons(n_reg);
-
-    *crc = calcrc(buf, len - sizeof(*crc));
-
-    return len;
-}
-
-int modbus_s_write_req_with_head(char *buf, uint8_t device_address,
-                                 modbus_function_e function_code, uint16_t addr,
-                                 uint16_t value)
-{
-    struct modbus_header *             header = (struct modbus_header *) buf;
-    struct modbus_code *               code = (struct modbus_code *) &header[1];
-    struct modbus_pdu_s_write_request *request =
-        (struct modbus_pdu_s_write_request *) &code[1];
-    uint16_t len = sizeof(*header) + sizeof(*code) + sizeof(*request);
-
-    header->process_no = 0x0000;
-    header->flag       = 0x0000;
-    header->len        = htons(len - sizeof(*header));
-
-    code->device_address = device_address;
-    code->function_code  = function_code;
-
-    request->start_addr = htons(addr);
-    request->value      = htons(value);
-
-    return len;
-}
-
-int modbus_s_write_req(char *buf, uint8_t device_address,
-                       modbus_function_e function_code, uint16_t addr,
-                       uint16_t value)
-{
-    struct modbus_code *               code = (struct modbus_code *) buf;
-    struct modbus_pdu_s_write_request *request =
-        (struct modbus_pdu_s_write_request *) &code[1];
-    uint16_t *crc = (uint16_t *) &request[1];
-    uint16_t  len = sizeof(*code) + sizeof(*request) + sizeof(*crc);
-
-    code->device_address = device_address;
-    code->function_code  = function_code;
-
-    request->start_addr = htons(addr);
-    request->value      = htons(value);
-
-    *crc = calcrc(buf, len - sizeof(*crc));
-
-    return len;
-}
-
-int modbus_m_write_req_with_head(char *buf, uint8_t device_address,
-                                 modbus_function_e function_code, uint16_t addr,
-                                 uint16_t n_reg, struct modbus_data *mdata)
-{
-    struct modbus_header *             header = (struct modbus_header *) buf;
-    struct modbus_code *               code = (struct modbus_code *) &header[1];
-    struct modbus_pdu_m_write_request *request =
-        (struct modbus_pdu_m_write_request *) &code[1];
-    uint8_t * data8  = (uint8_t *) &request[1];
-    uint16_t *data16 = (uint16_t *) &request[1];
-    uint32_t *data32 = (uint32_t *) &request[1];
-
-    uint16_t len = sizeof(*header) + sizeof(*code) + sizeof(*request);
-
-    header->process_no = 0x0000;
-    header->flag       = 0x0000;
-
-    code->device_address = device_address;
-    code->function_code  = function_code;
-
-    request->start_addr = htons(addr);
-    request->n_reg      = htons(n_reg);
-    request->n_byte     = mdata->type;
-    len += mdata->type;
-
-    switch (mdata->type) {
-    case MODBUS_B8:
-        *data8 = mdata->val.val_u8;
-        break;
-    case MODBUS_B16:
-        *data16 = htons(mdata->val.val_u16);
-        break;
-    case MODBUS_B32:
-        *data32 = htonl(mdata->val.val_u32);
-        break;
+    if (header == NULL ||
+        ntohs(header->len) > neu_protocol_unpack_buf_unused_size(buf)) {
+        return 0;
     }
 
-    header->len = htons(len - sizeof(*header));
-    return len;
-}
-
-int modbus_m_write_req(char *buf, uint8_t device_address,
-                       modbus_function_e function_code, uint16_t addr,
-                       uint16_t n_reg, struct modbus_data *mdata)
-{
-    struct modbus_code *               code = (struct modbus_code *) buf;
-    struct modbus_pdu_m_write_request *request =
-        (struct modbus_pdu_m_write_request *) &code[1];
-    uint8_t * data8  = (uint8_t *) &request[1];
-    uint16_t *data16 = (uint16_t *) &request[1];
-    uint32_t *data32 = (uint32_t *) &request[1];
-    uint16_t *crc    = NULL;
-
-    uint16_t len = sizeof(*code) + sizeof(*request) + sizeof(*crc);
-
-    code->device_address = device_address;
-    code->function_code  = function_code;
-
-    request->start_addr = htons(addr);
-    request->n_reg      = htons(n_reg);
-    request->n_byte     = mdata->type;
-    len += mdata->type;
-
-    switch (mdata->type) {
-    case MODBUS_B8:
-        *data8 = mdata->val.val_u8;
-        crc    = (uint16_t *) &data8[1];
-        break;
-    case MODBUS_B16:
-        *data16 = htons(mdata->val.val_u16);
-        crc     = (uint16_t *) &data16[1];
-        break;
-    case MODBUS_B32:
-        *data32 = htonl(mdata->val.val_u32);
-        crc     = (uint16_t *) &data32[1];
-        break;
+    if (header->protocol != 0x0) {
+        return -1;
     }
 
-    *crc = calcrc(buf, len - sizeof(*crc));
-    return len;
+    *out_header     = *header;
+    out_header->len = ntohs(out_header->len);
+    out_header->seq = ntohs(out_header->seq);
+
+    return sizeof(struct modbus_header);
+}
+
+void modbus_code_wrap(neu_protocol_pack_buf_t *buf, uint8_t slave_id,
+                      uint8_t function)
+{
+    assert(neu_protocol_pack_buf_unused_size(buf) >=
+           sizeof(struct modbus_code));
+    struct modbus_code *code = (struct modbus_code *) neu_protocol_pack_buf(
+        buf, sizeof(struct modbus_code));
+
+    code->slave_id = slave_id;
+    code->function = function;
+}
+
+int modbus_code_unwrap(neu_protocol_unpack_buf_t *buf,
+                       struct modbus_code *       out_code)
+{
+    struct modbus_code *code = (struct modbus_code *) neu_protocol_unpack_buf(
+        buf, sizeof(struct modbus_code));
+
+    if (code == NULL) {
+        return 0;
+    }
+
+    *out_code = *code;
+
+    return sizeof(struct modbus_code);
+}
+
+void modbus_address_wrap(neu_protocol_pack_buf_t *buf, uint16_t start,
+                         uint16_t n_register)
+{
+    assert(neu_protocol_pack_buf_unused_size(buf) >=
+           sizeof(struct modbus_address));
+    struct modbus_address *address =
+        (struct modbus_address *) neu_protocol_pack_buf(
+            buf, sizeof(struct modbus_address));
+
+    address->start_address = htons(start);
+    address->n_reg         = htons(n_register);
+}
+
+int modbus_address_unwrap(neu_protocol_unpack_buf_t *buf,
+                          struct modbus_address *    out_address)
+{
+    struct modbus_address *address =
+        (struct modbus_address *) neu_protocol_unpack_buf(
+            buf, sizeof(struct modbus_address));
+
+    if (address == NULL) {
+        return 0;
+    }
+
+    *out_address               = *address;
+    out_address->start_address = ntohs(out_address->start_address);
+    out_address->n_reg         = ntohs(out_address->n_reg);
+
+    return sizeof(struct modbus_address);
+}
+
+void modbus_data_wrap(neu_protocol_pack_buf_t *buf, uint8_t n_byte,
+                      uint8_t *bytes)
+{
+    assert(neu_protocol_pack_buf_unused_size(buf) >=
+           sizeof(struct modbus_data) + n_byte);
+    uint8_t *data = neu_protocol_pack_buf(buf, n_byte);
+
+    memcpy(data, bytes, n_byte);
+
+    struct modbus_data *mdata = (struct modbus_data *) neu_protocol_pack_buf(
+        buf, sizeof(struct modbus_data));
+
+    mdata->n_byte = n_byte;
+}
+
+int modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
+                       struct modbus_data *       out_data)
+{
+    struct modbus_data *mdata = (struct modbus_data *) neu_protocol_unpack_buf(
+        buf, sizeof(struct modbus_data));
+
+    if (mdata == NULL ||
+        mdata->n_byte > neu_protocol_unpack_buf_unused_size(buf)) {
+        return 0;
+    }
+
+    *out_data = *mdata;
+
+    return sizeof(struct modbus_data);
+}
+
+void modbus_crc_set(neu_protocol_pack_buf_t *buf)
+{
+    uint16_t  crc   = calcrc(neu_protocol_pack_buf_get(buf),
+                          neu_protocol_pack_buf_used_size(buf) - 2);
+    uint16_t *p_crc = (uint16_t *) neu_protocol_pack_buf_set(
+        buf, neu_protocol_pack_buf_used_size(buf) - 2, 2);
+
+    *p_crc = crc;
+}
+
+void modbus_crc_wrap(neu_protocol_pack_buf_t *buf)
+{
+    assert(neu_protocol_pack_buf_unused_size(buf) >= sizeof(struct modbus_crc));
+    struct modbus_crc *crc = (struct modbus_crc *) neu_protocol_pack_buf(
+        buf, sizeof(struct modbus_crc));
+
+    crc->crc = 0;
+}
+
+int modbus_crc_unwrap(neu_protocol_unpack_buf_t *buf,
+                      struct modbus_crc *        out_crc)
+{
+    struct modbus_crc *crc = (struct modbus_crc *) neu_protocol_unpack_buf(
+        buf, sizeof(struct modbus_crc));
+
+    if (crc == NULL) {
+        return 0;
+    }
+
+    *out_crc = *crc;
+
+    return sizeof(struct modbus_crc);
+}
+
+const char *modbus_area_to_str(modbus_area_e area)
+{
+    switch (area) {
+    case MODBUS_AREA_COIL:
+        return "coil";
+    case MODBUS_AREA_INPUT:
+        return "input";
+    case MODBUS_AREA_INPUT_REGISTER:
+        return "input register";
+    case MODBUS_AREA_HOLD_REGISTER:
+        return "hold register";
+    default:
+        return "unknown area";
+    }
 }

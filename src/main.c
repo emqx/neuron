@@ -124,7 +124,7 @@ static int neuron_run(const neu_cli_args_t *args)
     rv                        = nng_pair1_open(&g_sock);
     assert(rv == 0);
 
-    nng_setopt_ms(g_sock, NNG_OPT_RECVTIMEO, recv_timeout);
+    nng_socket_set_ms(g_sock, NNG_OPT_RECVTIMEO, recv_timeout);
     rv = neu_manager_init_main_adapter(g_manager, bind_main_adapter,
                                        unbind_main_adapter);
 
