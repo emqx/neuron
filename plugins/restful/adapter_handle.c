@@ -65,76 +65,15 @@ void handle_del_adapter(nng_aio *aio)
         })
 }
 
-static void handle_get_adapter_by_id(nng_aio *aio, neu_node_type_e node_type,
-                                     neu_node_id_t node_id)
-{
-    int             rv        = 0;
-    neu_plugin_t *  plugin    = neu_rest_get_plugin();
-    neu_node_info_t node_info = { 0 };
-
-    rv = neu_system_get_node_by_id(plugin, node_id, &node_info);
-    if (0 != rv) {
-        NEU_JSON_RESPONSE_ERROR(
-            rv, { http_response(aio, error_code.error, result_error); })
-        return;
-    }
-
-    if (NEU_NODE_TYPE_MAX != node_type && node_type != node_info.node_type) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-            http_response(aio, error_code.error, result_error);
-        })
-        return;
-    }
-
-    neu_json_get_nodes_resp_node_t node_resp = { 0 };
-    node_resp.id                             = node_info.node_id;
-    node_resp.name                           = node_info.node_name;
-    node_resp.plugin_id                      = node_info.plugin_id.id_val;
-
-    neu_json_get_nodes_resp_t nodes_resp = { 0 };
-    nodes_resp.n_node                    = 1;
-    nodes_resp.nodes                     = &node_resp;
-
-    char *result = NULL;
-    rv = neu_json_encode_by_fn(&nodes_resp, neu_json_encode_get_nodes_resp,
-                               &result);
-    if (0 == rv) {
-        http_ok(aio, result);
-    } else {
-        nlog_error("encode node info json response fail");
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            http_response(aio, error_code.error, result_error);
-        })
-    }
-
-    free(result);
-    free(node_info.node_name);
-
-    return;
-}
-
 void handle_get_adapter(nng_aio *aio)
 {
     neu_plugin_t *  plugin    = neu_rest_get_plugin();
     char *          result    = NULL;
-    neu_node_type_e node_type = NEU_NODE_TYPE_MAX;
-    neu_node_id_t   node_id   = 0;
+    neu_node_type_e node_type = { 0 };
 
     VALIDATE_JWT(aio);
 
-    if (NEU_ERR_EINVAL == http_get_param_node_type(aio, "type", &node_type) ||
-        NEU_ERR_EINVAL == http_get_param_node_id(aio, "id", &node_id)) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, error_code.error, result_error);
-        })
-        return;
-    }
-
-    if (0 != node_id) {
-        return handle_get_adapter_by_id(aio, node_type, node_id);
-    }
-
-    if (NEU_NODE_TYPE_MAX == node_type) {
+    if (http_get_param_node_type(aio, "type", &node_type) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
@@ -169,7 +108,9 @@ void handle_get_adapter(nng_aio *aio)
     VECTOR_FOR_EACH(&nodes, iter)
     {
         neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
+
         free(info->node_name);
+        index += 1;
     }
     vector_uninit(&nodes);
 }
