@@ -47,10 +47,6 @@ Get node with wrong parameters, it will return failure
     Integer    response status        400
     Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
 
-    GET        /api/v2/node?name_contains=test-node
-    Integer    response status        400
-    Integer    response body error    ${ERR_REQUEST_PARAM_INVALID}
-
 Get node by nonexistent id, it should failure
     GET        /api/v2/node?id=123456
 
@@ -72,18 +68,10 @@ Get DRIVER node by id, it should return the DRIVER node
     Integer    response body nodes 0 id             ${id}
     String     response body nodes 0 name           test-node
 
-Get DRIVER node by name substring, it should return the DRIVER node
+Get DRIVER node by id with correct type, it should return the DRIVER node
     ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
 
-    GET        /api/v2/node?type=${NODE_DRIVER}&name_contains=test-node
-    Integer    response status                      200
-    Integer    response body nodes 0 id             ${id}
-    String     response body nodes 0 name           test-node
-
-Get DRIVER node by id with correct type and name substring, it should return the DRIVER node
-    ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
-
-    GET        /api/v2/node?type=${NODE_DRIVER}&id=${id}&name_contains=test-node
+    GET        /api/v2/node?type=${NODE_DRIVER}&id=${id}
     Integer    response status                      200
     Integer    response body nodes 0 id             ${id}
     String     response body nodes 0 name           test-node
@@ -92,13 +80,6 @@ Get DRIVER node by id with wrong type, it should return failure
     ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
 
     GET        /api/v2/node?type=${NODE_WEB}&id=${id}
-    Integer    response status                      404
-    Integer    response body error                  ${ERR_NODE_NOT_EXIST}
-
-Get DRIVER node by id with wrong name substring, it should return failure
-    ${id} =    Get Node ID   ${NODE_DRIVER}         test-node
-
-    GET        /api/v2/node?id=${id}&name_contains=xxx
     Integer    response status                      404
     Integer    response body error                  ${ERR_NODE_NOT_EXIST}
 
@@ -116,18 +97,10 @@ Get WEB node by id, it should return the WEB node
     Integer    response body nodes 0 id             ${id}
     String     response body nodes 0 name           default-dashboard-adapter
 
-Get WEB node by name substring, it should return the WEB node
+Get WEB node by id with correct type, it should return the WEB node
     ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
 
-    GET        /api/v2/node?type=${NODE_WEB}&name_contains=dashboard
-    Integer    response status                      200
-    Integer    response body nodes 0 id             ${id}
-    String     response body nodes 0 name           default-dashboard-adapter
-
-Get WEB node by id with correct type and name substring, it should return the WEB node
-    ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
-
-    GET        /api/v2/node?type=${NODE_WEB}&id=${id}&name_contains=dashboard
+    GET        /api/v2/node?type=${NODE_WEB}&id=${id}
     Integer    response status                      200
     Integer    response body nodes 0 id             ${id}
     String     response body nodes 0 name           default-dashboard-adapter
@@ -136,13 +109,6 @@ Get WEB node by id with wrong type, it should return failure
     ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
 
     GET        /api/v2/node?type=${NODE_DRIVER}&id=${id}
-    Integer    response status                      404
-    Integer    response body error                  ${ERR_NODE_NOT_EXIST}
-
-Get WEB node by id with wrong name substring, it should return failure
-    ${id} =    Get Node ID   ${NODE_WEB}            default-dashboard-adapter
-
-    GET        /api/v2/node?id=${id}&name_contains=xxx
     Integer    response status                      404
     Integer    response body error                  ${ERR_NODE_NOT_EXIST}
 
@@ -161,18 +127,10 @@ Get MQTT node by id, it should return the MQTT node
     Integer    response body nodes 0 id             ${id}
     String     response body nodes 0 name           mqtt-adapter
 
-Get MQTT node by name substring, it should return the MQTT node
+Get MQTT node by id with correct type, it should return the MQTT node
     ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
 
-    GET        /api/v2/node?type=${NODE_MQTT}&name_contains=mqtt
-    Integer    response status                      200
-    Integer    response body nodes 0 id             ${id}
-    String     response body nodes 0 name           mqtt-adapter
-
-Get MQTT node by id with correct type and name substring, it should return the MQTT node
-    ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
-
-    GET        /api/v2/node?type=${NODE_MQTT}&id=${id}&name_contains=mqtt
+    GET        /api/v2/node?type=${NODE_MQTT}&id=${id}
     Integer    response status                      200
     Integer    response body nodes 0 id             ${id}
     String     response body nodes 0 name           mqtt-adapter
@@ -183,14 +141,6 @@ Get MQTT node by id with wrong type, it should return failure
     GET        /api/v2/node?type=${NODE_WEB}&id=${id}
     Integer    response status                      404
     Integer    response body error                  ${ERR_NODE_NOT_EXIST}
-
-Get MQTT node by id with wrong name substring, it should return failure
-    ${id} =    Get Node ID   ${NODE_MQTT}            mqtt-adapter
-
-    GET        /api/v2/node?id=${id}&name_contains=xxx
-    Integer    response status                      404
-    Integer    response body error                  ${ERR_NODE_NOT_EXIST}
-
 
 Get UNKNOWN type node, it should return empty node
     ${res} =    Get Nodes    ${NODE_UNKNOWN}
