@@ -226,5 +226,5 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_descr = "Neuron and LF Edge eKuiper integration plugin",
     .intf_funs    = &plugin_intf_funs,
     .kind         = PLUGIN_KIND_SYSTEM,
-    .type         = NEU_NODE_TYPE_APP,
+    .type         = NEU_NA_TYPE_APP,
 };

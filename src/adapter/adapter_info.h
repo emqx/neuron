@@ -25,25 +25,13 @@
 #include "adapter.h"
 #include "plugin_info.h"
 
-typedef enum adapter_type {
-    ADAPTER_TYPE_UNKNOW = 0,
-    ADAPTER_TYPE_DRIVER,
-    ADAPTER_TYPE_WEBSERVER,
-    ADAPTER_TYPE_MQTT,
-    ADAPTER_TYPE_DRIVERX,
-    ADAPTER_TYPE_APP,
-    ADAPTER_TYPE_FUNCTIONAL,
-
-    ADAPTER_TYPE_MAX,
-} adapter_type_e;
-
 typedef struct neu_adapter_info {
-    neu_adapter_id_t id;
-    adapter_type_e   type;
-    plugin_id_t      plugin_id;
-    const char *     name;
-    plugin_kind_e    plugin_kind;
-    const char *     plugin_lib_name;
+    neu_adapter_id_t   id;
+    neu_adapter_type_e type;
+    plugin_id_t        plugin_id;
+    const char *       name;
+    plugin_kind_e      plugin_kind;
+    const char *       plugin_lib_name;
 } neu_adapter_info_t;
 
 #endif

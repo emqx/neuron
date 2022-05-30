@@ -37,7 +37,7 @@ extern "C" {
 
 typedef struct plugin_reg_param {
     plugin_kind_e  plugin_kind;
-    adapter_type_e adapter_type;
+    neu_adapter_type_e adapter_type;
     // The buffer should be move to plugin manager, don't free it
     const char *plugin_name;
     // The buffer should be move to plugin manager, don't free it
@@ -47,7 +47,7 @@ typedef struct plugin_reg_param {
 typedef struct plugin_reg_info {
     plugin_id_t    plugin_id;
     plugin_kind_e  plugin_kind;
-    adapter_type_e adapter_type;
+    neu_adapter_type_e adapter_type;
     // The buffer is reference from plugin entity of register table,
     // don't free it
     const char *plugin_name;

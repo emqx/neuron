@@ -27,6 +27,7 @@
 #include "json/neu_json_fn.h"
 #include "json/neu_json_node.h"
 
+#include "adapter.h"
 #include "handle.h"
 #include "http.h"
 
@@ -40,12 +41,12 @@ void handle_add_adapter(nng_aio *aio)
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             neu_err_code_e code = { 0 };
 
-            if (req->type >= NEU_NODE_TYPE_MAX ||
-                req->type <= NEU_NODE_TYPE_UNKNOW) {
-                code = NEU_ERR_NODE_TYPE_INVALID;
-            } else {
+            if (req->type == NEU_NA_TYPE_DRIVER ||
+                req->type == NEU_NA_TYPE_APP) {
                 code = neu_system_add_node(plugin, req->type, req->name,
                                            req->plugin_name);
+            } else {
+                code = NEU_ERR_NODE_TYPE_INVALID;
             }
 
             NEU_JSON_RESPONSE_ERROR(code,

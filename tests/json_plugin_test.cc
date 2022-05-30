@@ -54,19 +54,19 @@ TEST(JsonPluginTest, GetPluginEncode)
 
     res.plugin_libs[0].id        = 123;
     res.plugin_libs[0].kind      = PLUGIN_KIND_SYSTEM;
-    res.plugin_libs[0].node_type = NEU_NODE_TYPE_DRIVER;
+    res.plugin_libs[0].node_type = NEU_NA_TYPE_DRIVER;
     res.plugin_libs[0].name      = strdup((char *) "plugin1");
     res.plugin_libs[0].lib_name  = strdup((char *) "lib1");
 
     res.plugin_libs[1].id        = 456;
     res.plugin_libs[1].kind      = PLUGIN_KIND_SYSTEM;
-    res.plugin_libs[1].node_type = NEU_NODE_TYPE_DRIVER;
+    res.plugin_libs[1].node_type = NEU_NA_TYPE_DRIVER;
     res.plugin_libs[1].name      = strdup((char *) "plugin2");
     res.plugin_libs[1].lib_name  = strdup((char *) "lib2");
 
     res.plugin_libs[2].id        = 789;
     res.plugin_libs[2].kind      = PLUGIN_KIND_SYSTEM;
-    res.plugin_libs[2].node_type = NEU_NODE_TYPE_DRIVER;
+    res.plugin_libs[2].node_type = NEU_NA_TYPE_DRIVER;
     res.plugin_libs[2].name      = strdup((char *) "plugin3");
     res.plugin_libs[2].lib_name  = strdup((char *) "lib3");
 

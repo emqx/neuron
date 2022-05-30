@@ -153,54 +153,6 @@ TEST(HTTPTest, http_get_param_node_id)
     nng_url_free(url);
 }
 
-TEST(HTTPTest, http_get_param_node_type)
-{
-    nng_aio *       aio       = NULL;
-    nng_http_req *  req       = NULL;
-    nng_url *       url       = NULL;
-    neu_node_type_e node_type = NEU_NODE_TYPE_UNKNOW;
-    int             rv        = 0;
-    char            uri[256]  = { 0 };
-
-    nng_aio_alloc(&aio, NULL, NULL);
-    nng_url_parse(&url, "http://127.0.0.1");
-    nng_http_req_alloc(&req, url);
-
-    nng_http_req_set_uri(req, "/?node_id=1");
-    nng_aio_set_input(aio, 0, req);
-    rv = http_get_param_node_type(aio, "type", &node_type);
-    EXPECT_EQ(rv, NEU_ERR_ENOENT);
-
-    nng_http_req_set_uri(req, "/?type");
-    nng_aio_set_input(aio, 0, req);
-    rv = http_get_param_node_type(aio, "type", &node_type);
-    EXPECT_EQ(rv, NEU_ERR_EINVAL);
-
-    nng_http_req_set_uri(req, "/?type=12345");
-    nng_aio_set_input(aio, 0, req);
-    rv = http_get_param_node_type(aio, "type", &node_type);
-    EXPECT_EQ(rv, NEU_ERR_EINVAL);
-
-    snprintf(uri, sizeof(uri), "/?type=%d", NEU_NODE_TYPE_MAX);
-    nng_http_req_set_uri(req, uri);
-    nng_aio_set_input(aio, 0, req);
-    rv = http_get_param_node_type(aio, "type", &node_type);
-    EXPECT_EQ(rv, NEU_ERR_EINVAL);
-
-    for (int i = NEU_NODE_TYPE_UNKNOW; i < NEU_NODE_TYPE_MAX; ++i) {
-        snprintf(uri, sizeof(uri), "/?type=%d", i);
-        nng_http_req_set_uri(req, uri);
-        nng_aio_set_input(aio, 0, req);
-        rv = http_get_param_node_type(aio, "type", &node_type);
-        EXPECT_EQ(rv, 0);
-        EXPECT_EQ(node_type, (neu_node_type_e) i);
-    }
-
-    nng_aio_free(aio);
-    nng_http_req_free(req);
-    nng_url_free(url);
-}
-
 int main(int argc, char **argv)
 {
     zlog_init("./config/dev.conf");

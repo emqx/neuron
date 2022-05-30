@@ -332,5 +332,5 @@ const neu_plugin_module_t default_dashboard_plugin_module = {
     .module_descr = DEFAULT_DASHBOARD_PLUGIN_DESCR,
     .intf_funs    = &plugin_intf_funs,
     .kind         = PLUGIN_KIND_SYSTEM,
-    .type         = NEU_NODE_TYPE_WEBSERVER
+    .type         = NEU_NA_TYPE_APP,
 };
