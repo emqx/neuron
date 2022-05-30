@@ -93,6 +93,7 @@ void handle_get_plugin(nng_aio *aio)
         plugin_res.plugin_libs[index].kind      = info->plugin_kind;
         plugin_res.plugin_libs[index].name      = (char *) info->plugin_name;
         plugin_res.plugin_libs[index].lib_name = (char *) info->plugin_lib_name;
+        plugin_res.plugin_libs[index].description = (char *) info->plugin_descr;
 
         index += 1;
     }

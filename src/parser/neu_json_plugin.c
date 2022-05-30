@@ -197,6 +197,11 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
                 .v.val_str = p_plugin_lib->lib_name,
             },
             {
+                .name      = "description",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_plugin_lib->description,
+            },
+            {
                 .name      = "kind",
                 .t         = NEU_JSON_INT,
                 .v.val_int = p_plugin_lib->kind,

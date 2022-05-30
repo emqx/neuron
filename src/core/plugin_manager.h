@@ -32,8 +32,11 @@ extern "C" {
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard-plugin"
 #define DEFAULT_DASHBOARD_PLUGIN_LIB_NAME "libplugin_default_dashboard"
+#define DEFAULT_DASHBOARD_PLUGIN_DESCR \
+    "A restful plugin for dashboard webserver"
 #define DEFAULT_DUMMY_PLUGIN_NAME "default-dummy-plugin"
 #define DEFAULT_DUMMY_PLUGIN_LIB_NAME "libplugin_default_dummy"
+#define DEFAULT_DUMMY_PLUGIN_DESCR "A plugin that does nothing"
 
 typedef struct plugin_reg_param {
     plugin_kind_e      plugin_kind;
@@ -42,6 +45,8 @@ typedef struct plugin_reg_param {
     const char *plugin_name;
     // The buffer should be move to plugin manager, don't free it
     char *plugin_lib_name;
+    // The buffer should be move to plugin manager, don't free it
+    const char *plugin_descr;
 } plugin_reg_param_t;
 
 typedef struct plugin_reg_info {
@@ -54,6 +59,9 @@ typedef struct plugin_reg_info {
     // The buffer is reference from plugin entity of register table,
     // don't free it
     const char *plugin_lib_name;
+    // The buffer is reference from plugin entity of register table,
+    // don't free it
+    const char *plugin_descr;
 } plugin_reg_info_t;
 
 typedef struct plugin_manager plugin_manager_t;
