@@ -93,6 +93,3 @@ else
     compile_source benmcollins/libjwt.git v1.13.1 "${ssl_lib_flag} -DENABLE_PIC=ON -DBUILD_SHARED_LIBS=OFF"
     compile_source neugates/MQTT-C.git HEAD "${ssl_lib_flag} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON -DMQTT_C_EXAMPLES=OFF"
 fi
-
-#compile_source ARMmbed/mbedtls.git v3.1.0 "-DCMAKE_BUILD_TYPE=Release -DUSE_SHARED_MBEDTLS_LIBRARY=OFF -DENABLE_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON"
-#compile_source nanomq/nng.git nng-mqtt "-DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DNNG_ENABLE_TLS=ON"
