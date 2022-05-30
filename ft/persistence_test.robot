@@ -31,7 +31,7 @@ Get the newly added adapters after stopping and restarting Neuron, it should ret
     Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-3}}    plugin_name=modbus-tcp
     Add Node    type=${${NODE_DRIVER}}    name=${${modbus-tcp-4}}    plugin_name=modbus-tcp
 
-    ${res} =                 Add Node    type=${${NODE_MQTT}}    name=${${mqtt-1}}    plugin_name=mqtt
+    ${res} =                 Add Node    type=${${NODE_APP}}    name=${${mqtt-1}}    plugin_name=mqtt
     Check Response Status    ${res}      200
     Check Error Code         ${res}      ${ERR_SUCCESS}
 
@@ -45,7 +45,7 @@ Get the newly added adapters after stopping and restarting Neuron, it should ret
     Node With Name Should Exist    ${res}[nodes]    ${modbus-tcp-3}
     Node With Name Should Exist    ${res}[nodes]    ${modbus-tcp-4}
 
-    ${res} =                       Get Nodes        ${NODE_MQTT}
+    ${res} =                       Get Nodes        ${NODE_APP}
     Check Response Status          ${res}           200
     Node With Name Should Exist    ${res}[nodes]    ${mqtt-1}
 
@@ -73,7 +73,7 @@ Get the deleted adapter after stopping and restarting Neuron, it should return f
     Node With Name Should Exist        ${res}[nodes]    ${modbus-tcp-3}
     Node With Name Should Not Exist    ${res}[nodes]    ${modbus-tcp-4}
 
-    ${res} =                       Get Nodes        ${NODE_MQTT}
+    ${res} =                       Get Nodes        ${NODE_APP}
     Node With Name Should Exist    ${res}[nodes]    ${mqtt-1}
 
     [Teardown]    Neuron Stop Running    ${process}
@@ -87,7 +87,7 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
     ${modbus_tcp2_id} =    Get Node ID          ${NODE_DRIVER}                                              ${modbus-tcp-2}
     Node Setting           ${modbus_tcp2_id}    {"host": "127.0.0.1", "port": 502, "timeout": 3000}
 
-    ${mqtt_id} =    Get Node ID    ${NODE_MQTT}                                                                                                                                           mqtt-1
+    ${mqtt_id} =    Get Node ID    ${NODE_APP}                                                                                                                                           mqtt-1
     Node Setting    ${mqtt_id}     {"client-id":"upload123", "upload-topic":"", "format": 0, "ssl":false,"host":"127.0.0.1","port":1883,"username":"admin","password":"0000","ca":"", "cert":"", "key":"", "keypass":""}
 
     Neuron Stop Running    ${process}
@@ -324,7 +324,7 @@ Get the subscribed groups after stopping and restarting Neuron, it should return
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
-    ${mqtt_id} =           Get Node ID    ${NODE_MQTT}      ${mqtt-1}
+    ${mqtt_id} =           Get Node ID    ${NODE_APP}      ${mqtt-1}
 
     ${res} =                 Subscribe Group    ${modbus_tcp1_id}    ${mqtt_id}    ${test_gconfig1}
     Check Response Status    ${res}             200
@@ -349,7 +349,7 @@ Get the unsubscribed groups after stopping ande restarting Neuron, it should ret
     ${process} =    Neuron Start Running
 
     ${modbus_tcp1_id} =    Get Node ID    ${NODE_DRIVER}    ${modbus-tcp-1}
-    ${mqtt_id} =           Get Node ID    ${NODE_MQTT}      ${mqtt-1}
+    ${mqtt_id} =           Get Node ID    ${NODE_APP}      ${mqtt-1}
 
     ${res} =                 Unsubscribe Group    ${modbus_tcp1_id}    ${mqtt_id}    ${test_gconfig2}
     Check Response Status    ${res}               200

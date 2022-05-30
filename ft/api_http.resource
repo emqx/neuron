@@ -25,7 +25,7 @@ LOGIN
   [Return]            ${token}[0]
 
 Add MQTT Node
-    Add Node    type=${${NODE_MQTT}}      name=mqtt-adapter          plugin_name=mqtt
+    Add Node    type=${${NODE_APP}}      name=mqtt-adapter          plugin_name=mqtt
 
 Add Node
   [Arguments]         &{args}

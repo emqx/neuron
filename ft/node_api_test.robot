@@ -56,25 +56,12 @@ Get DRIVER node, it should return all DRIVER node
     Node With Name Should Exist    ${res}[nodes]    ${name}
     END
 
-Get WEB node, it should return all WEB node
-    ${res} =    Get Nodes    ${NODE_WEB}
-
-    Check Response Status          ${res}           200
-    Node With Name Should Exist    ${res}[nodes]    default-dashboard-adapter
-
 Get MQTT node, it should return all mqtt node
-    ${res} =    Add Node     type=${${NODE_MQTT}}    name=mqtt-adapter    plugin_name=mqtt
-    ${res} =    Get Nodes    ${NODE_MQTT}
+    ${res} =    Add Node     type=${${NODE_APP}}    name=mqtt-adapter    plugin_name=mqtt
+    ${res} =    Get Nodes    ${NODE_APP}
 
     Check Response Status          ${res}           200
     Node With Name Should Exist    ${res}[nodes]    mqtt-adapter
-
-
-Get UNKNOWN type node, it should return empty node
-    ${res} =    Get Nodes    ${NODE_UNKNOWN}
-
-    Check Response Status    ${res}                       200
-    Run Keyword If           ${res}[nodes] != @{EMPTY}    Fail    not an empty object
 
 Get INVALID type node, it should return failure
     ${res} =    Get Nodes    ${123456}
