@@ -36,11 +36,11 @@
 #include "utils/log.h"
 
 typedef struct plugin_reg_entity {
-    plugin_id_t    plugin_id;
-    plugin_kind_e  plugin_kind;
-    adapter_type_e adapter_type;
-    const char *   plugin_name;
-    const char *   plugin_lib_name;
+    plugin_id_t        plugin_id;
+    plugin_kind_e      plugin_kind;
+    neu_adapter_type_e adapter_type;
+    const char *       plugin_name;
+    const char *       plugin_lib_name;
 } plugin_reg_entity_t;
 
 struct plugin_manager {
@@ -59,14 +59,14 @@ static const plugin_reg_entity_t builtin_static_plugins[] = {
     {
         .plugin_id       = { 1 },
         .plugin_kind     = PLUGIN_KIND_STATIC,
-        .adapter_type    = ADAPTER_TYPE_WEBSERVER,
+        .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
     },
     {
         .plugin_id       = { 2 },
         .plugin_kind     = PLUGIN_KIND_STATIC,
-        .adapter_type    = ADAPTER_TYPE_FUNCTIONAL,
+        .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME,
     },

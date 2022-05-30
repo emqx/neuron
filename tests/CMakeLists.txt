@@ -64,18 +64,6 @@ target_include_directories(data_val_test PRIVATE
 )
 target_link_libraries(data_val_test neuron-base gtest_main gtest pthread jansson)
 
-aux_source_directory(${CMAKE_SOURCE_DIR}/plugins/restful SRC_RESTFUL)
-aux_source_directory(${CMAKE_SOURCE_DIR}/plugins/dummy SRC_DUMMY)
-add_executable(plugin_manager_test plugin_manager_test.cc
-               ${CMAKE_SOURCE_DIR}/src/core/plugin_manager.c
-               ${SRC_RESTFUL} ${SRC_DUMMY} ${SRC_PARSER})
-target_include_directories(plugin_manager_test PRIVATE
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/include
-	${CMAKE_SOURCE_DIR}/plugins
-)
-target_link_libraries(plugin_manager_test neuron-base gtest_main gtest pthread jansson dl nng)
-
 add_executable(http_test http_test.cc 
 	${CMAKE_SOURCE_DIR}/plugins/restful/http.c)
 	
@@ -138,7 +126,6 @@ target_link_libraries(tag_sort_test neuron-base gtest_main gtest)
 
 include(GoogleTest)
 gtest_discover_tests(data_val_test)
-gtest_discover_tests(plugin_manager_test)
 gtest_discover_tests(datatag_table_test)
 gtest_discover_tests(json_test)
 gtest_discover_tests(json_rw_test)

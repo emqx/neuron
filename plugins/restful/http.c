@@ -271,8 +271,8 @@ int http_get_param_node_type(nng_aio *aio, const char *name,
         return rv;
     }
 
-    if (val >= (uintmax_t) NEU_NODE_TYPE_MAX) {
-        return NEU_ERR_EINVAL;
+    if (val != NEU_NA_TYPE_APP && val != NEU_NA_TYPE_DRIVER) {
+        return -1;
     }
 
     *param = (neu_node_type_e) val;

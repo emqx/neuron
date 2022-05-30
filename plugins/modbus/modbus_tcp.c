@@ -47,7 +47,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_descr = "modbus_tcp plugin",
     .intf_funs    = &plugin_intf_funs,
     .kind         = PLUGIN_KIND_SYSTEM,
-    .type         = NEU_NODE_TYPE_DRIVERX,
+    .type         = NEU_NA_TYPE_DRIVER,
 };
 
 static neu_plugin_t *driver_open(neu_adapter_t *            adapter,

@@ -33,22 +33,11 @@ extern "C" {
 typedef uint32_t neu_node_id_t;
 typedef uint32_t neu_adapter_id_t;
 
-typedef enum neu_adapter_type {
-    NEU_ADAPTER_TYPE_DRIVER  = 1,
-    NEU_ADAPTER_TYPE_CONFIG  = 2,
-    NEU_ADAPTER_TYPE_CONTROL = 3,
-} neu_adapter_type_e;
-
-typedef enum neu_node_type {
-    NEU_NODE_TYPE_UNKNOW = 0,
-    NEU_NODE_TYPE_DRIVER,
-    NEU_NODE_TYPE_WEBSERVER,
-    NEU_NODE_TYPE_MQTT,
-    NEU_NODE_TYPE_DRIVERX,
-    NEU_NODE_TYPE_APP,
-    NEU_NODE_TYPE_FUNCTIONAL,
-    NEU_NODE_TYPE_MAX,
-} neu_node_type_e;
+typedef enum {
+    NEU_NA_TYPE_DRIVER = 1,
+    NEU_NA_TYPE_APP    = 2,
+} neu_adapter_type_e,
+    neu_node_type_e;
 
 #include "adapter_msg.h"
 

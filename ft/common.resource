@@ -15,12 +15,8 @@ Resource    simulator.resource
 *** Variables ***
 ${test_data_dir}     ft/data
 
-${NODE_UNKNOWN}	0
-${NODE_DRIVER}	4
-${NODE_WEB}	2
-${NODE_MQTT}	3
-${NODE_DRIVERX}	4
-${NODE_APP}	5
+${NODE_DRIVER}	1
+${NODE_APP}	2
 
 ${NODE_CTL_START}	0
 ${NODE_CTL_STOP}	1

@@ -94,22 +94,22 @@ static const char *const manager_url = "inproc://neu_manager";
 #define PLUGIN_LIB_NAME_MAX_LEN 90
 
 typedef struct adapter_reg_cmd {
-    adapter_type_e adapter_type;
-    const char *   adapter_name;
-    const char *   plugin_name;
+    neu_adapter_type_e adapter_type;
+    const char *       adapter_name;
+    const char *       plugin_name;
     // optional value, it is nothing when set to 0
     plugin_id_t plugin_id;
 } adapter_reg_cmd_t;
 
 static const adapter_reg_cmd_t static_adapter_reg_cmds[] = {
     {
-        .adapter_type = ADAPTER_TYPE_WEBSERVER,
+        .adapter_type = NEU_NA_TYPE_APP,
         .adapter_name = DEFAULT_DASHBOARD_ADAPTER_NAME,
         .plugin_name  = DEFAULT_DASHBOARD_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
     },
     {
-        .adapter_type = ADAPTER_TYPE_FUNCTIONAL,
+        .adapter_type = NEU_NA_TYPE_APP,
         .adapter_name = DEFAULT_PERSIST_ADAPTER_NAME,
         .plugin_name  = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_id    = { 0 } // The plugin_id is nothing
@@ -122,13 +122,13 @@ static const adapter_reg_cmd_t static_adapter_reg_cmds[] = {
 static const plugin_reg_param_t static_plugin_infos[] = {
     {
         .plugin_kind     = PLUGIN_KIND_STATIC,
-        .adapter_type    = ADAPTER_TYPE_WEBSERVER,
+        .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME
     },
     {
         .plugin_kind     = PLUGIN_KIND_STATIC,
-        .adapter_type    = ADAPTER_TYPE_FUNCTIONAL,
+        .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME
     },
@@ -1263,78 +1263,6 @@ const char *neu_manager_get_url(neu_manager_t *manager)
     return manager->listen_url;
 }
 
-static adapter_type_e adapter_type_from_node_type(neu_node_type_e node_type)
-{
-    adapter_type_e adapter_type;
-
-    switch (node_type) {
-    case NEU_NODE_TYPE_DRIVER:
-        adapter_type = ADAPTER_TYPE_DRIVER;
-        break;
-
-    case NEU_NODE_TYPE_WEBSERVER:
-        adapter_type = ADAPTER_TYPE_WEBSERVER;
-        break;
-
-    case NEU_NODE_TYPE_MQTT:
-        adapter_type = ADAPTER_TYPE_MQTT;
-        break;
-
-    case NEU_NODE_TYPE_APP:
-        adapter_type = ADAPTER_TYPE_APP;
-        break;
-
-    case NEU_NODE_TYPE_DRIVERX:
-        adapter_type = ADAPTER_TYPE_DRIVERX;
-        break;
-
-    case NEU_NODE_TYPE_FUNCTIONAL:
-        adapter_type = ADAPTER_TYPE_FUNCTIONAL;
-        break;
-
-    default:
-        adapter_type = ADAPTER_TYPE_UNKNOW;
-        break;
-    }
-
-    return adapter_type;
-}
-
-static neu_node_type_e adapter_type_to_node_type(adapter_type_e adapter_type)
-{
-    neu_node_type_e node_type;
-
-    switch (adapter_type) {
-    case ADAPTER_TYPE_DRIVER:
-        node_type = NEU_NODE_TYPE_DRIVER;
-        break;
-
-    case ADAPTER_TYPE_WEBSERVER:
-        node_type = NEU_NODE_TYPE_WEBSERVER;
-        break;
-
-    case ADAPTER_TYPE_MQTT:
-        node_type = NEU_NODE_TYPE_MQTT;
-        break;
-
-    case ADAPTER_TYPE_DRIVERX:
-        node_type = NEU_NODE_TYPE_DRIVERX;
-        break;
-
-    case ADAPTER_TYPE_APP:
-        node_type = NEU_NODE_TYPE_APP;
-        break;
-    case ADAPTER_TYPE_FUNCTIONAL:
-        node_type = NEU_NODE_TYPE_FUNCTIONAL;
-        break;
-    default:
-        node_type = NEU_NODE_TYPE_UNKNOW;
-        break;
-    }
-
-    return node_type;
-}
-
 int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
                          neu_node_id_t *p_node_id)
 {
@@ -1343,7 +1271,7 @@ int neu_manager_add_node(neu_manager_t *manager, neu_cmd_add_node_t *cmd,
     neu_adapter_t *   adapter = NULL;
     adapter_reg_cmd_t reg_cmd;
 
-    reg_cmd.adapter_type = adapter_type_from_node_type(cmd->node_type);
+    reg_cmd.adapter_type = cmd->node_type;
     reg_cmd.adapter_name = cmd->adapter_name;
     reg_cmd.plugin_name  = cmd->plugin_name;
     reg_cmd.plugin_id    = cmd->plugin_id;
@@ -1529,27 +1457,6 @@ int neu_manager_unsubscribe_node(neu_manager_t *         manager,
     return rv;
 }
 
-static bool adapter_match_node_type(neu_adapter_t * adapter,
-                                    neu_node_type_e node_type)
-{
-    switch (node_type) {
-    case NEU_NODE_TYPE_WEBSERVER:
-        return ADAPTER_TYPE_WEBSERVER == neu_adapter_get_type(adapter);
-    case NEU_NODE_TYPE_DRIVER:
-        return ADAPTER_TYPE_DRIVER == neu_adapter_get_type(adapter);
-    case NEU_NODE_TYPE_MQTT:
-        return ADAPTER_TYPE_MQTT == neu_adapter_get_type(adapter);
-    case NEU_NODE_TYPE_DRIVERX:
-        return ADAPTER_TYPE_DRIVERX == neu_adapter_get_type(adapter);
-    case NEU_NODE_TYPE_APP:
-        return ADAPTER_TYPE_APP == neu_adapter_get_type(adapter);
-    case NEU_NODE_TYPE_FUNCTIONAL:
-        return ADAPTER_TYPE_FUNCTIONAL == neu_adapter_get_type(adapter);
-    default:
-        return false;
-    }
-}
-
 int neu_manager_get_node_by_id(neu_manager_t *manager, neu_node_id_t node_id,
                                neu_node_info_t *result)
 {
@@ -1567,16 +1474,16 @@ int neu_manager_get_node_by_id(neu_manager_t *manager, neu_node_id_t node_id,
     nng_mtx_lock(manager->adapters_mtx);
     reg_entity = find_reg_adapter_by_id(&manager->reg_adapters, adapter_id);
     if (NULL != reg_entity) {
-        neu_adapter_id_t adapter_id;
-        adapter_type_e   adapter_type;
-        const char *     adapter_name;
+        neu_adapter_id_t   adapter_id;
+        neu_adapter_type_e adapter_type;
+        const char *       adapter_name;
 
         adapter_type = neu_adapter_get_type(reg_entity->adapter);
         adapter_name = neu_adapter_get_name(reg_entity->adapter);
         adapter_id   = neu_adapter_get_id(reg_entity->adapter);
         result->node_id =
             neu_manager_adapter_id_to_node_id(manager, adapter_id);
-        result->node_type = adapter_type_to_node_type(adapter_type);
+        result->node_type = adapter_type;
         result->node_name = strdup(adapter_name);
         result->plugin_id = neu_adapter_get_plugin_id(reg_entity->adapter);
     } else {
@@ -1602,7 +1509,7 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
     VECTOR_FOR_EACH(&manager->reg_adapters, iter)
     {
         reg_entity = (adapter_reg_entity_t *) iterator_get(&iter);
-        if (adapter_match_node_type(reg_entity->adapter, node_type)) {
+        if (neu_adapter_get_type(reg_entity->adapter) == node_type) {
             neu_node_info_t  node_info;
             neu_adapter_id_t adapter_id;
             const char *     adapter_name;
@@ -1903,7 +1810,7 @@ int neu_manager_add_plugin_lib(neu_manager_t *           manager,
     }
 
     reg_param.plugin_kind     = module_info->kind;
-    reg_param.adapter_type    = adapter_type_from_node_type(module_info->type);
+    reg_param.adapter_type    = module_info->type;
     reg_param.plugin_lib_name = (char *) cmd->plugin_lib_name;
     reg_param.plugin_name     = module_info->module_name;
 
@@ -1915,8 +1822,8 @@ int neu_manager_add_plugin_lib(neu_manager_t *           manager,
         return NEU_ERR_LIBRARY_INFO_INVALID;
     }
 
-    if (reg_param.adapter_type <= ADAPTER_TYPE_UNKNOW ||
-        reg_param.adapter_type >= ADAPTER_TYPE_MAX) {
+    if (reg_param.adapter_type != NEU_NA_TYPE_APP &&
+        reg_param.adapter_type != NEU_NA_TYPE_DRIVER) {
         return NEU_ERR_LIBRARY_INFO_INVALID;
     }
 
@@ -1940,7 +1847,7 @@ int neu_manager_update_plugin_lib(neu_manager_t *              manager,
     plugin_reg_param_t reg_param;
 
     reg_param.plugin_kind     = cmd->plugin_kind;
-    reg_param.adapter_type    = adapter_type_from_node_type(cmd->node_type);
+    reg_param.adapter_type    = cmd->node_type;
     reg_param.plugin_name     = cmd->plugin_name;
     reg_param.plugin_lib_name = (char *) cmd->plugin_lib_name;
     rv = plugin_manager_update_plugin(manager->plugin_manager, &reg_param);
@@ -1965,13 +1872,13 @@ int neu_manager_get_plugin_libs(neu_manager_t *manager,
 
     VECTOR_FOR_EACH(plugin_regs, iter)
     {
-        adapter_type_e adapter_type;
+        neu_adapter_type_e adapter_type;
 
         plugin_reg_info             = (plugin_reg_info_t *) iterator_get(&iter);
         adapter_type                = plugin_reg_info->adapter_type;
         plugin_lib_info.plugin_id   = plugin_reg_info->plugin_id;
         plugin_lib_info.plugin_kind = plugin_reg_info->plugin_kind;
-        plugin_lib_info.node_type   = adapter_type_to_node_type(adapter_type);
+        plugin_lib_info.node_type   = adapter_type;
         plugin_lib_info.plugin_name = plugin_reg_info->plugin_name;
         plugin_lib_info.plugin_lib_name = plugin_reg_info->plugin_lib_name;
         vector_push_back(plugin_lib_infos, &plugin_lib_info);

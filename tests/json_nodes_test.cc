@@ -19,7 +19,7 @@ TEST(JsonNodesTest, AddNodesDecode)
 
     EXPECT_EQ(0, neu_json_decode_add_node_req(buf, &req));
 
-    EXPECT_EQ(NEU_NODE_TYPE_DRIVER, req->type);
+    EXPECT_EQ(NEU_NA_TYPE_DRIVER, req->type);
     EXPECT_STREQ("adapter1", req->name);
     EXPECT_STREQ("plugin1", req->plugin_name);
 

@@ -81,7 +81,7 @@ Update the interval of the test group config, it should return success
   Should Be Equal As Integers                               ${config}[interval]  2000
 
 North APP subscribe non-existent group config, it should return failure
-  ${app_node_id} =          Add Node And Return ID          ${NODE_MQTT}           ${app_node}               ${PLUGIN_MQTT}
+  ${app_node_id} =          Add Node And Return ID          ${NODE_APP}           ${app_node}               ${PLUGIN_MQTT}
   ${driver_node_id} =       Add Node And Return ID          ${NODE_DRIVER}        ${driver_node}            ${PLUGIN_MODBUS_TCP}
 
   ${res} =                  Subscribe Group                 ${driver_node_id}     ${app_node_id}            grp_config
@@ -90,7 +90,7 @@ North APP subscribe non-existent group config, it should return failure
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 North APP subscribe group config, it should return success
-  ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
+  ${app_node_id} =          Get Node ID                     ${NODE_APP}           ${app_node}
   ${driver_node_id} =       Get Node ID                     ${NODE_DRIVER}        ${driver_node}
   ${res} =                  Add Group Config                ${driver_node_id}     grp_config                1000
 
@@ -100,7 +100,7 @@ North APP subscribe group config, it should return success
   Check Error Code          ${res}                          ${ERR_SUCCESS}
 
 Query the subscribers of the group config, it should return all nodes subscribed to this group
-  ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
+  ${app_node_id} =          Get Node ID                     ${NODE_APP}           ${app_node}
   ${driver_node_id1} =      Get Node ID                     ${NODE_DRIVER}        ${driver_node}
 
   ${res} =                  Get Subscribe Group             ${app_node_id}
@@ -148,7 +148,7 @@ Delete the subscribe group config, it should return failure
   Check Error Code          ${res}                          ${ERR_GRP_CONFIG_IN_USE}
 
 North APP unsubscribe non-existent group config, it should return failure
-  ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
+  ${app_node_id} =          Get Node ID                     ${NODE_APP}           ${app_node}
   ${driver_node_id} =       Get Node ID                     ${NODE_DRIVER}        ${driver_node}
   ${res} =                  Unsubscribe Group               ${driver_node_id}     ${app_node_id}            xxgrp_config
 
@@ -156,7 +156,7 @@ North APP unsubscribe non-existent group config, it should return failure
   Check Error Code          ${res}                          ${ERR_GRPCONFIG_NOT_EXIST}
 
 North APP unsubscribe group config, it should return success
-  ${app_node_id} =          Get Node ID                     ${NODE_MQTT}           ${app_node}
+  ${app_node_id} =          Get Node ID                     ${NODE_APP}           ${app_node}
   ${driver_node_id1} =      Get Node ID                     ${NODE_DRIVER}        ${driver_node}
   ${driver_node_id2} =      Get Node ID                     ${NODE_DRIVER}        driver-node2
 
