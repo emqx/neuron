@@ -23,15 +23,13 @@
 #include <stdint.h>
 
 #include "adapter.h"
+#include "plugin.h"
 #include "plugin_info.h"
 
 typedef struct neu_adapter_info {
-    neu_adapter_id_t   id;
-    neu_adapter_type_e type;
-    plugin_id_t        plugin_id;
-    const char *       name;
-    plugin_kind_e      plugin_kind;
-    const char *       plugin_lib_name;
+    const char *         name;
+    void *               handle;
+    neu_plugin_module_t *module;
 } neu_adapter_info_t;
 
 #endif

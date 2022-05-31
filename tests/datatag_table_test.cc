@@ -3,8 +3,8 @@
 #include <random>
 
 #include "datatag_table.h"
-#include "neu_tag.h"
 #include "neu_vector.h"
+#include "tag.h"
 #include "utils/log.h"
 
 zlog_category_t *neuron = NULL;

@@ -17,15 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_GROUP_H_
-#define _NEU_GROUP_H_
+#ifndef _NEU_DEFINE_H_
+#define _NEU_DEFINE_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+#define NEU_TAG_NAME_LEN 64
+#define NEU_TAG_ADDRESS_LEN 128
+#define NEU_TAG_DESCRIPTION_LEN 128
+#define NEU_GORUP_NAME_LEN 64
+#define NEU_NODE_NAME_LEN 64
+#define NEU_PLUGIN_NAME_LEN 64
+#define NEU_PLUGIN_LIBRARY_LEN 64
+#define NEU_PLUGIN_DESCRIPTION_LEN 256
 
 #endif

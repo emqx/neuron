@@ -31,10 +31,12 @@ extern "C" {
 //#include "adapter.h"
 #include "data_expr.h"
 #include "datatag_table.h"
+#include "define.h"
 #include "errcodes.h"
 #include "plugin_info.h"
 #include "tag_group_config.h"
 #include "types.h"
+#include "utils/utextend.h"
 
 #define DEFAULT_TAG_GROUP_COUNT 8
 
@@ -133,25 +135,19 @@ typedef struct neu_reqresp_data {
 } neu_reqresp_data_t;
 
 typedef struct neu_node_info {
-    neu_node_id_t   node_id;
-    neu_node_type_e node_type;
-    char *          node_name;
-    plugin_id_t     plugin_id;
-    // TODO: add node attribute
+    char node_name[NEU_NODE_NAME_LEN];
+    char plugin_name[NEU_PLUGIN_NAME_LEN];
 } neu_node_info_t;
 
 /* NEU_REQRESP_ADD_NODE */
 typedef struct neu_cmd_add_node {
-    neu_node_type_e node_type;
-    const char *    adapter_name;
-    const char *    plugin_name;
-    // optional value, it is nothing when set to 0
-    plugin_id_t plugin_id;
+    const char *adapter_name;
+    const char *plugin_name;
 } neu_cmd_add_node_t;
 
 /* NEU_REQRESP_DEL_NODE */
 typedef struct neu_cmd_del_node {
-    neu_node_id_t node_id;
+    char *name;
 } neu_cmd_del_node_t;
 
 /* NEU_REQRESP_GET_NODE_BY_ID */
@@ -172,7 +168,7 @@ typedef struct neu_cmd_get_nodes {
 
 /* NEU_REQRESP_NODES */
 typedef struct neu_reqresp_nodes {
-    vector_t nodes; // vector of neu_node_info_t
+    UT_array *nodes; // array of neu_node_info_t
 } neu_reqresp_nodes_t;
 
 /* NEU_REQRESP_ADD_GRP_CONFIG */
@@ -203,20 +199,14 @@ typedef struct neu_reqresp_grp_configs {
     vector_t grp_configs; // vector of neu_taggrp_config_t pointer
 } neu_reqresp_grp_configs_t;
 
-typedef struct plugin_lib_info {
-    plugin_id_t     plugin_id;
-    plugin_kind_e   plugin_kind;
-    neu_node_type_e node_type;
-    // The buffer is reference from plugin entity of register table,
-    // don't free it
-    const char *plugin_name;
-    // The buffer is reference from plugin entity of register table,
-    // don't free it
-    const char *plugin_lib_name;
-    // The buffer is reference from plugin entity of register table,
-    // don't free it
-    const char *plugin_descr;
-} plugin_lib_info_t;
+typedef struct neu_plugin_lib_info {
+    char name[NEU_PLUGIN_NAME_LEN];
+    char description[NEU_PLUGIN_DESCRIPTION_LEN];
+    char lib_name[NEU_PLUGIN_LIBRARY_LEN];
+
+    neu_plugin_kind_e kind;
+    neu_node_type_e   type;
+} neu_plugin_lib_info_t;
 
 /* NEU_REQRESP_ADD_PLUGIN_LIB */
 typedef struct neu_cmd_add_plugin_lib_t {
@@ -225,7 +215,7 @@ typedef struct neu_cmd_add_plugin_lib_t {
 
 /* NEU_REQRESP_DEL_PLUGIN_LIB */
 typedef struct neu_cmd_del_plugin_lib {
-    plugin_id_t plugin_id;
+    char *name;
 } neu_cmd_del_plugin_lib_t;
 
 /* NEU_REQRESP_UPDATE_PLUGIN_LIB */
@@ -243,7 +233,7 @@ typedef struct neu_cmd_get_plugin_libs {
 
 /* NEU_REQRESP_PLUGIN_LIBS */
 typedef struct neu_reqresp_plugin_libs {
-    vector_t plugin_libs; // vector of plugin_lib_info_t
+    UT_array *plugin_libs;
 } neu_reqresp_plugin_libs_t;
 
 /* NEU_REQRESP_GET_DATATAGS */

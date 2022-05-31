@@ -16,5 +16,213 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include <string.h>
+#include <sys/time.h>
+
+#include <nng/nng.h>
+#include <nng/supplemental/util/platform.h>
+
+#include "errcodes.h"
 
 #include "group.h"
+
+#define NEU_GROUP_NAME_LEN 128
+#define NEU_GROUP_INTERVAL_LIMIT 100
+
+typedef struct tag_elem {
+    char *name;
+
+    neu_datatag_t *tag;
+
+    UT_hash_handle hh;
+} tag_elem_t;
+
+struct neu_group {
+    char *name;
+
+    tag_elem_t *tags;
+    uint32_t    interval;
+
+    nng_mtx *mtx;
+    int64_t  timestamp;
+};
+
+static UT_array *to_array(tag_elem_t *tags);
+static void      update_timestamp(neu_group_t *group);
+
+neu_group_t *neu_group_new(const char *name, uint32_t interval)
+{
+    if (interval < NEU_GROUP_INTERVAL_LIMIT ||
+        strlen(name) >= NEU_GROUP_NAME_LEN) {
+        return NULL;
+    }
+
+    neu_group_t *group = calloc(1, sizeof(neu_group_t));
+
+    group->name     = strdup(name);
+    group->interval = interval;
+
+    nng_mtx_alloc(&group->mtx);
+
+    return group;
+}
+
+void neu_group_destroy(neu_group_t *group)
+{
+    tag_elem_t *el = NULL, *tmp = NULL;
+
+    nng_mtx_lock(group->mtx);
+
+    HASH_ITER(hh, group->tags, el, tmp)
+    {
+        free(el->name);
+        free(el);
+    }
+
+    nng_mtx_unlock(group->mtx);
+
+    nng_mtx_free(group->mtx);
+
+    free(group->name);
+    free(group);
+}
+
+int neu_group_update(neu_group_t *group, uint32_t interval)
+{
+    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
+        return NEU_ERR_GROUP_CONFIG_INVALID;
+    }
+
+    nng_mtx_lock(group->mtx);
+    if (group->interval != interval) {
+        group->interval = interval;
+        update_timestamp(group);
+    }
+
+    nng_mtx_unlock(group->mtx);
+
+    return 0;
+}
+
+int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
+{
+    tag_elem_t *el = NULL;
+
+    nng_mtx_lock(group->mtx);
+
+    HASH_FIND_STR(group->tags, tag->name, el);
+    if (el != NULL) {
+        nng_mtx_unlock(group->mtx);
+        return NEU_ERR_TAG_NAME_CONFLICT;
+    }
+
+    el       = calloc(1, sizeof(tag_elem_t));
+    el->name = strdup(tag->name);
+    el->tag  = tag;
+
+    HASH_ADD_STR(group->tags, name, el);
+    update_timestamp(group);
+
+    nng_mtx_unlock(group->mtx);
+
+    return 0;
+}
+
+int neu_group_update_tag(neu_group_t *group, const char *tag_name,
+                         neu_datatag_t *tag)
+{
+    tag_elem_t *el = NULL;
+
+    nng_mtx_lock(group->mtx);
+
+    HASH_FIND_STR(group->tags, tag_name, el);
+    if (el != NULL) {
+        HASH_DEL(group->tags, el);
+        free(el->name);
+        free(el);
+    }
+
+    el       = calloc(1, sizeof(tag_elem_t));
+    el->name = strdup(tag->name);
+    el->tag  = tag;
+
+    HASH_ADD_STR(group->tags, name, el);
+    update_timestamp(group);
+
+    nng_mtx_unlock(group->mtx);
+
+    return 0;
+}
+
+int neu_group_del_tag(neu_group_t *group, const char *tag_name)
+{
+    tag_elem_t *el = NULL;
+
+    nng_mtx_lock(group->mtx);
+
+    HASH_FIND_STR(group->tags, tag_name, el);
+    if (el != NULL) {
+        HASH_DEL(group->tags, el);
+        free(el->name);
+        free(el);
+
+        update_timestamp(group);
+    }
+
+    nng_mtx_unlock(group->mtx);
+
+    return 0;
+}
+
+UT_array *neu_group_get_tag(neu_group_t *group)
+{
+    UT_array *array = NULL;
+
+    nng_mtx_lock(group->mtx);
+    array = to_array(group->tags);
+    nng_mtx_unlock(group->mtx);
+
+    return array;
+}
+
+uint16_t neu_group_tag_size(neu_group_t *group)
+{
+    uint16_t size = 0;
+
+    nng_mtx_lock(group->mtx);
+    size = HASH_COUNT(group->tags);
+    nng_mtx_unlock(group->mtx);
+
+    return size;
+}
+
+void neu_group_change_test(neu_group_t *group, int64_t timestamp, void *arg,
+                           neu_group_change_fn fn)
+{
+    nng_mtx_lock(group->mtx);
+    if (group->timestamp != timestamp) {
+        fn(arg, group->timestamp, to_array(group->tags), group->interval);
+    }
+    nng_mtx_unlock(group->mtx);
+}
+
+static void update_timestamp(neu_group_t *group)
+{
+    struct timeval tv = { 0 };
+
+    gettimeofday(&tv, NULL);
+
+    group->timestamp = tv.tv_sec * 1000 * 1000 + tv.tv_usec;
+}
+
+static UT_array *to_array(tag_elem_t *tags)
+{
+    tag_elem_t *el = NULL, *tmp = NULL;
+    UT_array *  array = NULL;
+    UT_icd      icd   = { sizeof(neu_datatag_t), NULL, NULL, NULL };
+
+    utarray_new(array, &icd);
+    HASH_ITER(hh, tags, el, tmp) { utarray_push_back(array, &el->tag); }
+
+    return array;
+}

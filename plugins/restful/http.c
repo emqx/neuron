@@ -50,6 +50,10 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
 
     nng_http_res_set_status(res, status);
 
+    nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+    nlog_notice("%s %s [%d]", nng_http_req_get_method(nng_req),
+                nng_http_req_get_uri(nng_req), status);
+
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
 
@@ -93,7 +97,6 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     } else {
         char *buf = calloc(*data_size + 1, sizeof(char));
         memcpy(buf, *data, *data_size);
-        nlog_info("body: %s", buf);
         *data = buf;
         return 0;
     }

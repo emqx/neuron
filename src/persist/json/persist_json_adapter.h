@@ -32,7 +32,6 @@ extern "C" {
 #endif
 
 typedef struct {
-    int64_t id;
     char *  name;
     int64_t type;
     char *  plugin_name;
@@ -49,7 +48,6 @@ typedef struct {
 int neu_json_encode_node_resp(void *json_object, void *param);
 
 typedef struct {
-    int64_t id;
     char *  name;
     int64_t type;
     char *  plugin_name;

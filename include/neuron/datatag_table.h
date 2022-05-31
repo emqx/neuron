@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#include "neu_tag.h"
+#include "tag.h"
 
 typedef uint32_t                 datatag_id_t;
 typedef struct neu_datatag_table neu_datatag_table_t;

@@ -86,7 +86,7 @@ typedef struct neu_plugin_module {
     const char *                  module_descr;
     const neu_plugin_intf_funs_t *intf_funs;
     neu_node_type_e               type;
-    plugin_kind_e                 kind;
+    neu_plugin_kind_e             kind;
 } neu_plugin_module_t;
 
 inline static neu_plugin_common_t *
@@ -102,21 +102,20 @@ uint32_t neu_plugin_get_event_id(neu_plugin_t *plugin);
 
 neu_datatag_table_t *neu_system_get_datatags_table(neu_plugin_t *plugin,
                                                    neu_node_id_t ndoe_id);
-intptr_t neu_system_add_node(neu_plugin_t *plugin, neu_node_type_e node_type,
-                             const char *adapter_name, const char *plugin_name);
-intptr_t neu_system_del_node(neu_plugin_t *plugin, neu_node_id_t node_id);
-int32_t  neu_system_get_node_by_id(neu_plugin_t *plugin, neu_node_id_t node_id,
-                                   neu_node_info_t *node_info);
-// uninit vector
-vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
-intptr_t neu_system_add_group_config(neu_plugin_t *       plugin,
-                                     neu_node_id_t        node_id,
-                                     neu_taggrp_config_t *grp_config);
-intptr_t neu_system_del_group_config(neu_plugin_t *plugin,
-                                     neu_node_id_t node_id, char *config_name);
-intptr_t neu_system_update_group_config(neu_plugin_t *       plugin,
-                                        neu_node_id_t        node_id,
-                                        neu_taggrp_config_t *grp_config);
+intptr_t  neu_system_add_node(neu_plugin_t *plugin, const char *adapter_name,
+                              const char *plugin_name);
+intptr_t  neu_system_del_node(neu_plugin_t *plugin, const char *name);
+int32_t   neu_system_get_node_by_id(neu_plugin_t *plugin, neu_node_id_t node_id,
+                                    neu_node_info_t *node_info);
+UT_array *neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
+intptr_t  neu_system_add_group_config(neu_plugin_t *       plugin,
+                                      neu_node_id_t        node_id,
+                                      neu_taggrp_config_t *grp_config);
+intptr_t  neu_system_del_group_config(neu_plugin_t *plugin,
+                                      neu_node_id_t node_id, char *config_name);
+intptr_t  neu_system_update_group_config(neu_plugin_t *       plugin,
+                                         neu_node_id_t        node_id,
+                                         neu_taggrp_config_t *grp_config);
 neu_taggrp_config_t *neu_system_find_group_config(neu_plugin_t *plugin,
                                                   neu_node_id_t node_id,
                                                   const char *  name);
@@ -164,17 +163,12 @@ int neu_plugin_notify_event_update_tags(neu_plugin_t *plugin, uint32_t event_id,
 int neu_plugin_notify_event_update_license(neu_plugin_t *plugin,
                                            uint32_t      event_id);
 
-intptr_t neu_system_del_plugin(neu_plugin_t *plugin, plugin_id_t plugin_id);
-intptr_t neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
-                                  neu_node_type_e node_type,
-                                  const char *    plugin_name,
-                                  const char *    plugin_lib_name);
-// uninit vector
-vector_t neu_system_get_plugin(neu_plugin_t *plugin);
-
-int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
-                                      neu_datatag_table_t *tag_table,
-                                      neu_attribute_e      attribute);
+intptr_t  neu_system_del_plugin(neu_plugin_t *plugin, const char *name);
+intptr_t  neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
+                                   neu_node_type_e node_type,
+                                   const char *    plugin_name,
+                                   const char *    plugin_lib_name);
+UT_array *neu_system_get_plugin(neu_plugin_t *plugin);
 
 intptr_t neu_plugin_set_node_setting(neu_plugin_t *plugin,
                                      neu_node_id_t node_id,

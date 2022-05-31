@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/queue.h>
 #include <unistd.h>
 
 #include "event/event.h"
@@ -61,16 +60,12 @@ struct event_data {
 
     void *usr_data;
     int   fd;
-
-    TAILQ_ENTRY(event_data) node;
 };
 
 struct neu_events {
     int       epoll_fd;
     pthread_t thread;
     bool      stop;
-
-    TAILQ_HEAD(, event_data) datas;
 };
 
 static void *event_loop(void *arg)
@@ -87,8 +82,8 @@ static void *event_loop(void *arg)
             continue;
         }
         if (ret == -1 || events->stop) {
-            zlog_warn(neuron, "event loop exit, errno: %d, stop: %d", errno,
-                      events->stop);
+            zlog_warn(neuron, "event loop exit, errno: %s(%d), stop: %d",
+                      strerror(errno), errno, events->stop);
             break;
         }
 
@@ -139,8 +134,6 @@ neu_events_t *neu_event_new(void)
     events->epoll_fd = epoll_create(1);
     events->stop     = false;
 
-    TAILQ_INIT(&events->datas);
-
     pthread_create(&events->thread, NULL, event_loop, events);
 
     return events;
@@ -148,31 +141,10 @@ neu_events_t *neu_event_new(void)
 
 int neu_event_close(neu_events_t *events)
 {
-    struct event_data *data = NULL;
-
     events->stop = true;
     close(events->epoll_fd);
 
-    zlog_info(neuron, "wait events loop exit: %d", events->epoll_fd);
     pthread_join(events->thread, NULL);
-    zlog_info(neuron, "events loop has exited: %d", events->epoll_fd);
-
-    data = TAILQ_FIRST(&events->datas);
-    while (data != NULL) {
-        TAILQ_REMOVE(&events->datas, data, node);
-        close(data->fd);
-        switch (data->type) {
-        case TIMER:
-            free(data->ctx.timer);
-            break;
-        case IO:
-            free(data->ctx.io);
-            break;
-        }
-        free(data);
-
-        data = TAILQ_FIRST(&events->datas);
-    }
 
     free(events);
     return 0;
@@ -204,8 +176,6 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     timer_ctx->value      = value;
     timer_ctx->fd         = timer_fd;
     timer_ctx->event_data = data;
-
-    TAILQ_INSERT_TAIL(&events->datas, data, node);
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, timer_fd, &event);
 
@@ -246,21 +216,29 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
     io_ctx->fd         = io.fd;
     io_ctx->event_data = data;
 
-    TAILQ_INSERT_TAIL(&events->datas, data, node);
-
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, io.fd, &event);
 
-    zlog_info(neuron, "add io, fd: %d, epoll: %d, ret: %d", io.fd,
-              events->epoll_fd, ret);
+    nlog_info("add io, fd: %d, epoll: %d, ret: %d", io.fd, events->epoll_fd,
+              ret);
 
     return io_ctx;
 }
 
 int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
 {
+    struct event_data *data = (struct event_data *) io->event_data;
     zlog_info(neuron, "del io: %d from epoll: %d", io->fd, events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
+    switch (data->type) {
+    case TIMER:
+        free(data->ctx.timer);
+        break;
+    case IO:
+        free(data->ctx.io);
+        break;
+    }
+    free(data);
 
     return 0;
 }

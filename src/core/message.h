@@ -57,7 +57,7 @@ typedef enum msg_type {
 
     MSG_TYPE_EVENT_START    = 0x2000,
     MSG_EVENT_DRIVER_STATUS = MSG_TYPE_EVENT_START,
-    MSG_EVENT_GROUP_CONFIG_CHANGED,
+    MSG_EVENT_GROUP_CONFIG_CHANGED, // unused
     MSG_EVENT_NODE_PING,
     MSG_EVENT_ADD_NODE,
     MSG_EVENT_UPDATE_NODE,
@@ -129,22 +129,20 @@ typedef struct stop_periodic_read_cmd {
 } stop_periodic_read_cmd_t;
 
 /* MSG_CMD_SUBSCRIBE_DRIVER */
-typedef struct subscribe_driver_cmd {
-    neu_taggrp_config_t *grp_config;
-    neu_adapter_id_t     sender_id; // adapter_id of sender
-    neu_node_id_t        src_node_id;
-    neu_node_id_t        dst_node_id;
-    uint32_t             req_id;
-} subscribe_node_cmd_t;
+typedef struct {
+    char *app;
+    char *driver;
+    char *group;
+} subscribe_node_cmd_t, unsubscribe_node_cmd_t;
 
 /* MSG_CMD_UNSUBSCRIBE_DRIVER */
-typedef struct unsubscribe_driver_cmd {
-    neu_taggrp_config_t *grp_config;
-    neu_adapter_id_t     sender_id; // adapter_id of sender
-    neu_node_id_t        src_node_id;
-    neu_node_id_t        dst_node_id;
-    uint32_t             req_id;
-} unsubscribe_node_cmd_t;
+// typedef struct unsubscribe_driver_cmd {
+// neu_taggrp_config_t *grp_config;
+// neu_adapter_id_t     sender_id; // adapter_id of sender
+// neu_node_id_t        src_node_id;
+// neu_node_id_t        dst_node_id;
+// uint32_t             req_id;
+//} unsubscribe_node_cmd_t;
 
 /* MSG_CMD_GROUP_CONFIG_CHANGED */
 typedef struct grp_config_changed_cmd {
@@ -165,6 +163,7 @@ typedef struct neuron_trans_data {
     neu_taggrp_config_t *grp_config;
     neu_adapter_id_t     sender_id; // adapter_id of sender
     char *               node_name;
+    char *               group;
     neu_trans_buf_t      trans_buf;
 } neuron_trans_data_t;
 

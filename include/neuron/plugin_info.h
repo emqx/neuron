@@ -24,6 +24,12 @@
 extern "C" {
 #endif
 
+typedef enum neu_plugin_kind {
+    NEU_PLUGIN_KIND_STATIC = 0,
+    NEU_PLUGIN_KIND_SYSTEM = 1,
+    NEU_PLUGIN_KIND_CUSTOM = 2,
+} neu_plugin_kind_e;
+
 typedef struct plugin_id {
     uint32_t id_val;
 } plugin_id_t;

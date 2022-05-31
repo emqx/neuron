@@ -31,9 +31,9 @@ extern "C" {
 #include "adapter.h"
 #include "errcodes.h"
 #include "file.h"
-#include "neu_tag.h"
 #include "neu_vector.h"
 #include "plugin.h"
+#include "tag.h"
 #include "types.h"
 #include "utils/base64.h"
 
@@ -46,6 +46,7 @@ extern "C" {
 #include "utils/protocol_buf.h"
 #include "utils/utextend.h"
 
+#include "define.h"
 #include "tag_sort.h"
 
 #ifdef __cplusplus

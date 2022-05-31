@@ -41,16 +41,9 @@ void handle_add_adapter(nng_aio *aio)
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             neu_err_code_e code = { 0 };
 
-            if (req->type == NEU_NA_TYPE_DRIVER ||
-                req->type == NEU_NA_TYPE_APP) {
-                code = neu_system_add_node(plugin, req->type, req->name,
-                                           req->plugin_name);
-            } else {
-                code = NEU_ERR_NODE_TYPE_INVALID;
-            }
-
-            NEU_JSON_RESPONSE_ERROR(code,
-                                    { http_response(aio, code, result_error); })
+            NEU_JSON_RESPONSE_ERROR(
+                neu_system_add_node(plugin, req->name, req->plugin_name),
+                { http_response(aio, code, result_error); })
         })
 }
 
@@ -60,7 +53,7 @@ void handle_del_adapter(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_node_req_t, neu_json_decode_del_node_req, {
-            NEU_JSON_RESPONSE_ERROR(neu_system_del_node(plugin, req->id), {
+            NEU_JSON_RESPONSE_ERROR(neu_system_del_node(plugin, req->name), {
                 http_response(aio, error_code.error, result_error);
             });
         })
@@ -83,19 +76,16 @@ void handle_get_adapter(nng_aio *aio)
 
     neu_json_get_nodes_resp_t nodes_res = { 0 };
     int                       index     = 0;
-    vector_t                  nodes = neu_system_get_nodes(plugin, node_type);
+    UT_array *                nodes = neu_system_get_nodes(plugin, node_type);
 
-    nodes_res.n_node = nodes.size;
+    nodes_res.n_node = utarray_len(nodes);
     nodes_res.nodes =
         calloc(nodes_res.n_node, sizeof(neu_json_get_nodes_resp_node_t));
 
-    VECTOR_FOR_EACH(&nodes, iter)
+    utarray_foreach(nodes, neu_node_info_t *, info)
     {
-        neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
-
-        nodes_res.nodes[index].id        = info->node_id;
-        nodes_res.nodes[index].name      = info->node_name;
-        nodes_res.nodes[index].plugin_id = info->plugin_id.id_val;
+        nodes_res.nodes[index].name        = info->node_name;
+        nodes_res.nodes[index].plugin_name = info->plugin_name;
         index += 1;
     }
 
@@ -105,15 +95,7 @@ void handle_get_adapter(nng_aio *aio)
 
     free(result);
     free(nodes_res.nodes);
-
-    VECTOR_FOR_EACH(&nodes, iter)
-    {
-        neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
-
-        free(info->node_name);
-        index += 1;
-    }
-    vector_uninit(&nodes);
+    utarray_free(nodes);
 }
 
 void handle_set_node_setting(nng_aio *aio)

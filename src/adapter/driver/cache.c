@@ -23,6 +23,7 @@
 
 #include "utils/uthash.h"
 
+#include "define.h"
 #include "tag.h"
 
 #include "cache.h"

@@ -41,10 +41,6 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "type",
-                                        .t    = NEU_JSON_INT,
-                                    },
-                                    {
                                         .name = "plugin_name",
                                         .t    = NEU_JSON_STR,
                                     },
@@ -58,9 +54,8 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
         goto decode_fail;
     }
 
-    req->type        = req_elems[0].v.val_int;
-    req->plugin_name = req_elems[1].v.val_str;
-    req->name        = req_elems[2].v.val_str;
+    req->plugin_name = req_elems[0].v.val_str;
+    req->name        = req_elems[1].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -99,8 +94,8 @@ int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "id",
-        .t    = NEU_JSON_INT,
+        .name = "name",
+        .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -108,7 +103,7 @@ int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
         goto decode_fail;
     }
 
-    req->id = req_elems[0].v.val_int;
+    req->name = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -128,7 +123,7 @@ decode_exit:
 
 void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req)
 {
-
+    free(req->name);
     free(req);
 }
 
@@ -207,21 +202,18 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
     void *                          node_array = neu_json_array();
     neu_json_get_nodes_resp_node_t *p_node     = resp->nodes;
     for (int i = 0; i < resp->n_node; i++) {
-        neu_json_elem_t node_elems[] = { {
-                                             .name      = "plugin_id",
-                                             .t         = NEU_JSON_INT,
-                                             .v.val_int = p_node->plugin_id,
-                                         },
-                                         {
-                                             .name      = "name",
-                                             .t         = NEU_JSON_STR,
-                                             .v.val_str = p_node->name,
-                                         },
-                                         {
-                                             .name      = "id",
-                                             .t         = NEU_JSON_INT,
-                                             .v.val_int = p_node->id,
-                                         } };
+        neu_json_elem_t node_elems[] = {
+            {
+                .name      = "plugin_name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_node->plugin_name,
+            },
+            {
+                .name      = "name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_node->name,
+            },
+        };
         node_array = neu_json_encode_array(node_array, node_elems,
                                            NEU_JSON_ELEM_SIZE(node_elems));
         p_node++;

@@ -26,11 +26,13 @@
 
 #include "adapter.h"
 #include "adapter/adapter_internal.h"
+#include "base/group.h"
 #include "cache.h"
 #include "driver_internal.h"
 
 struct subscribe_group {
-    neu_plugin_group_t   grp;
+    neu_plugin_group_t grp;
+    //    neu_group_t *      group;
     neu_taggrp_config_t *group;
 
     char *name;
@@ -44,8 +46,8 @@ struct subscribe_group {
 };
 
 struct neu_adapter_driver {
-    neu_adapter_t        adapter;
-    neu_datatag_table_t *tag_table;
+    neu_adapter_t adapter;
+    //    neu_datatag_table_t *tag_table;
 
     neu_driver_cache_t *cache;
 
@@ -168,8 +170,9 @@ int neu_adapter_driver_stop(neu_adapter_driver_t *driver)
 
 int neu_adapter_driver_init(neu_adapter_driver_t *driver)
 {
-    driver->tag_table = neu_manager_get_datatag_tbl(driver->adapter.manager,
-                                                    driver->adapter.id);
+    (void) driver;
+    // driver->tag_table = neu_manager_get_datatag_tbl(driver->adapter.manager,
+    // driver->adapter.id);
 
     return 0;
 }
@@ -228,7 +231,7 @@ void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
 
         int_val = neu_fixed_array_get(array, 0);
 
-        tag = neu_datatag_tbl_get(driver->tag_table, int_val->key);
+        //        tag = neu_datatag_tbl_get(driver->tag_table, int_val->key);
         if (tag == NULL) {
             int                      error = NEU_ERR_TAG_NOT_EXIST;
             neu_reqresp_write_resp_t data  = {
@@ -444,7 +447,8 @@ static neu_data_val_t *read_group(neu_adapter_driver_t *driver,
         int                      error = NEU_ERR_SUCCESS;
         neu_driver_cache_value_t value = { 0 };
         neu_datatag_id_t *       id = (neu_datatag_id_t *) iterator_get(&iter);
-        neu_datatag_t *tag = neu_datatag_tbl_get(driver->tag_table, *id);
+        neu_datatag_t *          tag =
+            NULL; // neu_datatag_tbl_get(driver->tag_table, *id);
 
         index += 1;
         if (tag == NULL) {
@@ -547,15 +551,18 @@ static void load_tags(neu_adapter_driver_t *driver, neu_taggrp_config_t *group,
                       UT_array **tags)
 {
     vector_t *ids = neu_taggrp_cfg_get_datatag_ids(group);
+    (void) driver;
 
     utarray_new(*tags, &ut_ptr_icd);
 
     VECTOR_FOR_EACH(ids, iter)
     {
 
-        neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter);
-        neu_datatag_t *   tag = neu_datatag_tbl_get(driver->tag_table, *id);
-        neu_datatag_t *   tmp = calloc(1, sizeof(neu_datatag_t));
+        neu_datatag_id_t *id = (neu_datatag_id_t *) iterator_get(&iter);
+        (void) id;
+        neu_datatag_t *tag =
+            NULL; // neu_datatag_tbl_get(driver->tag_table, *id);
+        neu_datatag_t *tmp = calloc(1, sizeof(neu_datatag_t));
         memcpy(tmp, tag, sizeof(neu_datatag_t));
         tmp->name     = strdup(tag->name);
         tmp->addr_str = strdup(tag->addr_str);

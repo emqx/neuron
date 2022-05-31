@@ -19,7 +19,7 @@ typedef struct modbus_point {
 
     neu_dtype_e               type;
     neu_datatag_addr_option_u option;
-    char                      name[NEU_TAG_NAME_SIZE];
+    char                      name[NEU_TAG_NAME_LEN];
 } modbus_point_t;
 
 int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point);

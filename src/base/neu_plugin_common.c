@@ -121,13 +121,12 @@ neu_datatag_table_t *neu_system_get_datatags_table(neu_plugin_t *plugin,
     return tag_table;
 }
 
-intptr_t neu_system_add_node(neu_plugin_t *plugin, neu_node_type_e node_type,
-                             const char *adapter_name, const char *plugin_name)
+intptr_t neu_system_add_node(neu_plugin_t *plugin, const char *adapter_name,
+                             const char *plugin_name)
 {
     intptr_t           errorcode    = -1;
     neu_cmd_add_node_t node_add_cmd = { 0 };
 
-    node_add_cmd.node_type    = node_type;
     node_add_cmd.adapter_name = adapter_name;
     node_add_cmd.plugin_name  = plugin_name;
 
@@ -137,12 +136,12 @@ intptr_t neu_system_add_node(neu_plugin_t *plugin, neu_node_type_e node_type,
     return errorcode;
 }
 
-intptr_t neu_system_del_node(neu_plugin_t *plugin, neu_node_id_t node_id)
+intptr_t neu_system_del_node(neu_plugin_t *plugin, const char *name)
 {
     intptr_t           errorcode    = -1;
     neu_cmd_del_node_t node_del_cmd = { 0 };
 
-    node_del_cmd.node_id = node_id;
+    node_del_cmd.name = (char *) name;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_DEL_NODE, node_del_cmd, intptr_t,
                     { errorcode = (intptr_t) resp; })
@@ -167,9 +166,9 @@ int32_t neu_system_get_node_by_id(neu_plugin_t *plugin, neu_node_id_t node_id,
     return ret;
 }
 
-vector_t neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type)
+UT_array *neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type)
 {
-    vector_t            nodes         = { 0 };
+    UT_array *          nodes         = { 0 };
     neu_cmd_get_nodes_t get_nodes_cmd = { 0 };
 
     get_nodes_cmd.node_type = node_type;
@@ -428,12 +427,12 @@ intptr_t neu_system_add_plugin(neu_plugin_t *plugin,
     return errorcode;
 }
 
-intptr_t neu_system_del_plugin(neu_plugin_t *plugin, plugin_id_t plugin_id)
+intptr_t neu_system_del_plugin(neu_plugin_t *plugin, const char *name)
 {
     intptr_t                 errorcode      = -1;
     neu_cmd_del_plugin_lib_t del_plugin_cmd = { 0 };
 
-    del_plugin_cmd.plugin_id = plugin_id;
+    del_plugin_cmd.name = (char *) name;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_DEL_PLUGIN_LIB, del_plugin_cmd,
                     intptr_t, { errorcode = (intptr_t) resp; })
@@ -459,10 +458,10 @@ intptr_t neu_system_update_plugin(neu_plugin_t *plugin, plugin_kind_e kind,
 
     return errorcode;
 }
-// uninit vector
-vector_t neu_system_get_plugin(neu_plugin_t *plugin)
+
+UT_array *neu_system_get_plugin(neu_plugin_t *plugin)
 {
-    vector_t                  plugin_libs    = { 0 };
+    UT_array *                plugin_libs    = NULL;
     neu_cmd_get_plugin_libs_t get_plugin_cmd = { 0 };
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_PLUGIN_LIBS, get_plugin_cmd,
@@ -516,29 +515,6 @@ neu_taggrp_config_t *neu_system_ref_group_config(neu_plugin_t *plugin,
     vector_uninit(&grp_configs);
 
     return (neu_taggrp_config_t *) neu_taggrp_cfg_ref(find_config);
-}
-
-int neu_plugin_tag_count_by_attribute(neu_taggrp_config_t *grp_config,
-                                      neu_datatag_table_t *tag_table,
-                                      neu_attribute_e      attribute)
-{
-    vector_t *ids   = neu_taggrp_cfg_get_datatag_ids(grp_config);
-    int       count = 0;
-
-    VECTOR_FOR_EACH(ids, iter_id)
-    {
-        neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
-        neu_datatag_t *   tag = neu_datatag_tbl_get(tag_table, *id);
-        if (tag == NULL) {
-            // The tag had been deleted by other node
-            continue;
-        }
-        if ((tag->attribute & attribute) == attribute) {
-            count += 1;
-        }
-    }
-
-    return count;
 }
 
 intptr_t neu_plugin_set_node_setting(neu_plugin_t *plugin,

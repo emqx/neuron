@@ -34,4 +34,18 @@ int  neu_adapter_driver_uninit(neu_adapter_driver_t *driver);
 void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
                                     neu_request_t *       req);
 
+int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
+                                 uint32_t interval);
+int neu_adapter_driver_del_group(neu_adapter_driver_t *driver,
+                                 const char *          name);
+int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver,
+                               neu_datatag_t *       tag);
+int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver,
+                               neu_datatag_t *       tag);
+int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
+                                  neu_datatag_t *       tag);
+
+int neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
+                                 const char *          group_name);
+
 #endif

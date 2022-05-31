@@ -58,15 +58,10 @@ static inline void neu_persist_adapter_infos_free(vector_t *adapter_infos)
     vector_free(adapter_infos);
 }
 
-static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
+static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
-    VECTOR_FOR_EACH(plugin_infos, iter)
-    {
-        neu_persist_plugin_info_t *p =
-            (neu_persist_plugin_info_t *) iterator_get(&iter);
-        free(*p);
-    }
-    vector_free(plugin_infos);
+    utarray_foreach(plugin_infos, neu_persist_plugin_info_t **, p) { free(*p); }
+    utarray_free(plugin_infos);
 }
 
 static inline void
@@ -171,7 +166,7 @@ int neu_persister_update_adapter(neu_persister_t *persister,
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_store_plugins(neu_persister_t *persister,
-                                vector_t *       plugin_infos);
+                                UT_array *       plugin_infos);
 /**
  * Load plugin infos.
  * @param persister                 persiter object.
@@ -180,7 +175,7 @@ int neu_persister_store_plugins(neu_persister_t *persister,
  * @return 0 on success, none-zero on failure
  */
 int neu_persister_load_plugins(neu_persister_t *persister,
-                               vector_t **      plugin_infos);
+                               UT_array **      plugin_infos);
 
 /**
  * Persist adapter datatags.

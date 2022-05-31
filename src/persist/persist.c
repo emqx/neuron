@@ -810,16 +810,26 @@ int neu_persister_update_adapter(neu_persister_t *persister,
 }
 
 int neu_persister_store_plugins(neu_persister_t *persister,
-                                vector_t *       plugin_infos)
+                                UT_array *       plugin_infos)
 {
+    int                    index       = 0;
     neu_json_plugin_resp_t plugin_resp = {
-        .n_plugin = plugin_infos->size,
-        .plugins  = plugin_infos->data,
+        .n_plugin = utarray_len(plugin_infos),
     };
+
+    plugin_resp.plugins = calloc(utarray_len(plugin_infos), sizeof(char *));
+
+    utarray_foreach(plugin_infos, char **, name)
+    {
+        plugin_resp.plugins[index] = *name;
+        index++;
+    }
 
     char *result = NULL;
     int   rv = neu_json_encode_by_fn(&plugin_resp, neu_json_encode_plugin_resp,
                                    &result);
+
+    free(plugin_resp.plugins);
     if (rv != 0) {
         return rv;
     }
@@ -831,7 +841,7 @@ int neu_persister_store_plugins(neu_persister_t *persister,
 }
 
 int neu_persister_load_plugins(neu_persister_t *persister,
-                               vector_t **      plugin_infos)
+                               UT_array **      plugin_infos)
 {
     char *json_str = NULL;
     int   rv       = read_file_string(persister->plugins_fname, &json_str);
@@ -846,23 +856,16 @@ int neu_persister_load_plugins(neu_persister_t *persister,
         return rv;
     }
 
-    rv            = 0;
-    vector_t *vec = vector_new_move_from_buf(
-        plugin_req->plugins, plugin_req->n_plugin, plugin_req->n_plugin,
-        sizeof(neu_persist_plugin_info_t));
-    if (vec == NULL) {
-        rv = -1;
-        goto load_plugins_exit;
+    utarray_new(*plugin_infos, &ut_ptr_icd);
+    for (int i = 0; i < plugin_req->n_plugin; i++) {
+        char *name = plugin_req->plugins[i];
+        utarray_push_back(*plugin_infos, &name);
     }
 
-    *plugin_infos = vec;
-
     free(json_str);
+    free(plugin_req->plugins);
     free(plugin_req);
     return 0;
-load_plugins_exit:
-    neu_json_decode_plugin_req_free(plugin_req);
-    return rv;
 }
 
 int neu_persister_store_datatags(neu_persister_t *persister,

@@ -21,14 +21,7 @@ config_ **/
 #include <string.h>
 
 #include "errcodes.h"
-#include "neu_tag.h"
-
-bool neu_tag_check_attribute(neu_attribute_e attribute)
-{
-    return !((attribute & NEU_ATTRIBUTE_READ) == 0 &&
-             (attribute & NEU_ATTRIBUTE_WRITE) == 0 &&
-             (attribute & NEU_ATTRIBUTE_SUBSCRIBE) == 0);
-}
+#include "tag.h"
 
 neu_datatag_t *neu_datatag_alloc(neu_attribute_e attr, neu_dtype_e type,
                                  neu_addr_str_t addr, const char *name)

@@ -16,15 +16,21 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
 set(CMAKE_C_FLAGS_DEBUG
-    "${CMAKE_C_FLAGS} -O0 -fsanitize=address \
-  -fsanitize-recover=address -fsanitize-address-use-after-scope \
-  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
+    "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
 )
 set(CMAKE_CXX_FLAGS_DEBUG
-    "-g -O0 -fsanitize=address \
-  -fsanitize-recover=address -fsanitize-address-use-after-scope \
-  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
+    "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
 )
+#set(CMAKE_C_FLAGS_DEBUG
+    #"${CMAKE_C_FLAGS} -O0 -fsanitize=address \
+  #-fsanitize-recover=address -fsanitize-address-use-after-scope \
+  #-fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
+#)
+#set(CMAKE_CXX_FLAGS_DEBUG
+    #"-g -O0 -fsanitize=address \
+  #-fsanitize-recover=address -fsanitize-address-use-after-scope \
+  #-fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
+#)
 
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
   set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS
@@ -106,9 +112,13 @@ set(NEURON_SOURCES
     src/core/message.c
     src/core/databuf.c
     src/core/neu_trans_buf.c
-    src/core/neu_manager.c
-    src/core/plugin_manager.c
-    src/core/neu_datatag_manager.c
+#    src/core/neu_manager.c
+    #src/core/plugin_manager.c
+    #src/core/neu_datatag_manager.c
+    src/core/manager.c
+    src/core/subscribe.c
+    src/core/pluginx_manager.c
+    src/core/node_manager.c
     src/adapter/adapter.c
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
@@ -146,13 +156,13 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 # define neuron base library
 set(NEURON_BASE_SOURCES
     src/types.c
-    src/base/tag_table.c
-    src/base/neu_tag.c
+    src/base/tag.c
     src/base/neu_datatag_table.c
     src/base/neu_tag_group_config.c
     src/base/neu_plugin_common.c
     src/base/neu_data_expr.c
     src/base/tag_sort.c
+    src/base/group.c
     src/connection/connection.c
     src/connection/mqtt_c_client.c
     src/connection/mqtt_client_intf.c
@@ -201,11 +211,11 @@ add_subdirectory(plugins/ekuiper)
 # define for simulator
 add_subdirectory(simulator)
 
-if(NOT DISABLE_UT)
-  # define for tests
-  enable_testing()
-  add_subdirectory(tests)
-endif()
+#if(NOT DISABLE_UT)
+  ## define for tests
+  #enable_testing()
+  #add_subdirectory(tests)
+#endif()
 
 
 # Set sane defaults for multi-lib linux systems

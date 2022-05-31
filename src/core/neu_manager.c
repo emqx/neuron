@@ -39,6 +39,7 @@
 #include "plugin_manager.h"
 #include "subscribe.h"
 #include "utils/log.h"
+#include "utils/utextend.h"
 
 typedef struct adapter_reg_entity {
     neu_adapter_id_t       adapter_id;
@@ -78,12 +79,10 @@ struct neu_manager {
     nng_cv *            adapters_cv;
     bool                is_adapters_freezed;
     vector_t            reg_adapters;
+    UT_array *          adapters;
 };
 
 static const char *const manager_url = "inproc://neu_manager";
-
-// definition for plugin names
-#define WEBSERVER_PLUGIN_NAME "webserver-plugin-proxy"
 
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME "default-dashboard-adapter"
@@ -1487,7 +1486,7 @@ int neu_manager_get_node_by_id(neu_manager_t *manager, neu_node_id_t node_id,
             neu_manager_adapter_id_to_node_id(manager, adapter_id);
         result->node_type = adapter_type;
         result->node_name = strdup(adapter_name);
-        result->plugin_id = neu_adapter_get_plugin_id(reg_entity->adapter);
+        result->plugin_id = 0;//neu_adapter_get_plugin_id(reg_entity->adapter);
     } else {
         rv = NEU_ERR_NODE_NOT_EXIST;
     }
@@ -1522,8 +1521,8 @@ int neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e node_type,
                 neu_manager_adapter_id_to_node_id(manager, adapter_id);
             node_info.node_type = node_type;
             node_info.node_name = strdup(adapter_name);
-            node_info.plugin_id =
-                neu_adapter_get_plugin_id(reg_entity->adapter);
+            node_info.plugin_id = 0;
+            // neu_adapter_get_plugin_id(reg_entity->adapter);
             vector_push_back(result_nodes, &node_info);
         }
     }
@@ -1999,12 +1998,7 @@ int neu_manager_adapter_set_setting(neu_manager_t *manager,
 const char *find_adapter_plugin_name(neu_manager_t *manager,
                                      neu_adapter_t *adapter)
 {
-    plugin_id_t plugin_id = neu_adapter_get_plugin_id(adapter);
-
-    plugin_reg_info_t reg_info = {};
-    plugin_manager_get_reg_info(manager->plugin_manager, plugin_id, &reg_info);
-
-    return reg_info.plugin_name;
+    return adapter->plugin_info.module->module_name;
 }
 
 int neu_manager_get_persist_adapter_info(neu_manager_t *             manager,

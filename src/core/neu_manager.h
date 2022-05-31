@@ -49,6 +49,7 @@ int neu_manager_get_node_name_by_id(neu_manager_t *manager,
                                     neu_node_id_t node_id, char **name);
 int neu_manager_get_node_id_by_name(neu_manager_t *manager, const char *name,
                                     neu_node_id_t *node_id_p);
+
 int neu_manager_subscribe_node(neu_manager_t *       manager,
                                subscribe_node_cmd_t *cmd);
 int neu_manager_unsubscribe_node(neu_manager_t *         manager,
@@ -56,7 +57,9 @@ int neu_manager_unsubscribe_node(neu_manager_t *         manager,
 int neu_manager_get_persist_subscription_infos(neu_manager_t *manager,
                                                neu_node_id_t  node_id,
                                                vector_t **    result);
-
+int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
+                                            neu_node_id_t  node_id,
+                                            vector_t **    result_sgc);
 int neu_manager_add_grp_config(neu_manager_t *           manager,
                                neu_cmd_add_grp_config_t *cmd);
 int neu_manager_del_grp_config(neu_manager_t *manager, neu_node_id_t node_id,
@@ -65,6 +68,7 @@ int neu_manager_update_grp_config(neu_manager_t *              manager,
                                   neu_cmd_update_grp_config_t *cmd);
 int neu_manager_get_grp_configs(neu_manager_t *manager, neu_node_id_t node_id,
                                 vector_t *result_grp_configs);
+
 int neu_manager_get_persist_datatag_infos(neu_manager_t *manager,
                                           neu_node_id_t  node_id,
                                           const char *   grp_config_name,
@@ -80,6 +84,9 @@ int neu_manager_get_plugin_libs(neu_manager_t *manager,
                                 vector_t *     plugin_lib_infos);
 int neu_manager_get_persist_plugin_infos(neu_manager_t *manager,
                                          vector_t **    result);
+int neu_manager_adapter_get_grp_config_ref_by_name(
+    neu_manager_t *manager, neu_node_id_t node_id, const char *grp_config_name,
+    neu_taggrp_config_t **p_grp_config);
 
 neu_datatag_table_t *neu_manager_get_datatag_tbl(neu_manager_t *manager,
                                                  neu_node_id_t  node_id);
@@ -104,12 +111,6 @@ int neu_manager_start_adapter_with_id(neu_manager_t *manager,
 int neu_manager_stop_adapter(neu_adapter_t *adapter);
 int neu_manager_init_adapter(neu_manager_t *manager, neu_adapter_t *adapter);
 int neu_manager_uninit_adapter(neu_manager_t *manager, neu_adapter_t *adapter);
-int neu_manager_adapter_get_sub_grp_configs(neu_manager_t *manager,
-                                            neu_node_id_t  node_id,
-                                            vector_t **    result_sgc);
-int neu_manager_adapter_get_grp_config_ref_by_name(
-    neu_manager_t *manager, neu_node_id_t node_id, const char *grp_config_name,
-    neu_taggrp_config_t **p_grp_config);
 
 int neu_manager_init_main_adapter(neu_manager_t * manager,
                                   bind_notify_fun bind_adapter,
