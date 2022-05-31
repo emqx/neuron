@@ -688,11 +688,13 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
                 memset(recv_buf, 0, sizeof(recv_buf));
                 offset = 0;
                 break;
-            } else {
-                assert(used > 0);
-                offset -= used;
-                memmove(recv_buf, recv_buf + used, offset);
             }
+        }
+        if (offset != 0) {
+            offset -= neu_protocol_unpack_buf_used_size(&protocol_buf);
+            memmove(recv_buf,
+                    recv_buf + neu_protocol_unpack_buf_used_size(&protocol_buf),
+                    offset);
         }
     }
 }
@@ -717,11 +719,13 @@ void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
                 memset(recv_buf, 0, sizeof(recv_buf));
                 offset = 0;
                 break;
-            } else {
-                assert(used > 0);
-                offset -= used;
-                memmove(recv_buf, recv_buf + used, offset);
             }
+        }
+        if (offset != 0) {
+            offset -= neu_protocol_unpack_buf_used_size(&protocol_buf);
+            memmove(recv_buf,
+                    recv_buf + neu_protocol_unpack_buf_used_size(&protocol_buf),
+                    offset);
         }
     }
 }
