@@ -370,6 +370,11 @@ void neu_conn_flush(neu_conn_t *conn)
     }
 }
 
+void neu_conn_disconnect(neu_conn_t *conn)
+{
+    conn_disconnect(conn);
+}
+
 static void conn_free_param(neu_conn_t *conn)
 {
     switch (conn->param.type) {
