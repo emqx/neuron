@@ -32,6 +32,10 @@ if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
       CACHE INTERNAL "No dev warnings")
 endif()
 
+add_custom_target(neuron-version
+  COMMAND ${CMAKE_COMMAND} -P
+          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/neuron-version.cmake)
+
 configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
 configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
 configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utlist.h)
@@ -171,6 +175,7 @@ target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
 target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
 target_link_libraries(neuron-base nng libzlog.so vector-static csptr jansson crypto ssl mqttc jwt
                       ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(neuron-base neuron-version)
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)

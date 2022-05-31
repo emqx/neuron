@@ -10,6 +10,7 @@ compile_commands.json
 *.tar.gz
 ft/reports
 include/csptr/
+include/neuron/version.h
 __pycache__
 tmp
 *.deb
