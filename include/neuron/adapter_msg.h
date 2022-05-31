@@ -213,6 +213,9 @@ typedef struct plugin_lib_info {
     // The buffer is reference from plugin entity of register table,
     // don't free it
     const char *plugin_lib_name;
+    // The buffer is reference from plugin entity of register table,
+    // don't free it
+    const char *plugin_descr;
 } plugin_lib_info_t;
 
 /* NEU_REQRESP_ADD_PLUGIN_LIB */

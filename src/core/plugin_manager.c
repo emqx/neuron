@@ -41,6 +41,7 @@ typedef struct plugin_reg_entity {
     neu_adapter_type_e adapter_type;
     const char *       plugin_name;
     const char *       plugin_lib_name;
+    const char *       plugin_descr;
 } plugin_reg_entity_t;
 
 struct plugin_manager {
@@ -62,6 +63,7 @@ static const plugin_reg_entity_t builtin_static_plugins[] = {
         .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
+        .plugin_descr    = DEFAULT_DASHBOARD_PLUGIN_DESCR,
     },
     {
         .plugin_id       = { 2 },
@@ -69,6 +71,7 @@ static const plugin_reg_entity_t builtin_static_plugins[] = {
         .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
         .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME,
+        .plugin_descr    = DEFAULT_DUMMY_PLUGIN_DESCR,
     },
 };
 #define BUILTIN_STATIC_PLUGIN_COUNT \
@@ -225,6 +228,7 @@ static void reg_entity_init(plugin_reg_entity_t *     reg_entity,
     reg_entity->adapter_type    = param->adapter_type;
     reg_entity->plugin_name     = strdup(param->plugin_name);
     reg_entity->plugin_lib_name = strdup(param->plugin_lib_name);
+    reg_entity->plugin_descr    = strdup(param->plugin_descr);
     return;
 }
 
@@ -237,6 +241,9 @@ static void reg_entity_uninit(plugin_reg_entity_t *reg_entity)
     }
     if (reg_entity->plugin_lib_name != NULL) {
         free((void *) reg_entity->plugin_lib_name);
+    }
+    if (reg_entity->plugin_descr != NULL) {
+        free((void *) reg_entity->plugin_descr);
     }
     return;
 }
@@ -422,6 +429,8 @@ int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
         plugins = &plugin_mng->custom_plugins;
     }
 
+    assert(NULL == param->plugin_descr); // not allow to update description
+
     nng_mtx_lock(plugin_mng->mtx);
     index = find_plugin_by_name(plugins, (const char *) param->plugin_name);
     if (index != SIZE_MAX) {
@@ -431,9 +440,12 @@ int plugin_manager_update_plugin(plugin_manager_t *        plugin_mng,
 
         old_reg_entity = (plugin_reg_entity_t *) vector_get(plugins, index);
         plugin_id      = old_reg_entity->plugin_id;
-        reg_entity_uninit(old_reg_entity);
+        // keep the description
+        ((plugin_reg_param_t *) param)->plugin_descr =
+            old_reg_entity->plugin_descr;
 
         reg_entity_init(&reg_entity, plugin_id, param);
+        reg_entity_uninit(old_reg_entity);
         vector_assign(plugins, index, &reg_entity);
         nlog_info("Update the plugin: %s", reg_entity.plugin_name);
     } else {
@@ -453,6 +465,7 @@ void reg_info_from_reg_entity(plugin_reg_info_t *  reg_info,
     reg_info->adapter_type    = reg_entity->adapter_type;
     reg_info->plugin_name     = reg_entity->plugin_name;
     reg_info->plugin_lib_name = reg_entity->plugin_lib_name;
+    reg_info->plugin_descr    = reg_entity->plugin_descr;
     return;
 }
 

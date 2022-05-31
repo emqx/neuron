@@ -124,13 +124,15 @@ static const plugin_reg_param_t static_plugin_infos[] = {
         .plugin_kind     = PLUGIN_KIND_STATIC,
         .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DASHBOARD_PLUGIN_NAME,
-        .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME
+        .plugin_lib_name = DEFAULT_DASHBOARD_PLUGIN_LIB_NAME,
+        .plugin_descr    = DEFAULT_DASHBOARD_PLUGIN_DESCR,
     },
     {
         .plugin_kind     = PLUGIN_KIND_STATIC,
         .adapter_type    = NEU_NA_TYPE_APP,
         .plugin_name     = DEFAULT_DUMMY_PLUGIN_NAME,
-        .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME
+        .plugin_lib_name = DEFAULT_DUMMY_PLUGIN_LIB_NAME,
+        .plugin_descr    = DEFAULT_DUMMY_PLUGIN_DESCR,
     },
 };
 // clang-format on
@@ -1813,6 +1815,7 @@ int neu_manager_add_plugin_lib(neu_manager_t *           manager,
     reg_param.adapter_type    = module_info->type;
     reg_param.plugin_lib_name = (char *) cmd->plugin_lib_name;
     reg_param.plugin_name     = module_info->module_name;
+    reg_param.plugin_descr    = module_info->module_descr;
 
     unload_plugin_library(handle, PLUGIN_KIND_SYSTEM);
 
@@ -1850,6 +1853,7 @@ int neu_manager_update_plugin_lib(neu_manager_t *              manager,
     reg_param.adapter_type    = cmd->node_type;
     reg_param.plugin_name     = cmd->plugin_name;
     reg_param.plugin_lib_name = (char *) cmd->plugin_lib_name;
+    reg_param.plugin_descr = NULL; // plugin description should be from the lib
     rv = plugin_manager_update_plugin(manager->plugin_manager, &reg_param);
     return rv;
 }
@@ -1881,6 +1885,7 @@ int neu_manager_get_plugin_libs(neu_manager_t *manager,
         plugin_lib_info.node_type   = adapter_type;
         plugin_lib_info.plugin_name = plugin_reg_info->plugin_name;
         plugin_lib_info.plugin_lib_name = plugin_reg_info->plugin_lib_name;
+        plugin_lib_info.plugin_descr    = plugin_reg_info->plugin_descr;
         vector_push_back(plugin_lib_infos, &plugin_lib_info);
     }
 
