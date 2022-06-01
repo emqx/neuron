@@ -27,6 +27,7 @@
 #include <zlog.h>
 
 #include "argparse.h"
+#include "neuron/version.h"
 
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
@@ -58,12 +59,19 @@ const char *usage_text =
 "                           - always,     always restart\n"
 "                           - on-failure, restart only if failure\n"
 "                           - NUMBER,     restart max NUMBER of times\n"
+"    --version            print version information\n"
 "\n";
 // clang-format on
 
 static inline void usage()
 {
     fprintf(stderr, "%s", usage_text);
+}
+
+static inline void version()
+{
+    printf("Neuron %s (%s %s)\n", NEURON_VERSION,
+           NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
 }
 
 static inline size_t parse_restart_policy(const char *s, size_t *out)
@@ -98,6 +106,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "daemon", no_argument, NULL, 'd' },
         { "log", no_argument, NULL, 'l' },
         { "restart", required_argument, NULL, 'r' },
+        { "version", no_argument, NULL, 'v' },
         { NULL, 0, NULL, 0 },
     };
 
@@ -127,6 +136,10 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
                         argv[0], optarg);
                 goto quit;
             }
+            break;
+        case 'v':
+            version();
+            goto quit;
             break;
         case '?':
         default:
