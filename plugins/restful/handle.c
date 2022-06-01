@@ -36,6 +36,7 @@
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
+#include "version_handle.h"
 
 #include "handle.h"
 
@@ -104,6 +105,9 @@ struct neu_rest_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/license",
+    },
+    {
+        .url = "/api/v2/version",
     },
 };
 
@@ -283,6 +287,12 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/license",
         .value.handler = handle_get_license,
+    },
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/version",
+        .value.handler = handle_get_version,
     },
 };
 
