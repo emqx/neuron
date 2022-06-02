@@ -281,6 +281,124 @@ int neu_manager_get_group(neu_manager_t *manager, const char *driver,
     return NEU_ERR_SUCCESS;
 }
 
+int neu_manager_add_tag(neu_manager_t *manager, const char *driver,
+                        const char *group, uint16_t n_tag, neu_datatag_t *tags,
+                        uint16_t *index)
+{
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+    *index = 0;
+
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
+        return NEU_ERR_GROUP_NOT_ALLOW;
+    }
+
+    for (int i = 0; i < n_tag; i++) {
+        int ret = neu_adapter_driver_add_tag((neu_adapter_driver_t *) adapter,
+                                             group, &tags[i]);
+        if (ret == NEU_ERR_SUCCESS) {
+            *index += 1;
+        } else {
+            return ret;
+        }
+    }
+
+    return NEU_ERR_SUCCESS;
+}
+
+int neu_manager_del_tag(neu_manager_t *manager, const char *driver,
+                        const char *group, uint16_t n_tag, char **tags)
+{
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
+        return NEU_ERR_GROUP_NOT_ALLOW;
+    }
+
+    for (int i = 0; i < n_tag; i++) {
+        neu_adapter_driver_del_tag((neu_adapter_driver_t *) adapter, group,
+                                   tags[i]);
+    }
+
+    return NEU_ERR_SUCCESS;
+}
+
+int neu_manager_update_tag(neu_manager_t *manager, const char *driver,
+                           const char *group, uint16_t n_tag,
+                           neu_datatag_t *tags, uint16_t *index)
+{
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+    *index = 0;
+
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
+        return NEU_ERR_GROUP_NOT_ALLOW;
+    }
+
+    for (int i = 0; i < n_tag; i++) {
+        int ret = neu_adapter_driver_update_tag(
+            (neu_adapter_driver_t *) adapter, group, &tags[i]);
+        if (ret == NEU_ERR_SUCCESS) {
+            *index += 1;
+        } else {
+            return ret;
+        }
+    }
+
+    return NEU_ERR_SUCCESS;
+}
+
+int neu_manager_get_tag(neu_manager_t *manager, const char *driver,
+                        const char *group, UT_array **tags)
+{
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
+        return NEU_ERR_GROUP_NOT_ALLOW;
+    }
+
+    return neu_adapter_driver_get_tag((neu_adapter_driver_t *) adapter, group,
+                                      tags);
+}
+
+UT_array *neu_manager_tag_read(neu_manager_t *manager, const char *driver,
+                               const char *group)
+{
+    (void) manager;
+    (void) driver;
+    (void) group;
+    return NULL;
+}
+
+int neu_manager_tag_write(neu_manager_t *manager, const char *driver,
+                          const char *group, const char *tag, neu_value_u value)
+{
+    (void) manager;
+    (void) driver;
+    (void) group;
+    (void) tag;
+    (void) value;
+    return 0;
+}
+
 int neu_manager_add_plugin(neu_manager_t *manager, const char *plugin_library)
 {
     return neu_plugin_manager_add(manager->plugin_manager, plugin_library);

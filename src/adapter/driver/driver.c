@@ -491,6 +491,90 @@ UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
     return groups;
 }
 
+int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
+                               neu_datatag_t *tag)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+
+    ret = driver->adapter.plugin_info.module->intf_funs->driver.validate_tag(
+        driver->adapter.plugin_info.plugin, tag);
+    if (ret != NEU_ERR_SUCCESS) {
+        return ret;
+    }
+
+    nng_mtx_lock(driver->mtx);
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        ret = neu_group_add_tag(find->group, tag);
+    } else {
+        ret = NEU_ERR_GROUP_NOT_EXIST;
+    }
+    nng_mtx_unlock(driver->mtx);
+
+    return ret;
+}
+
+int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
+                               const char *tag)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+
+    nng_mtx_lock(driver->mtx);
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        ret = neu_group_del_tag(find->group, tag);
+    } else {
+        ret = NEU_ERR_GROUP_NOT_EXIST;
+    }
+    nng_mtx_unlock(driver->mtx);
+
+    return ret;
+}
+
+int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
+                                  const char *group, neu_datatag_t *tag)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+
+    ret = driver->adapter.plugin_info.module->intf_funs->driver.validate_tag(
+        driver->adapter.plugin_info.plugin, tag);
+    if (ret != NEU_ERR_SUCCESS) {
+        return ret;
+    }
+
+    nng_mtx_lock(driver->mtx);
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        ret = neu_group_update_tag(find->group, tag);
+    } else {
+        ret = NEU_ERR_GROUP_NOT_EXIST;
+    }
+    nng_mtx_unlock(driver->mtx);
+
+    return ret;
+}
+
+int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
+                               UT_array **tags)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+
+    nng_mtx_lock(driver->mtx);
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        *tags = neu_group_get_tag(find->group);
+    } else {
+        ret = NEU_ERR_GROUP_NOT_EXIST;
+    }
+    nng_mtx_unlock(driver->mtx);
+
+    return ret;
+}
+
 static int report_callback(void *usr_data)
 {
     (void) usr_data;

@@ -458,3 +458,76 @@ UT_array *neu_system_get_sub_group_configs(neu_plugin_t *plugin,
                     neu_reqresp_sub_grp_configs_t, { groups = resp->groups; })
     return groups;
 }
+
+int neu_plugin_tag_add(neu_plugin_t *plugin, const char *node,
+                       const char *group, uint16_t n_tag, neu_datatag_t *tags,
+                       uint16_t *index)
+{
+    int                   error   = 0;
+    neu_reqresp_add_tag_t add_cmd = { 0 };
+
+    add_cmd.node  = (char *) node;
+    add_cmd.group = (char *) group;
+    add_cmd.n_tag = n_tag;
+    add_cmd.tags  = tags;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_ADD_TAGS, add_cmd,
+                    neu_reqresp_add_tag_resp_t, {
+                        error  = resp->error;
+                        *index = resp->index;
+                    })
+    return error;
+}
+
+int neu_plugin_tag_del(neu_plugin_t *plugin, const char *node,
+                       const char *group, uint16_t n_tag, char **tags)
+{
+    int                   error   = 0;
+    neu_reqresp_del_tag_t del_cmd = { 0 };
+
+    del_cmd.node  = (char *) node;
+    del_cmd.group = (char *) group;
+    del_cmd.n_tag = n_tag;
+    del_cmd.tags  = tags;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_DEL_TAGS, del_cmd,
+                    neu_reqresp_del_tag_resp_t, { error = resp->error; })
+    return error;
+}
+
+int neu_plugin_tag_update(neu_plugin_t *plugin, const char *node,
+                          const char *group, uint16_t n_tag,
+                          neu_datatag_t *tags, uint16_t *index)
+{
+    int                      error      = 0;
+    neu_reqresp_update_tag_t update_cmd = { 0 };
+
+    update_cmd.node  = (char *) node;
+    update_cmd.group = (char *) group;
+    update_cmd.n_tag = n_tag;
+    update_cmd.tags  = tags;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_UPDATE_TAGS, update_cmd,
+                    neu_reqresp_update_tag_resp_t, {
+                        error  = resp->error;
+                        *index = resp->index;
+                    })
+    return error;
+}
+
+int neu_plugin_tag_get(neu_plugin_t *plugin, const char *node,
+                       const char *group, UT_array **tags)
+{
+    int                    error   = 0;
+    neu_reqresp_get_tags_t get_cmd = { 0 };
+
+    get_cmd.node  = node;
+    get_cmd.group = group;
+
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_GET_TAGS, get_cmd,
+                    neu_reqresp_get_tags_resp_t, {
+                        *tags = resp->tags;
+                        error = resp->error;
+                    })
+    return error;
+}

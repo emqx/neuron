@@ -64,6 +64,10 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_DEL_GRP_CONFIG,
     NEU_REQRESP_UPDATE_GRP_CONFIG,
     NEU_REQRESP_GET_GRP_CONFIGS,
+    NEU_REQRESP_ADD_TAGS,
+    NEU_REQRESP_DEL_TAGS,
+    NEU_REQRESP_UPDATE_TAGS,
+    NEU_REQRESP_GET_TAGS,
     NEU_REQRESP_GRP_CONFIGS,
     NEU_REQRESP_ADD_PLUGIN_LIB,
     NEU_REQRESP_DEL_PLUGIN_LIB,
@@ -114,6 +118,36 @@ typedef struct neu_subscribe_info {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
 } neu_subscribe_info_t;
+
+typedef struct {
+    const char *   node;
+    const char *   group;
+    uint16_t       n_tag;
+    neu_datatag_t *tags;
+} neu_reqresp_add_tag_t, neu_reqresp_update_tag_t;
+
+typedef struct neu_reqresp_del_tag {
+    const char *node;
+    const char *group;
+    uint16_t    n_tag;
+    char **     tags;
+} neu_reqresp_del_tag_t;
+
+typedef struct {
+    int      error;
+    uint16_t index;
+} neu_reqresp_add_tag_resp_t, neu_reqresp_update_tag_resp_t,
+    neu_reqresp_del_tag_resp_t;
+
+typedef struct neu_reqresp_get_tags {
+    const char *node;
+    const char *group;
+} neu_reqresp_get_tags_t;
+
+typedef struct neu_reqresp_get_tags_resp {
+    int       error;
+    UT_array *tags;
+} neu_reqresp_get_tags_resp_t;
 
 /* NEU_REQRESP_READ_DATA */
 typedef struct neu_reqresp_read {

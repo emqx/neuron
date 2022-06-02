@@ -42,14 +42,12 @@ int neu_adapter_driver_find_group(neu_adapter_driver_t *driver,
                                   const char *          name);
 UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver);
 
-int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver,
-                               neu_datatag_t *       tag);
-int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver,
-                               neu_datatag_t *       tag);
+int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
+                               neu_datatag_t *tag);
+int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
+                               const char *tag);
 int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
-                                  neu_datatag_t *       tag);
-
-int neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
-                                 const char *          group_name);
-
+                                  const char *group, neu_datatag_t *tag);
+int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
+                               UT_array **tags);
 #endif

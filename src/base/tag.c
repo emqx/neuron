@@ -23,6 +23,33 @@ config_ **/
 #include "errcodes.h"
 #include "tag.h"
 
+static void tag_array_copy(void *_dst, const void *_src)
+{
+    neu_datatag_t *dst = (neu_datatag_t *) _dst;
+    neu_datatag_t *src = (neu_datatag_t *) _src;
+
+    dst->type      = src->type;
+    dst->attribute = src->attribute;
+    dst->addr_str  = strdup(src->addr_str);
+    dst->name      = strdup(src->name);
+}
+
+static void tag_array_free(void *_elt)
+{
+    neu_datatag_t *elt = (neu_datatag_t *) _elt;
+
+    free(elt->name);
+    free(elt->addr_str);
+}
+
+static UT_icd tag_icd = { sizeof(neu_datatag_t), NULL, tag_array_copy,
+                          tag_array_free };
+
+UT_icd *neu_tag_get_icd()
+{
+    return &tag_icd;
+}
+
 neu_datatag_t *neu_datatag_alloc(neu_attribute_e attr, neu_dtype_e type,
                                  neu_addr_str_t addr, const char *name)
 {

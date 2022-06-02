@@ -48,27 +48,25 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
     req->tags = calloc(req->n_tag, sizeof(neu_json_datatag_req_tag_t));
     neu_json_datatag_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
-        neu_json_elem_t tag_elems[] = { {
-                                            .name = "type",
-                                            .t    = NEU_JSON_INT,
-                                        },
-                                        {
-                                            .name = "name",
-                                            .t    = NEU_JSON_STR,
-                                        },
-                                        {
-                                            .name = "attribute",
-                                            .t    = NEU_JSON_INT,
-                                        },
-                                        {
-                                            .name = "address",
-                                            .t    = NEU_JSON_STR,
-                                        },
-                                        {
-                                            .name = "id",
-                                            .t    = NEU_JSON_INT,
-                                        } };
-        ret                         = neu_json_decode_array_by_json(
+        neu_json_elem_t tag_elems[] = {
+            {
+                .name = "type",
+                .t    = NEU_JSON_INT,
+            },
+            {
+                .name = "name",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "attribute",
+                .t    = NEU_JSON_INT,
+            },
+            {
+                .name = "address",
+                .t    = NEU_JSON_STR,
+            },
+        };
+        ret = neu_json_decode_array_by_json(
             json_obj, "tags", i, NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
         if (ret != 0) {
             goto decode_fail;
@@ -78,7 +76,6 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
         p_tag->name      = tag_elems[1].v.val_str;
         p_tag->attribute = tag_elems[2].v.val_int;
         p_tag->address   = tag_elems[3].v.val_str;
-        p_tag->id        = tag_elems[4].v.val_int;
         p_tag++;
     }
 
@@ -124,31 +121,28 @@ int neu_json_encode_datatag_resp(void *json_object, void *param)
     void *                       tag_array = neu_json_array();
     neu_json_datatag_resp_tag_t *p_tag     = resp->tags;
     for (int i = 0; i < resp->n_tag; i++) {
-        neu_json_elem_t tag_elems[] = { {
-                                            .name      = "type",
-                                            .t         = NEU_JSON_INT,
-                                            .v.val_int = p_tag->type,
-                                        },
-                                        {
-                                            .name      = "name",
-                                            .t         = NEU_JSON_STR,
-                                            .v.val_str = p_tag->name,
-                                        },
-                                        {
-                                            .name      = "attribute",
-                                            .t         = NEU_JSON_INT,
-                                            .v.val_int = p_tag->attribute,
-                                        },
-                                        {
-                                            .name      = "address",
-                                            .t         = NEU_JSON_STR,
-                                            .v.val_str = p_tag->address,
-                                        },
-                                        {
-                                            .name      = "id",
-                                            .t         = NEU_JSON_INT,
-                                            .v.val_int = p_tag->id,
-                                        } };
+        neu_json_elem_t tag_elems[] = {
+            {
+                .name      = "type",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_tag->type,
+            },
+            {
+                .name      = "name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_tag->name,
+            },
+            {
+                .name      = "attribute",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_tag->attribute,
+            },
+            {
+                .name      = "address",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_tag->address,
+            },
+        };
         tag_array = neu_json_encode_array(tag_array, tag_elems,
                                           NEU_JSON_ELEM_SIZE(tag_elems));
         p_tag++;

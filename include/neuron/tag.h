@@ -24,6 +24,7 @@ config_ **/
 #include <stdint.h>
 
 #include "data_expr.h"
+#include "utils/utextend.h"
 
 #define NEU_TAG_ADDRESS_SIZE 128
 
@@ -44,6 +45,8 @@ typedef struct {
     neu_addr_str_t   addr_str;
     neu_tag_name     name;
 } neu_datatag_t;
+
+UT_icd *neu_tag_get_icd();
 
 typedef enum {
     NEU_DATATAG_ENDIAN_L16  = 0, // #L

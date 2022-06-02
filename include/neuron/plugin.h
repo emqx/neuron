@@ -158,8 +158,18 @@ intptr_t  neu_plugin_node_ctl(neu_plugin_t *plugin, const char *node_name,
                               neu_adapter_ctl_e ctl);
 UT_array *neu_system_get_sub_group_configs(neu_plugin_t *plugin,
                                            const char *  node_name);
-intptr_t  neu_plugin_validate_tag(neu_plugin_t *plugin, const char *node_name,
-                                  neu_datatag_t *tag);
+
+int neu_plugin_tag_add(neu_plugin_t *plugin, const char *node,
+                       const char *group, uint16_t n_tag, neu_datatag_t *tags,
+                       uint16_t *index);
+int neu_plugin_tag_del(neu_plugin_t *plugin, const char *node,
+                       const char *group, uint16_t n_tag, char **tags);
+int neu_plugin_tag_update(neu_plugin_t *plugin, const char *node,
+                          const char *group, uint16_t n_tag,
+                          neu_datatag_t *tags, uint16_t *index);
+int neu_plugin_tag_get(neu_plugin_t *plugin, const char *node,
+                       const char *group, UT_array **tags);
+
 #ifdef __cplusplus
 }
 #endif

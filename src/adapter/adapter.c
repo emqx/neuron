@@ -215,54 +215,36 @@ static int persister_singleton_load_setting(neu_adapter_t *adapter,
     return rv;
 }
 
-// static int persister_singleton_load_datatags(neu_adapter_t *      adapter,
-// const char *         adapter_name,
-// neu_taggrp_config_t *grp_config,
-// neu_datatag_table_t *tag_tbl)
-//{
-// neu_persister_t *persister = persister_singleton_get();
+static int persister_singleton_load_datatags(neu_adapter_t *adapter,
+                                             const char *   driver,
+                                             const char *   group)
+{
+    neu_persister_t *persister = persister_singleton_get();
+    UT_array *       tags      = NULL;
+    int rv = neu_persister_load_datatags(persister, driver, group, &tags);
+    if (0 != rv) {
+        const char *fail_or_ignore = "fail";
+        if (NEU_ERR_ENOENT == rv) {
+            // ignore no datatags
+            rv             = 0;
+            fail_or_ignore = "ignore";
+        }
+        nlog_info("%s %s load datatags info of adapter:%s grp:%s",
+                  adapter->name, fail_or_ignore, driver, group);
+        return rv;
+    }
 
-// const char *grp_config_name = neu_taggrp_cfg_get_name(grp_config);
-// vector_t *  datatag_infos   = NULL;
-// int         rv = neu_persister_load_datatags(persister, adapter_name,
-// grp_config_name, &datatag_infos);
-// if (0 != rv) {
-// const char *fail_or_ignore = "fail";
-// if (NEU_ERR_ENOENT == rv) {
-//// ignore no datatags
-// rv             = 0;
-// fail_or_ignore = "ignore";
-//}
-// nlog_info("%s %s load datatags info of adapter:%s grp:%s",
-// adapter->name, fail_or_ignore, adapter_name, grp_config_name);
-// return rv;
-//}
+    utarray_foreach(tags, neu_datatag_t *, tag)
+    {
+        uint16_t index = 0;
+        neu_manager_add_tag(adapter->manager, driver, group, 1, tag, &index);
+        (void) index;
+    }
 
-// vector_t *ids = neu_taggrp_cfg_get_datatag_ids(grp_config);
-// VECTOR_FOR_EACH(datatag_infos, iter)
-//{
-// neu_persist_datatag_info_t *p   = iterator_get(&iter);
-// neu_datatag_t *             tag = neu_datatag_alloc_with_id(
-// p->attribute, p->type, p->address, p->name, p->id);
-// if (NULL == tag) {
-// rv = NEU_ERR_ENOMEM;
-// break;
-//}
+    neu_persist_datatag_infos_free(tags);
 
-// if (neu_datatag_tbl_add(tag_tbl, tag)) {
-// if (0 != vector_push_back(ids, &tag->id)) {
-// rv = NEU_ERR_ENOMEM;
-// break;
-//}
-//} else {
-// neu_datatag_free(tag);
-//}
-//}
-
-// neu_persist_datatag_infos_free(datatag_infos);
-
-// return rv;
-//}
+    return rv;
+}
 
 static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
                                                  const char *   adapter_name)
@@ -291,27 +273,12 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
         neu_manager_add_group(adapter->manager, p->adapter_name,
                               p->group_config_name, p->read_interval);
 
-        // rv = persister_singleton_load_datatags(adapter, adapter_name,
-        // grp_config, tag_tbl);
-        // if (0 != rv) {
-        // nlog_warn("%s load datatags of adapter:%s grp:%s fail, ignore",
-        // adapter->name, adapter_name, p->group_config_name);
-        //}
-
-        // neu_cmd_add_grp_config_t cmd = {
-        //.node_id    = node_id,
-        //.grp_config = grp_config,
-        //};
-        //(void) cmd;
-
-        ////        rv = neu_manager_add_grp_config(adapter->manager, &cmd);
-        // const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        // nlog_info("%s %s load group config %s interval:%" PRId64,
-        // adapter->name, ok_or_err, p->group_config_name, p->read_interval);
-        // if (0 != rv) {
-        // neu_taggrp_cfg_free(grp_config);
-        // break;
-        //}
+        rv = persister_singleton_load_datatags(adapter, p->adapter_name,
+                                               p->group_config_name);
+        if (0 != rv) {
+            nlog_warn("%s load datatags of adapter:%s grp:%s fail, ignore",
+                      adapter->name, p->adapter_name, p->group_config_name);
+        }
     }
 
     neu_persist_group_config_infos_free(group_config_infos);
@@ -548,38 +515,24 @@ static int persister_singleton_handle_grp_config(neu_adapter_t *adapter,
 }
 
 static int persister_singleton_handle_datatags(neu_adapter_t *adapter,
-                                               const char *   node_name,
-                                               const char *   grp_config_name)
+                                               const char *   node,
+                                               const char *   group)
 {
-    neu_persister_t *persister    = persister_singleton_get();
-    char *           adapter_name = NULL;
-    int              rv           = 0;
-    (void) node_name;
-    (void) adapter;
-    // int rv = neu_manager_get_node_name_by_id(adapter->manager, node_id,
-    //&adapter_name);
-    if (0 != rv) {
+    neu_persister_t *persister = persister_singleton_get();
+    UT_array *       tags      = NULL;
+
+    int rv = neu_manager_get_tag(adapter->manager, node, group, &tags);
+    if (rv != 0) {
+        nlog_warn("%s fail get tag infos", adapter->name);
         return rv;
     }
 
-    vector_t *datatag_infos = NULL;
-    // rv = neu_manager_get_persist_datatag_infos(adapter->manager, node_id,
-    // grp_config_name, &datatag_infos);
-    // if (0 != rv) {
-    // nlog_error("%s fail get persist datatag infos", adapter->name);
-    // free(adapter_name);
-    // return rv;
-    //}
-
-    rv = neu_persister_store_datatags(persister, adapter_name, grp_config_name,
-                                      datatag_infos);
+    rv = neu_persister_store_datatags(persister, node, group, tags);
     if (0 != rv) {
-        nlog_error("fail store adapter:%s grp:%s datatag infos", adapter_name,
-                   grp_config_name);
+        nlog_error("fail store adapter:%s grp:%s datatag infos", node, group);
     }
 
-    neu_persist_datatag_infos_free(datatag_infos);
-    free(adapter_name);
+    neu_persist_datatag_infos_free(tags);
     return rv;
 }
 
@@ -806,6 +759,52 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                 ret        = malloc(sizeof(neu_reqresp_grp_configs_t));
                 ret->error = neu_manager_get_group(
                     adapter->manager, req_cmd->node_name, &ret->groups);
+            });
+        break;
+    }
+
+    case NEU_REQRESP_ADD_TAGS: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_add_tag_resp_t, neu_reqresp_add_tag_t, rv,
+            NEU_REQRESP_ADD_TAGS, p_result, {
+                ret        = malloc(sizeof(neu_reqresp_add_tag_resp_t));
+                ret->error = neu_manager_add_tag(
+                    adapter->manager, req_cmd->node, req_cmd->group,
+                    req_cmd->n_tag, req_cmd->tags, &ret->index);
+            });
+
+        break;
+    }
+    case NEU_REQRESP_DEL_TAGS: {
+        ADAPTER_RESP_CMD(adapter, cmd, neu_reqresp_del_tag_resp_t,
+                         neu_reqresp_del_tag_t, rv, NEU_REQRESP_DEL_TAGS,
+                         p_result, {
+                             ret = malloc(sizeof(neu_reqresp_del_tag_resp_t));
+                             ret->error = neu_manager_del_tag(
+                                 adapter->manager, req_cmd->node,
+                                 req_cmd->group, req_cmd->n_tag, req_cmd->tags);
+                         });
+        break;
+    }
+    case NEU_REQRESP_UPDATE_TAGS: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_update_tag_resp_t,
+            neu_reqresp_update_tag_t, rv, NEU_REQRESP_UPDATE_TAGS, p_result, {
+                ret        = malloc(sizeof(neu_reqresp_update_tag_resp_t));
+                ret->error = neu_manager_update_tag(
+                    adapter->manager, req_cmd->node, req_cmd->group,
+                    req_cmd->n_tag, req_cmd->tags, &ret->index);
+            });
+        break;
+    }
+    case NEU_REQRESP_GET_TAGS: {
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_get_tags_resp_t, neu_reqresp_get_tags_t,
+            rv, NEU_REQRESP_GET_TAGS, p_result, {
+                ret = malloc(sizeof(neu_reqresp_get_tags_resp_t));
+                ret->error =
+                    neu_manager_get_tag(adapter->manager, req_cmd->node,
+                                        req_cmd->group, &ret->tags);
             });
         break;
     }

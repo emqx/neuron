@@ -39,42 +39,39 @@ typedef struct {
 } neu_json_add_tags_req_tag_t;
 
 typedef struct {
+    char *                       node;
+    char *                       group;
     int                          n_tag;
     neu_json_add_tags_req_tag_t *tags;
-    char *                       group_config_name;
-    int64_t                      node_id;
 } neu_json_add_tags_req_t;
 
 int  neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result);
 void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req);
 
-typedef int64_t neu_json_del_tags_req_id_t;
+typedef struct {
+    uint16_t index;
+    int      error;
+} neu_json_add_tag_res_t, neu_json_update_tag_res_t;
+
+int neu_json_encode_au_tags_resp(void *json_object, void *param);
+
+typedef char *neu_json_del_tags_req_name_t;
 
 typedef struct {
-    char *                      group_config_name;
-    int64_t                     node_id;
-    int                         n_id;
-    neu_json_del_tags_req_id_t *ids;
+    char *                        node;
+    char *                        group;
+    int                           n_tags;
+    neu_json_del_tags_req_name_t *tags;
 } neu_json_del_tags_req_t;
 
 int  neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result);
 void neu_json_decode_del_tags_req_free(neu_json_del_tags_req_t *req);
 
 typedef struct {
-    char *  group_config_name;
-    int64_t node_id;
-} neu_json_get_tags_req_t;
-
-int  neu_json_decode_get_tags_req(char *buf, neu_json_get_tags_req_t **result);
-void neu_json_decode_get_tags_req_free(neu_json_get_tags_req_t *req);
-
-typedef struct {
-    char *  group_config_name;
     char *  address;
     char *  name;
     int64_t type;
     int64_t attribute;
-    int64_t id;
 } neu_json_get_tags_resp_tag_t;
 
 typedef struct {
@@ -85,18 +82,17 @@ typedef struct {
 int neu_json_encode_get_tags_resp(void *json_object, void *param);
 
 typedef struct {
-    char *  address;
     char *  name;
+    char *  address;
     int64_t type;
     int64_t attribute;
-    int64_t id;
 } neu_json_update_tags_req_tag_t;
 
 typedef struct {
+    char *                          node;
+    char *                          group;
     int                             n_tag;
     neu_json_update_tags_req_tag_t *tags;
-    char *                          group_config_name;
-    int64_t                         node_id;
 } neu_json_update_tags_req_t;
 
 int  neu_json_decode_update_tags_req(char *                       buf,

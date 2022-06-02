@@ -51,6 +51,22 @@ int neu_manager_update_group(neu_manager_t *manager, const char *driver,
 int neu_manager_get_group(neu_manager_t *manager, const char *driver,
                           UT_array **groups);
 
+int       neu_manager_add_tag(neu_manager_t *manager, const char *driver,
+                              const char *group, uint16_t n_tag, neu_datatag_t *tags,
+                              uint16_t *index);
+int       neu_manager_del_tag(neu_manager_t *manager, const char *driver,
+                              const char *group, uint16_t n_tag, char **tags);
+int       neu_manager_update_tag(neu_manager_t *manager, const char *driver,
+                                 const char *group, uint16_t n_tag,
+                                 neu_datatag_t *tags, uint16_t *index);
+int       neu_manager_get_tag(neu_manager_t *manager, const char *driver,
+                              const char *group, UT_array **tags);
+UT_array *neu_manager_tag_read(neu_manager_t *manager, const char *driver,
+                               const char *group);
+int       neu_manager_tag_write(neu_manager_t *manager, const char *driver,
+                                const char *group, const char *tag,
+                                neu_value_u value);
+
 int neu_manager_add_plugin(neu_manager_t *manager, const char *plugin_library);
 int neu_manager_del_plugin(neu_manager_t *manager, const char *plugin);
 // plugin_lib_info_t array

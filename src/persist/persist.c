@@ -871,7 +871,7 @@ int neu_persister_load_plugins(neu_persister_t *persister,
 int neu_persister_store_datatags(neu_persister_t *persister,
                                  const char *     adapter_name,
                                  const char *     group_config_name,
-                                 vector_t *       datatag_infos)
+                                 UT_array *       datatag_infos)
 {
     char path[PATH_MAX_SIZE] = { 0 };
 
@@ -894,10 +894,19 @@ int neu_persister_store_datatags(neu_persister_t *persister,
         return NEU_ERR_FAILURE;
     }
 
-    neu_json_datatag_req_t datatags_resp = {
-        .n_tag = datatag_infos->size,
-        .tags  = datatag_infos->data,
-    };
+    neu_json_datatag_req_t datatags_resp = { 0 };
+    datatags_resp.n_tag                  = utarray_len(datatag_infos);
+    datatags_resp.tags =
+        calloc(datatags_resp.n_tag, sizeof(neu_json_datatag_req_tag_t));
+    int index = 0;
+    utarray_foreach(datatag_infos, neu_datatag_t *, tag)
+    {
+        datatags_resp.tags[index].name      = tag->name;
+        datatags_resp.tags[index].address   = tag->addr_str;
+        datatags_resp.tags[index].attribute = tag->attribute;
+        datatags_resp.tags[index].type      = tag->type;
+        index += 1;
+    }
 
     char *result = NULL;
     rv = neu_json_encode_by_fn(&datatags_resp, neu_json_encode_datatag_resp,
@@ -908,14 +917,14 @@ int neu_persister_store_datatags(neu_persister_t *persister,
     }
 
     free(result);
+    free(datatags_resp.tags);
 
     return rv;
 }
 
 int neu_persister_load_datatags(neu_persister_t *persister,
                                 const char *     adapter_name,
-                                const char *     group_config_name,
-                                vector_t **      datatag_infos)
+                                const char *group_config_name, UT_array **tags)
 {
     char path[PATH_MAX_SIZE] = { 0 };
 
@@ -945,16 +954,16 @@ int neu_persister_load_datatags(neu_persister_t *persister,
         return rv;
     }
 
-    vector_t *vec = vector_new_move_from_buf(
-        datatag_req->tags, datatag_req->n_tag, datatag_req->n_tag,
-        sizeof(neu_persist_datatag_info_t));
+    utarray_new(*tags, neu_tag_get_icd());
+    for (int i = 0; i < datatag_req->n_tag; i++) {
+        neu_datatag_t tag = {
+            .name      = datatag_req->tags[i].name,
+            .addr_str  = datatag_req->tags[i].address,
+            .type      = datatag_req->tags[i].type,
+            .attribute = datatag_req->tags[i].attribute,
+        };
 
-    if (NULL != vec) {
-        *datatag_infos     = vec;
-        datatag_req->n_tag = 0;
-        datatag_req->tags  = NULL;
-    } else {
-        rv = NEU_ERR_ENOMEM;
+        utarray_push_back(*tags, &tag);
     }
 
     neu_json_decode_datatag_req_free(datatag_req);
