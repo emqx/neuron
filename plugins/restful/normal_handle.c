@@ -32,7 +32,6 @@
 
 #include "json/neu_json_fn.h"
 #include "json/neu_json_login.h"
-#include "json/neu_json_tty.h"
 
 #include "file.h"
 #include "handle.h"

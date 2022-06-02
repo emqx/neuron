@@ -33,7 +33,6 @@ extern "C" {
 #include "json/neu_json_plugin.h"
 #include "json/neu_json_rw.h"
 #include "json/neu_json_tag.h"
-#include "json/neu_json_tty.h"
 
 #define UNUSED(x) (void) (x)
 
