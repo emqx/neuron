@@ -42,6 +42,7 @@ int  neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                                nng_pipe pipe);
 int  neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
                                  const char *app, const char *group);
-void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver);
+void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,
+                                  const char *group);
 
 #endif

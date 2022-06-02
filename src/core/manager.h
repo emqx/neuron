@@ -22,7 +22,6 @@
 
 #include "utils/utextend.h"
 
-#include "adapter.h"
 #include "persist/persist.h"
 
 typedef struct neu_manager neu_manager_t;
@@ -37,10 +36,11 @@ int       neu_manager_add_node(neu_manager_t *manager, const char *node_name,
 int       neu_manager_del_node(neu_manager_t *manager, const char *node_name);
 UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type);
 
-int neu_manager_subscribe(neu_manager_t *manager, const char *app,
-                          const char *driver, const char *group);
-int neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
-                            const char *driver, const char *group);
+int       neu_manager_subscribe(neu_manager_t *manager, const char *app,
+                                const char *driver, const char *group);
+int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
+                                  const char *driver, const char *group);
+UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
 
 int neu_manager_add_group(neu_manager_t *manager, const char *driver,
                           const char *group, uint32_t interval);
@@ -48,6 +48,8 @@ int neu_manager_del_group(neu_manager_t *manager, const char *driver,
                           const char *group);
 int neu_manager_update_group(neu_manager_t *manager, const char *driver,
                              const char *group, uint32_t interval);
+int neu_manager_get_group(neu_manager_t *manager, const char *driver,
+                          UT_array **groups);
 
 int neu_manager_add_plugin(neu_manager_t *manager, const char *plugin_library);
 int neu_manager_del_plugin(neu_manager_t *manager, const char *plugin);
@@ -56,6 +58,10 @@ UT_array *neu_manager_get_plugins(neu_manager_t *manager);
 
 int neu_manager_start_node(neu_manager_t *manager, const char *node);
 int neu_manager_stop_node(neu_manager_t *manager, const char *node);
+
+int   neu_manager_node_setting(neu_manager_t *manager, const char *node,
+                               const char *setting);
+char *neu_manager_node_get_setting(neu_manager_t *manager, const char *node);
 
 int       neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
                                        neu_persist_adapter_info_t *info);

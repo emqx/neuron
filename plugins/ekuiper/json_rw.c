@@ -440,61 +440,64 @@ int plugin_send_write_cmd_from_write_req(neu_plugin_t *plugin, uint32_t req_id,
                                          json_write_req_t *write_req)
 {
     int rv = 0;
+    (void) plugin;
+    (void) req_id;
+    (void) write_req;
 
-    neu_node_id_t node_id =
-        neu_plugin_get_node_id_by_node_name(plugin, write_req->node_name);
-    if (node_id == 0) {
-        nlog_error("node %s does not exist", write_req->node_name);
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
+    // neu_node_id_t node_id =
+    // neu_plugin_get_node_id_by_node_name(plugin, write_req->node_name);
+    // if (node_id == 0) {
+    // nlog_error("node %s does not exist", write_req->node_name);
+    // return NEU_ERR_NODE_NOT_EXIST;
+    //}
 
-    neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
-    neu_datatag_t *      tag =
-        neu_datatag_tbl_get_by_name(table, write_req->tag_name);
-    if (tag == NULL) {
-        return NEU_ERR_TAG_NOT_EXIST;
-    }
+    // neu_datatag_table_t *table = neu_system_get_datatags_table(plugin,
+    // node_id); neu_datatag_t *      tag = neu_datatag_tbl_get_by_name(table,
+    // write_req->tag_name);
+    // if (tag == NULL) {
+    // return NEU_ERR_TAG_NOT_EXIST;
+    //}
 
-    neu_taggrp_config_t *config =
-        neu_system_find_group_config(plugin, node_id, write_req->group_name);
-    if (NULL == config) {
-        return NEU_ERR_GRP_CONFIG_NOT_EXIST;
-    }
+    // neu_taggrp_config_t *config =
+    // neu_system_find_group_config(plugin, node_id, write_req->group_name);
+    // if (NULL == config) {
+    // return NEU_ERR_GRP_CONFIG_NOT_EXIST;
+    //}
 
-    neu_data_val_t *write_val = neu_dvalue_unit_new();
-    if (write_val == NULL) {
-        nlog_error("Failed to allocate data value for write data");
-        neu_taggrp_cfg_free(config);
-        return NEU_ERR_ENOMEM;
-    }
+    // neu_data_val_t *write_val = neu_dvalue_unit_new();
+    // if (write_val == NULL) {
+    // nlog_error("Failed to allocate data value for write data");
+    // neu_taggrp_cfg_free(config);
+    // return NEU_ERR_ENOMEM;
+    //}
 
-    neu_fixed_array_t *array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
-    if (array == NULL) {
-        nlog_error("Failed to allocate array for write data");
-        neu_dvalue_free(write_val);
-        neu_taggrp_cfg_free(config);
-        return NEU_ERR_ENOMEM;
-    }
+    // neu_fixed_array_t *array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
+    // if (array == NULL) {
+    // nlog_error("Failed to allocate array for write data");
+    // neu_dvalue_free(write_val);
+    // neu_taggrp_cfg_free(config);
+    // return NEU_ERR_ENOMEM;
+    //}
 
-    neu_data_val_t *val = NULL;
-    rv                  = unwrap_write_req_val(write_req, table, &val);
-    if (rv < 0) {
-        neu_fixed_array_free(array);
-        neu_dvalue_free(write_val);
-        neu_taggrp_cfg_free(config);
-        return rv;
-    }
+    // neu_data_val_t *val = NULL;
+    // rv                  = unwrap_write_req_val(write_req, table, &val);
+    // if (rv < 0) {
+    // neu_fixed_array_free(array);
+    // neu_dvalue_free(write_val);
+    // neu_taggrp_cfg_free(config);
+    // return rv;
+    //}
 
-    neu_datatag_id_t id = tag->id;
+    // neu_datatag_id_t id = tag->id;
 
-    neu_int_val_t int_val;
-    neu_int_val_init(&int_val, id, val);
-    neu_fixed_array_set(array, 0, (void *) &int_val);
+    // neu_int_val_t int_val;
+    // neu_int_val_init(&int_val, id, val);
+    // neu_fixed_array_set(array, 0, (void *) &int_val);
 
-    neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
+    // neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
 
-    neu_plugin_send_write_cmd(plugin, req_id, node_id, config, write_val);
+    // neu_plugin_send_write_cmd(plugin, req_id, node_id, config, write_val);
 
-    neu_taggrp_cfg_free(config);
+    // neu_taggrp_cfg_free(config);
     return rv;
 }

@@ -300,6 +300,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LICENSE_DISABLED:
     case NEU_ERR_LICENSE_MAX_NODES:
     case NEU_ERR_LICENSE_MAX_TAGS:
+    case NEU_ERR_GROUP_ALREADY_SUBSCRIBED:
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:
@@ -321,6 +322,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_SETTING_INVALID:
     case NEU_ERR_LIBRARY_INFO_INVALID:
     case NEU_ERR_LICENSE_INVALID:
+    case NEU_ERR_GROUP_PARAMETER_INVALID:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_LIBRARY_NOT_FOUND:
@@ -328,6 +330,8 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GRP_CONFIG_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
     case NEU_ERR_LICENSE_NOT_FOUND:
+    case NEU_ERR_GROUP_NOT_EXIST:
+    case NEU_ERR_GROUP_NOT_SUBSCRIBE:
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:
@@ -338,6 +342,8 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_TAG_NAME_CONFLICT:
     case NEU_ERR_GRP_CONFIG_CONFLICT:
     case NEU_ERR_LIBRARY_NAME_CONFLICT:
+    case NEU_ERR_GROUP_EXIST:
+    case NEU_ERR_GROUP_NOT_ALLOW:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:

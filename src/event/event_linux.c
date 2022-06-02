@@ -194,7 +194,8 @@ int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
               events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);
-
+    free(timer->event_data);
+    free(timer);
     return 0;
 }
 

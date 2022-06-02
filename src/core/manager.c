@@ -26,6 +26,9 @@
 #include "persist/persist.h"
 #include "utils/log.h"
 
+#include "adapter.h"
+#include "adapter/driver/driver_internal.h"
+
 #include "message.h"
 #include "node_manager.h"
 #include "pluginx_manager.h"
@@ -157,7 +160,7 @@ int neu_manager_del_node(neu_manager_t *manager, const char *node_name)
     neu_adapter_uninit(adapter);
     neu_adapter_destroy(adapter);
 
-    neu_subscribe_manager_remove(manager->subscribe_manager, node_name);
+    neu_subscribe_manager_remove(manager->subscribe_manager, node_name, NULL);
     neu_node_manager_del(manager->node_manager, node_name);
     return NEU_ERR_SUCCESS;
 }
@@ -192,33 +195,77 @@ int neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
 int neu_manager_add_group(neu_manager_t *manager, const char *driver,
                           const char *group, uint32_t interval)
 {
-    (void) manager;
-    (void) driver;
-    (void) group;
-    (void) interval;
+    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
+        return NEU_ERR_GROUP_PARAMETER_INVALID;
+    }
 
-    return 0;
+    if (strlen(group) > NEU_GROUP_NAME_LEN) {
+        return NEU_ERR_GROUP_PARAMETER_INVALID;
+    }
+
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
+        return NEU_ERR_GROUP_NOT_ALLOW;
+    }
+
+    return neu_adapter_driver_add_group((neu_adapter_driver_t *) adapter, group,
+                                        interval);
 }
 
 int neu_manager_del_group(neu_manager_t *manager, const char *driver,
                           const char *group)
 {
-    (void) manager;
-    (void) driver;
-    (void) group;
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
 
-    return 0;
+    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
+        return NEU_ERR_GROUP_NOT_ALLOW;
+    }
+
+    neu_subscribe_manager_remove(manager->subscribe_manager, driver, group);
+    return neu_adapter_driver_del_group((neu_adapter_driver_t *) adapter,
+                                        group);
 }
 
 int neu_manager_update_group(neu_manager_t *manager, const char *driver,
                              const char *group, uint32_t interval)
 {
+    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
+        return NEU_ERR_GROUP_PARAMETER_INVALID;
+    }
     (void) manager;
     (void) driver;
     (void) group;
     (void) interval;
 
     return 0;
+}
+
+int neu_manager_get_group(neu_manager_t *manager, const char *driver,
+                          UT_array **groups)
+{
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
+
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
+        return NEU_ERR_GROUP_NOT_ALLOW;
+    }
+
+    *groups = neu_adapter_driver_get_group((neu_adapter_driver_t *) adapter);
+
+    return NEU_ERR_SUCCESS;
 }
 
 int neu_manager_add_plugin(neu_manager_t *manager, const char *plugin_library)

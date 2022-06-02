@@ -38,6 +38,8 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                                  uint32_t interval);
 int neu_adapter_driver_del_group(neu_adapter_driver_t *driver,
                                  const char *          name);
+UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver);
+
 int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver,
                                neu_datatag_t *       tag);
 int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver,

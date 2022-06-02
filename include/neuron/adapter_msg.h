@@ -89,10 +89,35 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_UPDATE_LICENSE,
 } neu_reqresp_type_e;
 
+typedef struct neu_plugin_lib_info {
+    char name[NEU_PLUGIN_NAME_LEN];
+    char description[NEU_PLUGIN_DESCRIPTION_LEN];
+    char lib_name[NEU_PLUGIN_LIBRARY_LEN];
+
+    neu_plugin_kind_e kind;
+    neu_node_type_e   type;
+} neu_plugin_lib_info_t;
+
+typedef struct neu_node_info {
+    char node_name[NEU_NODE_NAME_LEN];
+    char plugin_name[NEU_PLUGIN_NAME_LEN];
+} neu_node_info_t;
+
+typedef struct neu_group_info {
+    char     name[NEU_GROUP_NAME_LEN];
+    uint16_t tag_count;
+    uint32_t interval;
+} neu_group_info_t;
+
+typedef struct neu_subscribe_info {
+    char node_name[NEU_NODE_NAME_LEN];
+    char group_name[NEU_GROUP_NAME_LEN];
+} neu_subscribe_info_t;
+
 /* NEU_REQRESP_READ_DATA */
 typedef struct neu_reqresp_read {
-    neu_taggrp_config_t *grp_config;
-    neu_node_id_t        dst_node_id;
+    char *node_name;
+    char *group_name;
 } neu_reqresp_read_t;
 
 /* NEU_REQRESP_READ_RESP */
@@ -103,9 +128,9 @@ typedef struct neu_reqresp_read_resp {
 
 /* NEU_REQRESP_WRITE_DATA */
 typedef struct neu_reqresp_write {
-    neu_taggrp_config_t *grp_config;
-    neu_node_id_t        dst_node_id;
-    neu_data_val_t *     data_val;
+    char *          node_name;
+    char *          group_name;
+    neu_data_val_t *data_val;
 } neu_reqresp_write_t;
 
 /* NEU_REQRESP_WRITE_RESP */
@@ -114,30 +139,19 @@ typedef struct neu_reqresp_write_resp {
     neu_data_val_t *     data_val; ///< result status of writing
 } neu_reqresp_write_resp_t;
 
-/* NEU_REQRESP_SUBSCRIBE_NODE */
-typedef struct neu_reqresp_subscribe_node {
-    neu_taggrp_config_t *grp_config;
-    neu_node_id_t        dst_node_id;
-    neu_node_id_t        src_node_id;
-} neu_reqresp_subscribe_node_t;
-
 /* NEU_REQRESP_UNSUBSCRIBE_NODE */
-typedef struct neu_reqresp_unsubscribe_node {
-    neu_taggrp_config_t *grp_config;
-    neu_node_id_t        dst_node_id;
-    neu_node_id_t        src_node_id;
-} neu_reqresp_unsubscribe_node_t;
+/* NEU_REQRESP_SUBSCRIBE_NODE */
+typedef struct {
+    char *app_name;
+    char *driver_name;
+    char *group;
+} neu_reqresp_subscribe_node_t, neu_reqresp_unsubscribe_node_t;
 
 /* NEU_REQRESP_TRANS_DATA */
 typedef struct neu_reqresp_data {
     neu_taggrp_config_t *grp_config;
     neu_data_val_t *     data_val;
 } neu_reqresp_data_t;
-
-typedef struct neu_node_info {
-    char node_name[NEU_NODE_NAME_LEN];
-    char plugin_name[NEU_PLUGIN_NAME_LEN];
-} neu_node_info_t;
 
 /* NEU_REQRESP_ADD_NODE */
 typedef struct neu_cmd_add_node {
@@ -172,41 +186,28 @@ typedef struct neu_reqresp_nodes {
 } neu_reqresp_nodes_t;
 
 /* NEU_REQRESP_ADD_GRP_CONFIG */
-typedef struct neu_cmd_add_grp_config {
-    neu_node_id_t        node_id;
-    neu_taggrp_config_t *grp_config;
-} neu_cmd_add_grp_config_t;
+typedef struct {
+    char *   node_name;
+    char *   name;
+    uint32_t interval;
+} neu_cmd_add_grp_config_t, neu_cmd_update_grp_config_t;
 
 /* NEU_REQRESP_DEL_GRP_CONFIG */
 typedef struct neu_cmd_del_grp_config {
-    neu_node_id_t node_id;
-    char *        config_name;
+    char *node_name;
+    char *name;
 } neu_cmd_del_grp_config_t;
-
-/* NEU_REQRESP_UPDATE_GRP_CONFIG */
-typedef struct neu_cmd_update_grp_config {
-    neu_node_id_t        node_id;
-    neu_taggrp_config_t *grp_config;
-} neu_cmd_update_grp_config_t;
 
 /* NEU_REQRESP_GET_GRP_CONFIGS */
 typedef struct neu_cmd_get_grp_configs {
-    neu_node_id_t node_id; // get group configs of this node
+    char *node_name;
 } neu_cmd_get_grp_configs_t;
 
 /* NEU_REQRESP_GRP_CONFIGS */
 typedef struct neu_reqresp_grp_configs {
-    vector_t grp_configs; // vector of neu_taggrp_config_t pointer
+    int       error;
+    UT_array *groups;
 } neu_reqresp_grp_configs_t;
-
-typedef struct neu_plugin_lib_info {
-    char name[NEU_PLUGIN_NAME_LEN];
-    char description[NEU_PLUGIN_DESCRIPTION_LEN];
-    char lib_name[NEU_PLUGIN_LIBRARY_LEN];
-
-    neu_plugin_kind_e kind;
-    neu_node_type_e   type;
-} neu_plugin_lib_info_t;
 
 /* NEU_REQRESP_ADD_PLUGIN_LIB */
 typedef struct neu_cmd_add_plugin_lib_t {
@@ -273,13 +274,13 @@ typedef struct neu_represp_node_name {
 
 /* NEU_REQRESP_SET_NODE_SETTING */
 typedef struct neu_cmd_set_node_setting {
-    neu_node_id_t node_id;
-    const char *  setting;
+    char *      node_name;
+    const char *setting;
 } neu_cmd_set_node_setting_t;
 
 /* NEU_REQRESP_GET_NODE_SETTING */
 typedef struct neu_cmd_get_node_setting {
-    neu_node_id_t node_id;
+    char *node_name;
 } neu_cmd_get_node_setting_t;
 
 typedef struct neu_reqresp_node_setting {
@@ -289,7 +290,7 @@ typedef struct neu_reqresp_node_setting {
 
 /* NEU_REQRESP_GET_NODE_STATE */
 typedef struct neu_cmd_get_node_state {
-    neu_node_id_t node_id;
+    char *node_name;
 } neu_cmd_get_node_state_t;
 
 /* NEU_REQRESP_NODE_STATE */
@@ -300,13 +301,13 @@ typedef struct neu_reqresp_node_state {
 
 /* NEU_REQRESP_GET_SUB_GRP_CONFIGS */
 typedef struct neu_cmd_get_sub_grp_configs {
-    neu_node_id_t node_id;
+    char *node_name;
 } neu_cmd_get_sub_grp_configs_t;
 
 /* NEU_REQRESP_SUB_GRP_CONFIGS_RESP */
 typedef struct neu_reqresp_sub_grp_configs {
     int32_t   result;
-    vector_t *sub_grp_configs;
+    UT_array *groups;
 } neu_reqresp_sub_grp_configs_t;
 
 typedef enum neu_adapter_ctl {
@@ -316,13 +317,13 @@ typedef enum neu_adapter_ctl {
 
 /* NEU_REQRESP_NODE_CTL */
 typedef struct neu_cmd_node_ctl {
-    neu_node_id_t     node_id;
+    char *            node_name;
     neu_adapter_ctl_e ctl;
 } neu_cmd_node_ctl_t;
 
 /* NEU_REQRESP_VALIDATE_TAG */
 typedef struct neu_cmd_validate_tag {
-    neu_node_id_t  node_id;
+    char *         node_name;
     neu_datatag_t *tag;
 } neu_cmd_validate_tag_t;
 
@@ -353,8 +354,8 @@ typedef struct neu_event_reply {
 } neu_event_reply_t;
 
 typedef struct neu_event_tags {
-    neu_node_id_t node_id;
-    char *        grp_config_name;
+    char *node_name;
+    char *group_name;
 } neu_event_tags_t;
 
 typedef struct {

@@ -38,18 +38,11 @@ void handle_add_group_config(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_group_config_req_t,
-        neu_json_decode_add_group_config_req, {
-            neu_taggrp_config_t *gconfig = neu_taggrp_cfg_new(req->name);
-            neu_taggrp_cfg_set_interval(gconfig, req->interval);
-
-            NEU_JSON_RESPONSE_ERROR(
-                neu_system_add_group_config(plugin, req->node_id, gconfig), {
-                    http_response(aio, error_code.error, result_error);
-                    if (error_code.error != NEU_ERR_SUCCESS) {
-                        neu_taggrp_cfg_free(gconfig);
-                    }
-                })
-        })
+        neu_json_decode_add_group_config_req,
+        { NEU_JSON_RESPONSE_ERROR(
+            neu_system_add_group_config(plugin, req->node_name, req->name,
+                                        req->interval),
+            { http_response(aio, error_code.error, result_error); }) })
 }
 
 void handle_del_group_config(nng_aio *aio)
@@ -58,38 +51,10 @@ void handle_del_group_config(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_group_config_req_t,
-        neu_json_decode_del_group_config_req, {
-            neu_taggrp_config_t *config =
-                neu_system_find_group_config(plugin, req->node_id, req->name);
-            neu_datatag_table_t *table =
-                neu_system_get_datatags_table(plugin, req->node_id);
-
-            if (config == NULL || table == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
-
-            if (neu_taggrp_cfg_get_subpipes(config)->size != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_IN_USE, {
-                    http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
-
-            vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
-
-            VECTOR_FOR_EACH(ids, iter)
-            {
-                neu_datatag_id_t *id = (neu_datatag_id_t *) iterator_get(&iter);
-                neu_datatag_tbl_remove(table, *id);
-            }
-
-            NEU_JSON_RESPONSE_ERROR(
-                neu_system_del_group_config(plugin, req->node_id, req->name),
-                { http_response(aio, error_code.error, result_error); })
-        })
+        neu_json_decode_del_group_config_req,
+        { NEU_JSON_RESPONSE_ERROR(
+            neu_system_del_group_config(plugin, req->node_name, req->name),
+            { http_response(aio, error_code.error, result_error); }) })
 }
 
 void handle_update_group_config(nng_aio *aio)
@@ -98,34 +63,23 @@ void handle_update_group_config(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_group_config_req_t,
-        neu_json_decode_update_group_config_req, {
-            neu_taggrp_config_t *config =
-                neu_system_find_group_config(plugin, req->node_id, req->name);
-
-            if (config == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                })
-                return;
-            }
-
-            neu_taggrp_cfg_set_interval(config, req->interval);
-
-            NEU_JSON_RESPONSE_ERROR(
-                neu_system_update_group_config(plugin, req->node_id, config),
-                { http_response(aio, error_code.error, result_error); })
-        })
+        neu_json_decode_update_group_config_req,
+        { NEU_JSON_RESPONSE_ERROR(
+            neu_system_update_group_config(plugin, req->node_name, req->name,
+                                           req->interval),
+            { http_response(aio, error_code.error, result_error); }) })
 }
 
 void handle_get_group_config(nng_aio *aio)
 {
-    neu_plugin_t *plugin  = neu_rest_get_plugin();
-    char *        result  = NULL;
-    neu_node_id_t node_id = { 0 };
+    neu_plugin_t *plugin                       = neu_rest_get_plugin();
+    char *        result                       = NULL;
+    char          node_name[NEU_NODE_NAME_LEN] = { 0 };
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
+    if (http_get_param_str(aio, "node_name", node_name, sizeof(node_name)) <=
+        0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
@@ -134,26 +88,25 @@ void handle_get_group_config(nng_aio *aio)
 
     neu_json_get_group_config_resp_t gconfig_res = { 0 };
     int                              index       = 0;
-    vector_t gconfigs = neu_system_get_group_configs(plugin, node_id);
+    UT_array *                       groups      = NULL;
+    int error = neu_system_get_group_configs(plugin, node_name, &groups);
 
-    gconfig_res.n_group_config = gconfigs.size;
+    if (error != NEU_ERR_SUCCESS) {
+        NEU_JSON_RESPONSE_ERROR(
+            error, { http_response(aio, error_code.error, result_error); })
+        return;
+    }
+
+    gconfig_res.n_group_config = utarray_len(groups);
     gconfig_res.group_configs =
         calloc(gconfig_res.n_group_config,
                sizeof(neu_json_get_group_config_resp_group_config_t));
 
-    VECTOR_FOR_EACH(&gconfigs, iter)
+    utarray_foreach(groups, neu_group_info_t *, group)
     {
-        neu_taggrp_config_t *config =
-            *(neu_taggrp_config_t **) iterator_get(&iter);
-
-        gconfig_res.group_configs[index].name =
-            (char *) neu_taggrp_cfg_get_name(config);
-        gconfig_res.group_configs[index].interval =
-            neu_taggrp_cfg_get_interval(config);
-        gconfig_res.group_configs[index].tag_count =
-            neu_taggrp_cfg_get_datatag_ids(config)->size;
-        gconfig_res.group_configs[index].pipe_count =
-            neu_taggrp_cfg_get_subpipes(config)->size;
+        gconfig_res.group_configs[index].name      = group->name;
+        gconfig_res.group_configs[index].interval  = group->interval;
+        gconfig_res.group_configs[index].tag_count = group->tag_count;
 
         index += 1;
     }
@@ -163,9 +116,9 @@ void handle_get_group_config(nng_aio *aio)
 
     http_ok(aio, result);
 
-    vector_uninit(&gconfigs);
     free(result);
     free(gconfig_res.group_configs);
+    utarray_free(groups);
 }
 
 void handle_grp_subscribe(nng_aio *aio)
@@ -174,20 +127,11 @@ void handle_grp_subscribe(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req, {
-            neu_taggrp_config_t *config = neu_system_find_group_config(
-                plugin, req->src_node_id, req->name);
-
-            if (config == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                })
-            } else {
-                neu_plugin_send_subscribe_cmd(plugin, req->src_node_id,
-                                              req->dst_node_id, config);
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
-                    http_response(aio, error_code.error, result_error);
-                })
-            }
+            neu_plugin_send_subscribe_cmd(plugin, req->app_name,
+                                          req->driver_name, req->name);
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
+                http_response(aio, error_code.error, result_error);
+            })
         })
 }
 
@@ -197,63 +141,51 @@ void handle_grp_unsubscribe(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_unsubscribe_req_t, neu_json_decode_unsubscribe_req, {
-            neu_taggrp_config_t *config = neu_system_find_group_config(
-                plugin, req->src_node_id, req->name);
-
-            if (config == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GRP_CONFIG_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                })
-            } else {
-                neu_plugin_send_unsubscribe_cmd(plugin, req->src_node_id,
-                                                req->dst_node_id, config);
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
-                    http_response(aio, error_code.error, result_error);
-                })
-            }
+            neu_plugin_send_unsubscribe_cmd(plugin, req->app_name,
+                                            req->driver_name, req->name);
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
+                http_response(aio, error_code.error, result_error);
+            })
         })
 }
 
 void handle_grp_get_subscribe(nng_aio *aio)
 {
-    neu_plugin_t *                plugin          = neu_rest_get_plugin();
-    char *                        result          = NULL;
-    neu_node_id_t                 node_id         = 0;
-    neu_json_get_subscribe_resp_t sub_grp_configs = { 0 };
-    int                           index           = 0;
+    (void) aio;
+    // neu_plugin_t *                plugin          = neu_rest_get_plugin();
+    // char *                        result          = NULL;
+    // neu_json_get_subscribe_resp_t sub_grp_configs = { 0 };
+    // int                           index           = 0;
+    // char                          node_name[NEU_NODE_NAME_LEN] = { 0 };
 
-    VALIDATE_JWT(aio);
+    // VALIDATE_JWT(aio);
 
-    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, error_code.error, result_error);
-        })
-        return;
-    }
+    // if (http_get_param_str(aio, "node_name", sizeof(node_name)) != 0) {
+    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+    // http_response(aio, error_code.error, result_error);
+    //})
+    // return;
+    //}
 
-    vector_t *gconfigs = neu_system_get_sub_group_configs(plugin, node_id);
+    // UT_array *groups = neu_system_get_sub_group_configs(plugin, node_name);
 
-    sub_grp_configs.n_group = gconfigs->size;
-    sub_grp_configs.groups =
-        calloc(gconfigs->size, sizeof(neu_json_get_subscribe_resp_group_t));
+    // sub_grp_configs.n_group = utarray_len(groups);
+    // sub_grp_configs.groups  = calloc(
+    // sub_grp_configs.n_group, sizeof(neu_json_get_subscribe_resp_group_t));
 
-    VECTOR_FOR_EACH(gconfigs, iter)
-    {
-        neu_sub_grp_config_t *sgc =
-            (neu_sub_grp_config_t *) iterator_get(&iter);
+    // utarray_foreach(groups, neu_subscribe_info_t *, group)
+    //{
+    // sub_grp_configs.groups[index].node_name  = group->node_name;
+    // sub_grp_configs.groups[index].group_name = group->group_name;
 
-        sub_grp_configs.groups[index].node_id = sgc->node_id;
-        sub_grp_configs.groups[index].group_config_name =
-            sgc->group_config_name;
+    // index += 1;
+    //}
 
-        index += 1;
-    }
+    // neu_json_encode_by_fn(&sub_grp_configs,
+    // neu_json_encode_get_subscribe_resp, &result);
 
-    neu_json_encode_by_fn(&sub_grp_configs, neu_json_encode_get_subscribe_resp,
-                          &result);
-
-    http_ok(aio, result);
-    vector_free(gconfigs);
-    free(result);
-    free(sub_grp_configs.groups);
+    // http_ok(aio, result);
+    // free(result);
+    // free(sub_grp_configs.groups);
+    // utarray_free(groups);
 }

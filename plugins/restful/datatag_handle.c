@@ -34,299 +34,304 @@
 
 void handle_add_tags(nng_aio *aio)
 {
-    neu_plugin_t *plugin = neu_rest_get_plugin();
+    (void) aio;
+    // neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
-        aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
-            neu_taggrp_config_t *new_config = NULL;
-            neu_taggrp_config_t *config     = neu_system_find_group_config(
-                plugin, req->node_id, req->group_config_name);
-            neu_datatag_table_t *table =
-                neu_system_get_datatags_table(plugin, req->node_id);
+    // REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    // aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
+    // neu_taggrp_config_t *new_config = NULL;
+    // neu_taggrp_config_t *config     = neu_system_find_group_config(
+    // plugin, req->node_id, req->group_config_name);
+    // neu_datatag_table_t *table =
+    // neu_system_get_datatags_table(plugin, req->node_id);
 
-            if (table == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
+    // if (table == NULL) {
+    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+    // http_response(aio, error_code.error, result_error);
+    //});
+    // return;
+    //}
 
-            if (config == NULL) {
-                new_config = neu_taggrp_cfg_new(req->group_config_name);
-                neu_taggrp_cfg_set_interval(new_config, 10000);
-                neu_system_add_group_config(plugin, req->node_id, new_config);
-            } else {
-                new_config = neu_taggrp_cfg_clone(config);
-            }
+    // if (config == NULL) {
+    // new_config = neu_taggrp_cfg_new(req->group_config_name);
+    // neu_taggrp_cfg_set_interval(new_config, 10000);
+    // neu_system_add_group_config(plugin, req->node_id, new_config);
+    //} else {
+    // new_config = neu_taggrp_cfg_clone(config);
+    //}
 
-            vector_t *     ids   = neu_taggrp_cfg_get_datatag_ids(new_config);
-            neu_err_code_e code  = { 0 };
-            bool           added = false;
+    // vector_t *     ids   = neu_taggrp_cfg_get_datatag_ids(new_config);
+    // neu_err_code_e code  = { 0 };
+    // bool           added = false;
 
-            for (int i = 0; i < req->n_tag; i++) {
-                neu_datatag_t *tag =
-                    neu_datatag_alloc(req->tags[i].attribute, req->tags[i].type,
-                                      req->tags[i].address, req->tags[i].name);
+    // for (int i = 0; i < req->n_tag; i++) {
+    // neu_datatag_t *tag =
+    // neu_datatag_alloc(req->tags[i].attribute, req->tags[i].type,
+    // req->tags[i].address, req->tags[i].name);
 
-                if (NULL == tag) {
-                    code = NEU_ERR_ENOMEM;
-                    break;
-                }
+    // if (NULL == tag) {
+    // code = NEU_ERR_ENOMEM;
+    // break;
+    //}
 
-                code = neu_plugin_validate_tag(plugin, req->node_id, tag);
-                if (code != NEU_ERR_SUCCESS) {
-                    free(tag);
-                    break;
-                }
+    // code = neu_plugin_validate_tag(plugin, req->node_id, tag);
+    // if (code != NEU_ERR_SUCCESS) {
+    // free(tag);
+    // break;
+    //}
 
-                if (neu_datatag_tbl_add(table, tag)) {
-                    vector_push_back(ids, &tag->id);
-                    added = true;
-                } else {
-                    nlog_warn("Add failed, tag name exits, node_id:%" PRId64
-                              ", "
-                              "req_tag_name:%s",
-                              req->node_id, req->tags[i].name);
-                    code = NEU_ERR_TAG_NAME_CONFLICT;
-                    free(tag);
-                }
-            }
+    // if (neu_datatag_tbl_add(table, tag)) {
+    // vector_push_back(ids, &tag->id);
+    // added = true;
+    //} else {
+    // nlog_warn("Add failed, tag name exits, node_id:%" PRId64
+    //", "
+    //"req_tag_name:%s",
+    // req->node_id, req->tags[i].name);
+    // code = NEU_ERR_TAG_NAME_CONFLICT;
+    // free(tag);
+    //}
+    //}
 
-            if (config != NULL) {
-                int rv = neu_system_update_group_config(plugin, req->node_id,
-                                                        new_config);
-                if (0 != rv) {
-                    code  = rv;
-                    added = false;
-                }
-            }
+    // if (config != NULL) {
+    // int rv = neu_system_update_group_config(plugin, req->node_id,
+    // new_config);
+    // if (0 != rv) {
+    // code  = rv;
+    // added = false;
+    //}
+    //}
 
-            if (added) {
-                uint32_t event_id = neu_plugin_get_event_id(plugin);
-                neu_plugin_notify_event_add_tags(plugin, event_id, req->node_id,
-                                                 req->group_config_name);
-            }
+    // if (added) {
+    // uint32_t event_id = neu_plugin_get_event_id(plugin);
+    // neu_plugin_notify_event_add_tags(plugin, event_id, req->node_id,
+    // req->group_config_name);
+    //}
 
-            NEU_JSON_RESPONSE_ERROR(
-                code, { http_response(aio, code, result_error); });
-        })
+    // NEU_JSON_RESPONSE_ERROR(
+    // code, { http_response(aio, code, result_error); });
+    //})
 }
 
 void handle_del_tags(nng_aio *aio)
 {
-    neu_plugin_t *plugin = neu_rest_get_plugin();
+    (void) aio;
+    // neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
-        aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
-            neu_taggrp_config_t *new_config = NULL;
-            neu_taggrp_config_t *config     = neu_system_find_group_config(
-                plugin, req->node_id, req->group_config_name);
-            neu_datatag_table_t *table =
-                neu_system_get_datatags_table(plugin, req->node_id);
+    // REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    // aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
+    // neu_taggrp_config_t *new_config = NULL;
+    // neu_taggrp_config_t *config     = neu_system_find_group_config(
+    // plugin, req->node_id, req->group_config_name);
+    // neu_datatag_table_t *table =
+    // neu_system_get_datatags_table(plugin, req->node_id);
 
-            if (config == NULL || table == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
+    // if (config == NULL || table == NULL) {
+    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+    // http_response(aio, error_code.error, result_error);
+    //});
+    // return;
+    //}
 
-            neu_err_code_e code = { 0 };
-            new_config          = neu_taggrp_cfg_clone(config);
-            bool deleted        = false;
+    // neu_err_code_e code = { 0 };
+    // new_config          = neu_taggrp_cfg_clone(config);
+    // bool deleted        = false;
 
-            for (int i = 0; i < req->n_id; i++) {
-                if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
-                    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(new_config);
+    // for (int i = 0; i < req->n_id; i++) {
+    // if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
+    // vector_t *ids = neu_taggrp_cfg_get_datatag_ids(new_config);
 
-                    VECTOR_FOR_EACH(ids, iter)
-                    {
-                        neu_datatag_id_t *id =
-                            (neu_datatag_id_t *) iterator_get(&iter);
-                        if (*id == req->ids[i]) {
-                            iterator_erase(ids, &iter);
-                            break;
-                        }
-                    }
+    // VECTOR_FOR_EACH(ids, iter)
+    //{
+    // neu_datatag_id_t *id =
+    //(neu_datatag_id_t *) iterator_get(&iter);
+    // if (*id == req->ids[i]) {
+    // iterator_erase(ids, &iter);
+    // break;
+    //}
+    //}
 
-                    deleted = true;
-                }
-            }
+    // deleted = true;
+    //}
+    //}
 
-            int rv = neu_system_update_group_config(plugin, req->node_id,
-                                                    new_config);
-            if (0 != rv) {
-                code    = rv;
-                deleted = false;
-            }
+    // int rv = neu_system_update_group_config(plugin, req->node_id,
+    // new_config);
+    // if (0 != rv) {
+    // code    = rv;
+    // deleted = false;
+    //}
 
-            if (deleted) {
-                uint32_t event_id = neu_plugin_get_event_id(plugin);
-                neu_plugin_notify_event_del_tags(plugin, event_id, req->node_id,
-                                                 req->group_config_name);
-            }
+    // if (deleted) {
+    // uint32_t event_id = neu_plugin_get_event_id(plugin);
+    // neu_plugin_notify_event_del_tags(plugin, event_id, req->node_id,
+    // req->group_config_name);
+    //}
 
-            NEU_JSON_RESPONSE_ERROR(
-                code, { http_response(aio, NEU_ERR_SUCCESS, result_error); })
-        })
+    // NEU_JSON_RESPONSE_ERROR(
+    // code, { http_response(aio, NEU_ERR_SUCCESS, result_error); })
+    //})
 }
 
 void handle_update_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
+    (void) plugin;
+    (void) aio;
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
-        aio, neu_json_update_tags_req_t, neu_json_decode_update_tags_req, {
-            neu_datatag_table_t *table =
-                neu_system_get_datatags_table(plugin, req->node_id);
-            if (table == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
+    // REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    // aio, neu_json_update_tags_req_t, neu_json_decode_update_tags_req, {
+    // neu_datatag_table_t *table =
+    // neu_system_get_datatags_table(plugin, req->node_id);
+    // if (table == NULL) {
+    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+    // http_response(aio, error_code.error, result_error);
+    //});
+    // return;
+    //}
 
-            bool           updated = false;
-            neu_err_code_e code    = { 0 };
-            for (int i = 0; i < req->n_tag; i++) {
-                neu_datatag_t *tag =
-                    neu_datatag_tbl_get(table, req->tags[i].id);
+    // bool           updated = false;
+    // neu_err_code_e code    = { 0 };
+    // for (int i = 0; i < req->n_tag; i++) {
+    // neu_datatag_t *tag =
+    // neu_datatag_tbl_get(table, req->tags[i].id);
 
-                if (tag == NULL) {
-                    code = NEU_ERR_TAG_NOT_EXIST;
-                    break;
-                }
+    // if (tag == NULL) {
+    // code = NEU_ERR_TAG_NOT_EXIST;
+    // break;
+    //}
 
-                tag = neu_datatag_alloc_with_id(
-                    req->tags[i].attribute, req->tags[i].type,
-                    req->tags[i].address, req->tags[i].name, req->tags[i].id);
+    // tag = neu_datatag_alloc_with_id(
+    // req->tags[i].attribute, req->tags[i].type,
+    // req->tags[i].address, req->tags[i].name, req->tags[i].id);
 
-                if (NULL == tag) {
-                    code = NEU_ERR_ENOMEM;
-                    break;
-                }
+    // if (NULL == tag) {
+    // code = NEU_ERR_ENOMEM;
+    // break;
+    //}
 
-                code = neu_plugin_validate_tag(plugin, req->node_id, tag);
-                if (code != NEU_ERR_SUCCESS) {
-                    free(tag);
-                    break;
-                }
+    // code = neu_plugin_validate_tag(plugin, req->node_id, tag);
+    // if (code != NEU_ERR_SUCCESS) {
+    // free(tag);
+    // break;
+    //}
 
-                if (0 != neu_datatag_tbl_update(table, req->tags[i].id, tag)) {
-                    nlog_warn("Update failed, tag name exists, node_id:%" PRId64
-                              ", "
-                              "tag_id:%" PRId64 ", req_tag_name:%s",
-                              req->node_id, req->tags[i].id, req->tags[i].name);
-                    code = NEU_ERR_TAG_NAME_CONFLICT;
-                    free(tag);
-                } else {
-                    updated                     = true;
-                    neu_taggrp_config_t *config = neu_system_find_group_config(
-                        plugin, req->node_id, req->group_config_name);
-                    neu_taggrp_config_t *new_config =
-                        neu_taggrp_cfg_clone(config);
-                    neu_system_update_group_config(plugin, req->node_id,
-                                                   new_config);
-                }
-            }
+    // if (0 != neu_datatag_tbl_update(table, req->tags[i].id, tag)) {
+    // nlog_warn("Update failed, tag name exists, node_id:%" PRId64
+    //", "
+    //"tag_id:%" PRId64 ", req_tag_name:%s",
+    // req->node_id, req->tags[i].id, req->tags[i].name);
+    // code = NEU_ERR_TAG_NAME_CONFLICT;
+    // free(tag);
+    //} else {
+    // updated                     = true;
+    // neu_taggrp_config_t *config = neu_system_find_group_config(
+    // plugin, req->node_id, req->group_config_name);
+    // neu_taggrp_config_t *new_config =
+    // neu_taggrp_cfg_clone(config);
+    // neu_system_update_group_config(plugin, req->node_id,
+    // new_config);
+    //}
+    //}
 
-            if (updated) {
-                uint32_t event_id = neu_plugin_get_event_id(plugin);
-                neu_plugin_notify_event_update_tags(
-                    plugin, event_id, req->node_id, req->group_config_name);
-            }
+    // if (updated) {
+    // uint32_t event_id = neu_plugin_get_event_id(plugin);
+    // neu_plugin_notify_event_update_tags(
+    // plugin, event_id, req->node_name, req->group_name);
+    //}
 
-            NEU_JSON_RESPONSE_ERROR(
-                code, { http_response(aio, code, result_error); });
-        })
+    // NEU_JSON_RESPONSE_ERROR(
+    // code, { http_response(aio, code, result_error); });
+    //})
 }
 
 void handle_get_tags(nng_aio *aio)
 {
-    neu_plugin_t *plugin  = neu_rest_get_plugin();
-    char *        result  = NULL;
-    neu_node_id_t node_id = { 0 };
+    (void) aio;
+    // neu_plugin_t *plugin  = neu_rest_get_plugin();
+    // char *        result  = NULL;
+    // neu_node_id_t node_id = { 0 };
 
-    VALIDATE_JWT(aio);
+    // VALIDATE_JWT(aio);
 
-    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
-        })
-        return;
-    }
+    // if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
+    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+    // http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+    //})
+    // return;
+    //}
 
-    char s_grp_name[256]   = { 0 }; // should be large enough for the time being
-    ssize_t s_grp_name_len = http_get_param_str(aio, "group_config_name",
-                                                s_grp_name, sizeof(s_grp_name));
-    if (-1 == s_grp_name_len || sizeof(s_grp_name) == s_grp_name_len) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
-        })
-        return;
-    }
+    // char s_grp_name[256]   = { 0 }; // should be large enough for the time
+    // being ssize_t s_grp_name_len = http_get_param_str(aio,
+    // "group_config_name", s_grp_name, sizeof(s_grp_name));
+    // if (-1 == s_grp_name_len || sizeof(s_grp_name) == s_grp_name_len) {
+    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+    // http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+    //})
+    // return;
+    //}
 
-    neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
-    if (table == NULL) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-            http_response(aio, NEU_ERR_NODE_NOT_EXIST, result_error);
-        })
-        return;
-    }
+    // neu_datatag_table_t *table = neu_system_get_datatags_table(plugin,
+    // node_id); if (table == NULL) {
+    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+    // http_response(aio, NEU_ERR_NODE_NOT_EXIST, result_error);
+    //})
+    // return;
+    //}
 
-    vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
-    neu_json_get_tags_resp_t tags_res = { 0 };
-    int                      index    = 0;
+    // vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
+    // neu_json_get_tags_resp_t tags_res = { 0 };
+    // int                      index    = 0;
 
-    VECTOR_FOR_EACH(&grp_configs, iter)
-    {
-        neu_taggrp_config_t *config =
-            *(neu_taggrp_config_t **) iterator_get(&iter);
-        const char *group_name = neu_taggrp_cfg_get_name(config);
-        vector_t *  ids        = neu_taggrp_cfg_get_datatag_ids(config);
-        if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
-            continue;
-        }
+    // VECTOR_FOR_EACH(&grp_configs, iter)
+    //{
+    // neu_taggrp_config_t *config =
+    //*(neu_taggrp_config_t **) iterator_get(&iter);
+    // const char *group_name = neu_taggrp_cfg_get_name(config);
+    // vector_t *  ids        = neu_taggrp_cfg_get_datatag_ids(config);
+    // if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
+    // continue;
+    //}
 
-        tags_res.n_tag += ids->size;
-    }
+    // tags_res.n_tag += ids->size;
+    //}
 
-    tags_res.tags =
-        calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
+    // tags_res.tags =
+    // calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
 
-    VECTOR_FOR_EACH(&grp_configs, iter)
-    {
-        neu_taggrp_config_t *config =
-            *(neu_taggrp_config_t **) iterator_get(&iter);
-        const char *group_name = neu_taggrp_cfg_get_name(config);
+    // VECTOR_FOR_EACH(&grp_configs, iter)
+    //{
+    // neu_taggrp_config_t *config =
+    //*(neu_taggrp_config_t **) iterator_get(&iter);
+    // const char *group_name = neu_taggrp_cfg_get_name(config);
 
-        if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
-            continue;
-        }
+    // if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
+    // continue;
+    //}
 
-        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
+    // vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
 
-        VECTOR_FOR_EACH(ids, iter_id)
-        {
-            neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
-            neu_datatag_t *   tag = neu_datatag_tbl_get(table, *id);
+    // VECTOR_FOR_EACH(ids, iter_id)
+    //{
+    // neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
+    // neu_datatag_t *   tag = neu_datatag_tbl_get(table, *id);
 
-            tags_res.tags[index].id                = *id;
-            tags_res.tags[index].name              = tag->name;
-            tags_res.tags[index].group_config_name = (char *) group_name;
-            tags_res.tags[index].type              = tag->type;
-            tags_res.tags[index].attribute         = tag->attribute;
-            tags_res.tags[index].address           = tag->addr_str;
+    // tags_res.tags[index].id                = *id;
+    // tags_res.tags[index].name              = tag->name;
+    // tags_res.tags[index].group_config_name = (char *) group_name;
+    // tags_res.tags[index].type              = tag->type;
+    // tags_res.tags[index].attribute         = tag->attribute;
+    // tags_res.tags[index].address           = tag->addr_str;
 
-            index += 1;
-        }
-    }
+    // index += 1;
+    //}
+    //}
 
-    neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
+    // neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
 
-    http_ok(aio, result);
+    // http_ok(aio, result);
 
-    vector_uninit(&grp_configs);
-    free(result);
-    free(tags_res.tags);
+    // vector_uninit(&grp_configs);
+    // free(result);
+    // free(tags_res.tags);
 }

@@ -22,12 +22,10 @@
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>
 
+#include "define.h"
 #include "errcodes.h"
 
 #include "group.h"
-
-#define NEU_GROUP_NAME_LEN 128
-#define NEU_GROUP_INTERVAL_LIMIT 100
 
 typedef struct tag_elem {
     char *name;
@@ -52,11 +50,6 @@ static void      update_timestamp(neu_group_t *group);
 
 neu_group_t *neu_group_new(const char *name, uint32_t interval)
 {
-    if (interval < NEU_GROUP_INTERVAL_LIMIT ||
-        strlen(name) >= NEU_GROUP_NAME_LEN) {
-        return NULL;
-    }
-
     neu_group_t *group = calloc(1, sizeof(neu_group_t));
 
     group->name     = strdup(name);
@@ -87,12 +80,30 @@ void neu_group_destroy(neu_group_t *group)
     free(group);
 }
 
+const char *neu_group_get_name(neu_group_t *group)
+{
+    static __thread char name[NEU_GROUP_NAME_LEN] = { 0 };
+
+    nng_mtx_lock(group->mtx);
+    strncpy(name, group->name, sizeof(name));
+    nng_mtx_unlock(group->mtx);
+
+    return name;
+}
+
+uint32_t neu_group_get_interval(neu_group_t *group)
+{
+    uint32_t interval = 0;
+
+    nng_mtx_lock(group->mtx);
+    interval = group->interval;
+    nng_mtx_unlock(group->mtx);
+
+    return interval;
+}
+
 int neu_group_update(neu_group_t *group, uint32_t interval)
 {
-    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
-        return NEU_ERR_GROUP_CONFIG_INVALID;
-    }
-
     nng_mtx_lock(group->mtx);
     if (group->interval != interval) {
         group->interval = interval;

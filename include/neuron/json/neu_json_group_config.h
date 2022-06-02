@@ -33,7 +33,7 @@ extern "C" {
 
 typedef struct {
     char *  name;
-    int64_t node_id;
+    char *  node_name;
     int64_t interval;
 } neu_json_add_group_config_req_t;
 
@@ -43,8 +43,8 @@ void neu_json_decode_add_group_config_req_free(
     neu_json_add_group_config_req_t *req);
 
 typedef struct {
-    char *  name;
-    int64_t node_id;
+    char *name;
+    char *node_name;
 } neu_json_del_group_config_req_t;
 
 int neu_json_decode_del_group_config_req(
@@ -53,7 +53,7 @@ void neu_json_decode_del_group_config_req_free(
     neu_json_del_group_config_req_t *req);
 
 typedef struct {
-    int64_t node_id;
+    char *node_name;
 } neu_json_get_group_config_req_t;
 
 int neu_json_decode_get_group_config_req(
@@ -63,7 +63,6 @@ void neu_json_decode_get_group_config_req_free(
 
 typedef struct {
     char *  name;
-    int64_t pipe_count;
     int64_t interval;
     int64_t tag_count;
 } neu_json_get_group_config_resp_group_config_t;
@@ -76,8 +75,8 @@ typedef struct {
 int neu_json_encode_get_group_config_resp(void *json_object, void *param);
 
 typedef struct {
-    char *  group_config_name;
-    int64_t node_id;
+    char *group_name;
+    char *node_name;
 } neu_json_get_subscribe_resp_group_t;
 
 typedef struct {
@@ -88,18 +87,18 @@ typedef struct {
 int neu_json_encode_get_subscribe_resp(void *json_object, void *param);
 
 typedef struct {
-    char *  name;
-    int64_t src_node_id;
-    int64_t dst_node_id;
+    char *name;
+    char *app_name;
+    char *driver_name;
 } neu_json_subscribe_req_t;
 
 int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result);
 void neu_json_decode_subscribe_req_free(neu_json_subscribe_req_t *req);
 
 typedef struct {
-    char *  name;
-    int64_t src_node_id;
-    int64_t dst_node_id;
+    char *name;
+    char *app_name;
+    char *driver_name;
 } neu_json_unsubscribe_req_t;
 
 int  neu_json_decode_unsubscribe_req(char *                       buf,
@@ -108,7 +107,7 @@ void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req);
 
 typedef struct {
     char *  name;
-    int64_t node_id;
+    char *  node_name;
     int64_t interval;
 } neu_json_update_group_config_req_t;
 

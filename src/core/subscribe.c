@@ -136,13 +136,15 @@ int neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
     return NEU_ERR_GROUP_NOT_SUBSCRIBE;
 }
 
-void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver)
+void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,
+                                  const char *group)
 {
     sub_elem_t *el = NULL, *tmp = NULL;
 
     HASH_ITER(hh, mgr->ss, el, tmp)
     {
-        if (strcmp(driver, el->key.driver) == 0) {
+        if (strcmp(driver, el->key.driver) == 0 &&
+            (group == NULL || strcmp(group, el->key.group) == 0)) {
             HASH_DEL(mgr->ss, el);
             utarray_free(el->apps);
             free(el);

@@ -153,25 +153,25 @@ struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
+        .url           = "/api/v2/group",
         .value.handler = handle_add_group_config,
     },
     {
         .method        = NEU_REST_METHOD_PUT,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
+        .url           = "/api/v2/group",
         .value.handler = handle_update_group_config,
     },
     {
         .method        = NEU_REST_METHOD_DELETE,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
+        .url           = "/api/v2/group",
         .value.handler = handle_del_group_config,
     },
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
+        .url           = "/api/v2/group",
         .value.handler = handle_get_group_config,
     },
     {
