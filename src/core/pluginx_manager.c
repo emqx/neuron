@@ -148,14 +148,16 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
 int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name)
 {
     plugin_entity_t *plugin = NULL;
-    int              ret    = -1;
+    int              ret    = NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL;
 
     nng_mtx_lock(mgr->mtx);
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
-        HASH_DEL(mgr->plugins, plugin);
-        entity_free(plugin);
-        ret = 0;
+        if (plugin->kind != NEU_PLUGIN_KIND_SYSTEM) {
+            HASH_DEL(mgr->plugins, plugin);
+            entity_free(plugin);
+            ret = NEU_ERR_SUCCESS;
+        }
     }
 
     nng_mtx_unlock(mgr->mtx);

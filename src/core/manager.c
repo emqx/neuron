@@ -288,8 +288,7 @@ int neu_manager_add_plugin(neu_manager_t *manager, const char *plugin_library)
 
 int neu_manager_del_plugin(neu_manager_t *manager, const char *plugin)
 {
-    neu_plugin_manager_del(manager->plugin_manager, plugin);
-    return 0;
+    return neu_plugin_manager_del(manager->plugin_manager, plugin);
 }
 
 UT_array *neu_manager_get_plugins(neu_manager_t *manager)
@@ -311,6 +310,40 @@ int neu_manager_stop_node(neu_manager_t *manager, const char *node)
     (void) node;
 
     return 0;
+}
+
+int neu_manager_get_node_state(neu_manager_t *manager, const char *node,
+                               neu_plugin_state_t *state)
+{
+    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    *state = neu_adapter_get_state(adapter);
+
+    return NEU_ERR_SUCCESS;
+}
+
+int neu_manager_node_ctl(neu_manager_t *manager, const char *node,
+                         neu_adapter_ctl_e ctl)
+{
+    int            ret     = NEU_ERR_SUCCESS;
+    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    switch (ctl) {
+    case NEU_ADAPTER_CTL_START:
+        ret = neu_adapter_start(adapter);
+        break;
+    case NEU_ADAPTER_CTL_STOP:
+        ret = neu_adapter_stop(adapter);
+        break;
+    }
+
+    return ret;
 }
 
 int neu_manager_node_setting(neu_manager_t *manager, const char *node,

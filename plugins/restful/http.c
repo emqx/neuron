@@ -323,6 +323,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LIBRARY_INFO_INVALID:
     case NEU_ERR_LICENSE_INVALID:
     case NEU_ERR_GROUP_PARAMETER_INVALID:
+    case NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_LIBRARY_NOT_FOUND:

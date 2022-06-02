@@ -296,8 +296,8 @@ int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "id",
-                                        .t    = NEU_JSON_INT,
+                                        .name = "name",
+                                        .t    = NEU_JSON_STR,
                                     },
                                     {
                                         .name = "cmd",
@@ -309,8 +309,8 @@ int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
         goto decode_fail;
     }
 
-    req->id  = req_elems[0].v.val_int;
-    req->cmd = req_elems[1].v.val_int;
+    req->name = req_elems[0].v.val_str;
+    req->cmd  = req_elems[1].v.val_int;
 
     *result = req;
     goto decode_exit;
@@ -330,7 +330,7 @@ decode_exit:
 
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req)
 {
-
+    free(req->name);
     free(req);
 }
 

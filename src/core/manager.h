@@ -58,6 +58,10 @@ UT_array *neu_manager_get_plugins(neu_manager_t *manager);
 
 int neu_manager_start_node(neu_manager_t *manager, const char *node);
 int neu_manager_stop_node(neu_manager_t *manager, const char *node);
+int neu_manager_get_node_state(neu_manager_t *manager, const char *node,
+                               neu_plugin_state_t *state);
+int neu_manager_node_ctl(neu_manager_t *manager, const char *node,
+                         neu_adapter_ctl_e ctl);
 
 int neu_manager_node_setting(neu_manager_t *manager, const char *node,
                              const char *setting);

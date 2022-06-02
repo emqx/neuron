@@ -186,37 +186,34 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
     return rv;
 }
 
-// static int persister_singleton_load_setting(neu_adapter_t *adapter,
-// const char *   adapter_name,
-// neu_node_id_t  node_id)
-//{
-// neu_persister_t *persister = persister_singleton_get();
-// const char *     setting   = NULL;
-//(void) node_id;
-// int rv =
-// neu_persister_load_adapter_setting(persister, adapter_name, &setting);
-// if (0 != rv) {
-// const char *fail_or_ignore = "fail";
-// if (NEU_ERR_ENOENT == rv) {
-//// ignore this error, no setting ever set
-// rv             = 0;
-// fail_or_ignore = "ignore";
-//}
-// nlog_info("%s %s load setting of %s", adapter->name, fail_or_ignore,
-// adapter_name);
-// return rv;
-//}
+static int persister_singleton_load_setting(neu_adapter_t *adapter,
+                                            const char *   adapter_name)
+{
+    neu_persister_t *persister = persister_singleton_get();
+    const char *     setting   = NULL;
+    int              rv =
+        neu_persister_load_adapter_setting(persister, adapter_name, &setting);
+    if (0 != rv) {
+        const char *fail_or_ignore = "fail";
+        if (NEU_ERR_ENOENT == rv) {
+            // ignore this error, no setting ever set
+            rv             = 0;
+            fail_or_ignore = "ignore";
+        }
+        nlog_info("%s %s load setting of %s", adapter->name, fail_or_ignore,
+                  adapter_name);
+        return rv;
+    }
 
-////    rv = neu_manager_adapter_set_setting(adapter->manager, node_id,
-////    setting);
-// const char *ok_or_err = (0 == rv) ? "success" : "fail";
-// nlog_info("%s %s set setting of %s %s", adapter->name, ok_or_err,
-// adapter_name, setting);
+    rv = neu_manager_node_setting(adapter->manager, adapter_name, setting);
+    const char *ok_or_err = (0 == rv) ? "success" : "fail";
+    nlog_info("%s %s set setting of %s %s", adapter->name, ok_or_err,
+              adapter_name, setting);
 
-// free((char *) setting);
+    free((char *) setting);
 
-// return rv;
-//}
+    return rv;
+}
 
 // static int persister_singleton_load_datatags(neu_adapter_t *      adapter,
 // const char *         adapter_name,
@@ -403,27 +400,24 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
             continue;
         }
 
-        rv = persister_singleton_load_grp_and_tags(adapter, adapter_info->name);
-        if (0 != rv) {
-            continue;
-        }
+        persister_singleton_load_setting(adapter, adapter_info->name);
+        persister_singleton_load_grp_and_tags(adapter, adapter_info->name);
 
         if (ADAPTER_STATE_RUNNING == adapter_info->state) {
-            // rv = neu_manager_start_adapter_with_id(adapter->manager,
-            // node_id); if (0 != rv) { nlog_error("%s fail start adapter
-            // %s", adapter->name, adapter_info->name);
-            //}
+            rv = neu_manager_node_ctl(adapter->manager, adapter_info->name,
+                                      NEU_ADAPTER_CTL_START);
+
+            if (0 != rv) {
+                nlog_error("%s fail start adapter %s", adapter->name,
+                           adapter_info->name);
+            }
         }
     }
 
     VECTOR_FOR_EACH(adapter_infos, iter)
     {
         neu_persist_adapter_info_t *adapter_info = iterator_get(&iter);
-        rv =
-            persister_singleton_load_subscriptions(adapter, adapter_info->name);
-        if (0 != rv) {
-            continue;
-        }
+        persister_singleton_load_subscriptions(adapter, adapter_info->name);
     }
 
     neu_persist_adapter_infos_free(adapter_infos);
@@ -894,37 +888,27 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_GET_NODE_STATE: {
-        ADAPTER_RESP_CMD(adapter, cmd, neu_reqresp_node_state_t,
-                         neu_cmd_get_node_state_t, rv, NEU_REQRESP_NODE_STATE,
-                         p_result, {
-                             ret = calloc(1, sizeof(neu_reqresp_node_state_t));
-
-                             // ret->result = neu_manager_adapter_get_state(
-                             // adapter->manager, req_cmd->node_id,
-                             // &ret->state);
-                         });
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_node_state_t, neu_cmd_get_node_state_t,
+            rv, NEU_REQRESP_NODE_STATE, p_result, {
+                ret         = calloc(1, sizeof(neu_reqresp_node_state_t));
+                ret->result = neu_manager_get_node_state(
+                    adapter->manager, req_cmd->node_name, &ret->state);
+            });
         break;
     }
 
     case NEU_REQRESP_NODE_CTL: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_node_ctl_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = 0;
-                              // ret =
-                              // neu_manager_adapter_ctl(adapter->manager,
-                              // req_cmd->node_id, req_cmd->ctl);
-                              // if (0 == ret) {
-                              // char *node_name = NULL;
-                              // rv              =
-                              // neu_manager_get_node_name_by_id(
-                              // adapter->manager, req_cmd->node_id,
-                              // &node_name); if (0 == rv) {
-                              // ADAPTER_SEND_NODE_EVENT(adapter, rv,
-                              // MSG_EVENT_ADD_NODE, node_name);
-                              // free(node_name);
-                              //}
-                              //}
-                          });
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, neu_cmd_node_ctl_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = neu_manager_node_ctl(adapter->manager, req_cmd->node_name,
+                                           req_cmd->ctl);
+                if (0 == ret) {
+                    ADAPTER_SEND_NODE_EVENT(adapter, rv, MSG_EVENT_ADD_NODE,
+                                            req_cmd->node_name);
+                }
+            });
         break;
     }
 
@@ -1274,8 +1258,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         case MSG_EVENT_ADD_NODE:
-            // fall through
-
         case MSG_EVENT_DEL_NODE: {
             const char *node_name = msg_get_buf_ptr(pay_msg);
             persister_singleton_handle_nodes(adapter, pay_msg_type, node_name);
