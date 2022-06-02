@@ -1,5 +1,7 @@
 #!/bin/bash
 
 echo "prerm"
+systemctl disable neuron.ekuiper
+systemctl stop neuron.ekuiper
 systemctl disable neuron
 systemctl stop neuron
