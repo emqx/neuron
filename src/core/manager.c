@@ -173,23 +173,36 @@ UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type)
 int neu_manager_subscribe(neu_manager_t *manager, const char *app,
                           const char *driver, const char *group)
 {
-    (void) manager;
-    (void) app;
-    (void) driver;
-    (void) group;
+    int            ret  = NEU_ERR_SUCCESS;
+    nng_pipe       pipe = { 0 };
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver);
 
-    return 0;
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    ret =
+        neu_adapter_driver_find_group((neu_adapter_driver_t *) adapter, group);
+    if (ret != NEU_ERR_SUCCESS) {
+        return ret;
+    }
+
+    adapter = neu_node_manager_find(manager->node_manager, app);
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    pipe = neu_node_manager_get_pipe(manager->node_manager, app);
+    return neu_subscribe_manager_sub(manager->subscribe_manager, driver, app,
+                                     group, pipe);
 }
 
 int neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                             const char *driver, const char *group)
 {
-    (void) manager;
-    (void) app;
-    (void) driver;
-    (void) group;
-
-    return 0;
+    return neu_subscribe_manager_unsub(manager->subscribe_manager, driver, app,
+                                       group);
 }
 
 int neu_manager_add_group(neu_manager_t *manager, const char *driver,
@@ -298,6 +311,11 @@ int neu_manager_stop_node(neu_manager_t *manager, const char *node)
     (void) node;
 
     return 0;
+}
+
+UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app)
+{
+    return neu_subscribe_manager_get(manager->subscribe_manager, app);
 }
 
 int neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
@@ -430,6 +448,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case MSG_EVENT_UPDATE_TAGS:
     case MSG_EVENT_ADD_PLUGIN:
     case MSG_EVENT_UPDATE_PLUGIN:
+    case MSG_EVENT_SUBSCRIBE_NODE:
+    case MSG_EVENT_UNSUBSCRIBE_NODE:
     case MSG_EVENT_DEL_PLUGIN: {
         forward_msg(manager, msg, manager->persist_pipe);
         nlog_info("forward event %d to %s pipe: %d", msg_get_type(pay_msg),

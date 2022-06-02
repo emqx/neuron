@@ -90,17 +90,15 @@ static inline void neu_persist_datatag_infos_free(vector_t *datatag_infos)
 }
 
 static inline void
-neu_persist_subscription_infos_free(vector_t *subscription_infos)
+neu_persist_subscription_infos_free(UT_array *subscription_infos)
 {
-    VECTOR_FOR_EACH(subscription_infos, iter)
+    utarray_foreach(subscription_infos, neu_persist_subscription_info_t *, info)
     {
-        neu_persist_subscription_info_t *p =
-            (neu_persist_subscription_info_t *) iterator_get(&iter);
-        free(p->src_adapter_name);
-        free(p->sub_adapter_name);
-        free(p->group_config_name);
+        free(info->group_config_name);
+        free(info->src_adapter_name);
+        free(info->sub_adapter_name);
     }
-    vector_free(subscription_infos);
+    utarray_free(subscription_infos);
 }
 
 /**
@@ -213,7 +211,7 @@ int neu_persister_load_datatags(neu_persister_t *persister,
  */
 int neu_persister_store_subscriptions(neu_persister_t *persister,
                                       const char *     adapter_name,
-                                      vector_t *       subscription_infos);
+                                      UT_array *       subscription_infos);
 /**
  * Load adapter subscription infos.
  * @param persister                 persiter object.
@@ -225,7 +223,7 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
  */
 int neu_persister_load_subscriptions(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     vector_t **      subscription_infos);
+                                     UT_array **      subscription_infos);
 
 /**
  * Persist group config.

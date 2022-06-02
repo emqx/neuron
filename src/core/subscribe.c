@@ -18,13 +18,15 @@
  **/
 #include <stdlib.h>
 
+#include "adapter.h"
 #include "errcodes.h"
+#include "utils/log.h"
 
 #include "subscribex.h"
 
 typedef struct sub_elem_key {
-    char driver[128];
-    char group[128];
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
 } sub_elem_key_t;
 
 typedef struct sub_elem {
@@ -34,6 +36,14 @@ typedef struct sub_elem {
 
     UT_hash_handle hh;
 } sub_elem_t;
+
+typedef struct app_elem {
+    char name[NEU_NODE_NAME_LEN];
+
+    UT_array *groups;
+
+    UT_hash_handle hh;
+} app_elem_t;
 
 static const UT_icd app_sub_icd = { sizeof(neu_app_subscribe_t), NULL, NULL,
                                     NULL };
@@ -81,6 +91,33 @@ UT_array *neu_subscribe_manager_find(neu_subscribe_mgr_t *mgr,
     }
 }
 
+UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
+{
+    sub_elem_t *el = NULL, *tmp = NULL;
+    UT_array *  groups = NULL;
+    UT_icd      icd    = { sizeof(neu_subscribe_info_t), NULL, NULL, NULL };
+
+    utarray_new(groups, &icd);
+
+    HASH_ITER(hh, mgr->ss, el, tmp)
+    {
+        utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
+        {
+            if (strcmp(sub_app->app_name, app) == 0) {
+                neu_subscribe_info_t info = { 0 };
+
+                strncpy(info.driver, el->key.driver, sizeof(info.driver));
+                strncpy(info.app, app, sizeof(info.app));
+                strncpy(info.group, el->key.group, sizeof(info.group));
+
+                utarray_push_back(groups, &info);
+            }
+        }
+    }
+
+    return groups;
+}
+
 int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                               const char *app, const char *group, nng_pipe pipe)
 {
@@ -106,6 +143,7 @@ int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
         find = calloc(1, sizeof(sub_elem_t));
         utarray_new(find->apps, &app_sub_icd);
         find->key = key;
+        HASH_ADD(hh, mgr->ss, key, sizeof(sub_elem_key_t), find);
     }
 
     utarray_push_back(find->apps, &app_sub);

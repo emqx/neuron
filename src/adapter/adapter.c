@@ -326,18 +326,7 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
 {
     int              rv        = 0;
     neu_persister_t *persister = persister_singleton_get();
-    vector_t *       sub_infos = NULL;
-
-    neu_node_id_t dst_node_id = 0;
-    (void) dst_node_id;
-
-    // rv = neu_manager_get_node_id_by_name(adapter->manager, adapter_name,
-    //&dst_node_id);
-    if (0 != rv) {
-        nlog_error("%s fail get node id by name: %s", adapter->name,
-                   adapter_name);
-        return rv;
-    }
+    UT_array *       sub_infos = NULL;
 
     rv = neu_persister_load_subscriptions(persister, adapter_name, &sub_infos);
     if (0 != rv) {
@@ -352,42 +341,15 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
         return rv;
     }
 
-    VECTOR_FOR_EACH(sub_infos, iter)
+    utarray_foreach(sub_infos, neu_persist_subscription_info_t *, info)
     {
-        neu_persist_subscription_info_t *p = iterator_get(&iter);
-
-        neu_node_id_t src_node_id = 0;
-        (void) src_node_id;
-        // rv = neu_manager_get_node_id_by_name(adapter->manager,
-        // p->src_adapter_name, &src_node_id);
-        if (0 != rv) {
-            nlog_error("%s fail get node id by name: %s", adapter->name,
-                       p->src_adapter_name);
-            break;
-        }
-
-        neu_taggrp_config_t *grp_config = NULL;
-        (void) grp_config;
-        // rv = neu_manager_adapter_get_grp_config_ref_by_name(
-        // adapter->manager, src_node_id, p->group_config_name, &grp_config);
-        // if (0 != rv) {
-        // break;
-        //}
-
-        // subscribe_node_cmd_t cmd = {
-        //.grp_config  = grp_config,
-        //.dst_node_id = dst_node_id,
-        //.src_node_id = src_node_id,
-        //.sender_id   = adapter->id,
-        ////            .req_id      = adapter_get_req_id(adapter),
-        //};
-        //        rv = neu_manager_subscribe_node(adapter->manager, &cmd);
+        rv = neu_manager_subscribe(adapter->manager, info->sub_adapter_name,
+                                   info->src_adapter_name,
+                                   info->group_config_name);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        nlog_info("%s %s load subscription dst:%s src:%s grp:%s", adapter->name,
-                  ok_or_err, adapter_name, p->src_adapter_name,
-                  p->group_config_name);
-
-        neu_taggrp_cfg_free((neu_taggrp_config_t *) grp_config);
+        nlog_info("%s %s load subscription app:%s driver:%s grp:%s",
+                  adapter->name, ok_or_err, adapter_name,
+                  info->src_adapter_name, info->group_config_name);
     }
 
     neu_persist_subscription_infos_free(sub_infos);
@@ -442,17 +404,14 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         }
 
         rv = persister_singleton_load_grp_and_tags(adapter, adapter_info->name);
-
-        // rv = persister_singleton_load_setting(adapter, adapter_info->name,
-        // node_id);
         if (0 != rv) {
             continue;
         }
 
         if (ADAPTER_STATE_RUNNING == adapter_info->state) {
             // rv = neu_manager_start_adapter_with_id(adapter->manager,
-            // node_id); if (0 != rv) { nlog_error("%s fail start adapter %s",
-            // adapter->name, adapter_info->name);
+            // node_id); if (0 != rv) { nlog_error("%s fail start adapter
+            // %s", adapter->name, adapter_info->name);
             //}
         }
     }
@@ -631,36 +590,18 @@ static int persister_singleton_handle_datatags(neu_adapter_t *adapter,
 }
 
 static int persister_singleton_handle_subscriptions(neu_adapter_t *adapter,
-                                                    neu_node_id_t  node_id)
+                                                    const char *   app)
 {
-    neu_persister_t *persister    = persister_singleton_get();
-    char *           adapter_name = NULL;
-    int              rv           = 0;
-    (void) node_id;
-    (void) adapter;
-    (void) persister;
-    // int rv = neu_manager_get_node_name_by_id(adapter->manager, node_id,
-    //&adapter_name);
+    neu_persister_t *persister = persister_singleton_get();
+
+    UT_array *sub_infos = neu_manager_get_sub_group(adapter->manager, app);
+
+    int rv = neu_persister_store_subscriptions(persister, app, sub_infos);
     if (0 != rv) {
-        return rv;
+        nlog_error("%s fail store adapter:%s subscription infos", app, app);
     }
 
-    // vector_t *sub_infos = NULL;
-    // rv = neu_manager_get_persist_subscription_infos(adapter->manager,
-    // node_id, &sub_infos);
-    // if (0 != rv) {
-    // nlog_error("%s fail get persist subscription infos", adapter->name);
-    // free(adapter_name);
-    // return rv;
-    //}
-
-    // rv = neu_persister_store_subscriptions(persister, adapter_name,
-    // sub_infos); if (0 != rv) { nlog_error("%s fail store adapter:%s
-    // subscription infos", adapter_name, adapter->name);
-    //}
-
-    //    neu_persist_subscription_infos_free(sub_infos);
-    free(adapter_name);
+    utarray_free(sub_infos);
 
     return rv;
 }
@@ -721,24 +662,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
 
     nlog_debug("Get command from plugin %d, %s", cmd->req_type, adapter->name);
     switch (cmd->req_type) {
-    case NEU_REQRESP_SUBSCRIBE_NODE: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, subscribe_node_cmd_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_subscribe(
-                                  adapter->manager, req_cmd->app,
-                                  req_cmd->driver, req_cmd->group);
-                          });
-        break;
-    }
-    case NEU_REQRESP_UNSUBSCRIBE_NODE: {
-        ADAPTER_RESP_CODE(adapter, cmd, intptr_t, unsubscribe_node_cmd_t, rv,
-                          NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = neu_manager_unsubscribe(
-                                  adapter->manager, req_cmd->app,
-                                  req_cmd->driver, req_cmd->group);
-                          });
-        break;
-    }
         // case NEU_REQRESP_READ_DATA: {
         // ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_READ_DATA,
         // read_data_cmd_t, neu_reqresp_read_t, {});
@@ -747,7 +670,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
 
         // case NEU_REQRESP_WRITE_DATA: {
         // ADAPTER_SEND_MSG(adapter, cmd, rv, MSG_CMD_WRITE_DATA,
-        // write_data_cmd_t, neu_reqresp_write_t, { neu_trans_buf_t *trans_buf;
+        // write_data_cmd_t, neu_reqresp_write_t, { neu_trans_buf_t
+        // *trans_buf;
 
         // trans_buf = &cmd_ptr->trans_buf;
         // neu_trans_buf_init(trans_buf, adapter->trans_kind,
@@ -755,6 +679,40 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         //})
         // break;
         //}
+    case NEU_REQRESP_SUBSCRIBE_NODE: {
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, subscribe_node_cmd_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = neu_manager_subscribe(adapter->manager, req_cmd->app,
+                                            req_cmd->driver, req_cmd->group);
+                if (ret == 0) {
+                    subscribe_node_cmd_t event = { 0 };
+                    event.app                  = strdup(req_cmd->app);
+                    event.driver               = strdup(req_cmd->driver);
+                    event.group                = strdup(req_cmd->group);
+                    ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_SUBSCRIBE_NODE,
+                                     &event, sizeof(event));
+                }
+            });
+        break;
+    }
+    case NEU_REQRESP_UNSUBSCRIBE_NODE: {
+        ADAPTER_RESP_CODE(
+            adapter, cmd, intptr_t, unsubscribe_node_cmd_t, rv,
+            NEU_REQRESP_ERR_CODE, p_result, {
+                ret = neu_manager_unsubscribe(adapter->manager, req_cmd->app,
+                                              req_cmd->driver, req_cmd->group);
+                if (ret == 0) {
+                    unsubscribe_node_cmd_t event = { 0 };
+                    event.app                    = strdup(req_cmd->app);
+                    event.driver                 = strdup(req_cmd->driver);
+                    event.group                  = strdup(req_cmd->group);
+                    ADAPTER_SEND_BUF(adapter, rv, MSG_EVENT_UNSUBSCRIBE_NODE,
+                                     &event, sizeof(event));
+                }
+            });
+        break;
+    }
 
     case NEU_REQRESP_ADD_NODE: {
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_add_node_t, rv,
@@ -933,7 +891,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
                              ret =
                                  calloc(1, sizeof(neu_reqresp_node_setting_t));
 
-                             // ret->result = neu_manager_adapter_get_setting(
+                             // ret->result =
+                             // neu_manager_adapter_get_setting(
                              // adapter->manager, req_cmd->node_id,
                              // &ret->setting);
                          });
@@ -958,7 +917,8 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_node_ctl_t, rv,
                           NEU_REQRESP_ERR_CODE, p_result, {
                               ret = 0;
-                              // ret = neu_manager_adapter_ctl(adapter->manager,
+                              // ret =
+                              // neu_manager_adapter_ctl(adapter->manager,
                               // req_cmd->node_id, req_cmd->ctl);
                               // if (0 == ret) {
                               // char *node_name = NULL;
@@ -976,17 +936,14 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     }
 
     case NEU_REQRESP_GET_SUB_GRP_CONFIGS: {
-        ADAPTER_RESP_CMD(adapter, cmd, neu_reqresp_sub_grp_configs_t,
-                         neu_cmd_get_sub_grp_configs_t, rv,
-                         NEU_REQRESP_SUB_GRP_CONFIGS_RESP, p_result, {
-                             ret = calloc(
-                                 1, sizeof(neu_reqresp_sub_grp_configs_t));
-
-                             // ret->result =
-                             // neu_manager_adapter_get_sub_grp_configs(
-                             // adapter->manager, req_cmd->node_id,
-                             // &ret->sub_grp_configs);
-                         });
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_sub_grp_configs_t,
+            neu_cmd_get_sub_grp_configs_t, rv, NEU_REQRESP_SUB_GRP_CONFIGS_RESP,
+            p_result, {
+                ret         = calloc(1, sizeof(neu_reqresp_sub_grp_configs_t));
+                ret->groups = neu_manager_get_sub_group(adapter->manager,
+                                                        req_cmd->node_name);
+            });
         break;
     }
 
@@ -1312,6 +1269,16 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             persister_singleton_load_data(adapter);
             break;
         }
+        case MSG_EVENT_SUBSCRIBE_NODE:
+        case MSG_EVENT_UNSUBSCRIBE_NODE: {
+            subscribe_node_cmd_t *cmd = msg_get_buf_ptr(pay_msg);
+
+            persister_singleton_handle_subscriptions(adapter, cmd->app);
+            free(cmd->app);
+            free(cmd->driver);
+            free(cmd->group);
+            break;
+        }
 
         case MSG_EVENT_ADD_NODE:
             // fall through
@@ -1377,15 +1344,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        case MSG_EVENT_SUBSCRIBE_NODE:
-            // fall through
-
-        case MSG_EVENT_UNSUBSCRIBE_NODE: {
-            const neu_node_id_t *node_id_p = msg_get_buf_ptr(pay_msg);
-            persister_singleton_handle_subscriptions(adapter, *node_id_p);
-            break;
-        }
-
         case MSG_EVENT_ADD_TAGS:
             // fall through
 
@@ -1426,60 +1384,6 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-            // case MSG_CMD_SUBSCRIBE_NODE: {
-            // subscribe_node_cmd_t *cmd_ptr;
-            // cmd_ptr = (subscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
-
-            // const neu_plugin_intf_funs_t *intf_funs;
-            // neu_request_t                 req;
-            // neu_reqresp_subscribe_node_t  sub_node_req;
-
-            // sub_node_req.grp_config  = cmd_ptr->grp_config;
-            // sub_node_req.dst_node_id = cmd_ptr->dst_node_id;
-            // sub_node_req.src_node_id = cmd_ptr->src_node_id;
-
-            // intf_funs     = adapter->plugin_info.module->intf_funs;
-            // req.req_id    = adapter_get_req_id(adapter);
-            // req.req_type  = NEU_REQRESP_SUBSCRIBE_NODE;
-            // req.sender_id = cmd_ptr->sender_id;
-            // req.buf_len   = sizeof(neu_reqresp_subscribe_node_t);
-            // req.buf       = (void *) &sub_node_req;
-            // if (adapter->plugin_info.module->type == NEU_NA_TYPE_DRIVER) {
-            // neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
-            //&req);
-            //} else {
-            // intf_funs->request(adapter->plugin_info.plugin, &req);
-            //}
-            // break;
-            //}
-
-            // case MSG_CMD_UNSUBSCRIBE_NODE: {
-            // unsubscribe_node_cmd_t *cmd_ptr;
-            // cmd_ptr = (unsubscribe_node_cmd_t *) msg_get_buf_ptr(pay_msg);
-
-            // const neu_plugin_intf_funs_t * intf_funs;
-            // neu_request_t                  req;
-            // neu_reqresp_unsubscribe_node_t unsub_node_req;
-
-            // unsub_node_req.grp_config  = cmd_ptr->grp_config;
-            // unsub_node_req.dst_node_id = cmd_ptr->dst_node_id;
-            // unsub_node_req.src_node_id = cmd_ptr->src_node_id;
-
-            // intf_funs     = adapter->plugin_info.module->intf_funs;
-            // req.req_id    = adapter_get_req_id(adapter);
-            // req.req_type  = NEU_REQRESP_UNSUBSCRIBE_NODE;
-            // req.sender_id = cmd_ptr->sender_id;
-            // req.buf_len   = sizeof(neu_reqresp_unsubscribe_node_t);
-            // req.buf       = (void *) &unsub_node_req;
-            // if (adapter->plugin_info.module->type == NEU_NA_TYPE_DRIVER) {
-            // neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
-            //&req);
-            //} else {
-            // intf_funs->request(adapter->plugin_info.plugin, &req);
-            //}
-            // break;
-            //}
-
         case MSG_CMD_READ_DATA: {
             // read_data_cmd_t *cmd_ptr;
             // cmd_ptr = (read_data_cmd_t *) msg_get_buf_ptr(pay_msg);
@@ -1497,8 +1401,9 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             // req.sender_id = cmd_ptr->sender_id;
             // req.buf_len   = sizeof(neu_reqresp_read_t);
             // req.buf       = (void *) &read_req;
-            // if (adapter->plugin_info.module->type == NEU_NA_TYPE_DRIVER) {
-            // neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
+            // if (adapter->plugin_info.module->type == NEU_NA_TYPE_DRIVER)
+            // { neu_adapter_driver_process_msg((neu_adapter_driver_t *)
+            // adapter,
             //&req);
             //} else {
             // intf_funs->request(adapter->plugin_info.plugin, &req);
@@ -1567,8 +1472,9 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             // req.sender_id = cmd_ptr->sender_id;
             // req.buf_len   = sizeof(neu_reqresp_write_t);
             // req.buf       = (void *) &write_req;
-            // if (adapter->plugin_info.module->type == NEU_NA_TYPE_DRIVER) {
-            // neu_adapter_driver_process_msg((neu_adapter_driver_t *) adapter,
+            // if (adapter->plugin_info.module->type == NEU_NA_TYPE_DRIVER)
+            // { neu_adapter_driver_process_msg((neu_adapter_driver_t *)
+            // adapter,
             //&req);
             //} else {
             // intf_funs->request(adapter->plugin_info.plugin, &req);
@@ -1796,7 +1702,8 @@ neu_adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
     return adapter->id;
 }
 
-// NOTE: Do NOT expose this function in header files, use for persistence only!
+// NOTE: Do NOT expose this function in header files, use for persistence
+// only!
 neu_adapter_id_t neu_adapter_set_id(neu_adapter_t *adapter, neu_adapter_id_t id)
 {
     if (adapter == NULL) {

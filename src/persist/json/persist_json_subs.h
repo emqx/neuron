@@ -32,10 +32,9 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *  group_config_name;
-    char *  sub_adapter_name;
-    int64_t read_interval;
-    char *  src_adapter_name;
+    char *group_config_name;
+    char *sub_adapter_name;
+    char *src_adapter_name;
 } neu_json_subscriptions_req_subscription_t;
 
 typedef struct {
@@ -48,10 +47,9 @@ int  neu_json_decode_subscriptions_req(char *                         buf,
 void neu_json_decode_subscriptions_req_free(neu_json_subscriptions_req_t *req);
 
 typedef struct {
-    char *  group_config_name;
-    char *  sub_adapter_name;
-    int64_t read_interval;
-    char *  src_adapter_name;
+    char *group_config_name;
+    char *sub_adapter_name;
+    char *src_adapter_name;
 } neu_json_subscriptions_resp_subscription_t;
 
 typedef struct {

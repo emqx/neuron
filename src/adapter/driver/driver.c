@@ -451,6 +451,22 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     return ret;
 }
 
+int neu_adapter_driver_find_group(neu_adapter_driver_t *driver,
+                                  const char *          name)
+{
+    group_t *find = NULL;
+    int      ret  = NEU_ERR_GROUP_NOT_EXIST;
+
+    nng_mtx_lock(driver->mtx);
+    HASH_FIND_STR(driver->groups, name, find);
+    if (find != NULL) {
+        ret = NEU_ERR_SUCCESS;
+    }
+
+    nng_mtx_unlock(driver->mtx);
+    return ret;
+}
+
 UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
 {
     group_t * el = NULL, *tmp = NULL;

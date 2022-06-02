@@ -116,14 +116,10 @@ intptr_t neu_system_update_group_config(neu_plugin_t *plugin,
 int neu_system_get_group_configs(neu_plugin_t *plugin, const char *node_name,
                                  UT_array **groups);
 
-uint32_t neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin,
-                                         const char *  app_name,
-                                         const char *  driver_name,
-                                         const char *  group);
-uint32_t neu_plugin_send_subscribe_cmd(neu_plugin_t *plugin,
-                                       const char *  app_name,
-                                       const char *  driver_name,
-                                       const char *  group);
+int neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin, const char *app_name,
+                                    const char *driver_name, const char *group);
+int neu_plugin_send_subscribe_cmd(neu_plugin_t *plugin, const char *app_name,
+                                  const char *driver_name, const char *group);
 
 void neu_plugin_send_read_cmd(neu_plugin_t *plugin, uint32_t event_id,
                               const char *node_name, const char *group_name);

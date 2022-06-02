@@ -110,8 +110,9 @@ typedef struct neu_group_info {
 } neu_group_info_t;
 
 typedef struct neu_subscribe_info {
-    char node_name[NEU_NODE_NAME_LEN];
-    char group_name[NEU_GROUP_NAME_LEN];
+    char app[NEU_NODE_NAME_LEN];
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
 } neu_subscribe_info_t;
 
 /* NEU_REQRESP_READ_DATA */
@@ -306,7 +307,6 @@ typedef struct neu_cmd_get_sub_grp_configs {
 
 /* NEU_REQRESP_SUB_GRP_CONFIGS_RESP */
 typedef struct neu_reqresp_sub_grp_configs {
-    int32_t   result;
     UT_array *groups;
 } neu_reqresp_sub_grp_configs_t;
 

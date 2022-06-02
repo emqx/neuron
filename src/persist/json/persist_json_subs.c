@@ -62,10 +62,6 @@ int neu_json_decode_subscriptions_req(char *                         buf,
                                                      .t    = NEU_JSON_STR,
                                                  },
                                                  {
-                                                     .name = "read_interval",
-                                                     .t    = NEU_JSON_INT,
-                                                 },
-                                                 {
                                                      .name =
                                                          "group_config_name",
                                                      .t = NEU_JSON_STR,
@@ -79,8 +75,7 @@ int neu_json_decode_subscriptions_req(char *                         buf,
 
         p_subscription->sub_adapter_name  = subscription_elems[0].v.val_str;
         p_subscription->src_adapter_name  = subscription_elems[1].v.val_str;
-        p_subscription->read_interval     = subscription_elems[2].v.val_int;
-        p_subscription->group_config_name = subscription_elems[3].v.val_str;
+        p_subscription->group_config_name = subscription_elems[2].v.val_str;
         p_subscription++;
     }
 
@@ -140,11 +135,6 @@ int neu_json_encode_subscriptions_resp(void *json_object, void *param)
                 .name      = "src_adapter_name",
                 .t         = NEU_JSON_STR,
                 .v.val_str = p_subscription->src_adapter_name,
-            },
-            {
-                .name      = "read_interval",
-                .t         = NEU_JSON_INT,
-                .v.val_int = p_subscription->read_interval,
             },
             {
                 .name      = "group_config_name",

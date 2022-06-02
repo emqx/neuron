@@ -218,38 +218,36 @@ int neu_system_get_group_configs(neu_plugin_t *plugin, const char *node_name,
     return error;
 }
 
-uint32_t neu_plugin_send_subscribe_cmd(neu_plugin_t *plugin,
-                                       const char *  app_name,
-                                       const char *  driver_name,
-                                       const char *  group)
+int neu_plugin_send_subscribe_cmd(neu_plugin_t *plugin, const char *app_name,
+                                  const char *driver_name, const char *group)
 {
-    uint32_t                     event_id = 0;
-    neu_reqresp_subscribe_node_t req      = { 0 };
+    int                          error = 0;
+    neu_reqresp_subscribe_node_t req   = { 0 };
 
     req.app_name    = (char *) app_name;
     req.driver_name = (char *) driver_name;
     req.group       = (char *) group;
 
-    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_SUBSCRIBE_NODE, req, event_id)
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_SUBSCRIBE_NODE, req, intptr_t,
+                    { error = (intptr_t) resp; })
 
-    return event_id;
+    return error;
 }
 
-uint32_t neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin,
-                                         const char *  app_name,
-                                         const char *  driver_name,
-                                         const char *  group)
+int neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin, const char *app_name,
+                                    const char *driver_name, const char *group)
 {
-    uint32_t                       event_id = 0;
-    neu_reqresp_unsubscribe_node_t req      = { 0 };
+    int                            error = 0;
+    neu_reqresp_unsubscribe_node_t req   = { 0 };
 
     req.app_name    = (char *) app_name;
     req.driver_name = (char *) driver_name;
     req.group       = (char *) group;
 
-    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_UNSUBSCRIBE_NODE, req, event_id)
+    PLUGIN_CALL_CMD(plugin, NEU_REQRESP_UNSUBSCRIBE_NODE, req, intptr_t,
+                    { error = (intptr_t) resp; })
 
-    return event_id;
+    return error;
 }
 
 void neu_plugin_send_read_cmd(neu_plugin_t *plugin, uint32_t event_id,
