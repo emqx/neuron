@@ -100,47 +100,46 @@ void handle_get_adapter(nng_aio *aio)
 
 void handle_set_node_setting(nng_aio *aio)
 {
-    (void) aio;
-    // neu_plugin_t *plugin = neu_rest_get_plugin();
+    neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    // REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
-    // aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
-    // char *config_buf = calloc(req_data_size + 1, sizeof(char));
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
+            char *config_buf = calloc(req_data_size + 1, sizeof(char));
 
-    // memcpy(config_buf, req_data, req_data_size);
+            memcpy(config_buf, req_data, req_data_size);
 
-    // NEU_JSON_RESPONSE_ERROR(
-    // neu_plugin_set_node_setting(plugin, req->node_id, config_buf),
-    //{ http_response(aio, error_code.error, result_error); });
-    // free(config_buf);
-    //})
+            NEU_JSON_RESPONSE_ERROR(
+                neu_plugin_set_node_setting(plugin, req->node_name, config_buf),
+                { http_response(aio, error_code.error, result_error); });
+            free(config_buf);
+        })
 }
 
 void handle_get_node_setting(nng_aio *aio)
 {
-    (void) aio;
-    // neu_plugin_t *plugin  = neu_rest_get_plugin();
-    // char *        setting = NULL;
-    // neu_node_id_t node_id = 0;
+    neu_plugin_t *plugin                       = neu_rest_get_plugin();
+    char *        setting                      = NULL;
+    char          node_name[NEU_NODE_NAME_LEN] = { 0 };
 
-    // VALIDATE_JWT(aio);
+    VALIDATE_JWT(aio);
 
-    // if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
-    // NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-    // http_response(aio, error_code.error, result_error);
-    //})
-    // return;
-    //}
+    if (http_get_param_str(aio, "node_name", node_name, sizeof(node_name)) <=
+        0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
 
-    // NEU_JSON_RESPONSE_ERROR(
-    // neu_plugin_get_node_setting(plugin, node_id, &setting), {
-    // if (error_code.error != NEU_ERR_SUCCESS) {
-    // http_response(aio, error_code.error, result_error);
-    //} else {
-    // http_ok(aio, setting);
-    // free(setting);
-    //}
-    //})
+    NEU_JSON_RESPONSE_ERROR(
+        neu_plugin_get_node_setting(plugin, node_name, &setting), {
+            if (error_code.error != NEU_ERR_SUCCESS) {
+                http_response(aio, error_code.error, result_error);
+            } else {
+                http_ok(aio, setting);
+                free(setting);
+            }
+        })
 }
 
 void handle_node_ctl(nng_aio *aio)

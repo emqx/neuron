@@ -275,8 +275,8 @@ typedef struct neu_represp_node_name {
 
 /* NEU_REQRESP_SET_NODE_SETTING */
 typedef struct neu_cmd_set_node_setting {
-    char *      node_name;
-    const char *setting;
+    char *node_name;
+    char *setting;
 } neu_cmd_set_node_setting_t;
 
 /* NEU_REQRESP_GET_NODE_SETTING */

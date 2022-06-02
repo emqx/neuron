@@ -90,7 +90,7 @@ int  neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result);
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req);
 
 typedef struct {
-    int64_t node_id;
+    char *node_name;
 } neu_json_node_setting_req_t;
 
 int  neu_json_decode_node_setting_req(char *                        buf,

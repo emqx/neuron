@@ -348,8 +348,8 @@ int neu_json_decode_node_setting_req(char *                        buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "node_id",
-        .t    = NEU_JSON_INT,
+        .name = "node_name",
+        .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -357,7 +357,7 @@ int neu_json_decode_node_setting_req(char *                        buf,
         goto decode_fail;
     }
 
-    req->node_id = req_elems[0].v.val_int;
+    req->node_name = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -377,6 +377,6 @@ decode_exit:
 
 void neu_json_decode_node_setting_req_free(neu_json_node_setting_req_t *req)
 {
-
+    free(req->node_name);
     free(req);
 }

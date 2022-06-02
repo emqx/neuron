@@ -313,6 +313,33 @@ int neu_manager_stop_node(neu_manager_t *manager, const char *node)
     return 0;
 }
 
+int neu_manager_node_setting(neu_manager_t *manager, const char *node,
+                             const char *setting)
+{
+    neu_config_t   config  = { 0 };
+    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    config.type    = NEU_CONFIG_SETTING;
+    config.buf     = (char *) setting;
+    config.buf_len = strlen(setting);
+
+    return neu_adapter_set_setting(adapter, &config);
+}
+
+int neu_manager_node_get_setting(neu_manager_t *manager, const char *node,
+                                 char **setting)
+{
+    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
+    if (adapter == NULL) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    return neu_adapter_get_setting(adapter, setting);
+}
+
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app)
 {
     return neu_subscribe_manager_get(manager->subscribe_manager, app);

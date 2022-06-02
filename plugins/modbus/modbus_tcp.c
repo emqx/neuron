@@ -125,6 +125,7 @@ static int driver_config(neu_plugin_t *plugin, neu_config_t *config)
         plog_warn(plugin, "config: %s, decode error: %s", (char *) config->buf,
                   err_param);
         free(err_param);
+        free(host.v.val_str);
         return -1;
     }
 

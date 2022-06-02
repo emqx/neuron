@@ -865,37 +865,30 @@ static int adapter_command(neu_adapter_t *adapter, neu_request_t *cmd,
     case NEU_REQRESP_SET_NODE_SETTING: {
         ADAPTER_RESP_CODE(adapter, cmd, intptr_t, neu_cmd_set_node_setting_t,
                           rv, NEU_REQRESP_ERR_CODE, p_result, {
-                              ret = 0;
-                              // ret = neu_manager_adapter_set_setting(
-                              // adapter->manager, req_cmd->node_id,
-                              // req_cmd->setting);
-                              // if (ret == 0) {
-                              // neu_cmd_set_node_setting_t event = {};
-                              // event.node_id = req_cmd->node_id;
-                              // event.setting = strdup(req_cmd->setting);
-                              // if (NULL != event.setting) {
-                              // ADAPTER_SEND_BUF(
-                              // adapter, rv,
-                              // MSG_EVENT_SET_NODE_SETTING, &event,
-                              // sizeof(event));
-                              //}
-                              //}
+                              ret = neu_manager_node_setting(adapter->manager,
+                                                             req_cmd->node_name,
+                                                             req_cmd->setting);
+                              if (ret == 0) {
+                                  neu_cmd_set_node_setting_t event = {};
+                                  event.node_name = strdup(req_cmd->node_name);
+                                  event.setting   = strdup(req_cmd->setting);
+                                  ADAPTER_SEND_BUF(adapter, rv,
+                                                   MSG_EVENT_SET_NODE_SETTING,
+                                                   &event, sizeof(event));
+                              }
                           });
         break;
     }
 
     case NEU_REQRESP_GET_NODE_SETTING: {
-        ADAPTER_RESP_CMD(adapter, cmd, neu_reqresp_node_setting_t,
-                         neu_cmd_get_node_setting_t, rv,
-                         NEU_REQRESP_GET_NODE_SETTING_RESP, p_result, {
-                             ret =
-                                 calloc(1, sizeof(neu_reqresp_node_setting_t));
-
-                             // ret->result =
-                             // neu_manager_adapter_get_setting(
-                             // adapter->manager, req_cmd->node_id,
-                             // &ret->setting);
-                         });
+        ADAPTER_RESP_CMD(
+            adapter, cmd, neu_reqresp_node_setting_t,
+            neu_cmd_get_node_setting_t, rv, NEU_REQRESP_GET_NODE_SETTING_RESP,
+            p_result, {
+                ret         = calloc(1, sizeof(neu_reqresp_node_setting_t));
+                ret->result = neu_manager_node_get_setting(
+                    adapter->manager, req_cmd->node_name, &ret->setting);
+            });
 
         break;
     }
@@ -1300,21 +1293,14 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case MSG_EVENT_SET_NODE_SETTING: {
             neu_cmd_set_node_setting_t *cmd       = msg_get_buf_ptr(pay_msg);
             neu_persister_t *           persister = persister_singleton_get();
-            char *                      adapter_name = NULL;
-            // rv = neu_manager_get_node_name_by_id(adapter->manager,
-            // cmd->node_id, &adapter_name);
-            if (0 != rv) {
-                free((char *) cmd->setting);
-                break;
-            }
-            rv = neu_persister_store_adapter_setting(persister, adapter_name,
+            rv = neu_persister_store_adapter_setting(persister, cmd->node_name,
                                                      cmd->setting);
             if (0 != rv) {
                 nlog_error("%s fail to store adapter:%s setting:%s",
-                           adapter->name, adapter_name, cmd->setting);
+                           adapter->name, cmd->node_name, cmd->setting);
             }
-            free((char *) cmd->setting);
-            free(adapter_name);
+            free(cmd->setting);
+            free(cmd->node_name);
             break;
         }
 
