@@ -1,6 +1,7 @@
 [Unit]
 Description=Neuron daemon
 After=network.target
+Wants=neuron.ekuiper.service
 
 [Service]
 Type=simple
