@@ -50,13 +50,6 @@ target_include_directories(variable_test PRIVATE
 )
 target_link_libraries(variable_test neuron-base gtest_main gtest)
 
-add_executable(datatag_table_test datatag_table_test.cc ${CMAKE_SOURCE_DIR}/src/base/neu_datatag_table.c)
-target_include_directories(datatag_table_test PRIVATE
-	${CMAKE_SOURCE_DIR}/src
-	${CMAKE_SOURCE_DIR}/include       
-)
-target_link_libraries(datatag_table_test neuron-base gtest_main gtest pthread jansson)
-
 add_executable(data_val_test data_val_test.cc ${SRC_PARSER})
 target_include_directories(data_val_test PRIVATE
 	${CMAKE_SOURCE_DIR}/src
@@ -126,7 +119,6 @@ target_link_libraries(tag_sort_test neuron-base gtest_main gtest)
 
 include(GoogleTest)
 gtest_discover_tests(data_val_test)
-gtest_discover_tests(datatag_table_test)
 gtest_discover_tests(json_test)
 gtest_discover_tests(json_rw_test)
 gtest_discover_tests(json_datatag_table_test)

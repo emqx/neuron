@@ -20,7 +20,6 @@
 
 #include "vector.h"
 
-#include "datatag_table.h"
 #include "plugin.h"
 #include "utils/log.h"
 #include "json/neu_json_error.h"

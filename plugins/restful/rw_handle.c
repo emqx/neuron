@@ -122,26 +122,26 @@ void handle_rw_uninit()
 // return ret;
 //}
 
-static struct cmd_ctx *write_find_ctx(uint32_t event_id)
-{
-    struct cmd_ctx *ctx = NULL;
-    struct cmd_ctx *ret = NULL;
+// static struct cmd_ctx *write_find_ctx(uint32_t event_id)
+//{
+// struct cmd_ctx *ctx = NULL;
+// struct cmd_ctx *ret = NULL;
 
-    pthread_mutex_lock(&write_ctx_mtx);
+// pthread_mutex_lock(&write_ctx_mtx);
 
-    TAILQ_FOREACH(ctx, &write_cmd_ctxs, node)
-    {
-        if (ctx->event_id == event_id) {
-            TAILQ_REMOVE(&write_cmd_ctxs, ctx, node);
-            ret = ctx;
-            break;
-        }
-    }
+// TAILQ_FOREACH(ctx, &write_cmd_ctxs, node)
+//{
+// if (ctx->event_id == event_id) {
+// TAILQ_REMOVE(&write_cmd_ctxs, ctx, node);
+// ret = ctx;
+// break;
+//}
+//}
 
-    pthread_mutex_unlock(&write_ctx_mtx);
+// pthread_mutex_unlock(&write_ctx_mtx);
 
-    return ret;
-}
+// return ret;
+//}
 
 void handle_read(nng_aio *aio)
 {
@@ -377,24 +377,25 @@ void handle_read_resp(void *cmd_resp)
 
 void handle_write_resp(void *cmd_resp)
 {
-    neu_request_t *           req   = (neu_request_t *) cmd_resp;
-    struct cmd_ctx *          ctx   = write_find_ctx(req->req_id);
-    neu_reqresp_write_resp_t *resp  = (neu_reqresp_write_resp_t *) req->buf;
-    neu_fixed_array_t *       array = NULL;
-    neu_int_val_t *           iv    = NULL;
-    int32_t                   error = 0;
+    (void) cmd_resp;
+    // neu_request_t *           req   = (neu_request_t *) cmd_resp;
+    // struct cmd_ctx *          ctx   = write_find_ctx(req->req_id);
+    // neu_reqresp_write_resp_t *resp  = (neu_reqresp_write_resp_t *) req->buf;
+    // neu_fixed_array_t *       array = NULL;
+    // neu_int_val_t *           iv    = NULL;
+    // int32_t                   error = 0;
 
-    nlog_info("write resp id: %d, ctx: %p", req->req_id, ctx);
+    // nlog_info("write resp id: %d, ctx: %p", req->req_id, ctx);
 
-    neu_dvalue_get_ref_array(resp->data_val, &array);
-    iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
-    assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
-    neu_dvalue_get_errorcode(iv->val, &error);
+    // neu_dvalue_get_ref_array(resp->data_val, &array);
+    // iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
+    // assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
+    // neu_dvalue_get_errorcode(iv->val, &error);
 
-    if (ctx != NULL) {
-        NEU_JSON_RESPONSE_ERROR(
-            error, { http_response(ctx->aio, error_code.error, result_error); })
-        free(ctx);
-    }
-    assert(ctx != NULL);
+    // if (ctx != NULL) {
+    // NEU_JSON_RESPONSE_ERROR(
+    // error, { http_response(ctx->aio, error_code.error, result_error); })
+    // free(ctx);
+    //}
+    // assert(ctx != NULL);
 }

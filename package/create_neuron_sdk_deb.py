@@ -45,8 +45,6 @@ rules.append(mkdeb.FileMap("../include/json/neu_json_rw.h",
              "/usr/local/include/neuron/json/"))
 rules.append(mkdeb.FileMap("../include/json/neu_json_tag.h",
              "/usr/local/include/neuron/json/"))
-rules.append(mkdeb.FileMap("../include/json/neu_json_tty.h",
-             "/usr/local/include/neuron/json/"))
 
 rules.append(mkdeb.FileMap("../include/neuron/utils/uthash.h",
              "/usr/local/include/neuron/utils/"))
@@ -66,15 +64,9 @@ rules.append(mkdeb.FileMap("../include/neuron/adapter_msg.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/utils/base64.h",
              "/usr/local/include/neuron/utils/"))
-rules.append(mkdeb.FileMap("../include/neuron/utils/hash_table.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neuron/utils/idhash.h",
-             "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/utils/atomic_data.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/data_expr.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neuron/datatag_table.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/errcodes.h",
              "/usr/local/include/neuron/"))
@@ -86,13 +78,7 @@ rules.append(mkdeb.FileMap("../include/neuron/list.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/log.h",
              "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neuron/panic.h",
-             "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/plugin_info.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neuron/subscribe.h",
-             "/usr/local/include/neuron/"))
-rules.append(mkdeb.FileMap("../include/neuron/tag_group_config.h",
              "/usr/local/include/neuron/"))
 rules.append(mkdeb.FileMap("../include/neuron/types.h",
              "/usr/local/include/neuron/"))

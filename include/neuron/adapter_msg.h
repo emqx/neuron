@@ -30,11 +30,10 @@ extern "C" {
 
 //#include "adapter.h"
 #include "data_expr.h"
-#include "datatag_table.h"
 #include "define.h"
 #include "errcodes.h"
 #include "plugin_info.h"
-#include "tag_group_config.h"
+#include "tag.h"
 #include "types.h"
 #include "utils/utextend.h"
 
@@ -156,10 +155,6 @@ typedef struct neu_reqresp_read {
 } neu_reqresp_read_t;
 
 /* NEU_REQRESP_READ_RESP */
-typedef struct neu_reqresp_read_resp {
-    neu_taggrp_config_t *grp_config;
-    neu_data_val_t *     data_val; ///< data values of reading
-} neu_reqresp_read_resp_t;
 
 /* NEU_REQRESP_WRITE_DATA */
 typedef struct neu_reqresp_write {
@@ -169,10 +164,6 @@ typedef struct neu_reqresp_write {
 } neu_reqresp_write_t;
 
 /* NEU_REQRESP_WRITE_RESP */
-typedef struct neu_reqresp_write_resp {
-    neu_taggrp_config_t *grp_config;
-    neu_data_val_t *     data_val; ///< result status of writing
-} neu_reqresp_write_resp_t;
 
 /* NEU_REQRESP_UNSUBSCRIBE_NODE */
 /* NEU_REQRESP_SUBSCRIBE_NODE */
@@ -183,10 +174,6 @@ typedef struct {
 } neu_reqresp_subscribe_node_t, neu_reqresp_unsubscribe_node_t;
 
 /* NEU_REQRESP_TRANS_DATA */
-typedef struct neu_reqresp_data {
-    neu_taggrp_config_t *grp_config;
-    neu_data_val_t *     data_val;
-} neu_reqresp_data_t;
 
 /* NEU_REQRESP_ADD_NODE */
 typedef struct neu_cmd_add_node {
@@ -276,11 +263,6 @@ typedef struct neu_reqresp_plugin_libs {
 typedef struct neu_cmd_get_datatags {
     neu_node_id_t node_id; // get datatag table of this node
 } neu_cmd_get_datatags_t;
-
-/* NEU_REQRESP_DATATAGS */
-typedef struct neu_reqresp_datatags {
-    neu_datatag_table_t *datatag_tbl; // datatag table of a node
-} neu_reqresp_datatags_t;
 
 /* NEU_REQRESP_SELF_NODE_ID */
 typedef struct neu_cmd_self_node_id {

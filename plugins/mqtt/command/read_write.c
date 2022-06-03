@@ -25,13 +25,13 @@
 #include "read_write.h"
 #include "utils/log.h"
 
-static uint64_t current_time()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t ms = tv.tv_sec;
-    return ms * 1000 + tv.tv_usec / 1000;
-}
+// static uint64_t current_time()
+//{
+// struct timeval tv;
+// gettimeofday(&tv, NULL);
+// uint64_t ms = tv.tv_sec;
+// return ms * 1000 + tv.tv_usec / 1000;
+//}
 
 int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                  neu_json_read_req_t *req, uint32_t req_id)
@@ -262,48 +262,47 @@ char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
     return json_str;
 }
 
-char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
-                                        const char *         node_name,
-                                        neu_taggrp_config_t *config,
-                                        neu_data_val_t *     resp_val,
-                                        int                  upload_format)
-{
-    UNUSED(plugin);
+// char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t
+// sender, const char *         node_name, neu_taggrp_config_t *config,
+// neu_data_val_t *     resp_val,
+// int                  upload_format)
+//{
+// UNUSED(plugin);
 
-    neu_fixed_array_t *array = NULL;
-    neu_dvalue_get_ref_array(resp_val, &array);
-    assert(NULL != array);
+// neu_fixed_array_t *array = NULL;
+// neu_dvalue_get_ref_array(resp_val, &array);
+// assert(NULL != array);
 
-    if (0 >= array->length) {
-        return NULL;
-    }
+// if (0 >= array->length) {
+// return NULL;
+//}
 
-    char *                   json_str = NULL;
-    neu_json_read_periodic_t header   = {
-        .group_name = (char *) neu_taggrp_cfg_get_name(config),
-        .node_name  = (char *) node_name,
-        .timestamp  = current_time()
-    };
+// char *                   json_str = NULL;
+// neu_json_read_periodic_t header   = {
+//.group_name = (char *) neu_taggrp_cfg_get_name(config),
+//.node_name  = (char *) node_name,
+//.timestamp  = current_time()
+//};
 
-    neu_json_read_resp_t json = { 0 };
-    wrap_read_response_json_object(array, &json, plugin, (uint32_t) sender);
+// neu_json_read_resp_t json = { 0 };
+// wrap_read_response_json_object(array, &json, plugin, (uint32_t) sender);
 
-    if (0 == upload_format) { // values
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
-                                  neu_json_encode_read_periodic_resp,
-                                  &json_str);
-    } else if (1 == upload_format) { // tags
-        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
-                                  neu_json_encode_read_periodic_resp,
-                                  &json_str);
-    } else {
-        clean_read_response_json_object(&json);
-        return NULL;
-    }
+// if (0 == upload_format) { // values
+// neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
+// neu_json_encode_read_periodic_resp,
+//&json_str);
+//} else if (1 == upload_format) { // tags
+// neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+// neu_json_encode_read_periodic_resp,
+//&json_str);
+//} else {
+// clean_read_response_json_object(&json);
+// return NULL;
+//}
 
-    clean_read_response_json_object(&json);
-    return json_str;
-}
+// clean_read_response_json_object(&json);
+// return json_str;
+//}
 
 // static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
 // const char *    group_config_name,

@@ -573,46 +573,46 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         break;
     }
-    case MSG_CMD_READ_DATA: {
-        read_data_cmd_t *read_cmd = (read_data_cmd_t *) msg_ptr;
-        nng_pipe         dst_pipe = neu_node_manager_get_pipe_by_id(
-            manager->node_manager, read_cmd->dst_node_id);
+        // case MSG_CMD_READ_DATA: {
+        // read_data_cmd_t *read_cmd = (read_data_cmd_t *) msg_ptr;
+        // nng_pipe         dst_pipe = neu_node_manager_get_pipe_by_id(
+        // manager->node_manager, read_cmd->dst_node_id);
 
-        forward_msg(manager, msg, dst_pipe);
+        // forward_msg(manager, msg, dst_pipe);
 
-        nlog_info("forward read request to driver pipe: %d", dst_pipe.id);
-        break;
-    }
-    case MSG_DATA_READ_RESP: {
-        read_data_resp_t *read_res = (read_data_resp_t *) msg_ptr;
-        nng_pipe          dst_pipe = neu_node_manager_get_pipe_by_id(
-            manager->node_manager, read_res->recver_id);
+        // nlog_info("forward read request to driver pipe: %d", dst_pipe.id);
+        // break;
+        //}
+        // case MSG_DATA_READ_RESP: {
+        // read_data_resp_t *read_res = (read_data_resp_t *) msg_ptr;
+        // nng_pipe          dst_pipe = neu_node_manager_get_pipe_by_id(
+        // manager->node_manager, read_res->recver_id);
 
-        forward_msg(manager, msg, dst_pipe);
+        // forward_msg(manager, msg, dst_pipe);
 
-        nlog_info("forward read response to driver pipe: %d", dst_pipe.id);
-        break;
-    }
-    case MSG_CMD_WRITE_DATA: {
-        write_data_cmd_t *write_cmd = (write_data_cmd_t *) msg_ptr;
-        nng_pipe          dst_pipe  = neu_node_manager_get_pipe_by_id(
-            manager->node_manager, write_cmd->dst_node_id);
+        // nlog_info("forward read response to driver pipe: %d", dst_pipe.id);
+        // break;
+        //}
+        // case MSG_CMD_WRITE_DATA: {
+        // write_data_cmd_t *write_cmd = (write_data_cmd_t *) msg_ptr;
+        // nng_pipe          dst_pipe  = neu_node_manager_get_pipe_by_id(
+        // manager->node_manager, write_cmd->dst_node_id);
 
-        forward_msg(manager, msg, dst_pipe);
+        // forward_msg(manager, msg, dst_pipe);
 
-        nlog_info("forward write request to driver pipe: %d", dst_pipe.id);
-        break;
-    }
-    case MSG_DATA_WRITE_RESP: {
-        write_data_resp_t *write_res = (write_data_resp_t *) msg_ptr;
-        nng_pipe           dst_pipe  = neu_node_manager_get_pipe_by_id(
-            manager->node_manager, write_res->recver_id);
+        // nlog_info("forward write request to driver pipe: %d", dst_pipe.id);
+        // break;
+        //}
+        // case MSG_DATA_WRITE_RESP: {
+        // write_data_resp_t *write_res = (write_data_resp_t *) msg_ptr;
+        // nng_pipe           dst_pipe  = neu_node_manager_get_pipe_by_id(
+        // manager->node_manager, write_res->recver_id);
 
-        forward_msg(manager, msg, dst_pipe);
+        // forward_msg(manager, msg, dst_pipe);
 
-        nlog_info("forward write response to driver pipe: %d", dst_pipe.id);
-        break;
-    }
+        // nlog_info("forward write response to driver pipe: %d", dst_pipe.id);
+        // break;
+        //}
 
     case MSG_EVENT_ADD_NODE:
     case MSG_EVENT_UPDATE_NODE:
@@ -666,20 +666,20 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                                     unsubscribe->group);
         break;
     }
-    case MSG_DATA_NEURON_TRANS_DATA: {
-        neuron_trans_data_t *trans = (neuron_trans_data_t *) msg_ptr;
-        UT_array *           apps  = neu_subscribe_manager_find(
-            manager->subscribe_manager, trans->node_name, trans->group);
+        // case MSG_DATA_NEURON_TRANS_DATA: {
+        // neuron_trans_data_t *trans = (neuron_trans_data_t *) msg_ptr;
+        // UT_array *           apps  = neu_subscribe_manager_find(
+        // manager->subscribe_manager, trans->node_name, trans->group);
 
-        utarray_foreach(apps, neu_app_subscribe_t *, app)
-        {
-            forward_msg(manager, msg, app->pipe);
-            nlog_debug("forward trans data to pipe: %d", app->pipe.id);
-        }
+        // utarray_foreach(apps, neu_app_subscribe_t *, app)
+        //{
+        // forward_msg(manager, msg, app->pipe);
+        // nlog_debug("forward trans data to pipe: %d", app->pipe.id);
+        //}
 
-        utarray_free(apps);
-        break;
-    }
+        // utarray_free(apps);
+        // break;
+    //}
     default:
         nlog_warn("receive a not supported msg type: %d",
                   msg_get_type(pay_msg));

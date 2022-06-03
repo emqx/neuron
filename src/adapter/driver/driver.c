@@ -69,23 +69,26 @@ static void update(neu_adapter_t *adapter, const char *name,
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 {
-    neu_request_t *req = (neu_request_t *) r;
+    (void) adapter;
+    (void) r;
+    (void) error;
+    // neu_request_t *req = (neu_request_t *) r;
 
-    neu_reqresp_write_resp_t data = {
-        .grp_config = NULL,
-        .data_val   = neu_datatag_pack_create(1),
-    };
-    neu_response_t resp = {
-        .req_id    = req->req_id,
-        .resp_type = NEU_REQRESP_WRITE_RESP,
-        .buf       = &data,
-        .buf_len   = sizeof(neu_reqresp_write_resp_t),
-        .recver_id = req->sender_id,
-    };
+    // neu_reqresp_write_resp_t data = {
+    //.grp_config = NULL,
+    //.data_val   = neu_datatag_pack_create(1),
+    //};
+    // neu_response_t resp = {
+    //.req_id    = req->req_id,
+    //.resp_type = NEU_REQRESP_WRITE_RESP,
+    //.buf       = &data,
+    //.buf_len   = sizeof(neu_reqresp_write_resp_t),
+    //.recver_id = req->sender_id,
+    //};
 
-    neu_datatag_pack_add(data.data_val, 0, NEU_DTYPE_ERRORCODE, 0,
-                         (void *) &error);
-    adapter->cb_funs.response(adapter, &resp);
+    // neu_datatag_pack_add(data.data_val, 0, NEU_DTYPE_ERRORCODE, 0,
+    //(void *) &error);
+    // adapter->cb_funs.response(adapter, &resp);
 }
 
 static void update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)

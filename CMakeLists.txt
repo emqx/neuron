@@ -157,8 +157,6 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 set(NEURON_BASE_SOURCES
     src/types.c
     src/base/tag.c
-    src/base/neu_datatag_table.c
-    src/base/neu_tag_group_config.c
     src/base/neu_plugin_common.c
     src/base/neu_data_expr.c
     src/base/tag_sort.c
@@ -169,8 +167,6 @@ set(NEURON_BASE_SOURCES
     src/event/event_linux.c
     src/event/event_unix.c
     src/utils/atomic_data.c
-    src/utils/idhash.c
-    src/utils/hash_table.c
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/file.c

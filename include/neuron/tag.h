@@ -81,16 +81,6 @@ typedef union {
     } bit;
 } neu_datatag_addr_option_u;
 
-bool neu_tag_check_attribute(neu_attribute_e attribute);
-// The id is set to zero, and we make a copy of the name.
-neu_datatag_t *neu_datatag_alloc(neu_attribute_e attr, neu_dtype_e type,
-                                 neu_addr_str_t addr, const char *name);
-// The id is set to the value passed in, and we make a copy of the name.
-neu_datatag_t *neu_datatag_alloc_with_id(neu_attribute_e attr, neu_dtype_e type,
-                                         neu_addr_str_t addr, const char *name,
-                                         neu_datatag_id_t id);
-void           neu_datatag_free(neu_datatag_t *datatag);
-
 int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
                                   neu_datatag_addr_option_u *option);
 

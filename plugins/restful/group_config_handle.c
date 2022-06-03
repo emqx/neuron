@@ -22,7 +22,6 @@
 #include "vector.h"
 
 #include "plugin.h"
-#include "subscribe.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_group_config.h"

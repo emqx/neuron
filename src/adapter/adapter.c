@@ -32,15 +32,11 @@
 #include "adapter.h"
 #include "adapter_internal.h"
 #include "core/message.h"
-//#include "core/neu_manager.h"
 #include "core/neu_trans_buf.h"
-#include "core/plugin_manager.h"
 #include "driver/driver_internal.h"
 #include "persist/persist.h"
 #include "plugin.h"
 #include "plugin_info.h"
-#include "subscribe.h"
-#include "tag_group_config.h"
 #include "utils/log.h"
 
 #define to_node_id(adapter, id) id;
@@ -942,109 +938,109 @@ static int adapter_response(neu_adapter_t *adapter, neu_response_t *resp)
 
     nlog_info("Get response from plugin %s", adapter->name);
     switch (resp->resp_type) {
-    case NEU_REQRESP_TRANS_DATA: {
-        size_t              msg_size;
-        nng_msg *           trans_data_msg;
-        neu_reqresp_data_t *neu_data;
+        // case NEU_REQRESP_TRANS_DATA: {
+        // size_t              msg_size;
+        // nng_msg *           trans_data_msg;
+        // neu_reqresp_data_t *neu_data;
 
-        assert(resp->buf_len == sizeof(neu_reqresp_data_t));
-        neu_data = (neu_reqresp_data_t *) resp->buf;
+        // assert(resp->buf_len == sizeof(neu_reqresp_data_t));
+        // neu_data = (neu_reqresp_data_t *) resp->buf;
 
-        msg_size = msg_inplace_data_get_size(sizeof(neuron_trans_data_t));
-        rv       = nng_msg_alloc(&trans_data_msg, msg_size);
-        if (rv == 0) {
-            message_t *          pay_msg;
-            neuron_trans_data_t *trans_data;
-            neu_trans_buf_t *    trans_buf;
+        // msg_size = msg_inplace_data_get_size(sizeof(neuron_trans_data_t));
+        // rv       = nng_msg_alloc(&trans_data_msg, msg_size);
+        // if (rv == 0) {
+        // message_t *          pay_msg;
+        // neuron_trans_data_t *trans_data;
+        // neu_trans_buf_t *    trans_buf;
 
-            pay_msg = (message_t *) nng_msg_body(trans_data_msg);
-            msg_inplace_data_init(pay_msg, MSG_DATA_NEURON_TRANS_DATA,
-                                  sizeof(neuron_trans_data_t));
-            trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
-            trans_data->grp_config = neu_data->grp_config;
-            trans_data->sender_id  = to_node_id((adapter), (adapter)->id);
-            trans_data->node_name  = adapter->name;
-            trans_buf              = &trans_data->trans_buf;
-            rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
-                                    neu_data->data_val);
-            if (rv != 0) {
-                nng_msg_free(trans_data_msg);
-                break;
-            }
-            nng_sendmsg(adapter->nng.sock, trans_data_msg, 0);
-        }
-        break;
-    }
+        // pay_msg = (message_t *) nng_msg_body(trans_data_msg);
+        // msg_inplace_data_init(pay_msg, MSG_DATA_NEURON_TRANS_DATA,
+        // sizeof(neuron_trans_data_t));
+        // trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
+        // trans_data->grp_config = neu_data->grp_config;
+        // trans_data->sender_id  = to_node_id((adapter), (adapter)->id);
+        // trans_data->node_name  = adapter->name;
+        // trans_buf              = &trans_data->trans_buf;
+        // rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
+        // neu_data->data_val);
+        // if (rv != 0) {
+        // nng_msg_free(trans_data_msg);
+        // break;
+        //}
+        // nng_sendmsg(adapter->nng.sock, trans_data_msg, 0);
+        //}
+        // break;
+        //}
 
-    case NEU_REQRESP_READ_RESP: {
-        size_t                   msg_size;
-        nng_msg *                read_resp_msg;
-        neu_reqresp_read_resp_t *read_resp;
+        // case NEU_REQRESP_READ_RESP: {
+        // size_t                   msg_size;
+        // nng_msg *                read_resp_msg;
+        // neu_reqresp_read_resp_t *read_resp;
 
-        assert(resp->buf_len == sizeof(neu_reqresp_read_resp_t));
-        read_resp = (neu_reqresp_read_resp_t *) resp->buf;
+        // assert(resp->buf_len == sizeof(neu_reqresp_read_resp_t));
+        // read_resp = (neu_reqresp_read_resp_t *) resp->buf;
 
-        msg_size = msg_inplace_data_get_size(sizeof(read_data_resp_t));
-        rv       = nng_msg_alloc(&read_resp_msg, msg_size);
-        if (rv == 0) {
-            message_t *       pay_msg;
-            read_data_resp_t *read_data_resp;
-            neu_trans_buf_t * trans_buf;
+        // msg_size = msg_inplace_data_get_size(sizeof(read_data_resp_t));
+        // rv       = nng_msg_alloc(&read_resp_msg, msg_size);
+        // if (rv == 0) {
+        // message_t *       pay_msg;
+        // read_data_resp_t *read_data_resp;
+        // neu_trans_buf_t * trans_buf;
 
-            pay_msg = (message_t *) nng_msg_body(read_resp_msg);
-            msg_inplace_data_init(pay_msg, MSG_DATA_READ_RESP,
-                                  sizeof(read_data_resp_t));
-            read_data_resp = (read_data_resp_t *) msg_get_buf_ptr(pay_msg);
-            read_data_resp->grp_config = read_resp->grp_config;
-            read_data_resp->recver_id  = resp->recver_id;
-            read_data_resp->req_id     = resp->req_id;
-            read_data_resp->sender_id  = to_node_id((adapter), (adapter)->id);
-            trans_buf                  = &read_data_resp->trans_buf;
-            rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
-                                    read_resp->data_val);
-            if (rv != 0) {
-                nng_msg_free(read_resp_msg);
-                break;
-            }
-            nng_sendmsg(adapter->nng.sock, read_resp_msg, 0);
-        }
-        break;
-    }
+        // pay_msg = (message_t *) nng_msg_body(read_resp_msg);
+        // msg_inplace_data_init(pay_msg, MSG_DATA_READ_RESP,
+        // sizeof(read_data_resp_t));
+        // read_data_resp = (read_data_resp_t *) msg_get_buf_ptr(pay_msg);
+        // read_data_resp->grp_config = read_resp->grp_config;
+        // read_data_resp->recver_id  = resp->recver_id;
+        // read_data_resp->req_id     = resp->req_id;
+        // read_data_resp->sender_id  = to_node_id((adapter), (adapter)->id);
+        // trans_buf                  = &read_data_resp->trans_buf;
+        // rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
+        // read_resp->data_val);
+        // if (rv != 0) {
+        // nng_msg_free(read_resp_msg);
+        // break;
+        //}
+        // nng_sendmsg(adapter->nng.sock, read_resp_msg, 0);
+        //}
+        // break;
+        //}
 
-    case NEU_REQRESP_WRITE_RESP: {
-        size_t                    msg_size;
-        nng_msg *                 write_resp_msg;
-        neu_reqresp_write_resp_t *write_resp;
+        // case NEU_REQRESP_WRITE_RESP: {
+        // size_t                    msg_size;
+        // nng_msg *                 write_resp_msg;
+        // neu_reqresp_write_resp_t *write_resp;
 
-        assert(resp->buf_len == sizeof(neu_reqresp_write_resp_t));
-        write_resp = (neu_reqresp_write_resp_t *) resp->buf;
+        // assert(resp->buf_len == sizeof(neu_reqresp_write_resp_t));
+        // write_resp = (neu_reqresp_write_resp_t *) resp->buf;
 
-        msg_size = msg_inplace_data_get_size(sizeof(write_data_resp_t));
-        rv       = nng_msg_alloc(&write_resp_msg, msg_size);
-        if (rv == 0) {
-            message_t *        pay_msg;
-            write_data_resp_t *write_data_resp;
-            neu_trans_buf_t *  trans_buf;
+        // msg_size = msg_inplace_data_get_size(sizeof(write_data_resp_t));
+        // rv       = nng_msg_alloc(&write_resp_msg, msg_size);
+        // if (rv == 0) {
+        // message_t *        pay_msg;
+        // write_data_resp_t *write_data_resp;
+        // neu_trans_buf_t *  trans_buf;
 
-            pay_msg = (message_t *) nng_msg_body(write_resp_msg);
-            msg_inplace_data_init(pay_msg, MSG_DATA_WRITE_RESP,
-                                  sizeof(write_data_resp_t));
-            write_data_resp = (write_data_resp_t *) msg_get_buf_ptr(pay_msg);
-            write_data_resp->grp_config = write_resp->grp_config;
-            write_data_resp->recver_id  = resp->recver_id;
-            write_data_resp->req_id     = resp->req_id;
-            write_data_resp->sender_id  = to_node_id((adapter), (adapter)->id);
-            trans_buf                   = &write_data_resp->trans_buf;
-            rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
-                                    write_resp->data_val);
-            if (rv != 0) {
-                nng_msg_free(write_resp_msg);
-                break;
-            }
-            nng_sendmsg(adapter->nng.sock, write_resp_msg, 0);
-        }
-        break;
-    }
+        // pay_msg = (message_t *) nng_msg_body(write_resp_msg);
+        // msg_inplace_data_init(pay_msg, MSG_DATA_WRITE_RESP,
+        // sizeof(write_data_resp_t));
+        // write_data_resp = (write_data_resp_t *) msg_get_buf_ptr(pay_msg);
+        // write_data_resp->grp_config = write_resp->grp_config;
+        // write_data_resp->recver_id  = resp->recver_id;
+        // write_data_resp->req_id     = resp->req_id;
+        // write_data_resp->sender_id  = to_node_id((adapter), (adapter)->id);
+        // trans_buf                   = &write_data_resp->trans_buf;
+        // rv = neu_trans_buf_init(trans_buf, adapter->trans_kind,
+        // write_resp->data_val);
+        // if (rv != 0) {
+        // nng_msg_free(write_resp_msg);
+        // break;
+        //}
+        // nng_sendmsg(adapter->nng.sock, write_resp_msg, 0);
+        //}
+        // break;
+        //}
 
     default:
         break;
@@ -1207,39 +1203,39 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                       exit_code);
             break;
         }
-        case MSG_DATA_NEURON_TRANS_DATA: {
-            neuron_trans_data_t *trans_data;
-            trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
+            // case MSG_DATA_NEURON_TRANS_DATA: {
+            // neuron_trans_data_t *trans_data;
+            // trans_data = (neuron_trans_data_t *) msg_get_buf_ptr(pay_msg);
 
-            const neu_plugin_intf_funs_t *intf_funs;
-            bool                          is_need_free;
-            neu_trans_buf_t *             trans_buf;
-            neu_request_t                 req;
-            neu_reqresp_data_t            data_req;
-            data_req.grp_config = trans_data->grp_config;
-            trans_buf           = &trans_data->trans_buf;
-            data_req.data_val =
-                neu_trans_buf_get_data_val(trans_buf, &is_need_free);
-            if (data_req.data_val == NULL) {
-                neu_trans_buf_uninit(trans_buf);
-                nlog_error("Failed to get data value from trans data");
-                break;
-            }
+            // const neu_plugin_intf_funs_t *intf_funs;
+            // bool                          is_need_free;
+            // neu_trans_buf_t *             trans_buf;
+            // neu_request_t                 req;
+            // neu_reqresp_data_t            data_req;
+            // data_req.grp_config = trans_data->grp_config;
+            // trans_buf           = &trans_data->trans_buf;
+            // data_req.data_val =
+            // neu_trans_buf_get_data_val(trans_buf, &is_need_free);
+            // if (data_req.data_val == NULL) {
+            // neu_trans_buf_uninit(trans_buf);
+            // nlog_error("Failed to get data value from trans data");
+            // break;
+            //}
 
-            intf_funs     = adapter->plugin_info.module->intf_funs;
-            req.req_id    = adapter_get_req_id(adapter);
-            req.req_type  = NEU_REQRESP_TRANS_DATA;
-            req.buf_len   = sizeof(neu_reqresp_data_t);
-            req.buf       = (void *) &data_req;
-            req.sender_id = trans_data->sender_id;
-            req.node_name = trans_data->node_name;
-            intf_funs->request(adapter->plugin_info.plugin, &req);
-            if (is_need_free) {
-                neu_dvalue_free(data_req.data_val);
-            }
-            neu_trans_buf_uninit(trans_buf);
-            break;
-        }
+            // intf_funs     = adapter->plugin_info.module->intf_funs;
+            // req.req_id    = adapter_get_req_id(adapter);
+            // req.req_type  = NEU_REQRESP_TRANS_DATA;
+            // req.buf_len   = sizeof(neu_reqresp_data_t);
+            // req.buf       = (void *) &data_req;
+            // req.sender_id = trans_data->sender_id;
+            // req.node_name = trans_data->node_name;
+            // intf_funs->request(adapter->plugin_info.plugin, &req);
+            // if (is_need_free) {
+            // neu_dvalue_free(data_req.data_val);
+            //}
+            // neu_trans_buf_uninit(trans_buf);
+            // break;
+            //}
 
         case MSG_CMD_PERSISTENCE_LOAD: {
             persister_singleton_load_data(adapter);
@@ -1378,39 +1374,39 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        case MSG_DATA_READ_RESP: {
-            read_data_resp_t *cmd_ptr;
-            cmd_ptr = (read_data_resp_t *) msg_get_buf_ptr(pay_msg);
+            // case MSG_DATA_READ_RESP: {
+            // read_data_resp_t *cmd_ptr;
+            // cmd_ptr = (read_data_resp_t *) msg_get_buf_ptr(pay_msg);
 
-            const neu_plugin_intf_funs_t *intf_funs;
-            bool                          is_need_free;
-            neu_trans_buf_t *             trans_buf;
-            neu_request_t                 req;
-            neu_reqresp_read_resp_t       read_resp;
+            // const neu_plugin_intf_funs_t *intf_funs;
+            // bool                          is_need_free;
+            // neu_trans_buf_t *             trans_buf;
+            // neu_request_t                 req;
+            // neu_reqresp_read_resp_t       read_resp;
 
-            read_resp.grp_config = cmd_ptr->grp_config;
-            trans_buf            = &cmd_ptr->trans_buf;
-            read_resp.data_val =
-                neu_trans_buf_get_data_val(trans_buf, &is_need_free);
-            if (read_resp.data_val == NULL) {
-                neu_trans_buf_uninit(trans_buf);
-                nlog_error("Failed to get data value from read response");
-                break;
-            }
+            // read_resp.grp_config = cmd_ptr->grp_config;
+            // trans_buf            = &cmd_ptr->trans_buf;
+            // read_resp.data_val =
+            // neu_trans_buf_get_data_val(trans_buf, &is_need_free);
+            // if (read_resp.data_val == NULL) {
+            // neu_trans_buf_uninit(trans_buf);
+            // nlog_error("Failed to get data value from read response");
+            // break;
+            //}
 
-            intf_funs     = adapter->plugin_info.module->intf_funs;
-            req.req_id    = cmd_ptr->req_id;
-            req.req_type  = NEU_REQRESP_READ_RESP;
-            req.sender_id = cmd_ptr->sender_id;
-            req.buf_len   = sizeof(neu_reqresp_read_resp_t);
-            req.buf       = (void *) &read_resp;
-            intf_funs->request(adapter->plugin_info.plugin, &req);
-            if (is_need_free) {
-                neu_dvalue_free(read_resp.data_val);
-            }
-            neu_trans_buf_uninit(trans_buf);
-            break;
-        }
+            // intf_funs     = adapter->plugin_info.module->intf_funs;
+            // req.req_id    = cmd_ptr->req_id;
+            // req.req_type  = NEU_REQRESP_READ_RESP;
+            // req.sender_id = cmd_ptr->sender_id;
+            // req.buf_len   = sizeof(neu_reqresp_read_resp_t);
+            // req.buf       = (void *) &read_resp;
+            // intf_funs->request(adapter->plugin_info.plugin, &req);
+            // if (is_need_free) {
+            // neu_dvalue_free(read_resp.data_val);
+            //}
+            // neu_trans_buf_uninit(trans_buf);
+            // break;
+            //}
 
         case MSG_CMD_WRITE_DATA: {
             // write_data_cmd_t *cmd_ptr;
@@ -1453,39 +1449,39 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        case MSG_DATA_WRITE_RESP: {
-            write_data_resp_t *cmd_ptr;
-            cmd_ptr = (write_data_resp_t *) msg_get_buf_ptr(pay_msg);
+            // case MSG_DATA_WRITE_RESP: {
+            // write_data_resp_t *cmd_ptr;
+            // cmd_ptr = (write_data_resp_t *) msg_get_buf_ptr(pay_msg);
 
-            const neu_plugin_intf_funs_t *intf_funs;
-            bool                          is_need_free;
-            neu_trans_buf_t *             trans_buf;
-            neu_request_t                 req;
-            neu_reqresp_write_resp_t      write_resp;
+            // const neu_plugin_intf_funs_t *intf_funs;
+            // bool                          is_need_free;
+            // neu_trans_buf_t *             trans_buf;
+            // neu_request_t                 req;
+            // neu_reqresp_write_resp_t      write_resp;
 
-            write_resp.grp_config = cmd_ptr->grp_config;
-            trans_buf             = &cmd_ptr->trans_buf;
-            write_resp.data_val =
-                neu_trans_buf_get_data_val(trans_buf, &is_need_free);
-            if (write_resp.data_val == NULL) {
-                neu_trans_buf_uninit(trans_buf);
-                nlog_error("Failed to get data value from write request");
-                break;
-            }
+            // write_resp.grp_config = cmd_ptr->grp_config;
+            // trans_buf             = &cmd_ptr->trans_buf;
+            // write_resp.data_val =
+            // neu_trans_buf_get_data_val(trans_buf, &is_need_free);
+            // if (write_resp.data_val == NULL) {
+            // neu_trans_buf_uninit(trans_buf);
+            // nlog_error("Failed to get data value from write request");
+            // break;
+            //}
 
-            intf_funs     = adapter->plugin_info.module->intf_funs;
-            req.req_id    = cmd_ptr->req_id;
-            req.req_type  = NEU_REQRESP_WRITE_RESP;
-            req.sender_id = cmd_ptr->sender_id;
-            req.buf_len   = sizeof(neu_reqresp_write_resp_t);
-            req.buf       = (void *) &write_resp;
-            intf_funs->request(adapter->plugin_info.plugin, &req);
-            if (is_need_free) {
-                neu_dvalue_free(write_resp.data_val);
-            }
-            neu_trans_buf_uninit(trans_buf);
-            break;
-        }
+            // intf_funs     = adapter->plugin_info.module->intf_funs;
+            // req.req_id    = cmd_ptr->req_id;
+            // req.req_type  = NEU_REQRESP_WRITE_RESP;
+            // req.sender_id = cmd_ptr->sender_id;
+            // req.buf_len   = sizeof(neu_reqresp_write_resp_t);
+            // req.buf       = (void *) &write_resp;
+            // intf_funs->request(adapter->plugin_info.plugin, &req);
+            // if (is_need_free) {
+            // neu_dvalue_free(write_resp.data_val);
+            //}
+            // neu_trans_buf_uninit(trans_buf);
+            // break;
+        //}
         default:
             nlog_warn("Receive a not supported message(type: %d)",
                       msg_get_type(pay_msg));

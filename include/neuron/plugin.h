@@ -28,7 +28,6 @@ extern "C" {
 #include "utils/zlog.h"
 
 #include "adapter.h"
-#include "tag_group_config.h"
 #include "type.h"
 
 #define NEURON_PLUGIN_VER_1_0 100
