@@ -25,7 +25,7 @@
 
 #include "utils/log.h"
 
-#include "core/databuf.h"
+//#include "core/databuf.h"
 #include "core/message.h"
 
 typedef struct msg_inplace_buf {
@@ -35,13 +35,9 @@ typedef struct msg_inplace_buf {
 } msg_inplace_buf_t;
 
 struct message {
-    msg_type_e type;
-    uint32_t   msg_id;
-    union {
-        msg_inplace_buf_t inp_buf;
-        // The external buffer pointer to a core_databuf_t.
-        core_databuf_t *ext_buf;
-    };
+    msg_type_e        type;
+    uint32_t          msg_id;
+    msg_inplace_buf_t inp_buf;
 
     // For align with 8 bytes
     uint64_t msg_buf[0];
@@ -93,28 +89,25 @@ void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len)
     msg->inp_buf.buf_ptr = msg->msg_buf;
 }
 
-void msg_external_data_init(message_t *msg, msg_type_e type,
-                            core_databuf_t *data_buf)
-{
-    if (msg == NULL) {
-        nlog_error("msg_external_data_init called with NULL pointr");
-        return;
-    }
+// void msg_external_data_init(message_t *msg, msg_type_e type,
+// core_databuf_t *data_buf)
+//{
+// if (msg == NULL) {
+// nlog_error("msg_external_data_init called with NULL pointr");
+// return;
+//}
 
-    msg->type    = type;
-    msg->ext_buf = core_databuf_get(data_buf);
-    return;
-}
+// msg->type    = type;
+// msg->ext_buf = core_databuf_get(data_buf);
+// return;
+//}
 
 void msg_external_data_uninit(message_t *msg)
 {
-    if (!(msg != NULL && msg->ext_buf != NULL)) {
+    if (!(msg != NULL)) {
         nlog_error("msg_external_data_uninit called with NULL pointr");
         return;
     }
-
-    core_databuf_put(msg->ext_buf);
-    msg->ext_buf = NULL;
 }
 
 msg_type_e msg_get_type(message_t *msg)
@@ -132,11 +125,7 @@ size_t msg_get_buf_len(message_t *msg)
         return 0;
     }
 
-    if ((msg->type & MSG_DATABUF_KIND_MASK) == MSG_DATABUF_EXTERNAL) {
-        return core_databuf_get_len(msg->ext_buf);
-    } else {
-        return msg->inp_buf.buf_len;
-    }
+    return msg->inp_buf.buf_len;
 }
 
 void *msg_get_buf_ptr(message_t *msg)
@@ -145,11 +134,7 @@ void *msg_get_buf_ptr(message_t *msg)
         return NULL;
     }
 
-    if ((msg->type & MSG_DATABUF_KIND_MASK) == MSG_DATABUF_EXTERNAL) {
-        return core_databuf_get_ptr(msg->ext_buf);
-    } else {
-        return msg->inp_buf.buf_ptr;
-    }
+    return msg->inp_buf.buf_ptr;
 }
 
 nng_msg *nng_msg_inplace_from_buf(msg_type_e msg_type, void *buf, size_t size)

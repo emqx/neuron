@@ -22,7 +22,7 @@
 
 #include <assert.h>
 
-#include "databuf.h"
+//#include "databuf.h"
 
 #include "adapter/adapter_internal.h"
 
@@ -207,8 +207,8 @@ void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len);
  * Initialize the message that has external data buffer. Just set pointer of
  * external buffer to message, and get a strong reference of external buffer.
  */
-void msg_external_data_init(message_t *msg, msg_type_e type,
-                            core_databuf_t *data_buf);
+// void msg_external_data_init(message_t *msg, msg_type_e type,
+// core_databuf_t *data_buf);
 
 /**
  *  Uninitialize the message that has external data buffer. Just return strong

@@ -98,7 +98,7 @@ set(NEURON_SOURCES
     src/argparse.c
     src/daemon.c
     src/core/message.c
-    src/core/databuf.c
+#    src/core/databuf.c
 #    src/core/neu_trans_buf.c
 #    src/core/neu_manager.c
     #src/core/plugin_manager.c
@@ -154,7 +154,7 @@ set(NEURON_BASE_SOURCES
     src/connection/mqtt_client_intf.c
     src/event/event_linux.c
     src/event/event_unix.c
-    src/utils/atomic_data.c
+#    src/utils/atomic_data.c
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/file.c

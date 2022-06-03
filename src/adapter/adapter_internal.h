@@ -29,7 +29,7 @@
 #include "plugin_info.h"
 
 #include "adapter_info.h"
-#include "core/databuf.h"
+//#include "core/databuf.h"
 //#include "core/neu_manager.h"
 #include "core/manager.h"
 #include "plugin_info.h"
