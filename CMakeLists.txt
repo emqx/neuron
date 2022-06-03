@@ -48,18 +48,6 @@ configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron
 
 add_subdirectory(extern/vector)
 set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
-add_subdirectory(extern/libcsptr)
-configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/neuron/vector.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/smart_ptr.h ${CMAKE_SOURCE_DIR}/include/csptr/smart_ptr.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/common.h ${CMAKE_SOURCE_DIR}/include/csptr/common.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/smalloc.h ${CMAKE_SOURCE_DIR}/include/csptr/smalloc.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/config.h ${CMAKE_SOURCE_DIR}/include/csptr/config.h
-               COPYONLY)
-
 # Call this from your own project's makefile.
 
 if(NOT CMAKE_STAGING_PREFIX)
@@ -111,7 +99,7 @@ set(NEURON_SOURCES
     src/daemon.c
     src/core/message.c
     src/core/databuf.c
-    src/core/neu_trans_buf.c
+#    src/core/neu_trans_buf.c
 #    src/core/neu_manager.c
     #src/core/plugin_manager.c
     #src/core/neu_datatag_manager.c

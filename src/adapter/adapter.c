@@ -32,7 +32,7 @@
 #include "adapter.h"
 #include "adapter_internal.h"
 #include "core/message.h"
-#include "core/neu_trans_buf.h"
+//#include "core/neu_trans_buf.h"
 #include "driver/driver_internal.h"
 #include "persist/persist.h"
 #include "plugin.h"
@@ -1119,7 +1119,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     adapter->manager            = manager;
     adapter->plugin_info.handle = info->handle;
     adapter->plugin_info.module = info->module;
-    adapter->trans_kind         = NEURON_TRANS_DATAVAL;
     adapter->req_id             = 1;
 
     rv = nng_mtx_alloc(&adapter->nng.mtx);

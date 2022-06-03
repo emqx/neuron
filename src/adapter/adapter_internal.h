@@ -32,7 +32,6 @@
 #include "core/databuf.h"
 //#include "core/neu_manager.h"
 #include "core/manager.h"
-#include "core/neu_trans_buf.h"
 #include "plugin_info.h"
 
 typedef enum adapter_state {
@@ -51,7 +50,6 @@ struct neu_adapter {
 
     uint32_t req_id;
 
-    neu_trans_kind_e    trans_kind;
     adapter_callbacks_t cb_funs;
     neu_config_t        setting;
     void *              x;

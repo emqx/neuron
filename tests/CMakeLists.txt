@@ -84,14 +84,6 @@ target_include_directories(json_persistence_test PRIVATE
 )
 target_link_libraries(json_persistence_test neuron-base gtest_main gtest)
 
-aux_source_directory(${CMAKE_SOURCE_DIR}/src/persist SRC_PERSIST)
-add_executable(persistence_test persistence_test.cc ${SRC_PERSIST_JSON} ${SRC_PERSIST})
-target_include_directories(persistence_test PRIVATE
-    ${CMAKE_SOURCE_DIR}/src
-    ${CMAKE_SOURCE_DIR}/include
-)
-target_link_libraries(persistence_test neuron-base gtest_main gtest)
-
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/tests/config)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/tests/config)
 add_executable(jwt_test jwt_test.cc)
@@ -129,6 +121,5 @@ gtest_discover_tests(http_test)
 gtest_discover_tests(mqtt_test)
 gtest_discover_tests(jwt_test)
 gtest_discover_tests(json_persistence_test)
-gtest_discover_tests(persistence_test)
 gtest_discover_tests(base64_test)
 gtest_discover_tests(tag_sort_test)
