@@ -22,78 +22,200 @@
 
 #include <assert.h>
 
-//#include "databuf.h"
+#include <nng/nng.h>
 
-#include "adapter/adapter_internal.h"
+#include "adapter.h"
+#include "define.h"
 
 typedef enum msg_type {
-    MSG_TYPE_CMD_START = 0,
-    MSG_CMD_NOP        = MSG_TYPE_CMD_START,
-    MSG_CMD_READ_DATA,
-    MSG_CMD_WRITE_DATA,
-    MSG_CMD_START_PERIODIC_READ,
-    MSG_CMD_STOP_PERIODIC_READ,
-    MSG_CMD_SUBSCRIBE_NODE,
-    MSG_CMD_UNSUBSCRIBE_NODE,
-    MSG_CMD_GROUP_CONFIG_CHANGED,
-    MSG_CMD_PERSISTENCE_LOAD,
-    MSG_CMD_EXIT_LOOP,
-    MSG_CMD_RESP_PONG, // response pong for ping
-    MSG_TYPE_CMD_END,
+    MSG_GROUP_READ,
+    MSG_GROUP_READ_RESP,
+    MSG_TAG_WRITE,
+    MSG_TAG_WRITE_RESP,
+    MSG_TRANS_DATA,
 
-    MSG_TYPE_CONFIG_START       = 0x1000,
-    MSG_CONFIG_REGISTER_ADAPTER = MSG_TYPE_CONFIG_START,
-    MSG_CONFIG_UNREGISTER_ADAPTER,
-    /*
-    MSG_CONFIG_SUBSCRIBE_ADAPTER,
-    MSG_CONFIG_ADD_TAGS_GROUP,
-    MSG_CONFIG_DEL_TAGS_GROUP,
-    MSG_CONFIG_UPDATE_TAGS_GROUP,
-    MSG_CONFIG_FIND_TAGS_GROUP,
-    */
-    MSG_TYPE_CONFIG_END,
+    MSG_NODE_INIT,
+    MSG_PERSISTENCE_LOAD,
+    MSG_PLUGIN_ADD,
+    MSG_PLUGIN_DEL,
+    MSG_PLUGIN_GET,
+    MSG_PLUGIN_GET_RESP,
+    MSG_NODE_ADD,
+    MSG_NODE_DEL,
+    MSG_NDOE_GET,
+    MSG_NODE_GET_RESP,
+    MSG_NODE_SETTING,
+    MSG_GROUP_ADD,
+    MSG_GROUP_DEL,
+    MSG_GROUP_UPDATE,
+    MSG_GROUP_GET,
+    MSG_GROUP_GET_RESP,
+    MSG_TAG_ADD,
+    MSG_TAG_ADD_RESP,
+    MSG_TAG_DEL,
+    MSG_TAG_UPDATE,
+    MSG_TAG_UPDATE_RESP,
+    MSG_TAG_GET,
+    MSG_TAG_GET_RESP,
+    MSG_GROUP_SUBSCRIBE,
+    MSG_GROUP_UNSUBSCRIBE,
+    MSG_UPDATE_LICENSE,
 
-    MSG_TYPE_EVENT_START    = 0x2000,
-    MSG_EVENT_DRIVER_STATUS = MSG_TYPE_EVENT_START,
-    MSG_EVENT_GROUP_CONFIG_CHANGED, // unused
-    MSG_EVENT_NODE_PING,
-    MSG_EVENT_ADD_NODE,
-    MSG_EVENT_UPDATE_NODE,
-    MSG_EVENT_SET_NODE_SETTING,
-    MSG_EVENT_DEL_NODE,
-    MSG_EVENT_ADD_GRP_CONFIG,
-    MSG_EVENT_UPDATE_GRP_CONFIG,
-    MSG_EVENT_DEL_GRP_CONFIG,
-    MSG_EVENT_SUBSCRIBE_NODE,
-    MSG_EVENT_UNSUBSCRIBE_NODE,
-    MSG_EVENT_ADD_PLUGIN,
-    MSG_EVENT_UPDATE_PLUGIN,
-    MSG_EVENT_DEL_PLUGIN,
-    MSG_EVENT_ADD_TAGS,
-    MSG_EVENT_UPDATE_TAGS,
-    MSG_EVENT_DEL_TAGS,
-    MSG_EVENT_UPDATE_LICENSE,
-    MSG_TYPE_EVENT_END,
-
-    MSG_TYPE_DATA_START        = 0x3000,
-    MSG_DATA_NEURON_TRANS_DATA = MSG_TYPE_DATA_START,
-    MSG_DATA_READ_RESP,
-    MSG_DATA_WRITE_RESP,
-    MSG_TYPE_DATA_END,
-
-    // User customer message types
-    MSG_TYPE_VENDOR_START = 0x100000,
-    MSG_TYPE_VENDOR_END,
-
-    MSG_TYPE_END = MSG_TYPE_VENDOR_END,
-
-    MSG_DATABUF_KIND_MASK = (0x3 << 29),
-    MSG_DATABUF_INPLACE   = (0x0 << 29),
-    MSG_DATABUF_EXTERNAL  = (0x1 << 29)
+    MSG_ERROR,
 } msg_type_e;
 
-static_assert(MSG_TYPE_END < MSG_DATABUF_KIND_MASK,
-              "Too many massage type exceed MSG_DATABUF_KIND_MASK");
+typedef struct msg_header {
+    msg_type_e type;
+    uint16_t   len;
+} msg_header_t;
+
+typedef struct msg_error {
+    int error;
+} msg_error_t;
+
+typedef struct msg_node_init {
+    msg_header_t header;
+    char         node[NEU_NODE_NAME_LEN];
+} msg_node_init_t;
+
+typedef struct msg_license_update {
+    msg_header_t header;
+} msg_license_update_t;
+
+typedef struct msg_group_read {
+    msg_header_t header;
+    char         driver[NEU_NODE_NAME_LEN];
+    char         reader[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+    void *       ctx;
+} msg_group_read_t;
+
+typedef struct msg_trans_data {
+    msg_header_t       header;
+    neu_reqresp_data_t data;
+} msg_trans_data_t;
+
+typedef struct msg_group_read_resp {
+    msg_header_t            header;
+    char                    reader[NEU_NODE_NAME_LEN];
+    neu_reqresp_read_resp_t data;
+} msg_group_read_resp_t;
+
+typedef struct msg_tag_write {
+    msg_header_t header;
+    char         writer[NEU_NODE_NAME_LEN];
+    char         driver[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+    char         tag[NEU_TAG_NAME_LEN];
+    neu_dvalue_t value;
+    void *       ctx;
+} msg_tag_write_t;
+
+typedef struct msg_tag_write_resp {
+    msg_header_t header;
+    char         writer[NEU_NODE_NAME_LEN];
+    void *       ctx;
+    int          error;
+} msg_tag_write_resp_t;
+
+typedef struct msg_persistence_load {
+    msg_header_t header;
+} msg_persistence_load_t;
+
+typedef struct msg_add_plugin {
+    msg_header_t header;
+    char         library[NEU_PLUGIN_LIBRARY_LEN];
+} msg_add_plugin_t;
+
+typedef struct msg_del_plugin {
+    msg_header_t header;
+    char         plugin[NEU_PLUGIN_NAME_LEN];
+} msg_del_plugin_t;
+
+typedef struct msg_get_plugin {
+    msg_header_t header;
+} msg_get_plugin_t;
+
+typedef struct msg_add_node {
+    msg_header_t header;
+    char         node[NEU_NODE_NAME_LEN];
+    char         plugin[NEU_PLUGIN_NAME_LEN];
+} msg_add_node_t;
+
+typedef struct msg_del_node {
+    msg_header_t header;
+    char         node[NEU_NODE_NAME_LEN];
+} msg_del_node_t;
+
+typedef struct msg_get_ndoe {
+    msg_header_t    header;
+    neu_node_type_e type;
+} msg_get_node_t;
+
+typedef struct msg_add_group {
+    msg_header_t header;
+    char         driver[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+    uint32_t     interval;
+} msg_add_group_t;
+
+typedef struct msg_del_group {
+    msg_header_t header;
+    char         driver[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+} msg_del_group_t;
+
+typedef struct msg_update_group {
+    msg_header_t header;
+    char         driver[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+    uint32_t     interval;
+} msg_update_group_t;
+
+typedef struct msg_get_group {
+    msg_header_t header;
+    char         driver[NEU_NODE_NAME_LEN];
+} msg_get_group_t;
+
+typedef struct {
+    msg_header_t  header;
+    char          driver[NEU_NODE_NAME_LEN];
+    char          group[NEU_GROUP_NAME_LEN];
+    uint16_t      n_tag;
+    neu_datatag_t tags[];
+} msg_add_tag_t, msg_update_tag_t;
+
+typedef struct msg_del_tag {
+    msg_header_t header;
+    char         driver[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+    uint16_t     n_tag;
+    char *       tags[];
+} msg_del_tag_t;
+
+typedef struct {
+    msg_header_t header;
+    char         app[NEU_NODE_NAME_LEN];
+    char         driver[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+} msg_group_subscribe_t, msg_group_unsubscribe_t;
+
+typedef struct msg_node_setting {
+    msg_header_t header;
+    char         node[NEU_NODE_NAME_LEN];
+    char *       setting;
+} msg_node_setting_t;
+
+inline static void *msg_new(nng_msg **msg, msg_type_e type, uint16_t size)
+{
+    nng_msg_alloc(msg, size);
+    msg_header_t *header = (msg_header_t *) nng_msg_body(*msg);
+
+    header->type = type;
+    header->len  = size;
+
+    return nng_msg_body(*msg);
+}
 
 /* MSG_CMD_READ_DATA */
 // typedef struct read_data_cmd {
@@ -127,11 +249,6 @@ static_assert(MSG_TYPE_END < MSG_DATABUF_KIND_MASK,
 //} stop_periodic_read_cmd_t;
 
 /* MSG_CMD_SUBSCRIBE_DRIVER */
-typedef struct {
-    char *app;
-    char *driver;
-    char *group;
-} subscribe_node_cmd_t, unsubscribe_node_cmd_t;
 
 /* MSG_CMD_UNSUBSCRIBE_DRIVER */
 // typedef struct unsubscribe_driver_cmd {
@@ -156,7 +273,8 @@ typedef struct {
 // neu_node_id_t        dst_node_id;
 //} grp_config_changed_event_t;
 
-///* MSG_DATA_NEURON_TRANS_DATA */
+/* MSG_DATA_NEURON_TRANS_DATA */
+
 // typedef struct neuron_trans_data {
 // neu_taggrp_config_t *grp_config;
 // neu_adapter_id_t     sender_id; // adapter_id of sender
@@ -182,44 +300,5 @@ typedef struct {
 // neu_adapter_id_t     recver_id;
 // uint32_t             req_id;
 //} write_data_resp_t;
-
-typedef struct message message_t;
-
-// get size of message
-size_t msg_with_struct_get_size(size_t struct_size);
-
-// get size of message
-size_t msg_inplace_data_get_size(size_t data_len);
-
-// get size of message
-size_t msg_external_data_get_size();
-
-/**
- * Initialize the message, the msg pointer had been allocated by caller, the
- * buffer of struct_ptr had also been allocated by caller. The initialization
- * function will copy contents in struct_ptr to internal buffer pointer.
- */
-void msg_with_struct_init(message_t *msg, msg_type_e type, void *struct_ptr,
-                          size_t struct_size);
-void msg_inplace_data_init(message_t *msg, msg_type_e type, size_t data_len);
-
-/**
- * Initialize the message that has external data buffer. Just set pointer of
- * external buffer to message, and get a strong reference of external buffer.
- */
-// void msg_external_data_init(message_t *msg, msg_type_e type,
-// core_databuf_t *data_buf);
-
-/**
- *  Uninitialize the message that has external data buffer. Just return strong
- *  reference of external buffer.
- */
-void msg_external_data_uninit(message_t *msg);
-
-msg_type_e msg_get_type(message_t *msg);
-size_t     msg_get_buf_len(message_t *msg);
-void *     msg_get_buf_ptr(message_t *msg);
-
-nng_msg *nng_msg_inplace_from_buf(msg_type_e msg_type, void *buf, size_t size);
 
 #endif

@@ -28,19 +28,22 @@
 
 typedef struct neu_group neu_group_t;
 
-neu_group_t *neu_group_new(const char *name, uint32_t interval);
-const char * neu_group_get_name(neu_group_t *group);
-uint32_t     neu_group_get_interval(neu_group_t *group);
-void         neu_group_destroy(neu_group_t *group);
-int          neu_group_update(neu_group_t *group, uint32_t interval);
-int          neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag);
-int          neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag);
-int          neu_group_del_tag(neu_group_t *group, const char *tag_name);
-UT_array *   neu_group_get_tag(neu_group_t *group);
-uint16_t     neu_group_tag_size(neu_group_t *group);
+neu_group_t *  neu_group_new(const char *name, uint32_t interval);
+const char *   neu_group_get_name(neu_group_t *group);
+uint32_t       neu_group_get_interval(neu_group_t *group);
+void           neu_group_destroy(neu_group_t *group);
+int            neu_group_update(neu_group_t *group, uint32_t interval);
+int            neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag);
+int            neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag);
+int            neu_group_del_tag(neu_group_t *group, const char *tag_name);
+UT_array *     neu_group_get_tag(neu_group_t *group);
+UT_array *     neu_group_get_read_tag(neu_group_t *group);
+uint16_t       neu_group_tag_size(neu_group_t *group);
+neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag);
 
 typedef void (*neu_group_change_fn)(void *arg, int64_t timestamp,
                                     UT_array *tags, uint32_t interval);
 void neu_group_change_test(neu_group_t *group, int64_t timestamp, void *arg,
                            neu_group_change_fn fn);
+bool neu_group_is_change(neu_group_t *group, int64_t timestamp);
 #endif

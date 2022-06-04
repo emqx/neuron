@@ -97,7 +97,7 @@ set(NEURON_SOURCES
     src/main.c
     src/argparse.c
     src/daemon.c
-    src/core/message.c
+#    src/core/message.c
 #    src/core/databuf.c
 #    src/core/neu_trans_buf.c
 #    src/core/neu_manager.c

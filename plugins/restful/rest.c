@@ -182,7 +182,6 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
         goto web_server_start_fail;
     }
 
-    handle_rw_init();
     nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 
@@ -205,13 +204,10 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    handle_rw_uninit();
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     nng_http_server_stop(plugin->web_server);
     nng_http_server_release(plugin->web_server);
-
-    neu_rest_free_ctx(plugin->handle_ctx);
 
     free(plugin);
     nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
@@ -261,9 +257,6 @@ static int dashb_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
     }
 
     nlog_info("send request to plugin: %s", neu_plugin_module.module_name);
-    const adapter_callbacks_t *adapter_callbacks;
-    adapter_callbacks = plugin->common.adapter_callbacks;
-    (void) adapter_callbacks;
 
     switch (req->req_type) {
     case NEU_REQRESP_READ_RESP:

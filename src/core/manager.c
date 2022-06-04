@@ -27,6 +27,7 @@
 #include "utils/log.h"
 
 #include "adapter.h"
+#include "adapter/adapter_internal.h"
 #include "adapter/driver/driver_internal.h"
 
 #include "message.h"
@@ -56,8 +57,8 @@ struct neu_manager {
 static const char *const url = "inproc://neu_manager";
 
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data);
-inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
-                               nng_pipe pipe);
+inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
+                                   nng_pipe pipe);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static void stop_static_adapter(neu_manager_t *manager, const char *name);
 
@@ -183,7 +184,7 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
     }
 
     ret =
-        neu_adapter_driver_find_group((neu_adapter_driver_t *) adapter, group);
+        neu_adapter_driver_group_exist((neu_adapter_driver_t *) adapter, group);
     if (ret != NEU_ERR_SUCCESS) {
         return ret;
     }
@@ -534,8 +535,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     neu_manager_t *manager = (neu_manager_t *) usr_data;
     int            rv      = 0;
     nng_msg *      msg     = NULL;
-    message_t *    pay_msg = NULL;
-    void *         msg_ptr = NULL;
+    msg_header_t * header  = NULL;
 
     if (type == NEU_EVENT_IO_CLOSED || type == NEU_EVENT_IO_HUP) {
         nlog_warn("manager socket(%d) recv closed or hup %d.", fd, type);
@@ -548,22 +548,19 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         return 0;
     }
 
-    pay_msg = nng_msg_body(msg);
-    msg_ptr = msg_get_buf_ptr(pay_msg);
-    switch (msg_get_type(pay_msg)) {
-    case MSG_EVENT_NODE_PING: {
-        char *   node_name = (char *) msg_ptr;
+    header = (msg_header_t *) nng_msg_body(msg);
+    switch (header->type) {
+    case MSG_NODE_INIT: {
+        char *   node_name = ((msg_node_init_t *) header)->node;
         nng_pipe pipe      = nng_msg_get_pipe(msg);
 
         neu_node_manager_update(manager->node_manager, node_name, pipe);
         nlog_notice("bind node %s to pipe(%d)", node_name, pipe.id);
         if (strcmp(DEFAULT_DUMMY_PLUGIN_NAME, node_name) == 0) {
-            nng_msg *out_msg  = NULL;
-            size_t   msg_size = msg_inplace_data_get_size(0);
-
-            nng_msg_alloc(&out_msg, msg_size);
-            msg_ptr = (message_t *) nng_msg_body(out_msg);
-            msg_inplace_data_init(msg_ptr, MSG_CMD_PERSISTENCE_LOAD, 0);
+            nng_msg *               out_msg = NULL;
+            msg_persistence_load_t *load = (msg_persistence_load_t *) msg_new(
+                &out_msg, MSG_PERSISTENCE_LOAD, sizeof(msg_persistence_load_t));
+            (void) load;
 
             manager->persist_pipe = pipe;
             nng_msg_set_pipe(out_msg, manager->persist_pipe);
@@ -573,116 +570,115 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         break;
     }
-        // case MSG_CMD_READ_DATA: {
-        // read_data_cmd_t *read_cmd = (read_data_cmd_t *) msg_ptr;
-        // nng_pipe         dst_pipe = neu_node_manager_get_pipe_by_id(
-        // manager->node_manager, read_cmd->dst_node_id);
+    case MSG_GROUP_READ: {
+        msg_group_read_t *cmd = (msg_group_read_t *) header;
+        nng_pipe          dst_pipe =
+            neu_node_manager_get_pipe(manager->node_manager, cmd->driver);
 
-        // forward_msg(manager, msg, dst_pipe);
+        forward_msg_dup(manager, msg, dst_pipe);
 
-        // nlog_info("forward read request to driver pipe: %d", dst_pipe.id);
-        // break;
-        //}
-        // case MSG_DATA_READ_RESP: {
-        // read_data_resp_t *read_res = (read_data_resp_t *) msg_ptr;
-        // nng_pipe          dst_pipe = neu_node_manager_get_pipe_by_id(
-        // manager->node_manager, read_res->recver_id);
+        nlog_info("forward read request to driver pipe: %d", dst_pipe.id);
+        break;
+    }
+    case MSG_GROUP_READ_RESP: {
+        msg_group_read_resp_t *cmd = (msg_group_read_resp_t *) header;
+        nng_pipe               dst_pipe =
+            neu_node_manager_get_pipe(manager->node_manager, cmd->reader);
 
-        // forward_msg(manager, msg, dst_pipe);
+        forward_msg_dup(manager, msg, dst_pipe);
 
-        // nlog_info("forward read response to driver pipe: %d", dst_pipe.id);
-        // break;
-        //}
-        // case MSG_CMD_WRITE_DATA: {
-        // write_data_cmd_t *write_cmd = (write_data_cmd_t *) msg_ptr;
-        // nng_pipe          dst_pipe  = neu_node_manager_get_pipe_by_id(
-        // manager->node_manager, write_cmd->dst_node_id);
+        nlog_info("forward read response to driver pipe: %d", dst_pipe.id);
+        break;
+    }
+    case MSG_TAG_WRITE: {
+        msg_tag_write_t *cmd = (msg_tag_write_t *) header;
+        nng_pipe         dst_pipe =
+            neu_node_manager_get_pipe(manager->node_manager, cmd->driver);
 
-        // forward_msg(manager, msg, dst_pipe);
+        forward_msg_dup(manager, msg, dst_pipe);
 
-        // nlog_info("forward write request to driver pipe: %d", dst_pipe.id);
-        // break;
-        //}
-        // case MSG_DATA_WRITE_RESP: {
-        // write_data_resp_t *write_res = (write_data_resp_t *) msg_ptr;
-        // nng_pipe           dst_pipe  = neu_node_manager_get_pipe_by_id(
-        // manager->node_manager, write_res->recver_id);
+        nlog_info("forward write request to driver pipe: %d", dst_pipe.id);
+        break;
+    }
+    case MSG_TAG_WRITE_RESP: {
+        msg_tag_write_resp_t *cmd = (msg_tag_write_resp_t *) header;
+        nng_pipe              dst_pipe =
+            neu_node_manager_get_pipe(manager->node_manager, cmd->writer);
 
-        // forward_msg(manager, msg, dst_pipe);
+        forward_msg_dup(manager, msg, dst_pipe);
 
-        // nlog_info("forward write response to driver pipe: %d", dst_pipe.id);
-        // break;
-        //}
-
-    case MSG_EVENT_ADD_NODE:
-    case MSG_EVENT_UPDATE_NODE:
-    case MSG_EVENT_DEL_NODE:
-    case MSG_EVENT_SET_NODE_SETTING:
-    case MSG_EVENT_ADD_GRP_CONFIG:
-    case MSG_EVENT_UPDATE_GRP_CONFIG:
-    case MSG_EVENT_DEL_GRP_CONFIG:
-    case MSG_EVENT_ADD_TAGS:
-    case MSG_EVENT_DEL_TAGS:
-    case MSG_EVENT_UPDATE_TAGS:
-    case MSG_EVENT_ADD_PLUGIN:
-    case MSG_EVENT_UPDATE_PLUGIN:
-    case MSG_EVENT_SUBSCRIBE_NODE:
-    case MSG_EVENT_UNSUBSCRIBE_NODE:
-    case MSG_EVENT_DEL_PLUGIN: {
-        forward_msg(manager, msg, manager->persist_pipe);
-        nlog_info("forward event %d to %s pipe: %d", msg_get_type(pay_msg),
+        nlog_info("forward read response to driver pipe: %d", dst_pipe.id);
+        break;
+    }
+    case MSG_PLUGIN_ADD:
+    case MSG_PLUGIN_DEL:
+    case MSG_NODE_ADD:
+    case MSG_NODE_DEL:
+    case MSG_NODE_SETTING:
+    case MSG_GROUP_ADD:
+    case MSG_GROUP_UPDATE:
+    case MSG_GROUP_DEL:
+    case MSG_TAG_ADD:
+    case MSG_TAG_DEL:
+    case MSG_TAG_UPDATE: {
+        forward_msg_dup(manager, msg, manager->persist_pipe);
+        nlog_info("forward event %d to %s pipe: %d", header->type,
                   DEFAULT_PERSIST_ADAPTER_NAME, manager->persist_pipe.id);
         break;
     }
-    case MSG_EVENT_UPDATE_LICENSE: {
+    case MSG_GROUP_SUBSCRIBE: {
+        msg_group_unsubscribe_t *unsubscribe =
+            (msg_group_unsubscribe_t *) header;
+
+        neu_subscribe_manager_unsub(manager->subscribe_manager,
+                                    unsubscribe->driver, unsubscribe->app,
+                                    unsubscribe->group);
+        forward_msg_dup(manager, msg, manager->persist_pipe);
+        nlog_info("forward event %d to %s pipe: %d", header->type,
+                  DEFAULT_PERSIST_ADAPTER_NAME, manager->persist_pipe.id);
+        break;
+    }
+    case MSG_GROUP_UNSUBSCRIBE: {
+        msg_group_subscribe_t *subscribe = (msg_group_subscribe_t *) header;
+        nng_pipe               app_pipe =
+            neu_node_manager_get_pipe(manager->node_manager, subscribe->app);
+        neu_subscribe_manager_sub(manager->subscribe_manager, subscribe->driver,
+                                  subscribe->app, subscribe->group, app_pipe);
+
+        forward_msg_dup(manager, msg, manager->persist_pipe);
+        nlog_info("forward event %d to %s pipe: %d", header->type,
+                  DEFAULT_PERSIST_ADAPTER_NAME, manager->persist_pipe.id);
+        break;
+    }
+    case MSG_UPDATE_LICENSE: {
         UT_array *pipes = neu_node_manager_get_pipes(manager->node_manager,
                                                      NEU_NA_TYPE_DRIVER);
 
         utarray_foreach(pipes, nng_pipe *, pipe)
         {
-            forward_msg(manager, msg, *pipe);
+            forward_msg_dup(manager, msg, *pipe);
             nlog_info("forward license update to pipe: %d", pipe->id);
         }
         utarray_free(pipes);
 
         break;
     }
-    case MSG_CMD_SUBSCRIBE_NODE: {
-        subscribe_node_cmd_t *subscribe = (subscribe_node_cmd_t *) msg_ptr;
-        nng_pipe              app_pipe =
-            neu_node_manager_get_pipe(manager->node_manager, subscribe->app);
-
-        neu_subscribe_manager_sub(manager->subscribe_manager, subscribe->driver,
-                                  subscribe->app, subscribe->group, app_pipe);
-
+    case MSG_TRANS_DATA: {
+        msg_trans_data_t *trans = (msg_trans_data_t *) header;
+        UT_array *        apps  = neu_subscribe_manager_find(
+            manager->subscribe_manager, trans->data.driver, trans->data.group);
+        if (apps != NULL) {
+            utarray_foreach(apps, neu_app_subscribe_t *, app)
+            {
+                forward_msg_dup(manager, msg, app->pipe);
+                nlog_debug("forward trans data to pipe: %d", app->pipe.id);
+            }
+            utarray_free(apps);
+        }
         break;
     }
-    case MSG_CMD_UNSUBSCRIBE_NODE: {
-        unsubscribe_node_cmd_t *unsubscribe =
-            (unsubscribe_node_cmd_t *) msg_ptr;
-
-        neu_subscribe_manager_unsub(manager->subscribe_manager,
-                                    unsubscribe->driver, unsubscribe->app,
-                                    unsubscribe->group);
-        break;
-    }
-        // case MSG_DATA_NEURON_TRANS_DATA: {
-        // neuron_trans_data_t *trans = (neuron_trans_data_t *) msg_ptr;
-        // UT_array *           apps  = neu_subscribe_manager_find(
-        // manager->subscribe_manager, trans->node_name, trans->group);
-
-        // utarray_foreach(apps, neu_app_subscribe_t *, app)
-        //{
-        // forward_msg(manager, msg, app->pipe);
-        // nlog_debug("forward trans data to pipe: %d", app->pipe.id);
-        //}
-
-        // utarray_free(apps);
-        // break;
-    //}
     default:
-        nlog_warn("receive a not supported msg type: %d",
-                  msg_get_type(pay_msg));
+        nlog_warn("receive a not supported msg type: %d", header->type);
         break;
     }
     nng_msg_free(msg);
@@ -690,25 +686,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     return 0;
 }
 
-inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
-                               nng_pipe pipe)
+inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
+                                   nng_pipe pipe)
 {
-    nng_msg *  out_nmsg;
-    message_t *in_msg, *out_msg;
-    void *     out_msg_ptr;
+    nng_msg *out_msg;
 
-    in_msg = (message_t *) nng_msg_body(msg);
-    nng_msg_alloc(&out_nmsg, nng_msg_len(msg));
-    out_msg = (message_t *) nng_msg_body(out_nmsg);
-
-    msg_inplace_data_init(out_msg, msg_get_type(in_msg),
-                          msg_get_buf_len(in_msg));
-
-    out_msg_ptr = msg_get_buf_ptr(out_msg);
-    memcpy(out_msg_ptr, msg_get_buf_ptr(in_msg), msg_get_buf_len(in_msg));
-
-    nng_msg_set_pipe(out_nmsg, pipe);
-    nng_sendmsg(manager->socket, out_nmsg, 0);
+    nng_msg_dup(&out_msg, msg);
+    nng_msg_set_pipe(out_msg, pipe);
+    nng_sendmsg(manager->socket, out_msg, 0);
 }
 
 static void start_static_adapter(neu_manager_t *manager, const char *name)

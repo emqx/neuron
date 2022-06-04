@@ -46,6 +46,7 @@ struct neu_group {
 };
 
 static UT_array *to_array(tag_elem_t *tags);
+static UT_array *to_read_array(tag_elem_t *tags);
 static void      update_timestamp(neu_group_t *group);
 
 neu_group_t *neu_group_new(const char *name, uint32_t interval)
@@ -213,6 +214,17 @@ UT_array *neu_group_get_tag(neu_group_t *group)
     return array;
 }
 
+UT_array *neu_group_get_read_tag(neu_group_t *group)
+{
+    UT_array *array = NULL;
+
+    nng_mtx_lock(group->mtx);
+    array = to_read_array(group->tags);
+    nng_mtx_unlock(group->mtx);
+
+    return array;
+}
+
 uint16_t neu_group_tag_size(neu_group_t *group)
 {
     uint16_t size = 0;
@@ -224,14 +236,46 @@ uint16_t neu_group_tag_size(neu_group_t *group)
     return size;
 }
 
+neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
+{
+    tag_elem_t *   find   = NULL;
+    neu_datatag_t *result = NULL;
+
+    nng_mtx_lock(group->mtx);
+    HASH_FIND_STR(group->tags, tag, find);
+    if (find != NULL) {
+        result            = calloc(1, sizeof(neu_datatag_t));
+        result->type      = find->tag->type;
+        result->attribute = find->tag->attribute;
+        result->name      = strdup(find->tag->name);
+        result->addr_str  = strdup(find->tag->addr_str);
+    }
+    nng_mtx_unlock(group->mtx);
+
+    return result;
+}
+
 void neu_group_change_test(neu_group_t *group, int64_t timestamp, void *arg,
                            neu_group_change_fn fn)
 {
     nng_mtx_lock(group->mtx);
     if (group->timestamp != timestamp) {
-        fn(arg, group->timestamp, to_array(group->tags), group->interval);
+        UT_array *tags = to_array(group->tags);
+        fn(arg, group->timestamp, tags, group->interval);
+        utarray_free(tags);
     }
     nng_mtx_unlock(group->mtx);
+}
+
+bool neu_group_is_change(neu_group_t *group, int64_t timestamp)
+{
+    bool change = false;
+
+    nng_mtx_lock(group->mtx);
+    change = group->timestamp != timestamp;
+    nng_mtx_unlock(group->mtx);
+
+    return change;
 }
 
 static void update_timestamp(neu_group_t *group)
@@ -250,6 +294,22 @@ static UT_array *to_array(tag_elem_t *tags)
 
     utarray_new(array, neu_tag_get_icd());
     HASH_ITER(hh, tags, el, tmp) { utarray_push_back(array, el->tag); }
+
+    return array;
+}
+
+static UT_array *to_read_array(tag_elem_t *tags)
+{
+    tag_elem_t *el = NULL, *tmp = NULL;
+    UT_array *  array = NULL;
+
+    utarray_new(array, neu_tag_get_icd());
+    HASH_ITER(hh, tags, el, tmp)
+    {
+        if ((el->tag->attribute & NEU_ATTRIBUTE_READ) == NEU_ATTRIBUTE_READ) {
+            utarray_push_back(array, el->tag);
+        }
+    }
 
     return array;
 }

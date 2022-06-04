@@ -26,7 +26,7 @@ void handle_rw_init();
 void handle_rw_uninit();
 void handle_read(nng_aio *aio);
 void handle_write(nng_aio *aio);
-void handle_read_resp(void *cmd_resp);
-void handle_write_resp(void *cmd_resp);
+void handle_read_resp(void *req);
+void handle_write_resp(void *req);
 
 #endif

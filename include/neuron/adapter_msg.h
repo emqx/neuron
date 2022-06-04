@@ -92,6 +92,12 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_UPDATE_LICENSE,
 } neu_reqresp_type_e;
 
+typedef struct neu_reqresp_head {
+    uint32_t           req_id;
+    neu_reqresp_type_e type;
+    uint16_t           len;
+} neu_reqresp_head_t;
+
 typedef struct neu_plugin_lib_info {
     char name[NEU_PLUGIN_NAME_LEN];
     char description[NEU_PLUGIN_DESCRIPTION_LEN];
@@ -148,28 +154,56 @@ typedef struct neu_reqresp_get_tags_resp {
     UT_array *tags;
 } neu_reqresp_get_tags_resp_t;
 
+typedef struct neu_tag_data {
+    char         tag[NEU_TAG_NAME_LEN];
+    neu_dvalue_t value;
+} neu_tag_data_t;
+
+/* NEU_REQRESP_DATA */
+typedef struct neu_reqresp_data {
+    char           driver[NEU_NODE_NAME_LEN];
+    char           group[NEU_GROUP_NAME_LEN];
+    uint16_t       n_data;
+    neu_tag_data_t datas[];
+} neu_reqresp_data_t;
+
 /* NEU_REQRESP_READ_DATA */
 typedef struct neu_reqresp_read {
-    char *node_name;
-    char *group_name;
+    char  driver[NEU_NODE_NAME_LEN];
+    char  group[NEU_GROUP_NAME_LEN];
+    void *ctx;
 } neu_reqresp_read_t;
 
 /* NEU_REQRESP_READ_RESP */
+typedef struct neu_reqresp_read_resp {
+    char           driver[NEU_NODE_NAME_LEN];
+    char           group[NEU_GROUP_NAME_LEN];
+    void *         ctx;
+    uint16_t       n_data;
+    neu_tag_data_t datas[];
+} neu_reqresp_read_resp_t;
 
 /* NEU_REQRESP_WRITE_DATA */
 typedef struct neu_reqresp_write {
-    char *          node_name;
-    char *          group_name;
-    neu_data_val_t *data_val;
+    char         driver[NEU_NODE_NAME_LEN];
+    char         group[NEU_GROUP_NAME_LEN];
+    char         tag[NEU_TAG_NAME_LEN];
+    void *       ctx;
+    neu_dvalue_t value;
 } neu_reqresp_write_t;
+
+typedef struct neu_reqresp_write_resp {
+    void *ctx;
+    int   error;
+} neu_reqresp_write_resp_t;
 
 /* NEU_REQRESP_WRITE_RESP */
 
 /* NEU_REQRESP_UNSUBSCRIBE_NODE */
 /* NEU_REQRESP_SUBSCRIBE_NODE */
 typedef struct {
-    char *app_name;
-    char *driver_name;
+    char *app;
+    char *driver;
     char *group;
 } neu_reqresp_subscribe_node_t, neu_reqresp_unsubscribe_node_t;
 
@@ -382,8 +416,8 @@ typedef struct {
 typedef struct neu_request {
     uint32_t           req_id;
     neu_reqresp_type_e req_type;
-    uint64_t           sender_id; // adapter_id of sender
     char *             node_name; // adapter name of sender
+    void *             ctx;
     uint32_t           buf_len;
     void *             buf;
 } neu_request_t;
@@ -391,11 +425,11 @@ typedef struct neu_request {
 typedef struct neu_response {
     uint32_t           req_id;
     neu_reqresp_type_e resp_type;
-    uint64_t           recver_id; // adapter_id of reciever, it is same as
-                                  // sender_id in neu_request_t
-    uint32_t buf_len;
-    void *   buf;
+    char *             node_name;
+    uint32_t           buf_len;
+    void *             buf;
 } neu_response_t;
+
 #ifdef __cplusplus
 }
 #endif

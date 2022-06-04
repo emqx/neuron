@@ -224,9 +224,9 @@ int neu_plugin_send_subscribe_cmd(neu_plugin_t *plugin, const char *app_name,
     int                          error = 0;
     neu_reqresp_subscribe_node_t req   = { 0 };
 
-    req.app_name    = (char *) app_name;
-    req.driver_name = (char *) driver_name;
-    req.group       = (char *) group;
+    req.app    = (char *) app_name;
+    req.driver = (char *) driver_name;
+    req.group  = (char *) group;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_SUBSCRIBE_NODE, req, intptr_t,
                     { error = (intptr_t) resp; })
@@ -240,9 +240,9 @@ int neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin, const char *app_name,
     int                            error = 0;
     neu_reqresp_unsubscribe_node_t req   = { 0 };
 
-    req.app_name    = (char *) app_name;
-    req.driver_name = (char *) driver_name;
-    req.group       = (char *) group;
+    req.app    = (char *) app_name;
+    req.driver = (char *) driver_name;
+    req.group  = (char *) group;
 
     PLUGIN_CALL_CMD(plugin, NEU_REQRESP_UNSUBSCRIBE_NODE, req, intptr_t,
                     { error = (intptr_t) resp; })
@@ -250,28 +250,31 @@ int neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin, const char *app_name,
     return error;
 }
 
-void neu_plugin_send_read_cmd(neu_plugin_t *plugin, uint32_t event_id,
-                              const char *node_name, const char *group_name)
+void neu_plugin_send_read_cmd(neu_plugin_t *plugin, const char *driver,
+                              const char *group, void *ctx)
 {
     neu_reqresp_read_t read_req = { 0 };
 
-    read_req.group_name = (char *) group_name;
-    read_req.node_name  = (char *) node_name;
+    strcpy(read_req.driver, driver);
+    strcpy(read_req.group, group);
+    read_req.ctx = ctx;
 
-    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_READ_DATA, read_req, event_id)
+    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_READ_DATA, read_req, 0)
 }
 
-void neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
-                               const char *node_name, const char *group_name,
-                               neu_data_val_t *data)
+void neu_plugin_send_write_cmd(neu_plugin_t *plugin, const char *node_name,
+                               const char *group_name, const char *tag,
+                               neu_dvalue_t value, void *ctx)
 {
     neu_reqresp_write_t write_req = { 0 };
 
-    write_req.node_name  = (char *) node_name;
-    write_req.group_name = (char *) group_name;
-    write_req.data_val   = data;
+    strcpy(write_req.driver, node_name);
+    strcpy(write_req.group, group_name);
+    strcpy(write_req.tag, tag);
+    write_req.ctx   = ctx;
+    write_req.value = value;
 
-    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_WRITE_DATA, write_req, event_id)
+    PLUGIN_SEND_CMD(plugin, NEU_REQRESP_WRITE_DATA, write_req, 0)
 }
 
 static inline int plugin_notify_tags_event(neu_plugin_t *   plugin,

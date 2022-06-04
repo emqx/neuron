@@ -120,11 +120,11 @@ int neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin, const char *app_name,
 int neu_plugin_send_subscribe_cmd(neu_plugin_t *plugin, const char *app_name,
                                   const char *driver_name, const char *group);
 
-void neu_plugin_send_read_cmd(neu_plugin_t *plugin, uint32_t event_id,
-                              const char *node_name, const char *group_name);
-void neu_plugin_send_write_cmd(neu_plugin_t *plugin, uint32_t event_id,
-                               const char *node_name, const char *group_name,
-                               neu_data_val_t *data);
+void neu_plugin_send_read_cmd(neu_plugin_t *plugin, const char *driver,
+                              const char *group, void *ctx);
+void neu_plugin_send_write_cmd(neu_plugin_t *plugin, const char *node_name,
+                               const char *group_name, const char *tag,
+                               neu_dvalue_t value, void *ctx);
 
 neu_node_id_t neu_plugin_get_node_id_by_node_name(neu_plugin_t *plugin,
                                                   const char *  node_name);
