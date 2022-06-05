@@ -28,19 +28,19 @@ extern "C" {
 
 #include "common.h"
 
-int   command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                                   neu_json_read_req_t *req, uint32_t req_id);
-//char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
-                                    //neu_json_mqtt_t *parse_header,
-                                    //neu_data_val_t * resp_val);
+int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                                 neu_json_read_req_t *req, uint32_t req_id);
+// char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
+// neu_json_mqtt_t *parse_header,
+// neu_data_val_t * resp_val);
 // char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t
 // sender, const char *         node_name, neu_taggrp_config_t *grp_config,
 // neu_data_val_t *     resp_val,
 // int                  upload_format);
-int   command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                               neu_json_write_req_t *write_req, uint32_t req_id);
-//char *command_rw_write_response(neu_json_mqtt_t *parse_header,
-                                //neu_data_val_t * resp_val);
+int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                             neu_json_write_req_t *write_req, uint32_t req_id);
+// char *command_rw_write_response(neu_json_mqtt_t *parse_header,
+// neu_data_val_t * resp_val);
 
 #ifdef __cplusplus
 }
