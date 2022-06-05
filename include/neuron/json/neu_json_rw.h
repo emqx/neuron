@@ -32,8 +32,8 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *   group_name;
-    char *   node_name;
+    char *   group;
+    char *   node;
     uint64_t timestamp;
 } neu_json_read_periodic_t;
 
@@ -53,9 +53,9 @@ int neu_json_encode_read_resp(void *json_object, void *param);
 int neu_json_encode_read_resp1(void *json_object, void *param);
 
 typedef struct {
-    char *               group_name;
-    char *               node_name;
-    char *               tag_name;
+    char *               group;
+    char *               node;
+    char *               tag;
     enum neu_json_type   t;
     union neu_json_value value;
 } neu_json_write_req_t;
@@ -64,8 +64,8 @@ int  neu_json_decode_write_req(char *buf, neu_json_write_req_t **result);
 void neu_json_decode_write_req_free(neu_json_write_req_t *req);
 
 typedef struct {
-    char *group_name;
-    char *node_name;
+    char *group;
+    char *node;
 } neu_json_read_req_t;
 
 int  neu_json_decode_read_req(char *buf, neu_json_read_req_t **result);

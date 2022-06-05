@@ -533,7 +533,13 @@ UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
 
 static int report_callback(void *usr_data)
 {
-    group_t * group = (group_t *) usr_data;
+    group_t *                  group = (group_t *) usr_data;
+    neu_plugin_running_state_e state =
+        neu_adapter_state_to_plugin_state((neu_adapter_t *) group->driver);
+    if (state != NEU_PLUGIN_RUNNING_STATE_RUNNING) {
+        return 0;
+    }
+
     UT_array *tags =
         neu_adapter_driver_get_read_tag(group->driver, group->name);
 
@@ -597,7 +603,12 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
 
 static int read_callback(void *usr_data)
 {
-    group_t *group = (group_t *) usr_data;
+    group_t *                  group = (group_t *) usr_data;
+    neu_plugin_running_state_e state =
+        neu_adapter_state_to_plugin_state((neu_adapter_t *) group->driver);
+    if (state != NEU_PLUGIN_RUNNING_STATE_RUNNING) {
+        return 0;
+    }
 
     nng_mtx_lock(group->driver->mtx);
     if (!neu_group_is_change(group->group, group->timestamp)) {

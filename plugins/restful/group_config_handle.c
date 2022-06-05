@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 
-
 #include "plugin.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
@@ -38,7 +37,7 @@ void handle_add_group_config(nng_aio *aio)
         aio, neu_json_add_group_config_req_t,
         neu_json_decode_add_group_config_req,
         { NEU_JSON_RESPONSE_ERROR(
-            neu_system_add_group_config(plugin, req->node_name, req->name,
+            neu_system_add_group_config(plugin, req->node, req->group,
                                         req->interval),
             { http_response(aio, error_code.error, result_error); }) })
 }
@@ -51,7 +50,7 @@ void handle_del_group_config(nng_aio *aio)
         aio, neu_json_del_group_config_req_t,
         neu_json_decode_del_group_config_req,
         { NEU_JSON_RESPONSE_ERROR(
-            neu_system_del_group_config(plugin, req->node_name, req->name),
+            neu_system_del_group_config(plugin, req->node, req->group),
             { http_response(aio, error_code.error, result_error); }) })
 }
 
@@ -76,8 +75,7 @@ void handle_get_group_config(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_str(aio, "node_name", node_name, sizeof(node_name)) <=
-        0) {
+    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
@@ -126,8 +124,8 @@ void handle_grp_subscribe(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req,
         { NEU_JSON_RESPONSE_ERROR(
-            neu_plugin_send_subscribe_cmd(plugin, req->app_name,
-                                          req->driver_name, req->name),
+            neu_plugin_send_subscribe_cmd(plugin, req->app, req->driver,
+                                          req->group),
             { http_response(aio, error_code.error, result_error); }) })
 }
 
@@ -138,8 +136,8 @@ void handle_grp_unsubscribe(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_unsubscribe_req_t, neu_json_decode_unsubscribe_req,
         { NEU_JSON_RESPONSE_ERROR(
-            neu_plugin_send_unsubscribe_cmd(plugin, req->app_name,
-                                            req->driver_name, req->name),
+            neu_plugin_send_unsubscribe_cmd(plugin, req->app, req->driver,
+                                            req->group),
             { http_response(aio, error_code.error, result_error); }) })
 }
 
@@ -153,8 +151,7 @@ void handle_grp_get_subscribe(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_str(aio, "node_name", node_name, sizeof(node_name)) <=
-        0) {
+    if (http_get_param_str(aio, "app", node_name, sizeof(node_name)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
@@ -169,8 +166,8 @@ void handle_grp_get_subscribe(nng_aio *aio)
 
     utarray_foreach(groups, neu_subscribe_info_t *, group)
     {
-        sub_grp_configs.groups[index].node_name  = group->driver;
-        sub_grp_configs.groups[index].group_name = group->group;
+        sub_grp_configs.groups[index].driver = group->driver;
+        sub_grp_configs.groups[index].group  = group->group;
 
         index += 1;
     }

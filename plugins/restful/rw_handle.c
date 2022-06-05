@@ -18,7 +18,7 @@ void handle_read(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_read_req_t, neu_json_decode_read_req, {
-            neu_plugin_send_read_cmd(plugin, req->node_name, req->group_name,
+            neu_plugin_send_read_cmd(plugin, req->node, req->group,
                                      (void *) aio);
         })
 }
@@ -52,8 +52,8 @@ void handle_write(nng_aio *aio)
                 break;
             }
 
-            neu_plugin_send_write_cmd(plugin, req->node_name, req->group_name,
-                                      req->tag_name, value, aio);
+            neu_plugin_send_write_cmd(plugin, req->node, req->group, req->tag,
+                                      value, aio);
         })
 }
 

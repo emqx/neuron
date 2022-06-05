@@ -40,7 +40,7 @@ void handle_add_adapter(nng_aio *aio)
             neu_err_code_e code = { 0 };
 
             NEU_JSON_RESPONSE_ERROR(
-                neu_system_add_node(plugin, req->name, req->plugin_name),
+                neu_system_add_node(plugin, req->name, req->plugin),
                 { http_response(aio, code, result_error); })
         })
 }
@@ -82,8 +82,8 @@ void handle_get_adapter(nng_aio *aio)
 
     utarray_foreach(nodes, neu_node_info_t *, info)
     {
-        nodes_res.nodes[index].name        = info->node_name;
-        nodes_res.nodes[index].plugin_name = info->plugin_name;
+        nodes_res.nodes[index].name   = info->node_name;
+        nodes_res.nodes[index].plugin = info->plugin_name;
         index += 1;
     }
 
@@ -107,7 +107,7 @@ void handle_set_node_setting(nng_aio *aio)
             memcpy(config_buf, req_data, req_data_size);
 
             NEU_JSON_RESPONSE_ERROR(
-                neu_plugin_set_node_setting(plugin, req->node_name, config_buf),
+                neu_plugin_set_node_setting(plugin, req->node, config_buf),
                 { http_response(aio, error_code.error, result_error); });
             free(config_buf);
         })
@@ -147,7 +147,7 @@ void handle_node_ctl(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_ctl_req_t, neu_json_decode_node_ctl_req, {
             NEU_JSON_RESPONSE_ERROR(
-                neu_plugin_node_ctl(plugin, req->name, req->cmd),
+                neu_plugin_node_ctl(plugin, req->node, req->cmd),
                 { http_response(aio, error_code.error, result_error); });
         })
 }
@@ -162,8 +162,7 @@ void handle_get_node_state(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_str(aio, "node_name", node_name, sizeof(node_name)) <=
-        0) {
+    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })

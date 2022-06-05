@@ -35,7 +35,7 @@ void handle_add_plugin(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_plugin_req_t, neu_json_decode_add_plugin_req, {
             NEU_JSON_RESPONSE_ERROR(
-                neu_system_add_plugin(plugin, req->lib_name),
+                neu_system_add_plugin(plugin, req->library),
                 { http_response(aio, error_code.error, result_error); });
         })
 }
@@ -46,7 +46,7 @@ void handle_del_plugin(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_plugin_req_t, neu_json_decode_del_plugin_req, {
-            intptr_t err = neu_system_del_plugin(plugin, req->name);
+            intptr_t err = neu_system_del_plugin(plugin, req->plugin);
             if (err != 0) {
                 http_bad_request(aio, "{\"error\": 1}");
             } else {
@@ -75,7 +75,7 @@ void handle_get_plugin(nng_aio *aio)
         plugin_res.plugin_libs[index].node_type   = info->type;
         plugin_res.plugin_libs[index].kind        = info->kind;
         plugin_res.plugin_libs[index].name        = (char *) info->name;
-        plugin_res.plugin_libs[index].lib_name    = (char *) info->lib_name;
+        plugin_res.plugin_libs[index].library     = (char *) info->lib_name;
         plugin_res.plugin_libs[index].description = (char *) info->description;
 
         index += 1;

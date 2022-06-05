@@ -43,7 +43,7 @@ int neu_json_decode_add_plugin_req(char *                      buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "lib_name",
+        .name = "library",
         .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -52,7 +52,7 @@ int neu_json_decode_add_plugin_req(char *                      buf,
         goto decode_fail;
     }
 
-    req->lib_name = req_elems[0].v.val_str;
+    req->library = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -73,7 +73,7 @@ decode_exit:
 void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req)
 {
 
-    free(req->lib_name);
+    free(req->library);
 
     free(req);
 }
@@ -92,7 +92,7 @@ int neu_json_decode_del_plugin_req(char *                      buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "name",
+        .name = "plugin",
         .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -101,7 +101,7 @@ int neu_json_decode_del_plugin_req(char *                      buf,
         goto decode_fail;
     }
 
-    req->name = req_elems[0].v.val_str;
+    req->plugin = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -121,7 +121,7 @@ decode_exit:
 
 void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req)
 {
-    free(req->name);
+    free(req->plugin);
     free(req);
 }
 
@@ -145,9 +145,9 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
                 .v.val_str = p_plugin_lib->name,
             },
             {
-                .name      = "lib_name",
+                .name      = "library",
                 .t         = NEU_JSON_STR,
-                .v.val_str = p_plugin_lib->lib_name,
+                .v.val_str = p_plugin_lib->library,
             },
             {
                 .name      = "description",
@@ -167,7 +167,7 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
     }
 
     neu_json_elem_t resp_elems[] = { {
-        .name         = "plugin_libs",
+        .name         = "plugins",
         .t            = NEU_JSON_OBJECT,
         .v.val_object = plugin_lib_array,
     } };

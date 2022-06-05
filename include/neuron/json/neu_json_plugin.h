@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *lib_name;
+    char *library;
 } neu_json_add_plugin_req_t;
 
 int  neu_json_decode_add_plugin_req(char *                      buf,
@@ -40,7 +40,7 @@ int  neu_json_decode_add_plugin_req(char *                      buf,
 void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req);
 
 typedef struct {
-    char *name;
+    char *plugin;
 } neu_json_del_plugin_req_t;
 
 int  neu_json_decode_del_plugin_req(char *                      buf,
@@ -49,7 +49,7 @@ void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req);
 
 typedef struct {
     char *  name;
-    char *  lib_name;
+    char *  library;
     char *  description;
     int64_t kind;
     int64_t node_type;

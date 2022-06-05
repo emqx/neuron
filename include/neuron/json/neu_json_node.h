@@ -33,7 +33,7 @@ extern "C" {
 
 typedef struct {
     char *name;
-    char *plugin_name;
+    char *plugin;
 } neu_json_add_node_req_t;
 
 int  neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result);
@@ -54,15 +54,8 @@ typedef struct {
 int neu_json_encode_get_node_state_resp(void *json_object, void *param);
 
 typedef struct {
-    int64_t node_type;
-} neu_json_get_nodes_req_t;
-
-int neu_json_decode_get_nodes_req(char *buf, neu_json_get_nodes_req_t **result);
-void neu_json_decode_get_nodes_req_free(neu_json_get_nodes_req_t *req);
-
-typedef struct {
     char *name;
-    char *plugin_name;
+    char *plugin;
 } neu_json_get_nodes_resp_node_t;
 
 typedef struct {
@@ -82,7 +75,7 @@ int  neu_json_decode_update_node_req(char *                       buf,
 void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req);
 
 typedef struct {
-    char *  name;
+    char *  node;
     int64_t cmd;
 } neu_json_node_ctl_req_t;
 
@@ -90,7 +83,7 @@ int  neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result);
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req);
 
 typedef struct {
-    char *node_name;
+    char *node;
 } neu_json_node_setting_req_t;
 
 int  neu_json_decode_node_setting_req(char *                        buf,

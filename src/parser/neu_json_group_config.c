@@ -43,11 +43,11 @@ int neu_json_decode_add_group_config_req(
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "node_name",
+                                        .name = "node",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "name",
+                                        .name = "group",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
@@ -60,9 +60,9 @@ int neu_json_decode_add_group_config_req(
         goto decode_fail;
     }
 
-    req->node_name = req_elems[0].v.val_str;
-    req->name      = req_elems[1].v.val_str;
-    req->interval  = req_elems[2].v.val_int;
+    req->node     = req_elems[0].v.val_str;
+    req->group    = req_elems[1].v.val_str;
+    req->interval = req_elems[2].v.val_int;
 
     *result = req;
     goto decode_exit;
@@ -83,8 +83,8 @@ decode_exit:
 void neu_json_decode_add_group_config_req_free(
     neu_json_add_group_config_req_t *req)
 {
-    free(req->node_name);
-    free(req->name);
+    free(req->node);
+    free(req->group);
 
     free(req);
 }
@@ -103,11 +103,11 @@ int neu_json_decode_del_group_config_req(
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "node_name",
+                                        .name = "node",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "name",
+                                        .name = "group",
                                         .t    = NEU_JSON_STR,
                                     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -116,8 +116,8 @@ int neu_json_decode_del_group_config_req(
         goto decode_fail;
     }
 
-    req->node_name = req_elems[0].v.val_str;
-    req->name      = req_elems[1].v.val_str;
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -138,56 +138,8 @@ decode_exit:
 void neu_json_decode_del_group_config_req_free(
     neu_json_del_group_config_req_t *req)
 {
-    free(req->node_name);
-    free(req->name);
-
-    free(req);
-}
-
-int neu_json_decode_get_group_config_req(
-    char *buf, neu_json_get_group_config_req_t **result)
-{
-    int                              ret      = 0;
-    void *                           json_obj = NULL;
-    neu_json_get_group_config_req_t *req =
-        calloc(1, sizeof(neu_json_get_group_config_req_t));
-    if (req == NULL) {
-        return -1;
-    }
-
-    json_obj = neu_json_decode_new(buf);
-
-    neu_json_elem_t req_elems[] = { {
-        .name = "node_name",
-        .t    = NEU_JSON_STR,
-    } };
-    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
-                                  req_elems);
-    if (ret != 0) {
-        goto decode_fail;
-    }
-
-    req->node_name = req_elems[0].v.val_str;
-
-    *result = req;
-    goto decode_exit;
-
-decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
-    ret = -1;
-
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
-    }
-    return ret;
-}
-
-void neu_json_decode_get_group_config_req_free(
-    neu_json_get_group_config_req_t *req)
-{
+    free(req->node);
+    free(req->group);
 
     free(req);
 }
@@ -246,14 +198,14 @@ int neu_json_encode_get_subscribe_resp(void *json_object, void *param)
     neu_json_get_subscribe_resp_group_t *p_group     = resp->groups;
     for (int i = 0; i < resp->n_group; i++) {
         neu_json_elem_t group_elems[] = { {
-                                              .name      = "node_name",
+                                              .name      = "driver",
                                               .t         = NEU_JSON_STR,
-                                              .v.val_str = p_group->node_name,
+                                              .v.val_str = p_group->driver,
                                           },
                                           {
-                                              .name      = "group_name",
+                                              .name      = "group",
                                               .t         = NEU_JSON_STR,
-                                              .v.val_str = p_group->group_name,
+                                              .v.val_str = p_group->group,
                                           } };
         group_array = neu_json_encode_array(group_array, group_elems,
                                             NEU_JSON_ELEM_SIZE(group_elems));
@@ -283,15 +235,15 @@ int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "app_name",
+                                        .name = "app",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "name",
+                                        .name = "group",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "driver_name",
+                                        .name = "driver",
                                         .t    = NEU_JSON_STR,
                                     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -300,9 +252,9 @@ int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result)
         goto decode_fail;
     }
 
-    req->app_name    = req_elems[0].v.val_str;
-    req->name        = req_elems[1].v.val_str;
-    req->driver_name = req_elems[2].v.val_str;
+    req->app    = req_elems[0].v.val_str;
+    req->group  = req_elems[1].v.val_str;
+    req->driver = req_elems[2].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -322,9 +274,9 @@ decode_exit:
 
 void neu_json_decode_subscribe_req_free(neu_json_subscribe_req_t *req)
 {
-    free(req->app_name);
-    free(req->driver_name);
-    free(req->name);
+    free(req->app);
+    free(req->driver);
+    free(req->group);
 
     free(req);
 }
@@ -343,15 +295,15 @@ int neu_json_decode_unsubscribe_req(char *                       buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "app_name",
+                                        .name = "app",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "name",
+                                        .name = "group",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "driver_name",
+                                        .name = "driver",
                                         .t    = NEU_JSON_STR,
                                     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -360,9 +312,9 @@ int neu_json_decode_unsubscribe_req(char *                       buf,
         goto decode_fail;
     }
 
-    req->app_name    = req_elems[0].v.val_str;
-    req->name        = req_elems[1].v.val_str;
-    req->driver_name = req_elems[2].v.val_str;
+    req->app    = req_elems[0].v.val_str;
+    req->group  = req_elems[1].v.val_str;
+    req->driver = req_elems[2].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -383,9 +335,9 @@ decode_exit:
 void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req)
 {
 
-    free(req->app_name);
-    free(req->driver_name);
-    free(req->name);
+    free(req->app);
+    free(req->driver);
+    free(req->group);
 
     free(req);
 }

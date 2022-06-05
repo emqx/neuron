@@ -32,8 +32,8 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *  name;
-    char *  node_name;
+    char *  group;
+    char *  node;
     int64_t interval;
 } neu_json_add_group_config_req_t;
 
@@ -43,23 +43,14 @@ void neu_json_decode_add_group_config_req_free(
     neu_json_add_group_config_req_t *req);
 
 typedef struct {
-    char *name;
-    char *node_name;
+    char *group;
+    char *node;
 } neu_json_del_group_config_req_t;
 
 int neu_json_decode_del_group_config_req(
     char *buf, neu_json_del_group_config_req_t **result);
 void neu_json_decode_del_group_config_req_free(
     neu_json_del_group_config_req_t *req);
-
-typedef struct {
-    char *node_name;
-} neu_json_get_group_config_req_t;
-
-int neu_json_decode_get_group_config_req(
-    char *buf, neu_json_get_group_config_req_t **result);
-void neu_json_decode_get_group_config_req_free(
-    neu_json_get_group_config_req_t *req);
 
 typedef struct {
     char *  name;
@@ -75,8 +66,8 @@ typedef struct {
 int neu_json_encode_get_group_config_resp(void *json_object, void *param);
 
 typedef struct {
-    char *group_name;
-    char *node_name;
+    char *group;
+    char *driver;
 } neu_json_get_subscribe_resp_group_t;
 
 typedef struct {
@@ -87,18 +78,18 @@ typedef struct {
 int neu_json_encode_get_subscribe_resp(void *json_object, void *param);
 
 typedef struct {
-    char *name;
-    char *app_name;
-    char *driver_name;
+    char *group;
+    char *app;
+    char *driver;
 } neu_json_subscribe_req_t;
 
 int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result);
 void neu_json_decode_subscribe_req_free(neu_json_subscribe_req_t *req);
 
 typedef struct {
-    char *name;
-    char *app_name;
-    char *driver_name;
+    char *group;
+    char *app;
+    char *driver;
 } neu_json_unsubscribe_req_t;
 
 int  neu_json_decode_unsubscribe_req(char *                       buf,
