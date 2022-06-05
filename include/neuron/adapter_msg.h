@@ -28,13 +28,10 @@ extern "C" {
 #include <string.h>
 #include <unistd.h>
 
-//#include "adapter.h"
-#include "data_expr.h"
 #include "define.h"
 #include "errcodes.h"
 #include "plugin_info.h"
 #include "tag.h"
-#include "types.h"
 #include "utils/utextend.h"
 
 #define DEFAULT_TAG_GROUP_COUNT 8

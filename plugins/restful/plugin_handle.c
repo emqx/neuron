@@ -19,8 +19,6 @@
 
 #include <stdlib.h>
 
-#include "vector.h"
-
 #include "plugin.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_plugin.h"

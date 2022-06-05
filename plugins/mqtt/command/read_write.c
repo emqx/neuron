@@ -59,208 +59,208 @@ int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return 0;
 }
 
-static int wrap_read_response_json_object(neu_fixed_array_t *   array,
-                                          neu_json_read_resp_t *json,
-                                          neu_plugin_t *        plugin,
-                                          uint32_t              node_id)
-{
-    (void) array;
-    (void) json;
-    (void) plugin;
-    (void) node_id;
-    // neu_int_val_t *      int_val;
-    // neu_data_val_t *     val;
-    // neu_datatag_table_t *datatag_table =
-    // neu_system_get_datatags_table(plugin, node_id);
-    // json->n_tag = array->length;
+// static int wrap_read_response_json_object(neu_fixed_array_t *   array,
+// neu_json_read_resp_t *json,
+// neu_plugin_t *        plugin,
+// uint32_t              node_id)
+//{
+//(void) array;
+//(void) json;
+//(void) plugin;
+//(void) node_id;
+// neu_int_val_t *      int_val;
+// neu_data_val_t *     val;
+// neu_datatag_table_t *datatag_table =
+// neu_system_get_datatags_table(plugin, node_id);
+// json->n_tag = array->length;
 
-    // if (0 == json->n_tag) {
-    // return -1;
-    //}
+// if (0 == json->n_tag) {
+// return -1;
+//}
 
-    // json->tags = (neu_json_read_resp_tag_t *) calloc(
-    // array->length, sizeof(neu_json_read_resp_tag_t));
+// json->tags = (neu_json_read_resp_tag_t *) calloc(
+// array->length, sizeof(neu_json_read_resp_tag_t));
 
-    // for (uint32_t i = 0; i < array->length; i++) {
-    // int_val          = neu_fixed_array_get(array, i);
-    // val              = int_val->val;
-    // neu_dtype_e type = neu_dvalue_get_value_type(val);
+// for (uint32_t i = 0; i < array->length; i++) {
+// int_val          = neu_fixed_array_get(array, i);
+// val              = int_val->val;
+// neu_dtype_e type = neu_dvalue_get_value_type(val);
 
-    // neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
+// neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
 
-    // if (tag == NULL) {
-    // continue;
-    //}
+// if (tag == NULL) {
+// continue;
+//}
 
-    // json->tags[i].name  = tag->name;
-    // json->tags[i].error = NEU_ERR_SUCCESS;
+// json->tags[i].name  = tag->name;
+// json->tags[i].error = NEU_ERR_SUCCESS;
 
-    // switch (type) {
-    // case NEU_DTYPE_ERRORCODE: {
-    // int32_t value;
-    // neu_dvalue_get_errorcode(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // json->tags[i].error         = value;
-    // break;
-    //}
-    // case NEU_DTYPE_BYTE: {
-    // uint8_t value;
-    // neu_dvalue_get_uint8(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_INT8: {
-    // int8_t value;
-    // neu_dvalue_get_int8(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_INT16: {
-    // int16_t value;
-    // neu_dvalue_get_int16(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_INT32: {
-    // int32_t value;
-    // neu_dvalue_get_int32(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_INT64: {
-    // int64_t value;
-    // neu_dvalue_get_int64(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_UINT8: {
-    // uint8_t value;
-    // neu_dvalue_get_uint8(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_UINT16: {
-    // uint16_t value;
-    // neu_dvalue_get_uint16(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_UINT32: {
-    // uint32_t value;
-    // neu_dvalue_get_uint32(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_UINT64: {
-    // uint64_t value;
-    // neu_dvalue_get_uint64(val, &value);
-    // json->tags[i].t             = NEU_JSON_INT;
-    // json->tags[i].value.val_int = value;
-    // break;
-    //}
-    // case NEU_DTYPE_FLOAT: {
-    // float value;
-    // neu_dvalue_get_float(val, &value);
-    // json->tags[i].t               = NEU_JSON_FLOAT;
-    // json->tags[i].value.val_float = value;
-    // break;
-    //}
-    // case NEU_DTYPE_DOUBLE: {
-    // double value;
-    // neu_dvalue_get_double(val, &value);
-    // json->tags[i].t                = NEU_JSON_DOUBLE;
-    // json->tags[i].value.val_double = value;
-    // break;
-    //}
-    // case NEU_DTYPE_BOOL: {
-    // bool value;
-    // neu_dvalue_get_bool(val, &value);
-    // json->tags[i].t              = NEU_JSON_BOOL;
-    // json->tags[i].value.val_bool = value;
-    // break;
-    //}
-    // case NEU_DTYPE_BIT: {
-    // uint8_t value;
-    // neu_dvalue_get_bit(val, &value);
-    // json->tags[i].t             = NEU_JSON_BIT;
-    // json->tags[i].value.val_bit = value;
-    // break;
-    //}
-    // case NEU_DTYPE_CSTR: {
-    // char *value;
-    // neu_dvalue_get_ref_cstr(val, &value);
-    // json->tags[i].t             = NEU_JSON_STR;
-    // json->tags[i].value.val_str = value;
-    // break;
-    //}
-    // default:
-    // break;
-    //}
-    //}
+// switch (type) {
+// case NEU_DTYPE_ERRORCODE: {
+// int32_t value;
+// neu_dvalue_get_errorcode(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// json->tags[i].error         = value;
+// break;
+//}
+// case NEU_DTYPE_BYTE: {
+// uint8_t value;
+// neu_dvalue_get_uint8(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT8: {
+// int8_t value;
+// neu_dvalue_get_int8(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT16: {
+// int16_t value;
+// neu_dvalue_get_int16(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT32: {
+// int32_t value;
+// neu_dvalue_get_int32(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT64: {
+// int64_t value;
+// neu_dvalue_get_int64(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT8: {
+// uint8_t value;
+// neu_dvalue_get_uint8(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT16: {
+// uint16_t value;
+// neu_dvalue_get_uint16(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT32: {
+// uint32_t value;
+// neu_dvalue_get_uint32(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT64: {
+// uint64_t value;
+// neu_dvalue_get_uint64(val, &value);
+// json->tags[i].t             = NEU_JSON_INT;
+// json->tags[i].value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_FLOAT: {
+// float value;
+// neu_dvalue_get_float(val, &value);
+// json->tags[i].t               = NEU_JSON_FLOAT;
+// json->tags[i].value.val_float = value;
+// break;
+//}
+// case NEU_DTYPE_DOUBLE: {
+// double value;
+// neu_dvalue_get_double(val, &value);
+// json->tags[i].t                = NEU_JSON_DOUBLE;
+// json->tags[i].value.val_double = value;
+// break;
+//}
+// case NEU_DTYPE_BOOL: {
+// bool value;
+// neu_dvalue_get_bool(val, &value);
+// json->tags[i].t              = NEU_JSON_BOOL;
+// json->tags[i].value.val_bool = value;
+// break;
+//}
+// case NEU_DTYPE_BIT: {
+// uint8_t value;
+// neu_dvalue_get_bit(val, &value);
+// json->tags[i].t             = NEU_JSON_BIT;
+// json->tags[i].value.val_bit = value;
+// break;
+//}
+// case NEU_DTYPE_CSTR: {
+// char *value;
+// neu_dvalue_get_ref_cstr(val, &value);
+// json->tags[i].t             = NEU_JSON_STR;
+// json->tags[i].value.val_str = value;
+// break;
+//}
+// default:
+// break;
+//}
+//}
 
-    // return 0;
-    return 0;
-}
+// return 0;
+// return 0;
+//}
 
-static void clean_read_response_json_object(neu_json_read_resp_t *json)
-{
-    if (NULL == json) {
-        return;
-    }
+// static void clean_read_response_json_object(neu_json_read_resp_t *json)
+//{
+// if (NULL == json) {
+// return;
+//}
 
-    if (NULL == json->tags) {
-        return;
-    }
+// if (NULL == json->tags) {
+// return;
+//}
 
-    free(json->tags);
-}
+// free(json->tags);
+//}
 
-char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
-                                    neu_json_mqtt_t *parse_header,
-                                    neu_data_val_t * resp_val)
-{
-    UNUSED(plugin);
+// char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
+// neu_json_mqtt_t *parse_header,
+// neu_data_val_t * resp_val)
+//{
+// UNUSED(plugin);
 
-    neu_fixed_array_t *array;
-    int                rc = neu_dvalue_get_ref_array(resp_val, &array);
-    if (0 != rc) {
-        zlog_info(neuron, "Get array ref error");
-        return NULL;
-    }
+// neu_fixed_array_t *array;
+// int                rc = neu_dvalue_get_ref_array(resp_val, &array);
+// if (0 != rc) {
+// zlog_info(neuron, "Get array ref error");
+// return NULL;
+//}
 
-    if (0 >= array->length) {
-        return NULL;
-    }
+// if (0 >= array->length) {
+// return NULL;
+//}
 
-    char *json_str = NULL;
+// char *json_str = NULL;
 
-    neu_json_read_resp_t json;
-    memset(&json, 0, sizeof(neu_json_read_resp_t));
-    rc = wrap_read_response_json_object(array, &json, plugin, node_id);
-    if (0 != rc) {
-        return NULL;
-    }
+// neu_json_read_resp_t json;
+// memset(&json, 0, sizeof(neu_json_read_resp_t));
+// rc = wrap_read_response_json_object(array, &json, plugin, node_id);
+// if (0 != rc) {
+// return NULL;
+//}
 
-    rc = neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp,
-                                   parse_header, neu_json_encode_mqtt_resp,
-                                   &json_str);
-    clean_read_response_json_object(&json);
-    if (0 != rc) {
-        zlog_info(neuron, "Json string parse error:%d", rc);
-        return NULL;
-    }
+// rc = neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp,
+// parse_header, neu_json_encode_mqtt_resp,
+//&json_str);
+// clean_read_response_json_object(&json);
+// if (0 != rc) {
+// zlog_info(neuron, "Json string parse error:%d", rc);
+// return NULL;
+//}
 
-    return json_str;
-}
+// return json_str;
+//}
 
 // char *command_rw_read_periodic_response(neu_plugin_t *plugin, uint64_t
 // sender, const char *         node_name, neu_taggrp_config_t *config,
@@ -430,22 +430,22 @@ int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return 0;
 }
 
-char *command_rw_write_response(neu_json_mqtt_t *parse_header,
-                                neu_data_val_t * resp_val)
-{
-    neu_int_val_t *       iv    = NULL;
-    neu_json_error_resp_t error = { 0 };
-    neu_fixed_array_t *   array;
+// char *command_rw_write_response(neu_json_mqtt_t *parse_header,
+// neu_data_val_t * resp_val)
+//{
+// neu_int_val_t *       iv    = NULL;
+// neu_json_error_resp_t error = { 0 };
+// neu_fixed_array_t *   array;
 
-    neu_dvalue_get_ref_array(resp_val, &array);
+// neu_dvalue_get_ref_array(resp_val, &array);
 
-    iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
-    assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
-    neu_dvalue_get_errorcode(iv->val, (int32_t *) &error.error);
+// iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
+// assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
+// neu_dvalue_get_errorcode(iv->val, (int32_t *) &error.error);
 
-    char *json_str = NULL;
-    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, parse_header,
-                              neu_json_encode_mqtt_resp, &json_str);
+// char *json_str = NULL;
+// neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, parse_header,
+// neu_json_encode_mqtt_resp, &json_str);
 
-    return json_str;
-}
+// return json_str;
+//}

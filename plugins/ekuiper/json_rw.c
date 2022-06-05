@@ -24,140 +24,140 @@
 
 #include "json_rw.h"
 
-int wrap_tag_data(neu_json_read_resp_tag_t *json_tag, neu_int_val_t *int_val,
-                  neu_datatag_table_t *datatag_table)
-{
-    neu_data_val_t *val;
+// int wrap_tag_data(neu_json_read_resp_tag_t *json_tag, neu_int_val_t *int_val,
+// neu_datatag_table_t *datatag_table)
+//{
+// neu_data_val_t *val;
 
-    if (NULL == json_tag || NULL == int_val) {
-        return NEU_ERR_EINVAL;
-    }
+// if (NULL == json_tag || NULL == int_val) {
+// return NEU_ERR_EINVAL;
+//}
 
-    val              = int_val->val;
-    neu_dtype_e type = neu_dvalue_get_value_type(val);
+// val              = int_val->val;
+// neu_dtype_e type = neu_dvalue_get_value_type(val);
 
-    neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
+// neu_datatag_t *tag = neu_datatag_tbl_get(datatag_table, int_val->key);
 
-    if (tag == NULL) {
-        return NEU_ERR_TAG_NOT_EXIST;
-    }
+// if (tag == NULL) {
+// return NEU_ERR_TAG_NOT_EXIST;
+//}
 
-    json_tag->name  = tag->name;
-    json_tag->error = NEU_ERR_SUCCESS;
+// json_tag->name  = tag->name;
+// json_tag->error = NEU_ERR_SUCCESS;
 
-    switch (type) {
-    case NEU_DTYPE_ERRORCODE: {
-        int32_t value;
-        neu_dvalue_get_errorcode(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        json_tag->error         = value;
-        break;
-    }
-    case NEU_DTYPE_BYTE: {
-        uint8_t value;
-        neu_dvalue_get_uint8(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_INT8: {
-        int8_t value;
-        neu_dvalue_get_int8(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_INT16: {
-        int16_t value;
-        neu_dvalue_get_int16(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_INT32: {
-        int32_t value;
-        neu_dvalue_get_int32(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_INT64: {
-        int64_t value;
-        neu_dvalue_get_int64(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_UINT8: {
-        uint8_t value;
-        neu_dvalue_get_uint8(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_UINT16: {
-        uint16_t value;
-        neu_dvalue_get_uint16(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_UINT32: {
-        uint32_t value;
-        neu_dvalue_get_uint32(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_UINT64: {
-        uint64_t value;
-        neu_dvalue_get_uint64(val, &value);
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = value;
-        break;
-    }
-    case NEU_DTYPE_FLOAT: {
-        float value;
-        neu_dvalue_get_float(val, &value);
-        json_tag->t               = NEU_JSON_FLOAT;
-        json_tag->value.val_float = value;
-        break;
-    }
-    case NEU_DTYPE_DOUBLE: {
-        double value;
-        neu_dvalue_get_double(val, &value);
-        json_tag->t                = NEU_JSON_DOUBLE;
-        json_tag->value.val_double = value;
-        break;
-    }
-    case NEU_DTYPE_BOOL: {
-        bool value;
-        neu_dvalue_get_bool(val, &value);
-        json_tag->t              = NEU_JSON_BOOL;
-        json_tag->value.val_bool = value;
-        break;
-    }
-    case NEU_DTYPE_BIT: {
-        uint8_t value;
-        neu_dvalue_get_bit(val, &value);
-        json_tag->t             = NEU_JSON_BIT;
-        json_tag->value.val_bit = value;
-        break;
-    }
-    case NEU_DTYPE_CSTR: {
-        char *value;
-        neu_dvalue_get_ref_cstr(val, &value);
-        json_tag->t             = NEU_JSON_STR;
-        json_tag->value.val_str = value;
-        break;
-    }
-    default:
-        return NEU_ERR_ENOTSUP;
-    }
+// switch (type) {
+// case NEU_DTYPE_ERRORCODE: {
+// int32_t value;
+// neu_dvalue_get_errorcode(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// json_tag->error         = value;
+// break;
+//}
+// case NEU_DTYPE_BYTE: {
+// uint8_t value;
+// neu_dvalue_get_uint8(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT8: {
+// int8_t value;
+// neu_dvalue_get_int8(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT16: {
+// int16_t value;
+// neu_dvalue_get_int16(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT32: {
+// int32_t value;
+// neu_dvalue_get_int32(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_INT64: {
+// int64_t value;
+// neu_dvalue_get_int64(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT8: {
+// uint8_t value;
+// neu_dvalue_get_uint8(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT16: {
+// uint16_t value;
+// neu_dvalue_get_uint16(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT32: {
+// uint32_t value;
+// neu_dvalue_get_uint32(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_UINT64: {
+// uint64_t value;
+// neu_dvalue_get_uint64(val, &value);
+// json_tag->t             = NEU_JSON_INT;
+// json_tag->value.val_int = value;
+// break;
+//}
+// case NEU_DTYPE_FLOAT: {
+// float value;
+// neu_dvalue_get_float(val, &value);
+// json_tag->t               = NEU_JSON_FLOAT;
+// json_tag->value.val_float = value;
+// break;
+//}
+// case NEU_DTYPE_DOUBLE: {
+// double value;
+// neu_dvalue_get_double(val, &value);
+// json_tag->t                = NEU_JSON_DOUBLE;
+// json_tag->value.val_double = value;
+// break;
+//}
+// case NEU_DTYPE_BOOL: {
+// bool value;
+// neu_dvalue_get_bool(val, &value);
+// json_tag->t              = NEU_JSON_BOOL;
+// json_tag->value.val_bool = value;
+// break;
+//}
+// case NEU_DTYPE_BIT: {
+// uint8_t value;
+// neu_dvalue_get_bit(val, &value);
+// json_tag->t             = NEU_JSON_BIT;
+// json_tag->value.val_bit = value;
+// break;
+//}
+// case NEU_DTYPE_CSTR: {
+// char *value;
+// neu_dvalue_get_ref_cstr(val, &value);
+// json_tag->t             = NEU_JSON_STR;
+// json_tag->value.val_str = value;
+// break;
+//}
+// default:
+// return NEU_ERR_ENOTSUP;
+//}
 
-    return 0;
-}
+// return 0;
+//}
 
 int json_encode_read_resp_header(void *json_object, void *param)
 {
@@ -185,104 +185,107 @@ int json_encode_read_resp_header(void *json_object, void *param)
     return ret;
 }
 
-int json_encode_read_resp_tags(void *json_object, void *param)
-{
-    int                    ret           = 0;
-    json_read_resp_tags_t *resp_tags     = param;
-    neu_datatag_table_t *  datatag_table = resp_tags->sender_datatag_table;
-    neu_fixed_array_t *    array         = resp_tags->array;
-    neu_int_val_t *        int_val       = NULL;
-    void *                 values_object = NULL;
-    void *                 errors_object = NULL;
+// int json_encode_read_resp_tags(void *json_object, void *param)
+//{
+// int                    ret           = 0;
+// json_read_resp_tags_t *resp_tags     = param;
+// neu_datatag_table_t *  datatag_table = resp_tags->sender_datatag_table;
+// neu_fixed_array_t *    array         = resp_tags->array;
+// neu_int_val_t *        int_val       = NULL;
+// void *                 values_object = NULL;
+// void *                 errors_object = NULL;
 
-    if (0 == array->length) {
-        return -1;
-    }
+// if (0 == array->length) {
+// return -1;
+//}
 
-    values_object = neu_json_encode_new();
-    if (NULL == values_object) {
-        return -1;
-    }
-    errors_object = neu_json_encode_new();
-    if (NULL == values_object) {
-        json_decref(values_object);
-        return -1;
-    }
+// values_object = neu_json_encode_new();
+// if (NULL == values_object) {
+// return -1;
+//}
+// errors_object = neu_json_encode_new();
+// if (NULL == values_object) {
+// json_decref(values_object);
+// return -1;
+//}
 
-    for (uint32_t i = 0; i < array->length; i++) {
-        neu_json_read_resp_tag_t json_tag = { 0 };
-        int_val                           = neu_fixed_array_get(array, i);
+// for (uint32_t i = 0; i < array->length; i++) {
+// neu_json_read_resp_tag_t json_tag = { 0 };
+// int_val                           = neu_fixed_array_get(array, i);
 
-        if (0 != wrap_tag_data(&json_tag, int_val, datatag_table)) {
-            continue; // ignore
-        }
+// if (0 != wrap_tag_data(&json_tag, int_val, datatag_table)) {
+// continue; // ignore
+//}
 
-        neu_json_elem_t tag_elem = {
-            .name = json_tag.name,
-            .t    = json_tag.t,
-            .v    = json_tag.value,
-        };
+// neu_json_elem_t tag_elem = {
+//.name = json_tag.name,
+//.t    = json_tag.t,
+//.v    = json_tag.value,
+//};
 
-        ret = neu_json_encode_field((0 != json_tag.error) ? errors_object
-                                                          : values_object,
-                                    &tag_elem, 1);
-        if (0 != ret) {
-            json_decref(errors_object);
-            json_decref(values_object);
-            return ret;
-        }
-    }
+// ret = neu_json_encode_field((0 != json_tag.error) ? errors_object
+//: values_object,
+//&tag_elem, 1);
+// if (0 != ret) {
+// json_decref(errors_object);
+// json_decref(values_object);
+// return ret;
+//}
+//}
 
-    neu_json_elem_t resp_elems[] = { {
-                                         .name         = "values",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = values_object,
-                                     },
-                                     {
-                                         .name         = "errors",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = errors_object,
+// neu_json_elem_t resp_elems[] = { {
+//.name         = "values",
+//.t            = NEU_JSON_OBJECT,
+//.v.val_object = values_object,
+//},
+//{
+//.name         = "errors",
+//.t            = NEU_JSON_OBJECT,
+//.v.val_object = errors_object,
 
-                                     } };
-    // steals `values_object` and `errors_object`
-    ret = neu_json_encode_field(json_object, resp_elems,
-                                NEU_JSON_ELEM_SIZE(resp_elems));
+//} };
+//// steals `values_object` and `errors_object`
+// ret = neu_json_encode_field(json_object, resp_elems,
+// NEU_JSON_ELEM_SIZE(resp_elems));
 
-    return ret;
-}
+// return ret;
+//}
 
 int json_encode_read_resp(void *json_object, void *param)
 {
-    int               ret  = 0;
-    json_read_resp_t *resp = param;
+    (void) json_object;
+    (void) param;
+    // int               ret  = 0;
+    // json_read_resp_t *resp = param;
 
-    neu_fixed_array_t *array = NULL;
-    neu_dvalue_get_ref_array(resp->data_val, &array);
-    assert(NULL != array);
+    // neu_fixed_array_t *array = NULL;
+    // neu_dvalue_get_ref_array(resp->data_val, &array);
+    // assert(NULL != array);
 
-    if (0 >= array->length) {
-        return -1;
-    }
+    // if (0 >= array->length) {
+    // return -1;
+    //}
 
-    json_read_resp_header_t header = {
-        .group_name = (char *) neu_taggrp_cfg_get_name(resp->grp_config),
-        .node_name  = (char *) resp->sender_name,
-        .timestamp  = time_ms()
-    };
+    // json_read_resp_header_t header = {
+    //.group_name = (char *) neu_taggrp_cfg_get_name(resp->grp_config),
+    //.node_name  = (char *) resp->sender_name,
+    //.timestamp  = time_ms()
+    //};
 
-    ret = json_encode_read_resp_header(json_object, &header);
-    if (0 != ret) {
-        return ret;
-    }
+    // ret = json_encode_read_resp_header(json_object, &header);
+    // if (0 != ret) {
+    // return ret;
+    //}
 
-    json_read_resp_tags_t tags = {
-        .sender_id            = resp->sender_id,
-        .sender_datatag_table = resp->sender_datatag_table,
-        .array                = array,
-    };
-    ret = json_encode_read_resp_tags(json_object, &tags);
+    // json_read_resp_tags_t tags = {
+    //.sender_id            = resp->sender_id,
+    //.sender_datatag_table = resp->sender_datatag_table,
+    //.array                = array,
+    //};
+    // ret = json_encode_read_resp_tags(json_object, &tags);
 
-    return ret;
+    // return ret;
+    return 0;
 }
 
 int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
@@ -361,80 +364,80 @@ void json_decode_write_req_free(json_write_req_t *req)
     free(req);
 }
 
-int unwrap_write_req_val(json_write_req_t *   req,
-                         neu_datatag_table_t *datatag_table,
-                         neu_data_val_t **    data_val)
-{
-    neu_data_val_t *     val   = NULL;
-    union neu_json_value value = req->value;
-    neu_datatag_t *      tag =
-        neu_datatag_tbl_get_by_name(datatag_table, req->tag_name);
+// int unwrap_write_req_val(json_write_req_t *   req,
+// neu_datatag_table_t *datatag_table,
+// neu_data_val_t **    data_val)
+//{
+// neu_data_val_t *     val   = NULL;
+// union neu_json_value value = req->value;
+// neu_datatag_t *      tag =
+// neu_datatag_tbl_get_by_name(datatag_table, req->tag_name);
 
-    if (NULL == data_val || tag == NULL) {
-        return NEU_ERR_EINVAL;
-    }
+// if (NULL == data_val || tag == NULL) {
+// return NEU_ERR_EINVAL;
+//}
 
-    switch (tag->type) {
-    case NEU_DTYPE_UINT8:
-        val = neu_dvalue_new(NEU_DTYPE_UINT8);
-        neu_dvalue_set_uint8(val, (uint8_t) value.val_int);
-        break;
-    case NEU_DTYPE_INT8:
-        val = neu_dvalue_new(NEU_DTYPE_INT8);
-        neu_dvalue_set_int8(val, (int8_t) value.val_int);
-        break;
-    case NEU_DTYPE_UINT16:
-        val = neu_dvalue_new(NEU_DTYPE_UINT16);
-        neu_dvalue_set_uint16(val, (uint16_t) value.val_int);
-        break;
-    case NEU_DTYPE_INT16:
-        val = neu_dvalue_new(NEU_DTYPE_INT16);
-        neu_dvalue_set_int16(val, (int16_t) value.val_int);
-        break;
-    case NEU_DTYPE_INT32:
-        val = neu_dvalue_new(NEU_DTYPE_INT32);
-        neu_dvalue_set_int32(val, (int32_t) value.val_int);
-        break;
-    case NEU_DTYPE_UINT32:
-        val = neu_dvalue_new(NEU_DTYPE_UINT32);
-        neu_dvalue_set_uint32(val, (uint32_t) value.val_int);
-        break;
-    case NEU_DTYPE_INT64:
-        val = neu_dvalue_new(NEU_DTYPE_INT64);
-        neu_dvalue_set_int64(val, (int64_t) value.val_int);
-        break;
-    case NEU_DTYPE_UINT64:
-        val = neu_dvalue_new(NEU_DTYPE_UINT64);
-        neu_dvalue_set_uint64(val, (uint64_t) value.val_int);
-        break;
-    case NEU_DTYPE_FLOAT:
-        val = neu_dvalue_new(NEU_DTYPE_FLOAT);
-        neu_dvalue_set_float(val, (float) value.val_double);
-        break;
-    case NEU_DTYPE_DOUBLE:
-        val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
-        neu_dvalue_set_double(val, value.val_double);
-        break;
-    case NEU_DTYPE_BIT:
-        val = neu_dvalue_new(NEU_DTYPE_BIT);
-        neu_dvalue_set_bit(val, (uint8_t) value.val_int);
-        break;
-    case NEU_DTYPE_BOOL:
-        val = neu_dvalue_new(NEU_DTYPE_BOOL);
-        neu_dvalue_set_bool(val, value.val_bool);
-        break;
-    case NEU_DTYPE_CSTR:
-        val = neu_dvalue_new(NEU_DTYPE_CSTR);
-        neu_dvalue_set_cstr(val, value.val_str);
-        break;
-    default:
-        break;
-    }
+// switch (tag->type) {
+// case NEU_DTYPE_UINT8:
+// val = neu_dvalue_new(NEU_DTYPE_UINT8);
+// neu_dvalue_set_uint8(val, (uint8_t) value.val_int);
+// break;
+// case NEU_DTYPE_INT8:
+// val = neu_dvalue_new(NEU_DTYPE_INT8);
+// neu_dvalue_set_int8(val, (int8_t) value.val_int);
+// break;
+// case NEU_DTYPE_UINT16:
+// val = neu_dvalue_new(NEU_DTYPE_UINT16);
+// neu_dvalue_set_uint16(val, (uint16_t) value.val_int);
+// break;
+// case NEU_DTYPE_INT16:
+// val = neu_dvalue_new(NEU_DTYPE_INT16);
+// neu_dvalue_set_int16(val, (int16_t) value.val_int);
+// break;
+// case NEU_DTYPE_INT32:
+// val = neu_dvalue_new(NEU_DTYPE_INT32);
+// neu_dvalue_set_int32(val, (int32_t) value.val_int);
+// break;
+// case NEU_DTYPE_UINT32:
+// val = neu_dvalue_new(NEU_DTYPE_UINT32);
+// neu_dvalue_set_uint32(val, (uint32_t) value.val_int);
+// break;
+// case NEU_DTYPE_INT64:
+// val = neu_dvalue_new(NEU_DTYPE_INT64);
+// neu_dvalue_set_int64(val, (int64_t) value.val_int);
+// break;
+// case NEU_DTYPE_UINT64:
+// val = neu_dvalue_new(NEU_DTYPE_UINT64);
+// neu_dvalue_set_uint64(val, (uint64_t) value.val_int);
+// break;
+// case NEU_DTYPE_FLOAT:
+// val = neu_dvalue_new(NEU_DTYPE_FLOAT);
+// neu_dvalue_set_float(val, (float) value.val_double);
+// break;
+// case NEU_DTYPE_DOUBLE:
+// val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
+// neu_dvalue_set_double(val, value.val_double);
+// break;
+// case NEU_DTYPE_BIT:
+// val = neu_dvalue_new(NEU_DTYPE_BIT);
+// neu_dvalue_set_bit(val, (uint8_t) value.val_int);
+// break;
+// case NEU_DTYPE_BOOL:
+// val = neu_dvalue_new(NEU_DTYPE_BOOL);
+// neu_dvalue_set_bool(val, value.val_bool);
+// break;
+// case NEU_DTYPE_CSTR:
+// val = neu_dvalue_new(NEU_DTYPE_CSTR);
+// neu_dvalue_set_cstr(val, value.val_str);
+// break;
+// default:
+// break;
+//}
 
-    *data_val = val;
+//*data_val = val;
 
-    return 0;
-}
+// return 0;
+//}
 
 int plugin_send_write_cmd_from_write_req(neu_plugin_t *plugin, uint32_t req_id,
                                          json_write_req_t *write_req)

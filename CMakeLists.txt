@@ -46,8 +46,6 @@ configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron
 configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
 configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utlist.h)
 
-add_subdirectory(extern/vector)
-set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
 # Call this from your own project's makefile.
 
 if(NOT CMAKE_STAGING_PREFIX)
@@ -143,10 +141,9 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
-    src/types.c
     src/base/tag.c
     src/base/neu_plugin_common.c
-    src/base/neu_data_expr.c
+    #src/base/neu_data_expr.c
     src/base/tag_sort.c
     src/base/group.c
     src/connection/connection.c
@@ -168,7 +165,7 @@ target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
 target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
 target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
-target_link_libraries(neuron-base nng libzlog.so vector-static csptr jansson crypto ssl mqttc jwt
+target_link_libraries(neuron-base nng libzlog.so jansson crypto ssl mqttc jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 add_dependencies(neuron-base neuron-version)
 

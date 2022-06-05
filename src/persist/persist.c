@@ -30,7 +30,6 @@
 
 #include "errcodes.h"
 #include "utils/log.h"
-#include "vector.h"
 
 #include "persist/json/persist_json_adapter.h"
 #include "persist/json/persist_json_datatags.h"
@@ -39,7 +38,6 @@
 #include "persist/json/persist_json_subs.h"
 #include "persist/persist.h"
 
-#include "neu_vector.h"
 #include "json/neu_json_fn.h"
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -455,7 +453,7 @@ error_open:
 // file tree walking callback for collecting adapter infos
 static int read_adapter_cb(const char *fpath, bool is_dir, void *arg)
 {
-    vector_t *adapter_infos = arg;
+    UT_array *adapter_infos = arg;
     int       rv            = 0;
 
     if (is_dir) {
@@ -480,23 +478,15 @@ static int read_adapter_cb(const char *fpath, bool is_dir, void *arg)
     }
 
     nlog_info("read %s", fpath);
-
-    if (0 == vector_push_back(adapter_infos, node)) {
-        // NOTE: do not call neu_json_decode_node_req_node_free
-        //       since member ownership was transferred to vector
-        free(node);
-    } else {
-        neu_json_decode_node_req_node_free(node);
-        rv = NEU_ERR_ENOMEM;
-    }
-
+    utarray_push_back(adapter_infos, node);
+    free(node);
     return rv;
 }
 
 // file tree walking callback for collecting adapter group config infos
 static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
 {
-    vector_t *group_config_infos = arg;
+    UT_array *group_config_infos = arg;
     int       rv                 = 0;
 
     if (is_dir) {
@@ -521,15 +511,8 @@ static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
     }
 
     nlog_info("read %s", fpath);
-
-    if (0 == vector_push_back(group_config_infos, group_config_req)) {
-        // NOTE: do not call neu_json_decode_group_configs_req_free,
-        //       since member ownership was transferred to vector
-        free(group_config_req);
-    } else {
-        neu_json_decode_group_configs_req_free(group_config_req);
-        rv = NEU_ERR_ENOMEM;
-    }
+    utarray_push_back(group_config_infos, group_config_req);
+    free(group_config_req);
 
     return rv;
 }
@@ -747,9 +730,10 @@ int neu_persister_store_adapter(neu_persister_t *           persister,
 }
 
 int neu_persister_load_adapters(neu_persister_t *persister,
-                                vector_t **      adapter_infos)
+                                UT_array **      adapter_infos)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    char   path[PATH_MAX_SIZE] = { 0 };
+    UT_icd icd = { sizeof(neu_persist_adapter_info_t), NULL, NULL, NULL };
 
     migrate_adapters_file(persister);
 
@@ -757,16 +741,11 @@ int neu_persister_load_adapters(neu_persister_t *persister,
         return -1;
     }
 
-    vector_t *result = vector_new(0, sizeof(neu_persist_adapter_info_t));
-    if (NULL == result) {
-        return NEU_ERR_ENOMEM;
-    }
+    utarray_new(*adapter_infos, &icd);
 
-    int rv = file_tree_walk(path, read_adapter_cb, result);
-    if (0 == rv) {
-        *adapter_infos = result;
-    } else {
-        neu_persist_adapter_infos_free(result);
+    int rv = file_tree_walk(path, read_adapter_cb, *adapter_infos);
+    if (0 != rv) {
+        neu_persist_adapter_infos_free(*adapter_infos);
     }
 
     return rv;
@@ -1111,9 +1090,10 @@ int neu_persister_store_group_config(
 
 int neu_persister_load_group_configs(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     vector_t **      group_config_infos)
+                                     UT_array **      group_config_infos)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    char   path[PATH_MAX_SIZE] = { 0 };
+    UT_icd icd = { sizeof(neu_persist_group_config_info_t), NULL, NULL, NULL };
 
     int n = persister_group_configs_dir(path, sizeof(path), persister,
                                         adapter_name);
@@ -1122,16 +1102,11 @@ int neu_persister_load_group_configs(neu_persister_t *persister,
         return -1;
     }
 
-    vector_t *result = vector_new(0, sizeof(neu_persist_group_config_info_t));
-    if (NULL == result) {
-        return NEU_ERR_ENOMEM;
-    }
+    utarray_new(*group_config_infos, &icd);
 
-    int rv = file_tree_walk(path, read_group_config_cb, result);
-    if (0 == rv) {
-        *group_config_infos = result;
-    } else {
-        neu_persist_group_config_infos_free(result);
+    int rv = file_tree_walk(path, read_group_config_cb, *group_config_infos);
+    if (0 != rv) {
+        neu_persist_group_config_infos_free(*group_config_infos);
     }
 
     return rv;

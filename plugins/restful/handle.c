@@ -22,8 +22,6 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
-#include "vector.h"
-
 #include "plugin.h"
 
 #include "adapter_handle.h"

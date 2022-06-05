@@ -31,10 +31,8 @@ extern "C" {
 #include "adapter.h"
 #include "errcodes.h"
 #include "file.h"
-#include "neu_vector.h"
 #include "plugin.h"
 #include "tag.h"
-#include "types.h"
 #include "utils/base64.h"
 
 #include "connection/neu_connection.h"

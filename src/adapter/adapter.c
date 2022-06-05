@@ -190,7 +190,7 @@ static int persister_singleton_load_datatags(neu_adapter_t *adapter,
 static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
                                                  const char *   adapter_name)
 {
-    vector_t *       group_config_infos = NULL;
+    UT_array *       group_config_infos = NULL;
     neu_persister_t *persister          = persister_singleton_get();
 
     int rv = neu_persister_load_group_configs(persister, adapter_name,
@@ -207,10 +207,8 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
         return rv;
     }
 
-    VECTOR_FOR_EACH(group_config_infos, iter)
+    utarray_foreach(group_config_infos, neu_persist_group_config_info_t *, p)
     {
-        neu_persist_group_config_info_t *p = iterator_get(&iter);
-
         neu_manager_add_group(adapter->manager, p->adapter_name,
                               p->group_config_name, p->read_interval);
 
@@ -262,15 +260,15 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
     return rv;
 }
 
-static int persist_adapter_info_cmp(const void *a, const void *b)
-{
-    return strcmp(((neu_persist_adapter_info_t *) a)->name,
-                  ((neu_persist_adapter_info_t *) b)->name);
-}
+// static int persist_adapter_info_cmp(const void *a, const void *b)
+//{
+// return strcmp(((neu_persist_adapter_info_t *) a)->name,
+//((neu_persist_adapter_info_t *) b)->name);
+//}
 
 static int persister_singleton_load_data(neu_adapter_t *adapter)
 {
-    vector_t *       adapter_infos = NULL;
+    UT_array *       adapter_infos = NULL;
     neu_persister_t *persister     = persister_singleton_get();
 
     // declaration for neu_manager_update_node_id since it is not exposed
@@ -292,12 +290,11 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
     }
 
     // sort by adapter id
-    qsort(adapter_infos->data, adapter_infos->size,
-          sizeof(neu_persist_adapter_info_t), persist_adapter_info_cmp);
+    // qsort(adapter_infos->data, adapter_infos->size,
+    // sizeof(neu_persist_adapter_info_t), persist_adapter_info_cmp);
 
-    VECTOR_FOR_EACH(adapter_infos, iter)
+    utarray_foreach(adapter_infos, neu_persist_adapter_info_t *, adapter_info)
     {
-        neu_persist_adapter_info_t *adapter_info = iterator_get(&iter);
         rv = neu_manager_add_node(adapter->manager, adapter_info->name,
                                   adapter_info->plugin_name);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
@@ -322,9 +319,8 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
         }
     }
 
-    VECTOR_FOR_EACH(adapter_infos, iter)
+    utarray_foreach(adapter_infos, neu_persist_adapter_info_t *, adapter_info)
     {
-        neu_persist_adapter_info_t *adapter_info = iterator_get(&iter);
         persister_singleton_load_subscriptions(adapter, adapter_info->name);
     }
 

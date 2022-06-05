@@ -1,6 +1,3 @@
-[submodule "extern/vector"]
-	path = extern/vector
-	url = https://github.com/flyfish30/vector.git
 [submodule "extern/uthash"]
 	path = extern/uthash
 	url = https://github.com/troydhanson/uthash.git

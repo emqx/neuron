@@ -56,7 +56,7 @@ typedef struct mqtt_routine {
     neu_mqtt_option_t option;
     neu_mqtt_client_t client;
     pthread_t         daemon;
-    neu_vector_t      topics;
+    // neu_vector_t      topics;
     TAILQ_HEAD(, context) head;
 } mqtt_routine_t;
 
@@ -85,86 +85,86 @@ static int timeout(struct context *ctx)
     return -1;
 }
 
-static char *real_topic_generate(char *format, char *name)
-{
-    char temp[256] = { '\0' };
-    int  rc        = snprintf(temp, 256, format, name);
-    if (-1 != rc) {
-        char *topic = strdup(temp);
-        return topic;
-    }
+// static char *real_topic_generate(char *format, char *name)
+//{
+// char temp[256] = { '\0' };
+// int  rc        = snprintf(temp, 256, format, name);
+// if (-1 != rc) {
+// char *topic = strdup(temp);
+// return topic;
+//}
 
-    return NULL;
-}
+// return NULL;
+//}
 
-static void topics_add(vector_t *topics, char *request, int qos_request,
-                       char *response, int qos_response, int type)
-{
-    struct topic_pair pair = { 0 };
-    pair.topic_request     = request;
-    pair.topic_response    = response;
-    pair.qos_request       = qos_request;
-    pair.qos_response      = qos_response;
-    pair.type              = type;
-    vector_push_back(topics, &pair);
-}
+// static void topics_add(vector_t *topics, char *request, int qos_request,
+// char *response, int qos_response, int type)
+//{
+// struct topic_pair pair = { 0 };
+// pair.topic_request     = request;
+// pair.topic_response    = response;
+// pair.qos_request       = qos_request;
+// pair.qos_response      = qos_response;
+// pair.type              = type;
+// vector_push_back(topics, &pair);
+//}
 
-static void topics_cleanup(vector_t *topics)
-{
-    VECTOR_FOR_EACH(topics, item)
-    {
-        struct topic_pair *pair = NULL;
-        pair                    = (struct topic_pair *) iterator_get(&item);
-        if (NULL != pair) {
-            if (NULL != pair->topic_request) {
-                free(pair->topic_request);
-            }
+// static void topics_cleanup(vector_t *topics)
+//{
+// VECTOR_FOR_EACH(topics, item)
+//{
+// struct topic_pair *pair = NULL;
+// pair                    = (struct topic_pair *) iterator_get(&item);
+// if (NULL != pair) {
+// if (NULL != pair->topic_request) {
+// free(pair->topic_request);
+//}
 
-            if (NULL != pair->topic_response) {
-                free(pair->topic_response);
-            }
-        }
-    }
+// if (NULL != pair->topic_response) {
+// free(pair->topic_response);
+//}
+//}
+//}
 
-    vector_clear(topics);
-}
+// vector_clear(topics);
+//}
 
-static void topics_generate(vector_t *topics, char *name, char *upload_topic)
-{
-    char *ping_req = real_topic_generate(TOPIC_PING_REQ, name);
-    char *ping_res = real_topic_generate(TOPIC_STATUS_RES, name);
-    topics_add(topics, ping_req, QOS0, ping_res, QOS0, TOPIC_TYPE_PING);
+// static void topics_generate(vector_t *topics, char *name, char *upload_topic)
+//{
+// char *ping_req = real_topic_generate(TOPIC_PING_REQ, name);
+// char *ping_res = real_topic_generate(TOPIC_STATUS_RES, name);
+// topics_add(topics, ping_req, QOS0, ping_res, QOS0, TOPIC_TYPE_PING);
 
-    char *read_req = real_topic_generate(TOPIC_READ_REQ, name);
-    char *read_res = real_topic_generate(TOPIC_READ_RES, name);
-    topics_add(topics, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
+// char *read_req = real_topic_generate(TOPIC_READ_REQ, name);
+// char *read_res = real_topic_generate(TOPIC_READ_RES, name);
+// topics_add(topics, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
 
-    char *write_req = real_topic_generate(TOPIC_WRITE_REQ, name);
-    char *write_res = real_topic_generate(TOPIC_WRITE_RES, name);
-    topics_add(topics, write_req, QOS0, write_res, QOS0, TOPIC_TYPE_WRITE);
+// char *write_req = real_topic_generate(TOPIC_WRITE_REQ, name);
+// char *write_res = real_topic_generate(TOPIC_WRITE_RES, name);
+// topics_add(topics, write_req, QOS0, write_res, QOS0, TOPIC_TYPE_WRITE);
 
-    /// UPLOAD TOPIC SETTING
-    char *upload_req = NULL;
-    char *upload_res = NULL;
-    if (NULL != upload_topic && 0 < strlen(upload_topic)) {
-        upload_res = strdup(upload_topic);
-    } else {
-        upload_res = real_topic_generate(TOPIC_UPLOAD_RES, name);
-    }
+///// UPLOAD TOPIC SETTING
+// char *upload_req = NULL;
+// char *upload_res = NULL;
+// if (NULL != upload_topic && 0 < strlen(upload_topic)) {
+// upload_res = strdup(upload_topic);
+//} else {
+// upload_res = real_topic_generate(TOPIC_UPLOAD_RES, name);
+//}
 
-    topics_add(topics, upload_req, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
-}
+// topics_add(topics, upload_req, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
+//}
 
-static bool topic_match(const void *key, const void *item)
-{
-    char *             topic_name = (char *) key;
-    struct topic_pair *pair       = (struct topic_pair *) item;
-    if (0 == strcmp(pair->topic_request, topic_name)) {
-        return true;
-    }
+// static bool topic_match(const void *key, const void *item)
+//{
+// char *             topic_name = (char *) key;
+// struct topic_pair *pair       = (struct topic_pair *) item;
+// if (0 == strcmp(pair->topic_request, topic_name)) {
+// return true;
+//}
 
-    return false;
-}
+// return false;
+//}
 
 // static bool topic_type_match(const void *key, const void *item)
 //{
@@ -177,87 +177,88 @@ static bool topic_match(const void *key, const void *item)
 // return false;
 //}
 
-static int mqtt_routine_send(mqtt_routine_t *routine, struct context *context);
+// static int mqtt_routine_send(mqtt_routine_t *routine, struct context
+// *context);
 
-static struct context *mqtt_routine_context_create(int              req_id,
-                                                   neu_json_mqtt_t *json_mqtt,
-                                                   char *result, void *pair,
-                                                   bool ready);
+// static struct context *mqtt_routine_context_create(int              req_id,
+// neu_json_mqtt_t *json_mqtt,
+// char *result, void *pair,
+// bool ready);
 
-static void mqtt_routine_callback(neu_plugin_t *plugin, uint32_t req_id,
-                                  neu_json_mqtt_t *json_mqtt, char *result,
-                                  void *pair, bool ready)
-{
-    pthread_mutex_lock(&plugin->mutex);
+// static void mqtt_routine_callback(neu_plugin_t *plugin, uint32_t req_id,
+// neu_json_mqtt_t *json_mqtt, char *result,
+// void *pair, bool ready)
+//{
+// pthread_mutex_lock(&plugin->mutex);
 
-    if (!plugin->routine_running) {
-        pthread_mutex_unlock(&plugin->mutex);
-        return;
-    }
+// if (!plugin->routine_running) {
+// pthread_mutex_unlock(&plugin->mutex);
+// return;
+//}
 
-    struct context *entry =
-        mqtt_routine_context_create(req_id, json_mqtt, result, pair, ready);
-    mqtt_routine_send(plugin->routine, entry);
+// struct context *entry =
+// mqtt_routine_context_create(req_id, json_mqtt, result, pair, ready);
+// mqtt_routine_send(plugin->routine, entry);
 
-    pthread_mutex_unlock(&plugin->mutex);
-}
+// pthread_mutex_unlock(&plugin->mutex);
+//}
 
-static void mqtt_routine_response(const char *topic_name, size_t topic_len,
-                                  void *payload, const size_t len,
-                                  void *context)
-{
-    neu_plugin_t *     plugin  = (neu_plugin_t *) context;
-    mqtt_routine_t *   routine = plugin->routine;
-    struct topic_pair *pair =
-        vector_find_item(&routine->topics, (void *) topic_name, topic_match);
-    mqtt_response_t response = { .topic_name  = topic_name,
-                                 .topic_len   = topic_len,
-                                 .payload     = payload,
-                                 .len         = len,
-                                 .plugin      = context,
-                                 .topic_pair  = pair,
-                                 .type        = pair->type,
-                                 .context_add = mqtt_routine_callback };
-    command_response_handle(&response);
-}
+// static void mqtt_routine_response(const char *topic_name, size_t topic_len,
+// void *payload, const size_t len,
+// void *context)
+//{
+// neu_plugin_t *     plugin  = (neu_plugin_t *) context;
+// mqtt_routine_t *   routine = plugin->routine;
+// struct topic_pair *pair =
+// vector_find_item(&routine->topics, (void *) topic_name, topic_match);
+// mqtt_response_t response = { .topic_name  = topic_name,
+//.topic_len   = topic_len,
+//.payload     = payload,
+//.len         = len,
+//.plugin      = context,
+//.topic_pair  = pair,
+//.type        = pair->type,
+//.context_add = mqtt_routine_callback };
+// command_response_handle(&response);
+//}
 
-static void topics_subscribe(vector_t *topics, neu_mqtt_client_t client)
-{
-    VECTOR_FOR_EACH(topics, item)
-    {
-        struct topic_pair *pair = NULL;
-        pair                    = iterator_get(&item);
-        if (NULL != pair && NULL != pair->topic_request) {
-            neu_mqtt_client_subscribe(client, pair->topic_request,
-                                      pair->qos_request, mqtt_routine_response);
-        }
-    }
-}
+// static void topics_subscribe(vector_t *topics, neu_mqtt_client_t client)
+//{
+// VECTOR_FOR_EACH(topics, item)
+//{
+// struct topic_pair *pair = NULL;
+// pair                    = iterator_get(&item);
+// if (NULL != pair && NULL != pair->topic_request) {
+// neu_mqtt_client_subscribe(client, pair->topic_request,
+// pair->qos_request, mqtt_routine_response);
+//}
+//}
+//}
 
-static struct context *mqtt_routine_context_create(int              req_id,
-                                                   neu_json_mqtt_t *json_mqtt,
-                                                   char *result, void *pair,
-                                                   bool ready)
-{
-    struct context *entry = calloc(1, sizeof(struct context));
-    if (NULL == entry) {
-        return NULL;
-    }
+// static struct context *mqtt_routine_context_create(int              req_id,
+// neu_json_mqtt_t *json_mqtt,
+// char *result, void *pair,
+// bool ready)
+//{
+// struct context *entry = calloc(1, sizeof(struct context));
+// if (NULL == entry) {
+// return NULL;
+//}
 
-    entry->timestamp = current_time_get();
-    entry->req_id    = req_id;
+// entry->timestamp = current_time_get();
+// entry->req_id    = req_id;
 
-    if (NULL != json_mqtt) {
-        entry->json_mqtt.uuid    = strdup(json_mqtt->uuid);
-        entry->json_mqtt.command = strdup(json_mqtt->command);
-    }
+// if (NULL != json_mqtt) {
+// entry->json_mqtt.uuid    = strdup(json_mqtt->uuid);
+// entry->json_mqtt.command = strdup(json_mqtt->command);
+//}
 
-    entry->result = result;
-    entry->pair   = pair;
-    entry->ready  = ready;
+// entry->result = result;
+// entry->pair   = pair;
+// entry->ready  = ready;
 
-    return entry;
-}
+// return entry;
+//}
 
 // static struct context *mqtt_routine_context_find(mqtt_routine_t *routine,
 // const int       id)
@@ -466,22 +467,23 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
         return NULL;
     }
 
-    vector_init(&routine->topics, 1, sizeof(struct topic_pair));
-    topics_generate(&routine->topics, routine->option.clientid,
-                    routine->option.upload_topic);
-    topics_subscribe(&routine->topics, routine->client);
+    //  vector_init(&routine->topics, 1, sizeof(struct topic_pair));
+    // topics_generate(&routine->topics, routine->option.clientid,
+    // routine->option.upload_topic);
+    //    topics_subscribe(&routine->topics, routine->client);
     return routine;
 }
 
-static int mqtt_routine_send(mqtt_routine_t *routine, struct context *context)
-{
-    assert(NULL != routine);
+// static int mqtt_routine_send(mqtt_routine_t *routine, struct context
+// *context)
+//{
+// assert(NULL != routine);
 
-    pthread_mutex_lock(&routine->contexts_mtx);
-    TAILQ_INSERT_TAIL(&routine->head, context, entry);
-    pthread_mutex_unlock(&routine->contexts_mtx);
-    return NEU_ERR_SUCCESS;
-}
+// pthread_mutex_lock(&routine->contexts_mtx);
+// TAILQ_INSERT_TAIL(&routine->head, context, entry);
+// pthread_mutex_unlock(&routine->contexts_mtx);
+// return NEU_ERR_SUCCESS;
+//}
 
 static void mqtt_routine_stop(mqtt_routine_t *routine)
 {
@@ -500,8 +502,8 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
 
     // close mqtt client and clean
     neu_mqtt_client_close(routine->client);
-    topics_cleanup(&routine->topics);
-    vector_uninit(&routine->topics);
+    //    topics_cleanup(&routine->topics);
+    //    vector_uninit(&routine->topics);
     mqtt_option_uninit(&routine->option);
 }
 
