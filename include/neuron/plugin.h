@@ -126,9 +126,6 @@ void neu_plugin_send_write_cmd(neu_plugin_t *plugin, const char *node_name,
                                const char *group_name, const char *tag,
                                neu_dvalue_t value, void *ctx);
 
-neu_node_id_t neu_plugin_get_node_id_by_node_name(neu_plugin_t *plugin,
-                                                  const char *  node_name);
-
 intptr_t  neu_system_add_plugin(neu_plugin_t *plugin,
                                 const char *  plugin_lib_name);
 intptr_t  neu_system_del_plugin(neu_plugin_t *plugin, const char *name);

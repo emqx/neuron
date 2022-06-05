@@ -52,8 +52,6 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_ADD_NODE,
     NEU_REQRESP_DEL_NODE,
-    NEU_REQRESP_GET_NODE_BY_ID,
-    NEU_REQRESP_NODE_INFO,
     NEU_REQRESP_GET_NODES,
     NEU_REQRESP_NODES,
     NEU_REQRESP_ADD_GRP_CONFIG,
@@ -70,13 +68,6 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_UPDATE_PLUGIN_LIB,
     NEU_REQRESP_GET_PLUGIN_LIBS,
     NEU_REQRESP_PLUGIN_LIBS,
-    NEU_REQRESP_GET_DATATAGS,
-    NEU_REQRESP_DATATAGS,
-    NEU_REQRESP_SELF_NODE_ID,
-    NEU_REQRESP_NODE_ID,
-    NEU_REQRESP_SELF_NODE_NAME,
-    NEU_REQRESP_NODE_NAME,
-    NEU_REQRESP_GET_NODE_ID_BY_NAME,
     NEU_REQRESP_SET_NODE_SETTING,
     NEU_REQRESP_GET_NODE_SETTING,
     NEU_REQRESP_GET_NODE_SETTING_RESP,
@@ -85,7 +76,6 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_NODE_CTL,
     NEU_REQRESP_GET_SUB_GRP_CONFIGS,
     NEU_REQRESP_SUB_GRP_CONFIGS_RESP,
-    NEU_REQRESP_VALIDATE_TAG,
     NEU_REQRESP_UPDATE_LICENSE,
 } neu_reqresp_type_e;
 
@@ -217,17 +207,6 @@ typedef struct neu_cmd_del_node {
     char *name;
 } neu_cmd_del_node_t;
 
-/* NEU_REQRESP_GET_NODE_BY_ID */
-typedef struct neu_cmd_get_node_by_id {
-    neu_node_id_t node_id;
-} neu_cmd_get_node_by_id_t;
-
-/* NEU_REQRESP_NODE_INFO */
-typedef struct {
-    int32_t         result;
-    neu_node_info_t node_info;
-} neu_reqresp_node_info_t;
-
 /* NEU_REQRESP_GET_NODES */
 typedef struct neu_cmd_get_nodes {
     neu_node_type_e node_type;
@@ -290,36 +269,6 @@ typedef struct neu_reqresp_plugin_libs {
     UT_array *plugin_libs;
 } neu_reqresp_plugin_libs_t;
 
-/* NEU_REQRESP_GET_DATATAGS */
-typedef struct neu_cmd_get_datatags {
-    neu_node_id_t node_id; // get datatag table of this node
-} neu_cmd_get_datatags_t;
-
-/* NEU_REQRESP_SELF_NODE_ID */
-typedef struct neu_cmd_self_node_id {
-    uint32_t reserved;
-} neu_cmd_self_node_id_t;
-
-/* NEU_REQRESP_GET_NODE_ID_BY_NAME */
-typedef struct neu_cmd_get_node_id_by_name {
-    const char *name;
-} neu_cmd_get_node_id_by_name_t;
-
-/* NEU_REQRESP_NODE_ID */
-typedef struct neu_represp_node_id {
-    neu_node_id_t node_id;
-} neu_reqresp_node_id_t;
-
-/* NEU_REQRESP_SELF_NODE_NAME */
-typedef struct neu_cmd_self_node_name {
-    uint32_t reserved;
-} neu_cmd_self_node_name_t;
-
-/* NEU_REQRESP_NODE_NAME */
-typedef struct neu_represp_node_name {
-    const char *node_name;
-} neu_reqresp_node_name_t;
-
 /* NEU_REQRESP_SET_NODE_SETTING */
 typedef struct neu_cmd_set_node_setting {
     char *node_name;
@@ -367,12 +316,6 @@ typedef struct neu_cmd_node_ctl {
     char *            node_name;
     neu_adapter_ctl_e ctl;
 } neu_cmd_node_ctl_t;
-
-/* NEU_REQRESP_VALIDATE_TAG */
-typedef struct neu_cmd_validate_tag {
-    char *         node_name;
-    neu_datatag_t *tag;
-} neu_cmd_validate_tag_t;
 
 /**
  * definition enum and structure for neuron event

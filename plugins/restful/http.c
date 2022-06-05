@@ -328,7 +328,6 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         break;
     case NEU_ERR_LIBRARY_NOT_FOUND:
     case NEU_ERR_NODE_NOT_EXIST:
-    case NEU_ERR_GRP_CONFIG_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
     case NEU_ERR_LICENSE_NOT_FOUND:
     case NEU_ERR_GROUP_NOT_EXIST:
@@ -341,7 +340,6 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_NOT_RUNNING:
     case NEU_ERR_NODE_IS_STOPED:
     case NEU_ERR_TAG_NAME_CONFLICT:
-    case NEU_ERR_GRP_CONFIG_CONFLICT:
     case NEU_ERR_LIBRARY_NAME_CONFLICT:
     case NEU_ERR_GROUP_EXIST:
     case NEU_ERR_GROUP_NOT_ALLOW:
@@ -351,9 +349,6 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_TAG_TYPE_NOT_SUPPORT:
     case NEU_ERR_TAG_ADDRESS_FORMAT_INVALID:
         status = NNG_HTTP_STATUS_PARTIAL_CONTENT;
-        break;
-    case NEU_ERR_GRP_CONFIG_IN_USE:
-        status = NNG_HTTP_STATUS_PRECONDITION_FAILED;
         break;
     default:
         if (code >= NEU_ERR_PLUGIN_ERROR_START &&
