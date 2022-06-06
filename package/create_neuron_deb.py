@@ -24,6 +24,7 @@ rules.append(mkdeb.FileMap("../.gitkeep", "/opt/neuron/core/"))
 rules.append(mkdeb.FileMap("../neuron.key", "/opt/neuron/config/"))
 rules.append(mkdeb.FileMap("../neuron.pem", "/opt/neuron/config/"))
 
+rules.append(mkdeb.FileMap("../persistence", "/opt/neuron/"))
 rules.append(mkdeb.FileMap("../default_plugins.json",
                            "/opt/neuron/persistence/", "r", "plugins.json"))
 
