@@ -30,11 +30,6 @@
 
 typedef struct neu_node_manager neu_node_manager_t;
 
-// typedef struct neu_node_info {
-// char name[NEU_NODE_NAME_LEN];
-// char plugin_name[NEU_PLUGIN_NAME_LEN];
-//} neu_node_info_t;
-
 neu_node_manager_t *neu_node_manager_create();
 void                neu_node_manager_destroy(neu_node_manager_t *mgr);
 

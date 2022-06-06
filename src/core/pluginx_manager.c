@@ -167,20 +167,20 @@ int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name)
 UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
 {
     UT_array *       plugins;
-    UT_icd           icd = { sizeof(neu_plugin_lib_info_t), NULL, NULL, NULL };
+    UT_icd           icd = { sizeof(neu_resp_plugin_info_t), NULL, NULL, NULL };
     plugin_entity_t *el = NULL, *tmp = NULL;
 
     utarray_new(plugins, &icd);
     nng_mtx_lock(mgr->mtx);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
-        neu_plugin_lib_info_t info = {
+        neu_resp_plugin_info_t info = {
             .kind = el->kind,
             .type = el->type,
         };
 
         strncpy(info.name, el->name, sizeof(info.name));
-        strncpy(info.lib_name, el->lib_name, sizeof(info.lib_name));
+        strncpy(info.library, el->lib_name, sizeof(info.library));
         strncpy(info.description, el->description, sizeof(info.description));
 
         utarray_push_back(plugins, &info);
@@ -191,7 +191,7 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
 }
 
 int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
-                            neu_plugin_lib_info_t *info)
+                            neu_resp_plugin_info_t *info)
 {
     plugin_entity_t *plugin = NULL;
     int              ret    = -1;
@@ -203,7 +203,7 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
         info->type = plugin->type;
         info->kind = plugin->kind;
         strncpy(info->name, plugin->name, sizeof(info->name));
-        strncpy(info->lib_name, plugin->lib_name, sizeof(info->lib_name));
+        strncpy(info->library, plugin->lib_name, sizeof(info->library));
         strncpy(info->description, plugin->description,
                 sizeof(info->description));
     }

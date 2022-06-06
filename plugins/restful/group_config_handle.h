@@ -21,12 +21,17 @@
 
 #include <nng/nng.h>
 
+#include "adapter.h"
+
 void handle_add_group_config(nng_aio *aio);
 void handle_del_group_config(nng_aio *aio);
-void handle_update_group_config(nng_aio *aio);
 void handle_get_group_config(nng_aio *aio);
+void handle_get_group_resp(nng_aio *aio, neu_resp_get_group_t *groups);
+
 void handle_grp_subscribe(nng_aio *aio);
 void handle_grp_unsubscribe(nng_aio *aio);
 void handle_grp_get_subscribe(nng_aio *aio);
+void handle_grp_get_subscribe_resp(nng_aio *                       aio,
+                                   neu_resp_get_subscribe_group_t *groups);
 
 #endif

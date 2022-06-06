@@ -159,65 +159,48 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return rv;
 }
 
-static int ekuiper_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
-{
-    int rv = 0;
-
-    if (plugin == NULL || req == NULL) {
-        zlog_warn(neuron, "The plugin pointer or request is NULL");
-        return (-1);
-    }
-
-    zlog_info(neuron, "send request to plugin: %s",
-              neu_plugin_module.module_name);
-    const adapter_callbacks_t *adapter_callbacks;
-    adapter_callbacks = plugin->common.adapter_callbacks;
-    (void) adapter_callbacks;
-
-    switch (req->req_type) {
-    case NEU_REQRESP_TRANS_DATA: {
-        send_data(plugin, req);
-        break;
-    }
-
-    default:
-        break;
-    }
-    return rv;
-}
-
-static int ekuiper_plugin_event_reply(neu_plugin_t *     plugin,
-                                      neu_event_reply_t *reply)
-{
-    int rv = 0;
-
-    (void) plugin;
-    (void) reply;
-
-    zlog_info(neuron, "reply event to plugin: %s",
-              neu_plugin_module.module_name);
-    return rv;
-}
-
-static int ekuiper_plugin_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
+static int ekuiper_plugin_request(neu_plugin_t *      plugin,
+                                  neu_reqresp_head_t *header, void *data)
 {
     (void) plugin;
-    (void) tag;
-
+    (void) header;
+    (void) data;
     return 0;
+    // int rv = 0;
+    //(void) header;
+
+    // if (plugin == NULL || data == NULL) {
+    // zlog_warn(neuron, "The plugin pointer or request is NULL");
+    // return (-1);
+    //}
+
+    // zlog_info(neuron, "send request to plugin: %s",
+    // neu_plugin_module.module_name);
+    // const adapter_callbacks_t *adapter_callbacks;
+    // adapter_callbacks = plugin->common.adapter_callbacks;
+    //(void) adapter_callbacks;
+
+    // switch (req->req_type) {
+    // case NEU_REQRESP_TRANS_DATA: {
+    // send_data(plugin, data);
+    // break;
+    //}
+
+    // default:
+    // break;
+    //}
+    // return rv;
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open         = ekuiper_plugin_open,
-    .close        = ekuiper_plugin_close,
-    .init         = ekuiper_plugin_init,
-    .uninit       = ekuiper_plugin_uninit,
-    .start        = ekuiper_plugin_start,
-    .stop         = ekuiper_plugin_stop,
-    .config       = ekuiper_plugin_config,
-    .request      = ekuiper_plugin_request,
-    .validate_tag = ekuiper_plugin_validate_tag,
-    .event_reply  = ekuiper_plugin_event_reply
+    .open    = ekuiper_plugin_open,
+    .close   = ekuiper_plugin_close,
+    .init    = ekuiper_plugin_init,
+    .uninit  = ekuiper_plugin_uninit,
+    .start   = ekuiper_plugin_start,
+    .stop    = ekuiper_plugin_stop,
+    .config  = ekuiper_plugin_config,
+    .request = ekuiper_plugin_request,
 };
 
 const neu_plugin_module_t neu_plugin_module = {

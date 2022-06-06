@@ -24,68 +24,11 @@
 
 #include "persist/persist.h"
 
-typedef struct neu_manager neu_manager_t;
+#include "manager_internal.h"
 
 neu_manager_t *neu_manager_create();
 void           neu_manager_destroy(neu_manager_t *manager);
 
 const char *neu_manager_get_url(neu_manager_t *manager);
-
-int       neu_manager_add_node(neu_manager_t *manager, const char *node_name,
-                               const char *plugin_name);
-int       neu_manager_del_node(neu_manager_t *manager, const char *node_name);
-UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type);
-
-int       neu_manager_subscribe(neu_manager_t *manager, const char *app,
-                                const char *driver, const char *group);
-int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
-                                  const char *driver, const char *group);
-UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
-
-int neu_manager_add_group(neu_manager_t *manager, const char *driver,
-                          const char *group, uint32_t interval);
-int neu_manager_del_group(neu_manager_t *manager, const char *driver,
-                          const char *group);
-int neu_manager_update_group(neu_manager_t *manager, const char *driver,
-                             const char *group, uint32_t interval);
-int neu_manager_get_group(neu_manager_t *manager, const char *driver,
-                          UT_array **groups);
-
-int       neu_manager_add_tag(neu_manager_t *manager, const char *driver,
-                              const char *group, uint16_t n_tag, neu_datatag_t *tags,
-                              uint16_t *index);
-int       neu_manager_del_tag(neu_manager_t *manager, const char *driver,
-                              const char *group, uint16_t n_tag, char **tags);
-int       neu_manager_update_tag(neu_manager_t *manager, const char *driver,
-                                 const char *group, uint16_t n_tag,
-                                 neu_datatag_t *tags, uint16_t *index);
-int       neu_manager_get_tag(neu_manager_t *manager, const char *driver,
-                              const char *group, UT_array **tags);
-UT_array *neu_manager_tag_read(neu_manager_t *manager, const char *driver,
-                               const char *group);
-int       neu_manager_tag_write(neu_manager_t *manager, const char *driver,
-                                const char *group, const char *tag,
-                                neu_value_u value);
-
-int neu_manager_add_plugin(neu_manager_t *manager, const char *plugin_library);
-int neu_manager_del_plugin(neu_manager_t *manager, const char *plugin);
-// plugin_lib_info_t array
-UT_array *neu_manager_get_plugins(neu_manager_t *manager);
-
-int neu_manager_start_node(neu_manager_t *manager, const char *node);
-int neu_manager_stop_node(neu_manager_t *manager, const char *node);
-int neu_manager_get_node_state(neu_manager_t *manager, const char *node,
-                               neu_plugin_state_t *state);
-int neu_manager_node_ctl(neu_manager_t *manager, const char *node,
-                         neu_adapter_ctl_e ctl);
-
-int neu_manager_node_setting(neu_manager_t *manager, const char *node,
-                             const char *setting);
-int neu_manager_node_get_setting(neu_manager_t *manager, const char *node,
-                                 char **setting);
-
-int       neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
-                                       neu_persist_adapter_info_t *info);
-UT_array *neu_manager_get_plugin_info(neu_manager_t *manager);
 
 #endif

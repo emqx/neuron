@@ -34,9 +34,19 @@ void handle_add_plugin(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_plugin_req_t, neu_json_decode_add_plugin_req, {
-            NEU_JSON_RESPONSE_ERROR(
-                neu_system_add_plugin(plugin, req->library),
-                { http_response(aio, error_code.error, result_error); });
+            int                  ret    = 0;
+            neu_reqresp_head_t   header = { 0 };
+            neu_req_add_plugin_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_ADD_PLUGIN;
+            strcpy(cmd.library, req->library);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
@@ -46,39 +56,59 @@ void handle_del_plugin(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_plugin_req_t, neu_json_decode_del_plugin_req, {
-            intptr_t err = neu_system_del_plugin(plugin, req->plugin);
-            if (err != 0) {
-                http_bad_request(aio, "{\"error\": 1}");
-            } else {
-                http_ok(aio, "{\"error\": 0}");
+            int                  ret    = 0;
+            neu_reqresp_head_t   header = { 0 };
+            neu_req_del_plugin_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_DEL_PLUGIN;
+            strcpy(cmd.plugin, req->plugin);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
         })
 }
 
 void handle_get_plugin(nng_aio *aio)
 {
-    neu_plugin_t *             plugin     = neu_rest_get_plugin();
-    neu_json_get_plugin_resp_t plugin_res = { 0 };
-    char *                     result     = NULL;
-    int                        index      = 0;
+    neu_plugin_t *     plugin = neu_rest_get_plugin();
+    neu_reqresp_head_t header = { 0 };
+    int                ret    = 0;
 
     VALIDATE_JWT(aio);
 
-    UT_array *plugin_libs = neu_system_get_plugin(plugin);
+    header.ctx  = aio;
+    header.type = NEU_REQ_GET_PLUGIN;
 
-    plugin_res.n_plugin_lib = utarray_len(plugin_libs);
+    ret = neu_plugin_op(plugin, header, NULL);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
+
+void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins)
+{
+    neu_json_get_plugin_resp_t plugin_res = { 0 };
+    char *                     result     = NULL;
+
+    plugin_res.n_plugin_lib = utarray_len(plugins->plugins);
     plugin_res.plugin_libs  = calloc(
         plugin_res.n_plugin_lib, sizeof(neu_json_get_plugin_resp_plugin_lib_t));
 
-    utarray_foreach(plugin_libs, neu_plugin_lib_info_t *, info)
+    utarray_foreach(plugins->plugins, neu_resp_plugin_info_t *, info)
     {
+        int index = utarray_eltidx(plugins->plugins, info);
+
         plugin_res.plugin_libs[index].node_type   = info->type;
         plugin_res.plugin_libs[index].kind        = info->kind;
         plugin_res.plugin_libs[index].name        = (char *) info->name;
-        plugin_res.plugin_libs[index].library     = (char *) info->lib_name;
+        plugin_res.plugin_libs[index].library     = (char *) info->library;
         plugin_res.plugin_libs[index].description = (char *) info->description;
-
-        index += 1;
     }
 
     neu_json_encode_by_fn(&plugin_res, neu_json_encode_get_plugin_resp,
@@ -88,5 +118,5 @@ void handle_get_plugin(nng_aio *aio)
     free(result);
     free(plugin_res.plugin_libs);
 
-    utarray_free(plugin_libs);
+    utarray_free(plugins->plugins);
 }

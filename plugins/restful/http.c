@@ -304,6 +304,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:
+    case NEU_ERR_IS_BUSY:
         status = NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
         break;
     case NEU_ERR_EXPIRED_TOKEN:

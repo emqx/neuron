@@ -18,8 +18,21 @@ void handle_read(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_read_req_t, neu_json_decode_read_req, {
-            neu_plugin_send_read_cmd(plugin, req->node, req->group,
-                                     (void *) aio);
+            int                  ret    = 0;
+            neu_reqresp_head_t   header = { 0 };
+            neu_req_read_group_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_READ_GROUP;
+
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
@@ -29,93 +42,105 @@ void handle_write(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_write_req_t, neu_json_decode_write_req, {
-            neu_dvalue_t value = { 0 };
+            int                 ret    = 0;
+            neu_reqresp_head_t  header = { 0 };
+            neu_req_write_tag_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_WRITE_TAG;
+
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            strcpy(cmd.tag, req->tag);
+
             switch (req->t) {
             case NEU_JSON_INT:
-                value.type      = NEU_TYPE_INT64;
-                value.value.u64 = req->value.val_int;
+                cmd.value.type      = NEU_TYPE_INT64;
+                cmd.value.value.u64 = req->value.val_int;
                 break;
             case NEU_JSON_STR:
-                value.type = NEU_TYPE_STRING;
-                strcpy(value.value.str, req->value.val_str);
+                cmd.value.type = NEU_TYPE_STRING;
+                strcpy(cmd.value.value.str, req->value.val_str);
                 break;
             case NEU_JSON_DOUBLE:
-                value.type      = NEU_TYPE_DOUBLE;
-                value.value.d64 = req->value.val_double;
+                cmd.value.type      = NEU_TYPE_DOUBLE;
+                cmd.value.value.d64 = req->value.val_double;
                 break;
             case NEU_JSON_BOOL:
-                value.type          = NEU_TYPE_BOOL;
-                value.value.boolean = req->value.val_bool;
+                cmd.value.type          = NEU_TYPE_BOOL;
+                cmd.value.value.boolean = req->value.val_bool;
                 break;
             default:
                 assert(false);
                 break;
             }
 
-            neu_plugin_send_write_cmd(plugin, req->node, req->group, req->tag,
-                                      value, aio);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
-void handle_read_resp(void *cmd_resp)
+void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
 {
-    neu_request_t *          req     = (neu_request_t *) cmd_resp;
-    neu_reqresp_read_resp_t *resp    = (neu_reqresp_read_resp_t *) req->buf;
-    neu_json_read_resp_t     api_res = { 0 };
-    char *                   result  = NULL;
+    neu_json_read_resp_t api_res = { 0 };
+    char *               result  = NULL;
 
-    api_res.n_tag = resp->n_data;
+    api_res.n_tag = resp->n_tag;
     api_res.tags  = calloc(api_res.n_tag, sizeof(neu_json_read_resp_tag_t));
 
-    for (int i = 0; i < resp->n_data; i++) {
-        api_res.tags[i].name  = resp->datas[i].tag;
+    for (int i = 0; i < resp->n_tag; i++) {
+        api_res.tags[i].name  = resp->tags[i].tag;
         api_res.tags[i].error = NEU_ERR_SUCCESS;
 
-        switch (resp->datas[i].value.type) {
+        switch (resp->tags[i].value.type) {
         case NEU_TYPE_INT8:
         case NEU_TYPE_UINT8:
             api_res.tags[i].t             = NEU_JSON_INT;
-            api_res.tags[i].value.val_int = resp->datas[i].value.value.u8;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.u8;
             break;
         case NEU_TYPE_INT16:
         case NEU_TYPE_UINT16:
             api_res.tags[i].t             = NEU_JSON_INT;
-            api_res.tags[i].value.val_int = resp->datas[i].value.value.u16;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.u16;
             break;
         case NEU_TYPE_INT32:
         case NEU_TYPE_UINT32:
             api_res.tags[i].t             = NEU_JSON_INT;
-            api_res.tags[i].value.val_int = resp->datas[i].value.value.u32;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.u32;
             break;
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
             api_res.tags[i].t             = NEU_JSON_INT;
-            api_res.tags[i].value.val_int = resp->datas[i].value.value.u64;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.u64;
             break;
         case NEU_TYPE_FLOAT:
             api_res.tags[i].t               = NEU_JSON_FLOAT;
-            api_res.tags[i].value.val_float = resp->datas[i].value.value.f32;
+            api_res.tags[i].value.val_float = resp->tags[i].value.value.f32;
             break;
         case NEU_TYPE_DOUBLE:
             api_res.tags[i].t                = NEU_JSON_DOUBLE;
-            api_res.tags[i].value.val_double = resp->datas[i].value.value.d64;
+            api_res.tags[i].value.val_double = resp->tags[i].value.value.d64;
             break;
         case NEU_TYPE_BIT:
             api_res.tags[i].t             = NEU_JSON_BIT;
-            api_res.tags[i].value.val_bit = resp->datas[i].value.value.u8;
+            api_res.tags[i].value.val_bit = resp->tags[i].value.value.u8;
             break;
         case NEU_TYPE_BOOL:
             api_res.tags[i].t              = NEU_JSON_BOOL;
-            api_res.tags[i].value.val_bool = resp->datas[i].value.value.boolean;
+            api_res.tags[i].value.val_bool = resp->tags[i].value.value.boolean;
             break;
         case NEU_TYPE_STRING:
             api_res.tags[i].t             = NEU_JSON_STR;
-            api_res.tags[i].value.val_str = resp->datas[i].value.value.str;
+            api_res.tags[i].value.val_str = resp->tags[i].value.value.str;
             break;
         case NEU_TYPE_ERROR:
             api_res.tags[i].t             = NEU_JSON_INT;
-            api_res.tags[i].value.val_int = resp->datas[i].value.value.i32;
-            api_res.tags[i].error         = resp->datas[i].value.value.i32;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.i32;
+            api_res.tags[i].error         = resp->tags[i].value.value.i32;
             break;
         default:
             break;
@@ -123,17 +148,8 @@ void handle_read_resp(void *cmd_resp)
     }
 
     neu_json_encode_by_fn(&api_res, neu_json_encode_read_resp, &result);
-    http_ok(resp->ctx, result);
+    http_ok(aio, result);
     free(api_res.tags);
     free(result);
-}
-
-void handle_write_resp(void *cmd_resp)
-{
-    neu_request_t *           req  = (neu_request_t *) cmd_resp;
-    neu_reqresp_write_resp_t *resp = (neu_reqresp_write_resp_t *) req->buf;
-
-    NEU_JSON_RESPONSE_ERROR(resp->error, {
-        http_response(resp->ctx, error_code.error, result_error);
-    })
+    free(resp->tags);
 }

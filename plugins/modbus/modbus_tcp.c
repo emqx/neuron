@@ -15,8 +15,8 @@ static int driver_uninit(neu_plugin_t *plugin);
 static int driver_start(neu_plugin_t *plugin);
 static int driver_stop(neu_plugin_t *plugin);
 static int driver_config(neu_plugin_t *plugin, neu_config_t *config);
-static int driver_request(neu_plugin_t *plugin, neu_request_t *req);
-static int driver_event_reply(neu_plugin_t *plugin, neu_event_reply_t *reply);
+static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                          void *data);
 
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
@@ -24,17 +24,14 @@ static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                         neu_value_u value);
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = driver_open,
-    .close       = driver_close,
-    .init        = driver_init,
-    .uninit      = driver_uninit,
-    .start       = driver_start,
-    .stop        = driver_stop,
-    .config      = driver_config,
-    .request     = driver_request,
-    .event_reply = driver_event_reply,
-
-    .validate_tag = driver_validate_tag,
+    .open    = driver_open,
+    .close   = driver_close,
+    .init    = driver_init,
+    .uninit  = driver_uninit,
+    .start   = driver_start,
+    .stop    = driver_stop,
+    .config  = driver_config,
+    .request = driver_request,
 
     .driver.validate_tag = driver_validate_tag,
     .driver.group_timer  = driver_group_timer,
@@ -150,14 +147,12 @@ static int driver_config(neu_plugin_t *plugin, neu_config_t *config)
     return 0;
 }
 
-static int driver_request(neu_plugin_t *plugin, neu_request_t *req)
+static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                          void *data)
 {
-    switch (req->req_type) {
-    default:
-        plog_warn(plugin, "unhandle msg type: %d", req->req_type);
-        break;
-    }
-
+    (void) plugin;
+    (void) head;
+    (void) data;
     return 0;
 }
 
@@ -177,14 +172,6 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
     }
 
     return ret;
-}
-
-static int driver_event_reply(neu_plugin_t *plugin, neu_event_reply_t *reply)
-{
-    (void) plugin;
-    (void) reply;
-
-    return 0;
 }
 
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)

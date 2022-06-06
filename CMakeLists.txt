@@ -95,12 +95,7 @@ set(NEURON_SOURCES
     src/main.c
     src/argparse.c
     src/daemon.c
-#    src/core/message.c
-#    src/core/databuf.c
-#    src/core/neu_trans_buf.c
-#    src/core/neu_manager.c
-    #src/core/plugin_manager.c
-    #src/core/neu_datatag_manager.c
+    src/core/manager_internal.c
     src/core/manager.c
     src/core/subscribe.c
     src/core/pluginx_manager.c

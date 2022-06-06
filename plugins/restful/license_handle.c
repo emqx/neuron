@@ -172,9 +172,9 @@ static int set_license(const char *lic_str)
         goto final;
     }
 
-    neu_plugin_t *plugin = neu_rest_get_plugin();
-    rv                   = neu_plugin_notify_event_update_license(
-        plugin, neu_plugin_get_event_id(plugin));
+    neu_plugin_t *     plugin = neu_rest_get_plugin();
+    neu_reqresp_head_t head   = { .type = NEU_REQ_UPDATE_LICENSE };
+    rv                        = neu_plugin_op(plugin, head, NULL);
     if (0 != rv) {
         rv = NEU_ERR_EINTERNAL;
     }

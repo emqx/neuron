@@ -36,31 +36,45 @@ void handle_add_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
-            char *                 result = NULL;
-            neu_json_add_tag_res_t res    = { 0 };
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_add_tag_t  cmd    = { 0 };
 
-            neu_datatag_t *tags = calloc(req->n_tag, sizeof(neu_datatag_t));
+            header.ctx  = aio;
+            header.type = NEU_REQ_ADD_TAG;
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            cmd.n_tag = req->n_tag;
+            cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
+
             for (int i = 0; i < req->n_tag; i++) {
-                tags[i].attribute = req->tags[i].attribute;
-                tags[i].type      = req->tags[i].type;
-                tags[i].addr_str  = req->tags[i].address;
-                tags[i].name      = req->tags[i].name;
+                cmd.tags[i].attribute = req->tags[i].attribute;
+                cmd.tags[i].type      = req->tags[i].type;
+                cmd.tags[i].addr_str  = strdup(req->tags[i].address);
+                cmd.tags[i].name      = strdup(req->tags[i].name);
             }
 
-            res.error = neu_plugin_tag_add(plugin, req->node, req->group,
-                                           req->n_tag, tags, &res.index);
-
-            neu_json_encode_by_fn(&res, neu_json_encode_au_tags_resp, &result);
-
-            http_ok(aio, result);
-            if (res.index > 0) {
-                neu_plugin_notify_event_add_tags(plugin, 0, req->node,
-                                                 req->group);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
-
-            free(result);
-            free(tags);
         })
+}
+
+void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
+{
+    neu_json_add_tag_res_t res    = { 0 };
+    char *                 result = NULL;
+
+    res.error = resp->error;
+    res.index = resp->index;
+
+    neu_json_encode_by_fn(&res, neu_json_encode_au_tags_resp, &result);
+
+    http_ok(aio, result);
+    free(result);
 }
 
 void handle_del_tags(nng_aio *aio)
@@ -69,11 +83,27 @@ void handle_del_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
-            int rv = neu_plugin_tag_del(plugin, req->node, req->group,
-                                        req->n_tags, req->tags);
-            neu_plugin_notify_event_del_tags(plugin, 0, req->node, req->group);
-            NEU_JSON_RESPONSE_ERROR(
-                rv, { http_response(aio, NEU_ERR_SUCCESS, result_error); })
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_del_tag_t  cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_DEL_TAG;
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            cmd.n_tag = req->n_tags;
+            cmd.tags  = calloc(req->n_tags, sizeof(char *));
+
+            for (int i = 0; i < req->n_tags; i++) {
+                cmd.tags[i] = strdup(req->tags[i]);
+            }
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
@@ -83,41 +113,49 @@ void handle_update_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_tags_req_t, neu_json_decode_update_tags_req, {
-            char *                    result = NULL;
-            neu_json_update_tag_res_t res    = { 0 };
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_add_tag_t  cmd    = { 0 };
 
-            neu_datatag_t *tags = calloc(req->n_tag, sizeof(neu_datatag_t));
+            header.ctx  = aio;
+            header.type = NEU_REQ_UPDATE_TAG;
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            cmd.n_tag = req->n_tag;
+            cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
+
             for (int i = 0; i < req->n_tag; i++) {
-                tags[i].attribute = req->tags[i].attribute;
-                tags[i].type      = req->tags[i].type;
-                tags[i].addr_str  = req->tags[i].address;
-                tags[i].name      = req->tags[i].name;
+                cmd.tags[i].attribute = req->tags[i].attribute;
+                cmd.tags[i].type      = req->tags[i].type;
+                cmd.tags[i].addr_str  = strdup(req->tags[i].address);
+                cmd.tags[i].name      = strdup(req->tags[i].name);
             }
 
-            res.error = neu_plugin_tag_update(plugin, req->node, req->group,
-                                              req->n_tag, tags, &res.index);
-
-            neu_json_encode_by_fn(&res, neu_json_encode_au_tags_resp, &result);
-
-            http_ok(aio, result);
-            if (res.index > 0) {
-                neu_plugin_notify_event_update_tags(plugin, 0, req->node,
-                                                    req->group);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
-
-            free(result);
-            free(tags);
         })
+}
+
+void handle_update_tags_resp(nng_aio *aio, neu_resp_update_tag_t *resp)
+{
+    handle_add_tags_resp(aio, resp);
 }
 
 void handle_get_tags(nng_aio *aio)
 {
-    neu_plugin_t *plugin                    = neu_rest_get_plugin();
-    char          node[NEU_NODE_NAME_LEN]   = { 0 };
-    char          group[NEU_GROUP_NAME_LEN] = { 0 };
-    UT_array *    tags                      = NULL;
-    int           ret                       = 0;
-    char *        result                    = NULL;
+    neu_plugin_t *     plugin                    = neu_rest_get_plugin();
+    char               node[NEU_NODE_NAME_LEN]   = { 0 };
+    char               group[NEU_GROUP_NAME_LEN] = { 0 };
+    int                ret                       = 0;
+    neu_req_get_tag_t  cmd                       = { 0 };
+    neu_reqresp_head_t header                    = {
+        .ctx  = aio,
+        .type = NEU_REQ_GET_TAG,
+    };
 
     VALIDATE_JWT(aio);
 
@@ -134,25 +172,34 @@ void handle_get_tags(nng_aio *aio)
         return;
     }
 
-    ret = neu_plugin_tag_get(plugin, node, group, &tags);
-    if (ret != 0) {
-        NEU_JSON_RESPONSE_ERROR(ret, { http_response(aio, ret, result_error); })
-        return;
-    }
+    strcpy(cmd.driver, node);
+    strcpy(cmd.group, group);
 
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
+
+void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
+{
     neu_json_get_tags_resp_t tags_res = { 0 };
-    int                      index    = 0;
-    tags_res.n_tag                    = utarray_len(tags);
+    char *                   result   = NULL;
+
+    tags_res.n_tag = utarray_len(tags->tags);
     tags_res.tags =
         calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
 
-    utarray_foreach(tags, neu_datatag_t *, tag)
+    utarray_foreach(tags->tags, neu_datatag_t *, tag)
     {
+        int index = utarray_eltidx(tags->tags, tag);
+
         tags_res.tags[index].name      = tag->name;
         tags_res.tags[index].address   = tag->addr_str;
         tags_res.tags[index].type      = tag->type;
         tags_res.tags[index].attribute = tag->attribute;
-        index += 1;
     }
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
@@ -161,5 +208,5 @@ void handle_get_tags(nng_aio *aio)
 
     free(result);
     free(tags_res.tags);
-    utarray_free(tags);
+    utarray_free(tags->tags);
 }

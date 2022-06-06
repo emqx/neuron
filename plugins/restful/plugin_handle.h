@@ -24,5 +24,6 @@
 void handle_add_plugin(nng_aio *aio);
 void handle_del_plugin(nng_aio *aio);
 void handle_get_plugin(nng_aio *aio);
+void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins);
 
 #endif

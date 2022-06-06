@@ -77,10 +77,9 @@ typedef struct {
 } neu_node_status_t;
 
 typedef struct adapter_callbacks {
-    int (*command)(neu_adapter_t *adapter, neu_request_t *cmd,
-                   neu_response_t **p_result);
-    int (*response)(neu_adapter_t *adapter, neu_response_t *resp);
-    int (*event_notify)(neu_adapter_t *adapter, neu_event_notify_t *event);
+    int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
+    int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
+                    void *data);
 
     void (*link_status)(neu_adapter_t *        adapter,
                         neu_node_link_status_e link_status);

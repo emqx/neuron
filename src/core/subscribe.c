@@ -95,7 +95,7 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
 {
     sub_elem_t *el = NULL, *tmp = NULL;
     UT_array *  groups = NULL;
-    UT_icd      icd    = { sizeof(neu_subscribe_info_t), NULL, NULL, NULL };
+    UT_icd      icd = { sizeof(neu_resp_subscribe_info_t), NULL, NULL, NULL };
 
     utarray_new(groups, &icd);
 
@@ -104,7 +104,7 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
         utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
         {
             if (strcmp(sub_app->app_name, app) == 0) {
-                neu_subscribe_info_t info = { 0 };
+                neu_resp_subscribe_info_t info = { 0 };
 
                 strncpy(info.driver, el->key.driver, sizeof(info.driver));
                 strncpy(info.app, app, sizeof(info.app));

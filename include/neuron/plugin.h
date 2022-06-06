@@ -64,9 +64,7 @@ typedef struct neu_plugin_intf_funs {
     int (*stop)(neu_plugin_t *plugin);
     int (*config)(neu_plugin_t *plugin, neu_config_t *configs);
 
-    int (*request)(neu_plugin_t *plugin, neu_request_t *req);
-    int (*event_reply)(neu_plugin_t *plugin, neu_event_reply_t *reply);
-    int (*validate_tag)(neu_plugin_t *plugin, neu_datatag_t *tag);
+    int (*request)(neu_plugin_t *plugin, neu_reqresp_head_t *head, void *data);
 
     union {
         struct {
@@ -99,72 +97,7 @@ bool neu_plugin_common_check(neu_plugin_t *plugin);
 
 uint32_t neu_plugin_get_event_id(neu_plugin_t *plugin);
 
-intptr_t  neu_system_add_node(neu_plugin_t *plugin, const char *adapter_name,
-                              const char *plugin_name);
-intptr_t  neu_system_del_node(neu_plugin_t *plugin, const char *name);
-UT_array *neu_system_get_nodes(neu_plugin_t *plugin, neu_node_type_e node_type);
-
-intptr_t neu_system_add_group_config(neu_plugin_t *plugin,
-                                     const char *node_name, const char *name,
-                                     uint32_t interval);
-intptr_t neu_system_del_group_config(neu_plugin_t *plugin,
-                                     const char *node_name, const char *name);
-intptr_t neu_system_update_group_config(neu_plugin_t *plugin,
-                                        const char *node_name, const char *name,
-                                        uint32_t interval);
-int neu_system_get_group_configs(neu_plugin_t *plugin, const char *node_name,
-                                 UT_array **groups);
-
-int neu_plugin_send_unsubscribe_cmd(neu_plugin_t *plugin, const char *app_name,
-                                    const char *driver_name, const char *group);
-int neu_plugin_send_subscribe_cmd(neu_plugin_t *plugin, const char *app_name,
-                                  const char *driver_name, const char *group);
-
-void neu_plugin_send_read_cmd(neu_plugin_t *plugin, const char *driver,
-                              const char *group, void *ctx);
-void neu_plugin_send_write_cmd(neu_plugin_t *plugin, const char *node_name,
-                               const char *group_name, const char *tag,
-                               neu_dvalue_t value, void *ctx);
-
-intptr_t  neu_system_add_plugin(neu_plugin_t *plugin,
-                                const char *  plugin_lib_name);
-intptr_t  neu_system_del_plugin(neu_plugin_t *plugin, const char *name);
-UT_array *neu_system_get_plugin(neu_plugin_t *plugin);
-
-int neu_plugin_notify_event_add_tags(neu_plugin_t *plugin, uint32_t event_id,
-                                     const char *node_name,
-                                     const char *group_name);
-int neu_plugin_notify_event_del_tags(neu_plugin_t *plugin, uint32_t event_id,
-                                     const char *node_name,
-                                     const char *group_name);
-int neu_plugin_notify_event_update_tags(neu_plugin_t *plugin, uint32_t event_id,
-                                        const char *node_name,
-                                        const char *group_name);
-int neu_plugin_notify_event_update_license(neu_plugin_t *plugin,
-                                           uint32_t      event_id);
-
-intptr_t neu_plugin_set_node_setting(neu_plugin_t *plugin,
-                                     const char *  node_name,
-                                     const char *  setting);
-int32_t neu_plugin_get_node_setting(neu_plugin_t *plugin, const char *node_name,
-                                    char **setting);
-int32_t neu_plugin_get_node_state(neu_plugin_t *plugin, const char *node_name,
-                                  neu_plugin_state_t *state);
-intptr_t  neu_plugin_node_ctl(neu_plugin_t *plugin, const char *node_name,
-                              neu_adapter_ctl_e ctl);
-UT_array *neu_system_get_sub_group_configs(neu_plugin_t *plugin,
-                                           const char *  node_name);
-
-int neu_plugin_tag_add(neu_plugin_t *plugin, const char *node,
-                       const char *group, uint16_t n_tag, neu_datatag_t *tags,
-                       uint16_t *index);
-int neu_plugin_tag_del(neu_plugin_t *plugin, const char *node,
-                       const char *group, uint16_t n_tag, char **tags);
-int neu_plugin_tag_update(neu_plugin_t *plugin, const char *node,
-                          const char *group, uint16_t n_tag,
-                          neu_datatag_t *tags, uint16_t *index);
-int neu_plugin_tag_get(neu_plugin_t *plugin, const char *node,
-                       const char *group, UT_array **tags);
+int neu_plugin_op(neu_plugin_t *plugin, neu_reqresp_head_t head, void *data);
 
 #ifdef __cplusplus
 }

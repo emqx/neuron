@@ -21,12 +21,20 @@
 
 #include <nng/nng.h>
 
+#include "adapter.h"
+
 void handle_add_adapter(nng_aio *aio);
 void handle_del_adapter(nng_aio *aio);
 void handle_get_adapter(nng_aio *aio);
+void handle_get_adapter_resp(nng_aio *aio, neu_resp_get_node_t *nodes);
+
 void handle_set_node_setting(nng_aio *aio);
 void handle_get_node_setting(nng_aio *aio);
+void handle_get_node_setting_resp(nng_aio *                    aio,
+                                  neu_resp_get_node_setting_t *setting);
+
 void handle_node_ctl(nng_aio *aio);
 void handle_get_node_state(nng_aio *aio);
+void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state);
 
 #endif

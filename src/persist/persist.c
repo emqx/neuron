@@ -980,7 +980,7 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
     subs_resp.subscriptions =
         calloc(subs_resp.n_subscription,
                sizeof(neu_json_subscriptions_req_subscription_t));
-    utarray_foreach(subscription_infos, neu_subscribe_info_t *, info)
+    utarray_foreach(subscription_infos, neu_resp_subscribe_info_t *, info)
     {
         subs_resp.subscriptions[index].group_config_name = info->group;
         subs_resp.subscriptions[index].src_adapter_name  = info->driver;

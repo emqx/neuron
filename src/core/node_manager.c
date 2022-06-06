@@ -142,11 +142,10 @@ void neu_node_manager_del(neu_node_manager_t *mgr, const char *name)
     nng_mtx_unlock(mgr->mtx);
 }
 
-// neu_node_info array
 UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
 {
     UT_array *     array = NULL;
-    UT_icd         icd   = { sizeof(neu_node_info_t), NULL, NULL, NULL };
+    UT_icd         icd   = { sizeof(neu_resp_node_info_t), NULL, NULL, NULL };
     node_entity_t *el = NULL, *tmp = NULL;
 
     utarray_new(array, &icd);
@@ -156,12 +155,10 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
     {
         if (!el->is_static) {
             if (el->adapter->plugin_info.module->type == type) {
-                neu_node_info_t info = { 0 };
-                strncpy(info.node_name, el->adapter->name,
-                        sizeof(info.node_name));
-                strncpy(info.plugin_name,
-                        el->adapter->plugin_info.module->module_name,
-                        sizeof(info.plugin_name));
+                neu_resp_node_info_t info = { 0 };
+                strcpy(info.node, el->adapter->name);
+                strcpy(info.plugin,
+                       el->adapter->plugin_info.module->module_name);
                 utarray_push_back(array, &info);
             }
         }

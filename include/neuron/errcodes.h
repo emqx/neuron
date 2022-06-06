@@ -73,6 +73,7 @@ typedef enum {
     NEU_ERR_VALIDATE_TOKEN           = 1007,
     NEU_ERR_INVALID_TOKEN            = 1008,
     NEU_ERR_INVALID_USER_OR_PASSWORD = 1009,
+    NEU_ERR_IS_BUSY                  = 1010,
 
     NEU_ERR_NODE_TYPE_INVALID      = 2001,
     NEU_ERR_NODE_EXIST             = 2002,
