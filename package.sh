@@ -65,6 +65,9 @@ cp build/plugins/libplugin-ekuiper.so \
     build/plugins/libplugin-mqtt.so \
     ${package_name}/plugins/
 
+cp -r build/ekuiper ${package_name}/
+cp neuron-helper.sh ${package_name}/
+
 tar czf ${package_name}-${arch}.tar.gz ${package_name}/
 ls ${package_name}
 rm -rf ${package_name}
