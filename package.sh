@@ -43,6 +43,7 @@ fi
 cp zlog/src/libzlog.so.1.2 ${package_name}
 
 cp .gitkeep ${package_name}/logs/
+cp -r persistence ${package_name}/
 cp default_plugins.json ${package_name}/persistence/plugins.json
 cp zlog.conf ${package_name}/config/
 
