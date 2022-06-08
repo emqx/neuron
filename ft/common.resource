@@ -1,4 +1,5 @@
 *** Settings ***
+Library     Process
 Library    OperatingSystem
 
 Library    Keyword.Neuron.GrpConfig
@@ -15,41 +16,6 @@ Resource    simulator.resource
 *** Variables ***
 ${test_data_dir}     ft/data
 
-${NODE_DRIVER}	1
-${NODE_APP}	2
-
-${NODE_CTL_START}	0
-${NODE_CTL_STOP}	1
-
-${NODE_STATE_IDLE}	0
-${NODE_STATE_INIT}	1
-${NODE_STATE_READY}	2
-${NODE_STATE_RUNNING}	3
-${NODE_STATE_STOP}	4
-
-${NODE_LINK_STATE_DISCONNECTED}    0
-${NODE_LINK_STATE_CONNECTING}      1
-${NODE_LINK_STATE_CONNECTED}       2
-
-${TAG_ATTRIBUTE_READ}	1
-${TAG_ATTRIBUTE_WRITE}	2
-${TAG_ATTRIBUTE_SUBSCRIBE}	4
-${TAG_ATTRIBUTE_RW}	3
-
-${TAG_DATA_TYPE_BYTE}	2
-${TAG_DATA_TYPE_INT8}	3
-${TAG_DATA_TYPE_INT16}	4
-${TAG_DATA_TYPE_INT32}	5
-${TAG_DATA_TYPE_INT64}	6
-${TAG_DATA_TYPE_UINT8}	7
-${TAG_DATA_TYPE_UINT16}	8
-${TAG_DATA_TYPE_UINT32}	9
-${TAG_DATA_TYPE_UINT64}	10
-${TAG_DATA_TYPE_FLOAT}	11
-${TAG_DATA_TYPE_DOUBLE}	12
-${TAG_DATA_TYPE_BOOL}	13
-${TAG_DATA_TYPE_BIT}	14
-${TAG_DATA_TYPE_STRING}	15
 
 ${PLUGIN_MODBUS_TCP}	modbus-tcp
 ${PLUGIN_MQTT}    mqtt
@@ -75,7 +41,24 @@ ${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "u
 
 ${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "timeout": 3000}
 
+*** Variables ***
+${neuron_process}
+
 *** Keywords ***
+Start Neuronx
+    Remove Persistence
+    ${process} =     Start Process     ./neuron  --log      cwd=build       stdout=neuron.log
+    Set Global Variable     ${neuron_process}       ${process}
+    Sleep   2
+    LOGIN
+
+Stop Neuronx
+    ${result} =     Terminate Process       ${neuron_process}
+    Should Be Empty     ${result.stderr} 
+
+
+
+
 To Array
 	[Arguments]	${str_array}
 	${tmp}                      Array    ${str_array}

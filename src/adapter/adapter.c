@@ -582,6 +582,8 @@ int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case NEU_REQRESP_PERSISTENCE_LOAD:
             persister_singleton_load_data(adapter);
             break;
+        case NEU_RESP_GET_NODE_STATE:
+        case NEU_RESP_GET_NODE_SETTING:
         case NEU_REQRESP_TRANS_DATA:
         case NEU_RESP_READ_GROUP:
         case NEU_RESP_GET_SUBSCRIBE_GROUP:
@@ -877,7 +879,6 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
         if (adapter->state == ADAPTER_STATE_INIT) {
             adapter->state = ADAPTER_STATE_READY;
         }
-
     } else {
         rv = NEU_ERR_NODE_SETTING_INVALID;
     }

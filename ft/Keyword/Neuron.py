@@ -118,11 +118,14 @@ class Node(object):
     def Get_Node_By_Name(self, snodes, name):
         for node in snodes:
             if node['name'] == name:
-                return node['id']
-        return 0
+                return True
+        return False
 
-    def Node_With_Name_Should_Exist(self, snodes, name):
-        assert 0 != self.Get_Node_By_Name(snodes, name)
+    def Node_Should_Exist(self, snodes, name):
+        assert True == self.Get_Node_By_Name(snodes, name)
+
+    def Node_Should_Not_Exist(self, snodes, name):
+        assert False == self.Get_Node_By_Name(snodes, name)
 
     def Node_With_Name_Should_Not_Exist(self, snodes, name):
         assert 0 == self.Get_Node_By_Name(snodes, name)

@@ -399,6 +399,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             forward_msg_dup(manager, msg, manager->persist_pipe);
+        } else {
+            free(cmd->setting);
         }
 
         header->type = NEU_RESP_ERROR;

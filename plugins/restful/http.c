@@ -294,8 +294,6 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_PLUGIN_DISCONNECTED:
     case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_READ:
     case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE:
-    case NEU_ERR_PLUGIN_TAG_NOT_EXIST:
-    case NEU_ERR_PLUGIN_GRP_NOT_SUBSCRIBE:
     case NEU_ERR_LICENSE_EXPIRED:
     case NEU_ERR_LICENSE_DISABLED:
     case NEU_ERR_LICENSE_MAX_NODES:
@@ -319,7 +317,6 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         break;
     case NEU_ERR_BODY_IS_WRONG:
     case NEU_ERR_PARAM_IS_WRONG:
-    case NEU_ERR_NODE_TYPE_INVALID:
     case NEU_ERR_NODE_SETTING_INVALID:
     case NEU_ERR_LIBRARY_INFO_INVALID:
     case NEU_ERR_LICENSE_INVALID:
