@@ -78,17 +78,14 @@ def create_deb_file(rules):
         src = r.src
         dstpath = fix_dri + r.dst
         dst = dstpath + r.filename
-        if not os.path.exists(src):
+        if not os.path.isfile(src):
             print("%s not exist!" % src)
             continue
 
         if not os.path.exists(dstpath):
             os.makedirs(dstpath)
 
-        if os.path.isfile(src):
-            shutil.copyfile(src, dst)
-        else:
-            shutil.copytree(src, dst, dirs_exist_ok=True)
+        shutil.copyfile(src, dst)
         if r.mode == "x":
             os.chmod(dst,
                      stat.S_IXUSR | stat.S_IRUSR | stat.S_IWUSR | stat.S_IXGRP | stat.S_IWGRP | stat.S_IRGRP)

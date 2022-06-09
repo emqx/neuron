@@ -39,28 +39,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: fetch ekuiper
-        if: ${{ matrix.arch[5] != 'armhf' }}
-        uses: dsaltares/fetch-gh-release-asset@master
-        env:
-          EKUIPER_VERSION: 1.5.0
-        with:
-          repo: "lf-edge/ekuiper"
-          version: "tags/${{ env.EKUIPER_VERSION }}"
-          file: "kuiper-${{ env.EKUIPER_VERSION }}-linux-${{ matrix.arch[5] }}.tar.gz"
-          target: "ekuiper.tar.gz"
-
-      - name: fetch ekuiper arm
-        if: ${{ matrix.arch[5] == 'armhf' }}
-        uses: dsaltares/fetch-gh-release-asset@master
-        env:
-          EKUIPER_VERSION: 1.5.0
-        with:
-          repo: "lf-edge/ekuiper"
-          version: "tags/${{ env.EKUIPER_VERSION }}"
-          file: "kuiper-${{ env.EKUIPER_VERSION }}-linux-arm.tar.gz"
-          target: "ekuiper.tar.gz"
-
       - name: install
         run: sudo apt-get update && sudo apt-get install -y ${{ matrix.arch[2] }} ${{ matrix.arch[3] }} pkg-config alien
       
@@ -74,7 +52,6 @@ jobs:
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch[0] }}.cmake \
             -DCMAKE_BUILD_TYPE=Release -DDISABLE_UT=ON
           make -j4
-
       - name: get version
         id: get_version
         run: echo "::set-output name=version::$(cat version)"
@@ -83,10 +60,6 @@ jobs:
         env:
           ARCH: ${{ matrix.arch[5] }}
         run: |
-          pwd
-          find . -iname "*kuiper*"
-          mkdir -p build/ekuiper
-          tar xvf ekuiper.tar.gz --strip-components=1 -C build/ekuiper
           ./package.sh -p ${ARCH} -n neuron-${{ steps.get_version.outputs.version }}
           cd package
           python3 create_neuron_deb.py ${{ steps.get_version.outputs.version }} ${{ matrix.arch[5] }}
@@ -102,7 +75,6 @@ jobs:
             *.tar.gz
             *.deb
             *.rpm
-            !ekuiper.tar.gz
 
       - name: Create neuron sdk package
         run: |
