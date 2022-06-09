@@ -19,18 +19,8 @@ set(CMAKE_C_FLAGS_DEBUG
     "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
 )
 set(CMAKE_CXX_FLAGS_DEBUG
-    "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
+    "-Wall -g -O0 -fsanitize=address"
 )
-#set(CMAKE_C_FLAGS_DEBUG
-    #"${CMAKE_C_FLAGS} -O0 -fsanitize=address \
-  #-fsanitize-recover=address -fsanitize-address-use-after-scope \
-  #-fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
-#)
-#set(CMAKE_CXX_FLAGS_DEBUG
-    #"-g -O0 -fsanitize=address \
-  #-fsanitize-recover=address -fsanitize-address-use-after-scope \
-  #-fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
-#)
 
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
   set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS
@@ -138,7 +128,6 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 set(NEURON_BASE_SOURCES
     src/base/tag.c
     src/base/neu_plugin_common.c
-    #src/base/neu_data_expr.c
     src/base/tag_sort.c
     src/base/group.c
     src/connection/connection.c
@@ -146,7 +135,6 @@ set(NEURON_BASE_SOURCES
     src/connection/mqtt_client_intf.c
     src/event/event_linux.c
     src/event/event_unix.c
-#    src/utils/atomic_data.c
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/file.c
@@ -187,11 +175,11 @@ add_subdirectory(plugins/ekuiper)
 # define for simulator
 add_subdirectory(simulator)
 
-#if(NOT DISABLE_UT)
-  ## define for tests
-  #enable_testing()
-  #add_subdirectory(tests)
-#endif()
+if(NOT DISABLE_UT)
+  # define for tests
+  enable_testing()
+  add_subdirectory(tests)
+endif()
 
 
 # Set sane defaults for multi-lib linux systems
