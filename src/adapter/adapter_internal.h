@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,8 +29,6 @@
 #include "plugin_info.h"
 
 #include "adapter_info.h"
-//#include "core/databuf.h"
-//#include "core/neu_manager.h"
 #include "core/manager.h"
 #include "plugin_info.h"
 

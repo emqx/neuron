@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -166,8 +166,7 @@ void handle_get_node_setting(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <=
-        0) {
+    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
