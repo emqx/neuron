@@ -5,11 +5,3 @@ ldconfig
 systemctl daemon-reload
 systemctl enable neuron
 systemctl start neuron
-systemctl enable neuron.ekuiper
-systemctl start neuron.ekuiper
-
-# create ekuiper stream for neuron
-sleep 1
-curl -X POST --location http://127.0.0.1:9081/streams \
-     -H 'Content-Type: application/json' \
-     -d '{"sql":"CREATE STREAM neuronStream() WITH (TYPE=\"neuron\",FORMAT=\"json\",SHARED=\"true\");"}'
