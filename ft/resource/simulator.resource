@@ -7,6 +7,10 @@ ${MODBUS_TCP_SERVER_SIMULATOR}    ./modbus_simulator
 ${OPCUA_SERVER_SIMULATOR}         ./opcua_simulator
 
 *** Keywords ***
+Start Modbus Simulator
+	${handle} =	Start Process    ${MODBUS_TCP_SERVER_SIMULATOR}	tcp	60502   cwd=build/simulator
+	[Return]	${handle}
+
 Start Simulator Arg
 	[Arguments]	${simulator}	${cwd}
 

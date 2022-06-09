@@ -96,6 +96,13 @@ Compare Tag Value As String
 
     Should Be Equal As Integers    ${ret}    0
 
+Compare Tag Value As Strings
+    [Arguments]    ${tags}    ${name}    ${value}
+
+    ${ret} =    Compare Tag Value Strings    ${tags}    ${name}    ${value}
+
+    Should Be Equal As Integers    ${ret}    0
+
 #Import Neuron API Resource
     #${api} =       Get Variable Value                                                    ${NEURON_API}    http
     #IF             $api.lower() not in ["mqtt", "http"]

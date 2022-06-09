@@ -1,7 +1,7 @@
 *** Settings ***
-Resource 	api.resource
-Resource	common.resource
-Resource	error.resource
+Resource 	resource/api.resource
+Resource	resource/common.resource
+Resource	resource/error.resource
 Suite Setup	Start Neuronx
 Suite Teardown	Stop Neuronx
 

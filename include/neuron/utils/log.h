@@ -63,4 +63,27 @@ extern zlog_category_t *neuron;
 #define plog_debug(plugin, ...)                                          \
     zlog((plugin)->common.log, __FILE__, sizeof(__FILE__) - 1, __func__, \
          sizeof(__func__) - 1, __LINE__, ZLOG_LEVEL_DEBUG, __VA_ARGS__)
+
+#define plog_send_protocol(plugin, bytes, n_byte)                          \
+    char protocol_buf[2048] = { 0 };                                       \
+    int  offset             = 0;                                           \
+    offset = snprintf(protocol_buf, sizeof(protocol_buf), "send:");        \
+    for (int i = 0; i < n_byte; i++) {                                     \
+        offset +=                                                          \
+            snprintf(protocol_buf + offset, sizeof(protocol_buf) - offset, \
+                     " 0x%02X", bytes[i]);                                 \
+    }                                                                      \
+    plog_debug(plugin, "%s", protocol_buf);
+
+#define plog_recv_protocol(plugin, bytes, n_byte)                          \
+    char protocol_buf[2048] = { 0 };                                       \
+    int  offset             = 0;                                           \
+    offset = snprintf(protocol_buf, sizeof(protocol_buf), "recv:");        \
+    for (int i = 0; i < n_byte; i++) {                                     \
+        offset +=                                                          \
+            snprintf(protocol_buf + offset, sizeof(protocol_buf) - offset, \
+                     " 0x%02X", bytes[i]);                                 \
+    }                                                                      \
+    plog_debug(plugin, "%s", protocol_buf);
+
 #endif

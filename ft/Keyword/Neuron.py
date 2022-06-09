@@ -214,3 +214,12 @@ class Read(object):
                     ret = 0
                 break
         return ret
+
+    def Compare_Tag_Value_Strings(self, tags, name, value):
+        ret = -1
+        for tag in tags:
+            if tag['name'] == name:
+                if "\"" + tag['value'] + "\"" == str(value):
+                    ret = 0
+                break
+        return ret

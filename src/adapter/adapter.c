@@ -483,6 +483,9 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     nng_msg *msg = neu_msg_gen(header, data);
 
     ret = nng_sendmsg(adapter->nng.sock, msg, NNG_FLAG_NONBLOCK);
+    if (ret == NNG_EAGAIN) {
+        ret = nng_sendmsg(adapter->nng.sock, msg, 0);
+    }
     if (ret != 0) {
         nlog_warn("sendmsg error: %d", ret);
         nng_msg_free(msg);

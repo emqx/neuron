@@ -179,15 +179,13 @@ Get Tag ID
   [Return]            ${id}
 
 Read Tags
-  [Arguments]         ${node_name}              ${group}
-  POST                /api/v2/read            {"node_name": "${node_name}", "group_name": "${group}"}
+  [Arguments]         ${node}              ${group}
+  POST                /api/v2/read            {"node": "${node}", "group": "${group}"}
   ${res} =            Object  response body
-
   [RETURN]            ${res}[0]
 
 Write Tags
-  [Arguments]         ${node_name}              ${group}                      ${tag_name}     ${value}
-  POST                /api/v2/write           {"node_name": "${node_name}", "group_name": "${group}", "tag_name": "${tag_name}", "value": ${value}}
+  [Arguments]         ${node}              ${group}                      ${tag}     ${value}
+  POST                /api/v2/write           {"node": "${node}", "group": "${group}", "tag": "${tag}", "value": ${value}}
   ${res} =            Object  response body
-
   [RETURN]            ${res}[0]

@@ -150,6 +150,7 @@ jobs:
             ft/reports/log.html
             ft/reports/output.xml
             ft/reports/report.html
+            build/neuron.log
 
   create_daily_release:
     runs-on: ubuntu-20.04

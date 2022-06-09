@@ -326,9 +326,9 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         free(find->grp.group_name);
         free(find->name);
 
-        utarray_foreach(find->grp.tags, neu_datatag_t *, tag)
+        utarray_foreach(find->grp.tags, neu_datatag_t **, p_tag)
         {
-            neu_driver_cache_del(driver->cache, tag->name);
+            neu_driver_cache_del(driver->cache, (*p_tag)->name);
         }
 
         free_tags(find->grp.tags);
