@@ -77,9 +77,6 @@ typedef struct {
 int  json_decode_write_req(char *buf, size_t len, json_write_req_t **result);
 void json_decode_write_req_free(json_write_req_t *req);
 
-int plugin_send_write_cmd_from_write_req(neu_plugin_t *plugin, uint32_t req_id,
-                                         json_write_req_t *write_req);
-
 #ifdef __cplusplus
 }
 #endif

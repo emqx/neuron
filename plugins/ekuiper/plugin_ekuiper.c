@@ -166,6 +166,12 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
               neu_plugin_module.module_name);
 
     switch (header->type) {
+    case NEU_RESP_ERROR: {
+        neu_resp_error_t *error = (neu_resp_error_t *) data;
+        zlog_info(neuron, "plugin: %s receive resp errcode: %d",
+                  neu_plugin_module.module_name, error->error);
+        break;
+    }
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_trans_data_t *trans_data = data;
         send_data(plugin, trans_data);
