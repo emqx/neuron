@@ -39,19 +39,6 @@ typedef struct {
     uint64_t timestamp;
 } json_read_resp_header_t;
 
-// typedef struct {
-// neu_node_id_t        sender_id;
-// neu_datatag_table_t *sender_datatag_table;
-// neu_fixed_array_t *  array;
-//} json_read_resp_tags_t;
-
-// typedef struct {
-// neu_node_id_t        sender_id;
-// const char *         sender_name;
-// neu_datatag_table_t *sender_datatag_table;
-// neu_taggrp_config_t *grp_config;
-//} json_read_resp_t;
-
 // time in milliseconds
 static inline uint64_t time_ms()
 {
@@ -61,8 +48,8 @@ static inline uint64_t time_ms()
     return ms * 1000 + tv.tv_usec / 1000;
 }
 
-// int wrap_tag_data(neu_json_read_resp_tag_t *json_tag, neu_int_val_t *int_val,
-// neu_datatag_table_t *datatag_table);
+int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
+                  neu_resp_tag_value_t *    tag_value);
 
 // { "node_name": "node0", "group_name": "grp0", "timestamp": 1649776722631 }
 int json_encode_read_resp_header(void *json_object, void *param);

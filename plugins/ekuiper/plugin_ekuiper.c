@@ -162,34 +162,21 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
 static int ekuiper_plugin_request(neu_plugin_t *      plugin,
                                   neu_reqresp_head_t *header, void *data)
 {
-    (void) plugin;
-    (void) header;
-    (void) data;
+    zlog_info(neuron, "send request to plugin: %s",
+              neu_plugin_module.module_name);
+
+    switch (header->type) {
+    case NEU_REQRESP_TRANS_DATA: {
+        neu_reqresp_trans_data_t *trans_data = data;
+        send_data(plugin, trans_data);
+        break;
+    }
+    default:
+        assert(false);
+        break;
+    }
+
     return 0;
-    // int rv = 0;
-    //(void) header;
-
-    // if (plugin == NULL || data == NULL) {
-    // zlog_warn(neuron, "The plugin pointer or request is NULL");
-    // return (-1);
-    //}
-
-    // zlog_info(neuron, "send request to plugin: %s",
-    // neu_plugin_module.module_name);
-    // const adapter_callbacks_t *adapter_callbacks;
-    // adapter_callbacks = plugin->common.adapter_callbacks;
-    //(void) adapter_callbacks;
-
-    // switch (req->req_type) {
-    // case NEU_REQRESP_TRANS_DATA: {
-    // send_data(plugin, data);
-    // break;
-    //}
-
-    // default:
-    // break;
-    //}
-    // return rv;
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
@@ -208,6 +195,6 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name  = "ekuiper",
     .module_descr = "Neuron and LF Edge eKuiper integration plugin",
     .intf_funs    = &plugin_intf_funs,
-    .kind         = PLUGIN_KIND_SYSTEM,
+    .kind         = NEU_PLUGIN_KIND_SYSTEM,
     .type         = NEU_NA_TYPE_APP,
 };

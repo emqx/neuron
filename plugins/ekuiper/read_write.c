@@ -26,47 +26,34 @@
 #include "json_rw.h"
 #include "read_write.h"
 
-// void send_data(neu_plugin_t *plugin, neu_request_t *req)
-//{
-//(void) req;
-//(void) plugin;
-// int                  rv       = 0;
-// neu_reqresp_data_t * neu_data = (neu_reqresp_data_t *) req->buf;
-// neu_datatag_table_t *datatag_table =
-// neu_system_get_datatags_table(plugin, req->sender_id);
+void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
+{
+    int rv = 0;
 
-// json_read_resp_t resp = {
-//.sender_id            = req->sender_id,
-//.sender_name          = req->node_name,
-//.sender_datatag_table = datatag_table,
-//.grp_config           = neu_data->grp_config,
-//.data_val             = neu_data->data_val,
-//};
-// char *json_str = NULL;
-// rv = neu_json_encode_by_fn(&resp, json_encode_read_resp, &json_str);
-// if (0 != rv) {
-// zlog_error(neuron, "cannot encode read resp");
-// return;
-//}
+    char *json_str = NULL;
+    rv = neu_json_encode_by_fn(trans_data, json_encode_read_resp, &json_str);
+    if (0 != rv) {
+        zlog_error(neuron, "cannot encode read resp");
+        return;
+    }
 
-// nng_msg *msg      = NULL;
-// size_t   json_len = strlen(json_str);
-// rv                = nng_msg_alloc(&msg, json_len);
-// if (0 != rv) {
-// zlog_error(neuron, "nng cannot allocate msg");
-// free(json_str);
-// return;
-//}
+    nng_msg *msg      = NULL;
+    size_t   json_len = strlen(json_str);
+    rv                = nng_msg_alloc(&msg, json_len);
+    if (0 != rv) {
+        zlog_error(neuron, "nng cannot allocate msg");
+        free(json_str);
+        return;
+    }
 
-// memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
-// rv = nng_sendmsg(plugin->sock, msg, 0); // TODO: use aio to send message
-// if (0 != rv) {
-// zlog_error(neuron, "nng cannot send msg");
-// nng_msg_free(msg);
-//}
-
-// free(json_str);
-//}
+    memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
+    free(json_str);
+    rv = nng_sendmsg(plugin->sock, msg, 0); // TODO: use aio to send message
+    if (0 != rv) {
+        zlog_error(neuron, "nng cannot send msg");
+        nng_msg_free(msg);
+    }
+}
 
 void recv_data_callback(void *arg)
 {
