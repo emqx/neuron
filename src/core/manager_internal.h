@@ -35,6 +35,8 @@ typedef struct neu_manager {
     neu_events_t *  events;
     neu_event_io_t *loop;
 
+    bool stop;
+
     neu_plugin_manager_t *plugin_manager;
     neu_node_manager_t *  node_manager;
     neu_subscribe_mgr_t * subscribe_manager;

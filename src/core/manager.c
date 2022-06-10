@@ -66,6 +66,7 @@ neu_manager_t *neu_manager_create()
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
+    manager->stop              = false;
 
     nng_mtx_alloc(&manager->mtx);
     nng_pair1_open_poly(&manager->socket);
@@ -76,8 +77,6 @@ neu_manager_t *neu_manager_create()
     nng_socket_get_int(manager->socket, NNG_OPT_RECVFD, &param.fd);
     manager->loop = neu_event_add_io(manager->events, param);
 
-    // load static
-    // load persistence
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
     start_static_adapter(manager, DEFAULT_DUMMY_PLUGIN_NAME);
 
@@ -89,6 +88,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     stop_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
     stop_static_adapter(manager, DEFAULT_DUMMY_PLUGIN_NAME);
 
+    manager->stop = true;
     neu_subscribe_manager_destroy(manager->subscribe_manager);
     neu_node_manager_destroy(manager->node_manager);
     neu_plugin_manager_destroy(manager->plugin_manager);
@@ -127,6 +127,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
 
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
+
+    if (manager->stop) {
+        nlog_warn("manager stopped, drop from %s msg: %d", header->sender,
+                  header->type);
+        nng_msg_free(msg);
+        return 0;
+    }
+
     nlog_info("manager recv msg from: %s, type: %d", header->sender,
               header->type);
     switch (header->type) {
