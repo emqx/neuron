@@ -35,6 +35,7 @@ extern "C" {
 #include "tag.h"
 #include "utils/base64.h"
 
+#include "connection/mqtt_client_intf.h"
 #include "connection/neu_connection.h"
 #include "event/event.h"
 
