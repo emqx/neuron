@@ -482,10 +482,10 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 
     nng_msg *msg = neu_msg_gen(header, data);
 
-    ret = nng_sendmsg(adapter->nng.sock, msg, NNG_FLAG_NONBLOCK);
-    if (ret == NNG_EAGAIN) {
-        ret = nng_sendmsg(adapter->nng.sock, msg, 0);
-    }
+    ret = nng_sendmsg(adapter->nng.sock, msg, 0);
+    // ret = nng_sendmsg(adapter->nng.sock, msg, NNG_FLAG_NONBLOCK);
+    // if (ret == NNG_EAGAIN) {
+    //}
     if (ret != 0) {
         nlog_warn("sendmsg error: %d", ret);
         nng_msg_free(msg);
@@ -726,15 +726,15 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     int rv = 0;
 
+    nng_dialer_close(adapter->nng.dialer);
+    nng_close(adapter->nng.sock);
+
     if (adapter->plugin_info.module->type == NEU_NA_TYPE_DRIVER) {
         neu_adapter_driver_uninit((neu_adapter_driver_t *) adapter);
     }
     adapter->plugin_info.module->intf_funs->uninit(adapter->plugin_info.plugin);
 
     neu_event_del_io(adapter->events, adapter->nng_io);
-
-    nng_dialer_close(adapter->nng.dialer);
-    nng_close(adapter->nng.sock);
 
     nlog_info("Stop the adapter(%s)", adapter->name);
     return rv;

@@ -89,13 +89,14 @@ void neu_manager_destroy(neu_manager_t *manager)
     stop_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
     stop_static_adapter(manager, DEFAULT_DUMMY_PLUGIN_NAME);
 
+    neu_subscribe_manager_destroy(manager->subscribe_manager);
+    neu_node_manager_destroy(manager->node_manager);
+    neu_plugin_manager_destroy(manager->plugin_manager);
+
     nng_close(manager->socket);
     neu_event_del_io(manager->events, manager->loop);
     neu_event_close(manager->events);
 
-    neu_subscribe_manager_destroy(manager->subscribe_manager);
-    neu_node_manager_destroy(manager->node_manager);
-    neu_plugin_manager_destroy(manager->plugin_manager);
     nng_mtx_free(manager->mtx);
     free(manager);
     nlog_warn("manager exit");
