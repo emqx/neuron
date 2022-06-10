@@ -151,7 +151,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     }
 
     if (!dev_log) {
-        zlog_init("./config/zlog.con");
+        zlog_init("./config/zlog.conf");
     }
 
     if (!args->daemonized && args->restart != NEU_RESTART_NEVER) {

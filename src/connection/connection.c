@@ -673,7 +673,13 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
 {
     static __thread uint8_t  recv_buf[2048] = { 0 };
     static __thread uint16_t offset         = 0;
-    ssize_t                  ret =
+
+    if (fn == NULL) {
+        offset = 0;
+        memset(recv_buf, 0, sizeof(recv_buf));
+        return;
+    }
+    ssize_t ret =
         neu_conn_recv(conn, recv_buf + offset, sizeof(recv_buf) - offset);
     if (ret > 0) {
         offset += ret;
