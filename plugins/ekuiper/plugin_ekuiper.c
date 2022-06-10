@@ -69,9 +69,8 @@ static void pipe_add_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     (void) p;
     (void) ev;
     neu_plugin_t *plugin = arg;
-    nng_mtx_lock(plugin->mtx);
+    atomic_store(&plugin->connected, true);
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
-    nng_mtx_unlock(plugin->mtx);
 }
 
 static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
@@ -79,9 +78,8 @@ static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     (void) p;
     (void) ev;
     neu_plugin_t *plugin = arg;
-    nng_mtx_lock(plugin->mtx);
+    atomic_store(&plugin->connected, false);
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
-    nng_mtx_unlock(plugin->mtx);
 }
 
 static int ekuiper_plugin_init(neu_plugin_t *plugin)
@@ -89,12 +87,7 @@ static int ekuiper_plugin_init(neu_plugin_t *plugin)
     int      rv       = 0;
     nng_aio *recv_aio = NULL;
 
-    plugin->mtx = NULL;
-    rv          = nng_mtx_alloc(&plugin->mtx);
-    if (0 != rv) {
-        zlog_error(neuron, "cannot allocate nng_mtx");
-        return rv;
-    }
+    atomic_init(&plugin->connected, false);
 
     rv = nng_aio_alloc(&recv_aio, recv_data_callback, plugin);
     if (rv < 0) {
@@ -113,7 +106,6 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
     int rv = 0;
 
     nng_aio_free(plugin->recv_aio);
-    nng_mtx_free(plugin->mtx);
 
     zlog_info(neuron, "Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
@@ -164,6 +156,12 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
 {
     zlog_info(neuron, "send request to plugin: %s",
               neu_plugin_module.module_name);
+
+    if (plugin->common.link_state != NEU_PLUGIN_LINK_STATE_CONNECTED) {
+        zlog_info(neuron, "plugin: %s not connected",
+                  neu_plugin_module.module_name);
+        return -1;
+    }
 
     switch (header->type) {
     case NEU_RESP_ERROR: {

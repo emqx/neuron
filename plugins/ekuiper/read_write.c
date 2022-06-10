@@ -48,7 +48,8 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 
     memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
     free(json_str);
-    rv = nng_sendmsg(plugin->sock, msg, 0); // TODO: use aio to send message
+    rv = nng_sendmsg(plugin->sock, msg,
+                     NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 != rv) {
         zlog_error(neuron, "nng cannot send msg");
         nng_msg_free(msg);
