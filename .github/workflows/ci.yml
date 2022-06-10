@@ -75,6 +75,7 @@ jobs:
             *.tar.gz
             *.deb
             *.rpm
+            build/simulator/modbus_simulator
 
       - name: Create neuron sdk package
         run: |

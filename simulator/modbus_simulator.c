@@ -220,9 +220,9 @@ static int recv_msg(enum neu_event_io_type type, int fd, void *usr_data)
     struct cycle_buf *buf = (struct cycle_buf *) usr_data;
     switch (type) {
     case NEU_EVENT_IO_READ: {
-        ssize_t len      = 0;
-        uint8_t res[512] = { 0 };
-        int     res_len  = 0;
+        ssize_t len        = 0;
+        uint8_t res[60000] = { 0 };
+        int     res_len    = 0;
 
         len = neu_conn_tcp_server_recv(conn, fd, buf->buf + buf->len,
                                        sizeof(buf->buf) - buf->len);
