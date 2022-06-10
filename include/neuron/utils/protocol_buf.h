@@ -106,6 +106,12 @@ inline static uint8_t *neu_protocol_unpack_buf(neu_protocol_unpack_buf_t *buf,
     return buf->base + buf->offset - size;
 }
 
+inline static void
+neu_protocol_unpack_buf_revert(neu_protocol_unpack_buf_t *buf, uint16_t size)
+{
+    buf->offset -= size;
+}
+
 inline static uint8_t *
 neu_protocol_unpack_buf_get(neu_protocol_unpack_buf_t *buf, uint16_t size)
 {
