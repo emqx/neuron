@@ -828,9 +828,9 @@ neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
     assert(NULL != client);
     assert(NULL != topic && 0 < strlen(topic));
 
-    if (SEND_BUF_SIZE < len) {
-        return NEU_ERR_MQTT_PUBLISH_OVER_LENGTH;
-    }
+    // if (SEND_BUF_SIZE < len) {
+    //     return NEU_ERR_MQTT_PUBLISH_OVER_LENGTH;
+    // }
 
     neu_err_code_e error = mqtt_c_client_is_connected(client);
     if (0 != error) {
