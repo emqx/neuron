@@ -50,6 +50,9 @@ struct neu_plugin_group {
     char *    group_name;
     UT_array *tags;
 
+    // the number of all tags under the node
+    uint16_t tag_size;
+
     void *                user_data;
     neu_plugin_group_free group_free;
 };
