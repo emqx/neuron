@@ -37,17 +37,13 @@ static int ping_response(char **output_str, neu_plugin_t *plugin,
 static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
                          neu_json_mqtt_t *mqtt, char *json_str)
 {
-    neu_json_read_req_t *req = NULL;
-    int                  rc  = neu_json_decode_read_req(json_str, &req);
-    if (0 == rc) {
-        uint32_t req_id = neu_plugin_get_event_id(plugin);
-        if (0 < req_id) {
-            response->context_add(plugin, req_id, mqtt, NULL,
-                                  response->topic_pair, false);
-        }
+    UNUSED(response);
 
-        command_rw_read_once_request(plugin, mqtt, req, req_id);
-        neu_json_decode_read_req_free(req);
+    neu_json_read_req_t *json = NULL;
+    int                  rc   = neu_json_decode_read_req(json_str, &json);
+    if (0 == rc) {
+        command_rw_read_once_request(plugin, mqtt, json);
+        neu_json_decode_read_req_free(json);
     }
 
     return rc;
@@ -138,18 +134,16 @@ void command_response_handle(mqtt_response_t *response)
     neu_json_decode_mqtt_req_free(mqtt);
 }
 
-// char *command_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
-// neu_json_mqtt_t *parse_header,
-// neu_data_val_t * resp_val)
-//{
-// return command_rw_read_once_response(plugin, node_id, parse_header,
-// resp_val);
-//}
-
-char *command_read_periodic_response(neu_reqresp_trans_data_t *data,
-                                     int                       upload_format)
+char *command_read_once_response(neu_reqresp_head_t *   head,
+                                 neu_resp_read_group_t *data, int format)
 {
-    return command_rw_read_periodic_response(data, upload_format);
+    return command_rw_read_once_response(head, data, format);
+    return NULL;
+}
+
+char *command_read_periodic_response(neu_reqresp_trans_data_t *data, int format)
+{
+    return command_rw_read_periodic_response(data, format);
 }
 
 // char *command_write_response(neu_json_mqtt_t *parse_header,

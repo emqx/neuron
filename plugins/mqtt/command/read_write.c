@@ -34,42 +34,33 @@ static uint64_t current_time()
 }
 
 int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                                 neu_json_read_req_t *req, uint32_t req_id)
+                                 neu_json_read_req_t *req)
 {
-    (void) plugin;
-    (void) mqtt;
-    (void) req;
-    (void) req_id;
-    // neu_node_id_t node_id =
-    // neu_plugin_get_node_id_by_node_name(plugin, req->node_name);
-    // if (node_id == 0) {
-    // zlog_debug(neuron, "node %s does not exist", req->node_name);
-    // return -1;
-    //}
-    // zlog_info(neuron, "READ uuid:%s, node id:%u", mqtt->uuid, node_id);
-    // neu_taggrp_config_t *config =
-    // neu_system_find_group_config(plugin, node_id, req->group_name);
-    // if (NULL == config) {
-    // zlog_debug(neuron, "The requested config does not exist");
-    // return -2;
-    //}
+    neu_reqresp_head_t header = { 0 };
+    header.ctx                = mqtt;
+    header.type               = NEU_REQ_READ_GROUP;
+    neu_req_read_group_t cmd  = { 0 };
+    strcpy(cmd.driver, req->node);
+    strcpy(cmd.group, req->group);
+    int ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        return -1;
+    }
 
-    // neu_plugin_send_read_cmd(plugin, req_id, node_id, config);
-    // return 0;
     return 0;
 }
 
-static void wrap_read_response_json(neu_reqresp_trans_data_t *data,
-                                    neu_json_read_resp_t *    json)
+static void wrap_read_response_json(neu_resp_tag_value_t *tags, uint16_t len,
+                                    neu_json_read_resp_t *json)
 {
-    json->n_tag = data->n_tag;
+    json->n_tag = len;
     if (0 < json->n_tag) {
         json->tags = (neu_json_read_resp_tag_t *) calloc(
             json->n_tag, sizeof(neu_json_read_resp_tag_t));
     }
 
     for (int i = 0; i < json->n_tag; i++) {
-        neu_resp_tag_value_t *tag  = &data->tags[i];
+        neu_resp_tag_value_t *tag  = &tags[i];
         neu_type_e            type = tag->value.type;
         json->tags[i].name         = tag->tag;
         json->tags[i].error        = NEU_ERR_SUCCESS;
@@ -151,59 +142,39 @@ static void clean_read_response_json(neu_json_read_resp_t *json)
     free(json->tags);
 }
 
-// char *command_rw_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
-// neu_json_mqtt_t *parse_header,
-// neu_data_val_t * resp_val)
-//{
-// UNUSED(plugin);
+char *command_rw_read_once_response(neu_reqresp_head_t *   head,
+                                    neu_resp_read_group_t *data, int format)
+{
+    UNUSED(format);
 
-// neu_fixed_array_t *array;
-// int                rc = neu_dvalue_get_ref_array(resp_val, &array);
-// if (0 != rc) {
-// zlog_info(neuron, "Get array ref error");
-// return NULL;
-//}
-
-// if (0 >= array->length) {
-// return NULL;
-//}
-
-// char *json_str = NULL;
-
-// neu_json_read_resp_t json;
-// memset(&json, 0, sizeof(neu_json_read_resp_t));
-// rc = wrap_read_response_json_object(array, &json, plugin, node_id);
-// if (0 != rc) {
-// return NULL;
-//}
-
-// rc = neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp,
-// parse_header, neu_json_encode_mqtt_resp,
-//&json_str);
-// clean_read_response_json_object(&json);
-// if (0 != rc) {
-// zlog_info(neuron, "Json string parse error:%d", rc);
-// return NULL;
-//}
-
-// return json_str;
-//}
+    neu_resp_tag_value_t *tags     = data->tags;
+    uint16_t              len      = data->n_tag;
+    char *                json_str = NULL;
+    neu_json_read_resp_t  json     = { 0 };
+    wrap_read_response_json(tags, len, &json);
+    neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, head->ctx,
+                              neu_json_encode_mqtt_resp, &json_str);
+    clean_read_response_json(&json);
+    return json_str;
+}
 
 char *command_rw_read_periodic_response(neu_reqresp_trans_data_t *data,
-                                        int                       upload_format)
+                                        int                       format)
 {
+    neu_resp_tag_value_t *   tags     = data->tags;
+    uint16_t                 len      = data->n_tag;
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = { .group     = (char *) data->group,
                                         .node      = (char *) data->driver,
                                         .timestamp = current_time() };
     neu_json_read_resp_t     json     = { 0 };
-    wrap_read_response_json(data, &json);
+    wrap_read_response_json(tags, len, &json);
 
-    if (0 == upload_format) { // values
+    if (0 == format) { // values
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
-    } else if (1 == upload_format) { // tags
+    } else if (1 == format) { // tags
         neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
                                   neu_json_encode_read_periodic_resp,
                                   &json_str);
