@@ -36,6 +36,9 @@ static uint64_t current_time()
 int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                  neu_json_read_req_t *req)
 {
+    zlog_info(neuron, "write uuid:%s, group:%s, node:%s", mqtt->uuid,
+              req->group, req->node);
+
     neu_reqresp_head_t header = { 0 };
     header.ctx                = mqtt;
     header.type               = NEU_REQ_READ_GROUP;
@@ -187,148 +190,58 @@ char *command_rw_read_periodic_response(neu_reqresp_trans_data_t *data,
     return json_str;
 }
 
-// static int write_command(neu_plugin_t *plugin, uint32_t dest_node_id,
-// const char *    group_config_name,
-// neu_data_val_t *write_val, uint32_t req_id)
-//{
-// neu_taggrp_config_t *config;
-// config =
-// neu_system_find_group_config(plugin, dest_node_id, group_config_name);
-// if (NULL == config) {
-// return -2;
-//}
-
-// neu_plugin_send_write_cmd(plugin, req_id, dest_node_id, config, write_val);
-// return 0;
-//}
-
 int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                             neu_json_write_req_t *write_req, uint32_t req_id)
+                             neu_json_write_req_t *req)
 {
-    (void) plugin;
-    (void) mqtt;
-    (void) write_req;
-    (void) req_id;
-    // zlog_info(neuron, "WRITE uuid:%s, group config name:%s", mqtt->uuid,
-    // write_req->group_name);
-    // neu_node_id_t node_id =
-    // neu_plugin_get_node_id_by_node_name(plugin, write_req->node_name);
-    // if (node_id == 0) {
-    // zlog_error(neuron, "node %s does not exist", write_req->node_name);
-    // return -1;
-    //}
+    zlog_info(neuron, "write uuid:%s, group:%s, node:%s", mqtt->uuid,
+              req->group, req->node);
 
-    // neu_data_val_t *   write_val;
-    // neu_fixed_array_t *array;
-    // write_val = neu_dvalue_unit_new();
-    // if (write_val == NULL) {
-    // zlog_error(neuron, "Failed to allocate data value for write data");
-    // return -1;
-    //}
+    neu_reqresp_head_t  header = { 0 };
+    neu_req_write_tag_t cmd    = { 0 };
 
-    // array = neu_fixed_array_new(1, sizeof(neu_int_val_t));
-    // if (array == NULL) {
-    // zlog_error(neuron, "Failed to allocate array for write data");
-    // neu_dvalue_free(write_val);
-    // return -2;
-    //}
+    header.ctx  = mqtt;
+    header.type = NEU_REQ_WRITE_TAG;
 
-    // neu_datatag_table_t *table = neu_system_get_datatags_table(plugin,
-    // node_id);
+    strcpy(cmd.driver, req->node);
+    strcpy(cmd.group, req->group);
+    strcpy(cmd.tag, req->tag);
 
-    // neu_int_val_t        int_val;
-    // neu_data_val_t *     val   = NULL;
-    // union neu_json_value value = write_req->value;
-    // neu_datatag_t *      tag =
-    // neu_datatag_tbl_get_by_name(table, write_req->tag_name);
+    switch (req->t) {
+    case NEU_JSON_INT:
+        cmd.value.type      = NEU_TYPE_INT64;
+        cmd.value.value.u64 = req->value.val_int;
+        break;
+    case NEU_JSON_STR:
+        cmd.value.type = NEU_TYPE_STRING;
+        strcpy(cmd.value.value.str, req->value.val_str);
+        break;
+    case NEU_JSON_DOUBLE:
+        cmd.value.type      = NEU_TYPE_DOUBLE;
+        cmd.value.value.d64 = req->value.val_double;
+        break;
+    case NEU_JSON_BOOL:
+        cmd.value.type          = NEU_TYPE_BOOL;
+        cmd.value.value.boolean = req->value.val_bool;
+        break;
+    default:
+        assert(false);
+        break;
+    }
 
-    // if (tag == NULL) {
-    // return -1;
-    //}
+    int ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        return -1;
+    }
 
-    // neu_datatag_id_t id = tag->id;
-
-    // switch (tag->type) {
-    // case NEU_DTYPE_UINT8:
-    // val = neu_dvalue_new(NEU_DTYPE_UINT8);
-    // neu_dvalue_set_uint8(val, (uint8_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_INT8:
-    // val = neu_dvalue_new(NEU_DTYPE_INT8);
-    // neu_dvalue_set_int8(val, (int8_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_UINT16:
-    // val = neu_dvalue_new(NEU_DTYPE_UINT16);
-    // neu_dvalue_set_uint16(val, (uint16_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_INT16:
-    // val = neu_dvalue_new(NEU_DTYPE_INT16);
-    // neu_dvalue_set_int16(val, (int16_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_INT32:
-    // val = neu_dvalue_new(NEU_DTYPE_INT32);
-    // neu_dvalue_set_int32(val, (int32_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_UINT32:
-    // val = neu_dvalue_new(NEU_DTYPE_UINT32);
-    // neu_dvalue_set_uint32(val, (uint32_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_INT64:
-    // val = neu_dvalue_new(NEU_DTYPE_INT64);
-    // neu_dvalue_set_int64(val, (int64_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_UINT64:
-    // val = neu_dvalue_new(NEU_DTYPE_UINT64);
-    // neu_dvalue_set_uint64(val, (uint64_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_FLOAT:
-    // val = neu_dvalue_new(NEU_DTYPE_FLOAT);
-    // neu_dvalue_set_float(val, (float) value.val_double);
-    // break;
-    // case NEU_DTYPE_DOUBLE:
-    // val = neu_dvalue_new(NEU_DTYPE_DOUBLE);
-    // neu_dvalue_set_double(val, value.val_double);
-    // break;
-    // case NEU_DTYPE_BIT:
-    // val = neu_dvalue_new(NEU_DTYPE_BIT);
-    // neu_dvalue_set_bit(val, (uint8_t) value.val_int);
-    // break;
-    // case NEU_DTYPE_BOOL:
-    // val = neu_dvalue_new(NEU_DTYPE_BOOL);
-    // neu_dvalue_set_bool(val, value.val_bool);
-    // break;
-    // case NEU_DTYPE_CSTR:
-    // val = neu_dvalue_new(NEU_DTYPE_CSTR);
-    // neu_dvalue_set_cstr(val, value.val_str);
-    // break;
-    // default:
-    // break;
-    //}
-
-    // neu_int_val_init(&int_val, id, val);
-    // neu_fixed_array_set(array, 0, (void *) &int_val);
-
-    // neu_dvalue_init_move_array(write_val, NEU_DTYPE_INT_VAL, array);
-    // write_command(plugin, node_id, write_req->group_name, write_val, req_id);
     return 0;
 }
 
-// char *command_rw_write_response(neu_json_mqtt_t *parse_header,
-// neu_data_val_t * resp_val)
-//{
-// neu_int_val_t *       iv    = NULL;
-// neu_json_error_resp_t error = { 0 };
-// neu_fixed_array_t *   array;
-
-// neu_dvalue_get_ref_array(resp_val, &array);
-
-// iv = (neu_int_val_t *) neu_fixed_array_get(array, 0);
-// assert(neu_dvalue_get_value_type(iv->val) == NEU_DTYPE_ERRORCODE);
-// neu_dvalue_get_errorcode(iv->val, (int32_t *) &error.error);
-
-// char *json_str = NULL;
-// neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, parse_header,
-// neu_json_encode_mqtt_resp, &json_str);
-
-// return json_str;
-//}
+char *command_rw_write_response(neu_reqresp_head_t *head,
+                                neu_resp_error_t *  data)
+{
+    neu_json_error_resp_t error    = { .error = data->error };
+    char *                json_str = NULL;
+    neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, head->ctx,
+                              neu_json_encode_mqtt_resp, &json_str);
+    return json_str;
+}

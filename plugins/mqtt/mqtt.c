@@ -263,22 +263,6 @@ static struct context *mqtt_routine_context_create(int              req_id,
     return entry;
 }
 
-// static struct context *mqtt_routine_context_find(mqtt_routine_t *routine,
-//                                                  const int       id)
-// {
-//     assert(NULL != routine);
-
-//     struct context *item = NULL;
-//     TAILQ_FOREACH(item, &routine->head, entry)
-//     {
-//         if (id == item->req_id) {
-//             return item;
-//         }
-//     }
-
-//     return NULL;
-// }
-
 static void mqtt_routine_context_destroy(struct context *entry)
 {
     if (NULL != entry) {
@@ -650,64 +634,33 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-// static neu_err_code_e read_response(neu_plugin_t *plugin, neu_request_t *req)
-//{
-//(void) plugin;
-//(void) req;
-// pthread_mutex_lock(&plugin->mutex);
+static neu_err_code_e write_response(neu_plugin_t *      plugin,
+                                     neu_reqresp_head_t *head,
+                                     neu_resp_error_t *  data)
+{
+    neu_resp_error_t *write_data = data;
 
-// if (!plugin->routine_running) {
-// pthread_mutex_unlock(&plugin->mutex);
-// return NEU_ERR_FAILURE;
-//}
+    pthread_mutex_lock(&plugin->mutex);
 
-// neu_reqresp_read_resp_t *read_resp = (neu_reqresp_read_resp_t *)
-// req->buf;
+    if (!plugin->routine_running) {
+        pthread_mutex_unlock(&plugin->mutex);
+        return NEU_ERR_FAILURE;
+    }
 
-// pthread_mutex_lock(&plugin->routine->contexts_mtx);
-// struct context *entry = NULL;
-// entry = mqtt_routine_context_find(plugin->routine, req->req_id);
-// if (NULL != entry) {
-// char *json = command_read_once_response(
-// plugin, req->sender_id, &entry->json_mqtt, read_resp->data_val);
-// entry->result = json;
-// entry->ready  = true;
-//}
-// pthread_mutex_unlock(&plugin->routine->contexts_mtx);
+    pthread_mutex_lock(&plugin->routine->contexts_mtx);
+    mqtt_routine_t *   routine = plugin->routine;
+    int                type    = TOPIC_TYPE_READ;
+    struct topic_pair *pair    = topics_find_type(routine->topics, type);
+    char *             json    = command_write_response(head, write_data);
+    struct context *c = mqtt_routine_context_create(0, NULL, json, pair, true);
+    if (NULL != c) {
+        mqtt_routine_send(routine, c);
+    }
+    pthread_mutex_unlock(&plugin->routine->contexts_mtx);
 
-// pthread_mutex_unlock(&plugin->mutex);
-// return NEU_ERR_SUCCESS;
-//}
-
-// static neu_err_code_e write_response(neu_plugin_t *plugin, neu_request_t
-// *req)
-//{
-//(void) plugin;
-//(void) req;
-// pthread_mutex_lock(&plugin->mutex);
-
-// if (!plugin->routine_running) {
-// pthread_mutex_unlock(&plugin->mutex);
-// return NEU_ERR_FAILURE;
-//}
-
-// neu_reqresp_write_resp_t *write_resp = NULL;
-// write_resp = (neu_reqresp_write_resp_t *) req->buf;
-
-// pthread_mutex_lock(&plugin->routine->contexts_mtx);
-// struct context *entry = NULL;
-// entry = mqtt_routine_context_find(plugin->routine, req->req_id);
-// if (NULL != entry) {
-// char *json =
-// command_write_response(&entry->json_mqtt, write_resp->data_val);
-// entry->result = json;
-// entry->ready  = true;
-//}
-// pthread_mutex_unlock(&plugin->routine->contexts_mtx);
-
-// pthread_mutex_unlock(&plugin->mutex);
-// return NEU_ERR_SUCCESS;
-//}
+    pthread_mutex_unlock(&plugin->mutex);
+    return NEU_ERR_SUCCESS;
+}
 
 static neu_err_code_e read_response(neu_plugin_t *      plugin,
                                     neu_reqresp_head_t *head, void *data)
@@ -777,12 +730,12 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     neu_err_code_e error = NEU_ERR_SUCCESS;
 
     switch (head->type) {
+    case NEU_RESP_ERROR:
+        error = write_response(plugin, head, data);
+        break;
     case NEU_RESP_READ_GROUP:
         error = read_response(plugin, head, data);
         break;
-    // case NEU_RESP_WRITE_TAG:
-    // error = write_response(plugin, req);
-    // break;
     case NEU_REQRESP_TRANS_DATA:
         error = trans_data(plugin, data);
         break;

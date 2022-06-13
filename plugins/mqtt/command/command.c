@@ -53,17 +53,12 @@ static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
 static int write_response(mqtt_response_t *response, neu_plugin_t *plugin,
                           neu_json_mqtt_t *mqtt, char *json_str)
 {
+    UNUSED(response);
+
     neu_json_write_req_t *req = NULL;
     int                   rc  = neu_json_decode_write_req(json_str, &req);
     if (0 == rc) {
-        uint32_t req_id = neu_plugin_get_event_id(plugin);
-        int      ret    = command_rw_write_request(plugin, mqtt, req, req_id);
-
-        if (0 < req_id && ret == 0) {
-            response->context_add(plugin, req_id, mqtt, NULL,
-                                  response->topic_pair, false);
-        }
-
+        command_rw_write_request(plugin, mqtt, req);
         neu_json_decode_write_req_free(req);
     }
 
@@ -146,8 +141,7 @@ char *command_read_periodic_response(neu_reqresp_trans_data_t *data, int format)
     return command_rw_read_periodic_response(data, format);
 }
 
-// char *command_write_response(neu_json_mqtt_t *parse_header,
-// neu_data_val_t * resp_val)
-//{
-// return command_rw_write_response(parse_header, resp_val);
-//}
+char *command_write_response(neu_reqresp_head_t *head, neu_resp_error_t *data)
+{
+    return command_rw_write_response(head, data);
+}

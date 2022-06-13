@@ -30,18 +30,8 @@ extern "C" {
 
 enum topic_type {
     TOPIC_TYPE_PING = 0,
-    TOPIC_TYPE_NODE,
-    TOPIC_TYPE_GCONFIG,
-    TOPIC_TYPE_TAGS,
-    TOPIC_TYPE_PLUGIN,
-    TOPIC_TYPE_SUBSCRIBE,
     TOPIC_TYPE_READ,
     TOPIC_TYPE_WRITE,
-    TOPIC_TYPE_TTYS,
-    TOPIC_TYPE_SCHEMA,
-    TOPIC_TYPE_SETTING,
-    TOPIC_TYPE_CTR,
-    TOPIC_TYPE_STATE,
     TOPIC_TYPE_UPLOAD,
 };
 
@@ -68,8 +58,7 @@ char *command_read_once_response(neu_reqresp_head_t *   head,
 char *command_read_periodic_response(neu_reqresp_trans_data_t *data,
                                      int                       format);
 
-// char *command_write_response(neu_json_mqtt_t *parse_header,
-// neu_data_val_t * resp_val);
+char *command_write_response(neu_reqresp_head_t *head, neu_resp_error_t *data);
 
 #ifdef __cplusplus
 }
