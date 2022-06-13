@@ -95,6 +95,7 @@ typedef struct neu_conn_param {
             neu_conn_tty_stop_e   stop;
             neu_conn_tty_baud_e   baud;
             neu_conn_tty_parity_e parity;
+            uint16_t              timeout; // millisecond
         } tty_client;
     } params;
 } neu_conn_param_t;

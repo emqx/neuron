@@ -415,7 +415,7 @@ inline static nng_msg *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     nng_msg_alloc(&msg, sizeof(neu_reqresp_head_t) + data_size);
     body = nng_msg_body(msg);
     memcpy(body, header, sizeof(neu_reqresp_head_t));
-    memcpy(body + sizeof(neu_reqresp_head_t), data, data_size);
+    memcpy((uint8_t *) body + sizeof(neu_reqresp_head_t), data, data_size);
     return msg;
 }
 

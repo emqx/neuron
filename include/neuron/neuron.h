@@ -41,6 +41,7 @@ extern "C" {
 
 #include "json/neu_json_param.h"
 
+#include "utils/async_queue.h"
 #include "utils/log.h"
 #include "utils/protocol_buf.h"
 #include "utils/utextend.h"
