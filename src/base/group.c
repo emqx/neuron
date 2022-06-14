@@ -150,7 +150,8 @@ int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
 
 int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
 {
-    tag_elem_t *el = NULL;
+    tag_elem_t *el  = NULL;
+    int         ret = NEU_ERR_TAG_NOT_EXIST;
 
     nng_mtx_lock(group->mtx);
 
@@ -162,22 +163,23 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
         free(el->tag->addr_str);
         free(el->tag);
         free(el);
+
+        el                 = calloc(1, sizeof(tag_elem_t));
+        el->name           = strdup(tag->name);
+        el->tag            = calloc(1, sizeof(neu_datatag_t));
+        el->tag->name      = strdup(tag->name);
+        el->tag->addr_str  = strdup(tag->addr_str);
+        el->tag->type      = tag->type;
+        el->tag->attribute = tag->attribute;
+
+        HASH_ADD_STR(group->tags, name, el);
+        update_timestamp(group);
+        ret = NEU_ERR_SUCCESS;
     }
-
-    el                 = calloc(1, sizeof(tag_elem_t));
-    el->name           = strdup(tag->name);
-    el->tag            = calloc(1, sizeof(neu_datatag_t));
-    el->tag->name      = strdup(tag->name);
-    el->tag->addr_str  = strdup(tag->addr_str);
-    el->tag->type      = tag->type;
-    el->tag->attribute = tag->attribute;
-
-    HASH_ADD_STR(group->tags, name, el);
-    update_timestamp(group);
 
     nng_mtx_unlock(group->mtx);
 
-    return 0;
+    return ret;
 }
 
 int neu_group_del_tag(neu_group_t *group, const char *tag_name)

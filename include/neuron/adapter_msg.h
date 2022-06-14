@@ -55,6 +55,9 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_SUBSCRIBE_GROUP,
     NEU_RESP_GET_SUBSCRIBE_GROUP,
 
+    NEU_REQ_APP_SUBSCRIBE_GROUP,
+    NEU_REQ_APP_UNSUBSCRIBE_GROUP,
+
     NEU_REQ_NODE_INIT,
     NEU_REQ_ADD_NODE,
     NEU_REQ_DEL_NODE,
@@ -200,6 +203,17 @@ typedef struct neu_req_get_tag {
 typedef struct neu_resp_get_tag {
     UT_array *tags; // array neu_datatag_t
 } neu_resp_get_tag_t;
+
+typedef struct {
+    char      driver[NEU_NODE_NAME_LEN];
+    char      group[NEU_GROUP_NAME_LEN];
+    UT_array *tags; // array neu_datatag_t
+} neu_req_app_subscribe_group_t;
+
+typedef struct {
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+} neu_req_app_unsubscribe_group_t;
 
 typedef struct {
     char app[NEU_NODE_NAME_LEN];
@@ -406,6 +420,12 @@ inline static nng_msg *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     }
     case NEU_REQ_UPDATE_LICENSE:
         data_size = sizeof(neu_req_update_license_t);
+        break;
+    case NEU_REQ_APP_SUBSCRIBE_GROUP:
+        data_size = sizeof(neu_req_app_subscribe_group_t);
+        break;
+    case NEU_REQ_APP_UNSUBSCRIBE_GROUP:
+        data_size = sizeof(neu_req_app_unsubscribe_group_t);
         break;
     default:
         assert(false);

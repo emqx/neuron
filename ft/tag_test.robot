@@ -86,17 +86,17 @@ Delete tag from non-existent group, it should return success
   	Check Response Status           ${res}        200
   	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
 
-Update non-existent tag, it should return success.
+Update non-existent tag, it should return failure.
 	${res}= 	Update Tags  modbus-node  group  ${tag4}
 
   	Check Response Status           ${res}        200
-  	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
+  	Check Error Code                ${res}        ${NEU_ERR_TAG_NOT_EXIST}
 
 	${res}=		Get Tags  modbus-node  group
 
   	Check Response Status           ${res}        200
 	${len} =	Get Length	${res}[tags]
- 	Should Be Equal As Integers	${len}		3
+ 	Should Be Equal As Integers	${len}		2
 	
 	Should Be Equal As Strings	${res}[tags][1][name]		tag1
 	Should Be Equal As Strings	${res}[tags][1][address]	1!400002
@@ -108,11 +108,6 @@ Update non-existent tag, it should return success.
 	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
 	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}
 
-	Should Be Equal As Strings	${res}[tags][2][name]		tag4
-	Should Be Equal As Strings	${res}[tags][2][address]	1!00031
-	Should Be Equal As Strings	${res}[tags][2][attribute]	${TAG_ATTRIBUTE_RW}
-	Should Be Equal As Strings	${res}[tags][2][type]		${TAG_TYPE_BIT}
-
 Delete tags, it should return success
 	Del Tags  modbus-node  group  "tag1","tag2"
 
@@ -120,9 +115,4 @@ Delete tags, it should return success
 
   	Check Response Status           ${res}        200
 	${len} =	Get Length	${res}[tags]
- 	Should Be Equal As Integers	${len}		1
-	
-	Should Be Equal As Strings	${res}[tags][0][name]		tag4
-	Should Be Equal As Strings	${res}[tags][0][address]	1!00031
-	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
-	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}
+ 	Should Be Equal As Integers	${len}		0

@@ -26,19 +26,9 @@
 
 #define NEU_PLUGIN_MAGIC_NUMBER 0x43474d50 // a string "PMGC"
 
-#define NEU_SELF_NODE_NAME_UNKNOWN "unknown-adapter"
-
-uint32_t neu_plugin_get_event_id(neu_plugin_t *plugin)
-{
-    neu_plugin_common_t *common = neu_plugin_to_plugin_common(plugin);
-    common->event_id += 2; // for avoid check event_id == 0
-    return common->event_id;
-}
-
 void neu_plugin_common_init(neu_plugin_common_t *common)
 {
-    common->event_id = 1;
-    common->magic    = NEU_PLUGIN_MAGIC_NUMBER;
+    common->magic = NEU_PLUGIN_MAGIC_NUMBER;
 }
 
 bool neu_plugin_common_check(neu_plugin_t *plugin)

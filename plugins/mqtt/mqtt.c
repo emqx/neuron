@@ -739,6 +739,13 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_REQRESP_TRANS_DATA:
         error = trans_data(plugin, data);
         break;
+    case NEU_REQ_APP_SUBSCRIBE_GROUP: {
+        neu_req_app_subscribe_group_t *sub =
+            (neu_req_app_subscribe_group_t *) data;
+
+        utarray_free(sub->tags);
+        break;
+    }
     default:
         error = NEU_ERR_FAILURE;
         break;

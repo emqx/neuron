@@ -91,4 +91,12 @@ int neu_manager_node_get_setting(neu_manager_t *manager, const char *node,
 
 int neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
                                  neu_persist_adapter_info_t *info);
+
+void neu_manager_notify_app_sub(neu_manager_t *manager, const char *app,
+                                const char *driver, const char *group);
+void neu_manager_notify_app_unsub(neu_manager_t *manager, const char *app,
+                                  const char *driver, const char *group);
+void neu_manager_notify_app_sub_update(neu_manager_t *manager,
+                                       const char *driver, const char *group);
+
 #endif
