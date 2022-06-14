@@ -22,6 +22,7 @@
 #include "modbus_req.h"
 
 struct modbus_group_data {
+    char *                  group;
     UT_array *              tags;
     modbus_read_cmd_sort_t *cmd_sort;
 };
@@ -75,6 +76,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
             utarray_push_back(gd->tags, &p);
         }
 
+        gd->group    = strdup(group->group_name);
         gd->cmd_sort = modbus_tag_sort(gd->tags, max_byte);
     } else {
         struct modbus_group_data *gd =
@@ -251,8 +253,8 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             }
         }
 
-        plugin->common.adapter_callbacks->driver.update(plugin->common.adapter,
-                                                        (*p_tag)->name, dvalue);
+        plugin->common.adapter_callbacks->driver.update(
+            plugin->common.adapter, gd->group, (*p_tag)->name, dvalue);
     }
     return 0;
 }

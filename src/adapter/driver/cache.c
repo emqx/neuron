@@ -18,8 +18,10 @@
  **/
 
 #include <assert.h>
-#include <pthread.h>
 #include <string.h>
+
+#include <nng/nng.h>
+#include <nng/supplemental/util/platform.h>
 
 #include "utils/uthash.h"
 
@@ -28,6 +30,11 @@
 
 #include "cache.h"
 
+typedef struct {
+    char group[NEU_GROUP_NAME_LEN];
+    char tag[NEU_TAG_NAME_LEN];
+} tkey_t;
+
 struct elem {
     int32_t error;
     int64_t timestamp;
@@ -35,21 +42,31 @@ struct elem {
     uint16_t n_byte;
     uint8_t *bytes;
 
-    char           name[NEU_TAG_NAME_LEN];
+    tkey_t         key;
     UT_hash_handle hh;
 };
 
 struct neu_driver_cache {
-    pthread_mutex_t mtx;
+    nng_mtx *mtx;
 
     struct elem *table;
 };
+
+inline static tkey_t to_key(const char *group, const char *tag)
+{
+    tkey_t key = { 0 };
+
+    strcpy(key.group, group);
+    strcpy(key.tag, tag);
+
+    return key;
+}
 
 neu_driver_cache_t *neu_driver_cache_new()
 {
     neu_driver_cache_t *cache = calloc(1, sizeof(neu_driver_cache_t));
 
-    pthread_mutex_init(&cache->mtx, NULL);
+    nng_mtx_alloc(&cache->mtx);
 
     return cache;
 }
@@ -59,7 +76,7 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     struct elem *elem = NULL;
     struct elem *tmp  = NULL;
 
-    pthread_mutex_lock(&cache->mtx);
+    nng_mtx_lock(cache->mtx);
     HASH_ITER(hh, cache->table, elem, tmp)
     {
         HASH_DEL(cache->table, elem);
@@ -68,48 +85,57 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
         }
         free(elem);
     }
-    pthread_mutex_unlock(&cache->mtx);
+    nng_mtx_unlock(cache->mtx);
 
-    pthread_mutex_destroy(&cache->mtx);
+    nng_mtx_free(cache->mtx);
 
     free(cache);
 }
 
-void neu_driver_cache_error(neu_driver_cache_t *cache, const char *key,
-                            int64_t timestamp, int32_t error)
+void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
+                            const char *tag, int64_t timestamp, int32_t error)
 {
     struct elem *elem = NULL;
+    tkey_t       key  = to_key(group, tag);
 
-    pthread_mutex_lock(&cache->mtx);
-    HASH_FIND_STR(cache->table, key, elem);
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem == NULL) {
         elem = calloc(1, sizeof(struct elem));
-        strncpy(elem->name, key, sizeof(elem->name));
-        HASH_ADD_STR(cache->table, name, elem);
+        strcpy(elem->key.group, group);
+        strcpy(elem->key.tag, tag);
+
+        HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
     }
     elem->timestamp = timestamp;
     elem->error     = error;
 
-    pthread_mutex_unlock(&cache->mtx);
+    nng_mtx_unlock(cache->mtx);
 }
 
-void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
-                             int64_t timestamp, uint16_t n_byte, uint8_t *bytes)
+void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
+                             const char *tag, int64_t timestamp,
+                             uint16_t n_byte, uint8_t *bytes)
 {
     struct elem *elem = NULL;
+    tkey_t       key  = to_key(group, tag);
 
-    pthread_mutex_lock(&cache->mtx);
-    HASH_FIND_STR(cache->table, key, elem);
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem == NULL) {
         elem = calloc(1, sizeof(struct elem));
-        strncpy(elem->name, key, sizeof(elem->name));
+
+        strcpy(elem->key.group, group);
+        strcpy(elem->key.tag, tag);
+
         assert(n_byte != 0);
         assert(n_byte <= NEU_VALUE_SIZE);
         elem->n_byte = n_byte;
         elem->bytes  = calloc(elem->n_byte, 1);
-        HASH_ADD_STR(cache->table, name, elem);
+
+        HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
     }
 
     elem->error     = 0;
@@ -130,17 +156,18 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
 
     memcpy(elem->bytes, bytes, elem->n_byte);
 
-    pthread_mutex_unlock(&cache->mtx);
+    nng_mtx_unlock(cache->mtx);
 }
 
-int neu_driver_cache_get(neu_driver_cache_t *cache, const char *key,
-                         neu_driver_cache_value_t *value)
+int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
+                         const char *tag, neu_driver_cache_value_t *value)
 {
     struct elem *elem = NULL;
     int          ret  = -1;
+    tkey_t       key  = to_key(group, tag);
 
-    pthread_mutex_lock(&cache->mtx);
-    HASH_FIND_STR(cache->table, key, elem);
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL) {
         value->error     = elem->error;
@@ -151,17 +178,19 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *key,
         ret = 0;
     }
 
-    pthread_mutex_unlock(&cache->mtx);
+    nng_mtx_unlock(cache->mtx);
 
     return ret;
 }
 
-void neu_driver_cache_del(neu_driver_cache_t *cache, const char *key)
+void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
+                          const char *tag)
 {
     struct elem *elem = NULL;
+    tkey_t       key  = to_key(group, tag);
 
-    pthread_mutex_lock(&cache->mtx);
-    HASH_FIND_STR(cache->table, key, elem);
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL) {
         HASH_DEL(cache->table, elem);
@@ -171,5 +200,5 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *key)
         free(elem);
     }
 
-    pthread_mutex_unlock(&cache->mtx);
+    nng_mtx_unlock(cache->mtx);
 }

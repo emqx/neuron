@@ -61,12 +61,12 @@ struct neu_adapter_driver {
 
 static int       report_callback(void *usr_data);
 static int       read_callback(void *usr_data);
-static void      read_group(neu_driver_cache_t *cache, UT_array *tags,
-                            neu_resp_tag_value_t *datas);
+static void      read_group(neu_driver_cache_t *cache, const char *group,
+                            UT_array *tags, neu_resp_tag_value_t *datas);
 static UT_array *load_tags(UT_array *tags);
 static void      free_tags(UT_array *tags);
-static void      update(neu_adapter_t *adapter, const char *name,
-                        neu_dvalue_t value);
+static void update(neu_adapter_t *adapter, const char *group, const char *tag,
+                   neu_dvalue_t value);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
 static group_t *find_group(neu_adapter_driver_t *driver, const char *name);
 static void     write_response(neu_adapter_t *adapter, void *r, neu_error error)
@@ -79,7 +79,8 @@ static void     write_response(neu_adapter_t *adapter, void *r, neu_error error)
     adapter->cb_funs.response(adapter, req, &nerror);
 }
 
-static void update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
+static void update(neu_adapter_t *adapter, const char *group, const char *tag,
+                   neu_dvalue_t value)
 {
     neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
     uint16_t              n_byte = 0;
@@ -118,9 +119,9 @@ static void update(neu_adapter_t *adapter, const char *name, neu_dvalue_t value)
     }
 
     if (value.type == NEU_TYPE_ERROR) {
-        neu_driver_cache_error(driver->cache, name, 0, value.value.i32);
+        neu_driver_cache_error(driver->cache, group, tag, 0, value.value.i32);
     } else {
-        neu_driver_cache_update(driver->cache, name, 0, n_byte,
+        neu_driver_cache_update(driver->cache, group, tag, 0, n_byte,
                                 value.value.bytes);
     }
 }
@@ -204,7 +205,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     resp.n_tag = utarray_len(tags);
     resp.tags  = calloc(1, utarray_len(tags) * sizeof(neu_resp_tag_value_t));
 
-    read_group(driver->cache, tags, resp.tags);
+    read_group(driver->cache, cmd->group, tags, resp.tags);
     strcpy(resp.driver, cmd->driver);
     strcpy(resp.group, cmd->group);
 
@@ -328,7 +329,7 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 
         utarray_foreach(find->grp.tags, neu_datatag_t **, p_tag)
         {
-            neu_driver_cache_del(driver->cache, (*p_tag)->name);
+            neu_driver_cache_del(driver->cache, name, (*p_tag)->name);
         }
 
         free_tags(find->grp.tags);
@@ -516,7 +517,8 @@ static int report_callback(void *usr_data)
     strcpy(data->driver, neu_adapter_get_name((neu_adapter_t *) group->driver));
     strcpy(data->group, group->name);
     data->n_tag = utarray_len(tags);
-    read_group(group->driver->cache, tags, (neu_resp_tag_value_t *) &data[1]);
+    read_group(group->driver->cache, group->name, tags,
+               (neu_resp_tag_value_t *) &data[1]);
 
     group->driver->adapter.cb_funs.response(&group->driver->adapter, &header,
                                             data);
@@ -538,7 +540,7 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
 
     utarray_foreach(group->grp.tags, neu_datatag_t **, p_tag)
     {
-        neu_driver_cache_del(group->driver->cache, (*p_tag)->name);
+        neu_driver_cache_del(group->driver->cache, group->name, (*p_tag)->name);
     }
 
     neu_plugin_group_t grp = {
@@ -583,8 +585,8 @@ static int read_callback(void *usr_data)
     return 0;
 }
 
-static void read_group(neu_driver_cache_t *cache, UT_array *tags,
-                       neu_resp_tag_value_t *datas)
+static void read_group(neu_driver_cache_t *cache, const char *group,
+                       UT_array *tags, neu_resp_tag_value_t *datas)
 {
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
@@ -593,7 +595,7 @@ static void read_group(neu_driver_cache_t *cache, UT_array *tags,
 
         strcpy(datas[index].tag, tag->name);
 
-        if (neu_driver_cache_get(cache, tag->name, &value) != 0) {
+        if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_READ_FAILURE;
             continue;
