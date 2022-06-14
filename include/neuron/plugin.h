@@ -34,12 +34,15 @@ extern "C" {
 #define NEURON_PLUGIN_VER_2_0 200
 
 typedef struct neu_plugin_common {
-    uint32_t                   magic;
-    neu_plugin_link_state_e    link_state;
+    uint32_t magic;
+
     neu_adapter_t *            adapter;
     const adapter_callbacks_t *adapter_callbacks;
-    uint32_t                   event_id;
-    zlog_category_t *          log;
+
+    neu_plugin_link_state_e link_state;
+    uint16_t                tag_size;
+
+    zlog_category_t *log;
 } neu_plugin_common_t;
 
 typedef struct neu_plugin neu_plugin_t;
@@ -49,9 +52,6 @@ typedef void (*neu_plugin_group_free)(neu_plugin_group_t *pgp);
 struct neu_plugin_group {
     char *    group_name;
     UT_array *tags;
-
-    // the number of all tags under the node
-    uint16_t tag_size;
 
     void *                user_data;
     neu_plugin_group_free group_free;
@@ -97,8 +97,6 @@ neu_plugin_to_plugin_common(neu_plugin_t *plugin)
 
 void neu_plugin_common_init(neu_plugin_common_t *common);
 bool neu_plugin_common_check(neu_plugin_t *plugin);
-
-uint32_t neu_plugin_get_event_id(neu_plugin_t *plugin);
 
 int neu_plugin_op(neu_plugin_t *plugin, neu_reqresp_head_t head, void *data);
 
