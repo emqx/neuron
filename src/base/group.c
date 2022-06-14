@@ -182,7 +182,8 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
 
 int neu_group_del_tag(neu_group_t *group, const char *tag_name)
 {
-    tag_elem_t *el = NULL;
+    tag_elem_t *el  = NULL;
+    int         ret = NEU_ERR_TAG_NOT_EXIST;
 
     nng_mtx_lock(group->mtx);
 
@@ -196,11 +197,12 @@ int neu_group_del_tag(neu_group_t *group, const char *tag_name)
         free(el);
 
         update_timestamp(group);
+        ret = NEU_ERR_SUCCESS;
     }
 
     nng_mtx_unlock(group->mtx);
 
-    return 0;
+    return ret;
 }
 
 UT_array *neu_group_get_tag(neu_group_t *group)

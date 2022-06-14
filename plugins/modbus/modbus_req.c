@@ -383,6 +383,7 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
     utarray_foreach(gd->tags, modbus_point_t **, tag) { free(*tag); }
 
     utarray_free(gd->tags);
+    free(gd->group);
 
     free(gd);
 }

@@ -67,7 +67,7 @@ extern zlog_category_t *neuron;
 #define plog_send_protocol(plugin, bytes, n_byte)                          \
     char protocol_buf[2048] = { 0 };                                       \
     int  offset             = 0;                                           \
-    offset = snprintf(protocol_buf, sizeof(protocol_buf), ">>");        \
+    offset = snprintf(protocol_buf, sizeof(protocol_buf), ">>");           \
     for (int i = 0; i < n_byte; i++) {                                     \
         offset +=                                                          \
             snprintf(protocol_buf + offset, sizeof(protocol_buf) - offset, \
@@ -78,7 +78,7 @@ extern zlog_category_t *neuron;
 #define plog_recv_protocol(plugin, bytes, n_byte)                          \
     char protocol_buf[2048] = { 0 };                                       \
     int  offset             = 0;                                           \
-    offset = snprintf(protocol_buf, sizeof(protocol_buf), "<<");        \
+    offset = snprintf(protocol_buf, sizeof(protocol_buf), "<<");           \
     for (int i = 0; i < n_byte; i++) {                                     \
         offset +=                                                          \
             snprintf(protocol_buf + offset, sizeof(protocol_buf) - offset, \
