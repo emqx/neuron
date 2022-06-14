@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *lib_name;
+    char *library;
 } neu_json_add_plugin_req_t;
 
 int  neu_json_decode_add_plugin_req(char *                      buf,
@@ -40,7 +40,7 @@ int  neu_json_decode_add_plugin_req(char *                      buf,
 void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req);
 
 typedef struct {
-    int64_t id;
+    char *plugin;
 } neu_json_del_plugin_req_t;
 
 int  neu_json_decode_del_plugin_req(char *                      buf,
@@ -48,19 +48,10 @@ int  neu_json_decode_del_plugin_req(char *                      buf,
 void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req);
 
 typedef struct {
-    int64_t id;
-} neu_json_get_plugin_req_t;
-
-int  neu_json_decode_get_plugin_req(char *                      buf,
-                                    neu_json_get_plugin_req_t **result);
-void neu_json_decode_get_plugin_req_free(neu_json_get_plugin_req_t *req);
-
-typedef struct {
     char *  name;
-    int64_t kind;
-    char *  lib_name;
+    char *  library;
     char *  description;
-    int64_t id;
+    int64_t kind;
     int64_t node_type;
 } neu_json_get_plugin_resp_plugin_lib_t;
 

@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,8 +18,6 @@
  **/
 
 #include <stdlib.h>
-
-#include "vector.h"
 
 #include "plugin.h"
 #include "utils/log.h"
@@ -39,18 +37,20 @@ void handle_add_adapter(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
-            neu_err_code_e code = { 0 };
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_add_node_t cmd    = { 0 };
 
-            if (req->type == NEU_NA_TYPE_DRIVER ||
-                req->type == NEU_NA_TYPE_APP) {
-                code = neu_system_add_node(plugin, req->type, req->name,
-                                           req->plugin_name);
-            } else {
-                code = NEU_ERR_NODE_TYPE_INVALID;
+            header.ctx  = aio;
+            header.type = NEU_REQ_ADD_NODE;
+            strcpy(cmd.node, req->name);
+            strcpy(cmd.plugin, req->plugin);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
-
-            NEU_JSON_RESPONSE_ERROR(code,
-                                    { http_response(aio, code, result_error); })
         })
 }
 
@@ -60,17 +60,32 @@ void handle_del_adapter(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_node_req_t, neu_json_decode_del_node_req, {
-            NEU_JSON_RESPONSE_ERROR(neu_system_del_node(plugin, req->id), {
-                http_response(aio, error_code.error, result_error);
-            });
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_del_node_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_DEL_NODE;
+            strcpy(cmd.node, req->name);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
 void handle_get_adapter(nng_aio *aio)
 {
-    neu_plugin_t *  plugin    = neu_rest_get_plugin();
-    char *          result    = NULL;
-    neu_node_type_e node_type = { 0 };
+    int                ret       = 0;
+    neu_plugin_t *     plugin    = neu_rest_get_plugin();
+    neu_node_type_e    node_type = { 0 };
+    neu_req_get_node_t cmd       = { 0 };
+    neu_reqresp_head_t header    = {
+        .ctx  = aio,
+        .type = NEU_REQ_GET_NODE,
+    };
 
     VALIDATE_JWT(aio);
 
@@ -81,22 +96,30 @@ void handle_get_adapter(nng_aio *aio)
         return;
     }
 
-    neu_json_get_nodes_resp_t nodes_res = { 0 };
-    int                       index     = 0;
-    vector_t                  nodes = neu_system_get_nodes(plugin, node_type);
+    cmd.type = node_type;
+    ret      = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
 
-    nodes_res.n_node = nodes.size;
+void handle_get_adapter_resp(nng_aio *aio, neu_resp_get_node_t *nodes)
+{
+    neu_json_get_nodes_resp_t nodes_res = { 0 };
+    char *                    result    = NULL;
+
+    nodes_res.n_node = utarray_len(nodes->nodes);
     nodes_res.nodes =
         calloc(nodes_res.n_node, sizeof(neu_json_get_nodes_resp_node_t));
 
-    VECTOR_FOR_EACH(&nodes, iter)
+    utarray_foreach(nodes->nodes, neu_resp_node_info_t *, info)
     {
-        neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
+        int index = utarray_eltidx(nodes->nodes, info);
 
-        nodes_res.nodes[index].id        = info->node_id;
-        nodes_res.nodes[index].name      = info->node_name;
-        nodes_res.nodes[index].plugin_id = info->plugin_id.id_val;
-        index += 1;
+        nodes_res.nodes[index].name   = info->node;
+        nodes_res.nodes[index].plugin = info->plugin;
     }
 
     neu_json_encode_by_fn(&nodes_res, neu_json_encode_get_nodes_resp, &result);
@@ -105,15 +128,7 @@ void handle_get_adapter(nng_aio *aio)
 
     free(result);
     free(nodes_res.nodes);
-
-    VECTOR_FOR_EACH(&nodes, iter)
-    {
-        neu_node_info_t *info = (neu_node_info_t *) iterator_get(&iter);
-
-        free(info->node_name);
-        index += 1;
-    }
-    vector_uninit(&nodes);
+    utarray_free(nodes->nodes);
 }
 
 void handle_set_node_setting(nng_aio *aio)
@@ -123,40 +138,58 @@ void handle_set_node_setting(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
             char *config_buf = calloc(req_data_size + 1, sizeof(char));
+            int   ret        = 0;
+            neu_reqresp_head_t     header = { 0 };
+            neu_req_node_setting_t cmd    = { 0 };
 
             memcpy(config_buf, req_data, req_data_size);
-
-            NEU_JSON_RESPONSE_ERROR(
-                neu_plugin_set_node_setting(plugin, req->node_id, config_buf),
-                { http_response(aio, error_code.error, result_error); });
-            free(config_buf);
+            header.ctx  = aio;
+            header.type = NEU_REQ_NODE_SETTING;
+            strcpy(cmd.node, req->node);
+            cmd.setting = config_buf;
+            ret         = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
 void handle_get_node_setting(nng_aio *aio)
 {
-    neu_plugin_t *plugin  = neu_rest_get_plugin();
-    char *        setting = NULL;
-    neu_node_id_t node_id = 0;
+    neu_plugin_t *             plugin = neu_rest_get_plugin();
+    char                       node_name[NEU_NODE_NAME_LEN] = { 0 };
+    int                        ret                          = 0;
+    neu_reqresp_head_t         header                       = { 0 };
+    neu_req_get_node_setting_t cmd                          = { 0 };
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
+    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
         return;
     }
 
-    NEU_JSON_RESPONSE_ERROR(
-        neu_plugin_get_node_setting(plugin, node_id, &setting), {
-            if (error_code.error != NEU_ERR_SUCCESS) {
-                http_response(aio, error_code.error, result_error);
-            } else {
-                http_ok(aio, setting);
-                free(setting);
-            }
-        })
+    header.ctx  = aio;
+    header.type = NEU_REQ_GET_NODE_SETTING;
+    strcpy(cmd.ndoe, node_name);
+
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
+
+void handle_get_node_setting_resp(nng_aio *                    aio,
+                                  neu_resp_get_node_setting_t *setting)
+{
+    http_ok(aio, setting->setting);
+    free(setting->setting);
 }
 
 void handle_node_ctl(nng_aio *aio)
@@ -165,42 +198,63 @@ void handle_node_ctl(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_ctl_req_t, neu_json_decode_node_ctl_req, {
-            NEU_JSON_RESPONSE_ERROR(
-                neu_plugin_node_ctl(plugin, req->id, req->cmd),
-                { http_response(aio, error_code.error, result_error); });
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_node_ctl_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_NODE_CTL;
+            strcpy(cmd.node, req->node);
+            cmd.ctl = req->cmd;
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
 void handle_get_node_state(nng_aio *aio)
 {
-    neu_plugin_t *                 plugin  = neu_rest_get_plugin();
-    neu_node_id_t                  node_id = 0;
-    neu_json_get_node_state_resp_t res     = { 0 };
-    neu_plugin_state_t             state   = { 0 };
-    char *                         result  = NULL;
+    neu_plugin_t *           plugin = neu_rest_get_plugin();
+    char                     node_name[NEU_NODE_NAME_LEN] = { 0 };
+    int                      ret                          = 0;
+    neu_reqresp_head_t       header                       = { 0 };
+    neu_req_get_node_state_t cmd                          = { 0 };
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
+    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
         })
         return;
     }
 
-    NEU_JSON_RESPONSE_ERROR(
-        neu_plugin_get_node_state(plugin, node_id, &state), {
-            if (error_code.error != NEU_ERR_SUCCESS) {
-                http_response(aio, error_code.error, result_error);
-            } else {
-                res.running = state.running;
-                res.link    = state.link;
+    header.ctx  = aio;
+    header.type = NEU_REQ_GET_NODE_STATE;
 
-                neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp,
-                                      &result);
+    strcpy(cmd.node, node_name);
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
 
-                http_ok(aio, result);
-                free(result);
-            }
-        })
+void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
+{
+    neu_json_get_node_state_resp_t res    = { 0 };
+    char *                         result = NULL;
+
+    res.link    = state->state.link;
+    res.running = state->state.running;
+
+    neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
+
+    http_ok(aio, result);
+    free(result);
 }

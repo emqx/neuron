@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.12)
 project(neuron)
 
 enable_language(C)
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -16,14 +16,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
 set(CMAKE_C_FLAGS_DEBUG
-    "${CMAKE_C_FLAGS} -O0 -fsanitize=address \
-  -fsanitize-recover=address -fsanitize-address-use-after-scope \
-  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
+    "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
 )
 set(CMAKE_CXX_FLAGS_DEBUG
-    "-g -O0 -fsanitize=address \
-  -fsanitize-recover=address -fsanitize-address-use-after-scope \
-  -fno-stack-protector -fno-omit-frame-pointer -fno-var-tracking"
+    "-Wall -g -O0 -fsanitize=address"
 )
 
 if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
@@ -39,20 +35,6 @@ add_custom_target(neuron-version
 configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
 configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
 configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utlist.h)
-
-add_subdirectory(extern/vector)
-set_property(TARGET vector-static PROPERTY POSITION_INDEPENDENT_CODE ON)
-add_subdirectory(extern/libcsptr)
-configure_file(extern/vector/vector.h ${CMAKE_SOURCE_DIR}/include/neuron/vector.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/smart_ptr.h ${CMAKE_SOURCE_DIR}/include/csptr/smart_ptr.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/common.h ${CMAKE_SOURCE_DIR}/include/csptr/common.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/smalloc.h ${CMAKE_SOURCE_DIR}/include/csptr/smalloc.h
-               COPYONLY)
-configure_file(extern/libcsptr/include/csptr/config.h ${CMAKE_SOURCE_DIR}/include/csptr/config.h
-               COPYONLY)
 
 # Call this from your own project's makefile.
 
@@ -103,12 +85,11 @@ set(NEURON_SOURCES
     src/main.c
     src/argparse.c
     src/daemon.c
-    src/core/message.c
-    src/core/databuf.c
-    src/core/neu_trans_buf.c
-    src/core/neu_manager.c
-    src/core/plugin_manager.c
-    src/core/neu_datatag_manager.c
+    src/core/manager_internal.c
+    src/core/manager.c
+    src/core/subscribe.c
+    src/core/pluginx_manager.c
+    src/core/node_manager.c
     src/adapter/adapter.c
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
@@ -145,22 +126,15 @@ target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
 
 # define neuron base library
 set(NEURON_BASE_SOURCES
-    src/types.c
-    src/base/tag_table.c
-    src/base/neu_tag.c
-    src/base/neu_datatag_table.c
-    src/base/neu_tag_group_config.c
+    src/base/tag.c
     src/base/neu_plugin_common.c
-    src/base/neu_data_expr.c
     src/base/tag_sort.c
+    src/base/group.c
     src/connection/connection.c
     src/connection/mqtt_c_client.c
     src/connection/mqtt_client_intf.c
     src/event/event_linux.c
     src/event/event_unix.c
-    src/utils/atomic_data.c
-    src/utils/idhash.c
-    src/utils/hash_table.c
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/file.c
@@ -174,7 +148,7 @@ target_include_directories(neuron-base
                            PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
 target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
 target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
-target_link_libraries(neuron-base nng libzlog.so vector-static csptr jansson crypto ssl mqttc jwt
+target_link_libraries(neuron-base nng libzlog.so jansson crypto ssl mqttc jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 add_dependencies(neuron-base neuron-version)
 

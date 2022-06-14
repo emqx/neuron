@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -828,9 +828,9 @@ neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
     assert(NULL != client);
     assert(NULL != topic && 0 < strlen(topic));
 
-    if (SEND_BUF_SIZE < len) {
-        return NEU_ERR_MQTT_PUBLISH_OVER_LENGTH;
-    }
+    // if (SEND_BUF_SIZE < len) {
+    //     return NEU_ERR_MQTT_PUBLISH_OVER_LENGTH;
+    // }
 
     neu_err_code_e error = mqtt_c_client_is_connected(client);
     if (0 != error) {

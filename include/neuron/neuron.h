@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -28,25 +28,33 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "adapter.h"
 #include "errcodes.h"
-#include "file.h"
-#include "neu_tag.h"
-#include "neu_vector.h"
-#include "plugin.h"
-#include "types.h"
-#include "utils/base64.h"
 
+#include "utils/async_queue.h"
+#include "utils/protocol_buf.h"
+
+#include "utils/base64.h"
+#include "utils/log.h"
+#include "utils/zlog.h"
+
+#include "utils/utarray.h"
+#include "utils/utextend.h"
+#include "utils/uthash.h"
+#include "utils/utlist.h"
+
+#include "connection/mqtt_client_intf.h"
 #include "connection/neu_connection.h"
 #include "event/event.h"
-
 #include "json/neu_json_param.h"
 
-#include "utils/log.h"
-#include "utils/protocol_buf.h"
-#include "utils/utextend.h"
+#include "define.h"
 
+#include "adapter.h"
+#include "plugin.h"
+#include "tag.h"
 #include "tag_sort.h"
+
+#include "file.h"
 
 #ifdef __cplusplus
 }

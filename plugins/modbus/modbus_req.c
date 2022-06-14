@@ -1,9 +1,28 @@
+/**
+ * NEURON IIoT System for Industry 4.0
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
 #include "modbus_point.h"
 #include "modbus_stack.h"
 
 #include "modbus_req.h"
 
 struct modbus_group_data {
+    char *                  group;
     UT_array *              tags;
     modbus_read_cmd_sort_t *cmd_sort;
 };
@@ -31,6 +50,7 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) ctx;
 
+    plog_send_protocol(plugin, bytes, n_byte);
     return neu_conn_send(plugin->conn, bytes, n_byte);
 }
 
@@ -56,6 +76,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
             utarray_push_back(gd->tags, &p);
         }
 
+        gd->group    = strdup(group->group_name);
         gd->cmd_sort = modbus_tag_sort(gd->tags, max_byte);
     } else {
         struct modbus_group_data *gd =
@@ -232,8 +253,8 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             }
         }
 
-        plugin->common.adapter_callbacks->driver.update(plugin->common.adapter,
-                                                        (*p_tag)->name, dvalue);
+        plugin->common.adapter_callbacks->driver.update(
+            plugin->common.adapter, gd->group, (*p_tag)->name, dvalue);
     }
     return 0;
 }
@@ -362,6 +383,7 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
     utarray_foreach(gd->tags, modbus_point_t **, tag) { free(*tag); }
 
     utarray_free(gd->tags);
+    free(gd->group);
 
     free(gd);
 }
@@ -376,6 +398,7 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
 
     if (ret > 0) {
         neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
+        plog_recv_protocol(plugin, recv_buf, ret);
         return modbus_stack_recv(plugin->stack, &pbuf);
     } else {
         return -1;

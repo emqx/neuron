@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -97,32 +97,13 @@ static int dummy_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return rv;
 }
 
-static int dummy_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
+static int dummy_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                                void *data)
 {
-    int rv = 0;
-
-    if (plugin == NULL || req == NULL) {
-        nlog_warn("The plugin pointer or request is NULL");
-        return (-1);
-    }
-
-    nlog_info("send request to plugin: %s", neu_plugin_module.module_name);
-    nlog_info("%s received request %d\n", neu_plugin_module.module_name,
-              req->req_type);
-
-    return rv;
-}
-
-static int dummy_plugin_event_reply(neu_plugin_t *     plugin,
-                                    neu_event_reply_t *reply)
-{
-    int rv = 0;
-
     (void) plugin;
-    (void) reply;
-
-    nlog_info("reply event to plugin: %s", neu_plugin_module.module_name);
-    return rv;
+    (void) head;
+    (void) data;
+    return 0;
 }
 
 static int dummy_plugin_start(neu_plugin_t *plugin)
@@ -138,15 +119,14 @@ static int dummy_plugin_stop(neu_plugin_t *plugin)
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = dummy_plugin_open,
-    .close       = dummy_plugin_close,
-    .init        = dummy_plugin_init,
-    .uninit      = dummy_plugin_uninit,
-    .start       = dummy_plugin_start,
-    .stop        = dummy_plugin_stop,
-    .config      = dummy_plugin_config,
-    .request     = dummy_plugin_request,
-    .event_reply = dummy_plugin_event_reply
+    .open    = dummy_plugin_open,
+    .close   = dummy_plugin_close,
+    .init    = dummy_plugin_init,
+    .uninit  = dummy_plugin_uninit,
+    .start   = dummy_plugin_start,
+    .stop    = dummy_plugin_stop,
+    .config  = dummy_plugin_config,
+    .request = dummy_plugin_request,
 };
 
 #define DEFAULT_DUMMY_PLUGIN_DESCR "A plugin that does nothing"

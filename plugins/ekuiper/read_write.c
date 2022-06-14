@@ -26,22 +26,12 @@
 #include "json_rw.h"
 #include "read_write.h"
 
-void send_data(neu_plugin_t *plugin, neu_request_t *req)
+void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 {
-    int                  rv       = 0;
-    neu_reqresp_data_t * neu_data = (neu_reqresp_data_t *) req->buf;
-    neu_datatag_table_t *datatag_table =
-        neu_system_get_datatags_table(plugin, req->sender_id);
+    int rv = 0;
 
-    json_read_resp_t resp = {
-        .sender_id            = req->sender_id,
-        .sender_name          = req->node_name,
-        .sender_datatag_table = datatag_table,
-        .grp_config           = neu_data->grp_config,
-        .data_val             = neu_data->data_val,
-    };
     char *json_str = NULL;
-    rv = neu_json_encode_by_fn(&resp, json_encode_read_resp, &json_str);
+    rv = neu_json_encode_by_fn(trans_data, json_encode_read_resp, &json_str);
     if (0 != rv) {
         zlog_error(neuron, "cannot encode read resp");
         return;
@@ -57,13 +47,13 @@ void send_data(neu_plugin_t *plugin, neu_request_t *req)
     }
 
     memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
-    rv = nng_sendmsg(plugin->sock, msg, 0); // TODO: use aio to send message
+    free(json_str);
+    rv = nng_sendmsg(plugin->sock, msg,
+                     NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 != rv) {
         zlog_error(neuron, "nng cannot send msg");
         nng_msg_free(msg);
     }
-
-    free(json_str);
 }
 
 void recv_data_callback(void *arg)
@@ -82,7 +72,6 @@ void recv_data_callback(void *arg)
 
     msg      = nng_aio_get_msg(plugin->recv_aio);
     json_str = nng_msg_body(msg);
-    // log_info("receive cmd: %s\n", json_str);
     if (json_decode_write_req(json_str, nng_msg_len(msg), &req) < 0) {
         zlog_error(neuron, "cannot decode write request");
         goto recv_data_callback_end;
@@ -102,6 +91,39 @@ recv_data_callback_end:
 
 int write_data(neu_plugin_t *plugin, json_write_req_t *write_req)
 {
-    uint32_t req_id = neu_plugin_get_event_id(plugin);
-    return plugin_send_write_cmd_from_write_req(plugin, req_id, write_req);
+    int                 ret    = 0;
+    neu_reqresp_head_t  header = { 0 };
+    neu_req_write_tag_t cmd    = { 0 };
+
+    header.ctx  = NULL;
+    header.type = NEU_REQ_WRITE_TAG;
+
+    strcpy(cmd.driver, write_req->node_name);
+    strcpy(cmd.group, write_req->group_name);
+    strcpy(cmd.tag, write_req->tag_name);
+
+    switch (write_req->t) {
+    case NEU_JSON_INT:
+        cmd.value.type      = NEU_TYPE_INT64;
+        cmd.value.value.u64 = write_req->value.val_int;
+        break;
+    case NEU_JSON_STR:
+        cmd.value.type = NEU_TYPE_STRING;
+        strcpy(cmd.value.value.str, write_req->value.val_str);
+        break;
+    case NEU_JSON_DOUBLE:
+        cmd.value.type      = NEU_TYPE_DOUBLE;
+        cmd.value.value.d64 = write_req->value.val_double;
+        break;
+    case NEU_JSON_BOOL:
+        cmd.value.type          = NEU_TYPE_BOOL;
+        cmd.value.value.boolean = write_req->value.val_bool;
+        break;
+    default:
+        assert(false);
+        break;
+    }
+
+    ret = neu_plugin_op(plugin, header, &cmd);
+    return ret;
 }

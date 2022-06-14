@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,6 +50,10 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
 
     nng_http_res_set_status(res, status);
 
+    nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+    nlog_notice("%s %s [%d]", nng_http_req_get_method(nng_req),
+                nng_http_req_get_uri(nng_req), status);
+
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
 
@@ -93,7 +97,6 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     } else {
         char *buf = calloc(*data_size + 1, sizeof(char));
         memcpy(buf, *data, *data_size);
-        nlog_info("body: %s", buf);
         *data = buf;
         return 0;
     }
@@ -291,15 +294,15 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_PLUGIN_DISCONNECTED:
     case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_READ:
     case NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE:
-    case NEU_ERR_PLUGIN_TAG_NOT_EXIST:
-    case NEU_ERR_PLUGIN_GRP_NOT_SUBSCRIBE:
     case NEU_ERR_LICENSE_EXPIRED:
     case NEU_ERR_LICENSE_DISABLED:
     case NEU_ERR_LICENSE_MAX_NODES:
     case NEU_ERR_LICENSE_MAX_TAGS:
+    case NEU_ERR_GROUP_ALREADY_SUBSCRIBED:
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:
+    case NEU_ERR_IS_BUSY:
         status = NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
         break;
     case NEU_ERR_EXPIRED_TOKEN:
@@ -314,17 +317,19 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
         break;
     case NEU_ERR_BODY_IS_WRONG:
     case NEU_ERR_PARAM_IS_WRONG:
-    case NEU_ERR_NODE_TYPE_INVALID:
     case NEU_ERR_NODE_SETTING_INVALID:
     case NEU_ERR_LIBRARY_INFO_INVALID:
     case NEU_ERR_LICENSE_INVALID:
+    case NEU_ERR_GROUP_PARAMETER_INVALID:
+    case NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_LIBRARY_NOT_FOUND:
     case NEU_ERR_NODE_NOT_EXIST:
-    case NEU_ERR_GRP_CONFIG_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
     case NEU_ERR_LICENSE_NOT_FOUND:
+    case NEU_ERR_GROUP_NOT_EXIST:
+    case NEU_ERR_GROUP_NOT_SUBSCRIBE:
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:
@@ -333,17 +338,15 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_NOT_RUNNING:
     case NEU_ERR_NODE_IS_STOPED:
     case NEU_ERR_TAG_NAME_CONFLICT:
-    case NEU_ERR_GRP_CONFIG_CONFLICT:
     case NEU_ERR_LIBRARY_NAME_CONFLICT:
+    case NEU_ERR_GROUP_EXIST:
+    case NEU_ERR_GROUP_NOT_ALLOW:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
     case NEU_ERR_TAG_TYPE_NOT_SUPPORT:
     case NEU_ERR_TAG_ADDRESS_FORMAT_INVALID:
         status = NNG_HTTP_STATUS_PARTIAL_CONTENT;
-        break;
-    case NEU_ERR_GRP_CONFIG_IN_USE:
-        status = NNG_HTTP_STATUS_PRECONDITION_FAILED;
         break;
     default:
         if (code >= NEU_ERR_PLUGIN_ERROR_START &&

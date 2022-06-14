@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,9 +22,6 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
-#include "vector.h"
-
-#include "datatag_table.h"
 #include "plugin.h"
 
 #include "adapter_handle.h"
@@ -153,25 +150,19 @@ struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
+        .url           = "/api/v2/group",
         .value.handler = handle_add_group_config,
-    },
-    {
-        .method        = NEU_REST_METHOD_PUT,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
-        .value.handler = handle_update_group_config,
     },
     {
         .method        = NEU_REST_METHOD_DELETE,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
+        .url           = "/api/v2/group",
         .value.handler = handle_del_group_config,
     },
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/gconfig",
+        .url           = "/api/v2/group",
         .value.handler = handle_get_group_config,
     },
     {

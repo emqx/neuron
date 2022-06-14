@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -24,12 +24,17 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "adapter_handle.h"
+#include "datatag_handle.h"
+#include "group_config_handle.h"
 #include "handle.h"
 #include "http.h"
+#include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"
+#include "json/neu_json_fn.h"
 
 #define neu_plugin_module default_dashboard_plugin_module
 
@@ -182,7 +187,6 @@ static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
         goto web_server_start_fail;
     }
 
-    handle_rw_init();
     nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 
@@ -205,13 +209,10 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    handle_rw_uninit();
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     nng_http_server_stop(plugin->web_server);
     nng_http_server_release(plugin->web_server);
-
-    neu_rest_free_ctx(plugin->handle_ctx);
 
     free(plugin);
     nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
@@ -251,43 +252,57 @@ static int dashb_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return rv;
 }
 
-static int dashb_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
+static int dashb_plugin_request(neu_plugin_t *      plugin,
+                                neu_reqresp_head_t *header, void *data)
 {
-    int rv = 0;
+    (void) plugin;
 
-    if (plugin == NULL || req == NULL) {
-        nlog_warn("The plugin pointer or request is NULL");
-        return -1;
-    }
-
-    nlog_info("send request to plugin: %s", neu_plugin_module.module_name);
-    const adapter_callbacks_t *adapter_callbacks;
-    adapter_callbacks = plugin->common.adapter_callbacks;
-    (void) adapter_callbacks;
-
-    switch (req->req_type) {
-    case NEU_REQRESP_READ_RESP:
-        handle_read_resp(req);
+    switch (header->type) {
+    case NEU_RESP_ERROR: {
+        neu_resp_error_t *error = (neu_resp_error_t *) data;
+        NEU_JSON_RESPONSE_ERROR(error->error, {
+            http_response(header->ctx, error->error, result_error);
+        });
         break;
-    case NEU_REQRESP_WRITE_RESP:
-        handle_write_resp(req);
+    }
+    case NEU_RESP_GET_PLUGIN:
+        handle_get_plugin_resp(header->ctx, (neu_resp_get_plugin_t *) data);
+        break;
+    case NEU_RESP_GET_NODE:
+        handle_get_adapter_resp(header->ctx, (neu_resp_get_node_t *) data);
+        break;
+    case NEU_RESP_GET_GROUP:
+        handle_get_group_resp(header->ctx, (neu_resp_get_group_t *) data);
+        break;
+    case NEU_RESP_ADD_TAG:
+        handle_add_tags_resp(header->ctx, (neu_resp_add_tag_t *) data);
+        break;
+    case NEU_RESP_UPDATE_TAG:
+        handle_update_tags_resp(header->ctx, (neu_resp_update_tag_t *) data);
+        break;
+    case NEU_RESP_GET_TAG:
+        handle_get_tags_resp(header->ctx, (neu_resp_get_tag_t *) data);
+        break;
+    case NEU_RESP_GET_SUBSCRIBE_GROUP:
+        handle_grp_get_subscribe_resp(header->ctx,
+                                      (neu_resp_get_subscribe_group_t *) data);
+        break;
+    case NEU_RESP_GET_NODE_SETTING:
+        handle_get_node_setting_resp(header->ctx,
+                                     (neu_resp_get_node_setting_t *) data);
+        break;
+    case NEU_RESP_GET_NODE_STATE:
+        handle_get_node_state_resp(header->ctx,
+                                   (neu_resp_get_node_state_t *) data);
+        break;
+    case NEU_RESP_READ_GROUP:
+        handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
         break;
     default:
+        assert(false);
         break;
     }
-    return rv;
-}
-
-static int dashb_plugin_event_reply(neu_plugin_t *     plugin,
-                                    neu_event_reply_t *reply)
-{
-    int rv = 0;
-
-    (void) plugin;
-    (void) reply;
-
-    nlog_info("reply event to plugin: %s", neu_plugin_module.module_name);
-    return rv;
+    return 0;
 }
 
 static int dashb_plugin_start(neu_plugin_t *plugin)
@@ -302,25 +317,15 @@ static int dashb_plugin_stop(neu_plugin_t *plugin)
     return 0;
 }
 
-static int dashb_plugin_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
-{
-    (void) plugin;
-    (void) tag;
-
-    return 0;
-}
-
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open         = dashb_plugin_open,
-    .close        = dashb_plugin_close,
-    .init         = dashb_plugin_init,
-    .uninit       = dashb_plugin_uninit,
-    .start        = dashb_plugin_start,
-    .stop         = dashb_plugin_stop,
-    .config       = dashb_plugin_config,
-    .request      = dashb_plugin_request,
-    .validate_tag = dashb_plugin_validate_tag,
-    .event_reply  = dashb_plugin_event_reply
+    .open    = dashb_plugin_open,
+    .close   = dashb_plugin_close,
+    .init    = dashb_plugin_init,
+    .uninit  = dashb_plugin_uninit,
+    .start   = dashb_plugin_start,
+    .stop    = dashb_plugin_stop,
+    .config  = dashb_plugin_config,
+    .request = dashb_plugin_request,
 };
 
 #define DEFAULT_DASHBOARD_PLUGIN_DESCR \

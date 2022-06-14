@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -21,12 +21,17 @@
 
 #include <nng/nng.h>
 
+#include "adapter.h"
+
 void handle_add_group_config(nng_aio *aio);
 void handle_del_group_config(nng_aio *aio);
-void handle_update_group_config(nng_aio *aio);
 void handle_get_group_config(nng_aio *aio);
+void handle_get_group_resp(nng_aio *aio, neu_resp_get_group_t *groups);
+
 void handle_grp_subscribe(nng_aio *aio);
 void handle_grp_unsubscribe(nng_aio *aio);
 void handle_grp_get_subscribe(nng_aio *aio);
+void handle_grp_get_subscribe_resp(nng_aio *                       aio,
+                                   neu_resp_get_subscribe_group_t *groups);
 
 #endif

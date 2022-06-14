@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,9 +26,6 @@ extern "C" {
 
 #include <stdint.h>
 
-#include "datatag_table.h"
-
-#include "data_expr.h"
 #include "neu_json_error.h"
 #include "neu_json_rw.h"
 
@@ -42,9 +39,6 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
 
 int neu_json_encode_setting_with_mqtt(uint32_t node_id, char *setting,
                                       void *mqtt_param, char **result);
-
-neu_data_val_t *neu_parse_write_req_to_val(neu_json_write_req_t *req,
-                                           neu_datatag_table_t *);
 
 #define NEU_JSON_RESPONSE_ERROR(err, func)                             \
     {                                                                  \

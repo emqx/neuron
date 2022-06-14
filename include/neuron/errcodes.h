@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -73,8 +73,8 @@ typedef enum {
     NEU_ERR_VALIDATE_TOKEN           = 1007,
     NEU_ERR_INVALID_TOKEN            = 1008,
     NEU_ERR_INVALID_USER_OR_PASSWORD = 1009,
+    NEU_ERR_IS_BUSY                  = 1010,
 
-    NEU_ERR_NODE_TYPE_INVALID      = 2001,
     NEU_ERR_NODE_EXIST             = 2002,
     NEU_ERR_NODE_NOT_EXIST         = 2003,
     NEU_ERR_NODE_SETTING_INVALID   = 2004,
@@ -84,9 +84,12 @@ typedef enum {
     NEU_ERR_NODE_NOT_RUNNING       = 2008,
     NEU_ERR_NODE_IS_STOPED         = 2009,
 
-    NEU_ERR_GRP_CONFIG_NOT_EXIST = 2101,
-    NEU_ERR_GRP_CONFIG_IN_USE    = 2102,
-    NEU_ERR_GRP_CONFIG_CONFLICT  = 2103,
+    NEU_ERR_GROUP_ALREADY_SUBSCRIBED = 2101,
+    NEU_ERR_GROUP_NOT_SUBSCRIBE      = 2102,
+    NEU_ERR_GROUP_NOT_ALLOW          = 2103,
+    NEU_ERR_GROUP_EXIST              = 2104,
+    NEU_ERR_GROUP_PARAMETER_INVALID  = 2105,
+    NEU_ERR_GROUP_NOT_EXIST          = 2106,
 
     NEU_ERR_TAG_NOT_EXIST              = 2201,
     NEU_ERR_TAG_NAME_CONFLICT          = 2202,
@@ -94,9 +97,12 @@ typedef enum {
     NEU_ERR_TAG_TYPE_NOT_SUPPORT       = 2204,
     NEU_ERR_TAG_ADDRESS_FORMAT_INVALID = 2205,
 
-    NEU_ERR_LIBRARY_NOT_FOUND     = 2301,
-    NEU_ERR_LIBRARY_INFO_INVALID  = 2302,
-    NEU_ERR_LIBRARY_NAME_CONFLICT = 2303,
+    NEU_ERR_LIBRARY_NOT_FOUND            = 2301,
+    NEU_ERR_LIBRARY_INFO_INVALID         = 2302,
+    NEU_ERR_LIBRARY_NAME_CONFLICT        = 2303,
+    NEU_ERR_LIBRARY_FAILED_TO_OPEN       = 2304,
+    NEU_ERR_LIBRARY_MODULE_INVALID       = 2305,
+    NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL = 2306,
 
     NEU_ERR_LICENSE_NOT_FOUND = 2400,
     NEU_ERR_LICENSE_INVALID   = 2401,
@@ -111,8 +117,6 @@ typedef enum {
     NEU_ERR_PLUGIN_DISCONNECTED        = 3002,
     NEU_ERR_PLUGIN_TAG_NOT_ALLOW_READ  = 3003,
     NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE = 3004,
-    NEU_ERR_PLUGIN_TAG_NOT_EXIST       = 3005,
-    NEU_ERR_PLUGIN_GRP_NOT_SUBSCRIBE   = 3006,
     NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH   = 3007,
 
     NEU_ERR_MQTT_FAILURE                        = 4000,

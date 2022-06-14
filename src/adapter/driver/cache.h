@@ -29,12 +29,13 @@ typedef struct neu_driver_cache neu_driver_cache_t;
 neu_driver_cache_t *neu_driver_cache_new();
 void                neu_driver_cache_destroy(neu_driver_cache_t *cache);
 
-void neu_driver_cache_error(neu_driver_cache_t *cache, const char *key,
-                            int64_t timestamp, int32_t error);
-void neu_driver_cache_update(neu_driver_cache_t *cache, const char *key,
-                             int64_t timestamp, uint16_t n_byte,
-                             uint8_t *bytes);
-void neu_driver_cache_del(neu_driver_cache_t *cache, const char *key);
+void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
+                            const char *tag, int64_t timestamp, int32_t error);
+void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
+                             const char *tag, int64_t timestamp,
+                             uint16_t n_byte, uint8_t *bytes);
+void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
+                          const char *tag);
 
 typedef struct {
     uint16_t    n_byte;
@@ -44,7 +45,7 @@ typedef struct {
     int64_t timestamp;
 } neu_driver_cache_value_t;
 
-int neu_driver_cache_get(neu_driver_cache_t *cache, const char *key,
-                         neu_driver_cache_value_t *value);
+int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
+                         const char *tag, neu_driver_cache_value_t *value);
 
 #endif

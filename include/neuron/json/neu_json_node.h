@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,16 +32,15 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *  name;
-    int64_t type;
-    char *  plugin_name;
+    char *name;
+    char *plugin;
 } neu_json_add_node_req_t;
 
 int  neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result);
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req);
 
 typedef struct {
-    int64_t id;
+    char *name;
 } neu_json_del_node_req_t;
 
 int  neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result);
@@ -55,16 +54,8 @@ typedef struct {
 int neu_json_encode_get_node_state_resp(void *json_object, void *param);
 
 typedef struct {
-    int64_t node_type;
-} neu_json_get_nodes_req_t;
-
-int neu_json_decode_get_nodes_req(char *buf, neu_json_get_nodes_req_t **result);
-void neu_json_decode_get_nodes_req_free(neu_json_get_nodes_req_t *req);
-
-typedef struct {
-    char *  name;
-    int64_t plugin_id;
-    int64_t id;
+    char *name;
+    char *plugin;
 } neu_json_get_nodes_resp_node_t;
 
 typedef struct {
@@ -84,15 +75,15 @@ int  neu_json_decode_update_node_req(char *                       buf,
 void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req);
 
 typedef struct {
+    char *  node;
     int64_t cmd;
-    int64_t id;
 } neu_json_node_ctl_req_t;
 
 int  neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result);
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req);
 
 typedef struct {
-    int64_t node_id;
+    char *node;
 } neu_json_node_setting_req_t;
 
 int  neu_json_decode_node_setting_req(char *                        buf,

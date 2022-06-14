@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,9 +29,7 @@
 #include "plugin_info.h"
 
 #include "adapter_info.h"
-#include "core/databuf.h"
-#include "core/neu_manager.h"
-#include "core/neu_trans_buf.h"
+#include "core/manager.h"
 #include "plugin_info.h"
 
 typedef enum adapter_state {
@@ -50,14 +48,11 @@ struct neu_adapter {
 
     uint32_t req_id;
 
-    neu_trans_kind_e    trans_kind;
     adapter_callbacks_t cb_funs;
     neu_config_t        setting;
-    vector_t            sub_grp_configs; // neu_sub_grp_config_t
+    void *              x;
 
     struct {
-        plugin_id_t          id;
-        plugin_kind_e        kind;
         void *               handle; // handle of dynamic lib
         neu_plugin_module_t *module;
         neu_plugin_t *       plugin;
@@ -91,17 +86,9 @@ const char *       neu_adapter_get_name(neu_adapter_t *adapter);
 neu_manager_t *    neu_adapter_get_manager(neu_adapter_t *adapter);
 neu_adapter_id_t   neu_adapter_get_id(neu_adapter_t *adapter);
 neu_adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter);
-plugin_id_t        neu_adapter_get_plugin_id(neu_adapter_t *adapter);
 int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
 neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter);
-void               neu_adapter_add_sub_grp_config(neu_adapter_t *      adapter,
-                                                  neu_node_id_t        node_id,
-                                                  neu_taggrp_config_t *grp_config);
-void               neu_adapter_del_sub_grp_config(neu_adapter_t *      adapter,
-                                                  neu_node_id_t        node_id,
-                                                  neu_taggrp_config_t *grp_config);
-vector_t *         neu_adapter_get_sub_grp_configs(neu_adapter_t *adapter);
 neu_plugin_running_state_e
     neu_adapter_state_to_plugin_state(neu_adapter_t *adapter);
 int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag);

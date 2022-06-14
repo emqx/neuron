@@ -159,65 +159,54 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     return rv;
 }
 
-static int ekuiper_plugin_request(neu_plugin_t *plugin, neu_request_t *req)
+static int ekuiper_plugin_request(neu_plugin_t *      plugin,
+                                  neu_reqresp_head_t *header, void *data)
 {
-    int rv = 0;
-
-    if (plugin == NULL || req == NULL) {
-        zlog_warn(neuron, "The plugin pointer or request is NULL");
-        return (-1);
-    }
+    bool disconnected = false;
 
     zlog_info(neuron, "send request to plugin: %s",
               neu_plugin_module.module_name);
-    const adapter_callbacks_t *adapter_callbacks;
-    adapter_callbacks = plugin->common.adapter_callbacks;
-    (void) adapter_callbacks;
 
-    switch (req->req_type) {
+    nng_mtx_lock(plugin->mtx);
+    disconnected =
+        NEU_PLUGIN_LINK_STATE_DISCONNECTED == plugin->common.link_state;
+    nng_mtx_unlock(plugin->mtx);
+
+    if (disconnected) {
+        zlog_info(neuron, "plugin: %s not connected",
+                  neu_plugin_module.module_name);
+        return -1;
+    }
+
+    switch (header->type) {
+    case NEU_RESP_ERROR: {
+        neu_resp_error_t *error = (neu_resp_error_t *) data;
+        zlog_info(neuron, "plugin: %s receive resp errcode: %d",
+                  neu_plugin_module.module_name, error->error);
+        break;
+    }
     case NEU_REQRESP_TRANS_DATA: {
-        send_data(plugin, req);
+        neu_reqresp_trans_data_t *trans_data = data;
+        send_data(plugin, trans_data);
         break;
     }
-
     default:
+        assert(false);
         break;
     }
-    return rv;
-}
-
-static int ekuiper_plugin_event_reply(neu_plugin_t *     plugin,
-                                      neu_event_reply_t *reply)
-{
-    int rv = 0;
-
-    (void) plugin;
-    (void) reply;
-
-    zlog_info(neuron, "reply event to plugin: %s",
-              neu_plugin_module.module_name);
-    return rv;
-}
-
-static int ekuiper_plugin_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
-{
-    (void) plugin;
-    (void) tag;
 
     return 0;
 }
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open         = ekuiper_plugin_open,
-    .close        = ekuiper_plugin_close,
-    .init         = ekuiper_plugin_init,
-    .uninit       = ekuiper_plugin_uninit,
-    .start        = ekuiper_plugin_start,
-    .stop         = ekuiper_plugin_stop,
-    .config       = ekuiper_plugin_config,
-    .request      = ekuiper_plugin_request,
-    .validate_tag = ekuiper_plugin_validate_tag,
-    .event_reply  = ekuiper_plugin_event_reply
+    .open    = ekuiper_plugin_open,
+    .close   = ekuiper_plugin_close,
+    .init    = ekuiper_plugin_init,
+    .uninit  = ekuiper_plugin_uninit,
+    .start   = ekuiper_plugin_start,
+    .stop    = ekuiper_plugin_stop,
+    .config  = ekuiper_plugin_config,
+    .request = ekuiper_plugin_request,
 };
 
 const neu_plugin_module_t neu_plugin_module = {
@@ -225,6 +214,6 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name  = "ekuiper",
     .module_descr = "Neuron and LF Edge eKuiper integration plugin",
     .intf_funs    = &plugin_intf_funs,
-    .kind         = PLUGIN_KIND_SYSTEM,
+    .kind         = NEU_PLUGIN_KIND_SYSTEM,
     .type         = NEU_NA_TYPE_APP,
 };

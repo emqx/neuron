@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -19,8 +19,6 @@
 
 #include <stdlib.h>
 
-#include "vector.h"
-
 #include "plugin.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_plugin.h"
@@ -36,9 +34,19 @@ void handle_add_plugin(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_plugin_req_t, neu_json_decode_add_plugin_req, {
-            NEU_JSON_RESPONSE_ERROR(
-                neu_system_add_plugin(plugin, req->lib_name),
-                { http_response(aio, error_code.error, result_error); });
+            int                  ret    = 0;
+            neu_reqresp_head_t   header = { 0 };
+            neu_req_add_plugin_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_ADD_PLUGIN;
+            strcpy(cmd.library, req->library);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
 }
 
@@ -48,54 +56,59 @@ void handle_del_plugin(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_plugin_req_t, neu_json_decode_del_plugin_req, {
-            plugin_id_t id;
-            id.id_val    = req->id;
-            intptr_t err = neu_system_del_plugin(plugin, id);
-            if (err != 0) {
-                http_bad_request(aio, "{\"error\": 1}");
-            } else {
-                http_ok(aio, "{\"error\": 0}");
+            int                  ret    = 0;
+            neu_reqresp_head_t   header = { 0 };
+            neu_req_del_plugin_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_DEL_PLUGIN;
+            strcpy(cmd.plugin, req->plugin);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
         })
 }
 
 void handle_get_plugin(nng_aio *aio)
 {
-    neu_plugin_t *             plugin     = neu_rest_get_plugin();
-    neu_json_get_plugin_resp_t plugin_res = { 0 };
-    char *                     result     = NULL;
-    int                        index      = 0;
-    uint32_t                   plugin_id  = 0;
+    neu_plugin_t *     plugin = neu_rest_get_plugin();
+    neu_reqresp_head_t header = { 0 };
+    int                ret    = 0;
 
     VALIDATE_JWT(aio);
 
-    vector_t plugin_libs = neu_system_get_plugin(plugin);
+    header.ctx  = aio;
+    header.type = NEU_REQ_GET_PLUGIN;
 
-    http_get_param_uint32(aio, "plugin_id", &plugin_id);
-
-    plugin_res.n_plugin_lib = plugin_libs.size;
-    if (plugin_id > 0) {
-        plugin_res.n_plugin_lib = 1;
+    ret = neu_plugin_op(plugin, header, NULL);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
     }
-    plugin_res.plugin_libs = calloc(
+}
+
+void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins)
+{
+    neu_json_get_plugin_resp_t plugin_res = { 0 };
+    char *                     result     = NULL;
+
+    plugin_res.n_plugin_lib = utarray_len(plugins->plugins);
+    plugin_res.plugin_libs  = calloc(
         plugin_res.n_plugin_lib, sizeof(neu_json_get_plugin_resp_plugin_lib_t));
 
-    VECTOR_FOR_EACH(&plugin_libs, iter)
+    utarray_foreach(plugins->plugins, neu_resp_plugin_info_t *, info)
     {
-        plugin_lib_info_t *info = (plugin_lib_info_t *) iterator_get(&iter);
+        int index = utarray_eltidx(plugins->plugins, info);
 
-        if (plugin_id > 0 && plugin_id != info->plugin_id.id_val) {
-            continue;
-        }
-
-        plugin_res.plugin_libs[index].node_type = info->node_type;
-        plugin_res.plugin_libs[index].id        = info->plugin_id.id_val;
-        plugin_res.plugin_libs[index].kind      = info->plugin_kind;
-        plugin_res.plugin_libs[index].name      = (char *) info->plugin_name;
-        plugin_res.plugin_libs[index].lib_name = (char *) info->plugin_lib_name;
-        plugin_res.plugin_libs[index].description = (char *) info->plugin_descr;
-
-        index += 1;
+        plugin_res.plugin_libs[index].node_type   = info->type;
+        plugin_res.plugin_libs[index].kind        = info->kind;
+        plugin_res.plugin_libs[index].name        = (char *) info->name;
+        plugin_res.plugin_libs[index].library     = (char *) info->library;
+        plugin_res.plugin_libs[index].description = (char *) info->description;
     }
 
     neu_json_encode_by_fn(&plugin_res, neu_json_encode_get_plugin_resp,
@@ -105,5 +118,5 @@ void handle_get_plugin(nng_aio *aio)
     free(result);
     free(plugin_res.plugin_libs);
 
-    vector_uninit(&plugin_libs);
+    utarray_free(plugins->plugins);
 }

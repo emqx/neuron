@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -23,6 +23,12 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef enum neu_plugin_kind {
+    NEU_PLUGIN_KIND_STATIC = 0,
+    NEU_PLUGIN_KIND_SYSTEM = 1,
+    NEU_PLUGIN_KIND_CUSTOM = 2,
+} neu_plugin_kind_e;
 
 typedef struct plugin_id {
     uint32_t id_val;

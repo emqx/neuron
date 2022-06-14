@@ -1,3 +1,21 @@
+/**
+ * NEURON IIoT System for Industry 4.0
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
 #include <stdlib.h>
 
 #include <neuron.h>
@@ -15,8 +33,8 @@ static int driver_uninit(neu_plugin_t *plugin);
 static int driver_start(neu_plugin_t *plugin);
 static int driver_stop(neu_plugin_t *plugin);
 static int driver_config(neu_plugin_t *plugin, neu_config_t *config);
-static int driver_request(neu_plugin_t *plugin, neu_request_t *req);
-static int driver_event_reply(neu_plugin_t *plugin, neu_event_reply_t *reply);
+static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                          void *data);
 
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
@@ -24,17 +42,14 @@ static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                         neu_value_u value);
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
-    .open        = driver_open,
-    .close       = driver_close,
-    .init        = driver_init,
-    .uninit      = driver_uninit,
-    .start       = driver_start,
-    .stop        = driver_stop,
-    .config      = driver_config,
-    .request     = driver_request,
-    .event_reply = driver_event_reply,
-
-    .validate_tag = driver_validate_tag,
+    .open    = driver_open,
+    .close   = driver_close,
+    .init    = driver_init,
+    .uninit  = driver_uninit,
+    .start   = driver_start,
+    .stop    = driver_stop,
+    .config  = driver_config,
+    .request = driver_request,
 
     .driver.validate_tag = driver_validate_tag,
     .driver.group_timer  = driver_group_timer,
@@ -125,6 +140,7 @@ static int driver_config(neu_plugin_t *plugin, neu_config_t *config)
         plog_warn(plugin, "config: %s, decode error: %s", (char *) config->buf,
                   err_param);
         free(err_param);
+        free(host.v.val_str);
         return -1;
     }
 
@@ -149,14 +165,12 @@ static int driver_config(neu_plugin_t *plugin, neu_config_t *config)
     return 0;
 }
 
-static int driver_request(neu_plugin_t *plugin, neu_request_t *req)
+static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                          void *data)
 {
-    switch (req->req_type) {
-    default:
-        plog_warn(plugin, "unhandle msg type: %d", req->req_type);
-        break;
-    }
-
+    (void) plugin;
+    (void) head;
+    (void) data;
     return 0;
 }
 
@@ -168,22 +182,14 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
     if (ret == 0) {
         plog_debug(
             plugin,
-            "validate tag success, name: %s, address: %s, type: %s, slave id: "
+            "validate tag success, name: %s, address: %s, type: %d, slave id: "
             "%d, start address: %d, n register: %d, area: %s",
-            tag->name, tag->addr_str, neu_dvalue_type_to_str(tag->type),
-            point.slave_id, point.start_address, point.n_register,
+            tag->name, tag->addr_str, tag->type, point.slave_id,
+            point.start_address, point.n_register,
             modbus_area_to_str(point.area));
     }
 
     return ret;
-}
-
-static int driver_event_reply(neu_plugin_t *plugin, neu_event_reply_t *reply)
-{
-    (void) plugin;
-    (void) reply;
-
-    return 0;
 }
 
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)

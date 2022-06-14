@@ -21,7 +21,6 @@
 #define _NEU_ADAPTER_DRIVER_INTERNAL_H_
 
 #include "adapter.h"
-#include "core/message.h"
 
 neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter);
 
@@ -31,7 +30,28 @@ int  neu_adapter_driver_stop(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_init(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_uninit(neu_adapter_driver_t *driver);
 
-void neu_adapter_driver_process_msg(neu_adapter_driver_t *driver,
-                                    neu_request_t *       req);
+void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
+                                   neu_reqresp_head_t *  req);
 
+void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
+                                  neu_reqresp_head_t *  req);
+
+int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
+                                 uint32_t interval);
+int neu_adapter_driver_del_group(neu_adapter_driver_t *driver,
+                                 const char *          name);
+int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
+                                   const char *          name);
+UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver);
+
+int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
+                               neu_datatag_t *tag);
+int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
+                               const char *tag);
+int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
+                                  const char *group, neu_datatag_t *tag);
+int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
+                               UT_array **tags);
+UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
+                                          const char *          group);
 #endif

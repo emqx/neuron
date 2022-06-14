@@ -1,0 +1,128 @@
+*** Settings ***
+Resource 	resource/api.resource
+Resource	resource/common.resource
+Resource	resource/error.resource
+Suite Setup	Start Neuronx
+Suite Teardown	Stop Neuronx
+
+*** Variables ***
+${tag1}             {"name": "tag1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
+${tag2}             {"name": "tag2", "address": "1!00001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+${tag3}             {"name": "tag3", "address": "1!00001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_UINT16}}
+${tag4}             {"name": "tag4", "address": "1!00031", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+${tag1update}       {"name": "tag1", "address": "1!400002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT32}}
+
+*** Test Cases ***
+Add tags to non-existent node, it should return failure
+  	${res}=	Add Tags	modbus-node	group	${tag1},${tag2}
+
+  	Check Response Status           ${res}        200
+  	Check Error Code                ${res}        ${NEU_ERR_NODE_NOT_EXIST}
+
+Add tags to the non-existent group, it should return failure
+	Add Node  modbus-node  ${PLUGIN-MODBUS-TCP}
+  	${res}=	Add Tags	modbus-node	group	${tag1},${tag2}
+
+  	Check Response Status           ${res}        200
+  	Check Error Code                ${res}        ${NEU_ERR_GROUP_NOT_EXIST}
+
+Add different types of tags to the group, it should return success
+	Add Group  modbus-node  group  5000
+  	${res}=	Add Tags	modbus-node	group	${tag1},${tag2}
+
+  	Check Response Status           ${res}        200
+  	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
+	Should Be Equal As Integers	${res}[index]	2
+
+Add a list of tags with errors, it should return the number of successful additions.
+  	${res}=	Add Tags	modbus-node	group	${tag1},${tag2},${tag3},${tag4}
+
+  	Check Response Status           ${res}        200
+  	Check Error Code                ${res}        ${NEU_ERR_TAG_NAME_CONFLICT}
+	Should Be Equal As Integers	${res}[index]	0
+
+Get tag list from modbus-node, it should return success.
+	${res}=		Get Tags  modbus-node  group
+
+  	Check Response Status           ${res}        200
+	${len} =	Get Length	${res}[tags]
+ 	Should Be Equal As Integers	${len}		2
+	
+	Should Be Equal As Strings	${res}[tags][0][name]		tag1
+	Should Be Equal As Strings	${res}[tags][0][address]	1!400001
+	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_READ}
+	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_INT16}
+
+	Should Be Equal As Strings	${res}[tags][1][name]		tag2
+	Should Be Equal As Strings	${res}[tags][1][address]	1!00001
+	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_BIT}
+
+Update tag, it should return success.
+	${res}=		Update Tags  modbus-node  group  ${tag1update}
+
+  	Check Response Status           ${res}        200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=		Get Tags  modbus-node  group
+
+  	Check Response Status           ${res}        200
+	${len} =	Get Length	${res}[tags]
+ 	Should Be Equal As Integers	${len}		2
+	
+	Should Be Equal As Strings	${res}[tags][1][name]		tag1
+	Should Be Equal As Strings	${res}[tags][1][address]	1!400002
+	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_INT32}
+
+	Should Be Equal As Strings	${res}[tags][0][name]		tag2
+	Should Be Equal As Strings	${res}[tags][0][address]	1!00001
+	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}
+
+Delete tag from non-existent group, it should return success
+	${res}=		Del Tags  modbus-node  group1  "tag1"
+
+  	Check Response Status           ${res}        200
+  	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
+
+Update non-existent tag, it should return success.
+	${res}= 	Update Tags  modbus-node  group  ${tag4}
+
+  	Check Response Status           ${res}        200
+  	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
+
+	${res}=		Get Tags  modbus-node  group
+
+  	Check Response Status           ${res}        200
+	${len} =	Get Length	${res}[tags]
+ 	Should Be Equal As Integers	${len}		3
+	
+	Should Be Equal As Strings	${res}[tags][1][name]		tag1
+	Should Be Equal As Strings	${res}[tags][1][address]	1!400002
+	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_INT32}
+
+	Should Be Equal As Strings	${res}[tags][0][name]		tag2
+	Should Be Equal As Strings	${res}[tags][0][address]	1!00001
+	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}
+
+	Should Be Equal As Strings	${res}[tags][2][name]		tag4
+	Should Be Equal As Strings	${res}[tags][2][address]	1!00031
+	Should Be Equal As Strings	${res}[tags][2][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][2][type]		${TAG_TYPE_BIT}
+
+Delete tags, it should return success
+	Del Tags  modbus-node  group  "tag1","tag2"
+
+	${res}=		Get Tags  modbus-node  group
+
+  	Check Response Status           ${res}        200
+	${len} =	Get Length	${res}[tags]
+ 	Should Be Equal As Integers	${len}		1
+	
+	Should Be Equal As Strings	${res}[tags][0][name]		tag4
+	Should Be Equal As Strings	${res}[tags][0][address]	1!00031
+	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}

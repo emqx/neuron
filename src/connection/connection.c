@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -26,12 +26,10 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "utils/log.h"
-
-#ifndef SOCK_NONBLOCK
 #include <fcntl.h>
-#define SOCK_NONBLOCK O_NONBLOCK
-#endif
+#include <termios.h>
+
+#include "utils/log.h"
 
 #include "connection/neu_connection.h"
 
@@ -249,15 +247,16 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         case NEU_CONN_TCP_CLIENT:
         case NEU_CONN_UDP:
             ret = send(conn->fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
-            if (ret != len) {
-                zlog_error(neuron,
-                           "conn fd: %d, send buf len: %zd, ret: %zd, "
-                           "errno: %s(%d)",
-                           conn->fd, len, ret, strerror(errno), errno);
-            }
             break;
         case NEU_CONN_TTY_CLIENT:
+            ret = write(conn->fd, buf, len);
             break;
+        }
+        if (ret != len) {
+            zlog_error(neuron,
+                       "conn fd: %d, send buf len: %zd, ret: %zd, "
+                       "errno: %s(%d)",
+                       conn->fd, len, ret, strerror(errno), errno);
         }
 
         if (ret == -1 && errno != EAGAIN) {
@@ -299,23 +298,18 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         } else {
             ret = recv(conn->fd, buf, len, 0);
         }
-        if (ret == -1) {
-            zlog_error(
-                neuron,
-                "tcp client fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
-                conn->fd, len, ret, strerror(errno), errno);
-        }
         break;
     case NEU_CONN_UDP:
         ret = recv(conn->fd, buf, len, 0);
-        if (ret == -1) {
-            zlog_error(neuron,
-                       "udp fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
-                       conn->fd, len, ret, strerror(errno), errno);
-        }
         break;
     case NEU_CONN_TTY_CLIENT:
+        ret = read(conn->fd, buf, len);
         break;
+    }
+    if (ret <= 0) {
+        zlog_error(neuron,
+                   "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
+                   conn->fd, len, ret, strerror(errno), errno);
     }
 
     if (errno == EPIPE || ret <= 0) {
@@ -432,6 +426,7 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->param.params.udp.src_port = param->params.udp.src_port;
         conn->param.params.udp.dst_ip   = strdup(param->params.udp.dst_ip);
         conn->param.params.udp.dst_port = param->params.udp.dst_port;
+        conn->param.params.udp.timeout  = param->params.udp.timeout;
         conn->block                     = conn->param.params.udp.timeout > 0;
         break;
     case NEU_CONN_TTY_CLIENT:
@@ -441,7 +436,9 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->param.params.tty_client.stop   = param->params.tty_client.stop;
         conn->param.params.tty_client.baud   = param->params.tty_client.baud;
         conn->param.params.tty_client.parity = param->params.tty_client.parity;
-        conn->block                          = false;
+        conn->param.params.tty_client.timeout =
+            param->params.tty_client.timeout;
+        conn->block = conn->param.params.tty_client.timeout > 0;
         break;
     }
 }
@@ -610,8 +607,105 @@ static void conn_connect(neu_conn_t *conn)
         }
         break;
     }
-    case NEU_CONN_TTY_CLIENT:
+    case NEU_CONN_TTY_CLIENT: {
+        struct termios tty_opt = { 0 };
+
+        fd                  = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY, 0);
+        tty_opt.c_cc[VTIME] = conn->param.params.tty_client.timeout / 100;
+        tty_opt.c_cc[VMIN]  = 0;
+
+        if (fd <= 0) {
+            nlog_error("open %s error: %s(%d)",
+                       conn->param.params.tty_client.device, strerror(errno),
+                       errno);
+            return;
+        }
+        tcgetattr(fd, &tty_opt);
+
+        switch (conn->param.params.tty_client.baud) {
+        case NEU_CONN_TTY_BAUD_115200:
+            cfsetospeed(&tty_opt, B115200);
+            cfsetispeed(&tty_opt, B115200);
+            break;
+        case NEU_CONN_TTY_BAUD_57600:
+            cfsetospeed(&tty_opt, B57600);
+            cfsetispeed(&tty_opt, B57600);
+            break;
+        case NEU_CONN_TTY_BAUD_38400:
+            cfsetospeed(&tty_opt, B38400);
+            cfsetispeed(&tty_opt, B38400);
+            break;
+        case NEU_CONN_TTY_BAUD_19200:
+            cfsetospeed(&tty_opt, B19200);
+            cfsetispeed(&tty_opt, B19200);
+            break;
+        case NEU_CONN_TTY_BAUD_9600:
+            cfsetospeed(&tty_opt, B9600);
+            cfsetispeed(&tty_opt, B9600);
+            break;
+        }
+
+        switch (conn->param.params.tty_client.parity) {
+        case NEU_CONN_TTY_PARITY_NONE:
+            tty_opt.c_cflag &= ~PARENB;
+            break;
+        case NEU_CONN_TTY_PARITY_ODD:
+            tty_opt.c_cflag |= PARENB;
+            tty_opt.c_cflag |= PARODD;
+            break;
+        case NEU_CONN_TTY_PARITY_EVEN:
+            tty_opt.c_cflag |= PARENB;
+            tty_opt.c_cflag &= ~PARODD;
+            break;
+        case NEU_CONN_TTY_PARITY_MARK:
+            tty_opt.c_cflag |= PARENB;
+            tty_opt.c_cflag |= PARODD;
+            tty_opt.c_cflag |= CMSPAR;
+            break;
+        case NEU_CONN_TTY_PARITY_SPACE:
+            tty_opt.c_cflag |= PARENB;
+            tty_opt.c_cflag |= CMSPAR;
+            tty_opt.c_cflag &= ~PARODD;
+            break;
+        }
+
+        tty_opt.c_cflag &= ~CSIZE;
+        switch (conn->param.params.tty_client.data) {
+        case NEU_CONN_TTY_DATA_5:
+            tty_opt.c_cflag |= CS5;
+            break;
+        case NEU_CONN_TTY_DATA_6:
+            tty_opt.c_cflag |= CS6;
+            break;
+        case NEU_CONN_TTY_DATA_7:
+            tty_opt.c_cflag |= CS7;
+            break;
+        case NEU_CONN_TTY_DATA_8:
+            tty_opt.c_cflag |= CS8;
+            break;
+        }
+
+        switch (conn->param.params.tty_client.stop) {
+        case NEU_CONN_TTY_STOP_1:
+            tty_opt.c_cflag &= ~CSTOPB;
+            break;
+        case NEU_CONN_TTY_STOP_2:
+            tty_opt.c_cflag |= CSTOPB;
+            break;
+        }
+
+        tty_opt.c_cflag |= CLOCAL | CREAD;
+        tty_opt.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+
+        tcflush(fd, TCIFLUSH);
+        tcsetattr(fd, TCSANOW, &tty_opt);
+
+        conn->fd           = fd;
+        conn->is_connected = true;
+        nlog_notice("open %s success, fd: %d",
+                    conn->param.params.tty_client.device, fd);
         break;
+    }
     }
 }
 
@@ -627,11 +721,10 @@ static void conn_disconnect(neu_conn_t *conn)
         break;
     case NEU_CONN_TCP_CLIENT:
     case NEU_CONN_UDP:
+    case NEU_CONN_TTY_CLIENT:
         if (conn->fd > 0) {
             close(conn->fd);
         }
-        break;
-    case NEU_CONN_TTY_CLIENT:
         break;
     }
 

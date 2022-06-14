@@ -1,3 +1,21 @@
+/**
+ * NEURON IIoT System for Industry 4.0
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
 #include <memory.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -202,9 +220,9 @@ static int recv_msg(enum neu_event_io_type type, int fd, void *usr_data)
     struct cycle_buf *buf = (struct cycle_buf *) usr_data;
     switch (type) {
     case NEU_EVENT_IO_READ: {
-        ssize_t len      = 0;
-        uint8_t res[512] = { 0 };
-        int     res_len  = 0;
+        ssize_t len        = 0;
+        uint8_t res[60000] = { 0 };
+        int     res_len    = 0;
 
         len = neu_conn_tcp_server_recv(conn, fd, buf->buf + buf->len,
                                        sizeof(buf->buf) - buf->len);

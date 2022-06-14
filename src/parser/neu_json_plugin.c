@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -43,7 +43,7 @@ int neu_json_decode_add_plugin_req(char *                      buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "lib_name",
+        .name = "library",
         .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -52,7 +52,7 @@ int neu_json_decode_add_plugin_req(char *                      buf,
         goto decode_fail;
     }
 
-    req->lib_name = req_elems[0].v.val_str;
+    req->library = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -73,7 +73,7 @@ decode_exit:
 void neu_json_decode_add_plugin_req_free(neu_json_add_plugin_req_t *req)
 {
 
-    free(req->lib_name);
+    free(req->library);
 
     free(req);
 }
@@ -92,8 +92,8 @@ int neu_json_decode_del_plugin_req(char *                      buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "id",
-        .t    = NEU_JSON_INT,
+        .name = "plugin",
+        .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -101,7 +101,7 @@ int neu_json_decode_del_plugin_req(char *                      buf,
         goto decode_fail;
     }
 
-    req->id = req_elems[0].v.val_int;
+    req->plugin = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -121,54 +121,7 @@ decode_exit:
 
 void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req)
 {
-
-    free(req);
-}
-
-int neu_json_decode_get_plugin_req(char *                      buf,
-                                   neu_json_get_plugin_req_t **result)
-{
-    int                        ret      = 0;
-    void *                     json_obj = NULL;
-    neu_json_get_plugin_req_t *req =
-        calloc(1, sizeof(neu_json_get_plugin_req_t));
-    if (req == NULL) {
-        return -1;
-    }
-
-    json_obj = neu_json_decode_new(buf);
-
-    neu_json_elem_t req_elems[] = { {
-        .name = "id",
-        .t    = NEU_JSON_INT,
-    } };
-    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
-                                  req_elems);
-    if (ret != 0) {
-        goto decode_fail;
-    }
-
-    req->id = req_elems[0].v.val_int;
-
-    *result = req;
-    goto decode_exit;
-
-decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
-    ret = -1;
-
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
-    }
-    return ret;
-}
-
-void neu_json_decode_get_plugin_req_free(neu_json_get_plugin_req_t *req)
-{
-
+    free(req->plugin);
     free(req);
 }
 
@@ -192,9 +145,9 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
                 .v.val_str = p_plugin_lib->name,
             },
             {
-                .name      = "lib_name",
+                .name      = "library",
                 .t         = NEU_JSON_STR,
-                .v.val_str = p_plugin_lib->lib_name,
+                .v.val_str = p_plugin_lib->library,
             },
             {
                 .name      = "description",
@@ -206,11 +159,6 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
                 .t         = NEU_JSON_INT,
                 .v.val_int = p_plugin_lib->kind,
             },
-            {
-                .name      = "id",
-                .t         = NEU_JSON_INT,
-                .v.val_int = p_plugin_lib->id,
-            }
         };
         plugin_lib_array =
             neu_json_encode_array(plugin_lib_array, plugin_lib_elems,
@@ -219,7 +167,7 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
     }
 
     neu_json_elem_t resp_elems[] = { {
-        .name         = "plugin_libs",
+        .name         = "plugins",
         .t            = NEU_JSON_OBJECT,
         .v.val_object = plugin_lib_array,
     } };

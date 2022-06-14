@@ -1,3 +1,21 @@
+/**
+ * NEURON IIoT System for Industry 4.0
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -19,17 +37,13 @@ static int ping_response(char **output_str, neu_plugin_t *plugin,
 static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
                          neu_json_mqtt_t *mqtt, char *json_str)
 {
-    neu_json_read_req_t *req = NULL;
-    int                  rc  = neu_json_decode_read_req(json_str, &req);
-    if (0 == rc) {
-        uint32_t req_id = neu_plugin_get_event_id(plugin);
-        if (0 < req_id) {
-            response->context_add(plugin, req_id, mqtt, NULL,
-                                  response->topic_pair, false);
-        }
+    UNUSED(response);
 
-        command_rw_read_once_request(plugin, mqtt, req, req_id);
-        neu_json_decode_read_req_free(req);
+    neu_json_read_req_t *json = NULL;
+    int                  rc   = neu_json_decode_read_req(json_str, &json);
+    if (0 == rc) {
+        command_rw_read_once_request(plugin, mqtt, json);
+        neu_json_decode_read_req_free(json);
     }
 
     return rc;
@@ -39,17 +53,12 @@ static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
 static int write_response(mqtt_response_t *response, neu_plugin_t *plugin,
                           neu_json_mqtt_t *mqtt, char *json_str)
 {
+    UNUSED(response);
+
     neu_json_write_req_t *req = NULL;
     int                   rc  = neu_json_decode_write_req(json_str, &req);
     if (0 == rc) {
-        uint32_t req_id = neu_plugin_get_event_id(plugin);
-        int      ret    = command_rw_write_request(plugin, mqtt, req, req_id);
-
-        if (0 < req_id && ret == 0) {
-            response->context_add(plugin, req_id, mqtt, NULL,
-                                  response->topic_pair, false);
-        }
-
+        command_rw_write_request(plugin, mqtt, req);
         neu_json_decode_write_req_free(req);
     }
 
@@ -120,26 +129,19 @@ void command_response_handle(mqtt_response_t *response)
     neu_json_decode_mqtt_req_free(mqtt);
 }
 
-char *command_read_once_response(neu_plugin_t *plugin, uint32_t node_id,
-                                 neu_json_mqtt_t *parse_header,
-                                 neu_data_val_t * resp_val)
+char *command_read_once_response(neu_reqresp_head_t *   head,
+                                 neu_resp_read_group_t *data, int format)
 {
-    return command_rw_read_once_response(plugin, node_id, parse_header,
-                                         resp_val);
+    return command_rw_read_once_response(head, data, format);
+    return NULL;
 }
 
-char *command_read_periodic_response(neu_plugin_t *plugin, uint64_t sender,
-                                     const char *         node_name,
-                                     neu_taggrp_config_t *config,
-                                     neu_data_val_t *     resp_val,
-                                     int                  upload_format)
+char *command_read_periodic_response(neu_reqresp_trans_data_t *data, int format)
 {
-    return command_rw_read_periodic_response(plugin, sender, node_name, config,
-                                             resp_val, upload_format);
+    return command_rw_read_periodic_response(data, format);
 }
 
-char *command_write_response(neu_json_mqtt_t *parse_header,
-                             neu_data_val_t * resp_val)
+char *command_write_response(neu_reqresp_head_t *head, neu_resp_error_t *data)
 {
-    return command_rw_write_response(parse_header, resp_val);
+    return command_rw_write_response(head, data);
 }

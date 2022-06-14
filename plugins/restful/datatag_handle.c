@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,9 +18,6 @@
  **/
 #include <stdlib.h>
 
-#include "vector.h"
-
-#include "datatag_table.h"
 #include "plugin.h"
 #include "utils/log.h"
 #include "json/neu_json_error.h"
@@ -29,6 +26,7 @@
 
 #include "handle.h"
 #include "http.h"
+#include "tag.h"
 
 #include "datatag_handle.h"
 
@@ -38,78 +36,45 @@ void handle_add_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
-            neu_taggrp_config_t *new_config = NULL;
-            neu_taggrp_config_t *config     = neu_system_find_group_config(
-                plugin, req->node_id, req->group_config_name);
-            neu_datatag_table_t *table =
-                neu_system_get_datatags_table(plugin, req->node_id);
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_add_tag_t  cmd    = { 0 };
 
-            if (table == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
-
-            if (config == NULL) {
-                new_config = neu_taggrp_cfg_new(req->group_config_name);
-                neu_taggrp_cfg_set_interval(new_config, 10000);
-                neu_system_add_group_config(plugin, req->node_id, new_config);
-            } else {
-                new_config = neu_taggrp_cfg_clone(config);
-            }
-
-            vector_t *     ids   = neu_taggrp_cfg_get_datatag_ids(new_config);
-            neu_err_code_e code  = { 0 };
-            bool           added = false;
+            header.ctx  = aio;
+            header.type = NEU_REQ_ADD_TAG;
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            cmd.n_tag = req->n_tag;
+            cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
 
             for (int i = 0; i < req->n_tag; i++) {
-                neu_datatag_t *tag =
-                    neu_datatag_alloc(req->tags[i].attribute, req->tags[i].type,
-                                      req->tags[i].address, req->tags[i].name);
-
-                if (NULL == tag) {
-                    code = NEU_ERR_ENOMEM;
-                    break;
-                }
-
-                code = neu_plugin_validate_tag(plugin, req->node_id, tag);
-                if (code != NEU_ERR_SUCCESS) {
-                    free(tag);
-                    break;
-                }
-
-                if (neu_datatag_tbl_add(table, tag)) {
-                    vector_push_back(ids, &tag->id);
-                    added = true;
-                } else {
-                    nlog_warn("Add failed, tag name exits, node_id:%" PRId64
-                              ", "
-                              "req_tag_name:%s",
-                              req->node_id, req->tags[i].name);
-                    code = NEU_ERR_TAG_NAME_CONFLICT;
-                    free(tag);
-                }
+                cmd.tags[i].attribute = req->tags[i].attribute;
+                cmd.tags[i].type      = req->tags[i].type;
+                cmd.tags[i].addr_str  = strdup(req->tags[i].address);
+                cmd.tags[i].name      = strdup(req->tags[i].name);
             }
 
-            if (config != NULL) {
-                int rv = neu_system_update_group_config(plugin, req->node_id,
-                                                        new_config);
-                if (0 != rv) {
-                    code  = rv;
-                    added = false;
-                }
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
-
-            if (added) {
-                uint32_t event_id = neu_plugin_get_event_id(plugin);
-                neu_plugin_notify_event_add_tags(plugin, event_id, req->node_id,
-                                                 req->group_config_name);
-            }
-
-            NEU_JSON_RESPONSE_ERROR(
-                code, { http_response(aio, code, result_error); });
         })
+}
+
+void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
+{
+    neu_json_add_tag_res_t res    = { 0 };
+    char *                 result = NULL;
+
+    res.error = resp->error;
+    res.index = resp->index;
+
+    neu_json_encode_by_fn(&res, neu_json_encode_au_tags_resp, &result);
+
+    http_ok(aio, result);
+    free(result);
 }
 
 void handle_del_tags(nng_aio *aio)
@@ -118,56 +83,27 @@ void handle_del_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
-            neu_taggrp_config_t *new_config = NULL;
-            neu_taggrp_config_t *config     = neu_system_find_group_config(
-                plugin, req->node_id, req->group_config_name);
-            neu_datatag_table_t *table =
-                neu_system_get_datatags_table(plugin, req->node_id);
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_del_tag_t  cmd    = { 0 };
 
-            if (config == NULL || table == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
+            header.ctx  = aio;
+            header.type = NEU_REQ_DEL_TAG;
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            cmd.n_tag = req->n_tags;
+            cmd.tags  = calloc(req->n_tags, sizeof(char *));
+
+            for (int i = 0; i < req->n_tags; i++) {
+                cmd.tags[i] = strdup(req->tags[i]);
+            }
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
-                return;
             }
-
-            neu_err_code_e code = { 0 };
-            new_config          = neu_taggrp_cfg_clone(config);
-            bool deleted        = false;
-
-            for (int i = 0; i < req->n_id; i++) {
-                if (neu_datatag_tbl_remove(table, req->ids[i]) == 0) {
-                    vector_t *ids = neu_taggrp_cfg_get_datatag_ids(new_config);
-
-                    VECTOR_FOR_EACH(ids, iter)
-                    {
-                        neu_datatag_id_t *id =
-                            (neu_datatag_id_t *) iterator_get(&iter);
-                        if (*id == req->ids[i]) {
-                            iterator_erase(ids, &iter);
-                            break;
-                        }
-                    }
-
-                    deleted = true;
-                }
-            }
-
-            int rv = neu_system_update_group_config(plugin, req->node_id,
-                                                    new_config);
-            if (0 != rv) {
-                code    = rv;
-                deleted = false;
-            }
-
-            if (deleted) {
-                uint32_t event_id = neu_plugin_get_event_id(plugin);
-                neu_plugin_notify_event_del_tags(plugin, event_id, req->node_id,
-                                                 req->group_config_name);
-            }
-
-            NEU_JSON_RESPONSE_ERROR(
-                code, { http_response(aio, NEU_ERR_SUCCESS, result_error); })
         })
 }
 
@@ -177,156 +113,100 @@ void handle_update_tags(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_tags_req_t, neu_json_decode_update_tags_req, {
-            neu_datatag_table_t *table =
-                neu_system_get_datatags_table(plugin, req->node_id);
-            if (table == NULL) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_add_tag_t  cmd    = { 0 };
 
-            bool           updated = false;
-            neu_err_code_e code    = { 0 };
+            header.ctx  = aio;
+            header.type = NEU_REQ_UPDATE_TAG;
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            cmd.n_tag = req->n_tag;
+            cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
+
             for (int i = 0; i < req->n_tag; i++) {
-                neu_datatag_t *tag =
-                    neu_datatag_tbl_get(table, req->tags[i].id);
-
-                if (tag == NULL) {
-                    code = NEU_ERR_TAG_NOT_EXIST;
-                    break;
-                }
-
-                tag = neu_datatag_alloc_with_id(
-                    req->tags[i].attribute, req->tags[i].type,
-                    req->tags[i].address, req->tags[i].name, req->tags[i].id);
-
-                if (NULL == tag) {
-                    code = NEU_ERR_ENOMEM;
-                    break;
-                }
-
-                code = neu_plugin_validate_tag(plugin, req->node_id, tag);
-                if (code != NEU_ERR_SUCCESS) {
-                    free(tag);
-                    break;
-                }
-
-                if (0 != neu_datatag_tbl_update(table, req->tags[i].id, tag)) {
-                    nlog_warn("Update failed, tag name exists, node_id:%" PRId64
-                              ", "
-                              "tag_id:%" PRId64 ", req_tag_name:%s",
-                              req->node_id, req->tags[i].id, req->tags[i].name);
-                    code = NEU_ERR_TAG_NAME_CONFLICT;
-                    free(tag);
-                } else {
-                    updated                     = true;
-                    neu_taggrp_config_t *config = neu_system_find_group_config(
-                        plugin, req->node_id, req->group_config_name);
-                    neu_taggrp_config_t *new_config =
-                        neu_taggrp_cfg_clone(config);
-                    neu_system_update_group_config(plugin, req->node_id,
-                                                   new_config);
-                }
+                cmd.tags[i].attribute = req->tags[i].attribute;
+                cmd.tags[i].type      = req->tags[i].type;
+                cmd.tags[i].addr_str  = strdup(req->tags[i].address);
+                cmd.tags[i].name      = strdup(req->tags[i].name);
             }
 
-            if (updated) {
-                uint32_t event_id = neu_plugin_get_event_id(plugin);
-                neu_plugin_notify_event_update_tags(
-                    plugin, event_id, req->node_id, req->group_config_name);
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
-
-            NEU_JSON_RESPONSE_ERROR(
-                code, { http_response(aio, code, result_error); });
         })
+}
+
+void handle_update_tags_resp(nng_aio *aio, neu_resp_update_tag_t *resp)
+{
+    handle_add_tags_resp(aio, resp);
 }
 
 void handle_get_tags(nng_aio *aio)
 {
-    neu_plugin_t *plugin  = neu_rest_get_plugin();
-    char *        result  = NULL;
-    neu_node_id_t node_id = { 0 };
+    neu_plugin_t *     plugin                    = neu_rest_get_plugin();
+    char               node[NEU_NODE_NAME_LEN]   = { 0 };
+    char               group[NEU_GROUP_NAME_LEN] = { 0 };
+    int                ret                       = 0;
+    neu_req_get_tag_t  cmd                       = { 0 };
+    neu_reqresp_head_t header                    = {
+        .ctx  = aio,
+        .type = NEU_REQ_GET_TAG,
+    };
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_node_id(aio, "node_id", &node_id) != 0) {
+    if (http_get_param_str(aio, "node", node, sizeof(node)) <= 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+        })
+        return;
+    }
+    if (http_get_param_str(aio, "group", group, sizeof(group)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
         })
         return;
     }
 
-    char s_grp_name[256]   = { 0 }; // should be large enough for the time being
-    ssize_t s_grp_name_len = http_get_param_str(aio, "group_config_name",
-                                                s_grp_name, sizeof(s_grp_name));
-    if (-1 == s_grp_name_len || sizeof(s_grp_name) == s_grp_name_len) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
-        })
-        return;
-    }
+    strcpy(cmd.driver, node);
+    strcpy(cmd.group, group);
 
-    neu_datatag_table_t *table = neu_system_get_datatags_table(plugin, node_id);
-    if (table == NULL) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-            http_response(aio, NEU_ERR_NODE_NOT_EXIST, result_error);
-        })
-        return;
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
     }
+}
 
-    vector_t grp_configs = neu_system_get_group_configs(plugin, node_id);
+void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
+{
     neu_json_get_tags_resp_t tags_res = { 0 };
-    int                      index    = 0;
+    char *                   result   = NULL;
 
-    VECTOR_FOR_EACH(&grp_configs, iter)
-    {
-        neu_taggrp_config_t *config =
-            *(neu_taggrp_config_t **) iterator_get(&iter);
-        const char *group_name = neu_taggrp_cfg_get_name(config);
-        vector_t *  ids        = neu_taggrp_cfg_get_datatag_ids(config);
-        if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
-            continue;
-        }
-
-        tags_res.n_tag += ids->size;
-    }
-
+    tags_res.n_tag = utarray_len(tags->tags);
     tags_res.tags =
         calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
 
-    VECTOR_FOR_EACH(&grp_configs, iter)
+    utarray_foreach(tags->tags, neu_datatag_t *, tag)
     {
-        neu_taggrp_config_t *config =
-            *(neu_taggrp_config_t **) iterator_get(&iter);
-        const char *group_name = neu_taggrp_cfg_get_name(config);
+        int index = utarray_eltidx(tags->tags, tag);
 
-        if (-2 != s_grp_name_len && strcmp(group_name, s_grp_name) != 0) {
-            continue;
-        }
-
-        vector_t *ids = neu_taggrp_cfg_get_datatag_ids(config);
-
-        VECTOR_FOR_EACH(ids, iter_id)
-        {
-            neu_datatag_id_t *id  = (neu_datatag_id_t *) iterator_get(&iter_id);
-            neu_datatag_t *   tag = neu_datatag_tbl_get(table, *id);
-
-            tags_res.tags[index].id                = *id;
-            tags_res.tags[index].name              = tag->name;
-            tags_res.tags[index].group_config_name = (char *) group_name;
-            tags_res.tags[index].type              = tag->type;
-            tags_res.tags[index].attribute         = tag->attribute;
-            tags_res.tags[index].address           = tag->addr_str;
-
-            index += 1;
-        }
+        tags_res.tags[index].name      = tag->name;
+        tags_res.tags[index].address   = tag->addr_str;
+        tags_res.tags[index].type      = tag->type;
+        tags_res.tags[index].attribute = tag->attribute;
     }
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
 
     http_ok(aio, result);
 
-    vector_uninit(&grp_configs);
     free(result);
     free(tags_res.tags);
+    utarray_free(tags->tags);
 }

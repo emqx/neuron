@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -30,7 +30,6 @@
 
 #include "errcodes.h"
 #include "utils/log.h"
-#include "vector.h"
 
 #include "persist/json/persist_json_adapter.h"
 #include "persist/json/persist_json_datatags.h"
@@ -39,7 +38,6 @@
 #include "persist/json/persist_json_subs.h"
 #include "persist/persist.h"
 
-#include "neu_vector.h"
 #include "json/neu_json_fn.h"
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -390,7 +388,7 @@ static int write_file_string(const char *fn, const char *s)
 
     fclose(f);
 
-    nlog_debug("pwersister write %s to %s", s, tmp);
+    nlog_debug("persister write %s to %s", s, tmp);
 
     // rename the temporary file to the destination file
     if (0 != rename(tmp, fn)) {
@@ -455,7 +453,7 @@ error_open:
 // file tree walking callback for collecting adapter infos
 static int read_adapter_cb(const char *fpath, bool is_dir, void *arg)
 {
-    vector_t *adapter_infos = arg;
+    UT_array *adapter_infos = arg;
     int       rv            = 0;
 
     if (is_dir) {
@@ -480,23 +478,15 @@ static int read_adapter_cb(const char *fpath, bool is_dir, void *arg)
     }
 
     nlog_info("read %s", fpath);
-
-    if (0 == vector_push_back(adapter_infos, node)) {
-        // NOTE: do not call neu_json_decode_node_req_node_free
-        //       since member ownership was transferred to vector
-        free(node);
-    } else {
-        neu_json_decode_node_req_node_free(node);
-        rv = NEU_ERR_ENOMEM;
-    }
-
+    utarray_push_back(adapter_infos, node);
+    free(node);
     return rv;
 }
 
 // file tree walking callback for collecting adapter group config infos
 static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
 {
-    vector_t *group_config_infos = arg;
+    UT_array *group_config_infos = arg;
     int       rv                 = 0;
 
     if (is_dir) {
@@ -521,15 +511,8 @@ static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
     }
 
     nlog_info("read %s", fpath);
-
-    if (0 == vector_push_back(group_config_infos, group_config_req)) {
-        // NOTE: do not call neu_json_decode_group_configs_req_free,
-        //       since member ownership was transferred to vector
-        free(group_config_req);
-    } else {
-        neu_json_decode_group_configs_req_free(group_config_req);
-        rv = NEU_ERR_ENOMEM;
-    }
+    utarray_push_back(group_config_infos, group_config_req);
+    free(group_config_req);
 
     return rv;
 }
@@ -747,9 +730,10 @@ int neu_persister_store_adapter(neu_persister_t *           persister,
 }
 
 int neu_persister_load_adapters(neu_persister_t *persister,
-                                vector_t **      adapter_infos)
+                                UT_array **      adapter_infos)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    char   path[PATH_MAX_SIZE] = { 0 };
+    UT_icd icd = { sizeof(neu_persist_adapter_info_t), NULL, NULL, NULL };
 
     migrate_adapters_file(persister);
 
@@ -757,16 +741,11 @@ int neu_persister_load_adapters(neu_persister_t *persister,
         return -1;
     }
 
-    vector_t *result = vector_new(0, sizeof(neu_persist_adapter_info_t));
-    if (NULL == result) {
-        return NEU_ERR_ENOMEM;
-    }
+    utarray_new(*adapter_infos, &icd);
 
-    int rv = file_tree_walk(path, read_adapter_cb, result);
-    if (0 == rv) {
-        *adapter_infos = result;
-    } else {
-        neu_persist_adapter_infos_free(result);
+    int rv = file_tree_walk(path, read_adapter_cb, *adapter_infos);
+    if (0 != rv) {
+        neu_persist_adapter_infos_free(*adapter_infos);
     }
 
     return rv;
@@ -810,16 +789,26 @@ int neu_persister_update_adapter(neu_persister_t *persister,
 }
 
 int neu_persister_store_plugins(neu_persister_t *persister,
-                                vector_t *       plugin_infos)
+                                UT_array *       plugin_infos)
 {
+    int                    index       = 0;
     neu_json_plugin_resp_t plugin_resp = {
-        .n_plugin = plugin_infos->size,
-        .plugins  = plugin_infos->data,
+        .n_plugin = utarray_len(plugin_infos),
     };
+
+    plugin_resp.plugins = calloc(utarray_len(plugin_infos), sizeof(char *));
+
+    utarray_foreach(plugin_infos, char **, name)
+    {
+        plugin_resp.plugins[index] = *name;
+        index++;
+    }
 
     char *result = NULL;
     int   rv = neu_json_encode_by_fn(&plugin_resp, neu_json_encode_plugin_resp,
                                    &result);
+
+    free(plugin_resp.plugins);
     if (rv != 0) {
         return rv;
     }
@@ -831,7 +820,7 @@ int neu_persister_store_plugins(neu_persister_t *persister,
 }
 
 int neu_persister_load_plugins(neu_persister_t *persister,
-                               vector_t **      plugin_infos)
+                               UT_array **      plugin_infos)
 {
     char *json_str = NULL;
     int   rv       = read_file_string(persister->plugins_fname, &json_str);
@@ -846,29 +835,22 @@ int neu_persister_load_plugins(neu_persister_t *persister,
         return rv;
     }
 
-    rv            = 0;
-    vector_t *vec = vector_new_move_from_buf(
-        plugin_req->plugins, plugin_req->n_plugin, plugin_req->n_plugin,
-        sizeof(neu_persist_plugin_info_t));
-    if (vec == NULL) {
-        rv = -1;
-        goto load_plugins_exit;
+    utarray_new(*plugin_infos, &ut_ptr_icd);
+    for (int i = 0; i < plugin_req->n_plugin; i++) {
+        char *name = plugin_req->plugins[i];
+        utarray_push_back(*plugin_infos, &name);
     }
 
-    *plugin_infos = vec;
-
     free(json_str);
+    free(plugin_req->plugins);
     free(plugin_req);
     return 0;
-load_plugins_exit:
-    neu_json_decode_plugin_req_free(plugin_req);
-    return rv;
 }
 
 int neu_persister_store_datatags(neu_persister_t *persister,
                                  const char *     adapter_name,
                                  const char *     group_config_name,
-                                 vector_t *       datatag_infos)
+                                 UT_array *       datatag_infos)
 {
     char path[PATH_MAX_SIZE] = { 0 };
 
@@ -891,10 +873,19 @@ int neu_persister_store_datatags(neu_persister_t *persister,
         return NEU_ERR_FAILURE;
     }
 
-    neu_json_datatag_req_t datatags_resp = {
-        .n_tag = datatag_infos->size,
-        .tags  = datatag_infos->data,
-    };
+    neu_json_datatag_req_t datatags_resp = { 0 };
+    datatags_resp.n_tag                  = utarray_len(datatag_infos);
+    datatags_resp.tags =
+        calloc(datatags_resp.n_tag, sizeof(neu_json_datatag_req_tag_t));
+    int index = 0;
+    utarray_foreach(datatag_infos, neu_datatag_t *, tag)
+    {
+        datatags_resp.tags[index].name      = tag->name;
+        datatags_resp.tags[index].address   = tag->addr_str;
+        datatags_resp.tags[index].attribute = tag->attribute;
+        datatags_resp.tags[index].type      = tag->type;
+        index += 1;
+    }
 
     char *result = NULL;
     rv = neu_json_encode_by_fn(&datatags_resp, neu_json_encode_datatag_resp,
@@ -905,14 +896,14 @@ int neu_persister_store_datatags(neu_persister_t *persister,
     }
 
     free(result);
+    free(datatags_resp.tags);
 
     return rv;
 }
 
 int neu_persister_load_datatags(neu_persister_t *persister,
                                 const char *     adapter_name,
-                                const char *     group_config_name,
-                                vector_t **      datatag_infos)
+                                const char *group_config_name, UT_array **tags)
 {
     char path[PATH_MAX_SIZE] = { 0 };
 
@@ -942,16 +933,16 @@ int neu_persister_load_datatags(neu_persister_t *persister,
         return rv;
     }
 
-    vector_t *vec = vector_new_move_from_buf(
-        datatag_req->tags, datatag_req->n_tag, datatag_req->n_tag,
-        sizeof(neu_persist_datatag_info_t));
+    utarray_new(*tags, neu_tag_get_icd());
+    for (int i = 0; i < datatag_req->n_tag; i++) {
+        neu_datatag_t tag = {
+            .name      = datatag_req->tags[i].name,
+            .addr_str  = datatag_req->tags[i].address,
+            .type      = datatag_req->tags[i].type,
+            .attribute = datatag_req->tags[i].attribute,
+        };
 
-    if (NULL != vec) {
-        *datatag_infos     = vec;
-        datatag_req->n_tag = 0;
-        datatag_req->tags  = NULL;
-    } else {
-        rv = NEU_ERR_ENOMEM;
+        utarray_push_back(*tags, &tag);
     }
 
     neu_json_decode_datatag_req_free(datatag_req);
@@ -961,7 +952,7 @@ int neu_persister_load_datatags(neu_persister_t *persister,
 
 int neu_persister_store_subscriptions(neu_persister_t *persister,
                                       const char *     adapter_name,
-                                      vector_t *       subscription_infos)
+                                      UT_array *       subscription_infos)
 {
     char path[PATH_MAX_SIZE] = { 0 };
 
@@ -983,10 +974,19 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
         return NEU_ERR_FAILURE;
     }
 
-    neu_json_subscriptions_req_t subs_resp = {
-        .n_subscription = subscription_infos->size,
-        .subscriptions  = subscription_infos->data,
-    };
+    neu_json_subscriptions_req_t subs_resp = { 0 };
+    int                          index     = 0;
+    subs_resp.n_subscription               = utarray_len(subscription_infos);
+    subs_resp.subscriptions =
+        calloc(subs_resp.n_subscription,
+               sizeof(neu_json_subscriptions_req_subscription_t));
+    utarray_foreach(subscription_infos, neu_resp_subscribe_info_t *, info)
+    {
+        subs_resp.subscriptions[index].group_config_name = info->group;
+        subs_resp.subscriptions[index].src_adapter_name  = info->driver;
+        subs_resp.subscriptions[index].sub_adapter_name  = info->app;
+        index += 1;
+    }
 
     char *result = NULL;
     rv = neu_json_encode_by_fn(&subs_resp, neu_json_encode_subscriptions_resp,
@@ -996,13 +996,14 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
     }
 
     free(result);
+    free(subs_resp.subscriptions);
 
     return rv;
 }
 
 int neu_persister_load_subscriptions(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     vector_t **      subscription_infos)
+                                     UT_array **      subscription_infos)
 {
     char path[PATH_MAX_SIZE] = { 0 };
 
@@ -1031,16 +1032,19 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
         return rv;
     }
 
-    vector_t *vec = vector_new_move_from_buf(
-        subs_req->subscriptions, subs_req->n_subscription,
-        subs_req->n_subscription, sizeof(neu_persist_subscription_info_t));
+    UT_icd icd = { sizeof(neu_persist_subscription_info_t), NULL, NULL, NULL };
+    utarray_new(*subscription_infos, &icd);
 
-    if (NULL != vec) {
-        subs_req->n_subscription = 0;
-        subs_req->subscriptions  = NULL;
-        *subscription_infos      = vec;
-    } else {
-        rv = NEU_ERR_ENOMEM;
+    for (int i = 0; i < subs_req->n_subscription; i++) {
+        neu_persist_subscription_info_t info = { 0 };
+        info.group_config_name =
+            strdup(subs_req->subscriptions[i].group_config_name);
+        info.src_adapter_name =
+            strdup(subs_req->subscriptions[i].src_adapter_name);
+        info.sub_adapter_name =
+            strdup(subs_req->subscriptions[i].sub_adapter_name);
+
+        utarray_push_back(*subscription_infos, &info);
     }
 
     neu_json_decode_subscriptions_req_free(subs_req);
@@ -1086,9 +1090,10 @@ int neu_persister_store_group_config(
 
 int neu_persister_load_group_configs(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     vector_t **      group_config_infos)
+                                     UT_array **      group_config_infos)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    char   path[PATH_MAX_SIZE] = { 0 };
+    UT_icd icd = { sizeof(neu_persist_group_config_info_t), NULL, NULL, NULL };
 
     int n = persister_group_configs_dir(path, sizeof(path), persister,
                                         adapter_name);
@@ -1097,16 +1102,11 @@ int neu_persister_load_group_configs(neu_persister_t *persister,
         return -1;
     }
 
-    vector_t *result = vector_new(0, sizeof(neu_persist_group_config_info_t));
-    if (NULL == result) {
-        return NEU_ERR_ENOMEM;
-    }
+    utarray_new(*group_config_infos, &icd);
 
-    int rv = file_tree_walk(path, read_group_config_cb, result);
-    if (0 == rv) {
-        *group_config_infos = result;
-    } else {
-        neu_persist_group_config_infos_free(result);
+    int rv = file_tree_walk(path, read_group_config_cb, *group_config_infos);
+    if (0 != rv) {
+        neu_persist_group_config_infos_free(*group_config_infos);
     }
 
     return rv;

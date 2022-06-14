@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -77,18 +77,17 @@ typedef struct {
 } neu_node_status_t;
 
 typedef struct adapter_callbacks {
-    int (*command)(neu_adapter_t *adapter, neu_request_t *cmd,
-                   neu_response_t **p_result);
-    int (*response)(neu_adapter_t *adapter, neu_response_t *resp);
-    int (*event_notify)(neu_adapter_t *adapter, neu_event_notify_t *event);
+    int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
+    int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
+                    void *data);
 
     void (*link_status)(neu_adapter_t *        adapter,
                         neu_node_link_status_e link_status);
 
     union {
         struct {
-            void (*update)(neu_adapter_t *adapter, const char *name,
-                           neu_dvalue_t value);
+            void (*update)(neu_adapter_t *adapter, const char *group,
+                           const char *tag, neu_dvalue_t value);
             void (*write_response)(neu_adapter_t *adapter, void *req,
                                    neu_error error);
         } driver;

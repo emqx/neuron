@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -25,7 +25,6 @@ extern "C" {
 #endif
 
 #include "adapter/adapter_info.h"
-#include "neu_vector.h"
 #include "persist/json/persist_json_adapter.h"
 #include "persist/json/persist_json_datatags.h"
 #include "persist/json/persist_json_group_configs.h"
@@ -46,66 +45,50 @@ neu_persist_adapter_info_fini(neu_persist_adapter_info_t *adapter_info)
     free(adapter_info->plugin_name);
 }
 
-static inline void neu_persist_adapter_infos_free(vector_t *adapter_infos)
+static inline void neu_persist_adapter_infos_free(UT_array *adapter_infos)
 {
-    VECTOR_FOR_EACH(adapter_infos, iter)
+    utarray_foreach(adapter_infos, neu_persist_adapter_info_t *, p)
     {
-        neu_persist_adapter_info_t *p =
-            (neu_persist_adapter_info_t *) iterator_get(&iter);
         free(p->name);
         free(p->plugin_name);
     }
-    vector_free(adapter_infos);
+
+    utarray_free(adapter_infos);
 }
 
-static inline void neu_persist_plugin_infos_free(vector_t *plugin_infos)
+static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
-    VECTOR_FOR_EACH(plugin_infos, iter)
-    {
-        neu_persist_plugin_info_t *p =
-            (neu_persist_plugin_info_t *) iterator_get(&iter);
-        free(*p);
-    }
-    vector_free(plugin_infos);
+    utarray_foreach(plugin_infos, neu_persist_plugin_info_t **, p) { free(*p); }
+    utarray_free(plugin_infos);
 }
 
 static inline void
-neu_persist_group_config_infos_free(vector_t *group_config_infos)
+neu_persist_group_config_infos_free(UT_array *group_config_infos)
 {
-    VECTOR_FOR_EACH(group_config_infos, iter)
+    utarray_foreach(group_config_infos, neu_persist_group_config_info_t *, p)
     {
-        neu_persist_group_config_info_t *p =
-            (neu_persist_group_config_info_t *) iterator_get(&iter);
         free(p->group_config_name);
         free(p->adapter_name);
     }
-    vector_free(group_config_infos);
+
+    utarray_free(group_config_infos);
 }
 
-static inline void neu_persist_datatag_infos_free(vector_t *datatag_infos)
+static inline void neu_persist_datatag_infos_free(UT_array *datatag_infos)
 {
-    VECTOR_FOR_EACH(datatag_infos, iter)
-    {
-        neu_persist_datatag_info_t *p =
-            (neu_persist_datatag_info_t *) iterator_get(&iter);
-        free(p->name);
-        free(p->address);
-    }
-    vector_free(datatag_infos);
+    utarray_free(datatag_infos);
 }
 
 static inline void
-neu_persist_subscription_infos_free(vector_t *subscription_infos)
+neu_persist_subscription_infos_free(UT_array *subscription_infos)
 {
-    VECTOR_FOR_EACH(subscription_infos, iter)
+    utarray_foreach(subscription_infos, neu_persist_subscription_info_t *, info)
     {
-        neu_persist_subscription_info_t *p =
-            (neu_persist_subscription_info_t *) iterator_get(&iter);
-        free(p->src_adapter_name);
-        free(p->sub_adapter_name);
-        free(p->group_config_name);
+        free(info->group_config_name);
+        free(info->src_adapter_name);
+        free(info->sub_adapter_name);
     }
-    vector_free(subscription_infos);
+    utarray_free(subscription_infos);
 }
 
 /**
@@ -143,7 +126,7 @@ int neu_persister_store_adapter(neu_persister_t *           persister,
  * @return 0 on success, none-zero on failure
  */
 int neu_persister_load_adapters(neu_persister_t *persister,
-                                vector_t **      adapter_infos);
+                                UT_array **      adapter_infos);
 /**
  * Delete adapter.
  * @param persister                 persiter object.
@@ -171,7 +154,7 @@ int neu_persister_update_adapter(neu_persister_t *persister,
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_store_plugins(neu_persister_t *persister,
-                                vector_t *       plugin_infos);
+                                UT_array *       plugin_infos);
 /**
  * Load plugin infos.
  * @param persister                 persiter object.
@@ -180,7 +163,7 @@ int neu_persister_store_plugins(neu_persister_t *persister,
  * @return 0 on success, none-zero on failure
  */
 int neu_persister_load_plugins(neu_persister_t *persister,
-                               vector_t **      plugin_infos);
+                               UT_array **      plugin_infos);
 
 /**
  * Persist adapter datatags.
@@ -193,7 +176,7 @@ int neu_persister_load_plugins(neu_persister_t *persister,
 int neu_persister_store_datatags(neu_persister_t *persister,
                                  const char *     adapter_name,
                                  const char *     group_config_name,
-                                 vector_t *       datatag_infos);
+                                 UT_array *       datatag_infos);
 /**
  * Load adapter datatag infos.
  * @param persister                 persiter object.
@@ -206,7 +189,7 @@ int neu_persister_store_datatags(neu_persister_t *persister,
 int neu_persister_load_datatags(neu_persister_t *persister,
                                 const char *     adapter_name,
                                 const char *     group_config_name,
-                                vector_t **      datatag_infos);
+                                UT_array **      datatag_infos);
 
 /**
  * Persist adapter subscriptions.
@@ -218,7 +201,7 @@ int neu_persister_load_datatags(neu_persister_t *persister,
  */
 int neu_persister_store_subscriptions(neu_persister_t *persister,
                                       const char *     adapter_name,
-                                      vector_t *       subscription_infos);
+                                      UT_array *       subscription_infos);
 /**
  * Load adapter subscription infos.
  * @param persister                 persiter object.
@@ -230,7 +213,7 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
  */
 int neu_persister_load_subscriptions(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     vector_t **      subscription_infos);
+                                     UT_array **      subscription_infos);
 
 /**
  * Persist group config.
@@ -254,7 +237,7 @@ int neu_persister_store_group_config(
  */
 int neu_persister_load_group_configs(neu_persister_t *persister,
                                      const char *     adapter_name,
-                                     vector_t **      group_config_infos);
+                                     UT_array **      group_config_infos);
 /**
  * Delete group config.
  * @param persister                 persiter object.

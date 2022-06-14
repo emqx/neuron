@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -125,15 +125,15 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
 
     neu_json_elem_t req_elems[] = {
         {
-            .name = "node_name",
+            .name = "node",
             .t    = NEU_JSON_STR,
         },
         {
-            .name = "group_name",
+            .name = "group",
             .t    = NEU_JSON_STR,
         },
         {
-            .name = "tag_name",
+            .name = "tag",
             .t    = NEU_JSON_STR,
         },
         {
@@ -147,11 +147,11 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
         goto decode_fail;
     }
 
-    req->node_name  = req_elems[0].v.val_str;
-    req->group_name = req_elems[1].v.val_str;
-    req->tag_name   = req_elems[2].v.val_str;
-    req->t          = req_elems[3].t;
-    req->value      = req_elems[3].v;
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+    req->tag   = req_elems[2].v.val_str;
+    req->t     = req_elems[3].t;
+    req->value = req_elems[3].v;
 
     *result = req;
     goto decode_exit;
@@ -171,9 +171,9 @@ decode_exit:
 
 void neu_json_decode_write_req_free(neu_json_write_req_t *req)
 {
-    free(req->group_name);
-    free(req->node_name);
-    free(req->tag_name);
+    free(req->group);
+    free(req->node);
+    free(req->tag);
     if (req->t == NEU_JSON_STR) {
         free(req->value.val_str);
     }
@@ -193,11 +193,11 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "node_name",
+                                        .name = "node",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
-                                        .name = "group_name",
+                                        .name = "group",
                                         .t    = NEU_JSON_STR,
                                     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
@@ -206,8 +206,8 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
         goto decode_fail;
     }
 
-    req->node_name  = req_elems[0].v.val_str;
-    req->group_name = req_elems[1].v.val_str;
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -227,8 +227,8 @@ decode_exit:
 
 void neu_json_decode_read_req_free(neu_json_read_req_t *req)
 {
-    free(req->group_name);
-    free(req->node_name);
+    free(req->group);
+    free(req->node);
 
     free(req);
 }
@@ -239,14 +239,14 @@ int neu_json_encode_read_periodic_resp(void *json_object, void *param)
     neu_json_read_periodic_t *resp = (neu_json_read_periodic_t *) param;
 
     neu_json_elem_t resp_elems[] = { {
-                                         .name      = "node_name",
+                                         .name      = "node",
                                          .t         = NEU_JSON_STR,
-                                         .v.val_str = resp->node_name,
+                                         .v.val_str = resp->node,
                                      },
                                      {
-                                         .name      = "group_name",
+                                         .name      = "group",
                                          .t         = NEU_JSON_STR,
-                                         .v.val_str = resp->group_name,
+                                         .v.val_str = resp->group,
                                      },
                                      {
                                          .name      = "timestamp",

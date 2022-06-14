@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,11 +41,7 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "type",
-                                        .t    = NEU_JSON_INT,
-                                    },
-                                    {
-                                        .name = "plugin_name",
+                                        .name = "plugin",
                                         .t    = NEU_JSON_STR,
                                     },
                                     {
@@ -58,9 +54,8 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
         goto decode_fail;
     }
 
-    req->type        = req_elems[0].v.val_int;
-    req->plugin_name = req_elems[1].v.val_str;
-    req->name        = req_elems[2].v.val_str;
+    req->plugin = req_elems[0].v.val_str;
+    req->name   = req_elems[1].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -81,7 +76,7 @@ decode_exit:
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
 {
 
-    free(req->plugin_name);
+    free(req->plugin);
     free(req->name);
 
     free(req);
@@ -99,8 +94,8 @@ int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "id",
-        .t    = NEU_JSON_INT,
+        .name = "name",
+        .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -108,7 +103,7 @@ int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
         goto decode_fail;
     }
 
-    req->id = req_elems[0].v.val_int;
+    req->name = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -128,7 +123,7 @@ decode_exit:
 
 void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req)
 {
-
+    free(req->name);
     free(req);
 }
 
@@ -154,51 +149,6 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
     return ret;
 }
 
-int neu_json_decode_get_nodes_req(char *buf, neu_json_get_nodes_req_t **result)
-{
-    int                       ret      = 0;
-    void *                    json_obj = NULL;
-    neu_json_get_nodes_req_t *req = calloc(1, sizeof(neu_json_get_nodes_req_t));
-    if (req == NULL) {
-        return -1;
-    }
-
-    json_obj = neu_json_decode_new(buf);
-
-    neu_json_elem_t req_elems[] = { {
-        .name = "node_type",
-        .t    = NEU_JSON_INT,
-    } };
-    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
-                                  req_elems);
-    if (ret != 0) {
-        goto decode_fail;
-    }
-
-    req->node_type = req_elems[0].v.val_int;
-
-    *result = req;
-    goto decode_exit;
-
-decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
-    ret = -1;
-
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
-    }
-    return ret;
-}
-
-void neu_json_decode_get_nodes_req_free(neu_json_get_nodes_req_t *req)
-{
-
-    free(req);
-}
-
 int neu_json_encode_get_nodes_resp(void *json_object, void *param)
 {
     int                        ret  = 0;
@@ -207,21 +157,18 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
     void *                          node_array = neu_json_array();
     neu_json_get_nodes_resp_node_t *p_node     = resp->nodes;
     for (int i = 0; i < resp->n_node; i++) {
-        neu_json_elem_t node_elems[] = { {
-                                             .name      = "plugin_id",
-                                             .t         = NEU_JSON_INT,
-                                             .v.val_int = p_node->plugin_id,
-                                         },
-                                         {
-                                             .name      = "name",
-                                             .t         = NEU_JSON_STR,
-                                             .v.val_str = p_node->name,
-                                         },
-                                         {
-                                             .name      = "id",
-                                             .t         = NEU_JSON_INT,
-                                             .v.val_int = p_node->id,
-                                         } };
+        neu_json_elem_t node_elems[] = {
+            {
+                .name      = "plugin",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_node->plugin,
+            },
+            {
+                .name      = "name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_node->name,
+            },
+        };
         node_array = neu_json_encode_array(node_array, node_elems,
                                            NEU_JSON_ELEM_SIZE(node_elems));
         p_node++;
@@ -304,8 +251,8 @@ int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-                                        .name = "id",
-                                        .t    = NEU_JSON_INT,
+                                        .name = "node",
+                                        .t    = NEU_JSON_STR,
                                     },
                                     {
                                         .name = "cmd",
@@ -317,8 +264,8 @@ int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
         goto decode_fail;
     }
 
-    req->id  = req_elems[0].v.val_int;
-    req->cmd = req_elems[1].v.val_int;
+    req->node = req_elems[0].v.val_str;
+    req->cmd  = req_elems[1].v.val_int;
 
     *result = req;
     goto decode_exit;
@@ -338,7 +285,7 @@ decode_exit:
 
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req)
 {
-
+    free(req->node);
     free(req);
 }
 
@@ -356,8 +303,8 @@ int neu_json_decode_node_setting_req(char *                        buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "node_id",
-        .t    = NEU_JSON_INT,
+        .name = "node",
+        .t    = NEU_JSON_STR,
     } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -365,7 +312,7 @@ int neu_json_decode_node_setting_req(char *                        buf,
         goto decode_fail;
     }
 
-    req->node_id = req_elems[0].v.val_int;
+    req->node = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -385,6 +332,6 @@ decode_exit:
 
 void neu_json_decode_node_setting_req_free(neu_json_node_setting_req_t *req)
 {
-
+    free(req->node);
     free(req);
 }

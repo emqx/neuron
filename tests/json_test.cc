@@ -11,26 +11,28 @@ TEST(JsonTest, DecodeField)
         (char *) "{\"field1\": true, \"field2\": false, \"field3\": 12345, "
                  "\"field4\": 11.223, \"field5\": \"hello world\"}";
 
-    neu_json_elem_t elems[] = { {
-                                    .name = (char *) "field1",
-                                    .t    = NEU_JSON_BOOL,
-                                },
-                                {
-                                    .name = (char *) "field2",
-                                    .t    = NEU_JSON_BOOL,
-                                },
-                                {
-                                    .name = (char *) "field3",
-                                    .t    = NEU_JSON_INT,
-                                },
-                                {
-                                    .name = (char *) "field4",
-                                    .t    = NEU_JSON_DOUBLE,
-                                },
-                                {
-                                    .name = (char *) "field5",
-                                    .t    = NEU_JSON_STR,
-                                } };
+    neu_json_elem_t elems[] = {
+        {
+            .name = (char *) "field1",
+            .t    = NEU_JSON_BOOL,
+        },
+        {
+            .name = (char *) "field2",
+            .t    = NEU_JSON_BOOL,
+        },
+        {
+            .name = (char *) "field3",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = (char *) "field4",
+            .t    = NEU_JSON_DOUBLE,
+        },
+        {
+            .name = (char *) "field5",
+            .t    = NEU_JSON_STR,
+        },
+    };
     EXPECT_EQ(5, sizeof(elems) / sizeof(neu_json_elem_t));
     EXPECT_EQ(5, NEU_JSON_ELEM_SIZE(elems));
     EXPECT_EQ(0, neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elems), elems));

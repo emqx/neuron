@@ -23,7 +23,6 @@
 
 #include "errcodes.h"
 #include "file.h"
-#include "neu_vector.h"
 #include "plugin.h"
 #include "utils/log.h"
 #include "json/neu_json_error.h"
@@ -39,7 +38,7 @@
 
 static int set_license(const char *lic_str);
 int        backup_license_file(const char *lic_fname);
-int        get_plugin_names(const license_t *lic, vector_t *plugin_names);
+int        get_plugin_names(const license_t *lic, UT_array *plugin_names);
 
 void handle_get_license(nng_aio *aio)
 {
@@ -51,12 +50,12 @@ void handle_get_license(nng_aio *aio)
     char                        valid_since[20] = {};
     char                        valid_until[20] = {};
     struct tm                   tm              = {};
-    vector_t                    plugin_names    = {};
+    UT_array *                  plugin_names    = NULL;
     char *                      result          = NULL;
 
     VALIDATE_JWT(aio);
 
-    vector_init(&plugin_names, PLUGIN_BIT_MAX, sizeof(char *));
+    utarray_new(plugin_names, &ut_ptr_icd);
     license_init(&lic);
     rv = license_read(&lic, LICENSE_PATH);
     if (0 != rv) {
@@ -86,12 +85,16 @@ void handle_get_license(nng_aio *aio)
     resp.max_nodes     = license_get_max_nodes(&lic);
     resp.max_node_tags = license_get_max_node_tags(&lic);
 
-    rv = get_plugin_names(&lic, &plugin_names);
+    rv = get_plugin_names(&lic, plugin_names);
     if (0 != rv) {
         goto final;
     }
-    resp.n_enabled_plugin = plugin_names.size;
-    resp.enabled_plugins  = plugin_names.data;
+    resp.n_enabled_plugin = utarray_len(plugin_names);
+    utarray_foreach(plugin_names, char **, p_name)
+    {
+        int index                   = utarray_eltidx(plugin_names, p_name);
+        resp.enabled_plugins[index] = *p_name;
+    }
 
 final:
     if (0 == rv) {
@@ -103,7 +106,7 @@ final:
     http_response(aio, rv, result);
     free(result);
     license_fini(&lic);
-    vector_uninit(&plugin_names);
+    utarray_free(plugin_names);
 }
 
 void handle_set_license(nng_aio *aio)
@@ -169,9 +172,9 @@ static int set_license(const char *lic_str)
         goto final;
     }
 
-    neu_plugin_t *plugin = neu_rest_get_plugin();
-    rv                   = neu_plugin_notify_event_update_license(
-        plugin, neu_plugin_get_event_id(plugin));
+    neu_plugin_t *     plugin = neu_rest_get_plugin();
+    neu_reqresp_head_t head   = { .type = NEU_REQ_UPDATE_LICENSE };
+    rv                        = neu_plugin_op(plugin, head, NULL);
     if (0 != rv) {
         rv = NEU_ERR_EINTERNAL;
     }
@@ -202,7 +205,7 @@ int backup_license_file(const char *lic_fname)
     return link(lic_fname, fname_bak);
 }
 
-int get_plugin_names(const license_t *lic, vector_t *plugin_names)
+int get_plugin_names(const license_t *lic, UT_array *plugin_names)
 {
     for (plugin_bit_e b = PLUGIN_BIT_MODBUS_PLUS_TCP; b < PLUGIN_BIT_MAX; ++b) {
         if (license_is_plugin_enabled(lic, b)) {
@@ -210,9 +213,7 @@ int get_plugin_names(const license_t *lic, vector_t *plugin_names)
             if (NULL == s) {
                 return NEU_ERR_EINTERNAL;
             }
-            if (0 != vector_push_back(plugin_names, &s)) {
-                return NEU_ERR_ENOMEM;
-            }
+            utarray_push_back(plugin_names, &s);
         }
     }
     return 0;

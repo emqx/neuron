@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2021 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -32,7 +32,6 @@ extern "C" {
 #endif
 
 typedef struct {
-    int64_t id;
     char *  address;
     char *  name;
     int64_t type;
@@ -48,7 +47,6 @@ int  neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result);
 void neu_json_decode_datatag_req_free(neu_json_datatag_req_t *req);
 
 typedef struct {
-    int64_t id;
     char *  address;
     char *  name;
     int64_t type;
