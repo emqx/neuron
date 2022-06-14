@@ -286,6 +286,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (resp.error == NEU_ERR_SUCCESS) {
             forward_msg_dup(manager, msg, manager->persist_pipe);
+            neu_manager_notify_app_sub_update(manager, cmd->driver, cmd->group);
         }
         for (int i = 0; i < cmd->n_tag; i++) {
             free(cmd->tags[i].addr_str);
@@ -307,6 +308,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             forward_msg_dup(manager, msg, manager->persist_pipe);
+            neu_manager_notify_app_sub_update(manager, cmd->driver, cmd->group);
         }
         for (int i = 0; i < cmd->n_tag; i++) {
             free(cmd->tags[i]);
@@ -327,6 +329,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (resp.error == NEU_ERR_SUCCESS) {
             forward_msg_dup(manager, msg, manager->persist_pipe);
+            neu_manager_notify_app_sub_update(manager, cmd->driver, cmd->group);
         }
         for (int i = 0; i < cmd->n_tag; i++) {
             free(cmd->tags[i].addr_str);
@@ -365,6 +368,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             forward_msg_dup(manager, msg, manager->persist_pipe);
+            neu_manager_notify_app_sub(manager, cmd->app, cmd->driver,
+                                       cmd->group);
         }
 
         header->type = NEU_RESP_ERROR;
@@ -381,6 +386,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             forward_msg_dup(manager, msg, manager->persist_pipe);
+            neu_manager_notify_app_unsub(manager, cmd->app, cmd->driver,
+                                         cmd->group);
         }
 
         header->type = NEU_RESP_ERROR;
