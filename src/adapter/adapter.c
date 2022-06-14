@@ -469,8 +469,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
 static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data)
 {
-    int ret = 0;
-
     switch (header->type) {
     case NEU_REQRESP_TRANS_DATA:
         strcpy(header->sender, adapter->name);
@@ -482,16 +480,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 
     nng_msg *msg = neu_msg_gen(header, data);
 
-    ret = nng_sendmsg(adapter->nng.sock, msg, 0);
-    // ret = nng_sendmsg(adapter->nng.sock, msg, NNG_FLAG_NONBLOCK);
-    // if (ret == NNG_EAGAIN) {
-    //}
-    if (ret != 0) {
-        nlog_warn("sendmsg error: %d", ret);
-        nng_msg_free(msg);
-    }
-
-    return ret;
+    return nng_sendmsg(adapter->nng.sock, msg, 0);
 }
 
 // clang-format off
