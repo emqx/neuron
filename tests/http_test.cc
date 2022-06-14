@@ -58,7 +58,7 @@ TEST(HTTPTest, http_get_param)
     nng_url_parse(&url, "http://127.0.0.1");
     nng_http_req_alloc(&req, url);
 
-    for (int i = 0; i < sizeof(data) / sizeof(query_param_data_t); ++i) {
+    for (uint64_t i = 0; i < sizeof(data) / sizeof(query_param_data_t); ++i) {
         nng_http_req_set_uri(req, (char *) data[i].uri);
         nng_aio_set_input(aio, 0, req);
         len             = 0;
@@ -135,7 +135,7 @@ TEST(HTTPTest, http_get_param_node_id)
     nng_url_parse(&url, "http://127.0.0.1");
     nng_http_req_alloc(&req, url);
 
-    for (int i = 0; i < sizeof(data) / sizeof(query_node_id_data_t); ++i) {
+    for (uint64_t i = 0; i < sizeof(data) / sizeof(query_node_id_data_t); ++i) {
         neu_node_id_t prev_node_id = node_id;
         nng_http_req_set_uri(req, (char *) data[i].uri);
         nng_aio_set_input(aio, 0, req);
