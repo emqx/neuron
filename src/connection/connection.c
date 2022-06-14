@@ -367,6 +367,10 @@ void neu_conn_flush(neu_conn_t *conn)
 void neu_conn_disconnect(neu_conn_t *conn)
 {
     conn_disconnect(conn);
+    if (conn->callback_trigger == true) {
+        conn->disconnected(conn->data, conn->fd);
+        conn->callback_trigger = false;
+    }
 }
 
 static void conn_free_param(neu_conn_t *conn)
@@ -610,7 +614,7 @@ static void conn_connect(neu_conn_t *conn)
     case NEU_CONN_TTY_CLIENT: {
         struct termios tty_opt = { 0 };
 
-        fd                  = open("/dev/ttyUSB0", O_RDWR | O_NOCTTY, 0);
+        fd = open(conn->param.params.tty_client.device, O_RDWR | O_NOCTTY, 0);
         tty_opt.c_cc[VTIME] = conn->param.params.tty_client.timeout / 100;
         tty_opt.c_cc[VMIN]  = 0;
 
