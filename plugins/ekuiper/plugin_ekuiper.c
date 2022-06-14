@@ -17,7 +17,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include "errcodes.h"
 #include "neuron.h"
 
 #include "plugin_ekuiper.h"
@@ -33,13 +32,13 @@ static neu_plugin_t *ekuiper_plugin_open(neu_adapter_t *            adapter,
     neu_plugin_t *plugin;
 
     if (adapter == NULL || callbacks == NULL) {
-        zlog_error(neuron, "Open plugin with NULL adapter or callbacks");
+        zlog_error(neuron, "open plugin with NULL adapter or callbacks");
         return NULL;
     }
 
     plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
     if (plugin == NULL) {
-        zlog_error(neuron, "Failed to allocate plugin %s",
+        zlog_error(neuron, "failed to allocate plugin %s",
                    neu_plugin_module.module_name);
         return NULL;
     }
@@ -49,7 +48,7 @@ static neu_plugin_t *ekuiper_plugin_open(neu_adapter_t *            adapter,
     plugin->common.adapter_callbacks = callbacks;
     plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
 
-    zlog_info(neuron, "Success to create plugin: %s",
+    zlog_info(neuron, "success to create plugin: %s",
               neu_plugin_module.module_name);
     return plugin;
 }
@@ -59,7 +58,7 @@ static int ekuiper_plugin_close(neu_plugin_t *plugin)
     int rv = 0;
 
     free(plugin);
-    zlog_info(neuron, "Success to free plugin: %s",
+    zlog_info(neuron, "success to free plugin: %s",
               neu_plugin_module.module_name);
     return rv;
 }
@@ -92,19 +91,19 @@ static int ekuiper_plugin_init(neu_plugin_t *plugin)
     plugin->mtx = NULL;
     rv          = nng_mtx_alloc(&plugin->mtx);
     if (0 != rv) {
-        zlog_error(neuron, "cannot allocate nng_mtx");
+        plog_error(plugin, "cannot allocate nng_mtx");
         return rv;
     }
 
     rv = nng_aio_alloc(&recv_aio, recv_data_callback, plugin);
     if (rv < 0) {
-        zlog_error(neuron, "cannot allocate recv_aio: %s", nng_strerror(rv));
+        plog_error(plugin, "cannot allocate recv_aio: %s", nng_strerror(rv));
         return rv;
     }
 
     plugin->recv_aio = recv_aio;
 
-    zlog_info(neuron, "Initialized plugin: %s", neu_plugin_module.module_name);
+    plog_info(plugin, "plugin initialized");
     return rv;
 }
 
@@ -115,7 +114,7 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
     nng_aio_free(plugin->recv_aio);
     nng_mtx_free(plugin->mtx);
 
-    zlog_info(neuron, "Uninitialize plugin: %s", neu_plugin_module.module_name);
+    plog_info(plugin, "plugin uninitialized");
     return rv;
 }
 
@@ -125,7 +124,7 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
 
     rv = nng_pair0_open(&plugin->sock);
     if (rv != 0) {
-        zlog_error(neuron, "nng_pair0_open: %s", nng_strerror(rv));
+        plog_error(plugin, "nng_pair0_open: %s", nng_strerror(rv));
         return NEU_ERR_FAILURE;
     }
 
@@ -133,7 +132,7 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
     nng_pipe_notify(plugin->sock, NNG_PIPE_EV_REM_POST, pipe_rm_cb, plugin);
 
     if ((rv = nng_listen(plugin->sock, EKUIPER_PLUGIN_URL, NULL, 0)) != 0) {
-        zlog_error(neuron, "nng_listen: %s", nng_strerror(rv));
+        plog_error(plugin, "nng_listen: %s", nng_strerror(rv));
         return NEU_ERR_FAILURE;
     }
 
@@ -155,7 +154,7 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
     (void) plugin;
     (void) configs;
 
-    zlog_info(neuron, "config plugin: %s", neu_plugin_module.module_name);
+    plog_info(plugin, "config success");
     return rv;
 }
 
@@ -164,8 +163,7 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
 {
     bool disconnected = false;
 
-    zlog_info(neuron, "send request to plugin: %s",
-              neu_plugin_module.module_name);
+    plog_info(plugin, "handling request type: %d", header->type);
 
     nng_mtx_lock(plugin->mtx);
     disconnected =
@@ -173,16 +171,14 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
     nng_mtx_unlock(plugin->mtx);
 
     if (disconnected) {
-        zlog_info(neuron, "plugin: %s not connected",
-                  neu_plugin_module.module_name);
+        plog_notice(plugin, "not connected");
         return -1;
     }
 
     switch (header->type) {
     case NEU_RESP_ERROR: {
         neu_resp_error_t *error = (neu_resp_error_t *) data;
-        zlog_info(neuron, "plugin: %s receive resp errcode: %d",
-                  neu_plugin_module.module_name, error->error);
+        plog_info(plugin, "receive resp errcode: %d", error->error);
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
@@ -191,7 +187,7 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         break;
     }
     default:
-        assert(false);
+        plog_notice(plugin, "unsupported request type: %d", header->type);
         break;
     }
 
