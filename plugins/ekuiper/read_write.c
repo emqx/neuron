@@ -19,7 +19,7 @@
 
 #include <nng/nng.h>
 
-#include "utils/log.h"
+#include "neuron.h"
 #include "json/neu_json_fn.h"
 #include "json/neu_json_rw.h"
 
@@ -33,7 +33,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     char *json_str = NULL;
     rv = neu_json_encode_by_fn(trans_data, json_encode_read_resp, &json_str);
     if (0 != rv) {
-        zlog_error(neuron, "cannot encode read resp");
+        plog_error(plugin, "cannot encode read resp");
         return;
     }
 
@@ -41,7 +41,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     size_t   json_len = strlen(json_str);
     rv                = nng_msg_alloc(&msg, json_len);
     if (0 != rv) {
-        zlog_error(neuron, "nng cannot allocate msg");
+        plog_error(plugin, "nng cannot allocate msg");
         free(json_str);
         return;
     }
@@ -51,7 +51,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     rv = nng_sendmsg(plugin->sock, msg,
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 != rv) {
-        zlog_error(neuron, "nng cannot send msg");
+        plog_error(plugin, "nng cannot send msg");
         nng_msg_free(msg);
     }
 }
@@ -66,20 +66,20 @@ void recv_data_callback(void *arg)
 
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
-        zlog_error(neuron, "receive error: %s", nng_strerror(rv));
+        plog_error(plugin, "receive error: %s", nng_strerror(rv));
         return;
     }
 
     msg      = nng_aio_get_msg(plugin->recv_aio);
     json_str = nng_msg_body(msg);
     if (json_decode_write_req(json_str, nng_msg_len(msg), &req) < 0) {
-        zlog_error(neuron, "cannot decode write request");
+        plog_error(plugin, "cannot decode write request");
         goto recv_data_callback_end;
     }
 
     rv = write_data(plugin, req);
     if (0 != rv) {
-        zlog_error(neuron, "failed to write data");
+        plog_error(plugin, "failed to write data");
         goto recv_data_callback_end;
     }
 
