@@ -26,27 +26,11 @@
 
 const neu_plugin_module_t neu_plugin_module;
 
-static neu_plugin_t *ekuiper_plugin_open(neu_adapter_t *            adapter,
-                                         const adapter_callbacks_t *callbacks)
+static neu_plugin_t *ekuiper_plugin_open(void)
 {
-    neu_plugin_t *plugin;
-
-    if (adapter == NULL || callbacks == NULL) {
-        zlog_error(neuron, "open plugin with NULL adapter or callbacks");
-        return NULL;
-    }
-
-    plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
-    if (plugin == NULL) {
-        zlog_error(neuron, "failed to allocate plugin %s",
-                   neu_plugin_module.module_name);
-        return NULL;
-    }
+    neu_plugin_t *plugin = calloc(1, sizeof(neu_plugin_t));
 
     neu_plugin_common_init(&plugin->common);
-    plugin->common.adapter           = adapter;
-    plugin->common.adapter_callbacks = callbacks;
-    plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
 
     zlog_info(neuron, "success to create plugin: %s",
               neu_plugin_module.module_name);
@@ -147,7 +131,7 @@ static int ekuiper_plugin_stop(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-static int ekuiper_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
+static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *configs)
 {
     int rv = 0;
 
@@ -208,7 +192,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .uninit  = ekuiper_plugin_uninit,
     .start   = ekuiper_plugin_start,
     .stop    = ekuiper_plugin_stop,
-    .config  = ekuiper_plugin_config,
+    .setting = ekuiper_plugin_config,
     .request = ekuiper_plugin_request,
 };
 

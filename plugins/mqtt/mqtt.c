@@ -408,7 +408,7 @@ static void *mqtt_routine_loop(void *argument)
 }
 
 static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
-                                          neu_config_t *config)
+                                          const char *  config)
 {
     assert(NULL != plugin);
     assert(NULL != config);
@@ -419,7 +419,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     }
 
     // MQTT client start
-    int rc = mqtt_option_init(config, &routine->option);
+    int rc = mqtt_option_init((char *) config, &routine->option);
     if (0 != rc) {
         mqtt_option_uninit(&routine->option);
         free(routine);
@@ -508,20 +508,11 @@ static void mqtt_routine_suspend(mqtt_routine_t *routine)
     neu_mqtt_client_suspend(routine->client);
 }
 
-static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
-                                      const adapter_callbacks_t *callbacks)
+static neu_plugin_t *mqtt_plugin_open(void)
 {
-    assert(NULL != adapter);
-    assert(NULL != callbacks);
-
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
-    if (NULL == plugin) {
-        return NULL;
-    }
 
     neu_plugin_common_init(&plugin->common);
-    plugin->common.adapter           = adapter;
-    plugin->common.adapter_callbacks = callbacks;
 
     return plugin;
 }
@@ -572,7 +563,7 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_config(neu_plugin_t *plugin, neu_config_t *config)
+static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
 {
     assert(NULL != plugin);
     assert(NULL != config);
@@ -761,7 +752,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .uninit  = mqtt_plugin_uninit,
     .start   = mqtt_plugin_start,
     .stop    = mqtt_plugin_stop,
-    .config  = mqtt_plugin_config,
+    .setting = mqtt_plugin_config,
     .request = mqtt_plugin_request,
 };
 

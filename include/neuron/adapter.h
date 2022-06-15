@@ -38,21 +38,9 @@ typedef enum {
 
 #include "adapter_msg.h"
 
-typedef struct neu_adapter         neu_adapter_t;
-typedef struct neu_adapter_driver  neu_adapter_driver_t;
-typedef struct neu_adapter_config  neu_adapter_config_t;
-typedef struct neu_adapter_control neu_adapter_control_t;
-
-typedef enum neu_config_type {
-    NEU_CONFIG_UNKNOW,
-    NEU_CONFIG_SETTING,
-} neu_config_type_e;
-
-typedef struct neu_config {
-    neu_config_type_e type;
-    uint32_t          buf_len;
-    void *            buf;
-} neu_config_t;
+typedef struct neu_adapter        neu_adapter_t;
+typedef struct neu_adapter_driver neu_adapter_driver_t;
+typedef struct neu_adapter_app    neu_adapter_app_t;
 
 typedef enum {
     NEU_NODE_LINK_STATUS_DISCONNECTED = 0,
@@ -77,9 +65,6 @@ typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
                     void *data);
-
-    void (*link_status)(neu_adapter_t *        adapter,
-                        neu_node_link_status_e link_status);
 
     union {
         struct {

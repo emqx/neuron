@@ -34,26 +34,11 @@ struct neu_plugin {
     neu_plugin_common_t common;
 };
 
-static neu_plugin_t *dummy_plugin_open(neu_adapter_t *            adapter,
-                                       const adapter_callbacks_t *callbacks)
+static neu_plugin_t *dummy_plugin_open()
 {
-    neu_plugin_t *plugin;
-
-    if (adapter == NULL || callbacks == NULL) {
-        nlog_error("Open plugin with NULL adapter or callbacks");
-        return NULL;
-    }
-
-    plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
-    if (plugin == NULL) {
-        nlog_error("Failed to allocate plugin %s",
-                   neu_plugin_module.module_name);
-        return NULL;
-    }
+    neu_plugin_t *plugin = calloc(1, sizeof(neu_plugin_t));
 
     neu_plugin_common_init(&plugin->common);
-    plugin->common.adapter           = adapter;
-    plugin->common.adapter_callbacks = callbacks;
 
     nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
@@ -86,7 +71,7 @@ static int dummy_plugin_uninit(neu_plugin_t *plugin)
     return rv;
 }
 
-static int dummy_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
+static int dummy_plugin_config(neu_plugin_t *plugin, const char *configs)
 {
     int rv = 0;
 
@@ -125,7 +110,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .uninit  = dummy_plugin_uninit,
     .start   = dummy_plugin_start,
     .stop    = dummy_plugin_stop,
-    .config  = dummy_plugin_config,
+    .setting = dummy_plugin_config,
     .request = dummy_plugin_request,
 };
 

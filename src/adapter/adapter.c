@@ -514,8 +514,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     rv = nng_mtx_alloc(&adapter->nng.sub_grp_mtx);
     assert(rv == 0);
 
-    adapter->plugin_info.plugin = adapter->plugin_info.module->intf_funs->open(
-        adapter, &adapter->cb_funs);
+    adapter->plugin_info.plugin =
+        adapter->plugin_info.module->intf_funs->open();
     assert(adapter->plugin_info.plugin != NULL);
     assert(neu_plugin_common_check(adapter->plugin_info.plugin));
     neu_plugin_common_t *common =
@@ -542,8 +542,8 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     if (adapter->name != NULL) {
         free(adapter->name);
     }
-    if (NULL != adapter->setting.buf) {
-        free(adapter->setting.buf);
+    if (NULL != adapter->setting) {
+        free(adapter->setting);
     }
 
     nng_mtx_free(adapter->nng.mtx);
@@ -832,21 +832,20 @@ neu_adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter)
     return (neu_adapter_type_e) adapter->plugin_info.module->type;
 }
 
-int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config)
+int neu_adapter_set_setting(neu_adapter_t *adapter, const char *setting)
 {
     int rv = -1;
 
     const neu_plugin_intf_funs_t *intf_funs;
 
     intf_funs = adapter->plugin_info.module->intf_funs;
-    rv        = intf_funs->config(adapter->plugin_info.plugin, config);
+    rv        = intf_funs->setting(adapter->plugin_info.plugin, setting);
     if (rv == 0) {
-        adapter->setting.buf_len = config->buf_len;
-        adapter->setting.type    = config->type;
+        if (adapter->setting != NULL) {
+            free(adapter->setting);
+        }
+        adapter->setting = strdup(setting);
 
-        if (adapter->setting.buf != NULL)
-            free(adapter->setting.buf);
-        adapter->setting.buf = strdup(config->buf);
         if (adapter->state == ADAPTER_STATE_INIT) {
             adapter->state = ADAPTER_STATE_READY;
         }
@@ -864,8 +863,8 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
         return NEU_ERR_NODE_NOT_EXIST;
     }
 
-    if (adapter->setting.buf != NULL) {
-        *config = strdup(adapter->setting.buf);
+    if (adapter->setting != NULL) {
+        *config = strdup(adapter->setting);
         return NEU_ERR_SUCCESS;
     }
 
