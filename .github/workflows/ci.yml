@@ -21,7 +21,7 @@ jobs:
         uses: DoozyX/clang-format-lint-action@v0.12
         with:
           source: 'src plugins include tests'
-          exclude: 'include/neuron/vector.h include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h'
+          exclude: 'include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h'
           clangFormatVersion: 10
           style: file
 
@@ -56,44 +56,15 @@ jobs:
         id: get_version
         run: echo "::set-output name=version::$(cat version)"
 
-      - name: Create neuron package
-        env:
-          ARCH: ${{ matrix.arch[5] }}
-        run: |
-          ./package.sh -p ${ARCH} -n neuron-${{ steps.get_version.outputs.version }}
-          cd package
-          python3 create_neuron_deb.py ${{ steps.get_version.outputs.version }} ${{ matrix.arch[5] }}
-          sudo alien --scripts -k -r *.deb
-          mv *.rpm neuron-${{ steps.get_version.outputs.version }}-${{ matrix.arch[5] }}.rpm
-          mv *.rpm ../
-          mv *.deb ../
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: neuron-${{ matrix.arch[5] }}
-          path: |
-            *.tar.gz
-            *.deb
-            *.rpm
-            build/simulator/modbus_simulator
-
       - name: Create neuron sdk package
         run: |
           ./package-sdk.sh -p ${{ matrix.arch[5] }} -n neuron-sdk-${{ steps.get_version.outputs.version }}
-          cd package
-          python3 create_neuron_sdk_deb.py ${{ steps.get_version.outputs.version }} ${{ matrix.arch[5] }}
-          sudo alien --scripts -k -r *.deb
-          mv *.rpm neuron-sdk-${{ steps.get_version.outputs.version }}-${{ matrix.arch[5] }}.rpm
-          mv *.rpm ../
-          mv *.deb ../
 
       - uses: actions/upload-artifact@v3
         with:
           name: neuron-sdk-${{ matrix.arch[5] }}
           path: |
             neuron-sdk-*.tar.gz
-            neuron-sdk-*.deb
-            neuron-sdk-*.rpm
 
   ut:
     runs-on: ubuntu-20.04
@@ -194,8 +165,8 @@ jobs:
     strategy:
       matrix:
         arch: [arm64, armhf, amd64]
-        type: [neuron, neuron-sdk]
-        package: [tar.gz, deb, rpm]
+        type: [neuron-sdk]
+        package: [tar.gz]
 
     steps:
       - uses: actions/checkout@v2
@@ -240,7 +211,7 @@ jobs:
     strategy:
       matrix:
         arch: [arm64, armhf, amd64]
-        type: [neuron]
+        type: [neuron-sdk]
         package: [tar.gz, deb, rpm]
 
     steps:

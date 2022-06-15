@@ -1,5 +1,0 @@
-#!/bin/bash
-
-echo "prerm"
-systemctl disable neuron
-systemctl stop neuron

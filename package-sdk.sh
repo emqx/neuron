@@ -31,30 +31,6 @@ while getopts "p:n:h-:" OPT; do
     esac
 done
 
-if [ ! -d $package_name ];then 
-    mkdir -p $package_name
-else 
-    rm -rf ${package_name}/*
-fi
-
-if [ ! -d $package_name/include ];then 
-    mkdir -p $package_name/include/neuron/
-else 
-    rm -rf ${package_name}/include/*
-fi
-
-if [ ! -d $package_name/lib ];then 
-    mkdir -p $package_name/lib
-else 
-    rm -rf ${package_name}/lib/*
-fi
-
-if [ ! -d $package_name/ft ];then 
-    mkdir -p $package_name/ft
-else 
-    rm -rf ${package_name}/ft/*
-fi
-
 case "$arch" in
     "arm-linux-gnueabihf") lib_path="/opt/externs/libs/arm-linux-gnueabihf/lib"
     ;;
@@ -62,16 +38,31 @@ case "$arch" in
     ;;
 esac
 
-cp -r include/* ${package_name}/include/
-cp build/libneuron-base.so ${package_name}/lib
-cp -r ft/Keyword ${package_name}/ft/
-cp ft/api_http.resource ${package_name}/ft/
-cp ft/api_mqtt.resource ${package_name}/ft/
-cp ft/common.resource ${package_name}/ft/
-cp ft/error.resource ${package_name}/ft/
-cp ft/requirements.txt ${package_name}/ft/
+rm -rf ${package_name}/*
 
+mkdir -p $package_name/include/neuron/
+mkdir -p $package_name/lib
+mkdir -p $package_name/config
+mkdir -p $package_name/plugins/schema
+
+cp neuron.conf ${package_name}/
+cp -r include/* ${package_name}/include/
+
+cp build/neuron ${package_name}
+cp build/libneuron-base.so ${package_name}/lib
 cp zlog/src/libzlog.so.1.2 ${package_name}/lib
+
+cp zlog.conf ${package_name}/config/
+cp neuron.key ${package_name}/config/
+cp neuron.pem ${package_name}/config/
+
+cp build/plugins/schema/ekuiper.json \
+    build/plugins/schema/mqtt.json \
+    ${package_name}/plugins/schema/
+
+cp build/plugins/libplugin-ekuiper.so \
+    build/plugins/libplugin-mqtt.so \
+    ${package_name}/plugins/
 
 tar czf ${package_name}-${arch}.tar.gz ${package_name}/
 ls ${package_name}
