@@ -99,6 +99,9 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     }
 
     if (ob == NULL) {
+        if (ele->attribute == NEU_JSON_ATTRIBUTE_OPTIONAL) {
+            return 0;
+        }
         zlog_error(neuron, "json decode: %s failed", ele->name);
         return -1;
     }

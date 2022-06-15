@@ -291,6 +291,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         for (int i = 0; i < cmd->n_tag; i++) {
             free(cmd->tags[i].addr_str);
             free(cmd->tags[i].name);
+            free(cmd->tags[i].description);
         }
         free(cmd->tags);
 
@@ -334,6 +335,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         for (int i = 0; i < cmd->n_tag; i++) {
             free(cmd->tags[i].addr_str);
             free(cmd->tags[i].name);
+            free(cmd->tags[i].description);
         }
         free(cmd->tags);
 

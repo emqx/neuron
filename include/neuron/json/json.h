@@ -50,7 +50,13 @@ typedef union neu_json_value {
     void *  val_object;
 } neu_json_value_u;
 
+typedef enum neu_json_attribute {
+    NEU_JSON_ATTRIBUTE_REQUIRED,
+    NEU_JSON_ATTRIBUTE_OPTIONAL,
+} neu_json_attribute_t;
+
 typedef struct neu_json_elem {
+    neu_json_attribute_t attribute;
     char *               name;
     enum neu_json_type   t;
     union neu_json_value v;

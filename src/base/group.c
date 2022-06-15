@@ -73,6 +73,7 @@ void neu_group_destroy(neu_group_t *group)
         free(el->name);
         free(el->tag->name);
         free(el->tag->addr_str);
+        free(el->tag->description);
         free(el->tag);
         free(el);
     }
@@ -132,13 +133,14 @@ int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
         return NEU_ERR_TAG_NAME_CONFLICT;
     }
 
-    el                 = calloc(1, sizeof(tag_elem_t));
-    el->name           = strdup(tag->name);
-    el->tag            = calloc(1, sizeof(neu_datatag_t));
-    el->tag->name      = strdup(tag->name);
-    el->tag->addr_str  = strdup(tag->addr_str);
-    el->tag->type      = tag->type;
-    el->tag->attribute = tag->attribute;
+    el                   = calloc(1, sizeof(tag_elem_t));
+    el->name             = strdup(tag->name);
+    el->tag              = calloc(1, sizeof(neu_datatag_t));
+    el->tag->name        = strdup(tag->name);
+    el->tag->addr_str    = strdup(tag->addr_str);
+    el->tag->description = strdup(tag->description);
+    el->tag->type        = tag->type;
+    el->tag->attribute   = tag->attribute;
 
     HASH_ADD_STR(group->tags, name, el);
     update_timestamp(group);
@@ -161,16 +163,18 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
         free(el->name);
         free(el->tag->name);
         free(el->tag->addr_str);
+        free(el->tag->description);
         free(el->tag);
         free(el);
 
-        el                 = calloc(1, sizeof(tag_elem_t));
-        el->name           = strdup(tag->name);
-        el->tag            = calloc(1, sizeof(neu_datatag_t));
-        el->tag->name      = strdup(tag->name);
-        el->tag->addr_str  = strdup(tag->addr_str);
-        el->tag->type      = tag->type;
-        el->tag->attribute = tag->attribute;
+        el                   = calloc(1, sizeof(tag_elem_t));
+        el->name             = strdup(tag->name);
+        el->tag              = calloc(1, sizeof(neu_datatag_t));
+        el->tag->name        = strdup(tag->name);
+        el->tag->addr_str    = strdup(tag->addr_str);
+        el->tag->description = strdup(tag->description);
+        el->tag->type        = tag->type;
+        el->tag->attribute   = tag->attribute;
 
         HASH_ADD_STR(group->tags, name, el);
         update_timestamp(group);
@@ -195,6 +199,7 @@ int neu_group_del_tag(neu_group_t *group, const char *tag_name)
         free(el->name);
         free(el->tag->name);
         free(el->tag->addr_str);
+        free(el->tag->description);
         free(el->tag);
         free(el);
 
@@ -248,11 +253,12 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
     nng_mtx_lock(group->mtx);
     HASH_FIND_STR(group->tags, tag, find);
     if (find != NULL) {
-        result            = calloc(1, sizeof(neu_datatag_t));
-        result->type      = find->tag->type;
-        result->attribute = find->tag->attribute;
-        result->name      = strdup(find->tag->name);
-        result->addr_str  = strdup(find->tag->addr_str);
+        result              = calloc(1, sizeof(neu_datatag_t));
+        result->type        = find->tag->type;
+        result->attribute   = find->tag->attribute;
+        result->name        = strdup(find->tag->name);
+        result->addr_str    = strdup(find->tag->addr_str);
+        result->description = strdup(find->tag->description);
     }
     nng_mtx_unlock(group->mtx);
 

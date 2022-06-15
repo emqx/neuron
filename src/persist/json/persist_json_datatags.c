@@ -65,6 +65,10 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
                 .name = "address",
                 .t    = NEU_JSON_STR,
             },
+            {
+                .name = "description",
+                .t    = NEU_JSON_STR,
+            },
         };
         ret = neu_json_decode_array_by_json(
             json_obj, "tags", i, NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
@@ -72,10 +76,11 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
             goto decode_fail;
         }
 
-        p_tag->type      = tag_elems[0].v.val_int;
-        p_tag->name      = tag_elems[1].v.val_str;
-        p_tag->attribute = tag_elems[2].v.val_int;
-        p_tag->address   = tag_elems[3].v.val_str;
+        p_tag->type        = tag_elems[0].v.val_int;
+        p_tag->name        = tag_elems[1].v.val_str;
+        p_tag->attribute   = tag_elems[2].v.val_int;
+        p_tag->address     = tag_elems[3].v.val_str;
+        p_tag->description = tag_elems[4].v.val_str;
         p_tag++;
     }
 
@@ -105,6 +110,7 @@ void neu_json_decode_datatag_req_free(neu_json_datatag_req_t *req)
     for (int i = 0; i < req->n_tag; i++) {
         free(p_tag->name);
         free(p_tag->address);
+        free(p_tag->description);
         p_tag++;
     }
 
@@ -141,6 +147,11 @@ int neu_json_encode_datatag_resp(void *json_object, void *param)
                 .name      = "address",
                 .t         = NEU_JSON_STR,
                 .v.val_str = p_tag->address,
+            },
+            {
+                .name      = "description",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_tag->description,
             },
         };
         tag_array = neu_json_encode_array(tag_array, tag_elems,

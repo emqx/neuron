@@ -269,6 +269,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             cmd->value.value);
         free(tag->addr_str);
         free(tag->name);
+        free(tag->description);
         free(tag);
     }
 }
