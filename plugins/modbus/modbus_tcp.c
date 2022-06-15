@@ -24,15 +24,13 @@
 #include "modbus_req.h"
 #include "modbus_stack.h"
 
-static neu_plugin_t *driver_open(neu_adapter_t *            adapter,
-                                 const adapter_callbacks_t *callbacks);
-
-static int driver_close(neu_plugin_t *plugin);
-static int driver_init(neu_plugin_t *plugin);
-static int driver_uninit(neu_plugin_t *plugin);
-static int driver_start(neu_plugin_t *plugin);
-static int driver_stop(neu_plugin_t *plugin);
-static int driver_config(neu_plugin_t *plugin, const char *config);
+static neu_plugin_t *driver_open(void);
+static int           driver_close(neu_plugin_t *plugin);
+static int           driver_init(neu_plugin_t *plugin);
+static int           driver_uninit(neu_plugin_t *plugin);
+static int           driver_start(neu_plugin_t *plugin);
+static int           driver_stop(neu_plugin_t *plugin);
+static int           driver_config(neu_plugin_t *plugin, const char *config);
 static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                           void *data);
 
@@ -65,15 +63,11 @@ const neu_plugin_module_t neu_plugin_module = {
     .type         = NEU_NA_TYPE_DRIVER,
 };
 
-static neu_plugin_t *driver_open(neu_adapter_t *            adapter,
-                                 const adapter_callbacks_t *callbacks)
+static neu_plugin_t *driver_open(void)
 {
     neu_plugin_t *plugin = calloc(1, sizeof(neu_plugin_t));
 
     neu_plugin_common_init(&plugin->common);
-    plugin->common.adapter           = adapter;
-    plugin->common.adapter_callbacks = callbacks;
-    plugin->common.link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
 
     return plugin;
 }

@@ -514,8 +514,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
     rv = nng_mtx_alloc(&adapter->nng.sub_grp_mtx);
     assert(rv == 0);
 
-    adapter->plugin_info.plugin = adapter->plugin_info.module->intf_funs->open(
-        adapter, &adapter->cb_funs);
+    adapter->plugin_info.plugin =
+        adapter->plugin_info.module->intf_funs->open();
     assert(adapter->plugin_info.plugin != NULL);
     assert(neu_plugin_common_check(adapter->plugin_info.plugin));
     neu_plugin_common_t *common =

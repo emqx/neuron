@@ -34,26 +34,11 @@ struct neu_plugin {
     neu_plugin_common_t common;
 };
 
-static neu_plugin_t *dummy_plugin_open(neu_adapter_t *            adapter,
-                                       const adapter_callbacks_t *callbacks)
+static neu_plugin_t *dummy_plugin_open()
 {
-    neu_plugin_t *plugin;
-
-    if (adapter == NULL || callbacks == NULL) {
-        nlog_error("Open plugin with NULL adapter or callbacks");
-        return NULL;
-    }
-
-    plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
-    if (plugin == NULL) {
-        nlog_error("Failed to allocate plugin %s",
-                   neu_plugin_module.module_name);
-        return NULL;
-    }
+    neu_plugin_t *plugin = calloc(1, sizeof(neu_plugin_t));
 
     neu_plugin_common_init(&plugin->common);
-    plugin->common.adapter           = adapter;
-    plugin->common.adapter_callbacks = callbacks;
 
     nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;

@@ -129,30 +129,15 @@ static nng_http_server *server_init(char *type)
     return server;
 }
 
-static neu_plugin_t *dashb_plugin_open(neu_adapter_t *            adapter,
-                                       const adapter_callbacks_t *callbacks)
+static neu_plugin_t *dashb_plugin_open(void)
 {
     int                            rv;
-    neu_plugin_t *                 plugin;
-    uint32_t                       n_handler     = 0;
+    neu_plugin_t *                 plugin    = calloc(1, sizeof(neu_plugin_t));
+    uint32_t                       n_handler = 0;
     const struct neu_rest_handler *rest_handlers = NULL;
     const struct neu_rest_handler *cors          = NULL;
 
-    if (adapter == NULL || callbacks == NULL) {
-        nlog_error("Open plugin with NULL adapter or callbacks");
-        return NULL;
-    }
-
-    plugin = (neu_plugin_t *) malloc(sizeof(neu_plugin_t));
-    if (plugin == NULL) {
-        nlog_error("Failed to allocate plugin %s",
-                   neu_plugin_module.module_name);
-        return NULL;
-    }
-
     neu_plugin_common_init(&plugin->common);
-    plugin->common.adapter           = adapter;
-    plugin->common.adapter_callbacks = callbacks;
 
     plugin->handle_ctx = neu_rest_init_ctx(plugin);
 

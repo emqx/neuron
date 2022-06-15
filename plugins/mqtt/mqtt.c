@@ -508,20 +508,11 @@ static void mqtt_routine_suspend(mqtt_routine_t *routine)
     neu_mqtt_client_suspend(routine->client);
 }
 
-static neu_plugin_t *mqtt_plugin_open(neu_adapter_t *            adapter,
-                                      const adapter_callbacks_t *callbacks)
+static neu_plugin_t *mqtt_plugin_open(void)
 {
-    assert(NULL != adapter);
-    assert(NULL != callbacks);
-
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
-    if (NULL == plugin) {
-        return NULL;
-    }
 
     neu_plugin_common_init(&plugin->common);
-    plugin->common.adapter           = adapter;
-    plugin->common.adapter_callbacks = callbacks;
 
     return plugin;
 }
