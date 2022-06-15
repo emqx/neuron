@@ -30,11 +30,9 @@ extern "C" {
 #define INTERVAL 100000U
 #define TIMEOUT 3000U
 
-#define TOPIC_PING_REQ "neuron/%s/ping"
 #define TOPIC_READ_REQ "neuron/%s/read/req"
 #define TOPIC_WRITE_REQ "neuron/%s/write/req"
 
-#define TOPIC_STATUS_RES "neuron/%s/status"
 #define TOPIC_READ_RES "neuron/%s/read/resp"
 #define TOPIC_WRITE_RES "neuron/%s/write/resp"
 #define TOPIC_UPLOAD_RES "neuron/%s/upload"
