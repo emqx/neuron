@@ -48,8 +48,7 @@ struct neu_adapter {
     uint32_t req_id;
 
     adapter_callbacks_t cb_funs;
-    neu_config_t        setting;
-    void *              x;
+    char *              setting;
 
     struct {
         void *               handle; // handle of dynamic lib
@@ -84,7 +83,7 @@ void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer);
 const char *       neu_adapter_get_name(neu_adapter_t *adapter);
 neu_manager_t *    neu_adapter_get_manager(neu_adapter_t *adapter);
 neu_adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter);
-int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config);
+int neu_adapter_set_setting(neu_adapter_t *adapter, const char *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
 neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter);
 neu_plugin_running_state_e

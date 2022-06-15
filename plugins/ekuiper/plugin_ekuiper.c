@@ -147,7 +147,7 @@ static int ekuiper_plugin_stop(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-static int ekuiper_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
+static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *configs)
 {
     int rv = 0;
 
@@ -208,7 +208,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .uninit  = ekuiper_plugin_uninit,
     .start   = ekuiper_plugin_start,
     .stop    = ekuiper_plugin_stop,
-    .config  = ekuiper_plugin_config,
+    .setting = ekuiper_plugin_config,
     .request = ekuiper_plugin_request,
 };
 

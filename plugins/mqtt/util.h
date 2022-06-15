@@ -27,7 +27,7 @@ extern "C" {
 #include "connection/mqtt_client_intf.h"
 #include <neuron.h>
 
-int  mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option);
+int  mqtt_option_init(char *config, neu_mqtt_option_t *option);
 void mqtt_option_uninit(neu_mqtt_option_t *option);
 
 #ifdef __cplusplus

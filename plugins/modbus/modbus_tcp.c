@@ -32,7 +32,7 @@ static int driver_init(neu_plugin_t *plugin);
 static int driver_uninit(neu_plugin_t *plugin);
 static int driver_start(neu_plugin_t *plugin);
 static int driver_stop(neu_plugin_t *plugin);
-static int driver_config(neu_plugin_t *plugin, neu_config_t *config);
+static int driver_config(neu_plugin_t *plugin, const char *config);
 static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                           void *data);
 
@@ -48,7 +48,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .uninit  = driver_uninit,
     .start   = driver_start,
     .stop    = driver_stop,
-    .config  = driver_config,
+    .setting = driver_config,
     .request = driver_request,
 
     .driver.validate_tag = driver_validate_tag,
@@ -125,7 +125,7 @@ static int driver_stop(neu_plugin_t *plugin)
     return 0;
 }
 
-static int driver_config(neu_plugin_t *plugin, neu_config_t *config)
+static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
     char *           err_param = NULL;
@@ -134,10 +134,11 @@ static int driver_config(neu_plugin_t *plugin, neu_config_t *config)
     neu_json_elem_t  host      = { .name = "host", .t = NEU_JSON_STR };
     neu_conn_param_t param     = { 0 };
 
-    ret = neu_parse_param(config->buf, &err_param, 3, &port, &host, &timeout);
+    ret =
+        neu_parse_param((char *) config, &err_param, 3, &port, &host, &timeout);
 
     if (ret != 0) {
-        plog_warn(plugin, "config: %s, decode error: %s", (char *) config->buf,
+        plog_warn(plugin, "config: %s, decode error: %s", (char *) config,
                   err_param);
         free(err_param);
         free(host.v.val_str);

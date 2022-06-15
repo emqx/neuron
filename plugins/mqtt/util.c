@@ -86,7 +86,7 @@ void mqtt_option_uninit(neu_mqtt_option_t *option)
     }
 }
 
-int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
+int mqtt_option_init(char *config, neu_mqtt_option_t *option)
 {
     if (NULL == config || NULL == option) {
         return -1;
@@ -107,7 +107,7 @@ int mqtt_option_init(neu_config_t *config, neu_mqtt_option_t *option)
     neu_json_elem_t key      = { .name = "key", .t = NEU_JSON_STR };
     neu_json_elem_t keypass  = { .name = "keypass", .t = NEU_JSON_STR };
 
-    ret = neu_parse_param(config->buf, &error, 12, &id, &upload, &format, &ssl,
+    ret = neu_parse_param(config, &error, 12, &id, &upload, &format, &ssl,
                           &host, &port, &username, &password, &ca, &cert, &key,
                           &keypass);
     if (0 != ret) {

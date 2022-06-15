@@ -345,17 +345,12 @@ int neu_manager_node_ctl(neu_manager_t *manager, const char *node,
 int neu_manager_node_setting(neu_manager_t *manager, const char *node,
                              const char *setting)
 {
-    neu_config_t   config  = { 0 };
     neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
     if (adapter == NULL) {
         return NEU_ERR_NODE_NOT_EXIST;
     }
 
-    config.type    = NEU_CONFIG_SETTING;
-    config.buf     = (char *) setting;
-    config.buf_len = strlen(setting);
-
-    return neu_adapter_set_setting(adapter, &config);
+    return neu_adapter_set_setting(adapter, setting);
 }
 
 int neu_manager_node_get_setting(neu_manager_t *manager, const char *node,

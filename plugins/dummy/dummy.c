@@ -86,7 +86,7 @@ static int dummy_plugin_uninit(neu_plugin_t *plugin)
     return rv;
 }
 
-static int dummy_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
+static int dummy_plugin_config(neu_plugin_t *plugin, const char *configs)
 {
     int rv = 0;
 
@@ -125,7 +125,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .uninit  = dummy_plugin_uninit,
     .start   = dummy_plugin_start,
     .stop    = dummy_plugin_stop,
-    .config  = dummy_plugin_config,
+    .setting = dummy_plugin_config,
     .request = dummy_plugin_request,
 };
 

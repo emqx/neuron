@@ -241,7 +241,7 @@ static int dashb_plugin_uninit(neu_plugin_t *plugin)
     return rv;
 }
 
-static int dashb_plugin_config(neu_plugin_t *plugin, neu_config_t *configs)
+static int dashb_plugin_config(neu_plugin_t *plugin, const char *configs)
 {
     int rv = 0;
 
@@ -324,7 +324,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .uninit  = dashb_plugin_uninit,
     .start   = dashb_plugin_start,
     .stop    = dashb_plugin_stop,
-    .config  = dashb_plugin_config,
+    .setting = dashb_plugin_config,
     .request = dashb_plugin_request,
 };
 
