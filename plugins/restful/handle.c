@@ -65,7 +65,7 @@ struct neu_rest_handler cors_handler[] = {
         .url = "/api/v2/tags",
     },
     {
-        .url = "/api/v2/gconfig",
+        .url = "/api/v2/group",
     },
     {
         .url = "/api/v2/node",
