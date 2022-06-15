@@ -109,50 +109,6 @@ TEST(HTTPTest, http_get_param_str)
     nng_url_free(url);
 }
 
-TEST(HTTPTest, http_get_param_node_id)
-{
-    nng_aio *     aio     = NULL;
-    nng_http_req *req     = NULL;
-    nng_url *     url     = NULL;
-    neu_node_id_t node_id = { 0 };
-    int           rv      = 0;
-
-    const query_node_id_data_t data[] = {
-        { .uri = "/?node_id=1", .node_id = 1, .error = 0 },
-        { .uri = "/?node_id=123", .node_id = 123, .error = 0 },
-        { .uri = "/?node_id=456&", .node_id = 456, .error = 0 },
-        { .uri = "/?node_id=1&type=1", .node_id = 1, .error = 0 },
-        { .uri = "/?hello=world", .node_id = INVAL, .error = NEU_ERR_ENOENT },
-        { .uri = "/?node_id=0", .node_id = INVAL, .error = NEU_ERR_EINVAL },
-        { .uri = "/?node_id", .node_id = INVAL, .error = NEU_ERR_EINVAL },
-        { .uri = "/?node_id=xx", .node_id = INVAL, .error = NEU_ERR_EINVAL },
-        { .uri     = "/?node_id=99999999999999999999999999999999999999999",
-          .node_id = 1,
-          .error   = NEU_ERR_EINVAL },
-    };
-
-    nng_aio_alloc(&aio, NULL, NULL);
-    nng_url_parse(&url, "http://127.0.0.1");
-    nng_http_req_alloc(&req, url);
-
-    for (uint64_t i = 0; i < sizeof(data) / sizeof(query_node_id_data_t); ++i) {
-        neu_node_id_t prev_node_id = node_id;
-        nng_http_req_set_uri(req, (char *) data[i].uri);
-        nng_aio_set_input(aio, 0, req);
-        rv = http_get_param_node_id(aio, "node_id", &node_id);
-        EXPECT_EQ(rv, data[i].error);
-        if (INVAL != data[i].node_id) {
-            EXPECT_EQ(node_id, data[i].node_id);
-        } else {
-            EXPECT_EQ(node_id, prev_node_id);
-        }
-    }
-
-    nng_aio_free(aio);
-    nng_http_req_free(req);
-    nng_url_free(url);
-}
-
 int main(int argc, char **argv)
 {
     zlog_init("./config/dev.conf");

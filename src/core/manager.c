@@ -553,8 +553,8 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter     = neu_adapter_create(&adapter_info, manager);
-    adapter->id = neu_node_manager_add_static(manager->node_manager, adapter);
+    adapter = neu_adapter_create(&adapter_info, manager);
+    neu_node_manager_add_static(manager->node_manager, adapter);
     neu_adapter_init(adapter);
     neu_adapter_start(adapter);
 }
