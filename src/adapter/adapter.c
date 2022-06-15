@@ -79,7 +79,9 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
         nlog_info("%s load plugin %s, lib:%s", adapter->name, ok_or_err, *name);
     }
 
-    neu_persist_plugin_infos_free(plugin_infos);
+    utarray_foreach(plugin_infos, char **, name) { free(*name); }
+    utarray_free(plugin_infos);
+
     return rv;
 }
 
@@ -458,7 +460,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
 
     msg = neu_msg_gen(&header, data);
 
-    ret = nng_sendmsg(adapter->nng.sock, msg, NNG_FLAG_NONBLOCK);
+    ret = nng_sendmsg(adapter->nng.sock, msg, 0);
     if (ret != 0) {
         nng_msg_free(msg);
     }
@@ -684,6 +686,7 @@ int neu_adapter_init(neu_adapter_t *adapter)
 
     assert(rv == 0);
 
+    nng_socket_set_ms(adapter->nng.sock, NNG_OPT_SENDTIMEO, 100);
     nng_socket_get_int(adapter->nng.sock, NNG_OPT_RECVFD, &adapter->recv_fd);
     param.fd = adapter->recv_fd;
 

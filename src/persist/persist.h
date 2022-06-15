@@ -58,7 +58,6 @@ static inline void neu_persist_adapter_infos_free(UT_array *adapter_infos)
 
 static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
-    utarray_foreach(plugin_infos, neu_persist_plugin_info_t **, p) { free(*p); }
     utarray_free(plugin_infos);
 }
 
