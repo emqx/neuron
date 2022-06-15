@@ -52,6 +52,11 @@ void handle_add_tags(nng_aio *aio)
                 cmd.tags[i].type      = req->tags[i].type;
                 cmd.tags[i].addr_str  = strdup(req->tags[i].address);
                 cmd.tags[i].name      = strdup(req->tags[i].name);
+                if (req->tags[i].description != NULL) {
+                    cmd.tags[i].description = strdup(req->tags[i].description);
+                } else {
+                    cmd.tags[i].description = strdup("");
+                }
             }
 
             ret = neu_plugin_op(plugin, header, &cmd);
@@ -129,6 +134,11 @@ void handle_update_tags(nng_aio *aio)
                 cmd.tags[i].type      = req->tags[i].type;
                 cmd.tags[i].addr_str  = strdup(req->tags[i].address);
                 cmd.tags[i].name      = strdup(req->tags[i].name);
+                if (req->tags[i].description != NULL) {
+                    cmd.tags[i].description = strdup(req->tags[i].description);
+                } else {
+                    cmd.tags[i].description = strdup("");
+                }
             }
 
             ret = neu_plugin_op(plugin, header, &cmd);
@@ -196,10 +206,11 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
     {
         int index = utarray_eltidx(tags->tags, tag);
 
-        tags_res.tags[index].name      = tag->name;
-        tags_res.tags[index].address   = tag->addr_str;
-        tags_res.tags[index].type      = tag->type;
-        tags_res.tags[index].attribute = tag->attribute;
+        tags_res.tags[index].name        = tag->name;
+        tags_res.tags[index].address     = tag->addr_str;
+        tags_res.tags[index].description = tag->description;
+        tags_res.tags[index].type        = tag->type;
+        tags_res.tags[index].attribute   = tag->attribute;
     }
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);

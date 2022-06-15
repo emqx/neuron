@@ -27,9 +27,6 @@ config_ **/
 
 #define NEU_TAG_ADDRESS_SIZE 128
 
-typedef uint32_t neu_datatag_id_t;
-typedef char *   neu_addr_str_t;
-typedef char *   neu_tag_name;
 typedef enum {
     NEU_DTYPE_VOID, ///< like Haskell, a no value type
     NEU_DTYPE_UNIT, ///< like Haskell, a () type, same as void in C
@@ -120,11 +117,11 @@ typedef enum {
 } neu_attribute_e;
 
 typedef struct {
-    neu_datatag_id_t id;
-    neu_attribute_e  attribute;
-    neu_dtype_e      type;
-    neu_addr_str_t   addr_str;
-    neu_tag_name     name;
+    char *          name;
+    char *          addr_str;
+    char *          description;
+    neu_attribute_e attribute;
+    neu_dtype_e     type;
 } neu_datatag_t;
 
 UT_icd *neu_tag_get_icd();

@@ -880,10 +880,11 @@ int neu_persister_store_datatags(neu_persister_t *persister,
     int index = 0;
     utarray_foreach(datatag_infos, neu_datatag_t *, tag)
     {
-        datatags_resp.tags[index].name      = tag->name;
-        datatags_resp.tags[index].address   = tag->addr_str;
-        datatags_resp.tags[index].attribute = tag->attribute;
-        datatags_resp.tags[index].type      = tag->type;
+        datatags_resp.tags[index].name        = tag->name;
+        datatags_resp.tags[index].description = tag->description;
+        datatags_resp.tags[index].address     = tag->addr_str;
+        datatags_resp.tags[index].attribute   = tag->attribute;
+        datatags_resp.tags[index].type        = tag->type;
         index += 1;
     }
 
@@ -936,10 +937,11 @@ int neu_persister_load_datatags(neu_persister_t *persister,
     utarray_new(*tags, neu_tag_get_icd());
     for (int i = 0; i < datatag_req->n_tag; i++) {
         neu_datatag_t tag = {
-            .name      = datatag_req->tags[i].name,
-            .addr_str  = datatag_req->tags[i].address,
-            .type      = datatag_req->tags[i].type,
-            .attribute = datatag_req->tags[i].attribute,
+            .name        = datatag_req->tags[i].name,
+            .addr_str    = datatag_req->tags[i].address,
+            .type        = datatag_req->tags[i].type,
+            .attribute   = datatag_req->tags[i].attribute,
+            .description = datatag_req->tags[i].description,
         };
 
         utarray_push_back(*tags, &tag);

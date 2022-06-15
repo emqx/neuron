@@ -29,10 +29,11 @@ static void tag_array_copy(void *_dst, const void *_src)
     neu_datatag_t *dst = (neu_datatag_t *) _dst;
     neu_datatag_t *src = (neu_datatag_t *) _src;
 
-    dst->type      = src->type;
-    dst->attribute = src->attribute;
-    dst->addr_str  = strdup(src->addr_str);
-    dst->name      = strdup(src->name);
+    dst->type        = src->type;
+    dst->attribute   = src->attribute;
+    dst->addr_str    = strdup(src->addr_str);
+    dst->name        = strdup(src->name);
+    dst->description = strdup(src->description);
 }
 
 static void tag_array_free(void *_elt)
@@ -41,6 +42,7 @@ static void tag_array_free(void *_elt)
 
     free(elt->name);
     free(elt->addr_str);
+    free(elt->description);
 }
 
 static UT_icd tag_icd = { sizeof(neu_datatag_t), NULL, tag_array_copy,
