@@ -41,7 +41,7 @@ struct topic_pair {
 typedef struct mqtt_routine {
     neu_plugin_t *    plugin;
     bool              running;
-    pthread_mutex_t   running_mtx;
+    pthread_mutex_t   mutex;
     neu_mqtt_option_t option;
     neu_mqtt_client_t client;
     UT_array *        topics;
@@ -49,12 +49,12 @@ typedef struct mqtt_routine {
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    bool                routine_running;
+    bool                running;
     mqtt_routine_t *    routine;
     pthread_mutex_t     mutex;
 };
 
-static char *real_topic_generate(char *format, char *name)
+static char *topics_format(char *format, char *name)
 {
     char temp[256] = { '\0' };
     int  rc        = snprintf(temp, 256, format, name);
@@ -76,6 +76,8 @@ static void topics_add(UT_array *topics, char *request, int qos_request,
     pair->qos_response      = qos_response;
     pair->type              = type;
     utarray_push_back(topics, &pair);
+    nlog_info("add topic-req:%s, topic-res:%s, count:%d", pair->topic_request,
+              pair->topic_response, utarray_len(topics));
 }
 
 static void topics_cleanup(UT_array *topics)
@@ -84,6 +86,9 @@ static void topics_cleanup(UT_array *topics)
              (struct topic_pair **) utarray_front(topics);
          NULL != pair;
          pair = (struct topic_pair **) utarray_next(topics, pair)) {
+
+        nlog_info("remove topic-req:%s, topic-res:%s", (*pair)->topic_request,
+                  (*pair)->topic_response);
         if (NULL != (*pair)->topic_request) {
             free((*pair)->topic_request);
         }
@@ -92,18 +97,18 @@ static void topics_cleanup(UT_array *topics)
             free((*pair)->topic_response);
         }
 
-        free(pair);
+        free(*pair);
     }
 }
 
 static void topics_generate(UT_array *topics, char *name, char *upload_topic)
 {
-    char *read_req = real_topic_generate(TOPIC_READ_REQ, name);
-    char *read_res = real_topic_generate(TOPIC_READ_RES, name);
+    char *read_req = topics_format(TOPIC_READ_REQ, name);
+    char *read_res = topics_format(TOPIC_READ_RES, name);
     topics_add(topics, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
 
-    char *write_req = real_topic_generate(TOPIC_WRITE_REQ, name);
-    char *write_res = real_topic_generate(TOPIC_WRITE_RES, name);
+    char *write_req = topics_format(TOPIC_WRITE_REQ, name);
+    char *write_res = topics_format(TOPIC_WRITE_RES, name);
     topics_add(topics, write_req, QOS0, write_res, QOS0, TOPIC_TYPE_WRITE);
 
     /// UPLOAD TOPIC SETTING
@@ -112,7 +117,7 @@ static void topics_generate(UT_array *topics, char *name, char *upload_topic)
     if (NULL != upload_topic && 0 < strlen(upload_topic)) {
         upload_res = strdup(upload_topic);
     } else {
-        upload_res = real_topic_generate(TOPIC_UPLOAD_RES, name);
+        upload_res = topics_format(TOPIC_UPLOAD_RES, name);
     }
 
     topics_add(topics, upload_req, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
@@ -211,7 +216,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
               routine->option.host, routine->option.port, error);
 
     routine->plugin = plugin;
-    pthread_mutex_init(&routine->running_mtx, NULL);
+    pthread_mutex_init(&routine->mutex, NULL);
 
     UT_icd ptr_icd = { sizeof(struct topic_pair *), NULL, NULL, NULL };
     utarray_new(routine->topics, &ptr_icd);
@@ -229,10 +234,10 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
     neu_mqtt_client_suspend(routine->client);
 
     // stop routine and clean contexts
-    pthread_mutex_lock(&routine->running_mtx);
+    pthread_mutex_lock(&routine->mutex);
     routine->running = false;
-    pthread_mutex_unlock(&routine->running_mtx);
-    pthread_mutex_destroy(&routine->running_mtx);
+    pthread_mutex_unlock(&routine->mutex);
+    pthread_mutex_destroy(&routine->mutex);
 
     // close mqtt client and clean
     neu_mqtt_client_close(routine->client);
@@ -258,9 +263,7 @@ static void mqtt_routine_suspend(mqtt_routine_t *routine)
 static neu_plugin_t *mqtt_plugin_open(void)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
-
     neu_plugin_common_init(&plugin->common);
-
     return plugin;
 }
 
@@ -279,8 +282,8 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    plugin->routine         = NULL;
-    plugin->routine_running = false;
+    plugin->routine = NULL;
+    plugin->running = false;
     pthread_mutex_init(&plugin->mutex, NULL);
 
     const char *name = neu_plugin_module.module_name;
@@ -293,9 +296,9 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     assert(NULL != plugin);
 
     pthread_mutex_lock(&plugin->mutex);
-    if (plugin->routine_running) {
+    if (plugin->running) {
         mqtt_routine_stop(plugin->routine);
-        plugin->routine_running = false;
+        plugin->running = false;
         if (NULL != plugin->routine) {
             free(plugin->routine);
             plugin->routine = NULL;
@@ -316,9 +319,9 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     assert(NULL != config);
 
     pthread_mutex_lock(&plugin->mutex);
-    if (plugin->routine_running) {
+    if (plugin->running) {
         mqtt_routine_stop(plugin->routine);
-        plugin->routine_running = false;
+        plugin->running = false;
         if (NULL != plugin->routine) {
             free(plugin->routine);
             plugin->routine = NULL;
@@ -329,15 +332,15 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     mqtt_routine_t *routine = mqtt_routine_start(plugin, config);
     if (NULL == routine) {
         pthread_mutex_lock(&plugin->mutex);
-        plugin->routine         = NULL;
-        plugin->routine_running = false;
+        plugin->routine = NULL;
+        plugin->running = false;
         pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
 
     pthread_mutex_lock(&plugin->mutex);
-    plugin->routine         = routine;
-    plugin->routine_running = true;
+    plugin->routine = routine;
+    plugin->running = true;
     pthread_mutex_unlock(&plugin->mutex);
 
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
@@ -351,7 +354,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
     assert(NULL != plugin);
 
     pthread_mutex_lock(&plugin->mutex);
-    if (plugin->routine_running) {
+    if (plugin->running) {
         mqtt_routine_continue(plugin->routine);
     }
     pthread_mutex_unlock(&plugin->mutex);
@@ -364,7 +367,7 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
     assert(NULL != plugin);
 
     pthread_mutex_lock(&plugin->mutex);
-    if (plugin->routine_running) {
+    if (plugin->running) {
         mqtt_routine_suspend(plugin->routine);
     }
     pthread_mutex_unlock(&plugin->mutex);
@@ -380,7 +383,7 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
 
     pthread_mutex_lock(&plugin->mutex);
 
-    if (!plugin->routine_running) {
+    if (!plugin->running) {
         pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
@@ -412,7 +415,7 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
 
     pthread_mutex_lock(&plugin->mutex);
 
-    if (!plugin->routine_running) {
+    if (!plugin->running) {
         pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
@@ -444,7 +447,7 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
 
     pthread_mutex_lock(&plugin->mutex);
 
-    if (!plugin->routine_running) {
+    if (!plugin->running) {
         pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
