@@ -44,7 +44,7 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
                            const char *          plugin_lib_name);
 int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name);
 
-// neu_plugin_lib_info_t array
+// neu_resp_plugin_info_t array
 UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr);
 int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
                             neu_resp_plugin_info_t *info);

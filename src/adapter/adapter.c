@@ -79,7 +79,9 @@ static int persister_singleton_load_plugins(neu_adapter_t *adapter)
         nlog_info("%s load plugin %s, lib:%s", adapter->name, ok_or_err, *name);
     }
 
-    neu_persist_plugin_infos_free(plugin_infos);
+    utarray_foreach(plugin_infos, char **, name) { free(*name); }
+    utarray_free(plugin_infos);
+
     return rv;
 }
 

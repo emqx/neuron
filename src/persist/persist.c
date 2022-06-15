@@ -798,9 +798,9 @@ int neu_persister_store_plugins(neu_persister_t *persister,
 
     plugin_resp.plugins = calloc(utarray_len(plugin_infos), sizeof(char *));
 
-    utarray_foreach(plugin_infos, char **, name)
+    utarray_foreach(plugin_infos, neu_resp_plugin_info_t *, plugin)
     {
-        plugin_resp.plugins[index] = *name;
+        plugin_resp.plugins[index] = plugin->library;
         index++;
     }
 
