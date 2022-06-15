@@ -27,7 +27,7 @@
 #include <zlog.h>
 
 #include "argparse.h"
-#include "neuron/version.h"
+#include "version.h"
 
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \

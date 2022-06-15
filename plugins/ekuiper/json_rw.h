@@ -23,7 +23,6 @@
 #include <sys/time.h>
 
 #include "neuron.h"
-#include "neuron/errcodes.h"
 #include "json/neu_json_rw.h"
 
 #ifdef __cplusplus

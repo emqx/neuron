@@ -1,8 +1,5 @@
 #!/bin/bash
 
-#set -euo
-
-lib_path=/usr/local/lib
 arch=x86_64-linux-gnu
 package_name=neuron-sdk
 
@@ -31,13 +28,6 @@ while getopts "p:n:h-:" OPT; do
     esac
 done
 
-case "$arch" in
-    "arm-linux-gnueabihf") lib_path="/opt/externs/libs/arm-linux-gnueabihf/lib"
-    ;;
-    "aarch64-linux-gnu") lib_path="/opt/externs/libs/aarch64-linux-gnu/lib"
-    ;;
-esac
-
 rm -rf ${package_name}/*
 
 mkdir -p $package_name/include/neuron/
@@ -46,6 +36,7 @@ mkdir -p $package_name/config
 mkdir -p $package_name/plugins/schema
 
 cp neuron.conf ${package_name}/
+cp cmake/neuron-config.cmake ${package_name}/
 cp -r include/* ${package_name}/include/
 
 cp build/neuron ${package_name}

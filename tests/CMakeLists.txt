@@ -1,4 +1,4 @@
-link_directories(/usr/local/lib)
+include_directories(${CMAKE_SOURCE_DIR}/include/neuron)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/parser SRC_PARSER)
 add_executable(json_test json_test.cc)
