@@ -33,23 +33,20 @@ typedef struct neu_node_manager neu_node_manager_t;
 neu_node_manager_t *neu_node_manager_create();
 void                neu_node_manager_destroy(neu_node_manager_t *mgr);
 
-uint32_t neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter);
-uint32_t neu_node_manager_add_static(neu_node_manager_t *mgr,
-                                     neu_adapter_t *     adapter);
-int      neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
-                                 nng_pipe pipe);
-void     neu_node_manager_del(neu_node_manager_t *mgr, const char *name);
+int  neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter);
+int  neu_node_manager_add_static(neu_node_manager_t *mgr,
+                                 neu_adapter_t *     adapter);
+int  neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
+                             nng_pipe pipe);
+void neu_node_manager_del(neu_node_manager_t *mgr, const char *name);
 
 // neu_node_info array
 UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type);
 neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name);
-neu_adapter_t *neu_node_manager_find_by_id(neu_node_manager_t *mgr,
-                                           uint32_t            id);
 
 // nng_pipe array
 UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,
                                      neu_node_type_e     type);
 nng_pipe  neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name);
-nng_pipe  neu_node_manager_get_pipe_by_id(neu_node_manager_t *mgr, uint32_t id);
 
 #endif
