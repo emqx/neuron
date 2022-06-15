@@ -40,8 +40,6 @@ struct topic_pair {
 
 typedef struct mqtt_routine {
     neu_plugin_t *    plugin;
-    bool              running;
-    pthread_mutex_t   mutex;
     neu_mqtt_option_t option;
     neu_mqtt_client_t client;
     UT_array *        topics;
@@ -51,7 +49,6 @@ struct neu_plugin {
     neu_plugin_common_t common;
     bool                running;
     mqtt_routine_t *    routine;
-    pthread_mutex_t     mutex;
 };
 
 static char *topics_format(char *format, char *name)
@@ -216,9 +213,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
               routine->option.host, routine->option.port, error);
 
     routine->plugin = plugin;
-    pthread_mutex_init(&routine->mutex, NULL);
-
-    UT_icd ptr_icd = { sizeof(struct topic_pair *), NULL, NULL, NULL };
+    UT_icd ptr_icd  = { sizeof(struct topic_pair *), NULL, NULL, NULL };
     utarray_new(routine->topics, &ptr_icd);
     topics_generate(routine->topics, routine->option.clientid,
                     routine->option.upload_topic);
@@ -232,12 +227,6 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
 
     // stop recevied
     neu_mqtt_client_suspend(routine->client);
-
-    // stop routine and clean contexts
-    pthread_mutex_lock(&routine->mutex);
-    routine->running = false;
-    pthread_mutex_unlock(&routine->mutex);
-    pthread_mutex_destroy(&routine->mutex);
 
     // close mqtt client and clean
     neu_mqtt_client_close(routine->client);
@@ -282,10 +271,8 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    plugin->routine = NULL;
-    plugin->running = false;
-    pthread_mutex_init(&plugin->mutex, NULL);
-
+    plugin->routine  = NULL;
+    plugin->running  = false;
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "initialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
@@ -295,7 +282,6 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    pthread_mutex_lock(&plugin->mutex);
     if (plugin->running) {
         mqtt_routine_stop(plugin->routine);
         plugin->running = false;
@@ -304,9 +290,7 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
             plugin->routine = NULL;
         }
     }
-    pthread_mutex_unlock(&plugin->mutex);
 
-    pthread_mutex_destroy(&plugin->mutex);
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
     const char *name          = neu_plugin_module.module_name;
     plog_info(plugin, "uninitialize plugin: %s", name);
@@ -318,7 +302,6 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     assert(NULL != plugin);
     assert(NULL != config);
 
-    pthread_mutex_lock(&plugin->mutex);
     if (plugin->running) {
         mqtt_routine_stop(plugin->routine);
         plugin->running = false;
@@ -327,22 +310,16 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
             plugin->routine = NULL;
         }
     }
-    pthread_mutex_unlock(&plugin->mutex);
 
     mqtt_routine_t *routine = mqtt_routine_start(plugin, config);
     if (NULL == routine) {
-        pthread_mutex_lock(&plugin->mutex);
         plugin->routine = NULL;
         plugin->running = false;
-        pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
 
-    pthread_mutex_lock(&plugin->mutex);
-    plugin->routine = routine;
-    plugin->running = true;
-    pthread_mutex_unlock(&plugin->mutex);
-
+    plugin->routine           = routine;
+    plugin->running           = true;
     plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
 
     plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
@@ -353,11 +330,9 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    pthread_mutex_lock(&plugin->mutex);
     if (plugin->running) {
         mqtt_routine_continue(plugin->routine);
     }
-    pthread_mutex_unlock(&plugin->mutex);
 
     return NEU_ERR_SUCCESS;
 }
@@ -366,11 +341,9 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    pthread_mutex_lock(&plugin->mutex);
     if (plugin->running) {
         mqtt_routine_suspend(plugin->routine);
     }
-    pthread_mutex_unlock(&plugin->mutex);
 
     return NEU_ERR_SUCCESS;
 }
@@ -381,10 +354,7 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
 {
     neu_resp_error_t *write_data = data;
 
-    pthread_mutex_lock(&plugin->mutex);
-
     if (!plugin->running) {
-        pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
 
@@ -398,13 +368,11 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
     neu_err_code_e error = neu_mqtt_client_publish(
         routine->client, topic, qos, (unsigned char *) json, strlen(json));
     if (NEU_ERR_SUCCESS != error) {
-        pthread_mutex_unlock(&plugin->mutex);
         plog_error(plugin, "trans data publish error code :%d, topoic:%s",
                    error, topic);
         return error;
     }
 
-    pthread_mutex_unlock(&plugin->mutex);
     return NEU_ERR_SUCCESS;
 }
 
@@ -413,10 +381,7 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
 {
     neu_resp_read_group_t *read_data = data;
 
-    pthread_mutex_lock(&plugin->mutex);
-
     if (!plugin->running) {
-        pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
 
@@ -431,13 +396,11 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
     neu_err_code_e error = neu_mqtt_client_publish(
         routine->client, topic, qos, (unsigned char *) json, strlen(json));
     if (NEU_ERR_SUCCESS != error) {
-        pthread_mutex_unlock(&plugin->mutex);
         plog_error(plugin, "read response publish error code :%d, topoic:%s",
                    error, topic);
         return error;
     }
 
-    pthread_mutex_unlock(&plugin->mutex);
     return NEU_ERR_SUCCESS;
 }
 
@@ -445,10 +408,7 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
 {
     neu_reqresp_trans_data_t *trans_data = data;
 
-    pthread_mutex_lock(&plugin->mutex);
-
     if (!plugin->running) {
-        pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
 
@@ -458,7 +418,6 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     char *             json =
         command_read_periodic_response(trans_data, routine->option.format);
     if (NULL == json) {
-        pthread_mutex_unlock(&plugin->mutex);
         return NEU_ERR_FAILURE;
     }
 
@@ -467,13 +426,11 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     neu_err_code_e error = neu_mqtt_client_publish(
         routine->client, topic, qos, (unsigned char *) json, strlen(json));
     if (NEU_ERR_SUCCESS != error) {
-        pthread_mutex_unlock(&plugin->mutex);
         plog_error(plugin, "trans data publish error code :%d, topoic:%s",
                    error, topic);
         return error;
     }
 
-    pthread_mutex_unlock(&plugin->mutex);
     return NEU_ERR_SUCCESS;
 }
 
