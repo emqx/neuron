@@ -65,8 +65,8 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter     = neu_adapter_create(&adapter_info, manager);
-    adapter->id = neu_node_manager_add(manager->node_manager, adapter);
+    adapter = neu_adapter_create(&adapter_info, manager);
+    neu_node_manager_add(manager->node_manager, adapter);
     neu_adapter_init(adapter);
 
     return NEU_ERR_SUCCESS;

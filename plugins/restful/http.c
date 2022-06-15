@@ -247,23 +247,6 @@ int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
     return 0;
 }
 
-int http_get_param_node_id(nng_aio *aio, const char *name, neu_node_id_t *param)
-{
-    uint32_t val;
-
-    int rv = http_get_param_uint32(aio, name, &val);
-    if (0 != rv) {
-        return rv;
-    }
-
-    if (0 == val) {
-        return NEU_ERR_EINVAL;
-    }
-
-    *param = (neu_node_id_t) val;
-    return 0;
-}
-
 int http_get_param_node_type(nng_aio *aio, const char *name,
                              neu_node_type_e *param)
 {

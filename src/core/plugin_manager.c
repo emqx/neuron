@@ -20,9 +20,6 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
-
 #include "errcodes.h"
 #include "utils/log.h"
 #include "utils/utextend.h"
@@ -34,7 +31,7 @@
 #include "dummy/dummy.h"
 #include "restful/rest.h"
 
-#include "pluginx_manager.h"
+#include "plugin_manager.h"
 
 typedef struct plugin_entity {
     char *name;
@@ -48,8 +45,6 @@ typedef struct plugin_entity {
 } plugin_entity_t;
 
 struct neu_plugin_manager {
-    nng_mtx *mtx;
-
     plugin_entity_t *plugins;
 };
 
@@ -59,8 +54,6 @@ neu_plugin_manager_t *neu_plugin_manager_create()
 {
     neu_plugin_manager_t *manager = calloc(1, sizeof(neu_plugin_manager_t));
 
-    nng_mtx_alloc(&manager->mtx);
-
     return manager;
 }
 
@@ -68,16 +61,12 @@ void neu_plugin_manager_destroy(neu_plugin_manager_t *mgr)
 {
     plugin_entity_t *el = NULL, *tmp = NULL;
 
-    nng_mtx_lock(mgr->mtx);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
         HASH_DEL(mgr->plugins, el);
         entity_free(el);
     }
 
-    nng_mtx_unlock(mgr->mtx);
-
-    nng_mtx_free(mgr->mtx);
     free(mgr);
 }
 
@@ -120,11 +109,9 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
         return NEU_ERR_LIBRARY_INFO_INVALID;
     }
 
-    nng_mtx_lock(mgr->mtx);
     HASH_FIND_STR(mgr->plugins, pm->module_name, plugin);
     if (plugin != NULL) {
         dlclose(handle);
-        nng_mtx_unlock(mgr->mtx);
         return NEU_ERR_LIBRARY_NAME_CONFLICT;
     }
     plugin = calloc(1, sizeof(plugin_entity_t));
@@ -136,7 +123,6 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
     plugin->description = strdup(pm->module_descr);
 
     HASH_ADD_STR(mgr->plugins, name, plugin);
-    nng_mtx_unlock(mgr->mtx);
 
     nlog_notice("add plugin, name: %s, library: %s, kind: %d, type: %d",
                 plugin->name, plugin->lib_name, plugin->kind, plugin->type);
@@ -150,7 +136,6 @@ int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name)
     plugin_entity_t *plugin = NULL;
     int              ret    = NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL;
 
-    nng_mtx_lock(mgr->mtx);
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
         if (plugin->kind != NEU_PLUGIN_KIND_SYSTEM) {
@@ -160,7 +145,6 @@ int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name)
         }
     }
 
-    nng_mtx_unlock(mgr->mtx);
     return ret;
 }
 
@@ -171,7 +155,6 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
     plugin_entity_t *el = NULL, *tmp = NULL;
 
     utarray_new(plugins, &icd);
-    nng_mtx_lock(mgr->mtx);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
         neu_resp_plugin_info_t info = {
@@ -185,7 +168,6 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
 
         utarray_push_back(plugins, &info);
     }
-    nng_mtx_unlock(mgr->mtx);
 
     return plugins;
 }
@@ -196,7 +178,6 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
     plugin_entity_t *plugin = NULL;
     int              ret    = -1;
 
-    nng_mtx_lock(mgr->mtx);
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
         ret        = 0;
@@ -207,7 +188,6 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
         strncpy(info->description, plugin->description,
                 sizeof(info->description));
     }
-    nng_mtx_unlock(mgr->mtx);
 
     return ret;
 }
@@ -218,7 +198,6 @@ int neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
 {
     plugin_entity_t *plugin = NULL;
 
-    nng_mtx_lock(mgr->mtx);
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
         char lib_path[256] = { 0 };
@@ -231,10 +210,8 @@ int neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
         instance->module = (neu_plugin_module_t *) dlsym(instance->handle,
                                                          "neu_plugin_module");
         assert(instance->module != NULL);
-        nng_mtx_unlock(mgr->mtx);
         return 0;
     }
-    nng_mtx_unlock(mgr->mtx);
 
     return -1;
 }

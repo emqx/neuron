@@ -223,11 +223,6 @@ static int persister_singleton_load_data(neu_adapter_t *adapter)
     UT_array *       adapter_infos = NULL;
     neu_persister_t *persister     = persister_singleton_get();
 
-    // declaration for neu_manager_update_node_id since it is not exposed
-    int neu_manager_update_node_id(neu_manager_t * manager,
-                                   neu_node_id_t node_id,
-                                   neu_node_id_t new_node_id);
-
     nlog_info("%s start persistence loading", adapter->name);
 
     int rv = persister_singleton_load_plugins(adapter);
@@ -826,28 +821,6 @@ neu_manager_t *neu_adapter_get_manager(neu_adapter_t *adapter)
     }
 
     return (neu_manager_t *) adapter->manager;
-}
-
-neu_adapter_id_t neu_adapter_get_id(neu_adapter_t *adapter)
-{
-    if (adapter == NULL) {
-        return 0;
-    }
-
-    return adapter->id;
-}
-
-// NOTE: Do NOT expose this function in header files, use for persistence
-// only!
-neu_adapter_id_t neu_adapter_set_id(neu_adapter_t *adapter, neu_adapter_id_t id)
-{
-    if (adapter == NULL) {
-        return 0;
-    }
-
-    neu_adapter_id_t old = adapter->id;
-    adapter->id          = id;
-    return old;
 }
 
 neu_adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter)

@@ -69,8 +69,6 @@ int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param);
 int http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param);
 int http_get_param_node_type(nng_aio *aio, const char *name,
                              neu_node_type_e *param);
-int http_get_param_node_id(nng_aio *aio, const char *name,
-                           neu_node_id_t *param);
 
 int         http_response(nng_aio *aio, neu_err_code_e code, char *content);
 const char *http_get_header(nng_aio *aio, char *name);

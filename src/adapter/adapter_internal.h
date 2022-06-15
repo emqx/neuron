@@ -41,10 +41,9 @@ typedef enum adapter_state {
 } adapter_state_e;
 
 struct neu_adapter {
-    neu_adapter_id_t id;
-    adapter_state_e  state;
-    char *           name;
-    neu_manager_t *  manager;
+    adapter_state_e state;
+    char *          name;
+    neu_manager_t * manager;
 
     uint32_t req_id;
 
@@ -84,7 +83,6 @@ void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer);
 
 const char *       neu_adapter_get_name(neu_adapter_t *adapter);
 neu_manager_t *    neu_adapter_get_manager(neu_adapter_t *adapter);
-neu_adapter_id_t   neu_adapter_get_id(neu_adapter_t *adapter);
 neu_adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter);
 int neu_adapter_set_setting(neu_adapter_t *adapter, neu_config_t *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);

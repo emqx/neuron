@@ -22,7 +22,7 @@
 #include "errcodes.h"
 #include "utils/log.h"
 
-#include "subscribex.h"
+#include "subscribe.h"
 
 typedef struct sub_elem_key {
     char driver[NEU_NODE_NAME_LEN];

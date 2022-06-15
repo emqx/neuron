@@ -112,8 +112,7 @@ int main(int argc, char *argv[])
             }
         } else if (WIFSIGNALED(status)) {
             signum = WTERMSIG(status);
-            zlog_notice(neuron, "detect neuron daemon term with signal:%d",
-                        signum);
+            nlog_notice("detect neuron daemon term with signal:%d", signum);
         }
     }
 

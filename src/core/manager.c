@@ -31,8 +31,8 @@
 #include "adapter/driver/driver_internal.h"
 
 #include "node_manager.h"
-#include "pluginx_manager.h"
-#include "subscribex.h"
+#include "plugin_manager.h"
+#include "subscribe.h"
 
 #include "manager.h"
 #include "manager_internal.h"
@@ -68,7 +68,6 @@ neu_manager_t *neu_manager_create()
     manager->subscribe_manager = neu_subscribe_manager_create();
     manager->stop              = false;
 
-    nng_mtx_alloc(&manager->mtx);
     nng_pair1_open_poly(&manager->socket);
 
     rv = nng_listen(manager->socket, url, NULL, 0);
@@ -97,7 +96,6 @@ void neu_manager_destroy(neu_manager_t *manager)
     neu_event_del_io(manager->events, manager->loop);
     neu_event_close(manager->events);
 
-    nng_mtx_free(manager->mtx);
     free(manager);
     nlog_warn("manager exit");
 }
@@ -555,8 +553,8 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter     = neu_adapter_create(&adapter_info, manager);
-    adapter->id = neu_node_manager_add_static(manager->node_manager, adapter);
+    adapter = neu_adapter_create(&adapter_info, manager);
+    neu_node_manager_add_static(manager->node_manager, adapter);
     neu_adapter_init(adapter);
     neu_adapter_start(adapter);
 }

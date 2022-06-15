@@ -30,9 +30,6 @@ extern "C" {
 
 #define NEU_ADAPTER_NAME_SIZE 64
 
-typedef uint32_t neu_node_id_t;
-typedef uint32_t neu_adapter_id_t;
-
 typedef enum {
     NEU_NA_TYPE_DRIVER = 1,
     NEU_NA_TYPE_APP    = 2,
