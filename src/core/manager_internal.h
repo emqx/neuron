@@ -26,8 +26,8 @@
 #include "event/event.h"
 
 #include "node_manager.h"
-#include "pluginx_manager.h"
-#include "subscribex.h"
+#include "plugin_manager.h"
+#include "subscribe.h"
 
 typedef struct neu_manager {
     nng_mtx *       mtx;

@@ -88,7 +88,7 @@ set(NEURON_SOURCES
     src/core/manager_internal.c
     src/core/manager.c
     src/core/subscribe.c
-    src/core/pluginx_manager.c
+    src/core/plugin_manager.c
     src/core/node_manager.c
     src/adapter/adapter.c
     src/adapter/driver/cache.c

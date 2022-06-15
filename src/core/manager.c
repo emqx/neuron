@@ -31,8 +31,8 @@
 #include "adapter/driver/driver_internal.h"
 
 #include "node_manager.h"
-#include "pluginx_manager.h"
-#include "subscribex.h"
+#include "plugin_manager.h"
+#include "subscribe.h"
 
 #include "manager.h"
 #include "manager_internal.h"
