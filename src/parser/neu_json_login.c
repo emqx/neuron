@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "json/neu_json_login.h"
+#include "neu_json_login.h"
 
 int neu_json_decode_login_req(char *buf, neu_json_login_req_t **result)
 {

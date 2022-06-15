@@ -45,7 +45,13 @@ extern "C" {
 #include "connection/mqtt_client_intf.h"
 #include "connection/neu_connection.h"
 #include "event/event.h"
+
+#include "json/json.h"
+#include "json/neu_json_error.h"
+#include "json/neu_json_fn.h"
+#include "json/neu_json_mqtt.h"
 #include "json/neu_json_param.h"
+#include "json/neu_json_rw.h"
 
 #include "define.h"
 
@@ -53,8 +59,6 @@ extern "C" {
 #include "plugin.h"
 #include "tag.h"
 #include "tag_sort.h"
-
-#include "file.h"
 
 #ifdef __cplusplus
 }

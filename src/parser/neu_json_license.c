@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "json/neu_json_license.h"
+#include "neu_json_license.h"
 
 int neu_json_encode_get_license_resp(void *json_object, void *param)
 {

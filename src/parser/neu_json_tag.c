@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "json/neu_json_tag.h"
+#include "neu_json_tag.h"
 
 int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
 {

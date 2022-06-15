@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "json/neu_json_log.h"
+#include "neu_json_log.h"
 
 int neu_json_encode_get_log_resp(void *json_object, void *param)
 {

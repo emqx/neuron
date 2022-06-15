@@ -18,16 +18,16 @@
  **/
 
 #define _POSIX_C_SOURCE 200809L
+#include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
 
 #include "errcodes.h"
-#include "file.h"
+#include "parser/neu_json_license.h"
 #include "plugin.h"
 #include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
-#include "json/neu_json_license.h"
 
 #include "handle.h"
 #include "http.h"
@@ -117,6 +117,11 @@ void handle_set_license(nng_aio *aio)
                 http_response(aio, error_code.error, result_error);
             });
         });
+}
+static inline bool file_exists(const char *const path)
+{
+    struct stat buf = { 0 };
+    return -1 != stat(path, &buf);
 }
 
 static int set_license(const char *lic_str)

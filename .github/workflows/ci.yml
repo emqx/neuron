@@ -1,4 +1,4 @@
-name: EMQX neuron dev
+name: compile
 
 on: 
   push:
@@ -8,23 +8,6 @@ on:
       - published
 
 jobs:
-  clang_format_check:
-    runs-on: ubuntu-20.04
-
-    steps:
-      # checkout
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Run clang-format style check for C/C++ programs.
-        uses: DoozyX/clang-format-lint-action@v0.12
-        with:
-          source: 'src plugins include tests'
-          exclude: 'include/neuron/utils/uthash.h include/neuron/utils/utarray.h include/neuron/utils/utlist.h include/neuron/utils/zlog.h'
-          clangFormatVersion: 10
-          style: file
-
   cross-build:
     runs-on: ubuntu-20.04
     strategy:
@@ -65,64 +48,6 @@ jobs:
           name: neuron-sdk-${{ matrix.arch[5] }}
           path: |
             neuron-sdk-*.tar.gz
-
-  ut:
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      
-      - name: install dep
-        run: |
-          ./install.sh -d /usr/local -a x86_64 -c x86_64-linux-gnu
-
-      - name: compile
-        run: |
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
-          make -j4
-
-      - name: unit test
-        run: |
-          cd build
-          ctest --output-on-failure
-
-  ft:
-    runs-on: ubuntu-20.04
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-      
-      - name: install dep
-        run: |
-          ./install.sh -d /usr/local -a x86_64 -c x86_64-linux-gnu
-
-      - name: compile
-        run: |
-          mkdir -p build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
-          make -j4
-
-      - name: function test
-        run: |
-          sudo apt-get install -y mosquitto
-          mosquitto -v &
-          python3 -m pip install -U pip
-          python3 -m pip install -r ft/requirements.txt
-          python3 -m robot -P ft/ -d ft/reports ft
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ft_result
-          path: |
-            ft/reports/log.html
-            ft/reports/output.xml
-            ft/reports/report.html
-            build/neuron.log
 
   create_daily_release:
     runs-on: ubuntu-20.04
@@ -220,7 +145,7 @@ jobs:
       matrix:
         arch: [arm64, armhf, amd64]
         type: [neuron-sdk]
-        package: [tar.gz, deb, rpm]
+        package: [tar.gz]
 
     steps:
       - uses: actions/checkout@v2

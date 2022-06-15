@@ -63,7 +63,6 @@ set(NEURON_BASE_SOURCES
     src/event/event_unix.c
     src/utils/json.c
     src/utils/neu_jwt.c
-    src/utils/file.c
     src/utils/base64.c
     src/utils/async_queue.c)
 
