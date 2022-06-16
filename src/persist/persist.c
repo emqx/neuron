@@ -254,7 +254,7 @@ static int file_tree_walk_(char *path_buf, size_t len, size_t size,
 
     // if not possible to read the directory for this user
     if ((dirp = opendir(path_buf)) == NULL) {
-        rv = (ENOENT == errno) ? NEU_ERR_ENOENT : NEU_ERR_FAILURE;
+        rv = -1;
         return rv;
     }
 
@@ -349,16 +349,16 @@ static inline int ensure_file_exist(const char *name,
 {
     int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
     if (-1 == fd) {
-        return NEU_ERR_FAILURE;
+        return -1;
     }
     struct stat statbuf;
     if (-1 == fstat(fd, &statbuf)) {
-        return NEU_ERR_FAILURE;
+        return -1;
     }
     if (0 == statbuf.st_size) {
         ssize_t size = strlen(default_content);
         if (size != write(fd, default_content, size)) {
-            return NEU_ERR_FAILURE;
+            return -1;
         }
     }
     return 0;
@@ -369,13 +369,13 @@ static int write_file_string(const char *fn, const char *s)
     char tmp[PATH_MAX_SIZE] = { 0 };
     if (sizeof(tmp) == snprintf(tmp, sizeof(tmp), "%s.tmp", fn)) {
         nlog_error("persister too long file name:%s", fn);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     FILE *f = fopen(tmp, "w+");
     if (NULL == f) {
         nlog_error("persister failed to open file:%s", fn);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     // write to a temporary file first
@@ -383,7 +383,7 @@ static int write_file_string(const char *fn, const char *s)
     if (((size_t) n) != fwrite(s, 1, n, f)) {
         nlog_error("persister failed to write file:%s", fn);
         fclose(f);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     fclose(f);
@@ -393,7 +393,7 @@ static int write_file_string(const char *fn, const char *s)
     // rename the temporary file to the destination file
     if (0 != rename(tmp, fn)) {
         nlog_error("persister failed rename %s to %s", tmp, fn);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     return 0;
@@ -405,7 +405,7 @@ static int read_file_string(const char *fn, char **out)
     int rv = 0;
     int fd = open(fn, O_RDONLY);
     if (-1 == fd) {
-        rv = (ENOENT == errno) ? NEU_ERR_ENOENT : NEU_ERR_FAILURE;
+        rv = -1;
         goto error_open;
     }
 
@@ -418,7 +418,7 @@ static int read_file_string(const char *fn, char **out)
 
     char *buf = malloc(fsize + 1);
     if (NULL == buf) {
-        rv = NEU_ERR_ENOMEM;
+        rv = -1;
         goto error_buf;
     }
 
@@ -430,7 +430,7 @@ static int read_file_string(const char *fn, char **out)
         } else if (n < fsize && EINTR == errno) {
             continue;
         } else {
-            rv = NEU_ERR_FAILURE;
+            rv = -1;
             goto error_read;
         }
     }
@@ -758,7 +758,7 @@ int neu_persister_delete_adapter(neu_persister_t *persister,
     int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
         nlog_error("persister path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
     rmdir_recursive(path);
     return 0;
@@ -771,18 +771,18 @@ int neu_persister_update_adapter(neu_persister_t *persister,
     int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
         nlog_error("persister path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     char new_path[PATH_MAX_SIZE] = { 0 };
     n = persister_adapter_dir(new_path, sizeof(new_path), persister, new_name);
     if (sizeof(new_path) == n) {
         nlog_error("persister new path too long: %s", new_path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     if (0 != rename(path, new_path)) {
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     return 0;
@@ -858,19 +858,19 @@ int neu_persister_store_datatags(neu_persister_t *persister,
                                        adapter_name, group_config_name);
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     int rv = create_dir_recursive(path);
     if (0 != rv) {
         nlog_error("fail to create dir: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     n = path_cat(path, n, sizeof(path), "datatags.json");
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     neu_json_datatag_req_t datatags_resp = { 0 };
@@ -912,13 +912,13 @@ int neu_persister_load_datatags(neu_persister_t *persister,
                                        adapter_name, group_config_name);
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     n = path_cat(path, n, sizeof(path), "datatags.json");
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     char *json_str = NULL;
@@ -961,7 +961,7 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
     int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     int rv = create_dir(path);
@@ -973,7 +973,7 @@ int neu_persister_store_subscriptions(neu_persister_t *persister,
     n = path_cat(path, n, sizeof(path), "subscriptions.json");
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     neu_json_subscriptions_req_t subs_resp = { 0 };
@@ -1012,13 +1012,13 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
     int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     n = path_cat(path, n, sizeof(path), "subscriptions.json");
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
-        return NEU_ERR_FAILURE;
+        return -1;
     }
 
     char *json_str = NULL;

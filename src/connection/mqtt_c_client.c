@@ -599,13 +599,13 @@ static neu_err_code_e client_init(mqtt_c_client_t *client)
     if (0 == strcmp(option->connection, "ssl://")) {
         ssl_ctx_init(&client->state);
         if (NULL == client->state.ssl_ctx) {
-            return NEU_ERR_FAILURE;
+            return NEU_ERR_MQTT_FAILURE;
         }
     }
 
     bio_init(&client->state);
     if (NULL == client->state.sock_fd) {
-        return NEU_ERR_FAILURE;
+        return NEU_ERR_MQTT_FAILURE;
     }
 
     return NEU_ERR_SUCCESS;

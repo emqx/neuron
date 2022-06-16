@@ -387,7 +387,7 @@ void license_free(license_t *license)
 int license_read(license_t *license, const char *fname)
 {
     if (NULL == license || NULL == fname) {
-        return NEU_ERR_EINVAL;
+        return -1;
     }
 
     license_t lic;
@@ -395,7 +395,7 @@ int license_read(license_t *license, const char *fname)
 
     lic.fname_ = strdup(fname);
     if (NULL == lic.fname_) {
-        return NEU_ERR_ENOMEM;
+        return -1;
     }
 
     int rv = extract_license(fname, root_cert_pub_key, &lic);

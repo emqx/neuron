@@ -315,7 +315,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     if (NULL == routine) {
         plugin->routine = NULL;
         plugin->running = false;
-        return NEU_ERR_FAILURE;
+        return NEU_ERR_MQTT_FAILURE;
     }
 
     plugin->routine           = routine;
@@ -355,7 +355,7 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
     neu_resp_error_t *write_data = data;
 
     if (!plugin->running) {
-        return NEU_ERR_FAILURE;
+        return NEU_ERR_MQTT_FAILURE;
     }
 
     mqtt_routine_t *   routine = plugin->routine;
@@ -382,7 +382,7 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
     neu_resp_read_group_t *read_data = data;
 
     if (!plugin->running) {
-        return NEU_ERR_FAILURE;
+        return NEU_ERR_MQTT_FAILURE;
     }
 
     mqtt_routine_t *   routine = plugin->routine;
@@ -409,7 +409,7 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     neu_reqresp_trans_data_t *trans_data = data;
 
     if (!plugin->running) {
-        return NEU_ERR_FAILURE;
+        return NEU_ERR_MQTT_FAILURE;
     }
 
     mqtt_routine_t *   routine = plugin->routine;
@@ -418,7 +418,7 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     char *             json =
         command_read_periodic_response(trans_data, routine->option.format);
     if (NULL == json) {
-        return NEU_ERR_FAILURE;
+        return NEU_ERR_MQTT_FAILURE;
     }
 
     const char *   topic = pair->topic_response;
@@ -461,7 +461,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     }
     default:
-        error = NEU_ERR_FAILURE;
+        error = NEU_ERR_MQTT_FAILURE;
         break;
     }
 
