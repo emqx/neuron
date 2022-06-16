@@ -84,6 +84,7 @@ struct mqtt_c_client {
     struct reconnect_state   state;
     pthread_t                daemon;
     void *                   user_data;
+    state_update             state_update_func;
     TAILQ_HEAD(, subscribe_tuple) head;
 };
 
@@ -506,6 +507,8 @@ static void publish_callback(void **                       p_reconnect_state,
     free(topic_name);
 }
 
+neu_err_code_e mqtt_c_client_is_connected(mqtt_c_client_t *client);
+
 static void *client_refresher(void *context)
 {
     assert(NULL != context);
@@ -529,6 +532,11 @@ static void *client_refresher(void *context)
         state->sock_state = error;
         pthread_mutex_unlock(&state->sock_state_mutex);
         usleep(INTERVAL);
+
+        if (NULL != client->state_update_func) {
+            int rc = mqtt_c_client_is_connected(client);
+            client->state_update_func(client->user_data, rc);
+        }
     }
 
     reconnect_state_uninit(state);
@@ -545,8 +553,9 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
         return NULL;
     }
 
-    client->option    = option;
-    client->user_data = context;
+    client->option            = option;
+    client->user_data         = context;
+    client->state_update_func = client->option->state_update_func;
     TAILQ_INIT(&client->head);
 
     struct reconnect_state *state = &client->state;
@@ -879,6 +888,8 @@ neu_err_code_e mqtt_c_client_close(mqtt_c_client_t *client)
     mqtt_c_client_suspend(client);
     client_disconnect(client);
 
+    client->state_update_func = NULL;
+    client->user_data         = NULL;
     pthread_mutex_lock(&client->state.running_mutex);
     client->state.running = false;
     pthread_mutex_unlock(&client->state.running_mutex);

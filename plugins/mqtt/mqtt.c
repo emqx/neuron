@@ -179,6 +179,20 @@ static void topics_subscribe(UT_array *topics, neu_mqtt_client_t client)
     }
 }
 
+static void mqtt_routine_state(void *context, int state)
+{
+    if (NULL == context) {
+        return;
+    }
+
+    neu_plugin_t *plugin = (neu_plugin_t *) context;
+    if (0 == state) {
+        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
+    } else {
+        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+    }
+}
+
 static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
                                           const char *  config)
 {
@@ -198,8 +212,9 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
         return NULL;
     }
 
-    neu_mqtt_client_t *client = (neu_mqtt_client_t *) &routine->client;
-    neu_err_code_e     error  = NEU_ERR_SUCCESS;
+    routine->option.state_update_func = mqtt_routine_state;
+    neu_mqtt_client_t *client         = (neu_mqtt_client_t *) &routine->client;
+    neu_err_code_e     error          = NEU_ERR_SUCCESS;
     error = neu_mqtt_client_open(client, &routine->option, plugin);
     if (NEU_ERR_SUCCESS != error) {
         mqtt_option_uninit(&routine->option);
