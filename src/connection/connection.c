@@ -662,20 +662,24 @@ static void conn_connect(neu_conn_t *conn)
         case NEU_CONN_TTY_PARITY_ODD:
             tty_opt.c_cflag |= PARENB;
             tty_opt.c_cflag |= PARODD;
+            tty_opt.c_iflag = INPCK;
             break;
         case NEU_CONN_TTY_PARITY_EVEN:
             tty_opt.c_cflag |= PARENB;
             tty_opt.c_cflag &= ~PARODD;
+            tty_opt.c_iflag = INPCK;
             break;
         case NEU_CONN_TTY_PARITY_MARK:
             tty_opt.c_cflag |= PARENB;
             tty_opt.c_cflag |= PARODD;
             tty_opt.c_cflag |= CMSPAR;
+            tty_opt.c_iflag = INPCK;
             break;
         case NEU_CONN_TTY_PARITY_SPACE:
             tty_opt.c_cflag |= PARENB;
             tty_opt.c_cflag |= CMSPAR;
             tty_opt.c_cflag &= ~PARODD;
+            tty_opt.c_iflag = INPCK;
             break;
         }
 
@@ -704,8 +708,10 @@ static void conn_connect(neu_conn_t *conn)
             break;
         }
 
-        tty_opt.c_cflag |= CLOCAL | CREAD;
-        tty_opt.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+        tty_opt.c_oflag = 0;
+        tty_opt.c_lflag = 0;
+        tty_opt.c_iflag |= IGNBRK;
+        tty_opt.c_cflag |= CREAD | HUPCL | CLOCAL;
 
         tcflush(fd, TCIFLUSH);
         tcsetattr(fd, TCSANOW, &tty_opt);
