@@ -19,11 +19,11 @@
 
 #include <stdlib.h>
 
+#include "parser/neu_json_node.h"
 #include "plugin.h"
 #include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
-#include "json/neu_json_node.h"
 
 #include "adapter.h"
 #include "handle.h"

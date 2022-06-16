@@ -30,10 +30,9 @@
 
 #include "utils/log.h"
 
+#include "parser/neu_json_login.h"
 #include "json/neu_json_fn.h"
-#include "json/neu_json_login.h"
 
-#include "file.h"
 #include "handle.h"
 #include "http.h"
 #include "utils/neu_jwt.h"
@@ -81,6 +80,41 @@ void handle_login(nng_aio *aio)
                 });
             }
         })
+}
+
+static char *file_string_read(size_t *length, const char *const path)
+{
+    FILE *fp = fopen(path, "rb");
+    if (!fp) {
+        errno   = 0;
+        *length = 0;
+        return NULL;
+    }
+
+    fseek(fp, 0, SEEK_END);
+    *length = (size_t) ftell(fp);
+    if (0 == *length) {
+        fclose(fp);
+        return NULL;
+    }
+
+    char *data = NULL;
+    data       = (char *) malloc((*length + 1) * sizeof(char));
+    if (NULL != data) {
+        data[*length] = '\0';
+        fseek(fp, 0, SEEK_SET);
+        size_t read = fread(data, sizeof(char), *length, fp);
+        if (read != *length) {
+            *length = 0;
+            free(data);
+            data = NULL;
+        }
+    } else {
+        *length = 0;
+    }
+
+    fclose(fp);
+    return data;
 }
 
 void handle_get_plugin_schema(nng_aio *aio)

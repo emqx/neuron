@@ -19,7 +19,7 @@
 
 #include <jansson.h>
 
-#include "neuron/tag.h"
+#include "neuron.h"
 #include "utils/log.h"
 
 #include "json_rw.h"

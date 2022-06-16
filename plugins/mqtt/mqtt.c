@@ -25,7 +25,7 @@
 
 #include "command/command.h"
 #include "mqtt.h"
-#include "neuron/neuron.h"
+#include "neuron.h"
 #include "util.h"
 
 const neu_plugin_module_t neu_plugin_module;

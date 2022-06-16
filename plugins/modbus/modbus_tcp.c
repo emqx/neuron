@@ -18,7 +18,7 @@
  **/
 #include <stdlib.h>
 
-#include <neuron.h>
+#include "neuron.h"
 
 #include "modbus_point.h"
 #include "modbus_req.h"

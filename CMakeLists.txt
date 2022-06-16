@@ -1,10 +1,9 @@
-# Neuron project cmake file
-
 cmake_minimum_required(VERSION 3.12)
 project(neuron)
 
 enable_language(C)
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -12,51 +11,6 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Debug")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
-set(CMAKE_C_FLAGS_DEBUG
-    "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
-)
-set(CMAKE_CXX_FLAGS_DEBUG
-    "-Wall -g -O0 -fsanitize=address"
-)
-
-if(NOT DEFINED CMAKE_SUPPRESS_DEVELOPER_WARNINGS)
-  set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS
-      1
-      CACHE INTERNAL "No dev warnings")
-endif()
-
-add_custom_target(neuron-version
-  COMMAND ${CMAKE_COMMAND} -P
-          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/neuron-version.cmake)
-
-configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
-configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
-configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utlist.h)
-
-# Call this from your own project's makefile.
-
-if(NOT CMAKE_STAGING_PREFIX)
-  if(APPLE)
-  include_directories(/usr/local/include /usr/local/opt/openssl/include)
-  link_directories(/usr/local/lib /usr/local/opt/openssl/lib)
-  else()
-  link_directories(/usr/local/lib)
-  endif()
-else()
-  set(CMAKE_PREFIX_PATH ${CMAKE_STAGING_PREFIX})
-  include_directories(${CMAKE_STAGING_PREFIX}/include ${CMAKE_STAGING_PREFIX}/openssl/include)
-  link_directories(${CMAKE_STAGING_PREFIX} ${CMAKE_STAGING_PREFIX}/lib ${CMAKE_STAGING_PREFIX}/lib/${COMPILER_PREFIX} ${CMAKE_STAGING_PREFIX}/openssl/lib)
-  message(STATUS ${CMAKE_STAGING_PREFIX})
-endif()
-
-
-find_package(nng CONFIG REQUIRED)
-find_package(Threads)
-
-add_definitions(-DPROJECT_ROOT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
 if(NOT CMAKE_SYSTEM_NAME)
   set(CMAKE_SYSTEM_NAME "Linux")
 endif()
@@ -71,9 +25,56 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
 endif()
 
-# define neuron executalbe program
+set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
+set(CMAKE_C_FLAGS_DEBUG
+    "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
+)
+set(CMAKE_CXX_FLAGS_DEBUG
+    "-Wall -g -O0 -fsanitize=address"
+)
+
+add_custom_target(neuron-version
+  COMMAND ${CMAKE_COMMAND} -P
+          ${CMAKE_CURRENT_SOURCE_DIR}/cmake/neuron-version.cmake)
+
+configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
+configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
+configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utlist.h)
+
+find_package(nng CONFIG REQUIRED)
+find_package(Threads)
+
+if (CMAKE_STAGING_PREFIX)
+  include_directories(${CMAKE_STAGING_PREFIX}/include)
+  link_directories(${CMAKE_STAGING_PREFIX}/lib)
+endif()
+
 aux_source_directory(src/parser NEURON_SRC_PARSE)
-aux_source_directory(src/schema NEURON_SRC_SCHEMA)
+set(NEURON_BASE_SOURCES
+    src/base/tag.c
+    src/base/neu_plugin_common.c
+    src/base/tag_sort.c
+    src/base/group.c
+    src/connection/connection.c
+    src/connection/mqtt_c_client.c
+    src/connection/mqtt_client_intf.c
+    src/event/event_linux.c
+    src/event/event_unix.c
+    src/utils/json.c
+    src/utils/neu_jwt.c
+    src/utils/base64.c
+    src/utils/async_queue.c)
+
+add_library(neuron-base SHARED)
+target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 
+target_include_directories(neuron-base
+                           PRIVATE include/neuron src)
+target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
+target_link_libraries(neuron-base nng libzlog.so jansson crypto ssl mqttc jwt
+                      ${CMAKE_THREAD_LIBS_INIT})
+add_dependencies(neuron-base neuron-version)
+
 set(PERSIST_SOURCES
     src/persist/persist.c
     src/persist/json/persist_json_adapter.c
@@ -110,75 +111,29 @@ set(NEURON_SOURCES
     ${PERSIST_SOURCES})
 
 set(CMAKE_BUILD_RPATH ./)
-set(NEURON_INCLUDE_DIRECTORIES include include/neuron src plugins)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
-target_include_directories(neuron PRIVATE ${NEURON_INCLUDE_DIRECTORIES})
-target_include_directories(neuron PUBLIC ${CMAKE_STAGING_PREFIX})
-if(APPLE)
-  target_link_libraries(neuron nng::nng jansson neuron-base)
-else()
-  target_link_libraries(neuron dl nng jansson neuron-base)
-endif()
-target_link_libraries(neuron ssl crypto ${CMAKE_THREAD_LIBS_INIT})
-
-# define neuron base library
-set(NEURON_BASE_SOURCES
-    src/base/tag.c
-    src/base/neu_plugin_common.c
-    src/base/tag_sort.c
-    src/base/group.c
-    src/connection/connection.c
-    src/connection/mqtt_c_client.c
-    src/connection/mqtt_client_intf.c
-    src/event/event_linux.c
-    src/event/event_unix.c
-    src/utils/json.c
-    src/utils/neu_jwt.c
-    src/utils/file.c
-    src/utils/base64.c
-    src/utils/async_queue.c)
-
-set(NEURON_BASE_INCLUDE_DIRECTORIES include include/neuron src)
-add_library(neuron-base SHARED)
-target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE} ${NEURON_SRC_SCHEMA})
-target_include_directories(neuron-base
-                           PRIVATE ${NEURON_BASE_INCLUDE_DIRECTORIES})
-target_include_directories(neuron-base PRIVATE ${CMAKE_STAGING_PREFIX})
-target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
-target_link_libraries(neuron-base nng libzlog.so jansson crypto ssl mqttc jwt
-                      ${CMAKE_THREAD_LIBS_INIT})
-add_dependencies(neuron-base neuron-version)
+target_include_directories(neuron PRIVATE include/neuron src plugins)
+target_link_libraries(neuron dl neuron-base)
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/dev.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
-file(COPY ${CMAKE_SOURCE_DIR}/plugins/ekuiper/ekuiper.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
-file(COPY ${CMAKE_SOURCE_DIR}/plugins/modbus/modbus-tcp.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
-file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
-
-#setup default plugins for persistence
 file(COPY ${CMAKE_SOURCE_DIR}/default_plugins.json DESTINATION ${CMAKE_BINARY_DIR}/persistence)
 file(RENAME ${CMAKE_BINARY_DIR}/persistence/default_plugins.json ${CMAKE_BINARY_DIR}/persistence/plugins.json)
 
-# define for plugins
-include_directories(include/neuron)
 add_subdirectory(plugins/modbus)
 add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/ekuiper)
 
-# define for simulator
 add_subdirectory(simulator)
 
 if(NOT DISABLE_UT)
-  # define for tests
-  enable_testing()
   add_subdirectory(tests)
 endif()
-
 
 # Set sane defaults for multi-lib linux systems
 include(GNUInstallDirs)
@@ -196,7 +151,6 @@ else()
 endif()
 
 # Should work, but CMake incorrectly prepends /usr to etc...
-#install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION ${CMAKE_INSTALL_SYSCONFDIR}/ld.so.conf.d)
 install(FILES "${CMAKE_SOURCE_DIR}/neuron.conf" DESTINATION etc/ld.so.conf.d)
 install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}

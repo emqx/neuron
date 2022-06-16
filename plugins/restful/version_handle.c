@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include "neuron/version.h"
 #include "utils/log.h"
+#include "version.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 

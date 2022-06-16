@@ -18,5 +18,5 @@ find_package(Threads)
 
 
 add_executable(modbus_simulator modbus_simulator.c modbus_s.c)
-target_include_directories(modbus_simulator PRIVATE ${CMAKE_SOURCE_DIR})
+target_include_directories(modbus_simulator PRIVATE ${CMAKE_SOURCE_DIR}/include/neuron ${CMAKE_SOURCE_DIR})
 target_link_libraries(modbus_simulator neuron-base ${CMAKE_THREAD_LIBS_INIT} dl)

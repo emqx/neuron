@@ -27,12 +27,8 @@ extern "C" {
 
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
-#include "json/neu_json_group_config.h"
 #include "json/neu_json_mqtt.h"
-#include "json/neu_json_node.h"
-#include "json/neu_json_plugin.h"
 #include "json/neu_json_rw.h"
-#include "json/neu_json_tag.h"
 
 #define UNUSED(x) (void) (x)
 

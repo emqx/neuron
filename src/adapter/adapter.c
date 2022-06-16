@@ -37,8 +37,6 @@
 #include "plugin_info.h"
 #include "utils/log.h"
 
-#define to_node_id(adapter, id) id;
-
 static neu_persister_t *g_persister_singleton = NULL;
 
 static void persister_singleton_init()

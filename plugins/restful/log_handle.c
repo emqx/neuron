@@ -32,8 +32,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "parser/neu_json_log.h"
 #include "json/neu_json_fn.h"
-#include "json/neu_json_log.h"
 
 #include "handle.h"
 #include "http.h"

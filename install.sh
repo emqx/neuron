@@ -51,7 +51,7 @@ function build_openssl() {
         cd openssl
         mkdir -p ${install_dir}/openssl/ssl
         ./Configure linux-${arch} no-asm shared \
-            --prefix=${install_dir}/openssl \
+            --prefix=${install_dir}/ \
             --openssldir=${install_dir}/openssl/ssl \
             --cross-compile-prefix=${compiler_prefix}- \
             --with-zlib-include=${install_dir}/zlib/include \
@@ -76,20 +76,14 @@ function build_zlog() {
     fi
 }
 
-ssl_lib_flag="-DOPENSSL_ROOT_DIR=${install_dir}/openssl \
-    -DOPENSSL_INCLUDE_DIR=${install_dir}/openssl/include \
-    -DOPENSSL_LIBRARIES='${install_dir}/openssl/lib'"
-
 build_zlog
 compile_source madler/zlib.git v1.2.11
 compile_source akheron/jansson.git v2.14 "-DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF"
 build_openssl 
 compile_source neugates/nng.git neuron/v1.5.2 "-DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF"
+compile_source benmcollins/libjwt.git v1.13.1 "-DENABLE_PIC=ON -DBUILD_SHARED_LIBS=OFF"
+compile_source neugates/MQTT-C.git HEAD "-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON -DMQTT_C_EXAMPLES=OFF"
+
 if [ $compiler_prefix == "x86_64-linux-gnu" ]; then
-    compile_source benmcollins/libjwt.git v1.13.1 "-DENABLE_PIC=ON -DBUILD_SHARED_LIBS=OFF"
-    compile_source neugates/MQTT-C.git HEAD "-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON -DMQTT_C_EXAMPLES=OFF"
     compile_source google/googletest.git release-1.11.0
-else
-    compile_source benmcollins/libjwt.git v1.13.1 "${ssl_lib_flag} -DENABLE_PIC=ON -DBUILD_SHARED_LIBS=OFF"
-    compile_source neugates/MQTT-C.git HEAD "${ssl_lib_flag} -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON -DMQTT_C_EXAMPLES=OFF"
 fi

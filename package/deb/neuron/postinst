@@ -1,7 +1,0 @@
-#!/bin/bash
-
-echo "postinst"
-ldconfig
-systemctl daemon-reload
-systemctl enable neuron
-systemctl start neuron

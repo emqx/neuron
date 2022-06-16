@@ -27,7 +27,7 @@
 
 #include "json/json.h"
 
-#include "json/neu_json_node.h"
+#include "neu_json_node.h"
 
 int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
 {
