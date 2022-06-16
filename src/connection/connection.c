@@ -599,16 +599,16 @@ static void conn_connect(neu_conn_t *conn)
         struct termios tty_opt = { 0 };
 
         fd = open(conn->param.params.tty_client.device, O_RDWR | O_NOCTTY, 0);
-        tty_opt.c_cc[VTIME] = conn->param.params.tty_client.timeout / 100;
-        tty_opt.c_cc[VMIN]  = 0;
-
         if (fd <= 0) {
             zlog_error(conn->param.log, "open %s error: %s(%d)",
                        conn->param.params.tty_client.device, strerror(errno),
                        errno);
             return;
         }
+
         tcgetattr(fd, &tty_opt);
+        tty_opt.c_cc[VTIME] = conn->param.params.tty_client.timeout / 100;
+        tty_opt.c_cc[VMIN]  = 0;
 
         switch (conn->param.params.tty_client.baud) {
         case NEU_CONN_TTY_BAUD_115200:
