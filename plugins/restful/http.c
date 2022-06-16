@@ -195,17 +195,17 @@ int http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
     uintmax_t   result = 0;
 
     if (tmp == NULL) {
-        return NEU_ERR_ENOENT;
+        return -1;
     }
 
     if (0 == len) {
-        return NEU_ERR_EINVAL;
+        return -1;
     }
 
     result = strtoumax(tmp, &end, 10);
     if ((result == UINTMAX_MAX && errno == ERANGE) || result > UINTMAX_MAX ||
         tmp + len != end) {
-        return NEU_ERR_EINVAL;
+        return -1;
     }
 
     *param = result;
@@ -223,7 +223,7 @@ int http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param)
     }
 
     if (val > UINT64_MAX) {
-        return NEU_ERR_EINVAL;
+        return -1;
     }
 
     *param = (uint64_t) val;
@@ -240,7 +240,7 @@ int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
     }
 
     if (val > UINT32_MAX) {
-        return NEU_ERR_EINVAL;
+        return -1;
     }
 
     *param = (uint32_t) val;
@@ -282,6 +282,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LICENSE_MAX_NODES:
     case NEU_ERR_LICENSE_MAX_TAGS:
     case NEU_ERR_GROUP_ALREADY_SUBSCRIBED:
+    case NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH:
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:
@@ -305,6 +306,8 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LICENSE_INVALID:
     case NEU_ERR_GROUP_PARAMETER_INVALID:
     case NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL:
+    case NEU_ERR_LIBRARY_FAILED_TO_OPEN:
+    case NEU_ERR_LIBRARY_MODULE_INVALID:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_LIBRARY_NOT_FOUND:

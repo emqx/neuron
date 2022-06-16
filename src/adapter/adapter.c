@@ -92,7 +92,7 @@ static int persister_singleton_load_setting(neu_adapter_t *adapter,
         neu_persister_load_adapter_setting(persister, adapter_name, &setting);
     if (0 != rv) {
         const char *fail_or_ignore = "fail";
-        if (NEU_ERR_ENOENT == rv) {
+        if (rv != 0) {
             // ignore this error, no setting ever set
             rv             = 0;
             fail_or_ignore = "ignore";
@@ -121,7 +121,7 @@ static int persister_singleton_load_datatags(neu_adapter_t *adapter,
     int rv = neu_persister_load_datatags(persister, driver, group, &tags);
     if (0 != rv) {
         const char *fail_or_ignore = "fail";
-        if (NEU_ERR_ENOENT == rv) {
+        if (rv != 0) {
             // ignore no datatags
             rv             = 0;
             fail_or_ignore = "ignore";
@@ -153,7 +153,7 @@ static int persister_singleton_load_grp_and_tags(neu_adapter_t *adapter,
                                               &group_config_infos);
     if (0 != rv) {
         const char *fail_or_ignore = "fail";
-        if (NEU_ERR_ENOENT == rv) {
+        if (rv != 0) {
             // ignore no group configs
             rv             = 0;
             fail_or_ignore = "ignore";
@@ -190,7 +190,7 @@ static int persister_singleton_load_subscriptions(neu_adapter_t *adapter,
     rv = neu_persister_load_subscriptions(persister, adapter_name, &sub_infos);
     if (0 != rv) {
         const char *fail_or_ignore = "fail";
-        if (NEU_ERR_ENOENT == rv) {
+        if (rv != 0) {
             // ignore no subscriptions
             rv             = 0;
             fail_or_ignore = "ignore";

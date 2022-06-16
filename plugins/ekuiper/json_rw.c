@@ -28,7 +28,7 @@ int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
                   neu_resp_tag_value_t *    tag_value)
 {
     if (NULL == json_tag || NULL == tag_value) {
-        return NEU_ERR_EINVAL;
+        return -1;
     }
 
     json_tag->name  = tag_value->tag;
