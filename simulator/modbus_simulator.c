@@ -122,6 +122,7 @@ int main(int argc, char *argv[])
     neuron = zlog_get_category("neuron");
 
     neu_conn_param_t param = {
+        .log                            = neuron,
         .type                           = NEU_CONN_TCP_SERVER,
         .params.tcp_server.ip           = "0.0.0.0",
         .params.tcp_server.port         = (uint16_t) port,
