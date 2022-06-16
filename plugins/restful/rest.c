@@ -122,6 +122,7 @@ static nng_http_server *server_init(char *type)
 
     ret = nng_http_server_hold(&server, url);
     if (ret != 0) {
+        nlog_error("rest api server bind error: %d", ret);
         return NULL;
     }
     nng_url_free(url);
