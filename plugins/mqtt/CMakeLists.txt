@@ -4,7 +4,6 @@ set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 set(src 
 	mqtt.c 
 	util.c
-	command/ping.c
 	command/read_write.c
 	command/command.c)
 

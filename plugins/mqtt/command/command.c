@@ -19,19 +19,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ping.h"
 #include "read_write.h"
 #include "utils/log.h"
 
 #include "command.h"
-
-// Ping topic
-static int ping_response(char **output_str, neu_plugin_t *plugin,
-                         neu_json_mqtt_t *mqtt)
-{
-    *output_str = command_ping(plugin, mqtt);
-    return 0;
-}
 
 // Read tags with group config
 static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
@@ -81,22 +72,20 @@ void command_response_handle(mqtt_response_t *response)
     memset(json_str, 0x00, response->len + 1);
     memcpy(json_str, response->payload, response->len);
 
-    neu_json_mqtt_t *mqtt    = NULL;
-    char *           ret_str = NULL;
-    int              rc      = neu_json_decode_mqtt_req(json_str, &mqtt);
+    neu_json_mqtt_t *mqtt = NULL;
+    int              rc   = neu_json_decode_mqtt_req(json_str, &mqtt);
 
     if (0 != rc) {
+        // char *                ret_str = NULL;
+        // neu_json_error_resp_t error   = { .error = NEU_ERR_BODY_IS_WRONG };
+        // neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
+        //                           neu_json_encode_mqtt_resp, &ret_str);
+
         zlog_error(neuron, "JSON parsing mqtt failed");
         return;
     }
 
     switch (response->type) {
-    case TOPIC_TYPE_PING: {
-        // Ping
-        rc = ping_response(&ret_str, plugin, mqtt);
-        break;
-    }
-
     case TOPIC_TYPE_READ: {
         rc = read_response(response, plugin, mqtt, json_str);
         break;
@@ -109,17 +98,6 @@ void command_response_handle(mqtt_response_t *response)
     default:
         assert(1 == 0);
         break;
-    }
-
-    if (0 != rc) {
-        neu_json_error_resp_t error = { .error = NEU_ERR_BODY_IS_WRONG };
-        neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
-                                  neu_json_encode_mqtt_resp, &ret_str);
-    }
-
-    if (NULL != ret_str) {
-        response->context_add(plugin, 0, mqtt, ret_str, response->topic_pair,
-                              true);
     }
 
     if (NULL != json_str) {

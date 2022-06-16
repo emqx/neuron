@@ -29,25 +29,19 @@ extern "C" {
 #include "common.h"
 
 enum topic_type {
-    TOPIC_TYPE_PING = 0,
     TOPIC_TYPE_READ,
     TOPIC_TYPE_WRITE,
     TOPIC_TYPE_UPLOAD,
 };
 
-typedef void (*context_add_callback)(neu_plugin_t *plugin, uint32_t req_id,
-                                     neu_json_mqtt_t *parse_head, char *result,
-                                     void *pair, bool ready);
-
 typedef struct {
-    const char *         topic_name;
-    size_t               topic_len;
-    void *               payload;
-    size_t               len;
-    void *               plugin;
-    void *               topic_pair;
-    enum topic_type      type;
-    context_add_callback context_add;
+    const char *    topic_name;
+    size_t          topic_len;
+    void *          payload;
+    size_t          len;
+    void *          plugin;
+    void *          topic_pair;
+    enum topic_type type;
 } mqtt_response_t;
 
 void command_response_handle(mqtt_response_t *response);
