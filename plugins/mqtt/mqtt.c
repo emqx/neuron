@@ -351,7 +351,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
         if (NULL == routine) {
             plugin->routine = NULL;
             plugin->running = false;
-            return NEU_ERR_FAILURE;
+            return NEU_ERR_MQTT_FAILURE;
         }
 
         plugin->routine           = routine;
@@ -380,21 +380,23 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
         return NEU_ERR_MQTT_FAILURE;
     }
 
-    mqtt_routine_t *   routine = plugin->routine;
-    int                type    = TOPIC_TYPE_READ;
-    struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *             json    = command_write_response(head, write_data);
-
-    const char *   topic = pair->topic_response;
-    const int      qos   = pair->qos_response;
-    neu_err_code_e error = neu_mqtt_client_publish(
-        routine->client, topic, qos, (unsigned char *) json, strlen(json));
+    mqtt_routine_t *   routine  = plugin->routine;
+    int                type     = TOPIC_TYPE_READ;
+    struct topic_pair *pair     = topics_find_type(routine->topics, type);
+    char *             json_str = command_write_response(head, write_data);
+    const char *       topic    = pair->topic_response;
+    const int          qos      = pair->qos_response;
+    neu_err_code_e     error =
+        neu_mqtt_client_publish(routine->client, topic, qos,
+                                (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(plugin, "trans data publish error code :%d, topoic:%s",
                    error, topic);
+        free(json_str);
         return error;
     }
 
+    free(json_str);
     return NEU_ERR_SUCCESS;
 }
 
@@ -410,19 +412,21 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
     mqtt_routine_t *   routine = plugin->routine;
     int                type    = TOPIC_TYPE_READ;
     struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *             json =
+    char *             json_str =
         command_read_once_response(head, read_data, routine->option.format);
-
     const char *   topic = pair->topic_response;
     const int      qos   = pair->qos_response;
-    neu_err_code_e error = neu_mqtt_client_publish(
-        routine->client, topic, qos, (unsigned char *) json, strlen(json));
+    neu_err_code_e error =
+        neu_mqtt_client_publish(routine->client, topic, qos,
+                                (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(plugin, "read response publish error code :%d, topoic:%s",
                    error, topic);
+        free(json_str);
         return error;
     }
 
+    free(json_str);
     return NEU_ERR_SUCCESS;
 }
 
@@ -437,22 +441,25 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     mqtt_routine_t *   routine = plugin->routine;
     int                type    = TOPIC_TYPE_UPLOAD;
     struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *             json =
+    char *             json_str =
         command_read_periodic_response(trans_data, routine->option.format);
-    if (NULL == json) {
+    if (NULL == json_str) {
         return NEU_ERR_MQTT_FAILURE;
     }
 
     const char *   topic = pair->topic_response;
     const int      qos   = pair->qos_response;
-    neu_err_code_e error = neu_mqtt_client_publish(
-        routine->client, topic, qos, (unsigned char *) json, strlen(json));
+    neu_err_code_e error =
+        neu_mqtt_client_publish(routine->client, topic, qos,
+                                (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(plugin, "trans data publish error code :%d, topoic:%s",
                    error, topic);
+        free(json_str);
         return error;
     }
 
+    free(json_str);
     return NEU_ERR_SUCCESS;
 }
 
