@@ -257,6 +257,9 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                        "conn fd: %d, send buf len: %zd, ret: %zd, "
                        "errno: %s(%d)",
                        conn->fd, len, ret, strerror(errno), errno);
+        } else {
+            nlog_debug("conn fd: %d, send buf len %zd success, ret: %zd",
+                       conn->fd, len, ret);
         }
 
         if (ret == -1 && errno != EAGAIN) {
@@ -310,6 +313,9 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         zlog_error(neuron,
                    "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
                    conn->fd, len, ret, strerror(errno), errno);
+    } else {
+        nlog_debug("conn fd: %d, recv buf len %zd success, ret: %zd", conn->fd,
+                   len, ret);
     }
 
     if (errno == EPIPE || ret <= 0) {
