@@ -139,6 +139,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         return -1;
     }
 
+    param.log                       = plugin->common.log;
     param.type                      = NEU_CONN_TCP_CLIENT;
     param.params.tcp_client.ip      = host.v.val_str;
     param.params.tcp_client.port    = port.v.val_int;

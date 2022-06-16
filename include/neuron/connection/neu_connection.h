@@ -63,7 +63,8 @@ typedef enum neu_conn_tty_data {
 typedef void (*neu_conn_callback)(void *data, int fd);
 
 typedef struct neu_conn_param {
-    neu_conn_type_e type;
+    zlog_category_t *log;
+    neu_conn_type_e  type;
 
     union {
         struct {
