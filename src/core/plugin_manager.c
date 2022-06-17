@@ -26,7 +26,6 @@
 
 #include "adapter.h"
 #include "plugin.h"
-#include "plugin_info.h"
 
 #include "dummy/dummy.h"
 #include "restful/rest.h"

@@ -29,6 +29,7 @@
 #include "adapter.h"
 #include "adapter/adapter_internal.h"
 #include "adapter/driver/driver_internal.h"
+#include "errcodes.h"
 
 #include "node_manager.h"
 #include "plugin_manager.h"

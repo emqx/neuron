@@ -24,7 +24,6 @@
 
 #include "adapter.h"
 #include "plugin.h"
-#include "plugin_info.h"
 
 typedef struct neu_adapter_info {
     const char *         name;

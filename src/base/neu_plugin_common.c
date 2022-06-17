@@ -29,7 +29,7 @@
 void neu_plugin_common_init(neu_plugin_common_t *common)
 {
     common->magic      = NEU_PLUGIN_MAGIC_NUMBER;
-    common->link_state = NEU_NODE_LINK_STATUS_DISCONNECTED;
+    common->link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     common->tag_size   = 0;
 }
 

@@ -18,6 +18,7 @@
  **/
 
 #include "adapter.h"
+#include "errcodes.h"
 
 #include "adapter/adapter_internal.h"
 #include "adapter/driver/driver_internal.h"
@@ -309,7 +310,7 @@ UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app)
 }
 
 int neu_manager_get_node_state(neu_manager_t *manager, const char *node,
-                               neu_plugin_state_t *state)
+                               neu_node_state_t *state)
 {
     neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
     if (adapter == NULL) {

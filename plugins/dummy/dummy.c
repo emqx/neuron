@@ -121,6 +121,6 @@ const neu_plugin_module_t default_dummy_plugin_module = {
     .module_name  = "neuron-default-dummy",
     .module_descr = DEFAULT_DUMMY_PLUGIN_DESCR,
     .intf_funs    = &plugin_intf_funs,
-    .kind         = PLUGIN_KIND_STATIC,
+    .kind         = NEU_PLUGIN_KIND_STATIC,
     .type         = NEU_NA_TYPE_APP,
 };

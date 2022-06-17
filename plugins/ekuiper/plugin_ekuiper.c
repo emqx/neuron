@@ -53,7 +53,7 @@ static void pipe_add_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     (void) ev;
     neu_plugin_t *plugin = arg;
     nng_mtx_lock(plugin->mtx);
-    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
     nng_mtx_unlock(plugin->mtx);
 }
 
@@ -63,7 +63,7 @@ static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     (void) ev;
     neu_plugin_t *plugin = arg;
     nng_mtx_lock(plugin->mtx);
-    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     nng_mtx_unlock(plugin->mtx);
 }
 
@@ -151,7 +151,7 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
 
     nng_mtx_lock(plugin->mtx);
     disconnected =
-        NEU_PLUGIN_LINK_STATE_DISCONNECTED == plugin->common.link_state;
+        NEU_NODE_LINK_STATE_DISCONNECTED == plugin->common.link_state;
     nng_mtx_unlock(plugin->mtx);
 
     if (disconnected) {
