@@ -35,7 +35,7 @@ typedef struct modbus_point {
     uint16_t      start_address;
     uint16_t      n_register;
 
-    neu_dtype_e               type;
+    neu_type_e                type;
     neu_datatag_addr_option_u option;
     char                      name[NEU_TAG_NAME_LEN];
 } modbus_point_t;

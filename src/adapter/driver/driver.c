@@ -230,32 +230,32 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         driver->adapter.cb_funs.response(&driver->adapter, req, &error);
     } else {
         switch (tag->type) {
-        case NEU_DTYPE_BOOL:
-        case NEU_DTYPE_DOUBLE:
-        case NEU_DTYPE_UINT64:
-        case NEU_DTYPE_INT64:
-        case NEU_DTYPE_CSTR:
+        case NEU_TYPE_BOOL:
+        case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_STRING:
             break;
-        case NEU_DTYPE_BIT:
+        case NEU_TYPE_BIT:
             cmd->value.type     = NEU_TYPE_BIT;
             cmd->value.value.u8 = (uint8_t) cmd->value.value.u64;
             break;
-        case NEU_DTYPE_UINT8:
-        case NEU_DTYPE_INT8:
+        case NEU_TYPE_UINT8:
+        case NEU_TYPE_INT8:
             cmd->value.type     = NEU_TYPE_UINT8;
             cmd->value.value.u8 = (uint8_t) cmd->value.value.u64;
             break;
-        case NEU_DTYPE_INT16:
-        case NEU_DTYPE_UINT16:
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
             cmd->value.type      = NEU_TYPE_UINT16;
             cmd->value.value.u16 = (uint16_t) cmd->value.value.u64;
             break;
-        case NEU_DTYPE_UINT32:
-        case NEU_DTYPE_INT32:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_INT32:
             cmd->value.type      = NEU_TYPE_UINT32;
             cmd->value.value.u32 = (uint32_t) cmd->value.value.u64;
             break;
-        case NEU_DTYPE_FLOAT:
+        case NEU_TYPE_FLOAT:
             cmd->value.type      = NEU_TYPE_FLOAT;
             cmd->value.value.f32 = (float) cmd->value.value.d64;
             break;
@@ -267,7 +267,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         driver->adapter.plugin_info.module->intf_funs->driver.write_tag(
             driver->adapter.plugin_info.plugin, (void *) req, tag,
             cmd->value.value);
-        free(tag->addr_str);
+        free(tag->address);
         free(tag->name);
         free(tag->description);
         free(tag);
@@ -624,33 +624,33 @@ static void read_group(neu_driver_cache_t *cache, const char *group,
         }
 
         switch (tag->type) {
-        case NEU_DTYPE_BOOL:
+        case NEU_TYPE_BOOL:
             datas[index].value.type = NEU_TYPE_BOOL;
             break;
-        case NEU_DTYPE_BIT:
-        case NEU_DTYPE_INT8:
-        case NEU_DTYPE_UINT8:
+        case NEU_TYPE_BIT:
+        case NEU_TYPE_INT8:
+        case NEU_TYPE_UINT8:
             datas[index].value.type = NEU_TYPE_UINT8;
             break;
-        case NEU_DTYPE_INT16:
-        case NEU_DTYPE_UINT16:
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
             datas[index].value.type = NEU_TYPE_UINT16;
             break;
-        case NEU_DTYPE_FLOAT:
+        case NEU_TYPE_FLOAT:
             datas[index].value.type = NEU_TYPE_FLOAT;
             break;
-        case NEU_DTYPE_INT32:
-        case NEU_DTYPE_UINT32:
+        case NEU_TYPE_INT32:
+        case NEU_TYPE_UINT32:
             datas[index].value.type = NEU_TYPE_UINT32;
             break;
-        case NEU_DTYPE_INT64:
-        case NEU_DTYPE_UINT64:
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
             datas[index].value.type = NEU_TYPE_UINT64;
             break;
-        case NEU_DTYPE_DOUBLE:
+        case NEU_TYPE_DOUBLE:
             datas[index].value.type = NEU_TYPE_DOUBLE;
             break;
-        case NEU_DTYPE_CSTR:
+        case NEU_TYPE_STRING:
             datas[index].value.type = NEU_TYPE_STRING;
             break;
         default:
@@ -671,8 +671,8 @@ static UT_array *load_tags(UT_array *tags)
     {
         neu_datatag_t *tmp = calloc(1, sizeof(neu_datatag_t));
         memcpy(tmp, tag, sizeof(neu_datatag_t));
-        tmp->name     = strdup(tag->name);
-        tmp->addr_str = strdup(tag->addr_str);
+        tmp->name    = strdup(tag->name);
+        tmp->address = strdup(tag->address);
 
         utarray_push_back(result, (void *) &tmp);
     }
@@ -687,7 +687,7 @@ static void free_tags(UT_array *tags)
     while (tag != NULL) {
         utarray_pop_back(tags);
 
-        free((*tag)->addr_str);
+        free((*tag)->address);
         free((*tag)->name);
         free(*tag);
 

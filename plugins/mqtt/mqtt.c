@@ -20,7 +20,6 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
-#include <sys/queue.h>
 #include <sys/time.h>
 
 #include "command/command.h"

@@ -287,7 +287,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_manager_notify_app_sub_update(manager, cmd->driver, cmd->group);
         }
         for (int i = 0; i < cmd->n_tag; i++) {
-            free(cmd->tags[i].addr_str);
+            free(cmd->tags[i].address);
             free(cmd->tags[i].name);
             free(cmd->tags[i].description);
         }
@@ -331,7 +331,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_manager_notify_app_sub_update(manager, cmd->driver, cmd->group);
         }
         for (int i = 0; i < cmd->n_tag; i++) {
-            free(cmd->tags[i].addr_str);
+            free(cmd->tags[i].address);
             free(cmd->tags[i].name);
             free(cmd->tags[i].description);
         }

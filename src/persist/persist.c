@@ -882,7 +882,7 @@ int neu_persister_store_datatags(neu_persister_t *persister,
     {
         datatags_resp.tags[index].name        = tag->name;
         datatags_resp.tags[index].description = tag->description;
-        datatags_resp.tags[index].address     = tag->addr_str;
+        datatags_resp.tags[index].address     = tag->address;
         datatags_resp.tags[index].attribute   = tag->attribute;
         datatags_resp.tags[index].type        = tag->type;
         index += 1;
@@ -938,7 +938,7 @@ int neu_persister_load_datatags(neu_persister_t *persister,
     for (int i = 0; i < datatag_req->n_tag; i++) {
         neu_datatag_t tag = {
             .name        = datatag_req->tags[i].name,
-            .addr_str    = datatag_req->tags[i].address,
+            .address     = datatag_req->tags[i].address,
             .type        = datatag_req->tags[i].type,
             .attribute   = datatag_req->tags[i].attribute,
             .description = datatag_req->tags[i].description,

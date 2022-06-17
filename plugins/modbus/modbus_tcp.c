@@ -180,7 +180,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
             plugin,
             "validate tag success, name: %s, address: %s, type: %d, slave id: "
             "%d, start address: %d, n register: %d, area: %s",
-            tag->name, tag->addr_str, tag->type, point.slave_id,
+            tag->name, tag->address, tag->type, point.slave_id,
             point.start_address, point.n_register,
             modbus_area_to_str(point.area));
     }

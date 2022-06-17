@@ -28,8 +28,6 @@ extern "C" {
 
 #include "type.h"
 
-#define NEU_ADAPTER_NAME_SIZE 64
-
 typedef enum {
     NEU_NA_TYPE_DRIVER = 1,
     NEU_NA_TYPE_APP    = 2,
