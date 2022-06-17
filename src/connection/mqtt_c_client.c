@@ -22,7 +22,6 @@
 #include <openssl/ssl.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/queue.h>
 #include <unistd.h>
 
 #include <mqtt.h>
@@ -75,7 +74,6 @@ struct subscribe_tuple {
     int                  qos;
     neu_subscribe_handle handle;
     mqtt_c_client_t *    client;
-    TAILQ_ENTRY(subscribe_tuple) entry;
 };
 
 struct mqtt_c_client {
@@ -85,7 +83,7 @@ struct mqtt_c_client {
     pthread_t                daemon;
     void *                   user_data;
     state_update             state_update_func;
-    TAILQ_HEAD(, subscribe_tuple) head;
+    UT_array *               array;
 };
 
 static neu_err_code_e client_destroy(mqtt_c_client_t *client);
@@ -403,12 +401,13 @@ static void subscribe_on_reconnect(mqtt_c_client_t *client)
 {
     assert(NULL != client);
 
-    struct subscribe_tuple *item = NULL;
-    TAILQ_FOREACH(item, &client->head, entry)
-    {
-        neu_err_code_e error = client_subscribe_send(client, item);
+    for (struct subscribe_tuple **p =
+             (struct subscribe_tuple **) utarray_front(client->array);
+         NULL != p;
+         p = (struct subscribe_tuple **) utarray_next(client->array, p)) {
+        neu_err_code_e error = client_subscribe_send(client, (*p));
         if (NEU_ERR_SUCCESS != error) {
-            zlog_error(neuron, "send subscribe %s error:%d", item->topic,
+            zlog_error(neuron, "send subscribe %s error:%d", (*p)->topic,
                        error);
         }
     }
@@ -493,11 +492,12 @@ static void publish_callback(void **                       p_reconnect_state,
     zlog_debug(neuron, "received publish('%s'): %s", topic_name,
                (const char *) published->application_message);
 
-    struct subscribe_tuple *item = NULL;
-    TAILQ_FOREACH(item, &client->head, entry)
-    {
-        if (0 == strcmp(item->topic, topic_name) && NULL != item->handle) {
-            item->handle(topic_name, strlen(topic_name),
+    for (struct subscribe_tuple **p =
+             (struct subscribe_tuple **) utarray_front(client->array);
+         NULL != p;
+         p = (struct subscribe_tuple **) utarray_next(client->array, p)) {
+        if (0 == strcmp((*p)->topic, topic_name) && NULL != (*p)->handle) {
+            (*p)->handle(topic_name, strlen(topic_name),
                          (void *) published->application_message,
                          published->application_message_size,
                          client->user_data);
@@ -556,7 +556,8 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
     client->option            = option;
     client->user_data         = context;
     client->state_update_func = client->option->state_update_func;
-    TAILQ_INIT(&client->head);
+    UT_icd tuple_icd = { sizeof(struct subscribe_tuple *), NULL, NULL, NULL };
+    utarray_new(client->array, &tuple_icd);
 
     struct reconnect_state *state = &client->state;
     state->hostname               = strdup(client->option->host);
@@ -709,15 +710,14 @@ static neu_err_code_e client_disconnect(mqtt_c_client_t *client)
 
 static neu_err_code_e client_destroy(mqtt_c_client_t *client)
 {
-    while (!TAILQ_EMPTY(&client->head)) {
-        struct subscribe_tuple *item = NULL;
-        item                         = TAILQ_FIRST(&client->head);
-        if (NULL != item) {
-            TAILQ_REMOVE(&client->head, item, entry);
-            client_subscribe_destroy(item);
-        }
+    for (struct subscribe_tuple **p =
+             (struct subscribe_tuple **) utarray_front(client->array);
+         NULL != p;
+         p = (struct subscribe_tuple **) utarray_next(client->array, p)) {
+        client_subscribe_destroy(*p);
     }
 
+    utarray_free(client->array);
     free(client);
     return NEU_ERR_SUCCESS;
 }
@@ -753,7 +753,7 @@ static neu_err_code_e client_subscribe_send(mqtt_c_client_t *       client,
 static neu_err_code_e client_subscribe_add(mqtt_c_client_t *       client,
                                            struct subscribe_tuple *tuple)
 {
-    TAILQ_INSERT_TAIL(&client->head, tuple, entry);
+    utarray_push_back(client->array, &tuple);
     return NEU_ERR_SUCCESS;
 }
 
@@ -788,11 +788,12 @@ neu_err_code_e mqtt_c_client_subscribe(mqtt_c_client_t *client,
 static struct subscribe_tuple *
 client_unsubscribe_create(mqtt_c_client_t *client, const char *topic)
 {
-    struct subscribe_tuple *item = NULL;
-    TAILQ_FOREACH(item, &client->head, entry)
-    {
-        if (0 == strcmp(item->topic, topic)) {
-            return item;
+    for (struct subscribe_tuple **p =
+             (struct subscribe_tuple **) utarray_front(client->array);
+         NULL != p;
+         p = (struct subscribe_tuple **) utarray_next(client->array, p)) {
+        if (0 == strcmp((*p)->topic, topic)) {
+            return (*p);
         }
     }
 
