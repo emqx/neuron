@@ -224,8 +224,8 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
 
     neu_mqtt_client_continue(routine->client);
 
-    plog_info(plugin, "try open mqtt client: %s:%s, code:%d",
-              routine->option.host, routine->option.port, error);
+    plog_info(plugin, "open mqtt client: %s:%s, code:%d", routine->option.host,
+              routine->option.port, error);
 
     routine->plugin = plugin;
     UT_icd ptr_icd  = { sizeof(struct topic_pair *), NULL, NULL, NULL };
@@ -245,6 +245,9 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
 
     // close mqtt client and clean
     neu_mqtt_client_close(routine->client);
+    plog_info(routine->plugin, "close mqtt client:%s:%s", routine->option.host,
+              routine->option.port);
+
     topics_cleanup(routine->topics);
     utarray_free(routine->topics);
     mqtt_option_uninit(&routine->option);
@@ -389,7 +392,7 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
         neu_mqtt_client_publish(routine->client, topic, qos,
                                 (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
-        plog_error(plugin, "trans data publish error code :%d, topoic:%s",
+        plog_error(plugin, "write response publish error code :%d, topoic:%s",
                    error, topic);
         free(json_str);
         return error;
