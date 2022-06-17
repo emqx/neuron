@@ -200,10 +200,10 @@ static void ssl_ctx_init(struct reconnect_state *state)
         state->cert = ssl_ctx_load_cert(cert_file, NULL);
         if (NULL != state->cert) {
             if (0 >= SSL_CTX_use_certificate(state->ssl_ctx, state->cert)) {
-                zlog_error(neuron, "failed to use certificate");
+                nlog_error("failed to use certificate");
             }
         } else {
-            zlog_error(neuron, "failed to load certificate");
+            nlog_error("failed to load certificate");
         }
     }
 
@@ -213,22 +213,22 @@ static void ssl_ctx_init(struct reconnect_state *state)
         state->key          = ssl_ctx_load_key(key_file, keypass);
         if (NULL != state->key) {
             if (0 >= SSL_CTX_use_PrivateKey(state->ssl_ctx, state->key)) {
-                zlog_error(neuron, "failed to use privatekey");
+                nlog_error("failed to use privatekey");
             }
         } else {
-            zlog_error(neuron, "failed to load privatekey");
+            nlog_error("failed to load privatekey");
         }
     }
 
     if (NULL != state->cert && NULL != state->key) {
         if (!SSL_CTX_check_private_key(state->ssl_ctx)) {
-            zlog_error(neuron, "failed to check privatekey");
+            nlog_error("failed to check privatekey");
         }
     }
 
     // setup ca from base64
     if (!ssl_ctx_load_ca(state->ssl_ctx, ca_file)) {
-        zlog_error(neuron, "failed to load ca");
+        nlog_error("failed to load ca");
     }
 }
 
@@ -407,8 +407,7 @@ static void subscribe_on_reconnect(mqtt_c_client_t *client)
          p = (struct subscribe_tuple **) utarray_next(client->array, p)) {
         neu_err_code_e error = client_subscribe_send(client, (*p));
         if (NEU_ERR_SUCCESS != error) {
-            zlog_error(neuron, "send subscribe %s error:%d", (*p)->topic,
-                       error);
+            nlog_error("send subscribe %s error:%d", (*p)->topic, error);
         }
     }
 }
@@ -482,14 +481,14 @@ static void publish_callback(void **                       p_reconnect_state,
 
     char *topic_name = (char *) malloc(published->topic_name_size + 1);
     if (NULL == topic_name) {
-        zlog_error(neuron, "topic name alloc error");
+        nlog_error("topic name alloc error");
         return;
     }
 
     memcpy(topic_name, published->topic_name, published->topic_name_size);
     topic_name[published->topic_name_size] = '\0';
 
-    zlog_debug(neuron, "received publish('%s'): %s", topic_name,
+    nlog_debug("received publish('%s'): %s", topic_name,
                (const char *) published->application_message);
 
     for (struct subscribe_tuple **p =
@@ -536,6 +535,12 @@ static void *client_refresher(void *context)
         if (NULL != client->state_update_func) {
             int rc = mqtt_c_client_is_connected(client);
             client->state_update_func(client->user_data, rc);
+
+            if (0 != rc) {
+                nlog_error("connect to %s:%s erorr, retry...",
+                           client->state.hostname, client->state.port);
+                usleep(INTERVAL * 10);
+            }
         }
     }
 
@@ -549,7 +554,7 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
 {
     mqtt_c_client_t *client = calloc(1, sizeof(mqtt_c_client_t));
     if (NULL == client) {
-        zlog_error(neuron, "mqtt c client alloc error");
+        nlog_error("mqtt c client alloc error");
         return NULL;
     }
 
@@ -627,7 +632,7 @@ static neu_err_code_e client_connect(mqtt_c_client_t *client)
                         publish_callback);
 
     if (0 != pthread_create(&client->daemon, NULL, client_refresher, client)) {
-        zlog_error(neuron, "pthread create error");
+        nlog_error("pthread create error");
         return NEU_ERR_MQTT_CONNECT_FAILURE;
     }
 
@@ -728,7 +733,7 @@ client_subscribe_create(mqtt_c_client_t *client, const char *topic,
 {
     struct subscribe_tuple *tuple = calloc(1, sizeof(struct subscribe_tuple));
     if (NULL == tuple) {
-        zlog_error(neuron, "tuple alloc error");
+        nlog_error("tuple alloc error");
         return NULL;
     }
 
