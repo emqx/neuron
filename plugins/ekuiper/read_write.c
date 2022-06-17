@@ -33,7 +33,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     char *json_str = NULL;
     rv = neu_json_encode_by_fn(trans_data, json_encode_read_resp, &json_str);
     if (0 != rv) {
-        plog_error(plugin, "cannot encode read resp");
+        plog_error(plugin, "fail encode trans data to json");
         return;
     }
 
@@ -47,6 +47,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     }
 
     memcpy(nng_msg_body(msg), json_str, json_len); // no null byte
+    plog_debug(plugin, ">> %s", json_str);
     free(json_str);
     rv = nng_sendmsg(plugin->sock, msg,
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
@@ -66,14 +67,15 @@ void recv_data_callback(void *arg)
 
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
-        plog_error(plugin, "receive error: %s", nng_strerror(rv));
+        plog_error(plugin, "nng_recv error: %s", nng_strerror(rv));
         return;
     }
 
     msg      = nng_aio_get_msg(plugin->recv_aio);
     json_str = nng_msg_body(msg);
+    plog_debug(plugin, "<< %.*s", (int) nng_msg_len(msg), json_str);
     if (json_decode_write_req(json_str, nng_msg_len(msg), &req) < 0) {
-        plog_error(plugin, "cannot decode write request");
+        plog_error(plugin, "fail decode write request json");
         goto recv_data_callback_end;
     }
 
