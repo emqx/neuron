@@ -22,6 +22,7 @@
 #include "read_write.h"
 #include "utils/log.h"
 
+#include "../mqtt.h"
 #include "command.h"
 
 // Read tags with group config
@@ -81,7 +82,8 @@ void command_response_handle(mqtt_response_t *response)
         // neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
         //                           neu_json_encode_mqtt_resp, &ret_str);
 
-        nlog_error("json parsing mqtt failed");
+        plog_error(plugin, "json parsing mqtt failed");
+
         free(json_str);
         return;
     }
@@ -103,26 +105,27 @@ void command_response_handle(mqtt_response_t *response)
         break;
     }
     default:
-        nlog_error("invalid topic type");
+        plog_error(plugin, "invalid topic type");
         break;
     }
 
     free(json_str);
 }
 
-char *command_read_once_response(neu_reqresp_head_t *   head,
+char *command_read_once_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                                  neu_resp_read_group_t *data, int format)
 {
-    return command_rw_read_once_response(head, data, format);
-    return NULL;
+    return command_rw_read_once_response(plugin, head, data, format);
 }
 
-char *command_read_periodic_response(neu_reqresp_trans_data_t *data, int format)
+char *command_read_periodic_response(neu_plugin_t *            plugin,
+                                     neu_reqresp_trans_data_t *data, int format)
 {
-    return command_rw_read_periodic_response(data, format);
+    return command_rw_read_periodic_response(plugin, data, format);
 }
 
-char *command_write_response(neu_reqresp_head_t *head, neu_resp_error_t *data)
+char *command_write_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                             neu_resp_error_t *data)
 {
-    return command_rw_write_response(head, data);
+    return command_rw_write_response(plugin, head, data);
 }

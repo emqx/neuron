@@ -31,17 +31,19 @@ extern "C" {
 int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                  neu_json_read_req_t *req);
 
-char *command_rw_read_once_response(neu_reqresp_head_t *   head,
+char *command_rw_read_once_response(neu_plugin_t *         plugin,
+                                    neu_reqresp_head_t *   head,
                                     neu_resp_read_group_t *data, int format);
 
-char *command_rw_read_periodic_response(neu_reqresp_trans_data_t *data,
+char *command_rw_read_periodic_response(neu_plugin_t *            plugin,
+                                        neu_reqresp_trans_data_t *data,
                                         int                       format);
 
 int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                              neu_json_write_req_t *req);
 
-char *command_rw_write_response(neu_reqresp_head_t *head,
-                                neu_resp_error_t *  data);
+char *command_rw_write_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                                neu_resp_error_t *data);
 
 #ifdef __cplusplus
 }
