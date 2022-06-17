@@ -17,7 +17,7 @@ ${tag_desc}             {"name": "tag_desc", "description": "description info", 
 Add tags to non-existent node, it should return failure
   	${res}=	Add Tags	modbus-node	group	${tag1},${tag2}
 
-  	Check Response Status           ${res}        200
+  	Check Response Status           ${res}        404
   	Check Error Code                ${res}        ${NEU_ERR_NODE_NOT_EXIST}
 
 Add tags to the non-existent group, it should return failure

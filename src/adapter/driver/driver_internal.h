@@ -22,7 +22,7 @@
 
 #include "adapter.h"
 
-neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter);
+neu_adapter_driver_t *neu_adapter_driver_create();
 
 void neu_adapter_driver_destroy(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_start(neu_adapter_driver_t *driver);

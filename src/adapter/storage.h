@@ -17,18 +17,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_MANAGER_H_
-#define _NEU_MANAGER_H_
-
-#include "utils/utextend.h"
+#ifndef ADAPTER_STORAGE_H
+#define ADAPTER_STORAGE_H
 
 #include "persist/persist.h"
 
-#include "manager_internal.h"
+#include "adapter_internal.h"
 
-neu_manager_t *neu_manager_create();
-void           neu_manager_destroy(neu_manager_t *manager);
+void adapter_storage_setting(neu_persister_t *persister, const char *node,
+                             const char *setting);
+void adapter_storage_add_group(neu_persister_t *persister, const char *node,
+                               const char *group, uint32_t interval);
+void adapter_storage_del_group(neu_persister_t *persister, const char *node,
+                               const char *group);
+void adapter_storage_tag(neu_persister_t *persister, neu_adapter_t *adapter,
+                         const char *node, const char *group);
 
-const char *neu_manager_get_url(void);
+int adapter_load_setting(neu_persister_t *persister, const char *node,
+                         char **setting);
+int adapter_load_group_and_tag(neu_persister_t *     persister,
+                               neu_adapter_driver_t *driver);
 
 #endif

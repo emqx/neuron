@@ -27,7 +27,6 @@
 #include "adapter.h"
 #include "plugin.h"
 
-#include "dummy/dummy.h"
 #include "restful/rest.h"
 
 #include "plugin_manager.h"
@@ -225,9 +224,6 @@ void neu_plugin_manager_load_static(neu_plugin_manager_t * mgr,
     if (strcmp(DEFAULT_DASHBOARD_PLUGIN_NAME, plugin_name) == 0) {
         instance->module =
             (neu_plugin_module_t *) &default_dashboard_plugin_module;
-    }
-    if (strcmp(DEFAULT_DUMMY_PLUGIN_NAME, plugin_name) == 0) {
-        instance->module = (neu_plugin_module_t *) &default_dummy_plugin_module;
     }
 }
 

@@ -91,6 +91,8 @@ set(NEURON_SOURCES
     src/core/subscribe.c
     src/core/plugin_manager.c
     src/core/node_manager.c
+    src/core/storage.c
+    src/adapter/storage.c
     src/adapter/adapter.c
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
@@ -107,7 +109,6 @@ set(NEURON_SOURCES
     plugins/restful/version_handle.c
     plugins/restful/rest.c
     plugins/restful/http.c
-    plugins/dummy/dummy.c
     ${PERSIST_SOURCES})
 
 set(CMAKE_BUILD_RPATH ./)

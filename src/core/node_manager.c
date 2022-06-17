@@ -52,8 +52,6 @@ void neu_node_manager_destroy(neu_node_manager_t *mgr)
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         HASH_DEL(mgr->nodes, el);
-        neu_adapter_uninit(el->adapter);
-        neu_adapter_destroy(el->adapter);
         free(el->name);
         free(el);
     }
@@ -110,6 +108,11 @@ void neu_node_manager_del(neu_node_manager_t *mgr, const char *name)
     }
 }
 
+uint16_t neu_node_manager_size(neu_node_manager_t *mgr)
+{
+    return HASH_COUNT(mgr->nodes);
+}
+
 UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
 {
     UT_array *     array = NULL;
@@ -121,11 +124,10 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         if (!el->is_static) {
-            if (el->adapter->plugin_info.module->type == type) {
+            if (el->adapter->module->type == type) {
                 neu_resp_node_info_t info = { 0 };
                 strcpy(info.node, el->adapter->name);
-                strcpy(info.plugin,
-                       el->adapter->plugin_info.module->module_name);
+                strcpy(info.plugin, el->adapter->module->module_name);
                 utarray_push_back(array, &info);
             }
         }
@@ -159,11 +161,28 @@ UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         if (!el->is_static) {
-            if (el->adapter->plugin_info.module->type == type) {
+            if (el->adapter->module->type == type) {
                 nng_pipe pipe = el->pipe;
                 utarray_push_back(pipes, &pipe);
             }
         }
+    }
+
+    return pipes;
+}
+
+UT_array *neu_node_manager_get_pipes_all(neu_node_manager_t *mgr)
+{
+    UT_icd         icd   = { sizeof(nng_pipe), NULL, NULL, NULL };
+    UT_array *     pipes = NULL;
+    node_entity_t *el = NULL, *tmp = NULL;
+
+    utarray_new(pipes, &icd);
+
+    HASH_ITER(hh, mgr->nodes, el, tmp)
+    {
+        nng_pipe pipe = el->pipe;
+        utarray_push_back(pipes, &pipe);
     }
 
     return pipes;

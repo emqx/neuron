@@ -128,12 +128,9 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
     }
 }
 
-neu_adapter_driver_t *neu_adapter_driver_create(neu_adapter_t *adapter)
+neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
-
-    driver->adapter = *adapter;
-    free(adapter);
 
     nng_mtx_alloc(&driver->mtx);
     driver->cache                                 = neu_driver_cache_new();
@@ -265,9 +262,8 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             break;
         }
 
-        driver->adapter.plugin_info.module->intf_funs->driver.write_tag(
-            driver->adapter.plugin_info.plugin, (void *) req, tag,
-            cmd->value.value);
+        driver->adapter.module->intf_funs->driver.write_tag(
+            driver->adapter.plugin, (void *) req, tag, cmd->value.value);
         free(tag->address);
         free(tag->name);
         free(tag->description);
@@ -341,8 +337,8 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         neu_group_destroy(find->group);
         free(find);
 
-        neu_plugin_to_plugin_common(driver->adapter.plugin_info.plugin)
-            ->tag_size -= tag_size;
+        neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -=
+            tag_size;
         ret = NEU_ERR_SUCCESS;
     }
 
@@ -406,8 +402,8 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    ret = driver->adapter.plugin_info.module->intf_funs->driver.validate_tag(
-        driver->adapter.plugin_info.plugin, tag);
+    ret = driver->adapter.module->intf_funs->driver.validate_tag(
+        driver->adapter.plugin, tag);
     if (ret != NEU_ERR_SUCCESS) {
         return ret;
     }
@@ -422,8 +418,7 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     nng_mtx_unlock(driver->mtx);
 
     if (ret == NEU_ERR_SUCCESS) {
-        neu_plugin_to_plugin_common(driver->adapter.plugin_info.plugin)
-            ->tag_size += 1;
+        neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size += 1;
     }
 
     return ret;
@@ -445,8 +440,7 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
     nng_mtx_unlock(driver->mtx);
 
     if (ret == NEU_ERR_SUCCESS) {
-        neu_plugin_to_plugin_common(driver->adapter.plugin_info.plugin)
-            ->tag_size -= 1;
+        neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -= 1;
     }
 
     return ret;
@@ -458,8 +452,8 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    ret = driver->adapter.plugin_info.module->intf_funs->driver.validate_tag(
-        driver->adapter.plugin_info.plugin, tag);
+    ret = driver->adapter.module->intf_funs->driver.validate_tag(
+        driver->adapter.plugin, tag);
     if (ret != NEU_ERR_SUCCESS) {
         return ret;
     }
@@ -514,8 +508,7 @@ static int report_callback(void *usr_data)
 {
     group_t *                group  = (group_t *) usr_data;
     neu_reqresp_head_t       header = { 0 };
-    neu_node_running_state_e state =
-        neu_adapter_state_to_plugin_state((neu_adapter_t *) group->driver);
+    neu_node_running_state_e state  = group->driver->adapter.state;
     if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
     }
@@ -531,7 +524,7 @@ static int report_callback(void *usr_data)
                sizeof(neu_reqresp_trans_data_t) +
                    utarray_len(tags) * sizeof(neu_resp_tag_value_t));
 
-    strcpy(data->driver, neu_adapter_get_name((neu_adapter_t *) group->driver));
+    strcpy(data->driver, group->driver->adapter.name);
     strcpy(data->group, group->name);
     data->n_tag = utarray_len(tags);
     read_group(group->driver->cache, group->name, tags,
@@ -580,8 +573,7 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
 static int read_callback(void *usr_data)
 {
     group_t *                group = (group_t *) usr_data;
-    neu_node_running_state_e state =
-        neu_adapter_state_to_plugin_state((neu_adapter_t *) group->driver);
+    neu_node_running_state_e state = group->driver->adapter.state;
     if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
     }
@@ -589,9 +581,8 @@ static int read_callback(void *usr_data)
     nng_mtx_lock(group->driver->mtx);
     if (!neu_group_is_change(group->group, group->timestamp)) {
         if (group->grp.tags != NULL) {
-            group->driver->adapter.plugin_info.module->intf_funs->driver
-                .group_timer(group->driver->adapter.plugin_info.plugin,
-                             &group->grp);
+            group->driver->adapter.module->intf_funs->driver.group_timer(
+                group->driver->adapter.plugin, &group->grp);
         }
     } else {
         neu_group_change_test(group->group, group->timestamp, (void *) group,
