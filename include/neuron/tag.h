@@ -25,90 +25,7 @@ config_ **/
 
 #include "utils/utextend.h"
 
-#define NEU_TAG_ADDRESS_SIZE 128
-
-typedef enum {
-    NEU_DTYPE_VOID, ///< like Haskell, a no value type
-    NEU_DTYPE_UNIT, ///< like Haskell, a () type, same as void in C
-
-    /* primary value types */
-    NEU_VALUE_TYPE_START,
-    NEU_DTYPE_BYTE = NEU_VALUE_TYPE_START,
-    NEU_DTYPE_INT8,
-    NEU_DTYPE_INT16,
-    NEU_DTYPE_INT32,
-    NEU_DTYPE_INT64,
-    NEU_DTYPE_UINT8,
-    NEU_DTYPE_UINT16,
-    NEU_DTYPE_UINT32,
-    NEU_DTYPE_UINT64,
-    NEU_DTYPE_FLOAT,
-    NEU_DTYPE_DOUBLE,
-    NEU_DTYPE_BOOL,
-    NEU_DTYPE_BIT,
-
-    /* buffer valude with pointer */
-    NEU_DTYPE_CSTR,   ///< C string with '\0', it's not good, we not recommended
-    NEU_DTYPE_STRING, ///< string with length, we recommended use it to replace
-                      ///< cstr
-    NEU_DTYPE_BYTES,  ///< bytes buffer with length
-    NEU_DTYPE_TEXT,   ///< localized text
-    NEU_DTYPE_STRUCT, ///< valued structure, no pointer in field of structure
-
-    /**
-     * A int-value pair for IntMap
-     */
-    NEU_DTYPE_INT_VAL,
-
-    /**
-     * A string-value pair for StringMap
-     */
-    NEU_DTYPE_STRING_VAL,
-
-    /* special value types */
-    NEU_DTYPE_ERRORCODE,
-    NEU_DTYPE_DATETIME,
-    NEU_DTYPE_UUID,
-    NEU_VALUE_TYPE_END,
-
-    /* recursive type definition */
-    NEU_RECURSIVE_TYPE_START = 1 << 8,
-    /*
-     * the val_data pointer to a neu_data_val_t
-     */
-    NEU_DTYPE_DATA_VAL = NEU_RECURSIVE_TYPE_START,
-    NEU_RECURSIVE_TYPE_END,
-
-    /* customer data value type */
-    NEU_DTYPE_CUSTOM_START = 15 << 8,
-    NEU_DTYPE_CUSTOM_END,
-
-    /* bit flags definiton */
-    NEU_DTYPE_FLAGS_START = 1 << 16,
-
-    /* bit flags for constructor types */
-    /*
-     * Fixed Array layout:
-     * { length, esize, elem1, elem2, elem3... }
-     * a example:
-     * { 4, 4, 3.48, 5.23, 2.72, 8.34 }
-     */
-    NEU_DTYPE_ARRAY = 1 << 16, ///< a fixed length array in val_data
-    NEU_DTYPE_VEC   = 1 << 17, ///< a @vector_t@ in val_data
-    NEU_DTYPE_PTR   = 1 << 18, ///< normal pointer
-    NEU_DTYPE_SPTR  = 1 << 19, ///< smart pointer, like c++
-
-    NEU_DTYPE_PTR_MASK = NEU_DTYPE_PTR | NEU_DTYPE_SPTR,
-
-    /* bit flags for attribute of types */
-    NEU_DTYPE_ATTR_MASK = 3 << 29,
-
-    NEU_DTYPE_INPLACE_PTR = 0 << 29, ///< the pointer points to internal buffer
-                                     ///< in neu_data_val_t
-    NEU_DTYPE_EXTERN_PTR  = 1 << 29, ///< the pointer points to external buffer
-    NEU_DTYPE_OWNERED_PTR = 1 << 30, ///< the pointer owner the resource,
-                                     ///< it need free resource
-} neu_dtype_e;
+#include "type.h"
 
 typedef enum {
     NEU_ATTRIBUTE_READ      = 1,
@@ -118,10 +35,10 @@ typedef enum {
 
 typedef struct {
     char *          name;
-    char *          addr_str;
+    char *          address;
     char *          description;
     neu_attribute_e attribute;
-    neu_dtype_e     type;
+    neu_type_e      type;
 } neu_datatag_t;
 
 UT_icd *neu_tag_get_icd();

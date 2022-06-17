@@ -50,7 +50,7 @@ void handle_add_tags(nng_aio *aio)
             for (int i = 0; i < req->n_tag; i++) {
                 cmd.tags[i].attribute = req->tags[i].attribute;
                 cmd.tags[i].type      = req->tags[i].type;
-                cmd.tags[i].addr_str  = strdup(req->tags[i].address);
+                cmd.tags[i].address   = strdup(req->tags[i].address);
                 cmd.tags[i].name      = strdup(req->tags[i].name);
                 if (req->tags[i].description != NULL) {
                     cmd.tags[i].description = strdup(req->tags[i].description);
@@ -132,7 +132,7 @@ void handle_update_tags(nng_aio *aio)
             for (int i = 0; i < req->n_tag; i++) {
                 cmd.tags[i].attribute = req->tags[i].attribute;
                 cmd.tags[i].type      = req->tags[i].type;
-                cmd.tags[i].addr_str  = strdup(req->tags[i].address);
+                cmd.tags[i].address   = strdup(req->tags[i].address);
                 cmd.tags[i].name      = strdup(req->tags[i].name);
                 if (req->tags[i].description != NULL) {
                     cmd.tags[i].description = strdup(req->tags[i].description);
@@ -207,7 +207,7 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
         int index = utarray_eltidx(tags->tags, tag);
 
         tags_res.tags[index].name        = tag->name;
-        tags_res.tags[index].address     = tag->addr_str;
+        tags_res.tags[index].address     = tag->address;
         tags_res.tags[index].description = tag->description;
         tags_res.tags[index].type        = tag->type;
         tags_res.tags[index].attribute   = tag->attribute;

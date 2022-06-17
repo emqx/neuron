@@ -143,14 +143,14 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             }
 
             switch ((*p_tag)->type) {
-            case NEU_DTYPE_UINT16:
-            case NEU_DTYPE_INT16:
+            case NEU_TYPE_UINT16:
+            case NEU_TYPE_INT16:
                 if ((*p_tag)->option.value16.endian == NEU_DATATAG_ENDIAN_L16) {
                     dvalue.value.u16 = htons(dvalue.value.u16);
                 }
                 dvalue.type = NEU_TYPE_INT16;
                 break;
-            case NEU_DTYPE_FLOAT: {
+            case NEU_TYPE_FLOAT: {
                 uint16_t v1 = ((uint16_t *) dvalue.value.bytes)[0];
                 uint16_t v2 = ((uint16_t *) dvalue.value.bytes)[1];
                 uint32_t v  = 0;
@@ -178,8 +178,8 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                 dvalue.value.f32 = *pf;
                 break;
             }
-            case NEU_DTYPE_INT32:
-            case NEU_DTYPE_UINT32: {
+            case NEU_TYPE_INT32:
+            case NEU_TYPE_UINT32: {
                 uint16_t v1 = ((uint16_t *) dvalue.value.bytes)[0];
                 uint16_t v2 = ((uint16_t *) dvalue.value.bytes)[1];
                 uint32_t v  = 0;
@@ -207,7 +207,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
 
                 break;
             }
-            case NEU_DTYPE_BIT: {
+            case NEU_TYPE_BIT: {
                 switch ((*p_tag)->area) {
                 case MODBUS_AREA_HOLD_REGISTER:
                 case MODBUS_AREA_INPUT_REGISTER: {
@@ -225,7 +225,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                 dvalue.type = NEU_TYPE_BIT;
                 break;
             }
-            case NEU_DTYPE_CSTR: {
+            case NEU_TYPE_STRING: {
                 switch ((*p_tag)->option.string.type) {
                 case NEU_DATATAG_STRING_TYPE_H:
                     break;
@@ -268,16 +268,16 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
     uint8_t n_byte = 0;
 
     switch (tag->type) {
-    case NEU_DTYPE_UINT16:
-    case NEU_DTYPE_INT16: {
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_INT16: {
         if (point.option.value16.endian == NEU_DATATAG_ENDIAN_L16) {
             value.u16 = htons(value.u16);
         }
         n_byte = sizeof(uint16_t);
         break;
     }
-    case NEU_DTYPE_UINT32:
-    case NEU_DTYPE_INT32: {
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_INT32: {
         uint16_t v1 = value.u32 & 0xffff;
         uint16_t v2 = (value.u32 & 0xffff0000) >> 16;
 
@@ -302,11 +302,11 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
         n_byte = sizeof(uint32_t);
         break;
     }
-    case NEU_DTYPE_BIT: {
+    case NEU_TYPE_BIT: {
         n_byte = sizeof(uint8_t);
         break;
     }
-    case NEU_DTYPE_FLOAT: {
+    case NEU_TYPE_FLOAT: {
         uint16_t v1 = value.u32 & 0xffff;
         uint16_t v2 = (value.u32 & 0xffff0000) >> 16;
 
@@ -331,7 +331,7 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
         n_byte = sizeof(float);
         break;
     }
-    case NEU_DTYPE_CSTR: {
+    case NEU_TYPE_STRING: {
         switch (point.option.string.type) {
         case NEU_DATATAG_STRING_TYPE_H:
             break;

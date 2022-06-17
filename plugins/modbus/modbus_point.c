@@ -45,7 +45,7 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
     }
 
     char area = 0;
-    int  n    = sscanf(tag->addr_str, "%hhd!%c%hd", &point->slave_id, &area,
+    int  n    = sscanf(tag->address, "%hhd!%c%hd", &point->slave_id, &area,
                    &point->start_address);
     if (n != 3) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
@@ -81,7 +81,7 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
     switch (point->area) {
     case MODBUS_AREA_INPUT:
     case MODBUS_AREA_COIL:
-        if (point->type != NEU_DTYPE_BIT) {
+        if (point->type != NEU_TYPE_BIT) {
             return NEU_ERR_TAG_TYPE_NOT_SUPPORT;
         }
         if (point->option.bit.bit > 7) {
@@ -90,13 +90,14 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
         break;
     case MODBUS_AREA_INPUT_REGISTER:
     case MODBUS_AREA_HOLD_REGISTER:
-        if (point->type == NEU_DTYPE_CSTR && point->option.string.length <= 0) {
+        if (point->type == NEU_TYPE_STRING &&
+            point->option.string.length <= 0) {
             return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
         }
-        if (point->type == NEU_DTYPE_BIT && point->option.bit.bit > 15) {
+        if (point->type == NEU_TYPE_BIT && point->option.bit.bit > 15) {
             return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
         }
-        if (point->type == NEU_DTYPE_BIT &&
+        if (point->type == NEU_TYPE_BIT &&
             (tag->attribute & NEU_ATTRIBUTE_WRITE) == NEU_ATTRIBUTE_WRITE) {
             return NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
         }
@@ -104,11 +105,11 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
     }
 
     switch (point->type) {
-    case NEU_DTYPE_BIT:
+    case NEU_TYPE_BIT:
         point->n_register = 1;
         break;
-    case NEU_DTYPE_UINT16:
-    case NEU_DTYPE_INT16:
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_INT16:
         if (point->area == MODBUS_AREA_COIL ||
             point->area == MODBUS_AREA_INPUT) {
             ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
@@ -116,9 +117,9 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
             point->n_register = 1;
         }
         break;
-    case NEU_DTYPE_UINT32:
-    case NEU_DTYPE_INT32:
-    case NEU_DTYPE_FLOAT:
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_INT32:
+    case NEU_TYPE_FLOAT:
         if (point->area == MODBUS_AREA_COIL ||
             point->area == MODBUS_AREA_INPUT) {
             ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
@@ -126,7 +127,7 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
             point->n_register = 2;
         }
         break;
-    case NEU_DTYPE_CSTR:
+    case NEU_TYPE_STRING:
         if (point->area == MODBUS_AREA_COIL ||
             point->area == MODBUS_AREA_INPUT) {
             ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;

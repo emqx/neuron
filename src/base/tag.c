@@ -31,7 +31,7 @@ static void tag_array_copy(void *_dst, const void *_src)
 
     dst->type        = src->type;
     dst->attribute   = src->attribute;
-    dst->addr_str    = strdup(src->addr_str);
+    dst->address     = strdup(src->address);
     dst->name        = strdup(src->name);
     dst->description = strdup(src->description);
 }
@@ -41,7 +41,7 @@ static void tag_array_free(void *_elt)
     neu_datatag_t *elt = (neu_datatag_t *) _elt;
 
     free(elt->name);
-    free(elt->addr_str);
+    free(elt->address);
     free(elt->description);
 }
 
@@ -72,8 +72,8 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
     int ret = 0;
 
     switch (datatag->type) {
-    case NEU_DTYPE_CSTR: {
-        char *op = find_last_character(datatag->addr_str, '.');
+    case NEU_TYPE_STRING: {
+        char *op = find_last_character(datatag->address, '.');
 
         if (op == NULL) {
             ret = -1;
@@ -106,9 +106,9 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         break;
     }
-    case NEU_DTYPE_INT16:
-    case NEU_DTYPE_UINT16: {
-        char *op = find_last_character(datatag->addr_str, '#');
+    case NEU_TYPE_INT16:
+    case NEU_TYPE_UINT16: {
+        char *op = find_last_character(datatag->address, '#');
 
         option->value16.endian = NEU_DATATAG_ENDIAN_L16;
         if (op != NULL) {
@@ -130,10 +130,10 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         break;
     }
-    case NEU_DTYPE_FLOAT:
-    case NEU_DTYPE_UINT32:
-    case NEU_DTYPE_INT32: {
-        char *op = find_last_character(datatag->addr_str, '#');
+    case NEU_TYPE_FLOAT:
+    case NEU_TYPE_INT32:
+    case NEU_TYPE_UINT32: {
+        char *op = find_last_character(datatag->address, '#');
 
         option->value32.endian = NEU_DATATAG_ENDIAN_LL32;
         if (op != NULL) {
@@ -159,8 +159,8 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         break;
     }
-    case NEU_DTYPE_BIT: {
-        char *op = find_last_character(datatag->addr_str, '.');
+    case NEU_TYPE_BIT: {
+        char *op = find_last_character(datatag->address, '.');
 
         if (op != NULL) {
             sscanf(op, ".%hhd", &option->bit.bit);

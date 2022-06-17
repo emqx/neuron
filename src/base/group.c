@@ -72,7 +72,7 @@ void neu_group_destroy(neu_group_t *group)
         HASH_DEL(group->tags, el);
         free(el->name);
         free(el->tag->name);
-        free(el->tag->addr_str);
+        free(el->tag->address);
         free(el->tag->description);
         free(el->tag);
         free(el);
@@ -137,7 +137,7 @@ int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
     el->name             = strdup(tag->name);
     el->tag              = calloc(1, sizeof(neu_datatag_t));
     el->tag->name        = strdup(tag->name);
-    el->tag->addr_str    = strdup(tag->addr_str);
+    el->tag->address     = strdup(tag->address);
     el->tag->description = strdup(tag->description);
     el->tag->type        = tag->type;
     el->tag->attribute   = tag->attribute;
@@ -162,7 +162,7 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
         HASH_DEL(group->tags, el);
         free(el->name);
         free(el->tag->name);
-        free(el->tag->addr_str);
+        free(el->tag->address);
         free(el->tag->description);
         free(el->tag);
         free(el);
@@ -171,7 +171,7 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
         el->name             = strdup(tag->name);
         el->tag              = calloc(1, sizeof(neu_datatag_t));
         el->tag->name        = strdup(tag->name);
-        el->tag->addr_str    = strdup(tag->addr_str);
+        el->tag->address     = strdup(tag->address);
         el->tag->description = strdup(tag->description);
         el->tag->type        = tag->type;
         el->tag->attribute   = tag->attribute;
@@ -198,7 +198,7 @@ int neu_group_del_tag(neu_group_t *group, const char *tag_name)
         HASH_DEL(group->tags, el);
         free(el->name);
         free(el->tag->name);
-        free(el->tag->addr_str);
+        free(el->tag->address);
         free(el->tag->description);
         free(el->tag);
         free(el);
@@ -257,7 +257,7 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
         result->type        = find->tag->type;
         result->attribute   = find->tag->attribute;
         result->name        = strdup(find->tag->name);
-        result->addr_str    = strdup(find->tag->addr_str);
+        result->address     = strdup(find->tag->address);
         result->description = strdup(find->tag->description);
     }
     nng_mtx_unlock(group->mtx);
