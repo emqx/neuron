@@ -30,4 +30,30 @@
 #define NEU_PLUGIN_LIBRARY_LEN 32
 #define NEU_PLUGIN_DESCRIPTION_LEN 256
 
+typedef enum neu_plugin_kind {
+    NEU_PLUGIN_KIND_STATIC = 0,
+    NEU_PLUGIN_KIND_SYSTEM = 1,
+    NEU_PLUGIN_KIND_CUSTOM = 2,
+} neu_plugin_kind_e;
+
+typedef enum {
+    NEU_NA_TYPE_DRIVER = 1,
+    NEU_NA_TYPE_APP    = 2,
+} neu_adapter_type_e,
+    neu_node_type_e;
+
+typedef enum {
+    NEU_NODE_LINK_STATE_DISCONNECTED = 0,
+    NEU_NODE_LINK_STATE_CONNECTING   = 1,
+    NEU_NODE_LINK_STATE_CONNECTED    = 2,
+} neu_node_link_state_e;
+
+typedef enum {
+    NEU_NODE_RUNNING_STATE_IDLE    = 0,
+    NEU_NODE_RUNNING_STATE_INIT    = 1,
+    NEU_NODE_RUNNING_STATE_READY   = 2,
+    NEU_NODE_RUNNING_STATE_RUNNING = 3,
+    NEU_NODE_RUNNING_STATE_STOPPED = 4,
+} neu_node_running_state_e;
+
 #endif

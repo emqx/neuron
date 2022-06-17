@@ -26,6 +26,7 @@
 
 #include "adapter_handle.h"
 #include "datatag_handle.h"
+#include "define.h"
 #include "group_config_handle.h"
 #include "handle.h"
 #include "http.h"
@@ -322,6 +323,6 @@ const neu_plugin_module_t default_dashboard_plugin_module = {
     .module_name  = "neuron-default-dashboard",
     .module_descr = DEFAULT_DASHBOARD_PLUGIN_DESCR,
     .intf_funs    = &plugin_intf_funs,
-    .kind         = PLUGIN_KIND_SYSTEM,
+    .kind         = NEU_PLUGIN_KIND_SYSTEM,
     .type         = NEU_NA_TYPE_APP,
 };

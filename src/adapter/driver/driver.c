@@ -24,7 +24,6 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "event/event.h"
-#include "tag.h"
 #include "utils/log.h"
 #include "utils/utextend.h"
 
@@ -33,6 +32,8 @@
 #include "base/group.h"
 #include "cache.h"
 #include "driver_internal.h"
+#include "errcodes.h"
+#include "tag.h"
 
 typedef struct group {
     char *name;
@@ -511,11 +512,11 @@ UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
 
 static int report_callback(void *usr_data)
 {
-    group_t *                  group  = (group_t *) usr_data;
-    neu_reqresp_head_t         header = { 0 };
-    neu_plugin_running_state_e state =
+    group_t *                group  = (group_t *) usr_data;
+    neu_reqresp_head_t       header = { 0 };
+    neu_node_running_state_e state =
         neu_adapter_state_to_plugin_state((neu_adapter_t *) group->driver);
-    if (state != NEU_PLUGIN_RUNNING_STATE_RUNNING) {
+    if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
     }
 
@@ -578,10 +579,10 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
 
 static int read_callback(void *usr_data)
 {
-    group_t *                  group = (group_t *) usr_data;
-    neu_plugin_running_state_e state =
+    group_t *                group = (group_t *) usr_data;
+    neu_node_running_state_e state =
         neu_adapter_state_to_plugin_state((neu_adapter_t *) group->driver);
-    if (state != NEU_PLUGIN_RUNNING_STATE_RUNNING) {
+    if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
     }
 

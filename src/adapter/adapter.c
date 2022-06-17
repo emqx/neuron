@@ -32,9 +32,9 @@
 #include "adapter.h"
 #include "adapter_internal.h"
 #include "driver/driver_internal.h"
+#include "errcodes.h"
 #include "persist/persist.h"
 #include "plugin.h"
-#include "plugin_info.h"
 #include "utils/log.h"
 
 static neu_persister_t *g_persister_singleton = NULL;
@@ -399,34 +399,29 @@ static int persister_singleton_handle_subscriptions(neu_adapter_t *adapter,
     return rv;
 }
 
-neu_plugin_running_state_e
+neu_node_running_state_e
 neu_adapter_state_to_plugin_state(neu_adapter_t *adapter)
 {
-    neu_plugin_running_state_e state;
+    neu_node_running_state_e state;
 
     switch (adapter->state) {
     case ADAPTER_STATE_IDLE:
-        state = NEU_PLUGIN_RUNNING_STATE_IDLE;
+        state = NEU_NODE_RUNNING_STATE_IDLE;
         break;
-
     case ADAPTER_STATE_INIT:
-        state = NEU_PLUGIN_RUNNING_STATE_INIT;
+        state = NEU_NODE_RUNNING_STATE_INIT;
         break;
-
     case ADAPTER_STATE_READY:
-        state = NEU_PLUGIN_RUNNING_STATE_READY;
+        state = NEU_NODE_RUNNING_STATE_READY;
         break;
-
     case ADAPTER_STATE_RUNNING:
-        state = NEU_PLUGIN_RUNNING_STATE_RUNNING;
+        state = NEU_NODE_RUNNING_STATE_RUNNING;
         break;
-
     case ADAPTER_STATE_STOPPED:
-        state = NEU_PLUGIN_RUNNING_STATE_STOPPED;
+        state = NEU_NODE_RUNNING_STATE_STOPPED;
         break;
-
     default:
-        state = NEU_PLUGIN_RUNNING_STATE_IDLE;
+        state = NEU_NODE_RUNNING_STATE_IDLE;
         break;
     }
 
@@ -520,7 +515,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info,
         neu_plugin_to_plugin_common(adapter->plugin_info.plugin);
     common->adapter           = adapter;
     common->adapter_callbacks = &adapter->cb_funs;
-    common->link_state        = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+    common->link_state        = NEU_NODE_LINK_STATE_DISCONNECTED;
     common->log               = zlog_get_category(adapter->name);
 
     adapter->events = neu_event_new();
@@ -869,9 +864,9 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config)
     return NEU_ERR_NODE_SETTING_NOT_FOUND;
 }
 
-neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter)
+neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
 {
-    neu_plugin_state_t   state = { 0 };
+    neu_node_state_t     state = { 0 };
     neu_plugin_common_t *common =
         neu_plugin_to_plugin_common(adapter->plugin_info.plugin);
 

@@ -26,11 +26,9 @@
 
 #include "event/event.h"
 #include "plugin.h"
-#include "plugin_info.h"
 
 #include "adapter_info.h"
 #include "core/manager.h"
-#include "plugin_info.h"
 
 typedef enum adapter_state {
     ADAPTER_STATE_IDLE = 0,
@@ -85,8 +83,8 @@ neu_manager_t *    neu_adapter_get_manager(neu_adapter_t *adapter);
 neu_adapter_type_e neu_adapter_get_type(neu_adapter_t *adapter);
 int neu_adapter_set_setting(neu_adapter_t *adapter, const char *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
-neu_plugin_state_t neu_adapter_get_state(neu_adapter_t *adapter);
-neu_plugin_running_state_e
+neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter);
+neu_node_running_state_e
     neu_adapter_state_to_plugin_state(neu_adapter_t *adapter);
 int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag);
 

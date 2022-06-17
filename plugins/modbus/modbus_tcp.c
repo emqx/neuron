@@ -59,7 +59,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name  = "modbus-tcp",
     .module_descr = "modbus_tcp plugin",
     .intf_funs    = &plugin_intf_funs,
-    .kind         = PLUGIN_KIND_SYSTEM,
+    .kind         = NEU_PLUGIN_KIND_SYSTEM,
     .type         = NEU_NA_TYPE_DRIVER,
 };
 
@@ -148,7 +148,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plog_info(plugin, "config: host: %s, port: %" PRId64 ", timeout: %" PRId64,
               host.v.val_str, port.v.val_int, timeout.v.val_int);
 
-    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
     if (plugin->conn != NULL) {
         plugin->conn = neu_conn_reconfig(plugin->conn, &param);
     } else {

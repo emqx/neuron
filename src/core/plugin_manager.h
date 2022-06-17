@@ -25,7 +25,6 @@
 #include "adapter.h"
 #include "define.h"
 #include "plugin.h"
-#include "plugin_info.h"
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard"
 #define DEFAULT_DUMMY_PLUGIN_NAME "default-dummy"

@@ -187,9 +187,9 @@ static void mqtt_routine_state(void *context, int state)
 
     neu_plugin_t *plugin = (neu_plugin_t *) context;
     if (0 == state) {
-        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTED;
+        plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
     } else {
-        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+        plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     }
 }
 
@@ -290,7 +290,7 @@ static void plugin_stop_running(neu_plugin_t *plugin)
         }
 
         plugin->running           = false;
-        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_DISCONNECTED;
+        plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     }
 }
 
@@ -335,7 +335,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
 
     plugin->routine           = routine;
     plugin->running           = true;
-    plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
 
     plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
@@ -355,7 +355,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 
         plugin->routine           = routine;
         plugin->running           = true;
-        plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
+        plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
     }
 
     return NEU_ERR_SUCCESS;
@@ -539,6 +539,6 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name  = "mqtt",
     .module_descr = "Neuron northbound MQTT communication plugin",
     .intf_funs    = &plugin_intf_funs,
-    .kind         = PLUGIN_KIND_SYSTEM,
+    .kind         = NEU_PLUGIN_KIND_SYSTEM,
     .type         = NEU_NA_TYPE_APP,
 };

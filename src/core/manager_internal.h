@@ -79,7 +79,7 @@ int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
 
 int neu_manager_get_node_state(neu_manager_t *manager, const char *node,
-                               neu_plugin_state_t *state);
+                               neu_node_state_t *state);
 int neu_manager_node_ctl(neu_manager_t *manager, const char *node,
                          neu_adapter_ctl_e ctl);
 

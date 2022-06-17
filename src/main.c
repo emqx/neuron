@@ -20,6 +20,7 @@
 #include <signal.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
 #include "core/manager.h"
 #include "utils/log.h"

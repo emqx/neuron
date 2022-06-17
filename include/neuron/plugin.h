@@ -28,6 +28,7 @@ extern "C" {
 #include "utils/zlog.h"
 
 #include "adapter.h"
+#include "define.h"
 #include "type.h"
 
 #define NEURON_PLUGIN_VER_1_0 100
@@ -39,8 +40,8 @@ typedef struct neu_plugin_common {
     neu_adapter_t *            adapter;
     const adapter_callbacks_t *adapter_callbacks;
 
-    neu_plugin_link_state_e link_state;
-    uint16_t                tag_size;
+    neu_node_link_state_e link_state;
+    uint16_t              tag_size;
 
     zlog_category_t *log;
 } neu_plugin_common_t;

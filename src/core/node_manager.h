@@ -26,7 +26,6 @@
 #include "utils/utextend.h"
 
 #include "adapter.h"
-#include "adapter_msg.h"
 
 typedef struct neu_node_manager neu_node_manager_t;
 
