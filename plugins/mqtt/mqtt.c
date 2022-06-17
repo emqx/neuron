@@ -18,14 +18,24 @@
  **/
 
 #include <assert.h>
-#include <pthread.h>
-#include <stdlib.h>
-#include <sys/time.h>
 
 #include "command/command.h"
 #include "mqtt.h"
-#include "neuron.h"
 #include "util.h"
+
+#define INTERVAL 100000U
+#define TIMEOUT 3000U
+
+#define TOPIC_READ_REQ "neuron/%s/read/req"
+#define TOPIC_WRITE_REQ "neuron/%s/write/req"
+
+#define TOPIC_READ_RES "neuron/%s/read/resp"
+#define TOPIC_WRITE_RES "neuron/%s/write/resp"
+#define TOPIC_UPLOAD_RES "neuron/%s/upload"
+
+#define QOS0 0
+#define QOS1 1
+#define QOS2 2
 
 const neu_plugin_module_t neu_plugin_module;
 
@@ -37,19 +47,14 @@ struct topic_pair {
     int   type;
 };
 
-typedef struct mqtt_routine {
+struct mqtt_routine {
     neu_plugin_t *    plugin;
     neu_mqtt_option_t option;
     neu_mqtt_client_t client;
     UT_array *        topics;
-} mqtt_routine_t;
-
-struct neu_plugin {
-    neu_plugin_common_t common;
-    bool                running;
-    mqtt_routine_t *    routine;
-    char *              config;
 };
+
+static neu_plugin_t *plugin_log = NULL;
 
 static char *topics_format(char *format, char *name)
 {
@@ -73,8 +78,8 @@ static void topics_add(UT_array *topics, char *request, int qos_request,
     pair->qos_response      = qos_response;
     pair->type              = type;
     utarray_push_back(topics, &pair);
-    nlog_info("add topic-req:%s, topic-res:%s, count:%d", pair->topic_request,
-              pair->topic_response, utarray_len(topics));
+    plog_info(plugin_log, "add topic-req:%s, topic-res:%s, count:%d",
+              pair->topic_request, pair->topic_response, utarray_len(topics));
 }
 
 static void topics_cleanup(UT_array *topics)
@@ -84,8 +89,8 @@ static void topics_cleanup(UT_array *topics)
          NULL != pair;
          pair = (struct topic_pair **) utarray_next(topics, pair)) {
 
-        nlog_info("remove topic-req:%s, topic-res:%s", (*pair)->topic_request,
-                  (*pair)->topic_response);
+        plog_info(plugin_log, "remove topic-req:%s, topic-res:%s",
+                  (*pair)->topic_request, (*pair)->topic_response);
         if (NULL != (*pair)->topic_request) {
             free((*pair)->topic_request);
         }
@@ -257,6 +262,7 @@ static neu_plugin_t *mqtt_plugin_open(void)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
     neu_plugin_common_init(&plugin->common);
+    plugin_log = plugin; // for plog
     return plugin;
 }
 
@@ -267,6 +273,7 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "success to free plugin:%s", name);
 
+    plugin_log = NULL;
     free(plugin);
     return NEU_ERR_SUCCESS;
 }
@@ -382,13 +389,13 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
         return NEU_ERR_MQTT_FAILURE;
     }
 
-    mqtt_routine_t *   routine  = plugin->routine;
-    int                type     = TOPIC_TYPE_READ;
-    struct topic_pair *pair     = topics_find_type(routine->topics, type);
-    char *             json_str = command_write_response(head, write_data);
-    const char *       topic    = pair->topic_response;
-    const int          qos      = pair->qos_response;
-    neu_err_code_e     error =
+    mqtt_routine_t *   routine = plugin->routine;
+    int                type    = TOPIC_TYPE_READ;
+    struct topic_pair *pair    = topics_find_type(routine->topics, type);
+    char *         json_str = command_write_response(plugin, head, write_data);
+    const char *   topic    = pair->topic_response;
+    const int      qos      = pair->qos_response;
+    neu_err_code_e error =
         neu_mqtt_client_publish(routine->client, topic, qos,
                                 (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
@@ -414,10 +421,10 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
     mqtt_routine_t *   routine = plugin->routine;
     int                type    = TOPIC_TYPE_READ;
     struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *             json_str =
-        command_read_once_response(head, read_data, routine->option.format);
-    const char *   topic = pair->topic_response;
-    const int      qos   = pair->qos_response;
+    char *      json_str = command_read_once_response(plugin, head, read_data,
+                                                routine->option.format);
+    const char *topic    = pair->topic_response;
+    const int   qos      = pair->qos_response;
     neu_err_code_e error =
         neu_mqtt_client_publish(routine->client, topic, qos,
                                 (unsigned char *) json_str, strlen(json_str));
@@ -443,8 +450,8 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     mqtt_routine_t *   routine = plugin->routine;
     int                type    = TOPIC_TYPE_UPLOAD;
     struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *             json_str =
-        command_read_periodic_response(trans_data, routine->option.format);
+    char *json_str = command_read_periodic_response(plugin, trans_data,
+                                                    routine->option.format);
     if (NULL == json_str) {
         return NEU_ERR_MQTT_FAILURE;
     }

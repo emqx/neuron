@@ -46,13 +46,15 @@ typedef struct {
 
 void command_response_handle(mqtt_response_t *response);
 
-char *command_read_once_response(neu_reqresp_head_t *   head,
+char *command_read_once_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                                  neu_resp_read_group_t *data, int format);
 
-char *command_read_periodic_response(neu_reqresp_trans_data_t *data,
+char *command_read_periodic_response(neu_plugin_t *            plugin,
+                                     neu_reqresp_trans_data_t *data,
                                      int                       format);
 
-char *command_write_response(neu_reqresp_head_t *head, neu_resp_error_t *data);
+char *command_write_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                             neu_resp_error_t *data);
 
 #ifdef __cplusplus
 }

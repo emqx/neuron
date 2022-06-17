@@ -25,21 +25,16 @@ extern "C" {
 #endif
 
 #include <neuron.h>
+#include <stdlib.h>
 
-#define UNUSED(x) (void) (x)
-#define INTERVAL 100000U
-#define TIMEOUT 3000U
+typedef struct mqtt_routine mqtt_routine_t;
 
-#define TOPIC_READ_REQ "neuron/%s/read/req"
-#define TOPIC_WRITE_REQ "neuron/%s/write/req"
-
-#define TOPIC_READ_RES "neuron/%s/read/resp"
-#define TOPIC_WRITE_RES "neuron/%s/write/resp"
-#define TOPIC_UPLOAD_RES "neuron/%s/upload"
-
-#define QOS0 0
-#define QOS1 1
-#define QOS2 2
+struct neu_plugin {
+    neu_plugin_common_t common;
+    bool                running;
+    mqtt_routine_t *    routine;
+    char *              config;
+};
 
 #ifdef __cplusplus
 }
