@@ -122,10 +122,12 @@ int json_encode_read_resp_tags(void *json_object, void *param)
 
     values_object = neu_json_encode_new();
     if (NULL == values_object) {
+        nlog_error("ekuiper cannot allocate json object");
         return -1;
     }
     errors_object = neu_json_encode_new();
     if (NULL == values_object) {
+        nlog_error("ekuiper cannot allocate json object");
         json_decref(values_object);
         return -1;
     }
@@ -182,6 +184,8 @@ int json_encode_read_resp(void *json_object, void *param)
 
     ret = json_encode_read_resp_header(json_object, &header);
     if (0 != ret) {
+        nlog_error("ekuiper fail encode data header node:%s group:%s, %" PRIu64,
+                   header.node_name, header.group_name, header.timestamp);
         return ret;
     }
 
