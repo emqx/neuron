@@ -39,24 +39,11 @@ int neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result)
         .t    = NEU_JSON_STR,
     } };
 
-    neu_json_elem_t elems_command[] = { {
-        .name = "command",
-        .t    = NEU_JSON_STR,
-    } };
-
     ret = neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elems_uuid), elems_uuid);
     if (ret == 0) {
         req->uuid = elems_uuid[0].v.val_str;
     } else {
         goto decode_fail;
-    }
-
-    ret =
-        neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elems_command), elems_command);
-    if (ret == 0) {
-        req->command = elems_command[0].v.val_str;
-    } else {
-        req->command = strdup("");
     }
 
     *result = req;
@@ -77,10 +64,6 @@ void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req)
 
     if (NULL != req->uuid) {
         free(req->uuid);
-    }
-
-    if (NULL != req->command) {
-        free(req->command);
     }
 
     free(req);

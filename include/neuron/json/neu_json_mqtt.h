@@ -33,7 +33,6 @@ extern "C" {
 
 typedef struct {
     char *uuid;
-    char *command;
 } neu_json_mqtt_t;
 
 int  neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result);

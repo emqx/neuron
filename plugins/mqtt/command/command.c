@@ -25,8 +25,8 @@
 #include "command.h"
 
 // Read tags with group config
-static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
-                         neu_json_mqtt_t *mqtt, char *json_str)
+static int read_request(mqtt_response_t *response, neu_plugin_t *plugin,
+                        neu_json_mqtt_t *mqtt, char *json_str)
 {
     UNUSED(response);
 
@@ -41,8 +41,8 @@ static int read_response(mqtt_response_t *response, neu_plugin_t *plugin,
 }
 
 // Write tags with group config
-static int write_response(mqtt_response_t *response, neu_plugin_t *plugin,
-                          neu_json_mqtt_t *mqtt, char *json_str)
+static int write_request(mqtt_response_t *response, neu_plugin_t *plugin,
+                         neu_json_mqtt_t *mqtt, char *json_str)
 {
     UNUSED(response);
 
@@ -81,30 +81,33 @@ void command_response_handle(mqtt_response_t *response)
         // neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, mqtt,
         //                           neu_json_encode_mqtt_resp, &ret_str);
 
-        zlog_error(neuron, "JSON parsing mqtt failed");
+        nlog_error("json parsing mqtt failed");
+        free(json_str);
         return;
     }
 
     switch (response->type) {
     case TOPIC_TYPE_READ: {
-        rc = read_response(response, plugin, mqtt, json_str);
+        rc = read_request(response, plugin, mqtt, json_str);
+        if (0 != rc) {
+            neu_json_decode_mqtt_req_free(mqtt);
+        }
         break;
     }
 
     case TOPIC_TYPE_WRITE: {
-        rc = write_response(response, plugin, mqtt, json_str);
+        rc = write_request(response, plugin, mqtt, json_str);
+        if (0 != rc) {
+            neu_json_decode_mqtt_req_free(mqtt);
+        }
         break;
     }
     default:
-        assert(1 == 0);
+        nlog_error("invalid topic type");
         break;
     }
 
-    if (NULL != json_str) {
-        free(json_str);
-    }
-
-    neu_json_decode_mqtt_req_free(mqtt);
+    free(json_str);
 }
 
 char *command_read_once_response(neu_reqresp_head_t *   head,

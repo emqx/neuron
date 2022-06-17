@@ -36,8 +36,8 @@ static uint64_t current_time()
 int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                  neu_json_read_req_t *req)
 {
-    zlog_info(neuron, "write uuid:%s, group:%s, node:%s", mqtt->uuid,
-              req->group, req->node);
+    nlog_info("read uuid:%s, group:%s, node:%s", mqtt->uuid, req->group,
+              req->node);
 
     neu_reqresp_head_t header = { 0 };
     header.ctx                = mqtt;
@@ -154,10 +154,13 @@ char *command_rw_read_once_response(neu_reqresp_head_t *   head,
     uint16_t              len      = data->n_tag;
     char *                json_str = NULL;
     neu_json_read_resp_t  json     = { 0 };
+
+    nlog_info("read resp uuid: %s", ((neu_json_mqtt_t *) head->ctx)->uuid);
     wrap_read_response_json(tags, len, &json);
     neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, head->ctx,
                               neu_json_encode_mqtt_resp, &json_str);
     clean_read_response_json(&json);
+    neu_json_decode_mqtt_req_free(head->ctx);
     return json_str;
 }
 
@@ -193,8 +196,8 @@ char *command_rw_read_periodic_response(neu_reqresp_trans_data_t *data,
 int command_rw_write_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                              neu_json_write_req_t *req)
 {
-    zlog_info(neuron, "write uuid:%s, group:%s, node:%s", mqtt->uuid,
-              req->group, req->node);
+    nlog_info("write uuid:%s, group:%s, node:%s", mqtt->uuid, req->group,
+              req->node);
 
     neu_reqresp_head_t  header = { 0 };
     neu_req_write_tag_t cmd    = { 0 };
@@ -241,7 +244,10 @@ char *command_rw_write_response(neu_reqresp_head_t *head,
 {
     neu_json_error_resp_t error    = { .error = data->error };
     char *                json_str = NULL;
+
+    nlog_info("write resp uuid: %s", ((neu_json_mqtt_t *) head->ctx)->uuid);
     neu_json_encode_with_mqtt(&error, neu_json_encode_error_resp, head->ctx,
                               neu_json_encode_mqtt_resp, &json_str);
+    neu_json_decode_mqtt_req_free(head->ctx);
     return json_str;
 }
