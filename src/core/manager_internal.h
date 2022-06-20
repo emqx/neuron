@@ -64,6 +64,10 @@ void neu_manager_notify_app_sub(neu_manager_t *manager, const char *app,
                                 const char *driver, const char *group);
 void neu_manager_notify_app_unsub(neu_manager_t *manager, const char *app,
                                   const char *driver, const char *group);
+void neu_manager_notify_app_unsub_update(neu_manager_t *manager,
+                                         const char *driver, const char *group);
+void neu_manager_notify_app_unsub_driver_update(neu_manager_t *manager,
+                                                const char *   driver);
 void neu_manager_notify_app_sub_update(neu_manager_t *manager,
                                        const char *driver, const char *group);
 
