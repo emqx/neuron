@@ -50,6 +50,11 @@ static inline uint64_t time_ms()
 int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
                   neu_resp_tag_value_t *    tag_value);
 
+typedef struct {
+    neu_plugin_t *            plugin;
+    neu_reqresp_trans_data_t *trans_data;
+} json_read_resp_t;
+
 // { "node_name": "node0", "group_name": "grp0", "timestamp": 1649776722631 }
 int json_encode_read_resp_header(void *json_object, void *param);
 

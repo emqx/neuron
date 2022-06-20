@@ -30,8 +30,12 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 {
     int rv = 0;
 
-    char *json_str = NULL;
-    rv = neu_json_encode_by_fn(trans_data, json_encode_read_resp, &json_str);
+    char *           json_str = NULL;
+    json_read_resp_t resp     = {
+        .plugin     = plugin,
+        .trans_data = trans_data,
+    };
+    rv = neu_json_encode_by_fn(&resp, json_encode_read_resp, &json_str);
     if (0 != rv) {
         plog_error(plugin, "fail encode trans data to json");
         return;
@@ -75,7 +79,8 @@ void recv_data_callback(void *arg)
     json_str = nng_msg_body(msg);
     plog_debug(plugin, "<< %.*s", (int) nng_msg_len(msg), json_str);
     if (json_decode_write_req(json_str, nng_msg_len(msg), &req) < 0) {
-        plog_error(plugin, "fail decode write request json");
+        plog_error(plugin, "fail decode write request json: %.*s",
+                   (int) nng_msg_len(msg), json_str);
         goto recv_data_callback_end;
     }
 
