@@ -24,6 +24,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "event/event.h"
+#include "persist/persist.h"
 
 #include "node_manager.h"
 #include "plugin_manager.h"
@@ -34,13 +35,11 @@ typedef struct neu_manager {
     neu_events_t *  events;
     neu_event_io_t *loop;
 
-    bool stop;
-
     neu_plugin_manager_t *plugin_manager;
     neu_node_manager_t *  node_manager;
     neu_subscribe_mgr_t * subscribe_manager;
 
-    nng_pipe persist_pipe;
+    neu_persister_t *persister;
 } neu_manager_t;
 
 int       neu_manager_add_plugin(neu_manager_t *manager, const char *library);
@@ -52,41 +51,11 @@ int       neu_manager_add_node(neu_manager_t *manager, const char *node_name,
 int       neu_manager_del_node(neu_manager_t *manager, const char *node_name);
 UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type);
 
-int neu_manager_add_group(neu_manager_t *manager, const char *driver,
-                          const char *group, uint32_t interval);
-int neu_manager_del_group(neu_manager_t *manager, const char *driver,
-                          const char *group);
-int neu_manager_update_group(neu_manager_t *manager, const char *driver,
-                             const char *group, uint32_t interval);
-int neu_manager_get_group(neu_manager_t *manager, const char *driver,
-                          UT_array **groups);
-
-int neu_manager_add_tag(neu_manager_t *manager, const char *driver,
-                        const char *group, uint16_t n_tag, neu_datatag_t *tags,
-                        uint16_t *index);
-int neu_manager_del_tag(neu_manager_t *manager, const char *driver,
-                        const char *group, uint16_t n_tag, char **tags);
-int neu_manager_update_tag(neu_manager_t *manager, const char *driver,
-                           const char *group, uint16_t n_tag,
-                           neu_datatag_t *tags, uint16_t *index);
-int neu_manager_get_tag(neu_manager_t *manager, const char *driver,
-                        const char *group, UT_array **tags);
-
 int       neu_manager_subscribe(neu_manager_t *manager, const char *app,
                                 const char *driver, const char *group);
 int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                                   const char *driver, const char *group);
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
-
-int neu_manager_get_node_state(neu_manager_t *manager, const char *node,
-                               neu_node_state_t *state);
-int neu_manager_node_ctl(neu_manager_t *manager, const char *node,
-                         neu_adapter_ctl_e ctl);
-
-int neu_manager_node_setting(neu_manager_t *manager, const char *node,
-                             const char *setting);
-int neu_manager_node_get_setting(neu_manager_t *manager, const char *node,
-                                 char **setting);
 
 int neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
                                  neu_persist_adapter_info_t *info);

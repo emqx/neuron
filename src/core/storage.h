@@ -17,11 +17,20 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_PLUGIN_DUMMY_H_
-#define _NEU_PLUGIN_DUMMY_H_
+#ifndef _NEU_MANAGER_STORAGE_H_
+#define _NEU_MANAGER_STORAGE_H_
 
-#include "plugin.h"
+#include "persist/persist.h"
 
-extern const neu_plugin_module_t default_dummy_plugin_module;
+#include "manager_internal.h"
+
+void manager_strorage_plugin(neu_manager_t *manager);
+void manager_storage_del_node(neu_manager_t *manager, const char *node);
+void manager_storage_add_node(neu_manager_t *manager, const char *node);
+void manager_storage_subscribe(neu_manager_t *manager, const char *node);
+
+int manager_load_plugin(neu_manager_t *manager);
+int manager_load_node(neu_manager_t *manager);
+int manager_load_subscribe(neu_manager_t *manager);
 
 #endif

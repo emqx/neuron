@@ -67,10 +67,10 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
         group->group_free = plugin_group_free;
         utarray_new(gd->tags, &ut_ptr_icd);
 
-        utarray_foreach(group->tags, neu_datatag_t **, p_tag)
+        utarray_foreach(group->tags, neu_datatag_t *, tag)
         {
             modbus_point_t *p = calloc(1, sizeof(modbus_point_t));
-            ret               = modbus_tag_to_point(*p_tag, p);
+            ret               = modbus_tag_to_point(tag, p);
             assert(ret == 0);
 
             utarray_push_back(gd->tags, &p);

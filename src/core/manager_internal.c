@@ -66,7 +66,7 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter = neu_adapter_create(&adapter_info, manager);
+    adapter = neu_adapter_create(&adapter_info, true);
     neu_node_manager_add(manager->node_manager, adapter);
     neu_adapter_init(adapter);
 
@@ -82,9 +82,7 @@ int neu_manager_del_node(neu_manager_t *manager, const char *node_name)
         return NEU_ERR_NODE_NOT_EXIST;
     }
 
-    neu_adapter_uninit(adapter);
     neu_adapter_destroy(adapter);
-
     neu_subscribe_manager_remove(manager->subscribe_manager, node_name, NULL);
     neu_node_manager_del(manager->node_manager, node_name);
     return NEU_ERR_SUCCESS;
@@ -93,180 +91,6 @@ int neu_manager_del_node(neu_manager_t *manager, const char *node_name)
 UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type)
 {
     return neu_node_manager_get(manager->node_manager, type);
-}
-
-int neu_manager_add_group(neu_manager_t *manager, const char *driver,
-                          const char *group, uint32_t interval)
-{
-    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
-        return NEU_ERR_GROUP_PARAMETER_INVALID;
-    }
-
-    if (strlen(group) > NEU_GROUP_NAME_LEN) {
-        return NEU_ERR_GROUP_PARAMETER_INVALID;
-    }
-
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, driver);
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
-        return NEU_ERR_GROUP_NOT_ALLOW;
-    }
-
-    return neu_adapter_driver_add_group((neu_adapter_driver_t *) adapter, group,
-                                        interval);
-}
-
-int neu_manager_del_group(neu_manager_t *manager, const char *driver,
-                          const char *group)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, driver);
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
-        return NEU_ERR_GROUP_NOT_ALLOW;
-    }
-
-    neu_subscribe_manager_remove(manager->subscribe_manager, driver, group);
-    return neu_adapter_driver_del_group((neu_adapter_driver_t *) adapter,
-                                        group);
-}
-
-int neu_manager_update_group(neu_manager_t *manager, const char *driver,
-                             const char *group, uint32_t interval)
-{
-    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
-        return NEU_ERR_GROUP_PARAMETER_INVALID;
-    }
-    (void) manager;
-    (void) driver;
-    (void) group;
-    (void) interval;
-
-    return 0;
-}
-
-int neu_manager_get_group(neu_manager_t *manager, const char *driver,
-                          UT_array **groups)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, driver);
-
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
-        return NEU_ERR_GROUP_NOT_ALLOW;
-    }
-
-    *groups = neu_adapter_driver_get_group((neu_adapter_driver_t *) adapter);
-
-    return NEU_ERR_SUCCESS;
-}
-
-int neu_manager_add_tag(neu_manager_t *manager, const char *driver,
-                        const char *group, uint16_t n_tag, neu_datatag_t *tags,
-                        uint16_t *index)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, driver);
-    *index = 0;
-
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
-        return NEU_ERR_GROUP_NOT_ALLOW;
-    }
-
-    for (int i = 0; i < n_tag; i++) {
-        int ret = neu_adapter_driver_add_tag((neu_adapter_driver_t *) adapter,
-                                             group, &tags[i]);
-        if (ret == NEU_ERR_SUCCESS) {
-            *index += 1;
-        } else {
-            return ret;
-        }
-    }
-
-    return NEU_ERR_SUCCESS;
-}
-
-int neu_manager_del_tag(neu_manager_t *manager, const char *driver,
-                        const char *group, uint16_t n_tag, char **tags)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, driver);
-
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
-        return NEU_ERR_GROUP_NOT_ALLOW;
-    }
-
-    for (int i = 0; i < n_tag; i++) {
-        neu_adapter_driver_del_tag((neu_adapter_driver_t *) adapter, group,
-                                   tags[i]);
-    }
-
-    return NEU_ERR_SUCCESS;
-}
-
-int neu_manager_update_tag(neu_manager_t *manager, const char *driver,
-                           const char *group, uint16_t n_tag,
-                           neu_datatag_t *tags, uint16_t *index)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, driver);
-    *index = 0;
-
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
-        return NEU_ERR_GROUP_NOT_ALLOW;
-    }
-
-    for (int i = 0; i < n_tag; i++) {
-        int ret = neu_adapter_driver_update_tag(
-            (neu_adapter_driver_t *) adapter, group, &tags[i]);
-        if (ret == NEU_ERR_SUCCESS) {
-            *index += 1;
-        } else {
-            return ret;
-        }
-    }
-
-    return NEU_ERR_SUCCESS;
-}
-
-int neu_manager_get_tag(neu_manager_t *manager, const char *driver,
-                        const char *group, UT_array **tags)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, driver);
-
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (adapter->plugin_info.module->type != NEU_NA_TYPE_DRIVER) {
-        return NEU_ERR_GROUP_NOT_ALLOW;
-    }
-
-    return neu_adapter_driver_get_tag((neu_adapter_driver_t *) adapter, group,
-                                      tags);
 }
 
 int neu_manager_subscribe(neu_manager_t *manager, const char *app,
@@ -309,62 +133,6 @@ UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app)
     return neu_subscribe_manager_get(manager->subscribe_manager, app);
 }
 
-int neu_manager_get_node_state(neu_manager_t *manager, const char *node,
-                               neu_node_state_t *state)
-{
-    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    *state = neu_adapter_get_state(adapter);
-
-    return NEU_ERR_SUCCESS;
-}
-
-int neu_manager_node_ctl(neu_manager_t *manager, const char *node,
-                         neu_adapter_ctl_e ctl)
-{
-    int            ret     = NEU_ERR_SUCCESS;
-    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    switch (ctl) {
-    case NEU_ADAPTER_CTL_START:
-        ret = neu_adapter_start(adapter);
-        break;
-    case NEU_ADAPTER_CTL_STOP:
-        ret = neu_adapter_stop(adapter);
-        break;
-    }
-
-    return ret;
-}
-
-int neu_manager_node_setting(neu_manager_t *manager, const char *node,
-                             const char *setting)
-{
-    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    return neu_adapter_set_setting(adapter, setting);
-}
-
-int neu_manager_node_get_setting(neu_manager_t *manager, const char *node,
-                                 char **setting)
-{
-    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    return neu_adapter_get_setting(adapter, setting);
-}
-
 int neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
                                  neu_persist_adapter_info_t *info)
 {
@@ -372,8 +140,8 @@ int neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
 
     if (adapter != NULL) {
         info->name        = strdup(name);
-        info->type        = adapter->plugin_info.module->type;
-        info->plugin_name = strdup(adapter->plugin_info.module->module_name);
+        info->type        = adapter->module->type;
+        info->plugin_name = strdup(adapter->module->module_name);
         info->state       = adapter->state;
         return 0;
     }
@@ -392,8 +160,8 @@ void neu_manager_notify_app_sub(neu_manager_t *manager, const char *app,
     header.type = NEU_REQ_APP_SUBSCRIBE_GROUP;
     strcpy(sub.driver, driver);
     strcpy(sub.group, group);
-    int ret = neu_manager_get_tag(manager, driver, group, &sub.tags);
-    assert(ret == 0);
+    // int ret = neu_manager_get_tag(manager, driver, group, &sub.tags);
+    // assert(ret == 0);
 
     msg = neu_msg_gen(&header, (void *) &sub);
     nng_msg_set_pipe(msg, pipe);

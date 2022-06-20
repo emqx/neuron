@@ -27,7 +27,6 @@
 #include "plugin.h"
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard"
-#define DEFAULT_DUMMY_PLUGIN_NAME "default-dummy"
 
 typedef struct neu_plugin_instance {
     void *               handle;

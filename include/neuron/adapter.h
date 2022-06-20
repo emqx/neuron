@@ -41,7 +41,6 @@ typedef enum neu_reqresp_type {
     NEU_RESP_ERROR,
     NEU_REQRESP_TRANS_DATA,
     NEU_REQ_UPDATE_LICENSE,
-    NEU_REQRESP_PERSISTENCE_LOAD,
 
     NEU_REQ_READ_GROUP,
     NEU_RESP_READ_GROUP,
@@ -56,6 +55,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_APP_UNSUBSCRIBE_GROUP,
 
     NEU_REQ_NODE_INIT,
+    NEU_REQ_NODE_UNINIT,
+    NEU_RESP_NODE_UNINIT,
     NEU_REQ_ADD_NODE,
     NEU_REQ_DEL_NODE,
     NEU_REQ_GET_NODE,
@@ -98,9 +99,9 @@ typedef struct neu_resp_error {
     int error;
 } neu_resp_error_t;
 
-typedef struct neu_req_node_init {
+typedef struct {
     char node[NEU_NODE_NAME_LEN];
-} neu_req_node_init_t;
+} neu_req_node_init_t, neu_req_node_uninit_t, neu_resp_node_uninit_t;
 
 typedef struct neu_req_add_plugin {
     char library[NEU_PLUGIN_LIBRARY_LEN];
@@ -304,9 +305,9 @@ inline static nng_msg *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     size_t   data_size = 0;
 
     switch (header->type) {
-    case NEU_REQRESP_PERSISTENCE_LOAD:
-        break;
     case NEU_REQ_NODE_INIT:
+    case NEU_REQ_NODE_UNINIT:
+    case NEU_RESP_NODE_UNINIT:
         data_size = sizeof(neu_req_node_init_t);
         break;
     case NEU_RESP_ERROR:
