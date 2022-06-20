@@ -56,16 +56,13 @@ struct neu_adapter_driver {
     neu_driver_cache_t *cache;
     neu_events_t *      driver_events;
 
-    nng_mtx *     mtx;
     struct group *groups;
 };
 
-static int       report_callback(void *usr_data);
-static int       read_callback(void *usr_data);
-static void      read_group(neu_driver_cache_t *cache, const char *group,
-                            UT_array *tags, neu_resp_tag_value_t *datas);
-static UT_array *load_tags(UT_array *tags);
-static void      free_tags(UT_array *tags);
+static int  report_callback(void *usr_data);
+static int  read_callback(void *usr_data);
+static void read_group(neu_driver_cache_t *cache, const char *group,
+                       UT_array *tags, neu_resp_tag_value_t *datas);
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
@@ -132,7 +129,6 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
 
-    nng_mtx_alloc(&driver->mtx);
     driver->cache                                 = neu_driver_cache_new();
     driver->driver_events                         = neu_event_new();
     driver->adapter.cb_funs.driver.update         = update;
@@ -145,7 +141,6 @@ void neu_adapter_driver_destroy(neu_adapter_driver_t *driver)
 {
     neu_event_close(driver->driver_events);
     neu_driver_cache_destroy(driver->cache);
-    nng_mtx_free(driver->mtx);
 }
 
 int neu_adapter_driver_start(neu_adapter_driver_t *driver)
@@ -171,7 +166,6 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 {
     group_t *el = NULL, *tmp = NULL;
 
-    nng_mtx_lock(driver->mtx);
     HASH_ITER(hh, driver->groups, el, tmp)
     {
         HASH_DEL(driver->groups, el);
@@ -183,12 +177,11 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
         }
         free(el->grp.group_name);
         free(el->name);
-        free_tags(el->grp.tags);
+        utarray_free(el->grp.tags);
 
         neu_group_destroy(el->group);
         free(el);
     }
-    nng_mtx_unlock(driver->mtx);
 
     return 0;
 }
@@ -277,7 +270,6 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
     group_t *find = NULL;
     int      ret  = NEU_ERR_GROUP_EXIST;
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, name, find);
     if (find == NULL) {
         find = calloc(1, sizeof(group_t));
@@ -303,8 +295,6 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         ret = NEU_ERR_SUCCESS;
     }
 
-    nng_mtx_unlock(driver->mtx);
-
     return ret;
 }
 
@@ -314,7 +304,6 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     int      ret      = NEU_ERR_GROUP_NOT_EXIST;
     uint16_t tag_size = 0;
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, name, find);
     if (find != NULL) {
         HASH_DEL(driver->groups, find);
@@ -328,12 +317,12 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         free(find->grp.group_name);
         free(find->name);
 
-        utarray_foreach(find->grp.tags, neu_datatag_t **, p_tag)
+        utarray_foreach(find->grp.tags, neu_datatag_t *, tag)
         {
-            neu_driver_cache_del(driver->cache, name, (*p_tag)->name);
+            neu_driver_cache_del(driver->cache, name, tag->name);
         }
 
-        free_tags(find->grp.tags);
+        utarray_free(find->grp.tags);
         neu_group_destroy(find->group);
         free(find);
 
@@ -342,7 +331,6 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         ret = NEU_ERR_SUCCESS;
     }
 
-    nng_mtx_unlock(driver->mtx);
     return ret;
 }
 
@@ -350,9 +338,7 @@ static group_t *find_group(neu_adapter_driver_t *driver, const char *name)
 {
     group_t *find = NULL;
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, name, find);
-    nng_mtx_unlock(driver->mtx);
 
     return find;
 }
@@ -362,13 +348,11 @@ int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
     group_t *find = NULL;
     int      ret  = NEU_ERR_GROUP_NOT_EXIST;
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, name, find);
     if (find != NULL) {
         ret = NEU_ERR_SUCCESS;
     }
 
-    nng_mtx_unlock(driver->mtx);
     return ret;
 }
 
@@ -380,7 +364,6 @@ UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
 
     utarray_new(groups, &icd);
 
-    nng_mtx_lock(driver->mtx);
     HASH_ITER(hh, driver->groups, el, tmp)
     {
         neu_resp_group_info_t info = { 0 };
@@ -392,7 +375,6 @@ UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
         utarray_push_back(groups, &info);
     }
 
-    nng_mtx_unlock(driver->mtx);
     return groups;
 }
 
@@ -408,14 +390,12 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
         return ret;
     }
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         ret = neu_group_add_tag(find->group, tag);
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
-    nng_mtx_unlock(driver->mtx);
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size += 1;
@@ -430,14 +410,12 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         ret = neu_group_del_tag(find->group, tag);
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
-    nng_mtx_unlock(driver->mtx);
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -= 1;
@@ -458,14 +436,12 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
         return ret;
     }
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         ret = neu_group_update_tag(find->group, tag);
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
-    nng_mtx_unlock(driver->mtx);
 
     return ret;
 }
@@ -476,14 +452,12 @@ int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         *tags = neu_group_get_tag(find->group);
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
-    nng_mtx_unlock(driver->mtx);
 
     return ret;
 }
@@ -494,12 +468,10 @@ UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
     group_t * find = NULL;
     UT_array *tags = NULL;
 
-    nng_mtx_lock(driver->mtx);
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         tags = neu_group_get_read_tag(find->group);
     }
-    nng_mtx_unlock(driver->mtx);
 
     return tags;
 }
@@ -518,7 +490,6 @@ static int report_callback(void *usr_data)
     UT_array *tags =
         neu_adapter_driver_get_read_tag(group->driver, group->name);
 
-    nng_mtx_lock(group->driver->mtx);
     neu_reqresp_trans_data_t *data =
         calloc(1,
                sizeof(neu_reqresp_trans_data_t) +
@@ -534,7 +505,6 @@ static int report_callback(void *usr_data)
                                             data);
     utarray_free(tags);
     free(data);
-    nng_mtx_unlock(group->driver->mtx);
     return 0;
 }
 
@@ -548,9 +518,9 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
     if (group->grp.group_free != NULL)
         group->grp.group_free(&group->grp);
 
-    utarray_foreach(group->grp.tags, neu_datatag_t **, p_tag)
+    utarray_foreach(group->grp.tags, neu_datatag_t *, tag)
     {
-        neu_driver_cache_del(group->driver->cache, group->name, (*p_tag)->name);
+        neu_driver_cache_del(group->driver->cache, group->name, tag->name);
     }
 
     neu_plugin_group_t grp = {
@@ -560,10 +530,10 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
         .user_data  = NULL,
     };
 
-    grp.tags = load_tags(tags);
+    grp.tags = tags;
     free(group->grp.group_name);
     if (group->grp.tags != NULL) {
-        free_tags(group->grp.tags);
+        utarray_free(group->grp.tags);
     }
 
     group->grp = grp;
@@ -578,7 +548,6 @@ static int read_callback(void *usr_data)
         return 0;
     }
 
-    nng_mtx_lock(group->driver->mtx);
     if (!neu_group_is_change(group->group, group->timestamp)) {
         if (group->grp.tags != NULL) {
             group->driver->adapter.module->intf_funs->driver.group_timer(
@@ -588,7 +557,6 @@ static int read_callback(void *usr_data)
         neu_group_change_test(group->group, group->timestamp, (void *) group,
                               group_change);
     }
-    nng_mtx_unlock(group->driver->mtx);
 
     return 0;
 }
@@ -652,38 +620,4 @@ static void read_group(neu_driver_cache_t *cache, const char *group,
         }
         datas[index].value.value = value.value;
     }
-}
-
-static UT_array *load_tags(UT_array *tags)
-{
-    UT_array *result = NULL;
-    utarray_new(result, &ut_ptr_icd);
-
-    utarray_foreach(tags, neu_datatag_t *, tag)
-    {
-        neu_datatag_t *tmp = calloc(1, sizeof(neu_datatag_t));
-        memcpy(tmp, tag, sizeof(neu_datatag_t));
-        tmp->name    = strdup(tag->name);
-        tmp->address = strdup(tag->address);
-
-        utarray_push_back(result, (void *) &tmp);
-    }
-
-    return result;
-}
-
-static void free_tags(UT_array *tags)
-{
-    neu_datatag_t **tag = (neu_datatag_t **) utarray_back(tags);
-
-    while (tag != NULL) {
-        utarray_pop_back(tags);
-
-        free((*tag)->address);
-        free((*tag)->name);
-        free(*tag);
-
-        tag = (neu_datatag_t **) utarray_back(tags);
-    }
-    utarray_free(tags);
 }
