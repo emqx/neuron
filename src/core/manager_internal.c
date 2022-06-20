@@ -155,13 +155,14 @@ void neu_manager_notify_app_sub(neu_manager_t *manager, const char *app,
     nng_msg *                     msg;
     neu_reqresp_head_t            header = { 0 };
     neu_req_app_subscribe_group_t sub    = { 0 };
-    nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, app);
+    nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, driver);
 
     header.type = NEU_REQ_APP_SUBSCRIBE_GROUP;
+    strcpy(header.sender, app);
+    strcpy(header.receiver, driver);
+
     strcpy(sub.driver, driver);
     strcpy(sub.group, group);
-    // int ret = neu_manager_get_tag(manager, driver, group, &sub.tags);
-    // assert(ret == 0);
 
     msg = neu_msg_gen(&header, (void *) &sub);
     nng_msg_set_pipe(msg, pipe);
@@ -177,12 +178,43 @@ void neu_manager_notify_app_unsub(neu_manager_t *manager, const char *app,
     nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, app);
 
     header.type = NEU_REQ_APP_UNSUBSCRIBE_GROUP;
+    strcpy(header.sender, "manager");
+    strcpy(header.receiver, app);
+
     strcpy(unsub.driver, driver);
     strcpy(unsub.group, group);
 
     msg = neu_msg_gen(&header, (void *) &unsub);
     nng_msg_set_pipe(msg, pipe);
     nng_sendmsg(manager->socket, msg, 0);
+}
+
+void neu_manager_notify_app_unsub_update(neu_manager_t *manager,
+                                         const char *driver, const char *group)
+{
+    UT_array *apps =
+        neu_subscribe_manager_find(manager->subscribe_manager, driver, group);
+    if (apps != NULL) {
+        utarray_foreach(apps, neu_app_subscribe_t *, app)
+        {
+            neu_manager_notify_app_unsub(manager, app->app_name, driver, group);
+        }
+        utarray_free(apps);
+    }
+}
+
+void neu_manager_notify_app_unsub_driver_update(neu_manager_t *manager,
+                                                const char *   driver)
+{
+    UT_array *apps = neu_subscribe_manager_find_by_driver(
+        manager->subscribe_manager, driver);
+    if (apps != NULL) {
+        utarray_foreach(apps, neu_app_subscribe_t *, app)
+        {
+            neu_manager_notify_app_unsub(manager, app->app_name, driver, "");
+        }
+        utarray_free(apps);
+    }
 }
 
 void neu_manager_notify_app_sub_update(neu_manager_t *manager,

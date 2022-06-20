@@ -91,6 +91,24 @@ UT_array *neu_subscribe_manager_find(neu_subscribe_mgr_t *mgr,
     }
 }
 
+UT_array *neu_subscribe_manager_find_by_driver(neu_subscribe_mgr_t *mgr,
+                                               const char *         driver)
+{
+    sub_elem_t *el = NULL, *tmp = NULL;
+    UT_array *  apps = NULL;
+
+    utarray_new(apps, &app_sub_icd);
+
+    HASH_ITER(hh, mgr->ss, el, tmp)
+    {
+        if (strcmp(driver, el->key.driver) == 0) {
+            utarray_concat(apps, el->apps);
+        }
+    }
+
+    return apps;
+}
+
 UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
 {
     sub_elem_t *el = NULL, *tmp = NULL;
@@ -98,7 +116,6 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
     UT_icd      icd = { sizeof(neu_resp_subscribe_info_t), NULL, NULL, NULL };
 
     utarray_new(groups, &icd);
-
     HASH_ITER(hh, mgr->ss, el, tmp)
     {
         utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)

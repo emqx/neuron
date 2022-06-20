@@ -72,7 +72,7 @@ jobs:
           mosquitto -v &
           python3 -m pip install -U pip
           python3 -m pip install -r ft/requirements.txt
-          python3 -m robot -P ft/ -d ft/reports ft
+          python3 -m robot --maxerrorlines=600 -P ft/ -d ft/reports ft
 
       - uses: actions/upload-artifact@v3
         with:

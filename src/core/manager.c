@@ -359,6 +359,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             reply(manager, header, &e);
         } else {
             forward_msg(manager, msg, header->receiver);
+            neu_manager_notify_app_unsub_update(manager, cmd->driver,
+                                                cmd->group);
             neu_subscribe_manager_remove(manager->subscribe_manager,
                                          cmd->driver, cmd->group);
         }
@@ -379,6 +381,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->tags);
         } else {
             forward_msg(manager, msg, header->receiver);
+            neu_manager_notify_app_sub_update(manager, cmd->driver, cmd->group);
         }
 
         break;
@@ -401,6 +404,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->tags);
         } else {
             forward_msg(manager, msg, header->receiver);
+            neu_manager_notify_app_sub_update(manager, cmd->driver, cmd->group);
         }
 
         break;
@@ -429,6 +433,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_ERROR:
     case NEU_RESP_READ_GROUP:
+    case NEU_RESP_APP_SUBSCRIBE_GROUP:
         forward_msg(manager, msg, header->receiver);
         break;
     default:

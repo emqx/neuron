@@ -28,7 +28,7 @@
 typedef struct neu_subscribe_mgr neu_subscribe_mgr_t;
 
 typedef struct neu_app_subscribe {
-    char     app_name[128];
+    char     app_name[NEU_NODE_NAME_LEN];
     nng_pipe pipe;
 } neu_app_subscribe_t;
 
@@ -38,6 +38,8 @@ void                 neu_subscribe_manager_destroy(neu_subscribe_mgr_t *mgr);
 //  neu_app_subscribe_t array
 UT_array *neu_subscribe_manager_find(neu_subscribe_mgr_t *mgr,
                                      const char *driver, const char *group);
+UT_array *neu_subscribe_manager_find_by_driver(neu_subscribe_mgr_t *mgr,
+                                               const char *         driver);
 UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app);
 int  neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                                const char *app, const char *group,

@@ -76,6 +76,7 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     req->type = NEU_RESP_ERROR;
 
     adapter->cb_funs.response(adapter, req, &nerror);
+    free(req);
 }
 
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
