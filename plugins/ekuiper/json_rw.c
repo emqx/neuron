@@ -23,6 +23,7 @@
 #include "utils/log.h"
 
 #include "json_rw.h"
+#include "plugin_ekuiper.h"
 
 int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
                   neu_resp_tag_value_t *    tag_value)
@@ -116,18 +117,20 @@ int json_encode_read_resp_header(void *json_object, void *param)
 int json_encode_read_resp_tags(void *json_object, void *param)
 {
     int                       ret           = 0;
-    neu_reqresp_trans_data_t *trans_data    = param;
+    json_read_resp_t *        resp          = param;
+    neu_plugin_t *            plugin        = resp->plugin;
+    neu_reqresp_trans_data_t *trans_data    = resp->trans_data;
     void *                    values_object = NULL;
     void *                    errors_object = NULL;
 
     values_object = neu_json_encode_new();
     if (NULL == values_object) {
-        nlog_error("ekuiper cannot allocate json object");
+        plog_error(plugin, "ekuiper cannot allocate json object");
         return -1;
     }
     errors_object = neu_json_encode_new();
     if (NULL == values_object) {
-        nlog_error("ekuiper cannot allocate json object");
+        plog_error(plugin, "ekuiper cannot allocate json object");
         json_decref(values_object);
         return -1;
     }
@@ -176,7 +179,9 @@ int json_encode_read_resp_tags(void *json_object, void *param)
 int json_encode_read_resp(void *json_object, void *param)
 {
     int                       ret        = 0;
-    neu_reqresp_trans_data_t *trans_data = param;
+    json_read_resp_t *        resp       = param;
+    neu_plugin_t *            plugin     = resp->plugin;
+    neu_reqresp_trans_data_t *trans_data = resp->trans_data;
 
     json_read_resp_header_t header = { .group_name = trans_data->group,
                                        .node_name  = trans_data->driver,
@@ -184,12 +189,13 @@ int json_encode_read_resp(void *json_object, void *param)
 
     ret = json_encode_read_resp_header(json_object, &header);
     if (0 != ret) {
-        nlog_error("ekuiper fail encode data header node:%s group:%s, %" PRIu64,
+        plog_error(plugin,
+                   "ekuiper fail encode data header node:%s group:%s, %" PRIu64,
                    header.node_name, header.group_name, header.timestamp);
         return ret;
     }
 
-    ret = json_encode_read_resp_tags(json_object, trans_data);
+    ret = json_encode_read_resp_tags(json_object, param);
 
     return ret;
 }
