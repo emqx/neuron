@@ -769,6 +769,7 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
     ssize_t ret =
         neu_conn_recv(conn, recv_buf + offset, sizeof(recv_buf) - offset);
     if (ret > 0) {
+        zlog_recv_protocol(conn->param.log, recv_buf + offset, ret);
         offset += ret;
         neu_protocol_unpack_buf_t protocol_buf = { 0 };
         neu_protocol_unpack_buf_init(&protocol_buf, recv_buf, offset);

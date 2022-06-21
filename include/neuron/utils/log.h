@@ -86,4 +86,15 @@ extern zlog_category_t *neuron;
     }                                                                      \
     plog_debug(plugin, "%s", protocol_buf);
 
+#define zlog_recv_protocol(log, bytes, n_byte)                             \
+    char protocol_buf[2048] = { 0 };                                       \
+    int  offset             = 0;                                           \
+    offset = snprintf(protocol_buf, sizeof(protocol_buf), "<<");           \
+    for (int i = 0; i < n_byte; i++) {                                     \
+        offset +=                                                          \
+            snprintf(protocol_buf + offset, sizeof(protocol_buf) - offset, \
+                     " 0x%02hhX", bytes[i]);                               \
+    }                                                                      \
+    zlog_debug(log, "%s", protocol_buf);
+
 #endif
