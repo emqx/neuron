@@ -65,26 +65,26 @@ extern zlog_category_t *neuron;
          sizeof(__func__) - 1, __LINE__, ZLOG_LEVEL_DEBUG, __VA_ARGS__)
 
 #define plog_send_protocol(plugin, bytes, n_byte)                          \
-    char protocol_buf[2048] = { 0 };                                       \
-    int  offset             = 0;                                           \
-    offset = snprintf(protocol_buf, sizeof(protocol_buf), ">>");           \
+    char log_protocol_buf[2048] = { 0 };                                   \
+    int  offset                 = 0;                                       \
+    offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), ">>");   \
     for (int i = 0; i < n_byte; i++) {                                     \
-        offset +=                                                          \
-            snprintf(protocol_buf + offset, sizeof(protocol_buf) - offset, \
-                     " 0x%02hhX", (bytes)[i]);                             \
+        offset += snprintf(log_protocol_buf + offset,                      \
+                           sizeof(log_protocol_buf) - offset, " 0x%02hhX", \
+                           (bytes)[i]);                                    \
     }                                                                      \
-    plog_debug(plugin, "%s", protocol_buf);
+    plog_debug(plugin, "%s", log_protocol_buf);
 
 #define plog_recv_protocol(plugin, bytes, n_byte)                          \
-    char protocol_buf[2048] = { 0 };                                       \
-    int  offset             = 0;                                           \
-    offset = snprintf(protocol_buf, sizeof(protocol_buf), "<<");           \
+    char log_protocol_buf[2048] = { 0 };                                   \
+    int  offset                 = 0;                                       \
+    offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), "<<");   \
     for (int i = 0; i < n_byte; i++) {                                     \
-        offset +=                                                          \
-            snprintf(protocol_buf + offset, sizeof(protocol_buf) - offset, \
-                     " 0x%02hhX", (bytes)[i]);                             \
+        offset += snprintf(log_protocol_buf + offset,                      \
+                           sizeof(log_protocol_buf) - offset, " 0x%02hhX", \
+                           (bytes)[i]);                                    \
     }                                                                      \
-    plog_debug(plugin, "%s", protocol_buf);
+    plog_debug(plugin, "%s", log_protocol_buf);
 
 #define zlog_recv_protocol(log, bytes, n_byte)                             \
     char log_protocol_buf[2048] = { 0 };                                   \
