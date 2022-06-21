@@ -136,6 +136,25 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
     return array;
 }
 
+UT_array *neu_node_manager_get_all(neu_node_manager_t *mgr)
+{
+    UT_array *     array = NULL;
+    UT_icd         icd   = { sizeof(neu_resp_node_info_t), NULL, NULL, NULL };
+    node_entity_t *el = NULL, *tmp = NULL;
+
+    utarray_new(array, &icd);
+
+    HASH_ITER(hh, mgr->nodes, el, tmp)
+    {
+        neu_resp_node_info_t info = { 0 };
+        strcpy(info.node, el->adapter->name);
+        strcpy(info.plugin, el->adapter->module->module_name);
+        utarray_push_back(array, &info);
+    }
+
+    return array;
+}
+
 neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name)
 {
     neu_adapter_t *adapter = NULL;
