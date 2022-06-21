@@ -78,6 +78,10 @@ typedef enum {
     PLUGIN_BIT_FINS            = 4,
     PLUGIN_BIT_QNA3E           = 5,
     PLUGIN_BIT_IEC60870_5_104  = 6,
+    PLUGIN_BIT_KNX             = 7,
+    PLUGIN_BIT_NOA11           = 8,
+    PLUGIN_BIT_DLT645_2007     = 9,
+    PLUGIN_BIT_BACNET          = 10,
     PLUGIN_BIT_MAX,
 } plugin_bit_e;
 

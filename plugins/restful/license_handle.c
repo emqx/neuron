@@ -90,6 +90,9 @@ void handle_get_license(nng_aio *aio)
         goto final;
     }
     resp.n_enabled_plugin = utarray_len(plugin_names);
+    resp.enabled_plugins =
+        calloc(resp.n_enabled_plugin,
+               sizeof(neu_json_get_license_resp_enabled_plugin_t));
     utarray_foreach(plugin_names, char **, p_name)
     {
         int index                   = utarray_eltidx(plugin_names, p_name);
@@ -107,6 +110,7 @@ final:
     free(result);
     license_fini(&lic);
     utarray_free(plugin_names);
+    free(resp.enabled_plugins);
 }
 
 void handle_set_license(nng_aio *aio)
