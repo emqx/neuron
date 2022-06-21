@@ -247,6 +247,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         strcpy(header->receiver, cmd->node);
         if (neu_node_manager_find(manager->node_manager, header->receiver) !=
             NULL) {
+            manager_storage_del_node(manager, cmd->node);
             header->type = NEU_REQ_NODE_UNINIT;
             forward_msg(manager, msg, header->receiver);
         } else {
@@ -261,7 +262,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_node_uninit_t *cmd = (neu_resp_node_uninit_t *) &header[1];
 
         neu_manager_del_node(manager, cmd->node);
-        manager_storage_del_node(manager, cmd->node);
         if (strlen(header->receiver) > 0) {
             neu_resp_error_t error = { 0 };
             header->type           = NEU_RESP_ERROR;
