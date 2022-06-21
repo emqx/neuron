@@ -83,6 +83,7 @@ struct mqtt_c_client {
     pthread_t                daemon;
     void *                   user_data;
     state_update             state_update_func;
+    zlog_category_t *        log;
     UT_array *               array;
 };
 
@@ -195,15 +196,21 @@ static void ssl_ctx_init(struct reconnect_state *state)
     SSL_library_init();
     state->ssl_ctx = SSL_CTX_new(SSLv23_client_method());
 
+    mqtt_c_client_t *client = state->client;
+
     // setup cert
     if (NULL != cert_file && 0 < strlen(cert_file)) {
         state->cert = ssl_ctx_load_cert(cert_file, NULL);
         if (NULL != state->cert) {
             if (0 >= SSL_CTX_use_certificate(state->ssl_ctx, state->cert)) {
-                nlog_error("failed to use certificate");
+                if (NULL != client->log) {
+                    zlog_error(client->log, "failed to use certificate");
+                }
             }
         } else {
-            nlog_error("failed to load certificate");
+            if (NULL != client->log) {
+                zlog_error(client->log, "failed to load certificate");
+            }
         }
     }
 
@@ -213,22 +220,30 @@ static void ssl_ctx_init(struct reconnect_state *state)
         state->key          = ssl_ctx_load_key(key_file, keypass);
         if (NULL != state->key) {
             if (0 >= SSL_CTX_use_PrivateKey(state->ssl_ctx, state->key)) {
-                nlog_error("failed to use privatekey");
+                if (NULL != client->log) {
+                    zlog_error(client->log, "failed to use privatekey");
+                }
             }
         } else {
-            nlog_error("failed to load privatekey");
+            if (NULL != client->log) {
+                zlog_error(client->log, "failed to load privatekey");
+            }
         }
     }
 
     if (NULL != state->cert && NULL != state->key) {
         if (!SSL_CTX_check_private_key(state->ssl_ctx)) {
-            nlog_error("failed to check privatekey");
+            if (NULL != client->log) {
+                zlog_error(client->log, "failed to check privatekey");
+            }
         }
     }
 
     // setup ca from base64
     if (!ssl_ctx_load_ca(state->ssl_ctx, ca_file)) {
-        nlog_error("failed to load ca");
+        if (NULL != client->log) {
+            zlog_error(client->log, "failed to load ca");
+        }
     }
 }
 
@@ -407,7 +422,15 @@ static void subscribe_on_reconnect(mqtt_c_client_t *client)
          p = (struct subscribe_tuple **) utarray_next(client->array, p)) {
         neu_err_code_e error = client_subscribe_send(client, (*p));
         if (NEU_ERR_SUCCESS != error) {
-            nlog_error("send subscribe %s error:%d", (*p)->topic, error);
+            if (NULL != client->log) {
+                zlog_error(client->log, "send subscribe %s error:%d",
+                           (*p)->topic, error);
+            }
+        }
+
+        if (NULL != client->log) {
+            zlog_error(client->log, "send subscribe %s success:%d", (*p)->topic,
+                       error);
         }
     }
 }
@@ -481,7 +504,9 @@ static void publish_callback(void **                       p_reconnect_state,
 
     char *topic_name = (char *) malloc(published->topic_name_size + 1);
     if (NULL == topic_name) {
-        nlog_error("topic name alloc error");
+        if (NULL != client->log) {
+            zlog_error(client->log, "topic name alloc error");
+        }
         return;
     }
 
@@ -537,8 +562,10 @@ static void *client_refresher(void *context)
             client->state_update_func(client->user_data, rc);
 
             if (0 != rc) {
-                nlog_error("connect to %s:%s erorr, retry...",
-                           client->state.hostname, client->state.port);
+                if (NULL != client->log) {
+                    zlog_error(client->log, "connect to %s:%s erorr, retry...",
+                               client->state.hostname, client->state.port);
+                }
                 usleep(INTERVAL * 10);
             }
         }
@@ -554,13 +581,14 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
 {
     mqtt_c_client_t *client = calloc(1, sizeof(mqtt_c_client_t));
     if (NULL == client) {
-        nlog_error("mqtt c client alloc error");
+        zlog_error(option->log, "mqtt c client alloc error");
         return NULL;
     }
 
     client->option            = option;
     client->user_data         = context;
     client->state_update_func = client->option->state_update_func;
+    client->log               = client->option->log;
     UT_icd tuple_icd = { sizeof(struct subscribe_tuple *), NULL, NULL, NULL };
     utarray_new(client->array, &tuple_icd);
 
@@ -632,7 +660,10 @@ static neu_err_code_e client_connect(mqtt_c_client_t *client)
                         publish_callback);
 
     if (0 != pthread_create(&client->daemon, NULL, client_refresher, client)) {
-        nlog_error("pthread create error");
+        if (NULL != client->log) {
+            zlog_error(client->log, "pthread create error");
+        }
+
         return NEU_ERR_MQTT_CONNECT_FAILURE;
     }
 
@@ -733,7 +764,10 @@ client_subscribe_create(mqtt_c_client_t *client, const char *topic,
 {
     struct subscribe_tuple *tuple = calloc(1, sizeof(struct subscribe_tuple));
     if (NULL == tuple) {
-        nlog_error("tuple alloc error");
+        if (NULL != client->log) {
+            nlog_error("tuple alloc error");
+        }
+
         return NULL;
     }
 
@@ -896,6 +930,7 @@ neu_err_code_e mqtt_c_client_close(mqtt_c_client_t *client)
 
     client->state_update_func = NULL;
     client->user_data         = NULL;
+    client->log               = NULL;
     pthread_mutex_lock(&client->state.running_mutex);
     client->state.running = false;
     pthread_mutex_unlock(&client->state.running_mutex);

@@ -218,6 +218,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     }
 
     routine->option.state_update_func = mqtt_routine_state;
+    routine->option.log               = plugin->common.log;
     neu_mqtt_client_t *client         = (neu_mqtt_client_t *) &routine->client;
     neu_err_code_e     error          = NEU_ERR_SUCCESS;
     error = neu_mqtt_client_open(client, &routine->option, plugin);
