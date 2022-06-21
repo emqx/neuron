@@ -226,6 +226,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
 
     switch (header->type) {
+    case NEU_REQ_UPDATE_LICENSE:
     case NEU_REQ_APP_UNSUBSCRIBE_GROUP:
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODE_SETTING:
