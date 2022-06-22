@@ -37,21 +37,33 @@ int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
 
     switch (tag_value->value.type) {
     case NEU_TYPE_INT8:
+        json_tag->t             = NEU_JSON_INT;
+        json_tag->value.val_int = tag_value->value.value.i8;
+        break;
     case NEU_TYPE_UINT8:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.u8;
         break;
     case NEU_TYPE_INT16:
+        json_tag->t             = NEU_JSON_INT;
+        json_tag->value.val_int = tag_value->value.value.i16;
+        break;
     case NEU_TYPE_UINT16:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.u16;
         break;
     case NEU_TYPE_INT32:
+        json_tag->t             = NEU_JSON_INT;
+        json_tag->value.val_int = tag_value->value.value.i32;
+        break;
     case NEU_TYPE_UINT32:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.u32;
         break;
     case NEU_TYPE_INT64:
+        json_tag->t             = NEU_JSON_INT;
+        json_tag->value.val_int = tag_value->value.value.i64;
+        break;
     case NEU_TYPE_UINT64:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.u64;
