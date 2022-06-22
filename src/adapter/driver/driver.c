@@ -585,41 +585,7 @@ static void read_group(neu_driver_cache_t *cache, const char *group,
             continue;
         }
 
-        switch (tag->type) {
-        case NEU_TYPE_BOOL:
-            datas[index].value.type = NEU_TYPE_BOOL;
-            break;
-        case NEU_TYPE_BIT:
-        case NEU_TYPE_INT8:
-        case NEU_TYPE_UINT8:
-            datas[index].value.type = NEU_TYPE_UINT8;
-            break;
-        case NEU_TYPE_INT16:
-        case NEU_TYPE_UINT16:
-            datas[index].value.type = NEU_TYPE_UINT16;
-            break;
-        case NEU_TYPE_FLOAT:
-            datas[index].value.type = NEU_TYPE_FLOAT;
-            break;
-        case NEU_TYPE_INT32:
-        case NEU_TYPE_UINT32:
-            datas[index].value.type = NEU_TYPE_UINT32;
-            break;
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_UINT64:
-            datas[index].value.type = NEU_TYPE_UINT64;
-            break;
-        case NEU_TYPE_DOUBLE:
-            datas[index].value.type = NEU_TYPE_DOUBLE;
-            break;
-        case NEU_TYPE_STRING:
-            datas[index].value.type = NEU_TYPE_STRING;
-            break;
-        default:
-            nlog_warn("unhandle tag type: %d", tag->type);
-            assert(false);
-            break;
-        }
+        datas[index].value.type  = tag->type;
         datas[index].value.value = value.value;
     }
 }
