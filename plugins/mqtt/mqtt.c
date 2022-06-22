@@ -391,11 +391,12 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
     }
 
     mqtt_routine_t *   routine = plugin->routine;
-    int                type    = TOPIC_TYPE_READ;
+    int                type    = TOPIC_TYPE_WRITE;
     struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *         json_str = command_write_response(plugin, head, write_data);
-    const char *   topic    = pair->topic_response;
-    const int      qos      = pair->qos_response;
+    char *      json_str = command_write_response(plugin, head, write_data);
+    const char *topic    = pair->topic_response;
+    const int   qos      = pair->qos_response;
+
     neu_err_code_e error =
         neu_mqtt_client_publish(routine->client, topic, qos,
                                 (unsigned char *) json_str, strlen(json_str));
@@ -406,6 +407,7 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
         return error;
     }
 
+    plog_info(plugin, "topic:%s, qos:%d, payload:%s", topic, qos, json_str);
     free(json_str);
     return NEU_ERR_SUCCESS;
 }
@@ -436,6 +438,7 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
         return error;
     }
 
+    plog_info(plugin, "topic:%s, qos:%d, payload:%s", topic, qos, json_str);
     free(json_str);
     return NEU_ERR_SUCCESS;
 }
