@@ -105,6 +105,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
             adapter->state = NEU_NODE_RUNNING_STATE_READY;
         } else {
             free(adapter->setting);
+            adapter->setting = NULL;
         }
         if (adapter->state == NEU_NODE_RUNNING_STATE_READY && start) {
             adapter->module->intf_funs->start(adapter->plugin);
