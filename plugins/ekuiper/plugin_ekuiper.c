@@ -121,6 +121,7 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
     }
 
     nng_recv_aio(plugin->sock, plugin->recv_aio);
+    plog_info(plugin, "start successfully");
 
     return NEU_ERR_SUCCESS;
 }
@@ -128,6 +129,7 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
 static int ekuiper_plugin_stop(neu_plugin_t *plugin)
 {
     nng_close(plugin->sock);
+    plog_info(plugin, "stop successfully");
     return NEU_ERR_SUCCESS;
 }
 
