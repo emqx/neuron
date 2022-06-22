@@ -549,6 +549,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         header->type = NEU_RESP_NODE_UNINIT;
         neu_msg_exchange(header);
+        strcpy(header->sender, adapter->name);
         strcpy(cmd->node, adapter->name);
         uninit_msg = neu_msg_gen(header, cmd);
 
