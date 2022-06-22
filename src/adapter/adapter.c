@@ -207,8 +207,12 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     }
 
     nng_msg *msg = neu_msg_gen(header, data);
+    int      ret = nng_sendmsg(adapter->sock, msg, 0);
+    if (ret != 0) {
+        nng_msg_free(msg);
+    }
 
-    return nng_sendmsg(adapter->sock, msg, 0);
+    return ret;
 }
 
 static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
@@ -553,7 +557,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         strcpy(cmd->node, adapter->name);
         uninit_msg = neu_msg_gen(header, cmd);
 
-        nng_sendmsg(adapter->sock, uninit_msg, 0);
+        if (nng_sendmsg(adapter->sock, uninit_msg, 0) == 0) {
+            nlog_warn("send uninit msg to %s", header->receiver);
+        } else {
+            nng_msg_free(uninit_msg);
+        }
         break;
     }
 
