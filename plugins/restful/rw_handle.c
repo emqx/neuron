@@ -114,21 +114,33 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
 
         switch (resp->tags[i].value.type) {
         case NEU_TYPE_INT8:
+            api_res.tags[i].t             = NEU_JSON_INT;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.i8;
+            break;
         case NEU_TYPE_UINT8:
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.u8;
             break;
         case NEU_TYPE_INT16:
+            api_res.tags[i].t             = NEU_JSON_INT;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.i16;
+            break;
         case NEU_TYPE_UINT16:
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.u16;
             break;
         case NEU_TYPE_INT32:
+            api_res.tags[i].t             = NEU_JSON_INT;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.i32;
+            break;
         case NEU_TYPE_UINT32:
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.u32;
             break;
         case NEU_TYPE_INT64:
+            api_res.tags[i].t             = NEU_JSON_INT;
+            api_res.tags[i].value.val_int = resp->tags[i].value.value.i64;
+            break;
         case NEU_TYPE_UINT64:
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.u64;
