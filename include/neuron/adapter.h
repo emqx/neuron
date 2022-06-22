@@ -89,6 +89,63 @@ typedef enum neu_reqresp_type {
     NEU_RESP_GET_PLUGIN,
 } neu_reqresp_type_e;
 
+static const char *neu_reqresp_type_string_t[] = {
+    [NEU_RESP_ERROR]         = "neu_resp_error",
+    [NEU_REQRESP_TRANS_DATA] = "neu_reqresp_trans_data",
+    [NEU_REQ_UPDATE_LICENSE] = "neu_req_update_license",
+
+    [NEU_REQ_READ_GROUP]  = "neu_req_read_group",
+    [NEU_RESP_READ_GROUP] = "neu_resp_read_group",
+    [NEU_REQ_WRITE_TAG]   = "neu_req_write_tag",
+
+    [NEU_REQ_SUBSCRIBE_GROUP]      = "neu_req_subscribe_group",
+    [NEU_REQ_UNSUBSCRIBE_GROUP]    = "neu_req_unsbuscribe_group",
+    [NEU_REQ_GET_SUBSCRIBE_GROUP]  = "neu_req_get_subscribe_group",
+    [NEU_RESP_GET_SUBSCRIBE_GROUP] = "neu_resp_get_subscribe_group",
+
+    [NEU_REQ_APP_SUBSCRIBE_GROUP]   = "neu_req_app_subscribe_group",
+    [NEU_RESP_APP_SUBSCRIBE_GROUP]  = "neu_resp_app_subscribe_group",
+    [NEU_REQ_APP_UNSUBSCRIBE_GROUP] = "neu_req_app_unsubscribe_group",
+
+    [NEU_REQ_NODE_INIT]         = "neu_req_node_init",
+    [NEU_REQ_NODE_UNINIT]       = "neu_req_node_uninit",
+    [NEU_RESP_NODE_UNINIT]      = "neu_resp_node_uninit",
+    [NEU_REQ_ADD_NODE]          = "neu_req_add_node",
+    [NEU_REQ_DEL_NODE]          = "neu_req_del_node",
+    [NEU_REQ_GET_NODE]          = "neu_req_get_node",
+    [NEU_RESP_GET_NODE]         = "neu_resp_get_node",
+    [NEU_REQ_NODE_SETTING]      = "neu_req_node_setting",
+    [NEU_REQ_GET_NODE_SETTING]  = "neu_req_get_node_setting",
+    [NEU_RESP_GET_NODE_SETTING] = "neu_resp_get_node_setting",
+    [NEU_REQ_GET_NODE_STATE]    = "neu_req_get_node_state",
+    [NEU_RESP_GET_NODE_STATE]   = "neu_resp_get_node_state",
+    [NEU_REQ_NODE_CTL]          = "neu_req_node_ctl",
+
+    [NEU_REQ_ADD_GROUP]    = "neu_req_add_group",
+    [NEU_REQ_DEL_GROUP]    = "neu_req_del_group",
+    [NEU_REQ_UPDATE_GROUP] = "neu_req_update_group",
+    [NEU_REQ_GET_GROUP]    = "neu_req_get_group",
+    [NEU_RESP_GET_GROUP]   = "neu_resp_get_group",
+
+    [NEU_REQ_ADD_TAG]     = "neu_req_add_tag",
+    [NEU_RESP_ADD_TAG]    = "neu_resp_add_tag",
+    [NEU_REQ_DEL_TAG]     = "neu_req_del_tag",
+    [NEU_REQ_UPDATE_TAG]  = "neu_req_update_tag",
+    [NEU_RESP_UPDATE_TAG] = "neu_resp_update_tag",
+    [NEU_REQ_GET_TAG]     = "neu_req_get_tag",
+    [NEU_RESP_GET_TAG]    = "neu_resp_get_tag",
+
+    [NEU_REQ_ADD_PLUGIN]  = "neu_req_add_plugin",
+    [NEU_REQ_DEL_PLUGIN]  = "neu_req_del_plugin",
+    [NEU_REQ_GET_PLUGIN]  = "neu_req_get_plugin",
+    [NEU_RESP_GET_PLUGIN] = "neu_resp_get_plugin",
+};
+
+inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
+{
+    return neu_reqresp_type_string_t[type];
+}
+
 typedef struct neu_reqresp_head {
     neu_reqresp_type_e type;
     void *             ctx;

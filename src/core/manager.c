@@ -150,8 +150,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
 
-    nlog_info("manager recv msg from: %s, type: %d", header->sender,
-              header->type);
+    nlog_info("manager recv msg from: %s, type: %s", header->sender,
+              neu_reqresp_type_string(header->type));
     switch (header->type) {
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
