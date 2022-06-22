@@ -96,6 +96,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     nng_msg *           uninit_msg = NULL;
     UT_array *pipes = neu_node_manager_get_pipes_all(manager->node_manager);
 
+    strcpy(header.sender, "manager");
     utarray_foreach(pipes, nng_pipe *, pipe)
     {
         uninit_msg = neu_msg_gen(&header, &uninit);
@@ -262,7 +263,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_node_uninit_t *cmd = (neu_resp_node_uninit_t *) &header[1];
 
         neu_manager_del_node(manager, cmd->node);
-        if (strlen(header->receiver) > 0) {
+        if (strlen(header->receiver) > 0 &&
+            strcmp(header->receiver, "manager") != 0) {
             neu_resp_error_t error = { 0 };
             header->type           = NEU_RESP_ERROR;
             reply(manager, header, &error);
@@ -452,8 +454,11 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
 
     nng_msg_dup(&out_msg, msg);
     nng_msg_set_pipe(out_msg, pipe);
-    nng_sendmsg(manager->socket, out_msg, 0);
-    nlog_info("forward msg to pipe %d", pipe.id);
+    if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
+        nlog_info("forward msg to pipe %d", pipe.id);
+    } else {
+        nng_msg_free(out_msg);
+    }
 }
 
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
@@ -464,8 +469,11 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
 
     nng_msg_dup(&out_msg, msg);
     nng_msg_set_pipe(out_msg, pipe);
-    nng_sendmsg(manager->socket, out_msg, 0);
-    nlog_info("forward msg to %s", node);
+    if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
+        nlog_info("forward msg to %s", node);
+    } else {
+        nng_msg_free(out_msg);
+    }
 }
 
 static void start_static_adapter(neu_manager_t *manager, const char *name)
@@ -495,5 +503,7 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
 
     nng_msg_set_pipe(msg, pipe);
 
-    nng_sendmsg(manager->socket, msg, 0);
+    if (nng_sendmsg(manager->socket, msg, 0) != 0) {
+        nng_msg_free(msg);
+    }
 }
