@@ -220,6 +220,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
 
         req->type = NEU_RESP_ERROR;
         driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        free(req);
     } else {
         switch (tag->type) {
         case NEU_TYPE_BOOL:
