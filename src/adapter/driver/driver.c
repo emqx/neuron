@@ -415,6 +415,18 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
+    if (strlen(tag->name) > NEU_TAG_NAME_LEN) {
+        return NEU_ERR_TAG_NAME_TOO_LONG;
+    }
+
+    if (strlen(tag->address) > NEU_TAG_ADDRESS_LEN) {
+        return NEU_ERR_TAG_ADDRESS_TOO_LONG;
+    }
+
+    if (strlen(tag->description) > NEU_TAG_DESCRIPTION_LEN) {
+        return NEU_ERR_TAG_DESCRIPTION_TOO_LONG;
+    }
+
     ret = driver->adapter.module->intf_funs->driver.validate_tag(
         driver->adapter.plugin, tag);
     if (ret != NEU_ERR_SUCCESS) {
@@ -460,6 +472,18 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
 {
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
+
+    if (strlen(tag->name) > NEU_TAG_NAME_LEN) {
+        return NEU_ERR_TAG_NAME_TOO_LONG;
+    }
+
+    if (strlen(tag->address) > NEU_TAG_ADDRESS_LEN) {
+        return NEU_ERR_TAG_ADDRESS_TOO_LONG;
+    }
+
+    if (strlen(tag->description) > NEU_TAG_DESCRIPTION_LEN) {
+        return NEU_ERR_TAG_DESCRIPTION_TOO_LONG;
+    }
 
     ret = driver->adapter.module->intf_funs->driver.validate_tag(
         driver->adapter.plugin, tag);
