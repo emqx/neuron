@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -46,6 +47,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
+static int         update_timestamp(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
     .command  = adapter_command,
@@ -54,9 +56,14 @@ static const adapter_callbacks_t callback_funs = {
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
 {
-    int                  rv      = 0;
-    neu_adapter_t *      adapter = NULL;
-    neu_event_io_param_t param   = { 0 };
+    int                     rv          = 0;
+    neu_adapter_t *         adapter     = NULL;
+    neu_event_io_param_t    param       = { 0 };
+    neu_event_timer_param_t timer_param = {
+        .second      = 0,
+        .millisecond = 100,
+        .cb          = update_timestamp,
+    };
 
     switch (info->module->type) {
     case NEU_NA_TYPE_DRIVER:
@@ -125,6 +132,9 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
     adapter->nng_io = neu_event_add_io(adapter->events, param);
     rv = nng_dial(adapter->sock, neu_manager_get_url(), &adapter->dialer, 0);
     assert(rv == 0);
+
+    timer_param.usr_data = (void *) adapter;
+    adapter->timer       = neu_event_add_timer(adapter->events, timer_param);
 
     nlog_info("Success to create adapter: %s", adapter->name);
 
@@ -604,6 +614,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
+    neu_event_del_timer(adapter->events, adapter->timer);
     adapter->module->intf_funs->close(adapter->plugin);
 
     nlog_info("Stop the adapter(%s)", adapter->name);
@@ -744,4 +755,18 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     nng_msg *msg = neu_msg_gen(header, data);
 
     nng_sendmsg(adapter->sock, msg, 0);
+}
+
+static int update_timestamp(void *usr_data)
+{
+    neu_adapter_t *adapter   = (neu_adapter_t *) usr_data;
+    struct timeval tv        = { 0 };
+    uint64_t       timestamp = 0;
+
+    gettimeofday(&tv, NULL);
+    timestamp          = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    adapter->timestamp = timestamp;
+
+    neu_plugin_to_plugin_common(adapter->plugin)->timestamp = timestamp;
+    return 0;
 }

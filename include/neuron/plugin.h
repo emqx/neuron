@@ -42,6 +42,7 @@ typedef struct neu_plugin_common {
 
     neu_node_link_state_e link_state;
     uint16_t              tag_size;
+    int64_t               timestamp;
 
     zlog_category_t *log;
 } neu_plugin_common_t;

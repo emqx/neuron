@@ -53,9 +53,9 @@ struct neu_driver_cache {
 };
 
 static void update_tag_error(neu_driver_cache_t *cache, const char *group,
-                             const char *tag, int error);
+                             const char *tag, int64_t timestamp, int error);
 static void update_group_error(neu_driver_cache_t *cache, const char *group,
-                               int error);
+                               int64_t timestamp, int error);
 
 inline static tkey_t to_key(const char *group, const char *tag)
 {
@@ -100,11 +100,10 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
 void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
                             const char *tag, int64_t timestamp, int32_t error)
 {
-    (void) timestamp;
     if (tag == NULL) {
-        update_group_error(cache, group, error);
+        update_group_error(cache, group, timestamp, error);
     } else {
-        update_tag_error(cache, group, tag, error);
+        update_tag_error(cache, group, tag, timestamp, error);
     }
 }
 
@@ -198,7 +197,7 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
 }
 
 static void update_tag_error(neu_driver_cache_t *cache, const char *group,
-                             const char *tag, int error)
+                             const char *tag, int64_t timestamp, int error)
 {
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
@@ -213,13 +212,14 @@ static void update_tag_error(neu_driver_cache_t *cache, const char *group,
 
         HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
     }
-    elem->error = error;
+    elem->error     = error;
+    elem->timestamp = timestamp;
 
     nng_mtx_unlock(cache->mtx);
 }
 
 static void update_group_error(neu_driver_cache_t *cache, const char *group,
-                               int error)
+                               int64_t timestamp, int error)
 {
     struct elem *elem = NULL, *tmp = NULL;
 
@@ -227,7 +227,8 @@ static void update_group_error(neu_driver_cache_t *cache, const char *group,
     HASH_ITER(hh, cache->table, elem, tmp)
     {
         if (strcmp(elem->key.group, group) == 0) {
-            elem->error = error;
+            elem->timestamp = timestamp;
+            elem->error     = error;
         }
     }
 
