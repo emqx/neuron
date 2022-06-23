@@ -38,15 +38,6 @@ typedef struct {
     uint64_t timestamp;
 } json_read_resp_header_t;
 
-// time in milliseconds
-static inline uint64_t time_ms()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t ms = tv.tv_sec;
-    return ms * 1000 + tv.tv_usec / 1000;
-}
-
 int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
                   neu_resp_tag_value_t *    tag_value);
 
