@@ -568,7 +568,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         uninit_msg = neu_msg_gen(header, cmd);
 
         if (nng_sendmsg(adapter->sock, uninit_msg, 0) == 0) {
-            nlog_warn("send uninit msg to %s", header->receiver);
+            nlog_warn("%s send uninit msg to %s", adapter->name,
+                      header->receiver);
         } else {
             nng_msg_free(uninit_msg);
         }

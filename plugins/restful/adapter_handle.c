@@ -37,19 +37,27 @@ void handle_add_adapter(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
-            int                ret    = 0;
-            neu_reqresp_head_t header = { 0 };
-            neu_req_add_node_t cmd    = { 0 };
-
-            header.ctx  = aio;
-            header.type = NEU_REQ_ADD_NODE;
-            strcpy(cmd.node, req->name);
-            strcpy(cmd.plugin, req->plugin);
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            if (strlen(req->name) > NEU_NODE_NAME_LEN) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {
+                    http_response(aio, NEU_ERR_NODE_NAME_TOO_LONG,
+                                  result_error);
                 });
+
+            } else {
+                int                ret    = 0;
+                neu_reqresp_head_t header = { 0 };
+                neu_req_add_node_t cmd    = { 0 };
+
+                header.ctx  = aio;
+                header.type = NEU_REQ_ADD_NODE;
+                strcpy(cmd.node, req->name);
+                strcpy(cmd.plugin, req->plugin);
+                ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }

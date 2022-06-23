@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include "utils/log.h"
 
 #include "adapter.h"
 #include "errcodes.h"
@@ -166,7 +167,10 @@ void neu_manager_notify_app_sub(neu_manager_t *manager, const char *app,
 
     msg = neu_msg_gen(&header, (void *) &sub);
     nng_msg_set_pipe(msg, pipe);
-    nng_sendmsg(manager->socket, msg, 0);
+    if (nng_sendmsg(manager->socket, msg, 0) != 0) {
+        nng_msg_free(msg);
+        nlog_warn("%s -> %s req app subscribe group send fail", app, driver);
+    }
 }
 
 void neu_manager_notify_app_unsub(neu_manager_t *manager, const char *app,
@@ -186,7 +190,10 @@ void neu_manager_notify_app_unsub(neu_manager_t *manager, const char *app,
 
     msg = neu_msg_gen(&header, (void *) &unsub);
     nng_msg_set_pipe(msg, pipe);
-    nng_sendmsg(manager->socket, msg, 0);
+    if (nng_sendmsg(manager->socket, msg, 0) != 0) {
+        nng_msg_free(msg);
+        nlog_warn("manager -> %s req app unsubscribe group send fail", app);
+    }
 }
 
 void neu_manager_notify_app_unsub_update(neu_manager_t *manager,
