@@ -61,7 +61,8 @@ struct neu_adapter_driver {
 
 static int  report_callback(void *usr_data);
 static int  read_callback(void *usr_data);
-static void read_group(neu_driver_cache_t *cache, const char *group,
+static void read_group(int64_t timestamp, int64_t timeout,
+                       neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, neu_resp_tag_value_t *datas);
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
@@ -119,9 +120,11 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
     }
 
     if (value.type == NEU_TYPE_ERROR) {
-        neu_driver_cache_error(driver->cache, group, tag, 0, value.value.i32);
+        neu_driver_cache_error(driver->cache, group, tag,
+                               driver->adapter.timestamp, value.value.i32);
     } else {
-        neu_driver_cache_update(driver->cache, group, tag, 0, n_byte,
+        neu_driver_cache_update(driver->cache, group, tag,
+                                driver->adapter.timestamp, n_byte,
                                 value.value.bytes);
     }
 }
@@ -190,21 +193,30 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
-    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      NEU_ERR_NODE_NOT_RUNNING);
-        return;
-    }
-
-    neu_req_read_group_t *cmd  = (neu_req_read_group_t *) &req[1];
-    neu_resp_read_group_t resp = { 0 };
-    UT_array *            tags =
-        neu_group_get_read_tag(find_group(driver, cmd->group)->group);
+    neu_req_read_group_t *cmd   = (neu_req_read_group_t *) &req[1];
+    neu_resp_read_group_t resp  = { 0 };
+    neu_group_t *         group = find_group(driver, cmd->group)->group;
+    UT_array *            tags  = neu_group_get_read_tag(group);
 
     resp.n_tag = utarray_len(tags);
     resp.tags  = calloc(1, utarray_len(tags) * sizeof(neu_resp_tag_value_t));
 
-    read_group(driver->cache, cmd->group, tags, resp.tags);
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        utarray_foreach(tags, neu_datatag_t *, tag)
+        {
+            int index = utarray_eltidx(tags, tag);
+            strcpy(resp.tags[index].tag, tag->name);
+            resp.tags[index].value.type      = NEU_TYPE_ERROR;
+            resp.tags[index].value.value.i32 = NEU_ERR_NODE_NOT_RUNNING;
+        }
+
+    } else {
+        read_group(driver->adapter.timestamp,
+                   neu_group_get_interval(group) *
+                       NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                   driver->cache, cmd->group, tags, resp.tags);
+    }
+
     strcpy(resp.driver, cmd->driver);
     strcpy(resp.group, cmd->group);
 
@@ -517,7 +529,10 @@ static int report_callback(void *usr_data)
     strcpy(data->driver, group->driver->adapter.name);
     strcpy(data->group, group->name);
     data->n_tag = utarray_len(tags);
-    read_group(group->driver->cache, group->name, tags,
+    read_group(group->driver->adapter.timestamp,
+               neu_group_get_interval(group->group) *
+                   NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+               group->driver->cache, group->name, tags,
                (neu_resp_tag_value_t *) &data[1]);
 
     group->driver->adapter.cb_funs.response(&group->driver->adapter, &header,
@@ -580,7 +595,8 @@ static int read_callback(void *usr_data)
     return 0;
 }
 
-static void read_group(neu_driver_cache_t *cache, const char *group,
+static void read_group(int64_t timestamp, int64_t timeout,
+                       neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, neu_resp_tag_value_t *datas)
 {
     utarray_foreach(tags, neu_datatag_t *, tag)
@@ -602,7 +618,12 @@ static void read_group(neu_driver_cache_t *cache, const char *group,
             continue;
         }
 
-        datas[index].value.type  = tag->type;
-        datas[index].value.value = value.value;
+        if ((timestamp - value.timestamp) > timeout) {
+            datas[index].value.type      = NEU_TYPE_ERROR;
+            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_EXPIRED;
+        } else {
+            datas[index].value.type  = tag->type;
+            datas[index].value.value = value.value;
+        }
     }
 }
