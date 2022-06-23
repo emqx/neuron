@@ -190,6 +190,12 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_NODE_NOT_RUNNING);
+        return;
+    }
+
     neu_req_read_group_t *cmd  = (neu_req_read_group_t *) &req[1];
     neu_resp_read_group_t resp = { 0 };
     UT_array *            tags =
@@ -211,6 +217,12 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req)
 {
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_NODE_NOT_RUNNING);
+        return;
+    }
+
     neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
     neu_datatag_t *      tag =
         neu_group_find_tag(find_group(driver, cmd->group)->group, cmd->tag);
@@ -222,6 +234,11 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         driver->adapter.cb_funs.response(&driver->adapter, req, &error);
         free(req);
     } else {
+        if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
+            driver->adapter.cb_funs.driver.write_response(
+                &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
+            return;
+        }
         switch (tag->type) {
         case NEU_TYPE_BOOL:
         case NEU_TYPE_DOUBLE:
