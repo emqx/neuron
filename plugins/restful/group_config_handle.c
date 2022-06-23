@@ -36,20 +36,27 @@ void handle_add_group_config(nng_aio *aio)
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_group_config_req_t,
         neu_json_decode_add_group_config_req, {
-            int                 ret    = 0;
-            neu_reqresp_head_t  header = { 0 };
-            neu_req_add_group_t cmd    = { 0 };
-
-            header.ctx  = aio;
-            header.type = NEU_REQ_ADD_GROUP;
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            cmd.interval = req->interval;
-            ret          = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            if (strlen(req->group) > NEU_GROUP_NAME_LEN) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
+                    http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
+                                  result_error);
                 });
+            } else {
+                int                 ret    = 0;
+                neu_reqresp_head_t  header = { 0 };
+                neu_req_add_group_t cmd    = { 0 };
+
+                header.ctx  = aio;
+                header.type = NEU_REQ_ADD_GROUP;
+                strcpy(cmd.driver, req->node);
+                strcpy(cmd.group, req->group);
+                cmd.interval = req->interval;
+                ret          = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }

@@ -102,7 +102,10 @@ void neu_manager_destroy(neu_manager_t *manager)
         uninit_msg = neu_msg_gen(&header, &uninit);
         nng_msg_set_pipe(uninit_msg, *pipe);
 
-        nng_sendmsg(manager->socket, uninit_msg, 0);
+        if (nng_sendmsg(manager->socket, uninit_msg, 0) != 0) {
+            nng_msg_free(uninit_msg);
+            nlog_warn("manager -> %d uninit msg send fail", (*pipe).id);
+        }
     }
     utarray_free(pipes);
 
