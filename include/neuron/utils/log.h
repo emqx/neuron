@@ -67,9 +67,10 @@ extern zlog_category_t *neuron;
 #define plog_send_protocol(plugin, bytes, n_byte)                     \
     static __thread char log_protocol_buf[65535] = { 0 };             \
     int                  log_offset              = 0;                 \
+    uint16_t             tmp_n_byte              = n_byte;            \
     memset(log_protocol_buf, 0, sizeof(log_protocol_buf));            \
     log_offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), \
-                          ">>(%d)", n_byte);                          \
+                          ">>(%d)", tmp_n_byte);                      \
     for (int i = 0; i < n_byte; i++) {                                \
         log_offset += snprintf(log_protocol_buf + log_offset,         \
                                sizeof(log_protocol_buf) - log_offset, \
@@ -80,9 +81,10 @@ extern zlog_category_t *neuron;
 #define plog_recv_protocol(plugin, bytes, n_byte)                     \
     static __thread char log_protocol_buf[65535] = { 0 };             \
     int                  log_offset              = 0;                 \
+    uint16_t             tmp_n_byte              = n_byte;            \
     memset(log_protocol_buf, 0, sizeof(log_protocol_buf));            \
     log_offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), \
-                          "<<(%ld)", n_byte);                         \
+                          "<<(%d)", tmp_n_byte);                      \
     for (int i = 0; i < n_byte; i++) {                                \
         log_offset += snprintf(log_protocol_buf + log_offset,         \
                                sizeof(log_protocol_buf) - log_offset, \
@@ -93,9 +95,10 @@ extern zlog_category_t *neuron;
 #define zlog_recv_protocol(log, bytes, n_byte)                        \
     static __thread char log_protocol_buf[65535] = { 0 };             \
     int                  log_offset              = 0;                 \
+    uint16_t             tmp_n_byte              = n_byte;            \
     memset(log_protocol_buf, 0, sizeof(log_protocol_buf));            \
     log_offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), \
-                          "<<(%ld)", n_byte);                         \
+                          "<<(%d)", tmp_n_byte);                      \
     for (int i = 0; i < n_byte; i++) {                                \
         log_offset += snprintf(log_protocol_buf + log_offset,         \
                                sizeof(log_protocol_buf) - log_offset, \
