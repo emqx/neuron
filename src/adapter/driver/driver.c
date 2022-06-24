@@ -193,9 +193,17 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
-    neu_req_read_group_t *cmd   = (neu_req_read_group_t *) &req[1];
+    neu_req_read_group_t *cmd = (neu_req_read_group_t *) &req[1];
+    group_t *             g   = find_group(driver, cmd->group);
+    if (g == NULL) {
+        neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
+        req->type              = NEU_RESP_ERROR;
+        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        return;
+    }
+
     neu_resp_read_group_t resp  = { 0 };
-    neu_group_t *         group = find_group(driver, cmd->group)->group;
+    neu_group_t *         group = g->group;
     UT_array *            tags  = neu_group_get_read_tag(group);
 
     resp.n_tag = utarray_len(tags);
@@ -236,8 +244,16 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     }
 
     neu_req_write_tag_t *cmd = (neu_req_write_tag_t *) &req[1];
-    neu_datatag_t *      tag =
-        neu_group_find_tag(find_group(driver, cmd->group)->group, cmd->tag);
+    group_t *            g   = find_group(driver, cmd->group);
+
+    if (g == NULL) {
+        neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
+        req->type              = NEU_RESP_ERROR;
+        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        free(req);
+        return;
+    }
+    neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tag);
 
     if (tag == NULL) {
         neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
