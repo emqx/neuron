@@ -557,7 +557,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_NODE_UNINIT: {
         neu_req_node_uninit_t *cmd = (neu_req_node_uninit_t *) &header[1];
-        nng_msg *              uninit_msg = NULL;
+        nng_msg *              uninit_msg                  = NULL;
+        char                   name[NEU_NODE_NAME_LEN]     = { 0 };
+        char                   receiver[NEU_NODE_NAME_LEN] = { 0 };
 
         neu_adapter_uninit(adapter);
 
@@ -567,9 +569,10 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         strcpy(cmd->node, adapter->name);
         uninit_msg = neu_msg_gen(header, cmd);
 
+        strcpy(name, adapter->name);
+        strcpy(receiver, header->receiver);
         if (nng_sendmsg(adapter->sock, uninit_msg, 0) == 0) {
-            nlog_warn("%s send uninit msg to %s", adapter->name,
-                      header->receiver);
+            nlog_warn("%s send uninit msg to %s", name, receiver);
         } else {
             nng_msg_free(uninit_msg);
         }
