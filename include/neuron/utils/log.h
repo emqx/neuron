@@ -64,40 +64,43 @@ extern zlog_category_t *neuron;
     zlog((plugin)->common.log, __FILE__, sizeof(__FILE__) - 1, __func__, \
          sizeof(__func__) - 1, __LINE__, ZLOG_LEVEL_DEBUG, __VA_ARGS__)
 
-#define plog_send_protocol(plugin, bytes, n_byte)                          \
-    static __thread char log_protocol_buf[65535] = { 0 };                  \
-    int                  offset                  = 0;                      \
-    memset(log_protocol_buf, 0, sizeof(log_protocol_buf));                 \
-    offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), ">>");   \
-    for (int i = 0; i < n_byte; i++) {                                     \
-        offset += snprintf(log_protocol_buf + offset,                      \
-                           sizeof(log_protocol_buf) - offset, " 0x%02hhX", \
-                           (bytes)[i]);                                    \
-    }                                                                      \
+#define plog_send_protocol(plugin, bytes, n_byte)                     \
+    static __thread char log_protocol_buf[65535] = { 0 };             \
+    int                  log_offset              = 0;                 \
+    memset(log_protocol_buf, 0, sizeof(log_protocol_buf));            \
+    log_offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), \
+                          ">>(%d)", n_byte);                          \
+    for (int i = 0; i < n_byte; i++) {                                \
+        log_offset += snprintf(log_protocol_buf + log_offset,         \
+                               sizeof(log_protocol_buf) - log_offset, \
+                               " 0x%02hhX", (bytes)[i]);              \
+    }                                                                 \
     plog_debug(plugin, "%s", log_protocol_buf);
 
-#define plog_recv_protocol(plugin, bytes, n_byte)                          \
-    static __thread char log_protocol_buf[65535] = { 0 };                  \
-    int                  offset                  = 0;                      \
-    memset(log_protocol_buf, 0, sizeof(log_protocol_buf));                 \
-    offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), "<<");   \
-    for (int i = 0; i < n_byte; i++) {                                     \
-        offset += snprintf(log_protocol_buf + offset,                      \
-                           sizeof(log_protocol_buf) - offset, " 0x%02hhX", \
-                           (bytes)[i]);                                    \
-    }                                                                      \
+#define plog_recv_protocol(plugin, bytes, n_byte)                     \
+    static __thread char log_protocol_buf[65535] = { 0 };             \
+    int                  log_offset              = 0;                 \
+    memset(log_protocol_buf, 0, sizeof(log_protocol_buf));            \
+    log_offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), \
+                          "<<(%ld)", n_byte);                         \
+    for (int i = 0; i < n_byte; i++) {                                \
+        log_offset += snprintf(log_protocol_buf + log_offset,         \
+                               sizeof(log_protocol_buf) - log_offset, \
+                               " 0x%02hhX", (bytes)[i]);              \
+    }                                                                 \
     plog_debug(plugin, "%s", log_protocol_buf);
 
-#define zlog_recv_protocol(log, bytes, n_byte)                             \
-    static __thread char log_protocol_buf[65535] = { 0 };                  \
-    int                  offset                  = 0;                      \
-    memset(log_protocol_buf, 0, sizeof(log_protocol_buf));                 \
-    offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), "<<");   \
-    for (int i = 0; i < n_byte; i++) {                                     \
-        offset += snprintf(log_protocol_buf + offset,                      \
-                           sizeof(log_protocol_buf) - offset, " 0x%02hhX", \
-                           (bytes)[i]);                                    \
-    }                                                                      \
+#define zlog_recv_protocol(log, bytes, n_byte)                        \
+    static __thread char log_protocol_buf[65535] = { 0 };             \
+    int                  log_offset              = 0;                 \
+    memset(log_protocol_buf, 0, sizeof(log_protocol_buf));            \
+    log_offset = snprintf(log_protocol_buf, sizeof(log_protocol_buf), \
+                          "<<(%ld)", n_byte);                         \
+    for (int i = 0; i < n_byte; i++) {                                \
+        log_offset += snprintf(log_protocol_buf + log_offset,         \
+                               sizeof(log_protocol_buf) - log_offset, \
+                               " 0x%02hhX", (bytes)[i]);              \
+    }                                                                 \
     zlog_debug(log, "%s", log_protocol_buf);
 
 #endif
