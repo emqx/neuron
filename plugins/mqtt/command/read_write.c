@@ -20,19 +20,18 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 #include "../mqtt.h"
 #include "read_write.h"
 #include "utils/log.h"
 
-static uint64_t current_time()
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t ms = tv.tv_sec;
-    return ms * 1000 + tv.tv_usec / 1000;
-}
+// static uint64_t current_time()
+// {
+//     struct timeval tv;
+//     gettimeofday(&tv, NULL);
+//     uint64_t ms = tv.tv_sec;
+//     return ms * 1000 + tv.tv_usec / 1000;
+// }
 
 int command_rw_read_once_request(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                  neu_json_read_req_t *req)
@@ -178,7 +177,7 @@ char *command_rw_read_periodic_response(neu_plugin_t *            plugin,
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = { .group     = (char *) data->group,
                                         .node      = (char *) data->driver,
-                                        .timestamp = current_time() };
+                                        .timestamp = plugin->common.timestamp };
     neu_json_read_resp_t     json     = { 0 };
     wrap_read_response_json(tags, len, &json);
 
