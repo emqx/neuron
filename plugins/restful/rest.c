@@ -196,6 +196,8 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
+    nlog_info("Success to before free plugin: %s",
+              neu_plugin_module.module_name);
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     nng_http_server_stop(plugin->web_server);
