@@ -127,7 +127,7 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                                 driver->adapter.timestamp, n_byte,
                                 value.value.bytes);
     }
-    nlog_info(
+    nlog_debug(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64,
         driver->adapter.name, group, tag, neu_type_string(value.type),
         driver->adapter.timestamp);
