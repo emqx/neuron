@@ -47,6 +47,44 @@ typedef enum {
     NEU_TYPE_ERROR  = 15,
 } neu_type_e;
 
+inline static const char *neu_type_string(neu_type_e type)
+{
+    switch (type) {
+    case NEU_TYPE_INT8:
+        return "NEU_TYPE_INT8";
+    case NEU_TYPE_UINT8:
+        return "NEU_TYPE_UINT8";
+    case NEU_TYPE_INT16:
+        return "NEU_TYPE_INT16";
+    case NEU_TYPE_UINT16:
+        return "NEU_TYPE_UINT16";
+    case NEU_TYPE_INT32:
+        return "NEU_TYPE_INT32";
+    case NEU_TYPE_UINT32:
+        return "NEU_TYPE_UINT32";
+    case NEU_TYPE_INT64:
+        return "NEU_TYPE_INT64";
+    case NEU_TYPE_UINT64:
+        return "NEU_TYPE_UINT64";
+    case NEU_TYPE_FLOAT:
+        return "NEU_TYPE_FLOAt";
+    case NEU_TYPE_DOUBLE:
+        return "NEU_TYPE_DOUBLE";
+    case NEU_TYPE_BIT:
+        return "NEU_TYPE_BIT";
+    case NEU_TYPE_BOOL:
+        return "NEU_TYPE_BOOL";
+    case NEU_TYPE_STRING:
+        return "NEU_TYPE_STRING";
+    case NEU_TYPE_BYTES:
+        return "NEU_TYPE_BYTES";
+    case NEU_TYPE_ERROR:
+        return "NEU_TYPE_ERROR";
+    }
+
+    return "";
+}
+
 #define NEU_VALUE_SIZE 128
 typedef union {
     bool     boolean;
