@@ -54,8 +54,6 @@ struct neu_driver_cache {
 
 static void update_tag_error(neu_driver_cache_t *cache, const char *group,
                              const char *tag, int64_t timestamp, int error);
-static void update_group_error(neu_driver_cache_t *cache, const char *group,
-                               int64_t timestamp, int error);
 
 inline static tkey_t to_key(const char *group, const char *tag)
 {
@@ -100,11 +98,7 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
 void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
                             const char *tag, int64_t timestamp, int32_t error)
 {
-    if (tag == NULL) {
-        update_group_error(cache, group, timestamp, error);
-    } else {
-        update_tag_error(cache, group, tag, timestamp, error);
-    }
+    update_tag_error(cache, group, tag, timestamp, error);
 }
 
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
@@ -214,23 +208,6 @@ static void update_tag_error(neu_driver_cache_t *cache, const char *group,
     }
     elem->error     = error;
     elem->timestamp = timestamp;
-
-    nng_mtx_unlock(cache->mtx);
-}
-
-static void update_group_error(neu_driver_cache_t *cache, const char *group,
-                               int64_t timestamp, int error)
-{
-    struct elem *elem = NULL, *tmp = NULL;
-
-    nng_mtx_lock(cache->mtx);
-    HASH_ITER(hh, cache->table, elem, tmp)
-    {
-        if (strcmp(elem->key.group, group) == 0) {
-            elem->timestamp = timestamp;
-            elem->error     = error;
-        }
-    }
 
     nng_mtx_unlock(cache->mtx);
 }

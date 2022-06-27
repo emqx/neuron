@@ -120,8 +120,23 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
     }
 
     if (value.type == NEU_TYPE_ERROR) {
-        neu_driver_cache_error(driver->cache, group, tag,
-                               driver->adapter.timestamp, value.value.i32);
+        if (tag != NULL) {
+            neu_driver_cache_error(driver->cache, group, tag,
+                                   driver->adapter.timestamp, value.value.i32);
+        } else {
+            group_t *g = find_group(driver, group);
+            if (g != NULL) {
+                UT_array *tags = neu_group_get_read_tag(g->group);
+
+                utarray_foreach(tags, neu_datatag_t *, t)
+                {
+                    neu_driver_cache_error(driver->cache, group, t->name,
+                                           driver->adapter.timestamp,
+                                           value.value.i32);
+                }
+                utarray_free(tags);
+            }
+        }
     } else {
         neu_driver_cache_update(driver->cache, group, tag,
                                 driver->adapter.timestamp, n_byte,
