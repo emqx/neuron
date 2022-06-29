@@ -70,6 +70,10 @@ $ mkdir build && cd build
 $ cmake .. && make
 ```
 
+## 前端
+[下载前端包](https://github.com/emqx/neuron-dashboard-src/releases)。
+下载后的前端包，解压放到Neuron可执行目录下的dist目录中。
+
 ## 快速开始
 
 ```shell
