@@ -69,6 +69,10 @@ $ mkdir build && cd build
 $ cmake .. && make
 ```
 
+## Dashboard
+[Download Dashboard Package](https://github.com/emqx/neuron-dashboard-src/releases).
+After downloading the dashboard package, put it in the **dist** directory of the neuron executable directory.
+
 ## Quick Start
 
 ```shell
