@@ -446,7 +446,7 @@ error_buf:
 error_fstat:
     close(fd);
 error_open:
-    nlog_error("persister fail to read %s, reason: %s", fn, strerror(errno));
+    nlog_warn("persister fail to read %s, reason: %s", fn, strerror(errno));
     return rv;
 }
 
