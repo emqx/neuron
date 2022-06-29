@@ -44,6 +44,8 @@ ${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "t
 *** Variables ***
 ${neuron_process}
 
+${MODBUS_PLUS_TCP_CONFIG}                   {"host": "127.0.0.1", "port": 60502, "connection_mode": 0, "timeout": 3000}
+
 *** Keywords ***
 Start Neuronx
     Remove Persistence
