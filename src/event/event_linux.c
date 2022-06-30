@@ -163,8 +163,8 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     int               ret      = 0;
     int               timer_fd = timerfd_create(CLOCK_MONOTONIC, 0);
     struct itimerspec value    = {
-        .it_value.tv_sec     = 0,
-        .it_value.tv_nsec    = 50 * 1000 * 1000,
+        .it_value.tv_sec     = timer.second,
+        .it_value.tv_nsec    = timer.millisecond * 1000 * 1000,
         .it_interval.tv_sec  = timer.second,
         .it_interval.tv_nsec = timer.millisecond * 1000 * 1000,
     };
