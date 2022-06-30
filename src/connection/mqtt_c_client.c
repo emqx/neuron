@@ -902,8 +902,8 @@ neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
     }
     pthread_mutex_unlock(&client->state.working_mutex);
 
-    error = mqtt_publish(&client->mqtt, topic, payload, len, qos);
-    if (1 != error) {
+    enum MQTTErrors err = mqtt_publish(&client->mqtt, topic, payload, len, qos);
+    if (1 != err) {
         return NEU_ERR_MQTT_PUBLISH_FAILURE;
     }
 
