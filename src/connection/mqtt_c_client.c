@@ -803,6 +803,15 @@ neu_err_code_e mqtt_c_client_subscribe(mqtt_c_client_t *client,
     assert(NULL != client);
     assert(NULL != topic && 0 < strlen(topic));
 
+    for (struct subscribe_tuple **p =
+             (struct subscribe_tuple **) utarray_front(client->array);
+         NULL != p;
+         p = (struct subscribe_tuple **) utarray_next(client->array, p)) {
+        if (0 == strcmp((*p)->topic, topic)) {
+            return NEU_ERR_SUCCESS;
+        }
+    }
+
     struct subscribe_tuple *tuple =
         client_subscribe_create(client, topic, qos, handle);
     if (NULL == tuple) {
@@ -893,8 +902,8 @@ neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,
     }
     pthread_mutex_unlock(&client->state.working_mutex);
 
-    error = mqtt_publish(&client->mqtt, topic, payload, len, qos);
-    if (1 != error) {
+    enum MQTTErrors err = mqtt_publish(&client->mqtt, topic, payload, len, qos);
+    if (1 != err) {
         return NEU_ERR_MQTT_PUBLISH_FAILURE;
     }
 
