@@ -21,15 +21,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <jansson.h>
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 #include <nng/supplemental/util/platform.h>
 #include <nng/transport/ws/websocket.h>
 #include <pthread.h>
 
+#include "define.h"
 #include "utils/log.h"
 #include "utils/zlog.h"
 #include "websocket.h"
+#include "json/json.h"
 
 #ifdef DEBUG
 #define PRINT(...)                    \
@@ -52,6 +55,8 @@ static inline websocket_stream_t *websocket_stream_new(nng_stream *s);
 static inline websocket_stream_t *
                    websocket_stream_ref(websocket_stream_t *stream);
 static inline void websocket_stream_deref(websocket_stream_t *stream);
+static inline void websocket_stream_recv(websocket_stream_t *stream,
+                                         nng_aio *           aio);
 
 // thread local context
 typedef struct thread_ctx {
@@ -67,18 +72,28 @@ typedef struct {
     nng_stream_listener *listener;
     nng_aio *            accept_aio;
 
+    nng_aio *recv_aio;
+    char     recv_buf[16 + NEU_NODE_NAME_LEN];
+
     pthread_rwlock_t    lock;
     websocket_stream_t *stream;
+    int                 level;
+    const char *        category;
     pthread_key_t       thread_key;
 } websocket_ctx_t;
 
 static int  websocket_ctx_init(websocket_ctx_t *ctx, const char *url);
 static void websocket_ctx_fini(websocket_ctx_t *ctx);
-static inline thread_ctx_t *websocket_ctx_get_thread_ctx(websocket_ctx_t *ctx);
+static inline thread_ctx_t *websocket_ctx_get_thread_ctx(websocket_ctx_t *ctx,
+                                                         int              level,
+                                                         const char *category);
 static inline void          websocket_ctx_del_thread_ctx(websocket_ctx_t *ctx,
                                                          thread_ctx_t *   thread_ctx);
-static inline int websocket_ctx_send(websocket_ctx_t *ctx, const void *buf,
-                                     size_t size);
+static inline int           websocket_ctx_send(websocket_ctx_t *ctx, int level,
+                                               const char *category, const void *buf,
+                                               size_t size);
+static inline int           parse_log_level(const char *s, int *level);
+static char *               json_get_string(json_t *root, const char *key);
 
 static inline websocket_stream_t *websocket_stream_new(nng_stream *s)
 {
@@ -105,20 +120,38 @@ websocket_stream_ref(websocket_stream_t *stream)
 
 static inline void websocket_stream_deref(websocket_stream_t *stream)
 {
+    bool should_free = false;
+
     pthread_mutex_lock(&stream->lock);
     if (!stream->closed) {
         stream->closed = true;
-        nng_stream_close(stream->s);
     }
     if (0 == --stream->refcnt) {
-        PRINT("free stream\n");
-        pthread_mutex_unlock(&stream->lock);
-        pthread_mutex_destroy(&stream->lock);
-        nng_stream_free(stream->s);
-        free(stream);
-        return;
+        should_free = true;
     }
     pthread_mutex_unlock(&stream->lock);
+
+    if (should_free) {
+        PRINT("free websocket stream\n");
+        nng_stream_close(stream->s);
+        nng_stream_free(stream->s);
+        pthread_mutex_destroy(&stream->lock);
+        free(stream);
+    }
+}
+
+static inline void websocket_stream_recv(websocket_stream_t *stream,
+                                         nng_aio *           aio)
+{
+    bool closed = false;
+
+    pthread_mutex_lock(&stream->lock);
+    closed = stream->closed;
+    pthread_mutex_unlock(&stream->lock);
+
+    if (!closed) {
+        nng_stream_recv(stream->s, aio);
+    }
 }
 
 // NOTE: Do not call log functions otherwise recursion will happen.
@@ -156,6 +189,7 @@ static inline void thread_ctx_free(thread_ctx_t *thread_ctx)
     free(thread_ctx);
 }
 
+// NOTE: Do not call log functions otherwise memory leak will happen.
 static void ws_accept_cb(void *arg)
 {
     int              rv  = 0;
@@ -175,13 +209,23 @@ static void ws_accept_cb(void *arg)
 
     nng_stream *s = nng_aio_get_output(ctx->accept_aio, 0);
 
+    memset(ctx->recv_buf, 0, sizeof(ctx->recv_buf));
+    nng_iov iov = {
+        .iov_buf = ctx->recv_buf,
+        .iov_len = sizeof(ctx->recv_buf) - 1,
+    };
+    nng_aio_set_iov(ctx->recv_aio, 1, &iov);
+
     pthread_rwlock_wrlock(&ctx->lock);
     if (NULL == ctx->stream) {
         ctx->stream = websocket_stream_new(s);
-        if (NULL == ctx->stream) {
+        if (NULL != ctx->stream) {
+            websocket_stream_recv(ctx->stream, ctx->recv_aio);
+        } else {
             PRINT("allocate websocket stream fail\n");
             nng_stream_free(s);
         }
+
     } else {
         PRINT("websocket already connected, refused\n");
         nng_stream_close(s);
@@ -192,11 +236,91 @@ static void ws_accept_cb(void *arg)
     nng_stream_listener_accept(ctx->listener, ctx->accept_aio);
 }
 
+// NOTE: Do not call log functions otherwise memory leak will happen.
+void ws_recv_cb(void *arg)
+{
+    int                 rv     = 0;
+    websocket_ctx_t *   ctx    = arg;
+    websocket_stream_t *stream = NULL;
+
+    rv = nng_aio_result(ctx->recv_aio);
+    if (0 != rv) {
+        PRINT("websocket ctx recv error: %s\n", nng_strerror(rv));
+        goto error;
+    }
+
+    // make null terminated, large frame will result in decode failure
+    size_t len         = nng_aio_count(ctx->recv_aio);
+    ctx->recv_buf[len] = '\0';
+    PRINT("websocket ctx recv: %s\n", ctx->recv_buf);
+
+    void *json      = neu_json_decode_new(ctx->recv_buf);
+    char *level_str = json_get_string(json, "level");
+    char *node_name = json_get_string(json, "node_name");
+    if (NULL == level_str) {
+        PRINT("websocket decode log level fail: %s\n", ctx->recv_buf);
+        goto error;
+    }
+    if (NULL == node_name) {
+        PRINT("log websocket decode node_name fail: %s\n", ctx->recv_buf);
+        free(level_str);
+        goto error;
+    }
+    neu_json_decode_free(json);
+
+    int level = 0;
+    if (level_str && 0 != parse_log_level(level_str, &level)) {
+        PRINT("websocket ctx parse log level fail: %s", level_str);
+        free(level_str);
+        free(node_name);
+        return;
+    }
+    free(level_str);
+
+    memset(ctx->recv_buf, 0, sizeof(ctx->recv_buf));
+    nng_iov iov = {
+        .iov_buf = ctx->recv_buf,
+        .iov_len = sizeof(ctx->recv_buf) - 1,
+    };
+    nng_aio_set_iov(ctx->recv_aio, 1, &iov);
+
+    pthread_rwlock_wrlock(&ctx->lock);
+    ctx->level = level;
+    free((void *) ctx->category);
+    ctx->category = node_name; // take ownership
+    if (ctx->stream) {
+        stream = websocket_stream_ref(ctx->stream);
+    }
+    pthread_rwlock_unlock(&ctx->lock);
+
+    if (stream) {
+        websocket_stream_recv(stream, ctx->recv_aio);
+        websocket_stream_deref(stream);
+    }
+
+    return;
+
+error:
+    pthread_rwlock_wrlock(&ctx->lock);
+    stream      = ctx->stream;
+    ctx->stream = NULL;
+    ctx->level  = ZLOG_LEVEL_NOTICE;
+    free((void *) ctx->category);
+    ctx->category = NULL;
+    pthread_rwlock_unlock(&ctx->lock);
+    if (stream) {
+        websocket_stream_deref(stream);
+    }
+    return;
+}
+
 static int websocket_ctx_init(websocket_ctx_t *ctx, const char *url)
 {
     int rv = 0;
 
-    ctx->stream = NULL;
+    ctx->stream   = NULL;
+    ctx->level    = ZLOG_LEVEL_NOTICE;
+    ctx->category = NULL;
 
     rv = nng_ws_register();
     if (0 != rv) {
@@ -222,6 +346,12 @@ static int websocket_ctx_init(websocket_ctx_t *ctx, const char *url)
         goto err_alloc_accept_aio;
     }
 
+    rv = nng_aio_alloc(&ctx->recv_aio, ws_recv_cb, ctx);
+    if (0 != rv) {
+        nlog_error("allocate websocket recv aio fail: %s", nng_strerror(rv));
+        goto err_alloc_recv_aio;
+    }
+
     rv = pthread_rwlock_init(&ctx->lock, NULL);
     if (0 != rv) {
         nlog_error("pthread_rwlock_init fail: %d", rv);
@@ -244,6 +374,8 @@ static int websocket_ctx_init(websocket_ctx_t *ctx, const char *url)
 err_key_create_fail:
     pthread_rwlock_destroy(&ctx->lock);
 err_rwlock_init_fail:
+    nng_aio_free(ctx->recv_aio);
+err_alloc_recv_aio:
     nng_aio_free(ctx->accept_aio);
 err_alloc_accept_aio:
     nng_stream_listener_close(ctx->listener);
@@ -262,18 +394,26 @@ static void websocket_ctx_fini(websocket_ctx_t *ctx)
     nng_stream_listener_free(ctx->listener);
     ctx->listener = NULL;
 
+    nng_aio_stop(ctx->recv_aio);
+    nng_aio_free(ctx->recv_aio);
+    ctx->recv_aio = NULL;
+
     pthread_rwlock_wrlock(&ctx->lock);
     if (NULL != ctx->stream) {
         websocket_stream_deref(ctx->stream);
         ctx->stream = NULL;
     }
+    free((void *) ctx->category);
+    ctx->category = NULL;
     pthread_rwlock_unlock(&ctx->lock);
 
     pthread_rwlock_destroy(&ctx->lock);
 }
 
 // NOTE: Do not call log functions otherwise recursion will happen.
-static inline thread_ctx_t *websocket_ctx_get_thread_ctx(websocket_ctx_t *ctx)
+static inline thread_ctx_t *websocket_ctx_get_thread_ctx(websocket_ctx_t *ctx,
+                                                         int              level,
+                                                         const char *category)
 {
     thread_ctx_t *      thread_ctx = NULL;
     websocket_stream_t *stream     = NULL;
@@ -289,6 +429,17 @@ static inline thread_ctx_t *websocket_ctx_get_thread_ctx(websocket_ctx_t *ctx)
         return NULL;
     }
 
+    if (level < ctx->level || NULL == ctx->category ||
+        0 != strcmp(category, ctx->category)) {
+        pthread_rwlock_unlock(&ctx->lock);
+        if (thread_ctx) {
+            thread_ctx_free(thread_ctx);
+            thread_ctx = NULL;
+            pthread_setspecific(ctx->thread_key, NULL);
+        }
+        return NULL;
+    }
+
     if (NULL == thread_ctx || NULL == thread_ctx->stream) {
         stream = websocket_stream_ref(ctx->stream);
         if (NULL != thread_ctx) {
@@ -298,6 +449,7 @@ static inline thread_ctx_t *websocket_ctx_get_thread_ctx(websocket_ctx_t *ctx)
         websocket_stream_deref(thread_ctx->stream);
         thread_ctx->stream = websocket_stream_ref(ctx->stream);
     }
+
     pthread_rwlock_unlock(&ctx->lock);
 
     if (NULL == thread_ctx) {
@@ -331,13 +483,14 @@ static inline void websocket_ctx_del_thread_ctx(websocket_ctx_t *ctx,
 }
 
 // NOTE: Do not call log functions otherwise recursion will happen.
-static inline int websocket_ctx_send(websocket_ctx_t *ctx, const void *buf,
+static inline int websocket_ctx_send(websocket_ctx_t *ctx, int level,
+                                     const char *category, const void *buf,
                                      size_t size)
 {
     int           rv         = 0;
     thread_ctx_t *thread_ctx = NULL;
 
-    thread_ctx = websocket_ctx_get_thread_ctx(ctx);
+    thread_ctx = websocket_ctx_get_thread_ctx(ctx, level, category);
     if (NULL == thread_ctx) {
         return -1;
     }
@@ -365,12 +518,98 @@ static inline int websocket_ctx_send(websocket_ctx_t *ctx, const void *buf,
 // Unfortunately, it has to be a global variable due to limitations of zlog.
 static websocket_ctx_t g_log_ws_ctx_;
 
+// Do not call log functions, otherwise memory leak may occur.
+static char *json_get_string(json_t *root, const char *key)
+{
+    json_t *ob = json_object_get(root, key);
+
+    if (ob == NULL) {
+        return NULL;
+    }
+
+    if (!json_is_string(ob)) {
+        return NULL;
+    }
+
+    return strdup(json_string_value(ob));
+}
+
+static inline int parse_log_level(const char *s, int *level)
+{
+    if (0 == strncasecmp(s, "debug", 5)) {
+        *level = ZLOG_LEVEL_DEBUG;
+    } else if (0 == strncasecmp(s, "info", 4)) {
+        *level = ZLOG_LEVEL_INFO;
+    } else if (0 == strncasecmp(s, "notice", 6)) {
+        *level = ZLOG_LEVEL_NOTICE;
+    } else if (0 == strncasecmp(s, "warn", 4)) {
+        *level = ZLOG_LEVEL_WARN;
+    } else if (0 == strncasecmp(s, "error", 5)) {
+        *level = ZLOG_LEVEL_ERROR;
+    } else if (0 == strncasecmp(s, "fatal", 5)) {
+        *level = ZLOG_LEVEL_FATAL;
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+// Assume proper zlog configuration, for performance, do minimal checking.
+static inline int parse_log_level_and_category(const char * zlog_path,
+                                               int *        level,
+                                               const char **category)
+{
+    // assume no zlog user defined levels,
+    switch (zlog_path[0]) {
+    case 'D':
+        *level = ZLOG_LEVEL_DEBUG;
+        break;
+    case 'I':
+        *level = ZLOG_LEVEL_INFO;
+        break;
+    case 'N':
+        *level = ZLOG_LEVEL_NOTICE;
+        break;
+    case 'W':
+        *level = ZLOG_LEVEL_WARN;
+        break;
+    case 'E':
+        *level = ZLOG_LEVEL_ERROR;
+        break;
+    case 'F':
+        *level = ZLOG_LEVEL_FATAL;
+        break;
+    default:
+        return -1;
+    }
+
+    // assume zlog path "%V,%c" and no zlog user defined levels,
+    // 4 is the minimum level string length, aka. `INFO`
+    zlog_path += 4;
+
+    while (*zlog_path && ',' != *zlog_path++) {
+        ;
+    }
+
+    *category = zlog_path;
+
+    return 0;
+}
+
 // NOTE: Do not call log functions otherwise recursion will happen.
 static int zlog_output_websocket(zlog_msg_t *msg)
 {
-    int rv = 0;
+    int         rv    = 0;
+    int         level = 0;
+    const char *cat   = NULL;
 
-    rv = websocket_ctx_send(&g_log_ws_ctx_, msg->buf, msg->len);
+    rv = parse_log_level_and_category(msg->path, &level, &cat);
+    if (0 != rv) {
+        return rv;
+    }
+
+    rv = websocket_ctx_send(&g_log_ws_ctx_, level, cat, msg->buf, msg->len);
 
     return rv;
 }
