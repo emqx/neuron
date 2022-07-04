@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "neuron.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "neuron.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  serviceName: {{ include "neuron.fullname" . }}-headless
+  {{- if and .Values.persistence.enabled (not .Values.persistence.existingClaim) }}
+  volumeClaimTemplates:
+    - metadata:
+        name: neuron-persistence
+        namespace: {{ .Release.Namespace }}
+        labels:
+          {{- include "neuron.selectorLabels" . | nindent 10 }}
+          app.kubernetes.io/managed-by: {{ .Release.Service }}
+      spec:
+        {{- if .Values.persistence.storageClassName }}
+        storageClassName: {{ .Values.persistence.storageClassName | quote }}
+        {{- end }}
+        accessModes:
+          - {{ .Values.persistence.accessMode | quote }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size | quote }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "neuron.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "neuron.selectorLabels" . | nindent 8 }}
+    spec:
+      volumes:
+        {{- if not .Values.persistence.enabled }}
+        - name: neuron-persistence
+          emptyDir: {}
+        {{- else if .Values.persistence.existingClaim }}
+        - name: neuron-persistence
+          persistentVolumeClaim:
+          {{- with .Values.persistence.existingClaim }}
+            claimName: {{ tpl . $ }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.tls.enabled }}
+        - name: certs
+          secret:
+            secretName: {{ include "neuron.tlsSecretName" . }}
+            items:
+              - key: neuron.pem
+                path: neuron.pem
+              - key: neuron.key
+                path: neuron.key
+        {{- end}}
+      containers:
+        - name: neuron
+          image: "{{ .Values.image.repository }}:{{ .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe:
+            httpGet:
+              port: {{ .Values.service.web | default 7000 }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          {{- end }}
+          ports:
+          - name: web
+            containerPort: {{ .Values.containerPorts.web | default 7000 }}
+          - name: api
+            containerPort: {{ .Values.containerPorts.api | default 7001 }}
+          volumeMounts:
+          - name: neuron-persistence
+            mountPath: "/opt/neuron/persistence"
+          {{- if .Values.tls.enabled }}
+          - name: certs
+            mountPath: "/opt/neuron/config/neuron.pem"
+            subPath: "neuron.pem"
+            readOnly: true
+          - name: certs
+            mountPath: "/opt/neuron/config/neuron.key"
+            subPath: "neuron.key"
+            readOnly: true
+          {{- end }}
+          resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+
+
