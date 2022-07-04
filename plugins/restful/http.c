@@ -312,6 +312,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GROUP_NAME_TOO_LONG:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
+    case NEU_ERR_FILE_NOT_EXIST:
     case NEU_ERR_LIBRARY_NOT_FOUND:
     case NEU_ERR_NODE_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
