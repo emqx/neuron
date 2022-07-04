@@ -291,6 +291,25 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
+static int plguin_start_running(neu_plugin_t *plugin)
+{
+    if (!plugin->running && NULL != plugin->config) {
+        mqtt_routine_t *routine = mqtt_routine_start(plugin, plugin->config);
+        if (NULL == routine) {
+            plugin->routine           = NULL;
+            plugin->running           = false;
+            plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+            return -1;
+        }
+
+        plugin->routine           = routine;
+        plugin->running           = true;
+        plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
+    }
+
+    return 0;
+}
+
 static void plugin_stop_running(neu_plugin_t *plugin)
 {
     if (plugin->running) {
@@ -336,17 +355,16 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     assert(NULL != config);
 
     plugin_config_save(plugin, config);
-    plugin_stop_running(plugin);
-    mqtt_routine_t *routine = mqtt_routine_start(plugin, config);
-    if (NULL == routine) {
-        plugin->routine = NULL;
-        plugin->running = false;
-        return NEU_ERR_MQTT_FAILURE;
+
+    if (!plugin->running) {
+        return NEU_ERR_SUCCESS;
     }
 
-    plugin->routine           = routine;
-    plugin->running           = true;
-    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
+    plugin_stop_running(plugin);
+    int rc = plguin_start_running(plugin);
+    if (0 != rc) {
+        return NEU_ERR_MQTT_FAILURE;
+    }
 
     plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
@@ -356,17 +374,9 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    if (!plugin->running && NULL != plugin->config) {
-        mqtt_routine_t *routine = mqtt_routine_start(plugin, plugin->config);
-        if (NULL == routine) {
-            plugin->routine = NULL;
-            plugin->running = false;
-            return NEU_ERR_MQTT_FAILURE;
-        }
-
-        plugin->routine           = routine;
-        plugin->running           = true;
-        plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
+    int rc = plguin_start_running(plugin);
+    if (0 != rc) {
+        return NEU_ERR_MQTT_FAILURE;
     }
 
     return NEU_ERR_SUCCESS;
@@ -479,7 +489,8 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
 // static neu_err_code_e reconnect(neu_plugin_t *plugin, neu_reqresp_head_t
 // *head)
 // {
-//     if (NEU_RESP_ERROR == head->type || NEU_RESP_READ_GROUP == head->type ||
+//     if (NEU_RESP_ERROR == head->type || NEU_RESP_READ_GROUP == head->type
+//     ||
 //         NEU_REQRESP_TRANS_DATA == head->type) {
 //         if (!plugin->running && NULL != plugin->config) {
 //             mqtt_routine_t *routine =
