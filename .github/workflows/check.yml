@@ -25,6 +25,19 @@ jobs:
           clangFormatVersion: 10
           style: file
 
+  cppcheck:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      
+      - name: cppcheck
+        run: |
+          sudo apt install cppcheck
+          cppcheck --enable=all  --error-exitcode=2 --suppress=missingInclude --suppress=unusedFunction ./plugins ./simulator ./src
+
   ut:
     runs-on: ubuntu-20.04
 

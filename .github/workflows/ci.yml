@@ -35,6 +35,7 @@ jobs:
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/${{ matrix.arch[0] }}.cmake \
             -DCMAKE_BUILD_TYPE=Release -DDISABLE_UT=ON
           make -j4
+
       - name: get version
         id: get_version
         run: echo "::set-output name=version::$(cat version)"
