@@ -222,10 +222,10 @@ bool neu_datatag_string_is_utf8(char *data, int len)
 
 int neu_datatag_string_htol(char *str, int len)
 {
-    char t = 0;
 
     for (int i = 0; i < len; i += 2) {
-        t          = str[i];
+        char t = str[i];
+
         str[i]     = str[i + 1];
         str[i + 1] = t;
     }

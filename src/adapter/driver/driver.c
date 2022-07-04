@@ -366,15 +366,14 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
 
 int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 {
-    group_t *find     = NULL;
-    int      ret      = NEU_ERR_GROUP_NOT_EXIST;
-    uint16_t tag_size = 0;
+    group_t *find = NULL;
+    int      ret  = NEU_ERR_GROUP_NOT_EXIST;
 
     HASH_FIND_STR(driver->groups, name, find);
     if (find != NULL) {
         HASH_DEL(driver->groups, find);
 
-        tag_size = neu_group_tag_size(find->group);
+        uint16_t tag_size = neu_group_tag_size(find->group);
         neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
         neu_event_del_timer(driver->driver_events, find->read);
         if (find->grp.group_free != NULL) {

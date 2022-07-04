@@ -51,7 +51,6 @@ void handle_login(nng_aio *aio)
             neu_json_login_resp_t login_resp = { 0 };
             char *                name       = "admin";
             char *                password   = "0000";
-            int                   ret        = 0;
 
             if (strcmp(req->name, name) == 0 &&
                 strcmp(req->pass, password) == 0) {
@@ -59,7 +58,7 @@ void handle_login(nng_aio *aio)
                 char *token  = NULL;
                 char *result = NULL;
 
-                ret = neu_jwt_new(&token);
+                int ret = neu_jwt_new(&token);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_NEED_TOKEN, {
                         http_response(aio, error_code.error, result_error);
@@ -125,7 +124,7 @@ void handle_get_plugin_schema(nng_aio *aio)
     VALIDATE_JWT(aio);
 
     const char *plugin_name = http_get_param(aio, "plugin_name", &len);
-    if (plugin_name == NULL || len <= 0) {
+    if (plugin_name == NULL || len == 0) {
         http_bad_request(aio, "{\"error\": 1002}");
         return;
     }

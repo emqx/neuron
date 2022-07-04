@@ -41,7 +41,7 @@ int neu_json_decode_plugin_req(char *buf, neu_json_plugin_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     req->n_plugin = neu_json_decode_array_size_by_json(json_obj, "plugins");
-    if (req->n_plugin < 0) {
+    if (req->n_plugin <= 0) {
         goto decode_fail;
     }
 
