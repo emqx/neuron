@@ -58,9 +58,7 @@ int neu_json_decode_add_plugin_req(char *                      buf,
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -107,9 +105,7 @@ int neu_json_decode_del_plugin_req(char *                      buf,
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:

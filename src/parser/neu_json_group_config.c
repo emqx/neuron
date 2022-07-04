@@ -68,9 +68,7 @@ int neu_json_decode_add_group_config_req(
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -123,9 +121,7 @@ int neu_json_decode_del_group_config_req(
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -260,9 +256,7 @@ int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -320,9 +314,7 @@ int neu_json_decode_unsubscribe_req(char *                       buf,
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -381,9 +373,7 @@ int neu_json_decode_update_group_config_req(
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:

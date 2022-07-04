@@ -68,9 +68,7 @@ int neu_json_decode_group_configs_req(char *                         buf,
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:

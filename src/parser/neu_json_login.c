@@ -54,9 +54,7 @@ int neu_json_decode_login_req(char *buf, neu_json_login_req_t **result)
     return ret;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     return -1;
 }
 

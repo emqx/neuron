@@ -103,7 +103,7 @@ const char *neu_persister_get_plugins_fname(neu_persister_t *persister)
 static int path_escape(char *buf, size_t size, const char *path)
 {
     size_t i = 0;
-    char   c = '\0';
+    char   c;
 
     if (NULL != buf) {
         for (const char *s = path; (c = *s++) && i < size; ++i) {

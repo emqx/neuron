@@ -61,9 +61,7 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -109,9 +107,7 @@ int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -219,9 +215,7 @@ int neu_json_decode_update_node_req(char *                       buf,
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -271,9 +265,7 @@ int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -318,9 +310,7 @@ int neu_json_decode_node_setting_req(char *                        buf,
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
