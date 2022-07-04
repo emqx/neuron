@@ -57,8 +57,6 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                        uint16_t max_byte)
 {
-    int ret = 0;
-
     if (group->user_data == NULL) {
         struct modbus_group_data *gd =
             calloc(1, sizeof(struct modbus_group_data));
@@ -69,8 +67,8 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 
         utarray_foreach(group->tags, neu_datatag_t *, tag)
         {
-            modbus_point_t *p = calloc(1, sizeof(modbus_point_t));
-            ret               = modbus_tag_to_point(tag, p);
+            modbus_point_t *p   = calloc(1, sizeof(modbus_point_t));
+            int             ret = modbus_tag_to_point(tag, p);
             assert(ret == 0);
 
             utarray_push_back(gd->tags, &p);
@@ -84,7 +82,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 
         for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
             uint16_t response_size = 0;
-            ret                    = modbus_stack_read(
+            int      ret           = modbus_stack_read(
                 plugin->stack, gd->cmd_sort->cmd[i].slave_id,
                 gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
                 gd->cmd_sort->cmd[i].n_register, &response_size);
@@ -154,7 +152,6 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                 uint16_t v1 = ((uint16_t *) dvalue.value.bytes)[0];
                 uint16_t v2 = ((uint16_t *) dvalue.value.bytes)[1];
                 uint32_t v  = 0;
-                float *  pf = (float *) &v;
 
                 switch ((*p_tag)->option.value32.endian) {
                 case NEU_DATATAG_ENDIAN_BB32:
@@ -175,7 +172,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                 }
 
                 dvalue.type      = NEU_TYPE_FLOAT;
-                dvalue.value.f32 = *pf;
+                dvalue.value.u32 = v;
                 break;
             }
             case NEU_TYPE_INT32:

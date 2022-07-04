@@ -41,7 +41,7 @@ int neu_json_decode_datatag_req(char *buf, neu_json_datatag_req_t **result)
     json_obj = neu_json_decode_new(buf);
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    if (req->n_tag < 0) {
+    if (req->n_tag <= 0) {
         goto decode_fail;
     }
 

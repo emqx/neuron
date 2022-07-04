@@ -64,6 +64,9 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
 
     ret = neu_plugin_manager_create_instance(manager->plugin_manager,
                                              plugin_name, &instance);
+    if (ret != 0) {
+        return NEU_ERR_LIBRARY_FAILED_TO_OPEN;
+    }
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 

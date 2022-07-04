@@ -58,7 +58,7 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
     req->group = req_elems[1].v.val_str;
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    if (req->n_tag < 0) {
+    if (req->n_tag <= 0) {
         goto decode_fail;
     }
 
@@ -193,7 +193,7 @@ int neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result)
     req->group = req_elems[1].v.val_str;
 
     req->n_tags = neu_json_decode_array_size_by_json(json_obj, "tags");
-    if (req->n_tags < 0) {
+    if (req->n_tags <= 0) {
         goto decode_fail;
     }
 
@@ -328,7 +328,7 @@ int neu_json_decode_update_tags_req(char *                       buf,
     req->group = req_elems[1].v.val_str;
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    if (req->n_tag < 0) {
+    if (req->n_tag <= 0) {
         goto decode_fail;
     }
 

@@ -45,7 +45,7 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
     }
 
     char area = 0;
-    int  n    = sscanf(tag->address, "%hhd!%c%hd", &point->slave_id, &area,
+    int  n    = sscanf(tag->address, "%hhu!%c%hu", &point->slave_id, &area,
                    &point->start_address);
     if (n != 3) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
@@ -153,7 +153,7 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
     }
 
     strncpy(point->name, tag->name, sizeof(point->name));
-    return 0;
+    return ret;
 }
 
 modbus_read_cmd_sort_t *modbus_tag_sort(UT_array *tags, uint16_t max_byte)

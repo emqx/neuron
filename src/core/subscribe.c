@@ -37,14 +37,6 @@ typedef struct sub_elem {
     UT_hash_handle hh;
 } sub_elem_t;
 
-typedef struct app_elem {
-    char name[NEU_NODE_NAME_LEN];
-
-    UT_array *groups;
-
-    UT_hash_handle hh;
-} app_elem_t;
-
 static const UT_icd app_sub_icd = { sizeof(neu_app_subscribe_t), NULL, NULL,
                                     NULL };
 
