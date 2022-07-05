@@ -62,8 +62,9 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
 
 ssize_t url_decode(const char *s, size_t len, char *buf, size_t size)
 {
-    size_t i = 0, j = 0;
-    int    c = 0, n = 0;
+    size_t       i = 0, j = 0;
+    int          n = 0;
+    unsigned int c;
     while (i < len && j < size) {
         c = s[i++];
         if ('+' == c) {
@@ -92,7 +93,7 @@ int http_get_body(nng_aio *aio, void **data, size_t *data_size)
     nng_http_req *req = nng_aio_get_input(aio, 0);
 
     nng_http_req_get_data(req, data, data_size);
-    if (*data_size <= 0) {
+    if (*data_size == 0) {
         return -1;
     } else {
         char *buf = calloc(*data_size + 1, sizeof(char));

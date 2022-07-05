@@ -141,7 +141,7 @@ int json_encode_read_resp_tags(void *json_object, void *param)
         return -1;
     }
     errors_object = neu_json_encode_new();
-    if (NULL == values_object) {
+    if (NULL == errors_object) {
         plog_error(plugin, "ekuiper cannot allocate json object");
         json_decref(values_object);
         return -1;
@@ -260,9 +260,7 @@ int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:

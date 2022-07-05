@@ -157,9 +157,7 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:
@@ -213,9 +211,7 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     ret = -1;
 
 decode_exit:

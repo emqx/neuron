@@ -101,6 +101,9 @@ int neu_json_decode_set_license_req(char *                       buf,
     int                         ret = 0;
     neu_json_set_license_req_t *req =
         calloc(1, sizeof(neu_json_set_license_req_t));
+    if (NULL == req) {
+        return -1;
+    }
 
     neu_json_elem_t req_elems[] = { {
         .name = "license",
@@ -117,9 +120,7 @@ int neu_json_decode_set_license_req(char *                       buf,
     return ret;
 
 decode_fail:
-    if (req != NULL) {
-        free(req);
-    }
+    free(req);
     return -1;
 }
 
