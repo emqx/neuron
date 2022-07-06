@@ -11,28 +11,23 @@ TEST(JsonTest, DecodeField)
         (char *) "{\"field1\": true, \"field2\": false, \"field3\": 12345, "
                  "\"field4\": 11.223, \"field5\": \"hello world\"}";
 
-    neu_json_elem_t elems[] = {
-        {
-            .name = (char *) "field1",
-            .t    = NEU_JSON_BOOL,
-        },
-        {
-            .name = (char *) "field2",
-            .t    = NEU_JSON_BOOL,
-        },
-        {
-            .name = (char *) "field3",
-            .t    = NEU_JSON_INT,
-        },
-        {
-            .name = (char *) "field4",
-            .t    = NEU_JSON_DOUBLE,
-        },
-        {
-            .name = (char *) "field5",
-            .t    = NEU_JSON_STR,
-        },
-    };
+    neu_json_elem_t elems[5];
+
+    elems[0].name = (char *) "field1";
+    elems[0].t    = NEU_JSON_BOOL;
+
+    elems[1].name = (char *) "field2";
+    elems[1].t    = NEU_JSON_BOOL;
+
+    elems[2].name = (char *) "field3";
+    elems[2].t    = NEU_JSON_INT;
+
+    elems[3].name = (char *) "field4";
+    elems[3].t    = NEU_JSON_DOUBLE;
+
+    elems[4].name = (char *) "field5";
+    elems[4].t    = NEU_JSON_STR;
+
     EXPECT_EQ(5, sizeof(elems) / sizeof(neu_json_elem_t));
     EXPECT_EQ(5, NEU_JSON_ELEM_SIZE(elems));
     EXPECT_EQ(0, neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elems), elems));
@@ -53,22 +48,20 @@ TEST(JsonTest, DecodeArray)
                  "\"value\": 123},{\"name\":\"name2\", \"value\": "
                  "456},{\"name\":\"name3\", \"value\": 789}] }";
 
-    neu_json_elem_t elems[] = { {
-        .name = (char *) "field1",
-        .t    = NEU_JSON_INT,
-    } };
-    neu_json_elem_t names[] = { {
-        .name = NULL,
-        .t    = NEU_JSON_STR,
-    } };
-    neu_json_elem_t tags[]  = { {
-                                   .name = (char *) "name",
-                                   .t    = NEU_JSON_STR,
-                               },
-                               {
-                                   .name = (char *) "value",
-                                   .t    = NEU_JSON_INT,
-                               } };
+    neu_json_elem_t elems[1];
+    elems[0].name = (char *) "field1";
+    elems[0].t    = NEU_JSON_INT;
+
+    neu_json_elem_t names[1];
+    names[0].name = NULL;
+    names[0].t    = NEU_JSON_STR;
+
+    neu_json_elem_t tags[2];
+    tags[0].name = (char *) "name";
+    tags[0].t    = NEU_JSON_STR;
+
+    tags[1].name = (char *) "value";
+    tags[1].t    = NEU_JSON_INT;
 
     EXPECT_EQ(1, sizeof(elems) / sizeof(neu_json_elem_t));
     EXPECT_EQ(3, neu_json_decode_array_size(buf, (char *) "field2"));
@@ -108,26 +101,23 @@ TEST(JsonTest, DecodeUndefine)
         (char *) "{\"field1\": true, \"field2\": false, \"field3\": 12345, "
                  "\"field4\": 11.223, \"field5\": \"hello world\"}";
 
-    neu_json_elem_t elems[] = { {
-                                    .name = (char *) "field1",
-                                    .t    = NEU_JSON_UNDEFINE,
-                                },
-                                {
-                                    .name = (char *) "field2",
-                                    .t    = NEU_JSON_UNDEFINE,
-                                },
-                                {
-                                    .name = (char *) "field3",
-                                    .t    = NEU_JSON_UNDEFINE,
-                                },
-                                {
-                                    .name = (char *) "field4",
-                                    .t    = NEU_JSON_UNDEFINE,
-                                },
-                                {
-                                    .name = (char *) "field5",
-                                    .t    = NEU_JSON_UNDEFINE,
-                                } };
+    neu_json_elem_t elems[5];
+
+    elems[0].name = (char *) "field1";
+    elems[0].t    = NEU_JSON_UNDEFINE;
+
+    elems[1].name = (char *) "field2";
+    elems[1].t    = NEU_JSON_UNDEFINE;
+
+    elems[2].name = (char *) "field3";
+    elems[2].t    = NEU_JSON_UNDEFINE;
+
+    elems[3].name = (char *) "field4";
+    elems[3].t    = NEU_JSON_UNDEFINE;
+
+    elems[4].name = (char *) "field5";
+    elems[4].t    = NEU_JSON_UNDEFINE;
+
     EXPECT_EQ(5, sizeof(elems) / sizeof(neu_json_elem_t));
     EXPECT_EQ(5, NEU_JSON_ELEM_SIZE(elems));
     EXPECT_EQ(0, neu_json_decode(buf, NEU_JSON_ELEM_SIZE(elems), elems));
@@ -152,31 +142,28 @@ TEST(JsonTest, EncodeField)
                  "\"field4\": 11.223, \"field5\": \"hello world\"}";
     char *result = NULL;
 
-    neu_json_elem_t elems[] = { {
-                                    .name = (char *) "field1",
-                                    .t    = NEU_JSON_BOOL,
-                                },
-                                {
-                                    .name = (char *) "field2",
-                                    .t    = NEU_JSON_BOOL,
-                                },
-                                {
-                                    .name = (char *) "field3",
-                                    .t    = NEU_JSON_INT,
-                                },
-                                {
-                                    .name = (char *) "field4",
-                                    .t    = NEU_JSON_DOUBLE,
-                                },
-                                {
-                                    .name = (char *) "field5",
-                                    .t    = NEU_JSON_STR,
-                                } };
-    elems[0].v.val_bool     = true;
-    elems[1].v.val_bool     = false;
-    elems[2].v.val_int      = 12345;
-    elems[3].v.val_double   = 11.223;
-    elems[4].v.val_str      = (char *) "hello world";
+    neu_json_elem_t elems[5];
+
+    elems[0].name = (char *) "field1";
+    elems[0].t    = NEU_JSON_BOOL;
+
+    elems[1].name = (char *) "field2";
+    elems[1].t    = NEU_JSON_BOOL;
+
+    elems[2].name = (char *) "field3";
+    elems[2].t    = NEU_JSON_INT;
+
+    elems[3].name = (char *) "field4";
+    elems[3].t    = NEU_JSON_DOUBLE;
+
+    elems[4].name = (char *) "field5";
+    elems[4].t    = NEU_JSON_STR;
+
+    elems[0].v.val_bool   = true;
+    elems[1].v.val_bool   = false;
+    elems[2].v.val_int    = 12345;
+    elems[3].v.val_double = 11.223;
+    elems[4].v.val_str    = (char *) "hello world";
     EXPECT_EQ(5, sizeof(elems) / sizeof(neu_json_elem_t));
     EXPECT_EQ(5, NEU_JSON_ELEM_SIZE(elems));
     void *ob = neu_json_encode_new();
@@ -197,41 +184,32 @@ TEST(JsonTest, EncodeArray)
     void *json_array1 = NULL;
     void *json_array2 = NULL;
 
-    neu_json_elem_t array1[] = { {
-                                     .name = NULL,
-                                     .t    = NEU_JSON_STR,
-                                 },
-                                 {
-                                     .name = NULL,
-                                     .t    = NEU_JSON_STR,
-                                 },
-                                 {
-                                     .name = NULL,
-                                     .t    = NEU_JSON_STR,
-                                 } };
-    neu_json_elem_t array2[] = {
-        {
-            .name = (char *) "name",
-            .t    = NEU_JSON_STR,
-        },
-        {
-            .name = (char *) "value",
-            .t    = NEU_JSON_INT,
-        },
-    };
+    neu_json_elem_t array1[3];
+    array1[0].name = NULL;
+    array1[0].t    = NEU_JSON_STR;
 
-    neu_json_elem_t elems[] = { {
-                                    .name = (char *) "field1",
-                                    .t    = NEU_JSON_INT,
-                                },
-                                {
-                                    .name = (char *) "field2",
-                                    .t    = NEU_JSON_OBJECT,
-                                },
-                                {
-                                    .name = (char *) "field3",
-                                    .t    = NEU_JSON_OBJECT,
-                                } };
+    array1[1].name = NULL;
+    array1[1].t    = NEU_JSON_STR;
+
+    array1[2].name = NULL;
+    array1[2].t    = NEU_JSON_STR;
+
+    neu_json_elem_t array2[2];
+    array2[0].name = (char *) "name";
+    array2[0].t    = NEU_JSON_STR;
+
+    array2[1].name = (char *) "value";
+    array2[1].t    = NEU_JSON_INT;
+
+    neu_json_elem_t elems[3];
+    elems[0].name = (char *) "field1";
+    elems[0].t    = NEU_JSON_INT;
+
+    elems[1].name = (char *) "field2";
+    elems[1].t    = NEU_JSON_OBJECT;
+
+    elems[2].name = (char *) "field3";
+    elems[2].t    = NEU_JSON_OBJECT;
 
     array1[0].v.val_str = (char *) "name1";
     array1[1].v.val_str = (char *) "name2";
