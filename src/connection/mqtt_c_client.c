@@ -536,6 +536,7 @@ neu_err_code_e mqtt_c_client_is_connected(mqtt_c_client_t *client);
 static void *client_refresher(void *context)
 {
     assert(NULL != context);
+    int error_count = 0;
 
     mqtt_c_client_t *       client = (mqtt_c_client_t *) context;
     struct mqtt_client *    mqtt   = &client->mqtt;
@@ -561,14 +562,12 @@ static void *client_refresher(void *context)
             int rc = mqtt_c_client_is_connected(client);
             client->state_update_func(client->user_data, rc);
 
-            if (0 != rc) {
-                if (NULL != client->log) {
-                    zlog_error(client->log, "connect to %s:%s erorr, retry...",
-                               client->state.hostname, client->state.port);
-                }
-                usleep(INTERVAL * 10);
+            if (0 != rc && error_count % 100 == 0) {
+                zlog_error(client->log, "connect to %s:%s erorr, retry...",
+                           client->state.hostname, client->state.port);
             }
         }
+        error_count++;
     }
 
     reconnect_state_uninit(state);
