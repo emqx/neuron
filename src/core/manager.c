@@ -83,6 +83,10 @@ neu_manager_t *neu_manager_create()
         nlog_warn("load plugin error");
     } else {
         manager_load_node(manager);
+        while (neu_node_manager_exist_uninit(manager->node_manager)) {
+            usleep(1000 * 100);
+        }
+
         manager_load_subscribe(manager);
     }
 

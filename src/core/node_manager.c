@@ -113,6 +113,20 @@ uint16_t neu_node_manager_size(neu_node_manager_t *mgr)
     return HASH_COUNT(mgr->nodes);
 }
 
+bool neu_node_manager_exist_uninit(neu_node_manager_t *mgr)
+{
+    node_entity_t *el = NULL, *tmp = NULL;
+
+    HASH_ITER(hh, mgr->nodes, el, tmp)
+    {
+        if (el->pipe.id == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
 {
     UT_array *     array = NULL;
