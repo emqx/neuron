@@ -274,6 +274,7 @@ static BIO *bio_tcp_create(const char *addr, const char *port)
         return NULL;
     }
 
+    BIO_clear_flags(bio, BIO_FLAGS_SHOULD_RETRY);
     BIO_set_nbio(bio, 1);
     BIO_set_conn_port(bio, port);
     return bio;
