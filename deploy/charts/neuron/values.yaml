@@ -2,7 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
 
 image:
   repository: emqx/neuron
@@ -15,19 +14,21 @@ nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
-  # Specifies whether a service account should be created
+  # -- Specifies whether a service account should be created
   create: true
-  # Annotations to add to the service account
+  # -- Annotations to add to the service account
   annotations: {}
-  # The name of the service account to use.
+  # -- The name of the service account to use.
   # If not set and create is true, a name is generated using the fullname template
   name: ""
 
 podAnnotations: {}
 
+# @ignored
 podSecurityContext: {}
   # fsGroup: 2000
 
+# @ignored
 securityContext: {}
   # capabilities:
   #   drop:
@@ -37,27 +38,25 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
+  enabled: false
   type: ClusterIP
 
-  ## Service ports
-  ## @param service.ports.web Neuron Dashboard port
-  ## @param service.ports.api Neuron API port
-  ##
+  # -- Service ports
   ports:
+    # -- service.ports.web Neuron Dashboard port
     web: 7000
+    # -- service.ports.api Neuron API port
     api: 7001
 
-  ## Service ports name
-  ## @param service.portNames.web Neuron Dashboard port name
-  ## @param service.portNames.api Neuron API port name
-  ##
+  # -- Service ports name
   portNames:
+    # -- service.portNames.web Neuron Dashboard port name
     web: "web"
+    # -- service.portNames.api Neuron API port name
     api: "api"
 
-  ## Specify the nodePort(s) value for the LoadBalancer and NodePort service types.
-  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
-  ##
+  # -- Specify the nodePort(s) value for the LoadBalancer and NodePort service types.
+  # ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
   nodePorts:
     web:
     api:
@@ -68,29 +67,13 @@ service:
   ## Load Balancer sources
   ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
   ## Example:
-  ## loadBalancerSourceRanges:
-  ## - 10.10.10.0/24
-  ##
-  loadBalancerSourceRanges: []
-  ## Provide any additional annotations which may be required. Evaluated as a template
-  ##
-  annotations: {}
 
-  ## Set the LoadBalancer service type to internal only.
-  ## ref: https://kubernetes.io/docs/concepts/services-networking/service/#internal-load-balancer
-  ##
-  # loadBalancerIP:
-  ## Load Balancer sources
-  ## ref: https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
-  ## Example:
-  ## loadBalancerSourceRanges:
-  ## - 10.10.10.0/24
-  ##
+  # -- loadBalancerSourceRanges:
+  # - 10.10.10.0/24
+  #
   loadBalancerSourceRanges: []
-  ## Provide any additional annotations which may be required. Evaluated as a template
-  ##
+  # -- Provide any additional annotations which may be required. Evaluated as a template
   annotations: {}
-
 
 ingress:
   enabled: false
@@ -110,13 +93,10 @@ ingress:
 
 
 persistence:
-  enabled: true
-  size: 20Mi
-  storageClassName: ""
-  accessMode: ReadWriteOnce
-  ## Existing PersistentVolumeClaims
-  ## The value is evaluated as a template
-  ## So, for example, the name can depend on .Release or .Chart
+  enabled: false
+  # -- Existing PersistentVolumeClaims
+  # The value is evaluated as a template
+  # So, for example, the name can depend on .Release or .Chart
   existingClaim: ""
 
 resources: {}
@@ -144,12 +124,13 @@ tolerations: []
 
 affinity: {}
 
-## @param clusterDomain Kubernetes Cluster Domain
-##
+# -- Kubernetes Cluster Domain
 clusterDomain: cluster.local
 
+# @ignored
 tls:
-  enabled: true
+  enabled: false
+  # -- neuron public key
   publicKey: |
     -----BEGIN PUBLIC KEY-----
     MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzrO7FUz4GGKl4nP5lwKM
@@ -160,6 +141,7 @@ tls:
     kGX0vx5udHJ0SlXM6qpMLny18FhWbwKNX3urc3mImn/j3zcJ5x1d+FlXAXs1NBSe
     TQIDAQAB
     -----END PUBLIC KEY-----
+  # -- neuron private key
   privateKey: |
     -----BEGIN RSA PRIVATE KEY-----
     MIIEpAIBAAKCAQEAzrO7FUz4GGKl4nP5lwKMh5uageJAAHnLZpVxTR1wXA9E870s
@@ -195,10 +177,16 @@ readinessProbe:
   initialDelaySeconds: 5
   periodSeconds: 5
 
-## Container Ports
-## @param containerPorts.web
-## @param containerPorts.api
-##
+# -- Container Ports
 containerPorts:
+  # -- containerPorts.web
   web: 7000
+  # -- containerPorts.api
   api: 7001
+
+# -- only for kubeedge deployment
+hostPorts:
+  enabled: true
+  web: 30370
+  api: 30371
+

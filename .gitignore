@@ -16,3 +16,4 @@ tmp
 *.deb
 *.rpm
 neuron-sdk
+.vscode

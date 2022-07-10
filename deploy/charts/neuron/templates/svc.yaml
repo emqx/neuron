@@ -1,3 +1,4 @@
+{{- if .Values.service.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -36,4 +37,4 @@ spec:
     {{- end }}
   selector:
     {{- include "neuron.selectorLabels" . | nindent 4 }}
-
+{{- end }}
