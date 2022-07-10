@@ -17,8 +17,8 @@ spec:
   {{- end }}
   {{- end }}
   ports:
-  - name: {{ .Values.service.portNames.web }}
-    port:  {{ .Values.service.ports.web | default 7000 }}
+  - name: {{ .Values.service.ports.web.name }}
+    port:  {{ .Values.service.ports.web.port | default 7000 }}
     protocol: TCP
     targetPort:  web
     {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) (not (empty .Values.service.nodePorts.web)) }}
@@ -26,8 +26,8 @@ spec:
     {{- else if eq .Values.service.type "ClusterIP" }}
     nodePort: null
     {{- end }}
-  - name: {{ .Values.service.portNames.api }}
-    port: {{ .Values.service.ports.api | default 7001 }}
+  - name: {{ .Values.service.ports.api.name }}
+    port: {{ .Values.service.ports.api.port | default 7001 }}
     protocol: TCP
     targetPort: api
     {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) (not (empty .Values.service.nodePorts.api)) }}

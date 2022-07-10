@@ -32,10 +32,10 @@ helm uninstall my-neuron
 | containerPorts.api | int | `7001` | containerPorts.api |
 | containerPorts.web | int | `7000` | containerPorts.web |
 | fullnameOverride | string | `""` |  |
-| hostPorts | object | `{"api":30371,"enabled":true,"web":30370}` | only for KubeEdge deployment |
+| hostPorts | object | `{"api":30371,"enabled":false,"web":30370}` | only for kubeedge deployment |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
 | image.repository | string | `"emqx/neuron"` |  |
-| image.tag | string | `""` |  |
+| image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion. |
 | imagePullSecrets | list | `[]` |  |
 | ingress.annotations | object | `{}` |  |
 | ingress.className | string | `""` |  |
@@ -54,18 +54,16 @@ helm uninstall my-neuron
 | readinessProbe.periodSeconds | int | `5` |  |
 | resources | object | `{}` |  |
 | service.annotations | object | `{}` | Provide any additional annotations which may be required. Evaluated as a template |
-| service.enabled | bool | `false` |  |
+| service.enabled | bool | `true` |  |
 | service.loadBalancerSourceRanges | list | `[]` | loadBalancerSourceRanges: - 10.10.10.0/24  |
 | service.nodePorts | object | `{"api":null,"web":null}` | Specify the nodePort(s) value for the LoadBalancer and NodePort service types. ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport |
-| service.portNames | object | `{"api":"api","web":"web"}` | Service ports name |
-| service.portNames.api | string | `"api"` | service.portNames.api Neuron API port name |
-| service.portNames.web | string | `"web"` | service.portNames.web Neuron Dashboard port name |
-| service.ports | object | `{"api":7001,"web":7000}` | Service ports |
-| service.ports.api | int | `7001` | service.ports.api Neuron API port |
-| service.ports.web | int | `7000` | service.ports.web Neuron Dashboard port |
+| service.ports | object | `{"api":{"name":"api","port":7001},"web":{"name":"web","port":7000}}` | Service ports |
+| service.ports.api.name | string | `"api"` | Neuron API port name |
+| service.ports.api.port | int | `7001` | Neuron API port |
+| service.ports.web.name | string | `"web"` | Neuron Dashboard port name |
+| service.ports.web.port | int | `7000` | Neuron Dashboard port |
 | service.type | string | `"ClusterIP"` |  |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.create | bool | `true` | Specifies whether a service account should be created |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and create is true, a name is generated using the fullname template |
 | tolerations | list | `[]` |  |
-

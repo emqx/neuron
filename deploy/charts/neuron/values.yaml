@@ -6,7 +6,7 @@
 image:
   repository: emqx/neuron
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
+  # -- Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
 imagePullSecrets: []
@@ -38,22 +38,21 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  enabled: false
+  enabled: true
   type: ClusterIP
 
   # -- Service ports
   ports:
-    # -- service.ports.web Neuron Dashboard port
-    web: 7000
-    # -- service.ports.api Neuron API port
-    api: 7001
-
-  # -- Service ports name
-  portNames:
-    # -- service.portNames.web Neuron Dashboard port name
-    web: "web"
-    # -- service.portNames.api Neuron API port name
-    api: "api"
+    web:
+      # -- Neuron Dashboard port name
+      name: "web"
+      # -- Neuron Dashboard port
+      port: 7000
+    api:
+      # -- Neuron API port name
+      name: "api"
+      # -- Neuron API port
+      port: 7001
 
   # -- Specify the nodePort(s) value for the LoadBalancer and NodePort service types.
   # ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport
@@ -186,7 +185,7 @@ containerPorts:
 
 # -- only for kubeedge deployment
 hostPorts:
-  enabled: true
+  enabled: false
   web: 30370
   api: 30371
 
