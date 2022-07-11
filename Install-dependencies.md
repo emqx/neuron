@@ -46,3 +46,12 @@ $ git clone -b release-1.11.0 https://github.com/google/googletest.git
 $ cd googletest && mkdir build && cd build
 $ cmake .. && make && sudo make install
 ```
+
+[sqlite](https://github.com/sqlite/sqlite)
+```shell
+$ curl -o sqlite3.tar.gz https://www.sqlite.org/2022/sqlite-autoconf-3390000.tar.gz
+$ mkdir sqlite3
+$ tar xzf sqlite3.tar.gz --strip-components=1 -C sqlite3
+$ cd sqlite3
+$ ./configure && make && sudo make install
+```
