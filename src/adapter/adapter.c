@@ -83,7 +83,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
     adapter->module           = info->module;
     adapter->persister        = neu_persister_create("persistence");
 
-    nng_pair1_open(&adapter->sock);
+    rv = nng_pair1_open(&adapter->sock);
+    assert(rv == 0);
     nng_socket_set_ms(adapter->sock, NNG_OPT_SENDTIMEO, 100);
     nng_socket_get_int(adapter->sock, NNG_OPT_RECVFD, &adapter->recv_fd);
 
