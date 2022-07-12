@@ -70,7 +70,7 @@ $ cmake .. && make
 ```
 
 ## Dashboard
-[Download Dashboard Package](https://github.com/emqx/neuron-dashboard-src/releases).
+[Download Dashboard Package](https://github.com/emqx/neuron-dashboard/releases).
 After downloading the dashboard package, put it in the **dist** directory of the neuron executable directory.
 
 ## Quick Start
