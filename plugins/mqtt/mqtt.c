@@ -18,6 +18,8 @@
  **/
 
 #include <assert.h>
+#include <nng/nng.h>
+#include <nng/supplemental/util/platform.h>
 
 #include "command/command.h"
 #include "mqtt.h"
@@ -53,6 +55,7 @@ struct mqtt_routine {
     neu_mqtt_option_t option;
     neu_mqtt_client_t client;
     UT_array *        topics;
+    nng_aio *         aio;
 };
 
 static neu_plugin_t *plugin_log = NULL;
@@ -212,6 +215,44 @@ static void mqtt_routine_state(void *context, int state)
     }
 }
 
+static void mqtt_routine_heartbeat(nng_aio *aio, void *arg, int code)
+{
+    mqtt_routine_t *routine = (mqtt_routine_t *) arg;
+
+    switch (code) {
+    case NNG_ETIMEDOUT: {
+        int                type     = TOPIC_TYPE_HEARTBEAT;
+        struct topic_pair *pair     = topics_find_type(routine->topics, type);
+        char *             json_str = "test";
+        const char *       topic    = pair->topic_response;
+        const int          qos      = pair->qos_response;
+        neu_err_code_e     error    = neu_mqtt_client_publish(
+            routine->client, topic, qos, (unsigned char *) json_str,
+            strlen(json_str));
+        if (NEU_ERR_SUCCESS != error) {
+            plog_error(plugin_log,
+                       "heartbeat publish error code :%d, topoic:%s", error,
+                       topic);
+            // free(json_str);
+        }
+
+        plog_info(plugin_log, "topic:%s, qos:%d, payload:%s", topic, qos,
+                  json_str);
+        // free(json_str);
+
+        nng_aio_set_timeout(aio, 1000);
+        nng_aio_defer(aio, mqtt_routine_heartbeat, routine);
+        break;
+    }
+    case NNG_ECANCELED: {
+        plog_info(plugin_log, "aio:%p, cancel", aio);
+        break;
+    }
+    default:
+        plog_warn(plugin_log, "aio:%p, skip error:%d", aio, code);
+    }
+}
+
 static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
                                           const char *  config)
 {
@@ -233,9 +274,9 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
 
     routine->option.state_update_func = mqtt_routine_state;
     routine->option.log               = plugin->common.log;
-    neu_mqtt_client_t *client         = (neu_mqtt_client_t *) &routine->client;
+    neu_mqtt_client_t *client_p       = (neu_mqtt_client_t *) &routine->client;
     neu_err_code_e     error          = NEU_ERR_SUCCESS;
-    error = neu_mqtt_client_open(client, &routine->option, plugin);
+    error = neu_mqtt_client_open(client_p, &routine->option, plugin);
     if (NEU_ERR_SUCCESS != error) {
         mqtt_option_uninit(&routine->option);
         free(routine);
@@ -254,12 +295,22 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
                     routine->option.upload_topic,
                     routine->option.heartbeat_topic);
     topics_subscribe(routine->topics, routine->client);
+
+    nng_aio_alloc(&routine->aio, NULL, routine);
+    nng_aio_wait(routine->aio);
+    nng_aio_set_timeout(routine->aio, 1000);
+    nng_aio_defer(routine->aio, mqtt_routine_heartbeat, routine);
+
     return routine;
 }
 
 static void mqtt_routine_stop(mqtt_routine_t *routine)
 {
     assert(NULL != routine);
+
+    // stop heartbeat sent
+    nng_aio_cancel(routine->aio);
+    nng_aio_free(routine->aio);
 
     // stop recevied
     neu_mqtt_client_suspend(routine->client);
