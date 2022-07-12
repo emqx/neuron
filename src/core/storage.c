@@ -37,26 +37,26 @@ void manager_strorage_plugin(neu_manager_t *manager)
 
 void manager_storage_add_node(neu_manager_t *manager, const char *node)
 {
-    int                        rv           = 0;
-    neu_persist_adapter_info_t adapter_info = {};
+    int                     rv        = 0;
+    neu_persist_node_info_t node_info = {};
 
-    rv = neu_manager_get_adapter_info(manager, node, &adapter_info);
+    rv = neu_manager_get_node_info(manager, node, &node_info);
     if (0 != rv) {
         nlog_error("unable to get adapter:%s info", node);
         return;
     }
 
-    rv = neu_persister_store_adapter(manager->persister, &adapter_info);
+    rv = neu_persister_store_node(manager->persister, &node_info);
     if (0 != rv) {
         nlog_error("failed to store adapter info");
     }
 
-    neu_persist_adapter_info_fini(&adapter_info);
+    neu_persist_node_info_fini(&node_info);
 }
 
 void manager_storage_del_node(neu_manager_t *manager, const char *node)
 {
-    neu_persister_delete_adapter(manager->persister, node);
+    neu_persister_delete_node(manager->persister, node);
 }
 
 void manager_storage_subscribe(neu_manager_t *manager, const char *app)
@@ -97,26 +97,26 @@ int manager_load_plugin(neu_manager_t *manager)
 
 int manager_load_node(neu_manager_t *manager)
 {
-    UT_array *adapter_infos = NULL;
-    int       rv            = 0;
+    UT_array *node_infos = NULL;
+    int       rv         = 0;
 
-    rv = neu_persister_load_adapters(manager->persister, &adapter_infos);
+    rv = neu_persister_load_nodes(manager->persister, &node_infos);
     if (0 != rv) {
         nlog_error("failed to load adapter infos");
         return -1;
     }
 
-    utarray_foreach(adapter_infos, neu_persist_adapter_info_t *, adapter_info)
+    utarray_foreach(node_infos, neu_persist_node_info_t *, node_info)
     {
-        rv = neu_manager_add_node(manager, adapter_info->name,
-                                  adapter_info->plugin_name);
+        rv                    = neu_manager_add_node(manager, node_info->name,
+                                  node_info->plugin_name);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
         nlog_info("load adapter %s type:%" PRId64 ", name:%s plugin:%s",
-                  ok_or_err, adapter_info->type, adapter_info->name,
-                  adapter_info->plugin_name);
+                  ok_or_err, node_info->type, node_info->name,
+                  node_info->plugin_name);
     }
 
-    neu_persist_adapter_infos_free(adapter_infos);
+    utarray_free(node_infos);
     return rv;
 }
 

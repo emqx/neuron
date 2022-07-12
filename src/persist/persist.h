@@ -25,40 +25,34 @@ extern "C" {
 #endif
 
 #include "adapter/adapter_info.h"
-#include "persist/json/persist_json_adapter.h"
 #include "persist/json/persist_json_datatags.h"
 #include "persist/json/persist_json_group_configs.h"
 #include "persist/json/persist_json_plugin.h"
 #include "persist/json/persist_json_subs.h"
 
-typedef neu_json_node_req_node_t     neu_persist_adapter_info_t;
 typedef neu_json_plugin_req_plugin_t neu_persist_plugin_info_t;
+
+typedef struct {
+    char *  name;
+    int64_t type;
+    char *  plugin_name;
+    int64_t state;
+} neu_persist_node_info_t;
+
 typedef neu_json_datatag_req_tag_t   neu_persist_datatag_info_t;
 typedef neu_json_group_configs_req_t neu_persist_group_config_info_t;
 typedef neu_json_subscriptions_req_subscription_t
     neu_persist_subscription_info_t;
 
-static inline void
-neu_persist_adapter_info_fini(neu_persist_adapter_info_t *adapter_info)
-{
-    free(adapter_info->name);
-    free(adapter_info->plugin_name);
-}
-
-static inline void neu_persist_adapter_infos_free(UT_array *adapter_infos)
-{
-    utarray_foreach(adapter_infos, neu_persist_adapter_info_t *, p)
-    {
-        free(p->name);
-        free(p->plugin_name);
-    }
-
-    utarray_free(adapter_infos);
-}
-
 static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
     utarray_free(plugin_infos);
+}
+
+static inline void neu_persist_node_info_fini(neu_persist_node_info_t *info)
+{
+    free(info->name);
+    free(info->plugin_name);
 }
 
 static inline void
@@ -95,7 +89,6 @@ neu_persist_subscription_infos_free(UT_array *subscription_infos)
 typedef struct neu_persister neu_persister_t;
 
 const char *neu_persister_get_persist_dir(neu_persister_t *persister);
-const char *neu_persister_get_adapters_fname(neu_persister_t *persister);
 const char *neu_persister_get_plugins_fname(neu_persister_t *persister);
 
 /**
@@ -110,41 +103,39 @@ neu_persister_t *neu_persister_create(const char *dir_name);
 void neu_persister_destroy(neu_persister_t *persiter);
 
 /**
- * Persist adapters.
+ * Persist nodes.
  * @param persister                 persiter object.
- * @param adapter_infos             neu_persist_adapter_info_t.
+ * @param node_info                 neu_persist_node_info_t.
  * @return 0 on success, non-zero on failure
  */
-int neu_persister_store_adapter(neu_persister_t *           persister,
-                                neu_persist_adapter_info_t *info);
+int neu_persister_store_node(neu_persister_t *        persister,
+                             neu_persist_node_info_t *info);
 /**
- * Load adapter infos.
+ * Load node infos.
  * @param persister                 persiter object.
- * @param[out] adapter_infos        used to return pointer to heap allocated
- * vector of neu_persist_adapter_info_t.
+ * @param[out] node_infos           used to return pointer to heap allocated
+ *                                  vector of neu_persist_node_info_t.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_load_adapters(neu_persister_t *persister,
-                                UT_array **      adapter_infos);
+int neu_persister_load_nodes(neu_persister_t *persister, UT_array **node_infos);
 /**
- * Delete adapter.
+ * Delete node.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter to delete.
+ * @param node_name                 name of the node to delete.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_delete_adapter(neu_persister_t *persister,
-                                 const char *     adapter_name);
+int neu_persister_delete_node(neu_persister_t *persister,
+                              const char *     node_name);
 
 /**
- * Update adapter.
+ * Update node.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter to update.
+ * @param node_name                 name of the node to update.
  * @param new_name                  new name of the adapter.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_update_adapter(neu_persister_t *persister,
-                                 const char *     adapter_name,
-                                 const char *     new_name);
+int neu_persister_update_node(neu_persister_t *persister, const char *node_name,
+                              const char *new_name);
 
 /**
  * Persist plugins.

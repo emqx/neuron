@@ -137,8 +137,8 @@ UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app)
     return neu_subscribe_manager_get(manager->subscribe_manager, app);
 }
 
-int neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
-                                 neu_persist_adapter_info_t *info)
+int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
+                              neu_persist_node_info_t *info)
 {
     neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, name);
 

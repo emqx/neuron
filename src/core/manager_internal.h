@@ -57,8 +57,8 @@ int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                                   const char *driver, const char *group);
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
 
-int neu_manager_get_adapter_info(neu_manager_t *manager, const char *name,
-                                 neu_persist_adapter_info_t *info);
+int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
+                              neu_persist_node_info_t *info);
 
 void neu_manager_notify_app_sub(neu_manager_t *manager, const char *app,
                                 const char *driver, const char *group);

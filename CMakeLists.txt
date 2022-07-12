@@ -121,7 +121,7 @@ set(CMAKE_BUILD_RPATH ./)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE include/neuron src plugins)
-target_link_libraries(neuron dl neuron-base)
+target_link_libraries(neuron dl neuron-base sqlite3)
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
