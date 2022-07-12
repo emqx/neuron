@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "heartbeat.h"
 #include "read_write.h"
 #include "utils/log.h"
 
@@ -128,4 +129,9 @@ char *command_write_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                              neu_resp_error_t *data)
 {
     return command_rw_write_response(plugin, head, data);
+}
+
+char *command_heartbeat_response(neu_plugin_t *plugin)
+{
+    return command_heartbeat_generate(plugin);
 }

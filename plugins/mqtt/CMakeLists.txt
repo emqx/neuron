@@ -10,6 +10,7 @@ set(src
 	mqtt.c 
 	util.c
 	command/read_write.c
+	command/heartbeat.c
 	command/command.c)
 
 add_library(${PROJECT_NAME} SHARED ${src})
