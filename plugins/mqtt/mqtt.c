@@ -32,6 +32,7 @@
 #define TOPIC_READ_RES "neuron/%s/read/resp"
 #define TOPIC_WRITE_RES "neuron/%s/write/resp"
 #define TOPIC_UPLOAD_RES "neuron/%s/upload"
+#define TOPIC_HEARTBEAT_RES "neuron/%s/heartbeat"
 
 #define QOS0 0
 #define QOS1 1
@@ -103,7 +104,8 @@ static void topics_cleanup(UT_array *topics)
     }
 }
 
-static void topics_generate(UT_array *topics, char *name, char *upload_topic)
+static void topics_generate(UT_array *topics, char *name, char *upload_topic,
+                            char *heartbeat_topic)
 {
     char *read_req = topics_format(TOPIC_READ_REQ, name);
     char *read_res = topics_format(TOPIC_READ_RES, name);
@@ -123,6 +125,18 @@ static void topics_generate(UT_array *topics, char *name, char *upload_topic)
     }
 
     topics_add(topics, upload_req, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
+
+    // HEARTBEAT TOPIC SETTING
+    char *heartbeat_req = NULL;
+    char *heartbeat_res = NULL;
+    if (NULL != heartbeat_topic && 0 < strlen(heartbeat_topic)) {
+        heartbeat_res = strdup(heartbeat_topic);
+    } else {
+        heartbeat_res = topics_format(TOPIC_HEARTBEAT_RES, name);
+    }
+
+    topics_add(topics, heartbeat_req, QOS0, heartbeat_res, QOS0,
+               TOPIC_TYPE_HEARTBEAT);
 }
 
 static struct topic_pair *topics_find_topic(UT_array *topics, const char *topic)
@@ -237,7 +251,8 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     UT_icd ptr_icd  = { sizeof(struct topic_pair *), NULL, NULL, NULL };
     utarray_new(routine->topics, &ptr_icd);
     topics_generate(routine->topics, routine->option.clientid,
-                    routine->option.upload_topic);
+                    routine->option.upload_topic,
+                    routine->option.heartbeat_topic);
     topics_subscribe(routine->topics, routine->client);
     return routine;
 }

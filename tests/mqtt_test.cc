@@ -13,7 +13,8 @@ TEST(MQTTTest, mqtt_option_init_by_config)
     memset(&option, 0, sizeof(neu_mqtt_option_t));
     char *config =
         (char *) "{\"node_id\":5,\"params\":{\"client-id\":"
-                 "\"upload123\", \"upload-topic\":\"\", \"format\": "
+                 "\"upload123\", \"upload-topic\":\"\", "
+                 "\"heartbeat-topic\":\"\", \"format\": "
                  "0,\"ssl\":false,\"host\":\"192.168.10."
                  "116\",\"port\":1883,\"username\":\"\",\"password\":"
                  "\"\",\"ca\":\"\", \"cert\":\"\", \"key\":\"\", "

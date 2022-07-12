@@ -19,6 +19,16 @@
 			"length": 255
 		}
 	},
+	"heartbeat-topic": {
+		"name": "heartbeat topic",
+		"description": "User-defined heartbeat topic",
+		"type": "string",
+		"attribute": "optional",
+		"default": "",
+		"valid": {
+			"length": 255
+		}
+	},
 	"format": {
 		"name": "upload format",
 		"description": "Upload format on mqtt",

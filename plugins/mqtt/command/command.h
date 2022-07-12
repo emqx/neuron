@@ -32,6 +32,7 @@ enum topic_type {
     TOPIC_TYPE_READ,
     TOPIC_TYPE_WRITE,
     TOPIC_TYPE_UPLOAD,
+    TOPIC_TYPE_HEARTBEAT,
 };
 
 typedef struct {

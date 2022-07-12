@@ -40,6 +40,11 @@ void mqtt_option_uninit(neu_mqtt_option_t *option)
         option->upload_topic = NULL;
     }
 
+    if (NULL != option->heartbeat_topic) {
+        free(option->heartbeat_topic);
+        option->heartbeat_topic = NULL;
+    }
+
     if (NULL != option->connection) {
         free(option->connection);
         option->connection = NULL;
@@ -92,20 +97,22 @@ int mqtt_option_init(char *config, neu_mqtt_option_t *option)
         return -1;
     }
 
-    int             ret      = 0;
-    char *          error    = NULL;
-    neu_json_elem_t id       = { .name = "client-id", .t = NEU_JSON_STR };
-    neu_json_elem_t upload   = { .name = "upload-topic", .t = NEU_JSON_STR };
-    neu_json_elem_t format   = { .name = "format", .t = NEU_JSON_INT };
-    neu_json_elem_t ssl      = { .name = "ssl", .t = NEU_JSON_BOOL };
-    neu_json_elem_t host     = { .name = "host", .t = NEU_JSON_STR };
-    neu_json_elem_t port     = { .name = "port", .t = NEU_JSON_INT };
-    neu_json_elem_t username = { .name = "username", .t = NEU_JSON_STR };
-    neu_json_elem_t password = { .name = "password", .t = NEU_JSON_STR };
-    neu_json_elem_t ca       = { .name = "ca", .t = NEU_JSON_STR };
-    neu_json_elem_t cert     = { .name = "cert", .t = NEU_JSON_STR };
-    neu_json_elem_t key      = { .name = "key", .t = NEU_JSON_STR };
-    neu_json_elem_t keypass  = { .name = "keypass", .t = NEU_JSON_STR };
+    int             ret       = 0;
+    char *          error     = NULL;
+    neu_json_elem_t id        = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t upload    = { .name = "upload-topic", .t = NEU_JSON_STR };
+    neu_json_elem_t heartbeat = { .name = "heartbeat-topic",
+                                  .t    = NEU_JSON_STR };
+    neu_json_elem_t format    = { .name = "format", .t = NEU_JSON_INT };
+    neu_json_elem_t ssl       = { .name = "ssl", .t = NEU_JSON_BOOL };
+    neu_json_elem_t host      = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t port      = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t username  = { .name = "username", .t = NEU_JSON_STR };
+    neu_json_elem_t password  = { .name = "password", .t = NEU_JSON_STR };
+    neu_json_elem_t ca        = { .name = "ca", .t = NEU_JSON_STR };
+    neu_json_elem_t cert      = { .name = "cert", .t = NEU_JSON_STR };
+    neu_json_elem_t key       = { .name = "key", .t = NEU_JSON_STR };
+    neu_json_elem_t keypass   = { .name = "keypass", .t = NEU_JSON_STR };
 
     ret = neu_parse_param(config, &error, 12, &id, &upload, &format, &ssl,
                           &host, &port, &username, &password, &ca, &cert, &key,
@@ -135,6 +142,7 @@ int mqtt_option_init(char *config, neu_mqtt_option_t *option)
     snprintf(option->port, 10, "%d", p);
     option->clientid           = id.v.val_str;
     option->upload_topic       = upload.v.val_str;
+    option->heartbeat_topic    = heartbeat.v.val_str;
     option->format             = format.v.val_int;
     option->username           = username.v.val_str;
     option->password           = password.v.val_str;
