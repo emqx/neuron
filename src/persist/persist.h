@@ -241,33 +241,33 @@ int neu_persister_delete_group_config(neu_persister_t *persister,
                                       const char *     group_config_name);
 
 /**
- * Persist adapter setting.
+ * Persist node setting.
  * @param persister                 persiter object.
  * @param adapter_name              name of the adapter who owns the setting.
- * @param setting                   adapter setting string.
+ * @param setting                   node setting string.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_adapter_setting(neu_persister_t *persister,
-                                        const char *     adapter_name,
-                                        const char *     setting);
+int neu_persister_store_node_setting(neu_persister_t *persister,
+                                     const char *     node_name,
+                                     const char *     setting);
 /**
- * Load adapter setting.
+ * Load node setting.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter.
- * @param[out] setting              used to return adapter setting string.
+ * @param node_name                 name of the node.
+ * @param[out] setting              used to return node setting string.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_load_adapter_setting(neu_persister_t *  persister,
-                                       const char *       adapter_name,
-                                       const char **const setting);
+int neu_persister_load_node_setting(neu_persister_t *  persister,
+                                    const char *       node_name,
+                                    const char **const setting);
 /**
- * Delete adapter setting.
+ * Delete node setting.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter.
+ * @param node_name                 name of the node.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_delete_adapter_setting(neu_persister_t *persister,
-                                         const char *     adapter_name);
+int neu_persister_delete_node_setting(neu_persister_t *persister,
+                                      const char *     node_name);
 
 #ifdef __cplusplus
 }

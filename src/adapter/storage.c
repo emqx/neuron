@@ -26,7 +26,7 @@
 void adapter_storage_setting(neu_persister_t *persister, const char *node,
                              const char *setting)
 {
-    neu_persister_store_adapter_setting(persister, node, setting);
+    neu_persister_store_node_setting(persister, node, setting);
 }
 
 void adapter_storage_add_group(neu_persister_t *persister, const char *node,
@@ -70,8 +70,8 @@ void adapter_storage_tag(neu_persister_t *persister, neu_adapter_t *adapter,
 int adapter_load_setting(neu_persister_t *persister, const char *node,
                          char **setting)
 {
-    int rv = neu_persister_load_adapter_setting(persister, node,
-                                                (const char **) setting);
+    int rv = neu_persister_load_node_setting(persister, node,
+                                             (const char **) setting);
     if (0 != rv) {
         nlog_info("load %s setting fail", node);
         return -1;

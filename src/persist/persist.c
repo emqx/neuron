@@ -1077,60 +1077,61 @@ int neu_persister_delete_group_config(neu_persister_t *persister,
     return rv;
 }
 
-int neu_persister_store_adapter_setting(neu_persister_t *persister,
-                                        const char *     adapter_name,
-                                        const char *     setting)
+int neu_persister_store_node_setting(neu_persister_t *persister,
+                                     const char *node_name, const char *setting)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    return neu_persister_sql_exec(
+        persister,
+        "INSERT OR REPLACE INTO settings (node_name, setting) VALUES (%Q, %Q)",
+        node_name, setting);
+}
 
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
+int neu_persister_load_node_setting(neu_persister_t *  persister,
+                                    const char *       node_name,
+                                    const char **const setting)
+{
+    int           rv    = 0;
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT setting FROM settings WHERE node_name=?";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` with `%s` fail: %s", query, node_name,
+                   sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
     }
-    if (0 != create_dir(path)) {
-        nlog_error("persister failed to create dir: %s", path);
-        return -1;
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, node_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, node_name,
+                   sqlite3_errmsg(persister->db));
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
     }
 
-    n = path_cat(path, n, sizeof(path), "settings.json");
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
+    if (SQLITE_ROW != sqlite3_step(stmt)) {
+        nlog_warn("SQL `%s` with `%s` fail: %s", query, node_name,
+                  sqlite3_errmsg(persister->db));
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
     }
 
-    int rv = write_file_string(path, setting);
+    char *s = strdup((char *) sqlite3_column_text(stmt, 0));
+    if (NULL == s) {
+        nlog_error("strdup fail");
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
 
+    *setting = s;
+
+end:
+    sqlite3_finalize(stmt);
     return rv;
 }
 
-int neu_persister_load_adapter_setting(neu_persister_t *  persister,
-                                       const char *       adapter_name,
-                                       const char **const setting)
+int neu_persister_delete_node_setting(neu_persister_t *persister,
+                                      const char *     node_name)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    n = path_cat(path, n, sizeof(path), "settings.json");
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    int rv = read_file_string(path, (char **) setting);
-
-    return rv;
-}
-
-int neu_persister_delete_adapter_setting(neu_persister_t *persister,
-                                         const char *     adapter_name)
-{
-    (void) persister;
-    (void) adapter_name;
-    return 0;
+    return neu_persister_sql_exec(
+        persister, "DELETE FROM settings WHERE node_name=%Q", node_name);
 }
