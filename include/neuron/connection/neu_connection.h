@@ -148,4 +148,11 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
 void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
                                         neu_conn_stream_consume_fn fn);
 
+typedef neu_buf_result_t (*neu_conn_process_msg)(
+    void *context, neu_protocol_unpack_buf_t *protocol_buf);
+int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
+                      neu_conn_process_msg fn);
+int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
+                                 uint16_t n_byte, neu_conn_process_msg fn);
+
 #endif

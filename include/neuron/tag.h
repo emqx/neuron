@@ -27,21 +27,13 @@ config_ **/
 
 #include "type.h"
 
+#define NEU_TAG_META_SIZE 20
+
 typedef enum {
     NEU_ATTRIBUTE_READ      = 1,
     NEU_ATTRIBUTE_WRITE     = 2,
     NEU_ATTRIBUTE_SUBSCRIBE = 4,
 } neu_attribute_e;
-
-typedef struct {
-    char *          name;
-    char *          address;
-    char *          description;
-    neu_attribute_e attribute;
-    neu_type_e      type;
-} neu_datatag_t;
-
-UT_icd *neu_tag_get_icd();
 
 typedef enum {
     NEU_DATATAG_ENDIAN_L16  = 0, // #L
@@ -72,9 +64,28 @@ typedef union {
     } string;
 
     struct {
+        bool    op;
         uint8_t bit;
     } bit;
 } neu_datatag_addr_option_u;
+
+typedef struct {
+    char *                    name;
+    char *                    address;
+    char *                    description;
+    neu_attribute_e           attribute;
+    neu_type_e                type;
+    neu_datatag_addr_option_u option;
+    uint8_t                   meta[NEU_TAG_META_SIZE];
+} neu_datatag_t;
+
+inline static bool neu_tag_attribute_test(neu_datatag_t * tag,
+                                          neu_attribute_e attribute)
+{
+    return (tag->attribute & attribute) == attribute;
+}
+
+UT_icd *neu_tag_get_icd();
 
 int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
                                   neu_datatag_addr_option_u *option);

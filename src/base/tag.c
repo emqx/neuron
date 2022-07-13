@@ -29,8 +29,10 @@ static void tag_array_copy(void *_dst, const void *_src)
     neu_datatag_t *dst = (neu_datatag_t *) _dst;
     neu_datatag_t *src = (neu_datatag_t *) _src;
 
-    dst->type        = src->type;
-    dst->attribute   = src->attribute;
+    dst->type      = src->type;
+    dst->attribute = src->attribute;
+    dst->option    = src->option;
+    memcpy(dst->meta, src->meta, sizeof(src->meta));
     dst->address     = strdup(src->address);
     dst->name        = strdup(src->name);
     dst->description = strdup(src->description);
@@ -164,6 +166,9 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         if (op != NULL) {
             sscanf(op, ".%hhd", &option->bit.bit);
+            option->bit.op = true;
+        } else {
+            option->bit.op = false;
         }
 
         break;

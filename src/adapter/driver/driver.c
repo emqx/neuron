@@ -234,7 +234,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
             int index = utarray_eltidx(tags, tag);
             strcpy(resp.tags[index].tag, tag->name);
             resp.tags[index].value.type      = NEU_TYPE_ERROR;
-            resp.tags[index].value.value.i32 = NEU_ERR_NODE_NOT_RUNNING;
+            resp.tags[index].value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
         }
 
     } else {
@@ -257,8 +257,8 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req)
 {
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
-                                                      NEU_ERR_NODE_NOT_RUNNING);
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return;
     }
 
@@ -284,6 +284,10 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             driver->adapter.cb_funs.driver.write_response(
                 &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
+            free(tag->address);
+            free(tag->name);
+            free(tag->description);
+            free(tag);
             return;
         }
         switch (tag->type) {
@@ -678,7 +682,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
 
         if ((timestamp - value.timestamp) > timeout) {
             datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_EXPIRED;
+            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
             datas[index].value.type  = tag->type;
             datas[index].value.value = value.value;
