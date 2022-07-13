@@ -17,28 +17,29 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 --- Add plugins table ---
-CREATE TABLE
+CREATE TABLE IF NOT EXISTS
   plugins (library TEXT PRIMARY KEY check(length(library) <= 32));
 
 --- Add adapters table ---
-CREATE TABLE
+CREATE TABLE IF NOT EXISTS
   nodes (
     name TEXT PRIMARY KEY check(length(name) <= 32),
-    type integer(1) NOT NULL check(TYPE IN (1, 2)),
+    type integer(1) NOT NULL check(type IN (1, 2)),
     state integer(1) NOT NULL check(state BETWEEN 0 AND 4),
     plugin_name TEXT NOT NULL check(length(plugin_name) <= 32)
   );
 
 --- Add settings table ---
-CREATE TABLE
+CREATE TABLE IF NOT EXISTS
   settings (
     node_name TEXT NOT NULL,
     setting TEXT NOT NULL,
+    UNIQUE (node_name),
     FOREIGN KEY (node_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE
   );
 
 --- Add groups table ---
-CREATE TABLE
+CREATE TABLE IF NOT EXISTS
   groups (
     driver_name TEXT NOT NULL,
     name NOT NULL check(length(name) <= 32),
@@ -48,7 +49,7 @@ CREATE TABLE
   );
 
 --- Add tags table ---
-CREATE TABLE
+CREATE TABLE IF NOT EXISTS
   tags (
     driver_name TEXT NOT NULL,
     group_name TEXT NOT NULL,
@@ -58,12 +59,11 @@ CREATE TABLE
     type INTEGER NOT NULL check(type BETWEEN 0 AND 15),
     description NOT NULL check(length(description) <= 128),
     UNIQUE (driver_name, group_name, name),
-    FOREIGN KEY (driver_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (group_name) REFERENCES groups (name) ON UPDATE CASCADE ON DELETE CASCADE
+    FOREIGN KEY (driver_name, group_name) REFERENCES groups (driver_name, name) ON UPDATE CASCADE ON DELETE CASCADE
   );
 
 --- Add subscriptions table ---
-CREATE TABLE
+CREATE TABLE IF NOT EXISTS
   subscriptions (
     app_name TEXT NOT NULL,
     driver_name TEXT NOT NULL,
@@ -71,6 +71,5 @@ CREATE TABLE
     CHECK (app_name != driver_name),
     UNIQUE (app_name, driver_name, group_name),
     FOREIGN KEY (app_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (driver_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE,
-    FOREIGN KEY (group_name) REFERENCES groups (name) ON UPDATE CASCADE ON DELETE CASCADE
+    FOREIGN KEY (driver_name, group_name) REFERENCES groups (driver_name, name) ON UPDATE CASCADE ON DELETE CASCADE
   );
