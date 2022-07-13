@@ -26,7 +26,6 @@ extern "C" {
 
 #include "adapter/adapter_info.h"
 #include "persist/json/persist_json_datatags.h"
-#include "persist/json/persist_json_group_configs.h"
 #include "persist/json/persist_json_plugin.h"
 #include "persist/json/persist_json_subs.h"
 
@@ -40,7 +39,12 @@ typedef struct {
 } neu_persist_node_info_t;
 
 typedef neu_json_datatag_req_tag_t   neu_persist_datatag_info_t;
-typedef neu_json_group_configs_req_t neu_persist_group_config_info_t;
+
+typedef struct {
+    uint32_t interval;
+    char *   name;
+} neu_persist_group_info_t;
+
 typedef neu_json_subscriptions_req_subscription_t
     neu_persist_subscription_info_t;
 
@@ -55,16 +59,9 @@ static inline void neu_persist_node_info_fini(neu_persist_node_info_t *info)
     free(info->plugin_name);
 }
 
-static inline void
-neu_persist_group_config_infos_free(UT_array *group_config_infos)
+static inline void neu_persist_group_info_fini(neu_persist_group_info_t *info)
 {
-    utarray_foreach(group_config_infos, neu_persist_group_config_info_t *, p)
-    {
-        free(p->group_config_name);
-        free(p->adapter_name);
-    }
-
-    utarray_free(group_config_infos);
+    free(info->name);
 }
 
 static inline void neu_persist_datatag_infos_free(UT_array *datatag_infos)
@@ -208,37 +205,32 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
 /**
  * Persist group config.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter who owns the group
- * config.
- * @param group_config_info         group config info to persist.
+ * @param driver_name               name of the driver who owns the group
+ * @param group_info                group info to persist.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_group_config(
-    neu_persister_t *persister, const char *adapter_name,
-    neu_persist_group_config_info_t *group_config_info);
+int neu_persister_store_group(neu_persister_t *         persister,
+                              const char *              driver_name,
+                              neu_persist_group_info_t *group_info);
 /**
  * Load all group config infos under an adapter.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter who owns the group
- * configs.
- * @param[out] group_config_infos   used to return pointer to heap allocated
- * vector of neu_persist_group_config_info_t.
+ * @param driver_name               name of the driver who owns the group
+ * @param[out] group_infos          used to return pointer to heap allocated
+ *                                  vector of neu_persist_group_info_t.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_load_group_configs(neu_persister_t *persister,
-                                     const char *     adapter_name,
-                                     UT_array **      group_config_infos);
+int neu_persister_load_groups(neu_persister_t *persister,
+                              const char *driver_name, UT_array **group_infos);
 /**
  * Delete group config.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter who owns the group
- * config.
- * @param group_config_name         name of the group config.
+ * @param driver_name               name of the driver who owns the group
+ * @param group_name                name of the group.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_delete_group_config(neu_persister_t *persister,
-                                      const char *     adapter_name,
-                                      const char *     group_config_name);
+int neu_persister_delete_group(neu_persister_t *persister,
+                               const char *driver_name, const char *group_name);
 
 /**
  * Persist node setting.

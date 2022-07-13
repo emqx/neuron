@@ -231,108 +231,6 @@ static int create_dir_recursive(const char *path)
 }
 
 /**
- * Type of callback invoked in file tree walking.
- */
-typedef int (*file_tree_walk_cb_t)(const char *fpath, bool is_dir, void *arg);
-
-// depth first file tree walking implementation.
-// `path_buf` is buffer for accumulating file path,
-// `len` is the length of the directory path of the current invocation,
-// `size` is the path buffer size.
-static int file_tree_walk_(char *path_buf, size_t len, size_t size,
-                           file_tree_walk_cb_t cb, void *ctx)
-{
-    int            rv = 0;
-    DIR *          dirp;
-    struct dirent *dent;
-
-    // if not possible to read the directory for this user
-    if ((dirp = opendir(path_buf)) == NULL) {
-        rv = -1;
-        return rv;
-    }
-
-    while (NULL != (dent = readdir(dirp))) {
-        if (DT_DIR == dent->d_type) {
-            // skip entries "." and ".."
-            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
-                continue;
-            }
-        } else if (DT_REG != dent->d_type) {
-            continue;
-        }
-
-        // determinate a full path of an entry
-        size_t n = path_cat(path_buf, len, size, dent->d_name);
-        if (size == n) {
-            rv = -1;
-            break;
-        }
-
-        if (DT_DIR == dent->d_type) {
-            rv = file_tree_walk_(path_buf, n, size, cb, ctx);
-        } else {
-            rv = cb(path_buf, false, ctx);
-        }
-
-        path_buf[len] = '\0'; // restore current directory path
-
-        if (0 != rv) {
-            break;
-        }
-    }
-
-    if (0 == rv) {
-        rv = cb(path_buf, true, ctx);
-    }
-
-    closedir(dirp);
-    return rv;
-}
-
-/**
- * Depth first traversal of file tree.
- *
- * @param dir       path of directory
- * @param cb        callback to invoke for each directory entry
- * @param ctx       argument to callback
- *
- * @return  If `cb` returns nonzero, then the tree walk is terminated and the
- *          value returned by `cb` is returned as the result
- */
-static int file_tree_walk(const char *dir, file_tree_walk_cb_t cb, void *ctx)
-{
-    char buf[PATH_MAX_SIZE] = { 0 };
-    int  n                  = path_cat(buf, 0, sizeof(buf), dir);
-    if (sizeof(buf) == n) {
-        return -1;
-    }
-    return file_tree_walk_(buf, n, sizeof(buf), cb, ctx);
-}
-
-// file tree walking callback for `rmdir_recursive`
-static int remove_cb(const char *fpath, bool is_dir, void *arg)
-{
-    (void) arg;
-
-    if (!is_dir && !ends_with(fpath, ".json")) {
-        // we are being defensive here, ignoring non-json files
-        return 0;
-    }
-    nlog_info("remove %s", fpath);
-    return remove(fpath);
-}
-
-/**
- * Remove directory recursively.
- * @param dir         path of directory to remove
- */
-static int rmdir_recursive(const char *dir)
-{
-    return file_tree_walk(dir, remove_cb, NULL);
-}
-
-/**
  * Ensure that a file with the given name exists.
  *
  * @param name              file name
@@ -441,40 +339,6 @@ error_fstat:
     close(fd);
 error_open:
     nlog_warn("persister fail to read %s, reason: %s", fn, strerror(errno));
-    return rv;
-}
-
-// file tree walking callback for collecting adapter group config infos
-static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
-{
-    UT_array *group_config_infos = arg;
-    int       rv                 = 0;
-
-    if (is_dir) {
-        return 0;
-    }
-
-    if (!ends_with(fpath, "config.json")) {
-        return 0;
-    }
-
-    char *json_str = NULL;
-    rv             = read_file_string(fpath, &json_str);
-    if (0 != rv) {
-        return rv;
-    }
-
-    neu_json_group_configs_req_t *group_config_req = NULL;
-    rv = neu_json_decode_group_configs_req(json_str, &group_config_req);
-    free(json_str);
-    if (0 != rv) {
-        return 0; // ignore bad group config data
-    }
-
-    nlog_info("read %s", fpath);
-    utarray_push_back(group_config_infos, group_config_req);
-    free(group_config_req);
-
     return rv;
 }
 
@@ -999,82 +863,80 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
     return 0;
 }
 
-int neu_persister_store_group_config(
-    neu_persister_t *persister, const char *adapter_name,
-    neu_persist_group_config_info_t *group_config_info)
+int neu_persister_store_group(neu_persister_t *         persister,
+                              const char *              driver_name,
+                              neu_persist_group_info_t *group_info)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n =
-        persister_group_config_dir(path, sizeof(path), persister, adapter_name,
-                                   group_config_info->group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    int rv = create_dir_recursive(path);
-    if (0 != rv) {
-        nlog_error("persister failed to create dir: %s", path);
-        return rv;
-    }
-
-    n = path_cat(path, n, sizeof(path), "config.json");
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    char *result = NULL;
-    rv           = neu_json_encode_by_fn(group_config_info,
-                               neu_json_encode_group_configs_resp, &result);
-    if (rv == 0) {
-        rv = write_file_string(path, result);
-    }
-
-    free(result);
-    return rv;
+    return neu_persister_sql_exec(
+        persister,
+        "INSERT INTO groups (driver_name, name, interval) VALUES (%Q, %Q, %i)",
+        driver_name, group_info->name, group_info->interval);
 }
 
-int neu_persister_load_group_configs(neu_persister_t *persister,
-                                     const char *     adapter_name,
-                                     UT_array **      group_config_infos)
+static UT_icd group_info_icd = {
+    sizeof(neu_persist_group_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_group_info_fini,
+};
+
+int neu_persister_load_groups(neu_persister_t *persister,
+                              const char *driver_name, UT_array **group_infos)
 {
-    char   path[PATH_MAX_SIZE] = { 0 };
-    UT_icd icd = { sizeof(neu_persist_group_config_info_t), NULL, NULL, NULL };
+    sqlite3_stmt *stmt = NULL;
+    const char *query = "SELECT name, interval FROM groups WHERE driver_name=?";
 
-    int n = persister_group_configs_dir(path, sizeof(path), persister,
-                                        adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
+    utarray_new(*group_infos, &group_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    utarray_new(*group_config_infos, &icd);
-
-    int rv = file_tree_walk(path, read_group_config_cb, *group_config_infos);
-    if (0 != rv) {
-        neu_persist_group_config_infos_free(*group_config_infos);
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, driver_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    return rv;
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_group_info_t info = {};
+        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == name) {
+            break;
+        }
+
+        info.name     = name;
+        info.interval = sqlite3_column_int(stmt, 1);
+        utarray_push_back(*group_infos, &info);
+
+        step = sqlite3_step(stmt);
+    }
+
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*group_infos);
+    *group_infos = NULL;
+    return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_delete_group_config(neu_persister_t *persister,
-                                      const char *     adapter_name,
-                                      const char *     group_config_name)
+int neu_persister_delete_group(neu_persister_t *persister,
+                               const char *driver_name, const char *group_name)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_group_config_dir(path, sizeof(path), persister,
-                                       adapter_name, group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    int rv = rmdir_recursive(path);
-    return rv;
+    // rely on foreign key constraints to delete tags and subscriptions
+    return neu_persister_sql_exec(
+        persister, "DELETE FROM groups WHERE driver_name=%Q AND name=%Q",
+        driver_name, group_name);
 }
 
 int neu_persister_store_node_setting(neu_persister_t *persister,
