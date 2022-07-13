@@ -119,6 +119,8 @@ int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
     el->tag->description = strdup(tag->description);
     el->tag->type        = tag->type;
     el->tag->attribute   = tag->attribute;
+    el->tag->option      = tag->option;
+    memcpy(el->tag->meta, tag->meta, sizeof(tag->meta));
 
     HASH_ADD_STR(group->tags, name, el);
     update_timestamp(group);
@@ -149,6 +151,8 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
         el->tag->description = strdup(tag->description);
         el->tag->type        = tag->type;
         el->tag->attribute   = tag->attribute;
+        el->tag->option      = tag->option;
+        memcpy(el->tag->meta, tag->meta, sizeof(tag->meta));
 
         HASH_ADD_STR(group->tags, name, el);
         update_timestamp(group);

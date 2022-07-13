@@ -284,6 +284,10 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             driver->adapter.cb_funs.driver.write_response(
                 &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
+            free(tag->address);
+            free(tag->name);
+            free(tag->description);
+            free(tag);
             return;
         }
         switch (tag->type) {
