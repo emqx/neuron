@@ -825,3 +825,54 @@ void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
         }
     }
 }
+
+int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
+                      neu_conn_process_msg fn)
+{
+    uint8_t                   recv_buf[2048] = { 0 };
+    uint16_t                  offset         = 0;
+    ssize_t                   ret    = neu_conn_recv(conn, recv_buf, n_byte);
+    neu_buf_result_t          result = { 0 };
+    neu_protocol_unpack_buf_t pbuf   = { 0 };
+
+    while (ret > 0) {
+        zlog_recv_protocol(conn->param.log, recv_buf + offset, ret);
+        offset += ret;
+        neu_protocol_unpack_buf_init(&pbuf, recv_buf, offset);
+        result = fn(context, &pbuf);
+        if (result.need > 0) {
+            assert(result.need <= sizeof(recv_buf) - offset);
+            ret = neu_conn_recv(conn, recv_buf + offset, result.need);
+        } else {
+            return result.used;
+        }
+    }
+
+    return ret;
+}
+
+int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
+                                 uint16_t n_byte, neu_conn_process_msg fn)
+{
+    uint8_t          recv_buf[2048] = { 0 };
+    uint16_t         offset         = 0;
+    ssize_t          ret = neu_conn_tcp_server_recv(conn, fd, recv_buf, n_byte);
+    neu_buf_result_t result        = { 0 };
+    neu_protocol_unpack_buf_t pbuf = { 0 };
+
+    while (ret > 0) {
+        zlog_recv_protocol(conn->param.log, recv_buf + offset, ret);
+        offset += ret;
+        neu_protocol_unpack_buf_init(&pbuf, recv_buf, offset);
+        result = fn(context, &pbuf);
+        if (result.need > 0) {
+            assert(result.need <= sizeof(recv_buf) - offset);
+            ret = neu_conn_tcp_server_recv(conn, fd, recv_buf + offset,
+                                           result.need);
+        } else {
+            return result.used;
+        }
+    }
+
+    return ret;
+}

@@ -164,6 +164,9 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         if (op != NULL) {
             sscanf(op, ".%hhd", &option->bit.bit);
+            option->bit.op = true;
+        } else {
+            option->bit.op = false;
         }
 
         break;

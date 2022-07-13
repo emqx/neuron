@@ -25,6 +25,11 @@ config_ **/
 #include <stdlib.h>
 
 typedef struct {
+    int      used;
+    uint16_t need;
+} neu_buf_result_t;
+
+typedef struct {
     uint8_t *base;
     uint16_t size;
     uint16_t offset;
