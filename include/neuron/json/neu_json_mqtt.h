@@ -35,10 +35,29 @@ typedef struct {
     char *uuid;
 } neu_json_mqtt_t;
 
+typedef struct {
+    char *node;
+    int   link;
+    int   running;
+} neu_json_node_state_t;
+
+typedef struct {
+    char *   version;
+    uint32_t timpstamp;
+} neu_json_states_head_t;
+
+typedef struct {
+    int                    n_state;
+    neu_json_node_state_t *states;
+} neu_json_states_t;
+
 int  neu_json_decode_mqtt_req(char *buf, neu_json_mqtt_t **result);
 void neu_json_decode_mqtt_req_free(neu_json_mqtt_t *req);
 
 int neu_json_encode_mqtt_resp(void *json_object, void *param);
+
+int neu_json_encode_state_header_resp(void *json_object, void *param);
+int neu_json_encode_states_resp(void *json_object, void *param);
 
 #ifdef __cplusplus
 }

@@ -114,9 +114,9 @@ int mqtt_option_init(char *config, neu_mqtt_option_t *option)
     neu_json_elem_t key       = { .name = "key", .t = NEU_JSON_STR };
     neu_json_elem_t keypass   = { .name = "keypass", .t = NEU_JSON_STR };
 
-    ret = neu_parse_param(config, &error, 12, &id, &upload, &format, &ssl,
-                          &host, &port, &username, &password, &ca, &cert, &key,
-                          &keypass);
+    ret = neu_parse_param(config, &error, 13, &id, &upload, &heartbeat, &format,
+                          &ssl, &host, &port, &username, &password, &ca, &cert,
+                          &key, &keypass);
     if (0 != ret) {
         return ret;
     }

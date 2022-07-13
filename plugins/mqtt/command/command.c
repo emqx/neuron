@@ -131,7 +131,7 @@ char *command_write_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     return command_rw_write_response(plugin, head, data);
 }
 
-char *command_heartbeat_response(neu_plugin_t *plugin)
+char *command_heartbeat_response(neu_plugin_t *plugin, UT_array *states)
 {
-    return command_heartbeat_generate(plugin);
+    return command_heartbeat_generate(plugin, states);
 }

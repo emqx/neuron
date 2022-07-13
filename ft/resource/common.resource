@@ -35,7 +35,7 @@ ${TOPIC_UPLOAD}                             neuron/${MQTT_CLIENTID}/upload
 ${MQTT_UUID}                                123456-789abc-123456-aabbcc
 ${MQTT_CONFIG_HOST}                         127.0.0.1
 ${MQTT_CONFIG_PORT}                         ${1883}
-${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "upload-topic": "", "format": 1, 
+${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "upload-topic": "", "heartbeat-topic": "", "format": 1, 
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
 ...                                          "username": "", "password": "", "ca":"", "cert":"", "key":"", "keypass":""}
 

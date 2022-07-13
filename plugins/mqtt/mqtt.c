@@ -50,19 +50,13 @@ struct topic_pair {
     int   type;
 };
 
-struct node_state {
-    char node[NEU_NODE_NAME_LEN];
-    char plugin[NEU_PLUGIN_NAME_LEN];
-    int  running;
-    int  link;
-};
-
 struct mqtt_routine {
     neu_plugin_t *    plugin;
     neu_mqtt_option_t option;
     neu_mqtt_client_t client;
     UT_array *        topics;
     nng_aio *         aio;
+    nng_mtx *         mutex;
     UT_array *        states;
 };
 
@@ -141,6 +135,7 @@ static void topics_generate(UT_array *topics, char *name, char *upload_topic,
     char *heartbeat_req = NULL;
     char *heartbeat_res = NULL;
     if (NULL != heartbeat_topic && 0 < strlen(heartbeat_topic)) {
+        nlog_debug("------------->%s", heartbeat_topic);
         heartbeat_res = strdup(heartbeat_topic);
     } else {
         heartbeat_res = topics_format(TOPIC_HEARTBEAT_RES, name);
@@ -243,28 +238,33 @@ static void mqtt_routine_heartbeat(nng_aio *aio, void *arg, int code)
         ret      = neu_plugin_op(routine->plugin, header, &cmd);
         if (ret != 0) { }
 
+        nng_aio_set_timeout(aio, 3000);
+        nng_aio_defer(aio, mqtt_routine_heartbeat, routine);
+
         // publish state data
-        int                type     = TOPIC_TYPE_HEARTBEAT;
-        struct topic_pair *pair     = topics_find_type(routine->topics, type);
-        char *             json_str = "test";
-        const char *       topic    = pair->topic_response;
-        const int          qos      = pair->qos_response;
-        neu_err_code_e     error    = neu_mqtt_client_publish(
+        nng_mtx_lock(routine->mutex);
+        int                type = TOPIC_TYPE_HEARTBEAT;
+        struct topic_pair *pair = topics_find_type(routine->topics, type);
+        char *             json_str =
+            command_heartbeat_response(routine->plugin, routine->states);
+        if (NULL == json_str) {
+            nng_mtx_unlock(routine->mutex);
+            break;
+        }
+
+        const char *   topic = pair->topic_response;
+        const int      qos   = pair->qos_response;
+        neu_err_code_e error = neu_mqtt_client_publish(
             routine->client, topic, qos, (unsigned char *) json_str,
             strlen(json_str));
         if (NEU_ERR_SUCCESS != error) {
             plog_error(plugin_log,
                        "heartbeat publish error code :%d, topoic:%s", error,
                        topic);
-            // free(json_str);
         }
 
-        plog_info(plugin_log, "topic:%s, qos:%d, payload:%s", topic, qos,
-                  json_str);
-        // free(json_str);
-
-        nng_aio_set_timeout(aio, 1000);
-        nng_aio_defer(aio, mqtt_routine_heartbeat, routine);
+        free(json_str);
+        nng_mtx_unlock(routine->mutex);
         break;
     }
     case NNG_ECANCELED: {
@@ -323,9 +323,10 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     utarray_new(routine->states, &state_ptr_icd);
 
     // start heartbeat send
+    nng_mtx_alloc(&routine->mutex);
     nng_aio_alloc(&routine->aio, NULL, routine);
     nng_aio_wait(routine->aio);
-    nng_aio_set_timeout(routine->aio, 1000);
+    nng_aio_set_timeout(routine->aio, 3000);
     nng_aio_defer(routine->aio, mqtt_routine_heartbeat, routine);
 
     return routine;
@@ -335,9 +336,18 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
 {
     assert(NULL != routine);
 
+    // cleanup node states
+    for (struct node_state **sp =
+             (struct node_state **) utarray_front(routine->states);
+         sp != NULL;
+         sp = (struct node_state **) utarray_next(routine->states, sp)) {
+        free((*sp));
+    }
+
     utarray_free(routine->states);
 
     // stop heartbeat send
+    nng_mtx_free(routine->mutex);
     nng_aio_cancel(routine->aio);
     nng_aio_free(routine->aio);
 
@@ -613,7 +623,7 @@ static neu_err_code_e node_list_get(neu_plugin_t *      plugin,
     neu_resp_get_node_t *nodes = (neu_resp_get_node_t *) data;
     utarray_foreach(nodes->nodes, neu_resp_node_info_t *, info)
     {
-        plog_info(plugin, "%s, %s", info->node, info->plugin);
+        // plog_info(plugin, "%s, %s", info->node, info->plugin);
         neu_reqresp_head_t       header = { 0 };
         neu_req_get_node_state_t cmd    = { 0 };
         header.ctx                      = strdup(info->node);
@@ -634,19 +644,13 @@ static neu_err_code_e node_state_update(neu_plugin_t *      plugin,
 {
     mqtt_routine_t *           routine = plugin->routine;
     neu_resp_get_node_state_t *state   = (neu_resp_get_node_state_t *) data;
-    char *                     node    = (char *) head->ctx;
-    int                        link    = state->state.link;
-    int                        running = state->state.running;
-    plog_debug(plugin, "node:%s, link:%d, running:%d", node, link, running);
 
+    nng_mtx_lock(routine->mutex);
     struct node_state *ns = NULL;
     for (struct node_state **sp =
              (struct node_state **) utarray_front(routine->states);
          sp != NULL;
          sp = (struct node_state **) utarray_next(routine->states, sp)) {
-
-        // plog_info(plugin, "node:%s, state->link:%d, state->running:%d",
-        //           (char *) head->ctx, state->link, state->running);
 
         if (0 == strcmp((char *) head->ctx, (*sp)->node)) {
             ns = (*sp);
@@ -662,6 +666,7 @@ static neu_err_code_e node_state_update(neu_plugin_t *      plugin,
 
     ns->link    = state->state.link;
     ns->running = state->state.running;
+    nng_mtx_unlock(routine->mutex);
 
     free(head->ctx);
 

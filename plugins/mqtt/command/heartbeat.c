@@ -26,13 +26,31 @@
 #include "utils/log.h"
 #include "version.h"
 
-char *command_heartbeat_generate(neu_plugin_t *plugin)
+char *command_heartbeat_generate(neu_plugin_t *plugin, UT_array *states)
 {
-    UNUSED(plugin);
+    char *                 version  = NEURON_VERSION;
+    neu_json_states_head_t header   = { .version   = version,
+                                      .timpstamp = plugin->common.timestamp };
+    neu_json_states_t      json     = { 0 };
+    char *                 json_str = NULL;
+    json.n_state                    = utarray_len(states);
+    if (0 < json.n_state) {
+        json.states = calloc(json.n_state, sizeof(neu_json_node_state_t));
+    }
 
-    // const char *version  = NEURON_VERSION;
-    // const char *revision = NEURON_GIT_REV NEURON_GIT_DIFF;
-    // const char *                          build_date = NEURON_BUILD_DATE;
+    for (int i = 0; i < json.n_state; i++) {
+        struct node_state **nsp = utarray_eltptr(states, (unsigned int) i);
+        struct node_state * ns  = (*nsp);
+        json.states[i].node     = ns->node;
+        json.states[i].link     = ns->link;
+        json.states[i].running  = ns->running;
+    }
 
-    return NULL;
+    neu_json_encode_with_mqtt(&json, neu_json_encode_states_resp, &header,
+                              neu_json_encode_state_header_resp, &json_str);
+    if (0 < json.n_state) {
+        free(json.states);
+    }
+
+    return json_str;
 }

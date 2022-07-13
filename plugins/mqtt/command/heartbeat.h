@@ -28,7 +28,7 @@ extern "C" {
 
 #include "common.h"
 
-char *command_heartbeat_generate(neu_plugin_t *plugin);
+char *command_heartbeat_generate(neu_plugin_t *plugin, UT_array *states);
 
 #ifdef __cplusplus
 }
