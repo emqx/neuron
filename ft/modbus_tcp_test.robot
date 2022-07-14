@@ -1,565 +1,187 @@
 *** Settings ***
-Resource          api_http.resource
-Resource          common.resource
-Suite Setup       Neuron Context Ready
-Suite Teardown    Stop All Processes
+Resource 	resource/api.resource
+Resource	resource/common.resource
+Resource	resource/error.resource
+Resource	resource/driver.resource
+Suite Setup	Modbus Test Setup
+Suite Teardown	Modbus Test Teardown
 
 *** Variables ***
-${MODBUS_PLUS_TCP_CONFIG}    {"host": "127.0.0.1", "port": 60502, "connection_mode": 0, "timeout": 3000}
-${test_node_id}
-${test_node_name}    modbus-plus-tcp-adapter
-${group}             config_modbus_tcp_sample_2
+${modbus_node}	modbus_node
 
-${tag_bit}       {"name": "tag_bit", "address": "1!000001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-${tag_int16}     {"name": "tag_int16", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
-${tag_uint16}    {"name": "tag_uint16", "address": "1!400002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-${tag_int32}     {"name": "tag_int32", "address": "1!400003", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-${tag_uint32}    {"name": "tag_uint32", "address": "1!400005", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
-${tag_float}     {"name": "tag_float", "address": "1!400007", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-${tag_string}    {"name": "tag_string", "address": "1!400009.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
+${MODBUS_TCP_CONFIG_WRONG} 	{"host": "127.0.0.1", "port": 60502}
 
-${tag1_bit}       {"name": "tag1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-${tag2_bit}       {"name": "tag2", "address": "1!100002", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-${tag1_int16}     {"name": "tag1", "address": "1!301021", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-${tag2_int16}     {"name": "tag2", "address": "1!301022", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-${tag1_uint16}    {"name": "tag1", "address": "1!301019", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT16}}
-${tag2_uint16}    {"name": "tag2", "address": "1!301020", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT16}}
-${tag1_int32}     {"name": "tag1", "address": "1!301010", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT32}}
-${tag2_int32}     {"name": "tag2", "address": "1!301011", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT32}}
-${tag1_uint32}    {"name": "tag1", "address": "1!301017", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-${tag2_uint32}    {"name": "tag2", "address": "1!301018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-${tag1_float}     {"name": "tag1", "address": "1!300009", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-${tag2_float}     {"name": "tag2", "address": "1!300008", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
+${hold_bit}       {"name": "hold_bit", "address": "1!400001.15", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${hold_int16}     {"name": "hold_int16", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}}
+${hold_uint16}    {"name": "hold_uint16", "address": "1!400002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_UINT16}}
+${hold_int32}     {"name": "hold_int32", "address": "1!400003", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT32}}
+${hold_uint32}    {"name": "hold_uint32", "address": "1!400015", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_UINT32}}
+${hold_float}     {"name": "hold_float", "address": "1!400017", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_FLOAT}}
+${hold_string}    {"name": "hold_string", "address": "1!400020.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_STRING}}
+
+${coil_bit_1}    {"name": "coil_bit_1", "address": "1!000001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+${coil_bit_2}    {"name": "coil_bit_2", "address": "1!000002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+${coil_bit_3}    {"name": "coil_bit_3", "address": "1!000003", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+${coil_bit_4}    {"name": "coil_bit_4", "address": "1!000005", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+${coil_bit_5}    {"name": "coil_bit_5", "address": "1!000010", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+
+${input_bit_1}    {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${input_bit_2}    {"name": "input_bit_2", "address": "1!100002", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${input_bit_3}    {"name": "input_bit_3", "address": "1!100003", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${input_bit_4}    {"name": "input_bit_4", "address": "1!100005", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${input_bit_5}    {"name": "input_bit_5", "address": "1!100010", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+
+${input_register_bit}       {"name": "input_register_bit", "address": "1!30101.15", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${input_register_int16}     {"name": "input_register_int16", "address": "1!30101", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
+${input_register_uint16}    {"name": "input_register_uint16", "address": "1!30102", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_UINT16}}
+${input_register_int32}     {"name": "input_register_int32", "address": "1!30103", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT32}}
+${input_register_uint32}    {"name": "input_register_uint32", "address": "1!30115", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_UINT32}}
+${input_register_float}     {"name": "input_register_float", "address": "1!30117", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_FLOAT}}
+${input_register_string}    {"name": "input_register_string", "address": "1!30120.10", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_STRING}}
+
+${hold_int16_address_update} 	{"name": "hold_int16", "address": "1!400100", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}}
+${hold_int16_type_update} 		{"name": "hold_int16", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT32}}
+
+${input_bit_1_name_wrong}   	  {"name": "input_bit", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${input_bit_1_attribute_unmatch}    {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
+${input_bit_1_type_unmatch}   	  {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 
 *** Test Cases ***
+Set a node with right settings, it should be success.
+	[Template]	Set a ${node} with right ${node_settings}, it will be success.
+	${modbus_node}	${MODBUS_TCP_CONFIG}
 
-#Read a point in the input or input reg area, and the data as bit/int16/uint16/int32/uint32/float/string type, it should return success
-    #[Template]         Read A Point In The Input Or Input Reg Area Should Return Success
-    #${test_node_id}    ${test_node_name}                                                    ${group}    input        bit       ${tag1_bit}       0      ${tag2_bit}       0
-    #${test_node_id}    ${test_node_name}                                                    ${group}    input reg    int16     ${tag1_int16}     0      ${tag2_int16}     0
-    #${test_node_id}    ${test_node_name}                                                    ${group}    input reg    uint16    ${tag1_uint16}    0      ${tag2_uint16}    0
-    #${test_node_id}    ${test_node_name}                                                    ${group}    input reg    int32     ${tag1_int32}     0      ${tag2_int32}     0
-    #${test_node_id}    ${test_node_name}                                                    ${group}    input reg    uint32    ${tag1_uint32}    0      ${tag2_uint32}    0
-    #${test_node_id}    ${test_node_name}                                                    ${group}    input reg    float     ${tag1_float}     0.0    ${tag2_float}     0.0
+Set a node with wrong settings, it should be failure.
+	[Template]	Set a ${node} with wrong ${node_settings}, it will be failure.
+	${modbus_node}	${MODBUS_TCP_CONFIG_WRONG}
 
-#Read/Write multiple points in the coil area, the point address includes continuous and non-continuous, and the data as bit type, it should return success
-    #${tag1_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!000001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag2_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "1!000002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag3_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "1!000010", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag4_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "1!000012", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag5_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "1!000107", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag6_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "1!000108", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag7_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "1!001022", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag8_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "1!001020", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag9_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "1!0000001.0", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
+Set tags with multiple address and types and attribute, it should be success.
+	[Template]	Add a ${tag} with right address and type and attribute from ${node}, it will be success.
+	${hold_int16}	${modbus_node}
+	${hold_uint16}	${modbus_node}
+	${hold_int32}	${modbus_node}
+	${hold_uint32}	${modbus_node}
+	${hold_float}	${modbus_node}
+	${hold_string}	${modbus_node}
 
-    #Should Not Be Equal As Integers    ${tag1_id}    -1
-    #Should Not Be Equal As Integers    ${tag2_id}    -1
-    #Should Not Be Equal As Integers    ${tag3_id}    -1
-    #Should Not Be Equal As Integers    ${tag4_id}    -1
-    #Should Not Be Equal As Integers    ${tag5_id}    -1
-    #Should Not Be Equal As Integers    ${tag6_id}    -1
-    #Should Not Be Equal As Integers    ${tag7_id}    -1
-    #Should Not Be Equal As Integers    ${tag8_id}    -1
-    #Should Not Be Equal AS Integers    ${tag9_id}    -1
+	${coil_bit_1}	${modbus_node}
+	${coil_bit_2}	${modbus_node}
+	${coil_bit_3}	${modbus_node}
+	${coil_bit_4}	${modbus_node}
+	${coil_bit_5}	${modbus_node}
 
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
+	${input_register_int16}	${modbus_node}
+	${input_register_uint16}	${modbus_node}
+	${input_register_int32}	${modbus_node}
+	${input_register_uint32}	${modbus_node}
+	${input_register_float}	${modbus_node}
+	${input_register_string}	${modbus_node}
 
-    #Compare Tag Value As Int    ${res}[tags]    tag1    1
-    #Compare Tag Value As Int    ${res}[tags]    tag2    0
-    #Compare Tag Value As Int    ${res}[tags]    tag3    0
-    #Compare Tag Value As Int    ${res}[tags]    tag4    0
-    #Compare Tag Value As Int    ${res}[tags]    tag5    0
-    #Compare Tag Value As Int    ${res}[tags]    tag6    0
-    #Compare Tag Value As Int    ${res}[tags]    tag7    0
-    #Compare Tag Value As Int    ${res}[tags]    tag8    0
-    #Compare Tag Value As Int    ${res}[tags]    tag9    1
+	${input_bit_1}	${modbus_node}
+	${input_bit_2}	${modbus_node}
+	${input_bit_3}	${modbus_node}
+	${input_bit_4}	${modbus_node}
+	${input_bit_5}	${modbus_node}
 
-    #Write Tags    ${test_node_name}    ${group}    tag2    1
-    #Write Tags    ${test_node_name}    ${group}    tag3    1
-    #Write Tags    ${test_node_name}    ${group}    tag4    1
-    #Write Tags    ${test_node_name}    ${group}    tag5    1
-    #Write Tags    ${test_node_name}    ${group}    tag7    1
+Set tags with unmatch address, type or attribute, it should be failure.
+	[Template]	Set a ${tag} with unmatch address, type or attribute from ${node}, it will be failure and return ${resp_status} and ${error_code}.
+	${input_bit_1_type_unmatch}	${modbus_node}	200	${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
+	${input_bit_1_attribute_unmatch}	${modbus_node}	200	${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}	
+	
+Write and Read all type tag with same slave id in hold register and coil, it should be success.
+	[Template]	Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
+	${hold_int16}     hold_int16     ${modbus_node}	Compare Tag Value As Int        120
+	${hold_uint16}    hold_uint16    ${modbus_node}	Compare Tag Value As Int        65535
+	${hold_int32}     hold_int32     ${modbus_node}	Compare Tag Value As Int        77889912
+	${hold_uint32}    hold_uint32    ${modbus_node}	Compare Tag Value As Int        88991232
+	${hold_float}     hold_float     ${modbus_node}	Compare Tag Value As Float      12.34
+	${hold_string}    hold_string    ${modbus_node}	Compare Tag Value As Strings    "abc123"
 
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
+	${coil_bit_1}    coil_bit_1    ${modbus_node}    Compare Tag Value As Int    1
+	${coil_bit_2}    coil_bit_2    ${modbus_node}    Compare Tag Value As Int    0
+	${coil_bit_3}    coil_bit_3    ${modbus_node}    Compare Tag Value As Int    0
+	${coil_bit_4}    coil_bit_4    ${modbus_node}    Compare Tag Value As Int    1
+	${coil_bit_5}    coil_bit_5    ${modbus_node}    Compare Tag Value As Int    1
 
-    #Compare Tag Value As Int    ${res}[tags]    tag1    1
-    #Compare Tag Value As Int    ${res}[tags]    tag2    1
-    #Compare Tag Value As Int    ${res}[tags]    tag3    1
-    #Compare Tag Value As Int    ${res}[tags]    tag4    1
-    #Compare Tag Value As Int    ${res}[tags]    tag5    1
-    #Compare Tag Value As Int    ${res}[tags]    tag6    0
-    #Compare Tag Value As Int    ${res}[tags]    tag7    1
-    #Compare Tag Value As Int    ${res}[tags]    tag8    0
-    #Compare Tag Value As Int    ${res}[tags]    tag9    1
+Read all type tag with same slave id in input register and input, it should be success.
+	[Template]	Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
+	${input_register_int16}     input_register_int16     ${modbus_node}	Compare Tag Value As Int        0
+	${input_register_uint16}    input_register_uint16    ${modbus_node}	Compare Tag Value As Int        0
+	${input_register_int32}     input_register_int32     ${modbus_node}	Compare Tag Value As Int        0
+	${input_register_uint32}    input_register_uint32    ${modbus_node}	Compare Tag Value As Int        0
+	${input_register_float}     input_register_float     ${modbus_node}	Compare Tag Value As Float      0
+	${input_register_string}    input_register_string    ${modbus_node}	Compare Tag Value As Strings    ""
 
-    #[Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id}
+	${input_bit_1}    input_bit_1    ${modbus_node}    Compare Tag Value As Int    0
+	${input_bit_2}    input_bit_2    ${modbus_node}    Compare Tag Value As Int    0
+	${input_bit_3}    input_bit_3    ${modbus_node}    Compare Tag Value As Int    0
+	${input_bit_4}    input_bit_4    ${modbus_node}    Compare Tag Value As Int    0
+	${input_bit_5}    input_bit_5    ${modbus_node}    Compare Tag Value As Int    0	
 
-#Read multiple points in the input area, the point address includes continuous and non-continuous, and the data as bit type, it should return success
-    #${tag1_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag2_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "1!100002", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag3_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "1!100010", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag4_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "1!100012", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag5_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "1!100107", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag6_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "1!100108", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag7_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "1!101022", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag8_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "1!101020", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag9_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "1!1000001.1", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
+Read some tags at time, it will be success.
+	${input_register_tags}=	Create List	${input_register_int16} 	${input_register_uint16}	${input_register_int32}	${input_register_uint32}	${input_register_float}	${input_register_string}	${input_register_bit}
+	Read some ${input_register_tags} from ${modbus_node}, it will be success.
 
-    #Should Not Be Equal As Integers    ${tag1_id}    -1
-    #Should Not Be Equal As Integers    ${tag2_id}    -1
-    #Should Not Be Equal As Integers    ${tag3_id}    -1
-    #Should Not Be Equal As Integers    ${tag4_id}    -1
-    #Should Not Be Equal As Integers    ${tag5_id}    -1
-    #Should Not Be Equal As Integers    ${tag6_id}    -1
-    #Should Not Be Equal As Integers    ${tag7_id}    -1
-    #Should Not Be Equal As Integers    ${tag8_id}    -1
-    #Should Not Be Equal AS Integers    ${tag9_id}    -1
+	${hold_tags}=	Create List	${hold_int16}	${hold_uint16}	${hold_int32}	${hold_uint32}	${hold_float}	${hold_string}	${hold_bit}
+	Read some ${hold_tags} from ${modbus_node}, it will be success.
 
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
+	${coil_tags}=	Create List	${coil_bit_1}	${coil_bit_2}	${coil_bit_3}	${coil_bit_4}	${coil_bit_5}
+	Read some ${coil_tags} from ${modbus_node}, it will be success.
 
-    #Compare Tag Value As Int    ${res}[tags]    tag1    0
-    #Compare Tag Value As Int    ${res}[tags]    tag2    0
-    #Compare Tag Value As Int    ${res}[tags]    tag3    0
-    #Compare Tag Value As Int    ${res}[tags]    tag4    0
-    #Compare Tag Value As Int    ${res}[tags]    tag5    0
-    #Compare Tag Value As Int    ${res}[tags]    tag6    0
-    #Compare Tag Value As Int    ${res}[tags]    tag7    0
-    #Compare Tag Value As Int    ${res}[tags]    tag8    0
-    #Compare Tag Value As Int    ${res}[tags]    tag9    0
+	${input_tags}=	Create List	${input_bit_1}	${input_bit_2}	${input_bit_3}	${input_bit_4}	${input_bit_5}
+	Read some ${input_tags} from ${modbus_node}, it will be success.
 
-    #[Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id}
+Write and read a tag with same name and same address that in different groups, it should be success.
+	${groups}=	Create List	group-1	group-2	group-3
+	Write and read a ${hold_int16} with same hold_int16 and same address in different ${groups} that from ${modbus_node}, using Compare Tag Value As Int to check the 2, it will be success.
 
-#Read multiple points in the input reg area, the point address includes continuous and non-continuous, and the data includes int16/uint16/int32/uint32/float type, it should return success
-    #${tag1_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!300001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag2_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "1!300002", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag3_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "1!300010", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT16}}
-    #${tag4_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "1!300012", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT16}}
-    #${tag5_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "1!300107", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag6_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "1!300115", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag7_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "1!300110", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-    #${tag8_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "1!301018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-    #${tag9_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "1!301020", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag10_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag10", "address": "1!301022", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag11_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag11", "address": "1!301024.10", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_STRING}}
-    #${tag12_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag12", "address": "1!301034.10", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_STRING}}
-    #${tag13_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag13", "address": "1!301020.0", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag14_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag14", "address": "1!301020.1", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
+Write and read a tag with same name but different address that in different groups, it should be success.
+	${groups}=	Create List	group-1	group-2	group-3
+	Write and read ${hold_int16} ${hold_int16_address_update} with same hold_int16 but different address in different ${groups} that from ${modbus_node}, using Compare Tag Value As Int to check the 2, it will be success.
 
-    #Should Not Be Equal As Integers    ${tag1_id}     -1
-    #Should Not Be Equal As Integers    ${tag2_id}     -1
-    #Should Not Be Equal As Integers    ${tag3_id}     -1
-    #Should Not Be Equal As Integers    ${tag4_id}     -1
-    #Should Not Be Equal As Integers    ${tag5_id}     -1
-    #Should Not Be Equal As Integers    ${tag6_id}     -1
-    #Should Not Be Equal As Integers    ${tag7_id}     -1
-    #Should Not Be Equal As Integers    ${tag8_id}     -1
-    #Should Not Be Equal As Integers    ${tag9_id}     -1
-    #Should Not Be Equal As Integers    ${tag10_id}    -1
-    #Should Not Be Equal As Integers    ${tag11_id}    -1
-    #Should Not Be Equal As Integers    ${tag12_id}    -1
-    #Should Not Be Equal As Integers    ${tag13_id}    -1
-    #Should Not Be Equal As Integers    ${tag14_id}    -1
+Update a tag with right address and types and attribute, it will be success
+	[Template]	Update a ${tag} by a ${tag_update} named ${tag_name} from ${node} , it can read and write, using ${check} to check the ${value}, it will be success.
+	${hold_int16}	${hold_int16_address_update}	hold_int16	${modbus_node}	Compare Tag Value As Int  120
+	${hold_int16}	${hold_int16_type_update}	hold_int16	${modbus_node}	Compare Tag Value As Int  120
 
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
+Update a tag with unmatch address and types and attribute, it should be failure.
+	[Template]	Update a ${tag} by a ${tag_update} with the unmatch settings from ${node} , it will be failure and return ${resp_status} and ${error_code}.
+	${input_bit_1}	${input_bit_1_attribute_unmatch}	${modbus_node}	200	${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
+	${input_bit_1}	${input_bit_1_type_unmatch}	${modbus_node}	200	${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
+	${input_bit_1}	${input_bit_1_name_wrong}	${modbus_node}	200	${NEU_ERR_TAG_NOT_EXIST}
 
-    #Compare Tag Value As Int      ${res}[tags]    tag1     0
-    #Compare Tag Value As Int      ${res}[tags]    tag2     0
-    #Compare Tag Value As Int      ${res}[tags]    tag3     0
-    #Compare Tag Value As Int      ${res}[tags]    tag4     0
-    #Compare Tag Value As Int      ${res}[tags]    tag5     0
-    #Compare Tag Value As Int      ${res}[tags]    tag6     0
-    #Compare Tag Value As Int      ${res}[tags]    tag7     0
-    #Compare Tag Value As Int      ${res}[tags]    tag8     0
-    #Compare Tag Value As Float    ${res}[tags]    tag9     0.0
-    #Compare Tag Value As Float    ${res}[tags]    tag10    0
-   ## Compare Tag Value As String    ${res}[tags]    tag11    0
-   ## Compare Tag Value As String    ${res}[tags]    tag12    0
-    #Compare Tag Value As Int      ${res}[tags]    tag13    0
-    #Compare Tag Value As Int      ${res}[tags]    tag14    0
+Write a value to a tag that don't exit in plc or neuron, it will be failure.
+	[Template]	Write a ${value} to a ${tag} with named ${tag_name} that don't exist in neuron or plc from ${node}, it will be failure.
+	12	${input_bit_1}	input	${modbus_node}
 
-    #[Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id},${tag13_id},${tag14_id}
+Write value to a tag without write attribute, it will be failure.
+	[Template]	Write a ${value} to a ${tag} named ${tag_name} that without write attribute from ${node}, it will be failure.
+	1	${input_bit_1}	input_bit_1	${modbus_node}
 
-#Read/Write multiple points in the hold reg area, the point address includes continuous and non-continuous, and the data includes int16/uint16/int32/uint32/float type, it should return success
-    #${tag1_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag2_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "1!400002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag3_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "1!400010", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-    #${tag4_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "1!400012", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-    #${tag5_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "1!400107", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag6_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "1!400120", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag7_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "1!400110", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
-    #${tag8_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "1!401018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
-    #${tag9_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "1!401020", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag10_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag10", "address": "1!401022", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag11_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag11", "address": "1!401024.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-    #${tag12_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag12", "address": "1!401034.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-    #${tag13_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag13", "address": "1!401020.0", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag14_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag14", "address": "1!401020.1", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-
-    #Should Not Be Equal As Integers    ${tag1_id}     -1
-    #Should Not Be Equal As Integers    ${tag2_id}     -1
-    #Should Not Be Equal As Integers    ${tag3_id}     -1
-    #Should Not Be Equal As Integers    ${tag4_id}     -1
-    #Should Not Be Equal As Integers    ${tag5_id}     -1
-    #Should Not Be Equal As Integers    ${tag6_id}     -1
-    #Should Not Be Equal As Integers    ${tag7_id}     -1
-    #Should Not Be Equal As Integers    ${tag8_id}     -1
-    #Should Not Be Equal As Integers    ${tag9_id}     -1
-    #Should Not Be Equal As Integers    ${tag10_id}    -1
-    #Should Not Be Equal As Integers    ${tag11_id}    -1
-    #Should Not Be Equal As Integers    ${tag12_id}    -1
-    #Should Not Be Equal As Integers    ${tag13_id}    -1
-    #Should Not Be Equal As Integers    ${tag14_id}    -1
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int    ${res}[tags]    tag1    123
-    #Compare Tag Value As Int    ${res}[tags]    tag2    456
-    #Compare Tag Value As Int    ${res}[tags]    tag3    30066
-    #Compare Tag Value As Int    ${res}[tags]    tag4    0
-    #Compare Tag Value As Int    ${res}[tags]    tag5    0
-    #Compare Tag Value As Int    ${res}[tags]    tag6    0
-
-    #Compare Tag Value As Int      ${res}[tags]    tag7     0
-    #Compare Tag Value As Int      ${res}[tags]    tag8     0
-    #Compare Tag Value As Float    ${res}[tags]    tag9     0.0
-    #Compare Tag Value As Float    ${res}[tags]    tag10    0.0
-    #Compare Tag Value As Int      ${res}[tags]    tag13    0
-    #Compare Tag Value As Int      ${res}[tags]    tag14    0
-
-    #Write Tags    ${test_node_name}    ${group}    tag1     1
-    #Write Tags    ${test_node_name}    ${group}    tag2     2
-    #Write Tags    ${test_node_name}    ${group}    tag3     10
-    #Write Tags    ${test_node_name}    ${group}    tag4     12
-    #Write Tags    ${test_node_name}    ${group}    tag5     6946924
-    #Write Tags    ${test_node_name}    ${group}    tag6     7143536
-    #Write Tags    ${test_node_name}    ${group}    tag7     66651131
-    #Write Tags    ${test_node_name}    ${group}    tag8     71651235
-    #Write Tags    ${test_node_name}    ${group}    tag9     11.234
-    #Write Tags    ${test_node_name}    ${group}    tag10    22.234
-    #Write Tags    ${test_node_name}    ${group}    tag11    "Hello"
-    #Write Tags    ${test_node_name}    ${group}    tag12    "World"
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int       ${res}[tags]    tag1     1
-    #Compare Tag Value As Int       ${res}[tags]    tag2     2
-    #Compare Tag Value As Int       ${res}[tags]    tag3     10
-    #Compare Tag Value As Int       ${res}[tags]    tag4     12
-    #Compare Tag Value As Int       ${res}[tags]    tag5     6946924
-    #Compare Tag Value As Int       ${res}[tags]    tag6     7143536
-    #Compare Tag Value As Int       ${res}[tags]    tag7     66651131
-    #Compare Tag Value As Int       ${res}[tags]    tag8     71651235 
-    #Compare Tag Value As Float     ${res}[tags]    tag9     11.234
-    #Compare Tag Value As Float     ${res}[tags]    tag10    22.234
-    #Compare Tag Value As String    ${res}[tags]    tag11    Hello
-    #Compare Tag Value As String    ${res}[tags]    tag12    World
-    #Compare Tag Value As Int       ${res}[tags]    tag13    1
-    #Compare Tag Value As Int       ${res}[tags]    tag14    0
-
-    #[Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id},${tag13_id},${tag14_id}
-
-#Read/Write multiple points belonging to different areas(coil/input/input reg/hold reg), the point address includes continuous and non-continuous, and the data include bit/int16/uint16/int32/uint32/float/string type, it should return success
-    #${tag1_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!000008", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag2_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "1!000009", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag3_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "1!000011", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag4_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "1!100008", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag5_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "1!300008", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag6_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "1!300009", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-    #${tag7_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "1!300012", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag8_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "1!400009", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-    #${tag9_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "1!400020", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag10_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag10", "address": "1!400015", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag11_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag11", "address": "1!400025.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-
-    #Should Not Be Equal As Integers    ${tag1_id}     -1
-    #Should Not Be Equal As Integers    ${tag2_id}     -1
-    #Should Not Be Equal As Integers    ${tag3_id}     -1
-    #Should Not Be Equal As Integers    ${tag4_id}     -1
-    #Should Not Be Equal As Integers    ${tag5_id}     -1
-    #Should Not Be Equal As Integers    ${tag6_id}     -1
-    #Should Not Be Equal As Integers    ${tag7_id}     -1
-    #Should Not Be Equal As Integers    ${tag8_id}     -1
-    #Should Not Be Equal As Integers    ${tag9_id}     -1
-    #Should Not Be Equal As Integers    ${tag10_id}    -1
-    #Should Not Be Equal As Integers    ${tag11_id}    -1
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int      ${res}[tags]    tag1    0
-    #Compare Tag Value As Int      ${res}[tags]    tag2    0
-    #Compare Tag Value As Int      ${res}[tags]    tag3    0
-    #Compare Tag Value As Int      ${res}[tags]    tag4    0
-    #Compare Tag Value As Int      ${res}[tags]    tag5    0
-    #Compare Tag Value As Int      ${res}[tags]    tag6    0
-    #Compare Tag Value As Float    ${res}[tags]    tag7    0.0
-
-    #Compare Tag Value As Int      ${res}[tags]    tag8     20069
-    #Compare Tag Value As Int      ${res}[tags]    tag9     0
-    #Compare Tag Value As Float    ${res}[tags]    tag10    0.0
-
-    #Write Tags    ${test_node_name}    ${group}    tag1     1
-    #Write Tags    ${test_node_name}    ${group}    tag2     1
-    #Write Tags    ${test_node_name}    ${group}    tag3     1
-    #Write Tags    ${test_node_name}    ${group}    tag8     62225
-    #Write Tags    ${test_node_name}    ${group}    tag9     66651134
-    #Write Tags    ${test_node_name}    ${group}    tag10    11.123
-    #Write Tags    ${test_node_name}    ${group}    tag11    "Hello"
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int       ${res}[tags]    tag1     1
-    #Compare Tag Value As Int       ${res}[tags]    tag2     1
-    #Compare Tag Value As Int       ${res}[tags]    tag3     1
-    #Compare Tag Value As Int       ${res}[tags]    tag4     0
-    #Compare Tag Value As Int       ${res}[tags]    tag5     0
-    #Compare Tag Value As Int       ${res}[tags]    tag6     0
-    #Compare Tag Value As Float     ${res}[tags]    tag7     0.0
-    #Compare Tag Value As Int       ${res}[tags]    tag8     62225
-    #Compare Tag Value As Int       ${res}[tags]    tag9     66651134
-    #Compare Tag Value As Float     ${res}[tags]    tag10    11.123
-    #Compare Tag Value As String    ${res}[tags]    tag11    Hello
-
-    #[Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id}
-
-#Read/Write multiple points belonging to different areas(coil/input/input reg/hold reg) and different sites, the point address includes continuous and non-continuous, and the data include int16/uint16/int32/uint32/float/string type, it should return success
-    #${tag1_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!000018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag2_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "2!000018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag3_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "3!000021", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag4_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "1!100018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_BIT}}
-    #${tag5_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "2!300018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag6_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "3!300018", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_UINT32}}
-    #${tag7_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "1!300022", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag8_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "2!400018", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-    #${tag9_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "3!400040", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag10_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag10", "address": "1!400022", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag11_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag11", "address": "2!300022.10", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_DATA_TYPE_STRING}}
-    #${tag12_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag12", "address": "3!400022.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-
-    #Should Not Be Equal As Integers    ${tag1_id}     -1
-    #Should Not Be Equal As Integers    ${tag2_id}     -1
-    #Should Not Be Equal As Integers    ${tag3_id}     -1
-    #Should Not Be Equal As Integers    ${tag4_id}     -1
-    #Should Not Be Equal As Integers    ${tag5_id}     -1
-    #Should Not Be Equal As Integers    ${tag6_id}     -1
-    #Should Not Be Equal As Integers    ${tag7_id}     -1
-    #Should Not Be Equal As Integers    ${tag8_id}     -1
-    #Should Not Be Equal As Integers    ${tag9_id}     -1
-    #Should Not Be Equal As Integers    ${tag10_id}    -1
-    #Should Not Be Equal As Integers    ${tag11_id}    -1
-    #Should Not Be Equal As Integers    ${tag12_id}    -1
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int      ${res}[tags]    tag1     0
-    #Compare Tag Value As Int      ${res}[tags]    tag2     0
-    #Compare Tag Value As Int      ${res}[tags]    tag3     0
-    #Compare Tag Value As Int      ${res}[tags]    tag4     0
-    #Compare Tag Value As Int      ${res}[tags]    tag5     0
-    #Compare Tag Value As Int      ${res}[tags]    tag6     0
-    #Compare Tag Value As Float    ${res}[tags]    tag7     0.0
-    #Compare Tag Value As Int      ${res}[tags]    tag8     0
-    #Compare Tag Value As Int      ${res}[tags]    tag9     0
-    #Compare Tag Value As Float    ${res}[tags]    tag10    0.0
-   ## Compare Tag Value As String    ${res}[tags]    tag11    0
-   ## Compare Tag Value As String    ${res}[tags]    tag12    0
-
-    #Write Tags    ${test_node_name}    ${group}    tag1     1
-    #Write Tags    ${test_node_name}    ${group}    tag2     1
-    #Write Tags    ${test_node_name}    ${group}    tag3     1
-    #Write Tags    ${test_node_name}    ${group}    tag8     62226
-    #Write Tags    ${test_node_name}    ${group}    tag9     66651136
-    #Write Tags    ${test_node_name}    ${group}    tag10    11.789
-    #Write Tags    ${test_node_name}    ${group}    tag12    "World"
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int       ${res}[tags]    tag1     1
-    #Compare Tag Value As Int       ${res}[tags]    tag2     1
-    #Compare Tag Value As Int       ${res}[tags]    tag3     1
-    #Compare Tag Value As Int       ${res}[tags]    tag4     0
-    #Compare Tag Value As Int       ${res}[tags]    tag5     0
-    #Compare Tag Value As Int       ${res}[tags]    tag6     0
-    #Compare Tag Value As Float     ${res}[tags]    tag7     0.0
-    #Compare Tag Value As Int       ${res}[tags]    tag8     62226
-    #Compare Tag Value As Int       ${res}[tags]    tag9     66651136
-    #Compare Tag Value As Float     ${res}[tags]    tag10    11.789
-   ## Compare Tag Value As String    ${res}[tags]    tag11    Hello
-    #Compare Tag Value As String    ${res}[tags]    tag12    World
-
-    #[Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id}
-
-#Read/Write multiple points in the hold reg area with different endian and different types(int16/uint16/int32/uint32/float/string), it should return success
-    #${tag1_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag2_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag2", "address": "1!400001#B", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT16}}
-    #${tag3_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag3", "address": "1!400001#L", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT16}}
-
-    #${tag4_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag4", "address": "1!400011#BB", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag5_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag5", "address": "1!400011#BL", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_INT32}}
-    #${tag6_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag6", "address": "1!400011#LB", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
-    #${tag7_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag7", "address": "1!400011#LL", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_UINT32}}
-
-    #${tag8_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag8", "address": "1!400021#BB", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag9_id} =     Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag9", "address": "1!400021#BL", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag10_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag10", "address": "1!400021#LB", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-    #${tag11_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag11", "address": "1!400021#LL", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_FLOAT}}
-
-    #${tag12_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag12", "address": "1!400031.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-    #${tag13_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag13", "address": "1!400031.10#B", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-    #${tag14_id} =    Add Tag And Return ID    ${test_node_id}    ${group}    {"name": "tag14", "address": "1!400031.10#L", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_DATA_TYPE_STRING}}
-
-    #Should Not Be Equal As Integers    ${tag1_id}     -1
-    #Should Not Be Equal As Integers    ${tag2_id}     -1
-    #Should Not Be Equal As Integers    ${tag3_id}     -1
-    #Should Not Be Equal As Integers    ${tag4_id}     -1
-    #Should Not Be Equal As Integers    ${tag5_id}     -1
-    #Should Not Be Equal As Integers    ${tag6_id}     -1
-    #Should Not Be Equal As Integers    ${tag7_id}     -1
-    #Should Not Be Equal As Integers    ${tag8_id}     -1
-    #Should Not Be Equal As Integers    ${tag9_id}     -1
-    #Should Not Be Equal As Integers    ${tag10_id}    -1
-    #Should Not Be Equal As Integers    ${tag11_id}    -1
-    #Should Not Be Equal As Integers    ${tag12_id}    -1
-    #Should Not Be Equal As Integers    ${tag13_id}    -1
-    #Should Not Be Equal As Integers    ${tag14_id}    -1
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int      ${res}[tags]    tag1     1
-    #Compare Tag Value As Int      ${res}[tags]    tag2     256
-    #Compare Tag Value As Int      ${res}[tags]    tag3     1
-    #Compare Tag Value As Int      ${res}[tags]    tag4     201354863
-    #Compare Tag Value As Int      ${res}[tags]    tag5     814958
-    #Compare Tag Value As Int      ${res}[tags]    tag6     1869479948
-    #Compare Tag Value As Int      ${res}[tags]    tag7     1852771328
-    #Compare Tag Value As Float    ${res}[tags]    tag8     -4.373957407653893e+37
-    #Compare Tag Value As Float    ${res}[tags]    tag9     1.497254271224983e-36
-    #Compare Tag Value As Float    ${res}[tags]    tag10    -0.3105773329734802
-    #Compare Tag Value As Float    ${res}[tags]    tag11    -8.088835712738108e-20
-
-    #Write Tags    ${test_node_name}    ${group}    tag1     123
-    #Write Tags    ${test_node_name}    ${group}    tag4     65540
-    #Write Tags    ${test_node_name}    ${group}    tag8     1.123
-    #Write Tags    ${test_node_name}    ${group}    tag12    "Neuron"
-
-    #Sleep       1s 500ms
-    #${res} =    Read Tags    ${test_node_name}    ${group}
-
-    #Compare Tag Value As Int    ${res}[tags]    tag1    123
-    #Compare Tag Value As Int    ${res}[tags]    tag2    31488
-    #Compare Tag Value As Int    ${res}[tags]    tag3    123
-
-    #Compare Tag Value As Int    ${res}[tags]    tag4    65540
-    #Compare Tag Value As Int    ${res}[tags]    tag5    16778240
-    #Compare Tag Value As Int    ${res}[tags]    tag6    67109120
-    #Compare Tag Value As Int    ${res}[tags]    tag7    262145
-
-    #Compare Tag Value As Float    ${res}[tags]    tag8     1.123
-    #Compare Tag Value As Float    ${res}[tags]    tag9     -9.440088562527097e-30
-    #Compare Tag Value As Float    ${res}[tags]    tag10    7.730013898977952e+33
-    #Compare Tag Value As Float    ${res}[tags]    tag11    -0.2414533942937851
-
-    #Compare Tag Value As String    ${res}[tags]    tag12    Neuron
-    #Compare Tag Value As String    ${res}[tags]    tag13    Neuron
-    #Compare Tag Value As String    ${res}[tags]    tag14    Neuron
-
-    #[Teardown]    Del Tags    ${test_node_id}    ${group}    ${tag1_id},${tag2_id},${tag3_id},${tag4_id},${tag5_id},${tag6_id},${tag7_id},${tag8_id},${tag9_id},${tag10_id},${tag11_id},${tag12_id},${tag13_id},${tag14_id}
+Write and read a value to a tag when the node is stoped, it will be failure.
+	[Template]	Write and read a ${value} to a ${tag} named ${tag_name} when the ${node} is stoped, it will be failure.
+	1	${hold_int16}	hold_int16	${modbus_node}
 
 *** Keywords ***
-Neuron Context Ready
-    Start Simulator Arg    ${MODBUS_TCP_SERVER_SIMULATOR}    ${SIMULATOR_DIR} 
+Modbus Test Setup
+	Start Modbus Simulator
 
-    Neuron Ready
-    LOGIN
+	Start Neuronx
 
-    Add Node    type=${${NODE_DRIVER}}    name=${test_node_name}    plugin_name=modbus-tcp
-    ${id} =     Get Node ID               ${NODE_DRIVER}            ${test_node_name}
+	${res}=	Add Node  ${modbus_node}	${PLUGIN-MODBUS-TCP}
+	Check Response Status  ${res}  200
 
-    Set Global Variable    ${test_node_id}    ${id}
+	${res}=	Node Setting  ${modbus_node}  ${MODBUS_TCP_CONFIG}
+	Check Response Status  ${res}  200
 
-    Node Setting    ${test_node_id}    ${MODBUS_PLUS_TCP_CONFIG}
-    Node Ctl        ${test_node_id}    ${NODE_CTL_START}
+	${res}=	Node Ctl  ${modbus_node}  ${NODE_CTL_START}
+	Check Response Status  ${res}  200
 
-    Add Group Config    ${test_node_id}    ${group}    300
-    Subscribe Group     ${test_node_id}    1           ${group}
+	${state}=	Get Node State    ${modbus_node}
+	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
+	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
 
-Stop All Processes
-    Stop Neuron                remove_persistence_data=True
-    sleep                      1s
-    Terminate All Processes    kill=false
-
-Read Write A Point In The hold/coil Reg Area Should Success
-    [Arguments]       ${node_id}                                                                                 ${node_name}    ${tag_name}    ${group}    ${tag}    ${area}    ${type}    ${value}
-    Log               Read a point in the ${area} reg area, and the data as ${type}, it should return success
-    Log To Console    Read a point in the ${area} reg area, and the data as ${type}, it should return success
-
-    ${val} =    Set Variable             ${value}
-    IF          "${type}" == "float"
-    ${cmp} =    Set Variable             Compare Tag Value As Float
-    ELSE IF     "${type}" == "string"
-    ${cmp} =    Set Variable             Compare Tag Value As String
-    ${val} =    Set Variable             "${value}"
-    ELSE
-    ${cmp} =    Set Variable             Compare Tag Value As Int
-    END
-
-    ${tag_id} =                        Add Tag And Return ID    ${node_id}    ${group}    ${tag}
-    Should Not Be Equal As Integers    ${tag_id}                -1
-
-    Sleep                    1s 500ms
-    ${res} =                 Read Tags    ${node_name}    ${group}
-    Check Response Status    ${res}       200
-
-    ${res} =    Write Tags    ${node_name}    ${group}    ${tag_name}    ${val}
-
-    Sleep                    1s 500ms
-    ${res} =                 Read Tags    ${node_name}    ${group}
-    Check Response Status    ${res}       200
-    Run Keyword              ${cmp}       ${res}[tags]    ${res}[tags][0][name]    ${value}
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag_id}
-
-Read A Point In The Input Or Input Reg Area Should Return Success
-    [Arguments]       ${node_id}                                                                             ${node_name}    ${group}    ${area}    ${type}    ${tag1}    ${value1}    ${tag2}    ${value2}
-    Log               Read a point in the ${area} area, and the data as ${type}, it should return success
-    Log To Console    Read a point in the ${area} area, and the data as ${type}, it should return success
-
-    IF          "${type}" == "float"
-    ${cmp} =    Set Variable             Compare Tag Value As Float
-    ELSE IF     "${type}" == "string"
-    ${cmp} =    Set Variable             Compare Tag Value As String
-    ELSE
-    ${cmp} =    Set Variable             Compare Tag Value As Int
-    END
-
-    ${tag1_id} =                       Add Tag And Return ID    ${node_id}    ${group}    ${tag1}
-    Should Not Be Equal As Integers    ${tag1_id}               -1
-
-    ${tag2_id} =                       Add Tag And Return ID    ${node_id}    ${group}    ${tag2}
-    Should Not Be Equal As Integers    ${tag2_id}               -1
-
-    Sleep                    1s 500ms
-    ${res} =                 Read Tags    ${node_name}    ${group}
-    Check Response Status    ${res}       200
-
-    Run Keyword    ${cmp}    ${res}[tags]    ${res}[tags][0][name]    ${value1}
-    Run Keyword    ${cmp}    ${res}[tags]    ${res}[tags][1][name]    ${value2}
-
-    [Teardown]    Del Tags    ${node_id}    ${group}    ${tag1_id},${tag2_id}
-
-Del Tags Check
-    [Arguments]              ${node_id}    ${group}          ${tag_id}
-    ${res} =                 Del Tags      ${node_id}        ${group}     ${tag_id}
-    Check Response Status    ${res}        200
-    Check Error Code         ${res}        ${ERR_SUCCESS}
+Modbus Test Teardown
+	Del Node  ${modbus_node}
+	Stop Neuronx
+	Terminate All Processes 	kill=false
