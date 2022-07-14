@@ -698,6 +698,7 @@ static void conn_disconnect(neu_conn_t *conn)
         for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
             if (conn->tcp_server.clients[i].fd > 0) {
                 close(conn->tcp_server.clients[i].fd);
+                conn->tcp_server.clients[i].fd = 0;
             }
         }
         break;
@@ -706,6 +707,7 @@ static void conn_disconnect(neu_conn_t *conn)
     case NEU_CONN_TTY_CLIENT:
         if (conn->fd > 0) {
             close(conn->fd);
+            conn->fd = 0;
         }
         break;
     }

@@ -114,8 +114,7 @@ static int driver_start(neu_plugin_t *plugin)
 
 static int driver_stop(neu_plugin_t *plugin)
 {
-    (void) plugin;
-
+    neu_conn_disconnect(plugin->conn);
     return 0;
 }
 

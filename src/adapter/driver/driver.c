@@ -670,7 +670,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
 
         if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
             datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = NEU_ERR_PLUGIN_READ_FAILURE;
+            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
             continue;
         }
 
