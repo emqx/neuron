@@ -190,7 +190,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 {
-    return modbus_group_timer(plugin, group, 0xff);
+    return modbus_group_timer(plugin, group, 0xfa);
 }
 
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
