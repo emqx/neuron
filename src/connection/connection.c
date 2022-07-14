@@ -243,10 +243,6 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
         if (ret == -1 && errno != EAGAIN) {
             conn_disconnect(conn);
-            if (conn->callback_trigger == true) {
-                conn->disconnected(conn->data, conn->fd);
-                conn->callback_trigger = false;
-            }
         }
 
         if (ret > 0 && conn->callback_trigger == false) {
@@ -296,10 +292,6 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
     if (errno == EPIPE || ret <= 0) {
         conn_disconnect(conn);
-        if (conn->callback_trigger == true) {
-            conn->disconnected(conn->data, conn->fd);
-            conn->callback_trigger = false;
-        }
     }
 
     if (ret > 0 && conn->callback_trigger == false) {
@@ -350,10 +342,6 @@ void neu_conn_flush(neu_conn_t *conn)
 void neu_conn_disconnect(neu_conn_t *conn)
 {
     conn_disconnect(conn);
-    if (conn->callback_trigger == true) {
-        conn->disconnected(conn->data, conn->fd);
-        conn->callback_trigger = false;
-    }
 }
 
 static void conn_free_param(neu_conn_t *conn)
@@ -723,6 +711,10 @@ static void conn_disconnect(neu_conn_t *conn)
     }
 
     conn->is_connected = false;
+    if (conn->callback_trigger == true) {
+        conn->disconnected(conn->data, conn->fd);
+        conn->callback_trigger = false;
+    }
 }
 
 static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
