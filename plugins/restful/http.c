@@ -286,6 +286,8 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH:
     case NEU_ERR_PLUGIN_PROTOCOL_DECODE_FAILURE:
     case NEU_ERR_PLUGIN_NOT_RUNNING:
+    case NEU_ERR_PLUGIN_TAG_NOT_READY:
+    case NEU_ERR_PLUGIN_PACKET_OUT_OF_ORDER:
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:

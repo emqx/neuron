@@ -159,8 +159,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
 
-    nlog_info("manager recv msg from: %s, type: %s", header->sender,
-              neu_reqresp_type_string(header->type));
+    nlog_info("manager recv msg from: %s to %s, type: %s", header->sender,
+              header->receiver, neu_reqresp_type_string(header->type));
     switch (header->type) {
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
@@ -510,8 +510,11 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
         neu_node_manager_get_pipe(manager->node_manager, header->receiver);
 
     nng_msg_set_pipe(msg, pipe);
+    int ret = nng_sendmsg(manager->socket, msg, 0);
 
-    if (nng_sendmsg(manager->socket, msg, 0) != 0) {
+    if (ret != 0) {
         nng_msg_free(msg);
+        nlog_warn("reply %s to %s, error: %d",
+                  neu_reqresp_type_string(header->type), header->receiver, ret);
     }
 }
