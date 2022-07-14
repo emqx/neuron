@@ -30,8 +30,12 @@ void adapter_storage_add_group(neu_persister_t *persister, const char *node,
                                const char *group, uint32_t interval);
 void adapter_storage_del_group(neu_persister_t *persister, const char *node,
                                const char *group);
-void adapter_storage_tag(neu_persister_t *persister, neu_adapter_t *adapter,
-                         const char *node, const char *group);
+void adapter_storage_add_tag(neu_persister_t *persister, const char *node,
+                             const char *group, const neu_datatag_t *tag);
+void adapter_storage_update_tag(neu_persister_t *persister, const char *node,
+                                const char *group, const neu_datatag_t *tag);
+void adapter_storage_del_tag(neu_persister_t *persister, const char *node,
+                             const char *group, const char *name);
 
 int adapter_load_setting(neu_persister_t *persister, const char *node,
                          char **setting);

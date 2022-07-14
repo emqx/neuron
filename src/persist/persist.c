@@ -195,42 +195,6 @@ static inline int create_dir(char *dir_name)
 }
 
 /**
- * Create a directory and any intermediate directory if necessary.
- */
-static int create_dir_recursive(const char *path)
-{
-    int  rv               = 0;
-    char p[PATH_MAX_SIZE] = { 0 };
-
-    rv = snprintf(p, sizeof(p), "%s", path);
-    if (sizeof(p) == rv) {
-        return -1;
-    }
-
-    int i = 0;
-    while (1) {
-        while (p[i] && PATH_SEP_CHAR == p[i]) {
-            ++i;
-        }
-        if ('\0' == p[i]) {
-            break;
-        }
-        while (p[i] && PATH_SEP_CHAR != p[i]) {
-            ++i;
-        }
-
-        char c = p[i];
-        p[i]   = '\0';
-        rv     = create_dir(p);
-        if (0 != rv) {
-            break;
-        }
-        p[i] = c;
-    }
-    return rv;
-}
-
-/**
  * Ensure that a file with the given name exists.
  *
  * @param name              file name
@@ -657,109 +621,93 @@ int neu_persister_load_plugins(neu_persister_t *persister,
     return 0;
 }
 
-int neu_persister_store_datatags(neu_persister_t *persister,
-                                 const char *     adapter_name,
-                                 const char *     group_config_name,
-                                 UT_array *       datatag_infos)
+int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
+                            const char *group_name, const neu_datatag_t *tag)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_group_config_dir(path, sizeof(path), persister,
-                                       adapter_name, group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    int rv = create_dir_recursive(path);
-    if (0 != rv) {
-        nlog_error("fail to create dir: %s", path);
-        return -1;
-    }
-
-    n = path_cat(path, n, sizeof(path), "datatags.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    neu_json_datatag_req_t datatags_resp = { 0 };
-    datatags_resp.n_tag                  = utarray_len(datatag_infos);
-    datatags_resp.tags =
-        calloc(datatags_resp.n_tag, sizeof(neu_json_datatag_req_tag_t));
-    int index = 0;
-    utarray_foreach(datatag_infos, neu_datatag_t *, tag)
-    {
-        datatags_resp.tags[index].name        = tag->name;
-        datatags_resp.tags[index].description = tag->description;
-        datatags_resp.tags[index].address     = tag->address;
-        datatags_resp.tags[index].attribute   = tag->attribute;
-        datatags_resp.tags[index].type        = tag->type;
-        index += 1;
-    }
-
-    char *result = NULL;
-    rv = neu_json_encode_by_fn(&datatags_resp, neu_json_encode_datatag_resp,
-                               &result);
-
-    if (rv == 0) {
-        write_file_string(path, result);
-    }
-
-    free(result);
-    free(datatags_resp.tags);
-
-    return rv;
+    return neu_persister_sql_exec(
+        persister,
+        "INSERT INTO tags (driver_name, group_name, name, address, attribute, "
+        "type, description) VALUES(%Q, %Q, %Q, %Q, %i, %i, %Q)",
+        driver_name, group_name, tag->name, tag->address, tag->attribute,
+        tag->type, tag->description);
 }
 
-int neu_persister_load_datatags(neu_persister_t *persister,
-                                const char *     adapter_name,
-                                const char *group_config_name, UT_array **tags)
+int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
+                            const char *group_name, UT_array **tags)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_group_config_dir(path, sizeof(path), persister,
-                                       adapter_name, group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    n = path_cat(path, n, sizeof(path), "datatags.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    char *json_str = NULL;
-    int   rv       = read_file_string(path, &json_str);
-    if (rv != 0) {
-        return rv;
-    }
-
-    neu_json_datatag_req_t *datatag_req = NULL;
-    rv = neu_json_decode_datatag_req(json_str, &datatag_req);
-    free(json_str);
-    if (rv != 0) {
-        return rv;
-    }
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT name, address, attribute, type, description "
+                        "FROM tags WHERE driver_name=? AND group_name=?";
 
     utarray_new(*tags, neu_tag_get_icd());
-    for (int i = 0; i < datatag_req->n_tag; i++) {
-        neu_datatag_t tag = {
-            .name        = datatag_req->tags[i].name,
-            .address     = datatag_req->tags[i].address,
-            .type        = datatag_req->tags[i].type,
-            .attribute   = datatag_req->tags[i].attribute,
-            .description = datatag_req->tags[i].description,
-        };
 
-        utarray_push_back(*tags, &tag);
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    neu_json_decode_datatag_req_free(datatag_req);
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, driver_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
 
-    return rv;
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, group_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_datatag_t tag = {
+            .name        = (char *) sqlite3_column_text(stmt, 0),
+            .address     = (char *) sqlite3_column_text(stmt, 1),
+            .attribute   = sqlite3_column_int(stmt, 2),
+            .type        = sqlite3_column_int(stmt, 3),
+            .description = (char *) sqlite3_column_text(stmt, 4),
+        };
+        utarray_push_back(*tags, &tag);
+
+        step = sqlite3_step(stmt);
+    }
+
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*tags);
+    *tags = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_update_tag(neu_persister_t *persister,
+                             const char *driver_name, const char *group_name,
+                             const neu_datatag_t *tag)
+{
+    return neu_persister_sql_exec(
+        persister,
+        "UPDATE tags SET address=%Q, attribute=%i, type=%i, description=%Q "
+        "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
+        tag->address, tag->attribute, tag->type, tag->description, driver_name,
+        group_name, tag->name);
+}
+
+int neu_persister_delete_tag(neu_persister_t *persister,
+                             const char *driver_name, const char *group_name,
+                             const char *tag_name)
+{
+    return neu_persister_sql_exec(
+        persister,
+        "DELETE FROM tags WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
+        driver_name, group_name, tag_name);
 }
 
 int neu_persister_store_subscriptions(neu_persister_t *persister,

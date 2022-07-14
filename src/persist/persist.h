@@ -25,7 +25,6 @@ extern "C" {
 #endif
 
 #include "adapter/adapter_info.h"
-#include "persist/json/persist_json_datatags.h"
 #include "persist/json/persist_json_plugin.h"
 #include "persist/json/persist_json_subs.h"
 
@@ -37,8 +36,6 @@ typedef struct {
     char *  plugin_name;
     int64_t state;
 } neu_persist_node_info_t;
-
-typedef neu_json_datatag_req_tag_t   neu_persist_datatag_info_t;
 
 typedef struct {
     uint32_t interval;
@@ -62,11 +59,6 @@ static inline void neu_persist_node_info_fini(neu_persist_node_info_t *info)
 static inline void neu_persist_group_info_fini(neu_persist_group_info_t *info)
 {
     free(info->name);
-}
-
-static inline void neu_persist_datatag_infos_free(UT_array *datatag_infos)
-{
-    utarray_free(datatag_infos);
 }
 
 static inline void
@@ -153,30 +145,51 @@ int neu_persister_load_plugins(neu_persister_t *persister,
                                UT_array **      plugin_infos);
 
 /**
- * Persist adapter datatags.
+ * Persist node tags.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter who owns the datatags.
- * @param group_config_name         name of the group config.
- * @param datatag_infos             vector of neu_persist_datatag_info_t.
+ * @param driver_name               name of the driver who owns the tags
+ * @param group_name                name of the group
+ * @param tag                       the tag to store
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_datatags(neu_persister_t *persister,
-                                 const char *     adapter_name,
-                                 const char *     group_config_name,
-                                 UT_array *       datatag_infos);
+int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
+                            const char *group_name, const neu_datatag_t *tag);
+
 /**
- * Load adapter datatag infos.
+ * Load node tag infos.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter who owns the datatags.
- * @param group_config_name         name of the group config.
- * @param[out] datatag_infos        used to return pointer to heap allocated
- * vector of neu_persist_datatag_info_t.
+ * @param node_name                 name of the node who owns the tags
+ * @param group_name                name of the group
+ * @param[out] tag_infos            used to return pointer to heap allocated
+ *                                  vector of neu_datatag_t
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_load_datatags(neu_persister_t *persister,
-                                const char *     adapter_name,
-                                const char *     group_config_name,
-                                UT_array **      datatag_infos);
+int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
+                            const char *group_name, UT_array **tag_infos);
+
+/**
+ * Update node tags.
+ * @param persister                 persiter object.
+ * @param driver_name               name of the driver who owns the tags
+ * @param group_name                name of the group
+ * @param tag                       the tag to update
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_update_tag(neu_persister_t *persister,
+                             const char *driver_name, const char *group_name,
+                             const neu_datatag_t *tag);
+
+/**
+ * Delete node tags.
+ * @param persister                 persiter object.
+ * @param driver_name               name of the driver who owns the tags
+ * @param group_name                name of the group
+ * @param tag_name                  name of the tag
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_delete_tag(neu_persister_t *persister,
+                             const char *driver_name, const char *group_name,
+                             const char *tag_name);
 
 /**
  * Persist adapter subscriptions.
