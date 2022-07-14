@@ -53,7 +53,7 @@ Check Response Status
   Integer             response status         ${status}
 
 LOGIN
-  POST                /api/v2/login           {"name": "admin", "pass":"0000"}
+  POST                /api/v2/login           {"name": "admin", "pass":"Lrlq6si6%GUvok$B"}
 
   Integer             response status         200
 

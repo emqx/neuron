@@ -50,7 +50,7 @@ void handle_login(nng_aio *aio)
         aio, neu_json_login_req_t, neu_json_decode_login_req, {
             neu_json_login_resp_t login_resp = { 0 };
             char *                name       = "admin";
-            char *                password   = "0000";
+            char *                password   = "Lrlq6si6%GUvok$B";
 
             if (strcmp(req->name, name) == 0 &&
                 strcmp(req->pass, password) == 0) {
