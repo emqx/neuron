@@ -55,7 +55,7 @@ Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${valu
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
+	Sleep	290ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status  ${res}  200
 
@@ -78,7 +78,7 @@ Read some ${tags} from ${node}, it will be success.
 		Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 	END
 
-	Sleep 	300ms
+	Sleep 	290ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status  ${res}  200
 
@@ -108,7 +108,7 @@ Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check 
 
 	[Teardown]	Del Group    ${node} 	group	
 
-Write and read same ${tag1} ${tag2} named same ${tag_name} but different address in different ${groups} that from ${node}, using ${check} to check the ${value}, it will be success.
+Write and read ${tag1} ${tag2} with same ${tag_name} but different address in different ${groups} that from ${node}, using ${check} to check the ${value}, it will be success.
 	[Tags]	Driver 	9
 	
 	${res}=	Add Group  ${node}  group-1  100
@@ -127,22 +127,22 @@ Write and read same ${tag1} ${tag2} named same ${tag_name} but different address
 	Check Response Status  ${res}  200
 	Check Error Code 	${res} 	${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
+	Sleep	290ms
 	${res}=	Write Tags  ${node}  group-1  ${tag_name}  ${value}
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
+	Sleep	100ms
 	${res}=	Read Tags  ${node}  group-1
 	Check Response Status  ${res}  200
 	Run Keyword	${check}	${res}[tags]	${tag_name}	${value}
 
-	Sleep	300ms
+	Sleep	290ms
 	${res}=	Write Tags  ${node}  group-2  ${tag_name}  ${value}
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
+	Sleep	100ms
 	${res}=	Read Tags  ${node}  group-1
 	Check Response Status  ${res}  200
 	Run Keyword	${check}	${res}[tags]	${tag_name}	${value}
@@ -150,42 +150,32 @@ Write and read same ${tag1} ${tag2} named same ${tag_name} but different address
 	Del Group	${node}	group-1
 	Del Group	${node}	group-2
 
-Write and read same a ${tag} with same ${tag_name} and same address in different ${groups} that from ${node}, using ${check} to check the ${value}, it will be success.
-	[Tags]	Driver 	10	
-	
-	${res}=	Add Group  ${node}  group-1  100
-	Check Response Status 	${res} 	200
-	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+Write and read a ${tag} with same ${tag_name} and same address in different ${groups} that from ${node}, using ${check} to check the ${value}, it will be success.
+	[Tags]	Driver 	10
 
-	${res}=	Add Group  ${node}  group-2  100
-	Check Response Status  ${res}  200
-	Check Error Code   ${res}  ${NEU_ERR_SUCCESS}
+	FOR	${group}	IN	@{groups}
+		${res}=	Add Group  ${node}  ${group}  100
+		Check Response Status  ${res}  200
+		Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	${res}=	Add Tags  ${node}  group-1  ${tags}
-	Check Response Status   ${res}  200
-	Check Error Code 		${res} 	${NEU_ERR_SUCCESS}
+		${res}=	Add Tags  ${node}  ${group}  ${tag}
+		Check Response Status  ${res}  200
+		Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	${res}=	Add Tags  ${node}  group-2  ${tags}
-	Check Response Status  ${res}  200
-	Check Error Code 	${res} 	${NEU_ERR_SUCCESS}
+		Sleep	290ms
+		${res}=	Write Tags  ${node}  ${group}  ${tag_name}  ${value}
+		Check Response Status  ${res}  200
+		Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
-	${res}=	Write Tags  ${node}  group-1  ${tag_name}  ${value}
-	Check Response Status  ${res}  200
-	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+		Sleep	100ms
+		${res}=	Read Tags  ${node}  ${group}
+		Check Response Status  ${res}  200
+		Run Keyword	${check}	${res}[tags]	${tag_name}	${value}
+	END
 
-	Sleep	300ms
-	${res}=	Read Tags  ${node}  group-1
-	Check Response Status  ${res}  200
-	Run Keyword 	${check} 	${res}[tags] 	${tag_name} 	${value}
-
-	Sleep	300ms
-	${res}=	Read Tags  ${node}  group-2
-	Check Response Status  ${res}  200
-	Run Keyword 	${check} 	${res}[tags] 	${tag_name} 	${value}
-
-	Del Group	${node}	group-1
-	Del Group	${node}	group-2
+	FOR	${group}	IN	@{groups}
+		Del Group  ${node}  ${group}
+	END
 
 Update a ${tag} by a ${tag_update} named ${tag_name} from ${node} , it can read and write, using ${check} to check the ${value}, it will be success.
 	[Tags]	Driver 	12
@@ -206,7 +196,7 @@ Update a ${tag} by a ${tag_update} named ${tag_name} from ${node} , it can read 
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep 	300ms
+	Sleep 	290ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status  ${res}  200
 
@@ -225,7 +215,6 @@ Update a ${tag} by a ${tag_update} with the unmatch settings from ${node} , it w
 	Check Response Status  ${res}  200
 	Check Error Code 	${res} 	${NEU_ERR_SUCCESS}
 
-	Sleep 	300ms
 	${res}=	Update Tags  ${node}  group  ${tag_update}
 	Check Response Status  ${res}  ${resp_status}
 	Check Error Code 	${res} 	${error_code}
@@ -260,7 +249,7 @@ Read a ${tag} with named ${tag_name} that don't exist in plc form ${node}, it wi
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
+	Sleep	290ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status 	${res} 	200
 	Check Tag Error As Int  ${res}  ${tag_name}  ${NEU_ERR_TAG_NOT_EXIST}
