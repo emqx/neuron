@@ -59,18 +59,26 @@ void manager_storage_del_node(neu_manager_t *manager, const char *node)
     neu_persister_delete_node(manager->persister, node);
 }
 
-void manager_storage_subscribe(neu_manager_t *manager, const char *app)
+void manager_storage_subscribe(neu_manager_t *manager, const char *app,
+                               const char *driver, const char *group)
 {
-
-    UT_array *sub_infos = neu_manager_get_sub_group(manager, app);
-
-    int rv =
-        neu_persister_store_subscriptions(manager->persister, app, sub_infos);
+    int rv = neu_persister_store_subscription(manager->persister, app, driver,
+                                              group);
     if (0 != rv) {
-        nlog_error("fail store adapter:%s subscription infos", app);
+        nlog_error("fail store subscription app:%s driver:%s group:%s", app,
+                   driver, group);
     }
+}
 
-    utarray_free(sub_infos);
+void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
+                                 const char *driver, const char *group)
+{
+    int rv = neu_persister_delete_subscription(manager->persister, app, driver,
+                                               group);
+    if (0 != rv) {
+        nlog_error("fail delete subscription app:%s driver:%s group:%s", app,
+                   driver, group);
+    }
 }
 
 int manager_load_plugin(neu_manager_t *manager)
@@ -137,21 +145,19 @@ int manager_load_subscribe(neu_manager_t *manager)
         } else {
             utarray_foreach(sub_infos, neu_persist_subscription_info_t *, info)
             {
-                rv = neu_manager_subscribe(manager, info->sub_adapter_name,
-                                           info->src_adapter_name,
-                                           info->group_config_name);
+                rv = neu_manager_subscribe(manager, node->node,
+                                           info->driver_name, info->group_name);
                 const char *ok_or_err = (0 == rv) ? "success" : "fail";
                 nlog_info("%s load subscription app:%s driver:%s grp:%s",
-                          ok_or_err, info->sub_adapter_name,
-                          info->src_adapter_name, info->group_config_name);
+                          ok_or_err, node->node, info->driver_name,
+                          info->group_name);
                 if (rv == 0) {
-                    neu_manager_notify_app_sub_update(manager,
-                                                      info->src_adapter_name,
-                                                      info->group_config_name);
+                    neu_manager_notify_app_sub_update(
+                        manager, info->driver_name, info->group_name);
                 }
             }
 
-            neu_persist_subscription_infos_free(sub_infos);
+            utarray_free(sub_infos);
         }
     }
 

@@ -710,105 +710,93 @@ int neu_persister_delete_tag(neu_persister_t *persister,
         driver_name, group_name, tag_name);
 }
 
-int neu_persister_store_subscriptions(neu_persister_t *persister,
-                                      const char *     adapter_name,
-                                      UT_array *       subscription_infos)
+int neu_persister_store_subscription(neu_persister_t *persister,
+                                     const char *     app_name,
+                                     const char *     driver_name,
+                                     const char *     group_name)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    int rv = create_dir(path);
-    if (0 != rv) {
-        nlog_error("fail to create dir: %s", path);
-        return rv;
-    }
-
-    n = path_cat(path, n, sizeof(path), "subscriptions.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    neu_json_subscriptions_req_t subs_resp = { 0 };
-    int                          index     = 0;
-    subs_resp.n_subscription               = utarray_len(subscription_infos);
-    subs_resp.subscriptions =
-        calloc(subs_resp.n_subscription,
-               sizeof(neu_json_subscriptions_req_subscription_t));
-    utarray_foreach(subscription_infos, neu_resp_subscribe_info_t *, info)
-    {
-        subs_resp.subscriptions[index].group_config_name = info->group;
-        subs_resp.subscriptions[index].src_adapter_name  = info->driver;
-        subs_resp.subscriptions[index].sub_adapter_name  = info->app;
-        index += 1;
-    }
-
-    char *result = NULL;
-    rv = neu_json_encode_by_fn(&subs_resp, neu_json_encode_subscriptions_resp,
-                               &result);
-    if (rv == 0) {
-        rv = write_file_string(path, result);
-    }
-
-    free(result);
-    free(subs_resp.subscriptions);
-
-    return rv;
+    return neu_persister_sql_exec(
+        persister,
+        "INSERT INTO subscriptions (app_name, driver_name, group_name) VALUES "
+        "(%Q, %Q, %Q)",
+        app_name, driver_name, group_name);
 }
 
+static UT_icd subscription_info_icd = {
+    sizeof(neu_persist_subscription_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_subscription_info_fini,
+};
+
 int neu_persister_load_subscriptions(neu_persister_t *persister,
-                                     const char *     adapter_name,
+                                     const char *     app_name,
                                      UT_array **      subscription_infos)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    sqlite3_stmt *stmt = NULL;
+    const char *  query =
+        "SELECT driver_name, group_name FROM subscriptions WHERE app_name=?";
 
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
+    utarray_new(*subscription_infos, &subscription_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    n = path_cat(path, n, sizeof(path), "subscriptions.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    char *json_str = NULL;
-    int   rv       = read_file_string(path, &json_str);
-    if (rv != 0) {
-        return rv;
-    }
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        char *driver_name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == driver_name) {
+            break;
+        }
 
-    neu_json_subscriptions_req_t *subs_req = NULL;
-    rv = neu_json_decode_subscriptions_req(json_str, &subs_req);
-    free(json_str);
-    if (0 != rv) {
-        return rv;
-    }
+        char *group_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == group_name) {
+            free(driver_name);
+            break;
+        }
 
-    UT_icd icd = { sizeof(neu_persist_subscription_info_t), NULL, NULL, NULL };
-    utarray_new(*subscription_infos, &icd);
-
-    for (int i = 0; i < subs_req->n_subscription; i++) {
-        neu_persist_subscription_info_t info = { 0 };
-        info.group_config_name =
-            strdup(subs_req->subscriptions[i].group_config_name);
-        info.src_adapter_name =
-            strdup(subs_req->subscriptions[i].src_adapter_name);
-        info.sub_adapter_name =
-            strdup(subs_req->subscriptions[i].sub_adapter_name);
-
+        neu_persist_subscription_info_t info = {
+            .driver_name = driver_name,
+            .group_name  = group_name,
+        };
         utarray_push_back(*subscription_infos, &info);
+
+        step = sqlite3_step(stmt);
     }
 
-    neu_json_decode_subscriptions_req_free(subs_req);
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
     return 0;
+
+error:
+    utarray_free(*subscription_infos);
+    *subscription_infos = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_delete_subscription(neu_persister_t *persister,
+                                      const char *     app_name,
+                                      const char *     driver_name,
+                                      const char *     group_name)
+{
+    return neu_persister_sql_exec(persister,
+                                  "DELETE FROM subscriptions WHERE app_name=%Q "
+                                  "AND driver_name=%Q AND group_name=%Q",
+                                  app_name, driver_name, group_name);
 }
 
 int neu_persister_store_group(neu_persister_t *         persister,

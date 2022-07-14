@@ -26,7 +26,6 @@ extern "C" {
 
 #include "adapter/adapter_info.h"
 #include "persist/json/persist_json_plugin.h"
-#include "persist/json/persist_json_subs.h"
 
 typedef neu_json_plugin_req_plugin_t neu_persist_plugin_info_t;
 
@@ -42,8 +41,10 @@ typedef struct {
     char *   name;
 } neu_persist_group_info_t;
 
-typedef neu_json_subscriptions_req_subscription_t
-    neu_persist_subscription_info_t;
+typedef struct {
+    char *driver_name;
+    char *group_name;
+} neu_persist_subscription_info_t;
 
 static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
@@ -62,15 +63,10 @@ static inline void neu_persist_group_info_fini(neu_persist_group_info_t *info)
 }
 
 static inline void
-neu_persist_subscription_infos_free(UT_array *subscription_infos)
+neu_persist_subscription_info_fini(neu_persist_subscription_info_t *info)
 {
-    utarray_foreach(subscription_infos, neu_persist_subscription_info_t *, info)
-    {
-        free(info->group_config_name);
-        free(info->src_adapter_name);
-        free(info->sub_adapter_name);
-    }
-    utarray_free(subscription_infos);
+    free(info->driver_name);
+    free(info->group_name);
 }
 
 /**
@@ -192,28 +188,42 @@ int neu_persister_delete_tag(neu_persister_t *persister,
                              const char *tag_name);
 
 /**
- * Persist adapter subscriptions.
+ * Persist subscriptions.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter who owns the
- * subscriptions.
- * @param subscription_infos        vector of neu_persist_subscription_info_t.
+ * @param app_name                  name of the app node
+ * @param driver_name               name of the driver node
+ * @param group_name                name of the group
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_subscriptions(neu_persister_t *persister,
-                                      const char *     adapter_name,
-                                      UT_array *       subscription_infos);
+int neu_persister_store_subscription(neu_persister_t *persister,
+                                     const char *     app_name,
+                                     const char *     driver_name,
+                                     const char *     group_name);
+
 /**
- * Load adapter subscription infos.
+ * Load adapter subscriptions.
  * @param persister                 persiter object.
- * @param adapter_name              name of the adapter who owns the
- * subscriptions.
+ * @param app_name                  name of the app node
  * @param[out] subscription_infos   used to return pointer to heap allocated
- * vector of neu_persist_subscription_info_t.
+ *                                  vector of neu_persist_subscription_info_t.
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_load_subscriptions(neu_persister_t *persister,
-                                     const char *     adapter_name,
+                                     const char *     app_name,
                                      UT_array **      subscription_infos);
+
+/**
+ * Persist subscriptions.
+ * @param persister                 persiter object.
+ * @param app_name                  name of the app node
+ * @param driver_name               name of the driver node
+ * @param group_name                name of the group
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_delete_subscription(neu_persister_t *persister,
+                                      const char *     app_name,
+                                      const char *     driver_name,
+                                      const char *     group_name);
 
 /**
  * Persist group config.
