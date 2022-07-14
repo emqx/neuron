@@ -119,18 +119,17 @@ int neu_json_encode_states_resp(void *json_object, void *param)
         neu_json_elem_t state_elems[] = { {
                                               .name      = "node",
                                               .t         = NEU_JSON_STR,
-                                              .v.val_str = (&states[i])->node,
+                                              .v.val_str = states[i].node,
                                           },
                                           {
                                               .name      = "link",
                                               .t         = NEU_JSON_INT,
-                                              .v.val_int = (&states[i])->link,
+                                              .v.val_int = states[i].link,
                                           },
                                           {
-                                              .name = "running",
-                                              .t    = NEU_JSON_INT,
-                                              .v.val_int =
-                                                  (&states[i])->running,
+                                              .name      = "running",
+                                              .t         = NEU_JSON_INT,
+                                              .v.val_int = states[i].running,
                                           } };
         state_array = neu_json_encode_array(state_array, state_elems,
                                             NEU_JSON_ELEM_SIZE(state_elems));

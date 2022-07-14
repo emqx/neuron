@@ -19,12 +19,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "command.h"
 #include "heartbeat.h"
 #include "read_write.h"
-#include "utils/log.h"
-
-#include "../mqtt.h"
-#include "command.h"
 
 // Read tags with group config
 static int read_request(mqtt_response_t *response, neu_plugin_t *plugin,

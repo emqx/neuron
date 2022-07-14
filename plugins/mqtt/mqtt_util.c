@@ -17,16 +17,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <jansson.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
 #include <json/json.h>
 #include <json/neu_json_param.h>
-#include <neuron.h>
+
+#include "mqtt_util.h"
 
 void mqtt_option_uninit(neu_mqtt_option_t *option)
 {

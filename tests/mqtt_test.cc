@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "util.h"
+#include "mqtt_util.h"
 #include <neuron.h>
 
 #include "utils/log.h"

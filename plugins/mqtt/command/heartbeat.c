@@ -21,10 +21,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "../mqtt.h"
-#include "heartbeat.h"
-#include "utils/log.h"
 #include "version.h"
+
+#include "heartbeat.h"
 
 char *command_heartbeat_generate(neu_plugin_t *plugin, UT_array *states)
 {
@@ -38,12 +37,14 @@ char *command_heartbeat_generate(neu_plugin_t *plugin, UT_array *states)
         json.states = calloc(json.n_state, sizeof(neu_json_node_state_t));
     }
 
-    for (int i = 0; i < json.n_state; i++) {
-        struct node_state **nsp = utarray_eltptr(states, (unsigned int) i);
-        struct node_state * ns  = (*nsp);
-        json.states[i].node     = ns->node;
-        json.states[i].link     = ns->link;
-        json.states[i].running  = ns->running;
+    int index = 0;
+    utarray_foreach(states, struct node_state **, state_p)
+    {
+        struct node_state *ns      = (*state_p);
+        json.states[index].node    = ns->node;
+        json.states[index].link    = ns->link;
+        json.states[index].running = ns->running;
+        index++;
     }
 
     neu_json_encode_with_mqtt(&json, neu_json_encode_states_resp, &header,

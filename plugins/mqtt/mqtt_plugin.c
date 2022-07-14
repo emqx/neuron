@@ -18,12 +18,13 @@
  **/
 
 #include <assert.h>
+
 #include <nng/nng.h>
 #include <nng/supplemental/util/platform.h>
 
 #include "command/command.h"
-#include "mqtt.h"
-#include "util.h"
+#include "mqtt_plugin.h"
+#include "mqtt_util.h"
 
 #define INTERVAL 100000U
 #define TIMEOUT 3000U
@@ -135,7 +136,7 @@ static void topics_generate(UT_array *topics, char *name, char *upload_topic,
     char *heartbeat_req = NULL;
     char *heartbeat_res = NULL;
     if (NULL != heartbeat_topic && 0 < strlen(heartbeat_topic)) {
-        nlog_debug("------------->%s", heartbeat_topic);
+        nlog_debug("user defined heartbeat topic:%s", heartbeat_topic);
         heartbeat_res = strdup(heartbeat_topic);
     } else {
         heartbeat_res = topics_format(TOPIC_HEARTBEAT_RES, name);

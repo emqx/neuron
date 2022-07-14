@@ -43,7 +43,7 @@ typedef struct {
 
 typedef struct {
     char *   version;
-    uint32_t timpstamp;
+    uint64_t timpstamp;
 } neu_json_states_head_t;
 
 typedef struct {

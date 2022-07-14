@@ -30,6 +30,8 @@ extern "C" {
 #include "json/neu_json_mqtt.h"
 #include "json/neu_json_rw.h"
 
+#include "mqtt_plugin.h"
+
 #define UNUSED(x) (void) (x)
 
 #ifdef __cplusplus

@@ -17,15 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT
-#define NEURON_PLUGIN_MQTT
+#ifndef NEURON_MQTT_PLUGIN
+#define NEURON_MQTT_PLUGIN
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <neuron.h>
 #include <stdlib.h>
+
+#include <neuron.h>
 
 typedef struct mqtt_routine mqtt_routine_t;
 
