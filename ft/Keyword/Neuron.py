@@ -223,3 +223,12 @@ class Read(object):
                     ret = 0
                 break
         return ret
+
+    def Check_Tag_Error(self, tags, name, value):
+        ret = -1
+        for tag in tags:
+            if tag['name'] == name:
+                if int(tag['error']) == int(value):
+                    ret = 0
+                break
+        return ret
