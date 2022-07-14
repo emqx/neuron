@@ -1,14 +1,17 @@
 #include <gtest/gtest.h>
 
-#include "mqtt_util.h"
 #include <neuron.h>
 
-#include "utils/log.h"
+#include "mqtt_plugin.h"
+#include "mqtt_util.h"
 
 zlog_category_t *neuron = NULL;
 
 TEST(MQTTTest, mqtt_option_init_by_config)
 {
+    neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
+    neu_plugin_common_init(&plugin->common);
+
     neu_mqtt_option_t option;
     memset(&option, 0, sizeof(neu_mqtt_option_t));
     char *config =
@@ -20,9 +23,10 @@ TEST(MQTTTest, mqtt_option_init_by_config)
                  "\"\",\"ca\":\"\", \"cert\":\"\", \"key\":\"\", "
                  "\"keypass\":\"\"}}";
 
-    int rc = mqtt_option_init(config, &option);
+    int rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
-    mqtt_option_uninit(&option);
+    mqtt_option_uninit(plugin, &option);
+    free(plugin);
 }
 
 int main(int argc, char **argv)

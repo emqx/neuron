@@ -592,29 +592,48 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
     utarray_new(client->array, &tuple_icd);
 
     struct reconnect_state *state = &client->state;
-    state->hostname               = strdup(client->option->host);
-    state->port                   = strdup(client->option->port);
-    state->client_id              = strdup(client->option->clientid);
-    state->connection             = strdup(client->option->connection);
-    state->username               = strdup(client->option->username);
-    state->password               = strdup(client->option->password);
-    state->keepalive              = client->option->keepalive_interval;
-    state->clean                  = client->option->clean_session;
-    state->ca_file                = strdup(client->option->ca);
-    state->cert_file              = strdup(client->option->cert);
-    state->key_file               = strdup(client->option->key);
-    state->client                 = client;
-    state->send_buf_sz            = sizeof(state->send_buf);
-    state->recv_buf_sz            = sizeof(state->recv_buf);
-    state->cert                   = NULL;
-    state->key                    = NULL;
-    state->ssl_ctx                = NULL;
-    state->sock_fd                = NULL;
-    state->running                = true;
-    state->working                = true;
-    pthread_mutex_init(&state->sock_state_mutex, NULL);
-    pthread_mutex_init(&state->running_mutex, NULL);
-    pthread_mutex_init(&state->working_mutex, NULL);
+
+    if (NULL != client->option->clientid) {
+        state->client_id = strdup(client->option->clientid);
+    }
+
+    if (NULL != client->option->connection) {
+        state->connection = strdup(client->option->connection);
+    }
+
+    if (NULL != client->option->host) {
+        state->hostname = strdup(client->option->host);
+    }
+
+    if (NULL != client->option->port) {
+        state->port = strdup(client->option->port);
+    }
+
+    if (NULL != client->option->username) {
+        state->username = strdup(client->option->username);
+    }
+
+    if (NULL != client->option->password) {
+        state->password = strdup(client->option->password);
+    }
+
+    if (NULL != client->option->ca) {
+        state->ca_file = strdup(client->option->ca);
+    }
+
+    if (NULL != client->option->cert) {
+        state->cert_file = strdup(client->option->cert);
+    }
+
+    if (NULL != client->option->key) {
+        state->key_file = strdup(client->option->key);
+    }
+
+    if (NULL != client->option->keypass) {
+        state->keypass = strdup(client->option->keypass);
+    } else {
+        state->keypass = NULL;
+    }
 
     if (NULL != client->option->will_topic) {
         state->will_topic = strdup(option->will_topic);
@@ -624,12 +643,20 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
         }
     }
 
-    if (NULL != client->option->keypass &&
-        0 < strlen(client->option->keypass)) {
-        state->keypass = strdup(client->option->keypass);
-    } else {
-        state->keypass = NULL;
-    }
+    state->client      = client;
+    state->send_buf_sz = sizeof(state->send_buf);
+    state->recv_buf_sz = sizeof(state->recv_buf);
+    state->cert        = NULL;
+    state->key         = NULL;
+    state->ssl_ctx     = NULL;
+    state->sock_fd     = NULL;
+    state->running     = true;
+    state->working     = true;
+    state->keepalive   = client->option->keepalive_interval;
+    state->clean       = client->option->clean_session;
+    pthread_mutex_init(&state->sock_state_mutex, NULL);
+    pthread_mutex_init(&state->running_mutex, NULL);
+    pthread_mutex_init(&state->working_mutex, NULL);
 
     client->mqtt.publish_response_callback_state = state;
     return client;

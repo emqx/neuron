@@ -25,10 +25,13 @@
 #include <json/json.h>
 #include <json/neu_json_param.h>
 
+#include "mqtt_plugin.h"
 #include "mqtt_util.h"
 
-void mqtt_option_uninit(neu_mqtt_option_t *option)
+void mqtt_option_uninit(neu_plugin_t *plugin, neu_mqtt_option_t *option)
 {
+    (void) plugin;
+
     if (NULL != option->clientid) {
         free(option->clientid);
         option->clientid = NULL;
@@ -90,7 +93,8 @@ void mqtt_option_uninit(neu_mqtt_option_t *option)
     }
 }
 
-int mqtt_option_init(char *config, neu_mqtt_option_t *option)
+int mqtt_option_init(neu_plugin_t *plugin, char *config,
+                     neu_mqtt_option_t *option)
 {
     if (NULL == config || NULL == option) {
         return -1;
@@ -113,45 +117,133 @@ int mqtt_option_init(char *config, neu_mqtt_option_t *option)
     neu_json_elem_t key       = { .name = "key", .t = NEU_JSON_STR };
     neu_json_elem_t keypass   = { .name = "keypass", .t = NEU_JSON_STR };
 
-    ret = neu_parse_param(config, &error, 13, &id, &upload, &heartbeat, &format,
-                          &ssl, &host, &port, &username, &password, &ca, &cert,
-                          &key, &keypass);
+    // client-id, required
+    ret = neu_parse_param(config, &error, 1, &id);
     if (0 != ret) {
-        return ret;
-    }
-
-    if (false == ssl.v.val_bool) {
-        option->connection = strdup("tcp://");
+        plog_error(plugin, "can't decode client-id from json");
+        free(id.v.val_str);
+        return -1;
     } else {
-        option->connection = strdup("ssl://");
+        option->clientid = id.v.val_str;
     }
 
-    if (0 == strcmp(option->connection, "ssl://")) {
-        if (0 == strlen(ca.v.val_str)) {
-            free(ca.v.val_str);
-            return -1;
+    // upload-topic, optional
+    ret = neu_parse_param(config, &error, 1, &upload);
+    if (0 != ret) {
+        free(upload.v.val_str);
+    } else {
+        option->upload_topic = upload.v.val_str;
+    }
+
+    // heartbeat-topic, optional
+    ret = neu_parse_param(config, &error, 1, &heartbeat);
+    if (0 != ret) {
+        free(heartbeat.v.val_str);
+    } else {
+        option->heartbeat_topic = heartbeat.v.val_str;
+    }
+
+    // format, required
+    ret = neu_parse_param(config, &error, 1, &format);
+    if (0 != ret) {
+        option->format = 0;
+    } else {
+        option->format = format.v.val_int;
+    }
+
+    // ssl, required
+    ret = neu_parse_param(config, &error, 1, &ssl);
+    if (0 != ret) {
+        plog_error(plugin, "can't decode ssl from json");
+        return -2;
+    } else {
+        if (false == ssl.v.val_bool) {
+            option->connection = strdup("tcp://");
+        } else {
+            option->connection = strdup("ssl://");
+
+            // ca, required if ssl enabled
+            ret = neu_parse_param(config, &error, 1, &ca);
+            if (0 != ret) {
+                plog_error(plugin, "can't decode ca from json");
+                free(ca.v.val_str);
+                return -3;
+            } else {
+                option->ca = ca.v.val_str;
+            }
+
+            // cert, optional
+            ret = neu_parse_param(config, &error, 1, &cert);
+            if (0 == ret) {
+                free(cert.v.val_str);
+            } else {
+                option->cert = cert.v.val_str;
+
+                // key, required if cert enable
+                ret = neu_parse_param(config, &error, 1, &key);
+                if (0 != ret) {
+                    plog_error(plugin, "can't decode key from json");
+                    free(key.v.val_str);
+                    return -4;
+                } else {
+                    option->key = key.v.val_str;
+                }
+
+                // keypass, optional
+                ret = neu_parse_param(config, &error, 1, &keypass);
+                if (0 != ret) {
+                    free(keypass.v.val_str);
+                } else {
+                    option->keypass = keypass.v.val_str;
+                }
+            }
         }
     }
 
+    // host, required
+    ret = neu_parse_param(config, &error, 1, &host);
+    if (0 != ret) {
+        plog_error(plugin, "can't decode host from json");
+        free(host.v.val_str);
+        return -5;
+    } else {
+        option->host = host.v.val_str;
+    }
+
+    // port, required
+    ret = neu_parse_param(config, &error, 1, &port);
+    if (0 != ret) {
+        plog_error(plugin, "can't decode port from json");
+        return -6;
+    } else {
+        int32_t p    = (int) port.v.val_int;
+        option->port = calloc(10, sizeof(char));
+        snprintf(option->port, 10, "%d", p);
+        option->password = password.v.val_str;
+    }
+
+    // username, optional
+    ret = neu_parse_param(config, &error, 1, &username);
+    if (0 != ret) {
+        free(username.v.val_str);
+    } else {
+        option->username = username.v.val_str;
+    }
+
+    // password, optional
+    ret = neu_parse_param(config, &error, 1, &password);
+    if (0 != ret) {
+        free(password.v.val_str);
+    } else {
+        option->password = password.v.val_str;
+    }
+
     // MQTT option
-    option->MQTT_version = 4; // Version 3.1.1
-    option->host         = host.v.val_str;
-    int32_t p            = (int) port.v.val_int;
-    option->port         = calloc(10, sizeof(char));
-    snprintf(option->port, 10, "%d", p);
-    option->clientid           = id.v.val_str;
-    option->upload_topic       = upload.v.val_str;
-    option->heartbeat_topic    = heartbeat.v.val_str;
-    option->format             = format.v.val_int;
-    option->username           = username.v.val_str;
-    option->password           = password.v.val_str;
-    option->ca                 = ca.v.val_str;
-    option->cert               = cert.v.val_str;
-    option->key                = key.v.val_str;
+    option->MQTT_version       = 4; // Version 3.1.1
     option->keepalive_interval = 30;
     option->clean_session      = 1;
     option->will_topic         = NULL;
     option->will_payload       = NULL;
-    option->keypass            = keypass.v.val_str;
+
     return 0;
 }

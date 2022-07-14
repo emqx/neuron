@@ -289,9 +289,9 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     }
 
     // MQTT client start
-    int rc = mqtt_option_init((char *) config, &routine->option);
+    int rc = mqtt_option_init(plugin, (char *) config, &routine->option);
     if (0 != rc) {
-        mqtt_option_uninit(&routine->option);
+        mqtt_option_uninit(plugin, &routine->option);
         free(routine);
         return NULL;
     }
@@ -302,7 +302,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     neu_err_code_e     error          = NEU_ERR_SUCCESS;
     error = neu_mqtt_client_open(client_p, &routine->option, plugin);
     if (NEU_ERR_SUCCESS != error) {
-        mqtt_option_uninit(&routine->option);
+        mqtt_option_uninit(plugin, &routine->option);
         free(routine);
         return NULL;
     }
@@ -362,7 +362,7 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
 
     topics_cleanup(routine->topics);
     utarray_free(routine->topics);
-    mqtt_option_uninit(&routine->option);
+    mqtt_option_uninit(routine->plugin, &routine->option);
 }
 
 static neu_plugin_t *mqtt_plugin_open(void)
