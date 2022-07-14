@@ -5,25 +5,25 @@ Resource	error.resource
 
 *** Keywords ***
 Set a ${node} with right ${node_settings}, it will be success.
-	[Tags] Driver 	1
+	[Tags]	Driver 	1
 
 	${res}=	Node Setting  ${node}  ${node_settings}
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
 Set a ${node} with wrong ${node_settings}, it will be failure.
-	[Tags] Driver 	2
+	[Tags]	Driver 	2
 
 	${res}=	Node Setting  ${node}  ${node_settings}
-	Check Response Status  ${res}  2004
+	Check Response Status  ${res}  400
 	Check Error Code  ${res}  ${NEU_ERR_NODE_SETTING_INVALID}
 
-Set a ${tag} with right address, type and attribute from ${node}, it will be success.
-	[Tags] 	Driver 	3
+Add a ${tag} with right address and type and attribute from ${node}, it will be success.
+	[Tags]	Driver 	3
 
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
-	Check Error Code  ${res}  ${NEU_ERROR_SUCCESS}
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
 	${res}=	Add Tags  ${node}  group  ${tag}
 	Check Response Status 	${res} 	200
@@ -32,7 +32,7 @@ Set a ${tag} with right address, type and attribute from ${node}, it will be suc
 	[Teardown] 	Del Group  ${node}  group
 
 Set a ${tag} with unmatch address, type or attribute from ${node}, it will be failure and return ${resp_status} and ${error_code}.
-	[Tags] 	Driver 4
+	[Tags]	Driver 4
 	
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
@@ -45,7 +45,7 @@ Set a ${tag} with unmatch address, type or attribute from ${node}, it will be fa
 	[Teardown] 	Del Group  ${node}  group
 
 Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
-	[Tags] 	Driver 	5
+	[Tags]	Driver 	5
 
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
@@ -64,11 +64,13 @@ Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${valu
 	[Teardown]	Del Group	${node}	group
 
 Read some ${tags} from ${node}, it will be success.
-	[Tags] 	Driver 6 and 7
+	[Tags]	Driver 6 and 7
 
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	Log	${tags}
 
 	FOR 	${tag} 	IN 	@{tags}
 		${res}=	Add Tags  ${node}  group  ${tag}
@@ -76,14 +78,14 @@ Read some ${tags} from ${node}, it will be success.
 		Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 	END
 
-	Sleep 	1000ms
+	Sleep 	300ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status  ${res}  200
 
 	[Teardown]	Del Group  ${node}  group
 
 Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
-	[Tags] 	Driver 	8
+	[Tags]	Driver 	8
 
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
@@ -93,12 +95,12 @@ Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check 
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
+	Sleep	290ms
 	${res}=	Write Tags  ${node}  group  ${tag_name}  ${value}
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	Sleep	300ms
+	Sleep	100ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status  ${res}  200
 
@@ -107,7 +109,7 @@ Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check 
 	[Teardown]	Del Group    ${node} 	group	
 
 Write and read same ${tag1} ${tag2} named same ${tag_name} but different address in different ${groups} that from ${node}, using ${check} to check the ${value}, it will be success.
-	[Tags] 	Driver 	9
+	[Tags]	Driver 	9
 	
 	${res}=	Add Group  ${node}  group-1  100
 	Check Response Status 	${res} 	200
@@ -149,7 +151,7 @@ Write and read same ${tag1} ${tag2} named same ${tag_name} but different address
 	Del Group	${node}	group-2
 
 Write and read same a ${tag} with same ${tag_name} and same address in different ${groups} that from ${node}, using ${check} to check the ${value}, it will be success.
-	[Tags] 	Driver 	10	
+	[Tags]	Driver 	10	
 	
 	${res}=	Add Group  ${node}  group-1  100
 	Check Response Status 	${res} 	200
@@ -185,8 +187,8 @@ Write and read same a ${tag} with same ${tag_name} and same address in different
 	Del Group	${node}	group-1
 	Del Group	${node}	group-2
 
-Update a ${tag} by ${tag_update} named ${tag_name} that from ${node}, it can read and write, using  ${check} to check the ${value}.
-	[Tags] 	Driver 	12
+Update a ${tag} by a ${tag_update} named ${tag_name} from ${node} , it can read and write, using ${check} to check the ${value}, it will be success.
+	[Tags]	Driver 	12
 	
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
@@ -200,21 +202,20 @@ Update a ${tag} by ${tag_update} named ${tag_name} that from ${node}, it can rea
 	Check Response Status  ${res}  200
 	Check Error Code 	${res} 	${NEU_ERR_SUCCESS}
 
-	${res}=	Write Tags  ${node}  group  ${tag}  ${value}
+	${res}=	Write Tags  ${node}  group  ${tag_name}  ${value}
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
 	Sleep 	300ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status  ${res}  200
-	Check Error Code 	${res} 	${NEU_ERR_SUCCESS}
 
-	Run Keyword	$[check]	${res}[tags]	${tag_name}	${value}
+	Run Keyword	${check}	${res}[tags]	${tag_name}	${value}
 
 	[Teardown]	Del Group	${node}	group
 
 Update a ${tag} by a ${tag_update} with the unmatch settings from ${node} , it will be failure and return ${resp_status} and ${error_code}.
-	[Tags] 	Driver 	13
+	[Tags]	Driver 	13
 	
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
@@ -231,36 +232,8 @@ Update a ${tag} by a ${tag_update} with the unmatch settings from ${node} , it w
 
 	[Teardown]	Del Group  ${node}  group
 
-Write a ${value} to a tag with named ${tag_name} that don't exist in neuron from ${node}, it will be failure.
-	[Tags] 	Driver 	14
-
-	${res}=	Add Group  ${node}  group  100
-	Check Response Status  ${res}  200
-	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
-
-	${res}=	Write Tags  ${node}  group  ${tag_name}  ${value}
-	Check Response Status 	${res} 	2201
-	Check Error Code 	${res} 	${NEU_ERR_TAG_NOT_EXIST}
-
-	[Teardown]	Del Group  ${node}  group
-
-Read a tag with named ${tag_name} that don't exist in neuron form ${node}, using ${check} to check the ${value}, it will be failure.
-	[Tags] 	Driver 	15
-
-	${res}=	Add Group  ${node}  group  100
-	Check Response Status  ${res}  200
-	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
-
-	${res}=	Read Tags  ${node}  group
-	Check Response Status 	${res} 	200
-	Check Error Code 	${res} 	${NEU_ERR_SUCCESS}
-
-	Run Keyword 	${check} 	${res}[tags] 	${tag_name} 	${value}
-
-	[Teardown]	Del Group  ${node}  group
-
-Write a ${value} to a ${tag} named ${tag_name} that without write attribute from ${node}, it will be failure.
-	[Tags] 	Driver 	16
+Write a ${value} to a ${tag} with named ${tag_name} that don't exist in neuron or plc from ${node}, it will be failure.
+	[Tags]	Driver 	14
 
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
@@ -271,13 +244,48 @@ Write a ${value} to a ${tag} named ${tag_name} that without write attribute from
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
 	${res}=	Write Tags  ${node}  group  ${tag_name}  ${value}
-	Check Response Status  ${res}  2203
-	Check Error Code  ${res}  ${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
+	Check Response Status 	${res} 	404
+	Check Error Code 	${res} 	${NEU_ERR_TAG_NOT_EXIST}
+
+	[Teardown]	Del Group  ${node}  group
+
+Read a ${tag} with named ${tag_name} that don't exist in plc form ${node}, it will be failure.
+	[Tags]	Driver 	15
+
+	${res}=	Add Group  ${node}  group  100
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=	Add Tags  ${node}  group  ${tag}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	Sleep	300ms
+	${res}=	Read Tags  ${node}  group
+	Check Response Status 	${res} 	200
+	Check Tag Error As Int  ${res}  ${tag_name}  ${NEU_ERR_TAG_NOT_EXIST}
+
+	[Teardown]	Del Group  ${node}  group
+
+Write a ${value} to a ${tag} named ${tag_name} that without write attribute from ${node}, it will be failure.
+	[Tags]	Driver 	16
+
+	${res}=	Add Group  ${node}  group  100
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=	Add Tags  ${node}  group  ${tag}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=	Write Tags  ${node}  group  ${tag_name}  ${value}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE}
 
 	[Teardown]	Del Group  ${node}  group
 
 Write and read a ${value} to a ${tag} named ${tag_name} when the ${node} is stoped, it will be failure.
-	[Tags] 	Driver 	17
+	[Tags]	Driver 	17
 
 	${res}=	Add Group  ${node}  group  100
 	Check Response Status  ${res}  200
@@ -292,11 +300,11 @@ Write and read a ${value} to a ${tag} named ${tag_name} when the ${node} is stop
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
 	${res}=	Write Tags  ${node}  group  ${tag_name}  ${value}
-	Check Response Status  ${res}  2009
-	Check Error Code  ${res}  ${NEU_ERR_NODE_IS_STOPED}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_PLUGIN_NOT_RUNNING}
 
 	${res}=	Read Tags  ${node}  group
-	Check Response Status  ${res}  2009
-	Check Error Code  {$res}  ${NEU_ERR_NODE_IS_STOPED}
+	Check Response Status  ${res}  200
+	Check Tag Error As Int  ${res}[tags]  ${tag_name}  ${NEU_ERR_PLUGIN_NOT_RUNNING}
 
 	[Teardown]	Del Group  ${node}  group
