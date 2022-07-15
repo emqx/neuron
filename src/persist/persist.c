@@ -306,6 +306,236 @@ error_open:
     return rv;
 }
 
+static inline int execute_sql(sqlite3 *db, const char *sql, ...)
+{
+    int rv = 0;
+
+    va_list args;
+    va_start(args, sql);
+    char *query = sqlite3_vmprintf(sql, args);
+    va_end(args);
+
+    if (NULL == query) {
+        nlog_error("allocate SQL `%s` fail", sql);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    char *err_msg = NULL;
+    if (SQLITE_OK != sqlite3_exec(db, query, NULL, NULL, &err_msg)) {
+        nlog_error("query `%s` fail: %s", query, err_msg);
+        rv = NEU_ERR_EINTERNAL;
+    }
+
+    sqlite3_free(err_msg);
+    sqlite3_free(query);
+
+    return rv;
+}
+
+static int get_schema_version(sqlite3 *db, char **version_p, bool *dirty_p)
+{
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT version, dirty FROM migrations ORDER BY "
+                        "migration_id DESC LIMIT 1";
+
+    if (SQLITE_OK != sqlite3_prepare_v2(db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    int step = sqlite3_step(stmt);
+    if (SQLITE_ROW == step) {
+        char *version = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == version) {
+            sqlite3_finalize(stmt);
+            return NEU_ERR_EINTERNAL;
+        }
+
+        *version_p = version;
+        *dirty_p   = sqlite3_column_int(stmt, 1);
+    } else if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+}
+
+static int extract_schema_info(const char *file, char **version_p,
+                               char **description_p)
+{
+    if (!ends_with(file, ".sql")) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    char *sep = strchr(file, '_');
+    if (NULL == sep) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    size_t n = sep - file;
+    if (4 != n) {
+        // invalid version
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (strcmp(++sep, ".sql") == 0) {
+        // no description
+        return NEU_ERR_EINTERNAL;
+    }
+
+    char *version = calloc(n + 1, sizeof(char));
+    if (NULL == version) {
+        return NEU_ERR_EINTERNAL;
+    }
+    strncat(version, file, n);
+
+    n                 = strlen(sep) - 4;
+    char *description = calloc(n + 1, sizeof(char));
+    if (NULL == description) {
+        free(version);
+        return NEU_ERR_EINTERNAL;
+    }
+    strncat(description, sep, n);
+
+    *version_p     = version;
+    *description_p = description;
+
+    return 0;
+}
+
+static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
+{
+    int   rv          = 0;
+    char *version     = NULL;
+    char *description = NULL;
+    char *sql         = NULL;
+    char  path[128]   = {};
+    int   n           = 0;
+
+    if (sizeof(path) == (n = path_cat(path, 0, sizeof(path), dir)) ||
+        sizeof(path) == path_cat(path, n, sizeof(path), file)) {
+        nlog_error("path too long: %s", path);
+        return -1;
+    }
+
+    if (0 != extract_schema_info(file, &version, &description)) {
+        nlog_warn("extract `%s` schema info fail, ignore", path);
+        return 0;
+    }
+
+    rv = read_file_string(path, &sql);
+    if (0 != rv) {
+        goto end;
+    }
+
+    rv = execute_sql(db,
+                     "INSERT INTO migrations (version, description, dirty) "
+                     "VALUES (%Q, %Q, 1)",
+                     version, description);
+    if (0 != rv) {
+        goto end;
+    }
+
+    char *err_msg = NULL;
+    rv            = sqlite3_exec(db, sql, NULL, NULL, &err_msg);
+    if (SQLITE_OK != rv) {
+        nlog_error("execute %s fail: %s", path, err_msg);
+        sqlite3_free(err_msg);
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    rv = execute_sql(db, "UPDATE migrations SET dirty = 0 WHERE version=%Q",
+                     version);
+
+end:
+    if (0 == rv) {
+        nlog_info("success apply schema `%s`, version=`%s` description=`%s`",
+                  path, version, description);
+    } else {
+        nlog_error("fail apply schema `%s`, version=`%s` description=`%s`",
+                   path, version, description);
+    }
+
+    free(sql);
+    free(version);
+    free(description);
+    return rv;
+}
+
+static int apply_schemas(sqlite3 *db, const char *dir)
+{
+    int rv = 0;
+
+    const char *sql = "CREATE TABLE IF NOT EXISTS migrations ( migration_id "
+                      "INTEGER PRIMARY KEY, version TEXT NOT NULL UNIQUE, "
+                      "description TEXT NOT NULL, dirty INTEGER NOT NULL, "
+                      "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP) ";
+    if (0 != execute_sql(db, sql)) {
+        nlog_error("create migration table fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    bool  dirty   = false;
+    char *version = NULL;
+    if (0 != get_schema_version(db, &version, &dirty)) {
+        nlog_error("find schema version fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    nlog_info("schema head version=%s", version ? version : "none");
+
+    if (dirty) {
+        nlog_error("database is dirty, need manual intervention");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    DIR *          dirp = NULL;
+    struct dirent *dent = NULL;
+    if ((dirp = opendir(dir)) == NULL) {
+        nlog_error("fail open dir: %s", dir);
+        free(version);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    UT_array *files = NULL;
+    utarray_new(files, &ut_str_icd);
+
+    while (NULL != (dent = readdir(dirp))) {
+        if (ends_with(dent->d_name, ".sql")) {
+            char *file = dent->d_name;
+            utarray_push_back(files, &file);
+        }
+    }
+
+    closedir(dirp);
+    dirp = NULL;
+
+    if (0 == utarray_len(files)) {
+        nlog_warn("directory `%s` contains no schema files", dir);
+    }
+
+    utarray_sort(files, (int (*)(const void *, const void *)) strcmp);
+
+    utarray_foreach(files, char **, file)
+    {
+        if (version && strncmp(*file, version, strlen(version)) <= 0) {
+            continue;
+        }
+
+        if (0 != apply_schema_file(db, dir, *file)) {
+            rv = NEU_ERR_EINTERNAL;
+            break;
+        }
+    }
+
+    free(version);
+    utarray_free(files);
+
+    return rv;
+}
+
 neu_persister_t *neu_persister_create(const char *dir_name)
 {
     int   rv                  = 0;
@@ -385,6 +615,9 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         sqlite3_close(persister->db);
         goto error;
     }
+    if (0 != apply_schemas(persister->db, persister->persist_dir)) {
+        goto error;
+    }
 
     return persister;
 
@@ -454,40 +687,13 @@ void neu_persister_destroy(neu_persister_t *persister)
     free(persister);
 }
 
-int neu_persister_sql_exec(neu_persister_t *persister, const char *sql, ...)
-{
-    int rv = 0;
-
-    va_list args;
-    va_start(args, sql);
-    char *query = sqlite3_vmprintf(sql, args);
-    va_end(args);
-
-    if (NULL == query) {
-        nlog_error("allocate SQL `%s` fail", query);
-        return NEU_ERR_EINTERNAL;
-    }
-
-    char *err_msg = NULL;
-    if (SQLITE_OK != sqlite3_exec(persister->db, query, NULL, NULL, &err_msg)) {
-        nlog_error("query `%s` fail: %s", query, err_msg);
-        rv = NEU_ERR_EINTERNAL;
-    }
-
-    sqlite3_free(err_msg);
-    sqlite3_free(query);
-
-    return rv;
-}
-
 int neu_persister_store_node(neu_persister_t *        persister,
                              neu_persist_node_info_t *info)
 {
-    return neu_persister_sql_exec(persister,
-                                  "INSERT INTO nodes (name, type, state, "
-                                  "plugin_name) VALUES (%Q, %i, %i, %Q)",
-                                  info->name, info->type, info->state,
-                                  info->plugin_name);
+    return execute_sql(persister->db,
+                       "INSERT INTO nodes (name, type, state, plugin_name) "
+                       "VALUES (%Q, %i, %i, %Q)",
+                       info->name, info->type, info->state, info->plugin_name);
 }
 
 static UT_icd node_info_icd = {
@@ -550,16 +756,15 @@ int neu_persister_delete_node(neu_persister_t *persister, const char *node_name)
 {
     // rely on foreign key constraints to remove settings, groups, tags and
     // subscriptions
-    return neu_persister_sql_exec(persister, "DELETE FROM nodes WHERE name=%Q;",
-                                  node_name);
+    return execute_sql(persister->db, "DELETE FROM nodes WHERE name=%Q;",
+                       node_name);
 }
 
 int neu_persister_update_node(neu_persister_t *persister, const char *node_name,
                               const char *new_name)
 {
-    return neu_persister_sql_exec(persister,
-                                  "UPDATE nodes SET name=%Q WHERE name=%Q;",
-                                  new_name, node_name);
+    return execute_sql(persister->db, "UPDATE nodes SET name=%Q WHERE name=%Q;",
+                       new_name, node_name);
 }
 
 int neu_persister_store_plugins(neu_persister_t *persister,
@@ -624,8 +829,8 @@ int neu_persister_load_plugins(neu_persister_t *persister,
 int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
                             const char *group_name, const neu_datatag_t *tag)
 {
-    return neu_persister_sql_exec(
-        persister,
+    return execute_sql(
+        persister->db,
         "INSERT INTO tags (driver_name, group_name, name, address, attribute, "
         "type, description) VALUES(%Q, %Q, %Q, %Q, %i, %i, %Q)",
         driver_name, group_name, tag->name, tag->address, tag->attribute,
@@ -692,8 +897,8 @@ int neu_persister_update_tag(neu_persister_t *persister,
                              const char *driver_name, const char *group_name,
                              const neu_datatag_t *tag)
 {
-    return neu_persister_sql_exec(
-        persister,
+    return execute_sql(
+        persister->db,
         "UPDATE tags SET address=%Q, attribute=%i, type=%i, description=%Q "
         "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
         tag->address, tag->attribute, tag->type, tag->description, driver_name,
@@ -704,8 +909,8 @@ int neu_persister_delete_tag(neu_persister_t *persister,
                              const char *driver_name, const char *group_name,
                              const char *tag_name)
 {
-    return neu_persister_sql_exec(
-        persister,
+    return execute_sql(
+        persister->db,
         "DELETE FROM tags WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
         driver_name, group_name, tag_name);
 }
@@ -715,10 +920,10 @@ int neu_persister_store_subscription(neu_persister_t *persister,
                                      const char *     driver_name,
                                      const char *     group_name)
 {
-    return neu_persister_sql_exec(
-        persister,
-        "INSERT INTO subscriptions (app_name, driver_name, group_name) VALUES "
-        "(%Q, %Q, %Q)",
+    return execute_sql(
+        persister->db,
+        "INSERT INTO subscriptions (app_name, driver_name, group_name) "
+        "VALUES (%Q, %Q, %Q)",
         app_name, driver_name, group_name);
 }
 
@@ -793,18 +998,18 @@ int neu_persister_delete_subscription(neu_persister_t *persister,
                                       const char *     driver_name,
                                       const char *     group_name)
 {
-    return neu_persister_sql_exec(persister,
-                                  "DELETE FROM subscriptions WHERE app_name=%Q "
-                                  "AND driver_name=%Q AND group_name=%Q",
-                                  app_name, driver_name, group_name);
+    return execute_sql(persister->db,
+                       "DELETE FROM subscriptions WHERE app_name=%Q AND "
+                       "driver_name=%Q AND group_name=%Q",
+                       app_name, driver_name, group_name);
 }
 
 int neu_persister_store_group(neu_persister_t *         persister,
                               const char *              driver_name,
                               neu_persist_group_info_t *group_info)
 {
-    return neu_persister_sql_exec(
-        persister,
+    return execute_sql(
+        persister->db,
         "INSERT INTO groups (driver_name, name, interval) VALUES (%Q, %Q, %i)",
         driver_name, group_info->name, group_info->interval);
 }
@@ -870,16 +1075,16 @@ int neu_persister_delete_group(neu_persister_t *persister,
                                const char *driver_name, const char *group_name)
 {
     // rely on foreign key constraints to delete tags and subscriptions
-    return neu_persister_sql_exec(
-        persister, "DELETE FROM groups WHERE driver_name=%Q AND name=%Q",
-        driver_name, group_name);
+    return execute_sql(persister->db,
+                       "DELETE FROM groups WHERE driver_name=%Q AND name=%Q",
+                       driver_name, group_name);
 }
 
 int neu_persister_store_node_setting(neu_persister_t *persister,
                                      const char *node_name, const char *setting)
 {
-    return neu_persister_sql_exec(
-        persister,
+    return execute_sql(
+        persister->db,
         "INSERT OR REPLACE INTO settings (node_name, setting) VALUES (%Q, %Q)",
         node_name, setting);
 }
@@ -930,6 +1135,6 @@ end:
 int neu_persister_delete_node_setting(neu_persister_t *persister,
                                       const char *     node_name)
 {
-    return neu_persister_sql_exec(
-        persister, "DELETE FROM settings WHERE node_name=%Q", node_name);
+    return execute_sql(persister->db, "DELETE FROM settings WHERE node_name=%Q",
+                       node_name);
 }
