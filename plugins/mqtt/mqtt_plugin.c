@@ -465,7 +465,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     plugin_stop_running(plugin);
     int rc = plguin_start_running(plugin);
     if (0 != rc) {
-        return NEU_ERR_MQTT_FAILURE;
+        return NEU_ERR_NODE_SETTING_INVALID;
     }
 
     plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
@@ -478,7 +478,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 
     int rc = plguin_start_running(plugin);
     if (0 != rc) {
-        return NEU_ERR_MQTT_FAILURE;
+        return NEU_ERR_NODE_SETTING_INVALID;
     }
 
     return NEU_ERR_SUCCESS;

@@ -32,7 +32,7 @@
 	"format": {
 		"name": "upload format",
 		"description": "Upload format on mqtt",
-		"attribute": "required",
+		"attribute": "optional",
 		"type": "map",
 		"default": 0,
 		"valid": {

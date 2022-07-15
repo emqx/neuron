@@ -96,6 +96,7 @@ void mqtt_option_uninit(neu_plugin_t *plugin, neu_mqtt_option_t *option)
 int mqtt_option_init(neu_plugin_t *plugin, char *config,
                      neu_mqtt_option_t *option)
 {
+    (void) plugin;
     if (NULL == config || NULL == option) {
         return -1;
     }
@@ -120,7 +121,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // client-id, required
     ret = neu_parse_param(config, &error, 1, &id);
     if (0 != ret) {
-        plog_error(plugin, "can't decode client-id from json");
+        free(error);
         free(id.v.val_str);
         return -1;
     } else {
@@ -130,6 +131,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // upload-topic, optional
     ret = neu_parse_param(config, &error, 1, &upload);
     if (0 != ret) {
+        free(error);
         free(upload.v.val_str);
     } else {
         option->upload_topic = upload.v.val_str;
@@ -138,14 +140,16 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // heartbeat-topic, optional
     ret = neu_parse_param(config, &error, 1, &heartbeat);
     if (0 != ret) {
+        free(error);
         free(heartbeat.v.val_str);
     } else {
         option->heartbeat_topic = heartbeat.v.val_str;
     }
 
-    // format, required
+    // format, optional
     ret = neu_parse_param(config, &error, 1, &format);
     if (0 != ret) {
+        free(error);
         option->format = 0;
     } else {
         option->format = format.v.val_int;
@@ -154,7 +158,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // ssl, required
     ret = neu_parse_param(config, &error, 1, &ssl);
     if (0 != ret) {
-        plog_error(plugin, "can't decode ssl from json");
+        free(error);
         return -2;
     } else {
         if (false == ssl.v.val_bool) {
@@ -165,7 +169,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
             // ca, required if ssl enabled
             ret = neu_parse_param(config, &error, 1, &ca);
             if (0 != ret) {
-                plog_error(plugin, "can't decode ca from json");
+                free(error);
                 free(ca.v.val_str);
                 return -3;
             } else {
@@ -174,7 +178,8 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
 
             // cert, optional
             ret = neu_parse_param(config, &error, 1, &cert);
-            if (0 == ret) {
+            if (0 != ret) {
+                free(error);
                 free(cert.v.val_str);
             } else {
                 option->cert = cert.v.val_str;
@@ -182,7 +187,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
                 // key, required if cert enable
                 ret = neu_parse_param(config, &error, 1, &key);
                 if (0 != ret) {
-                    plog_error(plugin, "can't decode key from json");
+                    free(error);
                     free(key.v.val_str);
                     return -4;
                 } else {
@@ -192,6 +197,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
                 // keypass, optional
                 ret = neu_parse_param(config, &error, 1, &keypass);
                 if (0 != ret) {
+                    free(error);
                     free(keypass.v.val_str);
                 } else {
                     option->keypass = keypass.v.val_str;
@@ -203,7 +209,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // host, required
     ret = neu_parse_param(config, &error, 1, &host);
     if (0 != ret) {
-        plog_error(plugin, "can't decode host from json");
+        free(error);
         free(host.v.val_str);
         return -5;
     } else {
@@ -213,7 +219,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // port, required
     ret = neu_parse_param(config, &error, 1, &port);
     if (0 != ret) {
-        plog_error(plugin, "can't decode port from json");
+        free(error);
         return -6;
     } else {
         int32_t p    = (int) port.v.val_int;
@@ -225,6 +231,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // username, optional
     ret = neu_parse_param(config, &error, 1, &username);
     if (0 != ret) {
+        free(error);
         free(username.v.val_str);
     } else {
         option->username = username.v.val_str;
@@ -233,6 +240,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     // password, optional
     ret = neu_parse_param(config, &error, 1, &password);
     if (0 != ret) {
+        free(error);
         free(password.v.val_str);
     } else {
         option->password = password.v.val_str;
