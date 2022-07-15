@@ -32,6 +32,7 @@ enum topic_type {
     TOPIC_TYPE_READ,
     TOPIC_TYPE_WRITE,
     TOPIC_TYPE_UPLOAD,
+    TOPIC_TYPE_HEARTBEAT,
 };
 
 typedef struct {
@@ -55,6 +56,8 @@ char *command_read_periodic_response(neu_plugin_t *            plugin,
 
 char *command_write_response(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                              neu_resp_error_t *data);
+
+char *command_heartbeat_response(neu_plugin_t *plugin, UT_array *states);
 
 #ifdef __cplusplus
 }

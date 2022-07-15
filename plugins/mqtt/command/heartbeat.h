@@ -17,24 +17,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MQTT
-#define NEURON_PLUGIN_MQTT
+#ifndef NEURON_PLUGIN_MQTT_COMMAND_HEARTBEAT
+#define NEURON_PLUGIN_MQTT_COMMAND_HEARTBEAT
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <neuron.h>
-#include <stdlib.h>
 
-typedef struct mqtt_routine mqtt_routine_t;
+#include "common.h"
 
-struct neu_plugin {
-    neu_plugin_common_t common;
-    bool                running;
-    mqtt_routine_t *    routine;
-    char *              config;
-};
+char *command_heartbeat_generate(neu_plugin_t *plugin, UT_array *states);
 
 #ifdef __cplusplus
 }

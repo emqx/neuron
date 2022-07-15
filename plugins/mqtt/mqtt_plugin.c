@@ -19,9 +19,12 @@
 
 #include <assert.h>
 
+#include <nng/nng.h>
+#include <nng/supplemental/util/platform.h>
+
 #include "command/command.h"
-#include "mqtt.h"
-#include "util.h"
+#include "mqtt_plugin.h"
+#include "mqtt_util.h"
 
 #define INTERVAL 100000U
 #define TIMEOUT 3000U
@@ -32,6 +35,7 @@
 #define TOPIC_READ_RES "neuron/%s/read/resp"
 #define TOPIC_WRITE_RES "neuron/%s/write/resp"
 #define TOPIC_UPLOAD_RES "neuron/%s/upload"
+#define TOPIC_HEARTBEAT_RES "neuron/%s/heartbeat"
 
 #define QOS0 0
 #define QOS1 1
@@ -48,10 +52,14 @@ struct topic_pair {
 };
 
 struct mqtt_routine {
-    neu_plugin_t *    plugin;
-    neu_mqtt_option_t option;
-    neu_mqtt_client_t client;
-    UT_array *        topics;
+    neu_plugin_t *     plugin;
+    neu_mqtt_option_t  option;
+    neu_mqtt_client_t  client;
+    UT_array *         topics;
+    nng_mtx *          mutex;
+    UT_array *         states;
+    neu_events_t *     events;
+    neu_event_timer_t *send;
 };
 
 static neu_plugin_t *plugin_log = NULL;
@@ -103,7 +111,8 @@ static void topics_cleanup(UT_array *topics)
     }
 }
 
-static void topics_generate(UT_array *topics, char *name, char *upload_topic)
+static void topics_generate(UT_array *topics, char *name, char *upload_topic,
+                            char *heartbeat_topic)
 {
     char *read_req = topics_format(TOPIC_READ_REQ, name);
     char *read_res = topics_format(TOPIC_READ_RES, name);
@@ -123,6 +132,19 @@ static void topics_generate(UT_array *topics, char *name, char *upload_topic)
     }
 
     topics_add(topics, upload_req, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
+
+    // HEARTBEAT TOPIC SETTING
+    char *heartbeat_req = NULL;
+    char *heartbeat_res = NULL;
+    if (NULL != heartbeat_topic && 0 < strlen(heartbeat_topic)) {
+        nlog_debug("user defined heartbeat topic:%s", heartbeat_topic);
+        heartbeat_res = strdup(heartbeat_topic);
+    } else {
+        heartbeat_res = topics_format(TOPIC_HEARTBEAT_RES, name);
+    }
+
+    topics_add(topics, heartbeat_req, QOS0, heartbeat_res, QOS0,
+               TOPIC_TYPE_HEARTBEAT);
 }
 
 static struct topic_pair *topics_find_topic(UT_array *topics, const char *topic)
@@ -198,6 +220,54 @@ static void mqtt_routine_state(void *context, int state)
     }
 }
 
+static int mqtt_routine_heartbeat(void *data)
+{
+    mqtt_routine_t *routine = (mqtt_routine_t *) data;
+
+    neu_req_get_node_t cmd    = { 0 };
+    neu_reqresp_head_t header = {
+        .ctx  = NULL,
+        .type = NEU_REQ_GET_NODE,
+    };
+
+    cmd.type = NEU_NA_TYPE_APP;
+    int ret  = neu_plugin_op(routine->plugin, header, &cmd);
+    if (ret != 0) {
+        return -1;
+    }
+    cmd.type = NEU_NA_TYPE_DRIVER;
+    ret      = neu_plugin_op(routine->plugin, header, &cmd);
+    if (ret != 0) {
+        return -1;
+    }
+
+    // publish state data
+    nng_mtx_lock(routine->mutex);
+    int                type = TOPIC_TYPE_HEARTBEAT;
+    struct topic_pair *pair = topics_find_type(routine->topics, type);
+    char *             json_str =
+        command_heartbeat_response(routine->plugin, routine->states);
+    if (NULL == json_str) {
+        nng_mtx_unlock(routine->mutex);
+        return -1;
+    }
+
+    const char *   topic = pair->topic_response;
+    const int      qos   = pair->qos_response;
+    neu_err_code_e error =
+        neu_mqtt_client_publish(routine->client, topic, qos,
+                                (unsigned char *) json_str, strlen(json_str));
+    if (NEU_ERR_SUCCESS != error) {
+        plog_error(plugin_log, "heartbeat publish error code :%d, topoic:%s",
+                   error, topic);
+    }
+
+    free(json_str);
+    nng_mtx_unlock(routine->mutex);
+
+    return 0;
+}
+
 static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
                                           const char *  config)
 {
@@ -210,20 +280,20 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     }
 
     // MQTT client start
-    int rc = mqtt_option_init((char *) config, &routine->option);
+    int rc = mqtt_option_init(plugin, (char *) config, &routine->option);
     if (0 != rc) {
-        mqtt_option_uninit(&routine->option);
+        mqtt_option_uninit(plugin, &routine->option);
         free(routine);
         return NULL;
     }
 
     routine->option.state_update_func = mqtt_routine_state;
     routine->option.log               = plugin->common.log;
-    neu_mqtt_client_t *client         = (neu_mqtt_client_t *) &routine->client;
+    neu_mqtt_client_t *client_p       = (neu_mqtt_client_t *) &routine->client;
     neu_err_code_e     error          = NEU_ERR_SUCCESS;
-    error = neu_mqtt_client_open(client, &routine->option, plugin);
+    error = neu_mqtt_client_open(client_p, &routine->option, plugin);
     if (NEU_ERR_SUCCESS != error) {
-        mqtt_option_uninit(&routine->option);
+        mqtt_option_uninit(plugin, &routine->option);
         free(routine);
         return NULL;
     }
@@ -233,18 +303,50 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     plog_info(plugin, "open mqtt client: %s:%s, code:%d", routine->option.host,
               routine->option.port, error);
 
-    routine->plugin = plugin;
-    UT_icd ptr_icd  = { sizeof(struct topic_pair *), NULL, NULL, NULL };
-    utarray_new(routine->topics, &ptr_icd);
+    routine->plugin      = plugin;
+    UT_icd topic_ptr_icd = { sizeof(struct topic_pair *), NULL, NULL, NULL };
+    utarray_new(routine->topics, &topic_ptr_icd);
     topics_generate(routine->topics, routine->option.clientid,
-                    routine->option.upload_topic);
+                    routine->option.upload_topic,
+                    routine->option.heartbeat_topic);
     topics_subscribe(routine->topics, routine->client);
+
+    UT_icd state_ptr_icd = { sizeof(struct node_state *), NULL, NULL, NULL };
+    utarray_new(routine->states, &state_ptr_icd);
+
+    // start heartbeat send
+    nng_mtx_alloc(&routine->mutex);
+    routine->events               = neu_event_new();
+    neu_event_timer_param_t param = {
+        .second      = 3,
+        .millisecond = 0,
+        .usr_data    = routine,
+        .cb          = mqtt_routine_heartbeat,
+    };
+
+    routine->send = neu_event_add_timer(routine->events, param);
+
     return routine;
 }
 
 static void mqtt_routine_stop(mqtt_routine_t *routine)
 {
     assert(NULL != routine);
+
+    // stop heartbeat send
+    neu_event_del_timer(routine->events, routine->send);
+    neu_event_close(routine->events);
+    nng_mtx_free(routine->mutex);
+
+    // cleanup node states
+    for (struct node_state **sp =
+             (struct node_state **) utarray_front(routine->states);
+         sp != NULL;
+         sp = (struct node_state **) utarray_next(routine->states, sp)) {
+        free((*sp));
+    }
+
+    utarray_free(routine->states);
 
     // stop recevied
     neu_mqtt_client_suspend(routine->client);
@@ -256,7 +358,7 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
 
     topics_cleanup(routine->topics);
     utarray_free(routine->topics);
-    mqtt_option_uninit(&routine->option);
+    mqtt_option_uninit(routine->plugin, &routine->option);
 }
 
 static neu_plugin_t *mqtt_plugin_open(void)
@@ -363,7 +465,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     plugin_stop_running(plugin);
     int rc = plguin_start_running(plugin);
     if (0 != rc) {
-        return NEU_ERR_MQTT_FAILURE;
+        return NEU_ERR_NODE_SETTING_INVALID;
     }
 
     plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
@@ -376,7 +478,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 
     int rc = plguin_start_running(plugin);
     if (0 != rc) {
-        return NEU_ERR_MQTT_FAILURE;
+        return NEU_ERR_NODE_SETTING_INVALID;
     }
 
     return NEU_ERR_SUCCESS;
@@ -486,29 +588,78 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     return NEU_ERR_SUCCESS;
 }
 
-// static neu_err_code_e reconnect(neu_plugin_t *plugin, neu_reqresp_head_t
-// *head)
-// {
-//     if (NEU_RESP_ERROR == head->type || NEU_RESP_READ_GROUP == head->type
-//     ||
-//         NEU_REQRESP_TRANS_DATA == head->type) {
-//         if (!plugin->running && NULL != plugin->config) {
-//             mqtt_routine_t *routine =
-//                 mqtt_routine_start(plugin, plugin->config);
-//             if (NULL == routine) {
-//                 plugin->routine = NULL;
-//                 plugin->running = false;
-//                 return NEU_ERR_FAILURE;
-//             }
+static neu_err_code_e subscribe_handle(neu_plugin_t *      plugin,
+                                       neu_reqresp_head_t *head, void *data)
+{
+    UNUSED(plugin);
+    UNUSED(head);
 
-//             plugin->routine           = routine;
-//             plugin->running           = true;
-//             plugin->common.link_state = NEU_PLUGIN_LINK_STATE_CONNECTING;
-//         }
-//     }
+    neu_resp_app_subscribe_group_t *sub =
+        (neu_resp_app_subscribe_group_t *) data;
+    utarray_free(sub->tags);
 
-//     return NEU_ERR_SUCCESS;
-// }
+    return NEU_ERR_SUCCESS;
+}
+
+static neu_err_code_e nodes_get(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                                void *data)
+{
+    UNUSED(head);
+
+    neu_resp_get_node_t *nodes = (neu_resp_get_node_t *) data;
+    utarray_foreach(nodes->nodes, neu_resp_node_info_t *, info)
+    {
+        // plog_info(plugin, "%s, %s", info->node, info->plugin);
+        neu_reqresp_head_t       header = { 0 };
+        neu_req_get_node_state_t cmd    = { 0 };
+        header.ctx                      = strdup(info->node);
+        header.type                     = NEU_REQ_GET_NODE_STATE;
+
+        strcpy(cmd.node, info->node);
+        int ret = neu_plugin_op(plugin, header, &cmd);
+        if (ret != 0) {
+            return -1;
+        }
+    }
+
+    utarray_free(nodes->nodes);
+
+    return 0;
+}
+
+static neu_err_code_e node_state_update(neu_plugin_t *      plugin,
+                                        neu_reqresp_head_t *head, void *data)
+{
+    mqtt_routine_t *           routine = plugin->routine;
+    neu_resp_get_node_state_t *state   = (neu_resp_get_node_state_t *) data;
+
+    nng_mtx_lock(routine->mutex);
+    struct node_state *ns = NULL;
+    for (struct node_state **sp =
+             (struct node_state **) utarray_front(routine->states);
+         sp != NULL;
+         sp = (struct node_state **) utarray_next(routine->states, sp)) {
+
+        if (0 == strcmp((char *) head->ctx, (*sp)->node)) {
+            ns = (*sp);
+            break;
+        }
+    }
+
+    if (NULL == ns) {
+        ns = calloc(1, sizeof(struct node_state));
+        strcpy(ns->node, head->ctx);
+        utarray_push_back(routine->states, &ns);
+    }
+
+    ns->link    = state->state.link;
+    ns->running = state->state.running;
+    nng_mtx_unlock(routine->mutex);
+
+    free(head->ctx);
+
+    return NEU_ERR_SUCCESS;
+}
 
 static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                                void *data)
@@ -518,10 +669,6 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     assert(NULL != data);
 
     neu_err_code_e error = NEU_ERR_SUCCESS;
-    // error                = reconnect(plugin, head);
-    // if (NEU_ERR_SUCCESS != error) {
-    //     return error;
-    // }
 
     switch (head->type) {
     case NEU_RESP_ERROR:
@@ -534,10 +681,15 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         error = trans_data(plugin, data);
         break;
     case NEU_RESP_APP_SUBSCRIBE_GROUP: {
-        neu_resp_app_subscribe_group_t *sub =
-            (neu_resp_app_subscribe_group_t *) data;
-
-        utarray_free(sub->tags);
+        error = subscribe_handle(plugin, head, data);
+        break;
+    }
+    case NEU_RESP_GET_NODE: {
+        error = nodes_get(plugin, head, data);
+        break;
+    }
+    case NEU_RESP_GET_NODE_STATE: {
+        error = node_state_update(plugin, head, data);
         break;
     }
     default:

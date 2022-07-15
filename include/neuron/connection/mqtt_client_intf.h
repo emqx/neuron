@@ -60,6 +60,7 @@ typedef struct {
     /*application*/
     int              format;
     char *           upload_topic;
+    char *           heartbeat_topic;
     char *           group_id;
     state_update     state_update_func;
     zlog_category_t *log;
