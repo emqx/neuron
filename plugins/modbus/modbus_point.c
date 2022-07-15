@@ -47,7 +47,7 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
     char area = 0;
     int  n    = sscanf(tag->address, "%hhu!%c%hu", &point->slave_id, &area,
                    &point->start_address);
-    if (n != 3) {
+    if (n != 3 || point->start_address == 0) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
     }
 

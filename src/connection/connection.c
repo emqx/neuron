@@ -228,7 +228,11 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             break;
         case NEU_CONN_TCP_CLIENT:
         case NEU_CONN_UDP:
-            ret = send(conn->fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
+            if (conn->block) {
+                ret = send(conn->fd, buf, len, MSG_NOSIGNAL);
+            } else {
+                ret = send(conn->fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
+            }
             break;
         case NEU_CONN_TTY_CLIENT:
             ret = write(conn->fd, buf, len);
@@ -472,10 +476,14 @@ static void conn_tcp_server_stop(neu_conn_t *conn)
         for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
             if (conn->tcp_server.clients[i].fd > 0) {
                 close(conn->tcp_server.clients[i].fd);
+                conn->tcp_server.clients[i].fd = 0;
             }
         }
 
-        close(conn->fd);
+        if (conn->fd > 0) {
+            close(conn->fd);
+            conn->fd = 0;
+        }
 
         conn->tcp_server.is_listen = false;
     }

@@ -90,12 +90,12 @@ static int driver_init(neu_plugin_t *plugin)
 
 static int driver_uninit(neu_plugin_t *plugin)
 {
-    if (plugin->stack) {
-        modbus_stack_destroy(plugin->stack);
-    }
-
     if (plugin->conn != NULL) {
         neu_conn_destory(plugin->conn);
+    }
+
+    if (plugin->stack) {
+        modbus_stack_destroy(plugin->stack);
     }
 
     neu_event_close(plugin->events);
