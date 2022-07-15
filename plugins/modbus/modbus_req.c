@@ -43,7 +43,7 @@ void modbus_conn_disconnected(void *data, int fd)
     struct neu_plugin *plugin = (struct neu_plugin *) data;
     (void) fd;
 
-    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
 }
 
 int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
