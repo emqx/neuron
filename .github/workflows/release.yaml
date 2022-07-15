@@ -1,0 +1,42 @@
+name: Release neuron
+
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check appVersion for helm
+      run: |
+        appVersion=$(egrep "^appVersion" deploy/charts/neuron/Chart.yaml | sed -r 's|^appVersion:[[:space:]]([0-9]+.[0-9]+.[0-9]+)$|\1|g')
+        if [ "$appVersion" != "${GITHUB_REF##*/}" ]; then
+          echo "Need update appVersion for Chart.yaml"
+          exit 1
+        fi
+
+  helm:
+    runs-on: self-hosted
+    if: github.repository_owner == 'emqx'
+    needs:
+    - release
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check appVersion for helm
+      working-directory: deploy/charts/neuron
+      run: |
+        appVersion=$(egrep "^appVersion" Chart.yaml | sed -r 's|^appVersion:[[:space:]]([0-9]+.[0-9]+.[0-9]+)$|\1|g')
+        if [ "$appVersion" != "${GITHUB_REF##*/}" ]; then
+          echo "Need update appVersion for Chart.yaml"
+          exit 1
+        fi
+    - name: Create helm package
+      working-directory: deploy/charts/neuron
+      run: helm package .
+    - name: Update helm repo
+      run: |
+        sudo mv $(find deploy/charts/neuron -name "*.tgz") /repos/charts
+        sudo helm repo index /repos/charts
