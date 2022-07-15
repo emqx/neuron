@@ -6,6 +6,12 @@ import shutil
 import time
 
 
+def prepare_persistence_dir():
+    os.system("mkdir -p build/persistence")
+    os.system("cp -r persistence build/")
+    os.system("cp default_plugins.json build/persistence/plugins.json")
+
+
 class Neuron(object):
     process = 0
     profiler_process = None
@@ -14,8 +20,7 @@ class Neuron(object):
         pass
 
     def Start_Neuron(self):
-        os.system("mkdir -p build/persistence")
-        os.system("cp default_plugins.json build/persistence/plugins.json")
+        prepare_persistence_dir()
         self.process = subprocess.Popen(['./neuron', '--log'], cwd='build/')
         return self.process
 
@@ -25,17 +30,15 @@ class Neuron(object):
             time.sleep(5)
         self.process.kill()
         if remove_persistence_data:
-            shutil.rmtree("build/persistence", ignore_errors=True)
-            os.system("mkdir -p build/persistence")
-            os.system("cp default_plugins.json build/persistence/plugins.json")
+            os.system("rm build/persistence/sqlite.db")
+            prepare_persistence_dir()
 
     def End_Neuron(self, process):
         process.kill()
 
     def Remove_Persistence(self):
-        shutil.rmtree("build/persistence", ignore_errors=True)
-        os.system("mkdir -p build/persistence")
-        os.system("cp default_plugins.json build/persistence/plugins.json")
+        os.system("rm build/persistence/sqlite.db")
+        prepare_persistence_dir()
 
     def Profile_Neuron(self, interval, result_dir):
         cmd = [
@@ -151,9 +154,9 @@ class Tag(object):
     def Tag_Find_By_Name(self, tags, name):
         for tag in tags:
             if tag['name'] == name:
-                return tag['id']
+                return tag
 
-        return -1
+        return None
 
 
 class Subscribe(object):
