@@ -83,7 +83,9 @@ function build_sqlite3() {
     tar xzf sqlite3.tar.gz --strip-components=1 -C sqlite3
     cd sqlite3
     ./configure --prefix=${install_dir} \
-      && make CC=${compiler_prefix}-gcc -j4 \
+                --disable-shared --disable-readline \
+                --host ${arch} CC=${compiler_prefix}-gcc \
+      && make -j4 \
       && sudo make install
     cd ../
 }
