@@ -618,6 +618,7 @@ static neu_err_code_e nodes_get(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         strcpy(cmd.node, info->node);
         int ret = neu_plugin_op(plugin, header, &cmd);
         if (ret != 0) {
+            free(head->ctx);
             return -1;
         }
     }
