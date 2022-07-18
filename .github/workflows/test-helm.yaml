@@ -1,13 +1,4 @@
 name: Test helm
-inputs:
-  repository:
-    description: "neuron image repository"
-    required: true
-    default: "emqx/neuron"
-  tag:
-    description: "neuron image tag"
-    required: true
-    default: "2.0.1"
 
 on:
   push:
@@ -16,44 +7,27 @@ on:
   pull_request:
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - run: minikube start --kubernetes-version="v1.23.0"
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: '1.18.3'
-      - name: install kubebuilder
-        run: |
-          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-          ARCH=$(uname -m | sed 's/x86_64/amd64/')
-          curl -fsL "https://storage.googleapis.com/kubebuilder-tools/kubebuilder-tools-1.16.4-${OS}-${ARCH}.tar.gz" -o kubebuilder-tools
-          tar -zxvf kubebuilder-tools
-          sudo mv kubebuilder/ /usr/local/kubebuilder
-      - run: make test
-
   deployment:
     runs-on: ubuntu-latest
     steps:
       - run: minikube start --kubernetes-version="v1.23.0"
       - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
-        with:
-          go-version: '1.18.3'
       - name: Deploy neuron by helm
         shell: bash
         run: |
           helm install neuron deploy/charts/neuron\
-            --set image.repository=${{ inputs.repository }} \
-            --set image.tag=${{ inputs.tag }}
+            --set image.repository="emqx/neuron"\
+            --set image.tag="2.0.1"
       - name: Check deployment
+        timeout-minutes: 5
         run: |
-          while [ "$(kubectl get Deployment -l app.kubernetes.io/name=neuron -o jsonpath='{.items[0].status.replicas}')" \
-            != "$(kubectl get Deployment -l app.kubernetes.io/name=neuron -o jsonpath='{.items[0].status.readyReplicas}')" ]; do
+          set -euo pipefail
+          while [ "$(kubectl get pods -o json | jq '.items[0].status.containerStatuses[] | select(.ready==true) | .containerID')" = "" ]; do
             echo "=============================="
             kubectl get pods
             echo "=============================="
             echo "waiting neuron started"
             sleep 10
           done
+
+
