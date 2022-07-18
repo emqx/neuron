@@ -125,6 +125,7 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
 
         crc = (uint16_t *) (res_value + len);
         break;
+    case MODBUS_WRITE_S_COIL:
     case MODBUS_WRITE_M_COIL:
     case MODBUS_WRITE_M_HOLD_REG:
         modbus_write(&tcp_registers[code->slave_id - 1], code->function,
@@ -200,6 +201,7 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
         res_data->n_byte = len;
         res_header->len += sizeof(struct modbus_data) + len;
         break;
+    case MODBUS_WRITE_S_COIL:
     case MODBUS_WRITE_M_COIL:
     case MODBUS_WRITE_M_HOLD_REG:
         nlog_info(
@@ -290,6 +292,13 @@ static void modbus_write(struct modbus_register *reg, uint8_t function,
 {
     pthread_mutex_lock(&reg->mutex);
     switch (function) {
+    case MODBUS_WRITE_S_COIL:
+        if (address->n_reg > 0) {
+            reg->coil[ntohs(address->start_address)].value = 1;
+        } else {
+            reg->coil[ntohs(address->start_address)].value = 0;
+        }
+        break;
     case MODBUS_WRITE_M_COIL:
         for (int i = 0; i < ntohs(address->n_reg); i++) {
             uint8_t x = (value[ntohs(address->n_reg) / 8] >> (i % 8)) & 0x1;
