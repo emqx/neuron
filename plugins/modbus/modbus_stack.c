@@ -85,6 +85,7 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
 
         break;
     }
+    case MODBUS_WRITE_S_COIL:
     case MODBUS_WRITE_M_HOLD_REG:
     case MODBUS_WRITE_M_COIL: {
         struct modbus_address address = { 0 };
@@ -98,7 +99,6 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
         stack->write_resp(stack->ctx, write_req, 0);
         break;
     }
-    case MODBUS_WRITE_S_COIL:
     case MODBUS_WRITE_S_HOLD_REG:
     default:
         break;
@@ -157,15 +157,18 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
 
     neu_protocol_pack_buf_init(&pbuf, buf, sizeof(buf));
 
-    modbus_data_wrap(&pbuf, n_byte, bytes);
-
-    modbus_address_wrap(&pbuf, start_address, n_reg);
-
     switch (area) {
     case MODBUS_AREA_COIL:
-        modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_M_COIL);
+        if (*bytes > 0) {
+            modbus_address_wrap(&pbuf, start_address, 0xff00);
+        } else {
+            modbus_address_wrap(&pbuf, start_address, 0);
+        }
+        modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_S_COIL);
         break;
     case MODBUS_AREA_HOLD_REGISTER:
+        modbus_data_wrap(&pbuf, n_byte, bytes);
+        modbus_address_wrap(&pbuf, start_address, n_reg);
         modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_M_HOLD_REG);
         break;
     default:
