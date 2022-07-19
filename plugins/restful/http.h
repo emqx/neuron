@@ -80,6 +80,7 @@ int         http_unauthorized(nng_aio *aio, char *content);
 int         http_not_found(nng_aio *aio, char *content);
 int         http_conflict(nng_aio *aio, char *content);
 int         http_internal_error(nng_aio *aio, char *content);
+void        http_timeout(nng_aio *aio, void *arg, int err);
 
 #ifdef __cplusplus
 }

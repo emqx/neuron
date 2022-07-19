@@ -75,6 +75,8 @@ neu_manager_t *neu_manager_create()
     rv = nng_listen(manager->socket, url, NULL, 0);
     assert(rv == 0);
 
+    nng_socket_set_int(manager->socket, NNG_OPT_RECVBUF, 2048);
+    nng_socket_set_int(manager->socket, NNG_OPT_SENDBUF, 2048);
     nng_socket_get_int(manager->socket, NNG_OPT_RECVFD, &param.fd);
     manager->loop = neu_event_add_io(manager->events, param);
 
