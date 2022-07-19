@@ -93,7 +93,7 @@ jobs:
   create_daily_release:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
-    needs: cross-build
+    needs: [cross-build, build-debug-sdk]
 
     steps:
       - name: delete old daily-pre-release
