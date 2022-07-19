@@ -32,6 +32,8 @@
         size_t    req_data_size = 0;                                          \
         req_type *req           = NULL;                                       \
                                                                               \
+        nng_aio_set_timeout(aio, 3000);                                       \
+        nng_aio_defer(aio, http_timeout, NULL);                               \
         if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
             decode_fun(req_data, &req) == 0) {                                \
             { func };                                                         \

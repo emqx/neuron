@@ -44,6 +44,7 @@ cp build/libneuron-base.so ${package_name}/lib
 cp zlog/src/libzlog.so.1.2 ${package_name}/lib
 
 cp zlog.conf ${package_name}/config/
+cp dev.conf ${package_name}/config/
 cp neuron.key ${package_name}/config/
 cp neuron.pem ${package_name}/config/
 

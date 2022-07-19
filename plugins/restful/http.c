@@ -395,3 +395,20 @@ int http_internal_error(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);
 }
+
+void http_timeout(nng_aio *aio, void *arg, int err)
+{
+    (void) arg;
+
+    switch (err) {
+    case NNG_ETIMEDOUT:
+        http_internal_error(aio, "{\"error\": \"timeout\"}");
+        break;
+    case NNG_ECANCELED:
+        http_internal_error(aio, "{\"error\": \"canceled\"}");
+        break;
+    default:
+        http_internal_error(aio, "{\"error\": \"unknown\"}");
+        break;
+    }
+}

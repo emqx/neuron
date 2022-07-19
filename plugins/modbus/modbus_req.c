@@ -356,7 +356,7 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
         process_protocol_buf(plugin, response_size);
     } else {
         plugin->common.adapter_callbacks->driver.write_response(
-            plugin->common.adapter, req, NEU_ERR_PLUGIN_WRITE_FAILURE);
+            plugin->common.adapter, req, NEU_ERR_PLUGIN_DISCONNECTED);
     }
 
     return 0;
