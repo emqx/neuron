@@ -85,27 +85,34 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
         return -1;
     }
 
-    if (code->function == MODBUS_READ_COIL ||
-        code->function == MODBUS_READ_INPUT ||
-        code->function == MODBUS_READ_HOLD_REG ||
-        code->function == MODBUS_READ_INPUT_REG) {
+    switch (code->function) {
+    case MODBUS_READ_COIL:
+    case MODBUS_READ_INPUT:
+    case MODBUS_READ_HOLD_REG:
+    case MODBUS_READ_INPUT_REG:
         if (req_len <
             sizeof(struct modbus_code) + sizeof(struct modbus_address) + 2) {
             return 0;
         }
         use_len += 2;
-    } else {
-        if (req_len < sizeof(struct modbus_code) +
-                sizeof(struct modbus_address) + sizeof(struct modbus_data)) {
+        break;
+    case MODBUS_WRITE_S_COIL:
+    case MODBUS_WRITE_S_HOLD_REG:
+        if (req_len <
+            sizeof(struct modbus_code) + sizeof(struct modbus_address) + 2) {
             return 0;
         }
-
+        use_len += 2;
+        break;
+    case MODBUS_WRITE_M_HOLD_REG:
+    case MODBUS_WRITE_M_COIL:
         if (req_len < sizeof(struct modbus_code) +
                 sizeof(struct modbus_address) + sizeof(struct modbus_data) +
                 data->n_byte + 2) {
             return 0;
         }
         use_len += sizeof(struct modbus_data) + data->n_byte + 2;
+        break;
     }
 
     memcpy(res, req, sizeof(struct modbus_code));
