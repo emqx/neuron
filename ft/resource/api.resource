@@ -168,16 +168,6 @@ Del Tags
 
   [RETURN]            ${res}[0]
 
-Get Tag ID
-  [Arguments]         ${node_id}              ${group}                      ${tag_name}
-  ${res} =            Get Tags                ${node_id}                    ${group}
-  Check Response Status                       ${res}                        200
-
-  ${id} =             Tag Find By Name        ${res}[tags]                  ${tag_name}
-  Should Not Be Equal As Integers             ${id}                         0
-
-  [Return]            ${id}
-
 Read Tags
   [Arguments]         ${node}              ${group}
   POST                /api/v2/read            {"node": "${node}", "group": "${group}"}

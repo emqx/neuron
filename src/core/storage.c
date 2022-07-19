@@ -37,40 +37,48 @@ void manager_strorage_plugin(neu_manager_t *manager)
 
 void manager_storage_add_node(neu_manager_t *manager, const char *node)
 {
-    int                        rv           = 0;
-    neu_persist_adapter_info_t adapter_info = {};
+    int                     rv        = 0;
+    neu_persist_node_info_t node_info = {};
 
-    rv = neu_manager_get_adapter_info(manager, node, &adapter_info);
+    rv = neu_manager_get_node_info(manager, node, &node_info);
     if (0 != rv) {
         nlog_error("unable to get adapter:%s info", node);
         return;
     }
 
-    rv = neu_persister_store_adapter(manager->persister, &adapter_info);
+    rv = neu_persister_store_node(manager->persister, &node_info);
     if (0 != rv) {
         nlog_error("failed to store adapter info");
     }
 
-    neu_persist_adapter_info_fini(&adapter_info);
+    neu_persist_node_info_fini(&node_info);
 }
 
 void manager_storage_del_node(neu_manager_t *manager, const char *node)
 {
-    neu_persister_delete_adapter(manager->persister, node);
+    neu_persister_delete_node(manager->persister, node);
 }
 
-void manager_storage_subscribe(neu_manager_t *manager, const char *app)
+void manager_storage_subscribe(neu_manager_t *manager, const char *app,
+                               const char *driver, const char *group)
 {
-
-    UT_array *sub_infos = neu_manager_get_sub_group(manager, app);
-
-    int rv =
-        neu_persister_store_subscriptions(manager->persister, app, sub_infos);
+    int rv = neu_persister_store_subscription(manager->persister, app, driver,
+                                              group);
     if (0 != rv) {
-        nlog_error("fail store adapter:%s subscription infos", app);
+        nlog_error("fail store subscription app:%s driver:%s group:%s", app,
+                   driver, group);
     }
+}
 
-    utarray_free(sub_infos);
+void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
+                                 const char *driver, const char *group)
+{
+    int rv = neu_persister_delete_subscription(manager->persister, app, driver,
+                                               group);
+    if (0 != rv) {
+        nlog_error("fail delete subscription app:%s driver:%s group:%s", app,
+                   driver, group);
+    }
 }
 
 int manager_load_plugin(neu_manager_t *manager)
@@ -97,26 +105,26 @@ int manager_load_plugin(neu_manager_t *manager)
 
 int manager_load_node(neu_manager_t *manager)
 {
-    UT_array *adapter_infos = NULL;
-    int       rv            = 0;
+    UT_array *node_infos = NULL;
+    int       rv         = 0;
 
-    rv = neu_persister_load_adapters(manager->persister, &adapter_infos);
+    rv = neu_persister_load_nodes(manager->persister, &node_infos);
     if (0 != rv) {
         nlog_error("failed to load adapter infos");
         return -1;
     }
 
-    utarray_foreach(adapter_infos, neu_persist_adapter_info_t *, adapter_info)
+    utarray_foreach(node_infos, neu_persist_node_info_t *, node_info)
     {
-        rv = neu_manager_add_node(manager, adapter_info->name,
-                                  adapter_info->plugin_name);
+        rv                    = neu_manager_add_node(manager, node_info->name,
+                                  node_info->plugin_name);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
         nlog_info("load adapter %s type:%" PRId64 ", name:%s plugin:%s",
-                  ok_or_err, adapter_info->type, adapter_info->name,
-                  adapter_info->plugin_name);
+                  ok_or_err, node_info->type, node_info->name,
+                  node_info->plugin_name);
     }
 
-    neu_persist_adapter_infos_free(adapter_infos);
+    utarray_free(node_infos);
     return rv;
 }
 
@@ -137,21 +145,19 @@ int manager_load_subscribe(neu_manager_t *manager)
         } else {
             utarray_foreach(sub_infos, neu_persist_subscription_info_t *, info)
             {
-                rv = neu_manager_subscribe(manager, info->sub_adapter_name,
-                                           info->src_adapter_name,
-                                           info->group_config_name);
+                rv = neu_manager_subscribe(manager, node->node,
+                                           info->driver_name, info->group_name);
                 const char *ok_or_err = (0 == rv) ? "success" : "fail";
                 nlog_info("%s load subscription app:%s driver:%s grp:%s",
-                          ok_or_err, info->sub_adapter_name,
-                          info->src_adapter_name, info->group_config_name);
+                          ok_or_err, node->node, info->driver_name,
+                          info->group_name);
                 if (rv == 0) {
-                    neu_manager_notify_app_sub_update(manager,
-                                                      info->src_adapter_name,
-                                                      info->group_config_name);
+                    neu_manager_notify_app_sub_update(
+                        manager, info->driver_name, info->group_name);
                 }
             }
 
-            neu_persist_subscription_infos_free(sub_infos);
+            utarray_free(sub_infos);
         }
     }
 

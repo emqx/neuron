@@ -237,15 +237,17 @@ Get the update tags after stopping ande restarting Neuron, it should return the 
 	${len} =	Get Length	${res}[tags]
  	Should Be Equal As Integers	${len}		2
 
-	Should Be Equal As Strings	${res}[tags][1][name]		tag1
-	Should Be Equal As Strings	${res}[tags][1][address]	1!400002
-	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_READ}
-	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_INT16}
+  ${tag1} =   Tag Find By Name  ${res}[tags]  tag1
+	Should Be Equal As Strings	${tag1}[name]		tag1
+	Should Be Equal As Strings	${tag1}[address]	1!400002
+	Should Be Equal As Strings	${tag1}[attribute]	${TAG_ATTRIBUTE_READ}
+	Should Be Equal As Strings	${tag1}[type]		${TAG_TYPE_INT16}
 
-	Should Be Equal As Strings	${res}[tags][0][name]		tag2
-	Should Be Equal As Strings	${res}[tags][0][address]	1!00001
-	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
-	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}
+  ${tag2} =   Tag Find By Name  ${res}[tags]  tag2
+	Should Be Equal As Strings	${tag2}[name]		tag2
+	Should Be Equal As Strings	${tag2}[address]	1!00001
+	Should Be Equal As Strings	${tag2}[attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${tag2}[type]		${TAG_TYPE_BIT}
 
    	[Teardown]    Neuron Stop Running    ${process}
 

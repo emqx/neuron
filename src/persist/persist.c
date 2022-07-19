@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,6 +28,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <sqlite3.h>
 
 #include "errcodes.h"
 #include "utils/log.h"
@@ -57,8 +60,8 @@ static inline bool ends_with(const char *str, const char *suffix)
 
 typedef struct neu_persister {
     const char *persist_dir;
-    const char *adapters_fname;
     const char *plugins_fname;
+    sqlite3 *   db;
 } neu_persister_t;
 
 const char *neu_persister_get_persist_dir(neu_persister_t *persister)
@@ -68,15 +71,6 @@ const char *neu_persister_get_persist_dir(neu_persister_t *persister)
     }
 
     return persister->persist_dir;
-}
-
-const char *neu_persister_get_adapters_fname(neu_persister_t *persister)
-{
-    if (persister == NULL) {
-        return NULL;
-    }
-
-    return persister->adapters_fname;
 }
 
 const char *neu_persister_get_plugins_fname(neu_persister_t *persister)
@@ -201,144 +195,6 @@ static inline int create_dir(char *dir_name)
 }
 
 /**
- * Create a directory and any intermediate directory if necessary.
- */
-static int create_dir_recursive(const char *path)
-{
-    int  rv               = 0;
-    char p[PATH_MAX_SIZE] = { 0 };
-
-    rv = snprintf(p, sizeof(p), "%s", path);
-    if (sizeof(p) == rv) {
-        return -1;
-    }
-
-    int i = 0;
-    while (1) {
-        while (p[i] && PATH_SEP_CHAR == p[i]) {
-            ++i;
-        }
-        if ('\0' == p[i]) {
-            break;
-        }
-        while (p[i] && PATH_SEP_CHAR != p[i]) {
-            ++i;
-        }
-
-        char c = p[i];
-        p[i]   = '\0';
-        rv     = create_dir(p);
-        if (0 != rv) {
-            break;
-        }
-        p[i] = c;
-    }
-    return rv;
-}
-
-/**
- * Type of callback invoked in file tree walking.
- */
-typedef int (*file_tree_walk_cb_t)(const char *fpath, bool is_dir, void *arg);
-
-// depth first file tree walking implementation.
-// `path_buf` is buffer for accumulating file path,
-// `len` is the length of the directory path of the current invocation,
-// `size` is the path buffer size.
-static int file_tree_walk_(char *path_buf, size_t len, size_t size,
-                           file_tree_walk_cb_t cb, void *ctx)
-{
-    int            rv = 0;
-    DIR *          dirp;
-    struct dirent *dent;
-
-    // if not possible to read the directory for this user
-    if ((dirp = opendir(path_buf)) == NULL) {
-        rv = -1;
-        return rv;
-    }
-
-    while (NULL != (dent = readdir(dirp))) {
-        if (DT_DIR == dent->d_type) {
-            // skip entries "." and ".."
-            if (!strcmp(dent->d_name, ".") || !strcmp(dent->d_name, "..")) {
-                continue;
-            }
-        } else if (DT_REG != dent->d_type) {
-            continue;
-        }
-
-        // determinate a full path of an entry
-        size_t n = path_cat(path_buf, len, size, dent->d_name);
-        if (size == n) {
-            rv = -1;
-            break;
-        }
-
-        if (DT_DIR == dent->d_type) {
-            rv = file_tree_walk_(path_buf, n, size, cb, ctx);
-        } else {
-            rv = cb(path_buf, false, ctx);
-        }
-
-        path_buf[len] = '\0'; // restore current directory path
-
-        if (0 != rv) {
-            break;
-        }
-    }
-
-    if (0 == rv) {
-        rv = cb(path_buf, true, ctx);
-    }
-
-    closedir(dirp);
-    return rv;
-}
-
-/**
- * Depth first traversal of file tree.
- *
- * @param dir       path of directory
- * @param cb        callback to invoke for each directory entry
- * @param ctx       argument to callback
- *
- * @return  If `cb` returns nonzero, then the tree walk is terminated and the
- *          value returned by `cb` is returned as the result
- */
-static int file_tree_walk(const char *dir, file_tree_walk_cb_t cb, void *ctx)
-{
-    char buf[PATH_MAX_SIZE] = { 0 };
-    int  n                  = path_cat(buf, 0, sizeof(buf), dir);
-    if (sizeof(buf) == n) {
-        return -1;
-    }
-    return file_tree_walk_(buf, n, sizeof(buf), cb, ctx);
-}
-
-// file tree walking callback for `rmdir_recursive`
-static int remove_cb(const char *fpath, bool is_dir, void *arg)
-{
-    (void) arg;
-
-    if (!is_dir && !ends_with(fpath, ".json")) {
-        // we are being defensive here, ignoring non-json files
-        return 0;
-    }
-    nlog_info("remove %s", fpath);
-    return remove(fpath);
-}
-
-/**
- * Remove directory recursively.
- * @param dir         path of directory to remove
- */
-static int rmdir_recursive(const char *dir)
-{
-    return file_tree_walk(dir, remove_cb, NULL);
-}
-
-/**
  * Ensure that a file with the given name exists.
  *
  * @param name              file name
@@ -450,69 +306,232 @@ error_open:
     return rv;
 }
 
-// file tree walking callback for collecting adapter infos
-static int read_adapter_cb(const char *fpath, bool is_dir, void *arg)
+static inline int execute_sql(sqlite3 *db, const char *sql, ...)
 {
-    UT_array *adapter_infos = arg;
-    int       rv            = 0;
+    int rv = 0;
 
-    if (is_dir) {
-        return 0;
+    va_list args;
+    va_start(args, sql);
+    char *query = sqlite3_vmprintf(sql, args);
+    va_end(args);
+
+    if (NULL == query) {
+        nlog_error("allocate SQL `%s` fail", sql);
+        return NEU_ERR_EINTERNAL;
     }
 
-    if (!ends_with(fpath, "adapter.json")) {
-        return 0;
+    char *err_msg = NULL;
+    if (SQLITE_OK != sqlite3_exec(db, query, NULL, NULL, &err_msg)) {
+        nlog_error("query `%s` fail: %s", query, err_msg);
+        rv = NEU_ERR_EINTERNAL;
     }
 
-    char *json_str = NULL;
-    rv             = read_file_string(fpath, &json_str);
-    if (0 != rv) {
-        return rv;
-    }
+    sqlite3_free(err_msg);
+    sqlite3_free(query);
 
-    neu_json_node_req_node_t *node = NULL;
-    rv = neu_json_decode_node_req_node(json_str, &node);
-    free(json_str);
-    if (0 != rv) {
-        return 0; // ignore bad adapter data
-    }
-
-    nlog_info("read %s", fpath);
-    utarray_push_back(adapter_infos, node);
-    free(node);
     return rv;
 }
 
-// file tree walking callback for collecting adapter group config infos
-static int read_group_config_cb(const char *fpath, bool is_dir, void *arg)
+static int get_schema_version(sqlite3 *db, char **version_p, bool *dirty_p)
 {
-    UT_array *group_config_infos = arg;
-    int       rv                 = 0;
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT version, dirty FROM migrations ORDER BY "
+                        "migration_id DESC LIMIT 1";
 
-    if (is_dir) {
+    if (SQLITE_OK != sqlite3_prepare_v2(db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    int step = sqlite3_step(stmt);
+    if (SQLITE_ROW == step) {
+        char *version = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == version) {
+            sqlite3_finalize(stmt);
+            return NEU_ERR_EINTERNAL;
+        }
+
+        *version_p = version;
+        *dirty_p   = sqlite3_column_int(stmt, 1);
+    } else if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(db));
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+}
+
+static int extract_schema_info(const char *file, char **version_p,
+                               char **description_p)
+{
+    if (!ends_with(file, ".sql")) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    char *sep = strchr(file, '_');
+    if (NULL == sep) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    size_t n = sep - file;
+    if (4 != n) {
+        // invalid version
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (strcmp(++sep, ".sql") == 0) {
+        // no description
+        return NEU_ERR_EINTERNAL;
+    }
+
+    char *version = calloc(n + 1, sizeof(char));
+    if (NULL == version) {
+        return NEU_ERR_EINTERNAL;
+    }
+    strncat(version, file, n);
+
+    n                 = strlen(sep) - 4;
+    char *description = calloc(n + 1, sizeof(char));
+    if (NULL == description) {
+        free(version);
+        return NEU_ERR_EINTERNAL;
+    }
+    strncat(description, sep, n);
+
+    *version_p     = version;
+    *description_p = description;
+
+    return 0;
+}
+
+static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
+{
+    int   rv          = 0;
+    char *version     = NULL;
+    char *description = NULL;
+    char *sql         = NULL;
+    char  path[128]   = {};
+    int   n           = 0;
+
+    if (sizeof(path) == (n = path_cat(path, 0, sizeof(path), dir)) ||
+        sizeof(path) == path_cat(path, n, sizeof(path), file)) {
+        nlog_error("path too long: %s", path);
+        return -1;
+    }
+
+    if (0 != extract_schema_info(file, &version, &description)) {
+        nlog_warn("extract `%s` schema info fail, ignore", path);
         return 0;
     }
 
-    if (!ends_with(fpath, "config.json")) {
-        return 0;
-    }
-
-    char *json_str = NULL;
-    rv             = read_file_string(fpath, &json_str);
+    rv = read_file_string(path, &sql);
     if (0 != rv) {
-        return rv;
+        goto end;
     }
 
-    neu_json_group_configs_req_t *group_config_req = NULL;
-    rv = neu_json_decode_group_configs_req(json_str, &group_config_req);
-    free(json_str);
+    rv = execute_sql(db,
+                     "INSERT INTO migrations (version, description, dirty) "
+                     "VALUES (%Q, %Q, 1)",
+                     version, description);
     if (0 != rv) {
-        return 0; // ignore bad group config data
+        goto end;
     }
 
-    nlog_info("read %s", fpath);
-    utarray_push_back(group_config_infos, group_config_req);
-    free(group_config_req);
+    char *err_msg = NULL;
+    rv            = sqlite3_exec(db, sql, NULL, NULL, &err_msg);
+    if (SQLITE_OK != rv) {
+        nlog_error("execute %s fail: %s", path, err_msg);
+        sqlite3_free(err_msg);
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    rv = execute_sql(db, "UPDATE migrations SET dirty = 0 WHERE version=%Q",
+                     version);
+
+end:
+    if (0 == rv) {
+        nlog_info("success apply schema `%s`, version=`%s` description=`%s`",
+                  path, version, description);
+    } else {
+        nlog_error("fail apply schema `%s`, version=`%s` description=`%s`",
+                   path, version, description);
+    }
+
+    free(sql);
+    free(version);
+    free(description);
+    return rv;
+}
+
+static int apply_schemas(sqlite3 *db, const char *dir)
+{
+    int rv = 0;
+
+    const char *sql = "CREATE TABLE IF NOT EXISTS migrations ( migration_id "
+                      "INTEGER PRIMARY KEY, version TEXT NOT NULL UNIQUE, "
+                      "description TEXT NOT NULL, dirty INTEGER NOT NULL, "
+                      "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP) ";
+    if (0 != execute_sql(db, sql)) {
+        nlog_error("create migration table fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    bool  dirty   = false;
+    char *version = NULL;
+    if (0 != get_schema_version(db, &version, &dirty)) {
+        nlog_error("find schema version fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    nlog_info("schema head version=%s", version ? version : "none");
+
+    if (dirty) {
+        nlog_error("database is dirty, need manual intervention");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    DIR *          dirp = NULL;
+    struct dirent *dent = NULL;
+    if ((dirp = opendir(dir)) == NULL) {
+        nlog_error("fail open dir: %s", dir);
+        free(version);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    UT_array *files = NULL;
+    utarray_new(files, &ut_str_icd);
+
+    while (NULL != (dent = readdir(dirp))) {
+        if (ends_with(dent->d_name, ".sql")) {
+            char *file = dent->d_name;
+            utarray_push_back(files, &file);
+        }
+    }
+
+    closedir(dirp);
+    dirp = NULL;
+
+    if (0 == utarray_len(files)) {
+        nlog_warn("directory `%s` contains no schema files", dir);
+    }
+
+    utarray_sort(files, (int (*)(const void *, const void *)) strcmp);
+
+    utarray_foreach(files, char **, file)
+    {
+        if (version && strncmp(*file, version, strlen(version)) <= 0) {
+            continue;
+        }
+
+        if (0 != apply_schema_file(db, dir, *file)) {
+            rv = NEU_ERR_EINTERNAL;
+            break;
+        }
+    }
+
+    free(version);
+    utarray_free(files);
 
     return rv;
 }
@@ -521,7 +540,6 @@ neu_persister_t *neu_persister_create(const char *dir_name)
 {
     int   rv                  = 0;
     char *persist_dir         = NULL;
-    char *adapters_fname      = NULL;
     char *plugins_fname       = NULL;
     char  path[PATH_MAX_SIZE] = { 0 };
 
@@ -553,17 +571,6 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         goto error;
     }
 
-    n = path_cat(path, dir_len, sizeof(path), "adapters.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        goto error;
-    }
-    adapters_fname = strdup(path);
-    if (NULL == adapters_fname) {
-        nlog_error("fail to strdup: %s", path);
-        goto error;
-    }
-
     n = path_cat(path, dir_len, sizeof(path), "plugins.json");
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
@@ -586,15 +593,36 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         goto error;
     }
 
-    persister->plugins_fname  = plugins_fname;
-    persister->adapters_fname = adapters_fname;
-    persister->persist_dir    = persist_dir;
+    persister->plugins_fname = plugins_fname;
+    persister->persist_dir   = persist_dir;
+
+    n = path_cat(path, dir_len, sizeof(path), "sqlite.db");
+    if (sizeof(path) == n) {
+        nlog_error("path too long: %s", path);
+        goto error;
+    }
+    rv = sqlite3_open(path, &persister->db);
+    if (SQLITE_OK != rv) {
+        nlog_error("db `%s` fail: %s", path, sqlite3_errstr(rv));
+        goto error;
+    }
+    // we rely on sqlite foreign key support
+    if (SQLITE_OK !=
+        sqlite3_exec(persister->db, "PRAGMA foreign_keys=ON", NULL, NULL,
+                     NULL)) {
+        nlog_error("db foreign key support fail: %s",
+                   sqlite3_errmsg(persister->db));
+        sqlite3_close(persister->db);
+        goto error;
+    }
+    if (0 != apply_schemas(persister->db, persister->persist_dir)) {
+        goto error;
+    }
 
     return persister;
 
 error:
     free(plugins_fname);
-    free(adapters_fname);
     free(persist_dir);
     return NULL;
 }
@@ -653,139 +681,90 @@ static inline int persister_group_config_dir(char *buf, size_t size,
 
 void neu_persister_destroy(neu_persister_t *persister)
 {
-    free((char *) persister->adapters_fname);
+    sqlite3_close(persister->db);
     free((char *) persister->plugins_fname);
     free((char *) persister->persist_dir);
     free(persister);
 }
 
-static int migrate_adapters_file(neu_persister_t *persister)
+int neu_persister_store_node(neu_persister_t *        persister,
+                             neu_persist_node_info_t *info)
 {
-    char *json_str = NULL;
-    int   rv       = read_file_string(persister->adapters_fname, &json_str);
-    if (rv != 0) {
-        return 0;
+    return execute_sql(persister->db,
+                       "INSERT INTO nodes (name, type, state, plugin_name) "
+                       "VALUES (%Q, %i, %i, %Q)",
+                       info->name, info->type, info->state, info->plugin_name);
+}
+
+static UT_icd node_info_icd = {
+    sizeof(neu_persist_node_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_node_info_fini,
+};
+
+int neu_persister_load_nodes(neu_persister_t *persister, UT_array **node_infos)
+{
+    int           rv    = 0;
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT name, type, state, plugin_name FROM nodes;";
+
+    utarray_new(*node_infos, &node_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        utarray_free(*node_infos);
+        *node_infos = NULL;
+        return NEU_ERR_EINTERNAL;
     }
 
-    neu_json_node_req_t *node_req = NULL;
-    rv = neu_json_decode_node_req(json_str, &node_req);
-    free(json_str);
-    json_str = NULL;
-    if (rv != 0) {
-        nlog_error("decode adapters json file fail");
-        return rv;
-    }
-
-    bool all_migrated = true;
-    for (int i = 0; i < node_req->n_node; ++i) {
-        neu_json_node_req_node_t *node = &node_req->nodes[i];
-        rv = neu_persister_store_adapter(persister, node);
-        if (0 != rv) {
-            nlog_error("migrate adapter %s fail", node->name);
-            all_migrated = false;
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_node_info_t info = {};
+        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == name) {
+            break;
         }
+
+        char *plugin_name = strdup((char *) sqlite3_column_text(stmt, 3));
+        if (NULL == plugin_name) {
+            free(name);
+            break;
+        }
+
+        info.name        = name;
+        info.type        = sqlite3_column_int(stmt, 1);
+        info.state       = sqlite3_column_int(stmt, 2);
+        info.plugin_name = plugin_name;
+        utarray_push_back(*node_infos, &info);
+
+        step = sqlite3_step(stmt);
     }
 
-    if (all_migrated) {
-        nlog_info("remove %s", persister->adapters_fname);
-        remove(persister->adapters_fname);
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
     }
 
-    neu_json_decode_node_req_free(node_req);
+    sqlite3_finalize(stmt);
     return rv;
 }
 
-int neu_persister_store_adapter(neu_persister_t *           persister,
-                                neu_persist_adapter_info_t *info)
+int neu_persister_delete_node(neu_persister_t *persister, const char *node_name)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_adapter_dir(path, sizeof(path), persister, info->name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-    if (0 != create_dir_recursive(path)) {
-        nlog_error("persister failed to create dir: %s", path);
-        return -1;
-    }
-
-    n = path_cat(path, n, sizeof(path), "adapter.json");
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    char *result = NULL;
-    int   rv =
-        neu_json_encode_by_fn(info, neu_json_encode_node_resp_node, &result);
-    if (rv != 0) {
-        return rv;
-    }
-
-    rv = write_file_string(path, result);
-
-    free(result);
-    return rv;
+    // rely on foreign key constraints to remove settings, groups, tags and
+    // subscriptions
+    return execute_sql(persister->db, "DELETE FROM nodes WHERE name=%Q;",
+                       node_name);
 }
 
-int neu_persister_load_adapters(neu_persister_t *persister,
-                                UT_array **      adapter_infos)
+int neu_persister_update_node(neu_persister_t *persister, const char *node_name,
+                              const char *new_name)
 {
-    char   path[PATH_MAX_SIZE] = { 0 };
-    UT_icd icd = { sizeof(neu_persist_adapter_info_t), NULL, NULL, NULL };
-
-    migrate_adapters_file(persister);
-
-    if (sizeof(path) == persister_adapters_dir(path, sizeof(path), persister)) {
-        return -1;
-    }
-
-    utarray_new(*adapter_infos, &icd);
-
-    int rv = file_tree_walk(path, read_adapter_cb, *adapter_infos);
-    if (0 != rv) {
-        neu_persist_adapter_infos_free(*adapter_infos);
-    }
-
-    return rv;
-}
-
-int neu_persister_delete_adapter(neu_persister_t *persister,
-                                 const char *     adapter_name)
-{
-    char path[PATH_MAX_SIZE] = { 0 };
-    int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-    rmdir_recursive(path);
-    return 0;
-}
-
-int neu_persister_update_adapter(neu_persister_t *persister,
-                                 const char *adapter_name, const char *new_name)
-{
-    char path[PATH_MAX_SIZE] = { 0 };
-    int  n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    char new_path[PATH_MAX_SIZE] = { 0 };
-    n = persister_adapter_dir(new_path, sizeof(new_path), persister, new_name);
-    if (sizeof(new_path) == n) {
-        nlog_error("persister new path too long: %s", new_path);
-        return -1;
-    }
-
-    if (0 != rename(path, new_path)) {
-        return -1;
-    }
-
-    return 0;
+    return execute_sql(persister->db, "UPDATE nodes SET name=%Q WHERE name=%Q;",
+                       new_name, node_name);
 }
 
 int neu_persister_store_plugins(neu_persister_t *persister,
@@ -847,344 +826,315 @@ int neu_persister_load_plugins(neu_persister_t *persister,
     return 0;
 }
 
-int neu_persister_store_datatags(neu_persister_t *persister,
-                                 const char *     adapter_name,
-                                 const char *     group_config_name,
-                                 UT_array *       datatag_infos)
+int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
+                            const char *group_name, const neu_datatag_t *tag)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_group_config_dir(path, sizeof(path), persister,
-                                       adapter_name, group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    int rv = create_dir_recursive(path);
-    if (0 != rv) {
-        nlog_error("fail to create dir: %s", path);
-        return -1;
-    }
-
-    n = path_cat(path, n, sizeof(path), "datatags.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    neu_json_datatag_req_t datatags_resp = { 0 };
-    datatags_resp.n_tag                  = utarray_len(datatag_infos);
-    datatags_resp.tags =
-        calloc(datatags_resp.n_tag, sizeof(neu_json_datatag_req_tag_t));
-    int index = 0;
-    utarray_foreach(datatag_infos, neu_datatag_t *, tag)
-    {
-        datatags_resp.tags[index].name        = tag->name;
-        datatags_resp.tags[index].description = tag->description;
-        datatags_resp.tags[index].address     = tag->address;
-        datatags_resp.tags[index].attribute   = tag->attribute;
-        datatags_resp.tags[index].type        = tag->type;
-        index += 1;
-    }
-
-    char *result = NULL;
-    rv = neu_json_encode_by_fn(&datatags_resp, neu_json_encode_datatag_resp,
-                               &result);
-
-    if (rv == 0) {
-        write_file_string(path, result);
-    }
-
-    free(result);
-    free(datatags_resp.tags);
-
-    return rv;
+    return execute_sql(
+        persister->db,
+        "INSERT INTO tags (driver_name, group_name, name, address, attribute, "
+        "type, description) VALUES(%Q, %Q, %Q, %Q, %i, %i, %Q)",
+        driver_name, group_name, tag->name, tag->address, tag->attribute,
+        tag->type, tag->description);
 }
 
-int neu_persister_load_datatags(neu_persister_t *persister,
-                                const char *     adapter_name,
-                                const char *group_config_name, UT_array **tags)
+int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
+                            const char *group_name, UT_array **tags)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_group_config_dir(path, sizeof(path), persister,
-                                       adapter_name, group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    n = path_cat(path, n, sizeof(path), "datatags.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    char *json_str = NULL;
-    int   rv       = read_file_string(path, &json_str);
-    if (rv != 0) {
-        return rv;
-    }
-
-    neu_json_datatag_req_t *datatag_req = NULL;
-    rv = neu_json_decode_datatag_req(json_str, &datatag_req);
-    free(json_str);
-    if (rv != 0) {
-        return rv;
-    }
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT name, address, attribute, type, description "
+                        "FROM tags WHERE driver_name=? AND group_name=?";
 
     utarray_new(*tags, neu_tag_get_icd());
-    for (int i = 0; i < datatag_req->n_tag; i++) {
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, driver_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, group_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
         neu_datatag_t tag = {
-            .name        = datatag_req->tags[i].name,
-            .address     = datatag_req->tags[i].address,
-            .type        = datatag_req->tags[i].type,
-            .attribute   = datatag_req->tags[i].attribute,
-            .description = datatag_req->tags[i].description,
+            .name        = (char *) sqlite3_column_text(stmt, 0),
+            .address     = (char *) sqlite3_column_text(stmt, 1),
+            .attribute   = sqlite3_column_int(stmt, 2),
+            .type        = sqlite3_column_int(stmt, 3),
+            .description = (char *) sqlite3_column_text(stmt, 4),
         };
-
         utarray_push_back(*tags, &tag);
+
+        step = sqlite3_step(stmt);
     }
 
-    neu_json_decode_datatag_req_free(datatag_req);
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
 
-    return rv;
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*tags);
+    *tags = NULL;
+    return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_store_subscriptions(neu_persister_t *persister,
-                                      const char *     adapter_name,
-                                      UT_array *       subscription_infos)
+int neu_persister_update_tag(neu_persister_t *persister,
+                             const char *driver_name, const char *group_name,
+                             const neu_datatag_t *tag)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    int rv = create_dir(path);
-    if (0 != rv) {
-        nlog_error("fail to create dir: %s", path);
-        return rv;
-    }
-
-    n = path_cat(path, n, sizeof(path), "subscriptions.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
-    }
-
-    neu_json_subscriptions_req_t subs_resp = { 0 };
-    int                          index     = 0;
-    subs_resp.n_subscription               = utarray_len(subscription_infos);
-    subs_resp.subscriptions =
-        calloc(subs_resp.n_subscription,
-               sizeof(neu_json_subscriptions_req_subscription_t));
-    utarray_foreach(subscription_infos, neu_resp_subscribe_info_t *, info)
-    {
-        subs_resp.subscriptions[index].group_config_name = info->group;
-        subs_resp.subscriptions[index].src_adapter_name  = info->driver;
-        subs_resp.subscriptions[index].sub_adapter_name  = info->app;
-        index += 1;
-    }
-
-    char *result = NULL;
-    rv = neu_json_encode_by_fn(&subs_resp, neu_json_encode_subscriptions_resp,
-                               &result);
-    if (rv == 0) {
-        rv = write_file_string(path, result);
-    }
-
-    free(result);
-    free(subs_resp.subscriptions);
-
-    return rv;
+    return execute_sql(
+        persister->db,
+        "UPDATE tags SET address=%Q, attribute=%i, type=%i, description=%Q "
+        "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
+        tag->address, tag->attribute, tag->type, tag->description, driver_name,
+        group_name, tag->name);
 }
+
+int neu_persister_delete_tag(neu_persister_t *persister,
+                             const char *driver_name, const char *group_name,
+                             const char *tag_name)
+{
+    return execute_sql(
+        persister->db,
+        "DELETE FROM tags WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
+        driver_name, group_name, tag_name);
+}
+
+int neu_persister_store_subscription(neu_persister_t *persister,
+                                     const char *     app_name,
+                                     const char *     driver_name,
+                                     const char *     group_name)
+{
+    return execute_sql(
+        persister->db,
+        "INSERT INTO subscriptions (app_name, driver_name, group_name) "
+        "VALUES (%Q, %Q, %Q)",
+        app_name, driver_name, group_name);
+}
+
+static UT_icd subscription_info_icd = {
+    sizeof(neu_persist_subscription_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_subscription_info_fini,
+};
 
 int neu_persister_load_subscriptions(neu_persister_t *persister,
-                                     const char *     adapter_name,
+                                     const char *     app_name,
                                      UT_array **      subscription_infos)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    sqlite3_stmt *stmt = NULL;
+    const char *  query =
+        "SELECT driver_name, group_name FROM subscriptions WHERE app_name=?";
 
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
+    utarray_new(*subscription_infos, &subscription_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    n = path_cat(path, n, sizeof(path), "subscriptions.json");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        return -1;
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    char *json_str = NULL;
-    int   rv       = read_file_string(path, &json_str);
-    if (rv != 0) {
-        return rv;
-    }
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        char *driver_name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == driver_name) {
+            break;
+        }
 
-    neu_json_subscriptions_req_t *subs_req = NULL;
-    rv = neu_json_decode_subscriptions_req(json_str, &subs_req);
-    free(json_str);
-    if (0 != rv) {
-        return rv;
-    }
+        char *group_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == group_name) {
+            free(driver_name);
+            break;
+        }
 
-    UT_icd icd = { sizeof(neu_persist_subscription_info_t), NULL, NULL, NULL };
-    utarray_new(*subscription_infos, &icd);
-
-    for (int i = 0; i < subs_req->n_subscription; i++) {
-        neu_persist_subscription_info_t info = { 0 };
-        info.group_config_name =
-            strdup(subs_req->subscriptions[i].group_config_name);
-        info.src_adapter_name =
-            strdup(subs_req->subscriptions[i].src_adapter_name);
-        info.sub_adapter_name =
-            strdup(subs_req->subscriptions[i].sub_adapter_name);
-
+        neu_persist_subscription_info_t info = {
+            .driver_name = driver_name,
+            .group_name  = group_name,
+        };
         utarray_push_back(*subscription_infos, &info);
+
+        step = sqlite3_step(stmt);
     }
 
-    neu_json_decode_subscriptions_req_free(subs_req);
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
     return 0;
+
+error:
+    utarray_free(*subscription_infos);
+    *subscription_infos = NULL;
+    return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_store_group_config(
-    neu_persister_t *persister, const char *adapter_name,
-    neu_persist_group_config_info_t *group_config_info)
+int neu_persister_delete_subscription(neu_persister_t *persister,
+                                      const char *     app_name,
+                                      const char *     driver_name,
+                                      const char *     group_name)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n =
-        persister_group_config_dir(path, sizeof(path), persister, adapter_name,
-                                   group_config_info->group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    int rv = create_dir_recursive(path);
-    if (0 != rv) {
-        nlog_error("persister failed to create dir: %s", path);
-        return rv;
-    }
-
-    n = path_cat(path, n, sizeof(path), "config.json");
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    char *result = NULL;
-    rv           = neu_json_encode_by_fn(group_config_info,
-                               neu_json_encode_group_configs_resp, &result);
-    if (rv == 0) {
-        rv = write_file_string(path, result);
-    }
-
-    free(result);
-    return rv;
+    return execute_sql(persister->db,
+                       "DELETE FROM subscriptions WHERE app_name=%Q AND "
+                       "driver_name=%Q AND group_name=%Q",
+                       app_name, driver_name, group_name);
 }
 
-int neu_persister_load_group_configs(neu_persister_t *persister,
-                                     const char *     adapter_name,
-                                     UT_array **      group_config_infos)
+int neu_persister_store_group(neu_persister_t *         persister,
+                              const char *              driver_name,
+                              neu_persist_group_info_t *group_info)
 {
-    char   path[PATH_MAX_SIZE] = { 0 };
-    UT_icd icd = { sizeof(neu_persist_group_config_info_t), NULL, NULL, NULL };
-
-    int n = persister_group_configs_dir(path, sizeof(path), persister,
-                                        adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    utarray_new(*group_config_infos, &icd);
-
-    int rv = file_tree_walk(path, read_group_config_cb, *group_config_infos);
-    if (0 != rv) {
-        neu_persist_group_config_infos_free(*group_config_infos);
-    }
-
-    return rv;
+    return execute_sql(
+        persister->db,
+        "INSERT INTO groups (driver_name, name, interval) VALUES (%Q, %Q, %i)",
+        driver_name, group_info->name, group_info->interval);
 }
 
-int neu_persister_delete_group_config(neu_persister_t *persister,
-                                      const char *     adapter_name,
-                                      const char *     group_config_name)
+static UT_icd group_info_icd = {
+    sizeof(neu_persist_group_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_group_info_fini,
+};
+
+int neu_persister_load_groups(neu_persister_t *persister,
+                              const char *driver_name, UT_array **group_infos)
 {
-    char path[PATH_MAX_SIZE] = { 0 };
+    sqlite3_stmt *stmt = NULL;
+    const char *query = "SELECT name, interval FROM groups WHERE driver_name=?";
 
-    int n = persister_group_config_dir(path, sizeof(path), persister,
-                                       adapter_name, group_config_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
+    utarray_new(*group_infos, &group_info_icd);
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    int rv = rmdir_recursive(path);
-    return rv;
-}
-
-int neu_persister_store_adapter_setting(neu_persister_t *persister,
-                                        const char *     adapter_name,
-                                        const char *     setting)
-{
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-    if (0 != create_dir(path)) {
-        nlog_error("persister failed to create dir: %s", path);
-        return -1;
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, driver_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
     }
 
-    n = path_cat(path, n, sizeof(path), "settings.json");
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_group_info_t info = {};
+        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == name) {
+            break;
+        }
+
+        info.name     = name;
+        info.interval = sqlite3_column_int(stmt, 1);
+        utarray_push_back(*group_infos, &info);
+
+        step = sqlite3_step(stmt);
     }
 
-    int rv = write_file_string(path, setting);
-
-    return rv;
-}
-
-int neu_persister_load_adapter_setting(neu_persister_t *  persister,
-                                       const char *       adapter_name,
-                                       const char **const setting)
-{
-    char path[PATH_MAX_SIZE] = { 0 };
-
-    int n = persister_adapter_dir(path, sizeof(path), persister, adapter_name);
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        // do not set return code, return partial or empty result
     }
 
-    n = path_cat(path, n, sizeof(path), "settings.json");
-    if (sizeof(path) == n) {
-        nlog_error("persister path too long: %s", path);
-        return -1;
-    }
-
-    int rv = read_file_string(path, (char **) setting);
-
-    return rv;
-}
-
-int neu_persister_delete_adapter_setting(neu_persister_t *persister,
-                                         const char *     adapter_name)
-{
-    (void) persister;
-    (void) adapter_name;
+    sqlite3_finalize(stmt);
     return 0;
+
+error:
+    utarray_free(*group_infos);
+    *group_infos = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_delete_group(neu_persister_t *persister,
+                               const char *driver_name, const char *group_name)
+{
+    // rely on foreign key constraints to delete tags and subscriptions
+    return execute_sql(persister->db,
+                       "DELETE FROM groups WHERE driver_name=%Q AND name=%Q",
+                       driver_name, group_name);
+}
+
+int neu_persister_store_node_setting(neu_persister_t *persister,
+                                     const char *node_name, const char *setting)
+{
+    return execute_sql(
+        persister->db,
+        "INSERT OR REPLACE INTO settings (node_name, setting) VALUES (%Q, %Q)",
+        node_name, setting);
+}
+
+int neu_persister_load_node_setting(neu_persister_t *  persister,
+                                    const char *       node_name,
+                                    const char **const setting)
+{
+    int           rv    = 0;
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT setting FROM settings WHERE node_name=?";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` with `%s` fail: %s", query, node_name,
+                   sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, node_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, node_name,
+                   sqlite3_errmsg(persister->db));
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    if (SQLITE_ROW != sqlite3_step(stmt)) {
+        nlog_warn("SQL `%s` with `%s` fail: %s", query, node_name,
+                  sqlite3_errmsg(persister->db));
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    char *s = strdup((char *) sqlite3_column_text(stmt, 0));
+    if (NULL == s) {
+        nlog_error("strdup fail");
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    *setting = s;
+
+end:
+    sqlite3_finalize(stmt);
+    return rv;
+}
+
+int neu_persister_delete_node_setting(neu_persister_t *persister,
+                                      const char *     node_name)
+{
+    return execute_sql(persister->db, "DELETE FROM settings WHERE node_name=%Q",
+                       node_name);
 }
