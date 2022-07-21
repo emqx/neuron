@@ -35,7 +35,6 @@
 #include "rw_handle.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"
-#include "websocket.h"
 #include "json/neu_json_fn.h"
 
 #define neu_plugin_module default_dashboard_plugin_module
@@ -175,17 +174,9 @@ static neu_plugin_t *dashb_plugin_open(void)
         goto web_server_start_fail;
     }
 
-    rv = log_websocket_start("ws://0.0.0.0:7001/log");
-    if (0 != rv) {
-        nlog_error("Failed to start log websocket");
-        goto log_websocket_start_fail;
-    }
-
     nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 
-log_websocket_start_fail:
-    nng_http_server_stop(plugin->web_server);
 web_server_start_fail:
     nng_http_server_stop(plugin->api_server);
 api_server_start_fail:
@@ -207,7 +198,6 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 
     nlog_info("Success to before free plugin: %s",
               neu_plugin_module.module_name);
-    log_websocket_stop();
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     nng_http_server_stop(plugin->web_server);
