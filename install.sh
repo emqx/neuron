@@ -53,9 +53,7 @@ function build_openssl() {
         ./Configure linux-${arch} no-asm shared \
             --prefix=${install_dir}/ \
             --openssldir=${install_dir}/openssl/ssl \
-            --cross-compile-prefix=${compiler_prefix}- \
-            --with-zlib-include=${install_dir}/zlib/include \
-            --with-zlib-lib=${install_dir}/zlib/lib
+            --cross-compile-prefix=${compiler_prefix}- 
         make clean
         make -j4
         make install_sw
@@ -77,7 +75,6 @@ function build_zlog() {
 }
 
 build_zlog
-compile_source madler/zlib.git v1.2.11
 compile_source akheron/jansson.git v2.14 "-DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF"
 build_openssl 
 compile_source neugates/nng.git HEAD "-DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF"
