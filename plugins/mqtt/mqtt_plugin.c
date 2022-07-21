@@ -713,10 +713,14 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 };
 
 const neu_plugin_module_t neu_plugin_module = {
-    .version      = NEURON_PLUGIN_VER_1_0,
-    .module_name  = "mqtt",
-    .module_descr = "Neuron northbound MQTT communication plugin",
-    .intf_funs    = &plugin_intf_funs,
-    .kind         = NEU_PLUGIN_KIND_SYSTEM,
-    .type         = NEU_NA_TYPE_APP,
+    .version     = NEURON_PLUGIN_VER_1_0,
+    .module_name = "mqtt",
+    .module_descr =
+        "Neuron northbound MQTT communication application. The data collected "
+        "by Neuron from the device can be transmitted to the MQTT Broker "
+        "through the MQTT application, and users can also send commands to "
+        "Neuron through the MQTT application.",
+    .intf_funs = &plugin_intf_funs,
+    .kind      = NEU_PLUGIN_KIND_SYSTEM,
+    .type      = NEU_NA_TYPE_APP,
 };
