@@ -29,12 +29,12 @@ endif()
 
 set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
-set(CMAKE_C_FLAGS_DEBUG
-    "${CMAKE_C_FLAGS} -O0 -fsanitize=address"
-)
-set(CMAKE_CXX_FLAGS_DEBUG
-    "-Wall -g -O0 -fsanitize=address"
-)
+
+if(NOT DISABLE_ASAN)
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fsanitize=address")
+  set(CMAKE_CXX_FLAGS_DEBUG "-Wall -g -fsanitize=address")
+endif()
+
 
 add_custom_target(neuron-version
   COMMAND ${CMAKE_COMMAND} -P
