@@ -116,7 +116,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.extract_branch.outputs.branch }}-daily
-          release_name: ${{ steps.extract_branch.outputs.branch }} Daily Release
+          release_name: Daily Release(${{ steps.extract_branch.outputs.branch }})
           draft: false
           prerelease: true
 
