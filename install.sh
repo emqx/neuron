@@ -74,12 +74,27 @@ function build_zlog() {
     fi
 }
 
+function build_sqlite3() {
+    curl https://www.sqlite.org/2022/sqlite-autoconf-3390000.tar.gz \
+      --output sqlite3.tar.gz
+    mkdir -p sqlite3
+    tar xzf sqlite3.tar.gz --strip-components=1 -C sqlite3
+    cd sqlite3
+    ./configure --prefix=${install_dir} \
+                --disable-shared --disable-readline \
+                --host ${arch} CC=${compiler_prefix}-gcc \
+      && make -j4 \
+      && sudo make install
+    cd ../
+}
+
 build_zlog
 compile_source akheron/jansson.git v2.14 "-DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF"
 build_openssl 
 compile_source neugates/nng.git HEAD "-DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF"
 compile_source benmcollins/libjwt.git v1.13.1 "-DENABLE_PIC=ON -DBUILD_SHARED_LIBS=OFF"
 compile_source neugates/MQTT-C.git HEAD "-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON -DMQTT_C_EXAMPLES=OFF"
+build_sqlite3
 
 if [ $compiler_prefix == "x86_64-linux-gnu" ]; then
     compile_source google/googletest.git release-1.11.0

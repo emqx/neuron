@@ -26,52 +26,60 @@
 void adapter_storage_setting(neu_persister_t *persister, const char *node,
                              const char *setting)
 {
-    neu_persister_store_adapter_setting(persister, node, setting);
+    neu_persister_store_node_setting(persister, node, setting);
 }
 
 void adapter_storage_add_group(neu_persister_t *persister, const char *node,
                                const char *group, uint32_t interval)
 {
-    neu_persist_group_config_info_t info = {
-        .group_config_name = (char *) group,
-        .read_interval     = interval,
-        .adapter_name      = (char *) node,
+    neu_persist_group_info_t info = {
+        .name     = (char *) group,
+        .interval = interval,
     };
 
-    neu_persister_store_group_config(persister, node, &info);
+    neu_persister_store_group(persister, node, &info);
 }
 
 void adapter_storage_del_group(neu_persister_t *persister, const char *node,
                                const char *group)
 {
-    neu_persister_delete_group_config(persister, node, group);
+    neu_persister_delete_group(persister, node, group);
 }
 
-void adapter_storage_tag(neu_persister_t *persister, neu_adapter_t *adapter,
-                         const char *node, const char *group)
+void adapter_storage_add_tag(neu_persister_t *persister, const char *node,
+                             const char *group, const neu_datatag_t *tag)
 {
-    UT_array *tags = NULL;
-
-    int rv = neu_adapter_driver_get_tag((neu_adapter_driver_t *) adapter, group,
-                                        &tags);
-    if (rv != 0) {
-        nlog_warn("fail get tag infos");
-        return;
-    }
-
-    rv = neu_persister_store_datatags(persister, node, group, tags);
+    int rv = neu_persister_store_tag(persister, node, group, tag);
     if (0 != rv) {
-        nlog_error("fail store adapter:%s grp:%s datatag infos", node, group);
+        nlog_error("fail store tag:%s adapter:%s grp:%s", tag->name, node,
+                   group);
     }
+}
 
-    neu_persist_datatag_infos_free(tags);
+void adapter_storage_update_tag(neu_persister_t *persister, const char *node,
+                                const char *group, const neu_datatag_t *tag)
+{
+    int rv = neu_persister_update_tag(persister, node, group, tag);
+    if (0 != rv) {
+        nlog_error("fail update tag:%s adapter:%s grp:%s", tag->name, node,
+                   group);
+    }
+}
+
+void adapter_storage_del_tag(neu_persister_t *persister, const char *node,
+                             const char *group, const char *name)
+{
+    int rv = neu_persister_delete_tag(persister, node, group, name);
+    if (0 != rv) {
+        nlog_error("fail del tag:%s adapter:%s grp:%s", name, node, group);
+    }
 }
 
 int adapter_load_setting(neu_persister_t *persister, const char *node,
                          char **setting)
 {
-    int rv = neu_persister_load_adapter_setting(persister, node,
-                                                (const char **) setting);
+    int rv = neu_persister_load_node_setting(persister, node,
+                                             (const char **) setting);
     if (0 != rv) {
         nlog_info("load %s setting fail", node);
         return -1;
@@ -86,35 +94,31 @@ int adapter_load_group_and_tag(neu_persister_t *     persister,
     UT_array *     group_infos = NULL;
     neu_adapter_t *adapter     = (neu_adapter_t *) driver;
 
-    int rv = neu_persister_load_group_configs(persister, adapter->name,
-                                              &group_infos);
+    int rv = neu_persister_load_groups(persister, adapter->name, &group_infos);
     if (0 != rv) {
         nlog_warn("load %s group fail", adapter->name);
         return rv;
     }
 
-    utarray_foreach(group_infos, neu_persist_group_config_info_t *, p)
+    utarray_foreach(group_infos, neu_persist_group_info_t *, p)
     {
         UT_array *tags = NULL;
-        neu_adapter_driver_add_group(driver, p->group_config_name,
-                                     p->read_interval);
+        neu_adapter_driver_add_group(driver, p->name, p->interval);
 
-        rv = neu_persister_load_datatags(persister, adapter->name,
-                                         p->group_config_name, &tags);
+        rv = neu_persister_load_tags(persister, adapter->name, p->name, &tags);
         if (0 != rv) {
-            nlog_warn("load %s:%s tags fail", adapter->name,
-                      p->group_config_name);
+            nlog_warn("load %s:%s tags fail", adapter->name, p->name);
             continue;
         }
 
         utarray_foreach(tags, neu_datatag_t *, tag)
         {
-            neu_adapter_driver_add_tag(driver, p->group_config_name, tag);
+            neu_adapter_driver_add_tag(driver, p->name, tag);
         }
 
-        neu_persist_datatag_infos_free(tags);
+        utarray_free(tags);
     }
 
-    neu_persist_group_config_infos_free(group_infos);
+    utarray_free(group_infos);
     return rv;
 }

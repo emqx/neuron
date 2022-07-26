@@ -1,10 +1,29 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+#
+# NEURON IIoT System for Industry 4.0
+# Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+
+from __future__ import print_function
 
 import argparse
 import os
 import re
 import sqlite3
-import operator
 import json
 
 
@@ -20,16 +39,33 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="count", help="verbosity")
-    parser.add_argument("-d", "--data_dir", type=str, help="data directory")
+    parser.add_argument(
+        "-d",
+        "--data_dir",
+        type=str,
+        default="persistence/",
+        help="data directory",
+    )
     subparsers = parser.add_subparsers(
         dest="subcommand", help="supported subcommands"
     )
 
-    show_parser = subparsers.add_parser("show")
+    import_parser = subparsers.add_parser(
+        "import", help="import persistence json data"
+    )
 
-    import_parser = subparsers.add_parser("import")
+    show_parser = subparsers.add_parser(
+        "show", help="show database schema version"
+    )
 
-    up_parser = subparsers.add_parser("up")
+    up_parser = subparsers.add_parser(
+        "up", help="bring database schema to latest version"
+    )
+    up_parser.add_argument(
+        "--import_once",
+        action="store_true",
+        help="import persistence json data if database is empty",
+    )
 
     return parser.parse_args()
 
@@ -40,7 +76,7 @@ class Migration:
             database_path = os.path.join(database_dir, database_name)
             conn = sqlite3.connect(database_path)
         except Exception as e:
-            log("Connecting database `{}` fail, {}".format(database_path, e))
+            print("Connecting database `{}` fail, {}".format(database_path, e))
             raise e
 
         self.conn_ = conn
@@ -123,7 +159,7 @@ class Migration:
             "description": match.group("description"),
         }
 
-    def should_apply(self, migration_filename: str, target_version=None):
+    def should_apply(self, migration_filename, target_version=None):
         """Check whether to apply the migration file."""
 
         head = self.head()
@@ -149,7 +185,7 @@ class Migration:
 
         return True
 
-    def apply(self):
+    def apply(self, import_once):
         """Migrate to the latest state."""
         head = self.head()
         if head["dirty"]:
@@ -189,6 +225,15 @@ class Migration:
                 (self.cursor_.lastrowid,),
             )
             self.conn_.commit()
+
+        if import_once and self.head()["version"] and self.check_no_data():
+            self.import_json()
+
+    def check_no_data(self):
+        """Check the database contains no data."""
+        self.cursor_.execute("SELECT COUNT(*) FROM nodes")
+        node_count = self.cursor_.fetchone()[0]
+        return node_count == 0
 
     def import_json(self):
         node_group_names = self.find_json_importable_node_and_group_names()
@@ -395,4 +440,4 @@ if __name__ == "__main__":
     elif args.subcommand == "show":
         migrations.print_head()
     elif args.subcommand == "up":
-        migrations.apply()
+        migrations.apply(args.import_once)

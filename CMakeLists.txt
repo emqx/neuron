@@ -121,7 +121,7 @@ set(CMAKE_BUILD_RPATH ./)
 add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE include/neuron src plugins)
-target_link_libraries(neuron dl neuron-base)
+target_link_libraries(neuron dl neuron-base sqlite3 -lm)
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
@@ -129,6 +129,7 @@ file(COPY ${CMAKE_SOURCE_DIR}/dev.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
+file(COPY ${CMAKE_SOURCE_DIR}/persistence DESTINATION ${CMAKE_BINARY_DIR}/)
 file(COPY ${CMAKE_SOURCE_DIR}/default_plugins.json DESTINATION ${CMAKE_BINARY_DIR}/persistence)
 file(RENAME ${CMAKE_BINARY_DIR}/persistence/default_plugins.json ${CMAKE_BINARY_DIR}/persistence/plugins.json)
 
