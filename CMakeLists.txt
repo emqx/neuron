@@ -82,11 +82,7 @@ add_dependencies(neuron-base neuron-version)
 
 set(PERSIST_SOURCES
     src/persist/persist.c
-    src/persist/json/persist_json_adapter.c
-    src/persist/json/persist_json_datatags.c
-    src/persist/json/persist_json_group_configs.c
-    src/persist/json/persist_json_plugin.c
-    src/persist/json/persist_json_subs.c)
+    src/persist/json/persist_json_plugin.c)
 set(NEURON_SOURCES
     src/main.c
     src/argparse.c

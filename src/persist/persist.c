@@ -34,11 +34,7 @@
 #include "errcodes.h"
 #include "utils/log.h"
 
-#include "persist/json/persist_json_adapter.h"
-#include "persist/json/persist_json_datatags.h"
-#include "persist/json/persist_json_group_configs.h"
 #include "persist/json/persist_json_plugin.h"
-#include "persist/json/persist_json_subs.h"
 #include "persist/persist.h"
 
 #include "json/neu_json_fn.h"
