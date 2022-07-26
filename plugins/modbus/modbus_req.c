@@ -387,17 +387,18 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
 
 static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
 {
-    static __thread uint8_t   recv_buf[65535] = { 0 };
-    neu_protocol_unpack_buf_t pbuf            = { 0 };
-    ssize_t                   ret             = 0;
+    uint8_t *                 recv_buf = calloc(256, 1);
+    neu_protocol_unpack_buf_t pbuf     = { 0 };
+    ssize_t                   ret      = 0;
 
     ret = neu_conn_recv(plugin->conn, recv_buf, response_size);
 
     if (ret > 0) {
         neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
         plog_recv_protocol(plugin, recv_buf, ret);
-        return modbus_stack_recv(plugin->stack, &pbuf);
-    } else {
-        return -1;
+        ret = modbus_stack_recv(plugin->stack, &pbuf);
     }
+
+    free(recv_buf);
+    return ret;
 }
