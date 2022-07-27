@@ -27,7 +27,11 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
 endif()
 
-set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Wall -Werror -Wextra -g")
+if(NOT DISABLE_WERROR)
+  set(CMAKE_C_FLAGS "$ENV{CFLAGS} -Werror")
+endif()
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
 
 if(NOT DISABLE_ASAN)
