@@ -62,8 +62,6 @@ struct mqtt_routine {
     neu_event_timer_t *send;
 };
 
-static neu_plugin_t *plugin_log = NULL;
-
 static char *topics_format(char *format, char *name)
 {
     char temp[256] = { '\0' };
@@ -76,8 +74,9 @@ static char *topics_format(char *format, char *name)
     return NULL;
 }
 
-static void topics_add(UT_array *topics, char *request, int qos_request,
-                       char *response, int qos_response, int type)
+static void topics_add(UT_array *topics, neu_plugin_t *plugin, char *request,
+                       int qos_request, char *response, int qos_response,
+                       int type)
 {
     struct topic_pair *pair = calloc(1, sizeof(struct topic_pair));
     pair->topic_request     = request;
@@ -86,19 +85,21 @@ static void topics_add(UT_array *topics, char *request, int qos_request,
     pair->qos_response      = qos_response;
     pair->type              = type;
     utarray_push_back(topics, &pair);
-    plog_info(plugin_log, "add topic-req:%s, topic-res:%s, count:%d",
+
+    plog_info(plugin, "add topic-req:%s, topic-res:%s, count:%d",
               pair->topic_request, pair->topic_response, utarray_len(topics));
 }
 
-static void topics_cleanup(UT_array *topics)
+static void topics_cleanup(UT_array *topics, neu_plugin_t *plugin)
 {
     for (struct topic_pair **pair =
              (struct topic_pair **) utarray_front(topics);
          NULL != pair;
          pair = (struct topic_pair **) utarray_next(topics, pair)) {
 
-        plog_info(plugin_log, "remove topic-req:%s, topic-res:%s",
+        plog_info(plugin, "remove topic-req:%s, topic-res:%s",
                   (*pair)->topic_request, (*pair)->topic_response);
+
         if (NULL != (*pair)->topic_request) {
             free((*pair)->topic_request);
         }
@@ -111,39 +112,46 @@ static void topics_cleanup(UT_array *topics)
     }
 }
 
-static void topics_generate(UT_array *topics, char *name, char *upload_topic,
-                            char *heartbeat_topic)
+static void topics_generate(UT_array *topics, neu_plugin_t *plugin,
+                            neu_mqtt_option_t *option)
 {
+    char *name            = option->clientid;
+    char *upload_topic    = option->upload_topic;
+    char *heartbeat_topic = option->heartbeat_topic;
+
     char *read_req = topics_format(TOPIC_READ_REQ, name);
     char *read_res = topics_format(TOPIC_READ_RES, name);
-    topics_add(topics, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
+    topics_add(topics, plugin, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
 
     char *write_req = topics_format(TOPIC_WRITE_REQ, name);
     char *write_res = topics_format(TOPIC_WRITE_RES, name);
-    topics_add(topics, write_req, QOS0, write_res, QOS0, TOPIC_TYPE_WRITE);
+    topics_add(topics, plugin, write_req, QOS0, write_res, QOS0,
+               TOPIC_TYPE_WRITE);
 
     /// UPLOAD TOPIC SETTING
     char *upload_req = NULL;
     char *upload_res = NULL;
     if (NULL != upload_topic && 0 < strlen(upload_topic)) {
+        plog_debug(plugin, "user defined upload topic:%s", upload_topic);
         upload_res = strdup(upload_topic);
     } else {
         upload_res = topics_format(TOPIC_UPLOAD_RES, name);
     }
 
-    topics_add(topics, upload_req, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
+    topics_add(topics, plugin, upload_req, QOS0, upload_res, QOS0,
+               TOPIC_TYPE_UPLOAD);
 
     // HEARTBEAT TOPIC SETTING
     char *heartbeat_req = NULL;
     char *heartbeat_res = NULL;
     if (NULL != heartbeat_topic && 0 < strlen(heartbeat_topic)) {
-        nlog_debug("user defined heartbeat topic:%s", heartbeat_topic);
+        plog_debug(plugin, "user defined heartbeat topic:%s", heartbeat_topic);
         heartbeat_res = strdup(heartbeat_topic);
     } else {
         heartbeat_res = topics_format(TOPIC_HEARTBEAT_RES, name);
     }
 
-    topics_add(topics, heartbeat_req, QOS0, heartbeat_res, QOS0,
+    topics_add(topics, plugin, heartbeat_req, QOS0, heartbeat_res, QOS0,
                TOPIC_TYPE_HEARTBEAT);
 }
 
@@ -258,8 +266,8 @@ static int mqtt_routine_heartbeat(void *data)
         neu_mqtt_client_publish(routine->client, topic, qos,
                                 (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
-        plog_error(plugin_log, "heartbeat publish error code :%d, topoic:%s",
-                   error, topic);
+        plog_error(routine->plugin,
+                   "heartbeat publish error code :%d, topoic:%s", error, topic);
     }
 
     free(json_str);
@@ -306,9 +314,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     routine->plugin      = plugin;
     UT_icd topic_ptr_icd = { sizeof(struct topic_pair *), NULL, NULL, NULL };
     utarray_new(routine->topics, &topic_ptr_icd);
-    topics_generate(routine->topics, routine->option.clientid,
-                    routine->option.upload_topic,
-                    routine->option.heartbeat_topic);
+    topics_generate(routine->topics, plugin, &routine->option);
     topics_subscribe(routine->topics, routine->client);
 
     UT_icd state_ptr_icd = { sizeof(struct node_state *), NULL, NULL, NULL };
@@ -356,7 +362,7 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
     plog_info(routine->plugin, "close mqtt client:%s:%s", routine->option.host,
               routine->option.port);
 
-    topics_cleanup(routine->topics);
+    topics_cleanup(routine->topics, routine->plugin);
     utarray_free(routine->topics);
     mqtt_option_uninit(routine->plugin, &routine->option);
 }
@@ -365,7 +371,6 @@ static neu_plugin_t *mqtt_plugin_open(void)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
     neu_plugin_common_init(&plugin->common);
-    plugin_log = plugin; // for plog
     return plugin;
 }
 
@@ -376,7 +381,6 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "success to free plugin:%s", name);
 
-    plugin_log = NULL;
     free(plugin);
     return NEU_ERR_SUCCESS;
 }
