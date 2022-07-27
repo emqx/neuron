@@ -175,7 +175,7 @@ jobs:
           asset_name: ${{ matrix.type }}-${{ steps.get_version.outputs.version }}-daily-linux-${{ matrix.arch }}.${{ matrix.package }}
           asset_content_type: application/octet-stream
 
-  upload_daily_release_debug-asset:
+  upload_daily_release_debug_asset:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
     needs: create_daily_release
@@ -223,7 +223,7 @@ jobs:
 
   clean:
     runs-on: ubuntu-20.04
-    needs: upload_daily_release_asset
+    needs: [upload_daily_release_asset, upload_daily_release_debug_asset]
     steps:
       - uses: geekyeggo/delete-artifact@v1
         with:
