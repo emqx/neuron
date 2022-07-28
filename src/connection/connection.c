@@ -390,6 +390,7 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->param.params.tty_client.stop   = param->params.tty_client.stop;
         conn->param.params.tty_client.baud   = param->params.tty_client.baud;
         conn->param.params.tty_client.parity = param->params.tty_client.parity;
+        conn->param.params.tty_client.flow   = param->params.tty_client.flow;
         conn->param.params.tty_client.timeout =
             param->params.tty_client.timeout;
         conn->block = conn->param.params.tty_client.timeout > 0;
@@ -580,6 +581,15 @@ static void conn_connect(neu_conn_t *conn)
         tty_opt.c_cc[VTIME] = conn->param.params.tty_client.timeout / 100;
         tty_opt.c_cc[VMIN]  = 0;
 
+        switch (conn->param.params.tty_client.flow) {
+        case NEU_CONN_TTYP_FLOW_DISABLE:
+            tty_opt.c_cflag &= ~CRTSCTS;
+            break;
+        case NEU_CONN_TTYP_FLOW_ENABLE:
+            tty_opt.c_cflag |= CRTSCTS;
+            break;
+        }
+
         switch (conn->param.params.tty_client.baud) {
         case NEU_CONN_TTY_BAUD_115200:
             cfsetospeed(&tty_opt, B115200);
@@ -656,10 +666,18 @@ static void conn_connect(neu_conn_t *conn)
             break;
         }
 
-        tty_opt.c_oflag = 0;
-        tty_opt.c_lflag = 0;
-        tty_opt.c_iflag |= IGNBRK;
-        tty_opt.c_cflag |= CREAD | HUPCL | CLOCAL;
+        tty_opt.c_cflag |= CREAD | CLOCAL;
+        tty_opt.c_lflag &= ~ICANON;
+        tty_opt.c_lflag &= ~ECHO;
+        tty_opt.c_lflag &= ~ECHOE;
+        tty_opt.c_lflag &= ~ECHONL;
+        tty_opt.c_lflag &= ~ISIG;
+
+        tty_opt.c_iflag &= ~(IXON | IXOFF | IXANY);
+        tty_opt.c_iflag &=
+            ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL);
+        tty_opt.c_oflag &= ~OPOST;
+        tty_opt.c_oflag &= ~ONLCR;
 
         tcflush(fd, TCIFLUSH);
         tcsetattr(fd, TCSANOW, &tty_opt);
