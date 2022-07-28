@@ -8,54 +8,26 @@
 
 English | [简体中文](https://github.com/neugates/neuron/blob/main/README-CN.md)
 
-Neuron is an Industrial IoT (IIoT) edge industrial gateway for modern big data technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol to access the IIoT platform.
+Neuron is an Industrial IoT (IIoT) connectivity server for modern big data technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol to access the IIoT platform.
 
-Version 2.0 streamlines some of the non-essential features in version 1.x and focuses on the data collection and forwarding of industrial protocols in order to provide more efficient and flexible one-stop protocol access and management for the IIoT platform.
-
-## Goals and Features
-
-Neuron is designed to focus on data collection, forwarding, and aggregation for the IIoT - converting data from a wide variety of industrial devices with different protocol types into a unified standard MQTT message to interconnect these individual devices and better integrate them into the larger IoT system for direct remote control and information access.
-
-We hope that Neuron can run on both low-end embedded Linux devices and Linux workstations with larger memory to support large numbers of connected devices and large amounts of data points. Neuron is therefore designed to have a very little memory footprint and a very low CPU footprint while being scalable to meet the needs of different operating resources.
+![neuron-overview](docs/pictures/neuron-final.png)
 
 The following is some important features of Neuron:
 
-- Plugged-in southbound driver and northbound application.
-- A light-weigh built-in web server. The user can configure, control and monitor device through browser.
-- A replaceable MQTT Client. The user can control and read/write device by MQTT message.
-- Support simultaneous connection of a large number of devices with different protocols.
-- Highly integrated with other EMQ products, including EMQ X, NanoMQ, eKuiper(Initiated by EMQ and now maintained and operated by LF Edge).
-- Support updating device drivers during Neuron runtime.
+- Edge native application to leverage the low latency network of edge side.
+- Loosely-coupled modularity design for extending more functional services by pluggable modules.
+- Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and [more](https://neugates.io/docs/en/latest/module-plugins/module-list.html).
+- Support simultaneous connection of a large number of industrial devices with different protocols.
+- Combine with the rule engine function provided by [eKuiper](https://www.lfedge.org/projects/ekuiper) to quickly implement rule-based device control or AI/ML analytics.
+- Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
+- Support installation of native executable or deployed in containerized enviornment.
+- Control industrial devices or make changes to the parameters or data tags through API and MQTT services.
+- Highly integrated with other EMQ products, including EMQX, NanoMQ, eKuiper.
+- Support updating module device drivers during Neuron runtime.
 
-For a full list of new features, please read [Instructions for application and driver](https://neugates.io/plugins)。
+For more information, please visit our [Homepage](https://neugates.io).
 
-For more information, please visit [Homepage](https://neugates.io)。
-
-## Architecture design
-
-Most modern CPUs are already multi-core, even the lower-end ARM and Risc-V architecture CPUs used in embedded systems, most of which have multi-core chips. Therefore, we need to be able to make full use of these multi-core CPUs, that is, Neuron needs to have very good multi-core and multi-thread performance. We use library NNG, which is an asynchronous concurrent library for multi-threaded IO processing and message passing, which can make full use of the multiple cores of the CPU.
-
-We use the star bus mode as an organizational form, and there is a message routing center. This message routing is based on NNG to provide high-efficiency message forwarding. The sending and receiving of messages is communication between threads. By using shared buffers and smart pointers, there is no memory copy, which is very efficient. Around this routing center are nodes, every node includes an adapter and plugin. These nodes can be built-in with Neuron, such as a lightweight web server, or they can be dynamically added, such as various device drivers, MQTT clients, eKuiper interface, and so on. By this design, it isolates the coupling between each device driver and northbound application. In addition, the subscription-publishing mechanism is used to realize the scattering and gathering of data streams, which makes Neuron extremely flexible. Users can dynamically increase and decrease device-driven nodes according to the working load of the site, with good configurability. In addition, when the hardware CPU running Neuron has good performance, more cores, and large memory, Neuron can support more device driver nodes, massive data points, greater data throughput, and lower response time. Has good system scalability.
-
-Neuron uses a plugged-in mechanism to support changing user functional requirements. Users can dynamically load plug-ins with different functions according to the functional requirements of the application scenario. When the device driver has a bug fix and needs to be upgraded, you can also dynamically update the new plug-in to solve the problem and get the new feature. The running state of each node is independent. When the plug-in of one node is upgraded, it will not affect the running state of other nodes, and Neuron does not need to be restarted.
-
-An overview of Neuron's architecture is shown in the figure below:
-
-![arch-overview](docs/pictures/neuron-arch-overview.png)
-
-The topology of bus in Neuron and the scattering/gathering of data flow are shown in the figure below:
-
-![neuron-bus-topo](docs/pictures/neuron-bus-topo.png)
-
-![neuron-dataflow](docs/pictures/neuron-dataflow.png)
-
-The hierarchical layer diagram of Neuron is shown in the figure below:
-
-![neuron-layers](docs/pictures/neuron-layers.png)
-
-## Installation
-
-###  Required Dependencies
+## Prerequisite
 
 [Install Required Dependencies](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
 
@@ -68,10 +40,6 @@ $ git submodule update --init
 $ mkdir build && cd build
 $ cmake .. && make
 ```
-
-## Dashboard
-[Download Dashboard Package](https://github.com/emqx/neuron-dashboard/releases).
-After downloading the dashboard package, put it in the **dist** directory of the neuron executable directory.
 
 ## Quick Start
 
