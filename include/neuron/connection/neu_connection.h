@@ -60,6 +60,11 @@ typedef enum neu_conn_tty_data {
     NEU_CONN_TTY_DATA_8,
 } neu_conn_tty_data_e;
 
+typedef enum neu_conn_tty_flow {
+    NEU_CONN_TTYP_FLOW_DISABLE,
+    NEU_CONN_TTYP_FLOW_ENABLE,
+} neu_conn_tty_flow_e;
+
 typedef void (*neu_conn_callback)(void *data, int fd);
 
 typedef struct neu_conn_param {
@@ -96,6 +101,7 @@ typedef struct neu_conn_param {
             neu_conn_tty_stop_e   stop;
             neu_conn_tty_baud_e   baud;
             neu_conn_tty_parity_e parity;
+            neu_conn_tty_flow_e   flow;
             uint16_t              timeout; // millisecond
         } tty_client;
     } params;
