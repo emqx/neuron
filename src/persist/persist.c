@@ -1006,8 +1006,8 @@ int neu_persister_store_group(neu_persister_t *         persister,
 {
     return execute_sql(
         persister->db,
-        "INSERT INTO groups (driver_name, name, interval) VALUES (%Q, %Q, %i)",
-        driver_name, group_info->name, group_info->interval);
+        "INSERT INTO groups (driver_name, name, interval) VALUES (%Q, %Q, %u)",
+        driver_name, group_info->name, (unsigned) group_info->interval);
 }
 
 static UT_icd group_info_icd = {
