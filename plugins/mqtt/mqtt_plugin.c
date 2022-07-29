@@ -28,6 +28,7 @@
 
 #define INTERVAL 100000U
 #define TIMEOUT 3000U
+#define MAX_TOPIC_LEN 256
 
 #define TOPIC_READ_REQ "neuron/%s/read/req"
 #define TOPIC_WRITE_REQ "neuron/%s/write/req"
@@ -64,13 +65,17 @@ struct mqtt_routine {
 
 static char *topics_format(char *format, char *name)
 {
-    char temp[256] = { '\0' };
-    int  rc        = snprintf(temp, 256, format, name);
+    char *topic = calloc(1, MAX_TOPIC_LEN);
+    if (NULL == topic) {
+        return NULL;
+    }
+
+    int rc = snprintf(topic, MAX_TOPIC_LEN, format, name);
     if (-1 != rc) {
-        char *topic = strdup(temp);
         return topic;
     }
 
+    free(topic);
     return NULL;
 }
 

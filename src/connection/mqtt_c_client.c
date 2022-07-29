@@ -53,8 +53,8 @@ struct reconnect_state {
     char *           key_file;
     char *           keypass;
     mqtt_c_client_t *client;
-    uint8_t          send_buf[SEND_BUF_SIZE];
-    uint8_t          recv_buf[RECV_BUF_SIZE];
+    uint8_t *        send_buf;
+    uint8_t *        recv_buf;
     size_t           send_buf_sz;
     size_t           recv_buf_sz;
     X509 *           cert;
@@ -410,6 +410,14 @@ static void reconnect_state_uninit(struct reconnect_state *state)
     if (NULL != state->keypass) {
         free(state->keypass);
     }
+
+    if (NULL != state->send_buf) {
+        free(state->send_buf);
+    }
+
+    if (NULL != state->recv_buf) {
+        free(state->recv_buf);
+    }
 }
 
 static void subscribe_on_reconnect(mqtt_c_client_t *client)
@@ -584,14 +592,20 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
         return NULL;
     }
 
+    struct reconnect_state *state = &client->state;
+    state->send_buf               = calloc(1, SEND_BUF_SIZE);
+    state->recv_buf               = calloc(1, RECV_BUF_SIZE);
+    if (NULL == state->send_buf || NULL == state->recv_buf) {
+        zlog_error(option->log, "mqtt buff alloc error");
+        return NULL;
+    }
+
     client->option            = option;
     client->user_data         = context;
     client->state_update_func = client->option->state_update_func;
     client->log               = client->option->log;
     UT_icd tuple_icd = { sizeof(struct subscribe_tuple *), NULL, NULL, NULL };
     utarray_new(client->array, &tuple_icd);
-
-    struct reconnect_state *state = &client->state;
 
     if (NULL != client->option->clientid) {
         state->client_id = strdup(client->option->clientid);
@@ -644,8 +658,8 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
     }
 
     state->client      = client;
-    state->send_buf_sz = sizeof(state->send_buf);
-    state->recv_buf_sz = sizeof(state->recv_buf);
+    state->send_buf_sz = SEND_BUF_SIZE;
+    state->recv_buf_sz = RECV_BUF_SIZE;
     state->cert        = NULL;
     state->key         = NULL;
     state->ssl_ctx     = NULL;
