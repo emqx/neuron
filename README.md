@@ -8,22 +8,25 @@
 
 English | [简体中文](https://github.com/neugates/neuron/blob/main/README-CN.md)
 
-Neuron is an Industrial IoT (IIoT) connectivity server for modern big data technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol to access the IIoT platform.
+Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and AI/ML technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol and realize the interconnection between IIoT platforms and various industrial devices.
 
 ![neuron-overview](docs/pictures/neuron-final.png)
 
-The following is some important features of Neuron:
+The following are some important features of Neuron:
 
-- Edge native application to leverage the low latency network of edge side.
-- Loosely-coupled modularity design for extending more functional services by pluggable modules.
+- Edge native application with real-time capability to leverage the low latency network of edge side.
+- Loosely-coupled modularity [architecture design](https://neugates.io/docs/en/latest/architecture.html) for extending more functional services by pluggable modules.
+- Support hot plugins that can update device and application modules during runtime.
 - Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and [more](https://neugates.io/docs/en/latest/module-plugins/module-list.html).
 - Support simultaneous connection of a large number of industrial devices with different protocols.
 - Combine with the rule engine function provided by [eKuiper](https://www.lfedge.org/projects/ekuiper) to quickly implement rule-based device control or AI/ML analytics.
+- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via [SparkplugB](https://neugates.io/docs/en/latest/use_cases.html) solution.
 - Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
 - Support installation of native executable or deployed in containerized enviornment.
-- Control industrial devices or make changes to the parameters or data tags through API and MQTT services.
+- Control industrial devices, and make changes to the parameters and data tags through [API](https://neugates.io/docs/en/latest/api.html) and [MQTT](https://neugates.io/docs/en/latest/mqtt.html) services.
 - Highly integrated with other EMQ products, including EMQX, NanoMQ, eKuiper.
-- Support updating module device drivers during Neuron runtime.
+- The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/getting-started/license_policy.html) to run.
+
 
 For more information, please visit our [Homepage](https://neugates.io).
 
@@ -91,10 +94,26 @@ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k 
 
 ```
 
+## Relational Repos
+
+The following are all the github repos related to Neuron development.
+
+- [Core Framework](https://github.com/emqx/neuron) - public
+- Pluggable Modules - private
+- [Dashboard](https://github.com/emqx/neuron-dashboard) - public
+- [Documentation](https://github.com/emqx/neuron-docs) - public
+
+
 ## Community
+
+Please visit our [offical website](https://neugates.io) to have a good inspiration of how to apply Neuron in your big data and IIoT project.
+
+If you found any bugs or issues, please drop it in [Github Issues](https://github.com/emqx/neuron/issues). Your help is much appriceiated. 
 
 You can connect with the Neuron community and developers in the following ways.
 
-- Discussions：https://github.com/emqx/neuron/discussions
-- Slack：https://slack-invite.emqx.io/
-- Discord：https://discord.gg/xYGf3fQnES 
+- [Github Discussions](https://github.com/emqx/neuron/discussions)
+- [Slack](https://slack-invite.emqx.io/)
+- [Discord](https://discord.gg/xYGf3fQnES) 
+
+By EMQ Neuron Industrial IoT Team
