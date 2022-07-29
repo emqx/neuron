@@ -30,10 +30,10 @@ extern "C" {
 typedef neu_json_plugin_req_plugin_t neu_persist_plugin_info_t;
 
 typedef struct {
-    char *  name;
-    int64_t type;
-    char *  plugin_name;
-    int64_t state;
+    char *name;
+    int   type;
+    char *plugin_name;
+    int   state;
 } neu_persist_node_info_t;
 
 typedef struct {
