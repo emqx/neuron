@@ -47,5 +47,8 @@ typedef struct {
 
 int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
                          const char *tag, neu_driver_cache_value_t *value);
+int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
+                                 const char *              tag,
+                                 neu_driver_cache_value_t *value);
 
 #endif
