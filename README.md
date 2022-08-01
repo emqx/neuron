@@ -10,7 +10,7 @@ English | [简体中文](https://github.com/neugates/neuron/blob/main/README-CN.
 
 Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and AI/ML technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol and realize the interconnection between IIoT platforms and various industrial devices.
 
-![neuron-overview](./docs/pictures/neuron-final.png)
+![neuron-overview](docs/pictures/neuron-final.png)
 
 The following are some important features of Neuron:
 
