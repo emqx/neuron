@@ -39,6 +39,7 @@ struct elem {
     int32_t error;
     int64_t timestamp;
 
+    bool     changed;
     uint16_t n_byte;
     uint8_t *bytes;
 
@@ -122,7 +123,13 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
         elem->n_byte = n_byte;
         elem->bytes  = calloc(elem->n_byte, 1);
 
+        elem->changed = true;
+
         HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
+    }
+
+    if (elem->error != 0) {
+        elem->changed = true;
     }
 
     elem->error     = 0;
@@ -133,11 +140,19 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
         assert(n_byte <= NEU_VALUE_SIZE);
         elem->n_byte = n_byte;
         elem->bytes  = calloc(elem->n_byte, n_byte);
+
+        elem->changed = true;
     } else {
         if (n_byte != elem->n_byte) {
             elem->n_byte = n_byte;
             elem->bytes  = realloc(elem->bytes, n_byte);
             memset(elem->bytes, 0, elem->n_byte);
+
+            elem->changed = true;
+        } else {
+            if (memcmp(elem->bytes, bytes, elem->n_byte) != 0) {
+                elem->changed = true;
+            }
         }
     }
 
@@ -163,6 +178,32 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
         memcpy(value->value.bytes, elem->bytes, elem->n_byte);
 
         ret = 0;
+    }
+
+    nng_mtx_unlock(cache->mtx);
+
+    return ret;
+}
+
+int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
+                                 const char *              tag,
+                                 neu_driver_cache_value_t *value)
+{
+    struct elem *elem = NULL;
+    int          ret  = -1;
+    tkey_t       key  = to_key(group, tag);
+
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
+
+    if (elem != NULL && elem->changed) {
+        value->error     = elem->error;
+        value->n_byte    = elem->n_byte;
+        value->timestamp = elem->timestamp;
+        memcpy(value->value.bytes, elem->bytes, elem->n_byte);
+
+        elem->changed = false;
+        ret           = 0;
     }
 
     nng_mtx_unlock(cache->mtx);
@@ -208,6 +249,7 @@ static void update_tag_error(neu_driver_cache_t *cache, const char *group,
     }
     elem->error     = error;
     elem->timestamp = timestamp;
+    elem->changed   = true;
 
     nng_mtx_unlock(cache->mtx);
 }

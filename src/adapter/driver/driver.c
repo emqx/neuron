@@ -62,8 +62,9 @@ struct neu_adapter_driver {
 static int  report_callback(void *usr_data);
 static int  read_callback(void *usr_data);
 static void read_group(int64_t timestamp, int64_t timeout,
-                       neu_driver_cache_t *cache, const char *group,
-                       UT_array *tags, neu_resp_tag_value_t *datas);
+                       neu_driver_cache_t *cache, bool report,
+                       const char *group, UT_array *tags,
+                       neu_resp_tag_value_t *datas);
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
@@ -241,7 +242,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
         read_group(driver->adapter.timestamp,
                    neu_group_get_interval(group) *
                        NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-                   driver->cache, cmd->group, tags, resp.tags);
+                   driver->cache, false, cmd->group, tags, resp.tags);
     }
 
     strcpy(resp.driver, cmd->driver);
@@ -594,7 +595,7 @@ static int report_callback(void *usr_data)
     read_group(group->driver->adapter.timestamp,
                neu_group_get_interval(group->group) *
                    NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-               group->driver->cache, group->name, tags,
+               group->driver->cache, true, group->name, tags,
                (neu_resp_tag_value_t *) &data[1]);
 
     group->driver->adapter.cb_funs.response(&group->driver->adapter, &header,
@@ -658,8 +659,9 @@ static int read_callback(void *usr_data)
 }
 
 static void read_group(int64_t timestamp, int64_t timeout,
-                       neu_driver_cache_t *cache, const char *group,
-                       UT_array *tags, neu_resp_tag_value_t *datas)
+                       neu_driver_cache_t *cache, bool report,
+                       const char *group, UT_array *tags,
+                       neu_resp_tag_value_t *datas)
 {
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
@@ -668,10 +670,19 @@ static void read_group(int64_t timestamp, int64_t timeout,
 
         strcpy(datas[index].tag, tag->name);
 
-        if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
-            datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
-            continue;
+        if (report && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
+            if (neu_driver_cache_get_changed(cache, group, tag->name, &value) !=
+                0) {
+                datas[index].value.type      = NEU_TYPE_ERROR;
+                datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+                continue;
+            }
+        } else {
+            if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
+                datas[index].value.type      = NEU_TYPE_ERROR;
+                datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+                continue;
+            }
         }
 
         if (value.error != 0) {
