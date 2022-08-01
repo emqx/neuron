@@ -1,6 +1,6 @@
 # Neuron
 
-[![GitHub Release](https://img.shields.io/github/release/neugates/neuron?color=brightgreen&label=Release)](https://github.com/neugates/neuron/releases)
+[![GitHub Release](https://img.shields.io/github/release/emqx/neuron?color=brightgreen&label=Release)](https://github.com/emqx/neuron/releases)
 [![Slack](https://img.shields.io/badge/Slack-Neuron-39AE85?logo=slack)](https://slack-invite.emqx.io/)
 [![Discord](https://img.shields.io/discord/931086341838622751?label=Discord&logo=discord)](https://discord.gg/xYGf3fQnES)
 [![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
@@ -10,7 +10,7 @@ English | [简体中文](https://github.com/neugates/neuron/blob/main/README-CN.
 
 Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and AI/ML technology to leverage the power of Industrial 4.0. It supports one-stop access to dozens of industrial protocols and converts them into MQTT protocol and realize the interconnection between IIoT platforms and various industrial devices.
 
-![neuron-overview](docs/pictures/neuron-final.png)
+![neuron-overview](./docs/pictures/neuron-final.png)
 
 The following are some important features of Neuron:
 
