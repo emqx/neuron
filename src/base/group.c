@@ -275,7 +275,8 @@ static UT_array *to_read_array(tag_elem_t *tags)
     utarray_new(array, neu_tag_get_icd());
     HASH_ITER(hh, tags, el, tmp)
     {
-        if ((el->tag->attribute & NEU_ATTRIBUTE_READ) == NEU_ATTRIBUTE_READ) {
+        if (neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_READ) ||
+            neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
             utarray_push_back(array, el->tag);
         }
     }
