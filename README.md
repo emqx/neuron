@@ -93,6 +93,10 @@ $ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1
 
 ```
 
+## Zlog
+
+Change the log level in the rules in the zlog.conf file. Available levels include INFO, DEBUG, NOTICE, WARN, ERROR and FATAL.
+
 ## Relational Repos
 
 The following are all the github repos related to Neuron development.

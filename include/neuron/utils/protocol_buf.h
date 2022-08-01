@@ -35,6 +35,13 @@ typedef struct {
     uint16_t offset;
 } neu_protocol_buf_t, neu_protocol_pack_buf_t, neu_protocol_unpack_buf_t;
 
+/**
+ * @brief Initialization of protocol_pack_buf.
+ *
+ * @param[in] buf neu_protocol_pack_buf_t to be initialized.
+ * @param[in] base Memory used in protocol_pack_buf.
+ * @param[in] size Size of base memory.
+ */
 inline static void neu_protocol_pack_buf_init(neu_protocol_pack_buf_t *buf,
                                               uint8_t *base, uint16_t size)
 {
@@ -43,6 +50,13 @@ inline static void neu_protocol_pack_buf_init(neu_protocol_pack_buf_t *buf,
     buf->offset = size;
 }
 
+/**
+ * @brief Initialization of protocol_unpack_buf.
+ *
+ * @param[in] buf neu_protocol_unpack_buf_t to be initialized.
+ * @param[in] base Memory used in protocol_unpack_buf.
+ * @param[in] size Size of base memory.
+ */
 inline static void neu_protocol_unpack_buf_init(neu_protocol_unpack_buf_t *buf,
                                                 uint8_t *base, uint16_t size)
 {

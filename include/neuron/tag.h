@@ -87,6 +87,14 @@ inline static bool neu_tag_attribute_test(neu_datatag_t * tag,
 
 UT_icd *neu_tag_get_icd();
 
+/**
+ * @brief Special usage of parsing tag address, e.g. setting length of string
+ * type, setting of endian.
+ *
+ * @param[in] datatag contains all the information about the tag.
+ * @param[in] option contain actions that the label can perform.
+ * @return  0 on success, -1 on failure.
+ */
 int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
                                   neu_datatag_addr_option_u *option);
 
