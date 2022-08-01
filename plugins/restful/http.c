@@ -409,6 +409,7 @@ void http_timeout(nng_aio *aio, void *arg, int err)
         http_internal_error(aio, "{\"error\": \"canceled\"}");
         break;
     default:
+        nlog_error("aio error: %d", err);
         http_internal_error(aio, "{\"error\": \"unknown\"}");
         break;
     }
