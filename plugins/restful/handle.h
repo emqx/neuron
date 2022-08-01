@@ -32,8 +32,6 @@
         size_t    req_data_size = 0;                                          \
         req_type *req           = NULL;                                       \
                                                                               \
-        nng_aio_set_timeout(aio, 3000);                                       \
-        nng_aio_defer(aio, http_timeout, NULL);                               \
         if (http_get_body((aio), (void **) &req_data, &req_data_size) == 0 && \
             decode_fun(req_data, &req) == 0) {                                \
             { func };                                                         \
@@ -47,6 +45,8 @@
 #define REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(aio, req_type, decode_fun,    \
                                                func)                         \
     {                                                                        \
+        nng_aio_set_timeout(aio, 3000);                                      \
+        nng_aio_defer(aio, http_timeout, NULL);                              \
         char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
                                                                              \
         NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
@@ -61,6 +61,8 @@
 
 #define VALIDATE_JWT(aio)                                                    \
     {                                                                        \
+        nng_aio_set_timeout(aio, 3000);                                      \
+        nng_aio_defer(aio, http_timeout, NULL);                              \
         char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
                                                                              \
         NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
