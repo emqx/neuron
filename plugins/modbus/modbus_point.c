@@ -35,11 +35,7 @@ static bool tag_sort(neu_tag_sort_t *sort, void *tag, void *tag_to_be_sorted);
 int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
 {
     int ret = NEU_ERR_SUCCESS;
-    if ((tag->attribute & NEU_ATTRIBUTE_SUBSCRIBE) == NEU_ATTRIBUTE_SUBSCRIBE) {
-        return NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
-    }
-
-    ret = neu_datatag_parse_addr_option(tag, &point->option);
+    ret     = neu_datatag_parse_addr_option(tag, &point->option);
     if (ret != 0) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
     }
