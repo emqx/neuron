@@ -233,3 +233,28 @@ nng_pipe neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name)
 
     return pipe;
 }
+
+UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
+{
+    UT_icd         icd    = { sizeof(neu_nodes_state_t), NULL, NULL, NULL };
+    UT_array *     states = NULL;
+    node_entity_t *el = NULL, *tmp = NULL;
+
+    utarray_new(states, &icd);
+
+    HASH_ITER(hh, mgr->nodes, el, tmp)
+    {
+        neu_nodes_state_t state = { 0 };
+
+        if (!el->is_static) {
+            strcpy(state.node, el->adapter->name);
+            state.state.running = el->adapter->state;
+            state.state.link =
+                neu_plugin_to_plugin_common(el->adapter->plugin)->link_state;
+
+            utarray_push_back(states, &state);
+        }
+    }
+
+    return states;
+}

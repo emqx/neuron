@@ -52,4 +52,7 @@ UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,
 UT_array *neu_node_manager_get_pipes_all(neu_node_manager_t *mgr);
 nng_pipe  neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name);
 
+// neu_nodes_state_t array
+UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr);
+
 #endif

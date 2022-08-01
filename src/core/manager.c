@@ -35,6 +35,7 @@
 #include "node_manager.h"
 #include "plugin_manager.h"
 #include "storage.h"
+#include "sub_msg.h"
 #include "subscribe.h"
 
 #include "manager.h"
@@ -53,6 +54,7 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *ndoe);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
+static int  report_nodes_state(void *usr_data);
 
 neu_manager_t *neu_manager_create()
 {
@@ -62,11 +64,17 @@ neu_manager_t *neu_manager_create()
         .usr_data = (void *) manager,
         .cb       = manager_loop,
     };
+    neu_event_timer_param_t timer_param = {
+        .second      = 1,
+        .millisecond = 0,
+        .cb          = report_nodes_state,
+    };
 
     manager->events            = neu_event_new();
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
+    manager->sub_msg_manager   = neu_sub_msg_manager_create();
     manager->persister         = neu_persister_create("persistence");
 
     rv = nng_pair1_open_poly(&manager->socket);
@@ -93,6 +101,9 @@ neu_manager_t *neu_manager_create()
         manager_load_subscribe(manager);
     }
 
+    timer_param.usr_data = (void *) manager;
+    manager->timer       = neu_event_add_timer(manager->events, timer_param);
+
     return manager;
 }
 
@@ -103,6 +114,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     nng_msg *           uninit_msg = NULL;
     UT_array *pipes = neu_node_manager_get_pipes_all(manager->node_manager);
 
+    neu_event_del_timer(manager->events, manager->timer);
     strcpy(header.sender, "manager");
     utarray_foreach(pipes, nng_pipe *, pipe)
     {
@@ -123,6 +135,7 @@ void neu_manager_destroy(neu_manager_t *manager)
         }
     }
 
+    neu_sub_msg_manager_destroy(manager->sub_msg_manager);
     neu_persister_destroy(manager->persister);
     neu_subscribe_manager_destroy(manager->subscribe_manager);
     neu_node_manager_destroy(manager->node_manager);
@@ -521,4 +534,42 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
         nlog_warn("reply %s to %s, error: %d",
                   neu_reqresp_type_string(header->type), header->receiver, ret);
     }
+}
+
+static int report_nodes_state(void *usr_data)
+{
+    neu_manager_t *manager = (neu_manager_t *) usr_data;
+    UT_array *     apps    = neu_sub_msg_manager_get(manager->sub_msg_manager,
+                                             NEU_SUBSCRIBE_NODES_STATE);
+    if (apps == NULL) {
+        return 0;
+    }
+
+    UT_array *states = neu_node_manager_get_state(manager->node_manager);
+
+    utarray_foreach(apps, char *, app)
+    {
+        nng_msg *                  msg         = NULL;
+        neu_reqresp_head_t         header      = { 0 };
+        neu_resp_get_nodes_state_t node_states = { 0 };
+        nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, app);
+
+        header.type = NEU_REQRESP_NODES_STATE;
+        strcpy(header.sender, "manager");
+        strcpy(header.receiver, app);
+        node_states.states = utarray_clone(states);
+
+        msg = neu_msg_gen(&header, (void *) &node_states);
+        nng_msg_set_pipe(msg, pipe);
+
+        if (nng_sendmsg(manager->socket, msg, 0) != 0) {
+            nng_msg_free(msg);
+            nlog_warn("manager -> %s nodes state fail", app);
+        }
+    }
+
+    utarray_free(apps);
+    utarray_free(states);
+
+    return 0;
 }

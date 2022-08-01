@@ -702,6 +702,16 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         error = node_state_update(plugin, head, data);
         break;
     }
+    case NEU_REQRESP_NODES_STATE: {
+        neu_reqresp_nodes_state_t *states = (neu_reqresp_nodes_state_t *) data;
+        utarray_foreach(states->states, neu_nodes_state_t *, state)
+        {
+            nlog_info("node %s: link: %d, running: %d", state->node,
+                      state->state.link, state->state.running);
+        }
+        utarray_free(states->states);
+        break;
+    }
     default:
         error = NEU_ERR_MQTT_FAILURE;
         break;
@@ -729,7 +739,8 @@ const neu_plugin_module_t neu_plugin_module = {
         "by Neuron from the device can be transmitted to the MQTT Broker "
         "through the MQTT application, and users can also send commands to "
         "Neuron through the MQTT application.",
-    .intf_funs = &plugin_intf_funs,
-    .kind      = NEU_PLUGIN_KIND_SYSTEM,
-    .type      = NEU_NA_TYPE_APP,
+    .intf_funs  = &plugin_intf_funs,
+    .kind       = NEU_PLUGIN_KIND_SYSTEM,
+    .type       = NEU_NA_TYPE_APP,
+    .sub_msg[0] = NEU_SUBSCRIBE_NODES_STATE,
 };

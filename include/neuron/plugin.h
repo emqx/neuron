@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-#include "utils/utarray.h"
+#include "utils/utextend.h"
 #include "utils/zlog.h"
 
 #include "adapter.h"
@@ -88,6 +88,7 @@ typedef struct neu_plugin_module {
     const neu_plugin_intf_funs_t *intf_funs;
     neu_node_type_e               type;
     neu_plugin_kind_e             kind;
+    neu_subscribe_type_e          sub_msg[NEU_APP_SUBSCRIBE_MSG_SIZE];
 } neu_plugin_module_t;
 
 inline static neu_plugin_common_t *

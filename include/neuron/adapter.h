@@ -39,7 +39,6 @@ typedef struct {
 
 typedef enum neu_reqresp_type {
     NEU_RESP_ERROR,
-    NEU_REQRESP_TRANS_DATA,
     NEU_REQ_UPDATE_LICENSE,
 
     NEU_REQ_READ_GROUP,
@@ -67,6 +66,8 @@ typedef enum neu_reqresp_type {
     NEU_RESP_GET_NODE_SETTING,
     NEU_REQ_GET_NODE_STATE,
     NEU_RESP_GET_NODE_STATE,
+    NEU_REQ_GET_NODES_STATE,
+    NEU_RESP_GET_NODES_STATE,
     NEU_REQ_NODE_CTL,
 
     NEU_REQ_ADD_GROUP,
@@ -87,11 +88,17 @@ typedef enum neu_reqresp_type {
     NEU_REQ_DEL_PLUGIN,
     NEU_REQ_GET_PLUGIN,
     NEU_RESP_GET_PLUGIN,
+
+    NEU_REQRESP_TRANS_DATA,
+    NEU_REQRESP_NODES_STATE,
 } neu_reqresp_type_e;
+
+typedef enum {
+    NEU_SUBSCRIBE_NODES_STATE = NEU_REQRESP_NODES_STATE,
+} neu_subscribe_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_ERROR]         = "NEU_RESP_ERROR",
-    [NEU_REQRESP_TRANS_DATA] = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQ_UPDATE_LICENSE] = "NEU_REQ_UPDATE_LICENSE",
 
     [NEU_REQ_READ_GROUP]  = "NEU_REQ_READ_GROUP",
@@ -119,6 +126,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_GET_NODE_SETTING] = "NEU_RESP_GET_NODE_SETTING",
     [NEU_REQ_GET_NODE_STATE]    = "NEU_REQ_GET_NODE_STATE",
     [NEU_RESP_GET_NODE_STATE]   = "NEU_RESP_GET_NODE_STATE",
+    [NEU_REQ_GET_NODES_STATE]   = "NEU_REQ_GET_NODES_STATE",
+    [NEU_RESP_GET_NODES_STATE]  = "NEU_RESP_GET_NODES_STATE",
     [NEU_REQ_NODE_CTL]          = "NEU_REQ_NODE_CTL",
 
     [NEU_REQ_ADD_GROUP]    = "NEU_REQ_ADD_GROUP",
@@ -139,6 +148,9 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_DEL_PLUGIN]  = "NEU_REQ_DEL_PLUGIN",
     [NEU_REQ_GET_PLUGIN]  = "NEU_REQ_GET_PLUGIN",
     [NEU_RESP_GET_PLUGIN] = "NEU_RESP_GET_PLUGIN",
+
+    [NEU_REQRESP_TRANS_DATA]  = "NEU_REQRESP_TRANS_DATA",
+    [NEU_REQRESP_NODES_STATE] = "NEU_REQRESP_NODE_STATE",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -322,6 +334,24 @@ typedef struct neu_resp_get_node_state {
     neu_node_state_t state;
 } neu_resp_get_node_state_t;
 
+typedef struct neu_req_get_nodes_state {
+} neu_req_get_nodes_state_t;
+
+typedef struct {
+    char             node[NEU_NODE_NAME_LEN];
+    neu_node_state_t state;
+} neu_nodes_state_t;
+
+inline static UT_icd neu_nodes_state_t_icd()
+{
+    UT_icd icd = { sizeof(neu_nodes_state_t), NULL, NULL, NULL };
+
+    return icd;
+}
+typedef struct {
+    UT_array *states; // array of neu_node_state_t
+} neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
+
 typedef struct neu_req_update_license {
 } neu_req_update_license_t;
 
@@ -458,6 +488,13 @@ inline static nng_msg *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     case NEU_RESP_GET_NODE_STATE:
         data_size = sizeof(neu_resp_get_node_state_t);
+        break;
+    case NEU_REQ_GET_NODES_STATE:
+        data_size = sizeof(neu_req_get_nodes_state_t);
+        break;
+    case NEU_REQRESP_NODES_STATE:
+    case NEU_RESP_GET_NODES_STATE:
+        data_size = sizeof(neu_resp_get_nodes_state_t);
         break;
     case NEU_REQ_READ_GROUP:
         data_size = sizeof(neu_req_read_group_t);
