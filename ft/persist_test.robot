@@ -21,7 +21,7 @@ ${tag4}             {"name": "tag4", "address": "2!400005", "attribute": ${TAG_A
 ${tag5}             {"name": "tag5", "address": "2!400006", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 ${tag6}             {"name": "tag6", "address": "2!400007", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 ${tag7}             {"name": "tag7", "address": "2!400008", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
-${tag8}             {"name": "tag8", "address": "2!400009", "attribute": %{TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
+${tag8}             {"name": "tag8", "address": "2!400009", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 
 *** Test Cases ***
 Get the newly added adapters after stopping and restarting Neuron, it should return success

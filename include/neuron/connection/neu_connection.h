@@ -67,7 +67,7 @@ typedef enum neu_conn_tty_flow {
     NEU_CONN_TTYP_FLOW_ENABLE,
 } neu_conn_tty_flow_e;
 
-typedef void (*neu_conn_callback)(void *data, int fd);
+typedef void (*neu_conn_callback)(void *ctx, int fd);
 
 typedef struct neu_conn_param {
     zlog_category_t *log;
@@ -111,53 +111,126 @@ typedef struct neu_conn_param {
 
 typedef struct neu_conn neu_conn_t;
 
-neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
+/**
+ * @brief create a new connection.
+ *
+ * @param[in] param required to create a connection.
+ * @param[in] ctx Mainly used in the neu_conn_callback callback function.
+ * @param[in] connected The neu_conn_callback callback function will be
+ * triggered when the connection is successful.
+ * @param[in] disconnected The callback function of neu_conn_callback will be
+ * triggered when the connection fails.
+ * @return Connection on success, NULL on failure.
+ */
+neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *ctx,
                          neu_conn_callback connected,
                          neu_conn_callback disconnected);
-neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
-void        neu_conn_destory(neu_conn_t *conn);
-void        neu_conn_disconnect(neu_conn_t *conn);
-int         neu_conn_tcp_server_accept(neu_conn_t *conn);
-int         neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd);
 
+/**
+ * @brief Reconfigure the connection.
+ *
+ * @param[in] conn Connection that need to be configured.
+ * @param[in] param New configuration parameters for the connection.
+ * @return Connection on success, NULL on failure.
+ */
+neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
+
+/**
+ * @brief Destroy connection
+ *
+ * @param conn
+ */
+void neu_conn_destory(neu_conn_t *conn);
+
+/**
+ * @brief Disconnect
+ *
+ *
+ * @param[in] conn
+ */
+void neu_conn_disconnect(neu_conn_t *conn);
+
+/**
+ * @brief Receive connection requests from clients.
+ *
+ * @param[in] conn
+ * @return Successfully returns a number greater than 0, i.e. client fd, -1 on
+ * failure.
+ */
+int neu_conn_tcp_server_accept(neu_conn_t *conn);
+
+/**
+ * @brief Close a client connection.
+ *
+ * @param[in] conn
+ * @param[in] fd Get the fd from neu_conn_tcp_server_accept function.
+ * @return 0 on success, -1 on failure.
+ */
+int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd);
+
+/**
+ * @brief Send data over the connection.
+ *
+ * @param[in] conn
+ * @param[in] buf Store the data to be sent.
+ * @param[in] len Length of data to be sent.
+ * @return When greater than 0, returns the number of bytes successfully sent,
+ * less than or equal to 0 fails.
+ */
 ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len);
+
+/**
+ * @brief Receive data via connection read.
+ *
+ * @param[in] conn
+ * @param[in] buf The received data is stored in buf.
+ * @param[in] len Length of buf.
+ * @return When greater than 0, it will return the number of bytes successfully
+ * received, less than or equal to 0 fails.
+ */
 ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len);
 
+/**
+ * @brief Specify the client to send data.
+ *
+ * @param[in] conn
+ * @param[in] fd Client's file descriptor.
+ * @param[in] buf Store the data to be sent.
+ * @param[in] len Length of data to be sent.
+ * @return When greater than 0, returns the number of bytes successfully sent,
+ * less than or equal to 0 fails.
+ */
 ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len);
+
+/**
+ * @brief Receive data via tcp server connection read.
+ *
+ * @param[in] conn
+ * @param[in] fd Client's file descriptor.
+ * @param[in] buf The received data is stored in buf.
+ * @param[in] len Length of buf.
+ * @return When greater than 0, returns the number of bytes successfully
+ * received, less than or equal to 0 fails.
+ */
 ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len);
 
-#define NEU_STREAM_CONSUME(buf, size)                           \
-    neu_protocol_unpack_buf_t protocol_buf = { 0 };             \
-    neu_protocol_unpack_buf_init(&protocol_buf, (buf), (size)); \
-    while (neu_protocol_unpack_buf_unused_size(&protocol_buf) > 0)
-
-#define NEU_STREAM_CONSUME_USED_SIZE(used) \
-    offset -= used;                        \
-    memmove(recv_buf, recv_buf + used, offset);
-
-#define NEU_TCP_CLIENT_CONSUME(conn)                                         \
-    static __thread uint8_t  recv_buf[2048] = { 0 };                         \
-    static __thread uint16_t offset         = 0;                             \
-    ssize_t                  ret =                                           \
-        neu_conn_recv((conn), recv_buf + offset, sizeof(recv_buf) - offset); \
-    if (ret > 0)                                                             \
-        offset += ret;                                                       \
-    if (ret > 0)                                                             \
-    NEU_STREAM_CONSUME(recv_buf, offset)
-
 typedef int (*neu_conn_stream_consume_fn)(
     void *context, neu_protocol_unpack_buf_t *protocol_buf);
+
 void neu_conn_stream_consume(neu_conn_t *conn, void *context,
                              neu_conn_stream_consume_fn fn);
+
 void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
                                         neu_conn_stream_consume_fn fn);
 
 typedef neu_buf_result_t (*neu_conn_process_msg)(
     void *context, neu_protocol_unpack_buf_t *protocol_buf);
+
 int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
                       neu_conn_process_msg fn);
+
 int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
                                  uint16_t n_byte, neu_conn_process_msg fn);
 

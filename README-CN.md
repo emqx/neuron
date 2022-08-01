@@ -95,6 +95,10 @@ $ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1
 
 ```
 
+## Zlog
+
+在 zlog.conf 文件的规则中更改日志级别。可用的日志级别包括 INFO，DEBUG，NOTICE，WARN，ERROR 和 FATAL。
+
 ## 关系报告
 
 以下是与 Neuron 开发相关的所有的 github repos：
