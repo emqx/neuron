@@ -261,6 +261,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_ERROR:
     case NEU_REQRESP_TRANS_DATA:
     case NEU_RESP_APP_SUBSCRIBE_GROUP:
+    case NEU_REQRESP_NODES_STATE:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         break;

@@ -74,6 +74,16 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
     neu_node_manager_add(manager->node_manager, adapter);
     neu_adapter_init(adapter);
 
+    if (instance.module->type == NEU_NA_TYPE_APP) {
+        for (int i = 0; i < NEU_APP_SUBSCRIBE_MSG_SIZE; i++) {
+            if (instance.module->sub_msg[i] != 0) {
+                neu_sub_msg_manager_add(manager->sub_msg_manager,
+                                        instance.module->sub_msg[i],
+                                        adapter->name);
+            }
+        }
+    }
+
     return NEU_ERR_SUCCESS;
 }
 
@@ -84,6 +94,16 @@ int neu_manager_del_node(neu_manager_t *manager, const char *node_name)
 
     if (adapter == NULL) {
         return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    if (adapter->module->type == NEU_NA_TYPE_APP) {
+        for (int i = 0; i < NEU_APP_SUBSCRIBE_MSG_SIZE; i++) {
+            if (adapter->module->sub_msg[i] != 0) {
+                neu_sub_msg_manager_del(manager->sub_msg_manager,
+                                        adapter->module->sub_msg[i],
+                                        adapter->name);
+            }
+        }
     }
 
     neu_adapter_destroy(adapter);
