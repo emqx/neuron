@@ -38,6 +38,8 @@ typedef enum neu_conn_tty_baud {
     NEU_CONN_TTY_BAUD_38400,
     NEU_CONN_TTY_BAUD_19200,
     NEU_CONN_TTY_BAUD_9600,
+    NEU_CONN_TTY_BAUD_4800,
+    NEU_CONN_TTY_BAUD_2400,
 } neu_conn_tty_baud_e;
 
 typedef enum neu_conn_tty_parity {
