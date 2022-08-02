@@ -591,6 +591,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
 void neu_adapter_destroy(neu_adapter_t *adapter)
 {
+    adapter->module->intf_funs->close(adapter->plugin);
+
     nng_dialer_close(adapter->dialer);
     nng_close(adapter->sock);
     neu_persister_destroy(adapter->persister);
@@ -620,7 +622,6 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     }
 
     neu_event_del_timer(adapter->events, adapter->timer);
-    adapter->module->intf_funs->close(adapter->plugin);
 
     nlog_info("Stop the adapter(%s)", adapter->name);
     return 0;
