@@ -24,7 +24,23 @@
 extern "C" {
 #endif
 
-char *         neu_encode64(const unsigned char *input, int length);
+/**
+ * @brief base64 encoding.
+ *
+ * @param[in] input Data to be encoded.
+ * @param[in] length Length of data to be encoded.
+ * @return Encoded data.
+ */
+
+char *neu_encode64(const unsigned char *input, int length);
+
+/**
+ * @brief base64 decoding.
+ *
+ * @param[out] length Pointer to the length of the decoded data.
+ * @param[in] input Data to be decoded.
+ * @return The decoded data.
+ */
 unsigned char *neu_decode64(int *length, const char *input);
 
 #ifdef __cplusplus
