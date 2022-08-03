@@ -43,6 +43,9 @@
 
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME DEFAULT_DASHBOARD_PLUGIN_NAME
+#define LICENSE_PLUGIN_LIB "libplugin-license-server.so"
+#define LICENSE_PLUGIN_NAME "neuron-license-server"
+#define LICENSE_SERVER_NODE_NAME "neuron-license-server"
 
 static const char *const url = "inproc://neu_manager";
 
@@ -55,6 +58,9 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *ndoe);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  report_nodes_state(void *usr_data);
+static void start_system_adapter(neu_manager_t *manager, const char *name,
+                                 const char *plugin_lib,
+                                 const char *plugin_name);
 
 neu_manager_t *neu_manager_create()
 {
@@ -89,6 +95,8 @@ neu_manager_t *neu_manager_create()
     manager->loop = neu_event_add_io(manager->events, param);
 
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
+    start_system_adapter(manager, LICENSE_SERVER_NODE_NAME, LICENSE_PLUGIN_LIB,
+                         LICENSE_PLUGIN_NAME);
 
     if (manager_load_plugin(manager) != 0) {
         nlog_warn("load plugin error");
@@ -516,6 +524,22 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
     adapter = neu_adapter_create(&adapter_info, manager);
     neu_node_manager_add_static(manager->node_manager, adapter);
     neu_adapter_init(adapter);
+    neu_adapter_start(adapter);
+}
+
+static void start_system_adapter(neu_manager_t *manager, const char *name,
+                                 const char *plugin_lib,
+                                 const char *plugin_name)
+{
+    if (0 != neu_manager_add_plugin(manager, plugin_lib)) {
+        return;
+    }
+
+    if (0 != neu_manager_add_node(manager, name, plugin_name)) {
+        return;
+    }
+
+    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, name);
     neu_adapter_start(adapter);
 }
 
