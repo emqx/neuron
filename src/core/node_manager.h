@@ -27,6 +27,8 @@
 
 #include "adapter.h"
 
+#define LICENSE_SERVER_NODE_NAME "neuron-license-server"
+
 typedef struct neu_node_manager neu_node_manager_t;
 
 neu_node_manager_t *neu_node_manager_create();

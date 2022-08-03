@@ -155,6 +155,10 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
     utarray_new(plugins, &icd);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
+        if (0 == strcmp(LICENSE_PLUGIN_NAME, el->name)) {
+            continue;
+        }
+
         neu_resp_plugin_info_t info = {
             .kind = el->kind,
             .type = el->type,
