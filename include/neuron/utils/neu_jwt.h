@@ -23,8 +23,6 @@
 extern "C" {
 #endif
 
-#include <jwt.h>
-
 int  neu_jwt_init(char *dir_path);
 int  neu_jwt_new(char **token);
 int  neu_jwt_validate(char *b_token);

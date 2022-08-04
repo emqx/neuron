@@ -25,6 +25,8 @@
 #include <string.h>
 #include <sys/time.h>
 
+#include <jwt.h>
+
 #include "errcodes.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"
