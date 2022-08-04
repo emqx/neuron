@@ -97,9 +97,32 @@ neu_plugin_to_plugin_common(neu_plugin_t *plugin)
     return (neu_plugin_common_t *) plugin;
 }
 
+/**
+ * @brief when creating a node, initialize the common parameter in
+ *        the plugin.
+ *
+ * @param[in] common refers to common parameter in plugins.
+ */
 void neu_plugin_common_init(neu_plugin_common_t *common);
+
+/**
+ * @brief Check the common parameter in the plugin.
+ *
+ * @param[in] plugin represents plugin information.
+ * @return  Returns true if the check is correct,false otherwise.
+ */
 bool neu_plugin_common_check(neu_plugin_t *plugin);
 
+/**
+ * @brief Encapsulate the request,convert the request into a message and send.
+ *
+ * @param[in] plugin
+ * @param[in] head the request header function.
+ * @param[in] data that different request headers correspond to different data.
+ *
+ * @return 0 for successful message processing, non-0 for message processing
+ * failure.
+ */
 int neu_plugin_op(neu_plugin_t *plugin, neu_reqresp_head_t head, void *data);
 
 #ifdef __cplusplus

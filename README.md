@@ -27,7 +27,6 @@ The following are some important features of Neuron:
 - Highly integrated with other EMQ products, including EMQX, NanoMQ, eKuiper.
 - The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/getting-started/license_policy.html) to run.
 
-
 For more information, please visit our [Homepage](https://neugates.io).
 
 ## Prerequisite
@@ -65,9 +64,9 @@ $ ctest --output-on-failure
 To run all functional testers
 
 ```shell
-mosquitto -v &
-pip3 install -r ft/requirements.txt
-python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
+$ mosquitto -v &
+$ pip3 install -r ft/requirements.txt
+$ python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
 
 ```
 
@@ -79,20 +78,24 @@ To run pressure tests
 
 ```shell
 # python dependencies
-pip3 install -r ft/requirements.txt
+$ pip3 install -r ft/requirements.txt
 
 # through http api, on dataset total-10k
-python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-10k -d ft/http-total-10k ft/pressure.test
+$ python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-10k -d ft/http-total-10k ft/pressure.test
 # through http api, on dataset total-50k
-python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-50k -d ft/http-total-50k ft/pressure.test
+$ python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-50k -d ft/http-total-50k ft/pressure.test
 
 # A MQTT broker is needed if using the mqtt api, mosquitto in this example
-mosquitto -v &
+$ mosquitto -v &
 
 # through mqtt api, on dataset simple-1k
-python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k -d ft/mqtt-simple-1k ft/pressure.test
+$ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k -d ft/mqtt-simple-1k ft/pressure.test
 
 ```
+
+## Zlog
+
+Change the log level in the rules in the zlog.conf file. Available levels include INFO, DEBUG, NOTICE, WARN, ERROR and FATAL.
 
 ## Relational Repos
 
@@ -103,17 +106,16 @@ The following are all the github repos related to Neuron development.
 - [Dashboard](https://github.com/emqx/neuron-dashboard) - public
 - [Documentation](https://github.com/emqx/neuron-docs) - public
 
-
 ## Community
 
 Please visit our [offical website](https://neugates.io) to have a good inspiration of how to apply Neuron in your big data and IIoT project.
 
-If you found any bugs or issues, please drop it in [Github Issues](https://github.com/emqx/neuron/issues). Your help is much appriceiated. 
+If you found any bugs or issues, please drop it in [Github Issues](https://github.com/emqx/neuron/issues). Your help is much appriceiated.
 
 You can connect with the Neuron community and developers in the following ways.
 
 - [Github Discussions](https://github.com/emqx/neuron/discussions)
 - [Slack](https://slack-invite.emqx.io/)
-- [Discord](https://discord.gg/xYGf3fQnES) 
+- [Discord](https://discord.gg/xYGf3fQnES)
 
 By EMQ Neuron Industrial IoT Team

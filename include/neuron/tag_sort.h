@@ -55,9 +55,22 @@ typedef struct {
 typedef bool (*neu_tag_sort_fn)(neu_tag_sort_t *sort, void *tag,
                                 void *tag_to_be_sorted);
 
+/**
+ * @brief Use sort and cmp to sort and classify tags.
+ *
+ * @param[in] tags The tags that needs to be processed.
+ * @param[in] sort Function for tag sort.
+ * @param[in] cmp Function for tags comparison.
+ * @return processed tags.
+ */
 neu_tag_sort_result_t *neu_tag_sort(UT_array *tags, neu_tag_sort_fn sort,
                                     neu_tag_sort_cmp cmp);
 
+/**
+ * @brief free the result.
+ *
+ * @param[in] result the tags result that needs to be relesed.
+ */
 void neu_tag_sort_free(neu_tag_sort_result_t *result);
 
 #ifdef __cplusplus
