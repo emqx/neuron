@@ -27,6 +27,8 @@
 #include "plugin.h"
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard"
+#define LICENSE_PLUGIN_LIB "libplugin-license-server.so"
+#define LICENSE_PLUGIN_NAME "neuron-license-server"
 
 typedef struct neu_plugin_instance {
     void *               handle;

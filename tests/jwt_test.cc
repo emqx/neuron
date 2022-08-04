@@ -3,7 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "jwt.h"
-#include "neu_jwt.h"
+#include "utils/neu_jwt.h"
 
 #include "utils/log.h"
 
