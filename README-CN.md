@@ -1,14 +1,17 @@
 # Neuron
 
 [![GitHub Release](https://img.shields.io/github/release/neugates/neuron?color=brightgreen&label=Release)](https://github.com/neugates/neuron/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/emqx/neuron?label=Docker%20Pulls)](https://hub.docker.com/r/emqx/neuron)
 [![Slack](https://img.shields.io/badge/Slack-Neuron-39AE85?logo=slack)](https://slack-invite.emqx.io/)
 [![Discord](https://img.shields.io/discord/931086341838622751?label=Discord&logo=discord)](https://discord.gg/xYGf3fQnES)
 [![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
 [![YouTube](https://img.shields.io/badge/Subscribe-EMQ-FF0000?logo=youtube)](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q)
 
+
+
 [English](https://github.com/neugates/neuron/blob/main/README.md) | 简体中文
 
-Neuron 是一款工业物联网 (IIoT) 连接服务器，用于现代大数据和 AI/ML 技术，以利用工业 4.0 的力量。支持一站式接入数十种工业协议，并将其转换为MQTT协议，实现工业物联网平台与各种工业设备的互联互通。
+Neuron 是一款开源的、轻量级工业协议网关软件，支持数十种工业协议的一站式设备连接、数据接入、MQTT 协议转换，为工业设备赋予工业 4.0 时代关键的物联网连接能力。
 
 ![neuron-overview](docs/pictures/neuron-final.png)
 
@@ -24,18 +27,54 @@ Neuron 是一款工业物联网 (IIoT) 连接服务器，用于现代大数据�
 - 具有非常低的内存占用，小于 10M 的内存占用和 CPU 使用率，可以在 ARM、x86 和 RISC-V 等资源有限的硬件上运行。
 - 支持在本地安装可执行文件或部署在容器化环境中。
 - 控制工业设备，通过[API](https://neugates.io/docs/en/latest/api.html)和[MQTT](https://neugates.io/docs/en/latest/mqtt.html) 服务更改参数和数据标签。
-- 与其他 EMQ 产品高度集成，包括 EMQX、NanoMQ、eKuiper。
+- 与其他 EMQ 产品高度集成，包括  [EMQX](https://www.emqx.com/zh/products/emqx)、[NanoMQ](https://nanomq.io/zh)、[eKuiper](https://ekuiper.org/zh)。
 - 核心框架和 Modbus、MQTT 和 eKuiper 的代码在 LGPLv3 的许可下开源。商业模块需要 [EMQ 许可证](https://neugates.io/docs/en/latest/getting-started/license_policy.html) 才能运行。
 
-欲了解更多信息，请访问我们的[主页](https://neugates.io)。
+获取更多信息，请访问 [Neuron 官网](https://neugates.io/zh)。
 
-## 前提条件
+## 快速开始
 
-[安装所需依赖项](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
+#### 使用 Docker 运行 Neuron
 
-## 编译
+```
+docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=true --restart=always emqx/neuron:latest
+```
 
-```shell
+接下来请参考 [入门指南](https://neugates.io/docs/zh/latest/getting-started/quick_start.html#运行和使用) 开启您的 Neuron 之旅。
+
+> **提示**
+>
+> Neuron 开源版只包含 Modbus 和 MQTT 驱动。
+>
+> 您可以[免费申请 15 天试用期限的 License](https://www.emqx.com/zh/apply-licenses/neuron)，加载所有的驱动。
+
+#### 更多安装方式
+
+您可以从 [neugates.io/zh/downloads?os=Linux](https://neugates.io/zh/downloads?os=Linux) 下载不同格式的 Neuron 安装包进行手动安装。
+
+也可以直接访问 [Neuron 安装文档](https://neugates.io/docs/zh/latest/getting-started/installation.html) 查看不同安装方式的操作步骤。
+
+## 文档
+
+Neuron 文档地址：https://neugates.io/docs/zh/latest/。
+
+## 社区
+
+- 访问 [Neuron 论坛](https://askemq.com/c/neuron/8) 以获取帮助，也可以分享您的想法或项目。
+- 添加小助手微信号 `emqmkt`，加入 Neuron 微信技术交流群。
+- 加入我们的 [Discord](https://discord.gg/xYGf3fQnES)，参于实时讨论。
+- 关注我们的 [bilibili](https://space.bilibili.com/522222081)，获取最新物联网技术分享。
+- 关注我们的 [微博](https://weibo.com/emqtt) 或 [Twitter](https://twitter.com/EMQTech)，获取 Neuron 最新资讯。
+
+## 从源码构建
+
+**安装依赖**
+
+请参考 [github.com/neugates/neuron/blob/main/Install-dependencies.md](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
+
+**编译**
+
+```
 $ git clone https://github.com/emqx/neuron
 $ cd neuron
 $ git submodule update --init
@@ -43,14 +82,24 @@ $ mkdir build && cd build
 $ cmake .. && make
 ```
 
-## 快速开始
+**安装 Dashboard**
 
-```shell
+在 [github.com/emqx/neuron-dashboard/releases](https://github.com/emqx/neuron-dashboard/releases) 页面下载最新的 `neuron-dashboard.zip`，解压后放到 Neuron 可执行目录下的 dist 目录中。
+
+**运行**
+
+```
 $ cd build
 $ ./neuron
 ```
 
-## 单元测试
+>**修改日志级别**
+>
+>在 zlog.conf 文件的规则中更改日志级别。可用的日志级别包括 INFO，DEBUG，NOTICE，WARN，ERROR 和 FATAL。
+
+## 测试
+
+### 单元测试
 
 运行所有的单元测试
 
@@ -59,19 +108,17 @@ $ cd build
 $ ctest --output-on-failure
 ```
 
-## 功能测试
+### 功能测试
 
 运行所有的功能测试
 
 ```shell
-
 $ mosquitto -v &
 $ pip3 install -r ft/requirements.txt
 $ python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
-
 ```
 
-## 压力测试
+### 压力测试
 
 在目录`ft/data/persistence/`中有压力测试的数据集。
 
@@ -91,34 +138,8 @@ $ mosquitto -v &
 
 # 使用mqtt接口在数据集simple-1k上进行测试
 $ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k -d ft/mqtt-simple-1k ft/pressure.test
-
-
 ```
 
-## Zlog
+## 开源许可
 
-在 zlog.conf 文件的规则中更改日志级别。可用的日志级别包括 INFO，DEBUG，NOTICE，WARN，ERROR 和 FATAL。
-
-## 关系报告
-
-以下是与 Neuron 开发相关的所有的 github repos：
-
-- [核心框架](https://github.com/emqx/neuron) - public
-- Pluggable Modules - private
-- [前端界面](https://github.com/emqx/neuron-dashboard) - public
-- [官网文档](https://github.com/emqx/neuron-docs) - public
-
-## 社区
-
-请访问我们的 [官方网站](https://neugates.io)，去了解如何在您的大数据和 IIoT 项目中使用 Neuron。
-
-如果您发现任何 bug 或者问题，请您反馈到 [Github Issues](https://github.com/emqx/neuron/issues) 中。非常感谢您的帮助。
-
-You can connect with the Neuron community and developers in the following ways.
-您可以通过以下方式与 Neuron 社区和开发人员联系
-
-- [Github Discussions](https://github.com/emqx/neuron/discussions)
-- [Slack](https://slack-invite.emqx.io/)
-- [Discord](https://discord.gg/xYGf3fQnES)
-
-作者：EMQ Neuron 工业物联网团队
+详见 [LICENSE](./LICENSE)。
