@@ -234,17 +234,15 @@ void handle_get_node_state(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
+    header.ctx = aio;
+
     if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, error_code.error, result_error);
-        })
-        return;
+        header.type = NEU_REQ_GET_NODES_STATE;
+    } else {
+        header.type = NEU_REQ_GET_NODE_STATE;
+        strcpy(cmd.node, node_name);
     }
 
-    header.ctx  = aio;
-    header.type = NEU_REQ_GET_NODE_STATE;
-
-    strcpy(cmd.node, node_name);
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
@@ -265,4 +263,32 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
 
     http_ok(aio, result);
     free(result);
+}
+
+void handle_get_nodes_state_resp(nng_aio *                   aio,
+                                 neu_resp_get_nodes_state_t *states)
+{
+    neu_json_get_nodes_state_resp_t states_res = { 0 };
+    char *                          result     = NULL;
+
+    states_res.n_node = utarray_len(states->states);
+    states_res.nodes =
+        calloc(states_res.n_node, sizeof(neu_json_get_nodes_state_t));
+
+    utarray_foreach(states->states, neu_nodes_state_t *, state)
+    {
+        int index                       = utarray_eltidx(states->states, state);
+        states_res.nodes[index].name    = state->node;
+        states_res.nodes[index].running = state->state.running;
+        states_res.nodes[index].link    = state->state.link;
+    }
+
+    neu_json_encode_by_fn(&states_res, neu_json_encode_get_nodes_state_resp,
+                          &result);
+
+    http_ok(aio, result);
+
+    free(result);
+    free(states_res.nodes);
+    utarray_free(states->states);
 }

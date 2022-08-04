@@ -349,7 +349,7 @@ inline static UT_icd neu_nodes_state_t_icd()
     return icd;
 }
 typedef struct {
-    UT_array *states; // array of neu_node_state_t
+    UT_array *states; // array of neu_nodes_state_t
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
 
 typedef struct neu_req_update_license {
