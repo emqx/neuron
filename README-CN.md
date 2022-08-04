@@ -56,7 +56,7 @@ docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=
 
 ## 文档
 
-Neuron 文档地址：https://neugates.io/docs/zh/latest/。
+Neuron 文档地址：[https://neugates.io/docs/zh/latest/](https://neugates.io/docs/zh/latest/)。
 
 ## 社区
 
