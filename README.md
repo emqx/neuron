@@ -1,6 +1,7 @@
 # Neuron
 
 [![GitHub Release](https://img.shields.io/github/release/emqx/neuron?color=brightgreen&label=Release)](https://github.com/emqx/neuron/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/emqx/neuron?label=Docker%20Pulls)](https://hub.docker.com/r/emqx/neuron)
 [![Slack](https://img.shields.io/badge/Slack-Neuron-39AE85?logo=slack)](https://slack-invite.emqx.io/)
 [![Discord](https://img.shields.io/discord/931086341838622751?label=Discord&logo=discord)](https://discord.gg/xYGf3fQnES)
 [![Twitter](https://img.shields.io/badge/Follow-EMQ-1DA1F2?logo=twitter)](https://twitter.com/EMQTech)
@@ -24,18 +25,53 @@ The following are some important features of Neuron:
 - Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
 - Support installation of native executable or deployed in containerized enviornment.
 - Control industrial devices, and make changes to the parameters and data tags through [API](https://neugates.io/docs/en/latest/api.html) and [MQTT](https://neugates.io/docs/en/latest/mqtt.html) services.
-- Highly integrated with other EMQ products, including EMQX, NanoMQ, eKuiper.
+- Highly integrated with other EMQ products, including [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), [eKuiper](https://ekuiper.org/).
 - The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/getting-started/license_policy.html) to run.
 
-For more information, please visit our [Homepage](https://neugates.io).
+For more information, please visit [Neuron homepage](https://neugates.io/).
 
-## Prerequisite
+## Get Started
 
-[Install Required Dependencies](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
+#### Run Neuron using Docker
 
-## Build
+```
+docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=true --restart=always emqx/neuron:latest
+```
 
-```shell
+Next, please follow the [getting started guide](https://neugates.io/docs/en/latest/getting-started/quick_start.html#run-for-the-first-time) to tour the Neuron features.
+
+> **Limitations**
+>
+> Neuron open source edition only includes Modbus and MQTT drivers.
+>
+> [Apply for a 15-day trial license](https://www.emqx.com/en/apply-licenses/neuron) to load all drivers.
+
+#### More installation options
+
+If you prefer to install and manage Neuron yourself, you can download the latest version from [neugates.io/downloads?os=Linux](https://neugates.io/downloads?os=Linux).
+
+For more installation options, see the [Neuron installation documentation](https://neugates.io/docs/en/latest/getting-started/installation.html).
+
+## Documentation
+
+The Neuron documentation is available at [neugates.io/docs/en/latest/](https://neugates.io/docs/en/latest/).
+
+## Get Involved
+
+- Follow [@EMQTech on Twitter](https://twitter.com/EMQTech).
+- If you have a specific question, check out our [discussion forums](https://github.com/emqx/neuron/discussions).
+- For general discussions, join us on the [official Discord](https://discord.gg/xYGf3fQnES) team.
+- Keep updated on [EMQ YouTube](https://www.youtube.com/channel/UC5FjR77ErAxvZENEWzQaO5Q) by subscribing.
+
+## Build From Source
+
+**Install required dependencies**
+
+[github.com/neugates/neuron/blob/main/Install-dependencies.md](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
+
+**Build**
+
+```
 $ git clone https://github.com/emqx/neuron
 $ cd neuron
 $ git submodule update --init
@@ -43,12 +79,21 @@ $ mkdir build && cd build
 $ cmake .. && make
 ```
 
-## Quick Start
+**Install Dashboard**
 
-```shell
+Download the latest `neuron-dashboard.zip` from the [github.com/emqx/neuron-dashboard/releases](https://github.com/emqx/neuron-dashboard/releases) page, unzip it and put it to the `dist` directory under the Neuron executable directory.
+
+**Run**
+
+```
 $ cd build
 $ ./neuron
 ```
+
+>**Log level**
+>
+>Change the log level in the rules in the zlog.conf file. Available levels include INFO, DEBUG, NOTICE, WARN, ERROR and FATAL.
+>
 
 ## Test
 
@@ -59,7 +104,7 @@ $ cd build
 $ ctest --output-on-failure
 ```
 
-## Functional test
+### Functional test
 
 To run all functional testers
 
@@ -67,10 +112,9 @@ To run all functional testers
 $ mosquitto -v &
 $ pip3 install -r ft/requirements.txt
 $ python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
-
 ```
 
-## Pressure test
+### Pressure test
 
 There are datasets for pressure testing in directory `ft/data/persistence/`.
 
@@ -90,32 +134,8 @@ $ mosquitto -v &
 
 # through mqtt api, on dataset simple-1k
 $ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k -d ft/mqtt-simple-1k ft/pressure.test
-
 ```
 
-## Zlog
+## License
 
-Change the log level in the rules in the zlog.conf file. Available levels include INFO, DEBUG, NOTICE, WARN, ERROR and FATAL.
-
-## Relational Repos
-
-The following are all the github repos related to Neuron development.
-
-- [Core Framework](https://github.com/emqx/neuron) - public
-- Pluggable Modules - private
-- [Dashboard](https://github.com/emqx/neuron-dashboard) - public
-- [Documentation](https://github.com/emqx/neuron-docs) - public
-
-## Community
-
-Please visit our [offical website](https://neugates.io) to have a good inspiration of how to apply Neuron in your big data and IIoT project.
-
-If you found any bugs or issues, please drop it in [Github Issues](https://github.com/emqx/neuron/issues). Your help is much appriceiated.
-
-You can connect with the Neuron community and developers in the following ways.
-
-- [Github Discussions](https://github.com/emqx/neuron/discussions)
-- [Slack](https://slack-invite.emqx.io/)
-- [Discord](https://discord.gg/xYGf3fQnES)
-
-By EMQ Neuron Industrial IoT Team
+See [LICENSE](./LICENSE).
