@@ -358,7 +358,20 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &resp);
         break;
     }
+    case NEU_REQ_GET_NODES_STATE: {
+        neu_resp_get_nodes_state_t resp = { 0 };
+        UT_array *states = neu_node_manager_get_state(manager->node_manager);
 
+        resp.states = utarray_clone(states);
+
+        strcpy(header->receiver, header->sender);
+        strcpy(header->sender, "manager");
+        header->type = NEU_RESP_GET_NODES_STATE;
+        reply(manager, header, &resp);
+
+        utarray_free(states);
+        break;
+    }
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAG:

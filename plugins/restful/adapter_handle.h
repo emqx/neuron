@@ -36,5 +36,7 @@ void handle_get_node_setting_resp(nng_aio *                    aio,
 void handle_node_ctl(nng_aio *aio);
 void handle_get_node_state(nng_aio *aio);
 void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state);
+void handle_get_nodes_state_resp(nng_aio *                   aio,
+                                 neu_resp_get_nodes_state_t *states);
 
 #endif

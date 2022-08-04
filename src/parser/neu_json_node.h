@@ -54,6 +54,19 @@ typedef struct {
 int neu_json_encode_get_node_state_resp(void *json_object, void *param);
 
 typedef struct {
+    char *  name;
+    int64_t running;
+    int64_t link;
+} neu_json_get_nodes_state_t;
+
+typedef struct {
+    uint16_t                    n_node;
+    neu_json_get_nodes_state_t *nodes;
+} neu_json_get_nodes_state_resp_t;
+
+int neu_json_encode_get_nodes_state_resp(void *json_object, void *param);
+
+typedef struct {
     char *name;
     char *plugin;
 } neu_json_get_nodes_resp_node_t;
