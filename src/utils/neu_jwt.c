@@ -26,8 +26,8 @@
 #include <sys/time.h>
 
 #include "errcodes.h"
-#include "neu_jwt.h"
 #include "utils/log.h"
+#include "utils/neu_jwt.h"
 
 struct public_key_store {
     struct {

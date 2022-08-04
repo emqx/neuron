@@ -37,6 +37,7 @@ extern "C" {
 #include "utils/log.h"
 #include "utils/zlog.h"
 
+#include "utils/neu_jwt.h"
 #include "utils/utarray.h"
 #include "utils/utextend.h"
 #include "utils/uthash.h"
