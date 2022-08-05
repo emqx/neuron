@@ -45,8 +45,6 @@
 #define REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(aio, req_type, decode_fun,    \
                                                func)                         \
     {                                                                        \
-        nng_aio_set_timeout(aio, 3000);                                      \
-        nng_aio_defer(aio, http_timeout, NULL);                              \
         char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
                                                                              \
         NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
@@ -61,8 +59,6 @@
 
 #define VALIDATE_JWT(aio)                                                    \
     {                                                                        \
-        nng_aio_set_timeout(aio, 3000);                                      \
-        nng_aio_defer(aio, http_timeout, NULL);                              \
         char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
                                                                              \
         NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \

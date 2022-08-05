@@ -726,6 +726,7 @@ static void conn_disconnect(neu_conn_t *conn)
         conn->callback_trigger = false;
     }
     conn->offset = 0;
+    memset(conn->buf, 0, conn->buf_size);
 }
 
 static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
@@ -761,11 +762,6 @@ static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
 void neu_conn_stream_consume(neu_conn_t *conn, void *context,
                              neu_conn_stream_consume_fn fn)
 {
-    if (fn == NULL) {
-        conn->offset = 0;
-        memset(conn->buf, 0, conn->buf_size);
-        return;
-    }
     ssize_t ret = neu_conn_recv(conn, conn->buf + conn->offset,
                                 conn->buf_size - conn->offset);
     if (ret > 0) {
