@@ -357,6 +357,11 @@ static int get_schema_version(sqlite3 *db, char **version_p, bool *dirty_p)
     return 0;
 }
 
+int schema_version_cmp(const void *a, const void *b)
+{
+    return strcmp(*(char **) a, *(char **) b);
+}
+
 static int extract_schema_info(const char *file, char **version_p,
                                char **description_p)
 {
@@ -512,7 +517,7 @@ static int apply_schemas(sqlite3 *db, const char *dir)
         nlog_warn("directory `%s` contains no schema files", dir);
     }
 
-    utarray_sort(files, (int (*)(const void *, const void *)) strcmp);
+    utarray_sort(files, schema_version_cmp);
 
     utarray_foreach(files, char **, file)
     {
