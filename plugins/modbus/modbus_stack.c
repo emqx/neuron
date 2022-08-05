@@ -31,8 +31,6 @@ struct modbus_stack {
     uint16_t seq;
 };
 
-static __thread void *write_req = NULL;
-
 modbus_stack_t *modbus_stack_create(void *ctx, modbus_stack_send send_fn,
                                     modbus_stack_value      value_fn,
                                     modbus_stack_write_resp write_resp)
@@ -90,13 +88,6 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
     case MODBUS_WRITE_M_COIL: {
         struct modbus_address address = { 0 };
         ret                           = modbus_address_unwrap(buf, &address);
-        if (ret <= 0) {
-            stack->write_resp(stack->ctx, write_req,
-                              NEU_ERR_PLUGIN_WRITE_FAILURE);
-            return ret;
-        }
-
-        stack->write_resp(stack->ctx, write_req, 0);
         break;
     }
     case MODBUS_WRITE_S_HOLD_REG:
@@ -182,9 +173,13 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
     modbus_header_wrap(&pbuf, stack->seq++);
     *response_size += sizeof(struct modbus_header);
 
-    write_req = req;
     ret = stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
                          neu_protocol_pack_buf_get(&pbuf));
+    if (ret > 0) {
+        stack->write_resp(stack->ctx, req, NEU_ERR_SUCCESS);
+    } else {
+        stack->write_resp(stack->ctx, req, NEU_ERR_PLUGIN_DISCONNECTED);
+    }
     free(buf);
     return ret;
 }
