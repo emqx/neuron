@@ -51,7 +51,6 @@ jobs:
           version: "tags/${{ steps.get_ui_version.outputs.version }}"
           file: "neuron-dashboard.zip"
           target: "neuron-dashboard.zip"
-          token: ${{ secrets.ci_git_token }}
 
       - name: unpack dashboard
         run: |

@@ -79,6 +79,7 @@ neu_manager_t *neu_manager_create()
     manager->subscribe_manager = neu_subscribe_manager_create();
     manager->sub_msg_manager   = neu_sub_msg_manager_create();
     manager->persister         = neu_persister_create("persistence");
+    assert(manager->persister != NULL);
 
     rv = nng_pair1_open_poly(&manager->socket);
     assert(rv == 0);

@@ -35,3 +35,7 @@ cp -r plugins/* ${neuron_bin}/plugins/
 cp -r dist ${neuron_bin}/
 
 ldconfig
+
+echo "Install neuron header to ${neuron_include}, include_directories ${neuron_include} in CMakeLists.txt."
+echo "Install neuron library to ${neuron_lib}, link_directories ${neuron_lib} in CMakeLists.txt."
+echo "Install neuron to ${neuron_bin}, the custom plugin is placed in the ${neuron_bin}/plugins directory and the ${neuron_bin}/persistence/plugins.json is modified."

@@ -82,6 +82,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
     adapter->cb_funs.response = callback_funs.response;
     adapter->module           = info->module;
     adapter->persister        = neu_persister_create("persistence");
+    assert(adapter->persister != NULL);
 
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
