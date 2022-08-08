@@ -84,6 +84,7 @@ enum neu_rest_method {
 enum neu_rest_handler_type {
     NEU_REST_HANDLER_FUNCTION = 0x0,
     NEU_REST_HANDLER_DIRECTORY,
+    NEU_REST_HANDLER_PROXY,
 };
 
 struct neu_rest_handler {
@@ -93,6 +94,7 @@ struct neu_rest_handler {
     union neu_rest_handler_value {
         void *handler;
         char *path;
+        char *dst_url;
     } value;
 };
 
