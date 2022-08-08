@@ -777,3 +777,150 @@ static int update_timestamp(void *usr_data)
     neu_plugin_to_plugin_common(adapter->plugin)->timestamp = timestamp;
     return 0;
 }
+
+void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
+{
+    nng_msg *msg       = NULL;
+    void *   body      = NULL;
+    size_t   data_size = 0;
+
+    switch (header->type) {
+    case NEU_REQ_NODE_INIT:
+    case NEU_REQ_NODE_UNINIT:
+    case NEU_RESP_NODE_UNINIT:
+        data_size = sizeof(neu_req_node_init_t);
+        break;
+    case NEU_RESP_ERROR:
+        data_size = sizeof(neu_resp_error_t);
+        break;
+    case NEU_REQ_ADD_PLUGIN:
+        data_size = sizeof(neu_req_add_plugin_t);
+        break;
+    case NEU_REQ_DEL_PLUGIN:
+        data_size = sizeof(neu_req_del_plugin_t);
+        break;
+    case NEU_REQ_GET_PLUGIN:
+        data_size = sizeof(neu_req_get_plugin_t);
+        break;
+    case NEU_RESP_GET_PLUGIN:
+        data_size = sizeof(neu_resp_get_plugin_t);
+        break;
+    case NEU_REQ_ADD_NODE:
+        data_size = sizeof(neu_req_add_node_t);
+        break;
+    case NEU_REQ_DEL_NODE:
+        data_size = sizeof(neu_req_del_node_t);
+        break;
+    case NEU_REQ_GET_NODE:
+        data_size = sizeof(neu_req_get_node_t);
+        break;
+    case NEU_RESP_GET_NODE:
+        data_size = sizeof(neu_resp_get_node_t);
+        break;
+    case NEU_REQ_ADD_GROUP:
+    case NEU_REQ_UPDATE_GROUP:
+        data_size = sizeof(neu_req_add_group_t);
+        break;
+    case NEU_REQ_DEL_GROUP:
+        data_size = sizeof(neu_req_del_group_t);
+        break;
+    case NEU_REQ_GET_GROUP:
+        data_size = sizeof(neu_req_get_group_t);
+        break;
+    case NEU_RESP_GET_GROUP:
+        data_size = sizeof(neu_resp_get_group_t);
+        break;
+    case NEU_REQ_ADD_TAG:
+        data_size = sizeof(neu_req_add_tag_t);
+        break;
+    case NEU_RESP_ADD_TAG:
+        data_size = sizeof(neu_resp_add_tag_t);
+        break;
+    case NEU_RESP_UPDATE_TAG:
+        data_size = sizeof(neu_resp_update_tag_t);
+        break;
+    case NEU_REQ_UPDATE_TAG:
+        data_size = sizeof(neu_req_update_tag_t);
+        break;
+    case NEU_REQ_DEL_TAG:
+        data_size = sizeof(neu_req_del_tag_t);
+        break;
+    case NEU_REQ_GET_TAG:
+        data_size = sizeof(neu_req_get_tag_t);
+        break;
+    case NEU_RESP_GET_TAG:
+        data_size = sizeof(neu_resp_get_tag_t);
+        break;
+    case NEU_REQ_SUBSCRIBE_GROUP:
+        data_size = sizeof(neu_req_subscribe_t);
+        break;
+    case NEU_REQ_UNSUBSCRIBE_GROUP:
+        data_size = sizeof(neu_req_unsubscribe_t);
+        break;
+    case NEU_REQ_GET_SUBSCRIBE_GROUP:
+        data_size = sizeof(neu_req_get_subscribe_group_t);
+        break;
+    case NEU_RESP_GET_SUBSCRIBE_GROUP:
+        data_size = sizeof(neu_resp_get_subscribe_group_t);
+        break;
+    case NEU_REQ_NODE_SETTING:
+        data_size = sizeof(neu_req_node_setting_t);
+        break;
+    case NEU_REQ_GET_NODE_SETTING:
+        data_size = sizeof(neu_req_get_node_setting_t);
+        break;
+    case NEU_RESP_GET_NODE_SETTING:
+        data_size = sizeof(neu_resp_get_node_setting_t);
+        break;
+    case NEU_REQ_NODE_CTL:
+        data_size = sizeof(neu_req_node_ctl_t);
+        break;
+    case NEU_REQ_GET_NODE_STATE:
+        data_size = sizeof(neu_req_get_node_state_t);
+        break;
+    case NEU_RESP_GET_NODE_STATE:
+        data_size = sizeof(neu_resp_get_node_state_t);
+        break;
+    case NEU_REQ_GET_NODES_STATE:
+        data_size = sizeof(neu_req_get_nodes_state_t);
+        break;
+    case NEU_REQRESP_NODES_STATE:
+    case NEU_RESP_GET_NODES_STATE:
+        data_size = sizeof(neu_resp_get_nodes_state_t);
+        break;
+    case NEU_REQ_READ_GROUP:
+        data_size = sizeof(neu_req_read_group_t);
+        break;
+    case NEU_REQ_WRITE_TAG:
+        data_size = sizeof(neu_req_write_tag_t);
+        break;
+    case NEU_RESP_READ_GROUP:
+        data_size = sizeof(neu_resp_read_group_t);
+        break;
+    case NEU_REQRESP_TRANS_DATA: {
+        neu_reqresp_trans_data_t *trans = (neu_reqresp_trans_data_t *) data;
+        data_size                       = sizeof(neu_reqresp_trans_data_t) +
+            trans->n_tag * sizeof(neu_resp_tag_value_t);
+        break;
+    }
+    case NEU_REQ_UPDATE_LICENSE:
+        data_size = sizeof(neu_req_update_license_t);
+        break;
+    case NEU_RESP_APP_SUBSCRIBE_GROUP:
+        data_size = sizeof(neu_resp_app_subscribe_group_t);
+        break;
+    case NEU_REQ_APP_SUBSCRIBE_GROUP:
+    case NEU_REQ_APP_UNSUBSCRIBE_GROUP:
+        data_size = sizeof(neu_req_app_unsubscribe_group_t);
+        break;
+    default:
+        assert(false);
+        break;
+    }
+
+    nng_msg_alloc(&msg, sizeof(neu_reqresp_head_t) + data_size);
+    body = nng_msg_body(msg);
+    memcpy(body, header, sizeof(neu_reqresp_head_t));
+    memcpy((uint8_t *) body + sizeof(neu_reqresp_head_t), data, data_size);
+    return msg;
+}
