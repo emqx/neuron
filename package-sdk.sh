@@ -35,9 +35,12 @@ mkdir -p $package_name/lib
 mkdir -p $package_name/config
 mkdir -p $package_name/plugins/schema
 
+cp sdk-install.sh ${package_name}/
 cp neuron.conf ${package_name}/
 cp cmake/neuron-config.cmake ${package_name}/
 cp -r include/* ${package_name}/include/
+
+cp -r build/dist ${package_name}/
 
 cp build/neuron ${package_name}
 cp build/libneuron-base.so ${package_name}/lib
@@ -46,10 +49,12 @@ cp zlog/src/libzlog.so.1.2 ${package_name}/lib
 cp -r persistence ${package_name}/
 cp migrate.py ${package_name}/
 
+cp sdk-zlog.conf ${package_name}/config/
 cp zlog.conf ${package_name}/config/
 cp dev.conf ${package_name}/config/
 cp neuron.key ${package_name}/config/
 cp neuron.pem ${package_name}/config/
+cp default_plugins.json ${package_name}/config/
 
 cp build/plugins/schema/ekuiper.json \
     build/plugins/schema/mqtt.json \
