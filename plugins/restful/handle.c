@@ -110,6 +110,11 @@ struct neu_rest_handler cors_handler[] = {
 
 struct neu_rest_handler api_handlers[] = {
     {
+        .type          = NEU_REST_HANDLER_PROXY,
+        .url           = "/api/v2/ekuiper",
+        .value.dst_url = "http://127.0.0.1:9081",
+    },
+    {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/ping",
