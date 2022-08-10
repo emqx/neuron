@@ -107,6 +107,7 @@ static void wrap_read_response_json(neu_resp_tag_value_t *tags, uint16_t len,
         case NEU_TYPE_FLOAT:
             json->tags[i].t               = NEU_JSON_FLOAT;
             json->tags[i].value.val_float = tag->value.value.f32;
+            json->tags[i].precision       = tag->value.precision;
             break;
         case NEU_TYPE_DOUBLE:
             json->tags[i].t                = NEU_JSON_DOUBLE;

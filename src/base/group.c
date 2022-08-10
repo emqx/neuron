@@ -119,6 +119,7 @@ int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
     el->tag->description = strdup(tag->description);
     el->tag->type        = tag->type;
     el->tag->attribute   = tag->attribute;
+    el->tag->precision   = tag->precision;
     el->tag->option      = tag->option;
     memcpy(el->tag->meta, tag->meta, sizeof(tag->meta));
 
@@ -151,6 +152,7 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
         el->tag->description = strdup(tag->description);
         el->tag->type        = tag->type;
         el->tag->attribute   = tag->attribute;
+        el->tag->precision   = tag->precision;
         el->tag->option      = tag->option;
         memcpy(el->tag->meta, tag->meta, sizeof(tag->meta));
 
@@ -221,6 +223,7 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
         result              = calloc(1, sizeof(neu_datatag_t));
         result->type        = find->tag->type;
         result->attribute   = find->tag->attribute;
+        result->precision   = find->tag->precision;
         result->name        = strdup(find->tag->name);
         result->address     = strdup(find->tag->address);
         result->description = strdup(find->tag->description);

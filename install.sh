@@ -89,7 +89,7 @@ function build_sqlite3() {
 }
 
 build_zlog
-compile_source akheron/jansson.git v2.14 "-DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF"
+compile_source neugates/jansson.git HEAD "-DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF"
 build_openssl 
 compile_source neugates/nng.git HEAD "-DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF"
 compile_source benmcollins/libjwt.git v1.13.1 "-DENABLE_PIC=ON -DBUILD_SHARED_LIBS=OFF"

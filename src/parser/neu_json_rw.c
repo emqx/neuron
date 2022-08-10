@@ -48,9 +48,10 @@ int neu_json_encode_read_resp(void *json_object, void *param)
             tag_elems[1].t         = NEU_JSON_INT;
             tag_elems[1].v.val_int = p_tag->error;
         } else {
-            tag_elems[1].name = "value";
-            tag_elems[1].t    = p_tag->t;
-            tag_elems[1].v    = p_tag->value;
+            tag_elems[1].name      = "value";
+            tag_elems[1].t         = p_tag->t;
+            tag_elems[1].v         = p_tag->value;
+            tag_elems[1].precision = p_tag->precision;
         }
 
         tag_array = neu_json_encode_array(tag_array, tag_elems,
@@ -81,9 +82,10 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
         neu_json_elem_t tag_elem = { 0 };
 
         if (p_tag->error == 0) {
-            tag_elem.name = p_tag->name;
-            tag_elem.t    = p_tag->t;
-            tag_elem.v    = p_tag->value;
+            tag_elem.name      = p_tag->name;
+            tag_elem.t         = p_tag->t;
+            tag_elem.v         = p_tag->value;
+            tag_elem.precision = p_tag->precision;
             neu_json_encode_field(values, &tag_elem, 1);
         } else {
             tag_elem.name      = p_tag->name;

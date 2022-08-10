@@ -706,7 +706,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         neu_reqresp_nodes_state_t *states = (neu_reqresp_nodes_state_t *) data;
         utarray_foreach(states->states, neu_nodes_state_t *, state)
         {
-            nlog_info("node %s: link: %d, running: %d", state->node,
+            plog_info(plugin, "node %s: link: %d, running: %d", state->node,
                       state->state.link, state->state.running);
         }
         utarray_free(states->states);

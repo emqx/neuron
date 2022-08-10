@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS
     name NOT NULL UNIQUE check(length(name) <= 32),
     address NOT NULL check(length(address) <= 64),
     attribute INTEGER NOT NULL check(attribute BETWEEN 0 AND 7),
+    precision INTEGER NOT NULL check(precision BETWEEN 0 AND 17),
     type INTEGER NOT NULL check(type BETWEEN 0 AND 15),
     description NOT NULL check(length(description) <= 128),
     UNIQUE (driver_name, group_name, name),
