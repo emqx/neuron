@@ -115,6 +115,11 @@ struct neu_rest_handler api_handlers[] = {
         .value.dst_url = "http://127.0.0.1:9081",
     },
     {
+        .type          = NEU_REST_HANDLER_PROXY,
+        .url           = "/api/v2/hwtoken",
+        .value.dst_url = "http://127.0.0.1:7003/api/v2/hwtoken",
+    },
+    {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/ping",
