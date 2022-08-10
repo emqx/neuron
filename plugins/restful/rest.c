@@ -31,6 +31,7 @@
 #include "handle.h"
 #include "http.h"
 #include "plugin_handle.h"
+#include "proxy.h"
 #include "rest.h"
 #include "rw_handle.h"
 #include "utils/log.h"
@@ -62,6 +63,9 @@ static int rest_add_handler(nng_http_server *              server,
         ret = nng_http_handler_alloc_directory(&handler, rest_handler->url,
                                                rest_handler->value.path);
         break;
+    case NEU_REST_HANDLER_PROXY:
+        ret = rest_proxy_handler(rest_handler, &handler);
+        goto end;
     }
 
     if (ret != 0) {
@@ -91,6 +95,7 @@ static int rest_add_handler(nng_http_server *              server,
         break;
     }
 
+end:
     if (ret != 0) {
         return -1;
     }
