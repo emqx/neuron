@@ -16,10 +16,11 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include <pthread.h>
 
-#include "proxy.h"
 #include "errcodes.h"
 #include "http.h"
+#include "proxy.h"
 #include "utils/log.h"
 #include "utils/utlist.h"
 #include "json/neu_json_fn.h"
@@ -27,9 +28,13 @@
 struct rest_proxy_ctx;
 
 typedef struct {
-    size_t                 uri_offset; // offset at which destination uri starts
-    nng_http_client *      client;     // client to destination
-    struct rest_proxy_ctx *free_list;  // context free list
+    pthread_mutex_t        mtx;
+    size_t                 src_uri_len; // source uri length
+    size_t                 dst_uri_len; // destination uri length
+    size_t                 uri_buf_len; // request uri buffer length
+    char *                 uri_buf;     // request uri buffer
+    nng_http_client *      client;      // client to destination
+    struct rest_proxy_ctx *free_list;   // context free list
 } rest_proxy_t;
 
 struct rest_proxy_ctx {
@@ -57,27 +62,52 @@ static int rest_proxy_alloc(rest_proxy_t **proxy, const char *src_url,
 
     rest_proxy_t *p = calloc(1, sizeof(rest_proxy_t));
     if (NULL == p) {
+        nlog_error("alloc rest proxy fail");
         return -1;
+    }
+
+    if (0 != pthread_mutex_init(&p->mtx, NULL)) {
+        nlog_error("init rest proxy mutex fail");
+        ret = -1;
+        goto err_mutex_init;
     }
 
     ret = nng_url_parse(&url, dst_url);
     if (0 != ret) {
-        free(p);
         nlog_error("parse url: `%s` fail", dst_url);
-        return ret;
+        goto err_url_parse;
     }
+
+    p->dst_uri_len = strlen(url->u_requri);
+    p->uri_buf_len = p->dst_uri_len + 1;
+    p->uri_buf     = calloc(p->uri_buf_len, sizeof(char));
+    if (NULL == p->uri_buf) {
+        nlog_error("alloc uri buffer for `%s` fail", dst_url);
+        ret = -1;
+        goto err_uri_buf;
+    }
+    // copy destination uri to head of buffer
+    strcpy(p->uri_buf, url->u_requri);
 
     ret = nng_http_client_alloc(&p->client, url);
     if (0 != ret) {
-        nng_url_free(url);
-        free(p);
         nlog_error("alloc http client for `%s` fail", dst_url);
-        return ret;
+        goto err_http_client;
     }
 
-    p->uri_offset = strlen(src_url);
-    *proxy        = p;
+    p->src_uri_len = strlen(src_url);
+    *proxy         = p;
     nng_url_free(url);
+    return ret;
+
+err_http_client:
+    free(p->uri_buf);
+err_uri_buf:
+    nng_url_free(url);
+err_url_parse:
+    pthread_mutex_destroy(&p->mtx);
+err_mutex_init:
+    free(p);
     return ret;
 }
 
@@ -86,7 +116,12 @@ static void rest_proxy_free(rest_proxy_t *proxy)
     if (NULL == proxy) {
         return;
     }
-    nng_http_client_free(proxy->client);
+
+    if (proxy->client) {
+        nng_http_client_free(proxy->client);
+    }
+
+    free(proxy->uri_buf);
 
     struct rest_proxy_ctx *el = NULL, *tmp = NULL;
     DL_FOREACH_SAFE(proxy->free_list, el, tmp)
@@ -97,7 +132,40 @@ static void rest_proxy_free(rest_proxy_t *proxy)
         free(el);
     }
 
+    pthread_mutex_destroy(&proxy->mtx);
     free(proxy);
+}
+
+static inline int rest_proxy_set_uri(rest_proxy_t *proxy, nng_http_req *req)
+{
+    const char *uri     = nng_http_req_get_uri(req);
+    size_t      len     = strlen(uri);
+    size_t      buf_len = len - proxy->src_uri_len + proxy->dst_uri_len + 1;
+
+    // TODO: use per context buffer if a single lock cause too much contention
+    pthread_mutex_lock(&proxy->mtx);
+    if (buf_len > proxy->uri_buf_len) {
+        proxy->uri_buf_len = buf_len;
+        proxy->uri_buf     = realloc(proxy->uri_buf, buf_len);
+        if (NULL == proxy->uri_buf) {
+            nlog_error("realloc uri buffer fail");
+            pthread_mutex_unlock(&proxy->mtx);
+            return -1;
+        }
+    }
+
+    // buffer large enough guaranteed
+    sprintf(proxy->uri_buf + proxy->dst_uri_len, "%s",
+            uri + proxy->src_uri_len);
+
+    if (0 != nng_http_req_set_uri(req, proxy->uri_buf)) {
+        nlog_error("proxy fail set req uri: `%s`", proxy->uri_buf);
+        pthread_mutex_unlock(&proxy->mtx);
+        return -1;
+    }
+    pthread_mutex_unlock(&proxy->mtx);
+
+    return 0;
 }
 
 static void rest_proxy_cb(void *arg)
@@ -128,16 +196,22 @@ static void rest_proxy_cb(void *arg)
 
     ctx->user_aio = NULL;
     ctx->res      = NULL;
+
+    pthread_mutex_lock(&ctx->proxy->mtx);
     DL_APPEND(ctx->proxy->free_list, ctx); // put to free list
+    pthread_mutex_unlock(&ctx->proxy->mtx);
 }
 
 struct rest_proxy_ctx *rest_proxy_get_ctx(rest_proxy_t *proxy)
 {
+    pthread_mutex_lock(&proxy->mtx);
     struct rest_proxy_ctx *ctx = proxy->free_list;
     if (NULL != ctx) {
         DL_DELETE(proxy->free_list, ctx);
+        pthread_mutex_unlock(&proxy->mtx);
         return ctx;
     }
+    pthread_mutex_unlock(&proxy->mtx);
 
     ctx = calloc(1, sizeof(*ctx));
     if (NULL == ctx) {
@@ -217,14 +291,7 @@ void handle_proxy(nng_aio *aio)
     rest_proxy_t *    proxy   = nng_http_handler_get_data(handler);
 
     // fix the uri
-    const char *uri = nng_http_req_get_uri(req);
-    if (strlen(uri) == proxy->uri_offset) {
-        uri = "/";
-    } else {
-        uri = uri + proxy->uri_offset;
-    }
-    if (0 != nng_http_req_set_uri(req, uri)) {
-        nlog_error("proxy fail set req uri: `%s`", uri);
+    if (0 != rest_proxy_set_uri(proxy, req)) {
         goto error;
     }
 
@@ -249,6 +316,5 @@ void handle_proxy(nng_aio *aio)
 error:
     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
         http_response(aio, error_code.error, result_error);
-        return;
     });
 }
