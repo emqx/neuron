@@ -830,22 +830,23 @@ int neu_persister_load_plugins(neu_persister_t *persister,
 int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
                             const char *group_name, const neu_datatag_t *tag)
 {
-    return execute_sql(
-        persister->db,
-        "INSERT INTO tags (driver_name, group_name, name, "
-        "address, attribute, precision, "
-        "type, description) VALUES(%Q, %Q, %Q, %Q, %i, %i, %i, %Q)",
-        driver_name, group_name, tag->name, tag->address, tag->attribute,
-        tag->precision, tag->type, tag->description);
+    return execute_sql(persister->db,
+                       "INSERT INTO tags (driver_name, group_name, name, "
+                       "address, attribute, precision, "
+                       "type, decimal, description) VALUES(%Q, %Q, %Q, %Q, %i, "
+                       "%i, %i, %lf, %Q)",
+                       driver_name, group_name, tag->name, tag->address,
+                       tag->attribute, tag->precision, tag->type, tag->decimal,
+                       tag->description);
 }
 
 int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
                             const char *group_name, UT_array **tags)
 {
-    sqlite3_stmt *stmt = NULL;
-    const char *  query =
-        "SELECT name, address, attribute, precision, type, description "
-        "FROM tags WHERE driver_name=? AND group_name=?";
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT name, address, attribute, precision, type, "
+                        "decimal, description "
+                        "FROM tags WHERE driver_name=? AND group_name=?";
 
     utarray_new(*tags, neu_tag_get_icd());
 
@@ -876,7 +877,8 @@ int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
             .attribute   = sqlite3_column_int(stmt, 2),
             .precision   = sqlite3_column_int64(stmt, 3),
             .type        = sqlite3_column_int(stmt, 4),
-            .description = (char *) sqlite3_column_text(stmt, 5),
+            .decimal     = sqlite3_column_double(stmt, 5),
+            .description = (char *) sqlite3_column_text(stmt, 6),
         };
         utarray_push_back(*tags, &tag);
 
@@ -903,10 +905,11 @@ int neu_persister_update_tag(neu_persister_t *persister,
 {
     return execute_sql(persister->db,
                        "UPDATE tags SET address=%Q, attribute=%i, "
-                       "precision=%i, type=%i, description=%Q "
+                       "precision=%i, type=%i, decimal=%lf, description=%Q "
                        "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
                        tag->address, tag->attribute, tag->precision, tag->type,
-                       tag->description, driver_name, group_name, tag->name);
+                       tag->decimal, tag->description, driver_name, group_name,
+                       tag->name);
 }
 
 int neu_persister_delete_tag(neu_persister_t *persister,

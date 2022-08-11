@@ -51,6 +51,7 @@ void handle_add_tags(nng_aio *aio)
                 cmd.tags[i].attribute = req->tags[i].attribute;
                 cmd.tags[i].type      = req->tags[i].type;
                 cmd.tags[i].precision = req->tags[i].precision;
+                cmd.tags[i].decimal   = req->tags[i].decimal;
                 cmd.tags[i].address   = strdup(req->tags[i].address);
                 cmd.tags[i].name      = strdup(req->tags[i].name);
                 if (req->tags[i].description != NULL) {
@@ -134,6 +135,7 @@ void handle_update_tags(nng_aio *aio)
                 cmd.tags[i].attribute = req->tags[i].attribute;
                 cmd.tags[i].type      = req->tags[i].type;
                 cmd.tags[i].precision = req->tags[i].precision;
+                cmd.tags[i].decimal   = req->tags[i].decimal;
                 cmd.tags[i].address   = strdup(req->tags[i].address);
                 cmd.tags[i].name      = strdup(req->tags[i].name);
                 if (req->tags[i].description != NULL) {
@@ -214,6 +216,7 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
         tags_res.tags[index].type        = tag->type;
         tags_res.tags[index].attribute   = tag->attribute;
         tags_res.tags[index].precision   = tag->precision;
+        tags_res.tags[index].decimal     = tag->decimal;
     }
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);

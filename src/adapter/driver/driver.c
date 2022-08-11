@@ -710,6 +710,42 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
             datas[index].value.type      = tag->type;
             datas[index].value.value     = value.value;
             datas[index].value.precision = tag->precision;
+            if (tag->decimal != 0) {
+                datas[index].value.type = NEU_TYPE_DOUBLE;
+                switch (tag->type) {
+                case NEU_TYPE_INT8:
+                case NEU_TYPE_UINT8:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u8 * tag->decimal;
+                    break;
+                case NEU_TYPE_INT16:
+                case NEU_TYPE_UINT16:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u16 * tag->decimal;
+                    break;
+                case NEU_TYPE_INT32:
+                case NEU_TYPE_UINT32:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u32 * tag->decimal;
+                    break;
+                case NEU_TYPE_INT64:
+                case NEU_TYPE_UINT64:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u64 * tag->decimal;
+                    break;
+                case NEU_TYPE_FLOAT:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.f32 * tag->decimal;
+                    break;
+                case NEU_TYPE_DOUBLE:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.d64 * tag->decimal;
+                    break;
+                default:
+                    datas[index].value.type = tag->type;
+                    break;
+                }
+            }
         }
         index += 1;
     }
@@ -747,6 +783,42 @@ static void read_group(int64_t timestamp, int64_t timeout,
             datas[index].value.type      = tag->type;
             datas[index].value.value     = value.value;
             datas[index].value.precision = tag->precision;
+            if (tag->decimal != 0) {
+                datas[index].value.type = NEU_TYPE_DOUBLE;
+                switch (tag->type) {
+                case NEU_TYPE_INT8:
+                case NEU_TYPE_UINT8:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u8 * tag->decimal;
+                    break;
+                case NEU_TYPE_INT16:
+                case NEU_TYPE_UINT16:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u16 * tag->decimal;
+                    break;
+                case NEU_TYPE_INT32:
+                case NEU_TYPE_UINT32:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u32 * tag->decimal;
+                    break;
+                case NEU_TYPE_INT64:
+                case NEU_TYPE_UINT64:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.u64 * tag->decimal;
+                    break;
+                case NEU_TYPE_FLOAT:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.f32 * tag->decimal;
+                    break;
+                case NEU_TYPE_DOUBLE:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.d64 * tag->decimal;
+                    break;
+                default:
+                    datas[index].value.type = tag->type;
+                    break;
+                }
+            }
         }
     }
 }

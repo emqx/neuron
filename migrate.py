@@ -365,14 +365,16 @@ class Migration:
                 log("Import tag {}".format(tag))
                 self.cursor_.execute(
                     """INSERT INTO tags (driver_name, group_name, name, address,
-                                         attribute, type, description)
-                                 VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                                         attribute, precision, decimal, type, description)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         node_name,
                         group_name,
                         tag["name"],
                         tag["address"],
                         tag["attribute"],
+                        0,
+                        0,
                         tag["type"],
                         tag.get("description", ""),
                     ),
