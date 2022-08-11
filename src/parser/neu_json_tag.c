@@ -83,6 +83,11 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
                 .t    = NEU_JSON_STR,
             },
             {
+                .name      = "precision",
+                .t         = NEU_JSON_INT,
+                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            },
+            {
                 .name      = "description",
                 .t         = NEU_JSON_STR,
                 .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
@@ -98,7 +103,8 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
         p_tag->name        = tag_elems[1].v.val_str;
         p_tag->attribute   = tag_elems[2].v.val_int;
         p_tag->address     = tag_elems[3].v.val_str;
-        p_tag->description = tag_elems[4].v.val_str;
+        p_tag->precision   = tag_elems[4].v.val_int;
+        p_tag->description = tag_elems[5].v.val_str;
         p_tag++;
     }
 
@@ -271,6 +277,11 @@ int neu_json_encode_get_tags_resp(void *json_object, void *param)
                 .v.val_int = p_tag->attribute,
             },
             {
+                .name      = "precision",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_tag->precision,
+            },
+            {
                 .name      = "address",
                 .t         = NEU_JSON_STR,
                 .v.val_str = p_tag->address,
@@ -353,6 +364,11 @@ int neu_json_decode_update_tags_req(char *                       buf,
                 .t    = NEU_JSON_STR,
             },
             {
+                .name      = "precision",
+                .t         = NEU_JSON_INT,
+                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            },
+            {
                 .name      = "description",
                 .t         = NEU_JSON_STR,
                 .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
@@ -368,7 +384,8 @@ int neu_json_decode_update_tags_req(char *                       buf,
         p_tag->name        = tag_elems[1].v.val_str;
         p_tag->attribute   = tag_elems[2].v.val_int;
         p_tag->address     = tag_elems[3].v.val_str;
-        p_tag->description = tag_elems[4].v.val_str;
+        p_tag->precision   = tag_elems[4].v.val_int;
+        p_tag->description = tag_elems[5].v.val_str;
         p_tag++;
     }
 

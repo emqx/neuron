@@ -153,8 +153,9 @@ TEST(JsonTest, EncodeField)
     elems[2].name = (char *) "field3";
     elems[2].t    = NEU_JSON_INT;
 
-    elems[3].name = (char *) "field4";
-    elems[3].t    = NEU_JSON_DOUBLE;
+    elems[3].name      = (char *) "field4";
+    elems[3].t         = NEU_JSON_DOUBLE;
+    elems[3].precision = 0;
 
     elems[4].name = (char *) "field5";
     elems[4].t    = NEU_JSON_STR;

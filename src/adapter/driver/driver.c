@@ -62,9 +62,11 @@ struct neu_adapter_driver {
 static int  report_callback(void *usr_data);
 static int  read_callback(void *usr_data);
 static void read_group(int64_t timestamp, int64_t timeout,
-                       neu_driver_cache_t *cache, bool report,
-                       const char *group, UT_array *tags,
-                       neu_resp_tag_value_t *datas);
+                       neu_driver_cache_t *cache, const char *group,
+                       UT_array *tags, neu_resp_tag_value_t *datas);
+static int  read_report_group(int64_t timestamp, int64_t timeout,
+                              neu_driver_cache_t *cache, const char *group,
+                              UT_array *tags, neu_resp_tag_value_t *datas);
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
@@ -242,7 +244,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
         read_group(driver->adapter.timestamp,
                    neu_group_get_interval(group) *
                        NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-                   driver->cache, false, cmd->group, tags, resp.tags);
+                   driver->cache, cmd->group, tags, resp.tags);
     }
 
     strcpy(resp.driver, cmd->driver);
@@ -466,6 +468,10 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
         return NEU_ERR_TAG_DESCRIPTION_TOO_LONG;
     }
 
+    if (tag->precision > NEU_TAG_FLOAG_PRECISION_MAX) {
+        return NEU_ERR_TAG_PRECISION_INVALID;
+    }
+
     ret = driver->adapter.module->intf_funs->driver.validate_tag(
         driver->adapter.plugin, tag);
     if (ret != NEU_ERR_SUCCESS) {
@@ -522,6 +528,10 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
 
     if (strlen(tag->description) > NEU_TAG_DESCRIPTION_LEN) {
         return NEU_ERR_TAG_DESCRIPTION_TOO_LONG;
+    }
+
+    if (tag->precision > NEU_TAG_FLOAG_PRECISION_MAX) {
+        return NEU_ERR_TAG_PRECISION_INVALID;
     }
 
     ret = driver->adapter.module->intf_funs->driver.validate_tag(
@@ -591,15 +601,16 @@ static int report_callback(void *usr_data)
 
     strcpy(data->driver, group->driver->adapter.name);
     strcpy(data->group, group->name);
-    data->n_tag = utarray_len(tags);
-    read_group(group->driver->adapter.timestamp,
-               neu_group_get_interval(group->group) *
-                   NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-               group->driver->cache, true, group->name, tags,
-               (neu_resp_tag_value_t *) &data[1]);
+    data->n_tag = read_report_group(group->driver->adapter.timestamp,
+                                    neu_group_get_interval(group->group) *
+                                        NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                                    group->driver->cache, group->name, tags,
+                                    (neu_resp_tag_value_t *) &data[1]);
 
-    group->driver->adapter.cb_funs.response(&group->driver->adapter, &header,
-                                            data);
+    if (data->n_tag > 0) {
+        group->driver->adapter.cb_funs.response(&group->driver->adapter,
+                                                &header, data);
+    }
     utarray_free(tags);
     free(data);
     return 0;
@@ -658,10 +669,57 @@ static int read_callback(void *usr_data)
     return 0;
 }
 
+static int read_report_group(int64_t timestamp, int64_t timeout,
+                             neu_driver_cache_t *cache, const char *group,
+                             UT_array *tags, neu_resp_tag_value_t *datas)
+{
+    int index = 0;
+
+    utarray_foreach(tags, neu_datatag_t *, tag)
+    {
+        neu_driver_cache_value_t value = { 0 };
+
+        if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
+            if (neu_driver_cache_get_changed(cache, group, tag->name, &value) !=
+                0) {
+                nlog_debug("tag: %s not changed", tag->name);
+                continue;
+            }
+        } else {
+            if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
+                strcpy(datas[index].tag, tag->name);
+                datas[index].value.type      = NEU_TYPE_ERROR;
+                datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+                index += 1;
+                continue;
+            }
+        }
+        strcpy(datas[index].tag, tag->name);
+
+        if (value.error != 0) {
+            datas[index].value.type      = NEU_TYPE_ERROR;
+            datas[index].value.value.i32 = value.error;
+            index += 1;
+            continue;
+        }
+
+        if ((timestamp - value.timestamp) > timeout) {
+            datas[index].value.type      = NEU_TYPE_ERROR;
+            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+        } else {
+            datas[index].value.type      = tag->type;
+            datas[index].value.value     = value.value;
+            datas[index].value.precision = tag->precision;
+        }
+        index += 1;
+    }
+
+    return index;
+}
+
 static void read_group(int64_t timestamp, int64_t timeout,
-                       neu_driver_cache_t *cache, bool report,
-                       const char *group, UT_array *tags,
-                       neu_resp_tag_value_t *datas)
+                       neu_driver_cache_t *cache, const char *group,
+                       UT_array *tags, neu_resp_tag_value_t *datas)
 {
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
@@ -670,19 +728,10 @@ static void read_group(int64_t timestamp, int64_t timeout,
 
         strcpy(datas[index].tag, tag->name);
 
-        if (report && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
-            if (neu_driver_cache_get_changed(cache, group, tag->name, &value) !=
-                0) {
-                datas[index].value.type      = NEU_TYPE_ERROR;
-                datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
-                continue;
-            }
-        } else {
-            if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
-                datas[index].value.type      = NEU_TYPE_ERROR;
-                datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
-                continue;
-            }
+        if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
+            datas[index].value.type      = NEU_TYPE_ERROR;
+            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+            continue;
         }
 
         if (value.error != 0) {
@@ -695,8 +744,9 @@ static void read_group(int64_t timestamp, int64_t timeout,
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
-            datas[index].value.type  = tag->type;
-            datas[index].value.value = value.value;
+            datas[index].value.type      = tag->type;
+            datas[index].value.value     = value.value;
+            datas[index].value.precision = tag->precision;
         }
     }
 }

@@ -79,16 +79,16 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
     } else {
         struct modbus_group_data *gd =
             (struct modbus_group_data *) group->user_data;
+        plugin->plugin_group_data = gd;
 
         for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
             uint16_t response_size = 0;
-            int      ret           = modbus_stack_read(
+            plugin->cmd_idx        = i;
+            int ret                = modbus_stack_read(
                 plugin->stack, gd->cmd_sort->cmd[i].slave_id,
                 gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
                 gd->cmd_sort->cmd[i].n_register, &response_size);
             if (ret > 0) {
-                plugin->plugin_group_data = gd;
-                plugin->cmd_idx           = i;
                 process_protocol_buf(plugin, response_size);
             }
         }
@@ -105,6 +105,16 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
         (struct modbus_group_data *) plugin->plugin_group_data;
     uint16_t start_address = gd->cmd_sort->cmd[plugin->cmd_idx].start_address;
     uint16_t n_register    = gd->cmd_sort->cmd[plugin->cmd_idx].n_register;
+
+    if (bytes == NULL) {
+        neu_dvalue_t dvalue = { 0 };
+
+        dvalue.type      = NEU_TYPE_ERROR;
+        dvalue.value.i32 = NEU_ERR_PLUGIN_DISCONNECTED;
+        plugin->common.adapter_callbacks->driver.update(
+            plugin->common.adapter, gd->group, NULL, dvalue);
+        return 0;
+    }
 
     utarray_foreach(gd->cmd_sort->cmd[plugin->cmd_idx].tags, modbus_point_t **,
                     p_tag)

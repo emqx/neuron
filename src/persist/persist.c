@@ -832,18 +832,20 @@ int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
 {
     return execute_sql(
         persister->db,
-        "INSERT INTO tags (driver_name, group_name, name, address, attribute, "
-        "type, description) VALUES(%Q, %Q, %Q, %Q, %i, %i, %Q)",
+        "INSERT INTO tags (driver_name, group_name, name, "
+        "address, attribute, precision, "
+        "type, description) VALUES(%Q, %Q, %Q, %Q, %i, %i, %i, %Q)",
         driver_name, group_name, tag->name, tag->address, tag->attribute,
-        tag->type, tag->description);
+        tag->precision, tag->type, tag->description);
 }
 
 int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
                             const char *group_name, UT_array **tags)
 {
-    sqlite3_stmt *stmt  = NULL;
-    const char *  query = "SELECT name, address, attribute, type, description "
-                        "FROM tags WHERE driver_name=? AND group_name=?";
+    sqlite3_stmt *stmt = NULL;
+    const char *  query =
+        "SELECT name, address, attribute, precision, type, description "
+        "FROM tags WHERE driver_name=? AND group_name=?";
 
     utarray_new(*tags, neu_tag_get_icd());
 
@@ -872,8 +874,9 @@ int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
             .name        = (char *) sqlite3_column_text(stmt, 0),
             .address     = (char *) sqlite3_column_text(stmt, 1),
             .attribute   = sqlite3_column_int(stmt, 2),
-            .type        = sqlite3_column_int(stmt, 3),
-            .description = (char *) sqlite3_column_text(stmt, 4),
+            .precision   = sqlite3_column_int64(stmt, 3),
+            .type        = sqlite3_column_int(stmt, 4),
+            .description = (char *) sqlite3_column_text(stmt, 5),
         };
         utarray_push_back(*tags, &tag);
 
@@ -898,12 +901,12 @@ int neu_persister_update_tag(neu_persister_t *persister,
                              const char *driver_name, const char *group_name,
                              const neu_datatag_t *tag)
 {
-    return execute_sql(
-        persister->db,
-        "UPDATE tags SET address=%Q, attribute=%i, type=%i, description=%Q "
-        "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
-        tag->address, tag->attribute, tag->type, tag->description, driver_name,
-        group_name, tag->name);
+    return execute_sql(persister->db,
+                       "UPDATE tags SET address=%Q, attribute=%i, "
+                       "precision=%i, type=%i, description=%Q "
+                       "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
+                       tag->address, tag->attribute, tag->precision, tag->type,
+                       tag->description, driver_name, group_name, tag->name);
 }
 
 int neu_persister_delete_tag(neu_persister_t *persister,

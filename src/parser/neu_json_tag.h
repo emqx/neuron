@@ -37,6 +37,7 @@ typedef struct {
     char *  description;
     int64_t type;
     int64_t attribute;
+    int64_t precision;
 } neu_json_add_tags_req_tag_t;
 
 typedef struct {
@@ -74,6 +75,7 @@ typedef struct {
     char *  description;
     int64_t type;
     int64_t attribute;
+    int64_t precision;
 } neu_json_get_tags_resp_tag_t;
 
 typedef struct {
@@ -89,6 +91,7 @@ typedef struct {
     char *  description;
     int64_t type;
     int64_t attribute;
+    int64_t precision;
 } neu_json_update_tags_req_tag_t;
 
 typedef struct {

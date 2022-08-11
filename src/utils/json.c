@@ -40,10 +40,10 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
         ob = json_string(ele->v.val_str);
         break;
     case NEU_JSON_DOUBLE:
-        ob = json_real(ele->v.val_double);
+        ob = json_realp(ele->v.val_double, ele->precision);
         break;
     case NEU_JSON_FLOAT:
-        ob = json_real(ele->v.val_float);
+        ob = json_realp(ele->v.val_float, ele->precision);
         break;
     case NEU_JSON_BOOL:
         ob = json_boolean(ele->v.val_bool);
@@ -70,10 +70,12 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
         json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
         break;
     case NEU_JSON_FLOAT:
-        json_object_set_new(ob, ele.name, json_real(ele.v.val_float));
+        json_object_set_new(ob, ele.name,
+                            json_realp(ele.v.val_float, ele.precision));
         break;
     case NEU_JSON_DOUBLE:
-        json_object_set_new(ob, ele.name, json_real(ele.v.val_double));
+        json_object_set_new(ob, ele.name,
+                            json_realp(ele.v.val_double, ele.precision));
         break;
     case NEU_JSON_BOOL:
         json_object_set_new(ob, ele.name, json_boolean(ele.v.val_bool));

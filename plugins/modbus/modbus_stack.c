@@ -104,6 +104,7 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
 {
     static __thread uint8_t                 buf[16] = { 0 };
     static __thread neu_protocol_pack_buf_t pbuf    = { 0 };
+    int                                     ret     = 0;
 
     neu_protocol_pack_buf_init(&pbuf, buf, sizeof(buf));
 
@@ -134,8 +135,12 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
     modbus_header_wrap(&pbuf, stack->seq++);
     *response_size += sizeof(struct modbus_header);
 
-    return stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
-                          neu_protocol_pack_buf_get(&pbuf));
+    ret = stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
+                         neu_protocol_pack_buf_get(&pbuf));
+    if (ret <= 0) {
+        stack->value_fn(stack->ctx, 0, 0, NULL);
+    }
+    return ret;
 }
 
 int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,

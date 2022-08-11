@@ -75,6 +75,7 @@ typedef struct {
     char *                    description;
     neu_attribute_e           attribute;
     neu_type_e                type;
+    uint8_t                   precision;
     neu_datatag_addr_option_u option;
     uint8_t                   meta[NEU_TAG_META_SIZE];
 } neu_datatag_t;

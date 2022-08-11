@@ -42,6 +42,7 @@ typedef struct {
     char *               name;
     enum neu_json_type   t;
     union neu_json_value value;
+    uint8_t              precision;
 } neu_json_read_resp_tag_t;
 
 typedef struct {

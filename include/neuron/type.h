@@ -67,7 +67,7 @@ inline static const char *neu_type_string(neu_type_e type)
     case NEU_TYPE_UINT64:
         return "NEU_TYPE_UINT64";
     case NEU_TYPE_FLOAT:
-        return "NEU_TYPE_FLOAt";
+        return "NEU_TYPE_FLOAT";
     case NEU_TYPE_DOUBLE:
         return "NEU_TYPE_DOUBLE";
     case NEU_TYPE_BIT:
@@ -105,6 +105,7 @@ typedef union {
 typedef struct {
     neu_type_e  type;
     neu_value_u value;
+    uint8_t     precision;
 } neu_dvalue_t;
 typedef union neu_value8 {
     uint8_t value;

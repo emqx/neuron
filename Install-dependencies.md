@@ -14,7 +14,7 @@ $ make && sudo make install
 
 [jansson](https://github.com/akheron/jansson)
 ```shell
-$ git clone -b v2.14 https://github.com/akheron/jansson.git
+$ git clone https://github.com/neugates/jansson.git
 $ cd jansson && mkdir build && cd build
 $ cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF ..&& make && sudo make install
 ```
