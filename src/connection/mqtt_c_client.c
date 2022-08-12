@@ -341,11 +341,16 @@ static int bio_connect(struct reconnect_state *state)
     return 0;
 }
 
-static void bio_update_connection(struct reconnect_state *state)
+static int bio_update_connection(struct reconnect_state *state)
 {
     bio_uninit(state);
     bio_init(state);
-    bio_connect(state);
+
+    if (NULL == state->sock_fd) {
+        return -1;
+    }
+
+    return bio_connect(state);
 }
 
 static void reconnect_state_uninit(struct reconnect_state *state)
@@ -459,7 +464,13 @@ static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
     mqtt_c_client_t *client  = state->client;
     mqtt->inspector_callback = inspector_callback;
 
-    bio_update_connection(state);
+    int ret = bio_update_connection(state);
+    if (0 != ret) {
+        zlog_error(client->log, "update bio failed");
+        usleep(1000);
+        mqtt->error = MQTT_ERROR_RECONNECT_FAILED;
+        return;
+    }
 
     mqtt_reinit(mqtt, state->sock_fd, state->send_buf, state->send_buf_sz,
                 state->recv_buf, state->recv_buf_sz);
@@ -513,7 +524,7 @@ static void publish_callback(void **                       p_reconnect_state,
     memcpy(topic_name, published->topic_name, published->topic_name_size);
     topic_name[published->topic_name_size] = '\0';
 
-    nlog_debug("received publish('%s'): %s", topic_name,
+    zlog_debug(client->log, "received publish('%s'): %s", topic_name,
                (const char *) published->application_message);
 
     for (struct subscribe_tuple **p =
