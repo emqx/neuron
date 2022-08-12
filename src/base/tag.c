@@ -32,6 +32,7 @@ static void tag_array_copy(void *_dst, const void *_src)
     dst->type      = src->type;
     dst->attribute = src->attribute;
     dst->precision = src->precision;
+    dst->decimal   = src->decimal;
     dst->option    = src->option;
     memcpy(dst->meta, src->meta, sizeof(src->meta));
     dst->address     = strdup(src->address);
