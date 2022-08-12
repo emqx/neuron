@@ -415,7 +415,7 @@ static int plguin_start_running(neu_plugin_t *plugin)
 
         plugin->routine           = routine;
         plugin->running           = true;
-        plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
+        plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     }
 
     return 0;

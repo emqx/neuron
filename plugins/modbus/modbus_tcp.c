@@ -147,7 +147,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plog_info(plugin, "config: host: %s, port: %" PRId64 ", timeout: %" PRId64,
               host.v.val_str, port.v.val_int, timeout.v.val_int);
 
-    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTING;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     if (plugin->conn != NULL) {
         plugin->conn = neu_conn_reconfig(plugin->conn, &param);
     } else {

@@ -179,7 +179,7 @@ Modbus Test Setup
 
 	${state}=	Get Node State    ${modbus_node}
 	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
-	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
+	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
 Modbus Test Teardown
 	Del Node  ${modbus_node}
