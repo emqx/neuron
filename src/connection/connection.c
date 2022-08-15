@@ -831,6 +831,7 @@ int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
 {
     ssize_t                   ret  = neu_conn_recv(conn, conn->buf, n_byte);
     neu_protocol_unpack_buf_t pbuf = { 0 };
+    conn->offset                   = 0;
 
     while (ret > 0) {
         zlog_recv_protocol(conn->param.log, conn->buf + conn->offset, ret);
@@ -853,6 +854,7 @@ int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
 {
     ssize_t ret = neu_conn_tcp_server_recv(conn, fd, conn->buf, n_byte);
     neu_protocol_unpack_buf_t pbuf = { 0 };
+    conn->offset                   = 0;
 
     while (ret > 0) {
         zlog_recv_protocol(conn->param.log, conn->buf + conn->offset, ret);
