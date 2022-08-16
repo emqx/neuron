@@ -230,6 +230,10 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
     pthread_mutex_lock(&conn->mtx);
 
+    if (!conn->is_connected) {
+        conn_connect(conn);
+    }
+
     if (conn->is_connected) {
         switch (conn->param.type) {
         case NEU_CONN_TCP_SERVER:
@@ -262,9 +266,6 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             conn->connected(conn->data, conn->fd);
             conn->callback_trigger = true;
         }
-
-    } else {
-        conn_connect(conn);
     }
 
     pthread_mutex_unlock(&conn->mtx);

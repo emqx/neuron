@@ -656,14 +656,14 @@ static int read_callback(void *usr_data)
         return 0;
     }
 
-    if (!neu_group_is_change(group->group, group->timestamp)) {
-        if (group->grp.tags != NULL) {
-            group->driver->adapter.module->intf_funs->driver.group_timer(
-                group->driver->adapter.plugin, &group->grp);
-        }
-    } else {
+    if (neu_group_is_change(group->group, group->timestamp)) {
         neu_group_change_test(group->group, group->timestamp, (void *) group,
                               group_change);
+    }
+
+    if (group->grp.tags != NULL) {
+        group->driver->adapter.module->intf_funs->driver.group_timer(
+            group->driver->adapter.plugin, &group->grp);
     }
 
     return 0;
