@@ -150,13 +150,13 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             }
             }
 
+            dvalue.type = (*p_tag)->type;
             switch ((*p_tag)->type) {
             case NEU_TYPE_UINT16:
             case NEU_TYPE_INT16:
                 if ((*p_tag)->option.value16.endian == NEU_DATATAG_ENDIAN_L16) {
                     dvalue.value.u16 = htons(dvalue.value.u16);
                 }
-                dvalue.type = NEU_TYPE_INT16;
                 break;
             case NEU_TYPE_FLOAT: {
                 uint16_t v1 = ((uint16_t *) dvalue.value.bytes)[0];
@@ -181,7 +181,6 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     break;
                 }
 
-                dvalue.type      = NEU_TYPE_FLOAT;
                 dvalue.value.u32 = v;
                 break;
             }
@@ -209,9 +208,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     break;
                 }
 
-                dvalue.type      = NEU_TYPE_UINT32;
                 dvalue.value.u32 = v;
-
                 break;
             }
             case NEU_TYPE_BIT: {
@@ -229,7 +226,6 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     break;
                 }
 
-                dvalue.type = NEU_TYPE_BIT;
                 break;
             }
             case NEU_TYPE_STRING: {
@@ -252,7 +248,6 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     dvalue.value.str[1] = 0;
                 }
 
-                dvalue.type = NEU_TYPE_STRING;
                 break;
             }
             default:

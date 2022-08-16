@@ -18,6 +18,7 @@
  **/
 
 #include <assert.h>
+#include <math.h>
 #include <string.h>
 
 #include <nng/nng.h>
@@ -36,12 +37,10 @@ typedef struct {
 } tkey_t;
 
 struct elem {
-    int32_t error;
     int64_t timestamp;
+    bool    changed;
 
-    bool     changed;
-    uint16_t n_byte;
-    uint8_t *bytes;
+    neu_dvalue_t value;
 
     tkey_t         key;
     UT_hash_handle hh;
@@ -53,8 +52,8 @@ struct neu_driver_cache {
     struct elem *table;
 };
 
-static void update_tag_error(neu_driver_cache_t *cache, const char *group,
-                             const char *tag, int64_t timestamp, int error);
+// static void update_tag_error(neu_driver_cache_t *cache, const char *group,
+// const char *tag, int64_t timestamp, int error);
 
 inline static tkey_t to_key(const char *group, const char *tag)
 {
@@ -84,9 +83,6 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     HASH_ITER(hh, cache->table, elem, tmp)
     {
         HASH_DEL(cache->table, elem);
-        if (elem->n_byte > 0) {
-            free(elem->bytes);
-        }
         free(elem);
     }
     nng_mtx_unlock(cache->mtx);
@@ -96,15 +92,14 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     free(cache);
 }
 
-void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
-                            const char *tag, int64_t timestamp, int32_t error)
-{
-    update_tag_error(cache, group, tag, timestamp, error);
-}
+// void neu_driver_cache_error(neu_driver_cache_t *cache, const char *group,
+// const char *tag, int64_t timestamp, int32_t error)
+//{
+// update_tag_error(cache, group, tag, timestamp, error);
+//}
 
-void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
-                             const char *tag, int64_t timestamp,
-                             uint16_t n_byte, uint8_t *bytes)
+void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
+                          const char *tag, neu_dvalue_t value)
 {
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
@@ -118,45 +113,78 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
         strcpy(elem->key.group, group);
         strcpy(elem->key.tag, tag);
 
-        assert(n_byte != 0);
-        assert(n_byte <= NEU_VALUE_SIZE);
-        elem->n_byte = n_byte;
-        elem->bytes  = calloc(elem->n_byte, 1);
-
-        elem->changed = true;
-
         HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
     }
 
-    if (elem->error != 0) {
-        elem->changed = true;
-    }
+    elem->timestamp = 0;
+    elem->changed   = false;
+    elem->value     = value;
 
-    elem->error     = 0;
-    elem->timestamp = timestamp;
+    nng_mtx_unlock(cache->mtx);
+}
 
-    if (elem->n_byte == 0) {
-        assert(n_byte != 0);
-        assert(n_byte <= NEU_VALUE_SIZE);
-        elem->n_byte = n_byte;
-        elem->bytes  = calloc(elem->n_byte, n_byte);
+void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
+                             const char *tag, int64_t timestamp,
+                             neu_dvalue_t value)
+{
+    struct elem *elem = NULL;
+    tkey_t       key  = to_key(group, tag);
 
-        elem->changed = true;
-    } else {
-        if (n_byte != elem->n_byte) {
-            elem->n_byte = n_byte;
-            elem->bytes  = realloc(elem->bytes, n_byte);
-            memset(elem->bytes, 0, elem->n_byte);
-
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
+    if (elem != NULL) {
+        elem->timestamp = timestamp;
+        if (elem->value.type != value.type) {
             elem->changed = true;
         } else {
-            if (memcmp(elem->bytes, bytes, elem->n_byte) != 0) {
+            switch (value.type) {
+            case NEU_TYPE_INT8:
+            case NEU_TYPE_UINT8:
+            case NEU_TYPE_INT16:
+            case NEU_TYPE_UINT16:
+            case NEU_TYPE_INT32:
+            case NEU_TYPE_UINT32:
+            case NEU_TYPE_INT64:
+            case NEU_TYPE_UINT64:
+            case NEU_TYPE_BIT:
+            case NEU_TYPE_BOOL:
+            case NEU_TYPE_STRING:
+            case NEU_TYPE_BYTES:
+                if (memcmp(&elem->value.value, &value.value,
+                           sizeof(value.value)) != 0) {
+                    elem->changed = true;
+                }
+                break;
+            case NEU_TYPE_FLOAT:
+                if (elem->value.precision == 0) {
+                    elem->changed = elem->value.value.f32 != value.value.f32;
+                } else {
+                    if (fabs(elem->value.value.f32 - value.value.f32) >
+                        pow(0.1, elem->value.precision)) {
+                        elem->changed = true;
+                    }
+                }
+                break;
+            case NEU_TYPE_DOUBLE:
+                if (elem->value.precision == 0) {
+                    elem->changed = elem->value.value.d64 != value.value.d64;
+                } else {
+                    if (fabs(elem->value.value.d64 - value.value.d64) >
+                        pow(0.1, elem->value.precision)) {
+                        elem->changed = true;
+                    }
+                }
+
+                break;
+            case NEU_TYPE_ERROR:
                 elem->changed = true;
+                break;
             }
         }
-    }
 
-    memcpy(elem->bytes, bytes, elem->n_byte);
+        elem->value.type  = value.type;
+        elem->value.value = value.value;
+    }
 
     nng_mtx_unlock(cache->mtx);
 }
@@ -172,10 +200,40 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL) {
-        value->error     = elem->error;
-        value->n_byte    = elem->n_byte;
-        value->timestamp = elem->timestamp;
-        memcpy(value->value.bytes, elem->bytes, elem->n_byte);
+        value->timestamp       = elem->timestamp;
+        value->value.type      = elem->value.type;
+        value->value.precision = elem->value.precision;
+
+        switch (elem->value.type) {
+        case NEU_TYPE_INT8:
+        case NEU_TYPE_UINT8:
+        case NEU_TYPE_BIT:
+            value->value.value.u8 = elem->value.value.u8;
+            break;
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
+            value->value.value.u16 = elem->value.value.u16;
+            break;
+        case NEU_TYPE_INT32:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_ERROR:
+            value->value.value.u32 = elem->value.value.u32;
+            break;
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_DOUBLE:
+            value->value.value.u64 = elem->value.value.u64;
+            break;
+        case NEU_TYPE_BOOL:
+            value->value.value.boolean = elem->value.value.boolean;
+            break;
+        case NEU_TYPE_STRING:
+        case NEU_TYPE_BYTES:
+            memcpy(value->value.value.str, elem->value.value.str,
+                   sizeof(elem->value.value.str));
+            break;
+        }
 
         ret = 0;
     }
@@ -197,13 +255,45 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL && elem->changed) {
-        value->error     = elem->error;
-        value->n_byte    = elem->n_byte;
-        value->timestamp = elem->timestamp;
-        memcpy(value->value.bytes, elem->bytes, elem->n_byte);
+        value->timestamp       = elem->timestamp;
+        value->value.type      = elem->value.type;
+        value->value.precision = elem->value.precision;
 
-        elem->changed = false;
-        ret           = 0;
+        switch (elem->value.type) {
+        case NEU_TYPE_INT8:
+        case NEU_TYPE_UINT8:
+        case NEU_TYPE_BIT:
+            value->value.value.u8 = elem->value.value.u8;
+            break;
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
+            value->value.value.u16 = elem->value.value.u16;
+            break;
+        case NEU_TYPE_INT32:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_ERROR:
+            value->value.value.u32 = elem->value.value.u32;
+            break;
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_DOUBLE:
+            value->value.value.u64 = elem->value.value.u64;
+            break;
+        case NEU_TYPE_BOOL:
+            value->value.value.boolean = elem->value.value.boolean;
+            break;
+        case NEU_TYPE_STRING:
+        case NEU_TYPE_BYTES:
+            memcpy(value->value.value.str, elem->value.value.str,
+                   sizeof(elem->value.value.str));
+            break;
+        }
+
+        if (elem->value.type != NEU_TYPE_ERROR) {
+            elem->changed = false;
+        }
+        ret = 0;
     }
 
     nng_mtx_unlock(cache->mtx);
@@ -222,34 +312,8 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
 
     if (elem != NULL) {
         HASH_DEL(cache->table, elem);
-        if (elem->n_byte != 0) {
-            free(elem->bytes);
-        }
         free(elem);
     }
-
-    nng_mtx_unlock(cache->mtx);
-}
-
-static void update_tag_error(neu_driver_cache_t *cache, const char *group,
-                             const char *tag, int64_t timestamp, int error)
-{
-    struct elem *elem = NULL;
-    tkey_t       key  = to_key(group, tag);
-
-    nng_mtx_lock(cache->mtx);
-    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
-
-    if (elem == NULL) {
-        elem = calloc(1, sizeof(struct elem));
-        strcpy(elem->key.group, group);
-        strcpy(elem->key.tag, tag);
-
-        HASH_ADD(hh, cache->table, key, sizeof(tkey_t), elem);
-    }
-    elem->error     = error;
-    elem->timestamp = timestamp;
-    elem->changed   = true;
 
     nng_mtx_unlock(cache->mtx);
 }
