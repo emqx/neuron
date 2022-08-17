@@ -273,13 +273,30 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_DEL_NODE: {
         neu_req_del_node_t *cmd   = (neu_req_del_node_t *) &header[1];
         neu_resp_error_t    error = { 0 };
+        neu_adapter_t *     adapter =
+            neu_node_manager_find(manager->node_manager, cmd->node);
 
         strcpy(header->receiver, cmd->node);
-        if (neu_node_manager_find(manager->node_manager, header->receiver) !=
-            NULL) {
+        if (adapter != NULL) {
             manager_storage_del_node(manager, cmd->node);
             header->type = NEU_REQ_NODE_UNINIT;
             forward_msg(manager, msg, header->receiver);
+            if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
+                UT_array *apps = neu_subscribe_manager_find_by_driver(
+                    manager->subscribe_manager, cmd->node);
+
+                utarray_foreach(apps, neu_app_subscribe_t *, app)
+                {
+                    neu_reqresp_node_deleted_t resp = { 0 };
+                    header->type                    = NEU_REQRESP_NODE_DELETED;
+
+                    strcpy(resp.node, header->receiver);
+                    strcpy(header->receiver, app->app_name);
+                    strcpy(header->sender, "manager");
+                    reply(manager, header, &resp);
+                }
+                utarray_free(apps);
+            }
         } else {
             error.error  = NEU_ERR_NODE_NOT_EXIST;
             header->type = NEU_RESP_ERROR;
@@ -357,6 +374,35 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         strcpy(header->receiver, header->sender);
         header->type = NEU_RESP_GET_SUBSCRIBE_GROUP;
         reply(manager, header, &resp);
+        break;
+    }
+    case NEU_REQ_GET_SUB_DRIVER_TAGS: {
+        neu_req_get_sub_driver_tags_t *cmd =
+            (neu_req_get_sub_driver_tags_t *) &header[1];
+        neu_resp_get_sub_driver_tags_t resp = { 0 };
+        UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
+
+        utarray_new(resp.infos, neu_resp_get_sub_driver_tags_info_icd());
+        utarray_foreach(groups, neu_resp_subscribe_info_t *, info)
+        {
+            neu_resp_get_sub_driver_tags_info_t in = { 0 };
+            neu_adapter_t *                     driver =
+                neu_node_manager_find(manager->node_manager, info->driver);
+            assert(driver != NULL);
+
+            strcpy(in.driver, info->driver);
+            strcpy(in.group, info->group);
+            neu_adapter_driver_get_value_tag((neu_adapter_driver_t *) driver,
+                                             info->group, &in.tags);
+
+            utarray_push_back(resp.infos, &in);
+        }
+        utarray_free(groups);
+
+        strcpy(header->receiver, header->sender);
+        header->type = NEU_RESP_GET_SUB_DRIVER_TAGS;
+        reply(manager, header, &resp);
+
         break;
     }
     case NEU_REQ_GET_NODES_STATE: {

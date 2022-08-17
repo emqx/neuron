@@ -157,6 +157,11 @@ void neu_adapter_init(neu_adapter_t *adapter)
     nng_sendmsg(adapter->sock, init_msg, 0);
 }
 
+neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
+{
+    return adapter->module->type;
+}
+
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
                            void *data)
 {
@@ -169,6 +174,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_WRITE_TAG: {
         neu_req_read_group_t *cmd = (neu_req_read_group_t *) data;
         strcpy(header.receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_DEL_NODE: {
+        neu_req_del_node_t *cmd = (neu_req_del_node_t *) data;
+        strcpy(header.receiver, cmd->node);
         break;
     }
     case NEU_REQ_UPDATE_GROUP:
@@ -192,6 +202,15 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_NODE_SETTING: {
         neu_req_node_setting_t *cmd = (neu_req_node_setting_t *) data;
+        strcpy(header.receiver, cmd->node);
+        break;
+    }
+    case NEU_REQ_GET_SUB_DRIVER_TAGS: {
+        strcpy(header.receiver, "manager");
+        break;
+    }
+    case NEU_REQRESP_NODE_DELETED: {
+        neu_reqresp_node_deleted_t *cmd = (neu_reqresp_node_deleted_t *) data;
         strcpy(header.receiver, cmd->node);
         break;
     }
@@ -248,6 +267,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
               header->sender, neu_reqresp_type_string(header->type));
 
     switch (header->type) {
+    case NEU_REQRESP_NODE_DELETED:
+    case NEU_RESP_GET_SUB_DRIVER_TAGS:
     case NEU_REQ_UPDATE_LICENSE:
     case NEU_REQ_APP_UNSUBSCRIBE_GROUP:
     case NEU_RESP_GET_NODE_STATE:
@@ -886,7 +907,11 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_req_unsubscribe_t);
         break;
     case NEU_REQ_GET_SUBSCRIBE_GROUP:
+    case NEU_REQ_GET_SUB_DRIVER_TAGS:
         data_size = sizeof(neu_req_get_subscribe_group_t);
+        break;
+    case NEU_RESP_GET_SUB_DRIVER_TAGS:
+        data_size = sizeof(neu_resp_get_sub_driver_tags_t);
         break;
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
         data_size = sizeof(neu_resp_get_subscribe_group_t);
@@ -940,6 +965,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_APP_SUBSCRIBE_GROUP:
     case NEU_REQ_APP_UNSUBSCRIBE_GROUP:
         data_size = sizeof(neu_req_app_unsubscribe_group_t);
+        break;
+    case NEU_REQRESP_NODE_DELETED:
+        data_size = sizeof(neu_reqresp_node_deleted_t);
         break;
     default:
         assert(false);

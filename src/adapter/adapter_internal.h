@@ -67,6 +67,8 @@ void           neu_adapter_init(neu_adapter_t *adapter);
 int neu_adapter_start(neu_adapter_t *adapter);
 int neu_adapter_stop(neu_adapter_t *adapter);
 
+neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter);
+
 int  neu_adapter_uninit(neu_adapter_t *adapter);
 void neu_adapter_destroy(neu_adapter_t *adapter);
 
