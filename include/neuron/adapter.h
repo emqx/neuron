@@ -221,7 +221,7 @@ typedef struct {
     char     driver[NEU_NODE_NAME_LEN];
     char     group[NEU_GROUP_NAME_LEN];
     uint32_t interval;
-} neu_req_add_group_t, neu_req_update_group;
+} neu_req_add_group_t, neu_req_update_group_t;
 
 typedef struct neu_req_del_group {
     char driver[NEU_NODE_NAME_LEN];

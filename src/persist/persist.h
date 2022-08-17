@@ -235,6 +235,17 @@ int neu_persister_delete_subscription(neu_persister_t *persister,
 int neu_persister_store_group(neu_persister_t *         persister,
                               const char *              driver_name,
                               neu_persist_group_info_t *group_info);
+
+/**
+ * Update group config.
+ * @param persister                 persiter object.
+ * @param driver_name               name of the driver who owns the group
+ * @param group_info                group info to persist.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_update_group(neu_persister_t *         persister,
+                               const char *              driver_name,
+                               neu_persist_group_info_t *group_info);
 /**
  * Load all group config infos under an adapter.
  * @param persister                 persiter object.

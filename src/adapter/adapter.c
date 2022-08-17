@@ -171,6 +171,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(header.receiver, cmd->driver);
         break;
     }
+    case NEU_REQ_UPDATE_GROUP:
     case NEU_REQ_GET_GROUP:
     case NEU_REQ_DEL_GROUP:
     case NEU_REQ_ADD_GROUP: {
@@ -417,6 +418,32 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (error.error == NEU_ERR_SUCCESS) {
             adapter_storage_add_group(adapter->persister, adapter->name,
                                       cmd->group, cmd->interval);
+        }
+
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_ERROR;
+        reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_UPDATE_GROUP: {
+        neu_req_update_group_t *cmd   = (neu_req_update_group_t *) &header[1];
+        neu_resp_error_t        error = { 0 };
+
+        if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
+            error.error = NEU_ERR_GROUP_PARAMETER_INVALID;
+        } else {
+            if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+                error.error = NEU_ERR_GROUP_NOT_ALLOW;
+            } else {
+                error.error = neu_adapter_driver_update_group(
+                    (neu_adapter_driver_t *) adapter, cmd->group,
+                    cmd->interval);
+            }
+        }
+
+        if (error.error == NEU_ERR_SUCCESS) {
+            adapter_storage_update_group(adapter->persister, adapter->name,
+                                         cmd->group, cmd->interval);
         }
 
         neu_msg_exchange(header);

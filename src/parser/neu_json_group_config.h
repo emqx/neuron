@@ -35,7 +35,7 @@ typedef struct {
     char *  group;
     char *  node;
     int64_t interval;
-} neu_json_add_group_config_req_t;
+} neu_json_add_group_config_req_t, neu_json_update_group_req_t;
 
 int neu_json_decode_add_group_config_req(
     char *buf, neu_json_add_group_config_req_t **result);
