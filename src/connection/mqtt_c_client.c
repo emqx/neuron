@@ -61,9 +61,10 @@ struct reconnect_state {
     EVP_PKEY *       key;
     SSL_CTX *        ssl_ctx;
     BIO *            sock_fd;
-    int              sock_state; // sock state, value same as mqtt.error
-    bool             running;    // refresher stop flag
-    bool             working;    // publish & publish callback working flag
+    int              sock_state;        // sock state, value same as mqtt.error
+    int              sock_do_connected; // sock do connect state
+    bool             running;           // refresher stop flag
+    bool             working; // publish & publish callback working flag
     pthread_mutex_t  sock_state_mutex;
     pthread_mutex_t  running_mutex;
     pthread_mutex_t  working_mutex;
@@ -341,11 +342,16 @@ static int bio_connect(struct reconnect_state *state)
     return 0;
 }
 
-static void bio_update_connection(struct reconnect_state *state)
+static int bio_update_connection(struct reconnect_state *state)
 {
     bio_uninit(state);
     bio_init(state);
-    bio_connect(state);
+
+    if (NULL == state->sock_fd) {
+        return -1;
+    }
+
+    return bio_connect(state);
 }
 
 static void reconnect_state_uninit(struct reconnect_state *state)
@@ -435,22 +441,44 @@ static void subscribe_on_reconnect(mqtt_c_client_t *client)
                            (*p)->topic, error);
             }
         }
-
-        if (NULL != client->log) {
-            zlog_error(client->log, "send subscribe %s success:%d", (*p)->topic,
-                       error);
-        }
     }
 }
 
 enum MQTTErrors inspector_callback(struct mqtt_client *mqtt)
 {
     struct reconnect_state *state = mqtt->reconnect_state;
+
+    if (NULL == state->sock_fd) {
+        mqtt->error = MQTT_ERROR_SOCKET_ERROR;
+
+        if (NULL != state->client->log) {
+            zlog_error(state->client->log, "bio is null");
+        }
+
+        return mqtt->error;
+    }
+
+    if (0 != state->sock_do_connected) {
+        mqtt->error = MQTT_ERROR_SOCKET_ERROR;
+
+        if (NULL != state->client->log) {
+            zlog_error(state->client->log, "bio do connect failed");
+        }
+
+        return mqtt->error;
+    }
+
     if (0 == strcmp(state->connection, "ssl://")) {
         SSL *ssl = NULL;
         BIO_get_ssl(state->sock_fd, &ssl);
         if (X509_V_OK != SSL_get_verify_result(ssl)) {
             mqtt->error = MQTT_ERROR_SOCKET_ERROR;
+
+            if (NULL != state->client->log) {
+                zlog_error(state->client->log, "bio ssl verify failed");
+            }
+
+            return mqtt->error;
         }
     }
 
@@ -466,8 +494,7 @@ static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
         *((struct reconnect_state **) p_reconnect_state);
     mqtt_c_client_t *client  = state->client;
     mqtt->inspector_callback = inspector_callback;
-
-    bio_update_connection(state);
+    state->sock_do_connected = bio_update_connection(state);
 
     mqtt_reinit(mqtt, state->sock_fd, state->send_buf, state->send_buf_sz,
                 state->recv_buf, state->recv_buf_sz);
@@ -521,8 +548,10 @@ static void publish_callback(void **                       p_reconnect_state,
     memcpy(topic_name, published->topic_name, published->topic_name_size);
     topic_name[published->topic_name_size] = '\0';
 
-    nlog_debug("received publish('%s'): %s", topic_name,
-               (const char *) published->application_message);
+    if (NULL != client->log) {
+        zlog_debug(client->log, "received publish('%s'): %s", topic_name,
+                   (const char *) published->application_message);
+    }
 
     for (struct subscribe_tuple **p =
              (struct subscribe_tuple **) utarray_front(client->array);
@@ -571,8 +600,10 @@ static void *client_refresher(void *context)
             client->state_update_func(client->user_data, rc);
 
             if (0 != rc && error_count % 100 == 0) {
-                zlog_error(client->log, "connect to %s:%s erorr, retry...",
-                           client->state.hostname, client->state.port);
+                if (NULL != client->log) {
+                    zlog_error(client->log, "connect to %s:%s erorr, retry...",
+                               client->state.hostname, client->state.port);
+                }
             }
         }
         error_count++;
@@ -588,7 +619,10 @@ static mqtt_c_client_t *client_create(const neu_mqtt_option_t *option,
 {
     mqtt_c_client_t *client = calloc(1, sizeof(mqtt_c_client_t));
     if (NULL == client) {
-        zlog_error(option->log, "mqtt c client alloc error");
+        if (NULL != option->log) {
+            zlog_error(option->log, "mqtt c client alloc error");
+        }
+
         return NULL;
     }
 
