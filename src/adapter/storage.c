@@ -40,6 +40,21 @@ void adapter_storage_add_group(neu_persister_t *persister, const char *node,
     neu_persister_store_group(persister, node, &info);
 }
 
+void adapter_storage_update_group(neu_persister_t *persister, const char *node,
+                                  const char *group, uint32_t interval)
+{
+    neu_persist_group_info_t info = {
+        .name     = (char *) group,
+        .interval = interval,
+    };
+
+    int rv = neu_persister_update_group(persister, node, &info);
+    if (0 != rv) {
+        nlog_error("fail update adapter:%s group:%s, interval: %u", node, group,
+                   interval);
+    }
+}
+
 void adapter_storage_del_group(neu_persister_t *persister, const char *node,
                                const char *group)
 {

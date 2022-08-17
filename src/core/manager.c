@@ -380,6 +380,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_GROUP:
     case NEU_REQ_GET_TAG:
     case NEU_REQ_NODE_CTL:
+    case NEU_REQ_UPDATE_GROUP:
     case NEU_REQ_ADD_GROUP: {
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {

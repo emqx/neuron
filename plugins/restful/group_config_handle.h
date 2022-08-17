@@ -24,6 +24,7 @@
 #include "adapter.h"
 
 void handle_add_group_config(nng_aio *aio);
+void handle_update_group(nng_aio *aio);
 void handle_del_group_config(nng_aio *aio);
 void handle_get_group_config(nng_aio *aio);
 void handle_get_group_resp(nng_aio *aio, neu_resp_get_group_t *groups);

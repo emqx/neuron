@@ -164,6 +164,12 @@ struct neu_rest_handler api_handlers[] = {
         .value.handler = handle_add_group_config,
     },
     {
+        .method        = NEU_REST_METHOD_PUT,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/group",
+        .value.handler = handle_update_group,
+    },
+    {
         .method        = NEU_REST_METHOD_DELETE,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/group",

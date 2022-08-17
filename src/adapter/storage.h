@@ -28,6 +28,8 @@ void adapter_storage_setting(neu_persister_t *persister, const char *node,
                              const char *setting);
 void adapter_storage_add_group(neu_persister_t *persister, const char *node,
                                const char *group, uint32_t interval);
+void adapter_storage_update_group(neu_persister_t *persister, const char *node,
+                                  const char *group, uint32_t interval);
 void adapter_storage_del_group(neu_persister_t *persister, const char *node,
                                const char *group);
 void adapter_storage_add_tag(neu_persister_t *persister, const char *node,

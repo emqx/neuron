@@ -330,6 +330,34 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
     return ret;
 }
 
+int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
+                                    const char *name, uint32_t interval)
+{
+    group_t *find = NULL;
+    int      ret  = NEU_ERR_GROUP_NOT_EXIST;
+
+    HASH_FIND_STR(driver->groups, name, find);
+    if (find != NULL) {
+        neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
+        neu_event_del_timer(driver->driver_events, find->read);
+
+        neu_event_timer_param_t param = {
+            .second      = interval / 1000,
+            .millisecond = interval % 1000,
+            .usr_data    = (void *) find,
+        };
+
+        param.cb     = report_callback;
+        find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+        param.cb     = read_callback;
+        find->read   = neu_event_add_timer(driver->driver_events, param);
+
+        ret = NEU_ERR_SUCCESS;
+    }
+
+    return ret;
+}
+
 int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 {
     group_t *find = NULL;

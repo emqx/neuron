@@ -1021,6 +1021,17 @@ int neu_persister_store_group(neu_persister_t *         persister,
         driver_name, group_info->name, (unsigned) group_info->interval);
 }
 
+int neu_persister_update_group(neu_persister_t *         persister,
+                               const char *              driver_name,
+                               neu_persist_group_info_t *group_info)
+{
+    return execute_sql(persister->db,
+                       "UPDATE groups SET driver_name=%Q, name=%Q, "
+                       "interval=%i, WHERE driver_name=%Q AND name=%Q",
+                       driver_name, group_info->name, group_info->interval,
+                       driver_name, group_info->name);
+}
+
 static UT_icd group_info_icd = {
     sizeof(neu_persist_group_info_t),
     NULL,
