@@ -47,8 +47,7 @@ typedef enum {
 
 typedef enum {
     NEU_NODE_LINK_STATE_DISCONNECTED = 0,
-    NEU_NODE_LINK_STATE_CONNECTING   = 1,
-    NEU_NODE_LINK_STATE_CONNECTED    = 2,
+    NEU_NODE_LINK_STATE_CONNECTED    = 1,
 } neu_node_link_state_e;
 
 typedef enum {

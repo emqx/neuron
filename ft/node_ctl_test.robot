@@ -37,7 +37,7 @@ Start the configured node, it should return success
     	Node Setting        modbus-node		${MODBUS_TCP_CONFIG}
     	${state} =    Get Node State    modbus-node
     	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_READY}
-    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
+    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
     	${res} =                 Node Ctl    modbus-node    ${NODE_CTL_START}
     	Check Response Status    ${res}      200
@@ -45,7 +45,7 @@ Start the configured node, it should return success
 
     	#${state} =    Get Node State    modbus-node
     	#Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
-    	#Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
+    	#Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
     	${res} =                 Node Ctl    modbus-node    ${NODE_CTL_STOP}
     	Check Response Status    ${res}      200
@@ -53,7 +53,7 @@ Start the configured node, it should return success
 
     	${state} =    Get Node State    modbus-node
     	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_STOP}
-    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
+    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
 Stop node that is stopped, it should return failure
     	${res} =                 Node Ctl    modbus-node    ${NODE_CTL_STOP}
@@ -67,7 +67,7 @@ Start the stopped node, it should return success
 
     	${state} =    Get Node State    modbus-node
     	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
-    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
+    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
 Start the running node, it should return failure
     	${res} =                 Node Ctl    modbus-node    ${NODE_CTL_START}
@@ -79,7 +79,7 @@ When setting up a READY/RUNNING/STOPED node, the node status will not change
 
     	${state} =    Get Node State    modbus-node
     	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
-    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
+    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
     	${res} =                 Node Ctl    modbus-node    ${NODE_CTL_STOP}
     	Check Response Status    ${res}      200
@@ -89,6 +89,6 @@ When setting up a READY/RUNNING/STOPED node, the node status will not change
 
     	${state} =    Get Node State    modbus-node
     	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_STOP}
-    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_CONNECTING}
+    	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
     	[Teardown]    Del Node  modbus-node

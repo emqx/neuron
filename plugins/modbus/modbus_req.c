@@ -57,9 +57,10 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                        uint16_t max_byte)
 {
+    struct modbus_group_data *gd = NULL;
+
     if (group->user_data == NULL) {
-        struct modbus_group_data *gd =
-            calloc(1, sizeof(struct modbus_group_data));
+        gd = calloc(1, sizeof(struct modbus_group_data));
 
         group->user_data  = gd;
         group->group_free = plugin_group_free;
@@ -77,20 +78,19 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
         gd->group    = strdup(group->group_name);
         gd->cmd_sort = modbus_tag_sort(gd->tags, max_byte);
     } else {
-        struct modbus_group_data *gd =
-            (struct modbus_group_data *) group->user_data;
-        plugin->plugin_group_data = gd;
+        gd = (struct modbus_group_data *) group->user_data;
+    }
+    plugin->plugin_group_data = gd;
 
-        for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
-            uint16_t response_size = 0;
-            plugin->cmd_idx        = i;
-            int ret                = modbus_stack_read(
-                plugin->stack, gd->cmd_sort->cmd[i].slave_id,
-                gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
-                gd->cmd_sort->cmd[i].n_register, &response_size);
-            if (ret > 0) {
-                process_protocol_buf(plugin, response_size);
-            }
+    for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
+        uint16_t response_size = 0;
+        plugin->cmd_idx        = i;
+        int ret                = modbus_stack_read(
+            plugin->stack, gd->cmd_sort->cmd[i].slave_id,
+            gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
+            gd->cmd_sort->cmd[i].n_register, &response_size);
+        if (ret > 0) {
+            process_protocol_buf(plugin, response_size);
         }
     }
 
@@ -150,13 +150,13 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             }
             }
 
+            dvalue.type = (*p_tag)->type;
             switch ((*p_tag)->type) {
             case NEU_TYPE_UINT16:
             case NEU_TYPE_INT16:
                 if ((*p_tag)->option.value16.endian == NEU_DATATAG_ENDIAN_L16) {
                     dvalue.value.u16 = htons(dvalue.value.u16);
                 }
-                dvalue.type = NEU_TYPE_INT16;
                 break;
             case NEU_TYPE_FLOAT: {
                 uint16_t v1 = ((uint16_t *) dvalue.value.bytes)[0];
@@ -181,7 +181,6 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     break;
                 }
 
-                dvalue.type      = NEU_TYPE_FLOAT;
                 dvalue.value.u32 = v;
                 break;
             }
@@ -209,9 +208,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     break;
                 }
 
-                dvalue.type      = NEU_TYPE_UINT32;
                 dvalue.value.u32 = v;
-
                 break;
             }
             case NEU_TYPE_BIT: {
@@ -229,7 +226,6 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     break;
                 }
 
-                dvalue.type = NEU_TYPE_BIT;
                 break;
             }
             case NEU_TYPE_STRING: {
@@ -252,7 +248,6 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     dvalue.value.str[1] = 0;
                 }
 
-                dvalue.type = NEU_TYPE_STRING;
                 break;
             }
             default:

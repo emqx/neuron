@@ -87,63 +87,22 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value)
 {
     neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
-    uint16_t              n_byte = 0;
 
-    switch (value.type) {
-    case NEU_TYPE_INT8:
-    case NEU_TYPE_UINT8:
-    case NEU_TYPE_BIT:
-    case NEU_TYPE_BOOL:
-        n_byte = 1;
-        break;
-    case NEU_TYPE_INT16:
-    case NEU_TYPE_UINT16:
-        n_byte = 2;
-        break;
-    case NEU_TYPE_INT32:
-    case NEU_TYPE_UINT32:
-    case NEU_TYPE_FLOAT:
-        n_byte = 4;
-        break;
-    case NEU_TYPE_INT64:
-    case NEU_TYPE_UINT64:
-    case NEU_TYPE_DOUBLE:
-        n_byte = 8;
-        break;
-    case NEU_TYPE_STRING:
-        n_byte = sizeof(value.value.str);
-        break;
-    case NEU_TYPE_BYTES:
-        break;
-    case NEU_TYPE_ERROR:
-        break;
-    default:
-        assert(value.type == NEU_TYPE_INT8);
-        break;
-    }
+    if (value.type == NEU_TYPE_ERROR && tag == NULL) {
+        group_t *g = find_group(driver, group);
+        if (g != NULL) {
+            UT_array *tags = neu_group_get_read_tag(g->group);
 
-    if (value.type == NEU_TYPE_ERROR) {
-        if (tag != NULL) {
-            neu_driver_cache_error(driver->cache, group, tag,
-                                   driver->adapter.timestamp, value.value.i32);
-        } else {
-            group_t *g = find_group(driver, group);
-            if (g != NULL) {
-                UT_array *tags = neu_group_get_read_tag(g->group);
-
-                utarray_foreach(tags, neu_datatag_t *, t)
-                {
-                    neu_driver_cache_error(driver->cache, group, t->name,
-                                           driver->adapter.timestamp,
-                                           value.value.i32);
-                }
-                utarray_free(tags);
+            utarray_foreach(tags, neu_datatag_t *, t)
+            {
+                neu_driver_cache_update(driver->cache, group, t->name,
+                                        driver->adapter.timestamp, value);
             }
+            utarray_free(tags);
         }
     } else {
         neu_driver_cache_update(driver->cache, group, tag,
-                                driver->adapter.timestamp, n_byte,
-                                value.value.bytes);
+                                driver->adapter.timestamp, value);
     }
     nlog_debug(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64,
@@ -631,6 +590,18 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
         neu_driver_cache_del(group->driver->cache, group->name, tag->name);
     }
 
+    utarray_foreach(tags, neu_datatag_t *, tag)
+    {
+        neu_dvalue_t value = { 0 };
+
+        value.precision = tag->precision;
+        value.type      = NEU_TYPE_ERROR;
+        value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+
+        neu_driver_cache_add(group->driver->cache, group->name, tag->name,
+                             value);
+    }
+
     neu_plugin_group_t grp = {
         .group_name = strdup(group->name),
         .tags       = NULL,
@@ -656,14 +627,14 @@ static int read_callback(void *usr_data)
         return 0;
     }
 
-    if (!neu_group_is_change(group->group, group->timestamp)) {
-        if (group->grp.tags != NULL) {
-            group->driver->adapter.module->intf_funs->driver.group_timer(
-                group->driver->adapter.plugin, &group->grp);
-        }
-    } else {
+    if (neu_group_is_change(group->group, group->timestamp)) {
         neu_group_change_test(group->group, group->timestamp, (void *) group,
                               group_change);
+    }
+
+    if (group->grp.tags != NULL) {
+        group->driver->adapter.module->intf_funs->driver.group_timer(
+            group->driver->adapter.plugin, &group->grp);
     }
 
     return 0;
@@ -696,9 +667,8 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
         }
         strcpy(datas[index].tag, tag->name);
 
-        if (value.error != 0) {
-            datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = value.error;
+        if (value.value.type == NEU_TYPE_ERROR) {
+            datas[index].value = value.value;
             index += 1;
             continue;
         }
@@ -707,9 +677,7 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
-            datas[index].value.type      = tag->type;
-            datas[index].value.value     = value.value;
-            datas[index].value.precision = tag->precision;
+            datas[index].value = value.value;
             if (tag->decimal != 0) {
                 datas[index].value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {
@@ -770,9 +738,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
             continue;
         }
 
-        if (value.error != 0) {
-            datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = value.error;
+        if (value.value.type == NEU_TYPE_ERROR) {
+            datas[index].value = value.value;
             continue;
         }
 
@@ -780,9 +747,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
-            datas[index].value.type      = tag->type;
-            datas[index].value.value     = value.value;
-            datas[index].value.precision = tag->precision;
+            datas[index].value = value.value;
             if (tag->decimal != 0) {
                 datas[index].value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {
