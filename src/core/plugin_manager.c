@@ -77,6 +77,7 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
     neu_plugin_module_t *pm            = NULL;
     plugin_entity_t *    plugin        = NULL;
 
+    assert(strlen(plugin_lib_name) <= NEU_PLUGIN_LIBRARY_LEN);
     snprintf(lib_path, sizeof(lib_path) - 1, "./plugins/%s", plugin_lib_name);
 
     handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);

@@ -553,6 +553,31 @@ int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
     return ret;
 }
 
+void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
+                                      const char *group, UT_array **tags)
+{
+    int ret = neu_adapter_driver_get_tag(driver, group, tags);
+    if (ret == NEU_ERR_SUCCESS) {
+        utarray_foreach(*tags, neu_datatag_t *, tag)
+        {
+            if (tag->decimal != 0) {
+                if (tag->type == NEU_TYPE_UINT8 || tag->type == NEU_TYPE_INT8 ||
+                    tag->type == NEU_TYPE_INT16 ||
+                    tag->type == NEU_TYPE_UINT16 ||
+                    tag->type == NEU_TYPE_INT32 ||
+                    tag->type == NEU_TYPE_UINT32 ||
+                    tag->type == NEU_TYPE_INT64 ||
+                    tag->type == NEU_TYPE_UINT64 ||
+                    tag->type == NEU_TYPE_FLOAT) {
+                    tag->type = NEU_TYPE_DOUBLE;
+                }
+            }
+        }
+    } else {
+        utarray_new(*tags, neu_tag_get_icd());
+    }
+}
+
 UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
                                           const char *          group)
 {

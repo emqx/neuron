@@ -47,6 +47,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_UNSUBSCRIBE_GROUP,
     NEU_REQ_GET_SUBSCRIBE_GROUP,
     NEU_RESP_GET_SUBSCRIBE_GROUP,
+    NEU_REQ_GET_SUB_DRIVER_TAGS,
+    NEU_RESP_GET_SUB_DRIVER_TAGS,
 
     NEU_REQ_APP_SUBSCRIBE_GROUP,
     NEU_RESP_APP_SUBSCRIBE_GROUP,
@@ -89,6 +91,7 @@ typedef enum neu_reqresp_type {
 
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_NODES_STATE,
+    NEU_REQRESP_NODE_DELETED,
 } neu_reqresp_type_e;
 
 typedef enum {
@@ -107,6 +110,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_UNSUBSCRIBE_GROUP]    = "NEU_REQ_UNSUBSCRIBE_GROUP",
     [NEU_REQ_GET_SUBSCRIBE_GROUP]  = "NEU_REQ_GET_SUBSCRIBE_GROUP",
     [NEU_RESP_GET_SUBSCRIBE_GROUP] = "NEU_RESP_GET_SUBSCRIBE_GROUP",
+    [NEU_REQ_GET_SUB_DRIVER_TAGS]  = "NEU_REQ_GET_SUB_DRIVER_TAGS",
+    [NEU_RESP_GET_SUB_DRIVER_TAGS] = "NEU_RESP_GET_SUB_DRIVER_TAGS",
 
     [NEU_REQ_APP_SUBSCRIBE_GROUP]   = "NEU_REQ_APP_SUBSCRIBE_GROUP",
     [NEU_RESP_APP_SUBSCRIBE_GROUP]  = "NEU_RESP_APP_SUBSCRIBE_GROUP",
@@ -147,8 +152,9 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_PLUGIN]  = "NEU_REQ_GET_PLUGIN",
     [NEU_RESP_GET_PLUGIN] = "NEU_RESP_GET_PLUGIN",
 
-    [NEU_REQRESP_TRANS_DATA]  = "NEU_REQRESP_TRANS_DATA",
-    [NEU_REQRESP_NODES_STATE] = "NEU_REQRESP_NODE_STATE",
+    [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
+    [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
+    [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -289,13 +295,29 @@ typedef struct {
 
 typedef struct neu_req_get_subscribe_group {
     char app[NEU_NODE_NAME_LEN];
-} neu_req_get_subscribe_group_t;
+} neu_req_get_subscribe_group_t, neu_req_get_sub_driver_tags_t;
 
 typedef struct neu_resp_subscribe_info {
     char app[NEU_NODE_NAME_LEN];
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
 } neu_resp_subscribe_info_t;
+
+typedef struct {
+    char      driver[NEU_NODE_NAME_LEN];
+    char      group[NEU_GROUP_NAME_LEN];
+    UT_array *tags;
+} neu_resp_get_sub_driver_tags_info_t;
+inline static UT_icd *neu_resp_get_sub_driver_tags_info_icd()
+{
+    static UT_icd icd = { sizeof(neu_resp_get_sub_driver_tags_info_t), NULL,
+                          NULL, NULL };
+    return &icd;
+}
+
+typedef struct {
+    UT_array *infos; // array neu_resp_get_sub_driver_tags_info_t
+} neu_resp_get_sub_driver_tags_t;
 
 typedef struct neu_resp_get_subscribe_group {
     UT_array *groups; // array neu_resp_subscribe_info_t
@@ -383,6 +405,10 @@ typedef struct {
     uint16_t             n_tag;
     neu_resp_tag_value_t tags[];
 } neu_reqresp_trans_data_t;
+
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+} neu_reqresp_node_deleted_t;
 
 void *neu_msg_gen(neu_reqresp_head_t *header, void *data);
 
