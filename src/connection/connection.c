@@ -42,6 +42,7 @@ struct neu_conn {
     neu_conn_param_t param;
     void *           data;
     bool             is_connected;
+    bool             stop;
 
     neu_conn_callback connected;
     neu_conn_callback disconnected;
@@ -84,12 +85,28 @@ neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
     conn->data             = data;
     conn->disconnected     = disconnected;
     conn->connected        = connected;
+    conn->stop             = false;
 
     conn_tcp_server_listen(conn);
 
     pthread_mutex_init(&conn->mtx, NULL);
 
     return conn;
+}
+
+void neu_conn_stop(neu_conn_t *conn)
+{
+    pthread_mutex_lock(&conn->mtx);
+    conn->stop = true;
+    conn_disconnect(conn);
+    pthread_mutex_unlock(&conn->mtx);
+}
+
+void neu_conn_start(neu_conn_t *conn)
+{
+    pthread_mutex_lock(&conn->mtx);
+    conn->stop = false;
+    pthread_mutex_unlock(&conn->mtx);
 }
 
 neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
@@ -198,8 +215,20 @@ int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd)
 ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
                                  ssize_t len)
 {
+    ssize_t ret = 0;
+
+    pthread_mutex_lock(&conn->mtx);
+    if (conn->stop) {
+        pthread_mutex_unlock(&conn->mtx);
+        return ret;
+    }
+
     conn_tcp_server_listen(conn);
-    return send(fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
+    ret = send(fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
+
+    pthread_mutex_unlock(&conn->mtx);
+
+    return ret;
 }
 
 ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
@@ -207,11 +236,19 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
 {
     ssize_t ret = 0;
 
+    pthread_mutex_lock(&conn->mtx);
+    if (conn->stop) {
+        pthread_mutex_unlock(&conn->mtx);
+        return ret;
+    }
+
     if (conn->block) {
         ret = recv(fd, buf, len, MSG_WAITALL);
     } else {
         ret = recv(fd, buf, len, 0);
     }
+    pthread_mutex_unlock(&conn->mtx);
+
     return ret;
 }
 
@@ -220,6 +257,10 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     ssize_t ret = 0;
 
     pthread_mutex_lock(&conn->mtx);
+    if (conn->stop) {
+        pthread_mutex_unlock(&conn->mtx);
+        return ret;
+    }
 
     if (conn->is_connected) {
         switch (conn->param.type) {
@@ -268,6 +309,10 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     ssize_t ret = 0;
 
     pthread_mutex_lock(&conn->mtx);
+    if (conn->stop) {
+        pthread_mutex_unlock(&conn->mtx);
+        return ret;
+    }
 
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:

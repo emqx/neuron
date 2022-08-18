@@ -117,6 +117,8 @@ neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
 neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
 void        neu_conn_destory(neu_conn_t *conn);
 void        neu_conn_disconnect(neu_conn_t *conn);
+void        neu_conn_stop(neu_conn_t *conn);
+void        neu_conn_start(neu_conn_t *conn);
 int         neu_conn_tcp_server_accept(neu_conn_t *conn);
 int         neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd);
 
