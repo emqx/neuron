@@ -107,14 +107,13 @@ static int driver_uninit(neu_plugin_t *plugin)
 
 static int driver_start(neu_plugin_t *plugin)
 {
-    (void) plugin;
-
+    neu_conn_start(plugin->conn);
     return 0;
 }
 
 static int driver_stop(neu_plugin_t *plugin)
 {
-    neu_conn_disconnect(plugin->conn);
+    neu_conn_stop(plugin->conn);
     return 0;
 }
 

@@ -151,6 +151,22 @@ void neu_conn_destory(neu_conn_t *conn);
 void neu_conn_disconnect(neu_conn_t *conn);
 
 /**
+ * @brief Stop the connection
+ *
+ *
+ * @param[in] conn
+ */
+void neu_conn_stop(neu_conn_t *conn);
+
+/**
+ * @brief Start the connection
+ *
+ *
+ * @param[in] conn
+ */
+void neu_conn_start(neu_conn_t *conn);
+
+/**
  * @brief Receive connection requests from clients.
  *
  * @param[in] conn
