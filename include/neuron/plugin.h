@@ -39,6 +39,7 @@ typedef struct neu_plugin_common {
 
     neu_adapter_t *            adapter;
     const adapter_callbacks_t *adapter_callbacks;
+    char                       name[NEU_NODE_NAME_LEN];
 
     neu_node_link_state_e link_state;
     uint16_t              tag_size;

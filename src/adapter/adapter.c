@@ -107,6 +107,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
     common->adapter_callbacks   = &adapter->cb_funs;
     common->link_state          = NEU_NODE_LINK_STATE_DISCONNECTED;
     common->log                 = zlog_get_category(adapter->name);
+    strcpy(common->name, adapter->name);
 
     adapter->module->intf_funs->init(adapter->plugin);
     if (adapter_load_setting(adapter->persister, adapter->name,
