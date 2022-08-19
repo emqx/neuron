@@ -347,6 +347,8 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
             .usr_data    = (void *) find,
         };
 
+        neu_group_set_interval(find->group, interval);
+
         param.cb     = report_callback;
         find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
         param.cb     = read_callback;
