@@ -768,6 +768,14 @@ int neu_persister_update_node(neu_persister_t *persister, const char *node_name,
                        new_name, node_name);
 }
 
+int neu_persister_update_node_state(neu_persister_t *persister,
+                                    const char *node_name, int state)
+{
+    return execute_sql(persister->db,
+                       "UPDATE nodes SET state=%i WHERE name=%Q;", state,
+                       node_name);
+}
+
 int neu_persister_store_plugins(neu_persister_t *persister,
                                 UT_array *       plugin_infos)
 {

@@ -174,9 +174,6 @@ Modbus Test Setup
 	${res}=	Node Setting  ${modbus_node}  ${MODBUS_TCP_CONFIG}
 	Check Response Status  ${res}  200
 
-	${res}=	Node Ctl  ${modbus_node}  ${NODE_CTL_START}
-	Check Response Status  ${res}  200
-
 	${state}=	Get Node State    ${modbus_node}
 	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
 	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}

@@ -92,6 +92,11 @@ uint32_t neu_group_get_interval(neu_group_t *group)
     return interval;
 }
 
+void neu_group_set_interval(neu_group_t *group, uint32_t interval)
+{
+    group->interval = interval;
+}
+
 int neu_group_update(neu_group_t *group, uint32_t interval)
 {
     if (group->interval != interval) {

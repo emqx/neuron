@@ -142,6 +142,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
 
     nlog_info("Success to create adapter: %s", adapter->name);
 
+    adapter_storage_state(adapter->persister, adapter->name, adapter->state);
     return adapter;
 }
 
@@ -263,8 +264,13 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     nng_recvmsg(adapter->sock, &msg, 0);
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
-    nlog_info("adapter(%s) recv msg from: %s, type: %s", adapter->name,
-              header->sender, neu_reqresp_type_string(header->type));
+    if (header->type == NEU_REQRESP_NODES_STATE) {
+        nlog_debug("adapter(%s) recv msg from: %s, type: %s", adapter->name,
+                   header->sender, neu_reqresp_type_string(header->type));
+    } else {
+        nlog_info("adapter(%s) recv msg from: %s, type: %s", adapter->name,
+                  header->sender, neu_reqresp_type_string(header->type));
+    }
 
     switch (header->type) {
     case NEU_REQRESP_NODE_DELETED:
@@ -685,9 +691,7 @@ int neu_adapter_start(neu_adapter_t *adapter)
     switch (adapter->state) {
     case NEU_NODE_RUNNING_STATE_IDLE:
     case NEU_NODE_RUNNING_STATE_INIT:
-        if (strcmp(adapter->module->module_name, "ekuiper") != 0) {
-            error = NEU_ERR_NODE_NOT_READY;
-        }
+        error = NEU_ERR_NODE_NOT_READY;
         break;
     case NEU_NODE_RUNNING_STATE_RUNNING:
         error = NEU_ERR_NODE_IS_RUNNING;
@@ -704,9 +708,19 @@ int neu_adapter_start(neu_adapter_t *adapter)
     error = intf_funs->start(adapter->plugin);
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_RUNNING;
+        adapter_storage_state(adapter->persister, adapter->name,
+                              adapter->state);
     }
 
     return error;
+}
+
+int neu_adapter_start_single(neu_adapter_t *adapter)
+{
+    const neu_plugin_intf_funs_t *intf_funs = adapter->module->intf_funs;
+
+    adapter->state = NEU_NODE_RUNNING_STATE_RUNNING;
+    return intf_funs->start(adapter->plugin);
 }
 
 int neu_adapter_stop(neu_adapter_t *adapter)
@@ -734,6 +748,8 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     error = intf_funs->stop(adapter->plugin);
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_STOPPED;
+        adapter_storage_state(adapter->persister, adapter->name,
+                              adapter->state);
     }
 
     return error;
@@ -755,6 +771,7 @@ int neu_adapter_set_setting(neu_adapter_t *adapter, const char *setting)
 
         if (adapter->state == NEU_NODE_RUNNING_STATE_INIT) {
             adapter->state = NEU_NODE_RUNNING_STATE_READY;
+            neu_adapter_start(adapter);
         }
     } else {
         rv = NEU_ERR_NODE_SETTING_INVALID;

@@ -27,8 +27,6 @@
 #include "plugin.h"
 
 #define DEFAULT_DASHBOARD_PLUGIN_NAME "default-dashboard"
-#define LICENSE_PLUGIN_LIB "libplugin-license-server.so"
-#define LICENSE_PLUGIN_NAME "neuron-license-server"
 
 typedef struct neu_plugin_instance {
     void *               handle;
@@ -46,6 +44,8 @@ int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name);
 
 // neu_resp_plugin_info_t array
 UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr);
+// neu_resp_plugin_info_t array
+UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr);
 int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
                             neu_resp_plugin_info_t *info);
 

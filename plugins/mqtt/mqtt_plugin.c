@@ -626,4 +626,5 @@ const neu_plugin_module_t neu_plugin_module = {
     .kind       = NEU_PLUGIN_KIND_SYSTEM,
     .type       = NEU_NA_TYPE_APP,
     .sub_msg[0] = NEU_SUBSCRIBE_NODES_STATE,
+    .single     = false,
 };

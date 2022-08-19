@@ -31,6 +31,7 @@ typedef struct neu_group neu_group_t;
 neu_group_t *  neu_group_new(const char *name, uint32_t interval);
 const char *   neu_group_get_name(neu_group_t *group);
 uint32_t       neu_group_get_interval(neu_group_t *group);
+void           neu_group_set_interval(neu_group_t *group, uint32_t interval);
 void           neu_group_destroy(neu_group_t *group);
 int            neu_group_update(neu_group_t *group, uint32_t interval);
 int            neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag);

@@ -89,6 +89,9 @@ typedef struct neu_plugin_module {
     neu_node_type_e               type;
     neu_plugin_kind_e             kind;
     neu_subscribe_type_e          sub_msg[NEU_APP_SUBSCRIBE_MSG_SIZE];
+    bool                          display;
+    bool                          single;
+    const char *                  single_name;
 } neu_plugin_module_t;
 
 inline static neu_plugin_common_t *

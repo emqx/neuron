@@ -113,7 +113,7 @@ int neu_persister_delete_node(neu_persister_t *persister,
                               const char *     node_name);
 
 /**
- * Update node.
+ * Update node name.
  * @param persister                 persiter object.
  * @param node_name                 name of the node to update.
  * @param new_name                  new name of the adapter.
@@ -121,6 +121,16 @@ int neu_persister_delete_node(neu_persister_t *persister,
  */
 int neu_persister_update_node(neu_persister_t *persister, const char *node_name,
                               const char *new_name);
+
+/**
+ * Update node state.
+ * @param persister                 persiter object.
+ * @param node_name                 name of the node to update.
+ * @param state                     state of the adapter.
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_node_state(neu_persister_t *persister,
+                                    const char *node_name, int state);
 
 /**
  * Persist plugins.

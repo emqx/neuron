@@ -55,9 +55,8 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *ndoe);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  report_nodes_state(void *usr_data);
-static void start_system_adapter(neu_manager_t *manager, const char *name,
-                                 const char *plugin_lib,
-                                 const char *plugin_name);
+static void start_single_adapter(neu_manager_t *manager, const char *name,
+                                 const char *plugin_name, bool display);
 
 neu_manager_t *neu_manager_create()
 {
@@ -93,12 +92,20 @@ neu_manager_t *neu_manager_create()
     manager->loop = neu_event_add_io(manager->events, param);
 
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
-    start_system_adapter(manager, LICENSE_SERVER_NODE_NAME, LICENSE_PLUGIN_LIB,
-                         LICENSE_PLUGIN_NAME);
 
     if (manager_load_plugin(manager) != 0) {
         nlog_warn("load plugin error");
     } else {
+        UT_array *single_plugins =
+            neu_plugin_manager_get_single(manager->plugin_manager);
+
+        utarray_foreach(single_plugins, neu_resp_plugin_info_t *, plugin)
+        {
+            start_single_adapter(manager, plugin->single_name, plugin->name,
+                                 plugin->display);
+        }
+        utarray_free(single_plugins);
+
         manager_load_node(manager);
         while (neu_node_manager_exist_uninit(manager->node_manager)) {
             usleep(1000 * 100);
@@ -258,7 +265,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
-        int error = neu_manager_add_node(manager, cmd->node, cmd->plugin);
+        int                 error =
+            neu_manager_add_node(manager, cmd->node, cmd->plugin, false);
         neu_resp_error_t e = { .error = error };
 
         if (error == NEU_ERR_SUCCESS) {
@@ -585,19 +593,14 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
     neu_adapter_start(adapter);
 }
 
-static void start_system_adapter(neu_manager_t *manager, const char *name,
-                                 const char *plugin_lib,
-                                 const char *plugin_name)
+static void start_single_adapter(neu_manager_t *manager, const char *name,
+                                 const char *plugin_name, bool display)
 {
     neu_adapter_t *       adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
     neu_adapter_info_t    adapter_info = {
         .name = name,
     };
-
-    if (0 != neu_manager_add_plugin(manager, plugin_lib)) {
-        return;
-    }
 
     if (0 !=
         neu_plugin_manager_create_instance(manager->plugin_manager, plugin_name,
@@ -609,10 +612,9 @@ static void start_system_adapter(neu_manager_t *manager, const char *name,
     adapter_info.module = instance.module;
     adapter             = neu_adapter_create(&adapter_info, true);
 
-    // add as static
-    neu_node_manager_add_static(manager->node_manager, adapter);
+    neu_node_manager_add_single(manager->node_manager, adapter, display);
     neu_adapter_init(adapter);
-    neu_adapter_start(adapter);
+    neu_adapter_start_single(adapter);
 }
 
 inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,

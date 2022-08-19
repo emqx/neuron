@@ -29,9 +29,12 @@ typedef struct node_entity {
 
     neu_adapter_t *adapter;
     bool           is_static;
+    bool           display;
+    bool           single;
     nng_pipe       pipe;
 
     UT_hash_handle hh;
+
 } node_entity_t;
 
 struct neu_node_manager {
@@ -65,6 +68,7 @@ int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter)
 
     node->adapter = adapter;
     node->name    = strdup(adapter->name);
+    node->display = true;
 
     HASH_ADD_STR(mgr->nodes, name, node);
 
@@ -78,6 +82,22 @@ int neu_node_manager_add_static(neu_node_manager_t *mgr, neu_adapter_t *adapter)
     node->adapter   = adapter;
     node->name      = strdup(adapter->name);
     node->is_static = true;
+    node->display   = true;
+
+    HASH_ADD_STR(mgr->nodes, name, node);
+
+    return 0;
+}
+
+int neu_node_manager_add_single(neu_node_manager_t *mgr, neu_adapter_t *adapter,
+                                bool display)
+{
+    node_entity_t *node = calloc(1, sizeof(node_entity_t));
+
+    node->adapter = adapter;
+    node->name    = strdup(adapter->name);
+    node->display = display;
+    node->single  = true;
 
     HASH_ADD_STR(mgr->nodes, name, node);
 
@@ -137,7 +157,7 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
 
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
-        if (!el->is_static) {
+        if (!el->is_static && el->display) {
             if (el->adapter->module->type == type) {
                 neu_resp_node_info_t info = { 0 };
                 strcpy(info.node, el->adapter->name);
@@ -246,7 +266,7 @@ UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
     {
         neu_nodes_state_t state = { 0 };
 
-        if (!el->is_static) {
+        if (!el->is_static && el->display) {
             strcpy(state.node, el->adapter->name);
             state.state.running = el->adapter->state;
             state.state.link =
