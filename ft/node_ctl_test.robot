@@ -36,16 +36,8 @@ Start the configured node, it should return success
 
     	Node Setting        modbus-node		${MODBUS_TCP_CONFIG}
     	${state} =    Get Node State    modbus-node
-    	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_READY}
+    	Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
     	Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
-
-    	${res} =                 Node Ctl    modbus-node    ${NODE_CTL_START}
-    	Check Response Status    ${res}      200
-    	Check Error Code         ${res}      ${NEU_ERR_SUCCESS}
-
-    	#${state} =    Get Node State    modbus-node
-    	#Should Be Equal As Integers    ${state}[running]    ${NODE_STATE_RUNNING}
-    	#Should Be Equal As Integers    ${state}[link]       ${NODE_LINK_STATE_DISCONNECTED}
 
     	${res} =                 Node Ctl    modbus-node    ${NODE_CTL_STOP}
     	Check Response Status    ${res}      200

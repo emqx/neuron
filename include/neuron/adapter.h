@@ -195,6 +195,9 @@ typedef struct neu_resp_plugin_info {
 
     neu_plugin_kind_e kind;
     neu_node_type_e   type;
+
+    bool display;
+    char single_name[NEU_NODE_NAME_LEN];
 } neu_resp_plugin_info_t;
 
 typedef struct neu_resp_get_plugin {

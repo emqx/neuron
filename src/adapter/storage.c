@@ -23,6 +23,12 @@
 #include "driver/driver_internal.h"
 #include "storage.h"
 
+void adapter_storage_state(neu_persister_t *persister, const char *node,
+                           neu_node_running_state_e state)
+{
+    neu_persister_update_node_state(persister, node, state);
+}
+
 void adapter_storage_setting(neu_persister_t *persister, const char *node,
                              const char *setting)
 {

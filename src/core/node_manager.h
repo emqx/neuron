@@ -27,18 +27,18 @@
 
 #include "adapter.h"
 
-#define LICENSE_SERVER_NODE_NAME "neuron-license-server"
-
 typedef struct neu_node_manager neu_node_manager_t;
 
 neu_node_manager_t *neu_node_manager_create();
 void                neu_node_manager_destroy(neu_node_manager_t *mgr);
 
-int      neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter);
-int      neu_node_manager_add_static(neu_node_manager_t *mgr,
-                                     neu_adapter_t *     adapter);
-int      neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
-                                 nng_pipe pipe);
+int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter);
+int neu_node_manager_add_static(neu_node_manager_t *mgr,
+                                neu_adapter_t *     adapter);
+int neu_node_manager_add_single(neu_node_manager_t *mgr, neu_adapter_t *adapter,
+                                bool display);
+int neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
+                            nng_pipe pipe);
 bool     neu_node_manager_exist_uninit(neu_node_manager_t *mgr);
 void     neu_node_manager_del(neu_node_manager_t *mgr, const char *name);
 uint16_t neu_node_manager_size(neu_node_manager_t *mgr);

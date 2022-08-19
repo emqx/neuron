@@ -39,6 +39,11 @@ typedef struct plugin_entity {
     neu_plugin_kind_e kind;
     neu_node_type_e   type;
 
+    bool display;
+
+    bool  single;
+    char *single_name;
+
     UT_hash_handle hh;
 } plugin_entity_t;
 
@@ -115,11 +120,16 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
     }
     plugin = calloc(1, sizeof(plugin_entity_t));
 
+    plugin->display     = pm->display;
     plugin->type        = pm->type;
     plugin->kind        = pm->kind;
     plugin->name        = strdup(pm->module_name);
     plugin->lib_name    = strdup(plugin_lib_name);
     plugin->description = strdup(pm->module_descr);
+    plugin->single      = pm->single;
+    if (plugin->single) {
+        plugin->single_name = strdup(pm->single_name);
+    }
 
     HASH_ADD_STR(mgr->plugins, name, plugin);
 
@@ -156,20 +166,51 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
     utarray_new(plugins, &icd);
     HASH_ITER(hh, mgr->plugins, el, tmp)
     {
-        if (0 == strcmp(LICENSE_PLUGIN_NAME, el->name)) {
+        if (el->single) {
             continue;
         }
-
         neu_resp_plugin_info_t info = {
             .kind = el->kind,
             .type = el->type,
         };
 
+        info.display = el->display;
         strncpy(info.name, el->name, sizeof(info.name));
         strncpy(info.library, el->lib_name, sizeof(info.library));
         strncpy(info.description, el->description, sizeof(info.description));
 
         utarray_push_back(plugins, &info);
+    }
+
+    return plugins;
+}
+
+UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr)
+{
+    UT_array *       plugins;
+    UT_icd           icd = { sizeof(neu_resp_plugin_info_t), NULL, NULL, NULL };
+    plugin_entity_t *el = NULL, *tmp = NULL;
+
+    utarray_new(plugins, &icd);
+    HASH_ITER(hh, mgr->plugins, el, tmp)
+    {
+        if (el->single) {
+            neu_resp_plugin_info_t info = {
+                .kind = el->kind,
+                .type = el->type,
+            };
+
+            info.display = el->display;
+
+            strncpy(info.single_name, el->single_name,
+                    sizeof(info.single_name));
+            strncpy(info.name, el->name, sizeof(info.name));
+            strncpy(info.library, el->lib_name, sizeof(info.library));
+            strncpy(info.description, el->description,
+                    sizeof(info.description));
+
+            utarray_push_back(plugins, &info);
+        }
     }
 
     return plugins;
@@ -247,6 +288,9 @@ static void entity_free(plugin_entity_t *entity)
 {
     nlog_notice("del plugin, name: %s, library: %s, kind: %d, type: %d",
                 entity->name, entity->lib_name, entity->kind, entity->type);
+    if (entity->single) {
+        free(entity->single_name);
+    }
     free(entity->name);
     free(entity->lib_name);
     free(entity->description);

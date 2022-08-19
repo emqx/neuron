@@ -24,6 +24,8 @@
 
 #include "adapter_internal.h"
 
+void adapter_storage_state(neu_persister_t *persister, const char *node,
+                           neu_node_running_state_e state);
 void adapter_storage_setting(neu_persister_t *persister, const char *node,
                              const char *setting);
 void adapter_storage_add_group(neu_persister_t *persister, const char *node,
