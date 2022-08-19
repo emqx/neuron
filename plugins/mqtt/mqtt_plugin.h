@@ -30,13 +30,6 @@ extern "C" {
 
 typedef struct mqtt_routine mqtt_routine_t;
 
-struct node_state {
-    char node[NEU_NODE_NAME_LEN];
-    char plugin[NEU_PLUGIN_NAME_LEN];
-    int  running;
-    int  link;
-};
-
 struct neu_plugin {
     neu_plugin_common_t common;
     bool                running;

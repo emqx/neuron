@@ -35,14 +35,12 @@ char *command_heartbeat_generate(neu_plugin_t *plugin, UT_array *states)
     json.n_state                    = utarray_len(states);
     json.states = calloc(json.n_state, sizeof(neu_json_node_state_t));
 
-    utarray_foreach(states, struct node_state **, state_p)
+    utarray_foreach(states, neu_nodes_state_t *, state)
     {
-        int                index   = utarray_eltidx(states, state_p);
-        struct node_state *ns      = (*state_p);
-        json.states[index].node    = ns->node;
-        json.states[index].link    = ns->link;
-        json.states[index].running = ns->running;
-        index++;
+        int index                  = utarray_eltidx(states, state);
+        json.states[index].node    = state->node;
+        json.states[index].link    = state->state.link;
+        json.states[index].running = state->state.running;
     }
 
     neu_json_encode_with_mqtt(&json, neu_json_encode_states_resp, &header,
