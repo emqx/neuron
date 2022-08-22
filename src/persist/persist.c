@@ -616,7 +616,7 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         sqlite3_close(persister->db);
         goto error;
     }
-    if (0 != apply_schemas(persister->db, persister->persist_dir)) {
+    if (0 != apply_schemas(persister->db, "config/")) {
         goto error;
     }
 
@@ -788,6 +788,10 @@ int neu_persister_store_plugins(neu_persister_t *persister,
 
     utarray_foreach(plugin_infos, neu_resp_plugin_info_t *, plugin)
     {
+        if (NEU_PLUGIN_KIND_SYSTEM == plugin->kind) {
+            // filter out system plugins
+            continue;
+        }
         plugin_resp.plugins[index] = plugin->library;
         index++;
     }
@@ -807,11 +811,10 @@ int neu_persister_store_plugins(neu_persister_t *persister,
     return rv;
 }
 
-int neu_persister_load_plugins(neu_persister_t *persister,
-                               UT_array **      plugin_infos)
+static int load_plugins_file(const char *fname, UT_array *plugin_infos)
 {
     char *json_str = NULL;
-    int   rv       = read_file_string(persister->plugins_fname, &json_str);
+    int   rv       = read_file_string(fname, &json_str);
     if (rv != 0) {
         return rv;
     }
@@ -823,15 +826,29 @@ int neu_persister_load_plugins(neu_persister_t *persister,
         return rv;
     }
 
-    utarray_new(*plugin_infos, &ut_ptr_icd);
     for (int i = 0; i < plugin_req->n_plugin; i++) {
         char *name = plugin_req->plugins[i];
-        utarray_push_back(*plugin_infos, &name);
+        utarray_push_back(plugin_infos, &name);
     }
 
     free(json_str);
     free(plugin_req->plugins);
     free(plugin_req);
+    return 0;
+}
+
+int neu_persister_load_plugins(neu_persister_t *persister,
+                               UT_array **      plugin_infos)
+{
+    utarray_new(*plugin_infos, &ut_ptr_icd);
+    // default plugins will always present
+    if (0 != load_plugins_file("config/default_plugins.json", *plugin_infos)) {
+        nlog_warn("cannot load default plugins");
+    }
+    // user plugins
+    if (0 != load_plugins_file(persister->plugins_fname, *plugin_infos)) {
+        nlog_warn("cannot load user plugins");
+    }
     return 0;
 }
 

@@ -8,8 +8,6 @@ import time
 
 def prepare_persistence_dir():
     os.system("mkdir -p build/persistence")
-    os.system("cp -r persistence build/")
-    os.system("cp default_plugins.json build/persistence/plugins.json")
 
 
 class Neuron(object):
