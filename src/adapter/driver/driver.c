@@ -842,3 +842,14 @@ static void read_group(int64_t timestamp, int64_t timeout,
         }
     }
 }
+
+uint16_t neu_adapter_driver_tag_size(neu_adapter_driver_t *driver)
+{
+    return neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size;
+}
+
+void neu_adapter_driver_set_all_tag_size(neu_adapter_driver_t *driver,
+                                         uint32_t              size)
+{
+    neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_all_size = size;
+}
