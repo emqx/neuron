@@ -27,9 +27,9 @@ cp config/sdk-zlog.conf ${neuron_bin}/config/zlog.conf
 cp config/dev.conf ${neuron_bin}/config/
 cp config/neuron.key ${neuron_bin}/config/
 cp config/neuron.pem ${neuron_bin}/config/
+cp config/default_plugins.json ${neuron_bin}/config/
+cp config/*.sql ${neuron_bin}/config/
 
-cp config/default_plugins.json ${neuron_bin}/persistence/plugins.json
-cp persistence/* ${neuron_bin}/persistence/
 cp -r plugins/* ${neuron_bin}/plugins/
 
 cp -r dist ${neuron_bin}/
