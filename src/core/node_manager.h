@@ -46,6 +46,10 @@ uint16_t neu_node_manager_size(neu_node_manager_t *mgr);
 // neu_resp_node_info array
 UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type);
 UT_array *neu_node_manager_get_all(neu_node_manager_t *mgr);
+
+// neu_adapter_t array
+UT_array *     neu_node_manager_get_adapter(neu_node_manager_t *mgr,
+                                            neu_node_type_e     type);
 neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name);
 
 // nng_pipe array

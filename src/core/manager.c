@@ -639,6 +639,8 @@ static int report_nodes_state(void *usr_data)
     neu_manager_t *manager = (neu_manager_t *) usr_data;
     UT_array *     apps    = neu_sub_msg_manager_get(manager->sub_msg_manager,
                                              NEU_SUBSCRIBE_NODES_STATE);
+
+    neu_manager_count_tag(manager);
     if (apps == NULL) {
         return 0;
     }

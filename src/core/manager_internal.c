@@ -117,6 +117,28 @@ UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type)
     return neu_node_manager_get(manager->node_manager, type);
 }
 
+void neu_manager_count_tag(neu_manager_t *manager)
+{
+    UT_array *drivers =
+        neu_node_manager_get_adapter(manager->node_manager, NEU_NA_TYPE_DRIVER);
+    uint32_t all_size = 0;
+
+    utarray_foreach(drivers, neu_adapter_t **, p_driver)
+    {
+        uint16_t size =
+            neu_adapter_driver_tag_size((neu_adapter_driver_t *) (*p_driver));
+        all_size += (uint32_t) size;
+    }
+
+    utarray_foreach(drivers, neu_adapter_t **, p_driver)
+    {
+        neu_adapter_driver_set_all_tag_size(
+            (neu_adapter_driver_t *) (*p_driver), all_size);
+    }
+
+    utarray_free(drivers);
+}
+
 int neu_manager_subscribe(neu_manager_t *manager, const char *app,
                           const char *driver, const char *group)
 {
