@@ -60,6 +60,7 @@ const char *usage_text =
 "                           - on-failure, restart only if failure\n"
 "                           - NUMBER,     restart max NUMBER of times\n"
 "    --version            print version information\n"
+"    --disable_auth       disable http api auth\n"
 "\n";
 // clang-format on
 
@@ -107,6 +108,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "log", no_argument, NULL, 'l' },
         { "restart", required_argument, NULL, 'r' },
         { "version", no_argument, NULL, 'v' },
+        { "disable_auth", no_argument, NULL, 'a' },
         { NULL, 0, NULL, 0 },
     };
 
@@ -140,6 +142,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         case 'v':
             version();
             goto quit;
+            break;
+        case 'a':
+            args->disable_auth = true;
             break;
         case '?':
         default:

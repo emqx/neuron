@@ -38,6 +38,7 @@ extern "C" {
 typedef struct {
     bool   daemonized; // flag indicating whether to run as daemon process
     size_t restart;    // restart policy
+    bool   disable_auth;
 } neu_cli_args_t;
 
 /** Parse command line arguments.

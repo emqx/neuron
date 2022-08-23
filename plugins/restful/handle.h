@@ -42,32 +42,38 @@
         free(req_data);                                                       \
     }
 
-#define REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(aio, req_type, decode_fun,    \
-                                               func)                         \
-    {                                                                        \
-        char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
-                                                                             \
-        NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
-            if (error_code.error != NEU_ERR_SUCCESS) {                       \
-                http_response(aio, error_code.error, result_error);          \
-                free(result_error);                                          \
-                return;                                                      \
-            }                                                                \
-        })                                                                   \
-        REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func);          \
+#define REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(aio, req_type, decode_fun, \
+                                               func)                      \
+    {                                                                     \
+        if (!disable_jwt) {                                               \
+            char *jwt =                                                   \
+                (char *) http_get_header(aio, (char *) "Authorization");  \
+                                                                          \
+            NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {              \
+                if (error_code.error != NEU_ERR_SUCCESS) {                \
+                    http_response(aio, error_code.error, result_error);   \
+                    free(result_error);                                   \
+                    return;                                               \
+                }                                                         \
+            })                                                            \
+        }                                                                 \
+        REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func);       \
     }
 
-#define VALIDATE_JWT(aio)                                                    \
-    {                                                                        \
-        char *jwt = (char *) http_get_header(aio, (char *) "Authorization"); \
-                                                                             \
-        NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                     \
-            if (error_code.error != NEU_ERR_SUCCESS) {                       \
-                http_response(aio, error_code.error, result_error);          \
-                free(result_error);                                          \
-                return;                                                      \
-            }                                                                \
-        });                                                                  \
+#define VALIDATE_JWT(aio)                                                \
+    {                                                                    \
+        if (!disable_jwt) {                                              \
+            char *jwt =                                                  \
+                (char *) http_get_header(aio, (char *) "Authorization"); \
+                                                                         \
+            NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {             \
+                if (error_code.error != NEU_ERR_SUCCESS) {               \
+                    http_response(aio, error_code.error, result_error);  \
+                    free(result_error);                                  \
+                    return;                                              \
+                }                                                        \
+            });                                                          \
+        }                                                                \
     }
 
 enum neu_rest_method {
