@@ -28,9 +28,10 @@
 #include "argparse.h"
 #include "daemon.h"
 
-static bool           exit_flag = false;
-static neu_manager_t *g_manager = NULL;
-zlog_category_t *     neuron    = NULL;
+static bool           exit_flag   = false;
+static neu_manager_t *g_manager   = NULL;
+zlog_category_t *     neuron      = NULL;
+bool                  disable_jwt = false;
 
 static void sig_handler(int sig)
 {
@@ -79,6 +80,7 @@ int main(int argc, char *argv[])
 
     neu_cli_args_init(&args, argc, argv);
 
+    disable_jwt = args.disable_auth;
     if (args.daemonized) {
         // become a daemon, this should be before calling `init`
         daemonize();
