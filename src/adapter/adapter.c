@@ -54,7 +54,7 @@ static const adapter_callbacks_t callback_funs = {
     .response = adapter_response,
 };
 
-neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
+neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
     int                     rv          = 0;
     neu_adapter_t *         adapter     = NULL;
@@ -119,10 +119,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
             free(adapter->setting);
             adapter->setting = NULL;
         }
-        if (adapter->state == NEU_NODE_RUNNING_STATE_READY && start) {
-            adapter->module->intf_funs->start(adapter->plugin);
-            adapter->state = NEU_NODE_RUNNING_STATE_RUNNING;
-        }
     }
 
     if (info->module->type == NEU_NA_TYPE_DRIVER) {
@@ -147,14 +143,18 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start)
     return adapter;
 }
 
-void neu_adapter_init(neu_adapter_t *adapter)
+void neu_adapter_init(neu_adapter_t *adapter, bool auto_start)
 {
     neu_reqresp_head_t  header   = { .type = NEU_REQ_NODE_INIT };
     neu_req_node_init_t init     = { 0 };
     nng_msg *           init_msg = NULL;
 
+    strcpy(header.sender, adapter->name);
+    strcpy(header.receiver, "manager");
+
     strcpy(init.node, adapter->name);
-    init_msg = neu_msg_gen(&header, &init);
+    init.auto_start = auto_start;
+    init_msg        = neu_msg_gen(&header, &init);
 
     nng_sendmsg(adapter->sock, init_msg, 0);
 }
@@ -690,7 +690,6 @@ int neu_adapter_start(neu_adapter_t *adapter)
     neu_err_code_e                error     = NEU_ERR_SUCCESS;
 
     switch (adapter->state) {
-    case NEU_NODE_RUNNING_STATE_IDLE:
     case NEU_NODE_RUNNING_STATE_INIT:
         error = NEU_ERR_NODE_NOT_READY;
         break;
@@ -730,7 +729,6 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     neu_err_code_e                error     = NEU_ERR_SUCCESS;
 
     switch (adapter->state) {
-    case NEU_NODE_RUNNING_STATE_IDLE:
     case NEU_NODE_RUNNING_STATE_INIT:
     case NEU_NODE_RUNNING_STATE_READY:
         error = NEU_ERR_NODE_NOT_RUNNING;

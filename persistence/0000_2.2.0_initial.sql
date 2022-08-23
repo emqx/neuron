@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS
   nodes (
     name TEXT PRIMARY KEY check(length(name) <= 32),
     type integer(1) NOT NULL check(type IN (1, 2)),
-    state integer(1) NOT NULL check(state BETWEEN 0 AND 4),
+    state integer(1) NOT NULL check(state BETWEEN 1 AND 4),
     plugin_name TEXT NOT NULL check(length(plugin_name) <= 32)
   );
 
