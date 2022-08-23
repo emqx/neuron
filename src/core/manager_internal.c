@@ -57,6 +57,10 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
         return NEU_ERR_LIBRARY_NOT_FOUND;
     }
 
+    if (info.single) {
+        return NEU_ERR_LIBRARY_NOT_ALLOW_CREATE_INSTANCE;
+    }
+
     adapter = neu_node_manager_find(manager->node_manager, node_name);
     if (adapter != NULL) {
         return NEU_ERR_NODE_EXIST;

@@ -201,6 +201,7 @@ UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr)
             };
 
             info.display = el->display;
+            info.single  = el->single;
 
             strncpy(info.single_name, el->single_name,
                     sizeof(info.single_name));
@@ -224,9 +225,15 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
 
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
-        ret        = 0;
-        info->type = plugin->type;
-        info->kind = plugin->kind;
+        ret           = 0;
+        info->single  = plugin->single;
+        info->display = plugin->display;
+        info->type    = plugin->type;
+        info->kind    = plugin->kind;
+
+        if (plugin->single_name != NULL) {
+            strcpy(info->single_name, plugin->single_name);
+        }
         strncpy(info->name, plugin->name, sizeof(info->name));
         strncpy(info->library, plugin->lib_name, sizeof(info->library));
         strncpy(info->description, plugin->description,
