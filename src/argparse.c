@@ -101,7 +101,6 @@ static inline size_t parse_restart_policy(const char *s, size_t *out)
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 {
     char *        opts           = "c:dh";
-    bool          dev_log        = false;
     struct option long_options[] = {
         { "help", no_argument, NULL, 1 },
         { "daemon", no_argument, NULL, 'd' },
@@ -129,8 +128,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             usage();
             goto quit;
         case 'l':
-            zlog_init("./config/dev.conf");
-            dev_log = true;
+            args->dev_log = true;
             break;
         case 'r':
             if (0 != parse_restart_policy(optarg, &args->restart)) {
@@ -153,10 +151,6 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             usage();
             goto quit;
         }
-    }
-
-    if (!dev_log) {
-        zlog_init("./config/zlog.conf");
     }
 
     if (!args->daemonized && args->restart != NEU_RESTART_NEVER) {
