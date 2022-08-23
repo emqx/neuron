@@ -57,6 +57,10 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
         return NEU_ERR_LIBRARY_NOT_FOUND;
     }
 
+    if (info.single) {
+        return NEU_ERR_LIBRARY_NOT_ALLOW_CREATE_INSTANCE;
+    }
+
     adapter = neu_node_manager_find(manager->node_manager, node_name);
     if (adapter != NULL) {
         return NEU_ERR_NODE_EXIST;
@@ -70,9 +74,9 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter = neu_adapter_create(&adapter_info, start);
+    adapter = neu_adapter_create(&adapter_info);
     neu_node_manager_add(manager->node_manager, adapter);
-    neu_adapter_init(adapter);
+    neu_adapter_init(adapter, start);
 
     if (instance.module->type == NEU_NA_TYPE_APP) {
         for (int i = 0; i < NEU_APP_SUBSCRIBE_MSG_SIZE; i++) {

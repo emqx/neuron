@@ -51,7 +51,6 @@ typedef enum {
 } neu_node_link_state_e;
 
 typedef enum {
-    NEU_NODE_RUNNING_STATE_IDLE    = 0,
     NEU_NODE_RUNNING_STATE_INIT    = 1,
     NEU_NODE_RUNNING_STATE_READY   = 2,
     NEU_NODE_RUNNING_STATE_RUNNING = 3,

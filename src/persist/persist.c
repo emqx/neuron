@@ -320,6 +320,8 @@ static inline int execute_sql(sqlite3 *db, const char *sql, ...)
     if (SQLITE_OK != sqlite3_exec(db, query, NULL, NULL, &err_msg)) {
         nlog_error("query `%s` fail: %s", query, err_msg);
         rv = NEU_ERR_EINTERNAL;
+    } else {
+        nlog_info("query %s success", query);
     }
 
     sqlite3_free(err_msg);
@@ -561,18 +563,7 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         goto error;
     }
 
-    int n = path_cat(path, dir_len, sizeof(path), "adapters");
-    if (sizeof(path) == n) {
-        nlog_error("path too long: %s", path);
-        goto error;
-    }
-    rv = create_dir(path);
-    if (rv != 0) {
-        nlog_error("failed to create directory: %s", path);
-        goto error;
-    }
-
-    n = path_cat(path, dir_len, sizeof(path), "plugins.json");
+    int n = path_cat(path, dir_len, sizeof(path), "plugins.json");
     if (sizeof(path) == n) {
         nlog_error("path too long: %s", path);
         goto error;
@@ -607,6 +598,7 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         nlog_error("db `%s` fail: %s", path, sqlite3_errstr(rv));
         goto error;
     }
+    sqlite3_busy_timeout(persister->db, 100 * 1000);
     // we rely on sqlite foreign key support
     if (SQLITE_OK !=
         sqlite3_exec(persister->db, "PRAGMA foreign_keys=ON", NULL, NULL,

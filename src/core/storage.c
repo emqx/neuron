@@ -120,8 +120,9 @@ int manager_load_node(neu_manager_t *manager)
             manager, node_info->name, node_info->plugin_name,
             node_info->state == NEU_NODE_RUNNING_STATE_RUNNING);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        nlog_info("load adapter %s type:%d, name:%s plugin:%s", ok_or_err,
-                  node_info->type, node_info->name, node_info->plugin_name);
+        nlog_info("load adapter %s type:%d, name:%s plugin:%s state:%d",
+                  ok_or_err, node_info->type, node_info->name,
+                  node_info->plugin_name, node_info->state);
     }
 
     utarray_free(node_infos);

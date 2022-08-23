@@ -61,8 +61,8 @@ typedef struct adapter_msg_handler {
     adapter_handler    handler;
 } adapter_msg_handler_t;
 
-neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool start);
-void           neu_adapter_init(neu_adapter_t *adapter);
+neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info);
+void           neu_adapter_init(neu_adapter_t *adapter, bool auto_start);
 
 int neu_adapter_start(neu_adapter_t *adapter);
 int neu_adapter_start_single(neu_adapter_t *adapter);

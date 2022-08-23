@@ -223,6 +223,13 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         nng_pipe             pipe = nng_msg_get_pipe(msg);
 
         neu_node_manager_update(manager->node_manager, init->node, pipe);
+
+        if (init->auto_start) {
+            neu_adapter_t *adapter =
+                neu_node_manager_find(manager->node_manager, init->node);
+            neu_adapter_start(adapter);
+        }
+
         nlog_notice("bind node %s to pipe(%d)", init->node, pipe.id);
         break;
     }
@@ -587,9 +594,9 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter = neu_adapter_create(&adapter_info, manager);
+    adapter = neu_adapter_create(&adapter_info);
     neu_node_manager_add_static(manager->node_manager, adapter);
-    neu_adapter_init(adapter);
+    neu_adapter_init(adapter, false);
     neu_adapter_start(adapter);
 }
 
@@ -610,10 +617,10 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
 
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
-    adapter             = neu_adapter_create(&adapter_info, true);
+    adapter             = neu_adapter_create(&adapter_info);
 
     neu_node_manager_add_single(manager->node_manager, adapter, display);
-    neu_adapter_init(adapter);
+    neu_adapter_init(adapter, false);
     neu_adapter_start_single(adapter);
 }
 
