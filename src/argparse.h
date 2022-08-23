@@ -37,6 +37,7 @@ extern "C" {
  */
 typedef struct {
     bool   daemonized; // flag indicating whether to run as daemon process
+    bool   dev_log;    // logging for development
     size_t restart;    // restart policy
     bool   disable_auth;
 } neu_cli_args_t;
