@@ -117,43 +117,26 @@ static void topics_cleanup(UT_array *topics, neu_plugin_t *plugin)
 static void topics_generate(UT_array *topics, neu_plugin_t *plugin,
                             neu_mqtt_option_t *option)
 {
-    char *name            = plugin->common.name;
-    char *upload_topic    = option->upload_topic;
-    char *heartbeat_topic = option->heartbeat_topic;
+    char *name = plugin->common.name;
 
+    // READ TOPIC
     char *read_req = topics_format(TOPIC_READ_REQ, name);
     char *read_res = topics_format(TOPIC_READ_RES, name);
     topics_add(topics, plugin, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
 
+    // WRITE TOPIC
     char *write_req = topics_format(TOPIC_WRITE_REQ, name);
     char *write_res = topics_format(TOPIC_WRITE_RES, name);
     topics_add(topics, plugin, write_req, QOS0, write_res, QOS0,
                TOPIC_TYPE_WRITE);
 
     /// UPLOAD TOPIC SETTING
-    char *upload_req = NULL;
-    char *upload_res = NULL;
-    if (NULL != upload_topic && 0 < strlen(upload_topic)) {
-        plog_debug(plugin, "user defined upload topic:%s", upload_topic);
-        upload_res = strdup(upload_topic);
-    } else {
-        upload_res = topics_format(TOPIC_UPLOAD_RES, name);
-    }
-
-    topics_add(topics, plugin, upload_req, QOS0, upload_res, QOS0,
-               TOPIC_TYPE_UPLOAD);
+    char *upload_res = strdup(option->upload_topic);
+    topics_add(topics, plugin, NULL, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
 
     // HEARTBEAT TOPIC SETTING
-    char *heartbeat_req = NULL;
-    char *heartbeat_res = NULL;
-    if (NULL != heartbeat_topic && 0 < strlen(heartbeat_topic)) {
-        plog_debug(plugin, "user defined heartbeat topic:%s", heartbeat_topic);
-        heartbeat_res = strdup(heartbeat_topic);
-    } else {
-        heartbeat_res = topics_format(TOPIC_HEARTBEAT_RES, name);
-    }
-
-    topics_add(topics, plugin, heartbeat_req, QOS0, heartbeat_res, QOS0,
+    char *heartbeat_res = strdup(option->heartbeat_topic);
+    topics_add(topics, plugin, NULL, QOS0, heartbeat_res, QOS0,
                TOPIC_TYPE_HEARTBEAT);
 }
 
