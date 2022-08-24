@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/sh
 #
 # NEURON IIoT System for Industry 4.0
 # Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
@@ -17,6 +17,19 @@
 # along with this program; if not, write to the Free Software Foundation,
 # Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
+
+"""":
+if type python3 > /dev/null 2>&1
+then
+    exec python3 "$0" "$@"
+elif type python > /dev/null 2>&1
+then
+    exec python "$0" "$@"
+else
+    echo >&2 "Python not installed"
+fi
+exit 1
+"""  # """
 
 from __future__ import print_function
 
