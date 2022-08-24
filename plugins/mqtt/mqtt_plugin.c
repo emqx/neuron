@@ -516,19 +516,6 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     return NEU_ERR_SUCCESS;
 }
 
-static neu_err_code_e subscribe_handle(neu_plugin_t *      plugin,
-                                       neu_reqresp_head_t *head, void *data)
-{
-    UNUSED(plugin);
-    UNUSED(head);
-
-    neu_resp_app_subscribe_group_t *sub =
-        (neu_resp_app_subscribe_group_t *) data;
-    utarray_free(sub->tags);
-
-    return NEU_ERR_SUCCESS;
-}
-
 static neu_err_code_e node_state_send(neu_plugin_t *      plugin,
                                       neu_reqresp_head_t *head, void *data)
 {
@@ -585,10 +572,6 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_REQRESP_TRANS_DATA:
         error = trans_data(plugin, data);
         break;
-    case NEU_RESP_APP_SUBSCRIBE_GROUP: {
-        error = subscribe_handle(plugin, head, data);
-        break;
-    }
     case NEU_REQRESP_NODES_STATE: {
         error = node_state_send(plugin, head, data);
         break;

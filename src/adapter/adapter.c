@@ -277,7 +277,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQRESP_NODE_DELETED:
     case NEU_RESP_GET_SUB_DRIVER_TAGS:
     case NEU_REQ_UPDATE_LICENSE:
-    case NEU_REQ_APP_UNSUBSCRIBE_GROUP:
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
@@ -291,7 +290,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
     case NEU_REQRESP_TRANS_DATA:
-    case NEU_RESP_APP_SUBSCRIBE_GROUP:
     case NEU_REQRESP_NODES_STATE:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
@@ -385,21 +383,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             header->type = NEU_RESP_GET_GROUP;
             reply(adapter, header, &resp);
         }
-        break;
-    }
-    case NEU_REQ_APP_SUBSCRIBE_GROUP: {
-        neu_req_app_subscribe_group_t *cmd =
-            (neu_req_app_subscribe_group_t *) &header[1];
-        neu_resp_app_subscribe_group_t resp = { 0 };
-
-        neu_adapter_driver_get_tag((neu_adapter_driver_t *) adapter, cmd->group,
-                                   &resp.tags);
-        neu_msg_exchange(header);
-        strcpy(resp.driver, cmd->driver);
-        strcpy(resp.group, cmd->group);
-
-        header->type = NEU_RESP_APP_SUBSCRIBE_GROUP;
-        reply(adapter, header, &resp);
         break;
     }
     case NEU_REQ_GET_TAG: {
@@ -974,13 +957,6 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     }
     case NEU_REQ_UPDATE_LICENSE:
         data_size = sizeof(neu_req_update_license_t);
-        break;
-    case NEU_RESP_APP_SUBSCRIBE_GROUP:
-        data_size = sizeof(neu_resp_app_subscribe_group_t);
-        break;
-    case NEU_REQ_APP_SUBSCRIBE_GROUP:
-    case NEU_REQ_APP_UNSUBSCRIBE_GROUP:
-        data_size = sizeof(neu_req_app_unsubscribe_group_t);
         break;
     case NEU_REQRESP_NODE_DELETED:
         data_size = sizeof(neu_reqresp_node_deleted_t);

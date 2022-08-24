@@ -152,10 +152,6 @@ int manager_load_subscribe(neu_manager_t *manager)
                 nlog_info("%s load subscription app:%s driver:%s grp:%s",
                           ok_or_err, node->node, info->driver_name,
                           info->group_name);
-                if (rv == 0) {
-                    neu_manager_notify_app_sub_update(
-                        manager, info->driver_name, info->group_name);
-                }
             }
 
             utarray_free(sub_infos);
