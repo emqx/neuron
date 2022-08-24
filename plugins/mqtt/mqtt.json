@@ -1,20 +1,10 @@
 {
-	"client-id": {
-		"name": "client id",
-		"description": "Neuron MQTT client ID",
-		"type": "string",
-		"attribute": "required",
-		"default": "",
-		"valid": {
-			"length": 255
-		}
-	},
 	"upload-topic": {
 		"name": "upload topic",
 		"description": "User-defined upload topic",
 		"type": "string",
-		"attribute": "optional",
-		"default": "",
+		"attribute": "required",
+		"default": "/neuron/${node-name}/upload",
 		"valid": {
 			"length": 255
 		}
@@ -23,8 +13,8 @@
 		"name": "heartbeat topic",
 		"description": "User-defined heartbeat topic",
 		"type": "string",
-		"attribute": "optional",
-		"default": "",
+		"attribute": "required",
+		"default": "/neuron/${node-name}/heartbeat",
 		"valid": {
 			"length": 255
 		}

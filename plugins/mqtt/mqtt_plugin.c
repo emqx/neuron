@@ -30,13 +30,13 @@
 #define TIMEOUT 3000U
 #define MAX_TOPIC_LEN 256
 
-#define TOPIC_READ_REQ "neuron/%s/read/req"
-#define TOPIC_WRITE_REQ "neuron/%s/write/req"
+#define TOPIC_READ_REQ "/neuron/%s/read/req"
+#define TOPIC_WRITE_REQ "/neuron/%s/write/req"
 
-#define TOPIC_READ_RES "neuron/%s/read/resp"
-#define TOPIC_WRITE_RES "neuron/%s/write/resp"
-#define TOPIC_UPLOAD_RES "neuron/%s/upload"
-#define TOPIC_HEARTBEAT_RES "neuron/%s/heartbeat"
+#define TOPIC_READ_RES "/neuron/%s/read/resp"
+#define TOPIC_WRITE_RES "/neuron/%s/write/resp"
+#define TOPIC_UPLOAD_RES "/neuron/%s/upload"
+#define TOPIC_HEARTBEAT_RES "/neuron/%s/heartbeat"
 
 #define QOS0 0
 #define QOS1 1
@@ -117,7 +117,7 @@ static void topics_cleanup(UT_array *topics, neu_plugin_t *plugin)
 static void topics_generate(UT_array *topics, neu_plugin_t *plugin,
                             neu_mqtt_option_t *option)
 {
-    char *name            = option->clientid;
+    char *name            = plugin->common.name;
     char *upload_topic    = option->upload_topic;
     char *heartbeat_topic = option->heartbeat_topic;
 
@@ -244,6 +244,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     // MQTT client start
     int rc = mqtt_option_init(plugin, (char *) config, &routine->option);
     if (0 != rc) {
+        plog_error(plugin, "%s", mqtt_option_error(rc));
         mqtt_option_uninit(plugin, &routine->option);
         free(routine);
         return NULL;

@@ -22,11 +22,40 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <openssl/rand.h>
+
 #include <json/json.h>
 #include <json/neu_json_param.h>
 
 #include "mqtt_plugin.h"
 #include "mqtt_util.h"
+
+int uuid_v4(char *buffer)
+{
+    union {
+        struct {
+            uint32_t time_low;
+            uint16_t time_mid;
+            uint16_t time_hi_and_version;
+            uint8_t  clk_seq_hi_res;
+            uint8_t  clk_seq_low;
+            uint8_t  node[6];
+        };
+        uint8_t __rnd[16];
+    } uuid;
+
+    int rc              = RAND_bytes(uuid.__rnd, sizeof(uuid));
+    uuid.clk_seq_hi_res = (uint8_t)((uuid.clk_seq_hi_res & 0x3F) | 0x80);
+    uuid.time_hi_and_version =
+        (uint16_t)((uuid.time_hi_and_version & 0x0FFF) | 0x4000);
+
+    snprintf(buffer, 38, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+             uuid.time_low, uuid.time_mid, uuid.time_hi_and_version,
+             uuid.clk_seq_hi_res, uuid.clk_seq_low, uuid.node[0], uuid.node[1],
+             uuid.node[2], uuid.node[3], uuid.node[4], uuid.node[5]);
+
+    return rc;
+}
 
 void mqtt_option_uninit(neu_plugin_t *plugin, neu_mqtt_option_t *option)
 {
@@ -98,12 +127,11 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
 {
     (void) plugin;
     if (NULL == config || NULL == option) {
-        return -1;
+        return 1;
     }
 
     int             ret       = 0;
     char *          error     = NULL;
-    neu_json_elem_t id        = { .name = "client-id", .t = NEU_JSON_STR };
     neu_json_elem_t upload    = { .name = "upload-topic", .t = NEU_JSON_STR };
     neu_json_elem_t heartbeat = { .name = "heartbeat-topic",
                                   .t    = NEU_JSON_STR };
@@ -119,30 +147,41 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     neu_json_elem_t keypass   = { .name = "keypass", .t = NEU_JSON_STR };
 
     // client-id, required
-    ret = neu_parse_param(config, &error, 1, &id);
-    if (0 != ret) {
-        free(error);
-        free(id.v.val_str);
-        return -1;
-    } else {
-        option->clientid = id.v.val_str;
+    char uuid[38] = { 0 };
+    int  rc       = uuid_v4(uuid);
+    if (1 != rc) {
+        return 2;
     }
 
-    // upload-topic, optional
+    option->clientid = strdup(uuid);
+
+    // upload-topic, required
     ret = neu_parse_param(config, &error, 1, &upload);
     if (0 != ret) {
         free(error);
         free(upload.v.val_str);
+        return 3;
     } else {
+        if (0 == strlen(upload.v.val_str)) {
+            free(upload.v.val_str);
+            return 3;
+        }
+
         option->upload_topic = upload.v.val_str;
     }
 
-    // heartbeat-topic, optional
+    // heartbeat-topic, required
     ret = neu_parse_param(config, &error, 1, &heartbeat);
     if (0 != ret) {
         free(error);
         free(heartbeat.v.val_str);
+        return 4;
     } else {
+        if (0 == strlen(heartbeat.v.val_str)) {
+            free(heartbeat.v.val_str);
+            return 4;
+        }
+
         option->heartbeat_topic = heartbeat.v.val_str;
     }
 
@@ -159,7 +198,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     ret = neu_parse_param(config, &error, 1, &ssl);
     if (0 != ret) {
         free(error);
-        return -2;
+        return 5;
     } else {
         if (false == ssl.v.val_bool) {
             option->connection = strdup("tcp://");
@@ -171,7 +210,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
             if (0 != ret) {
                 free(error);
                 free(ca.v.val_str);
-                return -3;
+                return 6;
             } else {
                 option->ca = ca.v.val_str;
             }
@@ -189,7 +228,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
                 if (0 != ret) {
                     free(error);
                     free(key.v.val_str);
-                    return -4;
+                    return 7;
                 } else {
                     option->key = key.v.val_str;
                 }
@@ -211,7 +250,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     if (0 != ret) {
         free(error);
         free(host.v.val_str);
-        return -5;
+        return 8;
     } else {
         option->host = host.v.val_str;
     }
@@ -220,7 +259,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     ret = neu_parse_param(config, &error, 1, &port);
     if (0 != ret) {
         free(error);
-        return -6;
+        return 9;
     } else {
         int32_t p    = (int) port.v.val_int;
         option->port = calloc(10, sizeof(char));
@@ -254,4 +293,27 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     option->will_payload       = NULL;
 
     return 0;
+}
+
+static const char *mqtt_option_error_strs[] = {
+    [0]  = "success",
+    [1]  = "config or option is null",
+    [2]  = "generate uuid failed",
+    [3]  = "upload topic field not set",
+    [4]  = "heartbeat topic field not set",
+    [5]  = "ssl field not set",
+    [6]  = "ca field not set when login with tls",
+    [7]  = "key field not set when login with tls with cert",
+    [8]  = "host field not set",
+    [9]  = "port field not set",
+    [10] = "unknow",
+};
+
+const char *mqtt_option_error(int error)
+{
+    if (0 <= error && 9 >= error) {
+        return mqtt_option_error_strs[error];
+    } else {
+        return mqtt_option_error_strs[10];
+    }
 }
