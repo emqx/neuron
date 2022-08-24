@@ -172,13 +172,6 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         send_data(plugin, trans_data);
         break;
     }
-    case NEU_RESP_APP_SUBSCRIBE_GROUP: {
-        neu_resp_app_subscribe_group_t *sub =
-            (neu_resp_app_subscribe_group_t *) data;
-
-        utarray_free(sub->tags);
-        break;
-    }
     default:
         plog_notice(plugin, "unsupported request type: %d", header->type);
         break;

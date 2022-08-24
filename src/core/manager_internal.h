@@ -64,16 +64,4 @@ UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
 
 int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
                               neu_persist_node_info_t *info);
-
-void neu_manager_notify_app_sub(neu_manager_t *manager, const char *app,
-                                const char *driver, const char *group);
-void neu_manager_notify_app_unsub(neu_manager_t *manager, const char *app,
-                                  const char *driver, const char *group);
-void neu_manager_notify_app_unsub_update(neu_manager_t *manager,
-                                         const char *driver, const char *group);
-void neu_manager_notify_app_unsub_driver_update(neu_manager_t *manager,
-                                                const char *   driver);
-void neu_manager_notify_app_sub_update(neu_manager_t *manager,
-                                       const char *driver, const char *group);
-
 #endif
