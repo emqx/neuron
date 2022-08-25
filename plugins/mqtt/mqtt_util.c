@@ -175,53 +175,65 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
         option->format = format.v.val_int;
     }
 
-    // ssl, required
+    // ssl, optional
     ret = neu_parse_param(config, &error, 1, &ssl);
     if (0 != ret) {
         free(error);
-        return 5;
+        option->connection = strdup("tcp://");
     } else {
         if (false == ssl.v.val_bool) {
             option->connection = strdup("tcp://");
         } else {
             option->connection = strdup("ssl://");
+        }
+    }
 
-            // ca, required if ssl enabled
-            ret = neu_parse_param(config, &error, 1, &ca);
-            if (0 != ret) {
-                free(error);
+    if (0 == strcmp(option->connection, "ssl://")) {
+        // ca, required if ssl enabled
+        ret = neu_parse_param(config, &error, 1, &ca);
+        if (0 != ret) {
+            free(error);
+            free(ca.v.val_str);
+            return 5;
+        } else {
+            if (0 == strlen(ca.v.val_str)) {
                 free(ca.v.val_str);
-                return 6;
-            } else {
-                option->ca = ca.v.val_str;
+                return 5;
             }
 
-            // cert, optional
-            ret = neu_parse_param(config, &error, 1, &cert);
+            option->ca = ca.v.val_str;
+        }
+
+        // cert, optional
+        ret = neu_parse_param(config, &error, 1, &cert);
+        if (0 != ret) {
+            free(error);
+            free(cert.v.val_str);
+        } else {
+            option->cert = cert.v.val_str;
+
+            // key, required if cert enable
+            ret = neu_parse_param(config, &error, 1, &key);
             if (0 != ret) {
                 free(error);
-                free(cert.v.val_str);
+                free(key.v.val_str);
+                return 6;
             } else {
-                option->cert = cert.v.val_str;
-
-                // key, required if cert enable
-                ret = neu_parse_param(config, &error, 1, &key);
-                if (0 != ret) {
-                    free(error);
+                if (0 == strlen(key.v.val_str)) {
                     free(key.v.val_str);
-                    return 7;
-                } else {
-                    option->key = key.v.val_str;
+                    return 6;
                 }
 
-                // keypass, optional
-                ret = neu_parse_param(config, &error, 1, &keypass);
-                if (0 != ret) {
-                    free(error);
-                    free(keypass.v.val_str);
-                } else {
-                    option->keypass = keypass.v.val_str;
-                }
+                option->key = key.v.val_str;
+            }
+
+            // keypass, optional
+            ret = neu_parse_param(config, &error, 1, &keypass);
+            if (0 != ret) {
+                free(error);
+                free(keypass.v.val_str);
+            } else {
+                option->keypass = keypass.v.val_str;
             }
         }
     }
@@ -231,8 +243,13 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     if (0 != ret) {
         free(error);
         free(host.v.val_str);
-        return 8;
+        return 7;
     } else {
+        if (0 == strlen(host.v.val_str)) {
+            free(host.v.val_str);
+            return 7;
+        }
+
         option->host = host.v.val_str;
     }
 
@@ -240,7 +257,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     ret = neu_parse_param(config, &error, 1, &port);
     if (0 != ret) {
         free(error);
-        return 9;
+        return 8;
     } else {
         int32_t p    = (int) port.v.val_int;
         option->port = calloc(10, sizeof(char));
@@ -277,24 +294,23 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
 }
 
 static const char *mqtt_option_error_strs[] = {
-    [0]  = "success",
-    [1]  = "config or option is null",
-    [2]  = "generate uuid failed",
-    [3]  = "upload topic field not set",
-    [4]  = "heartbeat topic field not set",
-    [5]  = "ssl field not set",
-    [6]  = "ca field not set when login with tls",
-    [7]  = "key field not set when login with tls with cert",
-    [8]  = "host field not set",
-    [9]  = "port field not set",
-    [10] = "unknow",
+    [0] = "success",
+    [1] = "config or option is null",
+    [2] = "generate uuid failed",
+    [3] = "upload topic field not set",
+    [4] = "heartbeat topic field not set",
+    [5] = "ca field not set when login with tls",
+    [6] = "key field not set when login with tls with cert",
+    [7] = "host field not set",
+    [8] = "port field not set",
+    [9] = "unknow",
 };
 
 const char *mqtt_option_error(int error)
 {
-    if (0 <= error && 9 >= error) {
+    if (0 <= error && 8 >= error) {
         return mqtt_option_error_strs[error];
     } else {
-        return mqtt_option_error_strs[10];
+        return mqtt_option_error_strs[9];
     }
 }

@@ -1,7 +1,7 @@
 {
 	"upload-topic": {
 		"name": "upload topic",
-		"description": "User-defined upload topic",
+		"description": "User defined upload topic",
 		"type": "string",
 		"attribute": "required",
 		"default": "/neuron/${node-name}/upload",
@@ -11,7 +11,7 @@
 	},
 	"heartbeat-topic": {
 		"name": "heartbeat topic",
-		"description": "User-defined heartbeat topic",
+		"description": "User defined heartbeat topic",
 		"type": "string",
 		"attribute": "required",
 		"default": "/neuron/${node-name}/heartbeat",
@@ -41,7 +41,7 @@
 	"ssl": {
 		"name": "ssl",
 		"description": "Enable SSL connection",
-		"attribute": "required",
+		"attribute": "optional",
 		"type": "bool",
 		"default": false,
 		"valid": {}
