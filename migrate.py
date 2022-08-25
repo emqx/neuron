@@ -53,6 +53,13 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("-v", "--verbose", action="count", help="verbosity")
     parser.add_argument(
+        "-s",
+        "--schema_dir",
+        type=str,
+        default="config/",
+        help="schema directory",
+    )
+    parser.add_argument(
         "-d",
         "--data_dir",
         type=str,
@@ -84,7 +91,7 @@ def parse_args():
 
 
 class Migration:
-    def __init__(self, database_dir="persistence", database_name="sqlite.db"):
+    def __init__(self, schema_dir="config", database_dir="persistence", database_name="sqlite.db"):
         try:
             database_path = os.path.join(database_dir, database_name)
             conn = sqlite3.connect(database_path)
@@ -94,6 +101,7 @@ class Migration:
 
         self.conn_ = conn
         self.cursor_ = self.conn_.cursor()
+        self.schema_dir = schema_dir
         self.database_dir_ = database_dir
         self.database_name_ = database_name
 
@@ -206,7 +214,7 @@ class Migration:
             return
 
         migration_filenames = list(
-            filter(self.should_apply, os.listdir(self.database_dir_))
+            filter(self.should_apply, os.listdir(self.schema_dir))
         )
 
         # Sort the migrations based on the version encoded in the filename
@@ -228,7 +236,7 @@ class Migration:
             self.conn_.commit()
 
             with open(
-                os.path.join(self.database_dir_, migration_filename), "r"
+                os.path.join(self.schema_dir, migration_filename), "r"
             ) as f:
                 sql = f.read()
                 self.cursor_.executescript(sql)
@@ -289,7 +297,7 @@ class Migration:
                                   VALUES (?, ?, ?, ?)""",
                     (
                         node["name"],
-                        node["type"],
+                        1 if node["type"] == 1 else 2,
                         node["state"],
                         node["plugin_name"],
                     ),
