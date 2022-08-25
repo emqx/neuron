@@ -314,3 +314,17 @@ const char *mqtt_option_error(int error)
         return mqtt_option_error_strs[9];
     }
 }
+
+int mqtt_option_validate(neu_plugin_t *plugin, const char *config)
+{
+    neu_mqtt_option_t option = { 0 };
+    int               rc = mqtt_option_init(plugin, (char *) config, &option);
+    if (0 != rc) {
+        plog_error(plugin, "%s", mqtt_option_error(rc));
+        mqtt_option_uninit(plugin, &option);
+        return NEU_ERR_NODE_SETTING_INVALID;
+    }
+
+    mqtt_option_uninit(plugin, &option);
+    return NEU_ERR_SUCCESS;
+}

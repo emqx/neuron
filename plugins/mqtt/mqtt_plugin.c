@@ -368,8 +368,13 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     assert(NULL != plugin);
     assert(NULL != config);
 
+    if (NEU_ERR_SUCCESS != mqtt_option_validate(plugin, config)) {
+        return NEU_ERR_NODE_SETTING_INVALID;
+    }
+
     plugin_config_save(plugin, config);
 
+    // Routine not running
     if (!plugin->running) {
         return NEU_ERR_SUCCESS;
     }
@@ -377,7 +382,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     plugin_stop_running(plugin);
     int rc = plguin_start_running(plugin);
     if (0 != rc) {
-        return NEU_ERR_NODE_SETTING_INVALID;
+        return NEU_ERR_MQTT_INIT_FAILURE;
     }
 
     plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
