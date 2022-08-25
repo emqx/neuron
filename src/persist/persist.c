@@ -837,18 +837,46 @@ static int load_plugins_file(const char *fname, UT_array *plugin_infos)
     return 0;
 }
 
+static int ut_str_cmp(const void *a, const void *b)
+{
+    return strcmp(*(char **) a, *(char **) b);
+}
+
 int neu_persister_load_plugins(neu_persister_t *persister,
                                UT_array **      plugin_infos)
 {
-    utarray_new(*plugin_infos, &ut_ptr_icd);
+    UT_array *default_plugins = NULL;
+    UT_array *user_plugins    = NULL;
+    utarray_new(default_plugins, &ut_ptr_icd);
+    utarray_new(user_plugins, &ut_ptr_icd);
+
     // default plugins will always present
-    if (0 != load_plugins_file("config/default_plugins.json", *plugin_infos)) {
+    if (0 !=
+        load_plugins_file("config/default_plugins.json", default_plugins)) {
         nlog_warn("cannot load default plugins");
     }
     // user plugins
-    if (0 != load_plugins_file(persister->plugins_fname, *plugin_infos)) {
+    if (0 != load_plugins_file(persister->plugins_fname, user_plugins)) {
         nlog_warn("cannot load user plugins");
+    } else {
+        // the following operation needs sorting
+        utarray_sort(default_plugins, ut_str_cmp);
     }
+
+    utarray_foreach(user_plugins, char **, name)
+    {
+        // filter out duplicates in case of old persistence data
+        char **find = utarray_find(default_plugins, name, ut_str_cmp);
+        if (NULL == find) {
+            utarray_push_back(default_plugins, name);
+            *name = NULL; // move to default_plugins
+        } else {
+            free(*name);
+        }
+    }
+
+    utarray_free(user_plugins);
+    *plugin_infos = default_plugins;
     return 0;
 }
 
