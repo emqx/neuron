@@ -71,6 +71,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_UPDATE_GROUP,
     NEU_REQ_GET_GROUP,
     NEU_RESP_GET_GROUP,
+    NEU_REQ_GET_DRIVER_GROUP,
+    NEU_RESP_GET_DRIVER_GROUP,
 
     NEU_REQ_ADD_TAG,
     NEU_RESP_ADD_TAG,
@@ -125,11 +127,13 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_GET_NODES_STATE]  = "NEU_RESP_GET_NODES_STATE",
     [NEU_REQ_NODE_CTL]          = "NEU_REQ_NODE_CTL",
 
-    [NEU_REQ_ADD_GROUP]    = "NEU_REQ_ADD_GROUP",
-    [NEU_REQ_DEL_GROUP]    = "NEU_REQ_DEL_GROUP",
-    [NEU_REQ_UPDATE_GROUP] = "NEU_REQ_UPDATE_GROUP",
-    [NEU_REQ_GET_GROUP]    = "NEU_REQ_GET_GROUP",
-    [NEU_RESP_GET_GROUP]   = "NEU_RESP_GET_GROUP",
+    [NEU_REQ_ADD_GROUP]         = "NEU_REQ_ADD_GROUP",
+    [NEU_REQ_DEL_GROUP]         = "NEU_REQ_DEL_GROUP",
+    [NEU_REQ_UPDATE_GROUP]      = "NEU_REQ_UPDATE_GROUP",
+    [NEU_REQ_GET_GROUP]         = "NEU_REQ_GET_GROUP",
+    [NEU_RESP_GET_GROUP]        = "NEU_RESP_GET_GROUP",
+    [NEU_REQ_GET_DRIVER_GROUP]  = "NEU_REQ_GET_DRIVER_GROUP",
+    [NEU_RESP_GET_DRIVER_GROUP] = "NEU_RESP_GET_DRIVER_GROUP",
 
     [NEU_REQ_ADD_TAG]     = "NEU_REQ_ADD_TAG",
     [NEU_RESP_ADD_TAG]    = "NEU_RESP_ADD_TAG",
@@ -244,6 +248,17 @@ typedef struct neu_resp_group_info {
 typedef struct neu_resp_get_group {
     UT_array *groups; // array neu_resp_group_info_t
 } neu_resp_get_group_t;
+
+typedef struct {
+    char     driver[NEU_NODE_NAME_LEN];
+    char     group[NEU_GROUP_NAME_LEN];
+    uint16_t tag_count;
+    uint32_t interval;
+} neu_resp_driver_group_info_t;
+
+typedef struct {
+    UT_array *groups; // array neu_resp_driver_group_info_t
+} neu_resp_get_driver_group_t;
 
 typedef struct {
     char           driver[NEU_NODE_NAME_LEN];
