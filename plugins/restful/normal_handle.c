@@ -30,6 +30,7 @@
 
 #include "utils/log.h"
 
+#include "argparse.h"
 #include "parser/neu_json_login.h"
 #include "json/neu_json_fn.h"
 
@@ -129,8 +130,8 @@ void handle_get_plugin_schema(nng_aio *aio)
         return;
     }
 
-    snprintf(schema_path, sizeof(schema_path) - 1, "./plugins/schema/%s.json",
-             plugin_name);
+    snprintf(schema_path, sizeof(schema_path) - 1, "%s/schema/%s.json",
+             g_plugin_dir, plugin_name);
 
     char *buf = NULL;
     buf       = file_string_read(&len, schema_path);

@@ -64,7 +64,7 @@ static void add_key(char *name, char *value)
             sizeof(key_store.key[key_store.size - 1].key) - 1);
 }
 
-static char *load_key(char *dir, char *name)
+static char *load_key(const char *dir, char *name)
 {
     FILE *      f             = NULL;
     int         len           = 0;
@@ -92,7 +92,7 @@ static char *load_key(char *dir, char *name)
     return content;
 }
 
-int neu_jwt_init(char *dir_path)
+int neu_jwt_init(const char *dir_path)
 {
     DIR *          dir = NULL;
     struct dirent *ptr = NULL;

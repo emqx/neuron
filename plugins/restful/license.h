@@ -20,7 +20,6 @@
 #ifndef LICENSE_H
 #define LICENSE_H
 
-#define LICENSE_DIR "config"
 #define LICENSE_FNAME "neuron.lic"
 
 // License type

@@ -34,6 +34,7 @@
 #include "errcodes.h"
 #include "utils/log.h"
 
+#include "argparse.h"
 #include "persist/json/persist_json_plugin.h"
 #include "persist/persist.h"
 
@@ -616,7 +617,7 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         sqlite3_close(persister->db);
         goto error;
     }
-    if (0 != apply_schemas(persister->db, "config/")) {
+    if (0 != apply_schemas(persister->db, g_config_dir)) {
         goto error;
     }
 
