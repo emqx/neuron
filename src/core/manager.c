@@ -430,11 +430,23 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         utarray_free(states);
         break;
     }
+    case NEU_REQ_GET_DRIVER_GROUP: {
+        neu_resp_get_driver_group_t resp = { 0 };
+
+        resp.groups = neu_manager_get_driver_group(manager);
+
+        strcpy(header->receiver, header->sender);
+        strcpy(header->sender, "manager");
+        header->type = NEU_RESP_GET_DRIVER_GROUP;
+        reply(manager, header, &resp);
+
+        break;
+    }
+    case NEU_REQ_GET_GROUP:
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAG:
     case NEU_REQ_GET_NODE_STATE:
-    case NEU_REQ_GET_GROUP:
     case NEU_REQ_GET_TAG:
     case NEU_REQ_NODE_CTL:
     case NEU_REQ_UPDATE_GROUP:

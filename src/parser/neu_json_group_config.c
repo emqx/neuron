@@ -184,6 +184,53 @@ int neu_json_encode_get_group_config_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_encode_get_driver_group_resp(void *json_object, void *param)
+{
+    int                               ret = 0;
+    neu_json_get_driver_group_resp_t *resp =
+        (neu_json_get_driver_group_resp_t *) param;
+
+    void *                                  group_array = neu_json_array();
+    neu_json_get_driver_group_resp_group_t *p_group     = resp->groups;
+    for (int i = 0; i < resp->n_group; i++) {
+        neu_json_elem_t group_elems[] = {
+            {
+                .name      = "driver",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_group->driver,
+            },
+            {
+                .name      = "group",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_group->group,
+            },
+            {
+                .name      = "tag_count",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_group->tag_count,
+            },
+            {
+                .name      = "interval",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_group->interval,
+            },
+        };
+        group_array = neu_json_encode_array(group_array, group_elems,
+                                            NEU_JSON_ELEM_SIZE(group_elems));
+        p_group++;
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "groups",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = group_array,
+    } };
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
 int neu_json_encode_get_subscribe_resp(void *json_object, void *param)
 {
     int                            ret = 0;

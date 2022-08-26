@@ -66,6 +66,20 @@ typedef struct {
 int neu_json_encode_get_group_config_resp(void *json_object, void *param);
 
 typedef struct {
+    char *  driver;
+    char *  group;
+    int64_t interval;
+    int64_t tag_count;
+} neu_json_get_driver_group_resp_group_t;
+
+typedef struct {
+    int                                     n_group;
+    neu_json_get_driver_group_resp_group_t *groups;
+} neu_json_get_driver_group_resp_t;
+
+int neu_json_encode_get_driver_group_resp(void *json_object, void *param);
+
+typedef struct {
     char *group;
     char *driver;
 } neu_json_get_subscribe_resp_group_t;

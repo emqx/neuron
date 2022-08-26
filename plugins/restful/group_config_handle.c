@@ -123,13 +123,12 @@ void handle_get_group_config(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, error_code.error, result_error);
-        })
-        return;
-    }
+    http_get_param_str(aio, "node", node_name, sizeof(node_name));
     strcpy(cmd.driver, node_name);
+    if (strlen(cmd.driver) == 0) {
+        header.type = NEU_REQ_GET_DRIVER_GROUP;
+    }
+
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
@@ -163,6 +162,35 @@ void handle_get_group_resp(nng_aio *aio, neu_resp_get_group_t *groups)
 
     free(result);
     free(gconfig_res.group_configs);
+    utarray_free(groups->groups);
+}
+
+void handle_get_driver_group_resp(nng_aio *                    aio,
+                                  neu_resp_get_driver_group_t *groups)
+{
+    neu_json_get_driver_group_resp_t gconfig_res = { 0 };
+    char *                           result      = NULL;
+
+    gconfig_res.n_group = utarray_len(groups->groups);
+    gconfig_res.groups  = calloc(gconfig_res.n_group,
+                                sizeof(neu_json_get_driver_group_resp_group_t));
+
+    utarray_foreach(groups->groups, neu_resp_driver_group_info_t *, group)
+    {
+        int index = utarray_eltidx(groups->groups, group);
+        gconfig_res.groups[index].driver    = group->driver;
+        gconfig_res.groups[index].group     = group->group;
+        gconfig_res.groups[index].interval  = group->interval;
+        gconfig_res.groups[index].tag_count = group->tag_count;
+    }
+
+    neu_json_encode_by_fn(&gconfig_res, neu_json_encode_get_driver_group_resp,
+                          &result);
+
+    http_ok(aio, result);
+
+    free(result);
+    free(gconfig_res.groups);
     utarray_free(groups->groups);
 }
 
