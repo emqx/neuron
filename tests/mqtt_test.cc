@@ -11,155 +11,207 @@ TEST(MQTTTest, mqtt_option_init_by_config)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
     neu_plugin_common_init(&plugin->common);
-
     neu_mqtt_option_t option;
-    // memset(&option, 0, sizeof(neu_mqtt_option_t));
-    // char *config =
-    //     (char *) "{\"node_id\":5,\"params\":{\"client-id\":"
-    //              "\"upload123\", \"upload-topic\":\"\", "
-    //              "\"heartbeat-topic\":\"\", \"format\": "
-    //              "0,\"ssl\":false,\"host\":\"192.168.10."
-    //              "116\",\"port\":1883,\"username\":\"\",\"password\":"
-    //              "\"\",\"ca\":\"\", \"cert\":\"\", \"key\":\"\", "
-    //              "\"keypass\":\"\"}}";
-
-    // int rc = mqtt_option_init(plugin, config, &option);
-    // EXPECT_EQ(0, rc);
-    // mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config0 = (char *) "{\"node_id\":5,\"params\":{}}";
-    int   rc      = mqtt_option_init(plugin, config0, &option);
-    EXPECT_EQ(-1, rc);
+    char *config = (char *) "{\"node_id\":5,\"params\":{}}";
+    int   rc     = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(3, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config1 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\"}}";
-    rc = mqtt_option_init(plugin, config1, &option);
-    EXPECT_EQ(-2, rc);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"\"}}";
+    rc     = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(3, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config2 = (char *) "{\"node_id\":5,\"params\":{\"client-id\":"
-                             "\"upload123\", \"upload-topic\":\"\"}}";
-    rc = mqtt_option_init(plugin, config2, &option);
-    EXPECT_EQ(-2, rc);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(4, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config3 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\"}}";
-    rc = mqtt_option_init(plugin, config3, &option);
-    EXPECT_EQ(-2, rc);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", \"heartbeat-topic\":\"\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(4, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config4 = (char *) "{\"node_id\":5,\"params\":{\"client-id\":"
-                             "\"upload123\", \"upload-topic\":\"\", "
-                             "\"heartbeat-topic\":\"\", \"format\": 0}}";
-    rc = mqtt_option_init(plugin, config4, &option);
-    EXPECT_EQ(-2, rc);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(7, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config5 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":false}}";
-    rc = mqtt_option_init(plugin, config5, &option);
-    EXPECT_EQ(-5, rc);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(7, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config6 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":false,\"host\":\"192.168.10.116\"}}";
-    rc = mqtt_option_init(plugin, config6, &option);
-    EXPECT_EQ(-6, rc);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1, \"ssl\":false}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(7, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config7 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":false,\"host\":\"192.168.10.116\",\"port\":1883}}";
-    rc = mqtt_option_init(plugin, config7, &option);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1, \"ssl\":false, \"host\":\"\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(7, rc);
+    mqtt_option_uninit(plugin, &option);
+
+    memset(&option, 0, sizeof(neu_mqtt_option_t));
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"ssl\":false, \"host\":\"192.168.10.116\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(8, rc);
+    mqtt_option_uninit(plugin, &option);
+
+    memset(&option, 0, sizeof(neu_mqtt_option_t));
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1, \"ssl\":false, "
+                      "\"host\":\"192.168.10.116\", \"port\":1883}}";
+    rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config8 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":false,\"host\":\"192.168.10.116\",\"port\":1883,"
-                 "\"username\":\"\"}}";
-    rc = mqtt_option_init(plugin, config8, &option);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1, \"ssl\":false, "
+                      "\"host\":\"192.168.10.116\", \"port\":1883, "
+                      "\"username\":\"\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config9 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":false,\"host\":\"192.168.10.116\",\"port\":1883,"
-                 "\"username\":\"\",\"password\":\"\"}}";
-    rc = mqtt_option_init(plugin, config9, &option);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1, \"ssl\":false, "
+                      "\"host\":\"192.168.10.116\", \"port\":1883, "
+                      "\"username\":\"\", \"password\":\"\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config10 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":true,\"host\":\"192.168.10.116\",\"port\":1883,"
-                 "\"username\":\"\",\"password\":\"\"}}";
-    rc = mqtt_option_init(plugin, config10, &option);
-    EXPECT_EQ(-3, rc);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1, \"ssl\":true, "
+                      "\"host\":\"192.168.10.116\", \"port\":1883, "
+                      "\"username\":\"\", \"password\":\"\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(5, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config11 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":true,\"host\":\"192.168.10.116\",\"port\":1883,"
-                 "\"username\":\"\",\"password\":\"\",\"ca\":\"\"}}";
-    rc = mqtt_option_init(plugin, config11, &option);
+    config = (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                      "node_name/upload\", "
+                      "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                      "\"format\":1, \"ssl\":true, "
+                      "\"host\":\"192.168.10.116\", \"port\":1883, "
+                      "\"username\":\"\", \"password\":\"\", \"ca\":\"\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(5, rc);
+    mqtt_option_uninit(plugin, &option);
+
+    memset(&option, 0, sizeof(neu_mqtt_option_t));
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"ttttttttt\"}}";
+    rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config12 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":true,\"host\":\"192.168.10.116\",\"port\":1883,"
-                 "\"username\":\"\",\"password\":\"\",\"ca\":\"\", "
-                 "\"cert\":\"\"}}";
-    rc = mqtt_option_init(plugin, config12, &option);
-    EXPECT_EQ(-4, rc);
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"tttttt\", "
+                 "\"cert\":\"\" }}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(6, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config13 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":false,\"host\":\"192.168.10.116\",\"port\":1883,"
-                 "\"username\":\"\",\"password\":\"\",\"ca\":\"\", "
-                 "\"cert\":\"\", \"key\":\"\"}}";
-    rc = mqtt_option_init(plugin, config13, &option);
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"tttttt\", "
+                 "\"cert\":\"ttttt\" }}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(6, rc);
+    mqtt_option_uninit(plugin, &option);
+
+    memset(&option, 0, sizeof(neu_mqtt_option_t));
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"tttttt\", "
+                 "\"cert\":\"tttttt\", \"key\":\"\" }}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(6, rc);
+    mqtt_option_uninit(plugin, &option);
+
+    memset(&option, 0, sizeof(neu_mqtt_option_t));
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"tttttt\", "
+                 "\"cert\":\"tttttt\", \"key\":\"tttttt\" }}";
+    rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(plugin, &option);
 
     memset(&option, 0, sizeof(neu_mqtt_option_t));
-    char *config14 =
-        (char *) "{\"node_id\":5,\"params\":{\"client-id\":\"upload123\", "
-                 "\"upload-topic\":\"\", \"heartbeat-topic\":\"\", \"format\": "
-                 "0,\"ssl\":true,\"host\":\"192.168.10.116\",\"port\":1883,"
-                 "\"username\":\"\",\"password\":\"\",\"ca\":\"\", "
-                 "\"cert\":\"\", \"key\":\"\", \"keypass\":\"\"}}";
-    rc = mqtt_option_init(plugin, config14, &option);
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"tttttt\", "
+                 "\"cert\":\"ttttt\", \"key\":\"tttt\", \"keypass\":\"\" }}";
+    rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
     mqtt_option_uninit(plugin, &option);
 

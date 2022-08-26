@@ -30,13 +30,13 @@
 #define TIMEOUT 3000U
 #define MAX_TOPIC_LEN 256
 
-#define TOPIC_READ_REQ "neuron/%s/read/req"
-#define TOPIC_WRITE_REQ "neuron/%s/write/req"
+#define TOPIC_READ_REQ "/neuron/%s/read/req"
+#define TOPIC_WRITE_REQ "/neuron/%s/write/req"
 
-#define TOPIC_READ_RES "neuron/%s/read/resp"
-#define TOPIC_WRITE_RES "neuron/%s/write/resp"
-#define TOPIC_UPLOAD_RES "neuron/%s/upload"
-#define TOPIC_HEARTBEAT_RES "neuron/%s/heartbeat"
+#define TOPIC_READ_RES "/neuron/%s/read/resp"
+#define TOPIC_WRITE_RES "/neuron/%s/write/resp"
+#define TOPIC_UPLOAD_RES "/neuron/%s/upload"
+#define TOPIC_HEARTBEAT_RES "/neuron/%s/heartbeat"
 
 #define QOS0 0
 #define QOS1 1
@@ -117,43 +117,26 @@ static void topics_cleanup(UT_array *topics, neu_plugin_t *plugin)
 static void topics_generate(UT_array *topics, neu_plugin_t *plugin,
                             neu_mqtt_option_t *option)
 {
-    char *name            = option->clientid;
-    char *upload_topic    = option->upload_topic;
-    char *heartbeat_topic = option->heartbeat_topic;
+    char *name = plugin->common.name;
 
+    // READ TOPIC
     char *read_req = topics_format(TOPIC_READ_REQ, name);
     char *read_res = topics_format(TOPIC_READ_RES, name);
     topics_add(topics, plugin, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
 
+    // WRITE TOPIC
     char *write_req = topics_format(TOPIC_WRITE_REQ, name);
     char *write_res = topics_format(TOPIC_WRITE_RES, name);
     topics_add(topics, plugin, write_req, QOS0, write_res, QOS0,
                TOPIC_TYPE_WRITE);
 
     /// UPLOAD TOPIC SETTING
-    char *upload_req = NULL;
-    char *upload_res = NULL;
-    if (NULL != upload_topic && 0 < strlen(upload_topic)) {
-        plog_debug(plugin, "user defined upload topic:%s", upload_topic);
-        upload_res = strdup(upload_topic);
-    } else {
-        upload_res = topics_format(TOPIC_UPLOAD_RES, name);
-    }
-
-    topics_add(topics, plugin, upload_req, QOS0, upload_res, QOS0,
-               TOPIC_TYPE_UPLOAD);
+    char *upload_res = strdup(option->upload_topic);
+    topics_add(topics, plugin, NULL, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
 
     // HEARTBEAT TOPIC SETTING
-    char *heartbeat_req = NULL;
-    char *heartbeat_res = NULL;
-    if (NULL != heartbeat_topic && 0 < strlen(heartbeat_topic)) {
-        plog_debug(plugin, "user defined heartbeat topic:%s", heartbeat_topic);
-        heartbeat_res = strdup(heartbeat_topic);
-    } else {
-        heartbeat_res = topics_format(TOPIC_HEARTBEAT_RES, name);
-    }
-
-    topics_add(topics, plugin, heartbeat_req, QOS0, heartbeat_res, QOS0,
+    char *heartbeat_res = strdup(option->heartbeat_topic);
+    topics_add(topics, plugin, NULL, QOS0, heartbeat_res, QOS0,
                TOPIC_TYPE_HEARTBEAT);
 }
 
@@ -244,6 +227,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     // MQTT client start
     int rc = mqtt_option_init(plugin, (char *) config, &routine->option);
     if (0 != rc) {
+        plog_error(plugin, "%s", mqtt_option_error(rc));
         mqtt_option_uninit(plugin, &routine->option);
         free(routine);
         return NULL;
@@ -384,8 +368,13 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     assert(NULL != plugin);
     assert(NULL != config);
 
+    if (NEU_ERR_SUCCESS != mqtt_option_validate(plugin, config)) {
+        return NEU_ERR_NODE_SETTING_INVALID;
+    }
+
     plugin_config_save(plugin, config);
 
+    // Routine not running
     if (!plugin->running) {
         return NEU_ERR_SUCCESS;
     }
@@ -393,7 +382,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
     plugin_stop_running(plugin);
     int rc = plguin_start_running(plugin);
     if (0 != rc) {
-        return NEU_ERR_NODE_SETTING_INVALID;
+        return NEU_ERR_MQTT_INIT_FAILURE;
     }
 
     plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
