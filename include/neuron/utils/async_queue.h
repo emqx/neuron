@@ -80,4 +80,11 @@ int neu_async_queue_pop(neu_async_queue_t *q, uint64_t key, void **elem);
 void neu_async_queue_remove(neu_async_queue_t *q, neu_async_queue_filter filter,
                             void *filter_elem);
 
+/**
+ * @brief remove all elements from the queue.
+ *
+ * @param[in] q the queue that requires an operation.
+ */
+void neu_async_queue_clean(neu_async_queue_t *q);
+
 #endif

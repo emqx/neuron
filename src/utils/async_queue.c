@@ -161,3 +161,17 @@ void neu_async_queue_remove(neu_async_queue_t *q, neu_async_queue_filter filter,
     }
     nng_mtx_unlock(q->mtx);
 }
+
+void neu_async_queue_clean(neu_async_queue_t *q)
+{
+    element *el = NULL, *tmp = NULL;
+
+    nng_mtx_lock(q->mtx);
+    DL_FOREACH_SAFE(q->list, el, tmp)
+    {
+        DL_DELETE(q->list, el);
+        q->free_fn(el->data);
+        free(el);
+    }
+    nng_mtx_unlock(q->mtx);
+}
