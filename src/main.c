@@ -81,16 +81,13 @@ int main(int argc, char *argv[])
     neu_cli_args_init(&args, argc, argv);
 
     disable_jwt = args.disable_auth;
+
     if (args.daemonized) {
         // become a daemon, this should be before calling `init`
         daemonize();
     }
 
-    if (args.dev_log) {
-        zlog_init("./config/dev.conf");
-    } else {
-        zlog_init("./config/zlog.conf");
-    }
+    zlog_init(args.log_init_file);
     neuron = zlog_get_category("neuron");
 
     if (neuron_already_running()) {

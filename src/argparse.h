@@ -33,6 +33,9 @@ extern "C" {
 #include <stdbool.h>
 #include <stdlib.h>
 
+extern const char *g_config_dir;
+extern const char *g_plugin_dir;
+
 /** Neuron command line arguments.
  */
 typedef struct {
@@ -40,6 +43,9 @@ typedef struct {
     bool   dev_log;    // logging for development
     size_t restart;    // restart policy
     bool   disable_auth;
+    char * log_init_file;
+    char * config_dir;
+    char * plugin_dir;
 } neu_cli_args_t;
 
 /** Parse command line arguments.
