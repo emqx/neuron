@@ -27,13 +27,22 @@ extern "C" {
 #include <stdlib.h>
 
 typedef struct neu_mem_cache neu_mem_cache_t;
+typedef void (*cache_data_release)(void *data);
+
+typedef struct {
+    size_t             size;
+    void *             data;
+    cache_data_release release;
+    uint32_t           timestamp;
+} cache_item_t;
+
+typedef void (*cache_dump)(cache_item_t *item, void *ctx);
 
 neu_mem_cache_t *neu_mem_cache_create(const size_t max_bytes,
                                       const size_t max_msgs);
-int              neu_mem_cache_append(neu_mem_cache_t *cache, void *data,
-                                      const size_t *size);
-void *           neu_mem_cache_last(neu_mem_cache_t *cache);
-void *           neu_mem_cache_first(neu_mem_cache_t *cache);
+int              neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item);
+cache_item_t     neu_mem_cache_earliest(neu_mem_cache_t *cache);
+cache_item_t     neu_mem_cache_latest(neu_mem_cache_t *cache);
 void neu_mem_cache_used(neu_mem_cache_t *cache, size_t *bytes, size_t *msgs);
 int  neu_mem_cache_dump(neu_mem_cache_t *cache, void *callback, void *ctx);
 int  neu_mem_cache_clear(neu_mem_cache_t *cache);
