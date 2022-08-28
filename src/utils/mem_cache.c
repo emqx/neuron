@@ -34,6 +34,22 @@ neu_mem_cache_t *neu_mem_cache_create(const size_t max_bytes,
     return cache;
 }
 
+cache_item_t neu_mem_cache_earliest(neu_mem_cache_t *cache);
+
+static bool queue_is_full(neu_mem_cache_t *cache, cache_item_t *item)
+{
+    if ((0 != cache->used_bytes) &&
+        (item->size + cache->used_bytes) > cache->max_bytes) {
+        return true;
+    }
+
+    if ((0 != cache->used_items) && (cache->used_items >= cache->max_items)) {
+        return true;
+    }
+
+    return false;
+}
+
 int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
 {
     assert(NULL != cache);
@@ -44,15 +60,11 @@ int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
         return -1;
     }
 
-    if ((0 != cache->used_bytes) &&
-        (item->size + cache->used_bytes) > cache->max_bytes) {
-        free(el);
-        return -1;
-    }
-
-    if ((0 != cache->used_items) && (cache->used_items >= cache->max_bytes)) {
-        free(el);
-        return -1;
+    while (queue_is_full(cache, item)) {
+        cache_item_t remove_item = neu_mem_cache_earliest(cache);
+        if (NULL != remove_item.release) {
+            remove_item.release(remove_item.data);
+        }
     }
 
     el->item = *item;
