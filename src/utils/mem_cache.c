@@ -2,7 +2,7 @@
 
 #include <neuron.h>
 
-#include "neu_mem_cache.h"
+#include "utils/mem_cache.h"
 
 typedef struct element {
     cache_item_t    item;
@@ -12,14 +12,14 @@ typedef struct element {
 
 struct neu_mem_cache {
     size_t   max_bytes; // 0 no limit
-    size_t   max_msgs;  // 0 no limit
+    size_t   max_items; // 0 no limit
     size_t   used_bytes;
-    size_t   used_msgs;
+    size_t   used_items;
     element *head;
 };
 
 neu_mem_cache_t *neu_mem_cache_create(const size_t max_bytes,
-                                      const size_t max_msgs)
+                                      const size_t max_items)
 {
     neu_mem_cache_t *cache = calloc(1, sizeof(neu_mem_cache_t));
     if (NULL == cache) {
@@ -27,9 +27,9 @@ neu_mem_cache_t *neu_mem_cache_create(const size_t max_bytes,
     }
 
     cache->max_bytes  = max_bytes;
-    cache->max_msgs   = max_msgs;
+    cache->max_items  = max_items;
     cache->used_bytes = 0;
-    cache->used_msgs  = 0;
+    cache->used_items = 0;
     cache->head       = NULL;
     return cache;
 }
@@ -43,11 +43,22 @@ int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
         return -1;
     }
 
+    if ((0 != cache->used_bytes) &&
+        (item->size + cache->used_bytes) > cache->max_bytes) {
+        free(el);
+        return -1;
+    }
+
+    if ((0 != cache->used_items) && (cache->used_items >= cache->max_bytes)) {
+        free(el);
+        return -1;
+    }
+
     el->item = *item;
     DL_PREPEND(cache->head, el);
 
     cache->used_bytes += item->size;
-    cache->used_msgs += 1;
+    cache->used_items += 1;
     return 0;
 }
 
@@ -63,8 +74,10 @@ cache_item_t neu_mem_cache_earliest(neu_mem_cache_t *cache)
 
     item = elm->item;
     DL_DELETE(cache->head, elm);
+    free(elm);
+
     cache->used_bytes -= item.size;
-    cache->used_msgs -= 1;
+    cache->used_items -= 1;
     return item;
 }
 
@@ -80,8 +93,10 @@ cache_item_t neu_mem_cache_latest(neu_mem_cache_t *cache)
 
     item = elm->item;
     DL_DELETE(cache->head, elm);
+    free(elm);
+
     cache->used_bytes -= item.size;
-    cache->used_msgs -= 1;
+    cache->used_items -= 1;
     return item;
 }
 
@@ -90,15 +105,27 @@ void neu_mem_cache_used(neu_mem_cache_t *cache, size_t *bytes, size_t *msgs)
     assert(NULL != cache);
 
     *bytes = cache->used_bytes;
-    *msgs  = cache->used_msgs;
+    *msgs  = cache->used_items;
 }
 
-int neu_mem_cache_dump(neu_mem_cache_t *cache, void *callback, void *ctx)
+int neu_mem_cache_dump(neu_mem_cache_t *cache, cache_dump callback, void *ctx)
 {
     assert(NULL != cache);
 
-    (void) callback;
-    (void) ctx;
+    if (NULL != callback) {
+        element *el  = NULL;
+        element *tmp = NULL;
+        DL_FOREACH_SAFE(cache->head, el, tmp)
+        {
+            callback(&el->item, ctx);
+
+            if (NULL != el->item.release) {
+                el->item.release(&el->item);
+            }
+
+            LL_DELETE(cache->head, el);
+        }
+    }
 
     return 0;
 }
@@ -116,6 +143,7 @@ int neu_mem_cache_clear(neu_mem_cache_t *cache)
         }
 
         LL_DELETE(cache->head, el);
+        free(el);
     }
 
     return 0;

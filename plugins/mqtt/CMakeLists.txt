@@ -9,7 +9,6 @@ file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt.json DESTINATION ${CMAKE_BINARY_
 set(src 
 	mqtt_plugin.c 
 	mqtt_util.c
-	neu_mem_cache.c
 	command/read_write.c
 	command/heartbeat.c
 	command/command.c)

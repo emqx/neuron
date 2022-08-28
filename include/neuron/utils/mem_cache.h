@@ -39,12 +39,13 @@ typedef struct {
 typedef void (*cache_dump)(cache_item_t *item, void *ctx);
 
 neu_mem_cache_t *neu_mem_cache_create(const size_t max_bytes,
-                                      const size_t max_msgs);
+                                      const size_t max_items);
 int              neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item);
 cache_item_t     neu_mem_cache_earliest(neu_mem_cache_t *cache);
 cache_item_t     neu_mem_cache_latest(neu_mem_cache_t *cache);
-void neu_mem_cache_used(neu_mem_cache_t *cache, size_t *bytes, size_t *msgs);
-int  neu_mem_cache_dump(neu_mem_cache_t *cache, void *callback, void *ctx);
+void             neu_mem_cache_used(neu_mem_cache_t *cache, size_t *used_bytes,
+                                    size_t *used_items);
+int  neu_mem_cache_dump(neu_mem_cache_t *cache, cache_dump callback, void *ctx);
 int  neu_mem_cache_clear(neu_mem_cache_t *cache);
 void neu_mem_cache_destroy(neu_mem_cache_t *cache);
 

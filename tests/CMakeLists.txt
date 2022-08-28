@@ -52,6 +52,14 @@ target_include_directories(tag_sort_test PRIVATE
 target_link_libraries(tag_sort_test neuron-base gtest_main gtest)
 #target_link_directories(modbus_point_test PRIVATE /usr/local/lib)
 
+add_executable(cache_test cache_test.cc 
+	${CMAKE_SOURCE_DIR}/src/utils/mem_cache.c)
+target_include_directories(cache_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include       
+)
+target_link_libraries(cache_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -59,3 +67,4 @@ gtest_discover_tests(mqtt_test)
 gtest_discover_tests(jwt_test)
 gtest_discover_tests(base64_test)
 gtest_discover_tests(tag_sort_test)
+gtest_discover_tests(cache_test)
