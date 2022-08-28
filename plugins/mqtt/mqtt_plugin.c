@@ -57,7 +57,6 @@ struct mqtt_routine {
     neu_mqtt_option_t option;
     neu_mqtt_client_t client;
     UT_array *        topics;
-    neu_events_t *    events;
 };
 
 static char *topics_format(char *format, char *name)
@@ -249,6 +248,7 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     plog_info(plugin, "open mqtt client: %s:%s, code:%d", routine->option.host,
               routine->option.port, error);
 
+    // topics generate
     routine->plugin      = plugin;
     UT_icd topic_ptr_icd = { sizeof(struct topic_pair *), NULL, NULL, NULL };
     utarray_new(routine->topics, &topic_ptr_icd);
@@ -297,9 +297,15 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    plugin->routine  = NULL;
-    plugin->running  = false;
-    plugin->config   = NULL;
+    plugin->routine = NULL;
+    plugin->running = false;
+    plugin->config  = NULL;
+
+    // cache setting
+    const size_t max_bytes = 1024 * 1024 * 60;
+    const size_t max_items = 0;
+    plugin->cache          = neu_mem_cache_create(max_bytes, max_items);
+
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "initialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
@@ -358,6 +364,8 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
     plugin_stop_running(plugin);
     plugin_config_free(plugin);
+    neu_mem_cache_destroy(plugin->cache);
+
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "uninitialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
@@ -472,6 +480,11 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
     return NEU_ERR_SUCCESS;
 }
 
+static void cache_string_release(void *data)
+{
+    free(data);
+}
+
 static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
 {
     neu_reqresp_trans_data_t *trans_data = data;
@@ -487,6 +500,18 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
                                                     routine->option.format);
     if (NULL == json_str) {
         return NEU_ERR_MQTT_FAILURE;
+    }
+
+    neu_err_code_e rc = neu_mqtt_client_is_connected(routine->client);
+    if (0 != rc) {
+        cache_item_t item = {
+            .size    = strlen(json_str) + 1,
+            .data    = json_str,
+            .release = cache_string_release,
+        };
+
+        neu_mem_cache_add(plugin->cache, &item);
+        return NEU_ERR_MQTT_CONNECT_FAILURE;
     }
 
     const char *   topic = pair->topic_response;

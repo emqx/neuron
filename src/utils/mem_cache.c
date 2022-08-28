@@ -37,6 +37,7 @@ neu_mem_cache_t *neu_mem_cache_create(const size_t max_bytes,
 int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
 {
     assert(NULL != cache);
+    assert(NULL != item);
 
     element *el = calloc(1, sizeof(element));
     if (NULL == el) {
