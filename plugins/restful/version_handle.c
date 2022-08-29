@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include "utils/asprintf.h"
 #include "utils/log.h"
 #include "version.h"
 #include "json/neu_json_error.h"
@@ -27,16 +28,16 @@
 
 void handle_get_version(nng_aio *aio)
 {
-    char result[128] = { 0 };
+    char *result = NULL;
 
     VALIDATE_JWT(aio);
 
-    int ret = snprintf(
-        result, sizeof(result),
+    int ret = neu_asprintf(
+        &result,
         "{\"version\":\"%s\", \"revision\":\"%s\", \"build_date\":\"%s\"}",
         NEURON_VERSION, NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
 
-    if ((size_t) ret >= sizeof(result)) {
+    if (ret < 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
             http_response(aio, error_code.error, result_error);
         });
