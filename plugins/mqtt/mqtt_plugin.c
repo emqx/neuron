@@ -57,6 +57,7 @@ struct mqtt_routine {
     neu_mqtt_option_t  option;
     neu_mqtt_client_t  client;
     UT_array *         topics;
+    neu_mem_cache_t *  cache;
     nng_mtx *          mutex;
     neu_events_t *     events;
     neu_event_timer_t *send;
@@ -176,7 +177,7 @@ static int mqtt_routine_cache_send(void *data)
 
     // size_t used_bytes = 0;
     // size_t used_items = 0;
-    // neu_mem_cache_used(routine->plugin->cache, &used_bytes, &used_items);
+    // neu_mem_cache_used(routine->cache, &used_bytes, &used_items);
     // plog_info(routine->plugin, "used bytes:%lu, used items:%lu", used_bytes,
     //           used_items);
 
@@ -186,7 +187,7 @@ static int mqtt_routine_cache_send(void *data)
     }
 
     nng_mtx_lock(routine->mutex);
-    cache_item_t item = neu_mem_cache_earliest(routine->plugin->cache);
+    cache_item_t item = neu_mem_cache_earliest(routine->cache);
     if (NULL == item.data) {
         nng_mtx_unlock(routine->mutex);
         return -1;
@@ -299,6 +300,10 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     topics_subscribe(routine->topics, routine->client);
 
     // cache send
+    const size_t max_bytes = routine->option.cache * 1024 * 1024;
+    const size_t max_items = 0;
+    routine->cache         = neu_mem_cache_create(max_bytes, max_items);
+
     nng_mtx_alloc(&routine->mutex);
     routine->events               = neu_event_new();
     neu_event_timer_param_t param = {
@@ -320,6 +325,7 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
     neu_event_del_timer(routine->events, routine->send);
     neu_event_close(routine->events);
     nng_mtx_free(routine->mutex);
+    neu_mem_cache_destroy(routine->cache);
 
     // stop recevied
     neu_mqtt_client_suspend(routine->client);
@@ -359,11 +365,6 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
     plugin->routine = NULL;
     plugin->running = false;
     plugin->config  = NULL;
-
-    // cache setting
-    const size_t max_bytes = 1024;
-    const size_t max_items = 1;
-    plugin->cache          = neu_mem_cache_create(max_bytes, max_items);
 
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "initialize plugin: %s", name);
@@ -423,7 +424,6 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
     plugin_stop_running(plugin);
     plugin_config_free(plugin);
-    neu_mem_cache_destroy(plugin->cache);
 
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "uninitialize plugin: %s", name);
@@ -570,8 +570,13 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
         };
 
         nng_mtx_lock(routine->mutex);
-        neu_mem_cache_add(plugin->cache, &item);
+        rc = neu_mem_cache_add(routine->cache, &item);
         nng_mtx_unlock(routine->mutex);
+
+        if (0 != rc) {
+            item.release(item.data);
+        }
+
         return NEU_ERR_MQTT_CONNECT_FAILURE;
     }
 

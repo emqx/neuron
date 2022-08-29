@@ -213,6 +213,35 @@ TEST(MQTTTest, mqtt_option_init_by_config)
                  "\"cert\":\"ttttt\", \"key\":\"tttt\", \"keypass\":\"\" }}";
     rc = mqtt_option_init(plugin, config, &option);
     EXPECT_EQ(0, rc);
+    EXPECT_EQ(option.cache, 64);
+    mqtt_option_uninit(plugin, &option);
+
+    memset(&option, 0, sizeof(neu_mqtt_option_t));
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"cache\": 100, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"tttttt\", "
+                 "\"cert\":\"ttttt\", \"key\":\"tttt\", \"keypass\":\"\" }}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(0, rc);
+    EXPECT_EQ(option.cache, 100);
+    mqtt_option_uninit(plugin, &option);
+
+    memset(&option, 0, sizeof(neu_mqtt_option_t));
+    config =
+        (char *) "{\"node_id\":5,\"params\":{\"upload-topic\":\"/neuron/"
+                 "node_name/upload\", "
+                 "\"heartbeat-topic\":\"/neuron/node_name/heartbeat\", "
+                 "\"format\":1, \"cache\": -100, \"ssl\":true, "
+                 "\"host\":\"192.168.10.116\", \"port\":1883, "
+                 "\"username\":\"\", \"password\":\"\", \"ca\":\"tttttt\", "
+                 "\"cert\":\"ttttt\", \"key\":\"tttt\", \"keypass\":\"\" }}";
+    rc = mqtt_option_init(plugin, config, &option);
+    EXPECT_EQ(0, rc);
+    EXPECT_EQ(option.cache, 64);
     mqtt_option_uninit(plugin, &option);
 
     free(plugin);

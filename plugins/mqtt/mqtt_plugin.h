@@ -35,7 +35,6 @@ struct neu_plugin {
     bool                running;
     mqtt_routine_t *    routine;
     char *              config;
-    neu_mem_cache_t *   cache;
 };
 
 #ifdef __cplusplus

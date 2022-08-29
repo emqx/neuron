@@ -117,6 +117,7 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
     neu_json_elem_t heartbeat = { .name = "heartbeat-topic",
                                   .t    = NEU_JSON_STR };
     neu_json_elem_t format    = { .name = "format", .t = NEU_JSON_INT };
+    neu_json_elem_t cache     = { .name = "cache", .t = NEU_JSON_INT };
     neu_json_elem_t ssl       = { .name = "ssl", .t = NEU_JSON_BOOL };
     neu_json_elem_t host      = { .name = "host", .t = NEU_JSON_STR };
     neu_json_elem_t port      = { .name = "port", .t = NEU_JSON_INT };
@@ -173,6 +174,19 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
         option->format = 0;
     } else {
         option->format = format.v.val_int;
+    }
+
+    // cache, optional
+    ret = neu_parse_param(config, &error, 1, &cache);
+    if (0 != ret) {
+        free(error);
+        option->cache = 64;
+    } else {
+        if (1 > cache.v.val_int || 265 < cache.v.val_int) {
+            option->cache = 64;
+        } else {
+            option->cache = cache.v.val_int;
+        }
     }
 
     // ssl, optional

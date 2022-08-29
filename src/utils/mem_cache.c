@@ -55,16 +55,21 @@ int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
     assert(NULL != cache);
     assert(NULL != item);
 
-    element *el = calloc(1, sizeof(element));
-    if (NULL == el) {
-        return -1;
-    }
-
     while (queue_is_full(cache, item)) {
         cache_item_t remove_item = neu_mem_cache_earliest(cache);
+        if (NULL == remove_item.data) {
+            // size(item.data) >  cache->max_bytes
+            return -1;
+        }
+
         if (NULL != remove_item.release && NULL != remove_item.data) {
             remove_item.release(remove_item.data);
         }
+    }
+
+    element *el = calloc(1, sizeof(element));
+    if (NULL == el) {
+        return -1;
     }
 
     el->item = *item;
