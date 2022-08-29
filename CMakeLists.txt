@@ -70,6 +70,7 @@ set(NEURON_BASE_SOURCES
     src/connection/mqtt_client_intf.c
     src/event/event_linux.c
     src/event/event_unix.c
+    src/utils/asprintf.c
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/base64.c
