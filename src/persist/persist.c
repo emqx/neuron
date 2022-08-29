@@ -32,6 +32,7 @@
 #include <sqlite3.h>
 
 #include "errcodes.h"
+#include "utils/asprintf.h"
 #include "utils/log.h"
 
 #include "argparse.h"
@@ -219,8 +220,8 @@ static inline int ensure_file_exist(const char *name,
 
 static int write_file_string(const char *fn, const char *s)
 {
-    char tmp[PATH_MAX_SIZE] = { 0 };
-    if (sizeof(tmp) == snprintf(tmp, sizeof(tmp), "%s.tmp", fn)) {
+    char *tmp = NULL;
+    if (0 > neu_asprintf(&tmp, "%s.tmp", fn)) {
         nlog_error("persister too long file name:%s", fn);
         return -1;
     }
@@ -228,6 +229,7 @@ static int write_file_string(const char *fn, const char *s)
     FILE *f = fopen(tmp, "w+");
     if (NULL == f) {
         nlog_error("persister failed to open file:%s", fn);
+        free(tmp);
         return -1;
     }
 
@@ -236,6 +238,7 @@ static int write_file_string(const char *fn, const char *s)
     if (((size_t) n) != fwrite(s, 1, n, f)) {
         nlog_error("persister failed to write file:%s", fn);
         fclose(f);
+        free(tmp);
         return -1;
     }
 
@@ -246,9 +249,11 @@ static int write_file_string(const char *fn, const char *s)
     // rename the temporary file to the destination file
     if (0 != rename(tmp, fn)) {
         nlog_error("persister failed rename %s to %s", tmp, fn);
+        free(tmp);
         return -1;
     }
 
+    free(tmp);
     return 0;
 }
 
@@ -414,17 +419,25 @@ static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
     char *version     = NULL;
     char *description = NULL;
     char *sql         = NULL;
-    char  path[128]   = {};
+    char *path        = NULL;
     int   n           = 0;
 
-    if (sizeof(path) == (n = path_cat(path, 0, sizeof(path), dir)) ||
-        sizeof(path) == path_cat(path, n, sizeof(path), file)) {
+    path = calloc(PATH_MAX_SIZE, sizeof(char));
+    if (NULL == path) {
+        nlog_error("malloc fail");
+        return -1;
+    }
+
+    if (PATH_MAX_SIZE <= (n = path_cat(path, 0, PATH_MAX_SIZE, dir)) ||
+        PATH_MAX_SIZE <= path_cat(path, n, PATH_MAX_SIZE, file)) {
         nlog_error("path too long: %s", path);
+        free(path);
         return -1;
     }
 
     if (0 != extract_schema_info(file, &version, &description)) {
         nlog_warn("extract `%s` schema info fail, ignore", path);
+        free(path);
         return 0;
     }
 
@@ -463,6 +476,7 @@ end:
     }
 
     free(sql);
+    free(path);
     free(version);
     free(description);
     return rv;
@@ -542,13 +556,19 @@ static int apply_schemas(sqlite3 *db, const char *dir)
 
 neu_persister_t *neu_persister_create(const char *dir_name)
 {
-    int   rv                  = 0;
-    char *persist_dir         = NULL;
-    char *plugins_fname       = NULL;
-    char  path[PATH_MAX_SIZE] = { 0 };
+    int   rv            = 0;
+    char *persist_dir   = NULL;
+    char *plugins_fname = NULL;
+    char *path          = NULL;
 
-    int dir_len = path_cat(path, 0, sizeof(path), dir_name);
-    if (sizeof(path) == dir_len) {
+    path = calloc(PATH_MAX_SIZE, sizeof(char));
+    if (NULL == path) {
+        nlog_error("malloc fail");
+        goto error;
+    }
+
+    int dir_len = path_cat(path, 0, PATH_MAX_SIZE, dir_name);
+    if (PATH_MAX_SIZE <= dir_len) {
         nlog_error("path too long: %s", dir_name);
         goto error;
     }
@@ -564,8 +584,8 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         goto error;
     }
 
-    int n = path_cat(path, dir_len, sizeof(path), "plugins.json");
-    if (sizeof(path) == n) {
+    int n = path_cat(path, dir_len, PATH_MAX_SIZE, "plugins.json");
+    if (PATH_MAX_SIZE <= n) {
         nlog_error("path too long: %s", path);
         goto error;
     }
@@ -589,8 +609,8 @@ neu_persister_t *neu_persister_create(const char *dir_name)
     persister->plugins_fname = plugins_fname;
     persister->persist_dir   = persist_dir;
 
-    n = path_cat(path, dir_len, sizeof(path), "sqlite.db");
-    if (sizeof(path) == n) {
+    n = path_cat(path, dir_len, PATH_MAX_SIZE, "sqlite.db");
+    if (PATH_MAX_SIZE <= n) {
         nlog_error("path too long: %s", path);
         goto error;
     }
@@ -613,9 +633,11 @@ neu_persister_t *neu_persister_create(const char *dir_name)
         goto error;
     }
 
+    free(path);
     return persister;
 
 error:
+    free(path);
     free(plugins_fname);
     free(persist_dir);
     return NULL;
