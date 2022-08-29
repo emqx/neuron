@@ -38,12 +38,12 @@ cache_item_t neu_mem_cache_earliest(neu_mem_cache_t *cache);
 
 static bool queue_is_full(neu_mem_cache_t *cache, cache_item_t *item)
 {
-    if ((0 != cache->used_bytes) &&
+    if ((0 != cache->max_bytes) &&
         (item->size + cache->used_bytes) > cache->max_bytes) {
         return true;
     }
 
-    if ((0 != cache->used_items) && (cache->used_items >= cache->max_items)) {
+    if ((0 != cache->max_items) && (cache->used_items >= cache->max_items)) {
         return true;
     }
 
@@ -62,7 +62,7 @@ int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
 
     while (queue_is_full(cache, item)) {
         cache_item_t remove_item = neu_mem_cache_earliest(cache);
-        if (NULL != remove_item.release) {
+        if (NULL != remove_item.release && NULL != remove_item.data) {
             remove_item.release(remove_item.data);
         }
     }
@@ -151,8 +151,8 @@ int neu_mem_cache_clear(neu_mem_cache_t *cache)
     element *tmp = NULL;
     DL_FOREACH_SAFE(cache->head, el, tmp)
     {
-        if (NULL != el->item.release) {
-            el->item.release(&el->item);
+        if (NULL != el->item.release && NULL != el->item.data) {
+            el->item.release(el->item.data);
         }
 
         LL_DELETE(cache->head, el);
