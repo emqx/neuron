@@ -25,6 +25,7 @@
 #include <nng/supplemental/http/http.h>
 
 #include "adapter_handle.h"
+#include "argparse.h"
 #include "datatag_handle.h"
 #include "define.h"
 #include "group_config_handle.h"
@@ -219,7 +220,7 @@ static int dashb_plugin_init(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    rv = neu_jwt_init("./config");
+    rv = neu_jwt_init(g_config_dir);
 
     nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;

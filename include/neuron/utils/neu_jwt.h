@@ -27,7 +27,7 @@ extern "C" {
 
 extern bool disable_jwt;
 
-int  neu_jwt_init(char *dir_path);
+int  neu_jwt_init(const char *dir_path);
 int  neu_jwt_new(char **token);
 int  neu_jwt_validate(char *b_token);
 void neu_jwt_destroy();

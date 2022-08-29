@@ -22,6 +22,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "argparse.h"
 #include "errcodes.h"
 #include "parser/neu_json_license.h"
 #include "plugin.h"
@@ -34,15 +35,25 @@
 #include "license.h"
 #include "license_handle.h"
 
-#define LICENSE_PATH LICENSE_DIR "/" LICENSE_FNAME
-
 static int set_license(const char *lic_str);
 int        backup_license_file(const char *lic_fname);
 int        get_plugin_names(const license_t *lic, UT_array *plugin_names);
 
+static inline char *get_license_path()
+{
+    size_t n = 1 + snprintf(NULL, 0, "%s/%s", g_config_dir, LICENSE_FNAME);
+    char * p = malloc(n);
+    if (NULL == p) {
+        return NULL;
+    }
+    snprintf(p, n, "%s/%s", g_config_dir, LICENSE_FNAME);
+    return p;
+}
+
 void handle_get_license(nng_aio *aio)
 {
     int                         rv              = 0;
+    char *                      license_path    = NULL;
     license_t                   lic             = {};
     neu_json_get_license_resp_t resp            = {};
     time_t                      since           = 0;
@@ -56,8 +67,15 @@ void handle_get_license(nng_aio *aio)
     VALIDATE_JWT(aio);
 
     utarray_new(plugin_names, &ut_ptr_icd);
+
+    license_path = get_license_path();
+    if (NULL == license_path) {
+        rv = NEU_ERR_EINTERNAL;
+        goto final;
+    }
+
     license_init(&lic);
-    rv = license_read(&lic, LICENSE_PATH);
+    rv = license_read(&lic, license_path);
     if (0 != rv) {
         goto final;
     }
@@ -111,6 +129,7 @@ final:
     license_fini(&lic);
     utarray_free(plugin_names);
     free(resp.enabled_plugins);
+    free(license_path);
 }
 
 void handle_set_license(nng_aio *aio)
@@ -130,20 +149,39 @@ static inline bool file_exists(const char *const path)
 
 static int set_license(const char *lic_str)
 {
-    int         rv        = 0;
-    license_t   new_lic   = {};
-    const char *fname_tmp = LICENSE_PATH ".tmp";
+    int         rv           = 0;
+    size_t      len          = 0;
+    const char *suffix       = ".tmp";
+    char *      license_path = NULL;
+    char *      fname_tmp    = NULL;
+    FILE *      fp           = NULL;
+    license_t   new_lic      = {};
 
-    int len = strlen(lic_str);
-    if (len > 15000) {
-        // the license file won't exceed 15KB
-        return NEU_ERR_LICENSE_INVALID;
+    license_path = get_license_path();
+    if (NULL == license_path) {
+        return NEU_ERR_EINTERNAL;
     }
 
-    FILE *fp = fopen(fname_tmp, "w");
+    len       = strlen(license_path) + strlen(suffix) + 1;
+    fname_tmp = malloc(len);
+    if (NULL == fname_tmp) {
+        rv = NEU_ERR_EINTERNAL;
+        goto final;
+    }
+    snprintf(fname_tmp, len, "%s%s", license_path, suffix);
+
+    len = strlen(lic_str);
+    if (len > 15000) {
+        // the license file won't exceed 15KB
+        rv = NEU_ERR_LICENSE_INVALID;
+        goto final;
+    }
+
+    fp = fopen(fname_tmp, "w");
     if (NULL == fp) {
         nlog_error("unable to create license tmp file `%s`", fname_tmp);
-        return NEU_ERR_EINTERNAL;
+        rv = NEU_ERR_EINTERNAL;
+        goto final;
     }
 
     rv = fputs(lic_str, fp);
@@ -170,13 +208,13 @@ static int set_license(const char *lic_str)
         goto final;
     }
 
-    if (file_exists(LICENSE_PATH) && 0 > backup_license_file(LICENSE_PATH)) {
-        nlog_error("unable to backup license file `%s`", LICENSE_PATH);
+    if (file_exists(license_path) && 0 > backup_license_file(license_path)) {
+        nlog_error("unable to backup license file `%s`", license_path);
         rv = NEU_ERR_EINTERNAL;
         goto final;
     }
 
-    if (0 > rename(fname_tmp, LICENSE_PATH)) {
+    if (0 > rename(fname_tmp, license_path)) {
         rv = NEU_ERR_EINTERNAL;
         goto final;
     }
@@ -189,29 +227,39 @@ static int set_license(const char *lic_str)
     }
 
 final:
-    fclose(fp);
+    if (fp) {
+        fclose(fp);
+    }
     remove(fname_tmp);
+    free(license_path);
+    free(fname_tmp);
     return rv;
 }
 
 int backup_license_file(const char *lic_fname)
 {
-    struct tm tm             = { .tm_isdst = -1 };
-    time_t    now            = time(NULL);
-    char      fname_bak[128] = { 0 };
+    struct tm   tm     = { .tm_isdst = -1 };
+    time_t      now    = time(NULL);
+    const char *suffix = ".bak";
+    size_t      len =
+        strlen(lic_fname) + strlen(suffix) + 15 + 1; // 15 for timestamp
+    char *fname_bak = malloc(len);
 
-    size_t n = snprintf(fname_bak, sizeof(fname_bak), "%s.bak", lic_fname);
-    if (sizeof(fname_bak) == n) {
-        return -1;
+    if (NULL == fname_bak) {
+        return NEU_ERR_EINTERNAL;
     }
+
+    size_t n = snprintf(fname_bak, len, "%s.bak", lic_fname);
 
     gmtime_r(&now, &tm);
-    if (0 ==
-        strftime(fname_bak + n, sizeof(fname_bak) - n, ".%Y%m%d%H%M%S", &tm)) {
+    if (0 == strftime(fname_bak + n, len - n, ".%Y%m%d%H%M%S", &tm)) {
+        free(fname_bak);
         return -1;
     }
 
-    return link(lic_fname, fname_bak);
+    int rv = link(lic_fname, fname_bak);
+    free(fname_bak);
+    return rv;
 }
 
 int get_plugin_names(const license_t *lic, UT_array *plugin_names)

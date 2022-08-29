@@ -29,6 +29,7 @@
 
 #include "restful/rest.h"
 
+#include "argparse.h"
 #include "plugin_manager.h"
 
 typedef struct plugin_entity {
@@ -253,7 +254,7 @@ int neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
     if (plugin != NULL) {
         char lib_path[256] = { 0 };
 
-        snprintf(lib_path, sizeof(lib_path) - 1, "./plugins/%s",
+        snprintf(lib_path, sizeof(lib_path) - 1, "%s/%s", g_plugin_dir,
                  plugin->lib_name);
         instance->handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
         assert(instance->handle != NULL);

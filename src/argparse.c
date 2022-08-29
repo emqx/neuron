@@ -23,6 +23,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <zlog.h>
 
@@ -46,6 +49,9 @@
         }                                                                      \
     } while (0)
 
+const char *g_config_dir = NULL;
+const char *g_plugin_dir = NULL;
+
 // clang-format off
 const char *usage_text =
 "USAGE:\n"
@@ -61,6 +67,8 @@ const char *usage_text =
 "                           - NUMBER,     restart max NUMBER of times\n"
 "    --version            print version information\n"
 "    --disable_auth       disable http api auth\n"
+"    --config_dir <DIR>   directory from which neuron reads configuration\n"
+"    --plugin_dir <DIR>   directory from which neuron loads plugin lib files\n"
 "\n";
 // clang-format on
 
@@ -98,9 +106,17 @@ static inline size_t parse_restart_policy(const char *s, size_t *out)
     return 0;
 }
 
+static inline bool file_exists(const char *const path)
+{
+    struct stat buf = { 0 };
+    return -1 != stat(path, &buf);
+}
+
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 {
-    char *        opts           = "c:dh";
+    char *        config_dir     = NULL;
+    char *        plugin_dir     = NULL;
+    char *        opts           = "dh";
     struct option long_options[] = {
         { "help", no_argument, NULL, 1 },
         { "daemon", no_argument, NULL, 'd' },
@@ -108,13 +124,17 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "restart", required_argument, NULL, 'r' },
         { "version", no_argument, NULL, 'v' },
         { "disable_auth", no_argument, NULL, 'a' },
+        { "config_dir", required_argument, NULL, 'c' },
+        { "plugin_dir", required_argument, NULL, 'p' },
         { NULL, 0, NULL, 0 },
     };
 
     memset(args, 0, sizeof(*args));
 
-    int c = 0;
-    while ((c = getopt_long(argc, argv, opts, long_options, NULL)) != -1) {
+    int c            = 0;
+    int option_index = 0;
+    while ((c = getopt_long(argc, argv, opts, long_options, &option_index)) !=
+           -1) {
         switch (c) {
         case 'h':
             usage();
@@ -123,8 +143,6 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             args->daemonized = true;
             break;
         case ':':
-            fprintf(stderr, "%s: option '-%c' requires an argument\n", argv[0],
-                    optopt);
             usage();
             goto quit;
         case 'l':
@@ -144,10 +162,14 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         case 'a':
             args->disable_auth = true;
             break;
+        case 'c':
+            config_dir = strdup(optarg);
+            break;
+        case 'p':
+            plugin_dir = strdup(optarg);
+            break;
         case '?':
         default:
-            fprintf(stderr, "%s: option '-%c' is invalid: ignored\n", argv[0],
-                    optopt);
             usage();
             goto quit;
         }
@@ -160,6 +182,33 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         args->restart = NEU_RESTART_NEVER;
     }
 
+    args->config_dir = config_dir ? config_dir : strdup("./config");
+    if (!file_exists(args->config_dir)) {
+        fprintf(stderr, "configuration directory `%s` not exists\n",
+                args->config_dir);
+        exit(1);
+    }
+
+    args->plugin_dir = plugin_dir ? plugin_dir : strdup("./plugins");
+    if (!file_exists(args->plugin_dir)) {
+        fprintf(stderr, "plugin directory `%s` not exists\n", args->plugin_dir);
+        exit(1);
+    }
+
+    const char *zlog_conf = args->dev_log ? "dev.conf" : "zlog.conf";
+    int         n = 1 + snprintf(NULL, 0, "%s/%s", args->config_dir, zlog_conf);
+    char *      log_init_file = malloc(n);
+    snprintf(log_init_file, n, "%s/%s", args->config_dir, zlog_conf);
+    args->log_init_file = log_init_file;
+    if (!file_exists(args->log_init_file)) {
+        fprintf(stderr, "log init file `%s` not exists\n", args->log_init_file);
+        exit(1);
+    }
+
+    // passing information by global variable is not a good style
+    g_config_dir = args->config_dir;
+    g_plugin_dir = args->plugin_dir;
+
     return;
 
 quit:
@@ -169,5 +218,9 @@ quit:
 
 void neu_cli_args_fini(neu_cli_args_t *args)
 {
-    (void) args;
+    if (args) {
+        free(args->log_init_file);
+        free(args->config_dir);
+        free(args->plugin_dir);
+    }
 }
