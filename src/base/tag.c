@@ -163,6 +163,32 @@ int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
 
         break;
     }
+    case NEU_TYPE_DOUBLE:
+    case NEU_TYPE_INT64:
+    case NEU_TYPE_UINT64: {
+        char *op = find_last_character(datatag->address, '#');
+
+        option->value64.endian = NEU_DATATAG_ENDIAN_L64;
+        if (op != NULL) {
+            char e = 0;
+            sscanf(op, "#%c", &e);
+
+            switch (e) {
+            case 'B':
+                option->value64.endian = NEU_DATATAG_ENDIAN_B64;
+                break;
+            case 'L':
+                option->value64.endian = NEU_DATATAG_ENDIAN_L64;
+                break;
+            default:
+                option->value64.endian = NEU_DATATAG_ENDIAN_L64;
+                break;
+            }
+        }
+
+        break;
+    }
+
     case NEU_TYPE_BIT: {
         char *op = find_last_character(datatag->address, '.');
 

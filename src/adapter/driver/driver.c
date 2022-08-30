@@ -254,9 +254,6 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         }
         switch (tag->type) {
         case NEU_TYPE_BOOL:
-        case NEU_TYPE_DOUBLE:
-        case NEU_TYPE_UINT64:
-        case NEU_TYPE_INT64:
         case NEU_TYPE_STRING:
             break;
         case NEU_TYPE_BIT:
@@ -272,15 +269,69 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         case NEU_TYPE_UINT16:
             cmd->value.type      = NEU_TYPE_UINT16;
             cmd->value.value.u16 = (uint16_t) cmd->value.value.u64;
+            switch (tag->option.value16.endian) {
+            case NEU_DATATAG_ENDIAN_B16:
+                cmd->value.value.u16 = htons(cmd->value.value.u16);
+                break;
+            case NEU_DATATAG_ENDIAN_L16:
+            default:
+                break;
+            }
             break;
         case NEU_TYPE_UINT32:
         case NEU_TYPE_INT32:
             cmd->value.type      = NEU_TYPE_UINT32;
             cmd->value.value.u32 = (uint32_t) cmd->value.value.u64;
+            switch (tag->option.value32.endian) {
+            case NEU_DATATAG_ENDIAN_LB32:
+                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
+                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
+                break;
+            case NEU_DATATAG_ENDIAN_BB32:
+                cmd->value.value.u32 = htonl(cmd->value.value.u32);
+                break;
+            case NEU_DATATAG_ENDIAN_BL32:
+                cmd->value.value.u32 = htonl(cmd->value.value.u32);
+                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
+                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
+                break;
+            case NEU_DATATAG_ENDIAN_LL32:
+            default:
+                break;
+            }
             break;
         case NEU_TYPE_FLOAT:
             cmd->value.type      = NEU_TYPE_FLOAT;
             cmd->value.value.f32 = (float) cmd->value.value.d64;
+            switch (tag->option.value32.endian) {
+            case NEU_DATATAG_ENDIAN_LB32:
+                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
+                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
+                break;
+            case NEU_DATATAG_ENDIAN_BB32:
+                cmd->value.value.u32 = htonl(cmd->value.value.u32);
+                break;
+            case NEU_DATATAG_ENDIAN_BL32:
+                cmd->value.value.u32 = htonl(cmd->value.value.u32);
+                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
+                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
+                break;
+            case NEU_DATATAG_ENDIAN_LL32:
+            default:
+                break;
+            }
+            break;
+        case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_INT64:
+            switch (tag->option.value64.endian) {
+            case NEU_DATATAG_ENDIAN_B64:
+                cmd->value.value.u64 = neu_ntohll(cmd->value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_L64:
+            default:
+                break;
+            }
             break;
         default:
             assert(false);
@@ -467,6 +518,8 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
         return ret;
     }
 
+    neu_datatag_parse_addr_option(tag, &tag->option);
+
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         ret = neu_group_add_tag(find->group, tag);
@@ -529,6 +582,7 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
         return ret;
     }
 
+    neu_datatag_parse_addr_option(tag, &tag->option);
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         ret = neu_group_update_tag(find->group, tag);
@@ -728,6 +782,62 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
             continue;
         }
 
+        switch (tag->type) {
+        case NEU_TYPE_UINT16:
+        case NEU_TYPE_INT16:
+            switch (tag->option.value16.endian) {
+            case NEU_DATATAG_ENDIAN_B16:
+                value.value.value.u16 = htons(value.value.value.u16);
+                break;
+            case NEU_DATATAG_ENDIAN_L16:
+            default:
+                break;
+            }
+            break;
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_INT32:
+            switch (tag->option.value32.endian) {
+            case NEU_DATATAG_ENDIAN_LB32: {
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+
+                neu_htons_p(v1);
+                neu_htons_p(v2);
+                break;
+            }
+            case NEU_DATATAG_ENDIAN_BB32:
+                value.value.value.u32 = htonl(value.value.value.u32);
+                break;
+            case NEU_DATATAG_ENDIAN_BL32:
+                value.value.value.u32 = htonl(value.value.value.u32);
+                uint16_t *v1          = (uint16_t *) value.value.value.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+
+                neu_htons_p(v1);
+                neu_htons_p(v2);
+                break;
+            case NEU_DATATAG_ENDIAN_LL32:
+            default:
+                break;
+            }
+            break;
+        case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+            switch (tag->option.value64.endian) {
+            case NEU_DATATAG_ENDIAN_B64:
+                value.value.value.u64 = htons(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_L64:
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
+        }
+
         if ((timestamp - value.timestamp) > timeout) {
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
@@ -796,6 +906,62 @@ static void read_group(int64_t timestamp, int64_t timeout,
         if (value.value.type == NEU_TYPE_ERROR) {
             datas[index].value = value.value;
             continue;
+        }
+
+        switch (tag->type) {
+        case NEU_TYPE_UINT16:
+        case NEU_TYPE_INT16:
+            switch (tag->option.value16.endian) {
+            case NEU_DATATAG_ENDIAN_B16:
+                value.value.value.u16 = htons(value.value.value.u16);
+                break;
+            case NEU_DATATAG_ENDIAN_L16:
+            default:
+                break;
+            }
+            break;
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_INT32:
+            switch (tag->option.value32.endian) {
+            case NEU_DATATAG_ENDIAN_LB32: {
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+
+                neu_htons_p(v1);
+                neu_htons_p(v2);
+                break;
+            }
+            case NEU_DATATAG_ENDIAN_BB32:
+                value.value.value.u32 = htonl(value.value.value.u32);
+                break;
+            case NEU_DATATAG_ENDIAN_BL32:
+                value.value.value.u32 = htonl(value.value.value.u32);
+                uint16_t *v1          = (uint16_t *) value.value.value.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+
+                neu_htons_p(v1);
+                neu_htons_p(v2);
+                break;
+            case NEU_DATATAG_ENDIAN_LL32:
+            default:
+                break;
+            }
+            break;
+        case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+            switch (tag->option.value64.endian) {
+            case NEU_DATATAG_ENDIAN_B64:
+                value.value.value.u64 = htons(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_L64:
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
         }
 
         if ((timestamp - value.timestamp) > timeout) {

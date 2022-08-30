@@ -154,61 +154,9 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             switch ((*p_tag)->type) {
             case NEU_TYPE_UINT16:
             case NEU_TYPE_INT16:
-                if ((*p_tag)->option.value16.endian == NEU_DATATAG_ENDIAN_L16) {
-                    dvalue.value.u16 = htons(dvalue.value.u16);
-                }
-                break;
-            case NEU_TYPE_FLOAT: {
-                uint16_t v1 = ((uint16_t *) dvalue.value.bytes)[0];
-                uint16_t v2 = ((uint16_t *) dvalue.value.bytes)[1];
-                uint32_t v  = 0;
-
-                switch ((*p_tag)->option.value32.endian) {
-                case NEU_DATATAG_ENDIAN_BB32:
-                    v = htons(v1) << 16 | htons(v2);
-                    break;
-                case NEU_DATATAG_ENDIAN_BL32:
-                    v = v1 << 16 | v2;
-                    break;
-                case NEU_DATATAG_ENDIAN_LL32:
-                    v = htons(v2) << 16 | htons(v1);
-                    break;
-                case NEU_DATATAG_ENDIAN_LB32:
-                    v = v2 << 16 | v1;
-                    break;
-                default:
-                    assert(1 == 0);
-                    break;
-                }
-
-                dvalue.value.u32 = v;
-                break;
-            }
+            case NEU_TYPE_FLOAT:
             case NEU_TYPE_INT32:
             case NEU_TYPE_UINT32: {
-                uint16_t v1 = ((uint16_t *) dvalue.value.bytes)[0];
-                uint16_t v2 = ((uint16_t *) dvalue.value.bytes)[1];
-                uint32_t v  = 0;
-
-                switch ((*p_tag)->option.value32.endian) {
-                case NEU_DATATAG_ENDIAN_BB32:
-                    v = v2 << 16 | v1;
-                    break;
-                case NEU_DATATAG_ENDIAN_BL32:
-                    v = htons(v2) << 16 | htons(v1);
-                    break;
-                case NEU_DATATAG_ENDIAN_LL32:
-                    v = v1 << 16 | v2;
-                    break;
-                case NEU_DATATAG_ENDIAN_LB32:
-                    v = htons(v1) << 16 | htons(v2);
-                    break;
-                default:
-                    assert(1 == 0);
-                    break;
-                }
-
-                dvalue.value.u32 = v;
                 break;
             }
             case NEU_TYPE_BIT: {
@@ -272,35 +220,11 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
     switch (tag->type) {
     case NEU_TYPE_UINT16:
     case NEU_TYPE_INT16: {
-        if (point.option.value16.endian == NEU_DATATAG_ENDIAN_L16) {
-            value.u16 = htons(value.u16);
-        }
         n_byte = sizeof(uint16_t);
         break;
     }
     case NEU_TYPE_UINT32:
     case NEU_TYPE_INT32: {
-        uint16_t v1 = value.u32 & 0xffff;
-        uint16_t v2 = (value.u32 & 0xffff0000) >> 16;
-
-        switch (point.option.value32.endian) {
-        case NEU_DATATAG_ENDIAN_BB32:
-            value.u32 = v2 << 16 | v1;
-            break;
-        case NEU_DATATAG_ENDIAN_BL32:
-            value.u32 = htons(v2) << 16 | htons(v1);
-            break;
-        case NEU_DATATAG_ENDIAN_LL32:
-            value.u32 = v1 << 16 | v2;
-            break;
-        case NEU_DATATAG_ENDIAN_LB32:
-            value.u32 = htons(v1) << 16 | htons(v2);
-            break;
-        default:
-            assert(1 == 0);
-            break;
-        }
-
         n_byte = sizeof(uint32_t);
         break;
     }
@@ -309,27 +233,6 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
         break;
     }
     case NEU_TYPE_FLOAT: {
-        uint16_t v1 = value.u32 & 0xffff;
-        uint16_t v2 = (value.u32 & 0xffff0000) >> 16;
-
-        switch (point.option.value32.endian) {
-        case NEU_DATATAG_ENDIAN_BB32:
-            value.u32 = htons(v1) << 16 | htons(v2);
-            break;
-        case NEU_DATATAG_ENDIAN_BL32:
-            value.u32 = v1 << 16 | v2;
-            break;
-        case NEU_DATATAG_ENDIAN_LL32:
-            value.u32 = htons(v2) << 16 | htons(v1);
-            break;
-        case NEU_DATATAG_ENDIAN_LB32:
-            value.u32 = v2 << 16 | v1;
-            break;
-        default:
-            assert(1 == 0);
-            break;
-        }
-
         n_byte = sizeof(float);
         break;
     }

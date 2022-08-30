@@ -232,6 +232,7 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
         result->attribute   = find->tag->attribute;
         result->precision   = find->tag->precision;
         result->decimal     = find->tag->decimal;
+        result->option      = find->tag->option;
         result->name        = strdup(find->tag->name);
         result->address     = strdup(find->tag->address);
         result->description = strdup(find->tag->description);
