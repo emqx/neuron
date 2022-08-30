@@ -16,33 +16,20 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#ifndef __NEU_ASPRINTF_H__
+#define __NEU_ASPRINTF_H__
 
-#include "utils/asprintf.h"
-#include "utils/log.h"
-#include "version.h"
-#include "json/neu_json_error.h"
-#include "json/neu_json_fn.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include "handle.h"
-#include "http.h"
+#include <stdarg.h>
 
-void handle_get_version(nng_aio *aio)
-{
-    char *result = NULL;
+int neu_asprintf(char **strp, const char *fmt, ...);
+int neu_vasprintf(char **strp, const char *fmt, va_list ap);
 
-    VALIDATE_JWT(aio);
-
-    int ret = neu_asprintf(
-        &result,
-        "{\"version\":\"%s\", \"revision\":\"%s\", \"build_date\":\"%s\"}",
-        NEURON_VERSION, NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
-
-    if (ret < 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            http_response(aio, error_code.error, result_error);
-        });
-        return;
-    }
-
-    http_response(aio, 0, result);
+#ifdef __cplusplus
 }
+#endif
+
+#endif

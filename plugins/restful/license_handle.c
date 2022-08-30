@@ -26,6 +26,7 @@
 #include "errcodes.h"
 #include "parser/neu_json_license.h"
 #include "plugin.h"
+#include "utils/asprintf.h"
 #include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
@@ -41,13 +42,9 @@ int        get_plugin_names(const license_t *lic, UT_array *plugin_names);
 
 static inline char *get_license_path()
 {
-    size_t n = 1 + snprintf(NULL, 0, "%s/%s", g_config_dir, LICENSE_FNAME);
-    char * p = malloc(n);
-    if (NULL == p) {
-        return NULL;
-    }
-    snprintf(p, n, "%s/%s", g_config_dir, LICENSE_FNAME);
-    return p;
+    char *s = NULL;
+    neu_asprintf(&s, "%s/%s", g_config_dir, LICENSE_FNAME);
+    return s;
 }
 
 void handle_get_license(nng_aio *aio)
@@ -149,26 +146,22 @@ static inline bool file_exists(const char *const path)
 
 static int set_license(const char *lic_str)
 {
-    int         rv           = 0;
-    size_t      len          = 0;
-    const char *suffix       = ".tmp";
-    char *      license_path = NULL;
-    char *      fname_tmp    = NULL;
-    FILE *      fp           = NULL;
-    license_t   new_lic      = {};
+    int       rv           = 0;
+    size_t    len          = 0;
+    char *    license_path = NULL;
+    char *    fname_tmp    = NULL;
+    FILE *    fp           = NULL;
+    license_t new_lic      = {};
 
     license_path = get_license_path();
     if (NULL == license_path) {
         return NEU_ERR_EINTERNAL;
     }
 
-    len       = strlen(license_path) + strlen(suffix) + 1;
-    fname_tmp = malloc(len);
-    if (NULL == fname_tmp) {
+    if (0 > neu_asprintf(&fname_tmp, "%s.tmp", license_path)) {
         rv = NEU_ERR_EINTERNAL;
         goto final;
     }
-    snprintf(fname_tmp, len, "%s%s", license_path, suffix);
 
     len = strlen(lic_str);
     if (len > 15000) {
@@ -249,7 +242,7 @@ int backup_license_file(const char *lic_fname)
         return NEU_ERR_EINTERNAL;
     }
 
-    size_t n = snprintf(fname_bak, len, "%s.bak", lic_fname);
+    size_t n = snprintf(fname_bak, len, "%s%s", lic_fname, suffix);
 
     gmtime_r(&now, &tm);
     if (0 == strftime(fname_bak + n, len - n, ".%Y%m%d%H%M%S", &tm)) {

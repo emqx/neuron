@@ -28,6 +28,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "utils/asprintf.h"
 #include "utils/log.h"
 
 #include "argparse.h"
@@ -119,8 +120,8 @@ static char *file_string_read(size_t *length, const char *const path)
 
 void handle_get_plugin_schema(nng_aio *aio)
 {
-    size_t len              = 0;
-    char   schema_path[256] = { 0 };
+    size_t len         = 0;
+    char * schema_path = NULL;
 
     VALIDATE_JWT(aio);
 
@@ -130,17 +131,24 @@ void handle_get_plugin_schema(nng_aio *aio)
         return;
     }
 
-    snprintf(schema_path, sizeof(schema_path) - 1, "%s/schema/%s.json",
-             g_plugin_dir, plugin_name);
+    if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
+                         plugin_name)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            http_response(aio, error_code.error, result_error);
+        });
+        return;
+    }
 
     char *buf = NULL;
     buf       = file_string_read(&len, schema_path);
     if (NULL == buf) {
         nlog_info("open %s error: %d", schema_path, errno);
         http_not_found(aio, "{\"status\": \"error\"}");
+        free(schema_path);
         return;
     }
 
     http_ok(aio, buf);
     free(buf);
+    free(schema_path);
 }

@@ -111,7 +111,7 @@ end:
 static nng_http_server *server_init(char *type)
 {
     nng_url *        url;
-    char             host_port[128] = { 0 };
+    char             host_port[24] = { 0 };
     nng_http_server *server;
 
     if (strncmp(type, "api", strlen("api")) == 0) {

@@ -17,32 +17,41 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#if defined(__GNUC__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
+#if (defined(__unix__) || defined(unix)) && !defined(USG)
+#include <sys/param.h>
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "utils/asprintf.h"
-#include "utils/log.h"
-#include "version.h"
-#include "json/neu_json_error.h"
-#include "json/neu_json_fn.h"
 
-#include "handle.h"
-#include "http.h"
-
-void handle_get_version(nng_aio *aio)
+int neu_asprintf(char **strp, const char *fmt, ...)
 {
-    char *result = NULL;
+    va_list ap;
+    va_start(ap, fmt);
+    int rv = neu_vasprintf(strp, fmt, ap);
+    va_end(ap);
+    return rv;
+}
 
-    VALIDATE_JWT(aio);
-
-    int ret = neu_asprintf(
-        &result,
-        "{\"version\":\"%s\", \"revision\":\"%s\", \"build_date\":\"%s\"}",
-        NEURON_VERSION, NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
-
-    if (ret < 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            http_response(aio, error_code.error, result_error);
-        });
-        return;
+int neu_vasprintf(char **strp, const char *fmt, va_list ap)
+{
+#if defined(_GNU_SOURCE) || defined(BSD) || defined(__APPLE__)
+    return vasprintf(strp, fmt, ap);
+#else
+    int   n = 1 + vsnprintf(NULL, 0, fmt, ap);
+    char *s = malloc(n);
+    if (NULL == s) {
+        return -1;
     }
 
-    http_response(aio, 0, result);
+    n     = vsnprintf(s, n, fmt, ap);
+    *strp = s;
+    return n;
+#endif
 }
