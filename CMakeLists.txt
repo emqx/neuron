@@ -74,7 +74,8 @@ set(NEURON_BASE_SOURCES
     src/utils/json.c
     src/utils/neu_jwt.c
     src/utils/base64.c
-    src/utils/async_queue.c)
+    src/utils/async_queue.c
+    src/utils/mem_cache.c)
 
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 

@@ -53,11 +53,14 @@ struct topic_pair {
 };
 
 struct mqtt_routine {
-    neu_plugin_t *    plugin;
-    neu_mqtt_option_t option;
-    neu_mqtt_client_t client;
-    UT_array *        topics;
-    neu_events_t *    events;
+    neu_plugin_t *     plugin;
+    neu_mqtt_option_t  option;
+    neu_mqtt_client_t  client;
+    UT_array *         topics;
+    neu_mem_cache_t *  cache;
+    nng_mtx *          mutex;
+    neu_events_t *     events;
+    neu_event_timer_t *send;
 };
 
 static char *topics_format(char *format, char *name)
@@ -168,6 +171,46 @@ static struct topic_pair *topics_find_type(UT_array *topics, int type)
     return NULL;
 }
 
+static int mqtt_routine_cache_send(void *data)
+{
+    mqtt_routine_t *routine = (mqtt_routine_t *) data;
+
+    // size_t used_bytes = 0;
+    // size_t used_items = 0;
+    // neu_mem_cache_used(routine->cache, &used_bytes, &used_items);
+    // plog_info(routine->plugin, "used bytes:%lu, used items:%lu", used_bytes,
+    //           used_items);
+
+    neu_err_code_e rc = neu_mqtt_client_is_connected(routine->client);
+    if (0 != rc) {
+        return -1;
+    }
+
+    nng_mtx_lock(routine->mutex);
+    cache_item_t item = neu_mem_cache_earliest(routine->cache);
+    if (NULL == item.data) {
+        nng_mtx_unlock(routine->mutex);
+        return -1;
+    }
+
+    int                type     = TOPIC_TYPE_UPLOAD;
+    struct topic_pair *pair     = topics_find_type(routine->topics, type);
+    char *             json_str = item.data;
+    const char *       topic    = pair->topic_response;
+    const int          qos      = pair->qos_response;
+    neu_err_code_e     error =
+        neu_mqtt_client_publish(routine->client, topic, qos,
+                                (unsigned char *) json_str, strlen(json_str));
+    if (NEU_ERR_SUCCESS != error) {
+        plog_error(routine->plugin, "cache publish error code :%d, topoic:%s",
+                   error, topic);
+    }
+
+    free(json_str);
+    nng_mtx_unlock(routine->mutex);
+    return 0;
+}
+
 static void mqtt_routine_response(const char *topic_name, size_t topic_len,
                                   void *payload, const size_t len,
                                   void *context)
@@ -249,18 +292,40 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
     plog_info(plugin, "open mqtt client: %s:%s, code:%d", routine->option.host,
               routine->option.port, error);
 
+    // topics generate
     routine->plugin      = plugin;
     UT_icd topic_ptr_icd = { sizeof(struct topic_pair *), NULL, NULL, NULL };
     utarray_new(routine->topics, &topic_ptr_icd);
     topics_generate(routine->topics, plugin, &routine->option);
     topics_subscribe(routine->topics, routine->client);
 
+    // cache send
+    const size_t max_bytes = routine->option.cache * 1024 * 1024;
+    const size_t max_items = 0;
+    routine->cache         = neu_mem_cache_create(max_bytes, max_items);
+
+    nng_mtx_alloc(&routine->mutex);
+    routine->events               = neu_event_new();
+    neu_event_timer_param_t param = {
+        .second      = 0,
+        .millisecond = 100,
+        .usr_data    = routine,
+        .cb          = mqtt_routine_cache_send,
+    };
+
+    routine->send = neu_event_add_timer(routine->events, param);
     return routine;
 }
 
 static void mqtt_routine_stop(mqtt_routine_t *routine)
 {
     assert(NULL != routine);
+
+    // stop cache send timer
+    neu_event_del_timer(routine->events, routine->send);
+    neu_event_close(routine->events);
+    nng_mtx_free(routine->mutex);
+    neu_mem_cache_destroy(routine->cache);
 
     // stop recevied
     neu_mqtt_client_suspend(routine->client);
@@ -297,9 +362,10 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     assert(NULL != plugin);
 
-    plugin->routine  = NULL;
-    plugin->running  = false;
-    plugin->config   = NULL;
+    plugin->routine = NULL;
+    plugin->running = false;
+    plugin->config  = NULL;
+
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "initialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
@@ -358,6 +424,7 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
     plugin_stop_running(plugin);
     plugin_config_free(plugin);
+
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "uninitialize plugin: %s", name);
     return NEU_ERR_SUCCESS;
@@ -472,6 +539,11 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
     return NEU_ERR_SUCCESS;
 }
 
+static void cache_string_release(void *data)
+{
+    free(data);
+}
+
 static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
 {
     neu_reqresp_trans_data_t *trans_data = data;
@@ -487,6 +559,25 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
                                                     routine->option.format);
     if (NULL == json_str) {
         return NEU_ERR_MQTT_FAILURE;
+    }
+
+    neu_err_code_e rc = neu_mqtt_client_is_connected(routine->client);
+    if (0 != rc) {
+        cache_item_t item = {
+            .size    = strlen(json_str) + 1,
+            .data    = json_str,
+            .release = cache_string_release,
+        };
+
+        nng_mtx_lock(routine->mutex);
+        rc = neu_mem_cache_add(routine->cache, &item);
+        nng_mtx_unlock(routine->mutex);
+
+        if (0 != rc) {
+            item.release(item.data);
+        }
+
+        return NEU_ERR_MQTT_CONNECT_FAILURE;
     }
 
     const char *   topic = pair->topic_response;

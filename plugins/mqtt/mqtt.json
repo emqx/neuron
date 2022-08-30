@@ -38,6 +38,17 @@
 			]
 		}
 	},
+	"cache": {
+		"name": "cache size(MB)",
+		"description": "Upload data memory cache",
+		"type": "int",
+		"attribute": "optional",
+		"default": 64,
+		"valid": {
+			"min": 1,
+			"max": 256 
+		}
+	},
 	"ssl": {
 		"name": "ssl",
 		"description": "Enable SSL connection",
