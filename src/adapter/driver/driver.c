@@ -827,7 +827,7 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_UINT64:
             switch (tag->option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
-                value.value.value.u64 = htons(value.value.value.u64);
+                value.value.value.u64 = neu_htonll(value.value.value.u64);
                 break;
             case NEU_DATATAG_ENDIAN_L64:
             default:
@@ -953,7 +953,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_UINT64:
             switch (tag->option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
-                value.value.value.u64 = htons(value.value.value.u64);
+                value.value.value.u64 = neu_htonll(value.value.value.u64);
                 break;
             case NEU_DATATAG_ENDIAN_L64:
             default:
