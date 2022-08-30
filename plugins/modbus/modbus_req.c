@@ -154,11 +154,13 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             switch ((*p_tag)->type) {
             case NEU_TYPE_UINT16:
             case NEU_TYPE_INT16:
+                dvalue.value.u16 = ntohs(dvalue.value.u16);
+                break;
             case NEU_TYPE_FLOAT:
             case NEU_TYPE_INT32:
-            case NEU_TYPE_UINT32: {
+            case NEU_TYPE_UINT32:
+                dvalue.value.u32 = ntohl(dvalue.value.u32);
                 break;
-            }
             case NEU_TYPE_BIT: {
                 switch ((*p_tag)->area) {
                 case MODBUS_AREA_HOLD_REGISTER:
@@ -220,20 +222,19 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
     switch (tag->type) {
     case NEU_TYPE_UINT16:
     case NEU_TYPE_INT16: {
-        n_byte = sizeof(uint16_t);
+        value.u16 = htons(value.u16);
+        n_byte    = sizeof(uint16_t);
         break;
     }
     case NEU_TYPE_UINT32:
-    case NEU_TYPE_INT32: {
-        n_byte = sizeof(uint32_t);
+    case NEU_TYPE_INT32:
+    case NEU_TYPE_FLOAT: {
+        value.u32 = htonl(value.u32);
+        n_byte    = sizeof(uint32_t);
         break;
     }
     case NEU_TYPE_BIT: {
         n_byte = sizeof(uint8_t);
-        break;
-    }
-    case NEU_TYPE_FLOAT: {
-        n_byte = sizeof(float);
         break;
     }
     case NEU_TYPE_STRING: {
