@@ -521,11 +521,12 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     neu_datatag_parse_addr_option(tag, &tag->option);
 
     HASH_FIND_STR(driver->groups, group, find);
-    if (find != NULL) {
-        ret = neu_group_add_tag(find->group, tag);
-    } else {
-        ret = NEU_ERR_GROUP_NOT_EXIST;
+    if (find == NULL) {
+        neu_adapter_driver_add_group(driver, group, 3000);
     }
+    HASH_FIND_STR(driver->groups, group, find);
+    assert(find != NULL);
+    ret = neu_group_add_tag(find->group, tag);
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size += 1;

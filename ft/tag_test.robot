@@ -20,12 +20,13 @@ Add tags to non-existent node, it should return failure
   	Check Response Status           ${res}        404
   	Check Error Code                ${res}        ${NEU_ERR_NODE_NOT_EXIST}
 
-Add tags to the non-existent group, it should return failure
+Add tags to the non-existent group, it should return success
 	Add Node  modbus-node  ${PLUGIN-MODBUS-TCP}
   	${res}=	Add Tags	modbus-node	group	${tag1},${tag2}
 
   	Check Response Status           ${res}        200
-  	Check Error Code                ${res}        ${NEU_ERR_GROUP_NOT_EXIST}
+  	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
+	[Teardown]	Del Tags  modbus-node  group  "tag1","tag2"
 
 Add different types of tags to the group, it should return success
 	Add Group  modbus-node  group  5000
