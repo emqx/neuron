@@ -95,24 +95,24 @@ neu_manager_t *neu_manager_create()
 
     if (manager_load_plugin(manager) != 0) {
         nlog_warn("load plugin error");
-    } else {
-        UT_array *single_plugins =
-            neu_plugin_manager_get_single(manager->plugin_manager);
-
-        utarray_foreach(single_plugins, neu_resp_plugin_info_t *, plugin)
-        {
-            start_single_adapter(manager, plugin->single_name, plugin->name,
-                                 plugin->display);
-        }
-        utarray_free(single_plugins);
-
-        manager_load_node(manager);
-        while (neu_node_manager_exist_uninit(manager->node_manager)) {
-            usleep(1000 * 100);
-        }
-
-        manager_load_subscribe(manager);
     }
+
+    UT_array *single_plugins =
+        neu_plugin_manager_get_single(manager->plugin_manager);
+
+    utarray_foreach(single_plugins, neu_resp_plugin_info_t *, plugin)
+    {
+        start_single_adapter(manager, plugin->single_name, plugin->name,
+                             plugin->display);
+    }
+    utarray_free(single_plugins);
+
+    manager_load_node(manager);
+    while (neu_node_manager_exist_uninit(manager->node_manager)) {
+        usleep(1000 * 100);
+    }
+
+    manager_load_subscribe(manager);
 
     timer_param.usr_data = (void *) manager;
     manager->timer       = neu_event_add_timer(manager->events, timer_param);
