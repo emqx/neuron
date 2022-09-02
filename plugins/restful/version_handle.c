@@ -45,4 +45,5 @@ void handle_get_version(nng_aio *aio)
     }
 
     http_response(aio, 0, result);
+    free(result);
 }

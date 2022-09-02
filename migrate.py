@@ -456,7 +456,7 @@ if __name__ == "__main__":
 
     VERBOSE = args.verbose
 
-    migrations = Migration(database_dir=args.data_dir)
+    migrations = Migration(schema_dir=args.schema_dir, database_dir=args.data_dir)
 
     if args.subcommand == "import":
         migrations.import_json()
