@@ -290,34 +290,46 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t    error = { 0 };
         neu_adapter_t *     adapter =
             neu_node_manager_find(manager->node_manager, cmd->node);
+        bool single =
+            neu_node_manager_is_single(manager->node_manager, cmd->node);
 
         strcpy(header->receiver, cmd->node);
-        if (adapter != NULL) {
-            manager_storage_del_node(manager, cmd->node);
-            header->type = NEU_REQ_NODE_UNINIT;
-            forward_msg(manager, msg, header->receiver);
-            if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
-                UT_array *apps = neu_subscribe_manager_find_by_driver(
-                    manager->subscribe_manager, cmd->node);
-
-                utarray_foreach(apps, neu_app_subscribe_t *, app)
-                {
-                    neu_reqresp_node_deleted_t resp = { 0 };
-                    header->type                    = NEU_REQRESP_NODE_DELETED;
-
-                    strcpy(resp.node, header->receiver);
-                    strcpy(header->receiver, app->app_name);
-                    strcpy(header->sender, "manager");
-                    reply(manager, header, &resp);
-                }
-                utarray_free(apps);
-            }
-        } else {
+        if (adapter == NULL) {
             error.error  = NEU_ERR_NODE_NOT_EXIST;
             header->type = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(manager, header, &error);
+            break;
         }
+
+        if (single) {
+            error.error  = NEU_ERR_NODE_NOT_ALLOW_DELETE;
+            header->type = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &error);
+            break;
+        }
+
+        manager_storage_del_node(manager, cmd->node);
+        header->type = NEU_REQ_NODE_UNINIT;
+        forward_msg(manager, msg, header->receiver);
+        if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
+            UT_array *apps = neu_subscribe_manager_find_by_driver(
+                manager->subscribe_manager, cmd->node);
+
+            utarray_foreach(apps, neu_app_subscribe_t *, app)
+            {
+                neu_reqresp_node_deleted_t resp = { 0 };
+                header->type                    = NEU_REQRESP_NODE_DELETED;
+
+                strcpy(resp.node, header->receiver);
+                strcpy(header->receiver, app->app_name);
+                strcpy(header->sender, "manager");
+                reply(manager, header, &resp);
+            }
+            utarray_free(apps);
+        }
+
         break;
     }
     case NEU_RESP_NODE_UNINIT: {

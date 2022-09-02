@@ -222,6 +222,18 @@ neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name)
     return adapter;
 }
 
+bool neu_node_manager_is_single(neu_node_manager_t *mgr, const char *name)
+{
+    node_entity_t *node = NULL;
+
+    HASH_FIND_STR(mgr->nodes, name, node);
+    if (node != NULL) {
+        return node->single;
+    }
+
+    return false;
+}
+
 UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,
                                      neu_node_type_e     type)
 {
