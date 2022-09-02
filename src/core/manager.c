@@ -623,6 +623,10 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
     adapter             = neu_adapter_create(&adapter_info);
 
     neu_node_manager_add_single(manager->node_manager, adapter, display);
+    if (display) {
+        manager_storage_add_node(manager, name);
+    }
+
     neu_adapter_init(adapter, false);
     neu_adapter_start_single(adapter);
 }
