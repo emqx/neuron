@@ -45,6 +45,8 @@ cache_item_t     neu_mem_cache_earliest(neu_mem_cache_t *cache);
 cache_item_t     neu_mem_cache_latest(neu_mem_cache_t *cache);
 void             neu_mem_cache_used(neu_mem_cache_t *cache, size_t *used_bytes,
                                     size_t *used_items);
+void             neu_mem_cache_resize(neu_mem_cache_t *cache, size_t new_bytes,
+                                      size_t new_items);
 int  neu_mem_cache_dump(neu_mem_cache_t *cache, cache_dump callback, void *ctx);
 int  neu_mem_cache_clear(neu_mem_cache_t *cache);
 void neu_mem_cache_destroy(neu_mem_cache_t *cache);
