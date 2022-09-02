@@ -342,3 +342,18 @@ int mqtt_option_validate(neu_plugin_t *plugin, const char *config)
     mqtt_option_uninit(plugin, &option);
     return NEU_ERR_SUCCESS;
 }
+
+size_t mqtt_option_item_cache(neu_plugin_t *plugin, const char *config)
+{
+    neu_mqtt_option_t option = { 0 };
+    int               rc = mqtt_option_init(plugin, (char *) config, &option);
+    if (0 != rc) {
+        plog_error(plugin, "%s", mqtt_option_error(rc));
+        mqtt_option_uninit(plugin, &option);
+        return 64;
+    }
+
+    size_t cache_size = option.cache;
+    mqtt_option_uninit(plugin, &option);
+    return cache_size;
+}

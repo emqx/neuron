@@ -26,6 +26,9 @@ extern "C" {
 
 #include <stdlib.h>
 
+#include <nng/nng.h>
+#include <nng/supplemental/util/platform.h>
+
 #include <neuron.h>
 
 typedef struct mqtt_routine mqtt_routine_t;
@@ -35,6 +38,10 @@ struct neu_plugin {
     bool                running;
     mqtt_routine_t *    routine;
     char *              config;
+    neu_mem_cache_t *   cache;
+    nng_mtx *           mutex;
+    neu_events_t *      events;
+    neu_event_timer_t * send;
 };
 
 #ifdef __cplusplus
