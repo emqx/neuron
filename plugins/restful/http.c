@@ -337,6 +337,7 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GROUP_EXIST:
     case NEU_ERR_GROUP_NOT_ALLOW:
     case NEU_ERR_LIBRARY_NOT_ALLOW_CREATE_INSTANCE:
+    case NEU_ERR_NODE_NOT_ALLOW_DELETE:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
