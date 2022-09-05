@@ -40,8 +40,6 @@ struct neu_plugin {
     char *              config;
     neu_mem_cache_t *   cache;
     nng_mtx *           mutex;
-    neu_events_t *      events;
-    neu_event_timer_t * send;
 };
 
 #ifdef __cplusplus

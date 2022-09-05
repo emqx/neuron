@@ -353,75 +353,14 @@ static void plugin_config_save(neu_plugin_t *plugin, const char *config)
     plugin->config = strdup(config);
 }
 
-static int plugin_cache_send(void *data)
-{
-    neu_plugin_t *plugin = (neu_plugin_t *) data;
-
-    if (!plugin->running) {
-        return -1;
-    }
-
-    mqtt_routine_t *routine = plugin->routine;
-
-    // nng_mtx_lock(plugin->mutex);
-    // size_t used_bytes = 0;
-    // size_t used_items = 0;
-    // neu_mem_cache_used(plugin->cache, &used_bytes, &used_items);
-    // plog_info(plugin, "used bytes:%lu, used items:%lu", used_bytes,
-    // used_items); nng_mtx_unlock(plugin->mutex);
-
-    neu_err_code_e rc = neu_mqtt_client_is_connected(routine->client);
-    if (0 != rc) {
-        return -1;
-    }
-
-    nng_mtx_lock(plugin->mutex);
-    cache_item_t item = neu_mem_cache_earliest(plugin->cache);
-    if (NULL == item.data) {
-        nng_mtx_unlock(plugin->mutex);
-        return -1;
-    }
-
-    int                type     = TOPIC_TYPE_UPLOAD;
-    struct topic_pair *pair     = topics_find_type(routine->topics, type);
-    char *             json_str = item.data;
-    const char *       topic    = pair->topic_response;
-    const int          qos      = pair->qos_response;
-    neu_err_code_e     error =
-        neu_mqtt_client_publish(routine->client, topic, qos,
-                                (unsigned char *) json_str, strlen(json_str));
-    if (NEU_ERR_SUCCESS != error) {
-        plog_error(plugin, "cache publish error code :%d, topoic:%s", error,
-                   topic);
-    }
-
-    free(json_str);
-    nng_mtx_unlock(plugin->mutex);
-    return 0;
-}
-
 static void plugin_cache_init(neu_plugin_t *plugin)
 {
-    const size_t max_bytes = 0;
-    const size_t max_items = 0;
-    plugin->cache          = neu_mem_cache_create(max_bytes, max_items);
-
+    plugin->cache = neu_mem_cache_create(0, 0);
     nng_mtx_alloc(&plugin->mutex);
-    plugin->events                = neu_event_new();
-    neu_event_timer_param_t param = {
-        .second      = 0,
-        .millisecond = 100,
-        .usr_data    = plugin,
-        .cb          = plugin_cache_send,
-    };
-
-    plugin->send = neu_event_add_timer(plugin->events, param);
 }
 
 static void plugin_cache_uninit(neu_plugin_t *plugin)
 {
-    neu_event_del_timer(plugin->events, plugin->send);
-    neu_event_close(plugin->events);
     nng_mtx_free(plugin->mutex);
     neu_mem_cache_destroy(plugin->cache);
 }
@@ -559,6 +498,35 @@ static void cache_string_release(void *data)
     free(data);
 }
 
+static int cache_send(neu_plugin_t *plugin)
+{
+    mqtt_routine_t *routine = plugin->routine;
+
+    nng_mtx_lock(plugin->mutex);
+    cache_item_t item = neu_mem_cache_earliest(plugin->cache);
+    if (NULL == item.data) {
+        nng_mtx_unlock(plugin->mutex);
+        return -1;
+    }
+
+    int                type     = TOPIC_TYPE_UPLOAD;
+    struct topic_pair *pair     = topics_find_type(routine->topics, type);
+    char *             json_str = item.data;
+    const char *       topic    = pair->topic_response;
+    const int          qos      = pair->qos_response;
+    neu_err_code_e     error =
+        neu_mqtt_client_publish(routine->client, topic, qos,
+                                (unsigned char *) json_str, strlen(json_str));
+    if (NEU_ERR_SUCCESS != error) {
+        plog_error(plugin, "cache publish error code :%d, topoic:%s", error,
+                   topic);
+    }
+
+    free(json_str);
+    nng_mtx_unlock(plugin->mutex);
+    return 0;
+}
+
 static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
 {
     neu_reqresp_trans_data_t *trans_data = data;
@@ -593,6 +561,13 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
         }
 
         return NEU_ERR_MQTT_CONNECT_FAILURE;
+    } else {
+        for (int i = 0; i < 100; i++) {
+            int r = cache_send(plugin);
+            if (-1 == r) {
+                break;
+            }
+        }
     }
 
     const char *   topic = pair->topic_response;
