@@ -131,10 +131,18 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         ele->v.val_str = strdup(json_string_value(ob));
         break;
     case NEU_JSON_FLOAT:
-        ele->v.val_float = json_real_value(ob);
+        if (json_is_integer(ob)) {
+            ele->v.val_float = (float) json_integer_value(ob);
+        } else {
+            ele->v.val_float = json_real_value(ob);
+        }
         break;
     case NEU_JSON_DOUBLE:
-        ele->v.val_double = json_real_value(ob);
+        if (json_is_integer(ob)) {
+            ele->v.val_double = (double) json_integer_value(ob);
+        } else {
+            ele->v.val_double = json_real_value(ob);
+        }
         break;
     case NEU_JSON_BOOL:
         ele->v.val_bool = json_boolean_value(ob);
