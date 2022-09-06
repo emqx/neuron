@@ -153,6 +153,7 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
         case NEU_TYPE_DOUBLE:
             api_res.tags[i].t                = NEU_JSON_DOUBLE;
             api_res.tags[i].value.val_double = resp->tags[i].value.value.d64;
+            api_res.tags[i].precision        = resp->tags[i].value.precision;
             break;
         case NEU_TYPE_BIT:
             api_res.tags[i].t             = NEU_JSON_BIT;
