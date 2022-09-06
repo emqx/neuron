@@ -50,23 +50,26 @@ static bool queue_is_full(neu_mem_cache_t *cache, cache_item_t *item)
     return false;
 }
 
-int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
+static void queue_reduce(neu_mem_cache_t *cache, cache_item_t *item)
 {
-    assert(NULL != cache);
-    assert(NULL != item);
-
     while (queue_is_full(cache, item)) {
         cache_item_t remove_item = neu_mem_cache_earliest(cache);
         if (NULL == remove_item.data) {
-            // size(item.data) >  cache->max_bytes
-            return -1;
+            break;
         }
 
         if (NULL != remove_item.release && NULL != remove_item.data) {
             remove_item.release(remove_item.data);
         }
     }
+}
 
+int neu_mem_cache_add(neu_mem_cache_t *cache, cache_item_t *item)
+{
+    assert(NULL != cache);
+    assert(NULL != item);
+
+    queue_reduce(cache, item);
     element *el = calloc(1, sizeof(element));
     if (NULL == el) {
         return -1;
@@ -124,6 +127,17 @@ void neu_mem_cache_used(neu_mem_cache_t *cache, size_t *bytes, size_t *msgs)
 
     *bytes = cache->used_bytes;
     *msgs  = cache->used_items;
+}
+
+void neu_mem_cache_resize(neu_mem_cache_t *cache, size_t new_bytes,
+                          size_t new_items)
+{
+    assert(NULL != cache);
+
+    cache->max_bytes  = new_bytes;
+    cache->max_items  = new_items;
+    cache_item_t item = { 0 };
+    queue_reduce(cache, &item);
 }
 
 int neu_mem_cache_dump(neu_mem_cache_t *cache, cache_dump callback, void *ctx)

@@ -32,7 +32,8 @@ int mqtt_option_init(neu_plugin_t *plugin, char *config,
 
 const char *mqtt_option_error(int error);
 
-int mqtt_option_validate(neu_plugin_t *plugin, const char *config);
+int    mqtt_option_validate(neu_plugin_t *plugin, const char *config);
+size_t mqtt_option_item_cache(neu_plugin_t *plugin, const char *config);
 
 void mqtt_option_uninit(neu_plugin_t *plugin, neu_mqtt_option_t *option);
 
