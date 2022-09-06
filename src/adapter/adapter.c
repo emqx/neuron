@@ -40,11 +40,13 @@
 #include "plugin.h"
 #include "storage.h"
 
-static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
-static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
-                           void *data);
-static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
+static int  adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
+static int  adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
                             void *data);
+static int  adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
+                             void *data);
+static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
+                             uint64_t n);
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 static int         update_timestamp(void *usr_data);
@@ -52,6 +54,7 @@ static int         update_timestamp(void *usr_data);
 static const adapter_callbacks_t callback_funs = {
     .command  = adapter_command,
     .response = adapter_response,
+    .stat_acc = adapter_stat_acc,
 };
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
@@ -80,6 +83,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->handle           = info->handle;
     adapter->cb_funs.command  = callback_funs.command;
     adapter->cb_funs.response = callback_funs.response;
+    adapter->cb_funs.stat_acc = callback_funs.stat_acc;
     adapter->module           = info->module;
     adapter->persister        = neu_persister_create("persistence");
     assert(adapter->persister != NULL);
@@ -162,6 +166,31 @@ void neu_adapter_init(neu_adapter_t *adapter, bool auto_start)
 neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
 {
     return adapter->module->type;
+}
+
+static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
+                             uint64_t n)
+{
+    switch (s) {
+    case NEU_NODE_STAT_BYTES_SENT:
+        adapter->stat.bytes_sent += n;
+        break;
+    case NEU_NODE_STAT_BYTES_RECV:
+        adapter->stat.bytes_recv += n;
+        break;
+    case NEU_NODE_STAT_MSGS_SENT:
+        adapter->stat.msgs_sent += n;
+        break;
+    case NEU_NODE_STAT_MSGS_RECV:
+        adapter->stat.msgs_recv += n;
+        break;
+
+    // these are maintained by neuron core
+    case NEU_NODE_STAT_TAG_TOT_CNT:
+    case NEU_NODE_STAT_TAG_ERR_CNT:
+    default:
+        assert(!"please supply a valid statistics counter kind");
+    }
 }
 
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
