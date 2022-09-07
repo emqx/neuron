@@ -83,6 +83,7 @@ typedef enum {
     NEU_ERR_LICENSE_DISABLED  = 2403,
     NEU_ERR_LICENSE_MAX_NODES = 2404,
     NEU_ERR_LICENSE_MAX_TAGS  = 2405,
+    NEU_ERR_LICENSE_BAD_CLOCK = 2407,
 
     // common error codes for plugins
     NEU_ERR_PLUGIN_READ_FAILURE            = 3000,
