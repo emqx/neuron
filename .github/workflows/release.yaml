@@ -33,10 +33,12 @@ jobs:
           echo "Need update appVersion for Chart.yaml"
           exit 1
         fi
-    - name: Create helm package
-      working-directory: deploy/charts/neuron
-      run: helm package .
     - name: Update helm repo
-      run: |
-        sudo mv $(find deploy/charts/neuron -name "*.tgz") /repos/charts
-        sudo helm repo index /repos/charts
+      uses: emqx/push-helm-action@v1
+      with:
+        charts_dir: "${{ github.workspace }}/deploy/charts/neuron"
+        version: ${{ github.ref_name }}
+        aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws_region: "us-west-2"
+        aws_bucket_name: "repos-emqx-io"
