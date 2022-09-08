@@ -1095,7 +1095,7 @@ int neu_persister_update_group(neu_persister_t *         persister,
 {
     return execute_sql(persister->db,
                        "UPDATE groups SET driver_name=%Q, name=%Q, "
-                       "interval=%i, WHERE driver_name=%Q AND name=%Q",
+                       "interval=%i WHERE driver_name=%Q AND name=%Q",
                        driver_name, group_info->name, group_info->interval,
                        driver_name, group_info->name);
 }
