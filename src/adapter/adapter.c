@@ -229,6 +229,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         break;
     }
     case NEU_REQ_NODE_CTL:
+    case NEU_REQ_GET_NODE_STAT:
     case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_NODE_SETTING: {
@@ -308,6 +309,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQRESP_NODE_DELETED:
     case NEU_RESP_GET_SUB_DRIVER_TAGS:
     case NEU_REQ_UPDATE_LICENSE:
+    case NEU_RESP_GET_NODE_STAT:
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
@@ -387,6 +389,16 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             reply(adapter, header, &resp);
         }
 
+        break;
+    }
+    case NEU_REQ_GET_NODE_STAT: {
+        neu_resp_get_node_stat_t resp = { 0 };
+
+        resp.type = neu_adapter_get_type(adapter);
+        memcpy(resp.data, adapter->stat.data, sizeof(resp.data));
+        header->type = NEU_RESP_GET_NODE_STAT;
+        neu_msg_exchange(header);
+        reply(adapter, header, &resp);
         break;
     }
     case NEU_REQ_GET_NODE_STATE: {
@@ -959,8 +971,14 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_NODE_CTL:
         data_size = sizeof(neu_req_node_ctl_t);
         break;
+    case NEU_REQ_GET_NODE_STAT:
+        data_size = sizeof(neu_req_get_node_stat_t);
+        break;
     case NEU_REQ_GET_NODE_STATE:
         data_size = sizeof(neu_req_get_node_state_t);
+        break;
+    case NEU_RESP_GET_NODE_STAT:
+        data_size = sizeof(neu_resp_get_node_stat_t);
         break;
     case NEU_RESP_GET_NODE_STATE:
         data_size = sizeof(neu_resp_get_node_state_t);
