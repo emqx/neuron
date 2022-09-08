@@ -50,16 +50,6 @@ app.kubernetes.io/name: {{ include "neuron.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
-{{/*
-Create the name of the service account to use
-*/}}
-{{- define "neuron.serviceAccountName" -}}
-{{- if .Values.serviceAccount.create }}
-{{- default (include "neuron.fullname" .) .Values.serviceAccount.name }}
-{{- else }}
-{{- default "default" .Values.serviceAccount.name }}
-{{- end }}
-{{- end }}
 
 {{/*
 Get the TLS secret.
