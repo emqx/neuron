@@ -27,6 +27,7 @@
 
 #include "argparse.h"
 #include "daemon.h"
+#include "version.h"
 
 static bool           exit_flag   = false;
 static neu_manager_t *g_manager   = NULL;
@@ -56,7 +57,9 @@ static int neuron_run(const neu_cli_args_t *args)
         nlog_warn("neuron process failed enable core dump, ignore");
     }
 
-    zlog_notice(neuron, "neuron process, daemon: %d", args->daemonized);
+    zlog_notice(neuron, "neuron process, daemon: %d, version: %s (%s %s)",
+                args->daemonized, NEURON_VERSION,
+                NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
     g_manager = neu_manager_create();
     if (g_manager == NULL) {
         nlog_fatal("neuron process failed to create neuron manager, exit!");
