@@ -15,7 +15,6 @@ spec:
       labels:
         {{- include "neuron.selectorLabels" . | nindent 8 }}
     spec:
-      serviceAccountName: {{ include "neuron.serviceAccountName" . }}
       volumes:
         - name: neuron-persistence
           {{- if .Values.persistence.enabled }}

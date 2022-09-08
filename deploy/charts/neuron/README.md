@@ -63,7 +63,4 @@ helm uninstall my-neuron
 | service.ports.web.name | string | `"web"` | Neuron Dashboard port name |
 | service.ports.web.port | int | `7000` | Neuron Dashboard port |
 | service.type | string | `"ClusterIP"` |  |
-| serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
-| serviceAccount.create | bool | `true` | Specifies whether a service account should be created |
-| serviceAccount.name | string | `""` | The name of the service account to use. If not set and create is true, a name is generated using the fullname template |
 | tolerations | list | `[]` |  |
