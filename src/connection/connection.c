@@ -366,7 +366,9 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
 void neu_conn_disconnect(neu_conn_t *conn)
 {
+    pthread_mutex_lock(&conn->mtx);
     conn_disconnect(conn);
+    pthread_mutex_unlock(&conn->mtx);
 }
 
 static void conn_free_param(neu_conn_t *conn)
