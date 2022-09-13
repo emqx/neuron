@@ -72,15 +72,15 @@ Update tag, it should return success.
 	${len} =	Get Length	${res}[tags]
  	Should Be Equal As Integers	${len}		2
 	
-	Should Be Equal As Strings	${res}[tags][1][name]		tag1
-	Should Be Equal As Strings	${res}[tags][1][address]	1!400002
-	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_RW}
-	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_INT32}
-
-	Should Be Equal As Strings	${res}[tags][0][name]		tag2
-	Should Be Equal As Strings	${res}[tags][0][address]	1!00001
+	Should Be Equal As Strings	${res}[tags][0][name]		tag1
+	Should Be Equal As Strings	${res}[tags][0][address]	1!400002
 	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
-	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}
+	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_INT32}
+
+	Should Be Equal As Strings	${res}[tags][1][name]		tag2
+	Should Be Equal As Strings	${res}[tags][1][address]	1!00001
+	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_BIT}
 
 Delete tag from non-existent group, it should return success
 	${res}=		Del Tags  modbus-node  group1  "tag1"
@@ -100,15 +100,15 @@ Update non-existent tag, it should return failure.
 	${len} =	Get Length	${res}[tags]
  	Should Be Equal As Integers	${len}		2
 	
-	Should Be Equal As Strings	${res}[tags][1][name]		tag1
-	Should Be Equal As Strings	${res}[tags][1][address]	1!400002
-	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_RW}
-	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_INT32}
-
-	Should Be Equal As Strings	${res}[tags][0][name]		tag2
-	Should Be Equal As Strings	${res}[tags][0][address]	1!00001
+	Should Be Equal As Strings	${res}[tags][0][name]		tag1
+	Should Be Equal As Strings	${res}[tags][0][address]	1!400002
 	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
-	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_BIT}
+	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_INT32}
+
+	Should Be Equal As Strings	${res}[tags][1][name]		tag2
+	Should Be Equal As Strings	${res}[tags][1][address]	1!00001
+	Should Be Equal As Strings	${res}[tags][1][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][1][type]		${TAG_TYPE_BIT}
 
 Delete tags, it should return success
 	Del Tags  modbus-node  group  "tag1","tag2"
