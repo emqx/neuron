@@ -88,6 +88,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->persister        = neu_persister_create("persistence");
     assert(adapter->persister != NULL);
 
+    adapter->stat.avg_rtt = NEU_NODE_STAT_RTT_MAX;
+
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
     nng_socket_set_int(adapter->sock, NNG_OPT_RECVBUF, 128);
@@ -184,6 +186,18 @@ static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
     case NEU_NODE_STAT_MSGS_RECV:
         adapter->stat.msgs_recv += n;
         break;
+    case NEU_NODE_STAT_AVG_RTT: {
+        if (NEU_NODE_STAT_RTT_MAX <= n ||
+            adapter->stat.avg_rtt == NEU_NODE_STAT_RTT_MAX) {
+            adapter->stat.avg_rtt = n;
+            break;
+        }
+
+        // exponential moving average with alpha = 0.3
+        const double a        = 0.3;
+        adapter->stat.avg_rtt = adapter->stat.avg_rtt * (1 - a) + n * a;
+        break;
+    }
 
     // these are maintained by neuron core
     case NEU_NODE_STAT_TAG_TOT_CNT:
