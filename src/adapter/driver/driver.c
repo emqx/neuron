@@ -751,8 +751,14 @@ static int read_callback(void *usr_data)
     }
 
     if (group->grp.tags != NULL) {
+        int64_t spend = group->driver->adapter.timestamp;
+
         group->driver->adapter.module->intf_funs->driver.group_timer(
             group->driver->adapter.plugin, &group->grp);
+
+        spend = group->driver->adapter.timestamp - spend;
+        nlog_info("%s-%s timer: %" PRId64, group->driver->adapter.name,
+                  group->name, spend);
     }
 
     return 0;
