@@ -142,28 +142,19 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
 
     HASH_FIND_STR(group->tags, tag->name, el);
     if (el != NULL) {
-        HASH_DEL(group->tags, el);
-        free(el->name);
-        free(el->tag->name);
         free(el->tag->address);
-        free(el->tag->description);
-        free(el->tag);
-        free(el);
+        el->tag->address = strdup(tag->address);
 
-        el                   = calloc(1, sizeof(tag_elem_t));
-        el->name             = strdup(tag->name);
-        el->tag              = calloc(1, sizeof(neu_datatag_t));
-        el->tag->name        = strdup(tag->name);
-        el->tag->address     = strdup(tag->address);
+        free(el->tag->description);
         el->tag->description = strdup(tag->description);
-        el->tag->type        = tag->type;
-        el->tag->attribute   = tag->attribute;
-        el->tag->precision   = tag->precision;
-        el->tag->decimal     = tag->decimal;
-        el->tag->option      = tag->option;
+
+        el->tag->type      = tag->type;
+        el->tag->attribute = tag->attribute;
+        el->tag->precision = tag->precision;
+        el->tag->decimal   = tag->decimal;
+        el->tag->option    = tag->option;
         memcpy(el->tag->meta, tag->meta, sizeof(tag->meta));
 
-        HASH_ADD_STR(group->tags, name, el);
         update_timestamp(group);
         ret = NEU_ERR_SUCCESS;
     }
