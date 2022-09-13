@@ -862,21 +862,33 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
                 datas[index].value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {
                 case NEU_TYPE_INT8:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i8 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT8:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u8 * tag->decimal;
                     break;
                 case NEU_TYPE_INT16:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i16 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT16:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u16 * tag->decimal;
                     break;
                 case NEU_TYPE_INT32:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i32 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT32:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u32 * tag->decimal;
                     break;
                 case NEU_TYPE_INT64:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i64 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT64:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u64 * tag->decimal;
@@ -988,21 +1000,33 @@ static void read_group(int64_t timestamp, int64_t timeout,
                 datas[index].value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {
                 case NEU_TYPE_INT8:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i8 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT8:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u8 * tag->decimal;
                     break;
                 case NEU_TYPE_INT16:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i16 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT16:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u16 * tag->decimal;
                     break;
                 case NEU_TYPE_INT32:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i32 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT32:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u32 * tag->decimal;
                     break;
                 case NEU_TYPE_INT64:
+                    datas[index].value.value.d64 =
+                        (double) datas[index].value.value.i64 * tag->decimal;
+                    break;
                 case NEU_TYPE_UINT64:
                     datas[index].value.value.d64 =
                         (double) datas[index].value.value.u64 * tag->decimal;
