@@ -29,6 +29,8 @@
 void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 {
     int rv = 0;
+    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
+        plugin->common.adapter_callbacks->stat_acc;
 
     char *           json_str = NULL;
     json_read_resp_t resp     = {
@@ -55,7 +57,10 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     free(json_str);
     rv = nng_sendmsg(plugin->sock, msg,
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
-    if (0 != rv) {
+    if (0 == rv) {
+        stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_SENT, 1);
+        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_SENT, json_len);
+    } else {
         plog_error(plugin, "nng cannot send msg");
         nng_msg_free(msg);
     }
@@ -66,8 +71,11 @@ void recv_data_callback(void *arg)
     int               rv       = 0;
     neu_plugin_t *    plugin   = arg;
     nng_msg *         msg      = NULL;
+    size_t            json_len = 0;
     char *            json_str = NULL;
     json_write_req_t *req      = NULL;
+    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
+        plugin->common.adapter_callbacks->stat_acc;
 
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
@@ -77,8 +85,11 @@ void recv_data_callback(void *arg)
 
     msg      = nng_aio_get_msg(plugin->recv_aio);
     json_str = nng_msg_body(msg);
-    plog_debug(plugin, "<< %.*s", (int) nng_msg_len(msg), json_str);
-    if (json_decode_write_req(json_str, nng_msg_len(msg), &req) < 0) {
+    json_len = nng_msg_len(msg);
+    plog_debug(plugin, "<< %.*s", (int) json_len, json_str);
+    stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_RECV, 1);
+    stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_RECV, json_len);
+    if (json_decode_write_req(json_str, json_len, &req) < 0) {
         plog_error(plugin, "fail decode write request json: %.*s",
                    (int) nng_msg_len(msg), json_str);
         goto recv_data_callback_end;

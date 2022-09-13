@@ -49,9 +49,16 @@ void modbus_conn_disconnected(void *data, int fd)
 int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) ctx;
+    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
+        plugin->common.adapter_callbacks->stat_acc;
 
     plog_send_protocol(plugin, bytes, n_byte);
-    return neu_conn_send(plugin->conn, bytes, n_byte);
+    int ret = neu_conn_send(plugin->conn, bytes, n_byte);
+    if (ret > 0) {
+        stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_SENT, 1);
+        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_SENT, ret);
+    }
+    return ret;
 }
 
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
@@ -296,13 +303,19 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
     uint8_t *                 recv_buf = calloc(256, 1);
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
+    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
+        plugin->common.adapter_callbacks->stat_acc;
 
     ret = neu_conn_recv(plugin->conn, recv_buf, response_size);
 
     if (ret > 0) {
+        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_RECV, ret);
         neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
         plog_recv_protocol(plugin, recv_buf, ret);
         ret = modbus_stack_recv(plugin->stack, &pbuf);
+        if (ret > 0) {
+            stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_RECV, 1);
+        }
     }
 
     free(recv_buf);
