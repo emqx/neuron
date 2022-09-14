@@ -21,7 +21,7 @@
 	},
 	"format": {
 		"name": "upload format",
-		"description": "Upload format on mqtt",
+		"description": "The json format of the data reported in the upload topic. In the values mode, all items are contained in the values object or the errors object, respectively. In tags mode, all items are contained in an array",
 		"attribute": "optional",
 		"type": "map",
 		"default": 0,
@@ -40,7 +40,7 @@
 	},
 	"cache": {
 		"name": "cache size(MB)",
-		"description": "Upload data memory cache",
+		"description": "The maximum byte limit in MB for the data backlog when an MQTT connection exception occurs",
 		"type": "int",
 		"attribute": "optional",
 		"default": 64,
