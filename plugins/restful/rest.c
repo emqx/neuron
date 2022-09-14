@@ -302,6 +302,8 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
         break;
     default:
+        nlog_fatal("recv unhandle msg: %s",
+                   neu_reqresp_type_string(header->type));
         assert(false);
         break;
     }
