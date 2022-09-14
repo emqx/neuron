@@ -38,7 +38,9 @@ static void sig_handler(int sig)
 {
     nlog_warn("recv sig: %d", sig);
 
-    neu_manager_destroy(g_manager);
+    if (sig != SIGABRT) {
+        neu_manager_destroy(g_manager);
+    }
     zlog_fini();
     exit_flag = true;
 }
