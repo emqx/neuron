@@ -54,6 +54,8 @@ static void pipe_add_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_plugin_t *plugin = arg;
     nng_mtx_lock(plugin->mtx);
     plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
+    plugin->common.adapter_callbacks->stat_acc(plugin->common.adapter,
+                                               NEU_NODE_STAT_AVG_RTT, 0);
     nng_mtx_unlock(plugin->mtx);
 }
 
@@ -64,6 +66,8 @@ static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_plugin_t *plugin = arg;
     nng_mtx_lock(plugin->mtx);
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+    plugin->common.adapter_callbacks->stat_acc(
+        plugin->common.adapter, NEU_NODE_STAT_AVG_RTT, NEU_NODE_STAT_RTT_MAX);
     nng_mtx_unlock(plugin->mtx);
 }
 

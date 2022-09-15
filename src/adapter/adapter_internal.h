@@ -60,6 +60,7 @@ struct neu_adapter {
             uint64_t bytes_recv;  // number of bytes received over network
             uint64_t msgs_sent;   // number of messages sent
             uint64_t msgs_recv;   // number of messages received
+            uint64_t avg_rtt;     // average round trip time in milliseconds
             uint64_t tag_tot_cnt; // number of tag read including errors
             uint64_t tag_err_cnt; // number of tag read errors
         };

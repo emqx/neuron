@@ -30,6 +30,8 @@ extern "C" {
 #include "tag.h"
 #include "type.h"
 
+#define NEU_NODE_STAT_RTT_MAX 9999
+
 /** Kinds of node statistics counters.
  *
  * Some counters are maintained by the neuron core, while others should be
@@ -41,6 +43,7 @@ typedef enum {
     NEU_NODE_STAT_BYTES_RECV, // number of bytes received
     NEU_NODE_STAT_MSGS_SENT,  // number of messages sent
     NEU_NODE_STAT_MSGS_RECV,  // number of messages received
+    NEU_NODE_STAT_AVG_RTT,    // average round trip time (ms)
 
     // kinds of counters maintained by the driver core
     NEU_NODE_STAT_TAG_TOT_CNT, // number of tag read including errors
@@ -56,6 +59,7 @@ static inline const char *neu_node_stat_string(neu_node_stat_e s)
         [NEU_NODE_STAT_BYTES_RECV]  = "bytes_received",
         [NEU_NODE_STAT_MSGS_SENT]   = "messages_sent",
         [NEU_NODE_STAT_MSGS_RECV]   = "messages_received",
+        [NEU_NODE_STAT_AVG_RTT]     = "average_rtt",
         [NEU_NODE_STAT_TAG_TOT_CNT] = "tag_total_count",
         [NEU_NODE_STAT_TAG_ERR_CNT] = "tag_error_count",
         [NEU_NODE_STAT_MAX]         = NULL,
