@@ -107,39 +107,26 @@ void neu_async_queue_push(neu_async_queue_t *q, void *elem)
 
 int neu_async_queue_pop(neu_async_queue_t *q, uint64_t key, void **elem)
 {
-    element *elt = NULL, *first = NULL;
+    element *elt = NULL, *tmp = NULL;
     int      ret = -1;
 
     nng_mtx_lock(q->mtx);
-    first = q->list;
-    elt   = DL_LAST(q->list);
-
-    while (elt != NULL) {
+    DL_FOREACH_SAFE(q->list, elt, tmp)
+    {
         if (elt->key == key) {
             DL_DELETE(q->list, elt);
             *elem = elt->data;
             free(elt);
             ret = 0;
             break;
-        }
-
-        if (first == elt) {
-            break;
-        }
-
-        if (q->expire_fn(elt->data)) {
-            element *tmp = DL_PREV(elt);
-
-            DL_DELETE(q->list, elt);
-            q->free_fn(elt->data);
-            free(elt);
-
-            elt = tmp;
         } else {
-            elt = DL_PREV(elt);
+            if (q->expire_fn(elt->data)) {
+                DL_DELETE(q->list, elt);
+                q->free_fn(elt->data);
+                free(elt);
+            }
         }
     }
-
     nng_mtx_unlock(q->mtx);
 
     return ret;
