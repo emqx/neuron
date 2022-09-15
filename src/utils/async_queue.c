@@ -26,7 +26,7 @@ config_ **/
 #include "utils/utextend.h"
 
 typedef struct element {
-    uint32_t key;
+    uint64_t key;
 
     void *data;
 
