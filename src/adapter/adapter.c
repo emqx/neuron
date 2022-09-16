@@ -471,17 +471,16 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_add_group_t *cmd   = (neu_req_add_group_t *) &header[1];
         neu_resp_error_t     error = { 0 };
 
-        if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
-            error.error = NEU_ERR_GROUP_PARAMETER_INVALID;
+        // if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
+        // error.error = NEU_ERR_GROUP_PARAMETER_INVALID;
+        //} else {
+        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            error.error = NEU_ERR_GROUP_NOT_ALLOW;
         } else {
-            if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-                error.error = NEU_ERR_GROUP_NOT_ALLOW;
-            } else {
-                error.error = neu_adapter_driver_add_group(
-                    (neu_adapter_driver_t *) adapter, cmd->group,
-                    cmd->interval);
-            }
+            error.error = neu_adapter_driver_add_group(
+                (neu_adapter_driver_t *) adapter, cmd->group, cmd->interval);
         }
+        // }
 
         if (error.error == NEU_ERR_SUCCESS) {
             adapter_storage_add_group(adapter->persister, adapter->name,
