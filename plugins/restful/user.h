@@ -26,15 +26,18 @@ extern "C" {
 
 #include <stdbool.h>
 
+#include "persist/persist.h"
+
 typedef struct {
     char *name;
     char *hash;
-    bool  is_admin;
 } neu_user_t;
 
-neu_user_t *neu_user_new(const char *name, const char *password, bool is_admin);
+neu_user_t *neu_user_new(const char *name, const char *password);
 void        neu_user_free(neu_user_t *user);
 bool        neu_user_check_password(neu_user_t *user, const char *password);
+
+neu_user_t *neu_load_user(neu_persister_t *persister, const char *name);
 
 #ifdef __cplusplus
 }

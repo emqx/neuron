@@ -28,6 +28,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "adapter/adapter_internal.h"
+#include "persist/persist.h"
+#include "user.h"
 #include "utils/asprintf.h"
 #include "utils/log.h"
 
@@ -50,12 +53,18 @@ void handle_login(nng_aio *aio)
 {
     REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_login_req_t, neu_json_decode_login_req, {
+            neu_plugin_t *        plugin = neu_rest_get_plugin();
+            neu_plugin_common_t * common = neu_plugin_to_plugin_common(plugin);
             neu_json_login_resp_t login_resp = { 0 };
-            char *                name       = "admin";
-            char *                password   = "0000";
+            neu_user_t *          user =
+                neu_load_user(common->adapter->persister, req->name);
 
-            if (strcmp(req->name, name) == 0 &&
-                strcmp(req->pass, password) == 0) {
+            if (NULL == user) {
+                nlog_warn("could not find user `%s`", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
+                    http_response(aio, error_code.error, result_error);
+                });
+            } else if (neu_user_check_password(user, req->pass)) {
 
                 char *token  = NULL;
                 char *result = NULL;
@@ -76,10 +85,13 @@ void handle_login(nng_aio *aio)
                 jwt_free_str(token);
                 free(result);
             } else {
+                nlog_warn("user `%s` password check fail", req->name);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
                     http_response(aio, error_code.error, result_error);
                 });
             }
+
+            neu_user_free(user);
         })
 }
 

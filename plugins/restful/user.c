@@ -341,16 +341,15 @@ end:
     return hash;
 }
 
-neu_user_t *neu_user_new(const char *name, const char *password, bool is_admin)
+neu_user_t *neu_user_new(const char *name, const char *password)
 {
     neu_user_t *user = malloc(sizeof(*user));
     if (NULL == user) {
         return NULL;
     }
 
-    user->name     = strdup(name);
-    user->hash     = hash_password(password, NULL);
-    user->is_admin = is_admin;
+    user->name = strdup(name);
+    user->hash = hash_password(password, NULL);
 
     if (NULL == user->name || NULL == user->hash) {
         free(user->name);
@@ -380,4 +379,24 @@ bool neu_user_check_password(neu_user_t *user, const char *password)
 
     free(hash);
     return pass;
+}
+
+neu_user_t *neu_load_user(neu_persister_t *persister, const char *name)
+{
+    neu_user_t *user = malloc(sizeof(*user));
+    if (NULL == user) {
+        return NULL;
+    }
+
+    neu_persist_user_info_t *info = NULL;
+    if (0 != neu_persister_load_user(persister, name, &info)) {
+        free(user);
+        return NULL;
+    }
+
+    user->name = info->name;
+    user->hash = info->hash;
+
+    free(info);
+    return user;
 }
