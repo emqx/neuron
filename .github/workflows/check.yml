@@ -63,7 +63,6 @@ jobs:
 
   ft:
     runs-on: ubuntu-20.04
-    if: github.event_name == 'release'
 
     steps:
       - uses: actions/checkout@v2
