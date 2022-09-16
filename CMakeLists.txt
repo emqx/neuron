@@ -117,6 +117,7 @@ set(NEURON_SOURCES
     plugins/restful/plugin_handle.c
     plugins/restful/version_handle.c
     plugins/restful/rest.c
+    plugins/restful/user.c
     plugins/restful/http.c
     plugins/restful/proxy.c
     plugins/restful/websocket.c
