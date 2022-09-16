@@ -509,9 +509,19 @@ static void client_reconnect(struct mqtt_client *mqtt, void **p_reconnect_state)
     const char *will_payload = state->will_payload;
     size_t      payload_len  = state->will_payload_len;
 
-    enum MQTTErrors rc = mqtt_connect(
-        mqtt, client_id, will_topic, will_payload, payload_len, state->username,
-        state->password, connect_flags, state->keepalive);
+    char *username = NULL;
+    if (NULL != state->username && 0 < strlen(state->username)) {
+        username = state->username;
+    }
+
+    char *password = NULL;
+    if (NULL != state->password && 0 < strlen(state->password)) {
+        password = state->password;
+    }
+
+    enum MQTTErrors rc =
+        mqtt_connect(mqtt, client_id, will_topic, will_payload, payload_len,
+                     username, password, connect_flags, state->keepalive);
 
     if (MQTT_OK != rc) {
         return;
