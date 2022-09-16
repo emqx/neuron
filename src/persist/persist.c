@@ -1224,3 +1224,81 @@ int neu_persister_delete_node_setting(neu_persister_t *persister,
     return execute_sql(persister->db, "DELETE FROM settings WHERE node_name=%Q",
                        node_name);
 }
+
+int neu_persister_store_user(neu_persister_t *              persister,
+                             const neu_persist_user_info_t *user)
+{
+    return execute_sql(persister->db,
+                       "INSERT INTO users (name, password) VALUES (%Q, %Q)",
+                       user->name, user->hash);
+}
+
+int neu_persister_update_user(neu_persister_t *              persister,
+                              const neu_persist_user_info_t *user)
+{
+    return execute_sql(persister->db,
+                       "UPDATE users SET password=%Q WHERE name=%Q", user->hash,
+                       user->name);
+}
+
+int neu_persister_load_user(neu_persister_t *persister, const char *user_name,
+                            neu_persist_user_info_t **user_p)
+{
+    neu_persist_user_info_t *user  = NULL;
+    sqlite3_stmt *           stmt  = NULL;
+    const char *             query = "SELECT password FROM users WHERE name=?";
+
+    if (SQLITE_OK !=
+        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` with `%s` fail: %s", query, user_name,
+                   sqlite3_errmsg(persister->db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, user_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, user_name,
+                   sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    if (SQLITE_ROW != sqlite3_step(stmt)) {
+        nlog_warn("SQL `%s` with `%s` fail: %s", query, user_name,
+                  sqlite3_errmsg(persister->db));
+        goto error;
+    }
+
+    user = calloc(1, sizeof(*user));
+    if (NULL == user) {
+        goto error;
+    }
+
+    user->hash = strdup((char *) sqlite3_column_text(stmt, 0));
+    if (NULL == user->hash) {
+        nlog_error("strdup fail");
+        goto error;
+    }
+
+    user->name = strdup(user_name);
+    if (NULL == user->name) {
+        nlog_error("strdup fail");
+        goto error;
+    }
+
+    *user_p = user;
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    if (user) {
+        neu_persist_user_info_fini(user);
+        free(user);
+    }
+    sqlite3_finalize(stmt);
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_delete_user(neu_persister_t *persister, const char *user_name)
+{
+    return execute_sql(persister->db, "DELETE FROM users WHERE name=%Q",
+                       user_name);
+}

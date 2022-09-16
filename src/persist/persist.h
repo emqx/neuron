@@ -46,6 +46,11 @@ typedef struct {
     char *group_name;
 } neu_persist_subscription_info_t;
 
+typedef struct {
+    char *name;
+    char *hash;
+} neu_persist_user_info_t;
+
 static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
     utarray_free(plugin_infos);
@@ -67,6 +72,12 @@ neu_persist_subscription_info_fini(neu_persist_subscription_info_t *info)
 {
     free(info->driver_name);
     free(info->group_name);
+}
+
+static inline void neu_persist_user_info_fini(neu_persist_user_info_t *info)
+{
+    free(info->name);
+    free(info->hash);
 }
 
 /**
@@ -304,6 +315,43 @@ int neu_persister_load_node_setting(neu_persister_t *  persister,
  */
 int neu_persister_delete_node_setting(neu_persister_t *persister,
                                       const char *     node_name);
+
+/**
+ * Save user info.
+ * @param persister                 persister object.
+ * @param user                      user info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_store_user(neu_persister_t *              persister,
+                             const neu_persist_user_info_t *user);
+
+/**
+ * Update user info.
+ * @param persister                 persister object.
+ * @param user                      user info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_update_user(neu_persister_t *              persister,
+                              const neu_persist_user_info_t *user);
+
+/**
+ * Load user info.
+ * @param persister                 persister object.
+ * @param user_name                 name of the user.
+ * @param user_p                    output parameter of user info
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_load_user(neu_persister_t *persister, const char *user_name,
+                            neu_persist_user_info_t **user_p);
+
+/**
+ * Delete user info.
+ * @param persister                 persister object.
+ * @param user_name                 name of the user.
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_delete_user(neu_persister_t *persister,
+                              const char *     user_name);
 
 #ifdef __cplusplus
 }
