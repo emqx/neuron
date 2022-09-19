@@ -16,52 +16,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-
-#ifndef _NEURON_H_
-#define _NEURON_H_
+#ifndef __NEU_TIME_H__
+#define __NEU_TIME_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
-#include "errcodes.h"
-
-#include "utils/async_queue.h"
-#include "utils/protocol_buf.h"
-
-#include "utils/base64.h"
-#include "utils/log.h"
-#include "utils/mem_cache.h"
-#include "utils/zlog.h"
-
-#include "utils/neu_jwt.h"
-#include "utils/time.h"
-#include "utils/utarray.h"
-#include "utils/utextend.h"
-#include "utils/uthash.h"
-#include "utils/utlist.h"
-
-#include "connection/mqtt_client_intf.h"
-#include "connection/neu_connection.h"
-#include "event/event.h"
-
-#include "json/json.h"
-#include "json/neu_json_error.h"
-#include "json/neu_json_fn.h"
-#include "json/neu_json_mqtt.h"
-#include "json/neu_json_param.h"
-#include "json/neu_json_rw.h"
-
-#include "define.h"
-
-#include "adapter.h"
-#include "plugin.h"
-#include "tag.h"
-#include "tag_sort.h"
+static inline uint64_t neu_time_ms()
+{
+    struct timeval tv = { 0 };
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
 
 #ifdef __cplusplus
 }
