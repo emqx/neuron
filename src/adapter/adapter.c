@@ -597,16 +597,20 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     neu_adapter_driver_add_tag((neu_adapter_driver_t *) adapter,
                                                cmd->group, &cmd->tags[i]);
                 if (ret == 0) {
-                    adapter_storage_add_tag(adapter->persister, cmd->driver,
-                                            cmd->group, &cmd->tags[i]);
                     resp.index += 1;
-
                 } else {
                     resp.error = ret;
                     break;
                 }
             }
         }
+
+        if (resp.index) {
+            // we have added some tags, try to persist
+            adapter_storage_add_tags(adapter->persister, cmd->driver,
+                                     cmd->group, cmd->tags, resp.index);
+        }
+
         for (int i = 0; i < cmd->n_tag; i++) {
             free(cmd->tags[i].address);
             free(cmd->tags[i].name);

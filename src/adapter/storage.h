@@ -36,6 +36,9 @@ void adapter_storage_del_group(neu_persister_t *persister, const char *node,
                                const char *group);
 void adapter_storage_add_tag(neu_persister_t *persister, const char *node,
                              const char *group, const neu_datatag_t *tag);
+void adapter_storage_add_tags(neu_persister_t *persister, const char *node,
+                              const char *group, const neu_datatag_t *tags,
+                              size_t n);
 void adapter_storage_update_tag(neu_persister_t *persister, const char *node,
                                 const char *group, const neu_datatag_t *tag);
 void adapter_storage_del_tag(neu_persister_t *persister, const char *node,
