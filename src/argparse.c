@@ -114,11 +114,12 @@ static inline bool file_exists(const char *const path)
 
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 {
+    int           ret            = 0;
     char *        config_dir     = NULL;
     char *        plugin_dir     = NULL;
     char *        opts           = "dh";
     struct option long_options[] = {
-        { "help", no_argument, NULL, 1 },
+        { "help", no_argument, NULL, 'h' },
         { "daemon", no_argument, NULL, 'd' },
         { "log", no_argument, NULL, 'l' },
         { "restart", required_argument, NULL, 'r' },
@@ -138,7 +139,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         switch (c) {
         case 'h':
             usage();
-            exit(0);
+            goto quit;
         case 'd':
             args->daemonized = true;
             break;
@@ -152,13 +153,13 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             if (0 != parse_restart_policy(optarg, &args->restart)) {
                 fprintf(stderr, "%s: option '--restart' invalid policy: `%s`\n",
                         argv[0], optarg);
+                ret = 1;
                 goto quit;
             }
             break;
         case 'v':
             version();
             goto quit;
-            break;
         case 'a':
             args->disable_auth = true;
             break;
@@ -171,6 +172,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         case '?':
         default:
             usage();
+            ret = 1;
             goto quit;
         }
     }
@@ -186,13 +188,15 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     if (!file_exists(args->config_dir)) {
         fprintf(stderr, "configuration directory `%s` not exists\n",
                 args->config_dir);
-        exit(1);
+        ret = 1;
+        goto quit;
     }
 
     args->plugin_dir = plugin_dir ? plugin_dir : strdup("./plugins");
     if (!file_exists(args->plugin_dir)) {
         fprintf(stderr, "plugin directory `%s` not exists\n", args->plugin_dir);
-        exit(1);
+        ret = 1;
+        goto quit;
     }
 
     const char *zlog_conf = args->dev_log ? "dev.conf" : "zlog.conf";
@@ -202,7 +206,8 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     args->log_init_file = log_init_file;
     if (!file_exists(args->log_init_file)) {
         fprintf(stderr, "log init file `%s` not exists\n", args->log_init_file);
-        exit(1);
+        ret = 1;
+        goto quit;
     }
 
     // passing information by global variable is not a good style
@@ -213,7 +218,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 
 quit:
     neu_cli_args_fini(args);
-    exit(1);
+    exit(ret);
 }
 
 void neu_cli_args_fini(neu_cli_args_t *args)
