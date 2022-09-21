@@ -95,6 +95,42 @@ void handle_login(nng_aio *aio)
         })
 }
 
+void handle_password(nng_aio *aio)
+{
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_password_req_t, neu_json_decode_password_req, {
+            neu_plugin_t *       plugin = neu_rest_get_plugin();
+            neu_plugin_common_t *common = neu_plugin_to_plugin_common(plugin);
+            neu_persister_t *    persister = common->adapter->persister;
+            neu_user_t *         user      = NULL;
+            int                  rv        = 0;
+            int                  pass_len  = strlen(req->new_pass);
+
+            if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
+                pass_len > NEU_USER_PASSWORD_MAX_LEN) {
+                nlog_error("user `%s` new password too short or too long",
+                           req->name);
+                rv = NEU_ERR_INVALID_PASSWORD_LEN;
+            } else if (NULL == (user = neu_load_user(persister, req->name))) {
+                nlog_error("could not find user `%s`", req->name);
+                rv = NEU_ERR_INVALID_USER_OR_PASSWORD;
+            } else if (!neu_user_check_password(user, req->old_pass)) {
+                nlog_error("user `%s` password check fail", req->name);
+                rv = NEU_ERR_INVALID_USER_OR_PASSWORD;
+            } else if (0 !=
+                       (rv = neu_user_update_password(user, req->new_pass))) {
+                nlog_error("user `%s` update password fail", req->name);
+            } else if (0 != (rv = neu_save_user(persister, user))) {
+                nlog_error("user `%s` persist fail", req->name);
+            }
+
+            NEU_JSON_RESPONSE_ERROR(
+                rv, { http_response(aio, error_code.error, result_error); });
+
+            neu_user_free(user);
+        })
+}
+
 static char *file_string_read(size_t *length, const char *const path)
 {
     FILE *fp = fopen(path, "rb");

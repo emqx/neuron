@@ -134,6 +134,12 @@ struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/password",
+        .value.handler = handle_password,
+    },
+    {
+        .method        = NEU_REST_METHOD_POST,
+        .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
         .value.handler = handle_add_tags,
 

@@ -8,7 +8,9 @@
 #endif
 #include <openssl/sha.h>
 
+#include "errcodes.h"
 #include "user.h"
+#include "utils/log.h"
 
 static const unsigned char cov_2char[64] = {
     0x2E, 0x2F, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,
@@ -399,4 +401,34 @@ neu_user_t *neu_load_user(neu_persister_t *persister, const char *name)
 
     free(info);
     return user;
+}
+
+int neu_save_user(neu_persister_t *persister, neu_user_t *user)
+{
+    neu_persist_user_info_t info = {
+        .name = user->name,
+        .hash = user->hash,
+    };
+
+    return neu_persister_update_user(persister, &info);
+}
+
+int neu_user_update_password(neu_user_t *user, const char *new_password)
+{
+    char *salt = user->hash + 3;
+    char *hash = hash_password(new_password, salt);
+    if (NULL == hash) {
+        nlog_error("hash_password fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (0 == strcmp(user->hash, hash)) {
+        nlog_error("new password the same as old one");
+        free(hash);
+        return NEU_ERR_DUPLICATE_PASSWORD;
+    }
+
+    free(user->hash);
+    user->hash = hash;
+    return 0;
 }

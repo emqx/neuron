@@ -40,6 +40,15 @@ int  neu_json_decode_login_req(char *buf, neu_json_login_req_t **result);
 void neu_json_decode_login_req_free(neu_json_login_req_t *req);
 
 typedef struct {
+    char *name;
+    char *old_pass;
+    char *new_pass;
+} neu_json_password_req_t;
+
+int  neu_json_decode_password_req(char *buf, neu_json_password_req_t **result);
+void neu_json_decode_password_req_free(neu_json_password_req_t *req);
+
+typedef struct {
     char *token;
 } neu_json_login_resp_t;
 

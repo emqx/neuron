@@ -42,6 +42,8 @@ typedef enum {
     NEU_ERR_INVALID_USER_OR_PASSWORD = 1009,
     NEU_ERR_IS_BUSY                  = 1010,
     NEU_ERR_FILE_NOT_EXIST           = 1011,
+    NEU_ERR_INVALID_PASSWORD_LEN     = 1012,
+    NEU_ERR_DUPLICATE_PASSWORD       = 1013,
 
     NEU_ERR_NODE_EXIST             = 2002,
     NEU_ERR_NODE_NOT_EXIST         = 2003,
