@@ -300,7 +300,7 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
 
 static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
 {
-    uint8_t *                 recv_buf = calloc(256, 1);
+    uint8_t *                 recv_buf = calloc(response_size, 1);
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
     void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
