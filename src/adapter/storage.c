@@ -77,6 +77,25 @@ void adapter_storage_add_tag(neu_persister_t *persister, const char *node,
     }
 }
 
+void adapter_storage_add_tags(neu_persister_t *persister, const char *node,
+                              const char *group, const neu_datatag_t *tags,
+                              size_t n)
+{
+    if (0 == n) {
+        return;
+    }
+
+    if (1 == n) {
+        return adapter_storage_add_tag(persister, node, group, &tags[0]);
+    }
+
+    int rv = neu_persister_store_tags(persister, node, group, tags, n);
+    if (0 != rv) {
+        nlog_error("fail store %zu tags:[%s ... %s] adapter:%s grp:%s", n,
+                   tags->name, tags[n - 1].name, node, group);
+    }
+}
+
 void adapter_storage_update_tag(neu_persister_t *persister, const char *node,
                                 const char *group, const neu_datatag_t *tag)
 {
