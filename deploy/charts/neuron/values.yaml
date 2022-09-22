@@ -83,11 +83,17 @@ ingress:
 
 
 persistence:
-  enabled: false
+  enabled: true
   # -- Existing PersistentVolumeClaims
   # The value is evaluated as a template
   # So, for example, the name can depend on .Release or .Chart
-  existingClaim: ""
+  existingClaim: "pvc-neuron-data"
+
+nngFromExistingPVC:
+  enabled: true
+  ## PVC must be created manually before volume will be bound. The value is evaluated as a template
+  ##
+  existingClaim: "pvc-neuron-tmp"
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
