@@ -12,7 +12,7 @@ $ cd zlog
 $ make && sudo make install
 ```
 
-[jansson](https://github.com/akheron/jansson)
+[jansson](https://github.com/neugates/jansson.git)
 ```shell
 $ git clone https://github.com/neugates/jansson.git
 $ cd jansson && mkdir build && cd build
