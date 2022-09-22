@@ -172,6 +172,10 @@ int neu_persister_load_plugins(neu_persister_t *persister,
 int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
                             const char *group_name, const neu_datatag_t *tag);
 
+int neu_persister_store_tags(neu_persister_t *persister,
+                             const char *driver_name, const char *group_name,
+                             const neu_datatag_t *tags, size_t n);
+
 /**
  * Load node tag infos.
  * @param persister                 persiter object.
