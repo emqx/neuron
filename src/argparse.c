@@ -30,6 +30,7 @@
 #include <zlog.h>
 
 #include "argparse.h"
+#include "persist/persist.h"
 #include "version.h"
 
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
@@ -60,6 +61,7 @@ const char *usage_text =
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
 "    --log                log to the stdout\n"
+"    --reset-password     reset dashboard to use default password\n"
 "    --restart <POLICY>   restart policy to apply when neuron daemon terminates,\n"
 "                           - never,      never restart (default)\n"
 "                           - always,     always restart\n"
@@ -81,6 +83,19 @@ static inline void version()
 {
     printf("Neuron %s (%s %s)\n", NEURON_VERSION,
            NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
+}
+
+static inline int reset_password()
+{
+    neu_persister_t *       persister = neu_persister_create("persistence");
+    neu_persist_user_info_t info      = {
+        .name = "admin",
+        .hash =
+            "$5$PwFeXpBBIBZuZdZl$fP8fFPWCLoaWcnVXVSR.3Xi8TEqCvX92gjhowNNn6S4",
+    };
+    int rv = neu_persister_update_user(persister, &info);
+    neu_persister_destroy(persister);
+    return rv;
 }
 
 static inline size_t parse_restart_policy(const char *s, size_t *out)
@@ -114,13 +129,16 @@ static inline bool file_exists(const char *const path)
 
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 {
-    char *        config_dir     = NULL;
-    char *        plugin_dir     = NULL;
-    char *        opts           = "dh";
-    struct option long_options[] = {
-        { "help", no_argument, NULL, 1 },
+    int           ret                 = 0;
+    bool          reset_password_flag = false;
+    char *        config_dir          = NULL;
+    char *        plugin_dir          = NULL;
+    char *        opts                = "dh";
+    struct option long_options[]      = {
+        { "help", no_argument, NULL, 'h' },
         { "daemon", no_argument, NULL, 'd' },
         { "log", no_argument, NULL, 'l' },
+        { "reset-password", no_argument, NULL, 'r' },
         { "restart", required_argument, NULL, 'r' },
         { "version", no_argument, NULL, 'v' },
         { "disable_auth", no_argument, NULL, 'a' },
@@ -138,7 +156,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         switch (c) {
         case 'h':
             usage();
-            exit(0);
+            goto quit;
         case 'd':
             args->daemonized = true;
             break;
@@ -149,16 +167,19 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             args->dev_log = true;
             break;
         case 'r':
-            if (0 != parse_restart_policy(optarg, &args->restart)) {
+            if (0 ==
+                strcmp("reset-password", long_options[option_index].name)) {
+                reset_password_flag = true;
+            } else if (0 != parse_restart_policy(optarg, &args->restart)) {
                 fprintf(stderr, "%s: option '--restart' invalid policy: `%s`\n",
                         argv[0], optarg);
+                ret = 1;
                 goto quit;
             }
             break;
         case 'v':
             version();
             goto quit;
-            break;
         case 'a':
             args->disable_auth = true;
             break;
@@ -171,6 +192,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         case '?':
         default:
             usage();
+            ret = 1;
             goto quit;
         }
     }
@@ -186,13 +208,15 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     if (!file_exists(args->config_dir)) {
         fprintf(stderr, "configuration directory `%s` not exists\n",
                 args->config_dir);
-        exit(1);
+        ret = 1;
+        goto quit;
     }
 
     args->plugin_dir = plugin_dir ? plugin_dir : strdup("./plugins");
     if (!file_exists(args->plugin_dir)) {
         fprintf(stderr, "plugin directory `%s` not exists\n", args->plugin_dir);
-        exit(1);
+        ret = 1;
+        goto quit;
     }
 
     const char *zlog_conf = args->dev_log ? "dev.conf" : "zlog.conf";
@@ -202,18 +226,24 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     args->log_init_file = log_init_file;
     if (!file_exists(args->log_init_file)) {
         fprintf(stderr, "log init file `%s` not exists\n", args->log_init_file);
-        exit(1);
+        ret = 1;
+        goto quit;
     }
 
     // passing information by global variable is not a good style
     g_config_dir = args->config_dir;
     g_plugin_dir = args->plugin_dir;
 
+    if (reset_password_flag) {
+        ret = reset_password();
+        goto quit;
+    }
+
     return;
 
 quit:
     neu_cli_args_fini(args);
-    exit(1);
+    exit(ret);
 }
 
 void neu_cli_args_fini(neu_cli_args_t *args)
