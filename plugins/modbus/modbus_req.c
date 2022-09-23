@@ -168,7 +168,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     neu_value16_u v16 = { 0 };
                     v16.value         = htons(*(uint16_t *) dvalue.value.bytes);
                     dvalue.value.u8 =
-                        neu_value16_get_bit(v16, 15 - (*p_tag)->option.bit.bit);
+                        neu_value16_get_bit(v16, (*p_tag)->option.bit.bit);
                     break;
                 }
                 case MODBUS_AREA_COIL:
