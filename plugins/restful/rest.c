@@ -31,6 +31,7 @@
 #include "group_config_handle.h"
 #include "handle.h"
 #include "http.h"
+#include "license_handle.h"
 #include "plugin_handle.h"
 #include "proxy.h"
 #include "rest.h"
@@ -144,6 +145,12 @@ static neu_plugin_t *dashb_plugin_open(void)
     uint32_t                       n_handler = 0;
     const struct neu_rest_handler *rest_handlers = NULL;
     const struct neu_rest_handler *cors          = NULL;
+
+    // copy license file for backward compatibility
+    if (0 != copy_license_file_if_necessary()) {
+        free(plugin);
+        return NULL;
+    }
 
     neu_plugin_common_init(&plugin->common);
 

@@ -22,6 +22,7 @@
 
 #include <nng/nng.h>
 
+int  copy_license_file_if_necessary();
 void handle_get_license(nng_aio *aio);
 void handle_set_license(nng_aio *aio);
 
