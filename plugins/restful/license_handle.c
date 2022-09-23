@@ -48,28 +48,89 @@ static inline char *get_license_path()
     return s;
 }
 
-static inline char *get_license_path_or_fallback()
+static int copy_file(const char *from, const char *to)
+{
+    int         rv      = 0;
+    char *      buf     = NULL;
+    FILE *      fp      = NULL;
+    struct stat statbuf = {};
+
+    if (0 != stat(from, &statbuf)) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    buf = malloc(statbuf.st_size);
+    if (NULL == buf) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    fp = fopen(from, "rb");
+    if (NULL == fp) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    if ((size_t) statbuf.st_size != fread(buf, 1, statbuf.st_size, fp)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    fclose(fp);
+    fp = fopen(to, "w");
+    if (NULL == fp) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    if ((size_t) statbuf.st_size != fwrite(buf, 1, statbuf.st_size, fp)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+end:
+    if (fp) {
+        fclose(fp);
+    }
+    free(buf);
+    return rv;
+}
+
+int copy_license_file_if_necessary()
 {
     struct stat statbuf      = {};
     char *      license_path = get_license_path();
+
     if (NULL == license_path) {
-        return NULL;
+        return NEU_ERR_EINTERNAL;
     }
 
     if (0 == stat(license_path, &statbuf)) {
-        return license_path;
+        free(license_path);
+        return 0;
     }
 
     nlog_warn("license `%s` not found", license_path);
-    free(license_path);
-    license_path = NULL;
 
-    neu_asprintf(&license_path, "%s/%s", g_config_dir, LICENSE_FNAME);
-    if (NULL != license_path) {
-        nlog_warn("license fallback to `%s`", license_path);
+    char *fallback_path = NULL;
+    neu_asprintf(&fallback_path, "%s/%s", g_config_dir, LICENSE_FNAME);
+    if (NULL == fallback_path) {
+        free(license_path);
+        return NEU_ERR_EINTERNAL;
     }
 
-    return license_path;
+    if (0 != stat(fallback_path, &statbuf)) {
+        // no fallback license file
+        free(license_path);
+        free(fallback_path);
+        return 0;
+    }
+
+    nlog_warn("fallback to `%s`", fallback_path);
+    int rv = copy_file(fallback_path, license_path);
+
+    free(license_path);
+    free(fallback_path);
+    return rv;
 }
 
 void handle_get_license(nng_aio *aio)
@@ -90,7 +151,7 @@ void handle_get_license(nng_aio *aio)
 
     utarray_new(plugin_names, &ut_ptr_icd);
 
-    license_path = get_license_path_or_fallback();
+    license_path = get_license_path();
     if (NULL == license_path) {
         rv = NEU_ERR_EINTERNAL;
         goto final;
