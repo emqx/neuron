@@ -19,6 +19,7 @@
 
 #define _POSIX_C_SOURCE 200809L
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -43,8 +44,32 @@ int        get_plugin_names(const license_t *lic, UT_array *plugin_names);
 static inline char *get_license_path()
 {
     char *s = NULL;
-    neu_asprintf(&s, "%s/%s", g_config_dir, LICENSE_FNAME);
+    neu_asprintf(&s, "persistence/%s", LICENSE_FNAME);
     return s;
+}
+
+static inline char *get_license_path_or_fallback()
+{
+    struct stat statbuf      = {};
+    char *      license_path = get_license_path();
+    if (NULL == license_path) {
+        return NULL;
+    }
+
+    if (0 == stat(license_path, &statbuf)) {
+        return license_path;
+    }
+
+    nlog_warn("license `%s` not found", license_path);
+    free(license_path);
+    license_path = NULL;
+
+    neu_asprintf(&license_path, "%s/%s", g_config_dir, LICENSE_FNAME);
+    if (NULL != license_path) {
+        nlog_warn("license fallback to `%s`", license_path);
+    }
+
+    return license_path;
 }
 
 void handle_get_license(nng_aio *aio)
@@ -65,7 +90,7 @@ void handle_get_license(nng_aio *aio)
 
     utarray_new(plugin_names, &ut_ptr_icd);
 
-    license_path = get_license_path();
+    license_path = get_license_path_or_fallback();
     if (NULL == license_path) {
         rv = NEU_ERR_EINTERNAL;
         goto final;
