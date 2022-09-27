@@ -13,21 +13,15 @@ jobs:
     strategy:
       matrix:
         arch:
-          - [aarch64-linux-gnu, aarch64, gcc-aarch64-linux-gnu, g++-aarch64-linux-gnu, /opt/externs/libs, arm64]
-          - [arm-linux-gnueabihf, armv4, gcc-arm-linux-gnueabihf, g++-arm-linux-gnueabihf, /opt/externs/libs, armhf]
-          - [x86_64-linux-gnu, x86_64, gcc, g++, /usr/local, amd64]
+          - [aarch64-linux-gnu, aarch64, arm64]
+          - [arm-linux-gnueabihf, armv4, armhf]
+          - [x86_64-linux-gnu, x86_64, amd64]
+    container: neugates/build:${{ matrix.arch[1] }}-2.2
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-
-      - name: install
-        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.arch[2] }} ${{ matrix.arch[3] }} pkg-config alien
-      
-      - name: install dep
-        run: |
-          ./install.sh -d ${{ matrix.arch[4] }} -c ${{ matrix.arch[0] }} -a ${{ matrix.arch[1] }}
 
       - name: get version
         id: get_version
@@ -58,11 +52,11 @@ jobs:
 
       - name: Create neuron sdk package
         run: |
-          ./package-sdk.sh -p ${{ matrix.arch[5] }} -n neuron-sdk-${{ steps.get_version.outputs.version }}
+          ./package-sdk.sh -p ${{ matrix.arch[2] }} -n neuron-sdk-${{ steps.get_version.outputs.version }}
 
       - uses: actions/upload-artifact@v3
         with:
-          name: neuron-sdk-${{ matrix.arch[5] }}
+          name: neuron-sdk-${{ matrix.arch[2] }}
           path: |
             neuron-sdk-*.tar.gz
 
@@ -71,19 +65,13 @@ jobs:
     strategy:
       matrix:
         arch:
-          - [x86_64-linux-gnu, x86_64, gcc, g++, /usr/local, amd64]
+          - [x86_64-linux-gnu, x86_64, amd64]
+    container: neugates/build:${{ matrix.arch[1] }}-2.2
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-
-      - name: install
-        run: sudo apt-get update && sudo apt-get install -y ${{ matrix.arch[2] }} ${{ matrix.arch[3] }} pkg-config alien
-      
-      - name: install dep
-        run: |
-          ./install.sh -d ${{ matrix.arch[4] }} -c ${{ matrix.arch[0] }} -a ${{ matrix.arch[1] }}
 
       - name: get version
         id: get_version
@@ -98,11 +86,11 @@ jobs:
 
       - name: Create neuron sdk package
         run: |
-          ./package-sdk.sh -p ${{ matrix.arch[5] }} -n neuron-sdk-debug-${{ steps.get_version.outputs.version }}
+          ./package-sdk.sh -p ${{ matrix.arch[2] }} -n neuron-sdk-debug-${{ steps.get_version.outputs.version }}
 
       - uses: actions/upload-artifact@v3
         with:
-          name: neuron-sdk-debug-${{ matrix.arch[5] }}
+          name: neuron-sdk-debug-${{ matrix.arch[2] }}
           path: |
             neuron-sdk-debug-*.tar.gz
 

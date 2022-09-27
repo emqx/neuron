@@ -2,26 +2,26 @@
 
 set -e
 
-compiler_prefix="x86_64-linux-gnu"
-dir="/usr/local/"
 install_dir=
 arch=x86_64
+compile=
 
-while getopts ":c:d:a:" OPT; do
+while getopts ":d:a:c:x:" OPT; do
     case ${OPT} in
         a)
             arch=$OPTARG
             ;;
-        c)
-            compiler_prefix=$OPTARG
-            ;;
         d)
-            dir=$OPTARG
+            install_dir=$OPTARG
+            ;;
+        c)
+            compile=$OPTARG
             ;;
     esac
 done
 
-install_dir=${dir}/${compiler_prefix}
+gcc_compile=${compile}-gcc
+gxx_compile=${compile}-g++
 
 #$1 rep
 #$2 tag
@@ -31,8 +31,8 @@ function compile_source() {
     cd tmp
     git checkout -b br $2
     mkdir build && cd build
-    cmake .. -DCMAKE_C_COMPILER=${compiler_prefix}-gcc \
-        -DCMAKE_CXX_COMPILER=${compiler_prefix}-g++ \
+    cmake .. -DCMAKE_C_COMPILER=${gcc_compile} \
+        -DCMAKE_CXX_COMPILER=${gxx_compile} \
         -DCMAKE_STAGING_PREFIX=${install_dir} \
         -DCMAKE_PREFIX_PATH=${install_dir} \
         $3
@@ -44,16 +44,17 @@ function compile_source() {
 
 function build_openssl() {
     echo "Installing openssl (1.1.1)"
-    if [ $compiler_prefix == "x86_64-linux-gnu" ]; then
+    if [ $arch == "x86_64" ]; then
         sudo apt-get install -y openssl libssl-dev
     else
+
         git clone -b OpenSSL_1_1_1 https://github.com/openssl/openssl.git
         cd openssl
         mkdir -p ${install_dir}/openssl/ssl
         ./Configure linux-${arch} no-asm shared \
-            --prefix=${install_dir}/ \
+            --prefix=${install_dir} \
             --openssldir=${install_dir}/openssl/ssl \
-            --cross-compile-prefix=${compiler_prefix}- 
+            --cross-compile-prefix=${compile}- 
         make clean
         make -j4
         make install_sw
@@ -65,8 +66,9 @@ function build_openssl() {
 function build_zlog() {
     git clone -b 1.2.15 https://github.com/HardySimpson/zlog.git
     cd zlog
-    make CC=${compiler_prefix}-gcc
-    if [ $compiler_prefix == "x86_64-linux-gnu" ]; then
+    echo ${gcc_compile}
+    make CC=${gcc_compile}
+    if [ $arch == "x86_64" ]; then
         sudo make install
         sudo make PREFIX=${install_dir} install
     else
@@ -82,7 +84,7 @@ function build_sqlite3() {
     cd sqlite3
     ./configure --prefix=${install_dir} \
                 --disable-shared --disable-readline \
-                --host ${arch} CC=${compiler_prefix}-gcc \
+                --host ${arch} CC=${gcc_compile} \
       && make -j4 \
       && sudo make install
     cd ../
@@ -96,6 +98,6 @@ compile_source benmcollins/libjwt.git v1.13.1 "-DENABLE_PIC=ON -DBUILD_SHARED_LI
 compile_source neugates/MQTT-C.git HEAD "-DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON -DMQTT_C_EXAMPLES=OFF"
 build_sqlite3
 
-if [ $compiler_prefix == "x86_64-linux-gnu" ]; then
+if [ $arch == "x86_64" ]; then
     compile_source google/googletest.git release-1.11.0
 fi
