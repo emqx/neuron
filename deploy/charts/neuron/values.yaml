@@ -30,7 +30,7 @@ securityContext: {}
 
 service:
   enabled: true
-  type: ClusterIP
+  type: NodePort
 
   # -- Service ports
   ports:
@@ -90,7 +90,7 @@ persistence:
   existingClaim: "pvc-neuron-data"
 
 nngFromExistingPVC:
-  enabled: true
+  enabled: false
   ## PVC must be created manually before volume will be bound. The value is evaluated as a template
   ##
   existingClaim: "pvc-neuron-tmp"
