@@ -40,16 +40,13 @@ jobs:
 
   ut:
     runs-on: ubuntu-20.04
+    container: neugates/build:x86_64-2.2
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
       
-      - name: install dep
-        run: |
-          ./install.sh -d /usr/local -a x86_64 -c x86_64-linux-gnu
-
       - name: compile
         run: |
           mkdir -p build && cd build
@@ -63,16 +60,13 @@ jobs:
 
   ft:
     runs-on: ubuntu-20.04
+    container: neugates/build:x86_64-2.2
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
       
-      - name: install dep
-        run: |
-          ./install.sh -d /usr/local -a x86_64 -c x86_64-linux-gnu
-
       - name: compile
         run: |
           mkdir -p build && cd build
