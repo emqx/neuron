@@ -419,6 +419,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_get_node_state_t resp = { 0 };
 
         resp.state   = neu_adapter_get_state(adapter);
+        resp.avg_rtt = adapter->stat.avg_rtt;
         header->type = NEU_RESP_GET_NODE_STATE;
         neu_msg_exchange(header);
         reply(adapter, header, &resp);

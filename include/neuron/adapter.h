@@ -395,6 +395,7 @@ typedef struct neu_req_get_node_state {
 
 typedef struct neu_resp_get_node_state {
     neu_node_state_t state;
+    uint16_t         avg_rtt; // average round trip time in milliseconds
 } neu_resp_get_node_state_t;
 
 typedef struct neu_req_get_nodes_state {
@@ -403,6 +404,7 @@ typedef struct neu_req_get_nodes_state {
 typedef struct {
     char             node[NEU_NODE_NAME_LEN];
     neu_node_state_t state;
+    uint16_t         avg_rtt; // average round trip time in milliseconds
 } neu_nodes_state_t;
 
 inline static UT_icd neu_nodes_state_t_icd()
