@@ -30,6 +30,13 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        - name: neuron-logs
+          {{- if .Values.logsPVC.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ printf "%s" (tpl (default "" .Values.logsPVC.existingClaim) .) }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         {{- if .Values.tls.enabled }}
         - name: certs
           secret:
@@ -67,6 +74,8 @@ spec:
             mountPath: "/opt/neuron/persistence"
           - name: neuron-tmp
             mountPath: "/tmp"
+          - name: neuron-logs
+            mountPath: "/opt/neuron/logs"
           {{- if .Values.tls.enabled }}
           - name: certs
             mountPath: "/opt/neuron/config/neuron.pem"
