@@ -63,7 +63,10 @@ service:
   #
   loadBalancerSourceRanges: []
   # -- Provide any additional annotations which may be required. Evaluated as a template
-  annotations: {}
+  annotations:
+    eip.openelb.kubesphere.io/v1alpha2: vip-eip
+    lb.kubesphere.io/v1alpha1: openelb
+    protocol.openelb.kubesphere.io/v1alpha1: vip
 
 ingress:
   enabled: false
@@ -96,7 +99,7 @@ nngFromExistingPVC:
   existingClaim: "pvc-neuron-tmp"
 
 logsPVC:
-  enable: true
+  enabled: true
   ## PVC must be created manually before volume will be bound. The value is evaluated as a template
   ##
   existingClaim: "pvc-neuron-logs"
