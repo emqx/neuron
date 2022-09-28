@@ -47,7 +47,6 @@ cp build/libneuron-base.so ${package_name}/lib
 cp /library/zlog/src/libzlog.so.1.2 ${package_name}/lib
 
 cp persistence/*.sql ${package_name}/config/
-cp migrate.py ${package_name}/
 
 cp sdk-zlog.conf ${package_name}/config/
 cp zlog.conf ${package_name}/config/
