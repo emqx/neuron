@@ -93,7 +93,7 @@ persistence:
   existingClaim: "pvc-neuron-data"
 
 nngFromExistingPVC:
-  enabled: false
+  enabled: true
   ## PVC must be created manually before volume will be bound. The value is evaluated as a template
   ##
   existingClaim: "pvc-neuron-tmp"
