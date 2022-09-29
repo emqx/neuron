@@ -92,6 +92,7 @@ neu_manager_t *neu_manager_create()
     manager->loop = neu_event_add_io(manager->events, param);
 
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
+    start_static_adapter(manager, DEFAULT_MONITOR_PLUGIN_NAME);
 
     if (manager_load_plugin(manager) != 0) {
         nlog_warn("load plugin error");
