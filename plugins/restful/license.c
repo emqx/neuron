@@ -65,7 +65,7 @@ static uint64_t mktimestamp(struct tm dt)
     uint64_t ret;
     int      i = 0;
 
-    ret = (dt.tm_year - 1970) * 365 * 24 * 3600;
+    ret = ((uint64_t) dt.tm_year - 1970) * 365 * 24 * 3600;
     ret +=
         (mon_yday[isleap(dt.tm_year)][dt.tm_mon] + dt.tm_mday - 1) * 24 * 3600;
     ret += dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
