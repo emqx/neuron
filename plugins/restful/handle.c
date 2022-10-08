@@ -291,7 +291,7 @@ struct neu_rest_handler api_handlers[] = {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/log",
-        .value.handler = handle_get_log,
+        .value.handler = handle_download_log,
     },
     {
         .method        = NEU_REST_METHOD_POST,

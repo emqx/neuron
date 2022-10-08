@@ -23,5 +23,6 @@
 #include <nng/nng.h>
 
 void handle_get_log(nng_aio *aio);
+void handle_download_log(nng_aio *aio);
 
 #endif
