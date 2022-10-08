@@ -121,6 +121,7 @@ set(NEURON_SOURCES
     plugins/restful/http.c
     plugins/restful/proxy.c
     plugins/restful/websocket.c
+    plugins/monitor/monitor.c
     ${PERSIST_SOURCES})
 
 set(CMAKE_BUILD_RPATH ./)
