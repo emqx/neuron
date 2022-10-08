@@ -559,7 +559,8 @@ static void publish_callback(void **                       p_reconnect_state,
     topic_name[published->topic_name_size] = '\0';
 
     if (NULL != client->log) {
-        zlog_debug(client->log, "received publish('%s'): %s", topic_name,
+        zlog_debug(client->log, "received publish('%s'): %.*s", topic_name,
+                   (int) published->application_message_size,
                    (const char *) published->application_message);
     }
 
