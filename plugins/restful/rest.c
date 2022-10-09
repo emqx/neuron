@@ -49,8 +49,8 @@ struct neu_plugin {
     neu_rest_handle_ctx_t *handle_ctx;
 };
 
-static int rest_add_handler(nng_http_server *              server,
-                            const struct neu_rest_handler *rest_handler)
+int neu_rest_add_handler(nng_http_server *              server,
+                         const struct neu_rest_handler *rest_handler)
 {
     nng_http_handler *handler;
     int               ret        = -1;
@@ -166,11 +166,11 @@ static neu_plugin_t *dashb_plugin_open(void)
 
     neu_rest_api_handler(&rest_handlers, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        rest_add_handler(plugin->api_server, &rest_handlers[i]);
+        neu_rest_add_handler(plugin->api_server, &rest_handlers[i]);
     }
     neu_rest_api_cors_handler(&cors, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        rest_add_handler(plugin->api_server, &cors[i]);
+        neu_rest_add_handler(plugin->api_server, &cors[i]);
     }
     if ((rv = nng_http_server_start(plugin->api_server)) != 0) {
         nlog_error("Failed to start api server, error=%d", rv);
@@ -179,7 +179,7 @@ static neu_plugin_t *dashb_plugin_open(void)
 
     neu_rest_web_handler(&rest_handlers, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        rest_add_handler(plugin->web_server, &rest_handlers[i]);
+        neu_rest_add_handler(plugin->web_server, &rest_handlers[i]);
     }
 
     if ((rv = nng_http_server_start(plugin->web_server)) != 0) {
