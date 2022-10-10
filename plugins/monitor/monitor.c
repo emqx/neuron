@@ -24,6 +24,7 @@
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
+#include "metric_handle.h"
 #include "monitor.h"
 #include "restful/handle.h"
 #include "utils/log.h"
@@ -57,7 +58,14 @@ static nng_http_server *server_init()
     return server;
 }
 
-static struct neu_rest_handler api_handlers[] = {};
+static struct neu_rest_handler api_handlers[] = {
+    {
+        .method        = NEU_REST_METHOD_GET,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/metrics",
+        .value.handler = handle_get_metric,
+    },
+};
 
 static int add_handlers(nng_http_server *server)
 {
