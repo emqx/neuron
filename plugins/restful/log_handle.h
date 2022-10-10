@@ -24,5 +24,6 @@
 
 void handle_get_log(nng_aio *aio);
 void handle_download_log(nng_aio *aio);
+void handle_log_level(nng_aio *aio);
 
 #endif

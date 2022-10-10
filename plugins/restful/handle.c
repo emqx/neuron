@@ -294,6 +294,12 @@ struct neu_rest_handler api_handlers[] = {
         .value.handler = handle_download_log,
     },
     {
+        .method        = NEU_REST_METHOD_PUT,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/level",
+        .value.handler = handle_log_level,
+    },
+    {
         .method        = NEU_REST_METHOD_POST,
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/license",

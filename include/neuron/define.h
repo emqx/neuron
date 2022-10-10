@@ -34,6 +34,7 @@
 #define NEU_TAG_FLOAG_PRECISION_MAX 17
 #define NEU_USER_PASSWORD_MIN_LEN 4
 #define NEU_USER_PASSWORD_MAX_LEN 16
+#define NEU_LOG_LEVEL_LEN 9
 
 typedef enum neu_plugin_kind {
     NEU_PLUGIN_KIND_STATIC = 0,
