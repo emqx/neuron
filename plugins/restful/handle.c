@@ -52,8 +52,6 @@ struct neu_rest_handler web_handlers[] = {
     },
 };
 
-static void cors(nng_aio *aio);
-
 struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/ping",
@@ -338,7 +336,7 @@ void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
     for (uint32_t i = 0; i < *size; i++) {
         cors_handler[i].method        = NEU_REST_METHOD_OPTIONS;
         cors_handler[i].type          = NEU_REST_HANDLER_FUNCTION;
-        cors_handler[i].value.handler = cors;
+        cors_handler[i].value.handler = neu_rest_handle_cors;
     }
 }
 
@@ -360,7 +358,7 @@ void *neu_rest_get_plugin()
     return rest_ctx->plugin;
 }
 
-static void cors(nng_aio *aio)
+void neu_rest_handle_cors(nng_aio *aio)
 {
     nng_http_res *res = NULL;
 

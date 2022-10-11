@@ -22,6 +22,9 @@
 
 #include <stdlib.h>
 
+#include <nng/nng.h>
+#include <nng/supplemental/http/http.h>
+
 #include "plugin.h"
 #include "utils/neu_jwt.h"
 #include "json/neu_json_error.h"
@@ -106,10 +109,13 @@ neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin);
 void                   neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx);
 void *                 neu_rest_get_plugin();
 
+int  neu_rest_add_handler(nng_http_server *              server,
+                          const struct neu_rest_handler *rest_handler);
 void neu_rest_web_handler(const struct neu_rest_handler **handlers,
                           uint32_t *                      size);
 void neu_rest_api_handler(const struct neu_rest_handler **handlers,
                           uint32_t *                      size);
 void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
                                uint32_t *                      size);
+void neu_rest_handle_cors(nng_aio *aio);
 #endif
