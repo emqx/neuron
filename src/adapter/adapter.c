@@ -693,10 +693,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
 void neu_adapter_destroy(neu_adapter_t *adapter)
 {
-    adapter->module->intf_funs->close(adapter->plugin);
-
     nng_dialer_close(adapter->dialer);
     nng_close(adapter->sock);
+
+    adapter->module->intf_funs->close(adapter->plugin);
+
     neu_persister_destroy(adapter->persister);
 
     if (adapter->name != NULL) {
