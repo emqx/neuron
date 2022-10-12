@@ -311,6 +311,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         manager_storage_del_node(manager, cmd->node);
+        if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_APP) {
+            neu_subscribe_manager_unsub_all(manager->subscribe_manager,
+                                            cmd->node);
+        }
         header->type = NEU_REQ_NODE_UNINIT;
         forward_msg(manager, msg, header->receiver);
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
