@@ -16,7 +16,9 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include <dirent.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -40,6 +42,7 @@
 
 #include "manager.h"
 #include "manager_internal.h"
+#include "utils/time.h"
 
 // definition for adapter names
 #define DEFAULT_DASHBOARD_ADAPTER_NAME DEFAULT_DASHBOARD_PLUGIN_NAME
@@ -53,6 +56,7 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
                                    nng_pipe pipe);
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *ndoe);
+static bool        has_core_dumps();
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  report_nodes_state(void *usr_data);
 static void start_single_adapter(neu_manager_t *manager, const char *name,
@@ -72,6 +76,7 @@ neu_manager_t *neu_manager_create()
         .cb          = report_nodes_state,
     };
 
+    manager->start_ts          = neu_time_ms();
     manager->events            = neu_event_new();
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
@@ -204,6 +209,24 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             utarray_free(apps);
             break;
         }
+        break;
+    }
+    case NEU_REQRESP_METRICS: {
+        neu_reqresp_metrics_t *cmd = (neu_reqresp_metrics_t *) &header[1];
+        if (NULL == cmd->metrics ||
+            0 !=
+                neu_node_manager_get_metrics(manager->node_manager,
+                                             cmd->metrics)) {
+            break;
+        }
+        cmd->metrics->core_dumped = has_core_dumps();
+        cmd->metrics->uptime_seconds =
+            (neu_time_ms() - manager->start_ts) / 1000;
+
+        header->type = NEU_REQRESP_METRICS;
+        strcpy(header->receiver, header->sender);
+        reply(manager, header, cmd);
+
         break;
     }
     case NEU_REQ_UPDATE_LICENSE: {
@@ -598,6 +621,25 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
     } else {
         nng_msg_free(out_msg);
     }
+}
+
+static bool has_core_dumps()
+{
+    DIR *dp = opendir("core");
+    if (NULL == dp) {
+        return false;
+    }
+
+    bool found = false;
+    for (struct dirent *de = NULL; NULL != (de = readdir(dp));) {
+        if (0 == strncmp("core", de->d_name, 4)) {
+            found = true;
+            break;
+        }
+    }
+
+    closedir(dp);
+    return found;
 }
 
 static void start_static_adapter(neu_manager_t *manager, const char *name)

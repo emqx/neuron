@@ -62,4 +62,6 @@ nng_pipe  neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name);
 // neu_nodes_state_t array
 UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr);
 
+int neu_node_manager_get_metrics(neu_node_manager_t *mgr,
+                                 neu_metrics_t *     metrics_p);
 #endif
