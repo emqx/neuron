@@ -127,6 +127,23 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
     return groups;
 }
 
+void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app)
+{
+    sub_elem_t *el = NULL, *tmp = NULL;
+
+    HASH_ITER(hh, mgr->ss, el, tmp)
+    {
+        utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
+        {
+            if (strcmp(sub_app->app_name, app) == 0) {
+                neu_subscribe_manager_unsub(mgr, el->key.driver, app,
+                                            el->key.group);
+                break;
+            }
+        }
+    }
+}
+
 int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                               const char *app, const char *group, nng_pipe pipe)
 {
