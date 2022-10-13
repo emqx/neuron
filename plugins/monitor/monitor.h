@@ -20,8 +20,26 @@
 #ifndef NEU_PLUGIN_MONITOR_H
 #define NEU_PLUGIN_MONITOR_H
 
+#include <pthread.h>
+
+#include <nng/nng.h>
+#include <nng/supplemental/http/http.h>
+
+#include "adapter.h"
+#include "event/event.h"
 #include "plugin.h"
 
+struct neu_plugin {
+    neu_plugin_common_t common;
+    pthread_mutex_t     mutex;
+    bool                metrics_updating;
+    neu_metrics_t       metrics;
+    neu_events_t *      events;
+    neu_event_timer_t * timer;
+    nng_http_server *   api_server;
+};
+
 extern const neu_plugin_module_t default_monitor_plugin_module;
+neu_plugin_t *                   neu_monitor_get_plugin();
 
 #endif

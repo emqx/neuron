@@ -52,6 +52,13 @@ typedef enum {
     NEU_NODE_STAT_MAX,
 } neu_node_stat_e;
 
+typedef enum {
+    NEU_METRICS_CATEGORY_GLOBAL,
+    NEU_METRICS_CATEGORY_DRIVER,
+    NEU_METRICS_CATEGORY_APP,
+    NEU_METRICS_CATEGORY_ALL,
+} neu_metrics_category_e;
+
 typedef struct {
     bool     core_dumped;
     uint64_t uptime_seconds;
