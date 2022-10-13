@@ -52,6 +52,24 @@ typedef enum {
     NEU_NODE_STAT_MAX,
 } neu_node_stat_e;
 
+typedef enum {
+    NEU_METRICS_CATEGORY_GLOBAL,
+    NEU_METRICS_CATEGORY_DRIVER,
+    NEU_METRICS_CATEGORY_APP,
+    NEU_METRICS_CATEGORY_ALL,
+} neu_metrics_category_e;
+
+typedef struct {
+    bool     core_dumped;
+    uint64_t uptime_seconds;
+    size_t   north_nodes;
+    size_t   north_running_nodes;
+    size_t   north_disconnected_nodes;
+    size_t   south_nodes;
+    size_t   south_running_nodes;
+    size_t   south_disconnected_nodes;
+} neu_metrics_t;
+
 static inline const char *neu_node_stat_string(neu_node_stat_e s)
 {
     static const char *map[] = {
@@ -130,6 +148,7 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_NODES_STATE,
     NEU_REQRESP_NODE_DELETED,
+    NEU_REQRESP_METRICS,
 } neu_reqresp_type_e;
 
 typedef enum {
@@ -193,6 +212,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
     [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
+    [NEU_REQRESP_METRICS]      = "NEU_REQRESP_METRICS",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -463,6 +483,10 @@ typedef struct {
 typedef struct {
     char node[NEU_NODE_NAME_LEN];
 } neu_reqresp_node_deleted_t;
+
+typedef struct {
+    neu_metrics_t *metrics;
+} neu_reqresp_metrics_t;
 
 void *neu_msg_gen(neu_reqresp_head_t *header, void *data);
 

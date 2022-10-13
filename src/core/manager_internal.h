@@ -32,6 +32,7 @@
 #include "subscribe.h"
 
 typedef struct neu_manager {
+    uint64_t           start_ts;
     nng_socket         socket;
     neu_events_t *     events;
     neu_event_io_t *   loop;

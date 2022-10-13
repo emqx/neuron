@@ -21,6 +21,7 @@
 #include "utils/log.h"
 
 #include "metric_handle.h"
+#include "monitor.h"
 #include "restful/handle.h"
 #include "restful/http.h"
 
@@ -64,6 +65,8 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
 
     if (content != NULL && strlen(content) > 0) {
         nng_http_res_copy_data(res, content, strlen(content));
+    } else {
+        nng_http_res_set_data(res, NULL, 0);
     }
 
     nng_http_res_set_status(res, status);
@@ -78,13 +81,79 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     return 0;
 }
 
+static inline bool parse_metrics_catgory(const char *s, size_t len,
+                                         neu_metrics_category_e *cat)
+{
+    char *domain[] = {
+        [NEU_METRICS_CATEGORY_GLOBAL] = "global",
+        [NEU_METRICS_CATEGORY_DRIVER] = "driver",
+        [NEU_METRICS_CATEGORY_APP]    = "app",
+        [NEU_METRICS_CATEGORY_ALL]    = NULL,
+    };
+
+    if (NULL == s || NULL == cat) {
+        return false;
+    }
+
+    for (int i = 0; i < NEU_METRICS_CATEGORY_ALL; ++i) {
+        if (strlen(domain[i]) == len && 0 == strncmp(s, domain[i], len)) {
+            *cat = i;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static inline void gen_global_metrics(const neu_metrics_t *metrics,
+                                      char **              result)
+{
+    neu_asprintf(result, METRIC_GLOBAL_TMPL, metrics->core_dumped,
+                 metrics->uptime_seconds, metrics->north_nodes,
+                 metrics->north_running_nodes,
+                 metrics->north_disconnected_nodes, metrics->south_nodes,
+                 metrics->south_running_nodes,
+                 metrics->south_disconnected_nodes);
+}
+
 void handle_get_metric(nng_aio *aio)
 {
-    char *result = NULL;
+    char *        result = NULL;
+    neu_plugin_t *plugin = neu_monitor_get_plugin();
 
-    neu_asprintf(&result, METRIC_GLOBAL_TMPL, 0, 0, 0, 0, 0, 0, 0, 0);
+    neu_metrics_category_e cat           = NEU_METRICS_CATEGORY_ALL;
+    size_t                 cat_param_len = 0;
+    const char *cat_param = http_get_param(aio, "category", &cat_param_len);
+    if (NULL != cat_param &&
+        !parse_metrics_catgory(cat_param, cat_param_len, &cat)) {
+        plog_info(plugin, "invalid metrics category: %.*s", (int) cat_param_len,
+                  cat_param);
+        response(aio, NULL, NNG_HTTP_STATUS_BAD_REQUEST);
+        return;
+    }
+
+    pthread_mutex_lock(&plugin->mutex);
+    if (plugin->metrics_updating) {
+        // a metrics request to core is in progress
+        // in the assumption that this case is rare, we just finish error
+        pthread_mutex_unlock(&plugin->mutex);
+        nng_aio_finish(aio, NNG_EBUSY);
+        response(aio, NULL, NNG_HTTP_STATUS_SERVICE_UNAVAILABLE);
+        return;
+    }
+    switch (cat) {
+    case NEU_METRICS_CATEGORY_GLOBAL:
+        gen_global_metrics(&plugin->metrics, &result);
+        break;
+    case NEU_METRICS_CATEGORY_DRIVER:
+    case NEU_METRICS_CATEGORY_APP:
+    case NEU_METRICS_CATEGORY_ALL:
+        break;
+    }
+    pthread_mutex_unlock(&plugin->mutex);
+
     if (NULL == result) {
-        nng_aio_finish(aio, NNG_EINTERNAL);
+        response(aio, NULL, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);
         return;
     }
 
