@@ -34,11 +34,21 @@ extern "C" {
 typedef char *neu_json_get_log_resp_row_t;
 
 typedef struct {
+    char *level;
+    char *node_name;
+} neu_json_update_log_level_req_t;
+
+typedef struct {
     int64_t                      page_count;
     int                          n_row;
     neu_json_get_log_resp_row_t *rows;
     int64_t                      error;
 } neu_json_get_log_resp_t;
+
+void neu_json_decode_update_log_level_req_free(
+    neu_json_update_log_level_req_t *req);
+int neu_json_decode_update_log_level_req(
+    char *buf, neu_json_update_log_level_req_t **result);
 
 int neu_json_encode_get_log_resp(void *json_object, void *param);
 

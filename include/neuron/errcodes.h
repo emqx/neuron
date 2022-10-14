@@ -44,6 +44,7 @@ typedef enum {
     NEU_ERR_FILE_NOT_EXIST           = 1011,
     NEU_ERR_INVALID_PASSWORD_LEN     = 1012,
     NEU_ERR_DUPLICATE_PASSWORD       = 1013,
+    NEU_ERR_LOG_LEVEL_NOT_EXIST      = 1014,
 
     NEU_ERR_NODE_EXIST             = 2002,
     NEU_ERR_NODE_NOT_EXIST         = 2003,

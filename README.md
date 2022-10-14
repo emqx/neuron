@@ -67,7 +67,7 @@ The Neuron documentation is available at [neugates.io/docs/en/latest/](https://n
 
 **Install required dependencies**
 
-[github.com/neugates/neuron/blob/main/Install-dependencies.md](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
+[Install-dependencies](https://github.com/emqx/neuron/blob/main/Install-dependencies.md)
 
 **Build**
 
@@ -81,7 +81,7 @@ $ cmake .. && make
 
 **Install Dashboard**
 
-Download the latest `neuron-dashboard.zip` from the [github.com/emqx/neuron-dashboard/releases](https://github.com/emqx/neuron-dashboard/releases) page, unzip it and put it to the `dist` directory under the Neuron executable directory.
+Download the latest `neuron-dashboard.zip` from the [neuron-dashboard](https://github.com/emqx/neuron-dashboard/releases) page, unzip it and put it to the `dist` directory under the Neuron executable directory.
 
 **Run**
 

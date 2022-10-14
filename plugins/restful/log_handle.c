@@ -34,6 +34,7 @@
 #include "errcodes.h"
 #include "handle.h"
 #include "http.h"
+#include "parser/neu_json_log.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"
 #include "json/neu_json_fn.h"
@@ -42,50 +43,53 @@
 #include "utils/utarray.h"
 
 UT_array *collect_log_files();
-void      handle_get_log_files(nng_aio *aio);
-int       read_log_file(const char *log_file, void **datap, size_t *lenp);
+// void      handle_get_log_files(nng_aio *aio);
+// int       read_log_file(const char *log_file, void **datap, size_t *lenp);
+int read_file(const char *file_name, void **datap, size_t *lenp);
+// int update_log_level(const char *file_name, const char *zlog_level);
 
-void handle_get_log(nng_aio *aio)
+void handle_download_log(nng_aio *aio)
 {
-    int  rv                               = 0;
-    char log_file[NEU_NODE_NAME_LEN + 32] = { 0 };
+    int  rv                          = 0;
+    char log_file[NEU_NODE_NAME_LEN] = { 0 };
 
     VALIDATE_JWT(aio);
 
-    // optional params
-    rv = http_get_param_str(aio, "log_file", log_file, sizeof(log_file));
-    if (-1 == rv) {
-        nlog_error("parse query param `log_file` fail");
+    rv = http_get_param_str(aio, "node_name", log_file, sizeof(log_file));
+    if (-1 == rv || -2 == rv) {
+        nlog_error("parse query param `node_name` fail");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             http_response(aio, error_code.error, result_error);
-        });
-        return;
-    } else if (-2 == rv) {
-        // handle no param
-        handle_get_log_files(aio);
+        })
         return;
     } else if ((size_t) rv >= sizeof(log_file)) {
         nlog_error("query param overflow, `log_file`:%s", log_file);
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
             http_response(aio, error_code.error, result_error);
-        });
+        })
         return;
     }
 
-    void *        data = NULL;
-    size_t        len  = 0;
-    nng_http_res *res  = NULL;
-    rv                 = read_log_file(log_file, &data, &len);
+    void *        data      = NULL;
+    size_t        len       = 0;
+    nng_http_res *res       = NULL;
+    char          path[128] = { 0 };
+
+    snprintf(path, sizeof(path), "./logs/%s.log", log_file);
+
+    rv = read_file(path, &data, &len);
     if (0 != rv) {
         NEU_JSON_RESPONSE_ERROR(
             rv, { http_response(aio, error_code.error, result_error); });
         return;
     }
-
     if (((rv = nng_http_res_alloc(&res)) != 0) ||
         ((rv = nng_http_res_set_status(res, NNG_HTTP_STATUS_OK)) != 0) ||
         ((rv = nng_http_res_set_header(res, "Content-Type",
                                        "application/octet-stream")) != 0) ||
+        ((rv = nng_http_res_set_header(res, "Content-Disposition",
+                                       "attachment; filename=log_file.log")) !=
+         0) ||
         ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Origin",
                                        "*")) != 0) ||
         ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Methods",
@@ -104,45 +108,185 @@ void handle_get_log(nng_aio *aio)
     nng_aio_finish(aio, 0);
 }
 
-void handle_get_log_files(nng_aio *aio)
+void handle_log_level(nng_aio *aio)
 {
-    UT_array *log_files = collect_log_files();
-    if (NULL == log_files) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            http_response(aio, error_code.error, result_error);
-        });
-        return;
-    }
+    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_update_log_level_req_t,
+        neu_json_decode_update_log_level_req, {
+            int rv  = 0;
+            int lev = 0;
 
-    size_t len = 1 + strlen("{log_files:[  ]}");
-    utarray_foreach(log_files, char **, log_file)
-    {
-        // one byte for the comma,
-        // the last one will be for the terminating NULL byte
-        len += strlen(*log_file) + 1;
-    }
+            char level[NEU_LOG_LEVEL_LEN]     = { 0 };
+            char node_name[NEU_NODE_NAME_LEN] = { 0 };
 
-    char *res = malloc(len);
-    if (NULL == res) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            http_response(aio, error_code.error, result_error);
-        });
-        utarray_free(log_files);
-        return;
-    }
+            strcpy(level, req->level);
+            if (strcmp(level, "DEBUG") == 0) {
+                lev = ZLOG_LEVEL_DEBUG;
+            } else if (strcmp(level, "INFO") == 0) {
+                lev = ZLOG_LEVEL_INFO;
+            } else if (strcmp(level, "WARN") == 0) {
+                lev = ZLOG_LEVEL_WARN;
+            } else if (strcmp(level, "ERROR") == 0) {
+                lev = ZLOG_LEVEL_ERROR;
+            } else if (strcmp(level, "NOTICE") == 0) {
+                lev = ZLOG_LEVEL_NOTICE;
+            } else if (strcmp(level, "FATAL") == 0) {
+                lev = ZLOG_LEVEL_FATAL;
+            } else {
+                free(req);
 
-    // with the space char to simplify code
-    int i = snprintf(res, len, "{log_files:[ ");
-    utarray_foreach(log_files, char **, log_file)
-    {
-        i += snprintf(res + i, len - i, "%s,", *log_file);
-    }
-    // will write over the last comma/space
-    snprintf(res + i - 1, len, "]}");
-    http_ok(aio, res);
-    free(res);
-    utarray_free(log_files);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_LOG_LEVEL_NOT_EXIST, {
+                    http_response(aio, error_code.error, result_error);
+                });
+
+                return;
+            }
+
+            UT_array *log_files = collect_log_files();
+            utarray_foreach(log_files, char **, log_file)
+            {
+                if (strncmp(*log_file, req->node_name, strlen(*log_file) - 4) ==
+                    0) {
+                    strcpy(node_name, req->node_name);
+                }
+            }
+
+            if (strlen(node_name) == 0) {
+                utarray_free(log_files);
+                free(req);
+
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+                    http_response(aio, error_code.error, result_error);
+                });
+
+                return;
+            }
+
+            zlog_category_t *ct = zlog_get_category(node_name);
+
+            rv = zlog_level_switch(ct, lev);
+            if (rv != 0) {
+                utarray_free(log_files);
+                free(req);
+
+                nlog_error("Modify log level fail");
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                    http_response(aio, error_code.error, result_error);
+                });
+
+                return;
+            }
+
+            utarray_free(log_files);
+            free(req);
+
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
+                http_response(aio, NEU_ERR_SUCCESS, result_error);
+            });
+
+            return;
+        })
 }
+
+// void handle_get_log(nng_aio *aio)
+// {
+//     int  rv                               = 0;
+//     char log_file[NEU_NODE_NAME_LEN + 32] = { 0 };
+
+//     VALIDATE_JWT(aio);
+
+//     // optional params
+//     rv = http_get_param_str(aio, "log_file", log_file, sizeof(log_file));
+//     if (-1 == rv) {
+//         nlog_error("parse query param `log_file` fail");
+//         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+//             http_response(aio, error_code.error, result_error);
+//         });
+//         return;
+//     } else if (-2 == rv) {
+//         // handle no param
+//         handle_get_log_files(aio);
+//         return;
+//     } else if ((size_t) rv >= sizeof(log_file)) {
+//         nlog_error("query param overflow, `log_file`:%s", log_file);
+//         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+//             http_response(aio, error_code.error, result_error);
+//         });
+//         return;
+//     }
+
+//     void *        data = NULL;
+//     size_t        len  = 0;
+//     nng_http_res *res  = NULL;
+//     rv                 = read_log_file(log_file, &data, &len);
+//     if (0 != rv) {
+//         NEU_JSON_RESPONSE_ERROR(
+//             rv, { http_response(aio, error_code.error, result_error); });
+//         return;
+//     }
+
+//     if (((rv = nng_http_res_alloc(&res)) != 0) ||
+//         ((rv = nng_http_res_set_status(res, NNG_HTTP_STATUS_OK)) != 0) ||
+//         ((rv = nng_http_res_set_header(res, "Content-Type",
+//                                        "application/octet-stream")) != 0) ||
+//         ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Origin",
+//                                        "*")) != 0) ||
+//         ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Methods",
+//                                        "POST,GET,PUT,DELETE,OPTIONS")) != 0)
+//                                        ||
+//         ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Headers",
+//                                        "*")) != 0) ||
+//         ((rv = nng_http_res_copy_data(res, data, len)) != 0)) {
+//         nng_http_res_free(res);
+//         free(data);
+//         nng_aio_finish(aio, rv);
+//         return;
+//     }
+
+//     free(data);
+//     nng_aio_set_output(aio, 0, res);
+//     nng_aio_finish(aio, 0);
+// }
+
+// void handle_get_log_files(nng_aio *aio)
+// {
+//     UT_array *log_files = collect_log_files();
+//     if (NULL == log_files) {
+//         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+//             http_response(aio, error_code.error, result_error);
+//         });
+//         return;
+//     }
+
+//     size_t len = 1 + strlen("{log_files:[  ]}");
+//     utarray_foreach(log_files, char **, log_file)
+//     {
+//         // one byte for the comma,
+//         // the last one will be for the terminating NULL byte
+//         len += strlen(*log_file) + 1;
+//     }
+
+//     char *res = malloc(len);
+//     if (NULL == res) {
+//         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+//             http_response(aio, error_code.error, result_error);
+//         });
+//         utarray_free(log_files);
+//         return;
+//     }
+
+//     // with the space char to simplify code
+//     int i = snprintf(res, len, "{log_files:[ ");
+//     utarray_foreach(log_files, char **, log_file)
+//     {
+//         i += snprintf(res + i, len - i, "%s,", *log_file);
+//     }
+//     // will write over the last comma/space
+//     snprintf(res + i - 1, len, "]}");
+//     http_ok(aio, res);
+//     free(res);
+//     utarray_free(log_files);
+// }
 
 static inline bool ends_with(const char *str, const char *suffix)
 {
@@ -175,29 +319,20 @@ UT_array *collect_log_files()
     return log_files;
 }
 
-// reads the entire named file, allocating storage to receive the data and
-// returning the data and the size in the reference arguments.
-int read_log_file(const char *log_file, void **datap, size_t *lenp)
+int read_file(const char *file_name, void **datap, size_t *lenp)
 {
     int         rv = 0;
     FILE *      f;
     struct stat st;
     size_t      len;
     void *      data;
-    char        name[128] = { 0 };
 
-    if ((size_t) snprintf(name, sizeof(name), "./logs/%s", log_file) >=
-        sizeof(name)) {
-        nlog_error("log_file path overflow:%s", name);
-        return NEU_ERR_EINTERNAL;
-    }
-
-    if (stat(name, &st) != 0) {
+    if (stat(file_name, &st) != 0) {
         return NEU_ERR_FILE_NOT_EXIST;
     }
 
-    if ((f = fopen(name, "rb")) == NULL) {
-        nlog_error("open fail: %s", name);
+    if ((f = fopen(file_name, "rb")) == NULL) {
+        nlog_error("open fail: %s", file_name);
         return NEU_ERR_EINTERNAL;
     }
 
@@ -209,6 +344,7 @@ int read_log_file(const char *log_file, void **datap, size_t *lenp)
         }
         if (fread(data, 1, len, f) != len) {
             rv = errno;
+            nlog_info("rv = %d", rv);
             free(data);
             goto done;
         }
