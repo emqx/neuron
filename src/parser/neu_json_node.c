@@ -27,7 +27,6 @@
 
 #include "json/json.h"
 
-#include "adapter.h"
 #include "neu_json_node.h"
 
 int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
@@ -122,33 +121,6 @@ void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req)
 {
     free(req->name);
     free(req);
-}
-
-int neu_json_encode_get_node_stat_resp(void *json_object, void *param)
-{
-    int                            ret = 0;
-    neu_json_get_node_stat_resp_t *resp =
-        (neu_json_get_node_stat_resp_t *) param;
-
-    for (int i = 0; i < NEU_NODE_STAT_MAX; ++i) {
-        if (i >= NEU_NODE_STAT_TAG_TOT_CNT &&
-            NEU_NA_TYPE_DRIVER != resp->type) {
-            // not a driver node, filter out driver specific counters
-            break;
-        }
-
-        neu_json_elem_t resp_elems[] = {
-            {
-                .name      = (char *) neu_node_stat_string(i),
-                .t         = NEU_JSON_INT,
-                .v.val_int = resp->data[i],
-            },
-        };
-        ret = neu_json_encode_field(json_object, resp_elems,
-                                    NEU_JSON_ELEM_SIZE(resp_elems));
-    }
-
-    return ret;
 }
 
 int neu_json_encode_get_node_state_resp(void *json_object, void *param)
