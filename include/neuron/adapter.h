@@ -121,8 +121,6 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_NODES_STATE,
     NEU_RESP_GET_NODES_STATE,
     NEU_REQ_NODE_CTL,
-    NEU_REQ_GET_NODE_STAT,
-    NEU_RESP_GET_NODE_STAT,
 
     NEU_REQ_ADD_GROUP,
     NEU_REQ_DEL_GROUP,
@@ -185,8 +183,6 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_NODES_STATE]   = "NEU_REQ_GET_NODES_STATE",
     [NEU_RESP_GET_NODES_STATE]  = "NEU_RESP_GET_NODES_STATE",
     [NEU_REQ_NODE_CTL]          = "NEU_REQ_NODE_CTL",
-    [NEU_REQ_GET_NODE_STAT]     = "NEU_REQ_GET_NODE_STAT",
-    [NEU_RESP_GET_NODE_STAT]    = "NEU_RESP_GET_NODE_STAT",
 
     [NEU_REQ_ADD_GROUP]         = "NEU_REQ_ADD_GROUP",
     [NEU_REQ_DEL_GROUP]         = "NEU_REQ_DEL_GROUP",
@@ -436,15 +432,6 @@ inline static UT_icd neu_nodes_state_t_icd()
 typedef struct {
     UT_array *states; // array of neu_nodes_state_t
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
-
-typedef struct neu_req_get_node_stat {
-    char node[NEU_NODE_NAME_LEN];
-} neu_req_get_node_stat_t;
-
-typedef struct neu_resp_get_node_stat {
-    neu_node_type_e type;
-    uint64_t        data[NEU_NODE_STAT_MAX];
-} neu_resp_get_node_stat_t;
 
 typedef struct neu_req_update_license {
 } neu_req_update_license_t;
