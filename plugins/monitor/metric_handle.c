@@ -25,31 +25,33 @@
 #include "restful/handle.h"
 #include "restful/http.h"
 
-#define METRIC_GLOBAL_TMPL                                                 \
-    "# HELP core_dumped Whether there is any core dump\n"                  \
-    "# TYPE core_dumped counter\n"                                         \
-    "core_dumped %d\n"                                                     \
-    "# HELP uptime_seconds Uptime in seconds\n"                            \
-    "# TYPE uptime_seconds counter\n"                                      \
-    "uptime_seconds %" PRIu64 "\n"                                         \
-    "# HELP north_nodes Number of north nodes\n"                           \
-    "# TYPE north_nodes counter\n"                                         \
-    "north_nodes %zu\n"                                                    \
-    "# HELP north_running_nodes Number of north nodes in running state\n"  \
-    "# TYPE north_running_nodes counter\n"                                 \
-    "north_running_nodes %zu\n"                                            \
-    "# HELP north_disconnected_nodes Number of north nodes disconnected\n" \
-    "# TYPE north_disconnected_nodes counter\n"                            \
-    "north_disconnected_nodes %zu\n"                                       \
-    "# HELP south_nodes Number of south nodes\n"                           \
-    "# TYPE south_nodes counter\n"                                         \
-    "south_nodes %zu\n"                                                    \
-    "# HELP south_running_nodes Number of south nodes in running state\n"  \
-    "# TYPE south_running_nodes counter\n"                                 \
-    "south_running_nodes %zu\n"                                            \
-    "# HELP south_disconnected_nodes Number of south nodes disconnected\n" \
-    "# TYPE south_disconnected_nodes counter\n"                            \
-    "south_disconnected_nodes %zu\n"
+// clang-format off
+#define METRIC_GLOBAL_TMPL                                                       \
+    "# HELP core_dumped Whether there is any core dump\n"                        \
+    "# TYPE core_dumped gauge\n"                                                 \
+    "core_dumped %d\n"                                                           \
+    "# HELP uptime_seconds Uptime in seconds\n"                                  \
+    "# TYPE uptime_seconds counter\n"                                            \
+    "uptime_seconds %" PRIu64 "\n"                                               \
+    "# HELP north_nodes_total Number of north nodes\n"                           \
+    "# TYPE north_nodes_total gauge\n"                                           \
+    "north_nodes_total %zu\n"                                                    \
+    "# HELP north_running_nodes_total Number of north nodes in running state\n"  \
+    "# TYPE north_running_nodes_total gauge\n"                                   \
+    "north_running_nodes_total %zu\n"                                            \
+    "# HELP north_disconnected_nodes_total Number of north nodes disconnected\n" \
+    "# TYPE north_disconnected_nodes_total gauge\n"                              \
+    "north_disconnected_nodes_total %zu\n"                                       \
+    "# HELP south_nodes_total Number of south nodes\n"                           \
+    "# TYPE south_nodes_total gauge\n"                                           \
+    "south_nodes_total %zu\n"                                                    \
+    "# HELP south_running_nodes_total Number of south nodes in running state\n"  \
+    "# TYPE south_running_nodes_total gauge\n"                                   \
+    "south_running_nodes_total %zu\n"                                            \
+    "# HELP south_disconnected_nodes_total Number of south nodes disconnected\n" \
+    "# TYPE south_disconnected_nodes_total gauge\n"                              \
+    "south_disconnected_nodes_total %zu\n"
+// clang-format on
 
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {
