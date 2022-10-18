@@ -278,12 +278,6 @@ struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/node/stat",
-        .value.handler = handle_get_node_stat,
-    },
-    {
-        .method        = NEU_REST_METHOD_GET,
-        .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/node/state",
         .value.handler = handle_get_node_state,
     },

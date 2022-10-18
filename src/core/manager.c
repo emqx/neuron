@@ -486,7 +486,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAG:
-    case NEU_REQ_GET_NODE_STAT:
     case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_GET_TAG:
     case NEU_REQ_NODE_CTL:
@@ -583,7 +582,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_TAG:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_GET_NODE_SETTING:
-    case NEU_RESP_GET_NODE_STAT:
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_ERROR:
     case NEU_RESP_READ_GROUP:

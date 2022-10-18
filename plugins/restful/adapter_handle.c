@@ -224,50 +224,6 @@ void handle_node_ctl(nng_aio *aio)
         })
 }
 
-void handle_get_node_stat(nng_aio *aio)
-{
-    neu_plugin_t *           plugin = neu_rest_get_plugin();
-    char                     node_name[NEU_NODE_NAME_LEN] = { 0 };
-    int                      ret                          = 0;
-    neu_reqresp_head_t       header                       = { 0 };
-    neu_req_get_node_state_t cmd                          = { 0 };
-
-    VALIDATE_JWT(aio);
-
-    header.ctx = aio;
-
-    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
-        });
-        return;
-    } else {
-        header.type = NEU_REQ_GET_NODE_STAT;
-        strcpy(cmd.node, node_name);
-    }
-
-    ret = neu_plugin_op(plugin, header, &cmd);
-    if (ret != 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-            http_response(aio, NEU_ERR_IS_BUSY, result_error);
-        });
-    }
-}
-
-void handle_get_node_stat_resp(nng_aio *aio, neu_resp_get_node_stat_t *stat)
-{
-    neu_json_get_node_stat_resp_t res    = { 0 };
-    char *                        result = NULL;
-
-    res.type = stat->type;
-    res.data = stat->data;
-
-    neu_json_encode_by_fn(&res, neu_json_encode_get_node_stat_resp, &result);
-
-    http_ok(aio, result);
-    free(result);
-}
-
 void handle_get_node_state(nng_aio *aio)
 {
     neu_plugin_t *           plugin = neu_rest_get_plugin();
