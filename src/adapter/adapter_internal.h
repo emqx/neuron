@@ -53,19 +53,10 @@ struct neu_adapter {
     neu_event_timer_t *timer;
     int                recv_fd;
 
-    // statistics counters
-    union {
-        struct {
-            uint64_t bytes_sent;  // number of bytes sent over network
-            uint64_t bytes_recv;  // number of bytes received over network
-            uint64_t msgs_sent;   // number of messages sent
-            uint64_t msgs_recv;   // number of messages received
-            uint64_t avg_rtt;     // average round trip time in milliseconds
-            uint64_t tag_tot_cnt; // number of tag read including errors
-            uint64_t tag_err_cnt; // number of tag read errors
-        };
-        uint64_t data[NEU_NODE_STAT_MAX];
-    } stat;
+    // metrics
+    struct {
+        NEU_NODE_METRICS_UNION;
+    } metrics;
 };
 
 typedef void (*adapter_handler)(neu_adapter_t *     adapter,

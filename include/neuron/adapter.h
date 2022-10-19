@@ -60,31 +60,45 @@ typedef enum {
 } neu_metrics_category_e;
 
 typedef struct {
-    bool     core_dumped;
-    uint64_t uptime_seconds;
-    size_t   north_nodes;
-    size_t   north_running_nodes;
-    size_t   north_disconnected_nodes;
-    size_t   south_nodes;
-    size_t   south_running_nodes;
-    size_t   south_disconnected_nodes;
+    uint64_t last_rtt_ms;      // last request round trip time in milliseconds
+    uint64_t send_bytes;       // number of bytes sent
+    uint64_t recv_bytes;       // number of bytes received
+    uint64_t tag_reads_total;  // number of tag read including errors
+    uint64_t tag_errors_total; // number of tag read errors
+} neu_driver_metrics_t;
+
+typedef struct {
+    uint64_t msgs_sent; // number of messages sent
+    uint64_t msgs_recv; // number of messages received
+} neu_app_metrics_t;
+
+#define NEU_NODE_METRICS_UNION       \
+    union {                          \
+        neu_driver_metrics_t driver; \
+        neu_app_metrics_t    app;    \
+    }
+
+// node metrics
+typedef struct {
+    NEU_NODE_METRICS_UNION;
+
+    bool            updated;
+    neu_node_type_e type;
+    char *          name;
+    UT_hash_handle  hh;
+} neu_node_metrics_t;
+
+typedef struct {
+    bool                core_dumped;
+    uint64_t            uptime_seconds;
+    size_t              north_nodes;
+    size_t              north_running_nodes;
+    size_t              north_disconnected_nodes;
+    size_t              south_nodes;
+    size_t              south_running_nodes;
+    size_t              south_disconnected_nodes;
+    neu_node_metrics_t *node_metrics;
 } neu_metrics_t;
-
-static inline const char *neu_node_stat_string(neu_node_stat_e s)
-{
-    static const char *map[] = {
-        [NEU_NODE_STAT_BYTES_SENT]  = "bytes_sent",
-        [NEU_NODE_STAT_BYTES_RECV]  = "bytes_received",
-        [NEU_NODE_STAT_MSGS_SENT]   = "messages_sent",
-        [NEU_NODE_STAT_MSGS_RECV]   = "messages_received",
-        [NEU_NODE_STAT_AVG_RTT]     = "average_rtt",
-        [NEU_NODE_STAT_TAG_TOT_CNT] = "tag_total_count",
-        [NEU_NODE_STAT_TAG_ERR_CNT] = "tag_error_count",
-        [NEU_NODE_STAT_MAX]         = NULL,
-    };
-
-    return map[s];
-}
 
 typedef struct {
     neu_node_running_state_e running;
@@ -411,7 +425,7 @@ typedef struct neu_req_get_node_state {
 
 typedef struct neu_resp_get_node_state {
     neu_node_state_t state;
-    uint16_t         avg_rtt; // average round trip time in milliseconds
+    uint16_t         rtt; // round trip time in milliseconds
 } neu_resp_get_node_state_t;
 
 typedef struct neu_req_get_nodes_state {
@@ -420,7 +434,7 @@ typedef struct neu_req_get_nodes_state {
 typedef struct {
     char             node[NEU_NODE_NAME_LEN];
     neu_node_state_t state;
-    uint16_t         avg_rtt; // average round trip time in milliseconds
+    uint16_t         rtt; // round trip time in milliseconds
 } neu_nodes_state_t;
 
 inline static UT_icd neu_nodes_state_t_icd()

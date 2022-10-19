@@ -88,7 +88,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->persister        = neu_persister_create("persistence");
     assert(adapter->persister != NULL);
 
-    adapter->stat.avg_rtt = NEU_NODE_STAT_RTT_MAX;
+    adapter->metrics.driver.last_rtt_ms = NEU_NODE_STAT_RTT_MAX;
 
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
@@ -175,27 +175,19 @@ static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
 {
     switch (s) {
     case NEU_NODE_STAT_BYTES_SENT:
-        adapter->stat.bytes_sent += n;
+        adapter->metrics.driver.send_bytes += n;
         break;
     case NEU_NODE_STAT_BYTES_RECV:
-        adapter->stat.bytes_recv += n;
+        adapter->metrics.driver.recv_bytes += n;
         break;
     case NEU_NODE_STAT_MSGS_SENT:
-        adapter->stat.msgs_sent += n;
+        adapter->metrics.app.msgs_sent += n;
         break;
     case NEU_NODE_STAT_MSGS_RECV:
-        adapter->stat.msgs_recv += n;
+        adapter->metrics.app.msgs_recv += n;
         break;
     case NEU_NODE_STAT_AVG_RTT: {
-        if (NEU_NODE_STAT_RTT_MAX <= n ||
-            adapter->stat.avg_rtt == NEU_NODE_STAT_RTT_MAX) {
-            adapter->stat.avg_rtt = n;
-            break;
-        }
-
-        // exponential moving average with alpha = 0.3
-        const double a        = 0.3;
-        adapter->stat.avg_rtt = adapter->stat.avg_rtt * (1 - a) + n * a;
+        adapter->metrics.driver.last_rtt_ms = n;
         break;
     }
 
@@ -407,8 +399,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_NODE_STATE: {
         neu_resp_get_node_state_t resp = { 0 };
 
+        if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
+            resp.rtt = adapter->metrics.driver.last_rtt_ms;
+        } else {
+            resp.rtt = 0;
+        }
         resp.state   = neu_adapter_get_state(adapter);
-        resp.avg_rtt = adapter->stat.avg_rtt;
         header->type = NEU_RESP_GET_NODE_STATE;
         neu_msg_exchange(header);
         reply(adapter, header, &resp);

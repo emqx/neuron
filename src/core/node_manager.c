@@ -303,7 +303,11 @@ UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
             state.state.running = el->adapter->state;
             state.state.link =
                 neu_plugin_to_plugin_common(el->adapter->plugin)->link_state;
-            state.avg_rtt = el->adapter->stat.avg_rtt;
+            if (NEU_NA_TYPE_DRIVER == el->adapter->module->type) {
+                state.rtt = el->adapter->metrics.driver.last_rtt_ms;
+            } else {
+                state.rtt = 0;
+            }
 
             utarray_push_back(states, &state);
         }
