@@ -121,6 +121,13 @@ static int monitor_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
+    neu_node_metrics_t *el = NULL, *tmp = NULL;
+    HASH_ITER(hh, plugin->metrics.node_metrics, el, tmp)
+    {
+        HASH_DEL(plugin->metrics.node_metrics, el);
+        free(el->name);
+        free(el);
+    }
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     pthread_mutex_destroy(&plugin->mutex);

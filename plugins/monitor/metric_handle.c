@@ -17,6 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdio.h>
+
 #include "utils/asprintf.h"
 #include "utils/log.h"
 
@@ -52,6 +54,44 @@
     "# TYPE south_disconnected_nodes_total gauge\n"                              \
     "south_disconnected_nodes_total %zu\n"
 // clang-format on
+
+#define METRIC_LAST_RTT_MS_HELP                                         \
+    "# HELP last_rtt_ms Last request round trip time in milliseconds\n" \
+    "# TYPE last_rtt_ms gauge\n"
+#define METRIC_LAST_RTT_MS_TMPL "last_rtt_ms{node=\"%s\"} %" PRIu64 "\n"
+
+#define METRIC_TAG_READS_TOTAL_HELP                                       \
+    "# HELP tag_reads_total Total number of tag reads including errors\n" \
+    "# TYPE tag_reads_total counter\n"
+#define METRIC_TAG_READS_TOTAL_TMPL "tag_reads_total{node=\"%s\"} %" PRIu64 "\n"
+
+#define METRIC_TAG_READ_ERRORS_TOTAL_HELP                            \
+    "# HELP tag_read_errors_total Total number of tag read errors\n" \
+    "# TYPE tag_read_errors_total counter\n"
+#define METRIC_TAG_READ_ERRORS_TOTAL_TMPL \
+    "tag_read_errors_total{node=\"%s\"} %" PRIu64 "\n"
+
+#define METRIC_SEND_BYTES_HELP                       \
+    "# HELP send_bytes Total number of bytes sent\n" \
+    "# TYPE send_bytes counter\n"
+#define METRIC_SEND_BYTES_TMPL "send_bytes{node=\"%s\"} %" PRIu64 "\n"
+
+#define METRIC_RECV_BYTES_HELP                           \
+    "# HELP recv_bytes Total number of bytes received\n" \
+    "# TYPE recv_bytes counter\n"
+#define METRIC_RECV_BYTES_TMPL "recv_bytes{node=\"%s\"} %" PRIu64 "\n"
+
+#define METRIC_DRIVER_TMPL            \
+    METRIC_LAST_RTT_MS_HELP           \
+    METRIC_LAST_RTT_MS_TMPL           \
+    METRIC_TAG_READS_TOTAL_HELP       \
+    METRIC_TAG_READS_TOTAL_TMPL       \
+    METRIC_TAG_READ_ERRORS_TOTAL_HELP \
+    METRIC_TAG_READ_ERRORS_TOTAL_TMPL \
+    METRIC_SEND_BYTES_HELP            \
+    METRIC_SEND_BYTES_TMPL            \
+    METRIC_RECV_BYTES_HELP            \
+    METRIC_RECV_BYTES_TMPL
 
 static int response(nng_aio *aio, char *content, enum nng_http_status status)
 {
@@ -107,20 +147,54 @@ static inline bool parse_metrics_catgory(const char *s, size_t len,
     return false;
 }
 
-static inline void gen_global_metrics(const neu_metrics_t *metrics,
-                                      char **              result)
+static inline void gen_global_metrics(FILE *               stream,
+                                      const neu_metrics_t *metrics)
 {
-    neu_asprintf(result, METRIC_GLOBAL_TMPL, metrics->core_dumped,
-                 metrics->uptime_seconds, metrics->north_nodes,
-                 metrics->north_running_nodes,
-                 metrics->north_disconnected_nodes, metrics->south_nodes,
-                 metrics->south_running_nodes,
-                 metrics->south_disconnected_nodes);
+    fprintf(stream, METRIC_GLOBAL_TMPL, metrics->core_dumped,
+            metrics->uptime_seconds, metrics->north_nodes,
+            metrics->north_running_nodes, metrics->north_disconnected_nodes,
+            metrics->south_nodes, metrics->south_running_nodes,
+            metrics->south_disconnected_nodes);
+}
+
+static inline void gen_driver_metrics(FILE *                    stream,
+                                      const neu_node_metrics_t *node_metrics)
+{
+    fprintf(stream, METRIC_DRIVER_TMPL, node_metrics->name,
+            node_metrics->driver.last_rtt_ms, node_metrics->name,
+            node_metrics->driver.tag_reads_total, node_metrics->name,
+            node_metrics->driver.tag_errors_total, node_metrics->name,
+            node_metrics->driver.send_bytes, node_metrics->name,
+            node_metrics->driver.recv_bytes);
+}
+
+#define GEN_DRIVER_METRIC(metric, field)                                    \
+    do {                                                                    \
+        fprintf(stream, "%s", metric##_HELP);                               \
+        neu_node_metrics_t *el = NULL, *tmp = NULL;                         \
+        HASH_ITER(hh, metrics->node_metrics, el, tmp)                       \
+        {                                                                   \
+            if (NEU_NA_TYPE_DRIVER == el->type) {                           \
+                fprintf(stream, metric##_TMPL, el->name, el->driver.field); \
+            }                                                               \
+        }                                                                   \
+    } while (0)
+
+static void gen_all_driver_metrics(FILE *stream, const neu_metrics_t *metrics)
+{
+    GEN_DRIVER_METRIC(METRIC_LAST_RTT_MS, last_rtt_ms);
+    GEN_DRIVER_METRIC(METRIC_TAG_READS_TOTAL, tag_reads_total);
+    GEN_DRIVER_METRIC(METRIC_TAG_READ_ERRORS_TOTAL, tag_errors_total);
+    GEN_DRIVER_METRIC(METRIC_SEND_BYTES, send_bytes);
+    GEN_DRIVER_METRIC(METRIC_RECV_BYTES, recv_bytes);
 }
 
 void handle_get_metric(nng_aio *aio)
 {
+    int           status = NNG_HTTP_STATUS_OK;
     char *        result = NULL;
+    size_t        len    = 0;
+    FILE *        stream = NULL;
     neu_plugin_t *plugin = neu_monitor_get_plugin();
 
     neu_metrics_category_e cat           = NEU_METRICS_CATEGORY_ALL;
@@ -130,35 +204,63 @@ void handle_get_metric(nng_aio *aio)
         !parse_metrics_catgory(cat_param, cat_param_len, &cat)) {
         plog_info(plugin, "invalid metrics category: %.*s", (int) cat_param_len,
                   cat_param);
-        response(aio, NULL, NNG_HTTP_STATUS_BAD_REQUEST);
-        return;
+        status = NNG_HTTP_STATUS_BAD_REQUEST;
+        goto end;
+    }
+
+    neu_node_metrics_t *node_metrics                 = NULL;
+    char                node_name[NEU_NODE_NAME_LEN] = { 0 };
+    ssize_t rv = http_get_param_str(aio, "node", node_name, sizeof(node_name));
+    if (-1 == rv || rv >= NEU_NODE_NAME_LEN) {
+        status = NNG_HTTP_STATUS_BAD_REQUEST;
+        goto end;
+    } else if (-2 != rv) {
+        HASH_FIND_STR(plugin->metrics.node_metrics, node_name, node_metrics);
+        if ((NEU_METRICS_CATEGORY_GLOBAL == cat) || NULL == node_metrics ||
+            (NEU_METRICS_CATEGORY_APP == cat &&
+             NEU_NA_TYPE_APP != node_metrics->type) ||
+            (NEU_METRICS_CATEGORY_DRIVER == cat &&
+             NEU_NA_TYPE_DRIVER != node_metrics->type)) {
+            status = NNG_HTTP_STATUS_NOT_FOUND;
+            goto end;
+        }
+    }
+
+    stream = open_memstream(&result, &len);
+    if (NULL == stream) {
+        status = NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+        goto end;
     }
 
     pthread_mutex_lock(&plugin->mutex);
     if (plugin->metrics_updating) {
         // a metrics request to core is in progress
-        // in the assumption that this case is rare, we just finish error
+        // in the assumption that this case is rare, we just return unavailable
         pthread_mutex_unlock(&plugin->mutex);
-        nng_aio_finish(aio, NNG_EBUSY);
-        response(aio, NULL, NNG_HTTP_STATUS_SERVICE_UNAVAILABLE);
-        return;
+        status = NNG_HTTP_STATUS_SERVICE_UNAVAILABLE;
+        goto end;
     }
     switch (cat) {
     case NEU_METRICS_CATEGORY_GLOBAL:
-        gen_global_metrics(&plugin->metrics, &result);
+        gen_global_metrics(stream, &plugin->metrics);
         break;
     case NEU_METRICS_CATEGORY_DRIVER:
+        if (NULL != node_metrics) {
+            gen_driver_metrics(stream, node_metrics);
+        } else {
+            gen_all_driver_metrics(stream, &plugin->metrics);
+        }
+        break;
     case NEU_METRICS_CATEGORY_APP:
     case NEU_METRICS_CATEGORY_ALL:
         break;
     }
     pthread_mutex_unlock(&plugin->mutex);
 
-    if (NULL == result) {
-        response(aio, NULL, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);
-        return;
+end:
+    if (NULL != stream) {
+        fclose(stream);
     }
-
-    response(aio, result, NNG_HTTP_STATUS_OK);
+    response(aio, NNG_HTTP_STATUS_OK == status ? result : NULL, status);
     free(result);
 }

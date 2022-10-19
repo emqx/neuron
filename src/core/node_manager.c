@@ -319,7 +319,8 @@ UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
 int neu_node_manager_get_metrics(neu_node_manager_t *mgr,
                                  neu_metrics_t *     metrics_p)
 {
-    node_entity_t *el = NULL, *tmp = NULL;
+    node_entity_t *     el = NULL, *tmp = NULL;
+    neu_node_metrics_t *nm = NULL, *nm_tmp = NULL;
 
     metrics_p->north_nodes              = 0;
     metrics_p->north_running_nodes      = 0;
@@ -327,6 +328,11 @@ int neu_node_manager_get_metrics(neu_node_manager_t *mgr,
     metrics_p->south_nodes              = 0;
     metrics_p->south_running_nodes      = 0;
     metrics_p->south_disconnected_nodes = 0;
+
+    // mark all node metrics as outdated
+    for (nm = metrics_p->node_metrics; nm != NULL; nm = nm->hh.next) {
+        nm->updated = false;
+    }
 
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
@@ -336,6 +342,23 @@ int neu_node_manager_get_metrics(neu_node_manager_t *mgr,
 
         neu_plugin_common_t *common =
             neu_plugin_to_plugin_common(el->adapter->plugin);
+
+        HASH_FIND_STR(metrics_p->node_metrics, el->name, nm);
+        if (NULL == nm) {
+            nm = calloc(1, sizeof(*nm));
+            if (NULL == nm) {
+                return -1;
+            }
+            nm->name = strdup(el->name);
+            if (NULL == nm->name) {
+                free(nm);
+                return -1;
+            }
+            HASH_ADD_STR(metrics_p->node_metrics, name, nm);
+        }
+        nm->updated = true;
+        nm->type    = el->adapter->module->type;
+        memcpy(nm, &el->adapter->metrics, sizeof(NEU_NODE_METRICS_UNION));
 
         if (NEU_NA_TYPE_DRIVER == el->adapter->module->type) {
             ++metrics_p->south_nodes;
@@ -353,6 +376,16 @@ int neu_node_manager_get_metrics(neu_node_manager_t *mgr,
             if (NEU_NODE_LINK_STATE_DISCONNECTED == common->link_state) {
                 ++metrics_p->north_disconnected_nodes;
             }
+        }
+    }
+
+    // remove all outdated node metrics
+    HASH_ITER(hh, metrics_p->node_metrics, nm, nm_tmp)
+    {
+        if (!nm->updated) {
+            HASH_DEL(metrics_p->node_metrics, nm);
+            free(nm->name);
+            free(nm);
         }
     }
 

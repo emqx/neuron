@@ -213,12 +213,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQRESP_METRICS: {
         neu_reqresp_metrics_t *cmd = (neu_reqresp_metrics_t *) &header[1];
-        if (NULL == cmd->metrics ||
-            0 !=
-                neu_node_manager_get_metrics(manager->node_manager,
-                                             cmd->metrics)) {
-            break;
-        }
+        neu_node_manager_get_metrics(manager->node_manager, cmd->metrics);
         cmd->metrics->core_dumped = has_core_dumps();
         cmd->metrics->uptime_seconds =
             (neu_time_ms() - manager->start_ts) / 1000;
