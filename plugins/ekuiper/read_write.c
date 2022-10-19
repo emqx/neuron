@@ -59,7 +59,6 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 == rv) {
         stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_SENT, 1);
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_SENT, json_len);
     } else {
         plog_error(plugin, "nng cannot send msg");
         nng_msg_free(msg);
@@ -88,7 +87,6 @@ void recv_data_callback(void *arg)
     json_len = nng_msg_len(msg);
     plog_debug(plugin, "<< %.*s", (int) json_len, json_str);
     stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_RECV, 1);
-    stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_RECV, json_len);
     if (json_decode_write_req(json_str, json_len, &req) < 0) {
         plog_error(plugin, "fail decode write request json: %.*s",
                    (int) nng_msg_len(msg), json_str);

@@ -55,7 +55,6 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
     plog_send_protocol(plugin, bytes, n_byte);
     int ret = neu_conn_send(plugin->conn, bytes, n_byte);
     if (ret > 0) {
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_SENT, 1);
         stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_SENT, ret);
     }
     return ret;
@@ -313,9 +312,6 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
         neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
         plog_recv_protocol(plugin, recv_buf, ret);
         ret = modbus_stack_recv(plugin->stack, &pbuf);
-        if (ret > 0) {
-            stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_RECV, 1);
-        }
     }
 
     free(recv_buf);
