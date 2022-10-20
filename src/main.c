@@ -40,6 +40,7 @@ static void sig_handler(int sig)
 
     if (sig != SIGABRT) {
         neu_manager_destroy(g_manager);
+        neu_persister_destroy();
     }
     zlog_fini();
     exit_flag = true;
@@ -47,7 +48,8 @@ static void sig_handler(int sig)
 
 static int neuron_run(const neu_cli_args_t *args)
 {
-    struct rlimit rl;
+    struct rlimit rl = { 0 };
+    int           rv = 0;
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
@@ -58,6 +60,9 @@ static int neuron_run(const neu_cli_args_t *args)
     if (setrlimit(RLIMIT_CORE, &rl) < 0) {
         nlog_warn("neuron process failed enable core dump, ignore");
     }
+
+    rv = neu_persister_create();
+    assert(rv == 0);
 
     zlog_notice(neuron, "neuron process, daemon: %d, version: %s (%s %s)",
                 args->daemonized, NEURON_VERSION,

@@ -49,79 +49,15 @@
 
 #define PATH_MAX_SIZE 128
 
+static const char *plugin_file = "persistence/plugins.json";
+static const char *db_file     = "persistence/sqlite.db";
+static sqlite3 *   global_db   = NULL;
+
 static inline bool ends_with(const char *str, const char *suffix)
 {
     size_t m = strlen(str);
     size_t n = strlen(suffix);
     return m >= n && !strcmp(str + m - n, suffix);
-}
-
-typedef struct neu_persister {
-    const char *persist_dir;
-    const char *plugins_fname;
-    sqlite3 *   db;
-} neu_persister_t;
-
-const char *neu_persister_get_persist_dir(neu_persister_t *persister)
-{
-    if (persister == NULL) {
-        return NULL;
-    }
-
-    return persister->persist_dir;
-}
-
-const char *neu_persister_get_plugins_fname(neu_persister_t *persister)
-{
-    if (persister == NULL) {
-        return NULL;
-    }
-
-    return persister->plugins_fname;
-}
-
-/**
- * Escape special characters in path string,
- *    '%' -> '%%', '/' => '%-', '.' -> '%.'
- *
- * @param buf     output buffer,
- * @param size    size of output buffer
- * @param path    path string
- *
- * @return if `buf` is NULL, return number of bytes needed to store the result.
- *         otherwise, return the number of bytes written excluding the
- *         terminating null byte, `size` indicates overflow.
- */
-static int path_escape(char *buf, size_t size, const char *path)
-{
-    size_t i = 0;
-    char   c;
-
-    if (NULL != buf) {
-        for (const char *s = path; (c = *s++) && i < size; ++i) {
-            if (PATH_SEP_CHAR == c || '.' == c || '%' == c) {
-                c        = (PATH_SEP_CHAR == c) ? '-' : c;
-                buf[i++] = '%';
-                if (size == i) {
-                    break;
-                }
-            }
-            buf[i] = c;
-        }
-        if (i < size) {
-            buf[i] = '\0';
-        } else if (i > 0) {
-            buf[i - 1] = '\0';
-        }
-    } else {
-        for (const char *s = path; (c = *s++); ++i) {
-            if (PATH_SEP_CHAR == c || '.' == c || '%' == c) {
-                ++i;
-            }
-        }
-    }
-
-    return i;
 }
 
 /**
@@ -156,66 +92,6 @@ static int path_cat(char *dst, size_t len, size_t size, const char *src)
     }
 
     return i;
-}
-
-/**
- * Escape and concatenate a path string to another.
- *
- * @param dst   destination path string buffer
- * @param len   destination path string len, not greater than size
- * @param size  destination path buffer size
- * @param src   path string
- *
- * @return length of the result path string excluding the terminating NULL
- *         byte, `size` indicates overflow.
- */
-static int path_cat_escaped(char *dst, size_t len, size_t size, const char *src)
-{
-    size_t i = len;
-
-    if (0 < i && i < size && (PATH_SEP_CHAR != dst[i - 1])) {
-        dst[i++] = PATH_SEP_CHAR;
-        dst[i]   = '\0';
-    }
-
-    size_t n = path_escape(dst + i, size - i, src);
-
-    return i + n;
-}
-
-static inline int create_dir(char *dir_name)
-{
-    int rv = mkdir(dir_name, 0777);
-    if (0 != rv && EEXIST == errno) {
-        rv = 0;
-    }
-    return rv;
-}
-
-/**
- * Ensure that a file with the given name exists.
- *
- * @param name              file name
- * @param default_content   default file content if file not exists
- */
-static inline int ensure_file_exist(const char *name,
-                                    const char *default_content)
-{
-    int fd = open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-    if (-1 == fd) {
-        return -1;
-    }
-    struct stat statbuf;
-    if (-1 == fstat(fd, &statbuf)) {
-        return -1;
-    }
-    if (0 == statbuf.st_size) {
-        ssize_t size = strlen(default_content);
-        if (size != write(fd, default_content, size)) {
-            return -1;
-        }
-    }
-    return 0;
 }
 
 static int write_file_string(const char *fn, const char *s)
@@ -554,167 +430,49 @@ static int apply_schemas(sqlite3 *db, const char *dir)
     return rv;
 }
 
-neu_persister_t *neu_persister_create(const char *dir_name)
+int neu_persister_create()
 {
-    int   rv            = 0;
-    char *persist_dir   = NULL;
-    char *plugins_fname = NULL;
-    char *path          = NULL;
+    int rv = sqlite3_open(db_file, &global_db);
 
-    path = calloc(PATH_MAX_SIZE, sizeof(char));
-    if (NULL == path) {
-        nlog_error("malloc fail");
-        goto error;
-    }
-
-    int dir_len = path_cat(path, 0, PATH_MAX_SIZE, dir_name);
-    if (PATH_MAX_SIZE <= dir_len) {
-        nlog_error("path too long: %s", dir_name);
-        goto error;
-    }
-    persist_dir = strdup(dir_name);
-    if (NULL == persist_dir) {
-        nlog_error("fail to strdup: %s", dir_name);
-        goto error;
-    }
-
-    rv = create_dir(persist_dir);
-    if (rv != 0) {
-        nlog_error("failed to create directory: %s", persist_dir);
-        goto error;
-    }
-
-    int n = path_cat(path, dir_len, PATH_MAX_SIZE, "plugins.json");
-    if (PATH_MAX_SIZE <= n) {
-        nlog_error("path too long: %s", path);
-        goto error;
-    }
-    plugins_fname = strdup(path);
-    if (NULL == plugins_fname) {
-        nlog_error("fail to strdup: %s", path);
-        goto error;
-    }
-
-    if (0 != ensure_file_exist(plugins_fname, "{\"plugins\": []}")) {
-        nlog_error("persister failed to ensure file exist: %s", plugins_fname);
-        goto error;
-    }
-
-    neu_persister_t *persister = malloc(sizeof(neu_persister_t));
-    if (NULL == persister) {
-        nlog_error("failed to alloc memory for persister struct");
-        goto error;
-    }
-
-    persister->plugins_fname = plugins_fname;
-    persister->persist_dir   = persist_dir;
-
-    n = path_cat(path, dir_len, PATH_MAX_SIZE, "sqlite.db");
-    if (PATH_MAX_SIZE <= n) {
-        nlog_error("path too long: %s", path);
-        goto error;
-    }
-    rv = sqlite3_open(path, &persister->db);
     if (SQLITE_OK != rv) {
-        nlog_error("db `%s` fail: %s", path, sqlite3_errstr(rv));
-        goto error;
+        nlog_fatal("db `%s` fail: %s", db_file, sqlite3_errstr(rv));
+        return -1;
     }
-    sqlite3_busy_timeout(persister->db, 100 * 1000);
-    // we rely on sqlite foreign key support
-    if (SQLITE_OK !=
-        sqlite3_exec(persister->db, "PRAGMA foreign_keys=ON", NULL, NULL,
-                     NULL)) {
-        nlog_error("db foreign key support fail: %s",
-                   sqlite3_errmsg(persister->db));
-        sqlite3_close(persister->db);
-        goto error;
-    }
-    if (SQLITE_OK !=
-        sqlite3_exec(persister->db, "PRAGMA journal_mode=WAL", NULL, NULL,
-                     NULL)) {
-        nlog_error("db journal_mode WAL fail: %s",
-                   sqlite3_errmsg(persister->db));
-        sqlite3_close(persister->db);
-        goto error;
-    }
-    if (0 != apply_schemas(persister->db, g_config_dir)) {
-        goto error;
+    sqlite3_busy_timeout(global_db, 100 * 1000);
+
+    rv = sqlite3_exec(global_db, "PRAGMA foreign_keys=ON", NULL, NULL, NULL);
+    if (rv != SQLITE_OK) {
+        nlog_fatal("db foreign key support fail: %s",
+                   sqlite3_errmsg(global_db));
+        sqlite3_close(global_db);
+        return -1;
     }
 
-    free(path);
-    return persister;
+    rv = sqlite3_exec(global_db, "PRAGMA journal_mode=WAL", NULL, NULL, NULL);
+    if (rv != SQLITE_OK) {
+        nlog_fatal("db journal_mode WAL fail: %s", sqlite3_errmsg(global_db));
+        sqlite3_close(global_db);
+        return -1;
+    }
 
-error:
-    free(path);
-    free(plugins_fname);
-    free(persist_dir);
-    return NULL;
+    rv = apply_schemas(global_db, g_config_dir);
+    if (rv != 0) {
+        nlog_fatal("db apply schemas fail");
+        sqlite3_close(global_db);
+        return -1;
+    }
+
+    return 0;
 }
 
-static inline int persister_adapters_dir(char *buf, size_t size,
-                                         neu_persister_t *persister)
+void neu_persister_destroy()
 {
-    size_t n = path_cat(buf, 0, size, persister->persist_dir);
-    if (size == n) {
-        return n;
-    }
-
-    n = path_cat(buf, n, size, "adapters");
-    return n;
+    sqlite3_close(global_db);
 }
 
-static inline int persister_adapter_dir(char *buf, size_t size,
-                                        neu_persister_t *persister,
-                                        const char *     adapter_name)
+int neu_persister_store_node(neu_persist_node_info_t *info)
 {
-    size_t n = persister_adapters_dir(buf, size, persister);
-    if (size == n) {
-        return n;
-    }
-
-    n = path_cat_escaped(buf, n, size, adapter_name);
-    return n;
-}
-
-static inline int persister_group_configs_dir(char *buf, size_t size,
-                                              neu_persister_t *persister,
-                                              const char *     adapter_name)
-{
-    size_t n = persister_adapter_dir(buf, size, persister, adapter_name);
-    if (size == n) {
-        return n;
-    }
-
-    n = path_cat(buf, n, size, "groups");
-    return n;
-}
-
-static inline int persister_group_config_dir(char *buf, size_t size,
-                                             neu_persister_t *persister,
-                                             const char *     adapter_name,
-                                             const char *     group_config_name)
-{
-    size_t n = persister_group_configs_dir(buf, size, persister, adapter_name);
-    if (size == n) {
-        return n;
-    }
-
-    n = path_cat_escaped(buf, n, size, group_config_name);
-    return n;
-}
-
-void neu_persister_destroy(neu_persister_t *persister)
-{
-    sqlite3_close(persister->db);
-    free((char *) persister->plugins_fname);
-    free((char *) persister->persist_dir);
-    free(persister);
-}
-
-int neu_persister_store_node(neu_persister_t *        persister,
-                             neu_persist_node_info_t *info)
-{
-    return execute_sql(persister->db,
+    return execute_sql(global_db,
                        "INSERT INTO nodes (name, type, state, plugin_name) "
                        "VALUES (%Q, %i, %i, %Q)",
                        info->name, info->type, info->state, info->plugin_name);
@@ -727,7 +485,7 @@ static UT_icd node_info_icd = {
     (dtor_f *) neu_persist_node_info_fini,
 };
 
-int neu_persister_load_nodes(neu_persister_t *persister, UT_array **node_infos)
+int neu_persister_load_nodes(UT_array **node_infos)
 {
     int           rv    = 0;
     sqlite3_stmt *stmt  = NULL;
@@ -735,10 +493,8 @@ int neu_persister_load_nodes(neu_persister_t *persister, UT_array **node_infos)
 
     utarray_new(*node_infos, &node_info_icd);
 
-    if (SQLITE_OK !=
-        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
-        nlog_error("prepare `%s` fail: %s", query,
-                   sqlite3_errmsg(persister->db));
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
         utarray_free(*node_infos);
         *node_infos = NULL;
         return NEU_ERR_EINTERNAL;
@@ -768,7 +524,7 @@ int neu_persister_load_nodes(neu_persister_t *persister, UT_array **node_infos)
     }
 
     if (SQLITE_DONE != step) {
-        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
         // do not set return code, return partial or empty result
     }
 
@@ -776,31 +532,27 @@ int neu_persister_load_nodes(neu_persister_t *persister, UT_array **node_infos)
     return rv;
 }
 
-int neu_persister_delete_node(neu_persister_t *persister, const char *node_name)
+int neu_persister_delete_node(const char *node_name)
 {
     // rely on foreign key constraints to remove settings, groups, tags and
     // subscriptions
-    return execute_sql(persister->db, "DELETE FROM nodes WHERE name=%Q;",
+    return execute_sql(global_db, "DELETE FROM nodes WHERE name=%Q;",
                        node_name);
 }
 
-int neu_persister_update_node(neu_persister_t *persister, const char *node_name,
-                              const char *new_name)
+int neu_persister_update_node(const char *node_name, const char *new_name)
 {
-    return execute_sql(persister->db, "UPDATE nodes SET name=%Q WHERE name=%Q;",
+    return execute_sql(global_db, "UPDATE nodes SET name=%Q WHERE name=%Q;",
                        new_name, node_name);
 }
 
-int neu_persister_update_node_state(neu_persister_t *persister,
-                                    const char *node_name, int state)
+int neu_persister_update_node_state(const char *node_name, int state)
 {
-    return execute_sql(persister->db,
-                       "UPDATE nodes SET state=%i WHERE name=%Q;", state,
-                       node_name);
+    return execute_sql(global_db, "UPDATE nodes SET state=%i WHERE name=%Q;",
+                       state, node_name);
 }
 
-int neu_persister_store_plugins(neu_persister_t *persister,
-                                UT_array *       plugin_infos)
+int neu_persister_store_plugins(UT_array *plugin_infos)
 {
     int                    index       = 0;
     neu_json_plugin_resp_t plugin_resp = {
@@ -828,7 +580,7 @@ int neu_persister_store_plugins(neu_persister_t *persister,
         return rv;
     }
 
-    rv = write_file_string(persister->plugins_fname, result);
+    rv = write_file_string(plugin_file, result);
 
     free(result);
     return rv;
@@ -865,8 +617,7 @@ static int ut_str_cmp(const void *a, const void *b)
     return strcmp(*(char **) a, *(char **) b);
 }
 
-int neu_persister_load_plugins(neu_persister_t *persister,
-                               UT_array **      plugin_infos)
+int neu_persister_load_plugins(UT_array **plugin_infos)
 {
     UT_array *default_plugins = NULL;
     UT_array *user_plugins    = NULL;
@@ -879,7 +630,7 @@ int neu_persister_load_plugins(neu_persister_t *persister,
         nlog_warn("cannot load default plugins");
     }
     // user plugins
-    if (0 != load_plugins_file(persister->plugins_fname, user_plugins)) {
+    if (0 != load_plugins_file(plugin_file, user_plugins)) {
         nlog_warn("cannot load user plugins");
     } else {
         // the following operation needs sorting
@@ -903,10 +654,10 @@ int neu_persister_load_plugins(neu_persister_t *persister,
     return 0;
 }
 
-int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
-                            const char *group_name, const neu_datatag_t *tag)
+int neu_persister_store_tag(const char *driver_name, const char *group_name,
+                            const neu_datatag_t *tag)
 {
-    return execute_sql(persister->db,
+    return execute_sql(global_db,
                        "INSERT INTO tags (driver_name, group_name, name, "
                        "address, attribute, precision, "
                        "type, decimal, description) VALUES(%Q, %Q, %Q, %Q, %i, "
@@ -916,8 +667,7 @@ int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
                        tag->description);
 }
 
-int neu_persister_store_tags(neu_persister_t *persister,
-                             const char *driver_name, const char *group_name,
+int neu_persister_store_tags(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tags, size_t n)
 {
     sqlite3_stmt *stmt  = NULL;
@@ -925,15 +675,13 @@ int neu_persister_store_tags(neu_persister_t *persister,
                         "address, attribute, precision, type, decimal, "
                         "description) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-    if (SQLITE_OK != sqlite3_exec(persister->db, "BEGIN", NULL, NULL, NULL)) {
-        nlog_error("begin transaction fail: %s", sqlite3_errmsg(persister->db));
+    if (SQLITE_OK != sqlite3_exec(global_db, "BEGIN", NULL, NULL, NULL)) {
+        nlog_error("begin transaction fail: %s", sqlite3_errmsg(global_db));
         return NEU_ERR_EINTERNAL;
     }
 
-    if (SQLITE_OK !=
-        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
-        nlog_error("prepare `%s` fail: %s", query,
-                   sqlite3_errmsg(persister->db));
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
         goto error;
     }
 
@@ -944,68 +692,67 @@ int neu_persister_store_tags(neu_persister_t *persister,
 
         if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
             nlog_error("bind `%s` with driver_name=`%s` fail: %s", query,
-                       driver_name, sqlite3_errmsg(persister->db));
+                       driver_name, sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
             nlog_error("bind `%s` with group_name=`%s` fail: %s", query,
-                       group_name, sqlite3_errmsg(persister->db));
+                       group_name, sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK != sqlite3_bind_text(stmt, 3, tag->name, -1, NULL)) {
             nlog_error("bind `%s` with name=`%s` fail: %s", query, tag->name,
-                       sqlite3_errmsg(persister->db));
+                       sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK != sqlite3_bind_text(stmt, 4, tag->address, -1, NULL)) {
             nlog_error("bind `%s` with address=`%s` fail: %s", query,
-                       tag->address, sqlite3_errmsg(persister->db));
+                       tag->address, sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK != sqlite3_bind_int(stmt, 5, tag->attribute)) {
             nlog_error("bind `%s` with attribute=`%i` fail: %s", query,
-                       tag->attribute, sqlite3_errmsg(persister->db));
+                       tag->attribute, sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK != sqlite3_bind_int(stmt, 6, tag->precision)) {
             nlog_error("bind `%s` with precision=`%i` fail: %s", query,
-                       tag->precision, sqlite3_errmsg(persister->db));
+                       tag->precision, sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK != sqlite3_bind_int(stmt, 7, tag->type)) {
             nlog_error("bind `%s` with type=`%i` fail: %s", query, tag->type,
-                       sqlite3_errmsg(persister->db));
+                       sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK != sqlite3_bind_double(stmt, 8, tag->decimal)) {
             nlog_error("bind `%s` with decimal=`%f` fail: %s", query,
-                       tag->decimal, sqlite3_errmsg(persister->db));
+                       tag->decimal, sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_OK !=
             sqlite3_bind_text(stmt, 9, tag->description, -1, NULL)) {
             nlog_error("bind `%s` with description=`%s` fail: %s", query,
-                       tag->description, sqlite3_errmsg(persister->db));
+                       tag->description, sqlite3_errmsg(global_db));
             goto error;
         }
 
         if (SQLITE_DONE != sqlite3_step(stmt)) {
-            nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(persister->db));
+            nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(global_db));
             goto error;
         }
     }
 
-    if (SQLITE_OK != sqlite3_exec(persister->db, "COMMIT", NULL, NULL, NULL)) {
-        nlog_error("commit transaction fail: %s",
-                   sqlite3_errmsg(persister->db));
+    if (SQLITE_OK != sqlite3_exec(global_db, "COMMIT", NULL, NULL, NULL)) {
+        nlog_error("commit transaction fail: %s", sqlite3_errmsg(global_db));
         goto error;
     }
 
@@ -1014,13 +761,13 @@ int neu_persister_store_tags(neu_persister_t *persister,
 
 error:
     nlog_info("rollback transaction");
-    sqlite3_exec(persister->db, "ROLLBACK", NULL, NULL, NULL);
+    sqlite3_exec(global_db, "ROLLBACK", NULL, NULL, NULL);
     sqlite3_finalize(stmt);
     return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
-                            const char *group_name, UT_array **tags)
+int neu_persister_load_tags(const char *driver_name, const char *group_name,
+                            UT_array **tags)
 {
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT name, address, attribute, precision, type, "
@@ -1029,22 +776,20 @@ int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
 
     utarray_new(*tags, neu_tag_get_icd());
 
-    if (SQLITE_OK !=
-        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
-        nlog_error("prepare `%s` fail: %s", query,
-                   sqlite3_errmsg(persister->db));
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
         goto error;
     }
 
     if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
         nlog_error("bind `%s` with `%s` fail: %s", query, driver_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         goto error;
     }
 
     if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
         nlog_error("bind `%s` with `%s` fail: %s", query, group_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         goto error;
     }
 
@@ -1065,7 +810,7 @@ int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
     }
 
     if (SQLITE_DONE != step) {
-        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
         // do not set return code, return partial or empty result
     }
 
@@ -1078,11 +823,10 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_update_tag(neu_persister_t *persister,
-                             const char *driver_name, const char *group_name,
+int neu_persister_update_tag(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tag)
 {
-    return execute_sql(persister->db,
+    return execute_sql(global_db,
                        "UPDATE tags SET address=%Q, attribute=%i, "
                        "precision=%i, type=%i, decimal=%lf, description=%Q "
                        "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
@@ -1091,23 +835,21 @@ int neu_persister_update_tag(neu_persister_t *persister,
                        tag->name);
 }
 
-int neu_persister_delete_tag(neu_persister_t *persister,
-                             const char *driver_name, const char *group_name,
+int neu_persister_delete_tag(const char *driver_name, const char *group_name,
                              const char *tag_name)
 {
     return execute_sql(
-        persister->db,
+        global_db,
         "DELETE FROM tags WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
         driver_name, group_name, tag_name);
 }
 
-int neu_persister_store_subscription(neu_persister_t *persister,
-                                     const char *     app_name,
-                                     const char *     driver_name,
-                                     const char *     group_name)
+int neu_persister_store_subscription(const char *app_name,
+                                     const char *driver_name,
+                                     const char *group_name)
 {
     return execute_sql(
-        persister->db,
+        global_db,
         "INSERT INTO subscriptions (app_name, driver_name, group_name) "
         "VALUES (%Q, %Q, %Q)",
         app_name, driver_name, group_name);
@@ -1120,9 +862,8 @@ static UT_icd subscription_info_icd = {
     (dtor_f *) neu_persist_subscription_info_fini,
 };
 
-int neu_persister_load_subscriptions(neu_persister_t *persister,
-                                     const char *     app_name,
-                                     UT_array **      subscription_infos)
+int neu_persister_load_subscriptions(const char *app_name,
+                                     UT_array ** subscription_infos)
 {
     sqlite3_stmt *stmt = NULL;
     const char *  query =
@@ -1130,16 +871,14 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
 
     utarray_new(*subscription_infos, &subscription_info_icd);
 
-    if (SQLITE_OK !=
-        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
-        nlog_error("prepare `%s` fail: %s", query,
-                   sqlite3_errmsg(persister->db));
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
         goto error;
     }
 
     if (SQLITE_OK != sqlite3_bind_text(stmt, 1, app_name, -1, NULL)) {
         nlog_error("bind `%s` with `%s` fail: %s", query, app_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         goto error;
     }
 
@@ -1166,7 +905,7 @@ int neu_persister_load_subscriptions(neu_persister_t *persister,
     }
 
     if (SQLITE_DONE != step) {
-        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
         // do not set return code, return partial or empty result
     }
 
@@ -1179,32 +918,29 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_delete_subscription(neu_persister_t *persister,
-                                      const char *     app_name,
-                                      const char *     driver_name,
-                                      const char *     group_name)
+int neu_persister_delete_subscription(const char *app_name,
+                                      const char *driver_name,
+                                      const char *group_name)
 {
-    return execute_sql(persister->db,
+    return execute_sql(global_db,
                        "DELETE FROM subscriptions WHERE app_name=%Q AND "
                        "driver_name=%Q AND group_name=%Q",
                        app_name, driver_name, group_name);
 }
 
-int neu_persister_store_group(neu_persister_t *         persister,
-                              const char *              driver_name,
+int neu_persister_store_group(const char *              driver_name,
                               neu_persist_group_info_t *group_info)
 {
     return execute_sql(
-        persister->db,
+        global_db,
         "INSERT INTO groups (driver_name, name, interval) VALUES (%Q, %Q, %u)",
         driver_name, group_info->name, (unsigned) group_info->interval);
 }
 
-int neu_persister_update_group(neu_persister_t *         persister,
-                               const char *              driver_name,
+int neu_persister_update_group(const char *              driver_name,
                                neu_persist_group_info_t *group_info)
 {
-    return execute_sql(persister->db,
+    return execute_sql(global_db,
                        "UPDATE groups SET driver_name=%Q, name=%Q, "
                        "interval=%i WHERE driver_name=%Q AND name=%Q",
                        driver_name, group_info->name, group_info->interval,
@@ -1218,24 +954,21 @@ static UT_icd group_info_icd = {
     (dtor_f *) neu_persist_group_info_fini,
 };
 
-int neu_persister_load_groups(neu_persister_t *persister,
-                              const char *driver_name, UT_array **group_infos)
+int neu_persister_load_groups(const char *driver_name, UT_array **group_infos)
 {
     sqlite3_stmt *stmt = NULL;
     const char *query = "SELECT name, interval FROM groups WHERE driver_name=?";
 
     utarray_new(*group_infos, &group_info_icd);
 
-    if (SQLITE_OK !=
-        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
-        nlog_error("prepare `%s` fail: %s", query,
-                   sqlite3_errmsg(persister->db));
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
         goto error;
     }
 
     if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
         nlog_error("bind `%s` with `%s` fail: %s", query, driver_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         goto error;
     }
 
@@ -1255,7 +988,7 @@ int neu_persister_load_groups(neu_persister_t *persister,
     }
 
     if (SQLITE_DONE != step) {
-        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(persister->db));
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
         // do not set return code, return partial or empty result
     }
 
@@ -1268,49 +1001,45 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_delete_group(neu_persister_t *persister,
-                               const char *driver_name, const char *group_name)
+int neu_persister_delete_group(const char *driver_name, const char *group_name)
 {
     // rely on foreign key constraints to delete tags and subscriptions
-    return execute_sql(persister->db,
+    return execute_sql(global_db,
                        "DELETE FROM groups WHERE driver_name=%Q AND name=%Q",
                        driver_name, group_name);
 }
 
-int neu_persister_store_node_setting(neu_persister_t *persister,
-                                     const char *node_name, const char *setting)
+int neu_persister_store_node_setting(const char *node_name, const char *setting)
 {
     return execute_sql(
-        persister->db,
+        global_db,
         "INSERT OR REPLACE INTO settings (node_name, setting) VALUES (%Q, %Q)",
         node_name, setting);
 }
 
-int neu_persister_load_node_setting(neu_persister_t *  persister,
-                                    const char *       node_name,
+int neu_persister_load_node_setting(const char *       node_name,
                                     const char **const setting)
 {
     int           rv    = 0;
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT setting FROM settings WHERE node_name=?";
 
-    if (SQLITE_OK !=
-        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
         nlog_error("prepare `%s` with `%s` fail: %s", query, node_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         return NEU_ERR_EINTERNAL;
     }
 
     if (SQLITE_OK != sqlite3_bind_text(stmt, 1, node_name, -1, NULL)) {
         nlog_error("bind `%s` with `%s` fail: %s", query, node_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         rv = NEU_ERR_EINTERNAL;
         goto end;
     }
 
     if (SQLITE_ROW != sqlite3_step(stmt)) {
         nlog_warn("SQL `%s` with `%s` fail: %s", query, node_name,
-                  sqlite3_errmsg(persister->db));
+                  sqlite3_errmsg(global_db));
         rv = NEU_ERR_EINTERNAL;
         goto end;
     }
@@ -1329,10 +1058,9 @@ end:
     return rv;
 }
 
-int neu_persister_delete_node_setting(neu_persister_t *persister,
-                                      const char *     node_name)
+int neu_persister_delete_node_setting(const char *node_name)
 {
-    return execute_sql(persister->db, "DELETE FROM settings WHERE node_name=%Q",
+    return execute_sql(global_db, "DELETE FROM settings WHERE node_name=%Q",
                        node_name);
 }
 

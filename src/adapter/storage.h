@@ -24,29 +24,23 @@
 
 #include "adapter_internal.h"
 
-void adapter_storage_state(neu_persister_t *persister, const char *node,
-                           neu_node_running_state_e state);
-void adapter_storage_setting(neu_persister_t *persister, const char *node,
-                             const char *setting);
-void adapter_storage_add_group(neu_persister_t *persister, const char *node,
-                               const char *group, uint32_t interval);
-void adapter_storage_update_group(neu_persister_t *persister, const char *node,
-                                  const char *group, uint32_t interval);
-void adapter_storage_del_group(neu_persister_t *persister, const char *node,
-                               const char *group);
-void adapter_storage_add_tag(neu_persister_t *persister, const char *node,
-                             const char *group, const neu_datatag_t *tag);
-void adapter_storage_add_tags(neu_persister_t *persister, const char *node,
-                              const char *group, const neu_datatag_t *tags,
-                              size_t n);
-void adapter_storage_update_tag(neu_persister_t *persister, const char *node,
-                                const char *group, const neu_datatag_t *tag);
-void adapter_storage_del_tag(neu_persister_t *persister, const char *node,
-                             const char *group, const char *name);
+void adapter_storage_state(const char *node, neu_node_running_state_e state);
+void adapter_storage_setting(const char *node, const char *setting);
+void adapter_storage_add_group(const char *node, const char *group,
+                               uint32_t interval);
+void adapter_storage_update_group(const char *node, const char *group,
+                                  uint32_t interval);
+void adapter_storage_del_group(const char *node, const char *group);
+void adapter_storage_add_tag(const char *node, const char *group,
+                             const neu_datatag_t *tag);
+void adapter_storage_add_tags(const char *node, const char *group,
+                              const neu_datatag_t *tags, size_t n);
+void adapter_storage_update_tag(const char *node, const char *group,
+                                const neu_datatag_t *tag);
+void adapter_storage_del_tag(const char *node, const char *group,
+                             const char *name);
 
-int adapter_load_setting(neu_persister_t *persister, const char *node,
-                         char **setting);
-int adapter_load_group_and_tag(neu_persister_t *     persister,
-                               neu_adapter_driver_t *driver);
+int adapter_load_setting(const char *node, char **setting);
+int adapter_load_group_and_tag(neu_adapter_driver_t *driver);
 
 #endif

@@ -38,7 +38,6 @@ struct neu_adapter {
 
     neu_node_running_state_e state;
 
-    neu_persister_t *   persister;
     adapter_callbacks_t cb_funs;
 
     void *               handle;

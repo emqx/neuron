@@ -533,8 +533,7 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     HASH_FIND_STR(driver->groups, group, find);
     if (find == NULL) {
         neu_adapter_driver_add_group(driver, group, 3000);
-        adapter_storage_add_group(driver->adapter.persister,
-                                  driver->adapter.name, group, 3000);
+        adapter_storage_add_group(driver->adapter.name, group, 3000);
     }
     HASH_FIND_STR(driver->groups, group, find);
     assert(find != NULL);

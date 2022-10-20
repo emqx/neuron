@@ -81,244 +81,196 @@ static inline void neu_persist_user_info_fini(neu_persist_user_info_t *info)
 }
 
 /**
- * Persister, provide methods to persist data */
-typedef struct neu_persister neu_persister_t;
-
-const char *neu_persister_get_persist_dir(neu_persister_t *persister);
-const char *neu_persister_get_plugins_fname(neu_persister_t *persister);
-
-/**
  * Create persister.
- * @return Pointer to heap allocated neu_persister_t on success, NULL otherwise.
+ * @return 0 on success, -1 otherwise.
  */
-neu_persister_t *neu_persister_create(const char *dir_name);
+int neu_persister_create();
 /**
  * Destroy perister.
- * @param persister                 persiter object to destroy.
  */
-void neu_persister_destroy(neu_persister_t *persiter);
+void neu_persister_destroy();
 
 /**
  * Persist nodes.
- * @param persister                 persiter object.
  * @param node_info                 neu_persist_node_info_t.
  * @return 0 on success, non-zero on failure
  */
-int neu_persister_store_node(neu_persister_t *        persister,
-                             neu_persist_node_info_t *info);
+int neu_persister_store_node(neu_persist_node_info_t *info);
 /**
  * Load node infos.
- * @param persister                 persiter object.
  * @param[out] node_infos           used to return pointer to heap allocated
  *                                  vector of neu_persist_node_info_t.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_load_nodes(neu_persister_t *persister, UT_array **node_infos);
+int neu_persister_load_nodes(UT_array **node_infos);
 /**
  * Delete node.
- * @param persister                 persiter object.
  * @param node_name                 name of the node to delete.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_delete_node(neu_persister_t *persister,
-                              const char *     node_name);
+int neu_persister_delete_node(const char *node_name);
 
 /**
  * Update node name.
- * @param persister                 persiter object.
  * @param node_name                 name of the node to update.
  * @param new_name                  new name of the adapter.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_update_node(neu_persister_t *persister, const char *node_name,
-                              const char *new_name);
+int neu_persister_update_node(const char *node_name, const char *new_name);
 
 /**
  * Update node state.
- * @param persister                 persiter object.
  * @param node_name                 name of the node to update.
  * @param state                     state of the adapter.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_update_node_state(neu_persister_t *persister,
-                                    const char *node_name, int state);
+int neu_persister_update_node_state(const char *node_name, int state);
 
 /**
  * Persist plugins.
- * @param persister                 persiter object.
  * @param plugin_infos              vector of neu_persist_plugin_info_t.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_plugins(neu_persister_t *persister,
-                                UT_array *       plugin_infos);
+int neu_persister_store_plugins(UT_array *plugin_infos);
 /**
  * Load plugin infos.
- * @param persister                 persiter object.
  * @param[out] plugin_infos         used to return pointer to heap allocated
  * vector of neu_persist_plugin_info_t.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_load_plugins(neu_persister_t *persister,
-                               UT_array **      plugin_infos);
+int neu_persister_load_plugins(UT_array **plugin_infos);
 
 /**
  * Persist node tags.
- * @param persister                 persiter object.
  * @param driver_name               name of the driver who owns the tags
  * @param group_name                name of the group
  * @param tag                       the tag to store
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_tag(neu_persister_t *persister, const char *driver_name,
-                            const char *group_name, const neu_datatag_t *tag);
+int neu_persister_store_tag(const char *driver_name, const char *group_name,
+                            const neu_datatag_t *tag);
 
-int neu_persister_store_tags(neu_persister_t *persister,
-                             const char *driver_name, const char *group_name,
+int neu_persister_store_tags(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tags, size_t n);
 
 /**
  * Load node tag infos.
- * @param persister                 persiter object.
  * @param node_name                 name of the node who owns the tags
  * @param group_name                name of the group
  * @param[out] tag_infos            used to return pointer to heap allocated
  *                                  vector of neu_datatag_t
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_load_tags(neu_persister_t *persister, const char *driver_name,
-                            const char *group_name, UT_array **tag_infos);
+int neu_persister_load_tags(const char *driver_name, const char *group_name,
+                            UT_array **tag_infos);
 
 /**
  * Update node tags.
- * @param persister                 persiter object.
  * @param driver_name               name of the driver who owns the tags
  * @param group_name                name of the group
  * @param tag                       the tag to update
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_update_tag(neu_persister_t *persister,
-                             const char *driver_name, const char *group_name,
+int neu_persister_update_tag(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tag);
 
 /**
  * Delete node tags.
- * @param persister                 persiter object.
  * @param driver_name               name of the driver who owns the tags
  * @param group_name                name of the group
  * @param tag_name                  name of the tag
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_delete_tag(neu_persister_t *persister,
-                             const char *driver_name, const char *group_name,
+int neu_persister_delete_tag(const char *driver_name, const char *group_name,
                              const char *tag_name);
 
 /**
  * Persist subscriptions.
- * @param persister                 persiter object.
  * @param app_name                  name of the app node
  * @param driver_name               name of the driver node
  * @param group_name                name of the group
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_subscription(neu_persister_t *persister,
-                                     const char *     app_name,
-                                     const char *     driver_name,
-                                     const char *     group_name);
+int neu_persister_store_subscription(const char *app_name,
+                                     const char *driver_name,
+                                     const char *group_name);
 
 /**
  * Load adapter subscriptions.
- * @param persister                 persiter object.
  * @param app_name                  name of the app node
  * @param[out] subscription_infos   used to return pointer to heap allocated
  *                                  vector of neu_persist_subscription_info_t.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_load_subscriptions(neu_persister_t *persister,
-                                     const char *     app_name,
-                                     UT_array **      subscription_infos);
+int neu_persister_load_subscriptions(const char *app_name,
+                                     UT_array ** subscription_infos);
 
 /**
  * Persist subscriptions.
- * @param persister                 persiter object.
  * @param app_name                  name of the app node
  * @param driver_name               name of the driver node
  * @param group_name                name of the group
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_delete_subscription(neu_persister_t *persister,
-                                      const char *     app_name,
-                                      const char *     driver_name,
-                                      const char *     group_name);
+int neu_persister_delete_subscription(const char *app_name,
+                                      const char *driver_name,
+                                      const char *group_name);
 
 /**
  * Persist group config.
- * @param persister                 persiter object.
  * @param driver_name               name of the driver who owns the group
  * @param group_info                group info to persist.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_group(neu_persister_t *         persister,
-                              const char *              driver_name,
+int neu_persister_store_group(const char *              driver_name,
                               neu_persist_group_info_t *group_info);
 
 /**
  * Update group config.
- * @param persister                 persiter object.
  * @param driver_name               name of the driver who owns the group
  * @param group_info                group info to persist.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_update_group(neu_persister_t *         persister,
-                               const char *              driver_name,
+int neu_persister_update_group(const char *              driver_name,
                                neu_persist_group_info_t *group_info);
 /**
  * Load all group config infos under an adapter.
- * @param persister                 persiter object.
  * @param driver_name               name of the driver who owns the group
  * @param[out] group_infos          used to return pointer to heap allocated
  *                                  vector of neu_persist_group_info_t.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_load_groups(neu_persister_t *persister,
-                              const char *driver_name, UT_array **group_infos);
+int neu_persister_load_groups(const char *driver_name, UT_array **group_infos);
 /**
  * Delete group config.
- * @param persister                 persiter object.
  * @param driver_name               name of the driver who owns the group
  * @param group_name                name of the group.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_delete_group(neu_persister_t *persister,
-                               const char *driver_name, const char *group_name);
+int neu_persister_delete_group(const char *driver_name, const char *group_name);
 
 /**
  * Persist node setting.
- * @param persister                 persiter object.
  * @param adapter_name              name of the adapter who owns the setting.
  * @param setting                   node setting string.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_store_node_setting(neu_persister_t *persister,
-                                     const char *     node_name,
-                                     const char *     setting);
+int neu_persister_store_node_setting(const char *node_name,
+                                     const char *setting);
 /**
  * Load node setting.
- * @param persister                 persiter object.
  * @param node_name                 name of the node.
  * @param[out] setting              used to return node setting string.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_load_node_setting(neu_persister_t *  persister,
-                                    const char *       node_name,
+int neu_persister_load_node_setting(const char *       node_name,
                                     const char **const setting);
 /**
  * Delete node setting.
- * @param persister                 persiter object.
  * @param node_name                 name of the node.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_delete_node_setting(neu_persister_t *persister,
-                                      const char *     node_name);
+int neu_persister_delete_node_setting(const char *node_name);
 
 /**
  * Save user info.
