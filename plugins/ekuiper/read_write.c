@@ -29,8 +29,9 @@
 void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 {
     int rv = 0;
-    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
-        plugin->common.adapter_callbacks->stat_acc;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
 
     char *           json_str = NULL;
     json_read_resp_t resp     = {
@@ -58,8 +59,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     rv = nng_sendmsg(plugin->sock, msg,
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 == rv) {
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_SENT, 1);
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_SENT, json_len);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES, json_len);
     } else {
         plog_error(plugin, "nng cannot send msg");
         nng_msg_free(msg);
@@ -74,8 +74,9 @@ void recv_data_callback(void *arg)
     size_t            json_len = 0;
     char *            json_str = NULL;
     json_write_req_t *req      = NULL;
-    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
-        plugin->common.adapter_callbacks->stat_acc;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
 
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
@@ -87,8 +88,7 @@ void recv_data_callback(void *arg)
     json_str = nng_msg_body(msg);
     json_len = nng_msg_len(msg);
     plog_debug(plugin, "<< %.*s", (int) json_len, json_str);
-    stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_RECV, 1);
-    stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_RECV, json_len);
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES, json_len);
     if (json_decode_write_req(json_str, json_len, &req) < 0) {
         plog_error(plugin, "fail decode write request json: %.*s",
                    (int) nng_msg_len(msg), json_str);

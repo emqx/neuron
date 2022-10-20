@@ -27,64 +27,9 @@ extern "C" {
 #include <stdint.h>
 
 #include "define.h"
+#include "metrics.h"
 #include "tag.h"
 #include "type.h"
-
-#define NEU_NODE_STAT_RTT_MAX 9999
-
-/** Kinds of node statistics counters.
- *
- * Some counters are maintained by the neuron core, while others should be
- * maintained by the plugin code using the adapter callback `stat_acc`.
- */
-typedef enum {
-    // kinds of counters maintained by the plugins
-    NEU_NODE_STAT_BYTES_SENT, // number of bytes sent
-    NEU_NODE_STAT_BYTES_RECV, // number of bytes received
-    NEU_NODE_STAT_MSGS_SENT,  // number of messages sent
-    NEU_NODE_STAT_MSGS_RECV,  // number of messages received
-    NEU_NODE_STAT_AVG_RTT,    // average round trip time (ms)
-
-    // kinds of counters maintained by the driver core
-    NEU_NODE_STAT_TAG_TOT_CNT, // number of tag read including errors
-    NEU_NODE_STAT_TAG_ERR_CNT, // number of tag read errors
-
-    NEU_NODE_STAT_MAX,
-} neu_node_stat_e;
-
-typedef enum {
-    NEU_METRICS_CATEGORY_GLOBAL,
-    NEU_METRICS_CATEGORY_DRIVER,
-    NEU_METRICS_CATEGORY_APP,
-    NEU_METRICS_CATEGORY_ALL,
-} neu_metrics_category_e;
-
-typedef struct {
-    bool     core_dumped;
-    uint64_t uptime_seconds;
-    size_t   north_nodes;
-    size_t   north_running_nodes;
-    size_t   north_disconnected_nodes;
-    size_t   south_nodes;
-    size_t   south_running_nodes;
-    size_t   south_disconnected_nodes;
-} neu_metrics_t;
-
-static inline const char *neu_node_stat_string(neu_node_stat_e s)
-{
-    static const char *map[] = {
-        [NEU_NODE_STAT_BYTES_SENT]  = "bytes_sent",
-        [NEU_NODE_STAT_BYTES_RECV]  = "bytes_received",
-        [NEU_NODE_STAT_MSGS_SENT]   = "messages_sent",
-        [NEU_NODE_STAT_MSGS_RECV]   = "messages_received",
-        [NEU_NODE_STAT_AVG_RTT]     = "average_rtt",
-        [NEU_NODE_STAT_TAG_TOT_CNT] = "tag_total_count",
-        [NEU_NODE_STAT_TAG_ERR_CNT] = "tag_error_count",
-        [NEU_NODE_STAT_MAX]         = NULL,
-    };
-
-    return map[s];
-}
 
 typedef struct {
     neu_node_running_state_e running;
@@ -494,11 +439,15 @@ typedef struct neu_adapter        neu_adapter_t;
 typedef struct neu_adapter_driver neu_adapter_driver_t;
 typedef struct neu_adapter_app    neu_adapter_app_t;
 
+typedef int (*neu_adapter_update_metric_cb_t)(neu_adapter_t *adapter,
+                                              const char *   metric_name,
+                                              uint64_t       n);
+
 typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
                     void *data);
-    void (*stat_acc)(neu_adapter_t *adapter, neu_node_stat_e s, uint64_t n);
+    neu_adapter_update_metric_cb_t update_metric;
 
     union {
         struct {
