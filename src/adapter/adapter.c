@@ -81,8 +81,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->cb_funs.command  = callback_funs.command;
     adapter->cb_funs.response = callback_funs.response;
     adapter->module           = info->module;
-    adapter->persister        = neu_persister_create("persistence");
-    assert(adapter->persister != NULL);
 
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
@@ -110,8 +108,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     strcpy(common->name, adapter->name);
 
     adapter->module->intf_funs->init(adapter->plugin);
-    if (adapter_load_setting(adapter->persister, adapter->name,
-                             &adapter->setting) == 0) {
+    if (adapter_load_setting(adapter->name, &adapter->setting) == 0) {
         if (adapter->module->intf_funs->setting(adapter->plugin,
                                                 adapter->setting) == 0) {
             adapter->state = NEU_NODE_RUNNING_STATE_READY;
@@ -122,8 +119,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     }
 
     if (info->module->type == NEU_NA_TYPE_DRIVER) {
-        adapter_load_group_and_tag(adapter->persister,
-                                   (neu_adapter_driver_t *) adapter);
+        adapter_load_group_and_tag((neu_adapter_driver_t *) adapter);
     }
 
     param.fd       = adapter->recv_fd;
@@ -139,7 +135,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     nlog_info("Success to create adapter: %s", adapter->name);
 
-    adapter_storage_state(adapter->persister, adapter->name, adapter->state);
+    adapter_storage_state(adapter->name, adapter->state);
     return adapter;
 }
 
@@ -334,8 +330,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         error.error = neu_adapter_set_setting(adapter, cmd->setting);
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_setting(adapter->persister, adapter->name,
-                                    cmd->setting);
+            adapter_storage_setting(adapter->name, cmd->setting);
         }
         free(cmd->setting);
 
@@ -429,8 +424,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_add_group(adapter->persister, adapter->name,
-                                      cmd->group, cmd->interval);
+            adapter_storage_add_group(adapter->name, cmd->group, cmd->interval);
         }
 
         neu_msg_exchange(header);
@@ -455,8 +449,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_update_group(adapter->persister, adapter->name,
-                                         cmd->group, cmd->interval);
+            adapter_storage_update_group(adapter->name, cmd->group,
+                                         cmd->interval);
         }
 
         neu_msg_exchange(header);
@@ -476,8 +470,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_del_group(adapter->persister, cmd->driver,
-                                      cmd->group);
+            adapter_storage_del_group(cmd->driver, cmd->group);
         }
 
         neu_msg_exchange(header);
@@ -514,8 +507,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 int ret = neu_adapter_driver_del_tag(
                     (neu_adapter_driver_t *) adapter, cmd->group, cmd->tags[i]);
                 if (0 == ret) {
-                    adapter_storage_del_tag(adapter->persister, cmd->driver,
-                                            cmd->group, cmd->tags[i]);
+                    adapter_storage_del_tag(cmd->driver, cmd->group,
+                                            cmd->tags[i]);
                 }
             }
         }
@@ -552,8 +545,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (resp.index) {
             // we have added some tags, try to persist
-            adapter_storage_add_tags(adapter->persister, cmd->driver,
-                                     cmd->group, cmd->tags, resp.index);
+            adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
+                                     resp.index);
         }
 
         for (int i = 0; i < cmd->n_tag; i++) {
@@ -580,8 +573,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     (neu_adapter_driver_t *) adapter, cmd->group,
                     &cmd->tags[i]);
                 if (ret == 0) {
-                    adapter_storage_update_tag(adapter->persister, cmd->driver,
-                                               cmd->group, &cmd->tags[i]);
+                    adapter_storage_update_tag(cmd->driver, cmd->group,
+                                               &cmd->tags[i]);
 
                     resp.index += 1;
                 } else {
@@ -641,7 +634,6 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
 
     nng_dialer_close(adapter->dialer);
     nng_close(adapter->sock);
-    neu_persister_destroy(adapter->persister);
 
     if (adapter->name != NULL) {
         free(adapter->name);
@@ -697,8 +689,7 @@ int neu_adapter_start(neu_adapter_t *adapter)
     error = intf_funs->start(adapter->plugin);
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_RUNNING;
-        adapter_storage_state(adapter->persister, adapter->name,
-                              adapter->state);
+        adapter_storage_state(adapter->name, adapter->state);
     }
 
     return error;
@@ -736,8 +727,7 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     error = intf_funs->stop(adapter->plugin);
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_STOPPED;
-        adapter_storage_state(adapter->persister, adapter->name,
-                              adapter->state);
+        adapter_storage_state(adapter->name, adapter->state);
     }
 
     return error;

@@ -77,8 +77,6 @@ neu_manager_t *neu_manager_create()
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
     manager->sub_msg_manager   = neu_sub_msg_manager_create();
-    manager->persister         = neu_persister_create("persistence");
-    assert(manager->persister != NULL);
 
     rv = nng_pair1_open_poly(&manager->socket);
     assert(rv == 0);
@@ -149,7 +147,6 @@ void neu_manager_destroy(neu_manager_t *manager)
     }
 
     neu_sub_msg_manager_destroy(manager->sub_msg_manager);
-    neu_persister_destroy(manager->persister);
     neu_subscribe_manager_destroy(manager->subscribe_manager);
     neu_node_manager_destroy(manager->node_manager);
     neu_plugin_manager_destroy(manager->plugin_manager);
