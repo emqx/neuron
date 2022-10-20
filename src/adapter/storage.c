@@ -23,103 +23,97 @@
 #include "driver/driver_internal.h"
 #include "storage.h"
 
-void adapter_storage_state(neu_persister_t *persister, const char *node,
-                           neu_node_running_state_e state)
+void adapter_storage_state(const char *node, neu_node_running_state_e state)
 {
-    neu_persister_update_node_state(persister, node, state);
+    neu_persister_update_node_state(node, state);
 }
 
-void adapter_storage_setting(neu_persister_t *persister, const char *node,
-                             const char *setting)
+void adapter_storage_setting(const char *node, const char *setting)
 {
-    neu_persister_store_node_setting(persister, node, setting);
+    neu_persister_store_node_setting(node, setting);
 }
 
-void adapter_storage_add_group(neu_persister_t *persister, const char *node,
-                               const char *group, uint32_t interval)
+void adapter_storage_add_group(const char *node, const char *group,
+                               uint32_t interval)
 {
     neu_persist_group_info_t info = {
         .name     = (char *) group,
         .interval = interval,
     };
 
-    neu_persister_store_group(persister, node, &info);
+    neu_persister_store_group(node, &info);
 }
 
-void adapter_storage_update_group(neu_persister_t *persister, const char *node,
-                                  const char *group, uint32_t interval)
+void adapter_storage_update_group(const char *node, const char *group,
+                                  uint32_t interval)
 {
     neu_persist_group_info_t info = {
         .name     = (char *) group,
         .interval = interval,
     };
 
-    int rv = neu_persister_update_group(persister, node, &info);
+    int rv = neu_persister_update_group(node, &info);
     if (0 != rv) {
         nlog_error("fail update adapter:%s group:%s, interval: %u", node, group,
                    interval);
     }
 }
 
-void adapter_storage_del_group(neu_persister_t *persister, const char *node,
-                               const char *group)
+void adapter_storage_del_group(const char *node, const char *group)
 {
-    neu_persister_delete_group(persister, node, group);
+    neu_persister_delete_group(node, group);
 }
 
-void adapter_storage_add_tag(neu_persister_t *persister, const char *node,
-                             const char *group, const neu_datatag_t *tag)
+void adapter_storage_add_tag(const char *node, const char *group,
+                             const neu_datatag_t *tag)
 {
-    int rv = neu_persister_store_tag(persister, node, group, tag);
+    int rv = neu_persister_store_tag(node, group, tag);
     if (0 != rv) {
         nlog_error("fail store tag:%s adapter:%s grp:%s", tag->name, node,
                    group);
     }
 }
 
-void adapter_storage_add_tags(neu_persister_t *persister, const char *node,
-                              const char *group, const neu_datatag_t *tags,
-                              size_t n)
+void adapter_storage_add_tags(const char *node, const char *group,
+                              const neu_datatag_t *tags, size_t n)
 {
     if (0 == n) {
         return;
     }
 
     if (1 == n) {
-        return adapter_storage_add_tag(persister, node, group, &tags[0]);
+        return adapter_storage_add_tag(node, group, &tags[0]);
     }
 
-    int rv = neu_persister_store_tags(persister, node, group, tags, n);
+    int rv = neu_persister_store_tags(node, group, tags, n);
     if (0 != rv) {
         nlog_error("fail store %zu tags:[%s ... %s] adapter:%s grp:%s", n,
                    tags->name, tags[n - 1].name, node, group);
     }
 }
 
-void adapter_storage_update_tag(neu_persister_t *persister, const char *node,
-                                const char *group, const neu_datatag_t *tag)
+void adapter_storage_update_tag(const char *node, const char *group,
+                                const neu_datatag_t *tag)
 {
-    int rv = neu_persister_update_tag(persister, node, group, tag);
+    int rv = neu_persister_update_tag(node, group, tag);
     if (0 != rv) {
         nlog_error("fail update tag:%s adapter:%s grp:%s", tag->name, node,
                    group);
     }
 }
 
-void adapter_storage_del_tag(neu_persister_t *persister, const char *node,
-                             const char *group, const char *name)
+void adapter_storage_del_tag(const char *node, const char *group,
+                             const char *name)
 {
-    int rv = neu_persister_delete_tag(persister, node, group, name);
+    int rv = neu_persister_delete_tag(node, group, name);
     if (0 != rv) {
         nlog_error("fail del tag:%s adapter:%s grp:%s", name, node, group);
     }
 }
 
-int adapter_load_setting(neu_persister_t *persister, const char *node,
-                         char **setting)
+int adapter_load_setting(const char *node, char **setting)
 {
-    int rv = neu_persister_load_node_setting(persister, node,
-                                             (const char **) setting);
+    int rv = neu_persister_load_node_setting(node, (const char **) setting);
     if (0 != rv) {
         nlog_info("load %s setting fail", node);
         return -1;
@@ -128,13 +122,12 @@ int adapter_load_setting(neu_persister_t *persister, const char *node,
     return 0;
 }
 
-int adapter_load_group_and_tag(neu_persister_t *     persister,
-                               neu_adapter_driver_t *driver)
+int adapter_load_group_and_tag(neu_adapter_driver_t *driver)
 {
     UT_array *     group_infos = NULL;
     neu_adapter_t *adapter     = (neu_adapter_t *) driver;
 
-    int rv = neu_persister_load_groups(persister, adapter->name, &group_infos);
+    int rv = neu_persister_load_groups(adapter->name, &group_infos);
     if (0 != rv) {
         nlog_warn("load %s group fail", adapter->name);
         return rv;
@@ -145,7 +138,7 @@ int adapter_load_group_and_tag(neu_persister_t *     persister,
         UT_array *tags = NULL;
         neu_adapter_driver_add_group(driver, p->name, p->interval);
 
-        rv = neu_persister_load_tags(persister, adapter->name, p->name, &tags);
+        rv = neu_persister_load_tags(adapter->name, p->name, &tags);
         if (0 != rv) {
             nlog_warn("load %s:%s tags fail", adapter->name, p->name);
             continue;
