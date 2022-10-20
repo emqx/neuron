@@ -42,8 +42,6 @@ typedef struct neu_manager {
     neu_node_manager_t *  node_manager;
     neu_subscribe_mgr_t * subscribe_manager;
     neu_sub_msg_mgr_t *   sub_msg_manager;
-
-    neu_persister_t *persister;
 } neu_manager_t;
 
 int       neu_manager_add_plugin(neu_manager_t *manager, const char *library);

@@ -87,14 +87,12 @@ static inline void version()
 
 static inline int reset_password()
 {
-    neu_persister_t *       persister = neu_persister_create("persistence");
-    neu_persist_user_info_t info      = {
+    neu_persist_user_info_t info = {
         .name = "admin",
         .hash =
             "$5$PwFeXpBBIBZuZdZl$fP8fFPWCLoaWcnVXVSR.3Xi8TEqCvX92gjhowNNn6S4",
     };
-    int rv = neu_persister_update_user(persister, &info);
-    neu_persister_destroy(persister);
+    int rv = neu_persister_update_user(&info);
     return rv;
 }
 

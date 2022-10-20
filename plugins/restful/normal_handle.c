@@ -53,11 +53,8 @@ void handle_login(nng_aio *aio)
 {
     REST_PROCESS_HTTP_REQUEST(
         aio, neu_json_login_req_t, neu_json_decode_login_req, {
-            neu_plugin_t *        plugin = neu_rest_get_plugin();
-            neu_plugin_common_t * common = neu_plugin_to_plugin_common(plugin);
             neu_json_login_resp_t login_resp = { 0 };
-            neu_user_t *          user =
-                neu_load_user(common->adapter->persister, req->name);
+            neu_user_t *          user       = neu_load_user(req->name);
 
             if (NULL == user) {
                 nlog_warn("could not find user `%s`", req->name);
@@ -99,19 +96,16 @@ void handle_password(nng_aio *aio)
 {
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_password_req_t, neu_json_decode_password_req, {
-            neu_plugin_t *       plugin = neu_rest_get_plugin();
-            neu_plugin_common_t *common = neu_plugin_to_plugin_common(plugin);
-            neu_persister_t *    persister = common->adapter->persister;
-            neu_user_t *         user      = NULL;
-            int                  rv        = 0;
-            int                  pass_len  = strlen(req->new_pass);
+            neu_user_t *user     = NULL;
+            int         rv       = 0;
+            int         pass_len = strlen(req->new_pass);
 
             if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
                 pass_len > NEU_USER_PASSWORD_MAX_LEN) {
                 nlog_error("user `%s` new password too short or too long",
                            req->name);
                 rv = NEU_ERR_INVALID_PASSWORD_LEN;
-            } else if (NULL == (user = neu_load_user(persister, req->name))) {
+            } else if (NULL == (user = neu_load_user(req->name))) {
                 nlog_error("could not find user `%s`", req->name);
                 rv = NEU_ERR_INVALID_USER_OR_PASSWORD;
             } else if (!neu_user_check_password(user, req->old_pass)) {
@@ -120,7 +114,7 @@ void handle_password(nng_aio *aio)
             } else if (0 !=
                        (rv = neu_user_update_password(user, req->new_pass))) {
                 nlog_error("user `%s` update password fail", req->name);
-            } else if (0 != (rv = neu_save_user(persister, user))) {
+            } else if (0 != (rv = neu_save_user(user))) {
                 nlog_error("user `%s` persist fail", req->name);
             }
 
