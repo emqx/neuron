@@ -1064,45 +1064,41 @@ int neu_persister_delete_node_setting(const char *node_name)
                        node_name);
 }
 
-int neu_persister_store_user(neu_persister_t *              persister,
-                             const neu_persist_user_info_t *user)
+int neu_persister_store_user(const neu_persist_user_info_t *user)
 {
-    return execute_sql(persister->db,
+    return execute_sql(global_db,
                        "INSERT INTO users (name, password) VALUES (%Q, %Q)",
                        user->name, user->hash);
 }
 
-int neu_persister_update_user(neu_persister_t *              persister,
-                              const neu_persist_user_info_t *user)
+int neu_persister_update_user(const neu_persist_user_info_t *user)
 {
-    return execute_sql(persister->db,
-                       "UPDATE users SET password=%Q WHERE name=%Q", user->hash,
-                       user->name);
+    return execute_sql(global_db, "UPDATE users SET password=%Q WHERE name=%Q",
+                       user->hash, user->name);
 }
 
-int neu_persister_load_user(neu_persister_t *persister, const char *user_name,
+int neu_persister_load_user(const char *              user_name,
                             neu_persist_user_info_t **user_p)
 {
     neu_persist_user_info_t *user  = NULL;
     sqlite3_stmt *           stmt  = NULL;
     const char *             query = "SELECT password FROM users WHERE name=?";
 
-    if (SQLITE_OK !=
-        sqlite3_prepare_v2(persister->db, query, -1, &stmt, NULL)) {
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
         nlog_error("prepare `%s` with `%s` fail: %s", query, user_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         return NEU_ERR_EINTERNAL;
     }
 
     if (SQLITE_OK != sqlite3_bind_text(stmt, 1, user_name, -1, NULL)) {
         nlog_error("bind `%s` with `%s` fail: %s", query, user_name,
-                   sqlite3_errmsg(persister->db));
+                   sqlite3_errmsg(global_db));
         goto error;
     }
 
     if (SQLITE_ROW != sqlite3_step(stmt)) {
         nlog_warn("SQL `%s` with `%s` fail: %s", query, user_name,
-                  sqlite3_errmsg(persister->db));
+                  sqlite3_errmsg(global_db));
         goto error;
     }
 
@@ -1136,8 +1132,7 @@ error:
     return NEU_ERR_EINTERNAL;
 }
 
-int neu_persister_delete_user(neu_persister_t *persister, const char *user_name)
+int neu_persister_delete_user(const char *user_name)
 {
-    return execute_sql(persister->db, "DELETE FROM users WHERE name=%Q",
-                       user_name);
+    return execute_sql(global_db, "DELETE FROM users WHERE name=%Q", user_name);
 }

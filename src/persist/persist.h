@@ -274,40 +274,33 @@ int neu_persister_delete_node_setting(const char *node_name);
 
 /**
  * Save user info.
- * @param persister                 persister object.
  * @param user                      user info
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_store_user(neu_persister_t *              persister,
-                             const neu_persist_user_info_t *user);
+int neu_persister_store_user(const neu_persist_user_info_t *user);
 
 /**
  * Update user info.
- * @param persister                 persister object.
  * @param user                      user info
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_update_user(neu_persister_t *              persister,
-                              const neu_persist_user_info_t *user);
+int neu_persister_update_user(const neu_persist_user_info_t *user);
 
 /**
  * Load user info.
- * @param persister                 persister object.
  * @param user_name                 name of the user.
  * @param user_p                    output parameter of user info
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_load_user(neu_persister_t *persister, const char *user_name,
+int neu_persister_load_user(const char *              user_name,
                             neu_persist_user_info_t **user_p);
 
 /**
  * Delete user info.
- * @param persister                 persister object.
  * @param user_name                 name of the user.
  * @return 0 on success, none-zero on failure
  */
-int neu_persister_delete_user(neu_persister_t *persister,
-                              const char *     user_name);
+int neu_persister_delete_user(const char *user_name);
 
 #ifdef __cplusplus
 }
