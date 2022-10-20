@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,22 +41,38 @@
 #include "plugin.h"
 #include "storage.h"
 
-static int  adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
-static int  adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
+static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
+static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
+                           void *data);
+static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
-static int  adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
-                             void *data);
-static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
-                             uint64_t n);
+static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
+                                   neu_metric_type_e type, const char *help,
+                                   uint64_t init);
+static int adapter_update_metric(neu_adapter_t *adapter,
+                                 const char *metric_name, uint64_t n);
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 static int         update_timestamp(void *usr_data);
 
+static pthread_rwlock_t g_node_metrics_mtx_ = PTHREAD_RWLOCK_INITIALIZER;
+static neu_metrics_t    g_node_metrics_;
+
 static const adapter_callbacks_t callback_funs = {
-    .command  = adapter_command,
-    .response = adapter_response,
-    .stat_acc = adapter_stat_acc,
+    .command       = adapter_command,
+    .response      = adapter_response,
+    .update_metric = adapter_update_metric,
 };
+
+#define REGISTER_METRIC(adapter, name, init) \
+    adapter_register_metric(adapter, name, name##_TYPE, name##_HELP, init);
+
+#define REGISTER_DRIVER_METRICS(adapter)                     \
+    REGISTER_METRIC(adapter, NEU_METRIC_LAST_RTT_MS, 9999);  \
+    REGISTER_METRIC(adapter, NEU_METRIC_SEND_BYTES, 0);      \
+    REGISTER_METRIC(adapter, NEU_METRIC_RECV_BYTES, 0);      \
+    REGISTER_METRIC(adapter, NEU_METRIC_TAG_READS_TOTAL, 0); \
+    REGISTER_METRIC(adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, 0)
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
@@ -77,16 +94,21 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         break;
     }
 
-    adapter->name             = strdup(info->name);
-    adapter->events           = neu_event_new();
-    adapter->state            = NEU_NODE_RUNNING_STATE_INIT;
-    adapter->handle           = info->handle;
-    adapter->cb_funs.command  = callback_funs.command;
-    adapter->cb_funs.response = callback_funs.response;
-    adapter->cb_funs.stat_acc = callback_funs.stat_acc;
-    adapter->module           = info->module;
+    adapter->name                  = strdup(info->name);
+    adapter->events                = neu_event_new();
+    adapter->state                 = NEU_NODE_RUNNING_STATE_INIT;
+    adapter->handle                = info->handle;
+    adapter->cb_funs.command       = callback_funs.command;
+    adapter->cb_funs.response      = callback_funs.response;
+    adapter->cb_funs.update_metric = callback_funs.update_metric;
+    adapter->module                = info->module;
 
-    adapter->stat.avg_rtt = NEU_NODE_STAT_RTT_MAX;
+    adapter->metrics = calloc(1, sizeof(*adapter->metrics));
+    if (NULL != adapter->metrics) {
+        adapter->metrics->type = info->module->type;
+        adapter->metrics->name = adapter->name;
+        HASH_ADD_STR(g_node_metrics_.node_metrics, name, adapter->metrics);
+    }
 
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
@@ -97,6 +119,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     switch (info->module->type) {
     case NEU_NA_TYPE_DRIVER:
+        REGISTER_DRIVER_METRICS(adapter);
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
         break;
     case NEU_NA_TYPE_APP:
@@ -166,41 +189,46 @@ neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
     return adapter->module->type;
 }
 
-static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
-                             uint64_t n)
+static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
+                                   neu_metric_type_e type, const char *help,
+                                   uint64_t init)
 {
-    switch (s) {
-    case NEU_NODE_STAT_BYTES_SENT:
-        adapter->stat.bytes_sent += n;
-        break;
-    case NEU_NODE_STAT_BYTES_RECV:
-        adapter->stat.bytes_recv += n;
-        break;
-    case NEU_NODE_STAT_MSGS_SENT:
-        adapter->stat.msgs_sent += n;
-        break;
-    case NEU_NODE_STAT_MSGS_RECV:
-        adapter->stat.msgs_recv += n;
-        break;
-    case NEU_NODE_STAT_AVG_RTT: {
-        if (NEU_NODE_STAT_RTT_MAX <= n ||
-            adapter->stat.avg_rtt == NEU_NODE_STAT_RTT_MAX) {
-            adapter->stat.avg_rtt = n;
-            break;
-        }
-
-        // exponential moving average with alpha = 0.3
-        const double a        = 0.3;
-        adapter->stat.avg_rtt = adapter->stat.avg_rtt * (1 - a) + n * a;
-        break;
+    if (NULL == adapter->metrics) {
+        return -1;
     }
 
-    // these are maintained by neuron core
-    case NEU_NODE_STAT_TAG_TOT_CNT:
-    case NEU_NODE_STAT_TAG_ERR_CNT:
-    default:
-        assert(!"please supply a valid statistics counter kind");
+    neu_metric_entry_t *entry = calloc(1, sizeof(*entry));
+    if (NULL == entry) {
+        return -1;
     }
+
+    entry->name  = name;
+    entry->type  = type;
+    entry->help  = help;
+    entry->value = init;
+    HASH_ADD_STR(adapter->metrics->entries, name, entry);
+    return 0;
+}
+
+static int adapter_update_metric(neu_adapter_t *adapter,
+                                 const char *metric_name, uint64_t n)
+{
+    neu_metric_entry_t *entry = NULL;
+    if (NULL != adapter->metrics) {
+        HASH_FIND_STR(adapter->metrics->entries, metric_name, entry);
+    }
+
+    if (NULL == entry) {
+        return -1;
+    }
+
+    if (NEU_METRIC_TYPE_COUNTER == entry->type) {
+        entry->value += n;
+    } else {
+        entry->value = n;
+    }
+
+    return 0;
 }
 
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
@@ -402,8 +430,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_NODE_STATE: {
         neu_resp_get_node_state_t resp = { 0 };
 
+        neu_metric_entry_t *e = NULL;
+        if (NULL != adapter->metrics) {
+            HASH_FIND_STR(adapter->metrics->entries, NEU_METRIC_LAST_RTT_MS, e);
+        }
+        resp.avg_rtt = NULL != e ? e->value : 0;
         resp.state   = neu_adapter_get_state(adapter);
-        resp.avg_rtt = adapter->stat.avg_rtt;
         header->type = NEU_RESP_GET_NODE_STATE;
         neu_msg_exchange(header);
         reply(adapter, header, &resp);
@@ -679,6 +711,13 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     nng_close(adapter->sock);
 
     adapter->module->intf_funs->close(adapter->plugin);
+
+    if (NULL != adapter->metrics) {
+        pthread_rwlock_wrlock(&g_node_metrics_mtx_);
+        HASH_DEL(g_node_metrics_.node_metrics, adapter->metrics);
+        neu_node_metrics_free(adapter->metrics);
+        pthread_rwlock_unlock(&g_node_metrics_mtx_);
+    }
 
     if (adapter->name != NULL) {
         free(adapter->name);

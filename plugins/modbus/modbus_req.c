@@ -49,14 +49,14 @@ void modbus_conn_disconnected(void *data, int fd)
 int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) ctx;
-    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
-        plugin->common.adapter_callbacks->stat_acc;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
 
     plog_send_protocol(plugin, bytes, n_byte);
     int ret = neu_conn_send(plugin->conn, bytes, n_byte);
     if (ret > 0) {
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_SENT, 1);
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_SENT, ret);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES, ret);
     }
     return ret;
 }
@@ -303,19 +303,17 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
     uint8_t *                 recv_buf = calloc(response_size, 1);
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
-    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
-        plugin->common.adapter_callbacks->stat_acc;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
 
     ret = neu_conn_recv(plugin->conn, recv_buf, response_size);
 
     if (ret > 0) {
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_RECV, ret);
+        update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES, ret);
         neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
         plog_recv_protocol(plugin, recv_buf, ret);
         ret = modbus_stack_recv(plugin->stack, &pbuf);
-        if (ret > 0) {
-            stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_RECV, 1);
-        }
     }
 
     free(recv_buf);

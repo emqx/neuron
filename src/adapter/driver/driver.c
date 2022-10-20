@@ -99,15 +99,22 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                 neu_driver_cache_update(driver->cache, group, t->name,
                                         driver->adapter.timestamp, value);
             }
-            driver->adapter.stat.tag_tot_cnt += utarray_len(tags);
-            driver->adapter.stat.tag_err_cnt += utarray_len(tags);
+            driver->adapter.cb_funs.update_metric(&driver->adapter,
+                                                  NEU_METRIC_TAG_READS_TOTAL,
+                                                  utarray_len(tags));
+            driver->adapter.cb_funs.update_metric(
+                &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
+                utarray_len(tags));
             utarray_free(tags);
         }
     } else {
         neu_driver_cache_update(driver->cache, group, tag,
                                 driver->adapter.timestamp, value);
-        driver->adapter.stat.tag_tot_cnt++;
-        driver->adapter.stat.tag_err_cnt += (NEU_TYPE_ERROR == value.type);
+        driver->adapter.cb_funs.update_metric(&driver->adapter,
+                                              NEU_METRIC_TAG_READS_TOTAL, 1);
+        driver->adapter.cb_funs.update_metric(&driver->adapter,
+                                              NEU_METRIC_TAG_READ_ERRORS_TOTAL,
+                                              NEU_TYPE_ERROR == value.type);
     }
     nlog_debug(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64,
