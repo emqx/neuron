@@ -308,7 +308,7 @@ UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
                 HASH_FIND_STR(el->adapter->metrics->entries,
                               NEU_METRIC_LAST_RTT_MS, e);
             }
-            state.avg_rtt = NULL != e ? e->value : 0;
+            state.rtt = NULL != e ? e->value : 0;
 
             utarray_push_back(states, &state);
         }

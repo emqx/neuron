@@ -140,9 +140,9 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
                                          .v.val_int = resp->link,
                                      },
                                      {
-                                         .name      = "average_rtt",
+                                         .name      = "rtt",
                                          .t         = NEU_JSON_INT,
-                                         .v.val_int = resp->avg_rtt,
+                                         .v.val_int = resp->rtt,
                                      } };
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
@@ -176,9 +176,9 @@ int neu_json_encode_get_nodes_state_resp(void *json_object, void *param)
                 .v.val_int = p_node->link,
             },
             {
-                .name      = "average_rtt",
+                .name      = "rtt",
                 .t         = NEU_JSON_INT,
-                .v.val_int = p_node->avg_rtt,
+                .v.val_int = p_node->rtt,
             },
         };
         node_array = neu_json_encode_array(node_array, node_elems,

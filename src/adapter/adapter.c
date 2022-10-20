@@ -434,7 +434,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (NULL != adapter->metrics) {
             HASH_FIND_STR(adapter->metrics->entries, NEU_METRIC_LAST_RTT_MS, e);
         }
-        resp.avg_rtt = NULL != e ? e->value : 0;
+        resp.rtt     = NULL != e ? e->value : 0;
         resp.state   = neu_adapter_get_state(adapter);
         header->type = NEU_RESP_GET_NODE_STATE;
         neu_msg_exchange(header);
