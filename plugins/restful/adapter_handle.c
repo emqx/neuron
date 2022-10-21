@@ -258,7 +258,7 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
 
     res.link    = state->state.link;
     res.running = state->state.running;
-    res.avg_rtt = state->avg_rtt;
+    res.rtt     = state->rtt;
 
     neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
 
@@ -282,7 +282,7 @@ void handle_get_nodes_state_resp(nng_aio *                   aio,
         states_res.nodes[index].name    = state->node;
         states_res.nodes[index].running = state->state.running;
         states_res.nodes[index].link    = state->state.link;
-        states_res.nodes[index].avg_rtt = state->avg_rtt;
+        states_res.nodes[index].rtt     = state->rtt;
     }
 
     neu_json_encode_by_fn(&states_res, neu_json_encode_get_nodes_state_resp,
