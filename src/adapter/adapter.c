@@ -815,7 +815,7 @@ static int update_timestamp(void *usr_data)
     uint64_t       timestamp = 0;
 
     gettimeofday(&tv, NULL);
-    timestamp          = tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    timestamp = (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
     adapter->timestamp = timestamp;
 
     neu_plugin_to_plugin_common(adapter->plugin)->timestamp = timestamp;

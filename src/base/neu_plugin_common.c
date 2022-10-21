@@ -32,7 +32,8 @@ void neu_plugin_common_init(neu_plugin_common_t *common)
     common->magic      = NEU_PLUGIN_MAGIC_NUMBER;
     common->link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     common->tag_size   = 0;
-    common->timestamp  = time(NULL) * 1000; // don't need much precision at init
+    common->timestamp  = time(NULL);
+    common->timestamp *= 1000; // don't need much precision at init
 }
 
 bool neu_plugin_common_check(neu_plugin_t *plugin)

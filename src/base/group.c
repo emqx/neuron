@@ -256,7 +256,7 @@ static void update_timestamp(neu_group_t *group)
 
     gettimeofday(&tv, NULL);
 
-    group->timestamp = tv.tv_sec * 1000 * 1000 + tv.tv_usec;
+    group->timestamp = (int64_t) tv.tv_sec * 1000 * 1000 + (int64_t) tv.tv_usec;
 }
 
 static UT_array *to_array(tag_elem_t *tags)
