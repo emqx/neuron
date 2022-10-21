@@ -81,7 +81,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     neu_event_io_param_t    param       = { 0 };
     neu_event_timer_param_t timer_param = {
         .second      = 0,
-        .millisecond = 10,
+        .millisecond = 1,
         .cb          = update_timestamp,
     };
 
