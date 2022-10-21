@@ -344,7 +344,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     switch (header->type) {
     case NEU_RESP_GET_DRIVER_GROUP:
     case NEU_REQRESP_NODE_DELETED:
-    case NEU_REQRESP_METRICS:
     case NEU_RESP_GET_SUB_DRIVER_TAGS:
     case NEU_REQ_UPDATE_LICENSE:
     case NEU_RESP_GET_NODE_STATE:
@@ -1041,9 +1040,6 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     case NEU_REQRESP_NODE_DELETED:
         data_size = sizeof(neu_reqresp_node_deleted_t);
-        break;
-    case NEU_REQRESP_METRICS:
-        data_size = sizeof(neu_reqresp_metrics_t);
         break;
     case NEU_RESP_GET_DRIVER_GROUP:
         data_size = sizeof(neu_resp_get_driver_group_t);
