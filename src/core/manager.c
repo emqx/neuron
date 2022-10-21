@@ -89,6 +89,7 @@ neu_manager_t *neu_manager_create()
     nng_socket_get_int(manager->socket, NNG_OPT_RECVFD, &param.fd);
     manager->loop = neu_event_add_io(manager->events, param);
 
+    neu_metrics_init();
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
     start_static_adapter(manager, DEFAULT_MONITOR_PLUGIN_NAME);
 

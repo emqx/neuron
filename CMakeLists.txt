@@ -103,6 +103,7 @@ set(NEURON_SOURCES
     src/core/storage.c
     src/adapter/storage.c
     src/adapter/adapter.c
+    src/adapter/metrics.c
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
     plugins/restful/handle.c

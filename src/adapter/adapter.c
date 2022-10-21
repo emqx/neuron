@@ -55,9 +55,6 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 static int         update_timestamp(void *usr_data);
 
-static pthread_rwlock_t g_node_metrics_mtx_ = PTHREAD_RWLOCK_INITIALIZER;
-static neu_metrics_t    g_node_metrics_;
-
 static const adapter_callbacks_t callback_funs = {
     .command       = adapter_command,
     .response      = adapter_response,
@@ -103,11 +100,14 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->cb_funs.update_metric = callback_funs.update_metric;
     adapter->module                = info->module;
 
-    adapter->metrics = calloc(1, sizeof(*adapter->metrics));
+    if (adapter->module->display) {
+        adapter->metrics = calloc(1, sizeof(*adapter->metrics));
+    }
     if (NULL != adapter->metrics) {
-        adapter->metrics->type = info->module->type;
-        adapter->metrics->name = adapter->name;
-        HASH_ADD_STR(g_node_metrics_.node_metrics, name, adapter->metrics);
+        adapter->metrics->type    = info->module->type;
+        adapter->metrics->name    = adapter->name;
+        adapter->metrics->adapter = adapter;
+        neu_metrics_add_node(adapter);
     }
 
     rv = nng_pair1_open(&adapter->sock);
@@ -712,10 +712,8 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     adapter->module->intf_funs->close(adapter->plugin);
 
     if (NULL != adapter->metrics) {
-        pthread_rwlock_wrlock(&g_node_metrics_mtx_);
-        HASH_DEL(g_node_metrics_.node_metrics, adapter->metrics);
+        neu_metrics_del_node(adapter);
         neu_node_metrics_free(adapter->metrics);
-        pthread_rwlock_unlock(&g_node_metrics_mtx_);
     }
 
     if (adapter->name != NULL) {

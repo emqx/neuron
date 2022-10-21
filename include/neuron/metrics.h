@@ -30,6 +30,9 @@ extern "C" {
 #include "type.h"
 #include "utils/uthash.h"
 
+// forward declaration for neu_adapter_t
+typedef struct neu_adapter neu_adapter_t;
+
 typedef enum {
     NEU_METRIC_TYPE_COUNTER,
     NEU_METRIC_TYPE_GAUAGE,
@@ -91,6 +94,7 @@ typedef struct {
     char *               name;          // node name
     neu_metric_entry_t * entries;       // node metric entries
     neu_group_metrics_t *group_metrics; // group metrics
+    neu_adapter_t *      adapter;       //
     UT_hash_handle       hh;            // ordered by name
 } neu_node_metrics_t;
 
@@ -105,6 +109,15 @@ typedef struct {
     size_t              south_disconnected_nodes;
     neu_node_metrics_t *node_metrics;
 } neu_metrics_t;
+
+static inline const char *neu_metric_type_str(neu_metric_type_e type)
+{
+    if (NEU_METRIC_TYPE_COUNTER == type) {
+        return "counter";
+    } else {
+        return "gauge";
+    }
+}
 
 static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
 {
@@ -149,6 +162,13 @@ static inline void neu_node_metrics_free(neu_node_metrics_t *node_metrics)
 
     free(node_metrics);
 }
+
+void neu_metrics_init();
+void neu_metrics_add_node(const neu_adapter_t *adapter);
+void neu_metrics_del_node(const neu_adapter_t *adapter);
+
+typedef void (*neu_metrics_cb_t)(const neu_metrics_t *metrics, void *data);
+void neu_metrics_visist(neu_metrics_cb_t cb, void *data);
 
 #ifdef __cplusplus
 }

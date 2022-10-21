@@ -17,6 +17,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <stdio.h>
+
+#include "define.h"
+#include "metrics.h"
 #include "utils/asprintf.h"
 #include "utils/log.h"
 
@@ -108,19 +112,21 @@ static inline bool parse_metrics_catgory(const char *s, size_t len,
 }
 
 static inline void gen_global_metrics(const neu_metrics_t *metrics,
-                                      char **              result)
+                                      FILE *               stream)
 {
-    neu_asprintf(result, METRIC_GLOBAL_TMPL, metrics->core_dumped,
-                 metrics->uptime_seconds, metrics->north_nodes,
-                 metrics->north_running_nodes,
-                 metrics->north_disconnected_nodes, metrics->south_nodes,
-                 metrics->south_running_nodes,
-                 metrics->south_disconnected_nodes);
+    fprintf(stream, METRIC_GLOBAL_TMPL, metrics->core_dumped,
+            metrics->uptime_seconds, metrics->north_nodes,
+            metrics->north_running_nodes, metrics->north_disconnected_nodes,
+            metrics->south_nodes, metrics->south_running_nodes,
+            metrics->south_disconnected_nodes);
 }
 
 void handle_get_metric(nng_aio *aio)
 {
+    int           status = NNG_HTTP_STATUS_OK;
     char *        result = NULL;
+    size_t        len    = 0;
+    FILE *        stream = NULL;
     neu_plugin_t *plugin = neu_monitor_get_plugin();
 
     neu_metrics_category_e cat           = NEU_METRICS_CATEGORY_ALL;
@@ -130,35 +136,30 @@ void handle_get_metric(nng_aio *aio)
         !parse_metrics_catgory(cat_param, cat_param_len, &cat)) {
         plog_info(plugin, "invalid metrics category: %.*s", (int) cat_param_len,
                   cat_param);
-        response(aio, NULL, NNG_HTTP_STATUS_BAD_REQUEST);
-        return;
+        status = NNG_HTTP_STATUS_BAD_REQUEST;
+        goto end;
     }
 
-    pthread_mutex_lock(&plugin->mutex);
-    if (plugin->metrics_updating) {
-        // a metrics request to core is in progress
-        // in the assumption that this case is rare, we just finish error
-        pthread_mutex_unlock(&plugin->mutex);
-        nng_aio_finish(aio, NNG_EBUSY);
-        response(aio, NULL, NNG_HTTP_STATUS_SERVICE_UNAVAILABLE);
-        return;
+    stream = open_memstream(&result, &len);
+    if (NULL == stream) {
+        status = NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
+        goto end;
     }
+
     switch (cat) {
     case NEU_METRICS_CATEGORY_GLOBAL:
-        gen_global_metrics(&plugin->metrics, &result);
+        neu_metrics_visist((neu_metrics_cb_t) gen_global_metrics, stream);
         break;
     case NEU_METRICS_CATEGORY_DRIVER:
     case NEU_METRICS_CATEGORY_APP:
     case NEU_METRICS_CATEGORY_ALL:
         break;
     }
-    pthread_mutex_unlock(&plugin->mutex);
 
-    if (NULL == result) {
-        response(aio, NULL, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);
-        return;
+end:
+    if (NULL != stream) {
+        fclose(stream);
     }
-
-    response(aio, result, NNG_HTTP_STATUS_OK);
+    response(aio, NNG_HTTP_STATUS_OK == status ? result : NULL, status);
     free(result);
 }

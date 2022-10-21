@@ -33,7 +33,6 @@ struct neu_plugin {
     neu_plugin_common_t common;
     pthread_mutex_t     mutex;
     bool                metrics_updating;
-    neu_metrics_t       metrics;
     neu_events_t *      events;
     neu_event_timer_t * timer;
     nng_http_server *   api_server;

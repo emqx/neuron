@@ -130,38 +130,10 @@ static int monitor_plugin_close(neu_plugin_t *plugin)
     return rv;
 }
 
-static inline int send_metrics_req(neu_plugin_t *plugin)
-{
-    neu_reqresp_head_t header = {
-        .type = NEU_REQRESP_METRICS,
-    };
-    neu_reqresp_metrics_t cmd = { .metrics = &plugin->metrics };
-
-    pthread_mutex_lock(&plugin->mutex);
-    plugin->metrics_updating = true;
-    pthread_mutex_unlock(&plugin->mutex);
-
-    return neu_plugin_op(plugin, header, &cmd);
-}
-
-static int monitor_timer_cb(void *data)
-{
-    neu_plugin_t *plugin = data;
-    return send_metrics_req(plugin);
-}
-
 static int monitor_plugin_init(neu_plugin_t *plugin)
 {
     int rv = 0;
-
-    plugin->events                = neu_event_new();
-    neu_event_timer_param_t param = {
-        .second      = 2,
-        .millisecond = 0,
-        .cb          = monitor_timer_cb,
-        .usr_data    = plugin,
-    };
-    plugin->timer = neu_event_add_timer(plugin->events, param);
+    (void) plugin;
 
     nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
@@ -205,12 +177,6 @@ static int monitor_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_ERROR: {
         neu_resp_error_t *resp_err = (neu_resp_error_t *) data;
         nlog_warn("recv error code: %d", resp_err->error);
-        break;
-    }
-    case NEU_REQRESP_METRICS: {
-        pthread_mutex_lock(&plugin->mutex);
-        plugin->metrics_updating = false;
-        pthread_mutex_unlock(&plugin->mutex);
         break;
     }
     default:
