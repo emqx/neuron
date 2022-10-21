@@ -333,16 +333,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     nng_recvmsg(adapter->sock, &msg, 0);
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
-    switch (header->type) {
-    case NEU_REQRESP_NODES_STATE:
-    case NEU_REQRESP_METRICS:
+    if (header->type == NEU_REQRESP_NODES_STATE) {
         nlog_debug("adapter(%s) recv msg from: %s, type: %s", adapter->name,
                    header->sender, neu_reqresp_type_string(header->type));
-        break;
-    default:
+    } else {
         nlog_info("adapter(%s) recv msg from: %s, type: %s", adapter->name,
                   header->sender, neu_reqresp_type_string(header->type));
-        break;
     }
 
     switch (header->type) {
