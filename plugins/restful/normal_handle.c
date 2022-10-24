@@ -28,7 +28,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "adapter/adapter_internal.h"
 #include "persist/persist.h"
 #include "user.h"
 #include "utils/asprintf.h"
