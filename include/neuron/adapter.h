@@ -214,6 +214,8 @@ typedef struct neu_req_del_node {
 
 typedef struct neu_req_get_node {
     neu_node_type_e type;
+    char            plugin[NEU_PLUGIN_NAME_LEN];
+    char            node[NEU_NODE_NAME_LEN];
 } neu_req_get_node_t;
 
 typedef struct neu_resp_node_info {
