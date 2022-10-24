@@ -121,6 +121,71 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
             metrics->south_disconnected_nodes);
 }
 
+static inline void
+gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
+{
+    neu_metric_entry_t *e = NULL;
+    HASH_LOOP(hh, node_metrics->entries, e)
+    {
+        fprintf(stream,
+                "# HELP %s %s\n# TYPE %s %s\n%s{node=\"%s\"} %" PRIu64 "\n",
+                e->name, e->help, e->name, neu_metric_type_str(e->type),
+                e->name, node_metrics->name, e->value);
+    }
+}
+
+static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
+                                 FILE *stream)
+{
+    neu_metric_entry_t *e = NULL, *r = NULL;
+    neu_node_metrics_t *n = NULL;
+
+    HASH_LOOP(hh, metrics->registered_metrics, r)
+    {
+        bool commented = false;
+        HASH_LOOP(hh, metrics->node_metrics, n)
+        {
+            if (!(type_filter & n->type)) {
+                continue;
+            }
+
+            if (!commented) {
+                commented = true;
+                fprintf(stream, "# HELP %s %s\n# TYPE %s %s\n", r->name,
+                        r->help, r->name, neu_metric_type_str(r->type));
+            }
+
+            HASH_FIND_STR(n->entries, r->name, e);
+            if (e) {
+                fprintf(stream, "%s{node=\"%s\"} %" PRIu64 "\n", e->name,
+                        n->name, e->value);
+            }
+        }
+    }
+}
+
+struct context {
+    int         filter;
+    int *       status;
+    FILE *      stream;
+    const char *node;
+};
+
+static void gen_node_metrics(const neu_metrics_t *metrics, struct context *ctx)
+{
+    if (ctx->node[0]) {
+        neu_node_metrics_t *n = NULL;
+        HASH_FIND_STR(metrics->node_metrics, ctx->node, n);
+        if (NULL == n || 0 == (ctx->filter & n->type)) {
+            *ctx->status = NNG_HTTP_STATUS_NOT_FOUND;
+            return;
+        }
+        gen_single_node_metrics(n, ctx->stream);
+    } else {
+        gen_all_node_metrics(metrics, ctx->filter, ctx->stream);
+    }
+}
+
 void handle_get_metric(nng_aio *aio)
 {
     int           status = NNG_HTTP_STATUS_OK;
@@ -140,19 +205,42 @@ void handle_get_metric(nng_aio *aio)
         goto end;
     }
 
+    char    node_name[NEU_NODE_NAME_LEN] = { 0 };
+    ssize_t rv = http_get_param_str(aio, "node", node_name, sizeof(node_name));
+    if (-1 == rv || rv >= NEU_NODE_NAME_LEN ||
+        (0 < rv && NEU_METRICS_CATEGORY_GLOBAL == cat)) {
+        status = NNG_HTTP_STATUS_BAD_REQUEST;
+        goto end;
+    }
+
     stream = open_memstream(&result, &len);
     if (NULL == stream) {
         status = NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR;
         goto end;
     }
 
+    struct context ctx = {
+        .status = &status,
+        .stream = stream,
+        .node   = node_name,
+    };
+
     switch (cat) {
     case NEU_METRICS_CATEGORY_GLOBAL:
         neu_metrics_visist((neu_metrics_cb_t) gen_global_metrics, stream);
         break;
     case NEU_METRICS_CATEGORY_DRIVER:
+        ctx.filter = NEU_NA_TYPE_DRIVER;
+        neu_metrics_visist((neu_metrics_cb_t) gen_node_metrics, &ctx);
+        break;
     case NEU_METRICS_CATEGORY_APP:
+        ctx.filter = NEU_NA_TYPE_APP;
+        neu_metrics_visist((neu_metrics_cb_t) gen_node_metrics, &ctx);
+        break;
     case NEU_METRICS_CATEGORY_ALL:
+        ctx.filter = NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP;
+        neu_metrics_visist((neu_metrics_cb_t) gen_global_metrics, stream);
+        neu_metrics_visist((neu_metrics_cb_t) gen_node_metrics, &ctx);
         break;
     }
 

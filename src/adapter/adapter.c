@@ -47,7 +47,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
 static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
 static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
-                                   neu_metric_type_e type, const char *help,
+                                   const char *help, neu_metric_type_e type,
                                    uint64_t init);
 static int adapter_update_metric(neu_adapter_t *adapter,
                                  const char *metric_name, uint64_t n);
@@ -62,7 +62,7 @@ static const adapter_callbacks_t callback_funs = {
 };
 
 #define REGISTER_METRIC(adapter, name, init) \
-    adapter_register_metric(adapter, name, name##_TYPE, name##_HELP, init);
+    adapter_register_metric(adapter, name, name##_HELP, name##_TYPE, init);
 
 #define REGISTER_DRIVER_METRICS(adapter)                     \
     REGISTER_METRIC(adapter, NEU_METRIC_LAST_RTT_MS, 9999);  \
@@ -100,16 +100,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->cb_funs.update_metric = callback_funs.update_metric;
     adapter->module                = info->module;
 
-    if (adapter->module->display) {
-        adapter->metrics = calloc(1, sizeof(*adapter->metrics));
-    }
-    if (NULL != adapter->metrics) {
-        adapter->metrics->type    = info->module->type;
-        adapter->metrics->name    = adapter->name;
-        adapter->metrics->adapter = adapter;
-        neu_metrics_add_node(adapter);
-    }
-
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
     nng_socket_set_int(adapter->sock, NNG_OPT_RECVBUF, 128);
@@ -119,7 +109,9 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     switch (info->module->type) {
     case NEU_NA_TYPE_DRIVER:
-        REGISTER_DRIVER_METRICS(adapter);
+        if (adapter->module->display) {
+            REGISTER_DRIVER_METRICS(adapter);
+        }
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
         break;
     case NEU_NA_TYPE_APP:
@@ -190,23 +182,26 @@ neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
 }
 
 static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
-                                   neu_metric_type_e type, const char *help,
+                                   const char *help, neu_metric_type_e type,
                                    uint64_t init)
 {
     if (NULL == adapter->metrics) {
+        adapter->metrics = calloc(1, sizeof(*adapter->metrics));
+        if (NULL == adapter->metrics) {
+            return -1;
+        }
+        adapter->metrics->type    = adapter->module->type;
+        adapter->metrics->name    = adapter->name;
+        adapter->metrics->adapter = adapter;
+        neu_metrics_add_node(adapter);
+    }
+
+    if (0 > neu_metric_entries_add(&adapter->metrics->entries, name, help, type,
+                                   init)) {
         return -1;
     }
 
-    neu_metric_entry_t *entry = calloc(1, sizeof(*entry));
-    if (NULL == entry) {
-        return -1;
-    }
-
-    entry->name  = name;
-    entry->type  = type;
-    entry->help  = help;
-    entry->value = init;
-    HASH_ADD_STR(adapter->metrics->entries, name, entry);
+    neu_metrics_register_entry(name, help, type);
     return 0;
 }
 
