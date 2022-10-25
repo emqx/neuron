@@ -101,6 +101,9 @@ struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/version",
     },
+    {
+        .url = "/api/v2/password",
+    },
 };
 
 struct neu_rest_handler api_handlers[] = {
