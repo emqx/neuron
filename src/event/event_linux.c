@@ -103,7 +103,10 @@ static void *event_loop(void *arg)
                 assert(size != -1);
 
                 nng_mtx_lock(data->ctx.timer->mtx);
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, data->fd, NULL);
                 ret = data->callback.timer(data->usr_data);
+                timerfd_settime(data->fd, 0, &data->ctx.timer->value, NULL);
+                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, data->fd, &event);
                 nng_mtx_unlock(data->ctx.timer->mtx);
             }
             break;
