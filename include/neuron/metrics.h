@@ -108,6 +108,7 @@ typedef struct {
     size_t              south_running_nodes;
     size_t              south_disconnected_nodes;
     neu_node_metrics_t *node_metrics;
+    neu_metric_entry_t *registered_metrics;
 } neu_metrics_t;
 
 static inline const char *neu_metric_type_str(neu_metric_type_e type)
@@ -118,6 +119,10 @@ static inline const char *neu_metric_type_str(neu_metric_type_e type)
         return "gauge";
     }
 }
+
+int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
+                           const char *help, neu_metric_type_e type,
+                           uint64_t init);
 
 static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
 {
@@ -166,6 +171,9 @@ static inline void neu_node_metrics_free(neu_node_metrics_t *node_metrics)
 void neu_metrics_init();
 void neu_metrics_add_node(const neu_adapter_t *adapter);
 void neu_metrics_del_node(const neu_adapter_t *adapter);
+int  neu_metrics_register_entry(const char *name, const char *help,
+                                neu_metric_type_e type);
+void neu_metrics_unregister_entry(const char *name);
 
 typedef void (*neu_metrics_cb_t)(const neu_metrics_t *metrics, void *data);
 void neu_metrics_visist(neu_metrics_cb_t cb, void *data);
