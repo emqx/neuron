@@ -364,6 +364,10 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     }
 }
 
+#define REGISTER_GROUP_METRIC(adapter, group, name, init)                  \
+    neu_adapter_register_group_metric((adapter), group, name, name##_HELP, \
+                                      name##_TYPE, (init))
+
 int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                                  uint32_t interval)
 {
@@ -390,6 +394,14 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
         param.cb     = read_callback;
         find->read   = neu_event_add_timer(driver->driver_events, param);
+
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_TAGS_TOTAL,
+                              neu_group_tag_size(find->group));
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_SEND_MSGS, 0);
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_LAST_TIMER_MS, 0);
 
         HASH_ADD_STR(driver->groups, name, find);
         ret = NEU_ERR_SUCCESS;
@@ -436,6 +448,8 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     HASH_FIND_STR(driver->groups, name, find);
     if (find != NULL) {
         HASH_DEL(driver->groups, find);
+
+        neu_adapter_del_group_metrics(&driver->adapter, name);
 
         uint16_t tag_size = neu_group_tag_size(find->group);
         neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
@@ -548,6 +562,9 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size += 1;
+        neu_adapter_update_group_metric(&driver->adapter, group,
+                                        NEU_METRIC_GROUP_TAGS_TOTAL,
+                                        neu_group_tag_size(find->group));
     }
 
     return ret;
@@ -568,6 +585,9 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -= 1;
+        neu_adapter_update_group_metric(&driver->adapter, group,
+                                        NEU_METRIC_GROUP_TAGS_TOTAL,
+                                        neu_group_tag_size(find->group));
     }
 
     return ret;
@@ -769,6 +789,9 @@ static int read_callback(void *usr_data)
         spend = group->driver->adapter.timestamp - spend;
         nlog_info("%s-%s timer: %" PRId64, group->driver->adapter.name,
                   group->name, spend);
+
+        neu_adapter_update_group_metric(&group->driver->adapter, group->name,
+                                        NEU_METRIC_GROUP_LAST_TIMER_MS, spend);
     }
 
     return 0;

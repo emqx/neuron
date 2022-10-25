@@ -85,4 +85,14 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter);
 
 int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag);
 
+int  neu_adapter_register_group_metric(neu_adapter_t *adapter,
+                                       const char *group_name, const char *name,
+                                       const char *help, neu_metric_type_e type,
+                                       uint64_t init);
+int  neu_adapter_update_group_metric(neu_adapter_t *adapter,
+                                     const char *   group_name,
+                                     const char *metric_name, uint64_t n);
+void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
+                                   const char *   group_name);
+
 #endif

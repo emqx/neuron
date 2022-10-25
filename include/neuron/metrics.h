@@ -65,6 +65,23 @@ typedef enum {
 #define NEU_METRIC_TAG_READ_ERRORS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
 #define NEU_METRIC_TAG_READ_ERRORS_TOTAL_HELP "Total number of tag read errors"
 
+// number of tags in group
+#define NEU_METRIC_GROUP_TAGS_TOTAL "group_tags_total"
+#define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_GROUP_TAGS_TOTAL_HELP "Total number of tags in the group"
+
+// number of messages sent in group
+#define NEU_METRIC_GROUP_SEND_MSGS "group_send_msgs"
+#define NEU_METRIC_GROUP_SEND_MSGS_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_GROUP_SEND_MSGS_HELP \
+    "Total number of messages sent in the group"
+
+// milliseconds consumed in last group timer invocation
+#define NEU_METRIC_GROUP_LAST_TIMER_MS "group_last_timer_ms"
+#define NEU_METRIC_GROUP_LAST_TIMER_MS_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_GROUP_LAST_TIMER_MS_HELP \
+    "Time in milliseconds consumed in last group timer invocation"
+
 typedef enum {
     NEU_METRICS_CATEGORY_GLOBAL,
     NEU_METRICS_CATEGORY_DRIVER,

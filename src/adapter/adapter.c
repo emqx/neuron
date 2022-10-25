@@ -876,6 +876,90 @@ void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer)
     neu_event_del_timer(adapter->events, timer);
 }
 
+int neu_adapter_register_group_metric(neu_adapter_t *adapter,
+                                      const char *group_name, const char *name,
+                                      const char *help, neu_metric_type_e type,
+                                      uint64_t init)
+{
+    neu_group_metrics_t *group_metrics = NULL;
+
+    if (NULL == adapter->metrics) {
+        return -1;
+    }
+
+    if (0 > neu_metrics_register_entry(name, help, type)) {
+        return -1;
+    }
+
+    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
+    if (NULL == group_metrics) {
+        group_metrics = calloc(1, sizeof(*group_metrics));
+        if (NULL == group_metrics) {
+            return -1;
+        }
+        group_metrics->name = strdup(group_name);
+        if (NULL == group_metrics->name) {
+            free(group_metrics);
+            return -1;
+        }
+        HASH_ADD_STR(adapter->metrics->group_metrics, name, group_metrics);
+    }
+
+    if (0 > neu_metric_entries_add(&group_metrics->entries, name, help, type,
+                                   init)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int neu_adapter_update_group_metric(neu_adapter_t *adapter,
+                                    const char *   group_name,
+                                    const char *metric_name, uint64_t n)
+{
+    neu_metric_entry_t * entry         = NULL;
+    neu_group_metrics_t *group_metrics = NULL;
+
+    if (NULL == adapter->metrics) {
+        return -1;
+    }
+
+    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
+    if (NULL == group_metrics) {
+        return -1;
+    }
+
+    HASH_FIND_STR(group_metrics->entries, metric_name, entry);
+    if (NULL == entry) {
+        return -1;
+    }
+
+    if (NEU_METRIC_TYPE_COUNTER == entry->type) {
+        entry->value += n;
+    } else {
+        entry->value = n;
+    }
+
+    return 0;
+}
+
+void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
+                                   const char *   group_name)
+{
+    if (NULL == adapter->metrics) {
+        return;
+    }
+
+    neu_group_metrics_t *gm = NULL;
+    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, gm);
+    if (NULL != gm) {
+        HASH_DEL(adapter->metrics->group_metrics, gm);
+        neu_metric_entry_t *e = NULL;
+        HASH_LOOP(hh, gm->entries, e) { neu_metrics_unregister_entry(e->name); }
+        neu_group_metrics_free(gm);
+    }
+}
+
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data)
 {
