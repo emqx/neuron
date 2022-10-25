@@ -348,9 +348,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_GET_NODE: {
-        neu_req_get_node_t *cmd   = (neu_req_get_node_t *) &header[1];
-        UT_array *          nodes = neu_manager_get_nodes(manager, cmd->type);
-        neu_resp_get_node_t resp  = { .nodes = nodes };
+        neu_req_get_node_t *cmd = (neu_req_get_node_t *) &header[1];
+        UT_array *          nodes =
+            neu_manager_get_nodes(manager, cmd->type, cmd->plugin, cmd->node);
+        neu_resp_get_node_t resp = { .nodes = nodes };
 
         header->type = NEU_RESP_GET_NODE;
         strcpy(header->receiver, header->sender);

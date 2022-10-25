@@ -86,7 +86,10 @@ void handle_del_adapter(nng_aio *aio)
 
 void handle_get_adapter(nng_aio *aio)
 {
-    int                ret       = 0;
+    int  ret                              = 0;
+    char plugin_name[NEU_PLUGIN_NAME_LEN] = { 0 };
+    char node_name[NEU_NODE_NAME_LEN]     = { 0 };
+
     neu_plugin_t *     plugin    = neu_rest_get_plugin();
     neu_node_type_e    node_type = { 0 };
     neu_req_get_node_t cmd       = { 0 };
@@ -102,6 +105,15 @@ void handle_get_adapter(nng_aio *aio)
             http_response(aio, error_code.error, result_error);
         })
         return;
+    }
+
+    if (http_get_param_str(aio, "plugin", plugin_name, sizeof(plugin_name)) ==
+        0) {
+        strcpy(cmd.plugin, plugin_name);
+    }
+
+    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) == 0) {
+        strcpy(cmd.node, node_name);
     }
 
     cmd.type = node_type;
