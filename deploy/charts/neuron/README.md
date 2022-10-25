@@ -1,6 +1,8 @@
 # neuron
 
-![Version: 1.0.0](https://img.shields.io/badge/Version-1.0.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.0.1](https://img.shields.io/badge/AppVersion-2.0.1-informational?style=flat-square)
+![Version: 1.0.2](https://img.shields.io/badge/Version-1.0.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.3](https://img.shields.io/badge/AppVersion-2.2.3-informational?style=flat-square)
+
+A Helm chart for Kubernetes
 
 A Helm chart for Kubernetes
 
@@ -28,9 +30,6 @@ helm uninstall my-neuron
 | autoscaling.minReplicas | int | `1` |  |
 | autoscaling.targetCPUUtilizationPercentage | int | `80` |  |
 | clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
-| containerPorts | object | `{"api":7001,"web":7000}` | Container Ports |
-| containerPorts.api | int | `7001` | containerPorts.api |
-| containerPorts.web | int | `7000` | containerPorts.web |
 | fullnameOverride | string | `""` |  |
 | hostPorts | object | `{"api":30371,"enabled":false,"web":30370}` | only for kubeedge deployment |
 | image.pullPolicy | string | `"IfNotPresent"` |  |
@@ -44,16 +43,20 @@ helm uninstall my-neuron
 | ingress.hosts[0].paths[0].path | string | `"/"` |  |
 | ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
 | ingress.tls | list | `[]` |  |
+| logsPVC.enabled | bool | `true` |  |
+| logsPVC.existingClaim | string | `"pvc-neuron-logs"` |  |
 | nameOverride | string | `""` |  |
+| nngFromExistingPVC.enabled | bool | `true` |  |
+| nngFromExistingPVC.existingClaim | string | `"pvc-neuron-tmp"` |  |
 | nodeSelector | object | `{}` |  |
-| persistence.enabled | bool | `false` |  |
-| persistence.existingClaim | string | `""` | Existing PersistentVolumeClaims The value is evaluated as a template So, for example, the name can depend on .Release or .Chart |
+| persistence.enabled | bool | `true` |  |
+| persistence.existingClaim | string | `"pvc-neuron-data"` | Existing PersistentVolumeClaims The value is evaluated as a template So, for example, the name can depend on .Release or .Chart |
 | podAnnotations | object | `{}` |  |
 | readinessProbe.enabled | bool | `true` |  |
 | readinessProbe.initialDelaySeconds | int | `5` |  |
 | readinessProbe.periodSeconds | int | `5` |  |
 | resources | object | `{}` |  |
-| service.annotations | object | `{}` | Provide any additional annotations which may be required. Evaluated as a template |
+| service.annotations | object | `{"eip.openelb.kubesphere.io/v1alpha2":"eip-pool","lb.kubesphere.io/v1alpha1":"openelb","protocol.openelb.kubesphere.io/v1alpha1":"layer2"}` | Provide any additional annotations which may be required. Evaluated as a template |
 | service.enabled | bool | `true` |  |
 | service.loadBalancerSourceRanges | list | `[]` | loadBalancerSourceRanges: - 10.10.10.0/24  |
 | service.nodePorts | object | `{"api":null,"web":null}` | Specify the nodePort(s) value for the LoadBalancer and NodePort service types. ref: https://kubernetes.io/docs/concepts/services-networking/service/#type-nodeport |
@@ -62,5 +65,5 @@ helm uninstall my-neuron
 | service.ports.api.port | int | `7001` | Neuron API port |
 | service.ports.web.name | string | `"web"` | Neuron Dashboard port name |
 | service.ports.web.port | int | `7000` | Neuron Dashboard port |
-| service.type | string | `"ClusterIP"` |  |
+| service.type | string | `"NodePort"` |  |
 | tolerations | list | `[]` |  |

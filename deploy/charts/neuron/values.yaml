@@ -30,7 +30,7 @@ securityContext: {}
 
 service:
   enabled: true
-  type: NodePort
+  type: LoadBalancer
 
   # -- Service ports
   ports:
@@ -64,9 +64,9 @@ service:
   loadBalancerSourceRanges: []
   # -- Provide any additional annotations which may be required. Evaluated as a template
   annotations:
-    eip.openelb.kubesphere.io/v1alpha2: vip-eip
     lb.kubesphere.io/v1alpha1: openelb
-    protocol.openelb.kubesphere.io/v1alpha1: vip
+    eip.openelb.kubesphere.io/v1alpha2: eip-pool
+    protocol.openelb.kubesphere.io/v1alpha1: layer2
 
 ingress:
   enabled: false
@@ -182,13 +182,6 @@ readinessProbe:
   enabled: true
   initialDelaySeconds: 5
   periodSeconds: 5
-
-# -- Container Ports
-containerPorts:
-  # -- containerPorts.web
-  web: 7000
-  # -- containerPorts.api
-  api: 7001
 
 # -- only for kubeedge deployment
 hostPorts:
