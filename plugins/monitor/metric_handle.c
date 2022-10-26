@@ -132,13 +132,27 @@ gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
                 e->name, e->help, e->name, neu_metric_type_str(e->type),
                 e->name, node_metrics->name, e->value);
     }
+
+    neu_group_metrics_t *g = NULL;
+    HASH_LOOP(hh, node_metrics->group_metrics, g)
+    {
+        HASH_LOOP(hh, g->entries, e)
+        {
+            fprintf(stream,
+                    "# HELP %s %s\n# TYPE %s %s\n%s{node=\"%s\",group=\"%s\"} "
+                    "%" PRIu64 "\n",
+                    e->name, e->help, e->name, neu_metric_type_str(e->type),
+                    e->name, node_metrics->name, g->name, e->value);
+        }
+    }
 }
 
 static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
                                  FILE *stream)
 {
-    neu_metric_entry_t *e = NULL, *r = NULL;
-    neu_node_metrics_t *n = NULL;
+    neu_metric_entry_t * e = NULL, *r = NULL;
+    neu_group_metrics_t *g = NULL;
+    neu_node_metrics_t * n = NULL;
 
     HASH_LOOP(hh, metrics->registered_metrics, r)
     {
@@ -159,6 +173,17 @@ static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
             if (e) {
                 fprintf(stream, "%s{node=\"%s\"} %" PRIu64 "\n", e->name,
                         n->name, e->value);
+                continue;
+            }
+
+            HASH_LOOP(hh, n->group_metrics, g)
+            {
+                HASH_FIND_STR(g->entries, r->name, e);
+                if (e) {
+                    fprintf(stream,
+                            "%s{node=\"%s\",group=\"%s\"} %" PRIu64 "\n",
+                            e->name, n->name, g->name, e->value);
+                }
             }
         }
     }
