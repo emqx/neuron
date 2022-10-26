@@ -38,7 +38,6 @@ struct neu_adapter {
 
     neu_node_running_state_e state;
 
-    neu_persister_t *   persister;
     adapter_callbacks_t cb_funs;
 
     void *               handle;
@@ -53,19 +52,8 @@ struct neu_adapter {
     neu_event_timer_t *timer;
     int                recv_fd;
 
-    // statistics counters
-    union {
-        struct {
-            uint64_t bytes_sent;  // number of bytes sent over network
-            uint64_t bytes_recv;  // number of bytes received over network
-            uint64_t msgs_sent;   // number of messages sent
-            uint64_t msgs_recv;   // number of messages received
-            uint64_t avg_rtt;     // average round trip time in milliseconds
-            uint64_t tag_tot_cnt; // number of tag read including errors
-            uint64_t tag_err_cnt; // number of tag read errors
-        };
-        uint64_t data[NEU_NODE_STAT_MAX];
-    } stat;
+    // metrics
+    neu_node_metrics_t *metrics;
 };
 
 typedef void (*adapter_handler)(neu_adapter_t *     adapter,
@@ -96,5 +84,15 @@ int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
 neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter);
 
 int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag);
+
+int  neu_adapter_register_group_metric(neu_adapter_t *adapter,
+                                       const char *group_name, const char *name,
+                                       const char *help, neu_metric_type_e type,
+                                       uint64_t init);
+int  neu_adapter_update_group_metric(neu_adapter_t *adapter,
+                                     const char *   group_name,
+                                     const char *metric_name, uint64_t n);
+void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
+                                   const char *   group_name);
 
 #endif

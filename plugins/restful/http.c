@@ -327,6 +327,8 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LICENSE_NOT_FOUND:
     case NEU_ERR_GROUP_NOT_EXIST:
     case NEU_ERR_GROUP_NOT_SUBSCRIBE:
+    case NEU_ERR_LOG_LEVEL_IS_WRONG:
+    case NEU_ERR_COMMAND_EXECUTION_FAILED:
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:

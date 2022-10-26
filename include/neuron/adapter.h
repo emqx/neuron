@@ -27,46 +27,9 @@ extern "C" {
 #include <stdint.h>
 
 #include "define.h"
+#include "metrics.h"
 #include "tag.h"
 #include "type.h"
-
-#define NEU_NODE_STAT_RTT_MAX 9999
-
-/** Kinds of node statistics counters.
- *
- * Some counters are maintained by the neuron core, while others should be
- * maintained by the plugin code using the adapter callback `stat_acc`.
- */
-typedef enum {
-    // kinds of counters maintained by the plugins
-    NEU_NODE_STAT_BYTES_SENT, // number of bytes sent
-    NEU_NODE_STAT_BYTES_RECV, // number of bytes received
-    NEU_NODE_STAT_MSGS_SENT,  // number of messages sent
-    NEU_NODE_STAT_MSGS_RECV,  // number of messages received
-    NEU_NODE_STAT_AVG_RTT,    // average round trip time (ms)
-
-    // kinds of counters maintained by the driver core
-    NEU_NODE_STAT_TAG_TOT_CNT, // number of tag read including errors
-    NEU_NODE_STAT_TAG_ERR_CNT, // number of tag read errors
-
-    NEU_NODE_STAT_MAX,
-} neu_node_stat_e;
-
-static inline const char *neu_node_stat_string(neu_node_stat_e s)
-{
-    static const char *map[] = {
-        [NEU_NODE_STAT_BYTES_SENT]  = "bytes_sent",
-        [NEU_NODE_STAT_BYTES_RECV]  = "bytes_received",
-        [NEU_NODE_STAT_MSGS_SENT]   = "messages_sent",
-        [NEU_NODE_STAT_MSGS_RECV]   = "messages_received",
-        [NEU_NODE_STAT_AVG_RTT]     = "average_rtt",
-        [NEU_NODE_STAT_TAG_TOT_CNT] = "tag_total_count",
-        [NEU_NODE_STAT_TAG_ERR_CNT] = "tag_error_count",
-        [NEU_NODE_STAT_MAX]         = NULL,
-    };
-
-    return map[s];
-}
 
 typedef struct {
     neu_node_running_state_e running;
@@ -103,8 +66,6 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_NODES_STATE,
     NEU_RESP_GET_NODES_STATE,
     NEU_REQ_NODE_CTL,
-    NEU_REQ_GET_NODE_STAT,
-    NEU_RESP_GET_NODE_STAT,
 
     NEU_REQ_ADD_GROUP,
     NEU_REQ_DEL_GROUP,
@@ -166,8 +127,6 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_NODES_STATE]   = "NEU_REQ_GET_NODES_STATE",
     [NEU_RESP_GET_NODES_STATE]  = "NEU_RESP_GET_NODES_STATE",
     [NEU_REQ_NODE_CTL]          = "NEU_REQ_NODE_CTL",
-    [NEU_REQ_GET_NODE_STAT]     = "NEU_REQ_GET_NODE_STAT",
-    [NEU_RESP_GET_NODE_STAT]    = "NEU_RESP_GET_NODE_STAT",
 
     [NEU_REQ_ADD_GROUP]         = "NEU_REQ_ADD_GROUP",
     [NEU_REQ_DEL_GROUP]         = "NEU_REQ_DEL_GROUP",
@@ -255,6 +214,8 @@ typedef struct neu_req_del_node {
 
 typedef struct neu_req_get_node {
     neu_node_type_e type;
+    char            plugin[NEU_PLUGIN_NAME_LEN];
+    char            node[NEU_NODE_NAME_LEN];
 } neu_req_get_node_t;
 
 typedef struct neu_resp_node_info {
@@ -395,6 +356,7 @@ typedef struct neu_req_get_node_state {
 
 typedef struct neu_resp_get_node_state {
     neu_node_state_t state;
+    uint16_t         rtt; // round trip time in milliseconds
 } neu_resp_get_node_state_t;
 
 typedef struct neu_req_get_nodes_state {
@@ -403,6 +365,7 @@ typedef struct neu_req_get_nodes_state {
 typedef struct {
     char             node[NEU_NODE_NAME_LEN];
     neu_node_state_t state;
+    uint16_t         rtt; // round trip time in milliseconds
 } neu_nodes_state_t;
 
 inline static UT_icd neu_nodes_state_t_icd()
@@ -414,15 +377,6 @@ inline static UT_icd neu_nodes_state_t_icd()
 typedef struct {
     UT_array *states; // array of neu_nodes_state_t
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
-
-typedef struct neu_req_get_node_stat {
-    char node[NEU_NODE_NAME_LEN];
-} neu_req_get_node_stat_t;
-
-typedef struct neu_resp_get_node_stat {
-    neu_node_type_e type;
-    uint64_t        data[NEU_NODE_STAT_MAX];
-} neu_resp_get_node_stat_t;
 
 typedef struct neu_req_update_license {
 } neu_req_update_license_t;
@@ -481,11 +435,15 @@ typedef struct neu_adapter        neu_adapter_t;
 typedef struct neu_adapter_driver neu_adapter_driver_t;
 typedef struct neu_adapter_app    neu_adapter_app_t;
 
+typedef int (*neu_adapter_update_metric_cb_t)(neu_adapter_t *adapter,
+                                              const char *   metric_name,
+                                              uint64_t       n);
+
 typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
                     void *data);
-    void (*stat_acc)(neu_adapter_t *adapter, neu_node_stat_e s, uint64_t n);
+    neu_adapter_update_metric_cb_t update_metric;
 
     union {
         struct {

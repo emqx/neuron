@@ -383,7 +383,7 @@ bool neu_user_check_password(neu_user_t *user, const char *password)
     return pass;
 }
 
-neu_user_t *neu_load_user(neu_persister_t *persister, const char *name)
+neu_user_t *neu_load_user(const char *name)
 {
     neu_user_t *user = malloc(sizeof(*user));
     if (NULL == user) {
@@ -391,7 +391,7 @@ neu_user_t *neu_load_user(neu_persister_t *persister, const char *name)
     }
 
     neu_persist_user_info_t *info = NULL;
-    if (0 != neu_persister_load_user(persister, name, &info)) {
+    if (0 != neu_persister_load_user(name, &info)) {
         free(user);
         return NULL;
     }
@@ -403,14 +403,14 @@ neu_user_t *neu_load_user(neu_persister_t *persister, const char *name)
     return user;
 }
 
-int neu_save_user(neu_persister_t *persister, neu_user_t *user)
+int neu_save_user(neu_user_t *user)
 {
     neu_persist_user_info_t info = {
         .name = user->name,
         .hash = user->hash,
     };
 
-    return neu_persister_update_user(persister, &info);
+    return neu_persister_update_user(&info);
 }
 
 int neu_user_update_password(neu_user_t *user, const char *new_password)

@@ -52,8 +52,6 @@ struct neu_rest_handler web_handlers[] = {
     },
 };
 
-static void cors(nng_aio *aio);
-
 struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/ping",
@@ -98,13 +96,13 @@ struct neu_rest_handler cors_handler[] = {
         .url = "/api/v2/node/state",
     },
     {
-        .url = "/api/v2/log",
-    },
-    {
         .url = "/api/v2/license",
     },
     {
         .url = "/api/v2/version",
+    },
+    {
+        .url = "/api/v2/password",
     },
 };
 
@@ -280,20 +278,20 @@ struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/node/stat",
-        .value.handler = handle_get_node_stat,
-    },
-    {
-        .method        = NEU_REST_METHOD_GET,
-        .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/node/state",
         .value.handler = handle_get_node_state,
     },
     {
         .method        = NEU_REST_METHOD_GET,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/log",
-        .value.handler = handle_get_log,
+        .url           = "/api/v2/logs",
+        .value.handler = handle_logs_files,
+    },
+    {
+        .method        = NEU_REST_METHOD_PUT,
+        .type          = NEU_REST_HANDLER_FUNCTION,
+        .url           = "/api/v2/level",
+        .value.handler = handle_log_level,
     },
     {
         .method        = NEU_REST_METHOD_POST,
@@ -338,7 +336,7 @@ void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
     for (uint32_t i = 0; i < *size; i++) {
         cors_handler[i].method        = NEU_REST_METHOD_OPTIONS;
         cors_handler[i].type          = NEU_REST_HANDLER_FUNCTION;
-        cors_handler[i].value.handler = cors;
+        cors_handler[i].value.handler = neu_rest_handle_cors;
     }
 }
 
@@ -360,7 +358,7 @@ void *neu_rest_get_plugin()
     return rest_ctx->plugin;
 }
 
-static void cors(nng_aio *aio)
+void neu_rest_handle_cors(nng_aio *aio)
 {
     nng_http_res *res = NULL;
 

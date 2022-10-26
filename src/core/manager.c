@@ -77,8 +77,6 @@ neu_manager_t *neu_manager_create()
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
     manager->sub_msg_manager   = neu_sub_msg_manager_create();
-    manager->persister         = neu_persister_create("persistence");
-    assert(manager->persister != NULL);
 
     rv = nng_pair1_open_poly(&manager->socket);
     assert(rv == 0);
@@ -91,7 +89,9 @@ neu_manager_t *neu_manager_create()
     nng_socket_get_int(manager->socket, NNG_OPT_RECVFD, &param.fd);
     manager->loop = neu_event_add_io(manager->events, param);
 
+    neu_metrics_init();
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
+    start_static_adapter(manager, DEFAULT_MONITOR_PLUGIN_NAME);
 
     if (manager_load_plugin(manager) != 0) {
         nlog_warn("load plugin error");
@@ -149,7 +149,6 @@ void neu_manager_destroy(neu_manager_t *manager)
     }
 
     neu_sub_msg_manager_destroy(manager->sub_msg_manager);
-    neu_persister_destroy(manager->persister);
     neu_subscribe_manager_destroy(manager->subscribe_manager);
     neu_node_manager_destroy(manager->node_manager);
     neu_plugin_manager_destroy(manager->plugin_manager);
@@ -311,6 +310,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         manager_storage_del_node(manager, cmd->node);
+        if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_APP) {
+            neu_subscribe_manager_unsub_all(manager->subscribe_manager,
+                                            cmd->node);
+        }
         header->type = NEU_REQ_NODE_UNINIT;
         forward_msg(manager, msg, header->receiver);
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
@@ -345,9 +348,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_GET_NODE: {
-        neu_req_get_node_t *cmd   = (neu_req_get_node_t *) &header[1];
-        UT_array *          nodes = neu_manager_get_nodes(manager, cmd->type);
-        neu_resp_get_node_t resp  = { .nodes = nodes };
+        neu_req_get_node_t *cmd = (neu_req_get_node_t *) &header[1];
+        UT_array *          nodes =
+            neu_manager_get_nodes(manager, cmd->type, cmd->plugin, cmd->node);
+        neu_resp_get_node_t resp = { .nodes = nodes };
 
         header->type = NEU_RESP_GET_NODE;
         strcpy(header->receiver, header->sender);
@@ -458,7 +462,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAG:
-    case NEU_REQ_GET_NODE_STAT:
     case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_GET_TAG:
     case NEU_REQ_NODE_CTL:
@@ -555,7 +558,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_TAG:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_GET_NODE_SETTING:
-    case NEU_RESP_GET_NODE_STAT:
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_ERROR:
     case NEU_RESP_READ_GROUP:

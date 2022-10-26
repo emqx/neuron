@@ -170,6 +170,38 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
     return array;
 }
 
+UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, neu_node_type_e type,
+                                  const char *plugin, const char *node)
+{
+    UT_array *     array = NULL;
+    UT_icd         icd   = { sizeof(neu_resp_node_info_t), NULL, NULL, NULL };
+    node_entity_t *el = NULL, *tmp = NULL;
+
+    utarray_new(array, &icd);
+
+    HASH_ITER(hh, mgr->nodes, el, tmp)
+    {
+        if (!el->is_static && el->display) {
+            if (el->adapter->module->type == type) {
+                if (strlen(plugin) > 0 &&
+                    strcmp(el->adapter->module->module_name, plugin) != 0) {
+                    continue;
+                }
+                if (strlen(node) > 0 &&
+                    strstr(el->adapter->name, node) == NULL) {
+                    continue;
+                }
+                neu_resp_node_info_t info = { 0 };
+                strcpy(info.node, el->adapter->name);
+                strcpy(info.plugin, el->adapter->module->module_name);
+                utarray_push_back(array, &info);
+            }
+        }
+    }
+
+    return array;
+}
+
 UT_array *neu_node_manager_get_all(neu_node_manager_t *mgr)
 {
     UT_array *     array = NULL;
@@ -303,6 +335,12 @@ UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
             state.state.running = el->adapter->state;
             state.state.link =
                 neu_plugin_to_plugin_common(el->adapter->plugin)->link_state;
+            neu_metric_entry_t *e = NULL;
+            if (NULL != el->adapter->metrics) {
+                HASH_FIND_STR(el->adapter->metrics->entries,
+                              NEU_METRIC_LAST_RTT_MS, e);
+            }
+            state.rtt = NULL != e ? e->value : 0;
 
             utarray_push_back(states, &state);
         }

@@ -26,7 +26,7 @@ void manager_strorage_plugin(neu_manager_t *manager)
 
     plugin_infos = neu_manager_get_plugins(manager);
 
-    int rv = neu_persister_store_plugins(manager->persister, plugin_infos);
+    int rv = neu_persister_store_plugins(plugin_infos);
     if (0 != rv) {
         nlog_error("failed to store plugins infos");
     }
@@ -46,7 +46,7 @@ void manager_storage_add_node(neu_manager_t *manager, const char *node)
         return;
     }
 
-    rv = neu_persister_store_node(manager->persister, &node_info);
+    rv = neu_persister_store_node(&node_info);
     if (0 != rv) {
         nlog_error("failed to store adapter info");
     }
@@ -56,14 +56,15 @@ void manager_storage_add_node(neu_manager_t *manager, const char *node)
 
 void manager_storage_del_node(neu_manager_t *manager, const char *node)
 {
-    neu_persister_delete_node(manager->persister, node);
+    (void) manager;
+    neu_persister_delete_node(node);
 }
 
 void manager_storage_subscribe(neu_manager_t *manager, const char *app,
                                const char *driver, const char *group)
 {
-    int rv = neu_persister_store_subscription(manager->persister, app, driver,
-                                              group);
+    (void) manager;
+    int rv = neu_persister_store_subscription(app, driver, group);
     if (0 != rv) {
         nlog_error("fail store subscription app:%s driver:%s group:%s", app,
                    driver, group);
@@ -73,8 +74,8 @@ void manager_storage_subscribe(neu_manager_t *manager, const char *app,
 void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
                                  const char *driver, const char *group)
 {
-    int rv = neu_persister_delete_subscription(manager->persister, app, driver,
-                                               group);
+    (void) manager;
+    int rv = neu_persister_delete_subscription(app, driver, group);
     if (0 != rv) {
         nlog_error("fail delete subscription app:%s driver:%s group:%s", app,
                    driver, group);
@@ -85,7 +86,7 @@ int manager_load_plugin(neu_manager_t *manager)
 {
     UT_array *plugin_infos = NULL;
 
-    int rv = neu_persister_load_plugins(manager->persister, &plugin_infos);
+    int rv = neu_persister_load_plugins(&plugin_infos);
     if (rv != 0) {
         return rv;
     }
@@ -108,7 +109,7 @@ int manager_load_node(neu_manager_t *manager)
     UT_array *node_infos = NULL;
     int       rv         = 0;
 
-    rv = neu_persister_load_nodes(manager->persister, &node_infos);
+    rv = neu_persister_load_nodes(&node_infos);
     if (0 != rv) {
         nlog_error("failed to load adapter infos");
         return -1;
@@ -139,8 +140,7 @@ int manager_load_subscribe(neu_manager_t *manager)
         int       rv        = 0;
         UT_array *sub_infos = NULL;
 
-        rv = neu_persister_load_subscriptions(manager->persister, node->node,
-                                              &sub_infos);
+        rv = neu_persister_load_subscriptions(node->node, &sub_infos);
         if (0 != rv) {
             nlog_warn("load %s subscribetion infos error", node->node);
         } else {
