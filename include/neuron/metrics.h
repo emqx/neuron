@@ -54,33 +54,48 @@ typedef enum {
 #define NEU_METRIC_RECV_BYTES_TYPE NEU_METRIC_TYPE_COUNTER
 #define NEU_METRIC_RECV_BYTES_HELP "Total number of bytes received"
 
+// maintained by neuron core
 // number of tag read including errors
 #define NEU_METRIC_TAG_READS_TOTAL "tag_reads_total"
 #define NEU_METRIC_TAG_READS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
 #define NEU_METRIC_TAG_READS_TOTAL_HELP \
     "Total number of tag reads including errors"
 
+// maintained by neuron core
 // number of tag read errors
 #define NEU_METRIC_TAG_READ_ERRORS_TOTAL "tag_read_errors_total"
 #define NEU_METRIC_TAG_READ_ERRORS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
 #define NEU_METRIC_TAG_READ_ERRORS_TOTAL_HELP "Total number of tag read errors"
 
+// maintained by neuron core
 // number of tags in group
 #define NEU_METRIC_GROUP_TAGS_TOTAL "group_tags_total"
 #define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
 #define NEU_METRIC_GROUP_TAGS_TOTAL_HELP "Total number of tags in the group"
 
 // number of messages sent in group
-#define NEU_METRIC_GROUP_SEND_MSGS "group_send_msgs"
-#define NEU_METRIC_GROUP_SEND_MSGS_TYPE NEU_METRIC_TYPE_COUNTER
-#define NEU_METRIC_GROUP_SEND_MSGS_HELP \
+#define NEU_METRIC_GROUP_SEND_MSGS_TOTAL "group_send_msgs_total"
+#define NEU_METRIC_GROUP_SEND_MSGS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_GROUP_SEND_MSGS_TOTAL_HELP \
     "Total number of messages sent in the group"
 
+// maintained by neuron core
 // milliseconds consumed in last group timer invocation
 #define NEU_METRIC_GROUP_LAST_TIMER_MS "group_last_timer_ms"
 #define NEU_METRIC_GROUP_LAST_TIMER_MS_TYPE NEU_METRIC_TYPE_GAUAGE
 #define NEU_METRIC_GROUP_LAST_TIMER_MS_HELP \
-    "Time in milliseconds consumed in last group timer invocation"
+    "Time in milliseconds consumed on last group timer invocation"
+
+// number of messages sent
+#define NEU_METRIC_SEND_MSGS_TOTAL "send_msgs_total"
+#define NEU_METRIC_SEND_MSGS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_SEND_MSGS_TOTAL_HELP "Total number of messages sent"
+
+// number of errors encounter while sending messages
+#define NEU_METRIC_SEND_MSG_ERRORS_TOTAL "send_msg_errors_total"
+#define NEU_METRIC_SEND_MSG_ERRORS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_SEND_MSG_ERRORS_TOTAL_HELP \
+    "Total number of errors sending messages"
 
 typedef enum {
     NEU_METRICS_CATEGORY_GLOBAL,

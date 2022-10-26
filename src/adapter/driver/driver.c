@@ -399,7 +399,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                               NEU_METRIC_GROUP_TAGS_TOTAL,
                               neu_group_tag_size(find->group));
         REGISTER_GROUP_METRIC(&driver->adapter, find->name,
-                              NEU_METRIC_GROUP_SEND_MSGS, 0);
+                              NEU_METRIC_GROUP_SEND_MSGS_TOTAL, 0);
         REGISTER_GROUP_METRIC(&driver->adapter, find->name,
                               NEU_METRIC_GROUP_LAST_TIMER_MS, 0);
 
