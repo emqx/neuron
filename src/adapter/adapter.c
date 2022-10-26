@@ -56,9 +56,10 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 static int         update_timestamp(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
-    .command       = adapter_command,
-    .response      = adapter_response,
-    .update_metric = adapter_update_metric,
+    .command         = adapter_command,
+    .response        = adapter_response,
+    .register_metric = adapter_register_metric,
+    .update_metric   = adapter_update_metric,
 };
 
 #define REGISTER_METRIC(adapter, name, init) \

@@ -436,12 +436,18 @@ typedef struct neu_adapter_app    neu_adapter_app_t;
 typedef int (*neu_adapter_update_metric_cb_t)(neu_adapter_t *adapter,
                                               const char *   metric_name,
                                               uint64_t       n);
+typedef int (*neu_adapter_register_metric_cb_t)(neu_adapter_t *   adapter,
+                                                const char *      name,
+                                                const char *      help,
+                                                neu_metric_type_e type,
+                                                uint64_t          init);
 
 typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
                     void *data);
-    neu_adapter_update_metric_cb_t update_metric;
+    neu_adapter_register_metric_cb_t register_metric;
+    neu_adapter_update_metric_cb_t   update_metric;
 
     union {
         struct {
