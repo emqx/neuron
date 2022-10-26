@@ -1,10 +1,9 @@
 # neuron
 
-![Version: 1.0.2](https://img.shields.io/badge/Version-1.0.2-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.3](https://img.shields.io/badge/AppVersion-2.2.3-informational?style=flat-square)
+![Version: 1.0.4](https://img.shields.io/badge/Version-1.0.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.3](https://img.shields.io/badge/AppVersion-2.2.3-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
-A Helm chart for Kubernetes
 
 ## Install the Chart
 
@@ -43,10 +42,8 @@ helm uninstall my-neuron
 | ingress.hosts[0].paths[0].path | string | `"/"` |  |
 | ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
 | ingress.tls | list | `[]` |  |
-| logsPVC.enabled | bool | `true` |  |
-| logsPVC.existingClaim | string | `"pvc-neuron-logs"` |  |
 | nameOverride | string | `""` |  |
-| nngFromExistingPVC.enabled | bool | `true` |  |
+| nngFromExistingPVC.enabled | bool | `false` |  |
 | nngFromExistingPVC.existingClaim | string | `"pvc-neuron-tmp"` |  |
 | nodeSelector | object | `{}` |  |
 | persistence.enabled | bool | `true` |  |
@@ -65,5 +62,5 @@ helm uninstall my-neuron
 | service.ports.api.port | int | `7001` | Neuron API port |
 | service.ports.web.name | string | `"web"` | Neuron Dashboard port name |
 | service.ports.web.port | int | `7000` | Neuron Dashboard port |
-| service.type | string | `"NodePort"` |  |
+| service.type | string | `"ClusterIP"` |  |
 | tolerations | list | `[]` |  |
