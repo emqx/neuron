@@ -147,6 +147,25 @@ gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
     }
 }
 
+static inline bool has_entry(neu_node_metrics_t *node_metrics, const char *name)
+{
+    neu_metric_entry_t * e = NULL;
+    neu_group_metrics_t *g = NULL;
+    HASH_FIND_STR(node_metrics->entries, name, e);
+    if (e) {
+        return true;
+    }
+
+    HASH_LOOP(hh, node_metrics->group_metrics, g)
+    {
+        HASH_FIND_STR(g->entries, name, e);
+        if (e) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
                                  FILE *stream)
 {
@@ -160,6 +179,10 @@ static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
         HASH_LOOP(hh, metrics->node_metrics, n)
         {
             if (!(type_filter & n->type)) {
+                continue;
+            }
+
+            if (!has_entry(n, r->name)) {
                 continue;
             }
 
