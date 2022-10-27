@@ -59,10 +59,15 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     rv = nng_sendmsg(plugin->sock, msg,
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 == rv) {
-        update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES, json_len);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES, json_len,
+                      NULL);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSGS_TOTAL, 1,
+                      NULL);
     } else {
         plog_error(plugin, "nng cannot send msg");
         nng_msg_free(msg);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
+                      1, NULL);
     }
 }
 
@@ -88,7 +93,9 @@ void recv_data_callback(void *arg)
     json_str = nng_msg_body(msg);
     json_len = nng_msg_len(msg);
     plog_debug(plugin, "<< %.*s", (int) json_len, json_str);
-    update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES, json_len);
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES, json_len,
+                  NULL);
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
     if (json_decode_write_req(json_str, json_len, &req) < 0) {
         plog_error(plugin, "fail decode write request json: %.*s",
                    (int) nng_msg_len(msg), json_str);

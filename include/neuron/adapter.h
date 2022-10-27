@@ -435,7 +435,7 @@ typedef struct neu_adapter_app    neu_adapter_app_t;
 
 typedef int (*neu_adapter_update_metric_cb_t)(neu_adapter_t *adapter,
                                               const char *   metric_name,
-                                              uint64_t       n);
+                                              uint64_t n, const char *group);
 typedef int (*neu_adapter_register_metric_cb_t)(neu_adapter_t *   adapter,
                                                 const char *      name,
                                                 const char *      help,
