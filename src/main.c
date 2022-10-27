@@ -100,6 +100,10 @@ int main(int argc, char *argv[])
     zlog_init(args.log_init_file);
     neuron = zlog_get_category("neuron");
 
+    if (0 == strcmp(args.log_init_file, "./config/zlog.conf")) {
+        zlog_level_switch(neuron, ZLOG_LEVEL_INFO);
+    }
+
     if (neuron_already_running()) {
         nlog_fatal("neuron process already running, exit.");
         rv = -1;

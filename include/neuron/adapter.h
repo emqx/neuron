@@ -91,6 +91,8 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_NODES_STATE,
     NEU_REQRESP_NODE_DELETED,
+
+    NEU_REQ_UPDATE_LOG_LEVEL,
 } neu_reqresp_type_e;
 
 typedef enum {
@@ -152,6 +154,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
     [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
+
+    [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -415,6 +419,10 @@ typedef struct {
 typedef struct {
     char node[NEU_NODE_NAME_LEN];
 } neu_reqresp_node_deleted_t;
+
+typedef struct neu_req_update_log_level {
+    char node[NEU_NODE_NAME_LEN];
+} neu_req_update_log_level_t;
 
 void *neu_msg_gen(neu_reqresp_head_t *header, void *data);
 

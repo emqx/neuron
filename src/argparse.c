@@ -33,6 +33,8 @@
 #include "persist/persist.h"
 #include "version.h"
 
+char log_init_config[128] = { 0 };
+
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
          ? (bool) (optarg = argv[optind++])                      \
@@ -227,6 +229,8 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         ret = 1;
         goto quit;
     }
+
+    strncpy(log_init_config, log_init_file, strlen(log_init_file));
 
     // passing information by global variable is not a good style
     g_config_dir = args->config_dir;

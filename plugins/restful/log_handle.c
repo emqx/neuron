@@ -123,11 +123,11 @@ void handle_logs_files(nng_aio *aio)
 
 void handle_log_level(nng_aio *aio)
 {
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_log_level_req_t,
         neu_json_decode_update_log_level_req, {
-            int  lev                          = 0;
-            char level[NEU_LOG_LEVEL_LEN]     = { 0 };
             char node_name[NEU_NODE_NAME_LEN] = { 0 };
 
             UT_array *log_files = collect_log_files();
@@ -140,42 +140,32 @@ void handle_log_level(nng_aio *aio)
                 }
             }
 
-            strcpy(level, req->level);
-            if (strcmp(level, "DEBUG") == 0) {
-                lev = ZLOG_LEVEL_DEBUG;
-            } else if (strcmp(level, "INFO") == 0) {
-                lev = ZLOG_LEVEL_INFO;
-            } else if (strcmp(level, "WARN") == 0) {
-                lev = ZLOG_LEVEL_WARN;
-            } else if (strcmp(level, "ERROR") == 0) {
-                lev = ZLOG_LEVEL_ERROR;
-            } else if (strcmp(level, "NOTICE") == 0) {
-                lev = ZLOG_LEVEL_NOTICE;
-            } else if (strcmp(level, "FATAL") == 0) {
-                lev = ZLOG_LEVEL_FATAL;
-            }
-
             if (strlen(node_name) == 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
                     http_response(aio, error_code.error, result_error);
                 });
-            } else if (lev == 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_LOG_LEVEL_IS_WRONG, {
-                    http_response(aio, error_code.error, result_error);
-                });
             } else {
-                zlog_category_t *ct = zlog_get_category(node_name);
+                int                        ret    = 0;
+                neu_reqresp_head_t         header = { 0 };
+                neu_req_update_log_level_t cmd    = { 0 };
+                zlog_category_t *          ct = zlog_get_category(node_name);
 
-                int rv = zlog_level_switch(ct, lev);
-
-                if (rv != 0) {
-                    nlog_error("Modify log level fail");
+                ret = zlog_level_switch(ct, ZLOG_LEVEL_DEBUG);
+                if (ret != 0) {
+                    nlog_error("Modify log level fail, ret: %d", ret);
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
                         http_response(aio, error_code.error, result_error);
                     });
-                } else {
-                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_SUCCESS, {
-                        http_response(aio, NEU_ERR_SUCCESS, result_error);
+                }
+
+                header.ctx  = aio;
+                header.type = NEU_REQ_UPDATE_LOG_LEVEL;
+                strcpy(cmd.node, req->node_name);
+
+                ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        http_response(aio, NEU_ERR_IS_BUSY, result_error);
                     });
                 }
             }
