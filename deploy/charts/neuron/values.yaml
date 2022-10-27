@@ -63,7 +63,10 @@ service:
   #
   loadBalancerSourceRanges: []
   # -- Provide any additional annotations which may be required. Evaluated as a template
-  annotations: {}
+  annotations:
+    lb.kubesphere.io/v1alpha1: openelb
+    eip.openelb.kubesphere.io/v1alpha2: eip-pool
+    protocol.openelb.kubesphere.io/v1alpha1: layer2
 
 ingress:
   enabled: false
@@ -83,11 +86,17 @@ ingress:
 
 
 persistence:
-  enabled: false
+  enabled: true
   # -- Existing PersistentVolumeClaims
   # The value is evaluated as a template
   # So, for example, the name can depend on .Release or .Chart
-  existingClaim: ""
+  existingClaim: "pvc-neuron-data"
+
+nngFromExistingPVC:
+  enabled: false
+  ## PVC must be created manually before volume will be bound. The value is evaluated as a template
+  ##
+  existingClaim: "pvc-neuron-tmp"
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -166,13 +175,6 @@ readinessProbe:
   enabled: true
   initialDelaySeconds: 5
   periodSeconds: 5
-
-# -- Container Ports
-containerPorts:
-  # -- containerPorts.web
-  web: 7000
-  # -- containerPorts.api
-  api: 7001
 
 # -- only for kubeedge deployment
 hostPorts:
