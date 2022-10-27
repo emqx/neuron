@@ -97,6 +97,11 @@ typedef enum {
 #define NEU_METRIC_SEND_MSG_ERRORS_TOTAL_HELP \
     "Total number of errors sending messages"
 
+// number of messages received
+#define NEU_METRIC_RECV_MSGS_TOTAL "recv_msgs_total"
+#define NEU_METRIC_RECV_MSGS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_RECV_MSGS_TOTAL_HELP "Total number of messages received"
+
 typedef enum {
     NEU_METRICS_CATEGORY_GLOBAL,
     NEU_METRICS_CATEGORY_DRIVER,

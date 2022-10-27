@@ -50,15 +50,17 @@ static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
                                    const char *help, neu_metric_type_e type,
                                    uint64_t init);
 static int adapter_update_metric(neu_adapter_t *adapter,
-                                 const char *metric_name, uint64_t n);
+                                 const char *metric_name, uint64_t n,
+                                 const char *group);
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 static int         update_timestamp(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
-    .command       = adapter_command,
-    .response      = adapter_response,
-    .update_metric = adapter_update_metric,
+    .command         = adapter_command,
+    .response        = adapter_response,
+    .register_metric = adapter_register_metric,
+    .update_metric   = adapter_update_metric,
 };
 
 #define REGISTER_METRIC(adapter, name, init) \
@@ -71,9 +73,10 @@ static const adapter_callbacks_t callback_funs = {
     REGISTER_METRIC(adapter, NEU_METRIC_TAG_READS_TOTAL, 0); \
     REGISTER_METRIC(adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, 0)
 
-#define REGISTER_APP_METRICS(adapter)                        \
-    REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSGS_TOTAL, 0); \
-    REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0);
+#define REGISTER_APP_METRICS(adapter)                              \
+    REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSGS_TOTAL, 0);       \
+    REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0); \
+    REGISTER_METRIC(adapter, NEU_METRIC_RECV_MSGS_TOTAL, 0);
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
@@ -213,11 +216,19 @@ static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
 }
 
 static int adapter_update_metric(neu_adapter_t *adapter,
-                                 const char *metric_name, uint64_t n)
+                                 const char *metric_name, uint64_t n,
+                                 const char *group)
 {
     neu_metric_entry_t *entry = NULL;
-    if (NULL != adapter->metrics) {
+    if (NULL == adapter->metrics) {
+        return -1;
+    }
+
+    if (NULL == group) {
         HASH_FIND_STR(adapter->metrics->entries, metric_name, entry);
+    } else if (NULL != adapter->metrics->group_metrics) {
+        HASH_FIND_STR(adapter->metrics->group_metrics->entries, metric_name,
+                      entry);
     }
 
     if (NULL == entry) {
