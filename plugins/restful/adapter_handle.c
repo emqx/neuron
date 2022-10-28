@@ -107,12 +107,12 @@ void handle_get_adapter(nng_aio *aio)
         return;
     }
 
-    if (http_get_param_str(aio, "plugin", plugin_name, sizeof(plugin_name)) ==
+    if (http_get_param_str(aio, "plugin", plugin_name, sizeof(plugin_name)) >
         0) {
         strcpy(cmd.plugin, plugin_name);
     }
 
-    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) == 0) {
+    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) > 0) {
         strcpy(cmd.node, node_name);
     }
 
