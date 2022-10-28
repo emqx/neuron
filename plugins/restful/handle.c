@@ -28,7 +28,6 @@
 #include "datatag_handle.h"
 #include "group_config_handle.h"
 #include "http.h"
-#include "license_handle.h"
 #include "log_handle.h"
 #include "normal_handle.h"
 #include "plugin_handle.h"
@@ -96,9 +95,6 @@ struct neu_rest_handler cors_handler[] = {
         .url = "/api/v2/node/state",
     },
     {
-        .url = "/api/v2/license",
-    },
-    {
         .url = "/api/v2/version",
     },
     {
@@ -122,6 +118,11 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_PROXY,
         .url           = "/api/v2/hwtoken",
         .value.dst_url = "http://127.0.0.1:7003/api/v2/hwtoken",
+    },
+    {
+        .type          = NEU_REST_HANDLER_PROXY,
+        .url           = "/api/v2/license",
+        .value.dst_url = "http://127.0.0.1:7003/api/v2/license",
     },
     {
         .method        = NEU_REST_METHOD_POST,
@@ -298,18 +299,6 @@ struct neu_rest_handler api_handlers[] = {
         .type          = NEU_REST_HANDLER_FUNCTION,
         .url           = "/api/v2/log/level",
         .value.handler = handle_log_level,
-    },
-    {
-        .method        = NEU_REST_METHOD_POST,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/license",
-        .value.handler = handle_set_license,
-    },
-    {
-        .method        = NEU_REST_METHOD_GET,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/license",
-        .value.handler = handle_get_license,
     },
     {
         .method        = NEU_REST_METHOD_GET,

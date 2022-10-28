@@ -107,8 +107,6 @@ set(NEURON_SOURCES
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
     plugins/restful/handle.c
-    plugins/restful/license.c
-    plugins/restful/license_handle.c
     plugins/restful/log_handle.c
     plugins/restful/normal_handle.c
     plugins/restful/rw_handle.c
@@ -131,6 +129,7 @@ add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE include/neuron src plugins)
 target_link_libraries(neuron dl neuron-base sqlite3 -lm)
+target_link_options(neuron PRIVATE "LINKER:--export-dynamic")
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
