@@ -161,12 +161,13 @@ void handle_update_tags_resp(nng_aio *aio, neu_resp_update_tag_t *resp)
 
 void handle_get_tags(nng_aio *aio)
 {
-    neu_plugin_t *     plugin                    = neu_rest_get_plugin();
-    char               node[NEU_NODE_NAME_LEN]   = { 0 };
-    char               group[NEU_GROUP_NAME_LEN] = { 0 };
-    int                ret                       = 0;
-    neu_req_get_tag_t  cmd                       = { 0 };
-    neu_reqresp_head_t header                    = {
+    neu_plugin_t *     plugin                     = neu_rest_get_plugin();
+    char               node[NEU_NODE_NAME_LEN]    = { 0 };
+    char               group[NEU_GROUP_NAME_LEN]  = { 0 };
+    char               tag_name[NEU_TAG_NAME_LEN] = { 0 };
+    int                ret                        = 0;
+    neu_req_get_tag_t  cmd                        = { 0 };
+    neu_reqresp_head_t header                     = {
         .ctx  = aio,
         .type = NEU_REQ_GET_TAG,
     };
@@ -184,6 +185,10 @@ void handle_get_tags(nng_aio *aio)
             http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
         })
         return;
+    }
+
+    if (http_get_param_str(aio, "name", tag_name, sizeof(tag_name)) >= 0) {
+        strcpy(cmd.name, tag_name);
     }
 
     strcpy(cmd.driver, node);

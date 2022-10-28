@@ -289,6 +289,7 @@ typedef struct neu_req_del_tag {
 typedef struct neu_req_get_tag {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
+    char name[NEU_TAG_NAME_LEN];
 } neu_req_get_tag_t;
 
 typedef struct neu_resp_get_tag {

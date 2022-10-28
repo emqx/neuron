@@ -193,6 +193,22 @@ UT_array *neu_group_get_tag(neu_group_t *group)
     return array;
 }
 
+UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
+{
+    tag_elem_t *el = NULL, *tmp = NULL;
+    UT_array *  array = NULL;
+
+    utarray_new(array, neu_tag_get_icd());
+    HASH_ITER(hh, group->tags, el, tmp)
+    {
+        if (strstr(el->tag->name, name) != NULL) {
+            utarray_push_back(array, el->tag);
+        }
+    }
+
+    return array;
+}
+
 UT_array *neu_group_get_read_tag(neu_group_t *group)
 {
     UT_array *array = NULL;
