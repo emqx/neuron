@@ -55,6 +55,7 @@ static int adapter_update_metric(neu_adapter_t *adapter,
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 static int         update_timestamp(void *usr_data);
+static int         level_check(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
     .command         = adapter_command,
@@ -80,6 +81,8 @@ static const adapter_callbacks_t callback_funs = {
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
+    extern char log_init_config[128];
+
     int                     rv          = 0;
     neu_adapter_t *         adapter     = NULL;
     neu_event_io_param_t    param       = { 0 };
@@ -87,6 +90,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         .second      = 0,
         .millisecond = 10,
         .cb          = update_timestamp,
+    };
+
+    neu_event_timer_param_t timer_level = {
+        .second      = 30,
+        .millisecond = 0,
+        .cb          = level_check,
     };
 
     switch (info->module->type) {
@@ -106,6 +115,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     adapter->cb_funs.response      = callback_funs.response;
     adapter->cb_funs.update_metric = callback_funs.update_metric;
     adapter->module                = info->module;
+
+    adapter->timestamp_lev = 0;
 
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
@@ -138,6 +149,10 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     common->log                 = zlog_get_category(adapter->name);
     strcpy(common->name, adapter->name);
 
+    if (0 == strcmp(log_init_config, "./config/zlog.conf")) {
+        zlog_level_switch(common->log, ZLOG_LEVEL_INFO);
+    }
+
     adapter->module->intf_funs->init(adapter->plugin);
     if (adapter_load_setting(adapter->name, &adapter->setting) == 0) {
         if (adapter->module->intf_funs->setting(adapter->plugin,
@@ -161,6 +176,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     rv = nng_dial(adapter->sock, neu_manager_get_url(), &adapter->dialer, 0);
     assert(rv == 0);
 
+    timer_level.usr_data = (void *) adapter;
+    adapter->timer_lev   = neu_event_add_timer(adapter->events, timer_level);
     timer_param.usr_data = (void *) adapter;
     adapter->timer       = neu_event_add_timer(adapter->events, timer_param);
 
@@ -294,6 +311,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     }
     case NEU_REQRESP_NODE_DELETED: {
         neu_reqresp_node_deleted_t *cmd = (neu_reqresp_node_deleted_t *) data;
+        strcpy(header.receiver, cmd->node);
+        break;
+    }
+    case NEU_REQ_UPDATE_LOG_LEVEL: {
+        neu_req_update_log_level_t *cmd = (neu_req_update_log_level_t *) data;
         strcpy(header.receiver, cmd->node);
         break;
     }
@@ -707,6 +729,19 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         break;
     }
+    case NEU_REQ_UPDATE_LOG_LEVEL: {
+        neu_resp_error_t error = { 0 };
+
+        struct timeval tv = { 0 };
+        gettimeofday(&tv, NULL);
+        adapter->timestamp_lev = tv.tv_sec;
+
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_ERROR;
+        reply(adapter, header, &error);
+
+        break;
+    }
 
     default:
         assert(false);
@@ -754,6 +789,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     }
 
     neu_event_del_timer(adapter->events, adapter->timer);
+    neu_event_del_timer(adapter->events, adapter->timer_lev);
 
     nlog_info("Stop the adapter(%s)", adapter->name);
     return 0;
@@ -986,6 +1022,29 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     nng_sendmsg(adapter->sock, msg, 0);
 }
 
+static int level_check(void *usr_data)
+{
+    neu_adapter_t *adapter = (neu_adapter_t *) usr_data;
+
+    if (0 != adapter->timestamp_lev) {
+        struct timeval   tv      = { 0 };
+        int64_t          diff    = 0;
+        int64_t          delay_s = 600;
+        zlog_category_t *ct      = zlog_get_category(adapter->name);
+
+        gettimeofday(&tv, NULL);
+        diff = tv.tv_sec - adapter->timestamp_lev;
+        if (delay_s <= diff) {
+            int ret = zlog_level_switch(ct, ZLOG_LEVEL_INFO);
+            if (0 != ret) {
+                nlog_error("Modify default log level fail, ret:%d", ret);
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int update_timestamp(void *usr_data)
 {
     neu_adapter_t *adapter   = (neu_adapter_t *) usr_data;
@@ -1138,6 +1197,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     case NEU_RESP_GET_DRIVER_GROUP:
         data_size = sizeof(neu_resp_get_driver_group_t);
+        break;
+    case NEU_REQ_UPDATE_LOG_LEVEL:
+        data_size = sizeof(neu_req_update_log_level_t);
         break;
     default:
         assert(false);

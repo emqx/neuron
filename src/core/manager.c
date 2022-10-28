@@ -563,6 +563,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_READ_GROUP:
         forward_msg(manager, msg, header->receiver);
         break;
+    case NEU_REQ_UPDATE_LOG_LEVEL:
+        if (neu_node_manager_find(manager->node_manager, header->receiver) ==
+            NULL) {
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+        } else {
+            forward_msg(manager, msg, header->receiver);
+        }
+
+        break;
     default:
         assert(false);
         break;

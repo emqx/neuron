@@ -104,6 +104,12 @@ struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/password",
     },
+    {
+        .url = "/api/v2/logs",
+    },
+    {
+        .url = "/api/v2/log/level",
+    },
 };
 
 struct neu_rest_handler api_handlers[] = {
@@ -290,7 +296,7 @@ struct neu_rest_handler api_handlers[] = {
     {
         .method        = NEU_REST_METHOD_PUT,
         .type          = NEU_REST_HANDLER_FUNCTION,
-        .url           = "/api/v2/level",
+        .url           = "/api/v2/log/level",
         .value.handler = handle_log_level,
     },
     {
