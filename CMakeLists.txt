@@ -129,7 +129,7 @@ add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE include/neuron src plugins)
 target_link_libraries(neuron dl neuron-base sqlite3 -lm)
-target_link_options(neuron PRIVATE "LINKER:--export-dynamic")
+target_link_options(neuron PRIVATE "LINKER:--dynamic-list-data")
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)

@@ -40,9 +40,9 @@ struct neu_rest_handle_ctx {
     void *plugin;
 };
 
-struct neu_rest_handle_ctx *rest_ctx = NULL;
+static struct neu_rest_handle_ctx *rest_ctx = NULL;
 
-struct neu_rest_handler web_handlers[] = {
+static struct neu_rest_handler web_handlers[] = {
     {
         .method     = NEU_REST_METHOD_GET,
         .type       = NEU_REST_HANDLER_DIRECTORY,
@@ -51,7 +51,7 @@ struct neu_rest_handler web_handlers[] = {
     },
 };
 
-struct neu_rest_handler cors_handler[] = {
+static struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/ping",
     },
@@ -108,7 +108,7 @@ struct neu_rest_handler cors_handler[] = {
     },
 };
 
-struct neu_rest_handler api_handlers[] = {
+static struct neu_rest_handler api_handlers[] = {
     {
         .type          = NEU_REST_HANDLER_PROXY,
         .url           = "/api/v2/ekuiper",
