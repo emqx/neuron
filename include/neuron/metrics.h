@@ -43,6 +43,7 @@ typedef enum {
 #define NEU_METRIC_LAST_RTT_MS_TYPE NEU_METRIC_TYPE_GAUAGE
 #define NEU_METRIC_LAST_RTT_MS_HELP \
     "Last request round trip time in milliseconds"
+#define NEU_METRIC_LAST_RTT_MS_MAX 9999
 
 // number of bytes sent
 #define NEU_METRIC_SEND_BYTES "send_bytes"

@@ -68,7 +68,8 @@ static const adapter_callbacks_t callback_funs = {
     adapter_register_metric(adapter, name, name##_HELP, name##_TYPE, init);
 
 #define REGISTER_DRIVER_METRICS(adapter)                     \
-    REGISTER_METRIC(adapter, NEU_METRIC_LAST_RTT_MS, 9999);  \
+    REGISTER_METRIC(adapter, NEU_METRIC_LAST_RTT_MS,         \
+                    NEU_METRIC_LAST_RTT_MS_MAX);             \
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_BYTES, 0);      \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_BYTES, 0);      \
     REGISTER_METRIC(adapter, NEU_METRIC_TAG_READS_TOTAL, 0); \
