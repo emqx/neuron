@@ -149,10 +149,21 @@ void handle_log_level(nng_aio *aio)
                 neu_reqresp_head_t         header = { 0 };
                 neu_req_update_log_level_t cmd    = { 0 };
                 zlog_category_t *          ct = zlog_get_category(node_name);
+                zlog_category_t *          neuron = zlog_get_category("neuron");
 
                 ret = zlog_level_switch(ct, ZLOG_LEVEL_DEBUG);
                 if (ret != 0) {
-                    nlog_error("Modify log level fail, ret: %d", ret);
+                    nlog_error(
+                        "Modify node log level fail, node_name:%s, ret: %d,",
+                        node_name, ret);
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                        http_response(aio, error_code.error, result_error);
+                    });
+                }
+
+                ret = zlog_level_switch(neuron, ZLOG_LEVEL_DEBUG);
+                if (ret != 0) {
+                    nlog_error("Modify neuron log level fail, ret: %d", ret);
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
                         http_response(aio, error_code.error, result_error);
                     });
