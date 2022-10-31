@@ -648,6 +648,27 @@ int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
     return ret;
 }
 
+int neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
+                                 const char *group, const char *name,
+                                 UT_array **tags)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        if (strlen(name) > 0) {
+            *tags = neu_group_query_tag(find->group, name);
+        } else {
+            *tags = neu_group_get_tag(find->group);
+        }
+    } else {
+        ret = NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    return ret;
+}
+
 void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
                                       const char *group, UT_array **tags)
 {

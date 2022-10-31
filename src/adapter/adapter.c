@@ -501,8 +501,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
             error.error = NEU_ERR_GROUP_NOT_ALLOW;
         } else {
-            error.error = neu_adapter_driver_get_tag(
-                (neu_adapter_driver_t *) adapter, cmd->group, &tags);
+            error.error = neu_adapter_driver_query_tag(
+                (neu_adapter_driver_t *) adapter, cmd->group, cmd->name, &tags);
         }
 
         neu_msg_exchange(header);
