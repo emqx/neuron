@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <stdlib.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -47,6 +48,7 @@
 static const char *const url = "inproc://neu_manager";
 
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data);
+static int manager_level_check(void *usr_data);
 inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                          void *data);
 inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
@@ -72,6 +74,12 @@ neu_manager_t *neu_manager_create()
         .cb          = report_nodes_state,
     };
 
+    neu_event_timer_param_t timer_level = {
+        .second      = 60,
+        .millisecond = 0,
+        .cb          = manager_level_check,
+    };
+
     manager->events            = neu_event_new();
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
@@ -88,6 +96,8 @@ neu_manager_t *neu_manager_create()
     nng_socket_set_int(manager->socket, NNG_OPT_SENDBUF, 2048);
     nng_socket_get_int(manager->socket, NNG_OPT_RECVFD, &param.fd);
     manager->loop = neu_event_add_io(manager->events, param);
+
+    manager->timestamp_lev_manager = 0;
 
     neu_metrics_init();
     start_static_adapter(manager, DEFAULT_DASHBOARD_PLUGIN_NAME);
@@ -114,6 +124,9 @@ neu_manager_t *neu_manager_create()
 
     manager_load_subscribe(manager);
 
+    timer_level.usr_data = (void *) manager;
+    manager->timer_lev   = neu_event_add_timer(manager->events, timer_level);
+
     timer_param.usr_data = (void *) manager;
     manager->timer       = neu_event_add_timer(manager->events, timer_param);
 
@@ -128,6 +141,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     UT_array *pipes = neu_node_manager_get_pipes_all(manager->node_manager);
 
     neu_event_del_timer(manager->events, manager->timer);
+    neu_event_del_timer(manager->events, manager->timer_lev);
     strcpy(header.sender, "manager");
     utarray_foreach(pipes, nng_pipe *, pipe)
     {
@@ -164,6 +178,29 @@ void neu_manager_destroy(neu_manager_t *manager)
 const char *neu_manager_get_url()
 {
     return url;
+}
+
+static int manager_level_check(void *usr_data)
+{
+    neu_manager_t *manager = (neu_manager_t *) usr_data;
+
+    if (0 != manager->timestamp_lev_manager) {
+        struct timeval   tv      = { 0 };
+        int64_t          diff    = { 0 };
+        int64_t          delay_s = 60;
+        zlog_category_t *neuron  = zlog_get_category("neuron");
+
+        gettimeofday(&tv, NULL);
+        diff = tv.tv_sec - manager->timestamp_lev_manager;
+        if (delay_s <= diff) {
+            int ret = zlog_level_switch(neuron, ZLOG_LEVEL_INFO);
+            if (0 != ret) {
+                nlog_error("Modify default log level fail, ret:%d", ret);
+            }
+        }
+    }
+
+    return 0;
 }
 
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
@@ -571,6 +608,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(manager, header, &e);
         } else {
+            struct timeval tv = { 0 };
+            gettimeofday(&tv, NULL);
+            manager->timestamp_lev_manager = tv.tv_sec;
+
             forward_msg(manager, msg, header->receiver);
         }
 
