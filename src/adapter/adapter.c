@@ -73,7 +73,7 @@ static const adapter_callbacks_t callback_funs = {
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_BYTES, 0);      \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_BYTES, 0);      \
     REGISTER_METRIC(adapter, NEU_METRIC_TAG_READS_TOTAL, 0); \
-    REGISTER_METRIC(adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, 0)
+    REGISTER_METRIC(adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, 0);
 
 #define REGISTER_APP_METRICS(adapter)                              \
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSGS_TOTAL, 0);       \
