@@ -74,11 +74,11 @@ typedef enum {
 #define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
 #define NEU_METRIC_GROUP_TAGS_TOTAL_HELP "Total number of tags in the group"
 
-// number of messages sent in group
-#define NEU_METRIC_GROUP_SEND_MSGS_TOTAL "group_send_msgs_total"
-#define NEU_METRIC_GROUP_SEND_MSGS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
-#define NEU_METRIC_GROUP_SEND_MSGS_TOTAL_HELP \
-    "Total number of messages sent in the group"
+// number of messages sent in last group timer
+#define NEU_METRIC_GROUP_LAST_SEND_MSGS "group_last_send_msgs"
+#define NEU_METRIC_GROUP_LAST_SEND_MSGS_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_GROUP_LAST_SEND_MSGS_HELP \
+    "Number of messages sent on last group timer invocation"
 
 // maintained by neuron core
 // milliseconds consumed in last group timer invocation
