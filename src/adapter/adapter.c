@@ -245,8 +245,11 @@ static int adapter_update_metric(neu_adapter_t *adapter,
     if (NULL == group) {
         HASH_FIND_STR(adapter->metrics->entries, metric_name, entry);
     } else if (NULL != adapter->metrics->group_metrics) {
-        HASH_FIND_STR(adapter->metrics->group_metrics->entries, metric_name,
-                      entry);
+        neu_group_metrics_t *g = NULL;
+        HASH_FIND_STR(adapter->metrics->group_metrics, group, g);
+        if (NULL != g) {
+            HASH_FIND_STR(g->entries, metric_name, entry);
+        }
     }
 
     if (NULL == entry) {
