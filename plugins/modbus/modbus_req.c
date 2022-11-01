@@ -64,7 +64,13 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                        uint16_t max_byte)
 {
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
     struct modbus_group_data *gd = NULL;
+
+    uint64_t read_interval_tot = 0;
+    uint64_t read_interval_avg = 0;
 
     if (group->user_data == NULL) {
         gd = calloc(1, sizeof(struct modbus_group_data));
@@ -92,14 +98,28 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
     for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
         uint16_t response_size = 0;
         plugin->cmd_idx        = i;
-        int ret                = modbus_stack_read(
+
+        uint64_t read_tms = neu_time_ms();
+
+        int ret = modbus_stack_read(
             plugin->stack, gd->cmd_sort->cmd[i].slave_id,
             gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
             gd->cmd_sort->cmd[i].n_register, &response_size);
         if (ret > 0) {
+            uint64_t recv_tms = neu_time_ms();
+
+            read_interval_tot += (recv_tms - read_tms);
+            read_interval_avg = (uint64_t)(read_interval_tot / (i + 1));
+
             process_protocol_buf(plugin, response_size);
         }
     }
+
+    update_metric(plugin->common.adapter, NEU_METRIC_LAST_RTT_MS,
+                  read_interval_avg, NULL);
+
+    update_metric(plugin->common.adapter, NEU_METRIC_GROUP_LAST_SEND_MSGS,
+                  gd->cmd_sort->n_cmd, group->group_name);
 
     return 0;
 }
