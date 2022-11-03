@@ -34,7 +34,7 @@ static nng_http_server *server_init()
 {
     nng_url *        url       = NULL;
     nng_http_server *server    = NULL;
-    const char *     host_port = "http://0.0.0.0:7001";
+    const char *     host_port = "http://0.0.0.0:7000";
 
     nlog_info("monitor bind url: %s", host_port);
 
