@@ -64,7 +64,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
         update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSGS_TOTAL, 1,
                       NULL);
     } else {
-        plog_error(plugin, "nng cannot send msg");
+        plog_error(plugin, "nng cannot send msg: %s", nng_strerror(rv));
         nng_msg_free(msg);
         update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
                       1, NULL);
