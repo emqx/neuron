@@ -114,6 +114,8 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
 
     nng_pipe_notify(plugin->sock, NNG_PIPE_EV_ADD_POST, pipe_add_cb, plugin);
     nng_pipe_notify(plugin->sock, NNG_PIPE_EV_REM_POST, pipe_rm_cb, plugin);
+    nng_socket_set_int(plugin->sock, NNG_OPT_SENDBUF, 2048);
+    nng_socket_set_int(plugin->sock, NNG_OPT_RECVBUF, 2048);
 
     if ((rv = nng_listen(plugin->sock, EKUIPER_PLUGIN_URL, NULL, 0)) != 0) {
         plog_error(plugin, "nng_listen: %s", nng_strerror(rv));
