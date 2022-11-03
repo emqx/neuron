@@ -56,7 +56,7 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     rv = nng_sendmsg(plugin->sock, msg,
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 != rv) {
-        plog_error(plugin, "nng cannot send msg");
+        plog_error(plugin, "nng cannot send msg: %s", nng_strerror(rv));
         nng_msg_free(msg);
     }
 }
