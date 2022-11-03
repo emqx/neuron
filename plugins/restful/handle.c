@@ -42,15 +42,6 @@ struct neu_rest_handle_ctx {
 
 static struct neu_rest_handle_ctx *rest_ctx = NULL;
 
-static struct neu_rest_handler web_handlers[] = {
-    {
-        .method     = NEU_REST_METHOD_GET,
-        .type       = NEU_REST_HANDLER_DIRECTORY,
-        .url        = "",
-        .value.path = "./dist",
-    },
-};
-
 static struct neu_rest_handler cors_handler[] = {
     {
         .url = "/api/v2/ping",
@@ -108,21 +99,24 @@ static struct neu_rest_handler cors_handler[] = {
     },
 };
 
-static struct neu_rest_handler api_handlers[] = {
+static struct neu_rest_handler rest_handlers[] = {
     {
+        .method     = NEU_REST_METHOD_GET,
+        .type       = NEU_REST_HANDLER_DIRECTORY,
+        .url        = "/web",
+        .value.path = "./dist",
+    },
+    {
+        .method     = NEU_REST_METHOD_UNDEFINE,
+        .type       = NEU_REST_HANDLER_REDIRECT,
+        .url        = "/",
+        .value.path = "/web",
+    },
+    {
+        .method        = NEU_REST_METHOD_UNDEFINE,
         .type          = NEU_REST_HANDLER_PROXY,
         .url           = "/api/v2/ekuiper",
         .value.dst_url = "http://127.0.0.1:9081",
-    },
-    {
-        .type          = NEU_REST_HANDLER_PROXY,
-        .url           = "/api/v2/hwtoken",
-        .value.dst_url = "http://127.0.0.1:7003/api/v2/hwtoken",
-    },
-    {
-        .type          = NEU_REST_HANDLER_PROXY,
-        .url           = "/api/v2/license",
-        .value.dst_url = "http://127.0.0.1:7003/api/v2/license",
     },
     {
         .method        = NEU_REST_METHOD_POST,
@@ -308,18 +302,10 @@ static struct neu_rest_handler api_handlers[] = {
     },
 };
 
-void neu_rest_web_handler(const struct neu_rest_handler **handlers,
-                          uint32_t *                      size)
+void neu_rest_handler(const struct neu_rest_handler **handlers, uint32_t *size)
 {
-    *handlers = web_handlers;
-    *size     = sizeof(web_handlers) / sizeof(struct neu_rest_handler);
-}
-
-void neu_rest_api_handler(const struct neu_rest_handler **handlers,
-                          uint32_t *                      size)
-{
-    *handlers = api_handlers;
-    *size     = sizeof(api_handlers) / sizeof(struct neu_rest_handler);
+    *handlers = rest_handlers;
+    *size     = sizeof(rest_handlers) / sizeof(struct neu_rest_handler);
 }
 
 void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
