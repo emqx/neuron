@@ -24,6 +24,7 @@
 
 #include "core/manager.h"
 #include "utils/log.h"
+#include "utils/time.h"
 
 #include "argparse.h"
 #include "daemon.h"
@@ -88,6 +89,7 @@ int main(int argc, char *argv[])
     pid_t          pid    = 0;
     neu_cli_args_t args   = { 0 };
 
+    global_timestamp = neu_time_ms();
     neu_cli_args_init(&args, argc, argv);
 
     disable_jwt = args.disable_auth;

@@ -198,7 +198,7 @@ int json_encode_read_resp(void *json_object, void *param)
 
     json_read_resp_header_t header = { .group_name = trans_data->group,
                                        .node_name  = trans_data->driver,
-                                       .timestamp  = plugin->common.timestamp };
+                                       .timestamp  = global_timestamp };
 
     ret = json_encode_read_resp_header(json_object, &header);
     if (0 != ret) {

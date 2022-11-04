@@ -34,8 +34,6 @@ struct neu_adapter {
     char *name;
     char *setting;
 
-    int64_t timestamp;
-
     neu_node_running_state_e state;
 
     adapter_callbacks_t cb_funs;
@@ -47,10 +45,9 @@ struct neu_adapter {
     nng_socket sock;
     nng_dialer dialer;
 
-    neu_events_t *     events;
-    neu_event_io_t *   nng_io;
-    neu_event_timer_t *timer;
-    int                recv_fd;
+    neu_events_t *  events;
+    neu_event_io_t *nng_io;
+    int             recv_fd;
 
     neu_event_timer_t *timer_lev;
     int64_t            timestamp_lev;

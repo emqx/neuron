@@ -27,6 +27,7 @@
 #include "event/event.h"
 #include "persist/persist.h"
 #include "utils/log.h"
+#include "utils/time.h"
 
 #include "adapter.h"
 #include "adapter/adapter_internal.h"
@@ -56,6 +57,7 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *ndoe);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
+static int  update_timestamp(void *usr_data);
 static int  report_nodes_state(void *usr_data);
 static void start_single_adapter(neu_manager_t *manager, const char *name,
                                  const char *plugin_name, bool display);
@@ -67,6 +69,12 @@ neu_manager_t *neu_manager_create()
     neu_event_io_param_t param   = {
         .usr_data = (void *) manager,
         .cb       = manager_loop,
+    };
+
+    neu_event_timer_param_t timestamp_timer_param = {
+        .second      = 0,
+        .millisecond = 10,
+        .cb          = update_timestamp,
     };
     neu_event_timer_param_t timer_param = {
         .second      = 1,
@@ -130,6 +138,10 @@ neu_manager_t *neu_manager_create()
     timer_param.usr_data = (void *) manager;
     manager->timer       = neu_event_add_timer(manager->events, timer_param);
 
+    timestamp_timer_param.usr_data = (void *) manager;
+    manager->timer_timestamp =
+        neu_event_add_timer(manager->events, timestamp_timer_param);
+
     return manager;
 }
 
@@ -142,6 +154,7 @@ void neu_manager_destroy(neu_manager_t *manager)
 
     neu_event_del_timer(manager->events, manager->timer);
     neu_event_del_timer(manager->events, manager->timer_lev);
+    neu_event_del_timer(manager->events, manager->timer_timestamp);
     strcpy(header.sender, "manager");
     utarray_foreach(pipes, nng_pipe *, pipe)
     {
@@ -754,5 +767,12 @@ static int report_nodes_state(void *usr_data)
     utarray_free(apps);
     utarray_free(states);
 
+    return 0;
+}
+
+static int update_timestamp(void *usr_data)
+{
+    (void) usr_data;
+    global_timestamp = neu_time_ms();
     return 0;
 }

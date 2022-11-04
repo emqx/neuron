@@ -27,9 +27,10 @@
 
 char *command_heartbeat_generate(neu_plugin_t *plugin, UT_array *states)
 {
+    (void) plugin;
     char *                 version  = NEURON_VERSION;
     neu_json_states_head_t header   = { .version   = version,
-                                      .timpstamp = plugin->common.timestamp };
+                                      .timpstamp = global_timestamp };
     neu_json_states_t      json     = { 0 };
     char *                 json_str = NULL;
     json.n_state                    = utarray_len(states);
