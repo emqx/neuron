@@ -54,7 +54,6 @@ static int adapter_update_metric(neu_adapter_t *adapter,
                                  const char *group);
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
-static int         update_timestamp(void *usr_data);
 static int         level_check(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
@@ -87,12 +86,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     int                     rv          = 0;
     neu_adapter_t *         adapter     = NULL;
     neu_event_io_param_t    param       = { 0 };
-    neu_event_timer_param_t timer_param = {
-        .second      = 0,
-        .millisecond = 10,
-        .cb          = update_timestamp,
-    };
-
     neu_event_timer_param_t timer_level = {
         .second      = 30,
         .millisecond = 0,
@@ -179,8 +172,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     timer_level.usr_data = (void *) adapter;
     adapter->timer_lev   = neu_event_add_timer(adapter->events, timer_level);
-    timer_param.usr_data = (void *) adapter;
-    adapter->timer       = neu_event_add_timer(adapter->events, timer_param);
 
     nlog_info("Success to create adapter: %s", adapter->name);
 
@@ -792,7 +783,6 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
-    neu_event_del_timer(adapter->events, adapter->timer);
     neu_event_del_timer(adapter->events, adapter->timer_lev);
 
     nlog_info("Stop the adapter(%s)", adapter->name);
@@ -1046,20 +1036,6 @@ static int level_check(void *usr_data)
         }
     }
 
-    return 0;
-}
-
-static int update_timestamp(void *usr_data)
-{
-    neu_adapter_t *adapter   = (neu_adapter_t *) usr_data;
-    struct timeval tv        = { 0 };
-    uint64_t       timestamp = 0;
-
-    gettimeofday(&tv, NULL);
-    timestamp = (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
-    adapter->timestamp = timestamp;
-
-    neu_plugin_to_plugin_common(adapter->plugin)->timestamp = timestamp;
     return 0;
 }
 

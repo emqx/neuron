@@ -97,7 +97,7 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
             utarray_foreach(tags, neu_datatag_t *, t)
             {
                 neu_driver_cache_update(driver->cache, group, t->name,
-                                        driver->adapter.timestamp, value);
+                                        global_timestamp, value);
             }
             driver->adapter.cb_funs.update_metric(&driver->adapter,
                                                   NEU_METRIC_TAG_READS_TOTAL,
@@ -108,8 +108,8 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
             utarray_free(tags);
         }
     } else {
-        neu_driver_cache_update(driver->cache, group, tag,
-                                driver->adapter.timestamp, value);
+        neu_driver_cache_update(driver->cache, group, tag, global_timestamp,
+                                value);
         driver->adapter.cb_funs.update_metric(
             &driver->adapter, NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
         driver->adapter.cb_funs.update_metric(
@@ -119,7 +119,7 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
     nlog_debug(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64,
         driver->adapter.name, group, tag, neu_type_string(value.type),
-        driver->adapter.timestamp);
+        global_timestamp);
 }
 
 neu_adapter_driver_t *neu_adapter_driver_create()
@@ -212,7 +212,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
         }
 
     } else {
-        read_group(driver->adapter.timestamp,
+        read_group(global_timestamp,
                    neu_group_get_interval(group) *
                        NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                    driver->cache, cmd->group, tags, resp.tags);
@@ -729,7 +729,7 @@ static int report_callback(void *usr_data)
 
     strcpy(data->driver, group->driver->adapter.name);
     strcpy(data->group, group->name);
-    data->n_tag = read_report_group(group->driver->adapter.timestamp,
+    data->n_tag = read_report_group(global_timestamp,
                                     neu_group_get_interval(group->group) *
                                         NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                                     group->driver->cache, group->name, tags,
@@ -802,12 +802,12 @@ static int read_callback(void *usr_data)
     }
 
     if (group->grp.tags != NULL) {
-        int64_t spend = group->driver->adapter.timestamp;
+        int64_t spend = global_timestamp;
 
         group->driver->adapter.module->intf_funs->driver.group_timer(
             group->driver->adapter.plugin, &group->grp);
 
-        spend = group->driver->adapter.timestamp - spend;
+        spend = global_timestamp - spend;
         nlog_info("%s-%s timer: %" PRId64, group->driver->adapter.name,
                   group->name, spend);
 

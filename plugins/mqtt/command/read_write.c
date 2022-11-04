@@ -169,7 +169,7 @@ char *command_rw_read_periodic_response(neu_plugin_t *            plugin,
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = { .group     = (char *) data->group,
                                         .node      = (char *) data->driver,
-                                        .timestamp = plugin->common.timestamp };
+                                        .timestamp = global_timestamp };
     neu_json_read_resp_t     json     = { 0 };
     wrap_read_response_json(tags, len, &json);
 
