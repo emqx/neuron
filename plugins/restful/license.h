@@ -50,6 +50,8 @@
 //
 #define LICENSE_KEY_PLUGIN_FLAG "1.3.6.1.4.1.52509.13"
 
+#define LICENSE_KEY_TOKEN "1.3.6.1.4.1.52509.14"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -95,6 +97,7 @@ typedef struct {
     uint32_t       max_nodes_;            // max number of nodes
     uint32_t       max_node_tags_;        // max number of tags per node
     uint8_t        plugin_flag_[200 / 8]; // plugin enable/disable bits
+    char *         token_;                // hardware token
 } license_t;
 
 // Initialize to be expired with no file.

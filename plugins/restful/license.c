@@ -273,6 +273,7 @@ static int extract_license(const char *license_fname, const char *pub_key,
         goto final;
     }
 
+    unsigned mark = 0;
     for (i = 0; i < sk_X509_EXTENSION_num(ext_list); i++) {
         ext = sk_X509_EXTENSION_value(ext_list, i);
         obj = X509_EXTENSION_get_object(ext);
@@ -286,25 +287,36 @@ static int extract_license(const char *license_fname, const char *pub_key,
         if (0 == strcmp(buf, LICENSE_KEY_TYPE)) {
             license->type_ = scan_licese_type(val);
             if (LICENSE_TYPE_MAX == license->type_) {
-                zlog_error(neuron, "invalid license type:`%s`", val);
+                nlog_error("invalid license type:`%s`", val);
                 rv = NEU_ERR_LICENSE_INVALID;
             }
+            mark |= 0x01;
         } else if (0 == strcmp(buf, LICENSE_KEY_MAX_NODES)) {
             license->max_nodes_ = strtoul(val, NULL, 0);
+            mark |= 0x02;
         } else if (0 == strcmp(buf, LICENSE_KEY_MAX_NODE_TAGS)) {
             license->max_node_tags_ = strtoul(val, NULL, 0);
+            mark |= 0x04;
         } else if (0 == strcmp(buf, LICENSE_KEY_PLUGIN_FLAG)) {
             if (0 !=
                 scan_bitvec(license->plugin_flag_,
                             sizeof(license->plugin_flag_), val)) {
-                zlog_error(neuron, "fail to scan license plugin flag:`%s`",
-                           val);
+                nlog_error("fail to scan license plugin flag:`%s`", val);
                 rv = NEU_ERR_LICENSE_INVALID;
             }
+            mark |= 0x08;
+        } else if (0 == strcmp(buf, LICENSE_KEY_TOKEN)) {
+            license->token_ = strdup(val);
+            mark |= 0x10;
         }
     }
 
-    nlog_info("certification verification success");
+    if (0x0F == (mark & 0x0F)) {
+        nlog_info("certification verification success");
+    } else {
+        rv = NEU_ERR_LICENSE_INVALID;
+        nlog_error("missing license key fields, mark:%u", mark);
+    }
 
 final:
     if (pkey)
@@ -364,6 +376,7 @@ void license_init(license_t *license)
 void license_fini(license_t *license)
 {
     free(license->fname_);
+    free(license->token_);
 }
 
 license_t *license_new()
@@ -411,6 +424,7 @@ int license_read(license_t *license, const char *fname)
     license_print(&lic);
 
     free(license->fname_);
+    free(license->token_);
     *license = lic;
 
     return rv;
