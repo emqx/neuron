@@ -93,7 +93,9 @@ typedef struct {
     license_type_e type_;                 // license type
     char *         fname_;                // license file name
     uint64_t       since_;                // not before
+    char *         since_str_;            //
     uint64_t       until_;                // not after
+    char *         until_str_;            //
     uint32_t       max_nodes_;            // max number of nodes
     uint32_t       max_node_tags_;        // max number of tags per node
     uint8_t        plugin_flag_[200 / 8]; // plugin enable/disable bits

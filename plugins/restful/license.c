@@ -36,6 +36,7 @@
 #include <time.h>
 
 #include "errcodes.h"
+#include "utils/asprintf.h"
 #include "utils/log.h"
 
 #include "license.h"
@@ -81,7 +82,7 @@ static uint64_t mktimestamp(struct tm dt)
     return (ret);
 }
 
-static uint64_t get_asn1_ts(ASN1_TIME *time)
+static uint64_t get_asn1_ts(ASN1_TIME *time, char **ts_str)
 {
     struct tm   t;
     const char *str = (const char *) time->data;
@@ -97,7 +98,11 @@ static uint64_t get_asn1_ts(ASN1_TIME *time)
                &t.tm_hour, &t.tm_min, &t.tm_sec);
     }
 
+    neu_asprintf(ts_str, "%4d-%02d-%02d %02d:%02d:%02d", t.tm_year, t.tm_mon,
+                 t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
+
     t.tm_mon -= 1;
+
     /* Note: we did not adjust the time based on time zone information */
     return mktimestamp(t);
 }
@@ -245,9 +250,14 @@ static int extract_license(const char *license_fname, const char *pub_key,
 
     not_before      = X509_get_notBefore(cert);
     not_after       = X509_get_notAfter(cert);
-    license->since_ = get_asn1_ts(not_before);
-    license->until_ = get_asn1_ts(not_after);
+    license->since_ = get_asn1_ts(not_before, &license->since_str_);
+    license->until_ = get_asn1_ts(not_after, &license->until_str_);
     nlog_info("certificate expire date: %s", not_after->data);
+    if (NULL == license->since_str_ || NULL == license->until_str_) {
+        nlog_warn("cannot strdup");
+        rv = NEU_ERR_EINTERNAL;
+        goto final;
+    }
 
     subj = X509_get_subject_name(cert);
     for (i = 0; i < X509_NAME_entry_count(subj); i++) {
@@ -342,26 +352,15 @@ const char *plugin_bit_str(plugin_bit_e b)
 
 void license_print(license_t *license)
 {
-    struct tm   tm        = {};
-    char        start[16] = {};
-    char        end[16]   = {};
-    time_t      since     = license->since_;
-    time_t      until     = license->until_;
-    const char *fmt       = "%Y%m%dT%H%M%S";
-
-    gmtime_r(&since, &tm);
-    strftime(start, sizeof(start), fmt, &tm);
-    gmtime_r(&until, &tm);
-    strftime(end, sizeof(end), fmt, &tm);
-
     char flag[sizeof(license->plugin_flag_) * 2 + 1] = {};
     print_bitvec(flag, sizeof(flag), license->plugin_flag_,
                  sizeof(license->plugin_flag_));
 
     nlog_info("license `%s` for %s, from %s to %s, max_nodes:%" PRIu32
               ", max_node_tags:%" PRIu32 ", flag:0x%s",
-              license->fname_, license_type_str(license->type_), start, end,
-              license->max_nodes_, license->max_node_tags_, flag);
+              license->fname_, license_type_str(license->type_),
+              license->since_str_, license->until_str_, license->max_nodes_,
+              license->max_node_tags_, flag);
 }
 
 void license_init(license_t *license)
@@ -375,6 +374,8 @@ void license_init(license_t *license)
 
 void license_fini(license_t *license)
 {
+    free(license->since_str_);
+    free(license->until_str_);
     free(license->fname_);
     free(license->token_);
 }
@@ -423,6 +424,8 @@ int license_read(license_t *license, const char *fname)
 
     license_print(&lic);
 
+    free(license->since_str_);
+    free(license->until_str_);
     free(license->fname_);
     free(license->token_);
     *license = lic;

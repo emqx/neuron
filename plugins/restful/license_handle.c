@@ -135,17 +135,12 @@ int copy_license_file_if_necessary()
 
 void handle_get_license(nng_aio *aio)
 {
-    int                         rv              = 0;
-    char *                      license_path    = NULL;
-    license_t                   lic             = {};
-    neu_json_get_license_resp_t resp            = {};
-    time_t                      since           = 0;
-    time_t                      until           = 0;
-    char                        valid_since[20] = {};
-    char                        valid_until[20] = {};
-    struct tm                   tm              = {};
-    UT_array *                  plugin_names    = NULL;
-    char *                      result          = NULL;
+    int                         rv           = 0;
+    char *                      license_path = NULL;
+    license_t                   lic          = {};
+    neu_json_get_license_resp_t resp         = {};
+    UT_array *                  plugin_names = NULL;
+    char *                      result       = NULL;
 
     VALIDATE_JWT(aio);
 
@@ -163,26 +158,10 @@ void handle_get_license(nng_aio *aio)
         goto final;
     }
 
-    since = license_not_before(&lic);
-    gmtime_r(&since, &tm);
-    if (0 ==
-        strftime(valid_since, sizeof(valid_since), "%Y-%m-%d %H:%M:%S", &tm)) {
-        rv = NEU_ERR_EINTERNAL;
-        goto final;
-    }
-
-    until = license_not_after(&lic);
-    gmtime_r(&until, &tm);
-    if (0 ==
-        strftime(valid_until, sizeof(valid_until), "%Y-%m-%d %H:%M:%S", &tm)) {
-        rv = NEU_ERR_EINTERNAL;
-        goto final;
-    }
-
     resp.license_type  = (char *) license_type_str(license_get_type(&lic));
     resp.valid         = !license_is_expired(&lic);
-    resp.valid_since   = valid_since;
-    resp.valid_until   = valid_until;
+    resp.valid_since   = lic.since_str_;
+    resp.valid_until   = lic.until_str_;
     resp.max_nodes     = license_get_max_nodes(&lic);
     resp.max_node_tags = license_get_max_node_tags(&lic);
 
