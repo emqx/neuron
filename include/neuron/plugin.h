@@ -34,7 +34,7 @@ extern "C" {
 #define NEURON_PLUGIN_VER_1_0 100
 #define NEURON_PLUGIN_VER_2_0 200
 
-static volatile int64_t global_timestamp;
+extern int64_t global_timestamp;
 
 typedef struct neu_plugin_common {
     uint32_t magic;

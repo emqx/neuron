@@ -35,6 +35,8 @@ static neu_manager_t *g_manager   = NULL;
 zlog_category_t *     neuron      = NULL;
 bool                  disable_jwt = false;
 
+int64_t global_timestamp = 0;
+
 static void sig_handler(int sig)
 {
     nlog_warn("recv sig: %d", sig);
