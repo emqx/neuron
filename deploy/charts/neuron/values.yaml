@@ -68,35 +68,12 @@ service:
     eip.openelb.kubesphere.io/v1alpha2: eip-pool
     protocol.openelb.kubesphere.io/v1alpha1: layer2
 
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
-
-
 persistence:
   enabled: true
   # -- Existing PersistentVolumeClaims
   # The value is evaluated as a template
   # So, for example, the name can depend on .Release or .Chart
   existingClaim: "pvc-neuron-data"
-
-nngFromExistingPVC:
-  enabled: false
-  ## PVC must be created manually before volume will be bound. The value is evaluated as a template
-  ##
-  existingClaim: "pvc-neuron-tmp"
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -110,16 +87,17 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
-
 nodeSelector: {}
 
-tolerations: []
+tolerations:
+  - key: "node.kubernetes.io/not-ready"
+    operator: "Exists"
+    effect: "NoExecute"
+    tolerationSeconds: 30
+  - key: "node.kubernetes.io/unreachable"
+    operator: "Exists"
+    effect: "NoExecute"
+    tolerationSeconds: 30
 
 affinity: {}
 
@@ -171,10 +149,13 @@ tls:
     -----END RSA PRIVATE KEY-----
 
 
-readinessProbe:
+neuronEnv:
   enabled: true
-  initialDelaySeconds: 5
-  periodSeconds: 5
+  key:
+    disableAuth: DISABLE_AUTH
+
+  value:
+    disableAuth: true
 
 # -- only for kubeedge deployment
 hostPorts:
