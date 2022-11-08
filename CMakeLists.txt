@@ -87,6 +87,10 @@ target_link_libraries(neuron-base nng libzlog.so jansson mqttc jwt
                       ${CMAKE_THREAD_LIBS_INIT})
 add_dependencies(neuron-base neuron-version)
 
+# dependency imposed by nng
+find_package(MbedTLS)
+target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto)
+
 set(PERSIST_SOURCES
     src/persist/persist.c
     src/persist/json/persist_json_plugin.c)
