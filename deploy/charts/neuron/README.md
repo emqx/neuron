@@ -1,6 +1,6 @@
 # neuron
 
-![Version: 1.0.4](https://img.shields.io/badge/Version-1.0.4-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.3](https://img.shields.io/badge/AppVersion-2.2.3-informational?style=flat-square)
+![Version: 1.0.3](https://img.shields.io/badge/Version-1.0.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.8](https://img.shields.io/badge/AppVersion-2.2.8-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
@@ -24,10 +24,6 @@ helm uninstall my-neuron
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` |  |
-| autoscaling.enabled | bool | `false` |  |
-| autoscaling.maxReplicas | int | `100` |  |
-| autoscaling.minReplicas | int | `1` |  |
-| autoscaling.targetCPUUtilizationPercentage | int | `80` |  |
 | clusterDomain | string | `"cluster.local"` | Kubernetes Cluster Domain |
 | fullnameOverride | string | `""` |  |
 | hostPorts | object | `{"api":30371,"enabled":false,"web":30370}` | only for kubeedge deployment |
@@ -35,23 +31,14 @@ helm uninstall my-neuron
 | image.repository | string | `"emqx/neuron"` |  |
 | image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion. |
 | imagePullSecrets | list | `[]` |  |
-| ingress.annotations | object | `{}` |  |
-| ingress.className | string | `""` |  |
-| ingress.enabled | bool | `false` |  |
-| ingress.hosts[0].host | string | `"chart-example.local"` |  |
-| ingress.hosts[0].paths[0].path | string | `"/"` |  |
-| ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
-| ingress.tls | list | `[]` |  |
 | nameOverride | string | `""` |  |
-| nngFromExistingPVC.enabled | bool | `false` |  |
-| nngFromExistingPVC.existingClaim | string | `"pvc-neuron-tmp"` |  |
+| neuronEnv.enabled | bool | `true` |  |
+| neuronEnv.key.disableAuth | string | `"DISABLE_AUTH"` |  |
+| neuronEnv.value.disableAuth | bool | `true` |  |
 | nodeSelector | object | `{}` |  |
 | persistence.enabled | bool | `true` |  |
 | persistence.existingClaim | string | `"pvc-neuron-data"` | Existing PersistentVolumeClaims The value is evaluated as a template So, for example, the name can depend on .Release or .Chart |
 | podAnnotations | object | `{}` |  |
-| readinessProbe.enabled | bool | `true` |  |
-| readinessProbe.initialDelaySeconds | int | `5` |  |
-| readinessProbe.periodSeconds | int | `5` |  |
 | resources | object | `{}` |  |
 | service.annotations | object | `{"eip.openelb.kubesphere.io/v1alpha2":"eip-pool","lb.kubesphere.io/v1alpha1":"openelb","protocol.openelb.kubesphere.io/v1alpha1":"layer2"}` | Provide any additional annotations which may be required. Evaluated as a template |
 | service.enabled | bool | `true` |  |
@@ -63,4 +50,11 @@ helm uninstall my-neuron
 | service.ports.web.name | string | `"web"` | Neuron Dashboard port name |
 | service.ports.web.port | int | `7000` | Neuron Dashboard port |
 | service.type | string | `"ClusterIP"` |  |
-| tolerations | list | `[]` |  |
+| tolerations[0].effect | string | `"NoExecute"` |  |
+| tolerations[0].key | string | `"node.kubernetes.io/not-ready"` |  |
+| tolerations[0].operator | string | `"Exists"` |  |
+| tolerations[0].tolerationSeconds | int | `30` |  |
+| tolerations[1].effect | string | `"NoExecute"` |  |
+| tolerations[1].key | string | `"node.kubernetes.io/unreachable"` |  |
+| tolerations[1].operator | string | `"Exists"` |  |
+| tolerations[1].tolerationSeconds | int | `30` |  |
