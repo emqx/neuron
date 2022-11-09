@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <assert.h>
+#include <math.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 
@@ -269,6 +270,38 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                 cmd->value.value.d64 = (double) cmd->value.value.u64;
             }
         }
+
+        if (tag->decimal != 0) {
+            switch (tag->type) {
+            case NEU_TYPE_INT8:
+            case NEU_TYPE_UINT8:
+            case NEU_TYPE_INT16:
+            case NEU_TYPE_UINT16:
+            case NEU_TYPE_INT32:
+            case NEU_TYPE_UINT32:
+            case NEU_TYPE_INT64:
+            case NEU_TYPE_UINT64:
+                if (cmd->value.type == NEU_TYPE_INT64) {
+                    cmd->value.value.u64 = cmd->value.value.u64 / tag->decimal;
+                } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
+                    cmd->value.value.u64 =
+                        (uint64_t) round(cmd->value.value.d64 / tag->decimal);
+                }
+                break;
+            case NEU_TYPE_FLOAT:
+            case NEU_TYPE_DOUBLE:
+                if (cmd->value.type == NEU_TYPE_INT64) {
+                    cmd->value.value.d64 =
+                        (double) (cmd->value.value.d64 / tag->decimal);
+                } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
+                    cmd->value.value.d64 = cmd->value.value.d64 / tag->decimal;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+
         switch (tag->type) {
         case NEU_TYPE_BOOL:
         case NEU_TYPE_STRING:
