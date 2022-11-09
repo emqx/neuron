@@ -54,8 +54,6 @@ static void pipe_add_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_plugin_t *plugin = arg;
     nng_mtx_lock(plugin->mtx);
     plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
-    plugin->common.adapter_callbacks->stat_acc(plugin->common.adapter,
-                                               NEU_NODE_STAT_AVG_RTT, 0);
     nng_mtx_unlock(plugin->mtx);
 }
 
@@ -66,8 +64,6 @@ static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_plugin_t *plugin = arg;
     nng_mtx_lock(plugin->mtx);
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-    plugin->common.adapter_callbacks->stat_acc(
-        plugin->common.adapter, NEU_NODE_STAT_AVG_RTT, NEU_NODE_STAT_RTT_MAX);
     nng_mtx_unlock(plugin->mtx);
 }
 
@@ -118,6 +114,8 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
 
     nng_pipe_notify(plugin->sock, NNG_PIPE_EV_ADD_POST, pipe_add_cb, plugin);
     nng_pipe_notify(plugin->sock, NNG_PIPE_EV_REM_POST, pipe_rm_cb, plugin);
+    nng_socket_set_int(plugin->sock, NNG_OPT_SENDBUF, 2048);
+    nng_socket_set_int(plugin->sock, NNG_OPT_RECVBUF, 2048);
 
     if ((rv = nng_listen(plugin->sock, EKUIPER_PLUGIN_URL, NULL, 0)) != 0) {
         plog_error(plugin, "nng_listen: %s", nng_strerror(rv));

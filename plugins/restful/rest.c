@@ -43,13 +43,12 @@
 
 struct neu_plugin {
     neu_plugin_common_t    common;
-    nng_http_server *      api_server;
-    nng_http_server *      web_server;
+    nng_http_server *      server;
     neu_rest_handle_ctx_t *handle_ctx;
 };
 
-static int rest_add_handler(nng_http_server *              server,
-                            const struct neu_rest_handler *rest_handler)
+int neu_rest_add_handler(nng_http_server *              server,
+                         const struct neu_rest_handler *rest_handler)
 {
     nng_http_handler *handler;
     int               ret        = -1;
@@ -66,7 +65,11 @@ static int rest_add_handler(nng_http_server *              server,
         break;
     case NEU_REST_HANDLER_PROXY:
         ret = rest_proxy_handler(rest_handler, &handler);
-        goto end;
+        break;
+    case NEU_REST_HANDLER_REDIRECT:
+        ret = nng_http_handler_alloc_redirect(&handler, rest_handler->url, 0,
+                                              rest_handler->value.path);
+        break;
     }
 
     if (ret != 0) {
@@ -94,12 +97,10 @@ static int rest_add_handler(nng_http_server *              server,
         ret = nng_http_handler_set_method(handler, "OPTIONS");
         strncpy(method, "OPTIONS", sizeof(method));
         break;
+    default:
+        break;
     }
-
-end:
-    if (ret != 0) {
-        return -1;
-    }
+    assert(ret == 0);
 
     ret = nng_http_server_add_handler(server, handler);
     nlog_info("rest add handler, method: %s, url: %s, ret: %d", method,
@@ -108,18 +109,14 @@ end:
     return ret;
 }
 
-static nng_http_server *server_init(char *type)
+static nng_http_server *server_init()
 {
     nng_url *        url;
     char             host_port[24] = { 0 };
     nng_http_server *server;
 
-    if (strncmp(type, "api", strlen("api")) == 0) {
-        snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7001");
-    } else {
-        snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7000");
-    }
-    nlog_info("%s bind url: %s", type, host_port);
+    snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7000");
+    nlog_info("bind url: %s", host_port);
 
     int ret = nng_url_parse(&url, host_port);
     if (ret != 0) {
@@ -149,49 +146,32 @@ static neu_plugin_t *dashb_plugin_open(void)
 
     plugin->handle_ctx = neu_rest_init_ctx(plugin);
 
-    plugin->web_server = server_init("web");
-    plugin->api_server = server_init("api");
+    plugin->server = server_init();
 
-    if (plugin->web_server == NULL || plugin->api_server == NULL) {
-        nlog_error("Failed to create web server and api server");
+    if (plugin->server == NULL) {
+        nlog_error("Failed to create RESTful server");
         goto server_init_fail;
     }
 
-    neu_rest_api_handler(&rest_handlers, &n_handler);
+    neu_rest_handler(&rest_handlers, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        rest_add_handler(plugin->api_server, &rest_handlers[i]);
+        neu_rest_add_handler(plugin->server, &rest_handlers[i]);
     }
     neu_rest_api_cors_handler(&cors, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        rest_add_handler(plugin->api_server, &cors[i]);
+        neu_rest_add_handler(plugin->server, &cors[i]);
     }
-    if ((rv = nng_http_server_start(plugin->api_server)) != 0) {
+    if ((rv = nng_http_server_start(plugin->server)) != 0) {
         nlog_error("Failed to start api server, error=%d", rv);
-        goto api_server_start_fail;
-    }
-
-    neu_rest_web_handler(&rest_handlers, &n_handler);
-    for (uint32_t i = 0; i < n_handler; i++) {
-        rest_add_handler(plugin->web_server, &rest_handlers[i]);
-    }
-
-    if ((rv = nng_http_server_start(plugin->web_server)) != 0) {
-        nlog_error("Failed to start web server, error=%d", rv);
-        goto web_server_start_fail;
+        goto server_init_fail;
     }
 
     nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 
-web_server_start_fail:
-    nng_http_server_stop(plugin->api_server);
-api_server_start_fail:
 server_init_fail:
-    if (plugin->web_server != NULL) {
-        nng_http_server_release(plugin->web_server);
-    }
-    if (plugin->api_server != NULL) {
-        nng_http_server_release(plugin->api_server);
+    if (plugin->server != NULL) {
+        nng_http_server_release(plugin->server);
     }
     neu_rest_free_ctx(plugin->handle_ctx);
     free(plugin);
@@ -204,10 +184,8 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 
     nlog_info("Success to before free plugin: %s",
               neu_plugin_module.module_name);
-    nng_http_server_stop(plugin->api_server);
-    nng_http_server_release(plugin->api_server);
-    nng_http_server_stop(plugin->web_server);
-    nng_http_server_release(plugin->web_server);
+    nng_http_server_stop(plugin->server);
+    nng_http_server_release(plugin->server);
 
     free(plugin);
     nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
@@ -293,10 +271,6 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_GET_NODES_STATE:
         handle_get_nodes_state_resp(header->ctx,
                                     (neu_resp_get_nodes_state_t *) data);
-        break;
-    case NEU_RESP_GET_NODE_STAT:
-        handle_get_node_stat_resp(header->ctx,
-                                  (neu_resp_get_node_stat_t *) data);
         break;
     case NEU_RESP_GET_NODE_STATE:
         handle_get_node_state_resp(header->ctx,

@@ -47,15 +47,9 @@ int  neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result);
 void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req);
 
 typedef struct {
-    uint64_t  type;
-    uint64_t *data;
-} neu_json_get_node_stat_resp_t;
-
-int neu_json_encode_get_node_stat_resp(void *json_object, void *param);
-
-typedef struct {
     int64_t running;
     int64_t link;
+    int64_t rtt;
 } neu_json_get_node_state_resp_t;
 
 int neu_json_encode_get_node_state_resp(void *json_object, void *param);
@@ -64,6 +58,7 @@ typedef struct {
     char *  name;
     int64_t running;
     int64_t link;
+    int64_t rtt;
 } neu_json_get_nodes_state_t;
 
 typedef struct {

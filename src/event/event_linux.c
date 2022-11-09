@@ -42,6 +42,7 @@ struct neu_event_timer {
     struct itimerspec value;
 
     nng_mtx *mtx;
+    bool     stop;
 };
 
 struct neu_event_io {
@@ -102,12 +103,14 @@ static void *event_loop(void *arg)
                 ssize_t size = read(data->fd, &t, sizeof(t));
                 assert(size != -1);
 
-                nng_mtx_lock(data->ctx.timer->mtx);
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, data->fd, NULL);
-                ret = data->callback.timer(data->usr_data);
-                timerfd_settime(data->fd, 0, &data->ctx.timer->value, NULL);
-                epoll_ctl(epoll_fd, EPOLL_CTL_ADD, data->fd, &event);
-                nng_mtx_unlock(data->ctx.timer->mtx);
+                if (!data->ctx.timer->stop) {
+                    nng_mtx_lock(data->ctx.timer->mtx);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, data->fd, NULL);
+                    ret = data->callback.timer(data->usr_data);
+                    timerfd_settime(data->fd, 0, &data->ctx.timer->value, NULL);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_ADD, data->fd, &event);
+                    nng_mtx_unlock(data->ctx.timer->mtx);
+                }
             }
             break;
         case IO:
@@ -183,6 +186,7 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     timer_ctx->value      = value;
     timer_ctx->fd         = timer_fd;
     timer_ctx->event_data = data;
+    timer_ctx->stop       = false;
     nng_mtx_alloc(&timer_ctx->mtx);
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, timer_fd, &event);
@@ -201,6 +205,7 @@ int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
     zlog_info(neuron, "del timer: %d from epoll: %d", timer->fd,
               events->epoll_fd);
 
+    timer->stop = true;
     nng_mtx_lock(timer->mtx);
     close(timer->fd);
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);

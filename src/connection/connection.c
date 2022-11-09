@@ -342,6 +342,15 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         break;
     case NEU_CONN_TTY_CLIENT:
         ret = read(conn->fd, buf, len);
+        while (ret > 0 && ret < len) {
+            ssize_t rv = read(conn->fd, buf + ret, len - ret);
+            if (rv <= 0) {
+                ret = rv;
+                break;
+            }
+
+            ret += rv;
+        }
         break;
     }
     if (ret <= 0) {
@@ -350,7 +359,7 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                    conn->fd, len, ret, strerror(errno), errno);
     }
 
-    if (errno == EPIPE || ret <= 0) {
+    if (errno == EPIPE || ret == -1) {
         conn_disconnect(conn);
     }
 

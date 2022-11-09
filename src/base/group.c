@@ -193,6 +193,22 @@ UT_array *neu_group_get_tag(neu_group_t *group)
     return array;
 }
 
+UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
+{
+    tag_elem_t *el = NULL, *tmp = NULL;
+    UT_array *  array = NULL;
+
+    utarray_new(array, neu_tag_get_icd());
+    HASH_ITER(hh, group->tags, el, tmp)
+    {
+        if (strstr(el->tag->name, name) != NULL) {
+            utarray_push_back(array, el->tag);
+        }
+    }
+
+    return array;
+}
+
 UT_array *neu_group_get_read_tag(neu_group_t *group)
 {
     UT_array *array = NULL;
@@ -256,7 +272,7 @@ static void update_timestamp(neu_group_t *group)
 
     gettimeofday(&tv, NULL);
 
-    group->timestamp = tv.tv_sec * 1000 * 1000 + tv.tv_usec;
+    group->timestamp = (int64_t) tv.tv_sec * 1000 * 1000 + (int64_t) tv.tv_usec;
 }
 
 static UT_array *to_array(tag_elem_t *tags)

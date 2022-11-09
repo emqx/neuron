@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <assert.h>
+#include <math.h>
 #include <netinet/in.h>
 #include <stdlib.h>
 
@@ -97,22 +98,29 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
             utarray_foreach(tags, neu_datatag_t *, t)
             {
                 neu_driver_cache_update(driver->cache, group, t->name,
-                                        driver->adapter.timestamp, value);
+                                        global_timestamp, value);
             }
-            driver->adapter.stat.tag_tot_cnt += utarray_len(tags);
-            driver->adapter.stat.tag_err_cnt += utarray_len(tags);
+            driver->adapter.cb_funs.update_metric(&driver->adapter,
+                                                  NEU_METRIC_TAG_READS_TOTAL,
+                                                  utarray_len(tags), NULL);
+            driver->adapter.cb_funs.update_metric(
+                &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
+                utarray_len(tags), NULL);
             utarray_free(tags);
         }
     } else {
-        neu_driver_cache_update(driver->cache, group, tag,
-                                driver->adapter.timestamp, value);
-        driver->adapter.stat.tag_tot_cnt++;
-        driver->adapter.stat.tag_err_cnt += (NEU_TYPE_ERROR == value.type);
+        neu_driver_cache_update(driver->cache, group, tag, global_timestamp,
+                                value);
+        driver->adapter.cb_funs.update_metric(
+            &driver->adapter, NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
+        driver->adapter.cb_funs.update_metric(
+            &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
+            NEU_TYPE_ERROR == value.type, NULL);
     }
     nlog_debug(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64,
         driver->adapter.name, group, tag, neu_type_string(value.type),
-        driver->adapter.timestamp);
+        global_timestamp);
 }
 
 neu_adapter_driver_t *neu_adapter_driver_create()
@@ -205,7 +213,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
         }
 
     } else {
-        read_group(driver->adapter.timestamp,
+        read_group(global_timestamp,
                    neu_group_get_interval(group) *
                        NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                    driver->cache, cmd->group, tags, resp.tags);
@@ -262,6 +270,38 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                 cmd->value.value.d64 = (double) cmd->value.value.u64;
             }
         }
+
+        if (tag->decimal != 0) {
+            switch (tag->type) {
+            case NEU_TYPE_INT8:
+            case NEU_TYPE_UINT8:
+            case NEU_TYPE_INT16:
+            case NEU_TYPE_UINT16:
+            case NEU_TYPE_INT32:
+            case NEU_TYPE_UINT32:
+            case NEU_TYPE_INT64:
+            case NEU_TYPE_UINT64:
+                if (cmd->value.type == NEU_TYPE_INT64) {
+                    cmd->value.value.u64 = cmd->value.value.u64 / tag->decimal;
+                } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
+                    cmd->value.value.u64 =
+                        (uint64_t) round(cmd->value.value.d64 / tag->decimal);
+                }
+                break;
+            case NEU_TYPE_FLOAT:
+            case NEU_TYPE_DOUBLE:
+                if (cmd->value.type == NEU_TYPE_INT64) {
+                    cmd->value.value.d64 =
+                        (double) (cmd->value.value.d64 / tag->decimal);
+                } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
+                    cmd->value.value.d64 = cmd->value.value.d64 / tag->decimal;
+                }
+                break;
+            default:
+                break;
+            }
+        }
+
         switch (tag->type) {
         case NEU_TYPE_BOOL:
         case NEU_TYPE_STRING:
@@ -357,6 +397,10 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     }
 }
 
+#define REGISTER_GROUP_METRIC(adapter, group, name, init)                  \
+    neu_adapter_register_group_metric((adapter), group, name, name##_HELP, \
+                                      name##_TYPE, (init))
+
 int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                                  uint32_t interval)
 {
@@ -383,6 +427,14 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
         param.cb     = read_callback;
         find->read   = neu_event_add_timer(driver->driver_events, param);
+
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_TAGS_TOTAL,
+                              neu_group_tag_size(find->group));
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_LAST_SEND_MSGS, 0);
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_LAST_TIMER_MS, 0);
 
         HASH_ADD_STR(driver->groups, name, find);
         ret = NEU_ERR_SUCCESS;
@@ -429,6 +481,8 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     HASH_FIND_STR(driver->groups, name, find);
     if (find != NULL) {
         HASH_DEL(driver->groups, find);
+
+        neu_adapter_del_group_metrics(&driver->adapter, name);
 
         uint16_t tag_size = neu_group_tag_size(find->group);
         neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
@@ -533,8 +587,7 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     HASH_FIND_STR(driver->groups, group, find);
     if (find == NULL) {
         neu_adapter_driver_add_group(driver, group, 3000);
-        adapter_storage_add_group(driver->adapter.persister,
-                                  driver->adapter.name, group, 3000);
+        adapter_storage_add_group(driver->adapter.name, group, 3000);
     }
     HASH_FIND_STR(driver->groups, group, find);
     assert(find != NULL);
@@ -542,6 +595,9 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size += 1;
+        neu_adapter_update_group_metric(&driver->adapter, group,
+                                        NEU_METRIC_GROUP_TAGS_TOTAL,
+                                        neu_group_tag_size(find->group));
     }
 
     return ret;
@@ -562,6 +618,9 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -= 1;
+        neu_adapter_update_group_metric(&driver->adapter, group,
+                                        NEU_METRIC_GROUP_TAGS_TOTAL,
+                                        neu_group_tag_size(find->group));
     }
 
     return ret;
@@ -615,6 +674,27 @@ int neu_adapter_driver_get_tag(neu_adapter_driver_t *driver, const char *group,
     HASH_FIND_STR(driver->groups, group, find);
     if (find != NULL) {
         *tags = neu_group_get_tag(find->group);
+    } else {
+        ret = NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    return ret;
+}
+
+int neu_adapter_driver_query_tag(neu_adapter_driver_t *driver,
+                                 const char *group, const char *name,
+                                 UT_array **tags)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
+
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        if (strlen(name) > 0) {
+            *tags = neu_group_query_tag(find->group, name);
+        } else {
+            *tags = neu_group_get_tag(find->group);
+        }
     } else {
         ret = NEU_ERR_GROUP_NOT_EXIST;
     }
@@ -682,7 +762,7 @@ static int report_callback(void *usr_data)
 
     strcpy(data->driver, group->driver->adapter.name);
     strcpy(data->group, group->name);
-    data->n_tag = read_report_group(group->driver->adapter.timestamp,
+    data->n_tag = read_report_group(global_timestamp,
                                     neu_group_get_interval(group->group) *
                                         NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                                     group->driver->cache, group->name, tags,
@@ -755,14 +835,17 @@ static int read_callback(void *usr_data)
     }
 
     if (group->grp.tags != NULL) {
-        int64_t spend = group->driver->adapter.timestamp;
+        int64_t spend = global_timestamp;
 
         group->driver->adapter.module->intf_funs->driver.group_timer(
             group->driver->adapter.plugin, &group->grp);
 
-        spend = group->driver->adapter.timestamp - spend;
+        spend = global_timestamp - spend;
         nlog_info("%s-%s timer: %" PRId64, group->driver->adapter.name,
                   group->name, spend);
+
+        neu_adapter_update_group_metric(&group->driver->adapter, group->name,
+                                        NEU_METRIC_GROUP_LAST_TIMER_MS, spend);
     }
 
     return 0;

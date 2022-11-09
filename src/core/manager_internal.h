@@ -32,17 +32,20 @@
 #include "subscribe.h"
 
 typedef struct neu_manager {
-    nng_socket         socket;
-    neu_events_t *     events;
-    neu_event_io_t *   loop;
-    neu_event_timer_t *timer;
+    nng_socket      socket;
+    neu_events_t *  events;
+    neu_event_io_t *loop;
 
     neu_plugin_manager_t *plugin_manager;
     neu_node_manager_t *  node_manager;
     neu_subscribe_mgr_t * subscribe_manager;
     neu_sub_msg_mgr_t *   sub_msg_manager;
 
-    neu_persister_t *persister;
+    neu_event_timer_t *timer;
+    neu_event_timer_t *timer_timestamp;
+
+    neu_event_timer_t *timer_lev;
+    int64_t            timestamp_lev_manager;
 } neu_manager_t;
 
 int       neu_manager_add_plugin(neu_manager_t *manager, const char *library);
@@ -52,7 +55,8 @@ UT_array *neu_manager_get_plugins(neu_manager_t *manager);
 int       neu_manager_add_node(neu_manager_t *manager, const char *node_name,
                                const char *plugin_name, bool start);
 int       neu_manager_del_node(neu_manager_t *manager, const char *node_name);
-UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type);
+UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type,
+                                const char *plugin, const char *node);
 
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 

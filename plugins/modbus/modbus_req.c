@@ -49,14 +49,14 @@ void modbus_conn_disconnected(void *data, int fd)
 int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) ctx;
-    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
-        plugin->common.adapter_callbacks->stat_acc;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
 
     plog_send_protocol(plugin, bytes, n_byte);
     int ret = neu_conn_send(plugin->conn, bytes, n_byte);
     if (ret > 0) {
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_SENT, 1);
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_SENT, ret);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES, ret, NULL);
     }
     return ret;
 }
@@ -64,7 +64,11 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                        uint16_t max_byte)
 {
-    struct modbus_group_data *gd = NULL;
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
+    struct modbus_group_data *gd  = NULL;
+    int64_t                   rtt = NEU_METRIC_LAST_RTT_MS_MAX;
 
     if (group->user_data == NULL) {
         gd = calloc(1, sizeof(struct modbus_group_data));
@@ -91,15 +95,26 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 
     for (uint16_t i = 0; i < gd->cmd_sort->n_cmd; i++) {
         uint16_t response_size = 0;
+        int64_t  start         = neu_time_ms();
         plugin->cmd_idx        = i;
-        int ret                = modbus_stack_read(
+
+        int ret = modbus_stack_read(
             plugin->stack, gd->cmd_sort->cmd[i].slave_id,
             gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
             gd->cmd_sort->cmd[i].n_register, &response_size);
         if (ret > 0) {
             process_protocol_buf(plugin, response_size);
+
+            int64_t end = neu_time_ms();
+            if (end - start < rtt) {
+                rtt = end - start;
+            }
         }
     }
+
+    update_metric(plugin->common.adapter, NEU_METRIC_LAST_RTT_MS, rtt, NULL);
+    update_metric(plugin->common.adapter, NEU_METRIC_GROUP_LAST_SEND_MSGS,
+                  gd->cmd_sort->n_cmd, group->group_name);
 
     return 0;
 }
@@ -175,7 +190,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                     neu_value16_u v16 = { 0 };
                     v16.value         = htons(*(uint16_t *) dvalue.value.bytes);
                     dvalue.value.u8 =
-                        neu_value16_get_bit(v16, 15 - (*p_tag)->option.bit.bit);
+                        neu_value16_get_bit(v16, (*p_tag)->option.bit.bit);
                     break;
                 }
                 case MODBUS_AREA_COIL:
@@ -303,19 +318,17 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
     uint8_t *                 recv_buf = calloc(response_size, 1);
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
-    void (*stat_acc)(neu_adapter_t *, neu_node_stat_e, uint64_t) =
-        plugin->common.adapter_callbacks->stat_acc;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
 
     ret = neu_conn_recv(plugin->conn, recv_buf, response_size);
 
     if (ret > 0) {
-        stat_acc(plugin->common.adapter, NEU_NODE_STAT_BYTES_RECV, ret);
+        update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES, ret, NULL);
         neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
         plog_recv_protocol(plugin, recv_buf, ret);
         ret = modbus_stack_recv(plugin->stack, &pbuf);
-        if (ret > 0) {
-            stat_acc(plugin->common.adapter, NEU_NODE_STAT_MSGS_RECV, 1);
-        }
     }
 
     free(recv_buf);

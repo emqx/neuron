@@ -24,6 +24,7 @@
 
 #include "core/manager.h"
 #include "utils/log.h"
+#include "utils/time.h"
 
 #include "argparse.h"
 #include "daemon.h"
@@ -34,12 +35,15 @@ static neu_manager_t *g_manager   = NULL;
 zlog_category_t *     neuron      = NULL;
 bool                  disable_jwt = false;
 
+int64_t global_timestamp = 0;
+
 static void sig_handler(int sig)
 {
     nlog_warn("recv sig: %d", sig);
 
     if (sig != SIGABRT) {
         neu_manager_destroy(g_manager);
+        neu_persister_destroy();
     }
     zlog_fini();
     exit_flag = true;
@@ -47,7 +51,8 @@ static void sig_handler(int sig)
 
 static int neuron_run(const neu_cli_args_t *args)
 {
-    struct rlimit rl;
+    struct rlimit rl = { 0 };
+    int           rv = 0;
 
     signal(SIGINT, sig_handler);
     signal(SIGTERM, sig_handler);
@@ -58,6 +63,9 @@ static int neuron_run(const neu_cli_args_t *args)
     if (setrlimit(RLIMIT_CORE, &rl) < 0) {
         nlog_warn("neuron process failed enable core dump, ignore");
     }
+
+    rv = neu_persister_create();
+    assert(rv == 0);
 
     zlog_notice(neuron, "neuron process, daemon: %d, version: %s (%s %s)",
                 args->daemonized, NEURON_VERSION,
@@ -83,6 +91,7 @@ int main(int argc, char *argv[])
     pid_t          pid    = 0;
     neu_cli_args_t args   = { 0 };
 
+    global_timestamp = neu_time_ms();
     neu_cli_args_init(&args, argc, argv);
 
     disable_jwt = args.disable_auth;
@@ -94,6 +103,10 @@ int main(int argc, char *argv[])
 
     zlog_init(args.log_init_file);
     neuron = zlog_get_category("neuron");
+
+    if (0 == strcmp(args.log_init_file, "./config/zlog.conf")) {
+        zlog_level_switch(neuron, ZLOG_LEVEL_INFO);
+    }
 
     if (neuron_already_running()) {
         nlog_fatal("neuron process already running, exit.");

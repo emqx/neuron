@@ -17,12 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_LICENSE_HANDLE_H_
-#define _NEU_LICENSE_HANDLE_H_
+#ifndef NEU_PLUGIN_MONITOR_METRIC_H
+#define NEU_PLUGIN_MONITOR_METRIC_H
 
 #include <nng/nng.h>
 
-void handle_get_license(nng_aio *aio);
-void handle_set_license(nng_aio *aio);
+void handle_get_metric(nng_aio *aio);
 
 #endif

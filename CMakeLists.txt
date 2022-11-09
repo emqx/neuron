@@ -103,11 +103,10 @@ set(NEURON_SOURCES
     src/core/storage.c
     src/adapter/storage.c
     src/adapter/adapter.c
+    src/adapter/metrics.c
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
     plugins/restful/handle.c
-    plugins/restful/license.c
-    plugins/restful/license_handle.c
     plugins/restful/log_handle.c
     plugins/restful/normal_handle.c
     plugins/restful/rw_handle.c
@@ -121,6 +120,8 @@ set(NEURON_SOURCES
     plugins/restful/http.c
     plugins/restful/proxy.c
     plugins/restful/websocket.c
+    plugins/monitor/monitor.c
+    plugins/monitor/metric_handle.c
     ${PERSIST_SOURCES})
 
 set(CMAKE_BUILD_RPATH ./)
@@ -128,11 +129,13 @@ add_executable(neuron)
 target_sources(neuron PRIVATE ${NEURON_SOURCES}) 
 target_include_directories(neuron PRIVATE include/neuron src plugins)
 target_link_libraries(neuron dl neuron-base sqlite3 -lm)
+target_link_options(neuron PRIVATE "LINKER:--dynamic-list-data")
 
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/dev.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
+file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/persistence)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(GLOB SQL_SCHEMAS ${CMAKE_SOURCE_DIR}/persistence/*.sql)

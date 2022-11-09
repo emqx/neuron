@@ -70,7 +70,7 @@ Neuron 文档地址：[https://neugates.io/docs/zh/latest/](https://neugates.io/
 
 **安装依赖**
 
-请参考 [github.com/neugates/neuron/blob/main/Install-dependencies.md](https://github.com/neugates/neuron/blob/main/Install-dependencies.md)
+请参考 [Install-dependencies](https://github.com/emqx/neuron/blob/main/Install-dependencies.md)
 
 **编译**
 
@@ -84,7 +84,7 @@ $ cmake .. && make
 
 **安装 Dashboard**
 
-在 [github.com/emqx/neuron-dashboard/releases](https://github.com/emqx/neuron-dashboard/releases) 页面下载最新的 `neuron-dashboard.zip`，解压后放到 Neuron 可执行目录下的 dist 目录中。
+在 [neuron-dashboard](https://github.com/emqx/neuron-dashboard/releases) 页面下载最新的 `neuron-dashboard.zip`，解压后放到 Neuron 可执行目录下的 dist 目录中。
 
 **运行**
 

@@ -20,6 +20,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,32 +41,55 @@
 #include "plugin.h"
 #include "storage.h"
 
-static int  adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
-static int  adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
+static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
+static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
+                           void *data);
+static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
-static int  adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
-                             void *data);
-static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
-                             uint64_t n);
+static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
+                                   const char *help, neu_metric_type_e type,
+                                   uint64_t init);
+static int adapter_update_metric(neu_adapter_t *adapter,
+                                 const char *metric_name, uint64_t n,
+                                 const char *group);
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
-static int         update_timestamp(void *usr_data);
+static int         level_check(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
-    .command  = adapter_command,
-    .response = adapter_response,
-    .stat_acc = adapter_stat_acc,
+    .command         = adapter_command,
+    .response        = adapter_response,
+    .register_metric = adapter_register_metric,
+    .update_metric   = adapter_update_metric,
 };
+
+#define REGISTER_METRIC(adapter, name, init) \
+    adapter_register_metric(adapter, name, name##_HELP, name##_TYPE, init);
+
+#define REGISTER_DRIVER_METRICS(adapter)                     \
+    REGISTER_METRIC(adapter, NEU_METRIC_LAST_RTT_MS,         \
+                    NEU_METRIC_LAST_RTT_MS_MAX);             \
+    REGISTER_METRIC(adapter, NEU_METRIC_SEND_BYTES, 0);      \
+    REGISTER_METRIC(adapter, NEU_METRIC_RECV_BYTES, 0);      \
+    REGISTER_METRIC(adapter, NEU_METRIC_TAG_READS_TOTAL, 0); \
+    REGISTER_METRIC(adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, 0);
+
+#define REGISTER_APP_METRICS(adapter)                              \
+    REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSGS_TOTAL, 0);       \
+    REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0); \
+    REGISTER_METRIC(adapter, NEU_METRIC_RECV_MSGS_TOTAL, 0);
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
+    extern char log_init_config[128];
+
     int                     rv          = 0;
     neu_adapter_t *         adapter     = NULL;
     neu_event_io_param_t    param       = { 0 };
-    neu_event_timer_param_t timer_param = {
-        .second      = 0,
-        .millisecond = 100,
-        .cb          = update_timestamp,
+    neu_event_timer_param_t timer_level = {
+        .second      = 30,
+        .millisecond = 0,
+        .cb          = level_check,
     };
 
     switch (info->module->type) {
@@ -77,18 +101,16 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         break;
     }
 
-    adapter->name             = strdup(info->name);
-    adapter->events           = neu_event_new();
-    adapter->state            = NEU_NODE_RUNNING_STATE_INIT;
-    adapter->handle           = info->handle;
-    adapter->cb_funs.command  = callback_funs.command;
-    adapter->cb_funs.response = callback_funs.response;
-    adapter->cb_funs.stat_acc = callback_funs.stat_acc;
-    adapter->module           = info->module;
-    adapter->persister        = neu_persister_create("persistence");
-    assert(adapter->persister != NULL);
+    adapter->name                  = strdup(info->name);
+    adapter->events                = neu_event_new();
+    adapter->state                 = NEU_NODE_RUNNING_STATE_INIT;
+    adapter->handle                = info->handle;
+    adapter->cb_funs.command       = callback_funs.command;
+    adapter->cb_funs.response      = callback_funs.response;
+    adapter->cb_funs.update_metric = callback_funs.update_metric;
+    adapter->module                = info->module;
 
-    adapter->stat.avg_rtt = NEU_NODE_STAT_RTT_MAX;
+    adapter->timestamp_lev = 0;
 
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
@@ -99,9 +121,15 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     switch (info->module->type) {
     case NEU_NA_TYPE_DRIVER:
+        if (adapter->module->display) {
+            REGISTER_DRIVER_METRICS(adapter);
+        }
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
         break;
     case NEU_NA_TYPE_APP:
+        if (adapter->module->display) {
+            REGISTER_APP_METRICS(adapter);
+        }
         break;
     }
 
@@ -115,9 +143,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     common->log                 = zlog_get_category(adapter->name);
     strcpy(common->name, adapter->name);
 
+    if (0 == strcmp(log_init_config, "./config/zlog.conf")) {
+        zlog_level_switch(common->log, ZLOG_LEVEL_INFO);
+    }
+
     adapter->module->intf_funs->init(adapter->plugin);
-    if (adapter_load_setting(adapter->persister, adapter->name,
-                             &adapter->setting) == 0) {
+    if (adapter_load_setting(adapter->name, &adapter->setting) == 0) {
         if (adapter->module->intf_funs->setting(adapter->plugin,
                                                 adapter->setting) == 0) {
             adapter->state = NEU_NODE_RUNNING_STATE_READY;
@@ -128,8 +159,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     }
 
     if (info->module->type == NEU_NA_TYPE_DRIVER) {
-        adapter_load_group_and_tag(adapter->persister,
-                                   (neu_adapter_driver_t *) adapter);
+        adapter_load_group_and_tag((neu_adapter_driver_t *) adapter);
     }
 
     param.fd       = adapter->recv_fd;
@@ -140,12 +170,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     rv = nng_dial(adapter->sock, neu_manager_get_url(), &adapter->dialer, 0);
     assert(rv == 0);
 
-    timer_param.usr_data = (void *) adapter;
-    adapter->timer       = neu_event_add_timer(adapter->events, timer_param);
+    timer_level.usr_data = (void *) adapter;
+    adapter->timer_lev   = neu_event_add_timer(adapter->events, timer_level);
 
     nlog_info("Success to create adapter: %s", adapter->name);
 
-    adapter_storage_state(adapter->persister, adapter->name, adapter->state);
+    adapter_storage_state(adapter->name, adapter->state);
     return adapter;
 }
 
@@ -170,41 +200,60 @@ neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
     return adapter->module->type;
 }
 
-static void adapter_stat_acc(neu_adapter_t *adapter, neu_node_stat_e s,
-                             uint64_t n)
+static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
+                                   const char *help, neu_metric_type_e type,
+                                   uint64_t init)
 {
-    switch (s) {
-    case NEU_NODE_STAT_BYTES_SENT:
-        adapter->stat.bytes_sent += n;
-        break;
-    case NEU_NODE_STAT_BYTES_RECV:
-        adapter->stat.bytes_recv += n;
-        break;
-    case NEU_NODE_STAT_MSGS_SENT:
-        adapter->stat.msgs_sent += n;
-        break;
-    case NEU_NODE_STAT_MSGS_RECV:
-        adapter->stat.msgs_recv += n;
-        break;
-    case NEU_NODE_STAT_AVG_RTT: {
-        if (NEU_NODE_STAT_RTT_MAX <= n ||
-            adapter->stat.avg_rtt == NEU_NODE_STAT_RTT_MAX) {
-            adapter->stat.avg_rtt = n;
-            break;
+    if (NULL == adapter->metrics) {
+        adapter->metrics = calloc(1, sizeof(*adapter->metrics));
+        if (NULL == adapter->metrics) {
+            return -1;
         }
-
-        // exponential moving average with alpha = 0.3
-        const double a        = 0.3;
-        adapter->stat.avg_rtt = adapter->stat.avg_rtt * (1 - a) + n * a;
-        break;
+        adapter->metrics->type    = adapter->module->type;
+        adapter->metrics->name    = adapter->name;
+        adapter->metrics->adapter = adapter;
+        neu_metrics_add_node(adapter);
     }
 
-    // these are maintained by neuron core
-    case NEU_NODE_STAT_TAG_TOT_CNT:
-    case NEU_NODE_STAT_TAG_ERR_CNT:
-    default:
-        assert(!"please supply a valid statistics counter kind");
+    if (0 > neu_metric_entries_add(&adapter->metrics->entries, name, help, type,
+                                   init)) {
+        return -1;
     }
+
+    neu_metrics_register_entry(name, help, type);
+    return 0;
+}
+
+static int adapter_update_metric(neu_adapter_t *adapter,
+                                 const char *metric_name, uint64_t n,
+                                 const char *group)
+{
+    neu_metric_entry_t *entry = NULL;
+    if (NULL == adapter->metrics) {
+        return -1;
+    }
+
+    if (NULL == group) {
+        HASH_FIND_STR(adapter->metrics->entries, metric_name, entry);
+    } else if (NULL != adapter->metrics->group_metrics) {
+        neu_group_metrics_t *g = NULL;
+        HASH_FIND_STR(adapter->metrics->group_metrics, group, g);
+        if (NULL != g) {
+            HASH_FIND_STR(g->entries, metric_name, entry);
+        }
+    }
+
+    if (NULL == entry) {
+        return -1;
+    }
+
+    if (NEU_METRIC_TYPE_COUNTER == entry->type) {
+        entry->value += n;
+    } else {
+        entry->value = n;
+    }
+
+    return 0;
 }
 
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
@@ -243,7 +292,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         break;
     }
     case NEU_REQ_NODE_CTL:
-    case NEU_REQ_GET_NODE_STAT:
     case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_NODE_SETTING: {
@@ -258,6 +306,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     }
     case NEU_REQRESP_NODE_DELETED: {
         neu_reqresp_node_deleted_t *cmd = (neu_reqresp_node_deleted_t *) data;
+        strcpy(header.receiver, cmd->node);
+        break;
+    }
+    case NEU_REQ_UPDATE_LOG_LEVEL: {
+        neu_req_update_log_level_t *cmd = (neu_req_update_log_level_t *) data;
         strcpy(header.receiver, cmd->node);
         break;
     }
@@ -323,7 +376,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQRESP_NODE_DELETED:
     case NEU_RESP_GET_SUB_DRIVER_TAGS:
     case NEU_REQ_UPDATE_LICENSE:
-    case NEU_RESP_GET_NODE_STAT:
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
@@ -379,8 +431,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         error.error = neu_adapter_set_setting(adapter, cmd->setting);
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_setting(adapter->persister, adapter->name,
-                                    cmd->setting);
+            adapter_storage_setting(adapter->name, cmd->setting);
         }
         free(cmd->setting);
 
@@ -405,19 +456,14 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
-    case NEU_REQ_GET_NODE_STAT: {
-        neu_resp_get_node_stat_t resp = { 0 };
-
-        resp.type = neu_adapter_get_type(adapter);
-        memcpy(resp.data, adapter->stat.data, sizeof(resp.data));
-        header->type = NEU_RESP_GET_NODE_STAT;
-        neu_msg_exchange(header);
-        reply(adapter, header, &resp);
-        break;
-    }
     case NEU_REQ_GET_NODE_STATE: {
         neu_resp_get_node_state_t resp = { 0 };
 
+        neu_metric_entry_t *e = NULL;
+        if (NULL != adapter->metrics) {
+            HASH_FIND_STR(adapter->metrics->entries, NEU_METRIC_LAST_RTT_MS, e);
+        }
+        resp.rtt     = NULL != e ? e->value : 0;
         resp.state   = neu_adapter_get_state(adapter);
         header->type = NEU_RESP_GET_NODE_STATE;
         neu_msg_exchange(header);
@@ -450,8 +496,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
             error.error = NEU_ERR_GROUP_NOT_ALLOW;
         } else {
-            error.error = neu_adapter_driver_get_tag(
-                (neu_adapter_driver_t *) adapter, cmd->group, &tags);
+            error.error = neu_adapter_driver_query_tag(
+                (neu_adapter_driver_t *) adapter, cmd->group, cmd->name, &tags);
         }
 
         neu_msg_exchange(header);
@@ -484,8 +530,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_add_group(adapter->persister, adapter->name,
-                                      cmd->group, cmd->interval);
+            adapter_storage_add_group(adapter->name, cmd->group, cmd->interval);
         }
 
         neu_msg_exchange(header);
@@ -510,8 +555,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_update_group(adapter->persister, adapter->name,
-                                         cmd->group, cmd->interval);
+            adapter_storage_update_group(adapter->name, cmd->group,
+                                         cmd->interval);
         }
 
         neu_msg_exchange(header);
@@ -531,8 +576,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
-            adapter_storage_del_group(adapter->persister, cmd->driver,
-                                      cmd->group);
+            adapter_storage_del_group(cmd->driver, cmd->group);
         }
 
         neu_msg_exchange(header);
@@ -569,8 +613,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 int ret = neu_adapter_driver_del_tag(
                     (neu_adapter_driver_t *) adapter, cmd->group, cmd->tags[i]);
                 if (0 == ret) {
-                    adapter_storage_del_tag(adapter->persister, cmd->driver,
-                                            cmd->group, cmd->tags[i]);
+                    adapter_storage_del_tag(cmd->driver, cmd->group,
+                                            cmd->tags[i]);
                 }
             }
         }
@@ -597,16 +641,20 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     neu_adapter_driver_add_tag((neu_adapter_driver_t *) adapter,
                                                cmd->group, &cmd->tags[i]);
                 if (ret == 0) {
-                    adapter_storage_add_tag(adapter->persister, cmd->driver,
-                                            cmd->group, &cmd->tags[i]);
                     resp.index += 1;
-
                 } else {
                     resp.error = ret;
                     break;
                 }
             }
         }
+
+        if (resp.index) {
+            // we have added some tags, try to persist
+            adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
+                                     resp.index);
+        }
+
         for (int i = 0; i < cmd->n_tag; i++) {
             free(cmd->tags[i].address);
             free(cmd->tags[i].name);
@@ -631,8 +679,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     (neu_adapter_driver_t *) adapter, cmd->group,
                     &cmd->tags[i]);
                 if (ret == 0) {
-                    adapter_storage_update_tag(adapter->persister, cmd->driver,
-                                               cmd->group, &cmd->tags[i]);
+                    adapter_storage_update_tag(cmd->driver, cmd->group,
+                                               &cmd->tags[i]);
 
                     resp.index += 1;
                 } else {
@@ -676,6 +724,19 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         break;
     }
+    case NEU_REQ_UPDATE_LOG_LEVEL: {
+        neu_resp_error_t error = { 0 };
+
+        struct timeval tv = { 0 };
+        gettimeofday(&tv, NULL);
+        adapter->timestamp_lev = tv.tv_sec;
+
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_ERROR;
+        reply(adapter, header, &error);
+
+        break;
+    }
 
     default:
         assert(false);
@@ -688,11 +749,15 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
 void neu_adapter_destroy(neu_adapter_t *adapter)
 {
-    adapter->module->intf_funs->close(adapter->plugin);
-
     nng_dialer_close(adapter->dialer);
     nng_close(adapter->sock);
-    neu_persister_destroy(adapter->persister);
+
+    adapter->module->intf_funs->close(adapter->plugin);
+
+    if (NULL != adapter->metrics) {
+        neu_metrics_del_node(adapter);
+        neu_node_metrics_free(adapter->metrics);
+    }
 
     if (adapter->name != NULL) {
         free(adapter->name);
@@ -718,7 +783,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
-    neu_event_del_timer(adapter->events, adapter->timer);
+    neu_event_del_timer(adapter->events, adapter->timer_lev);
 
     nlog_info("Stop the adapter(%s)", adapter->name);
     return 0;
@@ -748,8 +813,7 @@ int neu_adapter_start(neu_adapter_t *adapter)
     error = intf_funs->start(adapter->plugin);
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_RUNNING;
-        adapter_storage_state(adapter->persister, adapter->name,
-                              adapter->state);
+        adapter_storage_state(adapter->name, adapter->state);
     }
 
     return error;
@@ -787,8 +851,7 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     error = intf_funs->stop(adapter->plugin);
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_STOPPED;
-        adapter_storage_state(adapter->persister, adapter->name,
-                              adapter->state);
+        adapter_storage_state(adapter->name, adapter->state);
     }
 
     return error;
@@ -861,6 +924,90 @@ void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer)
     neu_event_del_timer(adapter->events, timer);
 }
 
+int neu_adapter_register_group_metric(neu_adapter_t *adapter,
+                                      const char *group_name, const char *name,
+                                      const char *help, neu_metric_type_e type,
+                                      uint64_t init)
+{
+    neu_group_metrics_t *group_metrics = NULL;
+
+    if (NULL == adapter->metrics) {
+        return -1;
+    }
+
+    if (0 > neu_metrics_register_entry(name, help, type)) {
+        return -1;
+    }
+
+    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
+    if (NULL == group_metrics) {
+        group_metrics = calloc(1, sizeof(*group_metrics));
+        if (NULL == group_metrics) {
+            return -1;
+        }
+        group_metrics->name = strdup(group_name);
+        if (NULL == group_metrics->name) {
+            free(group_metrics);
+            return -1;
+        }
+        HASH_ADD_STR(adapter->metrics->group_metrics, name, group_metrics);
+    }
+
+    if (0 > neu_metric_entries_add(&group_metrics->entries, name, help, type,
+                                   init)) {
+        return -1;
+    }
+
+    return 0;
+}
+
+int neu_adapter_update_group_metric(neu_adapter_t *adapter,
+                                    const char *   group_name,
+                                    const char *metric_name, uint64_t n)
+{
+    neu_metric_entry_t * entry         = NULL;
+    neu_group_metrics_t *group_metrics = NULL;
+
+    if (NULL == adapter->metrics) {
+        return -1;
+    }
+
+    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
+    if (NULL == group_metrics) {
+        return -1;
+    }
+
+    HASH_FIND_STR(group_metrics->entries, metric_name, entry);
+    if (NULL == entry) {
+        return -1;
+    }
+
+    if (NEU_METRIC_TYPE_COUNTER == entry->type) {
+        entry->value += n;
+    } else {
+        entry->value = n;
+    }
+
+    return 0;
+}
+
+void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
+                                   const char *   group_name)
+{
+    if (NULL == adapter->metrics) {
+        return;
+    }
+
+    neu_group_metrics_t *gm = NULL;
+    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, gm);
+    if (NULL != gm) {
+        HASH_DEL(adapter->metrics->group_metrics, gm);
+        neu_metric_entry_t *e = NULL;
+        HASH_LOOP(hh, gm->entries, e) { neu_metrics_unregister_entry(e->name); }
+        neu_group_metrics_free(gm);
+    }
+}
+
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data)
 {
@@ -869,17 +1016,26 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     nng_sendmsg(adapter->sock, msg, 0);
 }
 
-static int update_timestamp(void *usr_data)
+static int level_check(void *usr_data)
 {
-    neu_adapter_t *adapter   = (neu_adapter_t *) usr_data;
-    struct timeval tv        = { 0 };
-    uint64_t       timestamp = 0;
+    neu_adapter_t *adapter = (neu_adapter_t *) usr_data;
 
-    gettimeofday(&tv, NULL);
-    timestamp          = tv.tv_sec * 1000 + tv.tv_usec / 1000;
-    adapter->timestamp = timestamp;
+    if (0 != adapter->timestamp_lev) {
+        struct timeval   tv      = { 0 };
+        int64_t          diff    = 0;
+        int64_t          delay_s = 600;
+        zlog_category_t *ct      = zlog_get_category(adapter->name);
 
-    neu_plugin_to_plugin_common(adapter->plugin)->timestamp = timestamp;
+        gettimeofday(&tv, NULL);
+        diff = tv.tv_sec - adapter->timestamp_lev;
+        if (delay_s <= diff) {
+            int ret = zlog_level_switch(ct, ZLOG_LEVEL_INFO);
+            if (0 != ret) {
+                nlog_error("Modify default log level fail, ret:%d", ret);
+            }
+        }
+    }
+
     return 0;
 }
 
@@ -985,14 +1141,8 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_NODE_CTL:
         data_size = sizeof(neu_req_node_ctl_t);
         break;
-    case NEU_REQ_GET_NODE_STAT:
-        data_size = sizeof(neu_req_get_node_stat_t);
-        break;
     case NEU_REQ_GET_NODE_STATE:
         data_size = sizeof(neu_req_get_node_state_t);
-        break;
-    case NEU_RESP_GET_NODE_STAT:
-        data_size = sizeof(neu_resp_get_node_stat_t);
         break;
     case NEU_RESP_GET_NODE_STATE:
         data_size = sizeof(neu_resp_get_node_state_t);
@@ -1027,6 +1177,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     case NEU_RESP_GET_DRIVER_GROUP:
         data_size = sizeof(neu_resp_get_driver_group_t);
+        break;
+    case NEU_REQ_UPDATE_LOG_LEVEL:
+        data_size = sizeof(neu_req_update_log_level_t);
         break;
     default:
         assert(false);

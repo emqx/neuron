@@ -155,9 +155,10 @@ int json_encode_read_resp_tags(void *json_object, void *param)
         }
 
         neu_json_elem_t tag_elem = {
-            .name = json_tag.name,
-            .t    = json_tag.t,
-            .v    = json_tag.value,
+            .name      = json_tag.name,
+            .t         = json_tag.t,
+            .v         = json_tag.value,
+            .precision = trans_data->tags[i].value.precision,
         };
 
         ret = neu_json_encode_field((0 != json_tag.error) ? errors_object
@@ -197,7 +198,7 @@ int json_encode_read_resp(void *json_object, void *param)
 
     json_read_resp_header_t header = { .group_name = trans_data->group,
                                        .node_name  = trans_data->driver,
-                                       .timestamp  = plugin->common.timestamp };
+                                       .timestamp  = global_timestamp };
 
     ret = json_encode_read_resp_header(json_object, &header);
     if (0 != ret) {

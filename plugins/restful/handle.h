@@ -22,6 +22,9 @@
 
 #include <stdlib.h>
 
+#include <nng/nng.h>
+#include <nng/supplemental/http/http.h>
+
 #include "plugin.h"
 #include "utils/neu_jwt.h"
 #include "json/neu_json_error.h"
@@ -77,7 +80,8 @@
     }
 
 enum neu_rest_method {
-    NEU_REST_METHOD_GET = 0x0,
+    NEU_REST_METHOD_UNDEFINE = 0x0,
+    NEU_REST_METHOD_GET,
     NEU_REST_METHOD_POST,
     NEU_REST_METHOD_PUT,
     NEU_REST_METHOD_DELETE,
@@ -87,6 +91,7 @@ enum neu_rest_handler_type {
     NEU_REST_HANDLER_FUNCTION = 0x0,
     NEU_REST_HANDLER_DIRECTORY,
     NEU_REST_HANDLER_PROXY,
+    NEU_REST_HANDLER_REDIRECT,
 };
 
 struct neu_rest_handler {
@@ -106,10 +111,10 @@ neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin);
 void                   neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx);
 void *                 neu_rest_get_plugin();
 
-void neu_rest_web_handler(const struct neu_rest_handler **handlers,
-                          uint32_t *                      size);
-void neu_rest_api_handler(const struct neu_rest_handler **handlers,
-                          uint32_t *                      size);
+int  neu_rest_add_handler(nng_http_server *              server,
+                          const struct neu_rest_handler *rest_handler);
+void neu_rest_handler(const struct neu_rest_handler **handlers, uint32_t *size);
 void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
                                uint32_t *                      size);
+void neu_rest_handle_cors(nng_aio *aio);
 #endif

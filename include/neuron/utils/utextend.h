@@ -58,4 +58,13 @@ static inline UT_array *utarray_clone(UT_array *array)
 #define DL_REVERSE_FOREACH_END(head, tail, el) \
     while (((el) = (el)->prev) != (head))
 
+#ifdef NO_DECLTYPE
+#define HASH_LOOP(hh, head, el)                       \
+    for ((el)                 = (head); (el) != NULL; \
+         (*(char **) (&(el))) = (char *) (el)->hh.next)
+#else
+#define HASH_LOOP(hh, head, el) \
+    for ((el) = (head); (el) != NULL; (el) = DECLTYPE(el)((el)->hh.next))
+#endif
+
 #endif

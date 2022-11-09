@@ -27,11 +27,11 @@ extern "C" {
 #include <stdlib.h>
 #include <sys/time.h>
 
-static inline uint64_t neu_time_ms()
+static inline int64_t neu_time_ms()
 {
     struct timeval tv = { 0 };
     gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+    return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
 }
 
 #ifdef __cplusplus

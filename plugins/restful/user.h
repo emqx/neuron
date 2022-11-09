@@ -38,8 +38,8 @@ void        neu_user_free(neu_user_t *user);
 bool        neu_user_check_password(neu_user_t *user, const char *password);
 int neu_user_update_password(neu_user_t *user, const char *new_password);
 
-neu_user_t *neu_load_user(neu_persister_t *persister, const char *name);
-int         neu_save_user(neu_persister_t *persister, neu_user_t *user);
+neu_user_t *neu_load_user(const char *name);
+int         neu_save_user(neu_user_t *user);
 
 #ifdef __cplusplus
 }
