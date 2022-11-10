@@ -101,7 +101,7 @@ static void *event_loop(void *arg)
                 uint64_t t;
 
                 ssize_t size = read(data->fd, &t, sizeof(t));
-                assert(size != -1);
+                (void) size;
 
                 if (!data->ctx.timer->stop) {
                     nng_mtx_lock(data->ctx.timer->mtx);
