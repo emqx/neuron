@@ -19,11 +19,18 @@ $ cd jansson && mkdir build && cd build
 $ cmake -DJANSSON_BUILD_DOCS=OFF -DJANSSON_EXAMPLES=OFF ..&& make && sudo make install
 ```
 
-[nng](https://github.com/neugates/nng.git)
+[mbedtls](https://github.com/ARMmbed/mbedtls.git)
 ```shell
-$ git clone https://github.com/neugates/nng.git
-$ cd nng && mkdir build && cd build
-$ cmake -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF .. && make && sudo make install
+$ git clone -b v2.16.12 https://github.com/Mbed-TLS/mbedtls.git
+$ cd mbedtls && mkdir build && cd build
+$ cmake -DUSE_SHARED_MBEDTLS_LIBRARY=OFF -DENABLE_TESTING=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON .. && make && sudo make install
+```
+
+[NanoSDK](https://github.com/neugates/NanoSDK.git)
+```shell
+$ git clone https://github.com/neugates/NanoSDK.git
+$ cd NanoSDK && mkdir build && cd build
+$ cmake -DBUILD_SHARED_LIBS=OFF -DNNG_TESTS=OFF -DNNG_ENABLE_SQLITE=ON -DNNG_ENABLE_TLS=ON .. && make && sudo make install
 ```
 
 [jwt](https://github.com/benmcollins/libjwt.git)
