@@ -111,6 +111,11 @@ typedef struct neu_conn_param {
 
 typedef struct neu_conn neu_conn_t;
 
+typedef struct neu_conn_state {
+    uint64_t send_bytes;
+    uint64_t recv_bytes;
+} neu_conn_state_t;
+
 /**
  * @brief create a new connection.
  *
@@ -166,6 +171,14 @@ void neu_conn_stop(neu_conn_t *conn);
  */
 void neu_conn_start(neu_conn_t *conn);
 
+/**
+ * @brief get state of connection
+ *
+ *
+ * @param[in] conn
+ * @return returns state.
+ */
+neu_conn_state_t neu_conn_state(neu_conn_t *conn);
 /**
  * @brief Receive connection requests from clients.
  *
