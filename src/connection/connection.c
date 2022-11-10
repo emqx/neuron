@@ -53,6 +53,8 @@ struct neu_conn {
     int  fd;
     bool block;
 
+    neu_conn_state_t state;
+
     struct {
         struct tcp_client *clients;
         int                n_client;
@@ -120,7 +122,6 @@ void neu_conn_start(neu_conn_t *conn)
 neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
 {
     pthread_mutex_lock(&conn->mtx);
-    (void) param;
 
     conn_disconnect(conn);
     conn_free_param(conn);
@@ -128,6 +129,9 @@ neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param)
 
     conn_init_param(conn, param);
     conn_tcp_server_listen(conn);
+
+    conn->state.recv_bytes = 0;
+    conn->state.send_bytes = 0;
 
     pthread_mutex_unlock(&conn->mtx);
 
@@ -148,6 +152,11 @@ void neu_conn_destory(neu_conn_t *conn)
 
     free(conn->buf);
     free(conn);
+}
+
+neu_conn_state_t neu_conn_state(neu_conn_t *conn)
+{
+    return conn->state;
 }
 
 int neu_conn_tcp_server_accept(neu_conn_t *conn)
@@ -234,6 +243,9 @@ ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
 
     conn_tcp_server_listen(conn);
     ret = send(fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
+    if (ret > 0) {
+        conn->state.send_bytes += ret;
+    }
 
     pthread_mutex_unlock(&conn->mtx);
 
@@ -255,6 +267,10 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
         ret = recv(fd, buf, len, MSG_WAITALL);
     } else {
         ret = recv(fd, buf, len, 0);
+    }
+
+    if (ret > 0) {
+        conn->state.recv_bytes += ret;
     }
 
     pthread_mutex_unlock(&conn->mtx);
@@ -308,6 +324,10 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
             conn->connected(conn->data, conn->fd);
             conn->callback_trigger = true;
         }
+    }
+
+    if (ret > 0) {
+        conn->state.send_bytes += ret;
     }
 
     pthread_mutex_unlock(&conn->mtx);
@@ -369,6 +389,10 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     }
 
     pthread_mutex_unlock(&conn->mtx);
+
+    if (ret > 0) {
+        conn->state.recv_bytes += ret;
+    }
 
     return ret;
 }
