@@ -67,8 +67,8 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
     return neu_json_encode(object, result);
 }
 
-int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
-                    ...)
+int neu_parse_param(const char *buf, char **err_param, int n,
+                    neu_json_elem_t *ele, ...)
 {
     void *          json       = neu_json_decode_new(buf);
     neu_json_elem_t params_ele = { .name = "params", .t = NEU_JSON_OBJECT };
@@ -77,7 +77,9 @@ int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
 
     if (neu_json_decode_value(json, &params_ele) != 0) {
         neu_json_decode_free(json);
-        *err_param = strdup("params");
+        if (err_param) {
+            *err_param = strdup("params");
+        }
         neu_json_decode_free(json);
         return -1;
     }
@@ -92,8 +94,10 @@ int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
     for (int i = 1; i < n; i++) {
         neu_json_elem_t *tmp_ele = va_arg(ap, neu_json_elem_t *);
         if (neu_json_decode_value(params_ele.v.val_object, tmp_ele) != 0) {
-            *err_param = strdup(tmp_ele->name);
-            ret        = -1;
+            if (err_param) {
+                *err_param = strdup(tmp_ele->name);
+            }
+            ret = -1;
             break;
         }
     }

@@ -365,7 +365,7 @@ int neu_json_encode(void *json_object, char **str)
     return 0;
 }
 
-void *neu_json_decode_new(char *buf)
+void *neu_json_decode_new(const char *buf)
 {
     json_error_t error;
     json_t *     root = json_loads(buf, 0, &error);

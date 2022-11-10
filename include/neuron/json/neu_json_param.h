@@ -26,8 +26,8 @@ extern "C" {
 
 #include "json/json.h"
 
-int neu_parse_param(char *buf, char **err_param, int n, neu_json_elem_t *ele,
-                    ...);
+int neu_parse_param(const char *buf, char **err_param, int n,
+                    neu_json_elem_t *ele, ...);
 
 #ifdef __cplusplus
 }
