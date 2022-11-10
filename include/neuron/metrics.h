@@ -36,6 +36,7 @@ typedef struct neu_adapter neu_adapter_t;
 typedef enum {
     NEU_METRIC_TYPE_COUNTER,
     NEU_METRIC_TYPE_GAUAGE,
+    NEU_METRIC_TYPE_COUNTER_SET,
 } neu_metric_type_e;
 
 // last round trip time in millisends
@@ -47,12 +48,12 @@ typedef enum {
 
 // number of bytes sent
 #define NEU_METRIC_SEND_BYTES "send_bytes"
-#define NEU_METRIC_SEND_BYTES_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_SEND_BYTES_TYPE NEU_METRIC_TYPE_COUNTER_SET
 #define NEU_METRIC_SEND_BYTES_HELP "Total number of bytes sent"
 
 // number of bytes received
 #define NEU_METRIC_RECV_BYTES "recv_bytes"
-#define NEU_METRIC_RECV_BYTES_TYPE NEU_METRIC_TYPE_COUNTER
+#define NEU_METRIC_RECV_BYTES_TYPE NEU_METRIC_TYPE_COUNTER_SET
 #define NEU_METRIC_RECV_BYTES_HELP "Total number of bytes received"
 
 // maintained by neuron core
