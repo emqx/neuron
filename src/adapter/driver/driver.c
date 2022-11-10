@@ -560,7 +560,7 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    if (strlen(tag->name) > NEU_TAG_NAME_LEN) {
+    if (strlen(tag->name) >= NEU_TAG_NAME_LEN) {
         return NEU_ERR_TAG_NAME_TOO_LONG;
     }
 
@@ -632,7 +632,7 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
 
-    if (strlen(tag->name) > NEU_TAG_NAME_LEN) {
+    if (strlen(tag->name) >= NEU_TAG_NAME_LEN) {
         return NEU_ERR_TAG_NAME_TOO_LONG;
     }
 
