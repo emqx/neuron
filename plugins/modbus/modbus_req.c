@@ -50,15 +50,8 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) ctx;
 
-    neu_adapter_update_metric_cb_t update_metric =
-        plugin->common.adapter_callbacks->update_metric;
-
     plog_send_protocol(plugin, bytes, n_byte);
-    int ret = neu_conn_send(plugin->conn, bytes, n_byte);
-    if (ret > 0) {
-        update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES, ret, NULL);
-    }
-    return ret;
+    return neu_conn_send(plugin->conn, bytes, n_byte);
 }
 
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
@@ -66,9 +59,9 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
 {
     neu_adapter_update_metric_cb_t update_metric =
         plugin->common.adapter_callbacks->update_metric;
-
-    struct modbus_group_data *gd  = NULL;
-    int64_t                   rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+    struct modbus_group_data *gd    = NULL;
+    neu_conn_state_t          state = { 0 };
+    int64_t                   rtt   = NEU_METRIC_LAST_RTT_MS_MAX;
 
     if (group->user_data == NULL) {
         gd = calloc(1, sizeof(struct modbus_group_data));
@@ -112,6 +105,12 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
         }
     }
 
+    state = neu_conn_state(plugin->conn);
+
+    update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES,
+                  state.send_bytes, NULL);
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES,
+                  state.recv_bytes, NULL);
     update_metric(plugin->common.adapter, NEU_METRIC_LAST_RTT_MS, rtt, NULL);
     update_metric(plugin->common.adapter, NEU_METRIC_GROUP_LAST_SEND_MSGS,
                   gd->cmd_sort->n_cmd, group->group_name);
@@ -319,13 +318,9 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
 
-    neu_adapter_update_metric_cb_t update_metric =
-        plugin->common.adapter_callbacks->update_metric;
-
     ret = neu_conn_recv(plugin->conn, recv_buf, response_size);
 
     if (ret > 0) {
-        update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES, ret, NULL);
         neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
         plog_recv_protocol(plugin, recv_buf, ret);
         ret = modbus_stack_recv(plugin->stack, &pbuf);
