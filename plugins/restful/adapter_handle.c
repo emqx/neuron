@@ -37,7 +37,7 @@ void handle_add_adapter(nng_aio *aio)
 
     REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
-            if (strlen(req->name) > NEU_NODE_NAME_LEN) {
+            if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {
                     http_response(aio, NEU_ERR_NODE_NAME_TOO_LONG,
                                   result_error);
