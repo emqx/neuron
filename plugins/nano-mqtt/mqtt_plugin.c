@@ -18,6 +18,7 @@
  **/
 
 #include "mqtt_plugin.h"
+#include "mqtt_config.h"
 #include "mqtt_handle.h"
 
 const neu_plugin_module_t neu_plugin_module;
@@ -47,16 +48,30 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
+    mqtt_config_fini(&plugin->config);
     plog_info(plugin, "uninitialize plugin `%s` success",
               neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
+static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
 {
-    plog_info(plugin, "config plugin `%s` success, %s",
-              neu_plugin_module.module_name, config);
-    return NEU_ERR_SUCCESS;
+    int         rv          = 0;
+    const char *plugin_name = neu_plugin_module.module_name;
+
+    if (plugin->config.host) {
+        // already configured
+        mqtt_config_fini(&plugin->config);
+    }
+
+    rv = mqtt_config_parse(plugin, setting, &plugin->config);
+    if (0 != rv) {
+        plog_error(plugin, "config plugin `%s` fail", plugin_name);
+        return NEU_ERR_NODE_SETTING_INVALID;
+    }
+
+    plog_info(plugin, "config plugin `%s` success", plugin_name);
+    return rv;
 }
 
 static int mqtt_plugin_start(neu_plugin_t *plugin)
