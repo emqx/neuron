@@ -88,7 +88,7 @@ target_link_libraries(neuron-base nng libzlog.so jansson mqttc jwt
 add_dependencies(neuron-base neuron-version)
 
 # dependency imposed by nng
-find_package(MbedTLS)
+#find_package(MbedTLS)
 target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto)
 
 set(PERSIST_SOURCES
