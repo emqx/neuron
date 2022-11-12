@@ -66,6 +66,7 @@ set(NEURON_BASE_SOURCES
     src/base/tag_sort.c
     src/base/group.c
     src/connection/connection.c
+    src/connection/mqtt_client.c
     src/event/event_linux.c
     src/event/event_unix.c
     src/utils/asprintf.c
