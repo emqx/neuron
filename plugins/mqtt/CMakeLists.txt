@@ -7,6 +7,8 @@ set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
 file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/mqtt.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
 set(src 
+	mqtt_c_client.c
+	mqtt_client_intf.c
 	mqtt_plugin.c 
 	mqtt_util.c
 	command/read_write.c
@@ -19,3 +21,4 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 	${CMAKE_SOURCE_DIR}/plugins/mqtt)
 target_link_libraries(${PROJECT_NAME} neuron-base)
 target_link_libraries(${PROJECT_NAME} ${CMAKE_THREAD_LIBS_INIT})
+target_compile_definitions(${PROJECT_NAME} PRIVATE MQTT_USE_BIO)

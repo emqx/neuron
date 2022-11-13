@@ -17,7 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include "connection/mqtt_client_intf.h"
+#include "mqtt_client_intf.h"
 #include "mqtt_c_client.h"
 
 neu_err_code_e neu_mqtt_client_open(neu_mqtt_client_t *      p_client,

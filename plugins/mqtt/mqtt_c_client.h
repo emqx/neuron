@@ -24,9 +24,10 @@
 extern "C" {
 #endif
 
-#include "connection/mqtt_client_intf.h"
 #include <stddef.h>
 #include <stdint.h>
+
+#include "mqtt_client_intf.h"
 
 typedef struct mqtt_c_client mqtt_c_client_t;
 
