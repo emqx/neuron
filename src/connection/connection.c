@@ -769,7 +769,7 @@ static void conn_connect(neu_conn_t *conn)
         tty_opt.c_oflag &= ~OPOST;
         tty_opt.c_oflag &= ~ONLCR;
 
-        tcflush(fd, TCIFLUSH);
+        tcflush(fd, TCIOFLUSH);
         tcsetattr(fd, TCSANOW, &tty_opt);
 
         conn->fd           = fd;
