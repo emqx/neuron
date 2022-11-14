@@ -52,7 +52,7 @@ struct topic_pair {
 struct mqtt_routine {
     neu_plugin_t *    plugin;
     neu_mqtt_option_t option;
-    neu_mqtt_client_t client;
+    mqtt_client_t     client;
     UT_array *        topics;
 };
 
@@ -181,16 +181,15 @@ static void mqtt_routine_response(const char *topic_name, size_t topic_len,
     command_response_handle(&response);
 }
 
-static void topics_subscribe(UT_array *topics, neu_mqtt_client_t client)
+static void topics_subscribe(UT_array *topics, mqtt_client_t client)
 {
     for (struct topic_pair **pair =
              (struct topic_pair **) utarray_front(topics);
          NULL != pair;
          pair = (struct topic_pair **) utarray_next(topics, pair)) {
         if (NULL != (*pair)->topic_request) {
-            neu_mqtt_client_subscribe(client, (*pair)->topic_request,
-                                      (*pair)->qos_request,
-                                      mqtt_routine_response);
+            mqtt_client_subscribe(client, (*pair)->topic_request,
+                                  (*pair)->qos_request, mqtt_routine_response);
         }
     }
 }
@@ -231,16 +230,16 @@ static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
 
     routine->option.state_update_func = mqtt_routine_state;
     routine->option.log               = plugin->common.log;
-    neu_mqtt_client_t *client_p       = (neu_mqtt_client_t *) &routine->client;
-    neu_err_code_e     error          = NEU_ERR_SUCCESS;
-    error = neu_mqtt_client_open(client_p, &routine->option, plugin);
+    mqtt_client_t *client_p           = (mqtt_client_t *) &routine->client;
+    neu_err_code_e error              = NEU_ERR_SUCCESS;
+    error = mqtt_client_open(client_p, &routine->option, plugin);
     if (NEU_ERR_SUCCESS != error) {
         mqtt_option_uninit(plugin, &routine->option);
         free(routine);
         return NULL;
     }
 
-    neu_mqtt_client_continue(routine->client);
+    mqtt_client_continue(routine->client);
 
     plog_info(plugin, "open mqtt client: %s:%s, code:%d", routine->option.host,
               routine->option.port, error);
@@ -260,10 +259,10 @@ static void mqtt_routine_stop(mqtt_routine_t *routine)
     assert(NULL != routine);
 
     // stop recevied
-    neu_mqtt_client_suspend(routine->client);
+    mqtt_client_suspend(routine->client);
 
     // close mqtt client and clean
-    neu_mqtt_client_close(routine->client);
+    mqtt_client_close(routine->client);
     plog_info(routine->plugin, "close mqtt client:%s:%s", routine->option.host,
               routine->option.port);
 
@@ -448,8 +447,8 @@ static neu_err_code_e write_response(neu_plugin_t *      plugin,
     const int   qos      = pair->qos_response;
 
     neu_err_code_e error =
-        neu_mqtt_client_publish(routine->client, topic, qos,
-                                (unsigned char *) json_str, strlen(json_str));
+        mqtt_client_publish(routine->client, topic, qos,
+                            (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(plugin, "write response publish error code :%d, topoic:%s",
                    error, topic);
@@ -479,8 +478,8 @@ static neu_err_code_e read_response(neu_plugin_t *      plugin,
     const char *topic    = pair->topic_response;
     const int   qos      = pair->qos_response;
     neu_err_code_e error =
-        neu_mqtt_client_publish(routine->client, topic, qos,
-                                (unsigned char *) json_str, strlen(json_str));
+        mqtt_client_publish(routine->client, topic, qos,
+                            (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(plugin, "read response publish error code :%d, topoic:%s",
                    error, topic);
@@ -515,8 +514,8 @@ static int cache_send(neu_plugin_t *plugin)
     const char *       topic    = pair->topic_response;
     const int          qos      = pair->qos_response;
     neu_err_code_e     error =
-        neu_mqtt_client_publish(routine->client, topic, qos,
-                                (unsigned char *) json_str, strlen(json_str));
+        mqtt_client_publish(routine->client, topic, qos,
+                            (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(plugin, "cache publish error code :%d, topoic:%s", error,
                    topic);
@@ -544,7 +543,7 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
         return NEU_ERR_MQTT_FAILURE;
     }
 
-    neu_err_code_e rc = neu_mqtt_client_is_connected(routine->client);
+    neu_err_code_e rc = mqtt_client_is_connected(routine->client);
     if (0 != rc) {
         cache_item_t item = {
             .size    = strlen(json_str) + 1,
@@ -573,8 +572,8 @@ static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
     const char *   topic = pair->topic_response;
     const int      qos   = pair->qos_response;
     neu_err_code_e error =
-        neu_mqtt_client_publish(routine->client, topic, qos,
-                                (unsigned char *) json_str, strlen(json_str));
+        mqtt_client_publish(routine->client, topic, qos,
+                            (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(plugin, "trans data publish error code :%d, topoic:%s",
                    error, topic);
@@ -610,8 +609,8 @@ static neu_err_code_e node_state_send(neu_plugin_t *      plugin,
     const char *   topic = pair->topic_response;
     const int      qos   = pair->qos_response;
     neu_err_code_e error =
-        neu_mqtt_client_publish(routine->client, topic, qos,
-                                (unsigned char *) json_str, strlen(json_str));
+        mqtt_client_publish(routine->client, topic, qos,
+                            (unsigned char *) json_str, strlen(json_str));
     if (NEU_ERR_SUCCESS != error) {
         plog_error(routine->plugin,
                    "heartbeat publish error code :%d, topoic:%s", error, topic);

@@ -66,8 +66,7 @@ set(NEURON_BASE_SOURCES
     src/base/tag_sort.c
     src/base/group.c
     src/connection/connection.c
-    src/connection/mqtt_c_client.c
-    src/connection/mqtt_client_intf.c
+    src/connection/mqtt_client.c
     src/event/event_linux.c
     src/event/event_unix.c
     src/utils/asprintf.c
@@ -81,7 +80,6 @@ add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 
 target_include_directories(neuron-base
                            PRIVATE include/neuron src)
-target_compile_definitions(neuron-base PRIVATE MQTT_USE_BIO)
 target_link_libraries(neuron-base libssl.a libcrypto.a)
 target_link_libraries(neuron-base nng libzlog.so jansson mqttc jwt
                       ${CMAKE_THREAD_LIBS_INIT})

@@ -45,7 +45,6 @@ extern "C" {
 #include "utils/uthash.h"
 #include "utils/utlist.h"
 
-#include "connection/mqtt_client_intf.h"
 #include "connection/neu_connection.h"
 #include "event/event.h"
 

@@ -71,10 +71,10 @@ struct reconnect_state {
 };
 
 struct subscribe_tuple {
-    char *               topic;
-    int                  qos;
-    neu_subscribe_handle handle;
-    mqtt_c_client_t *    client;
+    char *           topic;
+    int              qos;
+    subscribe_handle handle;
+    mqtt_c_client_t *client;
 };
 
 struct mqtt_c_client {
@@ -845,7 +845,7 @@ static neu_err_code_e client_destroy(mqtt_c_client_t *client)
 
 static struct subscribe_tuple *
 client_subscribe_create(mqtt_c_client_t *client, const char *topic,
-                        const int qos, const neu_subscribe_handle handle)
+                        const int qos, const subscribe_handle handle)
 {
     struct subscribe_tuple *tuple = calloc(1, sizeof(struct subscribe_tuple));
     if (NULL == tuple) {
@@ -883,7 +883,7 @@ static neu_err_code_e client_subscribe_add(mqtt_c_client_t *       client,
 
 neu_err_code_e mqtt_c_client_subscribe(mqtt_c_client_t *client,
                                        const char *topic, const int qos,
-                                       neu_subscribe_handle handle)
+                                       subscribe_handle handle)
 {
     assert(NULL != client);
     assert(NULL != topic && 0 < strlen(topic));
