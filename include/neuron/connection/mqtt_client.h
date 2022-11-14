@@ -39,9 +39,9 @@ typedef enum {
 } neu_mqtt_version_e;
 
 typedef enum {
-    MQTT_QOS0,
-    MQTT_QOS1,
-    MQTT_QOS2,
+    NEU_MQTT_QOS0,
+    NEU_MQTT_QOS1,
+    NEU_MQTT_QOS2,
 } neu_mqtt_qos_e;
 
 typedef struct neu_mqtt_client_s neu_mqtt_client_t;

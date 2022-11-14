@@ -293,6 +293,10 @@ int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
 {
     check_opened();
 
+    if (0 == cache_limit) {
+        return 0;
+    }
+
     if (NULL == client->sqlite_cfg) {
         client->sqlite_cfg = alloc_sqlite_config(client);
         if (NULL == client->sqlite_cfg) {
@@ -398,6 +402,7 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     int rv = nng_sendmsg(client->sock, pub_msg, NNG_FLAG_NONBLOCK);
     if (0 != rv) {
         log(error, "nng_sendmsg fail: %s", nng_strerror(rv));
+        nng_msg_free(pub_msg);
         return -1;
     }
 
