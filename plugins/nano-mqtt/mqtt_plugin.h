@@ -24,6 +24,7 @@
 extern "C" {
 #endif
 
+#include "connection/mqtt_client.h"
 #include "neuron.h"
 
 #include "mqtt_config.h"
@@ -31,6 +32,7 @@ extern "C" {
 struct neu_plugin {
     neu_plugin_common_t common;
     mqtt_config_t       config;
+    neu_mqtt_client_t * client;
 };
 
 #ifdef __cplusplus
