@@ -40,6 +40,10 @@ size_t calcDecodeLength(const char *b64input)
 { // Calculates the length of a decoded string
     size_t len = strlen(b64input), padding = 0;
 
+    if (0 == len) {
+        return 0;
+    }
+
     if (b64input[len - 1] == '=' &&
         b64input[len - 2] == '=') // last two chars are =
         padding = 2;

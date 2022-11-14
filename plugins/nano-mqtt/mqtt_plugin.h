@@ -24,10 +24,13 @@
 extern "C" {
 #endif
 
-#include <neuron.h>
+#include "neuron.h"
+
+#include "mqtt_config.h"
 
 struct neu_plugin {
     neu_plugin_common_t common;
+    mqtt_config_t       config;
 };
 
 #ifdef __cplusplus

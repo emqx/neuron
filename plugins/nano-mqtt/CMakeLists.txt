@@ -4,7 +4,10 @@ project(plugin-nano-mqtt)
 
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
+file(COPY ${CMAKE_SOURCE_DIR}/plugins/nano-mqtt/nano-mqtt.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
+
 add_library(${PROJECT_NAME} SHARED
+  mqtt_config.c
   mqtt_handle.c
   mqtt_plugin.c
 )
