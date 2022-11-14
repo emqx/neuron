@@ -37,7 +37,7 @@ neu_err_code_e mqtt_c_client_open(mqtt_c_client_t **       p_client,
 neu_err_code_e mqtt_c_client_is_connected(mqtt_c_client_t *client);
 neu_err_code_e mqtt_c_client_subscribe(mqtt_c_client_t *client,
                                        const char *topic, const int qos,
-                                       neu_subscribe_handle handle);
+                                       subscribe_handle handle);
 neu_err_code_e mqtt_c_client_unsubscribe(mqtt_c_client_t *client,
                                          const char *     topic);
 neu_err_code_e mqtt_c_client_publish(mqtt_c_client_t *client, const char *topic,

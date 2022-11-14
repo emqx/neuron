@@ -67,34 +67,30 @@ typedef struct {
     zlog_category_t *log;
 } neu_mqtt_option_t;
 
-typedef void *neu_mqtt_client_t;
+typedef void *mqtt_client_t;
 
-typedef void (*neu_subscribe_handle)(const char *topic_name, size_t topic_len,
-                                     void *payload, const size_t len,
-                                     void *context);
+typedef void (*subscribe_handle)(const char *topic_name, size_t topic_len,
+                                 void *payload, const size_t len,
+                                 void *context);
 
-neu_err_code_e neu_mqtt_client_open(neu_mqtt_client_t *      p_client,
-                                    const neu_mqtt_option_t *option,
-                                    void *                   context);
+neu_err_code_e mqtt_client_open(mqtt_client_t *          p_client,
+                                const neu_mqtt_option_t *option, void *context);
 
-neu_err_code_e neu_mqtt_client_is_connected(neu_mqtt_client_t client);
+neu_err_code_e mqtt_client_is_connected(mqtt_client_t client);
 
-neu_err_code_e neu_mqtt_client_subscribe(neu_mqtt_client_t client,
-                                         const char *topic, const int qos,
-                                         neu_subscribe_handle handle);
+neu_err_code_e mqtt_client_subscribe(mqtt_client_t client, const char *topic,
+                                     const int qos, subscribe_handle handle);
 
-neu_err_code_e neu_mqtt_client_unsubscribe(neu_mqtt_client_t client,
-                                           const char *      topic);
+neu_err_code_e mqtt_client_unsubscribe(mqtt_client_t client, const char *topic);
 
-neu_err_code_e neu_mqtt_client_publish(neu_mqtt_client_t client,
-                                       const char *topic, int qos,
-                                       unsigned char *payload, size_t len);
+neu_err_code_e mqtt_client_publish(mqtt_client_t client, const char *topic,
+                                   int qos, unsigned char *payload, size_t len);
 
-neu_err_code_e neu_mqtt_client_suspend(neu_mqtt_client_t client);
+neu_err_code_e mqtt_client_suspend(mqtt_client_t client);
 
-neu_err_code_e neu_mqtt_client_continue(neu_mqtt_client_t client);
+neu_err_code_e mqtt_client_continue(mqtt_client_t client);
 
-neu_err_code_e neu_mqtt_client_close(neu_mqtt_client_t client);
+neu_err_code_e mqtt_client_close(mqtt_client_t client);
 
 #ifdef __cplusplus
 }
