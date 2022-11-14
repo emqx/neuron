@@ -247,6 +247,11 @@ ssize_t neu_conn_tcp_server_send(neu_conn_t *conn, int fd, uint8_t *buf,
         conn->state.send_bytes += ret;
     }
 
+    if (ret <= 0 && errno != EAGAIN) {
+        conn->disconnected(conn->data, fd);
+        conn_tcp_server_del_client(conn, fd);
+    }
+
     pthread_mutex_unlock(&conn->mtx);
 
     return ret;
@@ -271,6 +276,11 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
 
     if (ret > 0) {
         conn->state.recv_bytes += ret;
+    }
+
+    if (ret <= 0 && errno != EAGAIN) {
+        conn->disconnected(conn->data, fd);
+        conn_tcp_server_del_client(conn, fd);
     }
 
     pthread_mutex_unlock(&conn->mtx);
