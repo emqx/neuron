@@ -76,6 +76,10 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     plugin->read_req_topic = NULL;
     free(plugin->read_resp_topic);
     plugin->read_resp_topic = NULL;
+    free(plugin->write_req_topic);
+    plugin->write_req_topic = NULL;
+    free(plugin->write_resp_topic);
+    plugin->write_resp_topic = NULL;
 
     plog_info(plugin, "uninitialize plugin `%s` success",
               neu_plugin_module.module_name);
@@ -214,6 +218,28 @@ static int create_topic(neu_plugin_t *plugin)
         return -1;
     }
 
+    neu_asprintf(&plugin->write_req_topic, "/neuron/%s/write/req",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        free(plugin->read_resp_topic);
+        plugin->read_resp_topic = NULL;
+        return -1;
+    }
+
+    neu_asprintf(&plugin->write_resp_topic, "/neuron/%s/write/resp",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        free(plugin->read_resp_topic);
+        plugin->read_resp_topic = NULL;
+        free(plugin->write_req_topic);
+        plugin->write_req_topic = NULL;
+        return -1;
+    }
+
     return 0;
 }
 
@@ -248,11 +274,20 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
         goto end;
     }
 
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, 0, plugin->write_req_topic,
+                                  handle_write_req, plugin)) {
+        plog_error(plugin, "subscribe [%s] fail", plugin->write_req_topic);
+        rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+        goto end;
+    }
+
 end:
     if (0 == rv) {
         plog_info(plugin, "start plugin `%s` success", plugin_name);
     } else {
         plog_error(plugin, "start plugin `%s` failed", plugin_name);
+        neu_mqtt_client_close(plugin->client);
     }
     return rv;
 }
