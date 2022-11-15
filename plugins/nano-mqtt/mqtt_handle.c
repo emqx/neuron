@@ -53,6 +53,129 @@ static char *generate_heartbeat_json(neu_plugin_t *plugin, UT_array *states)
     return json_str;
 }
 
+static int tag_values_to_json(neu_resp_tag_value_t *tags, uint16_t len,
+                              neu_json_read_resp_t *json)
+{
+    if (0 == len) {
+        return 0;
+    }
+
+    json->n_tag = len;
+    json->tags  = (neu_json_read_resp_tag_t *) calloc(
+        json->n_tag, sizeof(neu_json_read_resp_tag_t));
+    if (NULL == json->tags) {
+        return -1;
+    }
+
+    for (int i = 0; i < json->n_tag; i++) {
+        neu_resp_tag_value_t *tag  = &tags[i];
+        neu_type_e            type = tag->value.type;
+        json->tags[i].name         = tag->tag;
+        json->tags[i].error        = NEU_ERR_SUCCESS;
+
+        switch (type) {
+        case NEU_TYPE_ERROR:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.i32;
+            json->tags[i].error         = tag->value.value.i32;
+            break;
+        case NEU_TYPE_UINT8:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.u8;
+            break;
+        case NEU_TYPE_INT8:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.i8;
+            break;
+        case NEU_TYPE_INT16:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.i16;
+            break;
+        case NEU_TYPE_INT32:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.i32;
+            break;
+        case NEU_TYPE_INT64:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.i64;
+            break;
+        case NEU_TYPE_UINT16:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.u16;
+            break;
+        case NEU_TYPE_UINT32:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.u32;
+            break;
+        case NEU_TYPE_UINT64:
+            json->tags[i].t             = NEU_JSON_INT;
+            json->tags[i].value.val_int = tag->value.value.u64;
+            break;
+        case NEU_TYPE_FLOAT:
+            json->tags[i].t               = NEU_JSON_FLOAT;
+            json->tags[i].value.val_float = tag->value.value.f32;
+            json->tags[i].precision       = tag->value.precision;
+            break;
+        case NEU_TYPE_DOUBLE:
+            json->tags[i].t                = NEU_JSON_DOUBLE;
+            json->tags[i].value.val_double = tag->value.value.d64;
+            json->tags[i].precision        = tag->value.precision;
+            break;
+        case NEU_TYPE_BOOL:
+            json->tags[i].t              = NEU_JSON_BOOL;
+            json->tags[i].value.val_bool = tag->value.value.boolean;
+            break;
+        case NEU_TYPE_BIT:
+            json->tags[i].t             = NEU_JSON_BIT;
+            json->tags[i].value.val_bit = tag->value.value.u8;
+            break;
+        case NEU_TYPE_STRING:
+            json->tags[i].t             = NEU_JSON_STR;
+            json->tags[i].value.val_str = tag->value.value.str;
+            break;
+        default:
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static char *generate_upload_json(neu_plugin_t *            plugin,
+                                  neu_reqresp_trans_data_t *data,
+                                  mqtt_upload_format_e      format)
+{
+    neu_resp_tag_value_t *   tags     = data->tags;
+    uint16_t                 len      = data->n_tag;
+    char *                   json_str = NULL;
+    neu_json_read_periodic_t header   = { .group     = (char *) data->group,
+                                        .node      = (char *) data->driver,
+                                        .timestamp = global_timestamp };
+    neu_json_read_resp_t     json     = { 0 };
+
+    if (0 != tag_values_to_json(tags, len, &json)) {
+        plog_error(plugin, "tag_values_to_json fail");
+        return NULL;
+    }
+
+    if (MQTT_UPLOAD_FORMAT_VALUES == format) { // values
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp1, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+    } else if (MQTT_UPLOAD_FORMAT_TAGS == format) { // tags
+        neu_json_encode_with_mqtt(&json, neu_json_encode_read_resp, &header,
+                                  neu_json_encode_read_periodic_resp,
+                                  &json_str);
+    } else {
+        plog_warn(plugin, "invalid upload format: %d", format);
+    }
+
+    if (json.tags) {
+        free(json.tags);
+    }
+    return json_str;
+}
+
 int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                           neu_resp_error_t *data)
 {
@@ -74,8 +197,34 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
 int handle_trans_data(neu_plugin_t *            plugin,
                       neu_reqresp_trans_data_t *trans_data)
 {
-    (void) plugin;
-    (void) trans_data;
+    int rv = 0;
+
+    if (NULL == plugin->client) {
+        return NEU_ERR_MQTT_IS_NULL;
+    }
+
+    if (!neu_mqtt_client_is_connected(plugin->client)) {
+        return NEU_ERR_MQTT_FAILURE;
+    }
+
+    char *json_str =
+        generate_upload_json(plugin, trans_data, plugin->config.format);
+    if (NULL == json_str) {
+        plog_error(plugin, "generate upload json fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    const char *   topic = plugin->config.upload_topic;
+    neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
+    rv = neu_mqtt_client_publish(plugin->client, qos, topic, json_str,
+                                 strlen(json_str));
+    if (0 != rv) {
+        plog_error(plugin, "upload pub [%s, QoS%d] error", topic, qos);
+        free(json_str);
+        return NEU_ERR_MQTT_PUBLISH_FAILURE;
+    }
+
+    free(json_str);
     return 0;
 }
 
