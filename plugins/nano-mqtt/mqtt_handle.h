@@ -29,6 +29,8 @@ extern "C" {
 int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                           neu_resp_error_t *data);
 
+void handle_read_req(const uint8_t *payload, uint32_t len, void *data);
+
 int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
                          neu_resp_read_group_t *data);
 

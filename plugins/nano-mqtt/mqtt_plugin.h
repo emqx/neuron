@@ -33,6 +33,8 @@ struct neu_plugin {
     neu_plugin_common_t common;
     mqtt_config_t       config;
     neu_mqtt_client_t * client;
+    char *              read_req_topic;
+    char *              read_resp_topic;
 };
 
 #ifdef __cplusplus
