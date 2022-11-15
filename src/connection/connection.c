@@ -519,6 +519,7 @@ static void conn_tcp_server_stop(neu_conn_t *conn)
             conn->fd = 0;
         }
 
+        conn->tcp_server.n_client  = 0;
         conn->tcp_server.is_listen = false;
     }
 }
@@ -768,6 +769,7 @@ static void conn_disconnect(neu_conn_t *conn)
                 conn->tcp_server.clients[i].fd = 0;
             }
         }
+        conn->tcp_server.n_client = 0;
         break;
     case NEU_CONN_TCP_CLIENT:
     case NEU_CONN_UDP:
@@ -814,8 +816,6 @@ static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
             return;
         }
     }
-
-    assert(1 == 0);
 }
 
 void neu_conn_stream_consume(neu_conn_t *conn, void *context,
