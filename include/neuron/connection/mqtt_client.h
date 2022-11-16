@@ -31,6 +31,8 @@ extern "C" {
 #include "utils/zlog.h"
 
 typedef void (*neu_mqtt_client_cb_t)(void *data);
+typedef void (*neu_mqtt_client_subscribe_cb_t)(const uint8_t *payload,
+                                               uint32_t len, void *data);
 
 typedef enum {
     NEU_MQTT_VERSION_V31  = 3,
@@ -73,7 +75,8 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client);
 int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                             const char *topic, const char *payload, size_t len);
 int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
-                              const char *topic, neu_mqtt_client_cb_t cb);
+                              const char *                   topic,
+                              neu_mqtt_client_subscribe_cb_t cb, void *data);
 
 #ifdef __cplusplus
 }

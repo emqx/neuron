@@ -30,6 +30,8 @@
 
 #include "connection/mqtt_client.h"
 #include "utils/asprintf.h"
+#include "utils/utextend.h"
+#include "utils/uthash.h"
 #include "utils/zlog.h"
 
 #define log(level, ...)                               \
@@ -48,6 +50,14 @@
         }                                                                    \
     } while (0)
 
+typedef struct {
+    char *                         topic;
+    neu_mqtt_client_subscribe_cb_t cb;
+    void *                         data;
+    nng_aio *                      aio;
+    UT_hash_handle                 hh;
+} subscription_t;
+
 struct neu_mqtt_client_s {
     nng_socket              sock;
     char *                  url;
@@ -61,6 +71,7 @@ struct neu_mqtt_client_s {
     neu_mqtt_client_cb_t    disconnect_cb;
     void *                  disconnect_cb_data;
     nng_mqtt_sqlite_option *sqlite_cfg;
+    subscription_t *        subscriptions;
     zlog_category_t *       log;
 };
 
@@ -104,6 +115,44 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     if (client->disconnect_cb) {
         client->disconnect_cb(client->connect_cb_data);
     }
+}
+
+static void recv_cb(void *arg)
+{
+    int                rv           = 0;
+    subscription_t *   subscription = arg;
+    nng_aio *          aio          = subscription->aio;
+    neu_mqtt_client_t *client       = nng_aio_get_input(aio, 0);
+
+    if (0 != (rv = nng_aio_result(aio))) {
+        log(error, "mqtt client recv error: %s", nng_strerror(rv));
+        if (NNG_EAGAIN == rv) {
+            nng_recv_aio(client->sock, aio);
+        }
+        return;
+    }
+
+    nng_msg *msg = nng_aio_get_msg(aio);
+
+    uint32_t    payload_len;
+    uint8_t *   payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
+    uint32_t    topic_len;
+    const char *topic = nng_mqtt_msg_get_publish_topic(msg, &topic_len);
+    uint8_t     qos   = nng_mqtt_msg_get_publish_qos(msg);
+
+    log(info, "recv [%.*s, QoS%d] %" PRIu32 " bytes", (unsigned) topic_len,
+        topic, (int) qos, payload_len);
+
+    // find matching subscription
+    HASH_FIND(hh, client->subscriptions, topic, topic_len, subscription);
+    if (NULL != subscription) {
+        subscription->cb(payload, payload_len, subscription->data);
+    } else {
+        log(warn, "[%.*s] no subscription found", (unsigned) topic_len, topic);
+    }
+
+    nng_msg_free(msg);
+    nng_recv_aio(client->sock, aio);
 }
 
 static nng_msg *alloc_conn_msg(neu_mqtt_client_t *client,
@@ -159,6 +208,78 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     return cfg;
 }
 
+static subscription_t *subscription_new(neu_mqtt_client_t *            client,
+                                        const char *                   topic,
+                                        neu_mqtt_client_subscribe_cb_t cb,
+                                        void *                         data)
+{
+    int             rv           = 0;
+    subscription_t *subscription = NULL;
+
+    subscription = calloc(1, sizeof(*subscription));
+    if (NULL == subscription) {
+        return NULL;
+    }
+
+    subscription->topic = strdup(topic);
+    if (NULL == subscription->topic) {
+        free(subscription);
+        return NULL;
+    }
+
+    if ((rv = nng_aio_alloc(&subscription->aio, recv_cb, subscription)) != 0) {
+        log(error, "nng_aio_alloc fail: %s", nng_strerror(rv));
+        free(subscription->topic);
+        free(subscription);
+        return NULL;
+    }
+
+    if ((rv = nng_aio_set_input(subscription->aio, 0, client)) != 0) {
+        log(error, "nng_aio_set_input fail: %s", nng_strerror(rv));
+        nng_aio_free(subscription->aio);
+        free(subscription->topic);
+        free(subscription);
+        return NULL;
+    }
+
+    subscription->cb   = cb;
+    subscription->data = data;
+
+    return subscription;
+}
+
+static inline void subscription_free(subscription_t *subscription)
+{
+    if (subscription) {
+        nng_aio_stop(subscription->aio);
+        nng_aio_free(subscription->aio);
+        free(subscription->topic);
+        free(subscription);
+    }
+}
+
+static inline void subscriptions_free(subscription_t *subscriptions)
+{
+    subscription_t *sub = NULL, *tmp = NULL;
+    HASH_ITER(hh, subscriptions, sub, tmp)
+    {
+        HASH_DEL(subscriptions, sub);
+        subscription_free(sub);
+    }
+}
+
+static void add_subscription(neu_mqtt_client_t *client, subscription_t *sub)
+{
+    subscription_t *old = NULL;
+
+    HASH_FIND_STR(client->subscriptions, sub->topic, old);
+    if (old) {
+        HASH_DEL(client->subscriptions, old);
+        subscription_free(old);
+    }
+    HASH_ADD_STR(client->subscriptions, topic, sub);
+}
+
 neu_mqtt_client_t *neu_mqtt_client_new(const char *host, uint16_t port,
                                        neu_mqtt_version_e version)
 {
@@ -196,6 +317,7 @@ void neu_mqtt_client_free(neu_mqtt_client_t *client)
         if (client->sqlite_cfg) {
             nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
         }
+        subscriptions_free(client->subscriptions);
         nng_msg_free(client->conn_msg);
         free(client->url);
         free(client);
@@ -412,14 +534,21 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
 }
 
 int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
-                              const char *topic, neu_mqtt_client_cb_t cb)
+                              const char *                   topic,
+                              neu_mqtt_client_subscribe_cb_t cb, void *data)
 {
-    int      rv      = 0;
-    nng_msg *sub_msg = NULL;
+    int             rv           = 0;
+    nng_msg *       sub_msg      = NULL;
+    subscription_t *subscription = NULL;
 
     if ((rv = nng_mqtt_msg_alloc(&sub_msg, 0)) != 0) {
         log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));
         return -1;
+    }
+
+    subscription = subscription_new(client, topic, cb, data);
+    if (NULL == subscription) {
+        goto error;
     }
 
     nng_mqtt_topic_qos topic_qos[] = {
@@ -435,10 +564,18 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     rv = nng_sendmsg(client->sock, sub_msg, NNG_FLAG_NONBLOCK);
     if (0 != rv) {
         log(error, "nng_sendmsg fail: %s", nng_strerror(rv));
-        return -1;
+        goto error;
     }
 
-    (void) cb; // TODO: handle callback on subscribed topic
+    add_subscription(client, subscription);
+    log(info, "sub [%s, QoS%d]", topic, qos);
+
+    nng_recv_aio(client->sock, subscription->aio);
 
     return 0;
+
+error:
+    nng_msg_free(sub_msg);
+    subscription_free(subscription);
+    return -1;
 }

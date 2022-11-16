@@ -17,9 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include "mqtt_plugin.h"
+#include "utils/asprintf.h"
+
 #include "mqtt_config.h"
 #include "mqtt_handle.h"
+#include "mqtt_plugin.h"
 
 const neu_plugin_module_t neu_plugin_module;
 
@@ -69,6 +71,16 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
         neu_mqtt_client_free(plugin->client);
         plugin->client = NULL;
     }
+
+    free(plugin->read_req_topic);
+    plugin->read_req_topic = NULL;
+    free(plugin->read_resp_topic);
+    plugin->read_resp_topic = NULL;
+    free(plugin->write_req_topic);
+    plugin->write_req_topic = NULL;
+    free(plugin->write_resp_topic);
+    plugin->write_resp_topic = NULL;
+
     plog_info(plugin, "uninitialize plugin `%s` success",
               neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
@@ -185,6 +197,52 @@ error:
     return rv;
 }
 
+static int create_topic(neu_plugin_t *plugin)
+{
+    if (plugin->read_req_topic) {
+        // topics already created
+        return 0;
+    }
+
+    neu_asprintf(&plugin->read_req_topic, "/neuron/%s/read/req",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        return -1;
+    }
+
+    neu_asprintf(&plugin->read_resp_topic, "/neuron/%s/read/resp",
+                 plugin->common.name);
+    if (NULL == plugin->read_resp_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        return -1;
+    }
+
+    neu_asprintf(&plugin->write_req_topic, "/neuron/%s/write/req",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        free(plugin->read_resp_topic);
+        plugin->read_resp_topic = NULL;
+        return -1;
+    }
+
+    neu_asprintf(&plugin->write_resp_topic, "/neuron/%s/write/resp",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        free(plugin->read_resp_topic);
+        plugin->read_resp_topic = NULL;
+        free(plugin->write_req_topic);
+        plugin->write_req_topic = NULL;
+        return -1;
+    }
+
+    return 0;
+}
+
 static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
     int         rv          = 0;
@@ -202,11 +260,34 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
         goto end;
     }
 
+    if (0 != create_topic(plugin)) {
+        plog_error(plugin, "create topics fail");
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, 0, plugin->read_req_topic,
+                                  handle_read_req, plugin)) {
+        plog_error(plugin, "subscribe [%s] fail", plugin->read_req_topic);
+        rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+        goto end;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, 0, plugin->write_req_topic,
+                                  handle_write_req, plugin)) {
+        plog_error(plugin, "subscribe [%s] fail", plugin->write_req_topic);
+        rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+        goto end;
+    }
+
 end:
     if (0 == rv) {
         plog_info(plugin, "start plugin `%s` success", plugin_name);
     } else {
         plog_error(plugin, "start plugin `%s` failed", plugin_name);
+        neu_mqtt_client_close(plugin->client);
     }
     return rv;
 }
