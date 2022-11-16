@@ -59,6 +59,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name  = "modbus-tcp",
     .module_descr = "The modbus-tcp plugin is used for devices connected using "
                     "the modbus protocol tcp mode.",
+    .module_descr_zh = "modbus-tcp 插件用于连接使用 modbus tcp 协议的设备",
     .intf_funs = &plugin_intf_funs,
     .kind      = NEU_PLUGIN_KIND_SYSTEM,
     .type      = NEU_NA_TYPE_DRIVER,

@@ -88,6 +88,7 @@ typedef struct neu_plugin_module {
     const uint32_t                version;
     const char *                  module_name;
     const char *                  module_descr;
+    const char *                  module_descr_zh;
     const neu_plugin_intf_funs_t *intf_funs;
     neu_node_type_e               type;
     neu_plugin_kind_e             kind;

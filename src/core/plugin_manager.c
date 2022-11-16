@@ -37,6 +37,7 @@ typedef struct plugin_entity {
     char *name;
     char *lib_name;
     char *description;
+    char *description_zh;
 
     neu_plugin_kind_e kind;
     neu_node_type_e   type;
@@ -122,13 +123,14 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
     }
     plugin = calloc(1, sizeof(plugin_entity_t));
 
-    plugin->display     = pm->display;
-    plugin->type        = pm->type;
-    plugin->kind        = pm->kind;
-    plugin->name        = strdup(pm->module_name);
-    plugin->lib_name    = strdup(plugin_lib_name);
-    plugin->description = strdup(pm->module_descr);
-    plugin->single      = pm->single;
+    plugin->display        = pm->display;
+    plugin->type           = pm->type;
+    plugin->kind           = pm->kind;
+    plugin->name           = strdup(pm->module_name);
+    plugin->lib_name       = strdup(plugin_lib_name);
+    plugin->description    = strdup(pm->module_descr);
+    plugin->description_zh = strdup(pm->module_descr_zh);
+    plugin->single         = pm->single;
     if (plugin->single) {
         plugin->single_name = strdup(pm->single_name);
     }
@@ -180,6 +182,8 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
         strncpy(info.name, el->name, sizeof(info.name));
         strncpy(info.library, el->lib_name, sizeof(info.library));
         strncpy(info.description, el->description, sizeof(info.description));
+        strncpy(info.description_zh, el->description_zh,
+                sizeof(info.description_zh));
 
         utarray_push_back(plugins, &info);
     }
@@ -211,6 +215,8 @@ UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr)
             strncpy(info.library, el->lib_name, sizeof(info.library));
             strncpy(info.description, el->description,
                     sizeof(info.description));
+            strncpy(info.description_zh, el->description_zh,
+                    sizeof(info.description_zh));
 
             utarray_push_back(plugins, &info);
         }
@@ -306,5 +312,6 @@ static void entity_free(plugin_entity_t *entity)
     free(entity->name);
     free(entity->lib_name);
     free(entity->description);
+    free(entity->description_zh);
     free(entity);
 }

@@ -109,6 +109,8 @@ void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins)
         plugin_res.plugin_libs[index].name        = (char *) info->name;
         plugin_res.plugin_libs[index].library     = (char *) info->library;
         plugin_res.plugin_libs[index].description = (char *) info->description;
+        plugin_res.plugin_libs[index].description_zh =
+            (char *) info->description_zh;
     }
 
     neu_json_encode_by_fn(&plugin_res, neu_json_encode_get_plugin_resp,

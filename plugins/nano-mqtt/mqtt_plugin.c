@@ -345,15 +345,17 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 };
 
 #define DESCRIPTION "Neuron northbound MQTT plugin bases on NanoSDK."
+#define DESCRIPTION_ZH "基于 NanoSDK 的 Neuron 北向应用 MQTT 插件"
 
 const neu_plugin_module_t neu_plugin_module = {
-    .version      = NEURON_PLUGIN_VER_1_0,
-    .module_name  = "nano-mqtt",
-    .module_descr = DESCRIPTION,
-    .intf_funs    = &plugin_intf_funs,
-    .kind         = NEU_PLUGIN_KIND_SYSTEM,
-    .type         = NEU_NA_TYPE_APP,
-    .sub_msg[0]   = NEU_SUBSCRIBE_NODES_STATE,
-    .display      = true,
-    .single       = false,
+    .version         = NEURON_PLUGIN_VER_1_0,
+    .module_name     = "nano-mqtt",
+    .module_descr    = DESCRIPTION,
+    .module_descr_zh = DESCRIPTION_ZH,
+    .intf_funs       = &plugin_intf_funs,
+    .kind            = NEU_PLUGIN_KIND_SYSTEM,
+    .type            = NEU_NA_TYPE_APP,
+    .sub_msg[0]      = NEU_SUBSCRIBE_NODES_STATE,
+    .display         = true,
+    .single          = false,
 };
