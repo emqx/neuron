@@ -1,6 +1,6 @@
 # neuron
 
-![Version: 1.0.3](https://img.shields.io/badge/Version-1.0.3-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.8](https://img.shields.io/badge/AppVersion-2.2.8-informational?style=flat-square)
+![Version: 1.0.6](https://img.shields.io/badge/Version-1.0.6-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 2.2.8](https://img.shields.io/badge/AppVersion-2.2.8-informational?style=flat-square)
 
 A Helm chart for Kubernetes
 
@@ -33,11 +33,15 @@ helm uninstall my-neuron
 | imagePullSecrets | list | `[]` |  |
 | nameOverride | string | `""` |  |
 | neuronEnv.enabled | bool | `true` |  |
-| neuronEnv.key.disableAuth | string | `"DISABLE_AUTH"` |  |
-| neuronEnv.value.disableAuth | bool | `true` |  |
+| neuronEnv.keys.disableAuth | string | `"DISABLE_AUTH"` |  |
+| neuronEnv.values.disableAuth | bool | `true` |  |
+| neuronMounts[0].capacity | string | `"100Mi"` |  |
+| neuronMounts[0].mountPath | string | `"/opt/neuron/persistence"` |  |
+| neuronMounts[0].name | string | `"pvc-neuron-data"` |  |
 | nodeSelector | object | `{}` |  |
-| persistence.enabled | bool | `true` |  |
-| persistence.existingClaim | string | `"pvc-neuron-data"` | Existing PersistentVolumeClaims The value is evaluated as a template So, for example, the name can depend on .Release or .Chart |
+| persistence.accessMode | string | `"ReadWriteOnce"` |  |
+| persistence.enabled | bool | `false` |  |
+| persistence.storageClass | string | `"standard"` |  |
 | podAnnotations | object | `{}` |  |
 | resources | object | `{}` |  |
 | service.annotations | object | `{"eip.openelb.kubesphere.io/v1alpha2":"eip-pool","lb.kubesphere.io/v1alpha1":"openelb","protocol.openelb.kubesphere.io/v1alpha1":"layer2"}` | Provide any additional annotations which may be required. Evaluated as a template |
