@@ -62,6 +62,7 @@ service:
   # - 10.10.10.0/24
   #
   loadBalancerSourceRanges: []
+  ## TODO: it's just for OpenELB
   # -- Provide any additional annotations which may be required. Evaluated as a template
   annotations:
     lb.kubesphere.io/v1alpha1: openelb
@@ -69,11 +70,16 @@ service:
     protocol.openelb.kubesphere.io/v1alpha1: layer2
 
 persistence:
-  enabled: true
-  # -- Existing PersistentVolumeClaims
-  # The value is evaluated as a template
-  # So, for example, the name can depend on .Release or .Chart
-  existingClaim: "pvc-neuron-data"
+  enabled: false
+  accessMode: ReadWriteOnce
+  ## TODO: not all storage class can work well, it depends on the specific storage
+  storageClass: standard
+  # storageClass: huawei-nfs
+
+neuronMounts:
+  - name: pvc-neuron-data
+    capacity: 100Mi
+    mountPath: "/opt/neuron/persistence"
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
@@ -151,10 +157,10 @@ tls:
 
 neuronEnv:
   enabled: true
-  key:
+  keys:
     disableAuth: DISABLE_AUTH
 
-  value:
+  values:
     disableAuth: true
 
 # -- only for kubeedge deployment
