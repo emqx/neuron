@@ -32,6 +32,7 @@
 #include "utils/asprintf.h"
 #include "utils/utextend.h"
 #include "utils/uthash.h"
+#include "utils/utlist.h"
 #include "utils/zlog.h"
 
 #define log(level, ...)                               \
@@ -51,12 +52,25 @@
     } while (0)
 
 typedef struct {
+    neu_mqtt_qos_e                 qos;
     char *                         topic;
     neu_mqtt_client_subscribe_cb_t cb;
     void *                         data;
-    nng_aio *                      aio;
     UT_hash_handle                 hh;
 } subscription_t;
+
+typedef enum {
+    TASK_SEND,
+    TASK_RECV,
+} task_kind_e;
+
+typedef struct task_s {
+    task_kind_e    kind;
+    nng_aio *      aio;
+    void *         data;
+    struct task_s *prev;
+    struct task_s *next;
+} task_t;
 
 struct neu_mqtt_client_s {
     nng_socket              sock;
@@ -71,9 +85,41 @@ struct neu_mqtt_client_s {
     neu_mqtt_client_cb_t    disconnect_cb;
     void *                  disconnect_cb_data;
     nng_mqtt_sqlite_option *sqlite_cfg;
+    bool                    receiving;
+    nng_aio *               recv_aio;
     subscription_t *        subscriptions;
+    size_t                  task_count;
+    size_t                  task_limit;
+    task_t *                task_free_list;
     zlog_category_t *       log;
 };
+
+static inline task_t *task_new(neu_mqtt_client_t *client, task_kind_e kind,
+                               void *data);
+static inline void    task_free(task_t *task);
+static inline void    tasks_free(task_t *tasks);
+static void           task_cb(void *arg);
+
+static subscription_t *subscription_new(neu_mqtt_client_t *            client,
+                                        const char *                   topic,
+                                        neu_mqtt_client_subscribe_cb_t cb,
+                                        void *                         data);
+static inline void     subscription_free(subscription_t *subscription);
+static inline void     subscriptions_free(subscription_t *subscriptions);
+
+static void recv_cb(void *arg);
+static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg);
+static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg);
+
+static inline task_t *client_alloc_task(neu_mqtt_client_t *client,
+                                        task_kind_e kind, void *data);
+static inline void    client_free_task(neu_mqtt_client_t *client, task_t *task);
+static inline void    client_add_subscription(neu_mqtt_client_t *client,
+                                              subscription_t *   sub);
+static inline int     client_send_msg(neu_mqtt_client_t *client, nng_msg *msg);
+static int            client_send_sub_msg(neu_mqtt_client_t *client,
+                                          subscription_t *   subscription);
+static inline void    client_start_recv(neu_mqtt_client_t *client);
 
 static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
 {
@@ -89,6 +135,122 @@ static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
     }
 }
 
+static inline task_t *task_new(neu_mqtt_client_t *client, task_kind_e kind,
+                               void *data)
+{
+    task_t *task = calloc(1, sizeof(*task));
+    if (NULL == task) {
+        log(error, "calloc task fail");
+        return NULL;
+    }
+
+    int rv = 0;
+    if ((rv = nng_aio_alloc(&task->aio, task_cb, task)) != 0) {
+        log(error, "nng_aio_alloc fail: %s", nng_strerror(rv));
+        free(task);
+        return NULL;
+    }
+
+    nng_aio_set_input(task->aio, 0, client);
+    task->kind = kind;
+    task->data = data;
+
+    return task;
+}
+
+static inline void task_free(task_t *task)
+{
+    // NanoSDK quirks: calling nng_aio_stop will block if the aio is in use
+    // nng_aio_stop(task->aio);
+    nng_aio_free(task->aio);
+    free(task);
+}
+
+static inline void tasks_free(task_t *tasks)
+{
+    task_t *task = NULL, *tmp = NULL;
+    DL_FOREACH_SAFE(tasks, task, tmp)
+    {
+        DL_DELETE(tasks, task);
+        task_free(task);
+    }
+}
+
+static void task_cb(void *arg)
+{
+    task_t *           task   = arg;
+    nng_aio *          aio    = task->aio;
+    neu_mqtt_client_t *client = nng_aio_get_input(aio, 0);
+
+    // TASK_SEND
+    if (TASK_SEND == task->kind) {
+        int rv = 0;
+        if (0 != (rv = nng_aio_result(aio))) {
+            log(error, "send error: %s", nng_strerror(rv));
+        }
+        client_free_task(client, task);
+        return;
+    }
+
+    // TASK_RECV
+
+    subscription_t *subscription = task->data;
+    nng_msg *       msg          = nng_aio_get_msg(aio);
+
+    uint32_t payload_len;
+    uint8_t *payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
+
+    subscription->cb(payload, payload_len, subscription->data);
+
+    nng_msg_free(msg);
+    client_free_task(client, task);
+}
+
+static subscription_t *subscription_new(neu_mqtt_client_t *            client,
+                                        const char *                   topic,
+                                        neu_mqtt_client_subscribe_cb_t cb,
+                                        void *                         data)
+{
+    (void) client;
+    subscription_t *subscription = NULL;
+
+    subscription = calloc(1, sizeof(*subscription));
+    if (NULL == subscription) {
+        log(error, "calloc subscription fail");
+        return NULL;
+    }
+
+    subscription->topic = strdup(topic);
+    if (NULL == subscription->topic) {
+        log(error, "strdup subscription topic fail");
+        free(subscription);
+        return NULL;
+    }
+
+    subscription->cb   = cb;
+    subscription->data = data;
+
+    return subscription;
+}
+
+static inline void subscription_free(subscription_t *subscription)
+{
+    if (subscription) {
+        free(subscription->topic);
+        free(subscription);
+    }
+}
+
+static inline void subscriptions_free(subscription_t *subscriptions)
+{
+    subscription_t *sub = NULL, *tmp = NULL;
+    HASH_ITER(hh, subscriptions, sub, tmp)
+    {
+        HASH_DEL(subscriptions, sub);
+        subscription_free(sub);
+    }
+}
+
 static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
@@ -96,6 +258,20 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_mqtt_client_t *client = arg;
 
     log(info, "mqtt client connected");
+
+    // send subscribe messages for all subscriptions
+    subscription_t *sub;
+    HASH_LOOP(hh, client->subscriptions, sub)
+    {
+        if (client_send_sub_msg(client, sub) < 0) {
+            log(error, "client_send_sub_msg fail");
+        }
+    }
+
+    // start receiving
+    client_start_recv(client);
+
+    // mark as connected
     client->connected = true;
 
     if (client->connect_cb) {
@@ -121,18 +297,21 @@ static void recv_cb(void *arg)
 {
     int                rv           = 0;
     subscription_t *   subscription = arg;
-    nng_aio *          aio          = subscription->aio;
-    neu_mqtt_client_t *client       = nng_aio_get_input(aio, 0);
+    neu_mqtt_client_t *client       = arg;
+    nng_aio *          aio          = client->recv_aio;
 
     if (0 != (rv = nng_aio_result(aio))) {
-        log(error, "mqtt client recv error: %s", nng_strerror(rv));
+        log(error, "mqtt client recv error: %s, aio:%p", nng_strerror(rv), aio);
         if (NNG_EAGAIN == rv) {
             nng_recv_aio(client->sock, aio);
+        } else {
+            client->receiving = false;
         }
         return;
     }
 
     nng_msg *msg = nng_aio_get_msg(aio);
+    nng_aio_set_msg(aio, NULL);
 
     uint32_t    payload_len;
     uint8_t *   payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
@@ -140,13 +319,22 @@ static void recv_cb(void *arg)
     const char *topic = nng_mqtt_msg_get_publish_topic(msg, &topic_len);
     uint8_t     qos   = nng_mqtt_msg_get_publish_qos(msg);
 
+    (void) payload;
     log(info, "recv [%.*s, QoS%d] %" PRIu32 " bytes", (unsigned) topic_len,
         topic, (int) qos, payload_len);
 
     // find matching subscription
+    // NOTE: does not support wildcards
     HASH_FIND(hh, client->subscriptions, topic, topic_len, subscription);
     if (NULL != subscription) {
-        subscription->cb(payload, payload_len, subscription->data);
+        task_t *task = client_alloc_task(client, TASK_RECV, subscription);
+        if (NULL != task) {
+            nng_aio_set_msg(task->aio, msg);
+            msg = NULL;
+            nng_aio_finish(task->aio, 0);
+        } else {
+            log(error, "client_alloc_task fail");
+        }
     } else {
         log(warn, "[%.*s] no subscription found", (unsigned) topic_len, topic);
     }
@@ -155,8 +343,120 @@ static void recv_cb(void *arg)
     nng_recv_aio(client->sock, aio);
 }
 
-static nng_msg *alloc_conn_msg(neu_mqtt_client_t *client,
-                               neu_mqtt_version_e version)
+static inline task_t *client_alloc_task(neu_mqtt_client_t *client,
+                                        task_kind_e kind, void *data)
+{
+    task_t *task = client->task_free_list;
+
+    if (NULL != task) {
+        DL_DELETE(client->task_free_list, task);
+        task->kind = kind;
+        task->data = data;
+        // may try to reduce task queue length adaptive to workload
+        return task;
+    }
+
+    if (client->task_count >= client->task_limit) {
+        log(warn, "reach task limit: %zu", client->task_count);
+        return NULL;
+    }
+
+    task = task_new(client, kind, data);
+    if (NULL == task) {
+        log(error, "task_new fail");
+        return NULL;
+    }
+
+    ++client->task_count;
+
+    // the task queue length should be a small number due to reuse
+    // log info every time the task queue length increments by 32
+    if (0 == (client->task_count & (32 - 1))) {
+        log(info, "task queue length: %zu", client->task_count);
+    }
+
+    return task;
+}
+
+static inline void client_free_task(neu_mqtt_client_t *client, task_t *task)
+{
+    nng_aio_set_msg(task->aio, NULL);
+    task->data = NULL;
+    // prepend in the hope to help locality
+    DL_PREPEND(client->task_free_list, task);
+}
+
+static inline void client_add_subscription(neu_mqtt_client_t *client,
+                                           subscription_t *   sub)
+{
+    subscription_t *old = NULL;
+
+    HASH_FIND_STR(client->subscriptions, sub->topic, old);
+    if (old) {
+        HASH_DEL(client->subscriptions, old);
+        subscription_free(old);
+    }
+    HASH_ADD_STR(client->subscriptions, topic, sub);
+}
+
+static inline int client_send_msg(neu_mqtt_client_t *client, nng_msg *msg)
+{
+    task_t *task = client_alloc_task(client, TASK_SEND, NULL);
+    if (NULL == task) {
+        log(error, "client_alloc_task fail");
+        return -1;
+    }
+
+    nng_aio_set_msg(task->aio, msg);
+    nng_send_aio(client->sock, task->aio);
+
+    return 0;
+}
+
+static int client_send_sub_msg(neu_mqtt_client_t *client,
+                               subscription_t *   subscription)
+{
+    int      rv      = 0;
+    nng_msg *sub_msg = NULL;
+
+    if ((rv = nng_mqtt_msg_alloc(&sub_msg, 0)) != 0) {
+        log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));
+        return -1;
+    }
+
+    nng_mqtt_topic_qos topic_qos[] = {
+        { .qos   = subscription->qos,
+          .topic = { .buf    = (uint8_t *) subscription->topic,
+                     .length = strlen(subscription->topic) } },
+    };
+
+    size_t topic_qos_count = sizeof(topic_qos) / sizeof(nng_mqtt_topic_qos);
+
+    nng_mqtt_msg_set_packet_type(sub_msg, NNG_MQTT_SUBSCRIBE);
+    nng_mqtt_msg_set_subscribe_topics(sub_msg, topic_qos, topic_qos_count);
+
+    rv = client_send_msg(client, sub_msg);
+    if (0 != rv) {
+        log(error, "client_send_msg fail");
+        nng_msg_free(sub_msg);
+        return -1;
+    }
+
+    log(info, "sub [%s, QoS%d]", subscription->topic, subscription->qos);
+
+    return 0;
+}
+
+static inline void client_start_recv(neu_mqtt_client_t *client)
+{
+    if (client->recv_aio && !client->receiving) {
+        nng_recv_aio(client->sock, client->recv_aio);
+        client->receiving = true;
+    }
+}
+
+static inline nng_msg *alloc_conn_msg(neu_mqtt_client_t *client,
+                                      neu_mqtt_version_e version)
 {
     int      rv  = 0;
     nng_msg *msg = NULL;
@@ -203,81 +503,10 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     nng_mqtt_set_sqlite_flush_threshold(cfg, 256);
     nng_mqtt_set_sqlite_max_rows(cfg, 256);
     nng_mqtt_set_sqlite_db_dir(cfg, "persistence/");
+    // FIXME: every client should have a distinct db
     nng_mqtt_sqlite_db_init(cfg, "mqtt_client.db", client->version);
 
     return cfg;
-}
-
-static subscription_t *subscription_new(neu_mqtt_client_t *            client,
-                                        const char *                   topic,
-                                        neu_mqtt_client_subscribe_cb_t cb,
-                                        void *                         data)
-{
-    int             rv           = 0;
-    subscription_t *subscription = NULL;
-
-    subscription = calloc(1, sizeof(*subscription));
-    if (NULL == subscription) {
-        return NULL;
-    }
-
-    subscription->topic = strdup(topic);
-    if (NULL == subscription->topic) {
-        free(subscription);
-        return NULL;
-    }
-
-    if ((rv = nng_aio_alloc(&subscription->aio, recv_cb, subscription)) != 0) {
-        log(error, "nng_aio_alloc fail: %s", nng_strerror(rv));
-        free(subscription->topic);
-        free(subscription);
-        return NULL;
-    }
-
-    if ((rv = nng_aio_set_input(subscription->aio, 0, client)) != 0) {
-        log(error, "nng_aio_set_input fail: %s", nng_strerror(rv));
-        nng_aio_free(subscription->aio);
-        free(subscription->topic);
-        free(subscription);
-        return NULL;
-    }
-
-    subscription->cb   = cb;
-    subscription->data = data;
-
-    return subscription;
-}
-
-static inline void subscription_free(subscription_t *subscription)
-{
-    if (subscription) {
-        nng_aio_stop(subscription->aio);
-        nng_aio_free(subscription->aio);
-        free(subscription->topic);
-        free(subscription);
-    }
-}
-
-static inline void subscriptions_free(subscription_t *subscriptions)
-{
-    subscription_t *sub = NULL, *tmp = NULL;
-    HASH_ITER(hh, subscriptions, sub, tmp)
-    {
-        HASH_DEL(subscriptions, sub);
-        subscription_free(sub);
-    }
-}
-
-static void add_subscription(neu_mqtt_client_t *client, subscription_t *sub)
-{
-    subscription_t *old = NULL;
-
-    HASH_FIND_STR(client->subscriptions, sub->topic, old);
-    if (old) {
-        HASH_DEL(client->subscriptions, old);
-        subscription_free(old);
-    }
-    HASH_ADD_STR(client->subscriptions, topic, sub);
 }
 
 neu_mqtt_client_t *neu_mqtt_client_new(const char *host, uint16_t port,
@@ -302,8 +531,9 @@ neu_mqtt_client_t *neu_mqtt_client_new(const char *host, uint16_t port,
         return NULL;
     }
 
-    client->url     = url;
-    client->version = version;
+    client->url        = url;
+    client->version    = version;
+    client->task_limit = 1024;
 
     return client;
 }
@@ -317,7 +547,9 @@ void neu_mqtt_client_free(neu_mqtt_client_t *client)
         if (client->sqlite_cfg) {
             nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
         }
+        nng_aio_free(client->recv_aio);
         subscriptions_free(client->subscriptions);
+        tasks_free(client->task_free_list);
         nng_msg_free(client->conn_msg);
         free(client->url);
         free(client);
@@ -378,6 +610,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
     } else {
         cfg = alloc_tls_config(client);
         if (NULL == cfg) {
+            log(error, "alloc_tls_config fail");
             return -1;
         }
         client->tls_cfg = cfg;
@@ -416,12 +649,14 @@ int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
     check_opened();
 
     if (0 == cache_limit) {
+        log(info, "cache disabled");
         return 0;
     }
 
     if (NULL == client->sqlite_cfg) {
         client->sqlite_cfg = alloc_sqlite_config(client);
         if (NULL == client->sqlite_cfg) {
+            log(error, "alloc_sqlite_config fail");
             return -1;
         }
     }
@@ -462,13 +697,13 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
                                  client->sqlite_cfg))) {
         log(error, "nng_socket_set_ptr(NNG_OPT_MQTT_SQLITE) fail: %s",
             nng_strerror(rv));
-        return -1;
+        goto error;
     }
 
     nng_dialer dialer;
     if ((rv = nng_dialer_create(&dialer, client->sock, client->url)) != 0) {
         log(error, "nng_dialer_create fail: %s", nng_strerror(rv));
-        return -1;
+        goto error;
     }
 
     if (client->tls_cfg &&
@@ -477,18 +712,30 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
                                      client->tls_cfg))) {
         log(error, "nng_dialter_set_ptr(NNG_OPT_TLS_CONFIG) fail: %s",
             nng_strerror(rv));
-        return -1;
+        goto error;
     }
 
     nng_mqtt_set_connect_cb(client->sock, connect_cb, client);
     nng_mqtt_set_disconnect_cb(client->sock, disconnect_cb, client);
 
-    nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG, client->conn_msg);
-    nng_dialer_start(dialer, NNG_FLAG_NONBLOCK);
+    if ((rv = nng_dialer_set_ptr(dialer, NNG_OPT_MQTT_CONNMSG,
+                                 client->conn_msg)) != 0) {
+        log(error, "nng_dialer_set_ptr fail: %s", nng_strerror(rv));
+        goto error;
+    }
+
+    if ((rv = nng_dialer_start(dialer, NNG_FLAG_NONBLOCK)) != 0) {
+        log(error, "nng_dialer_start fail: %s", nng_strerror(rv));
+        goto error;
+    }
 
     client->opened = true;
 
     return 0;
+
+error:
+    nng_close(client->sock);
+    return -1;
 }
 
 int neu_mqtt_client_close(neu_mqtt_client_t *client)
@@ -498,6 +745,9 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     if (!client->opened) {
         return rv;
     }
+
+    // NanoSDK quirks: calling nng_aio_stop will block if the aio is in use
+    // nng_aio_stop(client->recv_aio);
 
     rv = nng_close(client->sock);
     if (0 != rv) {
@@ -521,14 +771,14 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     nng_mqtt_msg_set_publish_payload(pub_msg, (uint8_t *) payload, len);
     nng_mqtt_msg_set_publish_qos(pub_msg, qos);
 
-    int rv = nng_sendmsg(client->sock, pub_msg, NNG_FLAG_NONBLOCK);
+    int rv = client_send_msg(client, pub_msg);
     if (0 != rv) {
-        log(error, "nng_sendmsg fail: %s", nng_strerror(rv));
+        log(error, "client_send_msg fail");
         nng_msg_free(pub_msg);
         return -1;
     }
 
-    log(debug, "pub [%s, QoS%d] %zu bytes", topic, qos, len);
+    log(info, "pub [%s, QoS%d] %zu bytes", topic, qos, len);
 
     return 0;
 }
@@ -538,44 +788,39 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                               neu_mqtt_client_subscribe_cb_t cb, void *data)
 {
     int             rv           = 0;
-    nng_msg *       sub_msg      = NULL;
     subscription_t *subscription = NULL;
 
-    if ((rv = nng_mqtt_msg_alloc(&sub_msg, 0)) != 0) {
-        log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));
-        return -1;
+    if (NULL == client->recv_aio) {
+        if ((rv = nng_aio_alloc(&client->recv_aio, recv_cb, client)) != 0) {
+            log(error, "nng_aio_alloc fail: %s", nng_strerror(rv));
+            return -1;
+        }
+        if (client->connected) {
+            // connect_cb already fired, then start receiving
+            client_start_recv(client);
+        }
     }
 
     subscription = subscription_new(client, topic, cb, data);
     if (NULL == subscription) {
+        log(error, "subscription_new fail");
         goto error;
     }
+    subscription->qos = qos;
 
-    nng_mqtt_topic_qos topic_qos[] = {
-        { .qos   = qos,
-          .topic = { .buf = (uint8_t *) topic, .length = strlen(topic) } },
-    };
-
-    size_t topic_qos_count = sizeof(topic_qos) / sizeof(nng_mqtt_topic_qos);
-
-    nng_mqtt_msg_set_packet_type(sub_msg, NNG_MQTT_SUBSCRIBE);
-    nng_mqtt_msg_set_subscribe_topics(sub_msg, topic_qos, topic_qos_count);
-
-    rv = nng_sendmsg(client->sock, sub_msg, NNG_FLAG_NONBLOCK);
-    if (0 != rv) {
-        log(error, "nng_sendmsg fail: %s", nng_strerror(rv));
-        goto error;
+    if (client->connected) {
+        // connect_cb already fired, then send a subscribe message
+        if (client_send_sub_msg(client, subscription) < 0) {
+            log(error, "client_send_sub_msg fail");
+            goto error;
+        }
     }
 
-    add_subscription(client, subscription);
-    log(info, "sub [%s, QoS%d]", topic, qos);
-
-    nng_recv_aio(client->sock, subscription->aio);
+    client_add_subscription(client, subscription);
 
     return 0;
 
 error:
-    nng_msg_free(sub_msg);
     subscription_free(subscription);
     return -1;
 }
