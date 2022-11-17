@@ -51,6 +51,7 @@ typedef struct {
     char *  name;
     char *  library;
     char *  description;
+    char *  description_zh;
     int64_t kind;
     int64_t node_type;
 } neu_json_get_plugin_resp_plugin_lib_t;

@@ -193,6 +193,7 @@ typedef struct neu_req_get_plugin {
 typedef struct neu_resp_plugin_info {
     char name[NEU_PLUGIN_NAME_LEN];
     char description[NEU_PLUGIN_DESCRIPTION_LEN];
+    char description_zh[NEU_PLUGIN_DESCRIPTION_LEN];
     char library[NEU_PLUGIN_LIBRARY_LEN];
 
     neu_plugin_kind_e kind;

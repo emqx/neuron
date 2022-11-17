@@ -674,6 +674,9 @@ const neu_plugin_module_t neu_plugin_module = {
         "by Neuron from the device can be transmitted to the MQTT Broker "
         "through the MQTT application, and users can also send commands to "
         "Neuron through the MQTT application.",
+    .module_descr_zh = "Neuron 北向应用 MQTT。Neuron "
+                       "从设备端采集到的数据可以通过北向应用 MQTT 传送到 MQTT "
+                       "Broker。用户也可以通过北向应用 MQTT 向 Neuron 发送指令",
     .intf_funs  = &plugin_intf_funs,
     .kind       = NEU_PLUGIN_KIND_SYSTEM,
     .type       = NEU_NA_TYPE_APP,
