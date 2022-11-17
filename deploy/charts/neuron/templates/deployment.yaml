@@ -16,13 +16,16 @@ spec:
         {{- include "neuron.selectorLabels" . | nindent 8 }}
     spec:
       volumes:
-        - name: neuron-persistence
-          {{- if .Values.persistence.enabled }}
+        {{- range $mount := .Values.neuronMounts }}
+        - name: {{ $mount.name }}
+          {{- if $.Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ (tpl .Values.persistence.existingClaim $) | default (include "neuron.fullname" .) }}
+            claimName: {{ printf "%s-%s" $.Release.Name (tpl $mount.name $) }}
           {{- else }}
           emptyDir: {}
           {{- end }}
+        {{- end }}
+
         {{- if .Values.tls.enabled }}
         - name: certs
           secret:
@@ -39,8 +42,8 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.neuronEnv.enabled }}
           env:
-          - name: {{ .Values.neuronEnv.key.disableAuth }}
-            value: "{{ .Values.neuronEnv.value.disableAuth }}"
+          - name: {{ .Values.neuronEnv.keys.disableAuth }}
+            value: "{{ .Values.neuronEnv.values.disableAuth }}"
           {{- end }}
           readinessProbe:
             httpGet:
@@ -49,7 +52,7 @@ spec:
             periodSeconds: 5
           ports:
           - name: web
-            containerPort: {{ .Values.service.ports.api.web | default 7000 }}
+            containerPort: {{ .Values.service.ports.web.port | default 7000 }}
             {{- if .Values.hostPorts.enabled }}
             hostPort: {{ .Values.hostPorts.web | default 7000 }}
             {{- end}}
@@ -59,8 +62,10 @@ spec:
             hostPort: {{ .Values.hostPorts.api | default 7001 }}
             {{- end}}
           volumeMounts:
-          - name: neuron-persistence
-            mountPath: "/opt/neuron/persistence"
+          {{- range $mount := .Values.neuronMounts }}
+          - name: {{ $mount.name }}
+            mountPath: {{ $mount.mountPath }}
+          {{- end }}
           {{- if .Values.tls.enabled }}
           - name: certs
             mountPath: "/opt/neuron/config/neuron.pem"
