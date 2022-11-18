@@ -289,6 +289,12 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_PLUGIN_NOT_RUNNING:
     case NEU_ERR_PLUGIN_TAG_NOT_READY:
     case NEU_ERR_PLUGIN_PACKET_OUT_OF_ORDER:
+    case NEU_ERR_MQTT_FAILURE:
+    case NEU_ERR_MQTT_IS_NULL:
+    case NEU_ERR_MQTT_INIT_FAILURE:
+    case NEU_ERR_MQTT_CONNECT_FAILURE:
+    case NEU_ERR_MQTT_SUBSCRIBE_FAILURE:
+    case NEU_ERR_MQTT_PUBLISH_FAILURE:
         status = NNG_HTTP_STATUS_OK;
         break;
     case NEU_ERR_EINTERNAL:
