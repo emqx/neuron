@@ -95,6 +95,7 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
         return 0;
     }
 
+    // set log category as soon as possible to ease debugging
     rv = neu_mqtt_client_set_zlog_category(client, plugin->common.log);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_client_set_zlog_category fail");
@@ -286,7 +287,8 @@ end:
     if (0 == rv) {
         plog_info(plugin, "start plugin `%s` success", plugin_name);
     } else {
-        plog_error(plugin, "start plugin `%s` failed", plugin_name);
+        plog_error(plugin, "start plugin `%s` failed, error %d", plugin_name,
+                   rv);
         neu_mqtt_client_close(plugin->client);
     }
     return rv;
