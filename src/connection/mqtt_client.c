@@ -509,31 +509,36 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     return cfg;
 }
 
-neu_mqtt_client_t *neu_mqtt_client_new(const char *host, uint16_t port,
-                                       neu_mqtt_version_e version)
+neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version)
 {
-    char *url = NULL;
-
-    neu_asprintf(&url, "mqtt-tcp://%s:%" PRIu16, host, port);
-    if (NULL == url) {
-        return NULL;
-    }
-
     neu_mqtt_client_t *client = calloc(1, sizeof(*client));
     if (NULL == client) {
-        free(url);
         return NULL;
     }
 
     client->conn_msg = alloc_conn_msg(client, version);
     if (NULL == client->conn_msg) {
-        free(url);
         return NULL;
     }
 
-    client->url        = url;
     client->version    = version;
     client->task_limit = 1024;
+
+    return client;
+}
+
+neu_mqtt_client_t *neu_mqtt_client_from_addr(const char *host, uint16_t port,
+                                             neu_mqtt_version_e version)
+{
+    neu_mqtt_client_t *client = neu_mqtt_client_new(version);
+    if (NULL == client) {
+        return NULL;
+    }
+
+    if (0 != neu_mqtt_client_set_addr(client, host, port)) {
+        neu_mqtt_client_free(client);
+        return NULL;
+    }
 
     return client;
 }
@@ -564,6 +569,22 @@ bool neu_mqtt_client_is_opened(neu_mqtt_client_t *client)
 bool neu_mqtt_client_is_connected(neu_mqtt_client_t *client)
 {
     return client->connected;
+}
+
+int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
+                             uint16_t port)
+{
+    char *url = NULL;
+
+    neu_asprintf(&url, "mqtt-tcp://%s:%" PRIu16, host, port);
+    if (NULL == url) {
+        log(error, "neu_asprintf address url fail");
+        return -1;
+    }
+
+    free(client->url);
+    client->url = url;
+    return 0;
 }
 
 int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,

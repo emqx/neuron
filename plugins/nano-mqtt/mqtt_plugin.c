@@ -102,6 +102,12 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
         return -1;
     }
 
+    rv = neu_mqtt_client_set_addr(client, config->host, config->port);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_host fail");
+        return -1;
+    }
+
     rv = neu_mqtt_client_set_connect_cb(client, connect_cb, plugin);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_client_set_connect_cb fail");
@@ -162,8 +168,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
             goto error;
         }
     } else {
-        plugin->client = neu_mqtt_client_new(config.host, config.port,
-                                             NEU_MQTT_VERSION_V311);
+        plugin->client = neu_mqtt_client_new(NEU_MQTT_VERSION_V311);
         if (NULL == plugin->client) {
             plog_error(plugin, "neu_mqtt_client_new fail");
             rv = NEU_ERR_EINTERNAL;
