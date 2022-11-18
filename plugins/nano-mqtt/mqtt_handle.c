@@ -333,7 +333,9 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    if (!neu_mqtt_client_is_connected(plugin->client)) {
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
         rv = NEU_ERR_MQTT_FAILURE;
         goto end;
     }
@@ -411,7 +413,9 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    if (!neu_mqtt_client_is_connected(plugin->client)) {
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
         rv = NEU_ERR_MQTT_FAILURE;
         goto end;
     }
@@ -449,7 +453,9 @@ int handle_trans_data(neu_plugin_t *            plugin,
         return NEU_ERR_MQTT_IS_NULL;
     }
 
-    if (!neu_mqtt_client_is_connected(plugin->client)) {
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
         return NEU_ERR_MQTT_FAILURE;
     }
 
@@ -484,7 +490,9 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
         goto end;
     }
 
-    if (!neu_mqtt_client_is_connected(plugin->client)) {
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
         rv = NEU_ERR_MQTT_FAILURE;
         goto end;
     }
