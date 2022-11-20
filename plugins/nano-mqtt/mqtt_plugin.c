@@ -108,6 +108,12 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
         return -1;
     }
 
+    rv = neu_mqtt_client_set_id(client, config->client_id);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_id fail");
+        return -1;
+    }
+
     rv = neu_mqtt_client_set_connect_cb(client, connect_cb, plugin);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_client_set_connect_cb fail");

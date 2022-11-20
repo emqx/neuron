@@ -120,7 +120,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     char *      err_param   = NULL;
     const char *placeholder = "********";
 
-    neu_json_elem_t upload_topic    = { .name = "upload-topic",
+    neu_json_elem_t client_id    = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t upload_topic = { .name = "upload-topic",
                                      .t    = NEU_JSON_STR };
     neu_json_elem_t heartbeat_topic = { .name = "heartbeat-topic",
                                         .t    = NEU_JSON_STR };
@@ -141,10 +142,16 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 6, &upload_topic,
+    ret = neu_parse_param(setting, &err_param, 7, &client_id, &upload_topic,
                           &heartbeat_topic, &format, &cache, &host, &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
+        goto error;
+    }
+
+    // client-id, required
+    if (0 == strlen(client_id.v.val_str)) {
+        plog_error(plugin, "setting empty client-id");
         goto error;
     }
 
@@ -204,6 +211,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    config->client_id       = client_id.v.val_str;
     config->upload_topic    = upload_topic.v.val_str;
     config->heartbeat_topic = heartbeat_topic.v.val_str;
     config->format          = format.v.val_int;
@@ -217,6 +225,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->key             = key.v.val_str;
     config->keypass         = keypass.v.val_str;
 
+    plog_info(plugin, "config client-id      : %s", config->client_id);
     plog_info(plugin, "config upload-topic   : %s", config->upload_topic);
     plog_info(plugin, "config heartbeat-topic: %s", config->heartbeat_topic);
     plog_info(plugin, "config format         : %s",
@@ -263,6 +272,7 @@ error:
 
 void mqtt_config_fini(mqtt_config_t *config)
 {
+    free(config->client_id);
     free(config->upload_topic);
     free(config->heartbeat_topic);
     free(config->host);
