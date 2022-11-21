@@ -188,6 +188,9 @@ static void task_cb(void *arg)
         if (0 != (rv = nng_aio_result(aio))) {
             log(error, "send error: %s", nng_strerror(rv));
         }
+        // TODO: check ack message status
+        nng_msg *msg = nng_aio_get_msg(aio);
+        nng_msg_free(msg);
         client_free_task(client, task);
         return;
     }
@@ -492,10 +495,26 @@ static inline nng_mqtt_sqlite_option *
 alloc_sqlite_config(neu_mqtt_client_t *client)
 {
     int                     rv;
+    char *                  db  = NULL;
     nng_mqtt_sqlite_option *cfg = NULL;
+    const mqtt_buf          client_id =
+        nng_mqtt_msg_get_connect_client_id(client->conn_msg);
+
+    if (NULL == client_id.buf || 0 == client_id.length) {
+        log(error, "nng_mqtt_msg_get_connect_client_id fail");
+        return NULL;
+    }
+
+    neu_asprintf(&db, "neuron-mqtt-client-%.*s.db", (unsigned) client_id.length,
+                 (char *) client_id.buf);
+    if (NULL == db) {
+        log(error, "neu_asprintf nano-mqtt cilent db fail");
+        return NULL;
+    }
 
     if ((rv = nng_mqtt_alloc_sqlite_opt(&cfg)) != 0) {
         log(error, "nng_mqtt_alloc_sqlite_opt fail: %s", nng_strerror(rv));
+        free(db);
         return NULL;
     }
 
@@ -503,9 +522,9 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     nng_mqtt_set_sqlite_flush_threshold(cfg, 256);
     nng_mqtt_set_sqlite_max_rows(cfg, 256);
     nng_mqtt_set_sqlite_db_dir(cfg, "persistence/");
-    // FIXME: every client should have a distinct db
-    nng_mqtt_sqlite_db_init(cfg, "mqtt_client.db", client->version);
+    nng_mqtt_sqlite_db_init(cfg, db, client->version);
 
+    free(db);
     return cfg;
 }
 
@@ -584,6 +603,18 @@ int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
 
     free(client->url);
     client->url = url;
+    return 0;
+}
+
+int neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id)
+{
+    check_opened();
+
+    if (NULL == id || 0 == strlen(id)) {
+        return -1;
+    }
+
+    nng_mqtt_msg_set_connect_client_id(client->conn_msg, id);
     return 0;
 }
 

@@ -58,6 +58,7 @@ bool neu_mqtt_client_is_connected(neu_mqtt_client_t *client);
 
 int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
                              uint16_t port);
+int neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id);
 int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
                              const char *password);
 int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *  client,
