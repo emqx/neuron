@@ -262,7 +262,7 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
         ret = recv(fd, buf, len, 0);
     }
 
-    if (ret <= 0 && errno != EAGAIN) {
+    if (ret <= 0) {
         conn->disconnected(conn->data, fd);
         conn_tcp_server_del_client(conn, fd);
     }
