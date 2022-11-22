@@ -1,6 +1,16 @@
 {
+  "client-id": {
+    "name": "client-id",
+    "description": "MQTT client id",
+    "type": "string",
+    "attribute": "required",
+    "default": "${node-name}",
+    "valid": {
+      "length": 255
+    }
+  },
   "upload-topic": {
-    "name": "topic",
+    "name": "upload topic",
     "description": "Topic to which publish tags data.",
     "type": "string",
     "attribute": "required",
