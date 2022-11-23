@@ -19,9 +19,11 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
+#define NNG_SUPP_TLS 1
 #define NNG_SUPP_SQLITE 1
 #include <nng/mqtt/mqtt_client.h>
 #include <nng/nng.h>
@@ -74,8 +76,10 @@ typedef struct task_s {
 
 struct neu_mqtt_client_s {
     nng_socket              sock;
-    char *                  url;
     neu_mqtt_version_e      version;
+    char *                  host;
+    uint16_t                port;
+    char *                  url;
     nng_tls_config *        tls_cfg;
     nng_msg *               conn_msg;
     bool                    opened;
@@ -120,6 +124,7 @@ static inline int     client_send_msg(neu_mqtt_client_t *client, nng_msg *msg);
 static int            client_send_sub_msg(neu_mqtt_client_t *client,
                                           subscription_t *   subscription);
 static inline void    client_start_recv(neu_mqtt_client_t *client);
+static inline int     client_make_url(neu_mqtt_client_t *client);
 
 static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
 {
@@ -458,6 +463,31 @@ static inline void client_start_recv(neu_mqtt_client_t *client)
     }
 }
 
+static inline int client_make_url(neu_mqtt_client_t *client)
+{
+    char *      url = NULL;
+    const char *fmt = NULL;
+
+    if (client->tls_cfg) {
+        fmt = "tls+mqtt-tcp://%s:%" PRIu16;
+    } else {
+        fmt = "mqtt-tcp://%s:%" PRIu16;
+    }
+
+    // cppcheck false alarm
+    // cppcheck-suppress wrongPrintfScanfArgNum
+    size_t n = snprintf(NULL, 0, fmt, client->host, client->port);
+    url      = realloc(client->url, n + 1);
+    if (NULL == url) {
+        log(error, "neu_asprintf address url fail");
+        return -1;
+    }
+
+    snprintf(url, n + 1, fmt, client->host, client->port);
+    client->url = url;
+    return 0;
+}
+
 static inline nng_msg *alloc_conn_msg(neu_mqtt_client_t *client,
                                       neu_mqtt_version_e version)
 {
@@ -576,6 +606,7 @@ void neu_mqtt_client_free(neu_mqtt_client_t *client)
         tasks_free(client->task_free_list);
         nng_msg_free(client->conn_msg);
         free(client->url);
+        free(client->host);
         free(client);
     }
 }
@@ -593,16 +624,20 @@ bool neu_mqtt_client_is_connected(neu_mqtt_client_t *client)
 int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
                              uint16_t port)
 {
-    char *url = NULL;
+    if (client->host && 0 == strcmp(client->host, host)) {
+        client->port = port;
+        return 0;
+    }
 
-    neu_asprintf(&url, "mqtt-tcp://%s:%" PRIu16, host, port);
-    if (NULL == url) {
-        log(error, "neu_asprintf address url fail");
+    char *h = strdup(host);
+    if (NULL == h) {
+        log(error, "strdup host fail");
         return -1;
     }
 
-    free(client->url);
-    client->url = url;
+    free(client->host);
+    client->host = h;
+    client->port = port;
     return 0;
 }
 
@@ -657,6 +692,15 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
 
     check_opened();
 
+    if (NULL == ca) {
+        // disable tls
+        if (client->tls_cfg) {
+            nng_tls_config_free(client->tls_cfg);
+            client->tls_cfg = NULL;
+        }
+        return 0;
+    }
+
     if (client->tls_cfg) {
         cfg = client->tls_cfg;
     } else {
@@ -685,11 +729,9 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
         }
     }
 
-    if (ca != NULL) {
-        if ((rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
-            log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
-            return -1;
-        }
+    if ((rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
+        log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
+        return -1;
     }
 
     return 0;
@@ -742,6 +784,11 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
     } else if ((rv = nng_mqtt_client_open(&client->sock)) != 0) {
         log(error, "nng_mqtt_client_open fail: %s", nng_strerror(rv));
         return -1;
+    }
+
+    if (0 != client_make_url(client)) {
+        log(error, "client_make_url fail");
+        goto error;
     }
 
     if (client->sqlite_cfg &&
