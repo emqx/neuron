@@ -694,6 +694,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
 
     if (NULL == ca) {
         // disable tls
+        log(info, "tls disabled");
         if (client->tls_cfg) {
             nng_tls_config_free(client->tls_cfg);
             client->tls_cfg = NULL;
@@ -743,7 +744,12 @@ int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
     check_opened();
 
     if (0 == cache_limit) {
+        // disable cache
         log(info, "cache disabled");
+        if (client->sqlite_cfg) {
+            nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
+            client->sqlite_cfg = NULL;
+        }
         return 0;
     }
 
