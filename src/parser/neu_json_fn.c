@@ -85,7 +85,9 @@ int neu_parse_param(const char *buf, char **err_param, int n,
     }
 
     if (neu_json_decode_value(params_ele.v.val_object, ele) != 0) {
-        *err_param = strdup(ele->name);
+        if (err_param) {
+            *err_param = strdup(ele->name);
+        }
         neu_json_decode_free(json);
         return -1;
     }
