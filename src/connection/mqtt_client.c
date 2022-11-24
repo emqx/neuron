@@ -103,6 +103,8 @@ static inline task_t *task_new(neu_mqtt_client_t *client, task_kind_e kind,
 static inline void    task_free(task_t *task);
 static inline void    tasks_free(task_t *tasks);
 static void           task_cb(void *arg);
+static void           task_handle_send(task_t *task, neu_mqtt_client_t *client);
+static void           task_handle_recv(task_t *task, neu_mqtt_client_t *client);
 
 static subscription_t *subscription_new(neu_mqtt_client_t *            client,
                                         const char *                   topic,
@@ -187,23 +189,74 @@ static void task_cb(void *arg)
     nng_aio *          aio    = task->aio;
     neu_mqtt_client_t *client = nng_aio_get_input(aio, 0);
 
-    // TASK_SEND
     if (TASK_SEND == task->kind) {
-        int rv = 0;
-        if (0 != (rv = nng_aio_result(aio))) {
-            log(error, "send error: %s", nng_strerror(rv));
-        }
-        // TODO: check ack message status
-        nng_msg *msg = nng_aio_get_msg(aio);
-        nng_msg_free(msg);
-        client_free_task(client, task);
+        task_handle_send(task, client);
+    } else if (TASK_RECV == task->kind) {
+        task_handle_recv(task, client);
+    } else {
+        log(error, "unexpected task kind:%d", task->kind);
+        assert(!"logic error, task kind not exhausted");
+    }
+
+    client_free_task(client, task);
+}
+
+static void task_handle_send(task_t *task, neu_mqtt_client_t *client)
+{
+    nng_aio *aio = task->aio;
+
+    int rv = 0;
+    if (0 != (rv = nng_aio_result(aio))) {
+        log(error, "send error: %s", nng_strerror(rv));
         return;
     }
 
-    // TASK_RECV
+    nng_msg *msg = nng_aio_get_msg(aio);
+    if (NULL == msg) {
+        return;
+    }
 
+    nng_mqtt_packet_type pt = nng_mqtt_msg_get_packet_type(msg);
+    switch (pt) {
+    case NNG_MQTT_SUBACK: {
+        uint32_t n  = 0;
+        uint8_t *rc = nng_mqtt_msg_get_suback_return_codes(msg, &n);
+        if (0 == *rc) {
+            log(info, "suback return_code:%d, OK", *rc);
+        } else {
+            log(error, "suback return_code:%d, FAIL", *rc);
+        }
+        nng_msg_free(msg);
+        break;
+    }
+    case NNG_MQTT_UNSUBACK: {
+        nng_msg_free(msg);
+        break;
+    }
+    default:
+        // NanoSDK quirks: do not free the msg
+        // log(info, "ignore packet type: %d", pt);
+        break;
+    }
+
+    return;
+}
+
+static void task_handle_recv(task_t *task, neu_mqtt_client_t *client)
+{
     subscription_t *subscription = task->data;
-    nng_msg *       msg          = nng_aio_get_msg(aio);
+    nng_msg *       msg          = nng_aio_get_msg(task->aio);
+
+    if (NULL == msg) {
+        log(error, "recv NULL msg");
+        return;
+    }
+
+    nng_mqtt_packet_type pt = nng_mqtt_msg_get_packet_type(msg);
+    if (NNG_MQTT_PUBLISH != pt) {
+        log(error, "recv packet type:%d, expect PUBLISH packet", pt);
+        return;
+    }
 
     uint32_t payload_len;
     uint8_t *payload = nng_mqtt_msg_get_publish_payload(msg, &payload_len);
@@ -211,7 +264,6 @@ static void task_cb(void *arg)
     subscription->cb(payload, payload_len, subscription->data);
 
     nng_msg_free(msg);
-    client_free_task(client, task);
 }
 
 static subscription_t *subscription_new(neu_mqtt_client_t *            client,
@@ -694,6 +746,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
 
     if (NULL == ca) {
         // disable tls
+        log(info, "tls disabled");
         if (client->tls_cfg) {
             nng_tls_config_free(client->tls_cfg);
             client->tls_cfg = NULL;
@@ -743,7 +796,12 @@ int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
     check_opened();
 
     if (0 == cache_limit) {
+        // disable cache
         log(info, "cache disabled");
+        if (client->sqlite_cfg) {
+            nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
+            client->sqlite_cfg = NULL;
+        }
         return 0;
     }
 
