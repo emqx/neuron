@@ -30,10 +30,6 @@ extern "C" {
 
 #include "utils/zlog.h"
 
-typedef void (*neu_mqtt_client_cb_t)(void *data);
-typedef void (*neu_mqtt_client_subscribe_cb_t)(const uint8_t *payload,
-                                               uint32_t len, void *data);
-
 typedef enum {
     NEU_MQTT_VERSION_V31  = 3,
     NEU_MQTT_VERSION_V311 = 4,
@@ -48,6 +44,15 @@ typedef enum {
 
 typedef struct neu_mqtt_client_s neu_mqtt_client_t;
 
+typedef void (*neu_mqtt_client_connection_cb_t)(void *data);
+typedef void (*neu_mqtt_client_publish_cb_t)(int errcode, neu_mqtt_qos_e qos,
+                                             char *topic, uint8_t *payload,
+                                             uint32_t len, void *data);
+typedef void (*neu_mqtt_client_subscribe_cb_t)(neu_mqtt_qos_e qos,
+                                               const char *   topic,
+                                               const uint8_t *payload,
+                                               uint32_t len, void *data);
+
 neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version);
 neu_mqtt_client_t *neu_mqtt_client_from_addr(const char *host, uint16_t port,
                                              neu_mqtt_version_e version);
@@ -61,10 +66,12 @@ int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
 int neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id);
 int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
                              const char *password);
-int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *  client,
-                                   neu_mqtt_client_cb_t cb, void *data);
-int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *  client,
-                                      neu_mqtt_client_cb_t cb, void *data);
+int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
+                                   neu_mqtt_client_connection_cb_t cb,
+                                   void *                          data);
+int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
+                                      neu_mqtt_client_connection_cb_t cb,
+                                      void *                          data);
 int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
                             const char *cert, const char *key,
                             const char *keypass);
@@ -76,11 +83,30 @@ int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
 int neu_mqtt_client_open(neu_mqtt_client_t *client);
 int neu_mqtt_client_close(neu_mqtt_client_t *client);
 
+/** Publish a `qos` message with `len` bytes `payload` on `topic`.
+ *
+ * This function initiates sending a `PUBLISH` packet, and if successful
+ * returns zero and the callback `cb` will be called once on completion of
+ * message delivery, otherwise returns a nonzero value. Callback invocation
+ * will be of the form `cb(errcode, qos, topic, payload, len, data)`, where
+ * `errcode` is zero if delivery was successful and nonzero otherwise, and
+ * the other arguments are exactly the same what you pass into this function.
+ * You may set `cb` to NULL if you do not care about the result.
+ */
 int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
-                            const char *topic, const char *payload, size_t len);
+                            char *topic, uint8_t *payload, uint32_t len,
+                            void *data, neu_mqtt_client_publish_cb_t cb);
+
+/** Subscribe to `topic` with service quality `qos`.
+ *
+ * This function tries to send a `SUBSCRIBE` packet with the given `qos` and
+ * `topic`. If this was successful returns zero and the callback `cb` will be
+ * called on each received message with the matching topic, otherwise a nonzero
+ * value is returned.
+ */
 int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
-                              const char *                   topic,
-                              neu_mqtt_client_subscribe_cb_t cb, void *data);
+                              const char *topic, void *data,
+                              neu_mqtt_client_subscribe_cb_t cb);
 
 #ifdef __cplusplus
 }
