@@ -32,7 +32,8 @@ VALUES
     "$5$PwFeXpBBIBZuZdZl$fP8fFPWCLoaWcnVXVSR.3Xi8TEqCvX92gjhowNNn6S4"
   );
 
---- Add tags table ---
+--- Modify tags table ---
+BEGIN TRANSACTION;
 ALTER TABLE tags RENAME TO old_tags;
 CREATE TABLE IF NOT EXISTS
   tags (
