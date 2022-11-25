@@ -31,3 +31,23 @@ VALUES
     "admin",
     "$5$PwFeXpBBIBZuZdZl$fP8fFPWCLoaWcnVXVSR.3Xi8TEqCvX92gjhowNNn6S4"
   );
+
+--- Add tags table ---
+ALTER TABLE tags RENAME TO old_tags;
+CREATE TABLE IF NOT EXISTS
+  tags (
+    driver_name TEXT NOT NULL,
+    group_name TEXT NOT NULL,
+    name TEXT NULL check(length(name) <= 32),
+    address TEXT NULL check(length(address) <= 64),
+    attribute INTEGER NOT NULL check(attribute BETWEEN 0 AND 7),
+    precision INTEGER NOT NULL check(precision BETWEEN 0 AND 17),
+    decimal REAL NOT NULL,
+    type INTEGER NOT NULL check(type BETWEEN 0 AND 19),
+    description TEXT NULL check(length(description) <= 128),
+    UNIQUE (driver_name, group_name, name),
+    FOREIGN KEY (driver_name, group_name) REFERENCES groups (driver_name, name) ON UPDATE CASCADE ON DELETE CASCADE
+  );
+INSERT INTO tags SELECT * FROM old_tags;
+DROP TABLE old_tags;
+COMMIT;

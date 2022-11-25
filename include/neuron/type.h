@@ -45,6 +45,9 @@ typedef enum {
     NEU_TYPE_STRING = 13,
     NEU_TYPE_BYTES  = 14,
     NEU_TYPE_ERROR  = 15,
+    NEU_TYPE_WORD   = 16,
+    NEU_TYPE_DWORD  = 17,
+    NEU_TYPE_LWORD  = 18,
 } neu_type_e;
 
 inline static const char *neu_type_string(neu_type_e type)
@@ -80,6 +83,12 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_BYTES";
     case NEU_TYPE_ERROR:
         return "NEU_TYPE_ERROR";
+    case NEU_TYPE_WORD:
+        return "NEU_TYPE_WORD";
+    case NEU_TYPE_DWORD:
+        return "NEU_TYPE_DWORD";
+    case NEU_TYPE_LWORD:
+        return "NEU_TYPE_LWORD";
     }
 
     return "";

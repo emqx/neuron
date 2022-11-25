@@ -281,7 +281,11 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             case NEU_TYPE_UINT32:
             case NEU_TYPE_INT64:
             case NEU_TYPE_UINT64:
-                if (cmd->value.type == NEU_TYPE_INT64) {
+            case NEU_TYPE_WORD:
+            case NEU_TYPE_LWORD:
+            case NEU_TYPE_DWORD:
+                if (cmd->value.type == NEU_TYPE_INT64 ||
+                    cmd->value.type == NEU_TYPE_LWORD) {
                     cmd->value.value.u64 = cmd->value.value.u64 / tag->decimal;
                 } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
                     cmd->value.value.u64 =
@@ -317,6 +321,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             break;
         case NEU_TYPE_INT16:
         case NEU_TYPE_UINT16:
+        case NEU_TYPE_WORD:
             cmd->value.type      = NEU_TYPE_UINT16;
             cmd->value.value.u16 = (uint16_t) cmd->value.value.u64;
             switch (tag->option.value16.endian) {
@@ -330,6 +335,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             break;
         case NEU_TYPE_UINT32:
         case NEU_TYPE_INT32:
+        case NEU_TYPE_DWORD:
             cmd->value.type      = NEU_TYPE_UINT32;
             cmd->value.value.u32 = (uint32_t) cmd->value.value.u64;
             switch (tag->option.value32.endian) {
@@ -374,6 +380,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         case NEU_TYPE_DOUBLE:
         case NEU_TYPE_UINT64:
         case NEU_TYPE_INT64:
+        case NEU_TYPE_LWORD:
             switch (tag->option.value64.endian) {
             case NEU_DATATAG_ENDIAN_B64:
                 cmd->value.value.u64 = neu_ntohll(cmd->value.value.u64);

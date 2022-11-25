@@ -243,6 +243,7 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
         result->name        = strdup(find->tag->name);
         result->address     = strdup(find->tag->address);
         result->description = strdup(find->tag->description);
+        memcpy(result->meta, find->tag->meta, sizeof(find->tag->meta));
     }
 
     return result;
