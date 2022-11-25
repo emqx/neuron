@@ -150,6 +150,9 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
             case NEU_TYPE_BOOL:
             case NEU_TYPE_STRING:
             case NEU_TYPE_BYTES:
+            case NEU_TYPE_WORD:
+            case NEU_TYPE_DWORD:
+            case NEU_TYPE_LWORD:
                 if (memcmp(&elem->value.value, &value.value,
                            sizeof(value.value)) != 0) {
                     elem->changed = true;
@@ -212,10 +215,12 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
             break;
         case NEU_TYPE_INT16:
         case NEU_TYPE_UINT16:
+        case NEU_TYPE_WORD:
             value->value.value.u16 = elem->value.value.u16;
             break;
         case NEU_TYPE_INT32:
         case NEU_TYPE_UINT32:
+        case NEU_TYPE_DWORD:
         case NEU_TYPE_FLOAT:
         case NEU_TYPE_ERROR:
             value->value.value.u32 = elem->value.value.u32;
@@ -223,6 +228,7 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
         case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_LWORD:
             value->value.value.u64 = elem->value.value.u64;
             break;
         case NEU_TYPE_BOOL:
@@ -267,17 +273,20 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
             break;
         case NEU_TYPE_INT16:
         case NEU_TYPE_UINT16:
+        case NEU_TYPE_WORD:
             value->value.value.u16 = elem->value.value.u16;
             break;
         case NEU_TYPE_INT32:
         case NEU_TYPE_UINT32:
         case NEU_TYPE_FLOAT:
         case NEU_TYPE_ERROR:
+        case NEU_TYPE_DWORD:
             value->value.value.u32 = elem->value.value.u32;
             break;
         case NEU_TYPE_INT64:
         case NEU_TYPE_UINT64:
         case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_LWORD:
             value->value.value.u64 = elem->value.value.u64;
             break;
         case NEU_TYPE_BOOL:
