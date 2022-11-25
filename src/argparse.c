@@ -94,7 +94,13 @@ static inline int reset_password()
         .hash =
             "$5$PwFeXpBBIBZuZdZl$fP8fFPWCLoaWcnVXVSR.3Xi8TEqCvX92gjhowNNn6S4",
     };
-    int rv = neu_persister_update_user(&info);
+
+    int rv = neu_persister_create();
+    if (0 != rv) {
+        return rv;
+    }
+
+    rv = neu_persister_update_user(&info);
     return rv;
 }
 
