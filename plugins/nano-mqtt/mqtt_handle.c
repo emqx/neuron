@@ -286,11 +286,22 @@ static int send_write_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 static void publish_cb(int errcode, neu_mqtt_qos_e qos, char *topic,
                        uint8_t *payload, uint32_t len, void *data)
 {
-    (void) errcode;
     (void) qos;
     (void) topic;
     (void) len;
-    (void) data;
+
+    neu_plugin_t *plugin = data;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
+    if (0 == errcode) {
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSGS_TOTAL, 1,
+                      NULL);
+    } else {
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
+                      1, NULL);
+    }
 
     free(payload);
 }
@@ -298,11 +309,16 @@ static void publish_cb(int errcode, neu_mqtt_qos_e qos, char *topic,
 static inline int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
                           char *payload, size_t payload_len)
 {
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
     int rv =
         neu_mqtt_client_publish(plugin->client, qos, topic, (uint8_t *) payload,
                                 (uint32_t) payload_len, plugin, publish_cb);
     if (0 != rv) {
         plog_error(plugin, "pub [%s, QoS%d] fail", topic, qos);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
+                      1, NULL);
         free(payload);
         rv = NEU_ERR_MQTT_PUBLISH_FAILURE;
     }
@@ -319,6 +335,10 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
 
     (void) qos;
     (void) topic;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
 
     char *json_str = malloc(len + 1);
     if (NULL == json_str) {
@@ -398,6 +418,10 @@ void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
 
     (void) qos;
     (void) topic;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
 
     char *json_str = malloc(len + 1);
     if (NULL == json_str) {
