@@ -63,7 +63,7 @@ neu_mqtt_client_t *neu_mqtt_client_from_addr(const char *host, uint16_t port,
                                              neu_mqtt_version_e version);
 void               neu_mqtt_client_free(neu_mqtt_client_t *client);
 
-bool   neu_mqtt_client_is_opened(neu_mqtt_client_t *client);
+bool   neu_mqtt_client_is_open(neu_mqtt_client_t *client);
 bool   neu_mqtt_client_is_connected(neu_mqtt_client_t *client);
 size_t neu_mqtt_client_get_cached_msgs_num(neu_mqtt_client_t *client);
 

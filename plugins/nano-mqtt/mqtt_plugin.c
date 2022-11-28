@@ -169,7 +169,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         return NEU_ERR_NODE_SETTING_INVALID;
     }
 
-    if (plugin->client && neu_mqtt_client_is_opened(plugin->client)) {
+    if (plugin->client && neu_mqtt_client_is_open(plugin->client)) {
         started = true;
         rv      = neu_mqtt_client_close(plugin->client);
         if (0 != rv) {
