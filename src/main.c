@@ -30,10 +30,11 @@
 #include "daemon.h"
 #include "version.h"
 
-static bool           exit_flag   = false;
-static neu_manager_t *g_manager   = NULL;
-zlog_category_t *     neuron      = NULL;
-bool                  disable_jwt = false;
+static bool           exit_flag         = false;
+static neu_manager_t *g_manager         = NULL;
+zlog_category_t *     neuron            = NULL;
+bool                  disable_jwt       = false;
+int                   default_log_level = ZLOG_LEVEL_INFO;
 
 int64_t global_timestamp = 0;
 
@@ -104,9 +105,7 @@ int main(int argc, char *argv[])
     zlog_init(args.log_init_file);
     neuron = zlog_get_category("neuron");
 
-    if (0 == strcmp(args.log_init_file, "./config/zlog.conf")) {
-        zlog_level_switch(neuron, ZLOG_LEVEL_INFO);
-    }
+    zlog_level_switch(neuron, default_log_level);
 
     if (neuron_already_running()) {
         nlog_fatal("neuron process already running, exit.");

@@ -36,6 +36,8 @@
 #define NEU_USER_PASSWORD_MAX_LEN 16
 #define NEU_LOG_LEVEL_LEN 9
 
+extern int default_log_level;
+
 typedef enum neu_plugin_kind {
     NEU_PLUGIN_KIND_STATIC = 0,
     NEU_PLUGIN_KIND_SYSTEM = 1,

@@ -33,8 +33,6 @@
 #include "persist/persist.h"
 #include "version.h"
 
-char log_init_config[128] = { 0 };
-
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
          ? (bool) (optarg = argv[optind++])                      \
@@ -63,6 +61,7 @@ const char *usage_text =
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
 "    --log                log to the stdout\n"
+"    --log_level <LEVEL>  default log level(DEBUG,INFO)\n"
 "    --reset-password     reset dashboard to use default password\n"
 "    --restart <POLICY>   restart policy to apply when neuron daemon terminates,\n"
 "                           - never,      never restart (default)\n"
@@ -139,11 +138,13 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     bool          reset_password_flag = false;
     char *        config_dir          = NULL;
     char *        plugin_dir          = NULL;
+    char *        log_level           = NULL;
     char *        opts                = "dh";
     struct option long_options[]      = {
         { "help", no_argument, NULL, 'h' },
         { "daemon", no_argument, NULL, 'd' },
         { "log", no_argument, NULL, 'l' },
+        { "log_level", required_argument, NULL, 'o' },
         { "reset-password", no_argument, NULL, 'r' },
         { "restart", required_argument, NULL, 'r' },
         { "version", no_argument, NULL, 'v' },
@@ -157,6 +158,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 
     int c            = 0;
     int option_index = 0;
+
     while ((c = getopt_long(argc, argv, opts, long_options, &option_index)) !=
            -1) {
         switch (c) {
@@ -171,6 +173,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             goto quit;
         case 'l':
             args->dev_log = true;
+            break;
+        case 'o':
+            log_level = strdup(optarg);
             break;
         case 'r':
             if (0 ==
@@ -236,8 +241,6 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         goto quit;
     }
 
-    strncpy(log_init_config, log_init_file, strlen(log_init_file));
-
     // passing information by global variable is not a good style
     g_config_dir = args->config_dir;
     g_plugin_dir = args->plugin_dir;
@@ -245,6 +248,16 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     if (reset_password_flag) {
         ret = reset_password();
         goto quit;
+    }
+
+    if (log_level != NULL) {
+        if (strcmp(log_level, "DEBUG") == 0) {
+            default_log_level = ZLOG_LEVEL_DEBUG;
+        }
+        if (strcmp(log_level, "INFO") == 0) {
+            default_log_level = ZLOG_LEVEL_INFO;
+        }
+        free(log_level);
     }
 
     return;
