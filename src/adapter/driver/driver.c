@@ -489,8 +489,6 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     if (find != NULL) {
         HASH_DEL(driver->groups, find);
 
-        neu_adapter_del_group_metrics(&driver->adapter, name);
-
         uint16_t tag_size = neu_group_tag_size(find->group);
         neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
         neu_event_del_timer(driver->driver_events, find->read);
@@ -511,6 +509,7 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 
         neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -=
             tag_size;
+        neu_adapter_del_group_metrics(&driver->adapter, name);
         ret = NEU_ERR_SUCCESS;
     }
 
