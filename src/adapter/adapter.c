@@ -81,8 +81,6 @@ static const adapter_callbacks_t callback_funs = {
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 {
-    extern char log_init_config[128];
-
     int                     rv          = 0;
     neu_adapter_t *         adapter     = NULL;
     neu_event_io_param_t    param       = { 0 };
@@ -143,9 +141,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     common->log                 = zlog_get_category(adapter->name);
     strcpy(common->name, adapter->name);
 
-    if (0 == strcmp(log_init_config, "./config/zlog.conf")) {
-        zlog_level_switch(common->log, ZLOG_LEVEL_INFO);
-    }
+    zlog_level_switch(common->log, default_log_level);
 
     adapter->module->intf_funs->init(adapter->plugin);
     if (adapter_load_setting(adapter->name, &adapter->setting) == 0) {
