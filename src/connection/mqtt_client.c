@@ -44,13 +44,14 @@
         }                                             \
     } while (0)
 
-#define check_opened()                                                       \
-    do {                                                                     \
-        if (client->opened) {                                                \
-            log(warn,                                                        \
-                "mqtt client already opened, setting will not take effect"); \
-            return -1;                                                       \
-        }                                                                    \
+#define return_failure_if_open()                                           \
+    do {                                                                   \
+        if (client->open) {                                                \
+            nng_mtx_unlock(client->mtx);                                   \
+            log(warn,                                                      \
+                "mqtt client already open, setting will not take effect"); \
+            return -1;                                                     \
+        }                                                                  \
     } while (0)
 
 typedef struct {
@@ -98,13 +99,14 @@ typedef struct task_s {
 
 struct neu_mqtt_client_s {
     nng_socket                      sock;
+    nng_mtx *                       mtx;
     neu_mqtt_version_e              version;
     char *                          host;
     uint16_t                        port;
     char *                          url;
     nng_tls_config *                tls_cfg;
     nng_msg *                       conn_msg;
-    bool                            opened;
+    bool                            open;
     bool                            connected;
     neu_mqtt_client_connection_cb_t connect_cb;
     void *                          connect_cb_data;
@@ -218,7 +220,9 @@ static void task_cb(void *arg)
         assert(!"logic error, task kind not exhausted");
     }
 
+    nng_mtx_lock(client->mtx);
     client_free_task(client, task);
+    nng_mtx_unlock(client->mtx);
 }
 
 static void task_handle_pub(task_t *task, neu_mqtt_client_t *client)
@@ -275,7 +279,6 @@ end:
     // TODO: handle retry subscribe on failure
     log(info, "sub [%s, QoS%d], %s", task->sub->topic, task->sub->qos,
         (0 == rv) ? "OK" : "FAIL");
-    subscription_free(task->sub);
     nng_msg_free(msg);
     return;
 }
@@ -292,7 +295,6 @@ static void task_handle_recv(task_t *task, neu_mqtt_client_t *client)
                        payload_len, task->recv.sub->data);
 
     nng_msg_free(msg);
-    subscription_free(task->recv.sub);
 }
 
 static subscription_t *subscription_new(neu_mqtt_client_t *client,
@@ -352,12 +354,15 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
     (void) ev;
-    neu_mqtt_client_t *client = arg;
+    neu_mqtt_client_t *             client = arg;
+    subscription_t *                sub    = NULL;
+    neu_mqtt_client_connection_cb_t cb     = NULL;
+    void *                          data   = NULL;
 
     log(info, "mqtt client connected");
 
     // send subscribe messages for all subscriptions
-    subscription_t *sub;
+    nng_mtx_lock(client->mtx);
     HASH_LOOP(hh, client->subscriptions, sub)
     {
         if (client_send_sub_msg(client, sub) < 0) {
@@ -370,9 +375,12 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 
     // mark as connected
     client->connected = true;
+    cb                = client->connect_cb;
+    data              = client->connect_cb_data;
+    nng_mtx_unlock(client->mtx);
 
-    if (client->connect_cb) {
-        client->connect_cb(client->connect_cb_data);
+    if (cb) {
+        cb(data);
     }
 }
 
@@ -380,13 +388,19 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
     (void) ev;
-    neu_mqtt_client_t *client = arg;
+    neu_mqtt_client_t *             client = arg;
+    neu_mqtt_client_connection_cb_t cb     = NULL;
+    void *                          data   = NULL;
 
     log(info, "mqtt client disconnected");
+    nng_mtx_lock(client->mtx);
     client->connected = false;
+    cb                = client->disconnect_cb;
+    data              = client->disconnect_cb_data;
+    nng_mtx_unlock(client->mtx);
 
-    if (client->disconnect_cb) {
-        client->disconnect_cb(client->connect_cb_data);
+    if (cb) {
+        cb(data);
     }
 }
 
@@ -402,7 +416,9 @@ static void recv_cb(void *arg)
         if (NNG_EAGAIN == rv) {
             nng_recv_aio(client->sock, aio);
         } else {
+            nng_mtx_lock(client->mtx);
             client->receiving = false;
+            nng_mtx_unlock(client->mtx);
         }
         return;
     }
@@ -433,6 +449,7 @@ static void recv_cb(void *arg)
 
     // find matching subscription
     // NOTE: does not support wildcards
+    nng_mtx_lock(client->mtx);
     HASH_FIND(hh, client->subscriptions, topic, topic_len, subscription);
     if (NULL != subscription) {
         task_t *task = client_alloc_task(client);
@@ -448,6 +465,7 @@ static void recv_cb(void *arg)
     } else {
         log(warn, "[%.*s] no subscription found", (unsigned) topic_len, topic);
     }
+    nng_mtx_unlock(client->mtx);
 
 end:
     nng_msg_free(msg);
@@ -489,6 +507,13 @@ static inline task_t *client_alloc_task(neu_mqtt_client_t *client)
 static inline void client_free_task(neu_mqtt_client_t *client, task_t *task)
 {
     nng_aio_set_msg(task->aio, NULL);
+
+    if (TASK_SUB == task->kind) {
+        subscription_free(task->sub);
+    } else if (TASK_RECV == task->kind) {
+        subscription_free(task->recv.sub);
+    }
+
     memset(&task->pub, 0, sizeof(task_union));
     // prepend in the hope to help locality
     DL_PREPEND(client->task_free_list, task);
@@ -654,8 +679,15 @@ neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version)
         return NULL;
     }
 
+    if (0 != nng_mtx_alloc(&client->mtx)) {
+        free(client);
+        return NULL;
+    }
+
     client->conn_msg = alloc_conn_msg(client, version);
     if (NULL == client->conn_msg) {
+        nng_mtx_free(client->mtx);
+        free(client);
         return NULL;
     }
 
@@ -696,68 +728,100 @@ void neu_mqtt_client_free(neu_mqtt_client_t *client)
         nng_msg_free(client->conn_msg);
         free(client->url);
         free(client->host);
+        nng_mtx_free(client->mtx);
         free(client);
     }
 }
 
-bool neu_mqtt_client_is_opened(neu_mqtt_client_t *client)
+bool neu_mqtt_client_is_open(neu_mqtt_client_t *client)
 {
-    return client->opened;
+    bool open = false;
+
+    nng_mtx_lock(client->mtx);
+    open = client->open;
+    nng_mtx_unlock(client->mtx);
+
+    return open;
 }
 
 bool neu_mqtt_client_is_connected(neu_mqtt_client_t *client)
 {
-    return client->connected;
+    bool connected = false;
+
+    nng_mtx_lock(client->mtx);
+    connected = client->connected;
+    nng_mtx_unlock(client->mtx);
+
+    return connected;
 }
 
 size_t neu_mqtt_client_get_cached_msgs_num(neu_mqtt_client_t *client)
 {
-    if (NULL == client->sqlite_cfg) {
-        return 0;
-    }
+    size_t num = 0;
 
-    return nng_mqtt_sqlite_db_get_cached_size(client->sqlite_cfg);
+    nng_mtx_lock(client->mtx);
+    if (NULL != client->sqlite_cfg) {
+        num = nng_mqtt_sqlite_db_get_cached_size(client->sqlite_cfg);
+    }
+    nng_mtx_unlock(client->mtx);
+
+    return num;
 }
 
 int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
                              uint16_t port)
 {
+    int rv = 0;
+
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
+
     if (client->host && 0 == strcmp(client->host, host)) {
         client->port = port;
-        return 0;
+        goto end;
     }
 
     char *h = strdup(host);
     if (NULL == h) {
         log(error, "strdup host fail");
-        return -1;
+        rv = -1;
+        goto end;
     }
 
     free(client->host);
     client->host = h;
     client->port = port;
-    return 0;
+
+end:
+    nng_mtx_unlock(client->mtx);
+    return rv;
 }
 
 int neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id)
 {
-    check_opened();
-
     if (NULL == id || 0 == strlen(id)) {
         return -1;
     }
 
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
+
     nng_mqtt_msg_set_connect_client_id(client->conn_msg, id);
+    nng_mtx_unlock(client->mtx);
+
     return 0;
 }
 
 int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
                              const char *password)
 {
-    check_opened();
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
 
     nng_mqtt_msg_set_connect_user_name(client->conn_msg, username);
     nng_mqtt_msg_set_connect_password(client->conn_msg, password);
+    nng_mtx_unlock(client->mtx);
+
     return 0;
 }
 
@@ -765,10 +829,13 @@ int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
                                    neu_mqtt_client_connection_cb_t cb,
                                    void *                          data)
 {
-    check_opened();
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
 
     client->connect_cb      = cb;
     client->connect_cb_data = data;
+    nng_mtx_unlock(client->mtx);
+
     return 0;
 }
 
@@ -776,10 +843,13 @@ int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
                                       neu_mqtt_client_connection_cb_t cb,
                                       void *                          data)
 {
-    check_opened();
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
 
     client->disconnect_cb      = cb;
     client->disconnect_cb_data = data;
+    nng_mtx_unlock(client->mtx);
+
     return 0;
 }
 
@@ -790,7 +860,8 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
     int             rv  = 0;
     nng_tls_config *cfg = NULL;
 
-    check_opened();
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
 
     if (NULL == ca) {
         // disable tls
@@ -799,7 +870,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
             nng_tls_config_free(client->tls_cfg);
             client->tls_cfg = NULL;
         }
-        return 0;
+        goto end;
     }
 
     if (client->tls_cfg) {
@@ -808,7 +879,8 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
         cfg = alloc_tls_config(client);
         if (NULL == cfg) {
             log(error, "alloc_tls_config fail");
-            return -1;
+            rv = -1;
+            goto end;
         }
         client->tls_cfg = cfg;
     }
@@ -817,31 +889,39 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
         if ((rv = nng_tls_config_auth_mode(cfg, NNG_TLS_AUTH_MODE_REQUIRED)) !=
             0) {
             log(error, "nng_tls_config_auth_mode fail: %s", nng_strerror(rv));
-            return -1;
+            rv = -1;
+            goto end;
         }
         if ((rv = nng_tls_config_own_cert(cfg, cert, key, keypass)) != 0) {
             log(error, "nng_tls_config_own_cert fail: %s", nng_strerror(rv));
-            return -1;
+            rv = -1;
+            goto end;
         }
     } else {
         if ((rv = nng_tls_config_auth_mode(cfg, NNG_TLS_AUTH_MODE_NONE)) != 0) {
             log(error, "nng_tls_config_auth_mode fail: %s", nng_strerror(rv));
-            return -1;
+            rv = -1;
+            goto end;
         }
     }
 
     if ((rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
         log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
-        return -1;
+        rv = -1;
     }
 
-    return 0;
+end:
+    nng_mtx_unlock(client->mtx);
+    return rv;
 }
 
 int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
                                         size_t             cache_limit)
 {
-    check_opened();
+    int rv = 0;
+
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
 
     if (0 == cache_limit) {
         // disable cache
@@ -850,28 +930,34 @@ int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
             nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
             client->sqlite_cfg = NULL;
         }
-        return 0;
+        goto end;
     }
 
     if (NULL == client->sqlite_cfg) {
         client->sqlite_cfg = alloc_sqlite_config(client);
         if (NULL == client->sqlite_cfg) {
             log(error, "alloc_sqlite_config fail");
-            return -1;
+            rv = -1;
+            goto end;
         }
     }
 
     nng_mqtt_set_sqlite_max_rows(client->sqlite_cfg, cache_limit);
 
-    return 0;
+end:
+    nng_mtx_unlock(client->mtx);
+    return rv;
 }
 
 int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
                                       zlog_category_t *  cat)
 {
-    check_opened();
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
 
     client->log = cat;
+    nng_mtx_unlock(client->mtx);
+
     return 0;
 }
 
@@ -879,16 +965,20 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
 {
     int rv = 0;
 
-    if (client->opened) {
-        return rv;
+    nng_mtx_lock(client->mtx);
+    if (client->open) {
+        nng_mtx_unlock(client->mtx);
+        return 0;
     }
 
     if (NEU_MQTT_VERSION_V5 == client->version &&
         (rv = nng_mqttv5_client_open(&client->sock)) != 0) {
         log(error, "nng_mqttv5_client_open fail: %s", nng_strerror(rv));
+        nng_mtx_unlock(client->mtx);
         return -1;
     } else if ((rv = nng_mqtt_client_open(&client->sock)) != 0) {
         log(error, "nng_mqtt_client_open fail: %s", nng_strerror(rv));
+        nng_mtx_unlock(client->mtx);
         return -1;
     }
 
@@ -934,11 +1024,13 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
         goto error;
     }
 
-    client->opened = true;
+    client->open = true;
+    nng_mtx_unlock(client->mtx);
 
     return 0;
 
 error:
+    nng_mtx_unlock(client->mtx);
     nng_close(client->sock);
     return -1;
 }
@@ -947,9 +1039,12 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
 {
     int rv = 0;
 
-    if (!client->opened) {
-        return rv;
+    nng_mtx_lock(client->mtx);
+    if (!client->open) {
+        nng_mtx_unlock(client->mtx);
+        return 0;
     }
+    nng_mtx_unlock(client->mtx);
 
     // NanoSDK quirks: calling nng_aio_stop will block if the aio is in use
     // nng_aio_stop(client->recv_aio);
@@ -960,7 +1055,9 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
         return -1;
     }
 
-    client->opened = false;
+    nng_mtx_lock(client->mtx);
+    client->open = false;
+    nng_mtx_unlock(client->mtx);
 
     return 0;
 }
@@ -971,6 +1068,7 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
 {
     int      rv      = 0;
     nng_msg *pub_msg = NULL;
+    task_t * task    = NULL;
 
     if (0 != (rv = nng_mqtt_msg_alloc(&pub_msg, 0))) {
         log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));
@@ -987,7 +1085,10 @@ int neu_mqtt_client_publish(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     nng_mqtt_msg_set_publish_payload(pub_msg, (uint8_t *) payload, len);
     nng_mqtt_msg_set_publish_qos(pub_msg, qos);
 
-    task_t *task = client_alloc_task(client);
+    nng_mtx_lock(client->mtx);
+    task = client_alloc_task(client);
+    nng_mtx_unlock(client->mtx);
+
     if (NULL == task) {
         nng_msg_free(pub_msg);
         log(error, "client_alloc_task fail");
@@ -1014,10 +1115,11 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     int             rv           = 0;
     subscription_t *subscription = NULL;
 
+    nng_mtx_lock(client->mtx);
     if (NULL == client->recv_aio) {
         if ((rv = nng_aio_alloc(&client->recv_aio, recv_cb, client)) != 0) {
             log(error, "nng_aio_alloc fail: %s", nng_strerror(rv));
-            return -1;
+            goto error;
         }
         if (client->connected) {
             // connect_cb already fired, then start receiving
@@ -1040,10 +1142,12 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
     }
 
     client_add_subscription(client, subscription);
+    nng_mtx_unlock(client->mtx);
 
     return 0;
 
 error:
+    nng_mtx_unlock(client->mtx);
     subscription_free(subscription);
     return -1;
 }

@@ -106,7 +106,7 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     if (0 != ret) {
         plog_info(plugin, "setting no keypass");
     } else if (0 == strlen(keypass->v.val_str)) {
-        plog_info(plugin, "setting invalid keypass");
+        plog_error(plugin, "setting invalid keypass");
         return -1;
     }
 
