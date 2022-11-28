@@ -206,7 +206,7 @@ static int manager_level_check(void *usr_data)
         gettimeofday(&tv, NULL);
         diff = tv.tv_sec - manager->timestamp_lev_manager;
         if (delay_s <= diff) {
-            int ret = zlog_level_switch(neuron, ZLOG_LEVEL_INFO);
+            int ret = zlog_level_switch(neuron, default_log_level);
             if (0 != ret) {
                 nlog_error("Modify default log level fail, ret:%d", ret);
             }

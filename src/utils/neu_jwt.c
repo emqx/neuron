@@ -92,7 +92,7 @@ static char *load_key(const char *dir, char *name)
     return content;
 }
 
-int neu_jwt_init(const char *dir_path)
+static void scanf_key(const char *dir_path)
 {
     DIR *          dir = NULL;
     struct dirent *ptr = NULL;
@@ -100,7 +100,7 @@ int neu_jwt_init(const char *dir_path)
     dir = opendir(dir_path);
     if (dir == NULL) {
         zlog_error(neuron, "Open dir error: %s", strerror(errno));
-        return -1;
+        return;
     }
 
     while (NULL != (ptr = readdir(dir))) {
@@ -127,6 +127,12 @@ int neu_jwt_init(const char *dir_path)
     }
 
     closedir(dir);
+}
+
+int neu_jwt_init(const char *dir_path)
+{
+    scanf_key(dir_path);
+    scanf_key("persistence");
     return 0;
 }
 

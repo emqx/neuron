@@ -1025,7 +1025,7 @@ static int level_check(void *usr_data)
         gettimeofday(&tv, NULL);
         diff = tv.tv_sec - adapter->timestamp_lev;
         if (delay_s <= diff) {
-            int ret = zlog_level_switch(ct, ZLOG_LEVEL_INFO);
+            int ret = zlog_level_switch(ct, default_log_level);
             if (0 != ret) {
                 nlog_error("Modify default log level fail, ret:%d", ret);
             }
