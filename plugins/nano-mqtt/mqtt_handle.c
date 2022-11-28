@@ -283,11 +283,62 @@ static int send_write_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return 0;
 }
 
-void handle_write_req(const uint8_t *payload, uint32_t len, void *data)
+static void publish_cb(int errcode, neu_mqtt_qos_e qos, char *topic,
+                       uint8_t *payload, uint32_t len, void *data)
+{
+    (void) qos;
+    (void) topic;
+    (void) len;
+
+    neu_plugin_t *plugin = data;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
+    if (0 == errcode) {
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSGS_TOTAL, 1,
+                      NULL);
+    } else {
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
+                      1, NULL);
+    }
+
+    free(payload);
+}
+
+static inline int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
+                          char *payload, size_t payload_len)
+{
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
+    int rv =
+        neu_mqtt_client_publish(plugin->client, qos, topic, (uint8_t *) payload,
+                                (uint32_t) payload_len, plugin, publish_cb);
+    if (0 != rv) {
+        plog_error(plugin, "pub [%s, QoS%d] fail", topic, qos);
+        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
+                      1, NULL);
+        free(payload);
+        rv = NEU_ERR_MQTT_PUBLISH_FAILURE;
+    }
+
+    return rv;
+}
+
+void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
+                      const uint8_t *payload, uint32_t len, void *data)
 {
     int                   rv     = 0;
     neu_plugin_t *        plugin = data;
     neu_json_write_req_t *req    = NULL;
+
+    (void) qos;
+    (void) topic;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
 
     char *json_str = malloc(len + 1);
     if (NULL == json_str) {
@@ -348,26 +399,29 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    const char *   topic = plugin->write_resp_topic;
+    char *         topic = plugin->write_resp_topic;
     neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
-    rv = neu_mqtt_client_publish(plugin->client, qos, topic, json_str,
-                                 strlen(json_str));
-    if (0 != rv) {
-        plog_error(plugin, "pub [%s, QoS%d] error", topic, qos);
-        rv = NEU_ERR_MQTT_PUBLISH_FAILURE;
-    }
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
 
 end:
-    free(json_str);
     neu_json_decode_mqtt_req_free(mqtt_json);
     return rv;
 }
 
-void handle_read_req(const uint8_t *payload, uint32_t len, void *data)
+void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
+                     const uint8_t *payload, uint32_t len, void *data)
 {
     int                  rv     = 0;
     neu_plugin_t *       plugin = data;
     neu_json_read_req_t *req    = NULL;
+
+    (void) qos;
+    (void) topic;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
 
     char *json_str = malloc(len + 1);
     if (NULL == json_str) {
@@ -427,19 +481,13 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    const char *   topic = plugin->read_resp_topic;
+    char *         topic = plugin->read_resp_topic;
     neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
-    rv = neu_mqtt_client_publish(plugin->client, qos, topic, json_str,
-                                 strlen(json_str));
-    if (0 != rv) {
-        plog_error(plugin, "pub [%s, QoS%d] error", topic, qos);
-        rv = NEU_ERR_MQTT_PUBLISH_FAILURE;
-        goto end;
-    }
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
-    free(json_str);
     free(data->tags);
     return rv;
 }
@@ -466,18 +514,12 @@ int handle_trans_data(neu_plugin_t *            plugin,
         return NEU_ERR_EINTERNAL;
     }
 
-    const char *   topic = plugin->config.upload_topic;
+    char *         topic = plugin->config.upload_topic;
     neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
-    rv = neu_mqtt_client_publish(plugin->client, qos, topic, json_str,
-                                 strlen(json_str));
-    if (0 != rv) {
-        plog_error(plugin, "upload pub [%s, QoS%d] error", topic, qos);
-        free(json_str);
-        return NEU_ERR_MQTT_PUBLISH_FAILURE;
-    }
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
 
-    free(json_str);
-    return 0;
+    return rv;
 }
 
 int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
@@ -504,17 +546,12 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
         goto end;
     }
 
-    const char *   topic = plugin->config.heartbeat_topic;
+    char *         topic = plugin->config.heartbeat_topic;
     neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
-    rv = neu_mqtt_client_publish(plugin->client, qos, topic, json_str,
-                                 strlen(json_str));
-    if (0 != rv) {
-        plog_error(plugin, "heartbeat pub [%s, QoS%d] error", topic, qos);
-        rv = NEU_ERR_MQTT_PUBLISH_FAILURE;
-    }
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
 
 end:
-    free(json_str);
     utarray_free(states->states);
 
     return rv;
