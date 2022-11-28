@@ -22,6 +22,24 @@
 
 #include <nng/nng.h>
 
+#include "json/neu_json_fn.h"
+
+#define VALIDATE_JWT(aio)                                                \
+    {                                                                    \
+        if (!disable_jwt) {                                              \
+            char *jwt =                                                  \
+                (char *) http_get_header(aio, (char *) "Authorization"); \
+                                                                         \
+            NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {             \
+                if (error_code.error != NEU_ERR_SUCCESS) {               \
+                    http_response(aio, error_code.error, result_error);  \
+                    free(result_error);                                  \
+                    return;                                              \
+                }                                                        \
+            });                                                          \
+        }                                                                \
+    }
+
 void handle_get_metric(nng_aio *aio);
 
 #endif
