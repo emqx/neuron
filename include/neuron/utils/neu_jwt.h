@@ -25,8 +25,6 @@ extern "C" {
 
 #include <stdbool.h>
 
-extern bool disable_jwt;
-
 int  neu_jwt_init(const char *dir_path);
 int  neu_jwt_new(char **token);
 int  neu_jwt_validate(char *b_token);

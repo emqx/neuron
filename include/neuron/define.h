@@ -20,6 +20,8 @@
 #ifndef _NEU_DEFINE_H_
 #define _NEU_DEFINE_H_
 
+#include <stdbool.h>
+
 #define NEU_TAG_NAME_LEN 64
 #define NEU_TAG_ADDRESS_LEN 128
 #define NEU_TAG_DESCRIPTION_LEN 128
@@ -36,7 +38,8 @@
 #define NEU_USER_PASSWORD_MAX_LEN 16
 #define NEU_LOG_LEVEL_LEN 9
 
-extern int default_log_level;
+extern int  default_log_level;
+extern bool disable_jwt;
 
 typedef enum neu_plugin_kind {
     NEU_PLUGIN_KIND_STATIC = 0,

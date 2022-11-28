@@ -242,6 +242,7 @@ void handle_get_metric(nng_aio *aio)
     FILE *        stream = NULL;
     neu_plugin_t *plugin = neu_monitor_get_plugin();
 
+    VALIDATE_JWT(aio);
     neu_metrics_category_e cat           = NEU_METRICS_CATEGORY_ALL;
     size_t                 cat_param_len = 0;
     const char *cat_param = http_get_param(aio, "category", &cat_param_len);
