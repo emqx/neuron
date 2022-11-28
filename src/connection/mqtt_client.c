@@ -638,7 +638,7 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     }
 
     nng_mqtt_set_sqlite_enable(cfg, true);
-    nng_mqtt_set_sqlite_flush_threshold(cfg, 256);
+    nng_mqtt_set_sqlite_flush_threshold(cfg, 1);
     nng_mqtt_set_sqlite_max_rows(cfg, 256);
     nng_mqtt_set_sqlite_db_dir(cfg, "persistence/");
     nng_mqtt_sqlite_db_init(cfg, db, client->version);
@@ -708,6 +708,15 @@ bool neu_mqtt_client_is_opened(neu_mqtt_client_t *client)
 bool neu_mqtt_client_is_connected(neu_mqtt_client_t *client)
 {
     return client->connected;
+}
+
+size_t neu_mqtt_client_get_cached_msgs_num(neu_mqtt_client_t *client)
+{
+    if (NULL == client->sqlite_cfg) {
+        return 0;
+    }
+
+    return nng_mqtt_sqlite_db_get_cached_size(client->sqlite_cfg);
 }
 
 int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,

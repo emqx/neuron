@@ -30,6 +30,11 @@ extern "C" {
 
 #include "utils/zlog.h"
 
+// number of messages cached
+#define NEU_METRIC_CACHED_MSGS_NUM "cached_msgs"
+#define NEU_METRIC_CACHED_MSGS_NUM_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_CACHED_MSGS_NUM_HELP "Number of messages cached"
+
 typedef enum {
     NEU_MQTT_VERSION_V31  = 3,
     NEU_MQTT_VERSION_V311 = 4,
@@ -58,8 +63,9 @@ neu_mqtt_client_t *neu_mqtt_client_from_addr(const char *host, uint16_t port,
                                              neu_mqtt_version_e version);
 void               neu_mqtt_client_free(neu_mqtt_client_t *client);
 
-bool neu_mqtt_client_is_opened(neu_mqtt_client_t *client);
-bool neu_mqtt_client_is_connected(neu_mqtt_client_t *client);
+bool   neu_mqtt_client_is_opened(neu_mqtt_client_t *client);
+bool   neu_mqtt_client_is_connected(neu_mqtt_client_t *client);
+size_t neu_mqtt_client_get_cached_msgs_num(neu_mqtt_client_t *client);
 
 int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
                              uint16_t port);

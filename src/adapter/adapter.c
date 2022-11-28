@@ -99,14 +99,15 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         break;
     }
 
-    adapter->name                  = strdup(info->name);
-    adapter->events                = neu_event_new();
-    adapter->state                 = NEU_NODE_RUNNING_STATE_INIT;
-    adapter->handle                = info->handle;
-    adapter->cb_funs.command       = callback_funs.command;
-    adapter->cb_funs.response      = callback_funs.response;
-    adapter->cb_funs.update_metric = callback_funs.update_metric;
-    adapter->module                = info->module;
+    adapter->name                    = strdup(info->name);
+    adapter->events                  = neu_event_new();
+    adapter->state                   = NEU_NODE_RUNNING_STATE_INIT;
+    adapter->handle                  = info->handle;
+    adapter->cb_funs.command         = callback_funs.command;
+    adapter->cb_funs.response        = callback_funs.response;
+    adapter->cb_funs.register_metric = callback_funs.register_metric;
+    adapter->cb_funs.update_metric   = callback_funs.update_metric;
+    adapter->module                  = info->module;
 
     adapter->timestamp_lev = 0;
 

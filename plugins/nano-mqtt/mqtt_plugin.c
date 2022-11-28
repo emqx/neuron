@@ -60,6 +60,11 @@ static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
     plog_info(plugin, "initialize plugin `%s` success",
               neu_plugin_module.module_name);
+    neu_adapter_register_metric_cb_t register_metric =
+        plugin->common.adapter_callbacks->register_metric;
+    register_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
+                    NEU_METRIC_CACHED_MSGS_NUM_HELP,
+                    NEU_METRIC_CACHED_MSGS_NUM_TYPE, 0);
     return NEU_ERR_SUCCESS;
 }
 
@@ -320,6 +325,17 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                                void *data)
 {
     neu_err_code_e error = NEU_ERR_SUCCESS;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
+    // update cached messages number per seconds
+    if ((global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
+        update_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
+                      neu_mqtt_client_get_cached_msgs_num(plugin->client),
+                      NULL);
+        plugin->cache_metric_update_ts = global_timestamp;
+    }
 
     switch (head->type) {
     case NEU_RESP_ERROR:
