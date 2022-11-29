@@ -74,7 +74,7 @@ Get the setted adapters information after stopping and restarting Neuron, it sho
 
     	Node Setting	${modbus-tcp-1}		{"host": "127.0.0.1", "port": 502, "timeout": 3000}
     	Node Setting	${modbus-tcp-2}		{"host": "127.0.0.1", "port": 502, "timeout": 3000}
-    	Node Setting    ${mqtt-1}     		{"upload-topic":"/neuron/mqtt-1/upload", "heartbeat-topic": "/neuron/mqtt-1/heartbeat", "format": 0, "ssl":false,"host":"127.0.0.1","port":1883,"username":"admin","password":"0000","ca":"", "cert":"", "key":"", "keypass":""}
+    	Node Setting    ${mqtt-1}     		{"client-id":"123456", "upload-topic":"/neuron/mqtt-1/upload", "heartbeat-topic": "/neuron/mqtt-1/heartbeat","format": 0,"cache-mem-size": 10,"cache-disk-size": 10,"ssl":false,"host":"127.0.0.1","port":1883,"username":"admin","password":"0000","ca":"", "cert":"", "key":"", "keypass":""}
 
     	Neuron Stop Running    ${process}
     	${process} =           Neuron Start Running

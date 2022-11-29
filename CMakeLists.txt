@@ -145,7 +145,7 @@ file(COPY ${SQL_SCHEMAS} DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/default_plugins.json DESTINATION ${CMAKE_BINARY_DIR}/config)
 
 add_subdirectory(plugins/modbus)
-add_subdirectory(plugins/nano-mqtt)
+add_subdirectory(plugins/mqtt)
 add_subdirectory(plugins/ekuiper)
 
 add_subdirectory(simulator)
