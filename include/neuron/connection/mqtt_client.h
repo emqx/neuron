@@ -81,8 +81,8 @@ int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
 int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
                             const char *cert, const char *key,
                             const char *keypass);
-int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
-                                        size_t             cache_limit);
+int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
+                                   size_t mem_size_bytes, size_t db_size_bytes);
 int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
                                       zlog_category_t *  cat);
 
