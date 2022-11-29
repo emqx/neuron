@@ -131,7 +131,8 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
         return -1;
     }
 
-    rv = neu_mqtt_client_set_msg_cache_limit(client, config->cache);
+    rv = neu_mqtt_client_set_cache_size(client, config->cache_mem_size,
+                                        config->cache_disk_size);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_client_set_msg_cache_limit fail");
         return -1;
