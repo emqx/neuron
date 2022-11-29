@@ -23,6 +23,8 @@
 #include "mqtt_config.h"
 #include "mqtt_plugin.h"
 
+#define MB 1000000
+
 static inline int decode_b64_param(neu_plugin_t *plugin, neu_json_elem_t *el)
 {
     int   len = 0;
@@ -126,7 +128,10 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     neu_json_elem_t heartbeat_topic = { .name = "heartbeat-topic",
                                         .t    = NEU_JSON_STR };
     neu_json_elem_t format          = { .name = "format", .t = NEU_JSON_INT };
-    neu_json_elem_t cache           = { .name = "cache", .t = NEU_JSON_INT };
+    neu_json_elem_t cache_mem_size  = { .name = "cache-mem-size",
+                                       .t    = NEU_JSON_INT };
+    neu_json_elem_t cache_disk_size = { .name = "cache-disk-size",
+                                        .t    = NEU_JSON_INT };
     neu_json_elem_t host            = { .name = "host", .t = NEU_JSON_STR };
     neu_json_elem_t port            = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t username        = { .name = "username", .t = NEU_JSON_STR };
@@ -142,8 +147,9 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 7, &client_id, &upload_topic,
-                          &heartbeat_topic, &format, &cache, &host, &port);
+    ret = neu_parse_param(setting, &err_param, 8, &client_id, &upload_topic,
+                          &heartbeat_topic, &format, &cache_mem_size,
+                          &cache_disk_size, &host, &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
         goto error;
@@ -175,10 +181,32 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    // cache, required
-    if (cache.v.val_int > 4096) {
-        plog_error(plugin, "setting invalid cache limit: %" PRIi64,
-                   cache.v.val_int);
+    // cache memory size, required
+    if (cache_mem_size.v.val_int > 1024) {
+        plog_error(plugin, "setting invalid cache memory size: %" PRIi64,
+                   cache_mem_size.v.val_int);
+        goto error;
+    }
+
+    // cache disk size, required
+    if (cache_disk_size.v.val_int > 10240) {
+        plog_error(plugin, "setting invalid cache disk size: %" PRIi64,
+                   cache_disk_size.v.val_int);
+        goto error;
+    }
+
+    if (cache_mem_size.v.val_int > cache_disk_size.v.val_int) {
+        plog_error(plugin,
+                   "setting cache memory size %" PRIi64
+                   " larger than cache disk size %" PRIi64,
+                   cache_mem_size.v.val_int, cache_disk_size.v.val_int);
+        goto error;
+    }
+
+    if (0 == cache_mem_size.v.val_int && 0 != cache_disk_size.v.val_int) {
+        plog_error(plugin,
+                   "setting cache disk size %" PRIi64 " without memory cache",
+                   cache_disk_size.v.val_int);
         goto error;
     }
 
@@ -215,7 +243,10 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->upload_topic    = upload_topic.v.val_str;
     config->heartbeat_topic = heartbeat_topic.v.val_str;
     config->format          = format.v.val_int;
-    config->cache           = cache.v.val_int;
+    config->cache =
+        0 != cache_mem_size.v.val_int || 0 != cache_disk_size.v.val_int;
+    config->cache_mem_size  = cache_mem_size.v.val_int * MB;
+    config->cache_disk_size = cache_disk_size.v.val_int * MB;
     config->host            = host.v.val_str;
     config->port            = port.v.val_int;
     config->username        = username.v.val_str;
@@ -231,6 +262,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_info(plugin, "config format         : %s",
               mqtt_upload_format_str(config->format));
     plog_info(plugin, "config cache          : %zu", config->cache);
+    plog_info(plugin, "config cache-mem-size : %zu", config->cache_mem_size);
+    plog_info(plugin, "config cache-disk-size: %zu", config->cache_disk_size);
     plog_info(plugin, "config host           : %s", config->host);
     plog_info(plugin, "config port           : %" PRIu16, config->port);
 

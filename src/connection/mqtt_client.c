@@ -663,7 +663,7 @@ alloc_sqlite_config(neu_mqtt_client_t *client)
     }
 
     nng_mqtt_set_sqlite_enable(cfg, true);
-    nng_mqtt_set_sqlite_flush_threshold(cfg, 1);
+    nng_mqtt_set_sqlite_flush_threshold(cfg, 256);
     nng_mqtt_set_sqlite_max_rows(cfg, 256);
     nng_mqtt_set_sqlite_db_dir(cfg, "persistence/");
     nng_mqtt_sqlite_db_init(cfg, db, client->version);
@@ -915,15 +915,15 @@ end:
     return rv;
 }
 
-int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
-                                        size_t             cache_limit)
+int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
+                                   size_t mem_size_bytes, size_t db_size_bytes)
 {
     int rv = 0;
 
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
 
-    if (0 == cache_limit) {
+    if (0 == mem_size_bytes && 0 == db_size_bytes) {
         // disable cache
         log(info, "cache disabled");
         if (client->sqlite_cfg) {
@@ -942,7 +942,19 @@ int neu_mqtt_client_set_msg_cache_limit(neu_mqtt_client_t *client,
         }
     }
 
-    nng_mqtt_set_sqlite_max_rows(client->sqlite_cfg, cache_limit);
+    // FIXME: until NanoSDK cache size limit feature out
+    // Assume that,
+    // 1. every upload message follows the below template
+    //    '{"node":"","group":"","timestamp":1669708991767,"values":{"":0},"errors":{}}'
+    // 2. every upload message has 50 tags in average
+    // 3. every tag has 4 bytes data
+    // then, estimated average message size is
+    //    len(tmpl) + 128/2 + 128/2 + 50*(64/2+4) ~= 2000
+    size_t avg_msg_size = 2000;
+    nng_mqtt_set_sqlite_flush_threshold(client->sqlite_cfg,
+                                        mem_size_bytes / avg_msg_size);
+    nng_mqtt_set_sqlite_max_rows(client->sqlite_cfg,
+                                 db_size_bytes / avg_msg_size);
 
 end:
     nng_mtx_unlock(client->mtx);

@@ -48,15 +48,26 @@
       ]
     }
   },
-  "cache": {
-    "name": "message cache",
-    "description": "Maximum number of messages cached when MQTT connection exception occurs",
+  "cache-mem-size": {
+    "name": "cache memory size (MB)",
+    "description": "Max in-memory cache size in megabytes when MQTT connection exception occurs. Should be smaller than cache disk size.",
     "type": "int",
     "attribute": "required",
     "default": 0,
     "valid": {
       "min": 0,
-      "max": 1048576
+      "max": 1024
+    }
+  },
+  "cache-disk-size": {
+    "name": "cache disk size (MB)",
+    "description": "Max in-disk cache size in megabytes when MQTT connection exception occurs. Should be larger than cache memory size. If nonzero, cache memory size should also be nonzero.",
+    "type": "int",
+    "attribute": "required",
+    "default": 0,
+    "valid": {
+      "min": 0,
+      "max": 10240
     }
   },
   "host": {

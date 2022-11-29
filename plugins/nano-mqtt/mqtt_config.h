@@ -51,7 +51,9 @@ typedef struct {
     char *               upload_topic;    // upload topic
     char *               heartbeat_topic; // heartbeat topic
     mqtt_upload_format_e format;          // upload format
-    size_t               cache;           // message cache
+    size_t               cache;           // cache enable flag
+    size_t               cache_mem_size;  // cache memory size in bytes
+    size_t               cache_disk_size; // cache disk size in bytes
     char *               host;            // broker host
     uint16_t             port;            // broker port
     char *               username;        // user name

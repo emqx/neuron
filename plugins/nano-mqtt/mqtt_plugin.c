@@ -131,7 +131,8 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
         return -1;
     }
 
-    rv = neu_mqtt_client_set_msg_cache_limit(client, config->cache);
+    rv = neu_mqtt_client_set_cache_size(client, config->cache_mem_size,
+                                        config->cache_disk_size);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_client_set_msg_cache_limit fail");
         return -1;
@@ -330,7 +331,8 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         plugin->common.adapter_callbacks->update_metric;
 
     // update cached messages number per seconds
-    if ((global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
+    if (NULL != plugin->client &&
+        (global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
         update_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
                       neu_mqtt_client_get_cached_msgs_num(plugin->client),
                       NULL);
