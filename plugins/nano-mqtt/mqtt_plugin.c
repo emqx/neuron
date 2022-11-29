@@ -330,7 +330,8 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         plugin->common.adapter_callbacks->update_metric;
 
     // update cached messages number per seconds
-    if ((global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
+    if (NULL != plugin->client &&
+        (global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
         update_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
                       neu_mqtt_client_get_cached_msgs_num(plugin->client),
                       NULL);
