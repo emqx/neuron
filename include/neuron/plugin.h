@@ -27,6 +27,8 @@ extern "C" {
 #include "utils/utextend.h"
 #include "utils/zlog.h"
 
+#include "event/event.h"
+
 #include "adapter.h"
 #include "define.h"
 #include "type.h"
@@ -96,6 +98,7 @@ typedef struct neu_plugin_module {
     bool                          display;
     bool                          single;
     const char *                  single_name;
+    neu_event_timer_type_e        timer_type;
 } neu_plugin_module_t;
 
 inline static neu_plugin_common_t *

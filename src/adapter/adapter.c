@@ -88,6 +88,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         .second      = 30,
         .millisecond = 0,
         .cb          = level_check,
+        .type        = NEU_EVENT_TIMER_BLOCK,
     };
 
     switch (info->module->type) {
