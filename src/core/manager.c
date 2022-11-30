@@ -75,17 +75,20 @@ neu_manager_t *neu_manager_create()
         .second      = 0,
         .millisecond = 10,
         .cb          = update_timestamp,
+        .type        = NEU_EVENT_TIMER_BLOCK,
     };
     neu_event_timer_param_t timer_param = {
         .second      = 1,
         .millisecond = 0,
         .cb          = report_nodes_state,
+        .type        = NEU_EVENT_TIMER_BLOCK,
     };
 
     neu_event_timer_param_t timer_level = {
         .second      = 60,
         .millisecond = 0,
         .cb          = manager_level_check,
+        .type        = NEU_EVENT_TIMER_BLOCK,
     };
 
     manager->events            = neu_event_new();
