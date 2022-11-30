@@ -17,258 +17,27 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include <assert.h>
+#include "utils/asprintf.h"
 
-#include "command/command.h"
+#include "mqtt_config.h"
+#include "mqtt_handle.h"
 #include "mqtt_plugin.h"
-#include "mqtt_util.h"
-
-#define INTERVAL 100000U
-#define TIMEOUT 3000U
-#define MAX_TOPIC_LEN 256
-
-#define TOPIC_READ_REQ "/neuron/%s/read/req"
-#define TOPIC_WRITE_REQ "/neuron/%s/write/req"
-
-#define TOPIC_READ_RES "/neuron/%s/read/resp"
-#define TOPIC_WRITE_RES "/neuron/%s/write/resp"
-#define TOPIC_UPLOAD_RES "/neuron/%s/upload"
-#define TOPIC_HEARTBEAT_RES "/neuron/%s/heartbeat"
-
-#define QOS0 0
-#define QOS1 1
-#define QOS2 2
 
 const neu_plugin_module_t neu_plugin_module;
 
-struct topic_pair {
-    char *topic_request;
-    char *topic_response;
-    int   qos_request;
-    int   qos_response;
-    int   type;
-};
-
-struct mqtt_routine {
-    neu_plugin_t *    plugin;
-    neu_mqtt_option_t option;
-    mqtt_client_t     client;
-    UT_array *        topics;
-};
-
-static char *topics_format(char *format, char *name)
+static void connect_cb(void *data)
 {
-    char *topic = calloc(1, MAX_TOPIC_LEN);
-    if (NULL == topic) {
-        return NULL;
-    }
-
-    int rc = snprintf(topic, MAX_TOPIC_LEN, format, name);
-    if (-1 != rc) {
-        return topic;
-    }
-
-    free(topic);
-    return NULL;
+    neu_plugin_t *plugin      = data;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
+    plog_info(plugin, "plugin `%s` connected", neu_plugin_module.module_name);
 }
 
-static void topics_add(UT_array *topics, neu_plugin_t *plugin, char *request,
-                       int qos_request, char *response, int qos_response,
-                       int type)
+static void disconnect_cb(void *data)
 {
-    struct topic_pair *pair = calloc(1, sizeof(struct topic_pair));
-    pair->topic_request     = request;
-    pair->topic_response    = response;
-    pair->qos_request       = qos_request;
-    pair->qos_response      = qos_response;
-    pair->type              = type;
-    utarray_push_back(topics, &pair);
-
-    plog_info(plugin, "add topic-req:%s, topic-res:%s, count:%d",
-              pair->topic_request, pair->topic_response, utarray_len(topics));
-}
-
-static void topics_cleanup(UT_array *topics, neu_plugin_t *plugin)
-{
-    for (struct topic_pair **pair =
-             (struct topic_pair **) utarray_front(topics);
-         NULL != pair;
-         pair = (struct topic_pair **) utarray_next(topics, pair)) {
-
-        plog_info(plugin, "remove topic-req:%s, topic-res:%s",
-                  (*pair)->topic_request, (*pair)->topic_response);
-
-        if (NULL != (*pair)->topic_request) {
-            free((*pair)->topic_request);
-        }
-
-        if (NULL != (*pair)->topic_response) {
-            free((*pair)->topic_response);
-        }
-
-        free(*pair);
-    }
-}
-
-static void topics_generate(UT_array *topics, neu_plugin_t *plugin,
-                            neu_mqtt_option_t *option)
-{
-    char *name = plugin->common.name;
-
-    // READ TOPIC
-    char *read_req = topics_format(TOPIC_READ_REQ, name);
-    char *read_res = topics_format(TOPIC_READ_RES, name);
-    topics_add(topics, plugin, read_req, QOS0, read_res, QOS0, TOPIC_TYPE_READ);
-
-    // WRITE TOPIC
-    char *write_req = topics_format(TOPIC_WRITE_REQ, name);
-    char *write_res = topics_format(TOPIC_WRITE_RES, name);
-    topics_add(topics, plugin, write_req, QOS0, write_res, QOS0,
-               TOPIC_TYPE_WRITE);
-
-    /// UPLOAD TOPIC SETTING
-    char *upload_res = strdup(option->upload_topic);
-    topics_add(topics, plugin, NULL, QOS0, upload_res, QOS0, TOPIC_TYPE_UPLOAD);
-
-    // HEARTBEAT TOPIC SETTING
-    char *heartbeat_res = strdup(option->heartbeat_topic);
-    topics_add(topics, plugin, NULL, QOS0, heartbeat_res, QOS0,
-               TOPIC_TYPE_HEARTBEAT);
-}
-
-static struct topic_pair *topics_find_topic(UT_array *topics, const char *topic)
-{
-    for (struct topic_pair **pair =
-             (struct topic_pair **) utarray_front(topics);
-         NULL != pair;
-         pair = (struct topic_pair **) utarray_next(topics, pair)) {
-        if (0 == strcmp((*pair)->topic_request, topic)) {
-            return *pair;
-        }
-    }
-
-    return NULL;
-}
-
-static struct topic_pair *topics_find_type(UT_array *topics, int type)
-{
-    for (struct topic_pair **pair =
-             (struct topic_pair **) utarray_front(topics);
-         NULL != pair;
-         pair = (struct topic_pair **) utarray_next(topics, pair)) {
-        if (type == (*pair)->type) {
-            return *pair;
-        }
-    }
-
-    return NULL;
-}
-
-static void mqtt_routine_response(const char *topic_name, size_t topic_len,
-                                  void *payload, const size_t len,
-                                  void *context)
-{
-    neu_plugin_t *     plugin  = (neu_plugin_t *) context;
-    mqtt_routine_t *   routine = plugin->routine;
-    struct topic_pair *pair    = topics_find_topic(routine->topics, topic_name);
-    mqtt_response_t    response = { .topic_name = topic_name,
-                                 .topic_len  = topic_len,
-                                 .payload    = payload,
-                                 .len        = len,
-                                 .plugin     = context,
-                                 .topic_pair = pair,
-                                 .type       = pair->type };
-    command_response_handle(&response);
-}
-
-static void topics_subscribe(UT_array *topics, mqtt_client_t client)
-{
-    for (struct topic_pair **pair =
-             (struct topic_pair **) utarray_front(topics);
-         NULL != pair;
-         pair = (struct topic_pair **) utarray_next(topics, pair)) {
-        if (NULL != (*pair)->topic_request) {
-            mqtt_client_subscribe(client, (*pair)->topic_request,
-                                  (*pair)->qos_request, mqtt_routine_response);
-        }
-    }
-}
-
-static void mqtt_routine_state(void *context, int state)
-{
-    if (NULL == context) {
-        return;
-    }
-
-    neu_plugin_t *plugin = (neu_plugin_t *) context;
-    if (0 == state) {
-        plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
-    } else {
-        plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-    }
-}
-
-static mqtt_routine_t *mqtt_routine_start(neu_plugin_t *plugin,
-                                          const char *  config)
-{
-    assert(NULL != plugin);
-    assert(NULL != config);
-
-    mqtt_routine_t *routine = calloc(1, sizeof(mqtt_routine_t));
-    if (NULL == routine) {
-        return NULL;
-    }
-
-    // MQTT client start
-    int rc = mqtt_option_init(plugin, (char *) config, &routine->option);
-    if (0 != rc) {
-        plog_error(plugin, "%s", mqtt_option_error(rc));
-        mqtt_option_uninit(plugin, &routine->option);
-        free(routine);
-        return NULL;
-    }
-
-    routine->option.state_update_func = mqtt_routine_state;
-    routine->option.log               = plugin->common.log;
-    mqtt_client_t *client_p           = (mqtt_client_t *) &routine->client;
-    neu_err_code_e error              = NEU_ERR_SUCCESS;
-    error = mqtt_client_open(client_p, &routine->option, plugin);
-    if (NEU_ERR_SUCCESS != error) {
-        mqtt_option_uninit(plugin, &routine->option);
-        free(routine);
-        return NULL;
-    }
-
-    mqtt_client_continue(routine->client);
-
-    plog_info(plugin, "open mqtt client: %s:%s, code:%d", routine->option.host,
-              routine->option.port, error);
-
-    // topics generate
-    routine->plugin      = plugin;
-    UT_icd topic_ptr_icd = { sizeof(struct topic_pair *), NULL, NULL, NULL };
-    utarray_new(routine->topics, &topic_ptr_icd);
-    topics_generate(routine->topics, plugin, &routine->option);
-    topics_subscribe(routine->topics, routine->client);
-
-    return routine;
-}
-
-static void mqtt_routine_stop(mqtt_routine_t *routine)
-{
-    assert(NULL != routine);
-
-    // stop recevied
-    mqtt_client_suspend(routine->client);
-
-    // close mqtt client and clean
-    mqtt_client_close(routine->client);
-    plog_info(routine->plugin, "close mqtt client:%s:%s", routine->option.host,
-              routine->option.port);
-
-    topics_cleanup(routine->topics, routine->plugin);
-    utarray_free(routine->topics);
-    mqtt_option_uninit(routine->plugin, &routine->option);
+    neu_plugin_t *plugin      = data;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+    plog_info(plugin, "plugin `%s` disconnected",
+              neu_plugin_module.module_name);
 }
 
 static neu_plugin_t *mqtt_plugin_open(void)
@@ -280,8 +49,6 @@ static neu_plugin_t *mqtt_plugin_open(void)
 
 static int mqtt_plugin_close(neu_plugin_t *plugin)
 {
-    assert(NULL != plugin);
-
     const char *name = neu_plugin_module.module_name;
     plog_info(plugin, "success to free plugin:%s", name);
 
@@ -289,360 +56,301 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-static void plugin_cache_init(neu_plugin_t *plugin);
-
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
-    assert(NULL != plugin);
-
-    plugin->routine = NULL;
-    plugin->running = false;
-    plugin->config  = NULL;
-    plugin_cache_init(plugin);
-
-    const char *name = neu_plugin_module.module_name;
-    plog_info(plugin, "initialize plugin: %s", name);
+    plog_info(plugin, "initialize plugin `%s` success",
+              neu_plugin_module.module_name);
+    neu_adapter_register_metric_cb_t register_metric =
+        plugin->common.adapter_callbacks->register_metric;
+    register_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
+                    NEU_METRIC_CACHED_MSGS_NUM_HELP,
+                    NEU_METRIC_CACHED_MSGS_NUM_TYPE, 0);
     return NEU_ERR_SUCCESS;
-}
-
-static int plguin_start_running(neu_plugin_t *plugin)
-{
-    if (!plugin->running && NULL != plugin->config) {
-        mqtt_routine_t *routine = mqtt_routine_start(plugin, plugin->config);
-        if (NULL == routine) {
-            plugin->routine           = NULL;
-            plugin->running           = false;
-            plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-            return -1;
-        }
-
-        plugin->routine           = routine;
-        plugin->running           = true;
-        plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-    }
-
-    return 0;
-}
-
-static void plugin_stop_running(neu_plugin_t *plugin)
-{
-    if (plugin->running) {
-        mqtt_routine_stop(plugin->routine);
-        if (NULL != plugin->routine) {
-            free(plugin->routine);
-            plugin->routine = NULL;
-        }
-
-        plugin->running           = false;
-        plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-    }
-}
-
-static void plugin_config_free(neu_plugin_t *plugin)
-{
-    if (NULL != plugin->config) {
-        free(plugin->config);
-        plugin->config = NULL;
-    }
-}
-
-static void plugin_config_save(neu_plugin_t *plugin, const char *config)
-{
-    plugin_config_free(plugin);
-    plugin->config = strdup(config);
-}
-
-static void plugin_cache_init(neu_plugin_t *plugin)
-{
-    plugin->cache = neu_mem_cache_create(0, 0);
-    nng_mtx_alloc(&plugin->mutex);
-}
-
-static void plugin_cache_uninit(neu_plugin_t *plugin)
-{
-    nng_mtx_free(plugin->mutex);
-    neu_mem_cache_destroy(plugin->cache);
 }
 
 static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
-    assert(NULL != plugin);
+    mqtt_config_fini(&plugin->config);
+    if (plugin->client) {
+        neu_mqtt_client_close(plugin->client);
+        neu_mqtt_client_free(plugin->client);
+        plugin->client = NULL;
+    }
 
-    plugin_stop_running(plugin);
-    plugin_cache_uninit(plugin);
-    plugin_config_free(plugin);
+    free(plugin->read_req_topic);
+    plugin->read_req_topic = NULL;
+    free(plugin->read_resp_topic);
+    plugin->read_resp_topic = NULL;
+    free(plugin->write_req_topic);
+    plugin->write_req_topic = NULL;
+    free(plugin->write_resp_topic);
+    plugin->write_resp_topic = NULL;
 
-    const char *name = neu_plugin_module.module_name;
-    plog_info(plugin, "uninitialize plugin: %s", name);
+    plog_info(plugin, "uninitialize plugin `%s` success",
+              neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_config(neu_plugin_t *plugin, const char *config)
+static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
+                              const mqtt_config_t *config)
 {
-    assert(NULL != plugin);
-    assert(NULL != config);
+    int rv = 0;
 
-    // Option setting
-    if (NEU_ERR_SUCCESS != mqtt_option_validate(plugin, config)) {
+    if (NULL == client) {
+        return 0;
+    }
+
+    // set log category as soon as possible to ease debugging
+    rv = neu_mqtt_client_set_zlog_category(client, plugin->common.log);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_zlog_category fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_addr(client, config->host, config->port);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_host fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_id(client, config->client_id);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_id fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_connect_cb(client, connect_cb, plugin);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_connect_cb fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_disconnect_cb(client, disconnect_cb, plugin);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_disconnect_cb fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_cache_size(client, config->cache_mem_size,
+                                        config->cache_disk_size);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_msg_cache_limit fail");
+        return -1;
+    }
+
+    if (NULL != config->username) {
+        rv = neu_mqtt_client_set_user(client, config->username,
+                                      config->password);
+        if (0 != rv) {
+            plog_error(plugin, "neu_mqtt_client_set_user fail");
+        }
+    }
+
+    // when config->ca is NULL tls will be disabled
+    rv = neu_mqtt_client_set_tls(client, config->ca, config->cert, config->key,
+                                 config->keypass);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_tsl fail");
+        return -1;
+    }
+
+    return rv;
+}
+
+static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
+{
+    int           rv          = 0;
+    const char *  plugin_name = neu_plugin_module.module_name;
+    mqtt_config_t config      = { 0 };
+    bool          started     = false;
+
+    rv = mqtt_config_parse(plugin, setting, &config);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_config_parse fail");
         return NEU_ERR_NODE_SETTING_INVALID;
     }
 
-    plugin_config_save(plugin, config);
-    size_t cache_size = mqtt_option_item_cache(plugin, config);
-    size_t max_bytes  = cache_size * 1024 * 1024;
-    nng_mtx_lock(plugin->mutex);
-    neu_mem_cache_resize(plugin->cache, max_bytes, 0);
-    nng_mtx_unlock(plugin->mutex);
-
-    // Routine not running
-    if (!plugin->running) {
-        return NEU_ERR_SUCCESS;
+    if (plugin->client && neu_mqtt_client_is_open(plugin->client)) {
+        started = true;
+        rv      = neu_mqtt_client_close(plugin->client);
+        if (0 != rv) {
+            plog_error(plugin, "neu_mqtt_client_close fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+    } else {
+        plugin->client = neu_mqtt_client_new(NEU_MQTT_VERSION_V311);
+        if (NULL == plugin->client) {
+            plog_error(plugin, "neu_mqtt_client_new fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
     }
 
-    plugin_stop_running(plugin);
-    int rc = plguin_start_running(plugin);
-    if (0 != rc) {
-        return NEU_ERR_MQTT_INIT_FAILURE;
+    rv = config_mqtt_client(plugin, plugin->client, &config);
+    if (0 != rv) {
+        rv = NEU_ERR_MQTT_INIT_FAILURE;
+        goto error;
     }
 
-    plog_info(plugin, "config plugin: %s", neu_plugin_module.module_name);
-    return NEU_ERR_SUCCESS;
+    if (started && 0 != neu_mqtt_client_open(plugin->client)) {
+        plog_error(plugin, "neu_mqtt_client_open fail");
+        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+        goto error;
+    }
+
+    if (plugin->config.host) {
+        // already configured
+        mqtt_config_fini(&plugin->config);
+    }
+    memmove(&plugin->config, &config, sizeof(config));
+
+    plog_info(plugin, "config plugin `%s` success", plugin_name);
+    return 0;
+
+error:
+    plog_info(plugin, "config plugin `%s` fail", plugin_name);
+    mqtt_config_fini(&config);
+    return rv;
+}
+
+static int create_topic(neu_plugin_t *plugin)
+{
+    if (plugin->read_req_topic) {
+        // topics already created
+        return 0;
+    }
+
+    neu_asprintf(&plugin->read_req_topic, "/neuron/%s/read/req",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        return -1;
+    }
+
+    neu_asprintf(&plugin->read_resp_topic, "/neuron/%s/read/resp",
+                 plugin->common.name);
+    if (NULL == plugin->read_resp_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        return -1;
+    }
+
+    neu_asprintf(&plugin->write_req_topic, "/neuron/%s/write/req",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        free(plugin->read_resp_topic);
+        plugin->read_resp_topic = NULL;
+        return -1;
+    }
+
+    neu_asprintf(&plugin->write_resp_topic, "/neuron/%s/write/resp",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        free(plugin->read_resp_topic);
+        plugin->read_resp_topic = NULL;
+        free(plugin->write_req_topic);
+        plugin->write_req_topic = NULL;
+        return -1;
+    }
+
+    return 0;
 }
 
 static int mqtt_plugin_start(neu_plugin_t *plugin)
 {
-    assert(NULL != plugin);
+    int         rv          = 0;
+    const char *plugin_name = neu_plugin_module.module_name;
 
-    int rc = plguin_start_running(plugin);
-    if (0 != rc) {
-        return NEU_ERR_NODE_SETTING_INVALID;
+    if (NULL == plugin->client) {
+        plog_error(plugin, "mqtt client is NULL due to init failure");
+        rv = NEU_ERR_MQTT_IS_NULL;
+        goto end;
     }
 
-    return NEU_ERR_SUCCESS;
+    if (0 != neu_mqtt_client_open(plugin->client)) {
+        plog_error(plugin, "neu_mqtt_client_open fail");
+        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+        goto end;
+    }
+
+    if (0 != create_topic(plugin)) {
+        plog_error(plugin, "create topics fail");
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, 0, plugin->read_req_topic,
+                                  plugin, handle_read_req)) {
+        plog_error(plugin, "subscribe [%s] fail", plugin->read_req_topic);
+        rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+        goto end;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, 0, plugin->write_req_topic,
+                                  plugin, handle_write_req)) {
+        plog_error(plugin, "subscribe [%s] fail", plugin->write_req_topic);
+        rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+        goto end;
+    }
+
+end:
+    if (0 == rv) {
+        plog_info(plugin, "start plugin `%s` success", plugin_name);
+    } else {
+        plog_error(plugin, "start plugin `%s` failed, error %d", plugin_name,
+                   rv);
+        neu_mqtt_client_close(plugin->client);
+    }
+    return rv;
 }
 
 static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
-    assert(NULL != plugin);
-
-    plugin_stop_running(plugin);
-    return NEU_ERR_SUCCESS;
-}
-
-static neu_err_code_e write_response(neu_plugin_t *      plugin,
-                                     neu_reqresp_head_t *head,
-                                     neu_resp_error_t *  data)
-{
-    neu_resp_error_t *write_data = data;
-
-    if (!plugin->running) {
-        return NEU_ERR_MQTT_FAILURE;
+    if (plugin->client) {
+        neu_mqtt_client_close(plugin->client);
+        plog_info(plugin, "mqtt client closed");
     }
 
-    mqtt_routine_t *   routine = plugin->routine;
-    int                type    = TOPIC_TYPE_WRITE;
-    struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *      json_str = command_write_response(plugin, head, write_data);
-    const char *topic    = pair->topic_response;
-    const int   qos      = pair->qos_response;
-
-    neu_err_code_e error =
-        mqtt_client_publish(routine->client, topic, qos,
-                            (unsigned char *) json_str, strlen(json_str));
-    if (NEU_ERR_SUCCESS != error) {
-        plog_error(plugin, "write response publish error code :%d, topoic:%s",
-                   error, topic);
-        free(json_str);
-        return error;
-    }
-
-    plog_info(plugin, "topic:%s, qos:%d, payload:%s", topic, qos, json_str);
-    free(json_str);
-    return NEU_ERR_SUCCESS;
-}
-
-static neu_err_code_e read_response(neu_plugin_t *      plugin,
-                                    neu_reqresp_head_t *head, void *data)
-{
-    neu_resp_read_group_t *read_data = data;
-
-    if (!plugin->running) {
-        return NEU_ERR_MQTT_FAILURE;
-    }
-
-    mqtt_routine_t *   routine = plugin->routine;
-    int                type    = TOPIC_TYPE_READ;
-    struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *      json_str = command_read_once_response(plugin, head, read_data,
-                                                routine->option.format);
-    const char *topic    = pair->topic_response;
-    const int   qos      = pair->qos_response;
-    neu_err_code_e error =
-        mqtt_client_publish(routine->client, topic, qos,
-                            (unsigned char *) json_str, strlen(json_str));
-    if (NEU_ERR_SUCCESS != error) {
-        plog_error(plugin, "read response publish error code :%d, topoic:%s",
-                   error, topic);
-        free(json_str);
-        return error;
-    }
-
-    plog_info(plugin, "topic:%s, qos:%d, payload:%s", topic, qos, json_str);
-    free(json_str);
-    return NEU_ERR_SUCCESS;
-}
-
-static void cache_string_release(void *data)
-{
-    free(data);
-}
-
-static int cache_send(neu_plugin_t *plugin)
-{
-    mqtt_routine_t *routine = plugin->routine;
-
-    nng_mtx_lock(plugin->mutex);
-    cache_item_t item = neu_mem_cache_earliest(plugin->cache);
-    if (NULL == item.data) {
-        nng_mtx_unlock(plugin->mutex);
-        return -1;
-    }
-
-    int                type     = TOPIC_TYPE_UPLOAD;
-    struct topic_pair *pair     = topics_find_type(routine->topics, type);
-    char *             json_str = item.data;
-    const char *       topic    = pair->topic_response;
-    const int          qos      = pair->qos_response;
-    neu_err_code_e     error =
-        mqtt_client_publish(routine->client, topic, qos,
-                            (unsigned char *) json_str, strlen(json_str));
-    if (NEU_ERR_SUCCESS != error) {
-        plog_error(plugin, "cache publish error code :%d, topoic:%s", error,
-                   topic);
-    }
-
-    free(json_str);
-    nng_mtx_unlock(plugin->mutex);
-    return 0;
-}
-
-static neu_err_code_e trans_data(neu_plugin_t *plugin, void *data)
-{
-    neu_reqresp_trans_data_t *trans_data = data;
-
-    if (!plugin->running) {
-        return NEU_ERR_MQTT_FAILURE;
-    }
-
-    mqtt_routine_t *   routine = plugin->routine;
-    int                type    = TOPIC_TYPE_UPLOAD;
-    struct topic_pair *pair    = topics_find_type(routine->topics, type);
-    char *json_str = command_read_periodic_response(plugin, trans_data,
-                                                    routine->option.format);
-    if (NULL == json_str) {
-        return NEU_ERR_MQTT_FAILURE;
-    }
-
-    neu_err_code_e rc = mqtt_client_is_connected(routine->client);
-    if (0 != rc) {
-        cache_item_t item = {
-            .size    = strlen(json_str) + 1,
-            .data    = json_str,
-            .release = cache_string_release,
-        };
-
-        nng_mtx_lock(plugin->mutex);
-        rc = neu_mem_cache_add(plugin->cache, &item);
-        nng_mtx_unlock(plugin->mutex);
-
-        if (0 != rc) {
-            item.release(item.data);
-        }
-
-        return NEU_ERR_MQTT_CONNECT_FAILURE;
-    } else {
-        for (int i = 0; i < 100; i++) {
-            int r = cache_send(plugin);
-            if (-1 == r) {
-                break;
-            }
-        }
-    }
-
-    const char *   topic = pair->topic_response;
-    const int      qos   = pair->qos_response;
-    neu_err_code_e error =
-        mqtt_client_publish(routine->client, topic, qos,
-                            (unsigned char *) json_str, strlen(json_str));
-    if (NEU_ERR_SUCCESS != error) {
-        plog_error(plugin, "trans data publish error code :%d, topoic:%s",
-                   error, topic);
-        free(json_str);
-        return error;
-    }
-
-    free(json_str);
-    return NEU_ERR_SUCCESS;
-}
-
-static neu_err_code_e node_state_send(neu_plugin_t *      plugin,
-                                      neu_reqresp_head_t *head, void *data)
-{
-    UNUSED(head);
-
-    neu_reqresp_nodes_state_t *states  = (neu_reqresp_nodes_state_t *) data;
-    mqtt_routine_t *           routine = plugin->routine;
-    if (!plugin->running) {
-        utarray_free(states->states);
-        return NEU_ERR_MQTT_FAILURE;
-    }
-
-    int                type = TOPIC_TYPE_HEARTBEAT;
-    struct topic_pair *pair = topics_find_type(routine->topics, type);
-    char *             json_str =
-        command_heartbeat_response(routine->plugin, states->states);
-    if (NULL == json_str) {
-        utarray_free(states->states);
-        return -1;
-    }
-
-    const char *   topic = pair->topic_response;
-    const int      qos   = pair->qos_response;
-    neu_err_code_e error =
-        mqtt_client_publish(routine->client, topic, qos,
-                            (unsigned char *) json_str, strlen(json_str));
-    if (NEU_ERR_SUCCESS != error) {
-        plog_error(routine->plugin,
-                   "heartbeat publish error code :%d, topoic:%s", error, topic);
-    }
-
-    free(json_str);
-    utarray_free(states->states);
-
+    plog_info(plugin, "stop plugin `%s` success",
+              neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
 }
 
 static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                                void *data)
 {
-    assert(NULL != plugin);
-    assert(NULL != head);
-    assert(NULL != data);
-
     neu_err_code_e error = NEU_ERR_SUCCESS;
+
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
+    // update cached messages number per seconds
+    if (NULL != plugin->client &&
+        (global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
+        update_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
+                      neu_mqtt_client_get_cached_msgs_num(plugin->client),
+                      NULL);
+        plugin->cache_metric_update_ts = global_timestamp;
+    }
 
     switch (head->type) {
     case NEU_RESP_ERROR:
-        error = write_response(plugin, head, data);
+        error = handle_write_response(plugin, head->ctx, data);
         break;
     case NEU_RESP_READ_GROUP:
-        error = read_response(plugin, head, data);
+        error = handle_read_response(plugin, head->ctx, data);
         break;
     case NEU_REQRESP_TRANS_DATA:
-        error = trans_data(plugin, data);
+        error = handle_trans_data(plugin, data);
         break;
     case NEU_REQRESP_NODES_STATE: {
-        error = node_state_send(plugin, head, data);
+        error = handle_nodes_state(plugin, data);
         break;
     }
     case NEU_REQRESP_NODE_DELETED:
@@ -666,20 +374,18 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .request = mqtt_plugin_request,
 };
 
+#define DESCRIPTION "Neuron northbound MQTT plugin bases on NanoSDK."
+#define DESCRIPTION_ZH "基于 NanoSDK 的 Neuron 北向应用 MQTT 插件"
+
 const neu_plugin_module_t neu_plugin_module = {
-    .version     = NEURON_PLUGIN_VER_1_0,
-    .module_name = "mqtt",
-    .module_descr =
-        "Neuron northbound MQTT communication application. The data collected "
-        "by Neuron from the device can be transmitted to the MQTT Broker "
-        "through the MQTT application, and users can also send commands to "
-        "Neuron through the MQTT application.",
-    .module_descr_zh = "Neuron 北向应用 MQTT。Neuron "
-                       "从设备端采集到的数据可以通过北向应用 MQTT 传送到 MQTT "
-                       "Broker。用户也可以通过北向应用 MQTT 向 Neuron 发送指令",
-    .intf_funs  = &plugin_intf_funs,
-    .kind       = NEU_PLUGIN_KIND_SYSTEM,
-    .type       = NEU_NA_TYPE_APP,
-    .sub_msg[0] = NEU_SUBSCRIBE_NODES_STATE,
-    .single     = false,
+    .version         = NEURON_PLUGIN_VER_1_0,
+    .module_name     = "mqtt",
+    .module_descr    = DESCRIPTION,
+    .module_descr_zh = DESCRIPTION_ZH,
+    .intf_funs       = &plugin_intf_funs,
+    .kind            = NEU_PLUGIN_KIND_SYSTEM,
+    .type            = NEU_NA_TYPE_APP,
+    .sub_msg[0]      = NEU_SUBSCRIBE_NODES_STATE,
+    .display         = true,
+    .single          = false,
 };

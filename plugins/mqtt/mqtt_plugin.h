@@ -17,32 +17,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_MQTT_PLUGIN
-#define NEURON_MQTT_PLUGIN
+#ifndef NEURON_PLUGIN_MQTT_H
+#define NEURON_PLUGIN_MQTT_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdlib.h>
+#include "connection/mqtt_client.h"
+#include "neuron.h"
 
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
-
-#include <neuron.h>
-
-typedef struct mqtt_routine mqtt_routine_t;
+#include "mqtt_config.h"
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    bool                running;
-    mqtt_routine_t *    routine;
-    char *              config;
-    neu_mem_cache_t *   cache;
-    nng_mtx *           mutex;
+    mqtt_config_t       config;
+    neu_mqtt_client_t * client;
+    int64_t             cache_metric_update_ts;
+    char *              read_req_topic;
+    char *              read_resp_topic;
+    char *              write_req_topic;
+    char *              write_resp_topic;
 };
 
 #ifdef __cplusplus
 }
 #endif
+
 #endif
