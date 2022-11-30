@@ -48,6 +48,11 @@ int neu_event_close(neu_events_t *events);
 typedef struct neu_event_timer neu_event_timer_t;
 typedef int (*neu_event_timer_callback)(void *usr_data);
 
+typedef enum neu_event_timer_type {
+    NEU_EVENT_TIMER_BLOCK   = 0,
+    NEU_EVENT_TIMER_NOBLOCK = 1,
+} neu_event_timer_type_e;
+
 typedef struct neu_event_timer_param {
     // timer trigger period
     int64_t second;
@@ -56,6 +61,7 @@ typedef struct neu_event_timer_param {
     void *usr_data;
     // Callback function that fires every time the timer fires
     neu_event_timer_callback cb;
+    neu_event_timer_type_e   type;
 } neu_event_timer_param_t;
 
 /**
