@@ -40,13 +40,6 @@ $ cd libjwt && mkdir build && cd build
 $ cmake -DENABLE_PIC=ON -DBUILD_SHARED_LIBS=OFF .. && make && sudo make install
 ```
 
-[MQTT-C](https://github.com/neugates/MQTT-C.git)
-```shell
-$ git clone https://github.com/neugates/MQTT-C.git 
-$ cd MQTT-C && mkdir build && cd build
-$ cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DMQTT_C_OpenSSL_SUPPORT=ON -DMQTT_C_EXAMPLES=OFF .. && make && sudo make install
-```
-
 [googletest](https://github.com/google/googletest.git)
 ```shell
 $ git clone -b release-1.11.0 https://github.com/google/googletest.git 
