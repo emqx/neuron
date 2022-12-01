@@ -59,7 +59,7 @@ void handle_logs_files(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    rv = mkdir("./neuron_logs", S_IRWXU);
+    rv = mkdir("neuron_logs", S_IRWXU);
     if (0 != rv && EEXIST == errno) {
         rv = 0;
     }
@@ -67,7 +67,7 @@ void handle_logs_files(nng_aio *aio)
     // check if coredump exists
     rv = access("./core", F_OK);
     if (0 == rv) {
-        rv = system("cp -r ./core ./neuron_logs");
+        rv = system("cp -r ./core neuron_logs");
         if (0 != rv) {
             nlog_error("failed to copy coredump file");
             NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
@@ -77,7 +77,7 @@ void handle_logs_files(nng_aio *aio)
         }
     }
 
-    rv = system("cp -r ./logs ./neuron_logs");
+    rv = system("cp -r ./logs neuron_logs");
     if (0 != rv) {
         nlog_error("failed to copy logs file");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
@@ -86,7 +86,7 @@ void handle_logs_files(nng_aio *aio)
         return;
     }
 
-    rv = system("tar -zcvf neuron_logs.tar.gz ./neuron_logs");
+    rv = system("tar -zcvf neuron_logs.tar.gz neuron_logs");
     if (0 != rv) {
         nlog_error("failed to create neuron_logs.tar.gz");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
@@ -95,7 +95,7 @@ void handle_logs_files(nng_aio *aio)
         return;
     }
 
-    strcpy(path, "./neuron_logs.tar.gz");
+    strcpy(path, "neuron_logs.tar.gz");
     rv = read_file(path, &data, &len);
     if (0 != rv) {
         NEU_JSON_RESPONSE_ERROR(
