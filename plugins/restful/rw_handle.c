@@ -125,6 +125,7 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.i16;
             break;
+        case NEU_TYPE_WORD:
         case NEU_TYPE_UINT16:
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.u16;
@@ -133,6 +134,7 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.i32;
             break;
+        case NEU_TYPE_DWORD:
         case NEU_TYPE_UINT32:
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.u32;
@@ -141,6 +143,7 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.i64;
             break;
+        case NEU_TYPE_LWORD:
         case NEU_TYPE_UINT64:
             api_res.tags[i].t             = NEU_JSON_INT;
             api_res.tags[i].value.val_int = resp->tags[i].value.value.u64;
