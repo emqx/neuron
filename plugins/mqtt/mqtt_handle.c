@@ -102,14 +102,17 @@ static int tag_values_to_json(neu_resp_tag_value_t *tags, uint16_t len,
             json->tags[i].t             = NEU_JSON_INT;
             json->tags[i].value.val_int = tag->value.value.i64;
             break;
+        case NEU_TYPE_WORD:
         case NEU_TYPE_UINT16:
             json->tags[i].t             = NEU_JSON_INT;
             json->tags[i].value.val_int = tag->value.value.u16;
             break;
+        case NEU_TYPE_DWORD:
         case NEU_TYPE_UINT32:
             json->tags[i].t             = NEU_JSON_INT;
             json->tags[i].value.val_int = tag->value.value.u32;
             break;
+        case NEU_TYPE_LWORD:
         case NEU_TYPE_UINT64:
             json->tags[i].t             = NEU_JSON_INT;
             json->tags[i].value.val_int = tag->value.value.u64;

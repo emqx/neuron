@@ -48,6 +48,7 @@ int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.i16;
         break;
+    case NEU_TYPE_WORD:
     case NEU_TYPE_UINT16:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.u16;
@@ -56,6 +57,7 @@ int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.i32;
         break;
+    case NEU_TYPE_DWORD:
     case NEU_TYPE_UINT32:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.u32;
@@ -64,6 +66,7 @@ int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.i64;
         break;
+    case NEU_TYPE_LWORD:
     case NEU_TYPE_UINT64:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.u64;
