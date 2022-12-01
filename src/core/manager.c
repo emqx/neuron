@@ -748,6 +748,14 @@ static int report_nodes_state(void *usr_data)
 
     utarray_foreach(apps, char *, app)
     {
+        neu_adapter_t *adapter =
+            neu_node_manager_find(manager->node_manager, app);
+        neu_node_state_t state = neu_adapter_get_state(adapter);
+        if (NEU_NODE_RUNNING_STATE_RUNNING != state.running) {
+            // skip nodes that are not running
+            continue;
+        }
+
         nng_msg *                  msg         = NULL;
         neu_reqresp_head_t         header      = { 0 };
         neu_resp_get_nodes_state_t node_states = { 0 };
