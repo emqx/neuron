@@ -231,6 +231,8 @@ static void task_handle_pub(task_t *task, neu_mqtt_client_t *client)
 
     int rv = 0;
     if (0 != (rv = nng_aio_result(aio))) {
+        nng_msg *msg = nng_aio_get_msg(aio);
+        nng_msg_free(msg);
         log(error, "send PUBLISH error: %s", nng_strerror(rv));
         log(error, "pub [%s, QoS%d] fail", task->pub.topic, task->pub.qos);
     } else {
