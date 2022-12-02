@@ -35,12 +35,13 @@ struct public_key_store {
     struct {
         char name[257];
         char key[1024];
-    } key[8];
+    } key[16];
     int size;
 };
 
 static struct public_key_store key_store;
-static char                    private_key[2048] = { 0 };
+static char                    neuron_private_key[2048] = { 0 };
+static char                    neuron_public_key[2048]  = { 0 };
 
 static int find_key(const char *name)
 {
@@ -92,10 +93,25 @@ static char *load_key(const char *dir, char *name)
     return content;
 }
 
+static void load_neuron_key(const char *dir_path)
+{
+    char *content = load_key(dir_path, "neuron.key");
+    assert(content != NULL);
+
+    strncpy(neuron_private_key, content, sizeof(neuron_private_key) - 1);
+
+    content = load_key(dir_path, "neuron.pem");
+    assert(content != NULL);
+
+    strncpy(neuron_public_key, content, sizeof(neuron_public_key) - 1);
+}
+
 static void scanf_key(const char *dir_path)
 {
     DIR *          dir = NULL;
     struct dirent *ptr = NULL;
+
+    memset(&key_store, 0, sizeof(key_store));
 
     dir = opendir(dir_path);
     if (dir == NULL) {
@@ -111,13 +127,6 @@ static void scanf_key(const char *dir_path)
             continue;
         }
 
-        if (strcmp("neuron.key", (char *) ptr->d_name) == 0) {
-            content = load_key(dir_path, (char *) ptr->d_name);
-            assert(content != NULL);
-
-            strncpy(private_key, content, sizeof(private_key) - 1);
-        }
-
         if (strstr((char *) ptr->d_name, ".pem") != NULL ||
             strstr((char *) ptr->d_name, ".pub") != NULL) {
             content = load_key(dir_path, (char *) ptr->d_name);
@@ -131,8 +140,8 @@ static void scanf_key(const char *dir_path)
 
 int neu_jwt_init(const char *dir_path)
 {
-    scanf_key(dir_path);
-    scanf_key("persistence");
+    load_neuron_key(dir_path);
+    scanf_key("certs");
     return 0;
 }
 
@@ -176,8 +185,8 @@ int neu_jwt_new(char **token)
         goto err_out;
     }
 
-    ret = jwt_set_alg(jwt, opt_alg, (const unsigned char *) private_key,
-                      strlen(private_key));
+    ret = jwt_set_alg(jwt, opt_alg, (const unsigned char *) neuron_private_key,
+                      strlen(neuron_private_key));
     if (ret != 0) {
         jwt_free(jwt);
         zlog_error(neuron, "jwt incorrect algorithm: %d, errno: %d", ret,
@@ -236,10 +245,20 @@ static void *neu_jwt_decode(char *token)
             jwt_free(jwt);
             return NULL;
         }
+    } else if (strcmp(name, "neuron") == 0) {
+        ret = jwt_decode(&jwt, token, (const unsigned char *) neuron_public_key,
+                         strlen(neuron_public_key));
+        if (ret != 0) {
+            zlog_error(neuron, "jwt decode error: %d", ret);
+            jwt_free(jwt_test);
+            jwt_free(jwt);
+            return NULL;
+        }
     } else {
         zlog_error(neuron, "Don't find public key file: %s", name);
         jwt_free(jwt_test);
         jwt_free(jwt);
+        scanf_key("certs");
         return NULL;
     }
 
