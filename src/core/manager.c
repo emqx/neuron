@@ -203,7 +203,7 @@ static int manager_level_check(void *usr_data)
     if (0 != manager->timestamp_lev_manager) {
         struct timeval   tv      = { 0 };
         int64_t          diff    = { 0 };
-        int64_t          delay_s = 60;
+        int64_t          delay_s = 600;
         zlog_category_t *neuron  = zlog_get_category("neuron");
 
         gettimeofday(&tv, NULL);
