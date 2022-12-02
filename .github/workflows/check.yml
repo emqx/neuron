@@ -49,6 +49,7 @@ jobs:
       
       - name: compile
         run: |
+          git config --global --add safe.directory $(pwd)
           mkdir -p build && cd build
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           make -j4
@@ -69,6 +70,7 @@ jobs:
       
       - name: compile
         run: |
+          git config --global --add safe.directory $(pwd)
           mkdir -p build && cd build
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           make -j4
