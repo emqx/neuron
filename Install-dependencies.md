@@ -53,5 +53,5 @@ $ curl -o sqlite3.tar.gz https://www.sqlite.org/2022/sqlite-autoconf-3390000.tar
 $ mkdir sqlite3
 $ tar xzf sqlite3.tar.gz --strip-components=1 -C sqlite3
 $ cd sqlite3
-$ ./configure && make && sudo make install
+$ ./configure CFLAGS=-fPIC && make && sudo make install
 ```
