@@ -333,7 +333,7 @@ static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
     char *err_msg = NULL;
     rv            = sqlite3_exec(db, sql, NULL, NULL, &err_msg);
     if (SQLITE_OK != rv) {
-        nlog_error("execute %s fail: %s", path, err_msg);
+        nlog_error("execute %s fail: (%d)%s", path, rv, err_msg);
         sqlite3_free(err_msg);
         rv = NEU_ERR_EINTERNAL;
         goto end;
