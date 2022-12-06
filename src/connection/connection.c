@@ -589,7 +589,7 @@ static void conn_connect(neu_conn_t *conn)
                       sizeof(struct sockaddr_in));
         if (ret != 0 && errno != EINPROGRESS) {
             close(fd);
-            zlog_error(neuron, "connect %s:%d error: %s(%d)",
+            zlog_error(conn->param.log, "connect %s:%d error: %s(%d)",
                        conn->param.params.tcp_client.ip,
                        conn->param.params.tcp_client.port, strerror(errno),
                        errno);
