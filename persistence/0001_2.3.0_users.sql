@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS
   tags (
     driver_name TEXT NOT NULL,
     group_name TEXT NOT NULL,
-    name TEXT NULL check(length(name) <= 32),
-    address TEXT NULL check(length(address) <= 64),
+    name TEXT NULL check(length(name) <= 64),
+    address TEXT NULL check(length(address) <= 128),
     attribute INTEGER NOT NULL check(attribute BETWEEN 0 AND 7),
     precision INTEGER NOT NULL check(precision BETWEEN 0 AND 17),
     decimal REAL NOT NULL,
@@ -51,4 +51,28 @@ CREATE TABLE IF NOT EXISTS
   );
 INSERT INTO tags SELECT * FROM old_tags;
 DROP TABLE old_tags;
+
+ALTER TABLE nodes RENAME TO old_nodes;
+CREATE TABLE IF NOT EXISTS
+  nodes (
+    name TEXT PRIMARY KEY check(length(name) <= 128),
+    type integer(1) NOT NULL check(type IN (1, 2)),
+    state integer(1) NOT NULL check(state BETWEEN 1 AND 4),
+    plugin_name TEXT NOT NULL check(length(plugin_name) <= 32)
+  );
+INSERT INTO nodes SELECT * FROM old_nodes;
+DROP TABLE old_nodes;
+
+ALTER TABLE groups RENAME TO old_groups;
+CREATE TABLE IF NOT EXISTS
+  groups (
+    driver_name TEXT NOT NULL,
+    name TEXT NULL check(length(name) <= 128),
+    interval INTEGER NOT NULL check(interval >= 100),
+    UNIQUE (driver_name, name),
+    FOREIGN KEY (driver_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE
+  );
+INSERT INTO groups SELECT * FROM old_groups;
+DROP TABLE old_groups;
+
 COMMIT;
