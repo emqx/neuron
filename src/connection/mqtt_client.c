@@ -31,6 +31,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "connection/mqtt_client.h"
+#include "event/event.h"
 #include "utils/asprintf.h"
 #include "utils/utextend.h"
 #include "utils/uthash.h"
@@ -56,6 +57,7 @@
 
 typedef struct {
     size_t                         ref;
+    bool                           ack;
     neu_mqtt_qos_e                 qos;
     char *                         topic;
     neu_mqtt_client_subscribe_cb_t cb;
@@ -100,6 +102,8 @@ typedef struct task_s {
 struct neu_mqtt_client_s {
     nng_socket                      sock;
     nng_mtx *                       mtx;
+    neu_events_t *                  events;
+    neu_event_timer_t *             timer;
     neu_mqtt_version_e              version;
     char *                          host;
     uint16_t                        port;
@@ -116,6 +120,7 @@ struct neu_mqtt_client_s {
     bool                            receiving;
     nng_aio *                       recv_aio;
     subscription_t *                subscriptions;
+    size_t                          suback_count;
     size_t                          task_count;
     size_t                          task_limit;
     task_t *                        task_free_list;
@@ -139,6 +144,7 @@ static inline subscription_t *subscription_ref(subscription_t *subscription);
 static inline void            subscriptions_free(subscription_t *subscriptions);
 
 static void recv_cb(void *arg);
+static int  resub_cb(void *data);
 static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg);
 static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg);
 
@@ -149,6 +155,7 @@ static inline void    client_add_subscription(neu_mqtt_client_t *client,
 static int            client_send_sub_msg(neu_mqtt_client_t *client,
                                           subscription_t *   subscription);
 static inline void    client_start_recv(neu_mqtt_client_t *client);
+static inline int     client_start_timer(neu_mqtt_client_t *client);
 static inline int     client_make_url(neu_mqtt_client_t *client);
 
 static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
@@ -275,7 +282,9 @@ static void task_handle_sub(task_t *task, neu_mqtt_client_t *client)
 
     rc = nng_mqtt_msg_get_suback_return_codes(msg, &n);
     log(info, "recv SUBACK return_code:%d", *rc);
-    rv = *rc;
+    rv             = *rc;
+    task->sub->ack = true;
+    client->suback_count += 1;
 
 end:
     // TODO: handle retry subscribe on failure
@@ -352,26 +361,38 @@ static inline void subscriptions_free(subscription_t *subscriptions)
     }
 }
 
+static int resub_cb(void *data)
+{
+    neu_mqtt_client_t *client = data;
+    subscription_t *   sub    = NULL;
+
+    nng_mtx_lock(client->mtx);
+    if (client->connected &&
+        (client->suback_count != HASH_COUNT(client->subscriptions))) {
+        // resend subscribe messages if necessary
+        HASH_LOOP(hh, client->subscriptions, sub)
+        {
+            if (!sub->ack && client_send_sub_msg(client, sub) < 0) {
+                log(error, "client_send_sub_msg fail");
+            }
+        }
+    }
+    nng_mtx_unlock(client->mtx);
+
+    return 0;
+}
+
 static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
 {
     (void) p;
     (void) ev;
     neu_mqtt_client_t *             client = arg;
-    subscription_t *                sub    = NULL;
     neu_mqtt_client_connection_cb_t cb     = NULL;
     void *                          data   = NULL;
 
     log(info, "mqtt client connected");
 
-    // send subscribe messages for all subscriptions
     nng_mtx_lock(client->mtx);
-    HASH_LOOP(hh, client->subscriptions, sub)
-    {
-        if (client_send_sub_msg(client, sub) < 0) {
-            log(error, "client_send_sub_msg fail");
-        }
-    }
-
     // start receiving
     client_start_recv(client);
 
@@ -391,6 +412,7 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     (void) p;
     (void) ev;
     neu_mqtt_client_t *             client = arg;
+    subscription_t *                sub    = NULL;
     neu_mqtt_client_connection_cb_t cb     = NULL;
     void *                          data   = NULL;
 
@@ -399,6 +421,8 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     client->connected = false;
     cb                = client->disconnect_cb;
     data              = client->disconnect_cb_data;
+    HASH_LOOP(hh, client->subscriptions, sub) { sub->ack = false; }
+    client->suback_count = 0;
     nng_mtx_unlock(client->mtx);
 
     if (cb) {
@@ -577,6 +601,39 @@ static inline void client_start_recv(neu_mqtt_client_t *client)
         nng_recv_aio(client->sock, client->recv_aio);
         client->receiving = true;
     }
+}
+
+static inline int client_start_timer(neu_mqtt_client_t *client)
+{
+    neu_events_t *     events = NULL;
+    neu_event_timer_t *timer  = NULL;
+
+    if (client->events) {
+        // timer already started
+        return 0;
+    }
+
+    events = neu_event_new();
+    if (NULL == events) {
+        return -1;
+    }
+
+    neu_event_timer_param_t param = {
+        .second      = 1,
+        .millisecond = 500,
+        .cb          = resub_cb,
+        .usr_data    = client,
+    };
+
+    timer = neu_event_add_timer(events, param);
+    if (NULL == timer) {
+        neu_event_close(events);
+        return -1;
+    }
+
+    client->events = events;
+    client->timer  = timer;
+    return 0;
 }
 
 static inline int client_make_url(neu_mqtt_client_t *client)
@@ -1001,6 +1058,11 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
         goto error;
     }
 
+    if (0 != client_start_timer(client)) {
+        log(error, "client_start_timer fail");
+        goto error;
+    }
+
     if (client->sqlite_cfg &&
         (rv = nng_socket_set_ptr(client->sock, NNG_OPT_MQTT_SQLITE,
                                  client->sqlite_cfg))) {
@@ -1045,20 +1107,37 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
 
 error:
     nng_mtx_unlock(client->mtx);
+    if (client->events) {
+        neu_event_del_timer(client->events, client->timer);
+        neu_event_close(client->events);
+        client->events = NULL;
+        client->timer  = NULL;
+    }
     nng_close(client->sock);
     return -1;
 }
 
 int neu_mqtt_client_close(neu_mqtt_client_t *client)
 {
-    int rv = 0;
+    int                rv     = 0;
+    neu_events_t *     events = NULL;
+    neu_event_timer_t *timer  = NULL;
 
     nng_mtx_lock(client->mtx);
     if (!client->open) {
         nng_mtx_unlock(client->mtx);
         return 0;
     }
+    events         = client->events;
+    timer          = client->timer;
+    client->events = NULL;
+    client->timer  = NULL;
     nng_mtx_unlock(client->mtx);
+
+    if (events) {
+        neu_event_del_timer(events, timer);
+        neu_event_close(events);
+    }
 
     // NanoSDK quirks: calling nng_aio_stop will block if the aio is in use
     // nng_aio_stop(client->recv_aio);
