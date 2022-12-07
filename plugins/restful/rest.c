@@ -234,7 +234,7 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_ERROR: {
         neu_resp_error_t *error = (neu_resp_error_t *) data;
         NEU_JSON_RESPONSE_ERROR(error->error, {
-            http_response(header->ctx, error->error, result_error);
+            neu_http_response(header->ctx, error->error, result_error);
         });
         break;
     }

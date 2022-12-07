@@ -71,7 +71,7 @@ void handle_logs_files(nng_aio *aio)
         if (0 != rv) {
             nlog_error("failed to copy coredump file");
             NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-                http_response(aio, error_code.error, result_error);
+                neu_http_response(aio, error_code.error, result_error);
             });
             return;
         }
@@ -81,7 +81,7 @@ void handle_logs_files(nng_aio *aio)
     if (0 != rv) {
         nlog_error("failed to copy logs file");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-            http_response(aio, error_code.error, result_error);
+            neu_http_response(aio, error_code.error, result_error);
         });
         return;
     }
@@ -90,7 +90,7 @@ void handle_logs_files(nng_aio *aio)
     if (0 != rv) {
         nlog_error("failed to create neuron_logs.tar.gz");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-            http_response(aio, error_code.error, result_error);
+            neu_http_response(aio, error_code.error, result_error);
         });
         return;
     }
@@ -99,7 +99,7 @@ void handle_logs_files(nng_aio *aio)
     rv = read_file(path, &data, &len);
     if (0 != rv) {
         NEU_JSON_RESPONSE_ERROR(
-            rv, { http_response(aio, error_code.error, result_error); });
+            rv, { neu_http_response(aio, error_code.error, result_error); });
         return;
     }
 
@@ -108,7 +108,7 @@ void handle_logs_files(nng_aio *aio)
     if (0 != rv) {
         nlog_error("failed to delete neuron_logs folder");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-            http_response(aio, error_code.error, result_error);
+            neu_http_response(aio, error_code.error, result_error);
         });
         return;
     }
@@ -142,7 +142,7 @@ void handle_log_level(nng_aio *aio)
 
             if (strlen(node_name) == 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
-                    http_response(aio, error_code.error, result_error);
+                    neu_http_response(aio, error_code.error, result_error);
                 });
             } else {
                 int                        ret    = 0;
@@ -157,7 +157,7 @@ void handle_log_level(nng_aio *aio)
                         "Modify node log level fail, node_name:%s, ret: %d,",
                         node_name, ret);
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-                        http_response(aio, error_code.error, result_error);
+                        neu_http_response(aio, error_code.error, result_error);
                     });
                 }
 
@@ -165,7 +165,7 @@ void handle_log_level(nng_aio *aio)
                 if (ret != 0) {
                     nlog_error("Modify neuron log level fail, ret: %d", ret);
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-                        http_response(aio, error_code.error, result_error);
+                        neu_http_response(aio, error_code.error, result_error);
                     });
                 }
 
@@ -176,7 +176,7 @@ void handle_log_level(nng_aio *aio)
                 ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                        http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                     });
                 }
             }

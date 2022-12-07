@@ -60,7 +60,7 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     return 0;
 }
 
-ssize_t url_decode(const char *s, size_t len, char *buf, size_t size)
+ssize_t neu_url_decode(const char *s, size_t len, char *buf, size_t size)
 {
     size_t       i = 0, j = 0;
     int          n = 0;
@@ -81,14 +81,14 @@ ssize_t url_decode(const char *s, size_t len, char *buf, size_t size)
     return j;
 }
 
-const char *http_get_header(nng_aio *aio, char *name)
+const char *neu_http_get_header(nng_aio *aio, char *name)
 {
     nng_http_req *req = nng_aio_get_input(aio, 0);
 
     return nng_http_req_get_header(req, name);
 }
 
-int http_get_body(nng_aio *aio, void **data, size_t *data_size)
+int neu_http_get_body(nng_aio *aio, void **data, size_t *data_size)
 {
     nng_http_req *req = nng_aio_get_input(aio, 0);
 
@@ -167,7 +167,7 @@ static char *get_param(const char *url, const char *name, size_t *len_p)
     return p;
 }
 
-const char *http_get_param(nng_aio *aio, const char *name, size_t *len)
+const char *neu_http_get_param(nng_aio *aio, const char *name, size_t *len)
 {
     nng_http_req *nng_req = nng_aio_get_input(aio, 0);
 
@@ -177,21 +177,21 @@ const char *http_get_param(nng_aio *aio, const char *name, size_t *len)
     return val;
 }
 
-ssize_t http_get_param_str(nng_aio *aio, const char *name, char *buf,
-                           size_t size)
+ssize_t neu_http_get_param_str(nng_aio *aio, const char *name, char *buf,
+                               size_t size)
 {
     size_t      len = 0;
-    const char *s   = http_get_param(aio, name, &len);
+    const char *s   = neu_http_get_param(aio, name, &len);
     if (NULL == s) {
         return -2;
     }
-    return url_decode(s, len, buf, size);
+    return neu_url_decode(s, len, buf, size);
 }
 
-int http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
+int neu_http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
 {
     size_t      len    = 0;
-    const char *tmp    = http_get_param(aio, name, &len);
+    const char *tmp    = neu_http_get_param(aio, name, &len);
     char *      end    = NULL;
     uintmax_t   result = 0;
 
@@ -214,11 +214,11 @@ int http_get_param_uintmax(nng_aio *aio, const char *name, uintmax_t *param)
     return 0;
 }
 
-int http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param)
+int neu_http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param)
 {
     uintmax_t val;
 
-    int rv = http_get_param_uintmax(aio, name, &val);
+    int rv = neu_http_get_param_uintmax(aio, name, &val);
     if (0 != rv) {
         return rv;
     }
@@ -231,11 +231,11 @@ int http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param)
     return 0;
 }
 
-int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
+int neu_http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
 {
     uintmax_t val;
 
-    int rv = http_get_param_uintmax(aio, name, &val);
+    int rv = neu_http_get_param_uintmax(aio, name, &val);
     if (0 != rv) {
         return rv;
     }
@@ -248,12 +248,12 @@ int http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param)
     return 0;
 }
 
-int http_get_param_node_type(nng_aio *aio, const char *name,
-                             neu_node_type_e *param)
+int neu_http_get_param_node_type(nng_aio *aio, const char *name,
+                                 neu_node_type_e *param)
 {
     uintmax_t val;
 
-    int rv = http_get_param_uintmax(aio, name, &val);
+    int rv = neu_http_get_param_uintmax(aio, name, &val);
     if (0 != rv) {
         return rv;
     }
@@ -266,7 +266,7 @@ int http_get_param_node_type(nng_aio *aio, const char *name,
     return 0;
 }
 
-int http_response(nng_aio *aio, neu_err_code_e code, char *content)
+int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
 {
     enum nng_http_status status = NNG_HTTP_STATUS_OK;
 
@@ -372,42 +372,42 @@ int http_response(nng_aio *aio, neu_err_code_e code, char *content)
     return response(aio, content, status);
 }
 
-int http_ok(nng_aio *aio, char *content)
+int neu_http_ok(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_OK);
 }
 
-int http_created(nng_aio *aio, char *content)
+int neu_http_created(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_CREATED);
 }
 
-int http_partial(nng_aio *aio, char *content)
+int neu_http_partial(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_PARTIAL_CONTENT);
 }
 
-int http_bad_request(nng_aio *aio, char *content)
+int neu_http_bad_request(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_BAD_REQUEST);
 }
 
-int http_unauthorized(nng_aio *aio, char *content)
+int neu_http_unauthorized(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_UNAUTHORIZED);
 }
 
-int http_not_found(nng_aio *aio, char *content)
+int neu_http_not_found(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_NOT_FOUND);
 }
 
-int http_conflict(nng_aio *aio, char *content)
+int neu_http_conflict(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_CONFLICT);
 }
 
-int http_internal_error(nng_aio *aio, char *content)
+int neu_http_internal_error(nng_aio *aio, char *content)
 {
     return response(aio, content, NNG_HTTP_STATUS_INTERNAL_SERVER_ERROR);
 }

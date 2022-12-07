@@ -315,6 +315,6 @@ void handle_proxy(nng_aio *aio)
 
 error:
     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-        http_response(aio, error_code.error, result_error);
+        neu_http_response(aio, error_code.error, result_error);
     });
 }

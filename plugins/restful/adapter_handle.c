@@ -39,8 +39,8 @@ void handle_add_adapter(nng_aio *aio)
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {
-                    http_response(aio, NEU_ERR_NODE_NAME_TOO_LONG,
-                                  result_error);
+                    neu_http_response(aio, NEU_ERR_NODE_NAME_TOO_LONG,
+                                      result_error);
                 });
 
             } else {
@@ -55,7 +55,7 @@ void handle_add_adapter(nng_aio *aio)
                 ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                        http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                     });
                 }
             }
@@ -78,7 +78,7 @@ void handle_del_adapter(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -100,19 +100,19 @@ void handle_get_adapter(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_node_type(aio, "type", &node_type) != 0) {
+    if (neu_http_get_param_node_type(aio, "type", &node_type) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, error_code.error, result_error);
+            neu_http_response(aio, error_code.error, result_error);
         })
         return;
     }
 
-    if (http_get_param_str(aio, "plugin", plugin_name, sizeof(plugin_name)) >
-        0) {
+    if (neu_http_get_param_str(aio, "plugin", plugin_name,
+                               sizeof(plugin_name)) > 0) {
         strcpy(cmd.plugin, plugin_name);
     }
 
-    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) > 0) {
+    if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) > 0) {
         strcpy(cmd.node, node_name);
     }
 
@@ -120,7 +120,7 @@ void handle_get_adapter(nng_aio *aio)
     ret      = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
         });
     }
 }
@@ -144,7 +144,7 @@ void handle_get_adapter_resp(nng_aio *aio, neu_resp_get_node_t *nodes)
 
     neu_json_encode_by_fn(&nodes_res, neu_json_encode_get_nodes_resp, &result);
 
-    http_ok(aio, result);
+    neu_http_ok(aio, result);
 
     free(result);
     free(nodes_res.nodes);
@@ -170,7 +170,7 @@ void handle_set_node_setting(nng_aio *aio)
             ret         = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -186,9 +186,10 @@ void handle_get_node_setting(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
+    if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) <=
+        0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, error_code.error, result_error);
+            neu_http_response(aio, error_code.error, result_error);
         })
         return;
     }
@@ -200,7 +201,7 @@ void handle_get_node_setting(nng_aio *aio)
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
         });
     }
 }
@@ -208,7 +209,7 @@ void handle_get_node_setting(nng_aio *aio)
 void handle_get_node_setting_resp(nng_aio *                    aio,
                                   neu_resp_get_node_setting_t *setting)
 {
-    http_ok(aio, setting->setting);
+    neu_http_ok(aio, setting->setting);
     free(setting->setting);
 }
 
@@ -230,7 +231,7 @@ void handle_node_ctl(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -248,7 +249,8 @@ void handle_get_node_state(nng_aio *aio)
 
     header.ctx = aio;
 
-    if (http_get_param_str(aio, "node", node_name, sizeof(node_name)) <= 0) {
+    if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) <=
+        0) {
         header.type = NEU_REQ_GET_NODES_STATE;
     } else {
         header.type = NEU_REQ_GET_NODE_STATE;
@@ -258,7 +260,7 @@ void handle_get_node_state(nng_aio *aio)
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
         });
     }
 }
@@ -274,7 +276,7 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
 
     neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
 
-    http_ok(aio, result);
+    neu_http_ok(aio, result);
     free(result);
 }
 
@@ -300,7 +302,7 @@ void handle_get_nodes_state_resp(nng_aio *                   aio,
     neu_json_encode_by_fn(&states_res, neu_json_encode_get_nodes_state_resp,
                           &result);
 
-    http_ok(aio, result);
+    neu_http_ok(aio, result);
 
     free(result);
     free(states_res.nodes);

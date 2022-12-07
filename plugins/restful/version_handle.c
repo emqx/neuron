@@ -39,11 +39,11 @@ void handle_get_version(nng_aio *aio)
 
     if (ret < 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            http_response(aio, error_code.error, result_error);
+            neu_http_response(aio, error_code.error, result_error);
         });
         return;
     }
 
-    http_response(aio, 0, result);
+    neu_http_response(aio, 0, result);
     free(result);
 }
