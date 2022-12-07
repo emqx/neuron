@@ -27,11 +27,11 @@
 #include "adapter_handle.h"
 #include "datatag_handle.h"
 #include "group_config_handle.h"
-#include "http.h"
 #include "log_handle.h"
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
+#include "utils/http.h"
 #include "version_handle.h"
 
 #include "handle.h"

@@ -9,7 +9,7 @@ target_include_directories(json_test PRIVATE
 target_link_libraries(json_test neuron-base gtest_main gtest pthread jansson)
 
 add_executable(http_test http_test.cc 
-	${CMAKE_SOURCE_DIR}/plugins/restful/http.c)
+	${CMAKE_SOURCE_DIR}/src/utils/http.c)
 	
 target_include_directories(http_test PRIVATE 
 	${CMAKE_SOURCE_DIR}/src

@@ -27,7 +27,7 @@
 #include "metric_handle.h"
 #include "monitor.h"
 #include "restful/handle.h"
-#include "restful/http.h"
+#include "utils/http.h"
 
 // clang-format off
 #define METRIC_GLOBAL_TMPL                                                       \

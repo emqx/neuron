@@ -24,7 +24,7 @@
 #include "json/neu_json_rw.h"
 
 #include "handle.h"
-#include "http.h"
+#include "utils/http.h"
 
 #include "rw_handle.h"
 

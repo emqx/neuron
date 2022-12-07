@@ -17,8 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_PLUGIN_HTTP_H_
-#define _NEU_PLUGIN_HTTP_H_
+#ifndef _NEU_HTTP_H_
+#define _NEU_HTTP_H_
 
 #include <nng/nng.h>
 

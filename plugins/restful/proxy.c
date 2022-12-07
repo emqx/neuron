@@ -19,8 +19,8 @@
 #include <pthread.h>
 
 #include "errcodes.h"
-#include "http.h"
 #include "proxy.h"
+#include "utils/http.h"
 #include "utils/log.h"
 #include "utils/utlist.h"
 #include "json/neu_json_fn.h"
