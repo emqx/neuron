@@ -772,7 +772,8 @@ int neu_persister_load_tags(const char *driver_name, const char *group_name,
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT name, address, attribute, precision, type, "
                         "decimal, description "
-                        "FROM tags WHERE driver_name=? AND group_name=?";
+                        "FROM tags WHERE driver_name=? AND group_name=? "
+                        "ORDER BY rowid ASC";
 
     utarray_new(*tags, neu_tag_get_icd());
 
