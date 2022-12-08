@@ -27,28 +27,28 @@
 #include "utils/http_handler.h"
 #include "utils/log.h"
 
-int neu_rest_add_handler(nng_http_server *              server,
-                         const struct neu_rest_handler *rest_handler)
+int neu_http_add_handler(nng_http_server *              server,
+                         const struct neu_http_handler *http_handler)
 {
     nng_http_handler *handler;
     int               ret        = -1;
     char              method[16] = { 0 };
 
-    switch (rest_handler->type) {
-    case NEU_REST_HANDLER_FUNCTION:
-        ret = nng_http_handler_alloc(&handler, rest_handler->url,
-                                     rest_handler->value.handler);
+    switch (http_handler->type) {
+    case NEU_HTTP_HANDLER_FUNCTION:
+        ret = nng_http_handler_alloc(&handler, http_handler->url,
+                                     http_handler->value.handler);
         break;
-    case NEU_REST_HANDLER_DIRECTORY:
-        ret = nng_http_handler_alloc_directory(&handler, rest_handler->url,
-                                               rest_handler->value.path);
+    case NEU_HTTP_HANDLER_DIRECTORY:
+        ret = nng_http_handler_alloc_directory(&handler, http_handler->url,
+                                               http_handler->value.path);
         break;
-    case NEU_REST_HANDLER_PROXY:
-        ret = rest_proxy_handler(rest_handler, &handler);
+    case NEU_HTTP_HANDLER_PROXY:
+        ret = neu_http_proxy_handler(http_handler, &handler);
         break;
-    case NEU_REST_HANDLER_REDIRECT:
-        ret = nng_http_handler_alloc_redirect(&handler, rest_handler->url, 0,
-                                              rest_handler->value.path);
+    case NEU_HTTP_HANDLER_REDIRECT:
+        ret = nng_http_handler_alloc_redirect(&handler, http_handler->url, 0,
+                                              http_handler->value.path);
         break;
     }
 
@@ -56,24 +56,24 @@ int neu_rest_add_handler(nng_http_server *              server,
         return -1;
     }
 
-    switch (rest_handler->method) {
-    case NEU_REST_METHOD_GET:
+    switch (http_handler->method) {
+    case NEU_HTTP_METHOD_GET:
         ret = nng_http_handler_set_method(handler, "GET");
         strncpy(method, "GET", sizeof(method));
         break;
-    case NEU_REST_METHOD_POST:
+    case NEU_HTTP_METHOD_POST:
         ret = nng_http_handler_set_method(handler, "POST");
         strncpy(method, "POST", sizeof(method));
         break;
-    case NEU_REST_METHOD_PUT:
+    case NEU_HTTP_METHOD_PUT:
         ret = nng_http_handler_set_method(handler, "PUT");
         strncpy(method, "PUT", sizeof(method));
         break;
-    case NEU_REST_METHOD_DELETE:
+    case NEU_HTTP_METHOD_DELETE:
         ret = nng_http_handler_set_method(handler, "DELETE");
         strncpy(method, "DELETE", sizeof(method));
         break;
-    case NEU_REST_METHOD_OPTIONS:
+    case NEU_HTTP_METHOD_OPTIONS:
         ret = nng_http_handler_set_method(handler, "OPTIONS");
         strncpy(method, "OPTIONS", sizeof(method));
         break;
@@ -83,13 +83,13 @@ int neu_rest_add_handler(nng_http_server *              server,
     assert(ret == 0);
 
     ret = nng_http_server_add_handler(server, handler);
-    nlog_info("rest add handler, method: %s, url: %s, ret: %d", method,
-              rest_handler->url, ret);
+    nlog_info("http add handler, method: %s, url: %s, ret: %d", method,
+              http_handler->url, ret);
 
     return ret;
 }
 
-void neu_rest_handle_cors(nng_aio *aio)
+void neu_http_handle_cors(nng_aio *aio)
 {
     nng_http_res *res = NULL;
 

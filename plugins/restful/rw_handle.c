@@ -32,7 +32,7 @@ void handle_read(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_read_req_t, neu_json_decode_read_req, {
             int                  ret    = 0;
             neu_reqresp_head_t   header = { 0 };
@@ -56,7 +56,7 @@ void handle_write(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_write_req_t, neu_json_decode_write_req, {
             int                 ret    = 0;
             neu_reqresp_head_t  header = { 0 };

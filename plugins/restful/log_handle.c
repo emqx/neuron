@@ -57,7 +57,7 @@ void handle_logs_files(nng_aio *aio)
     size_t len       = 0;
     int    rv        = 0;
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     rv = mkdir("neuron_logs", S_IRWXU);
     if (0 != rv && EEXIST == errno) {
@@ -125,7 +125,7 @@ void handle_log_level(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_log_level_req_t,
         neu_json_decode_update_log_level_req, {
             char node_name[NEU_NODE_NAME_LEN] = { 0 };

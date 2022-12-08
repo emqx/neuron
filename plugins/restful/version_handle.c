@@ -30,7 +30,7 @@ void handle_get_version(nng_aio *aio)
 {
     char *result = NULL;
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     int ret = neu_asprintf(
         &result,

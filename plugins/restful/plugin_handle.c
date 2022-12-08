@@ -32,7 +32,7 @@ void handle_add_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_plugin_req_t, neu_json_decode_add_plugin_req, {
             int                  ret    = 0;
             neu_reqresp_head_t   header = { 0 };
@@ -54,7 +54,7 @@ void handle_del_plugin(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_plugin_req_t, neu_json_decode_del_plugin_req, {
             int                  ret    = 0;
             neu_reqresp_head_t   header = { 0 };
@@ -78,7 +78,7 @@ void handle_get_plugin(nng_aio *aio)
     neu_reqresp_head_t header = { 0 };
     int                ret    = 0;
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     header.ctx  = aio;
     header.type = NEU_REQ_GET_PLUGIN;

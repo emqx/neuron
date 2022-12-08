@@ -76,8 +76,8 @@ static neu_plugin_t *dashb_plugin_open(void)
     int                            rv;
     neu_plugin_t *                 plugin    = calloc(1, sizeof(neu_plugin_t));
     uint32_t                       n_handler = 0;
-    const struct neu_rest_handler *rest_handlers = NULL;
-    const struct neu_rest_handler *cors          = NULL;
+    const struct neu_http_handler *rest_handlers = NULL;
+    const struct neu_http_handler *cors          = NULL;
 
     neu_plugin_common_init(&plugin->common);
 
@@ -92,11 +92,11 @@ static neu_plugin_t *dashb_plugin_open(void)
 
     neu_rest_handler(&rest_handlers, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        neu_rest_add_handler(plugin->server, &rest_handlers[i]);
+        neu_http_add_handler(plugin->server, &rest_handlers[i]);
     }
     neu_rest_api_cors_handler(&cors, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        neu_rest_add_handler(plugin->server, &cors[i]);
+        neu_http_add_handler(plugin->server, &cors[i]);
     }
     if ((rv = nng_http_server_start(plugin->server)) != 0) {
         nlog_error("Failed to start api server, error=%d", rv);

@@ -25,7 +25,7 @@
 #include "utils/utlist.h"
 #include "json/neu_json_fn.h"
 
-struct rest_proxy_ctx;
+struct http_proxy_ctx;
 
 static void handle_proxy(nng_aio *aio);
 
@@ -36,19 +36,19 @@ typedef struct {
     size_t                 uri_buf_len; // request uri buffer length
     char *                 uri_buf;     // request uri buffer
     nng_http_client *      client;      // client to destination
-    struct rest_proxy_ctx *free_list;   // context free list
-} rest_proxy_t;
+    struct http_proxy_ctx *free_list;   // context free list
+} http_proxy_t;
 
-struct rest_proxy_ctx {
-    rest_proxy_t *         proxy;
+struct http_proxy_ctx {
+    http_proxy_t *         proxy;
     nng_aio *              aio;
     nng_aio *              user_aio; // aio to write back response
     nng_http_res *         res;      // http response from the destination
-    struct rest_proxy_ctx *prev;
-    struct rest_proxy_ctx *next;
+    struct http_proxy_ctx *prev;
+    struct http_proxy_ctx *next;
 };
 
-static void rest_proxy_ctx_free(struct rest_proxy_ctx *ctx)
+static void http_proxy_ctx_free(struct http_proxy_ctx *ctx)
 {
     if (NULL == ctx) {
         return;
@@ -56,20 +56,20 @@ static void rest_proxy_ctx_free(struct rest_proxy_ctx *ctx)
     nng_aio_free(ctx->aio);
 }
 
-static int rest_proxy_alloc(rest_proxy_t **proxy, const char *src_url,
+static int http_proxy_alloc(http_proxy_t **proxy, const char *src_url,
                             const char *dst_url)
 {
     int      ret = 0;
     nng_url *url = NULL;
 
-    rest_proxy_t *p = calloc(1, sizeof(rest_proxy_t));
+    http_proxy_t *p = calloc(1, sizeof(http_proxy_t));
     if (NULL == p) {
-        nlog_error("alloc rest proxy fail");
+        nlog_error("alloc http proxy fail");
         return -1;
     }
 
     if (0 != pthread_mutex_init(&p->mtx, NULL)) {
-        nlog_error("init rest proxy mutex fail");
+        nlog_error("init http proxy mutex fail");
         ret = -1;
         goto err_mutex_init;
     }
@@ -113,7 +113,7 @@ err_mutex_init:
     return ret;
 }
 
-static void rest_proxy_free(rest_proxy_t *proxy)
+static void http_proxy_free(http_proxy_t *proxy)
 {
     if (NULL == proxy) {
         return;
@@ -125,7 +125,7 @@ static void rest_proxy_free(rest_proxy_t *proxy)
 
     free(proxy->uri_buf);
 
-    struct rest_proxy_ctx *el = NULL, *tmp = NULL;
+    struct http_proxy_ctx *el = NULL, *tmp = NULL;
     DL_FOREACH_SAFE(proxy->free_list, el, tmp)
     {
         DL_DELETE(proxy->free_list, el);
@@ -138,7 +138,7 @@ static void rest_proxy_free(rest_proxy_t *proxy)
     free(proxy);
 }
 
-static inline int rest_proxy_set_uri(rest_proxy_t *proxy, nng_http_req *req)
+static inline int http_proxy_set_uri(http_proxy_t *proxy, nng_http_req *req)
 {
     const char *uri     = nng_http_req_get_uri(req);
     size_t      len     = strlen(uri);
@@ -170,10 +170,10 @@ static inline int rest_proxy_set_uri(rest_proxy_t *proxy, nng_http_req *req)
     return 0;
 }
 
-static void rest_proxy_cb(void *arg)
+static void http_proxy_cb(void *arg)
 {
     int                    rv  = 0;
-    struct rest_proxy_ctx *ctx = arg;
+    struct http_proxy_ctx *ctx = arg;
 
     nng_aio_set_output(ctx->user_aio, 0, ctx->res);
 
@@ -204,10 +204,10 @@ static void rest_proxy_cb(void *arg)
     pthread_mutex_unlock(&ctx->proxy->mtx);
 }
 
-static struct rest_proxy_ctx *rest_proxy_get_ctx(rest_proxy_t *proxy)
+static struct http_proxy_ctx *http_proxy_get_ctx(http_proxy_t *proxy)
 {
     pthread_mutex_lock(&proxy->mtx);
-    struct rest_proxy_ctx *ctx = proxy->free_list;
+    struct http_proxy_ctx *ctx = proxy->free_list;
     if (NULL != ctx) {
         DL_DELETE(proxy->free_list, ctx);
         pthread_mutex_unlock(&proxy->mtx);
@@ -221,7 +221,7 @@ static struct rest_proxy_ctx *rest_proxy_get_ctx(rest_proxy_t *proxy)
         return NULL;
     }
 
-    if (0 != nng_aio_alloc(&ctx->aio, rest_proxy_cb, ctx)) {
+    if (0 != nng_aio_alloc(&ctx->aio, http_proxy_cb, ctx)) {
         nlog_error("alloc proxy ctx aio fail");
         free(ctx);
         return NULL;
@@ -231,21 +231,21 @@ static struct rest_proxy_ctx *rest_proxy_get_ctx(rest_proxy_t *proxy)
     return ctx;
 }
 
-int rest_proxy_handler(const struct neu_rest_handler *rest_handler,
-                       nng_http_handler **            handler)
+int neu_http_proxy_handler(const struct neu_http_handler *http_handler,
+                           nng_http_handler **            handler)
 {
     int           ret   = 0;
-    const char *  dst   = rest_handler->value.dst_url;
+    const char *  dst   = http_handler->value.dst_url;
     nng_url *     url   = NULL;
-    rest_proxy_t *proxy = NULL;
+    http_proxy_t *proxy = NULL;
 
-    ret = rest_proxy_alloc(&proxy, rest_handler->url,
-                           rest_handler->value.dst_url);
+    ret = http_proxy_alloc(&proxy, http_handler->url,
+                           http_handler->value.dst_url);
     if (0 != ret) {
         return ret;
     }
 
-    ret = nng_http_handler_alloc(handler, rest_handler->url, handle_proxy);
+    ret = nng_http_handler_alloc(handler, http_handler->url, handle_proxy);
     if (0 != ret) {
         nlog_error("alloc proxy handler for `%s` fail", dst);
         goto error;
@@ -264,7 +264,7 @@ int rest_proxy_handler(const struct neu_rest_handler *rest_handler,
     }
 
     ret = nng_http_handler_set_data(*handler, proxy,
-                                    (void (*)(void *)) rest_proxy_free);
+                                    (void (*)(void *)) http_proxy_free);
     if (0 != ret) {
         nlog_error("proxy handler for `%s` set data fail", dst);
         goto error;
@@ -280,7 +280,7 @@ error:
         nng_http_handler_free(*handler);
     }
     if (NULL != proxy) {
-        rest_proxy_free(proxy);
+        http_proxy_free(proxy);
     }
     return ret;
 }
@@ -290,14 +290,14 @@ static void handle_proxy(nng_aio *aio)
     nng_http_res *    res     = NULL;
     nng_http_req *    req     = nng_aio_get_input(aio, 0);
     nng_http_handler *handler = nng_aio_get_input(aio, 1);
-    rest_proxy_t *    proxy   = nng_http_handler_get_data(handler);
+    http_proxy_t *    proxy   = nng_http_handler_get_data(handler);
 
     // fix the uri
-    if (0 != rest_proxy_set_uri(proxy, req)) {
+    if (0 != http_proxy_set_uri(proxy, req)) {
         goto error;
     }
 
-    struct rest_proxy_ctx *ctx = rest_proxy_get_ctx(proxy);
+    struct http_proxy_ctx *ctx = http_proxy_get_ctx(proxy);
     if (NULL == ctx) {
         nlog_error("get proxy ctx fail");
         goto error;
@@ -305,7 +305,7 @@ static void handle_proxy(nng_aio *aio)
 
     if (0 != nng_http_res_alloc(&res)) {
         nlog_error("alloc proxy resp fail");
-        rest_proxy_ctx_free(ctx);
+        http_proxy_ctx_free(ctx);
         goto error;
     }
 
