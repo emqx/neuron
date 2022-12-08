@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 #include "adapter.h"
-#include "adapter_internal.h"
+#include "adapter/adapter_internal.h"
 #include "metrics.h"
 #include "utils/log.h"
 #include "utils/time.h"
