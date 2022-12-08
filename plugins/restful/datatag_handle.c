@@ -34,7 +34,7 @@ void handle_add_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
             int                ret    = 0;
             neu_reqresp_head_t header = { 0 };
@@ -88,7 +88,7 @@ void handle_del_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_tags_req_t, neu_json_decode_del_tags_req, {
             int                ret    = 0;
             neu_reqresp_head_t header = { 0 };
@@ -118,7 +118,7 @@ void handle_update_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_tags_req_t, neu_json_decode_update_tags_req, {
             int                ret    = 0;
             neu_reqresp_head_t header = { 0 };
@@ -172,7 +172,7 @@ void handle_get_tags(nng_aio *aio)
         .type = NEU_REQ_GET_TAG,
     };
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     if (neu_http_get_param_str(aio, "node", node, sizeof(node)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {

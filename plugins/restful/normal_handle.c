@@ -50,7 +50,7 @@ void handle_ping(nng_aio *aio)
 
 void handle_login(nng_aio *aio)
 {
-    REST_PROCESS_HTTP_REQUEST(
+    NEU_PROCESS_HTTP_REQUEST(
         aio, neu_json_login_req_t, neu_json_decode_login_req, {
             neu_json_login_resp_t login_resp = { 0 };
             neu_user_t *          user       = neu_load_user(req->name);
@@ -93,7 +93,7 @@ void handle_login(nng_aio *aio)
 
 void handle_password(nng_aio *aio)
 {
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_password_req_t, neu_json_decode_password_req, {
             neu_user_t *user     = NULL;
             int         rv       = 0;
@@ -165,7 +165,7 @@ void handle_get_plugin_schema(nng_aio *aio)
     size_t len         = 0;
     char * schema_path = NULL;
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     const char *plugin_name = neu_http_get_param(aio, "plugin_name", &len);
     if (plugin_name == NULL || len == 0) {

@@ -31,7 +31,6 @@
 #include "group_config_handle.h"
 #include "handle.h"
 #include "plugin_handle.h"
-#include "proxy.h"
 #include "rest.h"
 #include "rw_handle.h"
 #include "utils/http.h"
@@ -46,68 +45,6 @@ struct neu_plugin {
     nng_http_server *      server;
     neu_rest_handle_ctx_t *handle_ctx;
 };
-
-int neu_rest_add_handler(nng_http_server *              server,
-                         const struct neu_rest_handler *rest_handler)
-{
-    nng_http_handler *handler;
-    int               ret        = -1;
-    char              method[16] = { 0 };
-
-    switch (rest_handler->type) {
-    case NEU_REST_HANDLER_FUNCTION:
-        ret = nng_http_handler_alloc(&handler, rest_handler->url,
-                                     rest_handler->value.handler);
-        break;
-    case NEU_REST_HANDLER_DIRECTORY:
-        ret = nng_http_handler_alloc_directory(&handler, rest_handler->url,
-                                               rest_handler->value.path);
-        break;
-    case NEU_REST_HANDLER_PROXY:
-        ret = rest_proxy_handler(rest_handler, &handler);
-        break;
-    case NEU_REST_HANDLER_REDIRECT:
-        ret = nng_http_handler_alloc_redirect(&handler, rest_handler->url, 0,
-                                              rest_handler->value.path);
-        break;
-    }
-
-    if (ret != 0) {
-        return -1;
-    }
-
-    switch (rest_handler->method) {
-    case NEU_REST_METHOD_GET:
-        ret = nng_http_handler_set_method(handler, "GET");
-        strncpy(method, "GET", sizeof(method));
-        break;
-    case NEU_REST_METHOD_POST:
-        ret = nng_http_handler_set_method(handler, "POST");
-        strncpy(method, "POST", sizeof(method));
-        break;
-    case NEU_REST_METHOD_PUT:
-        ret = nng_http_handler_set_method(handler, "PUT");
-        strncpy(method, "PUT", sizeof(method));
-        break;
-    case NEU_REST_METHOD_DELETE:
-        ret = nng_http_handler_set_method(handler, "DELETE");
-        strncpy(method, "DELETE", sizeof(method));
-        break;
-    case NEU_REST_METHOD_OPTIONS:
-        ret = nng_http_handler_set_method(handler, "OPTIONS");
-        strncpy(method, "OPTIONS", sizeof(method));
-        break;
-    default:
-        break;
-    }
-    assert(ret == 0);
-
-    ret = nng_http_server_add_handler(server, handler);
-    nlog_info("rest add handler, method: %s, url: %s, ret: %d", method,
-              rest_handler->url, ret);
-
-    return ret;
-}
 
 static nng_http_server *server_init()
 {
@@ -139,8 +76,8 @@ static neu_plugin_t *dashb_plugin_open(void)
     int                            rv;
     neu_plugin_t *                 plugin    = calloc(1, sizeof(neu_plugin_t));
     uint32_t                       n_handler = 0;
-    const struct neu_rest_handler *rest_handlers = NULL;
-    const struct neu_rest_handler *cors          = NULL;
+    const struct neu_http_handler *rest_handlers = NULL;
+    const struct neu_http_handler *cors          = NULL;
 
     neu_plugin_common_init(&plugin->common);
 
@@ -155,11 +92,11 @@ static neu_plugin_t *dashb_plugin_open(void)
 
     neu_rest_handler(&rest_handlers, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        neu_rest_add_handler(plugin->server, &rest_handlers[i]);
+        neu_http_add_handler(plugin->server, &rest_handlers[i]);
     }
     neu_rest_api_cors_handler(&cors, &n_handler);
     for (uint32_t i = 0; i < n_handler; i++) {
-        neu_rest_add_handler(plugin->server, &cors[i]);
+        neu_http_add_handler(plugin->server, &cors[i]);
     }
     if ((rv = nng_http_server_start(plugin->server)) != 0) {
         nlog_error("Failed to start api server, error=%d", rv);

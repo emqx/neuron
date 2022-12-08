@@ -23,7 +23,7 @@
 
 #include "metric_handle.h"
 #include "monitor.h"
-#include "restful/handle.h"
+#include "utils/http_handler.h"
 #include "utils/log.h"
 
 #define neu_plugin_module default_monitor_plugin_module
@@ -52,10 +52,10 @@ static nng_http_server *server_init()
     return server;
 }
 
-static struct neu_rest_handler api_handlers[] = {
+static struct neu_http_handler api_handlers[] = {
     {
-        .method        = NEU_REST_METHOD_GET,
-        .type          = NEU_REST_HANDLER_FUNCTION,
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/metrics",
         .value.handler = handle_get_metric,
     },
@@ -63,20 +63,20 @@ static struct neu_rest_handler api_handlers[] = {
 
 static int add_handlers(nng_http_server *server)
 {
-    struct neu_rest_handler cors = {
-        .method        = NEU_REST_METHOD_OPTIONS,
-        .type          = NEU_REST_HANDLER_FUNCTION,
-        .value.handler = neu_rest_handle_cors,
+    struct neu_http_handler cors = {
+        .method        = NEU_HTTP_METHOD_OPTIONS,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .value.handler = neu_http_handle_cors,
     };
 
     for (size_t i = 0; i < sizeof(api_handlers) / sizeof(api_handlers[0]);
          ++i) {
-        if (0 != neu_rest_add_handler(server, &api_handlers[0])) {
+        if (0 != neu_http_add_handler(server, &api_handlers[0])) {
             return -1;
         }
 
         cors.url = api_handlers[i].url;
-        if (0 != neu_rest_add_handler(server, &cors)) {
+        if (0 != neu_http_add_handler(server, &cors)) {
             return -1;
         }
     }

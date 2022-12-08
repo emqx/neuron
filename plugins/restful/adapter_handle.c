@@ -35,7 +35,7 @@ void handle_add_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {
@@ -66,7 +66,7 @@ void handle_del_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_node_req_t, neu_json_decode_del_node_req, {
             int                ret    = 0;
             neu_reqresp_head_t header = { 0 };
@@ -98,7 +98,7 @@ void handle_get_adapter(nng_aio *aio)
         .type = NEU_REQ_GET_NODE,
     };
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     if (neu_http_get_param_node_type(aio, "type", &node_type) != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
@@ -155,7 +155,7 @@ void handle_set_node_setting(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
             char *config_buf = calloc(req_data_size + 1, sizeof(char));
             int   ret        = 0;
@@ -184,7 +184,7 @@ void handle_get_node_setting(nng_aio *aio)
     neu_reqresp_head_t         header                       = { 0 };
     neu_req_get_node_setting_t cmd                          = { 0 };
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     if (neu_http_get_param_str(aio, "node", node_name, sizeof(node_name)) <=
         0) {
@@ -217,7 +217,7 @@ void handle_node_ctl(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_ctl_req_t, neu_json_decode_node_ctl_req, {
             int                ret    = 0;
             neu_reqresp_head_t header = { 0 };
@@ -245,7 +245,7 @@ void handle_get_node_state(nng_aio *aio)
     neu_reqresp_head_t       header                       = { 0 };
     neu_req_get_node_state_t cmd                          = { 0 };
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     header.ctx = aio;
 

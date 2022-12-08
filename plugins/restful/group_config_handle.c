@@ -33,7 +33,7 @@ void handle_add_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_group_config_req_t,
         neu_json_decode_add_group_config_req, {
             if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
@@ -65,7 +65,7 @@ void handle_update_group(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_group_req_t, neu_json_decode_add_group_config_req,
         {
             int                 ret    = 0;
@@ -90,7 +90,7 @@ void handle_del_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_group_config_req_t,
         neu_json_decode_del_group_config_req, {
             int                 ret    = 0;
@@ -121,7 +121,7 @@ void handle_get_group_config(nng_aio *aio)
         .type = NEU_REQ_GET_GROUP,
     };
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     neu_http_get_param_str(aio, "node", node_name, sizeof(node_name));
     strcpy(cmd.driver, node_name);
@@ -198,7 +198,7 @@ void handle_grp_subscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req, {
             int                 ret    = 0;
             neu_req_subscribe_t cmd    = { 0 };
@@ -221,7 +221,7 @@ void handle_grp_unsubscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_unsubscribe_req_t, neu_json_decode_unsubscribe_req, {
             int                   ret    = 0;
             neu_req_unsubscribe_t cmd    = { 0 };
@@ -251,7 +251,7 @@ void handle_grp_get_subscribe(nng_aio *aio)
         .type = NEU_REQ_GET_SUBSCRIBE_GROUP,
     };
 
-    VALIDATE_JWT(aio);
+    NEU_VALIDATE_JWT(aio);
 
     if (neu_http_get_param_str(aio, "app", node_name, sizeof(node_name)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
