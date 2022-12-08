@@ -23,7 +23,7 @@
 
 #include "metric_handle.h"
 #include "monitor.h"
-#include "restful/handle.h"
+#include "utils/http_handler.h"
 #include "utils/log.h"
 
 #define neu_plugin_module default_monitor_plugin_module

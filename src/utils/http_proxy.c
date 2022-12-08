@@ -19,13 +19,15 @@
 #include <pthread.h>
 
 #include "errcodes.h"
-#include "proxy.h"
 #include "utils/http.h"
+#include "utils/http_handler.h"
 #include "utils/log.h"
 #include "utils/utlist.h"
 #include "json/neu_json_fn.h"
 
 struct rest_proxy_ctx;
+
+static void handle_proxy(nng_aio *aio);
 
 typedef struct {
     pthread_mutex_t        mtx;
@@ -202,7 +204,7 @@ static void rest_proxy_cb(void *arg)
     pthread_mutex_unlock(&ctx->proxy->mtx);
 }
 
-struct rest_proxy_ctx *rest_proxy_get_ctx(rest_proxy_t *proxy)
+static struct rest_proxy_ctx *rest_proxy_get_ctx(rest_proxy_t *proxy)
 {
     pthread_mutex_lock(&proxy->mtx);
     struct rest_proxy_ctx *ctx = proxy->free_list;
@@ -283,7 +285,7 @@ error:
     return ret;
 }
 
-void handle_proxy(nng_aio *aio)
+static void handle_proxy(nng_aio *aio)
 {
     nng_http_res *    res     = NULL;
     nng_http_req *    req     = nng_aio_get_input(aio, 0);

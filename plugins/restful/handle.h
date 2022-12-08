@@ -22,89 +22,8 @@
 
 #include <stdlib.h>
 
-#include <nng/nng.h>
-#include <nng/supplemental/http/http.h>
-
 #include "plugin.h"
-#include "utils/neu_jwt.h"
-#include "json/neu_json_error.h"
-
-#define REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func)           \
-    {                                                                        \
-        char *    req_data      = NULL;                                      \
-        size_t    req_data_size = 0;                                         \
-        req_type *req           = NULL;                                      \
-                                                                             \
-        if (neu_http_get_body((aio), (void **) &req_data, &req_data_size) == \
-                0 &&                                                         \
-            decode_fun(req_data, &req) == 0) {                               \
-            { func };                                                        \
-            decode_fun##_free(req);                                          \
-        } else {                                                             \
-            neu_http_bad_request(aio, "{\"error\": 1002}");                  \
-        }                                                                    \
-        free(req_data);                                                      \
-    }
-
-#define REST_PROCESS_HTTP_REQUEST_VALIDATE_JWT(aio, req_type, decode_fun,    \
-                                               func)                         \
-    {                                                                        \
-        if (!disable_jwt) {                                                  \
-            char *jwt =                                                      \
-                (char *) neu_http_get_header(aio, (char *) "Authorization"); \
-                                                                             \
-            NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                 \
-                if (error_code.error != NEU_ERR_SUCCESS) {                   \
-                    neu_http_response(aio, error_code.error, result_error);  \
-                    free(result_error);                                      \
-                    return;                                                  \
-                }                                                            \
-            })                                                               \
-        }                                                                    \
-        REST_PROCESS_HTTP_REQUEST(aio, req_type, decode_fun, func);          \
-    }
-
-#define VALIDATE_JWT(aio)                                                    \
-    {                                                                        \
-        if (!disable_jwt) {                                                  \
-            char *jwt =                                                      \
-                (char *) neu_http_get_header(aio, (char *) "Authorization"); \
-                                                                             \
-            NEU_JSON_RESPONSE_ERROR(neu_jwt_validate(jwt), {                 \
-                if (error_code.error != NEU_ERR_SUCCESS) {                   \
-                    neu_http_response(aio, error_code.error, result_error);  \
-                    free(result_error);                                      \
-                    return;                                                  \
-                }                                                            \
-            });                                                              \
-        }                                                                    \
-    }
-
-enum neu_rest_method {
-    NEU_REST_METHOD_UNDEFINE = 0x0,
-    NEU_REST_METHOD_GET,
-    NEU_REST_METHOD_POST,
-    NEU_REST_METHOD_PUT,
-    NEU_REST_METHOD_DELETE,
-    NEU_REST_METHOD_OPTIONS
-};
-enum neu_rest_handler_type {
-    NEU_REST_HANDLER_FUNCTION = 0x0,
-    NEU_REST_HANDLER_DIRECTORY,
-    NEU_REST_HANDLER_PROXY,
-    NEU_REST_HANDLER_REDIRECT,
-};
-
-struct neu_rest_handler {
-    enum neu_rest_method       method;
-    char *                     url;
-    enum neu_rest_handler_type type;
-    union neu_rest_handler_value {
-        void *handler;
-        char *path;
-        char *dst_url;
-    } value;
-};
+#include "utils/http_handler.h"
 
 typedef struct neu_rest_handle_ctx neu_rest_handle_ctx_t;
 
@@ -112,10 +31,8 @@ neu_rest_handle_ctx_t *neu_rest_init_ctx(void *plugin);
 void                   neu_rest_free_ctx(neu_rest_handle_ctx_t *ctx);
 void *                 neu_rest_get_plugin();
 
-int  neu_rest_add_handler(nng_http_server *              server,
-                          const struct neu_rest_handler *rest_handler);
 void neu_rest_handler(const struct neu_rest_handler **handlers, uint32_t *size);
 void neu_rest_api_cors_handler(const struct neu_rest_handler **handlers,
                                uint32_t *                      size);
-void neu_rest_handle_cors(nng_aio *aio);
+
 #endif

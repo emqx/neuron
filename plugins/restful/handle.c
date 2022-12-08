@@ -338,21 +338,3 @@ void *neu_rest_get_plugin()
 {
     return rest_ctx->plugin;
 }
-
-void neu_rest_handle_cors(nng_aio *aio)
-{
-    nng_http_res *res = NULL;
-
-    nng_http_res_alloc(&res);
-
-    nng_http_res_set_header(res, "Access-Control-Allow-Origin", "*");
-    nng_http_res_set_header(res, "Access-Control-Allow-Methods",
-                            "POST,GET,PUT,DELETE,OPTIONS");
-    nng_http_res_set_header(res, "Access-Control-Allow-Headers", "*");
-
-    nng_http_res_copy_data(res, " ", strlen(" "));
-    nng_http_res_set_status(res, NNG_HTTP_STATUS_OK);
-
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
-}

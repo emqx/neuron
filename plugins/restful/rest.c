@@ -31,7 +31,6 @@
 #include "group_config_handle.h"
 #include "handle.h"
 #include "plugin_handle.h"
-#include "proxy.h"
 #include "rest.h"
 #include "rw_handle.h"
 #include "utils/http.h"
@@ -46,68 +45,6 @@ struct neu_plugin {
     nng_http_server *      server;
     neu_rest_handle_ctx_t *handle_ctx;
 };
-
-int neu_rest_add_handler(nng_http_server *              server,
-                         const struct neu_rest_handler *rest_handler)
-{
-    nng_http_handler *handler;
-    int               ret        = -1;
-    char              method[16] = { 0 };
-
-    switch (rest_handler->type) {
-    case NEU_REST_HANDLER_FUNCTION:
-        ret = nng_http_handler_alloc(&handler, rest_handler->url,
-                                     rest_handler->value.handler);
-        break;
-    case NEU_REST_HANDLER_DIRECTORY:
-        ret = nng_http_handler_alloc_directory(&handler, rest_handler->url,
-                                               rest_handler->value.path);
-        break;
-    case NEU_REST_HANDLER_PROXY:
-        ret = rest_proxy_handler(rest_handler, &handler);
-        break;
-    case NEU_REST_HANDLER_REDIRECT:
-        ret = nng_http_handler_alloc_redirect(&handler, rest_handler->url, 0,
-                                              rest_handler->value.path);
-        break;
-    }
-
-    if (ret != 0) {
-        return -1;
-    }
-
-    switch (rest_handler->method) {
-    case NEU_REST_METHOD_GET:
-        ret = nng_http_handler_set_method(handler, "GET");
-        strncpy(method, "GET", sizeof(method));
-        break;
-    case NEU_REST_METHOD_POST:
-        ret = nng_http_handler_set_method(handler, "POST");
-        strncpy(method, "POST", sizeof(method));
-        break;
-    case NEU_REST_METHOD_PUT:
-        ret = nng_http_handler_set_method(handler, "PUT");
-        strncpy(method, "PUT", sizeof(method));
-        break;
-    case NEU_REST_METHOD_DELETE:
-        ret = nng_http_handler_set_method(handler, "DELETE");
-        strncpy(method, "DELETE", sizeof(method));
-        break;
-    case NEU_REST_METHOD_OPTIONS:
-        ret = nng_http_handler_set_method(handler, "OPTIONS");
-        strncpy(method, "OPTIONS", sizeof(method));
-        break;
-    default:
-        break;
-    }
-    assert(ret == 0);
-
-    ret = nng_http_server_add_handler(server, handler);
-    nlog_info("rest add handler, method: %s, url: %s, ret: %d", method,
-              rest_handler->url, ret);
-
-    return ret;
-}
 
 static nng_http_server *server_init()
 {
