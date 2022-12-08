@@ -19,8 +19,8 @@
 #include <pthread.h>
 
 #include "errcodes.h"
-#include "http.h"
 #include "proxy.h"
+#include "utils/http.h"
 #include "utils/log.h"
 #include "utils/utlist.h"
 #include "json/neu_json_fn.h"
@@ -315,6 +315,6 @@ void handle_proxy(nng_aio *aio)
 
 error:
     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-        http_response(aio, error_code.error, result_error);
+        neu_http_response(aio, error_code.error, result_error);
     });
 }

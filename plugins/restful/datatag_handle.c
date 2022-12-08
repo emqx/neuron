@@ -25,8 +25,8 @@
 #include "json/neu_json_fn.h"
 
 #include "handle.h"
-#include "http.h"
 #include "tag.h"
+#include "utils/http.h"
 
 #include "datatag_handle.h"
 
@@ -64,7 +64,7 @@ void handle_add_tags(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -80,7 +80,7 @@ void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
 
     neu_json_encode_by_fn(&res, neu_json_encode_au_tags_resp, &result);
 
-    http_ok(aio, result);
+    neu_http_ok(aio, result);
     free(result);
 }
 
@@ -108,7 +108,7 @@ void handle_del_tags(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -148,7 +148,7 @@ void handle_update_tags(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -174,20 +174,20 @@ void handle_get_tags(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    if (http_get_param_str(aio, "node", node, sizeof(node)) <= 0) {
+    if (neu_http_get_param_str(aio, "node", node, sizeof(node)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+            neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
         })
         return;
     }
-    if (http_get_param_str(aio, "group", group, sizeof(group)) <= 0) {
+    if (neu_http_get_param_str(aio, "group", group, sizeof(group)) <= 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+            neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
         })
         return;
     }
 
-    if (http_get_param_str(aio, "name", tag_name, sizeof(tag_name)) >= 0) {
+    if (neu_http_get_param_str(aio, "name", tag_name, sizeof(tag_name)) >= 0) {
         strcpy(cmd.name, tag_name);
     }
 
@@ -197,7 +197,7 @@ void handle_get_tags(nng_aio *aio)
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
         });
     }
 }
@@ -226,7 +226,7 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
 
-    http_ok(aio, result);
+    neu_http_ok(aio, result);
 
     free(result);
     free(tags_res.tags);

@@ -24,7 +24,7 @@
 #include "json/neu_json_rw.h"
 
 #include "handle.h"
-#include "http.h"
+#include "utils/http.h"
 
 #include "rw_handle.h"
 
@@ -46,7 +46,7 @@ void handle_read(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -94,7 +94,7 @@ void handle_write(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -181,7 +181,7 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
     }
 
     neu_json_encode_by_fn(&api_res, neu_json_encode_read_resp, &result);
-    http_ok(aio, result);
+    neu_http_ok(aio, result);
     free(api_res.tags);
     free(result);
     free(resp->tags);

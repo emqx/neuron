@@ -38,14 +38,14 @@
 #include "json/neu_json_fn.h"
 
 #include "handle.h"
-#include "http.h"
+#include "utils/http.h"
 #include "utils/neu_jwt.h"
 
 #include "normal_handle.h"
 
 void handle_ping(nng_aio *aio)
 {
-    http_ok(aio, "{}");
+    neu_http_ok(aio, "{}");
 }
 
 void handle_login(nng_aio *aio)
@@ -58,7 +58,7 @@ void handle_login(nng_aio *aio)
             if (NULL == user) {
                 nlog_warn("could not find user `%s`", req->name);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
-                    http_response(aio, error_code.error, result_error);
+                    neu_http_response(aio, error_code.error, result_error);
                 });
             } else if (neu_user_check_password(user, req->pass)) {
 
@@ -68,7 +68,7 @@ void handle_login(nng_aio *aio)
                 int ret = neu_jwt_new(&token);
                 if (ret != 0) {
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_NEED_TOKEN, {
-                        http_response(aio, error_code.error, result_error);
+                        neu_http_response(aio, error_code.error, result_error);
                         jwt_free_str(token);
                     });
                 }
@@ -77,13 +77,13 @@ void handle_login(nng_aio *aio)
 
                 neu_json_encode_by_fn(&login_resp, neu_json_encode_login_resp,
                                       &result);
-                http_ok(aio, result);
+                neu_http_ok(aio, result);
                 jwt_free_str(token);
                 free(result);
             } else {
                 nlog_warn("user `%s` password check fail", req->name);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
-                    http_response(aio, error_code.error, result_error);
+                    neu_http_response(aio, error_code.error, result_error);
                 });
             }
 
@@ -117,8 +117,9 @@ void handle_password(nng_aio *aio)
                 nlog_error("user `%s` persist fail", req->name);
             }
 
-            NEU_JSON_RESPONSE_ERROR(
-                rv, { http_response(aio, error_code.error, result_error); });
+            NEU_JSON_RESPONSE_ERROR(rv, {
+                neu_http_response(aio, error_code.error, result_error);
+            });
 
             neu_user_free(user);
         })
@@ -166,16 +167,16 @@ void handle_get_plugin_schema(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    const char *plugin_name = http_get_param(aio, "plugin_name", &len);
+    const char *plugin_name = neu_http_get_param(aio, "plugin_name", &len);
     if (plugin_name == NULL || len == 0) {
-        http_bad_request(aio, "{\"error\": 1002}");
+        neu_http_bad_request(aio, "{\"error\": 1002}");
         return;
     }
 
     if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
                          plugin_name)) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            http_response(aio, error_code.error, result_error);
+            neu_http_response(aio, error_code.error, result_error);
         });
         return;
     }
@@ -184,12 +185,12 @@ void handle_get_plugin_schema(nng_aio *aio)
     buf       = file_string_read(&len, schema_path);
     if (NULL == buf) {
         nlog_info("open %s error: %d", schema_path, errno);
-        http_not_found(aio, "{\"status\": \"error\"}");
+        neu_http_not_found(aio, "{\"status\": \"error\"}");
         free(schema_path);
         return;
     }
 
-    http_ok(aio, buf);
+    neu_http_ok(aio, buf);
     free(buf);
     free(schema_path);
 }

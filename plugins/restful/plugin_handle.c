@@ -24,7 +24,7 @@
 #include "json/neu_json_fn.h"
 
 #include "handle.h"
-#include "http.h"
+#include "utils/http.h"
 
 #include "plugin_handle.h"
 
@@ -44,7 +44,7 @@ void handle_add_plugin(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -66,7 +66,7 @@ void handle_del_plugin(nng_aio *aio)
             ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
         })
@@ -86,7 +86,7 @@ void handle_get_plugin(nng_aio *aio)
     ret = neu_plugin_op(plugin, header, NULL);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-            http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
         });
     }
 }
@@ -116,7 +116,7 @@ void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins)
     neu_json_encode_by_fn(&plugin_res, neu_json_encode_get_plugin_resp,
                           &result);
 
-    http_ok(aio, result);
+    neu_http_ok(aio, result);
     free(result);
     free(plugin_res.plugin_libs);
 

@@ -27,7 +27,7 @@
 #include "metric_handle.h"
 #include "monitor.h"
 #include "restful/handle.h"
-#include "restful/http.h"
+#include "utils/http.h"
 
 // clang-format off
 #define METRIC_GLOBAL_TMPL                                                       \
@@ -245,7 +245,7 @@ void handle_get_metric(nng_aio *aio)
     VALIDATE_JWT(aio);
     neu_metrics_category_e cat           = NEU_METRICS_CATEGORY_ALL;
     size_t                 cat_param_len = 0;
-    const char *cat_param = http_get_param(aio, "category", &cat_param_len);
+    const char *cat_param = neu_http_get_param(aio, "category", &cat_param_len);
     if (NULL != cat_param &&
         !parse_metrics_catgory(cat_param, cat_param_len, &cat)) {
         plog_info(plugin, "invalid metrics category: %.*s", (int) cat_param_len,
@@ -255,7 +255,8 @@ void handle_get_metric(nng_aio *aio)
     }
 
     char    node_name[NEU_NODE_NAME_LEN] = { 0 };
-    ssize_t rv = http_get_param_str(aio, "node", node_name, sizeof(node_name));
+    ssize_t rv =
+        neu_http_get_param_str(aio, "node", node_name, sizeof(node_name));
     if (-1 == rv || rv >= NEU_NODE_NAME_LEN ||
         (0 < rv && NEU_METRICS_CATEGORY_GLOBAL == cat)) {
         status = NNG_HTTP_STATUS_BAD_REQUEST;

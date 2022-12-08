@@ -71,6 +71,7 @@ set(NEURON_BASE_SOURCES
     src/event/event_unix.c
     src/utils/asprintf.c
     src/utils/json.c
+    src/utils/http.c
     src/utils/neu_jwt.c
     src/utils/base64.c
     src/utils/async_queue.c
@@ -119,7 +120,6 @@ set(NEURON_SOURCES
     plugins/restful/version_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c
-    plugins/restful/http.c
     plugins/restful/proxy.c
     plugins/restful/websocket.c
     plugins/monitor/monitor.c

@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "adapter.h"
-#include "http.h"
+#include "utils/http.h"
 #include <nng/nng.h>
 #include <nng/supplemental/http/http.h>
 
@@ -62,7 +62,7 @@ TEST(HTTPTest, http_get_param)
         nng_http_req_set_uri(req, (char *) data[i].uri);
         nng_aio_set_input(aio, 0, req);
         len             = 0;
-        const char *val = http_get_param(aio, data[i].name, &len);
+        const char *val = neu_http_get_param(aio, data[i].name, &len);
         EXPECT_EQ(len, data[i].len);
         EXPECT_EQ(strncmp(val, data[i].val, len), 0);
     }
@@ -86,21 +86,21 @@ TEST(HTTPTest, http_get_param_str)
     nng_aio_set_input(aio, 0, req);
 
     nng_http_req_set_uri(req, "/?node_id");
-    ret = http_get_param_str(aio, "group", buf, sizeof(buf));
+    ret = neu_http_get_param_str(aio, "group", buf, sizeof(buf));
     EXPECT_EQ(ret, -2);
 
     nng_http_req_set_uri(req, "/?group");
-    ret = http_get_param_str(aio, "group", buf, sizeof(buf));
+    ret = neu_http_get_param_str(aio, "group", buf, sizeof(buf));
     EXPECT_EQ(ret, 0);
     EXPECT_EQ(0, strcmp("", buf));
 
     nng_http_req_set_uri(req, "/?group=%EZ%BB%84");
-    ret = http_get_param_str(aio, "group", buf, 3);
+    ret = neu_http_get_param_str(aio, "group", buf, 3);
     EXPECT_EQ(ret, -1);
     EXPECT_EQ(0, strcmp("", buf));
 
     nng_http_req_set_uri(req, "/?group=%E7%BB%84");
-    ret = http_get_param_str(aio, "group", buf, 4);
+    ret = neu_http_get_param_str(aio, "group", buf, 4);
     EXPECT_EQ(ret, 3);
     EXPECT_EQ(0, strcmp("组", buf));
 
