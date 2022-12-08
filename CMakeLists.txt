@@ -65,6 +65,7 @@ set(NEURON_BASE_SOURCES
     src/base/neu_plugin_common.c
     src/base/tag_sort.c
     src/base/group.c
+    src/base/metrics.c
     src/connection/connection.c
     src/connection/mqtt_client.c
     src/event/event_linux.c
@@ -108,7 +109,6 @@ set(NEURON_SOURCES
     src/core/storage.c
     src/adapter/storage.c
     src/adapter/adapter.c
-    src/adapter/metrics.c
     src/adapter/driver/cache.c
     src/adapter/driver/driver.c
     plugins/restful/handle.c
