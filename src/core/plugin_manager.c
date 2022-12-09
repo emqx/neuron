@@ -27,7 +27,6 @@
 #include "adapter.h"
 #include "plugin.h"
 
-#include "monitor/monitor.h"
 #include "restful/rest.h"
 
 #include "argparse.h"
@@ -285,9 +284,6 @@ void neu_plugin_manager_load_static(neu_plugin_manager_t * mgr,
     if (strcmp(DEFAULT_DASHBOARD_PLUGIN_NAME, plugin_name) == 0) {
         instance->module =
             (neu_plugin_module_t *) &default_dashboard_plugin_module;
-    } else if (strcmp(DEFAULT_MONITOR_PLUGIN_NAME, plugin_name) == 0) {
-        instance->module =
-            (neu_plugin_module_t *) &default_monitor_plugin_module;
     }
 }
 

@@ -26,7 +26,7 @@
 #include "utils/http_handler.h"
 #include "utils/log.h"
 
-#define neu_plugin_module default_monitor_plugin_module
+extern const neu_plugin_module_t neu_plugin_module;
 
 static struct neu_plugin *g_monitor_plugin_;
 
@@ -213,14 +213,19 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 #define DEFAULT_MONITOR_PLUGIN_DESCR \
     "Builtin plugin for Neuron monitoring and alerting"
+#define DEFAULT_MONITOR_PLUGIN_DESCR_ZH "Neuron内置监控与告警插件"
 
-const neu_plugin_module_t default_monitor_plugin_module = {
-    .version      = NEURON_PLUGIN_VER_1_0,
-    .module_name  = "neuron-default-monitor",
-    .module_descr = DEFAULT_MONITOR_PLUGIN_DESCR,
-    .intf_funs    = &plugin_intf_funs,
-    .kind         = NEU_PLUGIN_KIND_SYSTEM,
-    .type         = NEU_NA_TYPE_APP,
+const neu_plugin_module_t neu_plugin_module = {
+    .version         = NEURON_PLUGIN_VER_1_0,
+    .module_name     = "monitor",
+    .module_descr    = DEFAULT_MONITOR_PLUGIN_DESCR,
+    .module_descr_zh = DEFAULT_MONITOR_PLUGIN_DESCR_ZH,
+    .intf_funs       = &plugin_intf_funs,
+    .kind            = NEU_PLUGIN_KIND_SYSTEM,
+    .type            = NEU_NA_TYPE_APP,
+    .display         = true,
+    .single          = true,
+    .single_name     = "monitor",
 };
 
 neu_plugin_t *neu_monitor_get_plugin()
