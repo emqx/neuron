@@ -1,0 +1,123 @@
+{
+  "client-id": {
+    "name": "client-id",
+    "description": "MQTT client id",
+    "type": "string",
+    "attribute": "required",
+    "default": "${node-name}",
+    "valid": {
+      "length": 255
+    }
+  },
+  "heartbeat-topic": {
+    "name": "heartbeat topic",
+    "description": "Topic to which publish heartbeat messages.",
+    "type": "string",
+    "attribute": "required",
+    "default": "/neuron/${node-name}/heartbeat",
+    "valid": {
+      "length": 255
+    }
+  },
+  "host": {
+    "name": "host",
+    "description": "MQTT broker host",
+    "attribute": "required",
+    "type": "string",
+    "default": "broker.emqx.io",
+    "valid": {
+      "length": 255
+    }
+  },
+  "port": {
+    "name": "port",
+    "description": "MQTT broker port",
+    "attribute": "required",
+    "type": "int",
+    "default": 1883,
+    "valid": {
+      "min": 1024,
+      "max": 65535
+    }
+  },
+  "username": {
+    "name": "username",
+    "description": "User name",
+    "attribute": "optional",
+    "type": "string",
+    "default": "",
+    "valid": {
+      "length": 255
+    }
+  },
+  "password": {
+    "name": "password",
+    "description": "Password",
+    "attribute": "optional",
+    "type": "string",
+    "default": "",
+    "valid": {
+      "length":255 
+    }
+  },
+  "ssl": {
+    "name": "ssl",
+    "description": "Enable SSL connection",
+    "attribute": "optional",
+    "type": "bool",
+    "default": false,
+    "valid": {}
+  },
+  "ca": {
+    "name": "CA",
+    "description": "CA certificate file",
+    "attribute": "required",
+    "type": "file",
+    "condition": {
+      "field": "ssl",
+      "value": true
+    },
+    "valid": {
+      "length": 81960
+    }
+  },
+  "cert": {
+    "name": "client cert",
+    "description": "client x509 certificate file",
+    "attribute": "optional",
+    "type": "file",
+    "condition": {
+      "field": "ssl",
+      "value": true
+    },
+    "valid": {
+      "length": 81960
+    }
+  },
+  "key": {
+    "name": "client key",
+    "description": "client key file",
+    "attribute": "optional",
+    "type": "file",
+    "condition": {
+      "field": "ssl",
+      "value": true
+    },
+    "valid": {
+      "length": 81960
+    }
+  },
+  "keypass": {
+    "name": "keypass",
+    "description": "key password",
+    "attribute": "optional",
+    "type": "string",
+    "condition": {
+      "field": "ssl",
+      "value": true
+    },
+    "valid": {
+      "length": 256
+    }
+  }
+}
