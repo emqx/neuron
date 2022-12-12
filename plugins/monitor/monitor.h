@@ -26,7 +26,9 @@
 #include <nng/supplemental/http/http.h>
 
 #include "adapter.h"
+#include "connection/mqtt_client.h"
 #include "event/event.h"
+#include "monitor_config.h"
 #include "plugin.h"
 
 struct neu_plugin {
@@ -36,6 +38,8 @@ struct neu_plugin {
     neu_events_t *      events;
     neu_event_timer_t * timer;
     nng_http_server *   api_server;
+    monitor_config_t *  config;
+    neu_mqtt_client_t * mqtt_client;
 };
 
 neu_plugin_t *neu_monitor_get_plugin();

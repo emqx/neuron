@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "errcodes.h"
 #include "metric_handle.h"
 #include "monitor.h"
 #include "utils/http_handler.h"
@@ -29,6 +30,21 @@
 extern const neu_plugin_module_t neu_plugin_module;
 
 static struct neu_plugin *g_monitor_plugin_;
+
+static void connect_cb(void *data)
+{
+    neu_plugin_t *plugin      = data;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
+    plog_info(plugin, "plugin `%s` connected", neu_plugin_module.module_name);
+}
+
+static void disconnect_cb(void *data)
+{
+    neu_plugin_t *plugin      = data;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+    plog_info(plugin, "plugin `%s` disconnected",
+              neu_plugin_module.module_name);
+}
 
 static nng_http_server *server_init()
 {
@@ -82,6 +98,65 @@ static int add_handlers(nng_http_server *server)
     }
 
     return 0;
+}
+
+static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
+                              const monitor_config_t *config)
+{
+    int rv = 0;
+
+    if (NULL == client) {
+        return 0;
+    }
+
+    // set log category as soon as possible to ease debugging
+    rv = neu_mqtt_client_set_zlog_category(client, plugin->common.log);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_zlog_category fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_addr(client, config->host, config->port);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_host fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_id(client, config->client_id);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_id fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_connect_cb(client, connect_cb, plugin);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_connect_cb fail");
+        return -1;
+    }
+
+    rv = neu_mqtt_client_set_disconnect_cb(client, disconnect_cb, plugin);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_disconnect_cb fail");
+        return -1;
+    }
+
+    if (NULL != config->username) {
+        rv = neu_mqtt_client_set_user(client, config->username,
+                                      config->password);
+        if (0 != rv) {
+            plog_error(plugin, "neu_mqtt_client_set_user fail");
+        }
+    }
+
+    // when config->ca is NULL tls will be disabled
+    rv = neu_mqtt_client_set_tls(client, config->ca, config->cert, config->key,
+                                 config->keypass);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_client_set_tsl fail");
+        return -1;
+    }
+
+    return rv;
 }
 
 static neu_plugin_t *monitor_plugin_open(void)
@@ -153,18 +228,85 @@ static int monitor_plugin_uninit(neu_plugin_t *plugin)
         plugin->events = NULL;
     }
 
+    if (NULL != plugin->config) {
+        monitor_config_fini(plugin->config);
+        free(plugin->config);
+        plugin->config = NULL;
+    }
+
+    if (NULL != plugin->mqtt_client) {
+        neu_mqtt_client_close(plugin->mqtt_client);
+        neu_mqtt_client_free(plugin->mqtt_client);
+        plugin->mqtt_client = NULL;
+    }
+
     nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
-static int monitor_plugin_config(neu_plugin_t *plugin, const char *configs)
+static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
 {
-    int rv = 0;
+    int              rv          = 0;
+    const char *     plugin_name = neu_plugin_module.module_name;
+    monitor_config_t config      = { 0 };
+    bool             started     = false;
 
-    (void) plugin;
-    (void) configs;
+    rv = monitor_config_parse(plugin, setting, &config);
+    if (0 != rv) {
+        plog_error(plugin, "neu_mqtt_config_parse fail");
+        return NEU_ERR_NODE_SETTING_INVALID;
+    }
 
-    nlog_info("config plugin: %s", neu_plugin_module.module_name);
+    if (NULL == plugin->config) {
+        plugin->config = calloc(1, sizeof(*plugin->config));
+        if (NULL == plugin->config) {
+            plog_error(plugin, "calloc monitor config fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+    }
+
+    if (plugin->mqtt_client && neu_mqtt_client_is_open(plugin->mqtt_client)) {
+        started = true;
+        rv      = neu_mqtt_client_close(plugin->mqtt_client);
+        if (0 != rv) {
+            plog_error(plugin, "neu_mqtt_client_close fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+    } else {
+        plugin->mqtt_client = neu_mqtt_client_new(NEU_MQTT_VERSION_V311);
+        if (NULL == plugin->mqtt_client) {
+            plog_error(plugin, "neu_mqtt_client_new fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+    }
+
+    rv = config_mqtt_client(plugin, plugin->mqtt_client, &config);
+    if (0 != rv) {
+        rv = NEU_ERR_MQTT_INIT_FAILURE;
+        goto error;
+    }
+
+    if (started && 0 != neu_mqtt_client_open(plugin->mqtt_client)) {
+        plog_error(plugin, "neu_mqtt_client_open fail");
+        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+        goto error;
+    }
+
+    if (plugin->config->host) {
+        // already configured
+        monitor_config_fini(plugin->config);
+    }
+    memmove(plugin->config, &config, sizeof(config));
+
+    plog_info(plugin, "config plugin `%s` success", plugin_name);
+    return 0;
+
+error:
+    plog_error(plugin, "config plugin `%s` fail", plugin_name);
+    monitor_config_fini(&config);
     return rv;
 }
 
@@ -190,13 +332,35 @@ static int monitor_plugin_request(neu_plugin_t *      plugin,
 
 static int monitor_plugin_start(neu_plugin_t *plugin)
 {
-    (void) plugin;
+    int         rv          = 0;
+    const char *plugin_name = neu_plugin_module.module_name;
+
+    if (NULL == plugin->mqtt_client) {
+        plog_info(plugin, "mqtt client is NULL");
+    } else if (0 != neu_mqtt_client_open(plugin->mqtt_client)) {
+        plog_error(plugin, "neu_mqtt_client_open fail");
+        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+    }
+
+    if (0 == rv) {
+        plog_info(plugin, "start plugin `%s` success", plugin_name);
+    } else {
+        plog_error(plugin, "start plugin `%s` failed, error %d", plugin_name,
+                   rv);
+    }
+
     return 0;
 }
 
 static int monitor_plugin_stop(neu_plugin_t *plugin)
 {
-    (void) plugin;
+    if (plugin->mqtt_client) {
+        neu_mqtt_client_close(plugin->mqtt_client);
+        plog_info(plugin, "mqtt client closed");
+    }
+
+    plog_info(plugin, "stop plugin `%s` success",
+              neu_plugin_module.module_name);
     return 0;
 }
 
