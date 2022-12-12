@@ -1,8 +1,11 @@
 # neuron monitor plugin
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/plugins")
 
+file(COPY ${CMAKE_SOURCE_DIR}/plugins/monitor/monitor.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
+
 set(src
     monitor.c
+    monitor_config.c
     metric_handle.c
 )
 

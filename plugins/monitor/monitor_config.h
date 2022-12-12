@@ -17,31 +17,37 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEU_PLUGIN_MONITOR_H
-#define NEU_PLUGIN_MONITOR_H
+#ifndef NEURON_PLUGIN_MONITOR_CONFIG_H
+#define NEURON_PLUGIN_MONITOR_CONFIG_H
 
-#include <pthread.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#include <nng/nng.h>
-#include <nng/supplemental/http/http.h>
+#include <stdint.h>
+#include <stdlib.h>
 
-#include "adapter.h"
-#include "connection/mqtt_client.h"
-#include "event/event.h"
-#include "monitor_config.h"
 #include "plugin.h"
 
-struct neu_plugin {
-    neu_plugin_common_t common;
-    pthread_mutex_t     mutex;
-    bool                metrics_updating;
-    neu_events_t *      events;
-    neu_event_timer_t * timer;
-    nng_http_server *   api_server;
-    monitor_config_t *  config;
-    neu_mqtt_client_t * mqtt_client;
-};
+typedef struct {
+    char *   client_id;       // client id
+    char *   heartbeat_topic; // heartbeat topic
+    char *   host;            // broker host
+    uint16_t port;            // broker port
+    char *   username;        // user name
+    char *   password;        // user password
+    char *   ca;              // CA
+    char *   cert;            // client cert
+    char *   key;             // client key
+    char *   keypass;         // client key password
+} monitor_config_t;
 
-neu_plugin_t *neu_monitor_get_plugin();
+int  monitor_config_parse(neu_plugin_t *plugin, const char *setting,
+                          monitor_config_t *config);
+void monitor_config_fini(monitor_config_t *config);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
