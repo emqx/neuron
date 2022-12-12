@@ -30,16 +30,17 @@ extern "C" {
 #include "plugin.h"
 
 typedef struct {
-    char *   client_id;       // client id
-    char *   heartbeat_topic; // heartbeat topic
-    char *   host;            // broker host
-    uint16_t port;            // broker port
-    char *   username;        // user name
-    char *   password;        // user password
-    char *   ca;              // CA
-    char *   cert;            // client cert
-    char *   key;             // client key
-    char *   keypass;         // client key password
+    char *   client_id;          // client id
+    uint64_t heartbeat_interval; // heartbeat interval
+    char *   heartbeat_topic;    // heartbeat topic
+    char *   host;               // broker host
+    uint16_t port;               // broker port
+    char *   username;           // user name
+    char *   password;           // user password
+    char *   ca;                 // CA
+    char *   cert;               // client cert
+    char *   key;                // client key
+    char *   keypass;            // client key password
 } monitor_config_t;
 
 int  monitor_config_parse(neu_plugin_t *plugin, const char *setting,
