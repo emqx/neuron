@@ -38,7 +38,6 @@ struct neu_plugin {
     nng_http_server *   api_server;
 };
 
-extern const neu_plugin_module_t default_monitor_plugin_module;
-neu_plugin_t *                   neu_monitor_get_plugin();
+neu_plugin_t *neu_monitor_get_plugin();
 
 #endif
