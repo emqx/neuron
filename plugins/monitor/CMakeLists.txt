@@ -7,6 +7,7 @@ set(src
     monitor.c
     monitor_config.c
     metric_handle.c
+    mqtt_handle.c
 )
 
 add_library(plugin-monitor SHARED ${src})
