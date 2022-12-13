@@ -17,35 +17,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef NEURON_PLUGIN_MONITOR_CONFIG_H
-#define NEURON_PLUGIN_MONITOR_CONFIG_H
+#ifndef NEURON_PLUGIN_MONITOR_MQTT_HANDLE_H
+#define NEURON_PLUGIN_MONITOR_MQTT_HANDLE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stdlib.h>
+#include "neuron.h"
 
-#include "plugin.h"
-
-typedef struct {
-    char *   client_id;          // client id
-    uint64_t heartbeat_interval; // heartbeat interval
-    char *   heartbeat_topic;    // heartbeat topic
-    char *   host;               // broker host
-    uint16_t port;               // broker port
-    char *   username;           // user name
-    char *   password;           // user password
-    char *   ca;                 // CA
-    char *   cert;               // client cert
-    char *   key;                // client key
-    char *   keypass;            // client key password
-} monitor_config_t;
-
-int  monitor_config_parse(neu_plugin_t *plugin, const char *setting,
-                          monitor_config_t *config);
-void monitor_config_fini(monitor_config_t *config);
+int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states);
 
 #ifdef __cplusplus
 }

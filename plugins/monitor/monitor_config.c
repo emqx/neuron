@@ -126,25 +126,27 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     const char *placeholder = "********";
 
     neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
-    neu_json_elem_t heartbeat_topic = { .name = "heartbeat-topic",
+    neu_json_elem_t heartbeat_interval = { .name = "heartbeat-interval",
+                                           .t    = NEU_JSON_INT };
+    neu_json_elem_t heartbeat_topic    = { .name = "heartbeat-topic",
                                         .t    = NEU_JSON_STR };
-    neu_json_elem_t host            = { .name = "host", .t = NEU_JSON_STR };
-    neu_json_elem_t port            = { .name = "port", .t = NEU_JSON_INT };
-    neu_json_elem_t username        = { .name = "username", .t = NEU_JSON_STR };
-    neu_json_elem_t password        = { .name = "password", .t = NEU_JSON_STR };
-    neu_json_elem_t ssl             = { .name = "ssl", .t = NEU_JSON_BOOL };
-    neu_json_elem_t ca              = { .name = "ca", .t = NEU_JSON_STR };
-    neu_json_elem_t cert            = { .name = "cert", .t = NEU_JSON_STR };
-    neu_json_elem_t key             = { .name = "key", .t = NEU_JSON_STR };
-    neu_json_elem_t keypass         = { .name = "keypass", .t = NEU_JSON_STR };
+    neu_json_elem_t host               = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t port               = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t username = { .name = "username", .t = NEU_JSON_STR };
+    neu_json_elem_t password = { .name = "password", .t = NEU_JSON_STR };
+    neu_json_elem_t ssl      = { .name = "ssl", .t = NEU_JSON_BOOL };
+    neu_json_elem_t ca       = { .name = "ca", .t = NEU_JSON_STR };
+    neu_json_elem_t cert     = { .name = "cert", .t = NEU_JSON_STR };
+    neu_json_elem_t key      = { .name = "key", .t = NEU_JSON_STR };
+    neu_json_elem_t keypass  = { .name = "keypass", .t = NEU_JSON_STR };
 
     if (NULL == setting || NULL == config) {
         plog_error(plugin, "invalid argument, null pointer");
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 4, &client_id, &heartbeat_topic,
-                          &host, &port);
+    ret = neu_parse_param(setting, &err_param, 5, &client_id,
+                          &heartbeat_interval, &heartbeat_topic, &host, &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
         goto error;
@@ -153,6 +155,13 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     // client-id, required
     if (0 == strlen(client_id.v.val_str)) {
         plog_error(plugin, "setting empty client-id");
+        goto error;
+    }
+
+    // heartbeat-interval, required
+    if (0 > heartbeat_interval.v.val_int) {
+        plog_error(plugin, "setting negative heartbeat-interval:%" PRIi64,
+                   heartbeat_interval.v.val_int);
         goto error;
     }
 
@@ -191,40 +200,43 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    config->client_id       = client_id.v.val_str;
-    config->heartbeat_topic = heartbeat_topic.v.val_str;
-    config->host            = host.v.val_str;
-    config->port            = port.v.val_int;
-    config->username        = username.v.val_str;
-    config->password        = password.v.val_str;
-    config->ca              = ca.v.val_str;
-    config->cert            = cert.v.val_str;
-    config->key             = key.v.val_str;
-    config->keypass         = keypass.v.val_str;
+    config->client_id          = client_id.v.val_str;
+    config->heartbeat_interval = heartbeat_interval.v.val_int;
+    config->heartbeat_topic    = heartbeat_topic.v.val_str;
+    config->host               = host.v.val_str;
+    config->port               = port.v.val_int;
+    config->username           = username.v.val_str;
+    config->password           = password.v.val_str;
+    config->ca                 = ca.v.val_str;
+    config->cert               = cert.v.val_str;
+    config->key                = key.v.val_str;
+    config->keypass            = keypass.v.val_str;
 
-    plog_info(plugin, "config client-id      : %s", config->client_id);
-    plog_info(plugin, "config heartbeat-topic: %s", config->heartbeat_topic);
-    plog_info(plugin, "config host           : %s", config->host);
-    plog_info(plugin, "config port           : %" PRIu16, config->port);
+    plog_info(plugin, "config client-id         : %s", config->client_id);
+    plog_info(plugin, "config heartbeat-interval: %" PRIu64,
+              config->heartbeat_interval);
+    plog_info(plugin, "config heartbeat-topic   : %s", config->heartbeat_topic);
+    plog_info(plugin, "config host              : %s", config->host);
+    plog_info(plugin, "config port              : %" PRIu16, config->port);
 
     if (config->username) {
-        plog_info(plugin, "config username       : %s", config->username);
+        plog_info(plugin, "config username          : %s", config->username);
     }
     if (config->password) {
-        plog_info(plugin, "config password       : %s",
+        plog_info(plugin, "config password          : %s",
                   0 == strlen(config->password) ? "" : placeholder);
     }
     if (config->ca) {
-        plog_info(plugin, "config ca             : %s", placeholder);
+        plog_info(plugin, "config ca                : %s", placeholder);
     }
     if (config->cert) {
-        plog_info(plugin, "config cert           : %s", placeholder);
+        plog_info(plugin, "config cert              : %s", placeholder);
     }
     if (config->key) {
-        plog_info(plugin, "config key            : %s", placeholder);
+        plog_info(plugin, "config key               : %s", placeholder);
     }
     if (config->keypass) {
-        plog_info(plugin, "config keypass        : %s", placeholder);
+        plog_info(plugin, "config keypass           : %s", placeholder);
     }
 
     return 0;
@@ -244,6 +256,10 @@ error:
 
 void monitor_config_fini(monitor_config_t *config)
 {
+    if (NULL == config) {
+        return;
+    }
+
     free(config->client_id);
     free(config->heartbeat_topic);
     free(config->host);

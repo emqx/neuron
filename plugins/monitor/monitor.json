@@ -9,6 +9,16 @@
       "length": 255
     }
   },
+  "heartbeat-interval": {
+    "name": "heartbeat interval (seconds)",
+    "description": "Interval in seconds between two heartbeat messages. Setting to zero will disable heartbeat monitoring.",
+    "attribute": "required",
+    "type": "int",
+    "default": 0,
+    "valid": {
+      "min": 0
+    }
+  },
   "heartbeat-topic": {
     "name": "heartbeat topic",
     "description": "Topic to which publish heartbeat messages.",
