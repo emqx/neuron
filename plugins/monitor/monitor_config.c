@@ -256,6 +256,10 @@ error:
 
 void monitor_config_fini(monitor_config_t *config)
 {
+    if (NULL == config) {
+        return;
+    }
+
     free(config->client_id);
     free(config->heartbeat_topic);
     free(config->host);

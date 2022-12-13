@@ -22,8 +22,10 @@
 #include <string.h>
 
 #include "errcodes.h"
+#include "event/event.h"
 #include "metric_handle.h"
 #include "monitor.h"
+#include "mqtt_handle.h"
 #include "utils/http_handler.h"
 #include "utils/log.h"
 
@@ -159,6 +161,83 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
     return rv;
 }
 
+static int heartbeat_timer_cb(void *data)
+{
+    neu_plugin_t *plugin = data;
+
+    neu_reqresp_head_t header = {
+        .type = NEU_REQ_GET_NODES_STATE,
+        .ctx  = plugin,
+    };
+    neu_req_get_nodes_state_t cmd = {};
+
+    return neu_plugin_op(plugin, header, &cmd);
+}
+
+static inline void stop_heartbeart_timer(neu_plugin_t *plugin)
+{
+    if (plugin->heartbeat_timer) {
+        neu_event_del_timer(plugin->events, plugin->heartbeat_timer);
+        plugin->heartbeat_timer = NULL;
+        plog_info(plugin, "heartbeat timer stopped");
+    }
+}
+
+static int start_hearbeat_timer(neu_plugin_t *plugin, uint64_t interval)
+{
+    if (NULL == plugin->events) {
+        plugin->events = neu_event_new();
+        if (NULL == plugin->events) {
+            plog_error(plugin, "neu_event_new fail");
+            return NEU_ERR_EINTERNAL;
+        }
+    }
+
+    neu_event_timer_param_t param = {
+        .second      = interval,
+        .millisecond = 0,
+        .cb          = heartbeat_timer_cb,
+        .usr_data    = plugin,
+    };
+
+    neu_event_timer_t *timer = neu_event_add_timer(plugin->events, param);
+    if (NULL == timer) {
+        plog_error(plugin, "neu_event_add_timer fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (plugin->heartbeat_timer) {
+        neu_event_del_timer(plugin->events, plugin->heartbeat_timer);
+    }
+    plugin->heartbeat_timer = timer;
+
+    plog_info(plugin, "start_hearbeat_timer interval: %" PRIu64, interval);
+
+    return 0;
+}
+
+static void stop_timers_and_mqtt(neu_plugin_t *plugin)
+{
+    stop_heartbeart_timer(plugin);
+
+    if (NULL != plugin->events) {
+        neu_event_close(plugin->events);
+        plugin->events = NULL;
+    }
+
+    if (NULL != plugin->config) {
+        monitor_config_fini(plugin->config);
+        free(plugin->config);
+        plugin->config = NULL;
+    }
+
+    if (NULL != plugin->mqtt_client) {
+        neu_mqtt_client_close(plugin->mqtt_client);
+        neu_mqtt_client_free(plugin->mqtt_client);
+        plugin->mqtt_client = NULL;
+    }
+}
+
 static neu_plugin_t *monitor_plugin_open(void)
 {
     neu_plugin_t *plugin = calloc(1, sizeof(neu_plugin_t));
@@ -218,27 +297,7 @@ static int monitor_plugin_uninit(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    if (NULL != plugin->timer) {
-        neu_event_del_timer(plugin->events, plugin->timer);
-        plugin->events = NULL;
-    }
-
-    if (NULL != plugin->events) {
-        neu_event_close(plugin->events);
-        plugin->events = NULL;
-    }
-
-    if (NULL != plugin->config) {
-        monitor_config_fini(plugin->config);
-        free(plugin->config);
-        plugin->config = NULL;
-    }
-
-    if (NULL != plugin->mqtt_client) {
-        neu_mqtt_client_close(plugin->mqtt_client);
-        neu_mqtt_client_free(plugin->mqtt_client);
-        plugin->mqtt_client = NULL;
-    }
+    stop_timers_and_mqtt(plugin);
 
     nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
@@ -249,12 +308,18 @@ static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
     int              rv          = 0;
     const char *     plugin_name = neu_plugin_module.module_name;
     monitor_config_t config      = { 0 };
-    bool             started     = false;
 
     rv = monitor_config_parse(plugin, setting, &config);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_config_parse fail");
         return NEU_ERR_NODE_SETTING_INVALID;
+    }
+
+    if (config.heartbeat_interval == 0) {
+        // heartbeat disabled, no need for mqtt functionality
+        stop_timers_and_mqtt(plugin);
+        monitor_config_fini(&config);
+        return 0;
     }
 
     if (NULL == plugin->config) {
@@ -267,8 +332,7 @@ static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
     }
 
     if (plugin->mqtt_client && neu_mqtt_client_is_open(plugin->mqtt_client)) {
-        started = true;
-        rv      = neu_mqtt_client_close(plugin->mqtt_client);
+        rv = neu_mqtt_client_close(plugin->mqtt_client);
         if (0 != rv) {
             plog_error(plugin, "neu_mqtt_client_close fail");
             rv = NEU_ERR_EINTERNAL;
@@ -289,17 +353,22 @@ static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
         goto error;
     }
 
-    if (started && 0 != neu_mqtt_client_open(plugin->mqtt_client)) {
+    if (plugin->started && 0 != neu_mqtt_client_open(plugin->mqtt_client)) {
         plog_error(plugin, "neu_mqtt_client_open fail");
         rv = NEU_ERR_MQTT_CONNECT_FAILURE;
         goto error;
     }
 
-    if (plugin->config->host) {
-        // already configured
-        monitor_config_fini(plugin->config);
+    if (plugin->started &&
+        0 != start_hearbeat_timer(plugin, config.heartbeat_interval)) {
+        plog_error(plugin, "start_hearbeat_timer fail");
+        rv = NEU_ERR_EINTERNAL;
+        goto error;
     }
+
+    monitor_config_fini(plugin->config);
     memmove(plugin->config, &config, sizeof(config));
+    // `config` moved, do not call monitor_config_fini
 
     plog_info(plugin, "config plugin `%s` success", plugin_name);
     return 0;
@@ -321,6 +390,10 @@ static int monitor_plugin_request(neu_plugin_t *      plugin,
         nlog_warn("recv error code: %d", resp_err->error);
         break;
     }
+    case NEU_RESP_GET_NODES_STATE: {
+        handle_nodes_state(header->ctx, (neu_resp_get_nodes_state_t *) data);
+        break;
+    }
     default:
         nlog_fatal("recv unhandle msg: %s",
                    neu_reqresp_type_string(header->type));
@@ -337,12 +410,25 @@ static int monitor_plugin_start(neu_plugin_t *plugin)
 
     if (NULL == plugin->mqtt_client) {
         plog_info(plugin, "mqtt client is NULL");
-    } else if (0 != neu_mqtt_client_open(plugin->mqtt_client)) {
-        plog_error(plugin, "neu_mqtt_client_open fail");
-        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+        goto end;
     }
 
+    if (0 != neu_mqtt_client_open(plugin->mqtt_client)) {
+        plog_error(plugin, "neu_mqtt_client_open fail");
+        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+        goto end;
+    }
+
+    if (0 != start_hearbeat_timer(plugin, plugin->config->heartbeat_interval)) {
+        plog_error(plugin, "start_hearbeat_timer fail");
+        neu_mqtt_client_close(plugin->mqtt_client);
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+end:
     if (0 == rv) {
+        plugin->started = true;
         plog_info(plugin, "start plugin `%s` success", plugin_name);
     } else {
         plog_error(plugin, "start plugin `%s` failed, error %d", plugin_name,
@@ -359,6 +445,8 @@ static int monitor_plugin_stop(neu_plugin_t *plugin)
         plog_info(plugin, "mqtt client closed");
     }
 
+    stop_heartbeart_timer(plugin);
+    plugin->started = false;
     plog_info(plugin, "stop plugin `%s` success",
               neu_plugin_module.module_name);
     return 0;
