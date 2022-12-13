@@ -170,18 +170,18 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         return NEU_ERR_NODE_SETTING_INVALID;
     }
 
-    if (plugin->client && neu_mqtt_client_is_open(plugin->client)) {
+    if (NULL == plugin->client) {
+        plugin->client = neu_mqtt_client_new(NEU_MQTT_VERSION_V311);
+        if (NULL == plugin->client) {
+            plog_error(plugin, "neu_mqtt_client_new fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+    } else if (neu_mqtt_client_is_open(plugin->client)) {
         started = true;
         rv      = neu_mqtt_client_close(plugin->client);
         if (0 != rv) {
             plog_error(plugin, "neu_mqtt_client_close fail");
-            rv = NEU_ERR_EINTERNAL;
-            goto error;
-        }
-    } else {
-        plugin->client = neu_mqtt_client_new(NEU_MQTT_VERSION_V311);
-        if (NULL == plugin->client) {
-            plog_error(plugin, "neu_mqtt_client_new fail");
             rv = NEU_ERR_EINTERNAL;
             goto error;
         }
