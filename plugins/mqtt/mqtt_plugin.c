@@ -349,10 +349,6 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_REQRESP_TRANS_DATA:
         error = handle_trans_data(plugin, data);
         break;
-    case NEU_REQRESP_NODES_STATE: {
-        error = handle_nodes_state(plugin, data);
-        break;
-    }
     case NEU_REQRESP_NODE_DELETED:
         break;
     default:
@@ -385,7 +381,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .intf_funs       = &plugin_intf_funs,
     .kind            = NEU_PLUGIN_KIND_SYSTEM,
     .type            = NEU_NA_TYPE_APP,
-    .sub_msg[0]      = NEU_SUBSCRIBE_NODES_STATE,
+    .sub_msg         = { 0 },
     .display         = true,
     .single          = false,
 };
