@@ -42,8 +42,6 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
 int handle_trans_data(neu_plugin_t *            plugin,
                       neu_reqresp_trans_data_t *trans_data);
 
-int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states);
-
 #ifdef __cplusplus
 }
 #endif
