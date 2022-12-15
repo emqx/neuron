@@ -192,6 +192,11 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
         return NEU_ERR_NODE_NOT_EXIST;
     }
 
+    if (0 == strcmp(app, "monitor")) {
+        // filter out monitor node
+        return NEU_ERR_NODE_NOT_ALLOW_SUBSCRIBE;
+    }
+
     ret =
         neu_adapter_driver_group_exist((neu_adapter_driver_t *) adapter, group);
     if (ret != NEU_ERR_SUCCESS) {
