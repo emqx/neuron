@@ -331,17 +331,17 @@ static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
         }
     }
 
-    if (plugin->mqtt_client && neu_mqtt_client_is_open(plugin->mqtt_client)) {
-        rv = neu_mqtt_client_close(plugin->mqtt_client);
-        if (0 != rv) {
-            plog_error(plugin, "neu_mqtt_client_close fail");
-            rv = NEU_ERR_EINTERNAL;
-            goto error;
-        }
-    } else {
+    if (NULL == plugin->mqtt_client) {
         plugin->mqtt_client = neu_mqtt_client_new(NEU_MQTT_VERSION_V311);
         if (NULL == plugin->mqtt_client) {
             plog_error(plugin, "neu_mqtt_client_new fail");
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+    } else if (neu_mqtt_client_is_open(plugin->mqtt_client)) {
+        rv = neu_mqtt_client_close(plugin->mqtt_client);
+        if (0 != rv) {
+            plog_error(plugin, "neu_mqtt_client_close fail");
             rv = NEU_ERR_EINTERNAL;
             goto error;
         }
