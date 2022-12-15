@@ -19,16 +19,6 @@
       "length": 255
     }
   },
-  "heartbeat-topic": {
-    "name": "heartbeat topic",
-    "description": "Topic to which publish heartbeat messages.",
-    "type": "string",
-    "attribute": "required",
-    "default": "/neuron/${node-name}/heartbeat",
-    "valid": {
-      "length": 255
-    }
-  },
   "format": {
     "name": "upload format",
     "description": "JSON format of the data reported in the upload topic. In values mode, data are split into `values` and `errors` sub objects. In tags mode, tag data are put in a single array.",

@@ -122,13 +122,11 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     char *      err_param   = NULL;
     const char *placeholder = "********";
 
-    neu_json_elem_t client_id    = { .name = "client-id", .t = NEU_JSON_STR };
-    neu_json_elem_t upload_topic = { .name = "upload-topic",
+    neu_json_elem_t client_id      = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t upload_topic   = { .name = "upload-topic",
                                      .t    = NEU_JSON_STR };
-    neu_json_elem_t heartbeat_topic = { .name = "heartbeat-topic",
-                                        .t    = NEU_JSON_STR };
-    neu_json_elem_t format          = { .name = "format", .t = NEU_JSON_INT };
-    neu_json_elem_t cache_mem_size  = { .name = "cache-mem-size",
+    neu_json_elem_t format         = { .name = "format", .t = NEU_JSON_INT };
+    neu_json_elem_t cache_mem_size = { .name = "cache-mem-size",
                                        .t    = NEU_JSON_INT };
     neu_json_elem_t cache_disk_size = { .name = "cache-disk-size",
                                         .t    = NEU_JSON_INT };
@@ -147,9 +145,9 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 8, &client_id, &upload_topic,
-                          &heartbeat_topic, &format, &cache_mem_size,
-                          &cache_disk_size, &host, &port);
+    ret = neu_parse_param(setting, &err_param, 7, &client_id, &upload_topic,
+                          &format, &cache_mem_size, &cache_disk_size, &host,
+                          &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
         goto error;
@@ -164,12 +162,6 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     // upload-topic, required
     if (0 == strlen(upload_topic.v.val_str)) {
         plog_error(plugin, "setting empty upload-topic");
-        goto error;
-    }
-
-    // heartbeat-topic, required
-    if (0 == strlen(heartbeat_topic.v.val_str)) {
-        plog_error(plugin, "setting empty heartbeat-topic");
         goto error;
     }
 
@@ -239,10 +231,9 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    config->client_id       = client_id.v.val_str;
-    config->upload_topic    = upload_topic.v.val_str;
-    config->heartbeat_topic = heartbeat_topic.v.val_str;
-    config->format          = format.v.val_int;
+    config->client_id    = client_id.v.val_str;
+    config->upload_topic = upload_topic.v.val_str;
+    config->format       = format.v.val_int;
     config->cache =
         0 != cache_mem_size.v.val_int || 0 != cache_disk_size.v.val_int;
     config->cache_mem_size  = cache_mem_size.v.val_int * MB;
@@ -258,7 +249,6 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 
     plog_info(plugin, "config client-id      : %s", config->client_id);
     plog_info(plugin, "config upload-topic   : %s", config->upload_topic);
-    plog_info(plugin, "config heartbeat-topic: %s", config->heartbeat_topic);
     plog_info(plugin, "config format         : %s",
               mqtt_upload_format_str(config->format));
     plog_info(plugin, "config cache          : %zu", config->cache);
@@ -292,7 +282,6 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 error:
     free(err_param);
     free(upload_topic.v.val_str);
-    free(heartbeat_topic.v.val_str);
     free(host.v.val_str);
     free(username.v.val_str);
     free(password.v.val_str);
@@ -307,7 +296,6 @@ void mqtt_config_fini(mqtt_config_t *config)
 {
     free(config->client_id);
     free(config->upload_topic);
-    free(config->heartbeat_topic);
     free(config->host);
     free(config->username);
     free(config->password);
