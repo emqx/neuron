@@ -122,7 +122,6 @@ set(NEURON_SOURCES
     plugins/restful/version_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c
-    plugins/restful/websocket.c
     ${PERSIST_SOURCES})
 
 set(CMAKE_BUILD_RPATH ./)
