@@ -95,4 +95,9 @@ CREATE TABLE IF NOT EXISTS
   );
 INSERT INTO settings SELECT * FROM old_settings;
 
+CREATE TABLE IF NOT EXISTS
+  node_cache (
+    node_name TEXT NOT NULL,
+    cache TEXT NOT NULL
+  );
 COMMIT;
