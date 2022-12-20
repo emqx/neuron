@@ -28,7 +28,6 @@
 
 #include "node_manager.h"
 #include "plugin_manager.h"
-#include "sub_msg.h"
 #include "subscribe.h"
 
 typedef struct neu_manager {
@@ -39,9 +38,7 @@ typedef struct neu_manager {
     neu_plugin_manager_t *plugin_manager;
     neu_node_manager_t *  node_manager;
     neu_subscribe_mgr_t * subscribe_manager;
-    neu_sub_msg_mgr_t *   sub_msg_manager;
 
-    neu_event_timer_t *timer;
     neu_event_timer_t *timer_timestamp;
 
     neu_event_timer_t *timer_lev;

@@ -95,10 +95,6 @@ typedef enum neu_reqresp_type {
     NEU_REQ_UPDATE_LOG_LEVEL,
 } neu_reqresp_type_e;
 
-typedef enum {
-    NEU_SUBSCRIBE_NODES_STATE = NEU_REQRESP_NODES_STATE,
-} neu_subscribe_type_e;
-
 static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_ERROR]         = "NEU_RESP_ERROR",
     [NEU_REQ_UPDATE_LICENSE] = "NEU_REQ_UPDATE_LICENSE",
