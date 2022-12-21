@@ -57,8 +57,6 @@ UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type,
 
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 
-void neu_manager_count_tag(neu_manager_t *manager);
-
 int       neu_manager_subscribe(neu_manager_t *manager, const char *app,
                                 const char *driver, const char *group);
 int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,

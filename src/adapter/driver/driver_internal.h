@@ -61,7 +61,4 @@ void neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
                                       const char *group, UT_array **tags);
 UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
                                           const char *          group);
-uint16_t  neu_adapter_driver_tag_size(neu_adapter_driver_t *driver);
-void      neu_adapter_driver_set_all_tag_size(neu_adapter_driver_t *driver,
-                                              uint32_t              size);
 #endif
