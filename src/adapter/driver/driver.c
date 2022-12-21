@@ -422,7 +422,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
             .second      = interval / 1000,
             .millisecond = interval % 1000,
             .usr_data    = (void *) find,
-            .type        = NEU_EVENT_TIMER_BLOCK,
+            .type        = NEU_EVENT_TIMER_NOBLOCK,
         };
 
         find->driver         = driver;
@@ -492,7 +492,6 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     if (find != NULL) {
         HASH_DEL(driver->groups, find);
 
-        uint16_t tag_size = neu_group_tag_size(find->group);
         neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
         neu_event_del_timer(driver->driver_events, find->read);
         if (find->grp.group_free != NULL) {
@@ -510,8 +509,6 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         neu_group_destroy(find->group);
         free(find);
 
-        neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -=
-            tag_size;
         neu_adapter_del_group_metrics(&driver->adapter, name);
         ret = NEU_ERR_SUCCESS;
     }
@@ -603,7 +600,6 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     ret = neu_group_add_tag(find->group, tag);
 
     if (ret == NEU_ERR_SUCCESS) {
-        neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size += 1;
         neu_adapter_update_group_metric(&driver->adapter, group,
                                         NEU_METRIC_GROUP_TAGS_TOTAL,
                                         neu_group_tag_size(find->group));
@@ -626,7 +622,6 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
     }
 
     if (ret == NEU_ERR_SUCCESS) {
-        neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size -= 1;
         neu_adapter_update_group_metric(&driver->adapter, group,
                                         NEU_METRIC_GROUP_TAGS_TOTAL,
                                         neu_group_tag_size(find->group));
@@ -1142,15 +1137,4 @@ static void read_group(int64_t timestamp, int64_t timeout,
             }
         }
     }
-}
-
-uint16_t neu_adapter_driver_tag_size(neu_adapter_driver_t *driver)
-{
-    return neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_size;
-}
-
-void neu_adapter_driver_set_all_tag_size(neu_adapter_driver_t *driver,
-                                         uint32_t              size)
-{
-    neu_plugin_to_plugin_common(driver->adapter.plugin)->tag_all_size = size;
 }
