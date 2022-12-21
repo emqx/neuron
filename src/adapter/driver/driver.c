@@ -422,7 +422,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
             .second      = interval / 1000,
             .millisecond = interval % 1000,
             .usr_data    = (void *) find,
-            .type        = NEU_EVENT_TIMER_BLOCK,
+            .type        = NEU_EVENT_TIMER_NOBLOCK,
         };
 
         find->driver         = driver;
