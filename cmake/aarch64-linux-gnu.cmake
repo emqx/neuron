@@ -1,7 +1,7 @@
 set(CMAKE_SYSTEM_NAME Linux)
 set(COMPILER_PREFIX aarch64-linux-gnu)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
-set(LIBRARY_DIR /opt/externs/libs)
+set(LIBRARY_DIR /home/neuron/libs)
 
 set(CMAKE_C_COMPILER ${COMPILER_PREFIX}-gcc)
 set(CMAKE_CXX_COMPILER ${COMPILER_PREFIX}-g++)
