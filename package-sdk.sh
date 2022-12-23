@@ -44,7 +44,7 @@ cp -r build/dist ${package_name}/
 
 cp build/neuron ${package_name}
 cp build/libneuron-base.so ${package_name}/lib
-cp /library/zlog/src/libzlog.so.1.2 ${package_name}/lib
+cp /usr/local/lib/libzlog.so.1.2 ${package_name}/lib
 
 cp persistence/*.sql ${package_name}/config/
 
