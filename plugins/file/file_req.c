@@ -46,7 +46,7 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 
     utarray_foreach(group->tags, neu_datatag_t *, tag)
     {
-        FILE *       f = NULL;
+        FILE *       f      = NULL;
         struct stat  st     = { 0 };
         char *       buf    = calloc(1, length);
         neu_dvalue_t dvalue = { 0 };
