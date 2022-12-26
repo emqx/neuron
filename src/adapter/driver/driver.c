@@ -422,7 +422,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
             .second      = interval / 1000,
             .millisecond = interval % 1000,
             .usr_data    = (void *) find,
-            .type        = NEU_EVENT_TIMER_BLOCK,
+            .type        = NEU_EVENT_TIMER_NOBLOCK,
         };
 
         find->driver         = driver;
@@ -431,9 +431,9 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         find->grp.group_name = strdup(name);
         find->grp.tags       = neu_group_get_tag(find->group);
 
-        param.type   = driver->adapter.module->timer_type;
         param.cb     = report_callback;
         find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+        param.type   = driver->adapter.module->timer_type;
         param.cb     = read_callback;
         find->read   = neu_event_add_timer(driver->driver_events, param);
 
@@ -467,14 +467,14 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
             .second      = interval / 1000,
             .millisecond = interval % 1000,
             .usr_data    = (void *) find,
-            .type        = NEU_EVENT_TIMER_BLOCK,
+            .type        = NEU_EVENT_TIMER_NOBLOCK,
         };
 
         neu_group_set_interval(find->group, interval);
 
-        param.type   = driver->adapter.module->timer_type;
         param.cb     = report_callback;
         find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+        param.type   = driver->adapter.module->timer_type;
         param.cb     = read_callback;
         find->read   = neu_event_add_timer(driver->driver_events, param);
 
