@@ -1,0 +1,18 @@
+{
+    "tag_regex": [
+        {
+            "type": 13,
+            "regex": ""
+        }
+    ],
+    "file_length": {
+        "name": "file_length",
+        "description": "",
+        "attribute": "required",
+        "type": "int",
+        "default": 512,
+        "valid": {
+            "min": 1
+        }
+    }
+}
