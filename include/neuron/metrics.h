@@ -138,6 +138,8 @@ typedef struct {
 } neu_node_metrics_t;
 
 typedef struct {
+    char                distro[32];
+    char                kernel[32];
     bool                core_dumped;
     uint64_t            uptime_seconds;
     size_t              north_nodes;

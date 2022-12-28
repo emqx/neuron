@@ -31,6 +31,10 @@
 
 // clang-format off
 #define METRIC_GLOBAL_TMPL                                                       \
+    "# HELP distro OS distribution\n"                                            \
+    "distro %s\n"                                                                \
+    "# HELP kernel OS kernel version\n"                                          \
+    "kernel %s\n"                                                                \
     "# HELP core_dumped Whether there is any core dump\n"                        \
     "# TYPE core_dumped gauge\n"                                                 \
     "core_dumped %d\n"                                                           \
@@ -114,8 +118,8 @@ static inline bool parse_metrics_catgory(const char *s, size_t len,
 static inline void gen_global_metrics(const neu_metrics_t *metrics,
                                       FILE *               stream)
 {
-    fprintf(stream, METRIC_GLOBAL_TMPL, metrics->core_dumped,
-            metrics->uptime_seconds, metrics->north_nodes,
+    fprintf(stream, METRIC_GLOBAL_TMPL, metrics->distro, metrics->kernel,
+            metrics->core_dumped, metrics->uptime_seconds, metrics->north_nodes,
             metrics->north_running_nodes, metrics->north_disconnected_nodes,
             metrics->south_nodes, metrics->south_running_nodes,
             metrics->south_disconnected_nodes);
