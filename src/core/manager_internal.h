@@ -41,7 +41,6 @@ typedef struct neu_manager {
     neu_subscribe_mgr_t * subscribe_manager;
     neu_sub_msg_mgr_t *   sub_msg_manager;
 
-    neu_event_timer_t *timer;
     neu_event_timer_t *timer_timestamp;
 
     neu_event_timer_t *timer_lev;
