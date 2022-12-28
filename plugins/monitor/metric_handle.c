@@ -41,6 +41,15 @@
     "# HELP mem_used_bytes Used memory in bytes\n"                               \
     "# TYPE mem_used_bytes gauge\n"                                              \
     "mem_used_bytes %zu\n"                                                       \
+    "# HELP disk_size_gibibytes Disk size in gibibytes\n"                        \
+    "# TYPE disk_size_gibibytes counter\n"                                       \
+    "disk_size_gibibytes %zu\n"                                                  \
+    "# HELP disk_used_gibibytes Used disk size in gibibytes\n"                   \
+    "# TYPE disk_used_gibibytes gauge\n"                                         \
+    "disk_used_gibibytes %zu\n"                                                  \
+    "# HELP disk_avail_gibibytes Available disk size in gibibytes\n"             \
+    "# TYPE disk_avail_gibibytes gauge\n"                                        \
+    "disk_avail_gibibytes %zu\n"                                                 \
     "# HELP core_dumped Whether there is any core dump\n"                        \
     "# TYPE core_dumped gauge\n"                                                 \
     "core_dumped %d\n"                                                           \
@@ -126,7 +135,9 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
 {
     fprintf(stream, METRIC_GLOBAL_TMPL, metrics->distro, metrics->kernel,
             metrics->mem_total_bytes, metrics->mem_used_bytes,
-            metrics->core_dumped, metrics->uptime_seconds, metrics->north_nodes,
+            metrics->disk_size_gibibytes, metrics->disk_used_gibibytes,
+            metrics->disk_avail_gibibytes, metrics->core_dumped,
+            metrics->uptime_seconds, metrics->north_nodes,
             metrics->north_running_nodes, metrics->north_disconnected_nodes,
             metrics->south_nodes, metrics->south_running_nodes,
             metrics->south_disconnected_nodes);
