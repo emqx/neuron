@@ -58,7 +58,6 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *ndoe);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  update_timestamp(void *usr_data);
-static int  report_nodes_state(void *usr_data);
 static void start_single_adapter(neu_manager_t *manager, const char *name,
                                  const char *plugin_name, bool display);
 
@@ -73,15 +72,9 @@ neu_manager_t *neu_manager_create()
 
     neu_event_timer_param_t timestamp_timer_param = {
         .second      = 0,
-        .millisecond = 10,
+        .millisecond = 5,
         .cb          = update_timestamp,
-        .type        = NEU_EVENT_TIMER_BLOCK,
-    };
-    neu_event_timer_param_t timer_param = {
-        .second      = 1,
-        .millisecond = 0,
-        .cb          = report_nodes_state,
-        .type        = NEU_EVENT_TIMER_BLOCK,
+        .type        = NEU_EVENT_TIMER_NOBLOCK,
     };
 
     neu_event_timer_param_t timer_level = {
@@ -138,9 +131,6 @@ neu_manager_t *neu_manager_create()
     timer_level.usr_data = (void *) manager;
     manager->timer_lev   = neu_event_add_timer(manager->events, timer_level);
 
-    timer_param.usr_data = (void *) manager;
-    manager->timer       = neu_event_add_timer(manager->events, timer_param);
-
     timestamp_timer_param.usr_data = (void *) manager;
     manager->timer_timestamp =
         neu_event_add_timer(manager->events, timestamp_timer_param);
@@ -155,7 +145,6 @@ void neu_manager_destroy(neu_manager_t *manager)
     nng_msg *           uninit_msg = NULL;
     UT_array *pipes = neu_node_manager_get_pipes_all(manager->node_manager);
 
-    neu_event_del_timer(manager->events, manager->timer);
     neu_event_del_timer(manager->events, manager->timer_lev);
     neu_event_del_timer(manager->events, manager->timer_timestamp);
     strcpy(header.sender, "manager");
@@ -731,46 +720,6 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
         nlog_warn("reply %s to %s, error: %d",
                   neu_reqresp_type_string(header->type), header->receiver, ret);
     }
-}
-
-static int report_nodes_state(void *usr_data)
-{
-    neu_manager_t *manager = (neu_manager_t *) usr_data;
-    UT_array *     apps    = neu_sub_msg_manager_get(manager->sub_msg_manager,
-                                             NEU_SUBSCRIBE_NODES_STATE);
-
-    neu_manager_count_tag(manager);
-    if (apps == NULL) {
-        return 0;
-    }
-
-    UT_array *states = neu_node_manager_get_state(manager->node_manager);
-
-    utarray_foreach(apps, char *, app)
-    {
-        nng_msg *                  msg         = NULL;
-        neu_reqresp_head_t         header      = { 0 };
-        neu_resp_get_nodes_state_t node_states = { 0 };
-        nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, app);
-
-        header.type = NEU_REQRESP_NODES_STATE;
-        strcpy(header.sender, "manager");
-        strcpy(header.receiver, app);
-        node_states.states = utarray_clone(states);
-
-        msg = neu_msg_gen(&header, (void *) &node_states);
-        nng_msg_set_pipe(msg, pipe);
-
-        if (nng_sendmsg(manager->socket, msg, 0) != 0) {
-            nng_msg_free(msg);
-            nlog_warn("manager -> %s nodes state fail", app);
-        }
-    }
-
-    utarray_free(apps);
-    utarray_free(states);
-
-    return 0;
 }
 
 static int update_timestamp(void *usr_data)
