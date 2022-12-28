@@ -31,6 +31,38 @@ static pthread_rwlock_t g_metrics_mtx_ = PTHREAD_RWLOCK_INITIALIZER;
 static neu_metrics_t    g_metrics_;
 static uint64_t         g_start_ts_;
 
+static void find_os_info()
+{
+    const char *cmd = "if [ -f /etc/os-release ]; then . /etc/os-release;"
+                      "echo $NAME $VERSION_ID; else uname -s; fi; uname -r";
+    FILE *f = popen(cmd, "r");
+
+    if (NULL == f) {
+        nlog_error("popen command fail");
+        return;
+    }
+
+    char buf[64] = {};
+
+    if (NULL == fgets(buf, sizeof(buf), f)) {
+        nlog_error("no command output");
+        return;
+    }
+    buf[strcspn(buf, "\n")] = 0;
+    strncpy(g_metrics_.distro, buf, sizeof(g_metrics_.distro));
+    g_metrics_.distro[sizeof(g_metrics_.distro) - 1] = 0;
+
+    if (NULL == fgets(buf, sizeof(buf), f)) {
+        nlog_error("no command output");
+        return;
+    }
+    buf[strcspn(buf, "\n")] = 0;
+    strncpy(g_metrics_.kernel, buf, sizeof(g_metrics_.kernel));
+    g_metrics_.kernel[sizeof(g_metrics_.kernel) - 1] = 0;
+
+    fclose(f);
+}
+
 static bool has_core_dumps()
 {
     DIR *dp = opendir("core");
@@ -94,6 +126,7 @@ void neu_metrics_init()
     pthread_rwlock_wrlock(&g_metrics_mtx_);
     if (0 == g_start_ts_) {
         g_start_ts_ = neu_time_ms();
+        find_os_info();
     }
     pthread_rwlock_unlock(&g_metrics_mtx_);
 }
