@@ -31,5 +31,7 @@ struct neu_plugin {
 };
 
 int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
+int file_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
+               neu_value_u value);
 
 #endif

@@ -32,6 +32,8 @@ static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
+static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
+                        neu_value_u value);
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .open    = driver_open,
@@ -45,6 +47,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
     .driver.validate_tag = driver_validate_tag,
     .driver.group_timer  = driver_group_timer,
+    .driver.write_tag    = driver_write,
 };
 
 const neu_plugin_module_t neu_plugin_module = {
@@ -134,10 +137,6 @@ static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 {
-    if ((tag->attribute & NEU_ATTRIBUTE_WRITE) == NEU_ATTRIBUTE_WRITE) {
-        return NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
-    }
-
     plog_debug(plugin, "validate tag success, name:%s, address:%s,type:%d ",
                tag->name, tag->address, tag->type);
 
@@ -147,4 +146,10 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 {
     return file_group_timer(plugin, group);
+}
+
+static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
+                        neu_value_u value)
+{
+    return file_write(plugin, req, tag, value);
 }
