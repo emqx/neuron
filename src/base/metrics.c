@@ -113,6 +113,51 @@ static inline int disk_usage(size_t *size_p, size_t *used_p, size_t *avail_p)
     return 0;
 }
 
+static unsigned cpu_usage()
+{
+    int                ret   = 0;
+    unsigned long long user1 = 0, nice1 = 0, sys1 = 0, idle1 = 0, iowait1 = 0,
+                       irq1 = 0, softirq1 = 0;
+    unsigned long long user2 = 0, nice2 = 0, sys2 = 0, idle2 = 0, iowait2 = 0,
+                       irq2 = 0, softirq2 = 0;
+    unsigned long long work = 0, total = 0;
+    struct timespec    tv = {
+        .tv_sec  = 0,
+        .tv_nsec = 50000000,
+    };
+    FILE *f = NULL;
+
+    f = fopen("/proc/stat", "r");
+    if (NULL == f) {
+        nlog_error("open /proc/stat fail");
+        return 0;
+    }
+
+    ret = fscanf(f, "cpu %llu %llu %llu %llu %llu %llu %llu", &user1, &nice1,
+                 &sys1, &idle1, &iowait1, &irq1, &softirq1);
+    if (7 != ret) {
+        fclose(f);
+        return 0;
+    }
+
+    nanosleep(&tv, NULL);
+
+    rewind(f);
+    ret = fscanf(f, "cpu %llu %llu %llu %llu %llu %llu %llu", &user2, &nice2,
+                 &sys2, &idle2, &iowait2, &irq2, &softirq2);
+    if (7 != ret) {
+        fclose(f);
+        return 0;
+    }
+    fclose(f);
+
+    work  = (user2 - user1) + (nice2 - nice1) + (sys2 - sys1);
+    total = work + (idle2 - idle1) + (iowait2 - iowait1) + (irq2 - irq1) +
+        (softirq2 - softirq1);
+
+    return (double) work / total * 100.0 * sysconf(_SC_NPROCESSORS_CONF);
+}
+
 static bool has_core_dumps()
 {
     DIR *dp = opendir("core");
@@ -228,12 +273,14 @@ void neu_metrics_unregister_entry(const char *name)
 
 void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
 {
-    size_t mem_used  = memory_used();
-    size_t disk_size = 0, disk_used = 0, disk_avail = 0;
+    unsigned cpu       = cpu_usage();
+    size_t   mem_used  = memory_used();
+    size_t   disk_size = 0, disk_used = 0, disk_avail = 0;
     disk_usage(&disk_size, &disk_used, &disk_avail);
     bool     core_dumped    = has_core_dumps();
     uint64_t uptime_seconds = (neu_time_ms() - g_start_ts_) / 1000;
     pthread_rwlock_rdlock(&g_metrics_mtx_);
+    g_metrics_.cpu_percent          = cpu;
     g_metrics_.mem_used_bytes       = mem_used;
     g_metrics_.disk_size_gibibytes  = disk_size;
     g_metrics_.disk_used_gibibytes  = disk_used;
