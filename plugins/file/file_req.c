@@ -51,12 +51,6 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         char *       buf    = calloc(1, length);
         neu_dvalue_t dvalue = { 0 };
 
-        if ((tag->attribute & NEU_ATTRIBUTE_WRITE) == NEU_ATTRIBUTE_WRITE) {
-            dvalue.type      = NEU_TYPE_ERROR;
-            dvalue.value.i32 = NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
-            goto dvalue_result;
-        }
-
         if (stat(tag->address, &st) != 0) {
             dvalue.type      = NEU_TYPE_ERROR;
             dvalue.value.i32 = NEU_ERR_FILE_NOT_EXIST;
@@ -109,4 +103,26 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
     free(gd->group);
 
     free(gd);
+}
+
+int file_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
+               neu_value_u value)
+{
+    FILE *fp  = fopen(tag->address, "w");
+    int   ret = 0;
+
+    if (0 == fwrite(value.str, sizeof(char), strlen(value.str), fp)) {
+        nlog_error("write file failed:%s", tag->address);
+        ret = NEU_ERR_FILE_WRITE_FAILURE;
+        goto dvalue_result;
+    }
+
+    neu_datatag_string_ltoh(value.str, strlen(value.str));
+
+dvalue_result:
+    fclose(fp);
+    plugin->common.adapter_callbacks->driver.write_response(
+        plugin->common.adapter, req, ret);
+
+    return 0;
 }
