@@ -46,6 +46,7 @@ static void find_os_info()
 
     if (NULL == fgets(buf, sizeof(buf), f)) {
         nlog_error("no command output");
+        fclose(f);
         return;
     }
     buf[strcspn(buf, "\n")] = 0;
@@ -54,6 +55,7 @@ static void find_os_info()
 
     if (NULL == fgets(buf, sizeof(buf), f)) {
         nlog_error("no command output");
+        fclose(f);
         return;
     }
     buf[strcspn(buf, "\n")] = 0;
@@ -61,6 +63,40 @@ static void find_os_info()
     g_metrics_.kernel[sizeof(g_metrics_.kernel) - 1] = 0;
 
     fclose(f);
+}
+
+static size_t parse_memory_fields(int col)
+{
+    FILE * f       = NULL;
+    char   buf[64] = {};
+    size_t val     = 0;
+
+    sprintf(buf, "free -b | awk 'NR==2 {print $%i}'", col);
+
+    f = popen(buf, "r");
+    if (NULL == f) {
+        nlog_error("popen command fail");
+        return 0;
+    }
+
+    if (NULL != fgets(buf, sizeof(buf), f)) {
+        val = atoll(buf);
+    } else {
+        nlog_error("no command output");
+    }
+
+    fclose(f);
+    return val;
+}
+
+static inline size_t memory_total()
+{
+    return parse_memory_fields(2);
+}
+
+static inline size_t memory_used()
+{
+    return parse_memory_fields(3);
 }
 
 static bool has_core_dumps()
@@ -127,6 +163,7 @@ void neu_metrics_init()
     if (0 == g_start_ts_) {
         g_start_ts_ = neu_time_ms();
         find_os_info();
+        g_metrics_.mem_total_bytes = memory_total();
     }
     pthread_rwlock_unlock(&g_metrics_mtx_);
 }
@@ -177,9 +214,11 @@ void neu_metrics_unregister_entry(const char *name)
 
 void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
 {
+    size_t   mem_used       = memory_used();
     bool     core_dumped    = has_core_dumps();
     uint64_t uptime_seconds = (neu_time_ms() - g_start_ts_) / 1000;
     pthread_rwlock_rdlock(&g_metrics_mtx_);
+    g_metrics_.mem_used_bytes = mem_used;
     g_metrics_.core_dumped    = core_dumped;
     g_metrics_.uptime_seconds = uptime_seconds;
 

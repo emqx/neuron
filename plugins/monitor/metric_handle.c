@@ -35,6 +35,12 @@
     "distro %s\n"                                                                \
     "# HELP kernel OS kernel version\n"                                          \
     "kernel %s\n"                                                                \
+    "# HELP mem_total_bytes Total installed memory in bytes\n"                   \
+    "# TYPE mem_total_bytes counter\n"                                           \
+    "mem_total_bytes %zu\n"                                                      \
+    "# HELP mem_used_bytes Used memory in bytes\n"                               \
+    "# TYPE mem_used_bytes gauge\n"                                              \
+    "mem_used_bytes %zu\n"                                                       \
     "# HELP core_dumped Whether there is any core dump\n"                        \
     "# TYPE core_dumped gauge\n"                                                 \
     "core_dumped %d\n"                                                           \
@@ -119,6 +125,7 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
                                       FILE *               stream)
 {
     fprintf(stream, METRIC_GLOBAL_TMPL, metrics->distro, metrics->kernel,
+            metrics->mem_total_bytes, metrics->mem_used_bytes,
             metrics->core_dumped, metrics->uptime_seconds, metrics->north_nodes,
             metrics->north_running_nodes, metrics->north_disconnected_nodes,
             metrics->south_nodes, metrics->south_running_nodes,
