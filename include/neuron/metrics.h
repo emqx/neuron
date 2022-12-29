@@ -142,6 +142,9 @@ typedef struct {
     char                kernel[32];
     size_t              mem_total_bytes;
     size_t              mem_used_bytes;
+    size_t              disk_size_gibibytes;
+    size_t              disk_used_gibibytes;
+    size_t              disk_avail_gibibytes;
     bool                core_dumped;
     uint64_t            uptime_seconds;
     size_t              north_nodes;

@@ -19,6 +19,7 @@
 
 #include <dirent.h>
 #include <pthread.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 
 #include "adapter.h"
@@ -97,6 +98,19 @@ static inline size_t memory_total()
 static inline size_t memory_used()
 {
     return parse_memory_fields(3);
+}
+
+static inline int disk_usage(size_t *size_p, size_t *used_p, size_t *avail_p)
+{
+    struct statvfs buf = {};
+    if (0 != statvfs(".", &buf)) {
+        return -1;
+    }
+
+    *size_p  = (double) buf.f_frsize * buf.f_blocks / (1 << 30);
+    *used_p  = (double) buf.f_frsize * (buf.f_blocks - buf.f_bfree) / (1 << 30);
+    *avail_p = (double) buf.f_frsize * buf.f_bavail / (1 << 30);
+    return 0;
 }
 
 static bool has_core_dumps()
@@ -214,13 +228,18 @@ void neu_metrics_unregister_entry(const char *name)
 
 void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
 {
-    size_t   mem_used       = memory_used();
+    size_t mem_used  = memory_used();
+    size_t disk_size = 0, disk_used = 0, disk_avail = 0;
+    disk_usage(&disk_size, &disk_used, &disk_avail);
     bool     core_dumped    = has_core_dumps();
     uint64_t uptime_seconds = (neu_time_ms() - g_start_ts_) / 1000;
     pthread_rwlock_rdlock(&g_metrics_mtx_);
-    g_metrics_.mem_used_bytes = mem_used;
-    g_metrics_.core_dumped    = core_dumped;
-    g_metrics_.uptime_seconds = uptime_seconds;
+    g_metrics_.mem_used_bytes       = mem_used;
+    g_metrics_.disk_size_gibibytes  = disk_size;
+    g_metrics_.disk_used_gibibytes  = disk_used;
+    g_metrics_.disk_avail_gibibytes = disk_avail;
+    g_metrics_.core_dumped          = core_dumped;
+    g_metrics_.uptime_seconds       = uptime_seconds;
 
     g_metrics_.north_nodes              = 0;
     g_metrics_.north_running_nodes      = 0;
