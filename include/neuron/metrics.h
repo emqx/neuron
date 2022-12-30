@@ -39,6 +39,16 @@ typedef enum {
     NEU_METRIC_TYPE_COUNTER_SET,
 } neu_metric_type_e;
 
+// node running state
+#define NEU_METRIC_RUNNING_STATE "running_state"
+#define NEU_METRIC_RUNNING_STATE_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_RUNNING_STATE_HELP "Node running state"
+
+// node link state
+#define NEU_METRIC_LINK_STATE "link_state"
+#define NEU_METRIC_LINK_STATE_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_LINK_STATE_HELP "Node link state"
+
 // last round trip time in millisends
 #define NEU_METRIC_LAST_RTT_MS "last_rtt_ms"
 #define NEU_METRIC_LAST_RTT_MS_TYPE NEU_METRIC_TYPE_GAUAGE
