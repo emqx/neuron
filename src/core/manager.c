@@ -72,7 +72,7 @@ neu_manager_t *neu_manager_create()
 
     neu_event_timer_param_t timestamp_timer_param = {
         .second      = 0,
-        .millisecond = 5,
+        .millisecond = 10,
         .cb          = update_timestamp,
         .type        = NEU_EVENT_TIMER_NOBLOCK,
     };

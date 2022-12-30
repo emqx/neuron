@@ -414,6 +414,7 @@ typedef struct {
 typedef struct {
     char                 driver[NEU_NODE_NAME_LEN];
     char                 group[NEU_GROUP_NAME_LEN];
+    int64_t              timestamp;
     uint16_t             n_tag;
     neu_resp_tag_value_t tags[];
 } neu_reqresp_trans_data_t;

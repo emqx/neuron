@@ -770,6 +770,7 @@ static int report_callback(void *usr_data)
                sizeof(neu_reqresp_trans_data_t) +
                    utarray_len(tags) * sizeof(neu_resp_tag_value_t));
 
+    data->timestamp = global_timestamp;
     strcpy(data->driver, group->driver->adapter.name);
     strcpy(data->group, group->name);
     data->n_tag = read_report_group(global_timestamp,
