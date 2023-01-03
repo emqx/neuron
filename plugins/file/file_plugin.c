@@ -52,6 +52,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
+    .schema          = "file.json",
     .module_name     = "file",
     .module_descr    = "The plugin is used to read and write files.",
     .module_descr_zh = "该插件用于读写文件。",

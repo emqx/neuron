@@ -56,6 +56,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 const neu_plugin_module_t neu_plugin_module = {
     .version      = NEURON_PLUGIN_VER_1_0,
+    .schema       = "modbus-tcp.json",
     .module_name  = "modbus-tcp",
     .module_descr = "The modbus-tcp plugin is used for devices connected using "
                     "the modbus protocol tcp mode.",

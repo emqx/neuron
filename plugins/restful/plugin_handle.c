@@ -106,6 +106,7 @@ void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins)
 
         plugin_res.plugin_libs[index].node_type   = info->type;
         plugin_res.plugin_libs[index].kind        = info->kind;
+        plugin_res.plugin_libs[index].schema      = (char *) info->schema;
         plugin_res.plugin_libs[index].name        = (char *) info->name;
         plugin_res.plugin_libs[index].library     = (char *) info->library;
         plugin_res.plugin_libs[index].description = (char *) info->description;

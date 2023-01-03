@@ -187,6 +187,7 @@ typedef struct neu_req_get_plugin {
 } neu_req_get_plugin_t;
 
 typedef struct neu_resp_plugin_info {
+    char schema[NEU_PLUGIN_NAME_LEN];
     char name[NEU_PLUGIN_NAME_LEN];
     char description[NEU_PLUGIN_DESCRIPTION_LEN];
     char description_zh[NEU_PLUGIN_DESCRIPTION_LEN];

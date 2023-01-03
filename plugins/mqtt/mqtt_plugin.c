@@ -375,6 +375,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
+    .schema          = "mqtt.json",
     .module_name     = "mqtt",
     .module_descr    = DESCRIPTION,
     .module_descr_zh = DESCRIPTION_ZH,
