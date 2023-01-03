@@ -82,6 +82,8 @@ static int ekuiper_plugin_init(neu_plugin_t *plugin)
     rv = nng_aio_alloc(&recv_aio, recv_data_callback, plugin);
     if (rv < 0) {
         plog_error(plugin, "cannot allocate recv_aio: %s", nng_strerror(rv));
+        nng_mtx_free(plugin->mtx);
+        plugin->mtx = NULL;
         return rv;
     }
 
@@ -119,6 +121,7 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
 
     if ((rv = nng_listen(plugin->sock, EKUIPER_PLUGIN_URL, NULL, 0)) != 0) {
         plog_error(plugin, "nng_listen: %s", nng_strerror(rv));
+        nng_close(plugin->sock);
         return NEU_ERR_EINTERNAL;
     }
 
