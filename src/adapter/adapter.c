@@ -67,6 +67,10 @@ static const adapter_callbacks_t callback_funs = {
     adapter_register_metric(adapter, name, name##_HELP, name##_TYPE, init);
 
 #define REGISTER_DRIVER_METRICS(adapter)                     \
+    REGISTER_METRIC(adapter, NEU_METRIC_LINK_STATE,          \
+                    NEU_NODE_LINK_STATE_DISCONNECTED);       \
+    REGISTER_METRIC(adapter, NEU_METRIC_RUNNING_STATE,       \
+                    NEU_NODE_RUNNING_STATE_INIT);            \
     REGISTER_METRIC(adapter, NEU_METRIC_LAST_RTT_MS,         \
                     NEU_METRIC_LAST_RTT_MS_MAX);             \
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_BYTES, 0);      \
@@ -75,6 +79,10 @@ static const adapter_callbacks_t callback_funs = {
     REGISTER_METRIC(adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, 0);
 
 #define REGISTER_APP_METRICS(adapter)                              \
+    REGISTER_METRIC(adapter, NEU_METRIC_LINK_STATE,                \
+                    NEU_NODE_LINK_STATE_DISCONNECTED);             \
+    REGISTER_METRIC(adapter, NEU_METRIC_RUNNING_STATE,             \
+                    NEU_NODE_RUNNING_STATE_INIT);                  \
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSGS_TOTAL, 0);       \
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0); \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_MSGS_TOTAL, 0);
