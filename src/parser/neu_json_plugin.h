@@ -49,6 +49,7 @@ void neu_json_decode_del_plugin_req_free(neu_json_del_plugin_req_t *req);
 
 typedef struct {
     char *  name;
+    char *  schema;
     char *  library;
     char *  description;
     char *  description_zh;

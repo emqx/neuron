@@ -33,6 +33,7 @@
 #include "plugin_manager.h"
 
 typedef struct plugin_entity {
+    char *schema;
     char *name;
     char *lib_name;
     char *description;
@@ -125,6 +126,7 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
     plugin->display        = pm->display;
     plugin->type           = pm->type;
     plugin->kind           = pm->kind;
+    plugin->schema         = strdup(pm->schema);
     plugin->name           = strdup(pm->module_name);
     plugin->lib_name       = strdup(plugin_lib_name);
     plugin->description    = strdup(pm->module_descr);
@@ -178,6 +180,7 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
         };
 
         info.display = el->display;
+        strncpy(info.schema, el->schema, sizeof(info.schema));
         strncpy(info.name, el->name, sizeof(info.name));
         strncpy(info.library, el->lib_name, sizeof(info.library));
         strncpy(info.description, el->description, sizeof(info.description));
@@ -208,6 +211,7 @@ UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr)
             info.display = el->display;
             info.single  = el->single;
 
+            strncpy(info.schema, el->schema, sizeof(info.schema));
             strncpy(info.single_name, el->single_name,
                     sizeof(info.single_name));
             strncpy(info.name, el->name, sizeof(info.name));
@@ -305,6 +309,7 @@ static void entity_free(plugin_entity_t *entity)
     if (entity->single) {
         free(entity->single_name);
     }
+    free(entity->schema);
     free(entity->name);
     free(entity->lib_name);
     free(entity->description);
