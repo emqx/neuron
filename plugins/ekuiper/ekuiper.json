@@ -1,1 +1,23 @@
-{}
+{
+  "host": {
+    "name": "host",
+    "description": "IP address to listen for connections from eKuiper",
+    "attribute": "required",
+    "type": "string",
+    "default": "127.0.0.1",
+    "valid": {
+      "length": 255
+    }
+  },
+  "port": {
+    "name": "port",
+    "description": "TCP port number to listen for connections from eKuiper",
+    "attribute": "required",
+    "type": "int",
+    "default": 7081,
+    "valid": {
+      "min": 1024,
+      "max": 65535
+    }
+  }
+}
