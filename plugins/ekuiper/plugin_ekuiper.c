@@ -195,7 +195,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
-    .schema          = "ekuiper.json",
+    .schema          = "ekuiper",
     .module_name     = "ekuiper",
     .module_descr    = "Neuron and LF Edge eKuiper integration plugin",
     .module_descr_zh = "Neuron 和 LF Edge eKuiper 一体化插件",
