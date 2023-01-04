@@ -3,9 +3,9 @@ Library    REST                     http://127.0.0.1:7000
 Resource   common.resource
 
 *** Variables ***
-${PLUGIN-MODBUS-TCP}    modbus-tcp
-${PLUGIN-MQTT}          mqtt
-${PLUGIN-EKUIPER}       ekuiper
+${PLUGIN-MODBUS-TCP}    Modbus TCP
+${PLUGIN-MQTT}          MQTT
+${PLUGIN-EKUIPER}       eKuiper
 
 ${NODE_DRIVER}	1
 ${NODE_APP}	2
