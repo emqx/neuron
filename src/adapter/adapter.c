@@ -385,6 +385,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
+    case NEU_REQ_SUBSCRIBE_GROUP:
+    case NEU_REQ_UNSUBSCRIBE_GROUP:
     case NEU_RESP_READ_GROUP:
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
     case NEU_RESP_ADD_TAG:

@@ -88,6 +88,9 @@ void *neu_json_encode_array_value(void *array, neu_json_elem_t *t, int n);
 int   neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n);
 int   neu_json_encode(void *json_object, char **str);
 
+int neu_json_dump_key(void *object, const char *key, char **const result,
+                      bool must_exist);
+
 #ifdef __cplusplus
 }
 #endif

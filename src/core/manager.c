@@ -404,6 +404,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_manager_subscribe(manager, cmd->app, cmd->driver, cmd->group);
 
         if (error.error == NEU_ERR_SUCCESS) {
+            forward_msg(manager, msg, cmd->app);
             manager_storage_subscribe(manager, cmd->app, cmd->driver,
                                       cmd->group);
         }
@@ -421,6 +422,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_manager_unsubscribe(manager, cmd->app, cmd->driver, cmd->group);
 
         if (error.error == NEU_ERR_SUCCESS) {
+            forward_msg(manager, msg, cmd->app);
             manager_storage_unsubscribe(manager, cmd->app, cmd->driver,
                                         cmd->group);
         }

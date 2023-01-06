@@ -406,3 +406,29 @@ int neu_json_decode_value(void *object, neu_json_elem_t *ele)
 {
     return decode_object(object, ele);
 }
+
+int neu_json_dump_key(void *object, const char *key, char **const result,
+                      bool must_exist)
+{
+    int rv        = 0;
+    json_t *new   = NULL;
+    json_t *value = NULL;
+
+    value = json_object_get(object, key);
+    if (NULL == value) {
+        if (must_exist) {
+            return -1;
+        } else {
+            *result = NULL;
+            return 0;
+        }
+    }
+
+    if (NULL == (new = json_object()) || json_object_set(new, key, value) < 0 ||
+        NULL == (*result = json_dumps(new, JSON_COMPACT))) {
+        rv = -1;
+    }
+
+    json_decref(new);
+    return rv;
+}

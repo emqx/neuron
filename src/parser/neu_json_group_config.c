@@ -266,6 +266,11 @@ int neu_json_encode_get_subscribe_resp(void *json_object, void *param)
     return ret;
 }
 
+static inline int dump_params(void *root, char **const result)
+{
+    return neu_json_dump_key(root, "params", result, false);
+}
+
 int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result)
 {
     int                       ret      = 0;
@@ -299,6 +304,11 @@ int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result)
     req->group  = req_elems[1].v.val_str;
     req->driver = req_elems[2].v.val_str;
 
+    ret = dump_params(json_obj, &req->params);
+    if (0 != ret) {
+        goto decode_fail;
+    }
+
     *result = req;
     goto decode_exit;
 
@@ -318,6 +328,7 @@ void neu_json_decode_subscribe_req_free(neu_json_subscribe_req_t *req)
     free(req->app);
     free(req->driver);
     free(req->group);
+    free(req->params);
 
     free(req);
 }

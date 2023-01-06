@@ -95,6 +95,7 @@ typedef struct {
     char *group;
     char *app;
     char *driver;
+    char *params;
 } neu_json_subscribe_req_t;
 
 int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result);
