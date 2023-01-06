@@ -58,6 +58,10 @@ void neu_subscribe_manager_destroy(neu_subscribe_mgr_t *mgr)
     HASH_ITER(hh, mgr->ss, el, tmp)
     {
         HASH_DEL(mgr->ss, el);
+        utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
+        {
+            neu_app_subscribe_fini(sub_app);
+        }
         utarray_free(el->apps);
         free(el);
     }
@@ -118,6 +122,7 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
                 strncpy(info.driver, el->key.driver, sizeof(info.driver));
                 strncpy(info.app, app, sizeof(info.app));
                 strncpy(info.group, el->key.group, sizeof(info.group));
+                info.params = sub_app->params; // borrowed reference
 
                 utarray_push_back(groups, &info);
             }
@@ -145,7 +150,8 @@ void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app)
 }
 
 int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
-                              const char *app, const char *group, nng_pipe pipe)
+                              const char *app, const char *group,
+                              const char *params, nng_pipe pipe)
 {
     sub_elem_t *        find    = NULL;
     sub_elem_key_t      key     = { 0 };
@@ -156,12 +162,17 @@ int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
     strncpy(app_sub.app_name, app, sizeof(app_sub.app_name));
     app_sub.pipe = pipe;
 
+    if (params && NULL == (app_sub.params = strdup(params))) {
+        return NEU_ERR_EINTERNAL;
+    }
+
     HASH_FIND(hh, mgr->ss, &key, sizeof(sub_elem_key_t), find);
 
     if (find) {
         utarray_foreach(find->apps, neu_app_subscribe_t *, sub)
         {
             if (strcmp(sub->app_name, app) == 0) {
+                neu_app_subscribe_fini(&app_sub);
                 return NEU_ERR_GROUP_ALREADY_SUBSCRIBED;
             }
         }
@@ -191,6 +202,7 @@ int neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
         utarray_foreach(find->apps, neu_app_subscribe_t *, sub)
         {
             if (strcmp(sub->app_name, app) == 0) {
+                neu_app_subscribe_fini(sub);
                 utarray_erase(find->apps, utarray_eltidx(find->apps, sub), 1);
                 return NEU_ERR_SUCCESS;
             }
@@ -210,6 +222,10 @@ void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,
         if (strcmp(driver, el->key.driver) == 0 &&
             (group == NULL || strcmp(group, el->key.group) == 0)) {
             HASH_DEL(mgr->ss, el);
+            utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
+            {
+                neu_app_subscribe_fini(sub_app);
+            }
             utarray_free(el->apps);
             free(el);
         }

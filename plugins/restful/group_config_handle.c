@@ -286,6 +286,7 @@ void handle_grp_get_subscribe_resp(nng_aio *                       aio,
         int index = utarray_eltidx(groups->groups, group);
         sub_grp_configs.groups[index].driver = group->driver;
         sub_grp_configs.groups[index].group  = group->group;
+        sub_grp_configs.groups[index].params = group->params;
     }
 
     neu_json_encode_by_fn(&sub_grp_configs, neu_json_encode_get_subscribe_resp,

@@ -139,7 +139,8 @@ UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 }
 
 int neu_manager_subscribe(neu_manager_t *manager, const char *app,
-                          const char *driver, const char *group)
+                          const char *driver, const char *group,
+                          const char *params)
 {
     int            ret  = NEU_ERR_SUCCESS;
     nng_pipe       pipe = { 0 };
@@ -168,7 +169,7 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
 
     pipe = neu_node_manager_get_pipe(manager->node_manager, app);
     return neu_subscribe_manager_sub(manager->subscribe_manager, driver, app,
-                                     group, pipe);
+                                     group, params, pipe);
 }
 
 int neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
@@ -181,6 +182,24 @@ int neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app)
 {
     return neu_subscribe_manager_get(manager->subscribe_manager, app);
+}
+
+UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
+                                              const char *   app)
+{
+    UT_array *subs = neu_subscribe_manager_get(manager->subscribe_manager, app);
+
+    utarray_foreach(subs, neu_resp_subscribe_info_t *, sub)
+    {
+        if (sub->params) {
+            sub->params = strdup(sub->params);
+        }
+    }
+
+    // set vector element destructor
+    subs->icd.dtor = (void (*)(void *)) neu_resp_subscribe_info_fini;
+
+    return subs;
 }
 
 int neu_manager_get_node_info(neu_manager_t *manager, const char *name,

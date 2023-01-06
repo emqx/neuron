@@ -147,7 +147,8 @@ int manager_load_subscribe(neu_manager_t *manager)
             utarray_foreach(sub_infos, neu_persist_subscription_info_t *, info)
             {
                 rv = neu_manager_subscribe(manager, node->node,
-                                           info->driver_name, info->group_name);
+                                           info->driver_name, info->group_name,
+                                           NULL);
                 const char *ok_or_err = (0 == rv) ? "success" : "fail";
                 nlog_info("%s load subscription app:%s driver:%s grp:%s",
                           ok_or_err, node->node, info->driver_name,

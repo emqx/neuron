@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <jansson.h>
+
 #include "json/json.h"
 
 #include "neu_json_group_config.h"
@@ -231,7 +233,7 @@ int neu_json_encode_get_driver_group_resp(void *json_object, void *param)
     return ret;
 }
 
-int neu_json_encode_get_subscribe_resp(void *json_object, void *param)
+int neu_json_encode_get_subscribe_resp(void *object, void *param)
 {
     int                            ret = 0;
     neu_json_get_subscribe_resp_t *resp =
@@ -240,18 +242,21 @@ int neu_json_encode_get_subscribe_resp(void *json_object, void *param)
     void *                               group_array = neu_json_array();
     neu_json_get_subscribe_resp_group_t *p_group     = resp->groups;
     for (int i = 0; i < resp->n_group; i++) {
-        neu_json_elem_t group_elems[] = { {
-                                              .name      = "driver",
-                                              .t         = NEU_JSON_STR,
-                                              .v.val_str = p_group->driver,
-                                          },
-                                          {
-                                              .name      = "group",
-                                              .t         = NEU_JSON_STR,
-                                              .v.val_str = p_group->group,
-                                          } };
-        group_array = neu_json_encode_array(group_array, group_elems,
-                                            NEU_JSON_ELEM_SIZE(group_elems));
+        json_t *ob = json_object();
+
+        // rely on lib jansson to check for NULL pointers
+        json_object_set_new(ob, "driver", json_string(p_group->driver));
+        json_object_set_new(ob, "group", json_string(p_group->group));
+
+        if (p_group->params) {
+            json_t *t = json_loads(p_group->params, 0, NULL);
+            json_t *p = json_object_get(t, "params");
+            json_object_set(ob, "params", p);
+            json_decref(t);
+        }
+
+        json_array_append_new(group_array, ob);
+
         p_group++;
     }
 
@@ -260,7 +265,7 @@ int neu_json_encode_get_subscribe_resp(void *json_object, void *param)
         .t            = NEU_JSON_OBJECT,
         .v.val_object = group_array,
     } };
-    ret = neu_json_encode_field(json_object, resp_elems,
+    ret                          = neu_json_encode_field(object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
 
     return ret;
