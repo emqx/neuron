@@ -295,20 +295,33 @@ typedef struct neu_resp_get_tag {
 } neu_resp_get_tag_t;
 
 typedef struct {
+    char  app[NEU_NODE_NAME_LEN];
+    char  driver[NEU_NODE_NAME_LEN];
+    char  group[NEU_GROUP_NAME_LEN];
+    char *params;
+} neu_req_subscribe_t;
+
+typedef struct {
     char app[NEU_NODE_NAME_LEN];
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
-} neu_req_subscribe_t, neu_req_unsubscribe_t;
+} neu_req_unsubscribe_t;
 
 typedef struct neu_req_get_subscribe_group {
     char app[NEU_NODE_NAME_LEN];
 } neu_req_get_subscribe_group_t, neu_req_get_sub_driver_tags_t;
 
 typedef struct neu_resp_subscribe_info {
-    char app[NEU_NODE_NAME_LEN];
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
+    char  app[NEU_NODE_NAME_LEN];
+    char  driver[NEU_NODE_NAME_LEN];
+    char  group[NEU_GROUP_NAME_LEN];
+    char *params;
 } neu_resp_subscribe_info_t;
+
+static inline void neu_resp_subscribe_info_fini(neu_resp_subscribe_info_t *info)
+{
+    free(info->params);
+}
 
 typedef struct {
     char      driver[NEU_NODE_NAME_LEN];

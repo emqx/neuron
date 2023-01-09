@@ -82,6 +82,7 @@ int neu_json_encode_get_driver_group_resp(void *json_object, void *param);
 typedef struct {
     char *group;
     char *driver;
+    char *params;
 } neu_json_get_subscribe_resp_group_t;
 
 typedef struct {
@@ -95,6 +96,7 @@ typedef struct {
     char *group;
     char *app;
     char *driver;
+    char *params;
 } neu_json_subscribe_req_t;
 
 int neu_json_decode_subscribe_req(char *buf, neu_json_subscribe_req_t **result);

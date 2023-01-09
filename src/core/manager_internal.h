@@ -58,10 +58,13 @@ UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type,
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 
 int       neu_manager_subscribe(neu_manager_t *manager, const char *app,
-                                const char *driver, const char *group);
+                                const char *driver, const char *group,
+                                const char *params);
 int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                                   const char *driver, const char *group);
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
+UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
+                                              const char *   app);
 
 int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
                               neu_persist_node_info_t *info);

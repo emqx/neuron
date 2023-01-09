@@ -208,7 +208,9 @@ void handle_grp_subscribe(nng_aio *aio)
             strcpy(cmd.app, req->app);
             strcpy(cmd.driver, req->driver);
             strcpy(cmd.group, req->group);
-            ret = neu_plugin_op(plugin, header, &cmd);
+            cmd.params  = req->params; // ownership moved
+            req->params = NULL;
+            ret         = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
@@ -284,6 +286,7 @@ void handle_grp_get_subscribe_resp(nng_aio *                       aio,
         int index = utarray_eltidx(groups->groups, group);
         sub_grp_configs.groups[index].driver = group->driver;
         sub_grp_configs.groups[index].group  = group->group;
+        sub_grp_configs.groups[index].params = group->params;
     }
 
     neu_json_encode_by_fn(&sub_grp_configs, neu_json_encode_get_subscribe_resp,

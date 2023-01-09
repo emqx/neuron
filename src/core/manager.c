@@ -400,10 +400,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_subscribe_t *cmd   = (neu_req_subscribe_t *) &header[1];
         neu_resp_error_t     error = { 0 };
 
-        error.error =
-            neu_manager_subscribe(manager, cmd->app, cmd->driver, cmd->group);
+        error.error = neu_manager_subscribe(manager, cmd->app, cmd->driver,
+                                            cmd->group, cmd->params);
 
         if (error.error == NEU_ERR_SUCCESS) {
+            forward_msg(manager, msg, cmd->app);
             manager_storage_subscribe(manager, cmd->app, cmd->driver,
                                       cmd->group);
         }
@@ -421,6 +422,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_manager_unsubscribe(manager, cmd->app, cmd->driver, cmd->group);
 
         if (error.error == NEU_ERR_SUCCESS) {
+            forward_msg(manager, msg, cmd->app);
             manager_storage_unsubscribe(manager, cmd->app, cmd->driver,
                                         cmd->group);
         }
@@ -433,7 +435,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_SUBSCRIBE_GROUP: {
         neu_req_get_subscribe_group_t *cmd =
             (neu_req_get_subscribe_group_t *) &header[1];
-        UT_array *groups = neu_manager_get_sub_group(manager, cmd->app);
+        UT_array *groups =
+            neu_manager_get_sub_group_deep_copy(manager, cmd->app);
         neu_resp_get_subscribe_group_t resp = { .groups = groups };
 
         strcpy(header->receiver, header->sender);
