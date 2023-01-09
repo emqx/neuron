@@ -61,10 +61,11 @@ void manager_storage_del_node(neu_manager_t *manager, const char *node)
 }
 
 void manager_storage_subscribe(neu_manager_t *manager, const char *app,
-                               const char *driver, const char *group)
+                               const char *driver, const char *group,
+                               const char *params)
 {
     (void) manager;
-    int rv = neu_persister_store_subscription(app, driver, group);
+    int rv = neu_persister_store_subscription(app, driver, group, params);
     if (0 != rv) {
         nlog_error("fail store subscription app:%s driver:%s group:%s", app,
                    driver, group);
@@ -148,7 +149,7 @@ int manager_load_subscribe(neu_manager_t *manager)
             {
                 rv = neu_manager_subscribe(manager, node->node,
                                            info->driver_name, info->group_name,
-                                           NULL);
+                                           info->params);
                 const char *ok_or_err = (0 == rv) ? "success" : "fail";
                 nlog_info("%s load subscription app:%s driver:%s grp:%s",
                           ok_or_err, node->node, info->driver_name,
