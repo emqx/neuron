@@ -50,6 +50,11 @@ typedef struct plugin_entity {
     UT_hash_handle hh;
 } plugin_entity_t;
 
+typedef struct {
+    char *name_old;
+    char *name_new;
+} plugin_name_t;
+
 struct neu_plugin_manager {
     plugin_entity_t *plugins;
 };
@@ -233,6 +238,41 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
 {
     plugin_entity_t *plugin = NULL;
     int              ret    = -1;
+
+    static const plugin_name_t name[] = {
+        { "mqtt", "MQTT" },
+        { "ekuiper", "eKuiper" },
+        { "modbus-tcp", "Modbus TCP" },
+        { "a1e", "Mitsubishi 1E" },
+        { "ads", "Beckhoff ADS" },
+        { "bacnet", "BACnet/IP" },
+        { "dlt645", "DLT645-2007" },
+        { "EtherNet-IP", "EtherNet/IP(CIP)" },
+        { "fins", "Omron FINS" },
+        { "focas", "Fanuc Focas Ethernet" },
+        { "iec104", "IEC60870-5-104" },
+        { "knx", "KNXnet/IP" },
+        { "modbus-qh-tcp", "Modbus TCP QH" },
+        { "modbus-rtu", "Modbus RTU" },
+        { "modbus-plus-tcp", "Modbus TCP Advance" },
+        { "nona11", "NON A11" },
+        { "opcua", "OPC UA" },
+        { "qna3e", "Mitsubishi 3E" },
+        { "s7comm", "Siemens S7 ISOTCP" },
+        { "s7comm_for_300", "Siemens S7 ISOTCP for 300/400" },
+        { "sparkplugb", "SparkPlugB" },
+        { NULL, NULL },
+    };
+
+    int i = 0;
+    while (name[i].name_old != NULL) {
+        if (strcmp(plugin_name, name[i].name_old) == 0) {
+            plugin_name = name[i].name_new;
+            break;
+        }
+
+        i++;
+    }
 
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
