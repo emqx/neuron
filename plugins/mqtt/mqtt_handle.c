@@ -480,6 +480,14 @@ int handle_trans_data(neu_plugin_t *            plugin,
         return NEU_ERR_MQTT_FAILURE;
     }
 
+    const route_entry_t *route = route_tbl_get(
+        &plugin->route_tbl, trans_data->driver, trans_data->group);
+    if (NULL == route) {
+        plog_error(plugin, "no route for driver:%s group:%s",
+                   trans_data->driver, trans_data->group);
+        return NEU_ERR_GROUP_NOT_SUBSCRIBE;
+    }
+
     char *json_str =
         generate_upload_json(plugin, trans_data, plugin->config.format);
     if (NULL == json_str) {
@@ -487,10 +495,48 @@ int handle_trans_data(neu_plugin_t *            plugin,
         return NEU_ERR_EINTERNAL;
     }
 
-    char *         topic = plugin->config.upload_topic;
+    char *         topic = route->topic;
     neu_mqtt_qos_e qos   = NEU_MQTT_QOS0;
     rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
     json_str = NULL;
 
     return rv;
+}
+
+int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
+{
+    int rv = 0;
+
+    neu_json_elem_t topic = { .name = "topic", .t = NEU_JSON_STR };
+    if (0 != neu_parse_param(sub_info->params, NULL, 1, &topic)) {
+        plog_error(plugin, "parse `%s` for topic fail", sub_info->params);
+        rv = NEU_ERR_GROUP_PARAMETER_INVALID;
+        goto end;
+    }
+
+    rv = route_tbl_add_new(&plugin->route_tbl, sub_info->driver,
+                           sub_info->group, topic.v.val_str);
+    // topic.v.val_str ownership moved
+    if (0 != rv) {
+        plog_error(plugin, "route driver:%s group:%s to topic:%s fail, `%s`",
+                   sub_info->driver, sub_info->group, topic.v.val_str,
+                   sub_info->params);
+        goto end;
+    }
+
+    plog_info(plugin, "route driver:%s group:%s to topic:%s", sub_info->driver,
+              sub_info->group, topic.v.val_str);
+
+end:
+    free(sub_info->params);
+    return rv;
+}
+
+int handle_unsubscribe_group(neu_plugin_t *         plugin,
+                             neu_req_unsubscribe_t *unsub_info)
+{
+    route_tbl_del(&plugin->route_tbl, unsub_info->driver, unsub_info->group);
+    plog_info(plugin, "del route driver:%s group:%s", unsub_info->driver,
+              unsub_info->group);
+    return 0;
 }
