@@ -847,13 +847,13 @@ int neu_persister_delete_tag(const char *driver_name, const char *group_name,
 
 int neu_persister_store_subscription(const char *app_name,
                                      const char *driver_name,
-                                     const char *group_name)
+                                     const char *group_name, const char *params)
 {
     return execute_sql(
         global_db,
-        "INSERT INTO subscriptions (app_name, driver_name, group_name) "
-        "VALUES (%Q, %Q, %Q)",
-        app_name, driver_name, group_name);
+        "INSERT INTO subscriptions (app_name, driver_name, group_name, params) "
+        "VALUES (%Q, %Q, %Q, %Q)",
+        app_name, driver_name, group_name, params);
 }
 
 static UT_icd subscription_info_icd = {
@@ -866,9 +866,9 @@ static UT_icd subscription_info_icd = {
 int neu_persister_load_subscriptions(const char *app_name,
                                      UT_array ** subscription_infos)
 {
-    sqlite3_stmt *stmt = NULL;
-    const char *  query =
-        "SELECT driver_name, group_name FROM subscriptions WHERE app_name=?";
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT driver_name, group_name, params "
+                        "FROM subscriptions WHERE app_name=?";
 
     utarray_new(*subscription_infos, &subscription_info_icd);
 
@@ -896,9 +896,18 @@ int neu_persister_load_subscriptions(const char *app_name,
             break;
         }
 
+        char *params = (char *) sqlite3_column_text(stmt, 2);
+        // copy if params not NULL
+        if (NULL != params && NULL == (params = strdup(params))) {
+            free(group_name);
+            free(driver_name);
+            break;
+        }
+
         neu_persist_subscription_info_t info = {
             .driver_name = driver_name,
             .group_name  = group_name,
+            .params      = params,
         };
         utarray_push_back(*subscription_infos, &info);
 

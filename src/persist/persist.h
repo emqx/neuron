@@ -44,6 +44,7 @@ typedef struct {
 typedef struct {
     char *driver_name;
     char *group_name;
+    char *params;
 } neu_persist_subscription_info_t;
 
 typedef struct {
@@ -72,6 +73,7 @@ neu_persist_subscription_info_fini(neu_persist_subscription_info_t *info)
 {
     free(info->driver_name);
     free(info->group_name);
+    free(info->params);
 }
 
 static inline void neu_persist_user_info_fini(neu_persist_user_info_t *info)
@@ -189,11 +191,13 @@ int neu_persister_delete_tag(const char *driver_name, const char *group_name,
  * @param app_name                  name of the app node
  * @param driver_name               name of the driver node
  * @param group_name                name of the group
+ * @param params                    subscription params
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_store_subscription(const char *app_name,
                                      const char *driver_name,
-                                     const char *group_name);
+                                     const char *group_name,
+                                     const char *params);
 
 /**
  * Load adapter subscriptions.
