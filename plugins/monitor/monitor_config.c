@@ -126,6 +126,8 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     const char *placeholder = "********";
 
     neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t event_topic_prefix = { .name = "event-topic-prefix",
+                                           .t    = NEU_JSON_STR };
     neu_json_elem_t heartbeat_interval = { .name = "heartbeat-interval",
                                            .t    = NEU_JSON_INT };
     neu_json_elem_t heartbeat_topic    = { .name = "heartbeat-topic",
@@ -145,8 +147,9 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 5, &client_id,
-                          &heartbeat_interval, &heartbeat_topic, &host, &port);
+    ret =
+        neu_parse_param(setting, &err_param, 6, &client_id, &event_topic_prefix,
+                        &heartbeat_interval, &heartbeat_topic, &host, &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
         goto error;
@@ -201,6 +204,7 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     }
 
     config->client_id          = client_id.v.val_str;
+    config->event_topic_prefix = event_topic_prefix.v.val_str;
     config->heartbeat_interval = heartbeat_interval.v.val_int;
     config->heartbeat_topic    = heartbeat_topic.v.val_str;
     config->host               = host.v.val_str;
@@ -213,6 +217,8 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     config->keypass            = keypass.v.val_str;
 
     plog_info(plugin, "config client-id         : %s", config->client_id);
+    plog_info(plugin, "config event-topic-prefix: %s",
+              config->event_topic_prefix);
     plog_info(plugin, "config heartbeat-interval: %" PRIu64,
               config->heartbeat_interval);
     plog_info(plugin, "config heartbeat-topic   : %s", config->heartbeat_topic);
@@ -243,6 +249,7 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
 
 error:
     free(err_param);
+    free(event_topic_prefix.v.val_str);
     free(heartbeat_topic.v.val_str);
     free(host.v.val_str);
     free(username.v.val_str);
@@ -261,6 +268,7 @@ void monitor_config_fini(monitor_config_t *config)
     }
 
     free(config->client_id);
+    free(config->event_topic_prefix);
     free(config->heartbeat_topic);
     free(config->host);
     free(config->username);

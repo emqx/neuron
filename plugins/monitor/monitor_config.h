@@ -31,6 +31,7 @@ extern "C" {
 
 typedef struct {
     char *   client_id;          // client id
+    char *   event_topic_prefix; // event topic prefix
     uint64_t heartbeat_interval; // heartbeat interval
     char *   heartbeat_topic;    // heartbeat topic
     char *   host;               // broker host
