@@ -172,6 +172,39 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
                                      group, params, pipe);
 }
 
+int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
+                               const char *driver, const char *group,
+                               const char *params)
+{
+    neu_reqresp_head_t header = { 0 };
+    header.type               = NEU_REQ_SUBSCRIBE_GROUP;
+    strcpy(header.sender, "manager");
+    strcpy(header.receiver, app);
+
+    neu_req_subscribe_t cmd = { 0 };
+    strcpy(cmd.app, app);
+    strcpy(cmd.driver, driver);
+    strcpy(cmd.group, group);
+
+    if (params && NULL == (cmd.params = strdup(params))) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    nng_msg *out_msg;
+    nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, app);
+
+    out_msg = neu_msg_gen(&header, &cmd);
+    nng_msg_set_pipe(out_msg, pipe);
+
+    if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
+        nlog_info("send %s to %s", neu_reqresp_type_string(header.type), app);
+    } else {
+        nng_msg_free(out_msg);
+    }
+
+    return 0;
+}
+
 int neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                             const char *driver, const char *group)
 {
