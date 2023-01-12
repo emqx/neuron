@@ -86,6 +86,8 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     free(plugin->write_resp_topic);
     plugin->write_resp_topic = NULL;
 
+    route_tbl_free(plugin->route_tbl);
+
     plog_info(plugin, "uninitialize plugin `%s` success",
               neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
@@ -348,6 +350,12 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     case NEU_REQRESP_TRANS_DATA:
         error = handle_trans_data(plugin, data);
+        break;
+    case NEU_REQ_SUBSCRIBE_GROUP:
+        error = handle_subscribe_group(plugin, data);
+        break;
+    case NEU_REQ_UNSUBSCRIBE_GROUP:
+        error = handle_unsubscribe_group(plugin, data);
         break;
     case NEU_REQRESP_NODE_DELETED:
         break;

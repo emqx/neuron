@@ -29,6 +29,19 @@ extern "C" {
 
 #include "mqtt_config.h"
 
+typedef struct {
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+} route_key_t;
+
+typedef struct {
+    route_key_t key;
+
+    char *topic;
+
+    UT_hash_handle hh;
+} route_entry_t;
+
 struct neu_plugin {
     neu_plugin_common_t common;
     mqtt_config_t       config;
@@ -38,7 +51,74 @@ struct neu_plugin {
     char *              read_resp_topic;
     char *              write_req_topic;
     char *              write_resp_topic;
+    route_entry_t *     route_tbl;
 };
+
+static inline void route_entry_free(route_entry_t *e)
+{
+    free(e->topic);
+    free(e);
+}
+
+static inline void route_tbl_free(route_entry_t *tbl)
+{
+    route_entry_t *e = NULL, *tmp = NULL;
+    HASH_ITER(hh, tbl, e, tmp)
+    {
+        HASH_DEL(tbl, e);
+        route_entry_free(e);
+    }
+}
+
+static inline route_entry_t *
+route_tbl_get(route_entry_t **tbl, const char *driver, const char *group)
+{
+    route_entry_t *find = NULL;
+    route_key_t    key  = { 0 };
+
+    strncpy(key.driver, driver, sizeof(key.driver));
+    strncpy(key.group, group, sizeof(key.group));
+
+    HASH_FIND(hh, *tbl, &key, sizeof(key), find);
+    return find;
+}
+
+// NOTE: we take ownership of `topic`
+static inline int route_tbl_add_new(route_entry_t **tbl, const char *driver,
+                                    const char *group, char *topic)
+{
+    route_entry_t *find = NULL;
+
+    find = route_tbl_get(tbl, driver, group);
+    if (find) {
+        free(topic);
+        return NEU_ERR_GROUP_ALREADY_SUBSCRIBED;
+    }
+
+    find = calloc(1, sizeof(*find));
+    if (NULL == find) {
+        free(topic);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    strncpy(find->key.driver, driver, sizeof(find->key.driver));
+    strncpy(find->key.group, group, sizeof(find->key.group));
+    find->topic = topic;
+    HASH_ADD(hh, *tbl, key, sizeof(find->key), find);
+
+    return 0;
+}
+
+static inline void route_tbl_del(route_entry_t **tbl, const char *driver,
+                                 const char *group)
+{
+    route_entry_t *find = NULL;
+    find                = route_tbl_get(tbl, driver, group);
+    if (find) {
+        HASH_DEL(*tbl, find);
+        route_entry_free(find);
+    }
+}
 
 #ifdef __cplusplus
 }
