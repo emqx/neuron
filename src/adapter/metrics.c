@@ -163,6 +163,11 @@ void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
         neu_plugin_common_t *common =
             neu_plugin_to_plugin_common(n->adapter->plugin);
 
+        n->adapter->cb_funs.update_metric(n->adapter, NEU_METRIC_RUNNING_STATE,
+                                          n->adapter->state, NULL);
+        n->adapter->cb_funs.update_metric(n->adapter, NEU_METRIC_LINK_STATE,
+                                          common->link_state, NULL);
+
         if (NEU_NA_TYPE_DRIVER == n->adapter->module->type) {
             ++g_metrics_.south_nodes;
             if (NEU_NODE_RUNNING_STATE_RUNNING == n->adapter->state) {
