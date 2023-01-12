@@ -9,6 +9,16 @@
       "length": 255
     }
   },
+  "event-topic-prefix": {
+    "name": "event topic prefix",
+    "description": "Prefix of the topics to which publish event messages.",
+    "type": "string",
+    "attribute": "required",
+    "default": "/neuron/{client-id}",
+    "valid": {
+      "length": 255
+    }
+  },
   "heartbeat-interval": {
     "name": "heartbeat interval (seconds)",
     "description": "Interval in seconds between two heartbeat messages. Setting to zero will disable heartbeat monitoring.",
