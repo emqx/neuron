@@ -54,6 +54,8 @@ static int adapter_update_metric(neu_adapter_t *adapter,
                                  const char *group);
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
+inline static void notify_monitor(neu_adapter_t *    adapter,
+                                  neu_reqresp_type_e event, void *data);
 static int         level_check(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
@@ -398,6 +400,10 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_ERROR:
     case NEU_REQRESP_TRANS_DATA:
     case NEU_REQRESP_NODES_STATE:
+    case NEU_REQ_ADD_NODE_EVENT:
+    case NEU_REQ_DEL_NODE_EVENT:
+    case NEU_REQ_NODE_CTL_EVENT:
+    case NEU_REQ_NODE_SETTING_EVENT:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         break;
@@ -440,8 +446,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         error.error = neu_adapter_set_setting(adapter, cmd->setting);
         if (error.error == NEU_ERR_SUCCESS) {
             adapter_storage_setting(adapter->name, cmd->setting);
+            // ownership of `cmd->setting` transfer
+            notify_monitor(adapter, NEU_REQ_NODE_SETTING_EVENT, cmd);
+        } else {
+            free(cmd->setting);
         }
-        free(cmd->setting);
 
         header->type = NEU_RESP_ERROR;
         neu_msg_exchange(header);
@@ -603,6 +612,10 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         case NEU_ADAPTER_CTL_STOP:
             error.error = neu_adapter_stop(adapter);
             break;
+        }
+
+        if (0 == error.error) {
+            notify_monitor(adapter, NEU_REQ_NODE_CTL_EVENT, cmd);
         }
 
         neu_msg_exchange(header);
@@ -1024,6 +1037,26 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     nng_sendmsg(adapter->sock, msg, 0);
 }
 
+inline static void notify_monitor(neu_adapter_t *    adapter,
+                                  neu_reqresp_type_e event, void *data)
+{
+    neu_reqresp_head_t header = {
+        .receiver = "monitor",
+        .type     = event,
+    };
+
+    strncpy(header.sender, adapter->name, NEU_NODE_NAME_LEN);
+
+    nng_msg *msg = neu_msg_gen(&header, data);
+
+    int ret = nng_sendmsg(adapter->sock, msg, 0);
+    if (ret != 0) {
+        nng_msg_free(msg);
+        nlog_warn("notify %s of %s, error: %s", header.receiver,
+                  neu_reqresp_type_string(header.type), nng_strerror(ret));
+    }
+}
+
 static int level_check(void *usr_data)
 {
     neu_adapter_t *adapter = (neu_adapter_t *) usr_data;
@@ -1075,9 +1108,11 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_resp_get_plugin_t);
         break;
     case NEU_REQ_ADD_NODE:
+    case NEU_REQ_ADD_NODE_EVENT:
         data_size = sizeof(neu_req_add_node_t);
         break;
     case NEU_REQ_DEL_NODE:
+    case NEU_REQ_DEL_NODE_EVENT:
         data_size = sizeof(neu_req_del_node_t);
         break;
     case NEU_REQ_GET_NODE:
@@ -1138,6 +1173,7 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_resp_get_subscribe_group_t);
         break;
     case NEU_REQ_NODE_SETTING:
+    case NEU_REQ_NODE_SETTING_EVENT:
         data_size = sizeof(neu_req_node_setting_t);
         break;
     case NEU_REQ_GET_NODE_SETTING:
@@ -1147,6 +1183,7 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_resp_get_node_setting_t);
         break;
     case NEU_REQ_NODE_CTL:
+    case NEU_REQ_NODE_CTL_EVENT:
         data_size = sizeof(neu_req_node_ctl_t);
         break;
     case NEU_REQ_GET_NODE_STATE:
