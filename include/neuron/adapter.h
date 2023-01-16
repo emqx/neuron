@@ -93,6 +93,11 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_NODE_DELETED,
 
     NEU_REQ_UPDATE_LOG_LEVEL,
+
+    NEU_REQ_ADD_NODE_EVENT,
+    NEU_REQ_DEL_NODE_EVENT,
+    NEU_REQ_NODE_CTL_EVENT,
+    NEU_REQ_NODE_SETTING_EVENT,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -152,6 +157,11 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
 
     [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
+
+    [NEU_REQ_ADD_NODE_EVENT]     = "NEU_REQ_ADD_NODE_EVENT",
+    [NEU_REQ_DEL_NODE_EVENT]     = "NEU_REQ_DEL_NODE_EVENT",
+    [NEU_REQ_NODE_CTL_EVENT]     = "NEU_REQ_NODE_CTL_EVENT",
+    [NEU_REQ_NODE_SETTING_EVENT] = "NEU_REQ_NODE_SETTING_EVENT",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)

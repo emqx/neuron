@@ -55,6 +55,8 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
                                    nng_pipe pipe);
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *ndoe);
+inline static void notify_monitor(neu_manager_t *    manager,
+                                  neu_reqresp_type_e event, void *data);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  update_timestamp(void *usr_data);
 static void start_single_adapter(neu_manager_t *manager, const char *name,
@@ -315,6 +317,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error == NEU_ERR_SUCCESS) {
             manager_storage_add_node(manager, cmd->node);
+            notify_monitor(manager, NEU_REQ_ADD_NODE_EVENT, cmd);
         }
 
         header->type = NEU_RESP_ERROR;
@@ -354,6 +357,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         header->type = NEU_REQ_NODE_UNINIT;
         forward_msg(manager, msg, header->receiver);
+        notify_monitor(manager, NEU_REQ_DEL_NODE_EVENT, cmd);
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
             UT_array *apps = neu_subscribe_manager_find_by_driver(
                 manager->subscribe_manager, cmd->node);
@@ -521,6 +525,17 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
+    case NEU_REQ_ADD_NODE_EVENT:
+    case NEU_REQ_DEL_NODE_EVENT:
+    case NEU_REQ_NODE_CTL_EVENT:
+    case NEU_REQ_NODE_SETTING_EVENT: {
+        if (neu_node_manager_find(manager->node_manager, header->receiver)) {
+            forward_msg(manager, msg, header->receiver);
+        }
+
+        break;
+    }
+
     case NEU_REQ_DEL_GROUP: {
         neu_req_del_group_t *cmd = (neu_req_del_group_t *) &header[1];
 
@@ -655,6 +670,32 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
         nlog_info("forward msg to %s", node);
     } else {
         nng_msg_free(out_msg);
+    }
+}
+
+inline static void notify_monitor(neu_manager_t *    manager,
+                                  neu_reqresp_type_e event, void *data)
+{
+    nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, "monitor");
+    if (0 == pipe.id) {
+        nlog_error("no monitor node");
+        return;
+    }
+
+    neu_reqresp_head_t header = {
+        .sender   = "manager",
+        .receiver = "monitor",
+        .type     = event,
+    };
+
+    nng_msg *msg = neu_msg_gen(&header, data);
+    nng_msg_set_pipe(msg, pipe);
+
+    int ret = nng_sendmsg(manager->socket, msg, 0);
+    if (ret != 0) {
+        nng_msg_free(msg);
+        nlog_warn("notify %s of %s, error: %s", header.receiver,
+                  neu_reqresp_type_string(header.type), nng_strerror(ret));
     }
 }
 

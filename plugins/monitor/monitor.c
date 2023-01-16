@@ -311,7 +311,7 @@ static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
 
     rv = monitor_config_parse(plugin, setting, &config);
     if (0 != rv) {
-        plog_error(plugin, "neu_mqtt_config_parse fail");
+        plog_error(plugin, "monitor_config_parse fail");
         return NEU_ERR_NODE_SETTING_INVALID;
     }
 
@@ -394,10 +394,13 @@ static int monitor_plugin_request(neu_plugin_t *      plugin,
         handle_nodes_state(header->ctx, (neu_resp_get_nodes_state_t *) data);
         break;
     }
+    case NEU_REQ_NODE_SETTING_EVENT: {
+        free(((neu_req_node_setting_t *) data)->setting);
+        break;
+    }
     default:
-        nlog_fatal("recv unhandle msg: %s",
-                   neu_reqresp_type_string(header->type));
-        assert(false);
+        nlog_warn("recv unsupported msg: %s",
+                  neu_reqresp_type_string(header->type));
         break;
     }
     return 0;
