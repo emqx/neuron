@@ -94,7 +94,7 @@ inline static const char *neu_type_string(neu_type_e type)
     return "";
 }
 
-#define NEU_VALUE_SIZE 128
+#define NEU_VALUE_SIZE 512
 typedef union {
     bool     boolean;
     int8_t   i8;
