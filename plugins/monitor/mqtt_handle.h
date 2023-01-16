@@ -28,6 +28,8 @@ extern "C" {
 
 int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states);
 
+int handle_events(neu_plugin_t *plugin, neu_reqresp_type_e event, void *data);
+
 #ifdef __cplusplus
 }
 #endif

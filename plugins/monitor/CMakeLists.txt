@@ -14,6 +14,7 @@ add_library(plugin-monitor SHARED ${src})
 
 target_include_directories(plugin-monitor PRIVATE
   ${CMAKE_SOURCE_DIR}/include/neuron
+  ${CMAKE_SOURCE_DIR}/src
 )
 
 target_link_libraries(plugin-monitor neuron-base nng)

@@ -394,8 +394,11 @@ static int monitor_plugin_request(neu_plugin_t *      plugin,
         handle_nodes_state(header->ctx, (neu_resp_get_nodes_state_t *) data);
         break;
     }
+    case NEU_REQ_ADD_NODE_EVENT:
+    case NEU_REQ_DEL_NODE_EVENT:
+    case NEU_REQ_NODE_CTL_EVENT:
     case NEU_REQ_NODE_SETTING_EVENT: {
-        free(((neu_req_node_setting_t *) data)->setting);
+        handle_events(plugin, header->type, data);
         break;
     }
     default:

@@ -20,6 +20,7 @@
 #include "json/json.h"
 #include "json/neu_json_param.h"
 
+#include "utils/asprintf.h"
 #include "utils/base64.h"
 #include "utils/log.h"
 
@@ -118,6 +119,48 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     return 0;
 }
 
+static int make_event_topics(monitor_config_t *config, const char *prefix)
+{
+    char *node_add_topic     = NULL;
+    char *node_del_topic     = NULL;
+    char *node_ctl_topic     = NULL;
+    char *node_setting_topic = NULL;
+
+    neu_asprintf(&node_add_topic, "%s/node/add", prefix);
+    if (NULL == node_add_topic) {
+        goto error;
+    }
+
+    neu_asprintf(&node_del_topic, "%s/node/delete", prefix);
+    if (NULL == node_del_topic) {
+        goto error;
+    }
+
+    neu_asprintf(&node_ctl_topic, "%s/node/ctl", prefix);
+    if (NULL == node_ctl_topic) {
+        goto error;
+    }
+
+    neu_asprintf(&node_setting_topic, "%s/node/setting", prefix);
+    if (NULL == node_setting_topic) {
+        goto error;
+    }
+
+    config->node_add_topic     = node_add_topic;
+    config->node_del_topic     = node_del_topic;
+    config->node_ctl_topic     = node_ctl_topic;
+    config->node_setting_topic = node_setting_topic;
+
+    return 0;
+
+error:
+    free(node_setting_topic);
+    free(node_ctl_topic);
+    free(node_del_topic);
+    free(node_add_topic);
+    return -1;
+}
+
 int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
                          monitor_config_t *config)
 {
@@ -203,6 +246,12 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    ret = make_event_topics(config, event_topic_prefix.v.val_str);
+    if (0 != ret) {
+        plog_error(plugin, "make event topics fail");
+        goto error;
+    }
+
     config->client_id          = client_id.v.val_str;
     config->event_topic_prefix = event_topic_prefix.v.val_str;
     config->heartbeat_interval = heartbeat_interval.v.val_int;
@@ -245,6 +294,12 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
         plog_info(plugin, "config keypass           : %s", placeholder);
     }
 
+    plog_info(plugin, "node add event topic     : %s", config->node_add_topic);
+    plog_info(plugin, "node del event topic     : %s", config->node_del_topic);
+    plog_info(plugin, "node ctl event topic     : %s", config->node_ctl_topic);
+    plog_info(plugin, "node setting event topic : %s",
+              config->node_setting_topic);
+
     return 0;
 
 error:
@@ -277,6 +332,11 @@ void monitor_config_fini(monitor_config_t *config)
     free(config->cert);
     free(config->key);
     free(config->keypass);
+
+    free(config->node_add_topic);
+    free(config->node_del_topic);
+    free(config->node_ctl_topic);
+    free(config->node_setting_topic);
 
     memset(config, 0, sizeof(*config));
 }

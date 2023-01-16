@@ -23,6 +23,8 @@
 #include "json/neu_json_mqtt.h"
 #include "json/neu_json_rw.h"
 
+#include "parser/neu_json_node.h"
+
 #include "monitor.h"
 #include "mqtt_handle.h"
 
@@ -53,6 +55,61 @@ static char *generate_heartbeat_json(neu_plugin_t *plugin, UT_array *states)
                               neu_json_encode_state_header_resp, &json_str);
 
     free(json.states);
+    return json_str;
+}
+
+static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
+                                 void *data, char **topic_p)
+{
+    char *json_str                                   = NULL;
+    int (*encode_fn)(void *json_object, void *param) = NULL;
+    union {
+        neu_json_add_node_req_t     add_node;
+        neu_json_del_node_req_t     del_node;
+        neu_json_node_ctl_req_t     node_ctl;
+        neu_json_node_setting_req_t node_setting;
+    } json_req;
+
+    switch (event) {
+    case NEU_REQ_ADD_NODE_EVENT: {
+        neu_req_add_node_t *add_node = data;
+        json_req.add_node.name       = add_node->node;
+        json_req.add_node.plugin     = add_node->plugin;
+        encode_fn                    = neu_json_encode_add_node_req;
+        *topic_p                     = plugin->config->node_add_topic;
+        break;
+    }
+    case NEU_REQ_DEL_NODE_EVENT: {
+        neu_req_del_node_t *del_node = data;
+        json_req.del_node.name       = del_node->node;
+        encode_fn                    = neu_json_encode_del_node_req;
+        *topic_p                     = plugin->config->node_del_topic;
+        break;
+    }
+    case NEU_REQ_NODE_CTL_EVENT: {
+        neu_req_node_ctl_t *node_ctl = data;
+        json_req.node_ctl.node       = node_ctl->node;
+        json_req.node_ctl.cmd        = node_ctl->ctl;
+        encode_fn                    = neu_json_encode_node_ctl_req;
+        *topic_p                     = plugin->config->node_ctl_topic;
+        break;
+    }
+    case NEU_REQ_NODE_SETTING_EVENT: {
+        neu_req_node_setting_t *node_setting = data;
+        json_req.node_setting.node           = node_setting->node;
+        json_req.node_setting.setting        = node_setting->setting;
+        encode_fn                            = neu_json_encode_node_setting_req;
+        *topic_p = plugin->config->node_setting_topic;
+        break;
+    }
+    default: {
+        plog_error(plugin, "unsupported event:%s",
+                   neu_reqresp_type_string(event));
+        return NULL;
+    }
+    }
+
+    neu_json_encode_by_fn(&json_req, encode_fn, &json_str);
     return json_str;
 }
 
@@ -130,5 +187,41 @@ int handle_nodes_state(neu_plugin_t *plugin, neu_reqresp_nodes_state_t *states)
 end:
     utarray_free(states->states);
 
+    return rv;
+}
+
+int handle_events(neu_plugin_t *plugin, neu_reqresp_type_e event, void *data)
+{
+    int   rv       = 0;
+    char *json_str = NULL;
+    char *topic    = NULL;
+
+    if (NULL == plugin->mqtt_client) {
+        rv = NEU_ERR_MQTT_IS_NULL;
+        goto end;
+    }
+
+    if (!neu_mqtt_client_is_connected(plugin->mqtt_client)) {
+        // cache disable and we are disconnected
+        rv = NEU_ERR_MQTT_FAILURE;
+        goto end;
+    }
+
+    json_str = generate_event_json(plugin, event, data, &topic);
+    if (NULL == json_str) {
+        plog_error(plugin, "generate event:%s json fail",
+                   neu_reqresp_type_string(event));
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    neu_mqtt_qos_e qos = NEU_MQTT_QOS0;
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
+
+end:
+    if (NEU_REQ_NODE_SETTING_EVENT == event) {
+        free(((neu_req_node_setting_t *) data)->setting);
+    }
     return rv;
 }
