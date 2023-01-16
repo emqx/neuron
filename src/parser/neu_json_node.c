@@ -29,6 +29,28 @@
 
 #include "neu_json_node.h"
 
+int neu_json_encode_add_node_req(void *json_object, void *param)
+{
+    int                      ret = 0;
+    neu_json_add_node_req_t *req = param;
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "plugin",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->plugin,
+                                    },
+                                    {
+                                        .name      = "name",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->name,
+                                    } };
+
+    ret = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
 int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
 {
     int                      ret      = 0;
@@ -78,6 +100,23 @@ void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
     free(req->name);
 
     free(req);
+}
+
+int neu_json_encode_del_node_req(void *json_object, void *param)
+{
+    int                      ret = 0;
+    neu_json_del_node_req_t *req = param;
+
+    neu_json_elem_t req_elems[] = { {
+        .name      = "name",
+        .t         = NEU_JSON_STR,
+        .v.val_str = req->name,
+    } };
+
+    ret = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
 }
 
 int neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result)
@@ -285,6 +324,28 @@ void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req)
     free(req);
 }
 
+int neu_json_encode_node_ctl_req(void *json_object, void *param)
+{
+    int                      ret = 0;
+    neu_json_node_ctl_req_t *req = param;
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "node",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->node,
+                                    },
+                                    {
+                                        .name      = "cmd",
+                                        .t         = NEU_JSON_INT,
+                                        .v.val_int = req->cmd,
+                                    } };
+
+    ret = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
 int neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result)
 {
     int                      ret      = 0;
@@ -331,6 +392,27 @@ void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req)
 {
     free(req->node);
     free(req);
+}
+
+int neu_json_encode_node_setting_req(void *json_object, void *param)
+{
+    int                          ret = 0;
+    neu_json_node_setting_req_t *req = param;
+
+    neu_json_elem_t req_elems[] = { {
+        .name      = "node",
+        .t         = NEU_JSON_STR,
+        .v.val_str = req->node,
+    } };
+
+    ret = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    if (0 == ret) {
+        ret = neu_json_load_key(json_object, "params", req->setting, true);
+    }
+
+    return ret;
 }
 
 int neu_json_decode_node_setting_req(char *                        buf,

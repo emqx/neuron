@@ -36,6 +36,7 @@ typedef struct {
     char *plugin;
 } neu_json_add_node_req_t;
 
+int  neu_json_encode_add_node_req(void *json_object, void *param);
 int  neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result);
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req);
 
@@ -43,6 +44,7 @@ typedef struct {
     char *name;
 } neu_json_del_node_req_t;
 
+int  neu_json_encode_del_node_req(void *json_object, void *param);
 int  neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result);
 void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req);
 
@@ -94,6 +96,7 @@ typedef struct {
     int64_t cmd;
 } neu_json_node_ctl_req_t;
 
+int  neu_json_encode_node_ctl_req(void *json_object, void *param);
 int  neu_json_decode_node_ctl_req(char *buf, neu_json_node_ctl_req_t **result);
 void neu_json_decode_node_ctl_req_free(neu_json_node_ctl_req_t *req);
 
@@ -102,6 +105,7 @@ typedef struct {
     char *setting;
 } neu_json_node_setting_req_t;
 
+int  neu_json_encode_node_setting_req(void *json_object, void *param);
 int  neu_json_decode_node_setting_req(char *                        buf,
                                       neu_json_node_setting_req_t **result);
 void neu_json_decode_node_setting_req_free(neu_json_node_setting_req_t *req);
