@@ -56,12 +56,14 @@ cp neuron.pem ${package_name}/config/
 cp default_plugins.json ${package_name}/config/
 
 cp build/plugins/schema/ekuiper.json \
+    build/plugins/schema/monitor.json \
     build/plugins/schema/mqtt.json \
     build/plugins/schema/modbus-tcp.json \
     build/plugins/schema/file.json \
     ${package_name}/plugins/schema/
 
 cp build/plugins/libplugin-ekuiper.so \
+    build/plugins/libplugin-monitor.so \
     build/plugins/libplugin-mqtt.so \
     build/plugins/libplugin-modbus-tcp.so \
     build/plugins/libplugin-file.so \
