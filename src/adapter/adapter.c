@@ -468,6 +468,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             reply(adapter, header, &error);
         } else {
             header->type = NEU_RESP_GET_NODE_SETTING;
+            strcpy(resp.node, adapter->name);
             reply(adapter, header, &resp);
         }
 

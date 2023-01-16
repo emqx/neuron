@@ -417,6 +417,7 @@ int neu_json_dump_key(void *object, const char *key, char **const result,
     value = json_object_get(object, key);
     if (NULL == value) {
         if (must_exist) {
+            zlog_error(neuron, "json has no key `%s`", key);
             return -1;
         } else {
             *result = NULL;
@@ -430,5 +431,36 @@ int neu_json_dump_key(void *object, const char *key, char **const result,
     }
 
     json_decref(new);
+    return rv;
+}
+
+int neu_json_load_key(void *object, const char *key, const char *input,
+                      bool must_exist)
+{
+    int          rv           = 0;
+    json_t *     input_object = NULL;
+    json_t *     value        = NULL;
+    json_error_t error        = {};
+
+    input_object = json_loads(input, 0, &error);
+    if (NULL == input_object) {
+        zlog_error(neuron,
+                   "json load error, line: %d, column: %d, position: %d, info: "
+                   "%s",
+                   error.line, error.column, error.position, error.text);
+        return -1;
+    }
+
+    value = json_object_get(input_object, key);
+    if (NULL == value) {
+        if (must_exist) {
+            zlog_error(neuron, "json has no key `%s`", key);
+            rv = -1;
+        }
+    } else if (json_object_set(object, key, value) < 0) {
+        rv = -1;
+    }
+
+    json_decref(input_object);
     return rv;
 }

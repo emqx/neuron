@@ -356,12 +356,19 @@ int neu_json_decode_node_setting_req(char *                        buf,
         goto decode_fail;
     }
 
+    ret = neu_json_dump_key(json_obj, "params", &req->setting, true);
+    if (0 != ret) {
+        goto decode_fail;
+    }
+
     req->node = req_elems[0].v.val_str;
 
     *result = req;
     goto decode_exit;
 
 decode_fail:
+    free(req->node);
+    free(req->setting);
     free(req);
     ret = -1;
 
@@ -375,5 +382,27 @@ decode_exit:
 void neu_json_decode_node_setting_req_free(neu_json_node_setting_req_t *req)
 {
     free(req->node);
+    free(req->setting);
     free(req);
+}
+
+int neu_json_encode_get_node_setting_resp(void *json_object, void *param)
+{
+    int                               ret  = 0;
+    neu_json_get_node_setting_resp_t *resp = param;
+
+    neu_json_elem_t resp_elems[] = { {
+        .name      = "node",
+        .t         = NEU_JSON_STR,
+        .v.val_str = resp->node,
+    } };
+
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    if (0 == ret) {
+        ret = neu_json_load_key(json_object, "params", resp->setting, true);
+    }
+
+    return ret;
 }
