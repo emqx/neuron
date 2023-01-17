@@ -125,6 +125,9 @@ static int make_event_topics(monitor_config_t *config, const char *prefix)
     char *node_del_topic     = NULL;
     char *node_ctl_topic     = NULL;
     char *node_setting_topic = NULL;
+    char *group_add_topic    = NULL;
+    char *group_del_topic    = NULL;
+    char *group_update_topic = NULL;
 
     neu_asprintf(&node_add_topic, "%s/node/add", prefix);
     if (NULL == node_add_topic) {
@@ -146,14 +149,35 @@ static int make_event_topics(monitor_config_t *config, const char *prefix)
         goto error;
     }
 
+    neu_asprintf(&group_add_topic, "%s/group/add", prefix);
+    if (NULL == group_add_topic) {
+        goto error;
+    }
+
+    neu_asprintf(&group_del_topic, "%s/group/delete", prefix);
+    if (NULL == group_del_topic) {
+        goto error;
+    }
+
+    neu_asprintf(&group_update_topic, "%s/group/update", prefix);
+    if (NULL == group_update_topic) {
+        goto error;
+    }
+
     config->node_add_topic     = node_add_topic;
     config->node_del_topic     = node_del_topic;
     config->node_ctl_topic     = node_ctl_topic;
     config->node_setting_topic = node_setting_topic;
+    config->group_add_topic    = group_add_topic;
+    config->group_del_topic    = group_del_topic;
+    config->group_update_topic = group_update_topic;
 
     return 0;
 
 error:
+    free(group_update_topic);
+    free(group_del_topic);
+    free(group_add_topic);
     free(node_setting_topic);
     free(node_ctl_topic);
     free(node_del_topic);
@@ -299,6 +323,10 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_info(plugin, "node ctl event topic     : %s", config->node_ctl_topic);
     plog_info(plugin, "node setting event topic : %s",
               config->node_setting_topic);
+    plog_info(plugin, "group add topic          : %s", config->group_add_topic);
+    plog_info(plugin, "group del topic          : %s", config->group_del_topic);
+    plog_info(plugin, "group update topic       : %s",
+              config->group_update_topic);
 
     return 0;
 
@@ -337,6 +365,9 @@ void monitor_config_fini(monitor_config_t *config)
     free(config->node_del_topic);
     free(config->node_ctl_topic);
     free(config->node_setting_topic);
+    free(config->group_add_topic);
+    free(config->group_del_topic);
+    free(config->group_update_topic);
 
     memset(config, 0, sizeof(*config));
 }

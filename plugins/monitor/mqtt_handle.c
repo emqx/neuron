@@ -23,6 +23,7 @@
 #include "json/neu_json_mqtt.h"
 #include "json/neu_json_rw.h"
 
+#include "parser/neu_json_group_config.h"
 #include "parser/neu_json_node.h"
 
 #include "monitor.h"
@@ -64,10 +65,13 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
     char *json_str                                   = NULL;
     int (*encode_fn)(void *json_object, void *param) = NULL;
     union {
-        neu_json_add_node_req_t     add_node;
-        neu_json_del_node_req_t     del_node;
-        neu_json_node_ctl_req_t     node_ctl;
-        neu_json_node_setting_req_t node_setting;
+        neu_json_add_node_req_t         add_node;
+        neu_json_del_node_req_t         del_node;
+        neu_json_node_ctl_req_t         node_ctl;
+        neu_json_node_setting_req_t     node_setting;
+        neu_json_add_group_config_req_t add_grp;
+        neu_json_del_group_config_req_t del_grp;
+        neu_json_update_group_req_t     update_grp;
     } json_req;
 
     switch (event) {
@@ -100,6 +104,32 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
         json_req.node_setting.setting        = node_setting->setting;
         encode_fn                            = neu_json_encode_node_setting_req;
         *topic_p = plugin->config->node_setting_topic;
+        break;
+    }
+    case NEU_REQ_ADD_GROUP_EVENT: {
+        neu_req_add_group_t *add_grp = data;
+        json_req.add_grp.node        = add_grp->driver;
+        json_req.add_grp.group       = add_grp->group;
+        json_req.add_grp.interval    = add_grp->interval;
+        encode_fn                    = neu_json_encode_add_group_config_req;
+        *topic_p                     = plugin->config->group_add_topic;
+        break;
+    }
+    case NEU_REQ_DEL_GROUP_EVENT: {
+        neu_req_del_group_t *del_grp = data;
+        json_req.del_grp.node        = del_grp->driver;
+        json_req.del_grp.group       = del_grp->group;
+        encode_fn                    = neu_json_encode_del_group_config_req;
+        *topic_p                     = plugin->config->group_del_topic;
+        break;
+    }
+    case NEU_REQ_UPDATE_GROUP_EVENT: {
+        neu_req_update_group_t *update_grp = data;
+        json_req.update_grp.node           = update_grp->driver;
+        json_req.update_grp.group          = update_grp->group;
+        json_req.update_grp.interval       = update_grp->interval;
+        encode_fn = neu_json_encode_add_group_config_req;
+        *topic_p  = plugin->config->group_update_topic;
         break;
     }
     default: {
