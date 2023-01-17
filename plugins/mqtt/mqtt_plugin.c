@@ -239,7 +239,7 @@ static int create_topic(neu_plugin_t *plugin)
 
     neu_asprintf(&plugin->write_req_topic, "/neuron/%s/write/req",
                  plugin->common.name);
-    if (NULL == plugin->read_req_topic) {
+    if (NULL == plugin->write_req_topic) {
         free(plugin->read_req_topic);
         plugin->read_req_topic = NULL;
         free(plugin->read_resp_topic);
@@ -249,7 +249,7 @@ static int create_topic(neu_plugin_t *plugin)
 
     neu_asprintf(&plugin->write_resp_topic, "/neuron/%s/write/resp",
                  plugin->common.name);
-    if (NULL == plugin->read_req_topic) {
+    if (NULL == plugin->write_resp_topic) {
         free(plugin->read_req_topic);
         plugin->read_req_topic = NULL;
         free(plugin->read_resp_topic);
