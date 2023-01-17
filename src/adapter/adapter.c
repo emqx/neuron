@@ -404,6 +404,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_DEL_NODE_EVENT:
     case NEU_REQ_NODE_CTL_EVENT:
     case NEU_REQ_NODE_SETTING_EVENT:
+    case NEU_REQ_ADD_GROUP_EVENT:
+    case NEU_REQ_DEL_GROUP_EVENT:
+    case NEU_REQ_UPDATE_GROUP_EVENT:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         break;
@@ -549,6 +552,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             adapter_storage_add_group(adapter->name, cmd->group, cmd->interval);
+            notify_monitor(adapter, NEU_REQ_ADD_GROUP_EVENT, cmd);
         }
 
         neu_msg_exchange(header);
@@ -575,6 +579,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (error.error == NEU_ERR_SUCCESS) {
             adapter_storage_update_group(adapter->name, cmd->group,
                                          cmd->interval);
+            notify_monitor(adapter, NEU_REQ_UPDATE_GROUP_EVENT, cmd);
         }
 
         neu_msg_exchange(header);
@@ -595,6 +600,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             adapter_storage_del_group(cmd->driver, cmd->group);
+            notify_monitor(adapter, NEU_REQ_DEL_GROUP_EVENT, cmd);
         }
 
         neu_msg_exchange(header);
@@ -1123,10 +1129,15 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_resp_get_node_t);
         break;
     case NEU_REQ_ADD_GROUP:
-    case NEU_REQ_UPDATE_GROUP:
+    case NEU_REQ_ADD_GROUP_EVENT:
         data_size = sizeof(neu_req_add_group_t);
         break;
+    case NEU_REQ_UPDATE_GROUP:
+    case NEU_REQ_UPDATE_GROUP_EVENT:
+        data_size = sizeof(neu_req_update_group_t);
+        break;
     case NEU_REQ_DEL_GROUP:
+    case NEU_REQ_DEL_GROUP_EVENT:
         data_size = sizeof(neu_req_del_group_t);
         break;
     case NEU_REQ_GET_DRIVER_GROUP:
