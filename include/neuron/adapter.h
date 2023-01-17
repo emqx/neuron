@@ -363,6 +363,7 @@ typedef struct neu_req_get_node_setting {
 } neu_req_get_node_setting_t;
 
 typedef struct neu_resp_get_node_setting {
+    char  node[NEU_NODE_NAME_LEN];
     char *setting;
 } neu_resp_get_node_setting_t;
 

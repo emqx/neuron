@@ -42,6 +42,12 @@ typedef struct {
     char *   cert;               // client cert
     char *   key;                // client key
     char *   keypass;            // client key password
+
+    // event topics generated according to event_topic_prefix
+    char *node_add_topic;
+    char *node_del_topic;
+    char *node_ctl_topic;
+    char *node_setting_topic;
 } monitor_config_t;
 
 int  monitor_config_parse(neu_plugin_t *plugin, const char *setting,

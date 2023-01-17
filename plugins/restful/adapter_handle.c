@@ -157,17 +157,16 @@ void handle_set_node_setting(nng_aio *aio)
 
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
-            char *config_buf = calloc(req_data_size + 1, sizeof(char));
-            int   ret        = 0;
+            int                    ret    = 0;
             neu_reqresp_head_t     header = { 0 };
             neu_req_node_setting_t cmd    = { 0 };
 
-            memcpy(config_buf, req_data, req_data_size);
             header.ctx  = aio;
             header.type = NEU_REQ_NODE_SETTING;
             strcpy(cmd.node, req->node);
-            cmd.setting = config_buf;
-            ret         = neu_plugin_op(plugin, header, &cmd);
+            cmd.setting  = req->setting;
+            req->setting = NULL; // ownership moved
+            ret          = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
@@ -209,8 +208,24 @@ void handle_get_node_setting(nng_aio *aio)
 void handle_get_node_setting_resp(nng_aio *                    aio,
                                   neu_resp_get_node_setting_t *setting)
 {
-    neu_http_ok(aio, setting->setting);
+    char *                           json_str = NULL;
+    neu_json_get_node_setting_resp_t resp     = {
+        .node    = setting->node,
+        .setting = setting->setting,
+    };
+
+    if (0 !=
+        neu_json_encode_by_fn(&resp, neu_json_encode_get_node_setting_resp,
+                              &json_str)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+    } else {
+        neu_http_ok(aio, json_str);
+    }
+
     free(setting->setting);
+    free(json_str);
 }
 
 void handle_node_ctl(nng_aio *aio)
