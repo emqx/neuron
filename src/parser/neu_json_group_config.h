@@ -37,6 +37,7 @@ typedef struct {
     int64_t interval;
 } neu_json_add_group_config_req_t, neu_json_update_group_req_t;
 
+int neu_json_encode_add_group_config_req(void *json_object, void *param);
 int neu_json_decode_add_group_config_req(
     char *buf, neu_json_add_group_config_req_t **result);
 void neu_json_decode_add_group_config_req_free(
@@ -47,6 +48,7 @@ typedef struct {
     char *node;
 } neu_json_del_group_config_req_t;
 
+int neu_json_encode_del_group_config_req(void *json_object, void *param);
 int neu_json_decode_del_group_config_req(
     char *buf, neu_json_del_group_config_req_t **result);
 void neu_json_decode_del_group_config_req_free(
