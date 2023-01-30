@@ -128,6 +128,9 @@ static int make_event_topics(monitor_config_t *config, const char *prefix)
     char *group_add_topic    = NULL;
     char *group_del_topic    = NULL;
     char *group_update_topic = NULL;
+    char *tag_add_topic      = NULL;
+    char *tag_del_topic      = NULL;
+    char *tag_update_topic   = NULL;
 
     neu_asprintf(&node_add_topic, "%s/node/add", prefix);
     if (NULL == node_add_topic) {
@@ -164,6 +167,21 @@ static int make_event_topics(monitor_config_t *config, const char *prefix)
         goto error;
     }
 
+    neu_asprintf(&tag_add_topic, "%s/tag/add", prefix);
+    if (NULL == tag_add_topic) {
+        goto error;
+    }
+
+    neu_asprintf(&tag_del_topic, "%s/tag/delete", prefix);
+    if (NULL == tag_del_topic) {
+        goto error;
+    }
+
+    neu_asprintf(&tag_update_topic, "%s/tag/update", prefix);
+    if (NULL == tag_update_topic) {
+        goto error;
+    }
+
     config->node_add_topic     = node_add_topic;
     config->node_del_topic     = node_del_topic;
     config->node_ctl_topic     = node_ctl_topic;
@@ -171,10 +189,16 @@ static int make_event_topics(monitor_config_t *config, const char *prefix)
     config->group_add_topic    = group_add_topic;
     config->group_del_topic    = group_del_topic;
     config->group_update_topic = group_update_topic;
+    config->tag_add_topic      = tag_add_topic;
+    config->tag_del_topic      = tag_del_topic;
+    config->tag_update_topic   = tag_update_topic;
 
     return 0;
 
 error:
+    free(tag_update_topic);
+    free(tag_del_topic);
+    free(tag_add_topic);
     free(group_update_topic);
     free(group_del_topic);
     free(group_add_topic);
@@ -327,6 +351,10 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_info(plugin, "group del topic          : %s", config->group_del_topic);
     plog_info(plugin, "group update topic       : %s",
               config->group_update_topic);
+    plog_info(plugin, "tag add topic            : %s", config->tag_add_topic);
+    plog_info(plugin, "tag del topic            : %s", config->tag_del_topic);
+    plog_info(plugin, "tag update topic         : %s",
+              config->tag_update_topic);
 
     return 0;
 
@@ -368,6 +396,9 @@ void monitor_config_fini(monitor_config_t *config)
     free(config->group_add_topic);
     free(config->group_del_topic);
     free(config->group_update_topic);
+    free(config->tag_add_topic);
+    free(config->tag_del_topic);
+    free(config->tag_update_topic);
 
     memset(config, 0, sizeof(*config));
 }
