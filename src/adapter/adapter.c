@@ -407,6 +407,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_GROUP_EVENT:
     case NEU_REQ_DEL_GROUP_EVENT:
     case NEU_REQ_UPDATE_GROUP_EVENT:
+    case NEU_REQ_ADD_TAG_EVENT:
+    case NEU_REQ_DEL_TAG_EVENT:
+    case NEU_REQ_UPDATE_TAG_EVENT:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         break;
@@ -647,10 +650,14 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             }
         }
 
-        for (int i = 0; i < cmd->n_tag; i++) {
-            free(cmd->tags[i]);
+        if (0 == error.error) {
+            notify_monitor(adapter, NEU_REQ_DEL_TAG_EVENT, cmd);
+        } else {
+            for (uint16_t i = 0; i < cmd->n_tag; i++) {
+                free(cmd->tags[i]);
+            }
+            free(cmd->tags);
         }
-        free(cmd->tags);
 
         neu_msg_exchange(header);
         header->type = NEU_RESP_ERROR;
@@ -677,18 +684,21 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             }
         }
 
-        if (resp.index) {
-            // we have added some tags, try to persist
-            adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
-                                     resp.index);
-        }
-
-        for (int i = 0; i < cmd->n_tag; i++) {
+        for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
             free(cmd->tags[i].address);
             free(cmd->tags[i].name);
             free(cmd->tags[i].description);
         }
-        free(cmd->tags);
+
+        if (resp.index) {
+            // we have added some tags, try to persist
+            adapter_storage_add_tags(cmd->driver, cmd->group, cmd->tags,
+                                     resp.index);
+            cmd->n_tag = resp.index;
+            notify_monitor(adapter, NEU_REQ_ADD_TAG_EVENT, cmd);
+        } else {
+            free(cmd->tags);
+        }
 
         neu_msg_exchange(header);
         header->type = NEU_RESP_ADD_TAG;
@@ -717,12 +727,18 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 }
             }
         }
-        for (int i = 0; i < cmd->n_tag; i++) {
+
+        for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
             free(cmd->tags[i].address);
             free(cmd->tags[i].name);
             free(cmd->tags[i].description);
         }
-        free(cmd->tags);
+        if (resp.index > 0) {
+            cmd->n_tag = resp.index;
+            notify_monitor(adapter, NEU_REQ_UPDATE_TAG_EVENT, cmd);
+        } else {
+            free(cmd->tags);
+        }
 
         neu_msg_exchange(header);
         header->type = NEU_RESP_UPDATE_TAG;
@@ -1148,6 +1164,7 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_resp_get_group_t);
         break;
     case NEU_REQ_ADD_TAG:
+    case NEU_REQ_ADD_TAG_EVENT:
         data_size = sizeof(neu_req_add_tag_t);
         break;
     case NEU_RESP_ADD_TAG:
@@ -1157,9 +1174,11 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_resp_update_tag_t);
         break;
     case NEU_REQ_UPDATE_TAG:
+    case NEU_REQ_UPDATE_TAG_EVENT:
         data_size = sizeof(neu_req_update_tag_t);
         break;
     case NEU_REQ_DEL_TAG:
+    case NEU_REQ_DEL_TAG_EVENT:
         data_size = sizeof(neu_req_del_tag_t);
         break;
     case NEU_REQ_GET_TAG:
