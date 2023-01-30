@@ -29,6 +29,78 @@
 
 #include "neu_json_tag.h"
 
+int neu_json_encode_add_tags_req(void *json_object, void *param)
+{
+    int                      ret = 0;
+    neu_json_add_tags_req_t *req = param;
+
+    void *                       tag_array = neu_json_array();
+    neu_json_add_tags_req_tag_t *p_tag     = req->tags;
+    for (int i = 0; i < req->n_tag; i++) {
+        neu_json_elem_t tag_elems[] = {
+            {
+                .name      = "type",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_tag->type,
+            },
+            {
+                .name      = "name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_tag->name,
+            },
+            {
+                .name      = "attribute",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_tag->attribute,
+            },
+            {
+                .name      = "precision",
+                .t         = NEU_JSON_INT,
+                .v.val_int = p_tag->precision,
+            },
+            {
+                .name         = "decimal",
+                .t            = NEU_JSON_DOUBLE,
+                .v.val_double = p_tag->decimal,
+            },
+            {
+                .name      = "address",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_tag->address,
+            },
+            {
+                .name      = "description",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_tag->description,
+            },
+        };
+        tag_array = neu_json_encode_array(tag_array, tag_elems,
+                                          NEU_JSON_ELEM_SIZE(tag_elems));
+        p_tag++;
+    }
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "node",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->node,
+                                    },
+                                    {
+                                        .name      = "group",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->group,
+                                    },
+                                    {
+                                        .name         = "tags",
+                                        .t            = NEU_JSON_OBJECT,
+                                        .v.val_object = tag_array,
+                                    } };
+
+    ret = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
 int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
 {
     int                      ret      = 0;
@@ -172,6 +244,48 @@ int neu_json_encode_au_tags_resp(void *json_object, void *param)
 
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
+int neu_json_encode_del_tags_req(void *json_object, void *param)
+{
+    int                      ret = 0;
+    neu_json_del_tags_req_t *req = param;
+
+    void *                        tag_array = neu_json_array();
+    neu_json_del_tags_req_name_t *p_name    = req->tags;
+    for (int i = 0; i < req->n_tags; i++) {
+        neu_json_elem_t tag_elems[] = {
+            {
+                .name      = NULL,
+                .t         = NEU_JSON_STR,
+                .v.val_str = *p_name,
+            },
+        };
+        tag_array = neu_json_encode_array_value(tag_array, tag_elems,
+                                                NEU_JSON_ELEM_SIZE(tag_elems));
+        p_name++;
+    }
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "node",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->node,
+                                    },
+                                    {
+                                        .name      = "group",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->group,
+                                    },
+                                    {
+                                        .name         = "tags",
+                                        .t            = NEU_JSON_OBJECT,
+                                        .v.val_object = tag_array,
+                                    } };
+
+    ret = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
 
     return ret;
 }
