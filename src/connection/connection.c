@@ -842,7 +842,7 @@ static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
 static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
 {
     for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
-        if (conn->tcp_server.clients[i].fd == fd) {
+        if (fd > 0 && conn->tcp_server.clients[i].fd == fd) {
             close(fd);
             conn->tcp_server.clients[i].fd = 0;
             conn->tcp_server.n_client -= 1;
