@@ -94,7 +94,7 @@ static inline int reset_password()
             "$5$PwFeXpBBIBZuZdZl$fP8fFPWCLoaWcnVXVSR.3Xi8TEqCvX92gjhowNNn6S4",
     };
 
-    int rv = neu_persister_create();
+    int rv = neu_persister_create(g_config_dir);
     if (0 != rv) {
         return rv;
     }
