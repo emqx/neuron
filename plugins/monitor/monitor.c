@@ -400,7 +400,10 @@ static int monitor_plugin_request(neu_plugin_t *      plugin,
     case NEU_REQ_NODE_SETTING_EVENT:
     case NEU_REQ_ADD_GROUP_EVENT:
     case NEU_REQ_DEL_GROUP_EVENT:
-    case NEU_REQ_UPDATE_GROUP_EVENT: {
+    case NEU_REQ_UPDATE_GROUP_EVENT:
+    case NEU_REQ_ADD_TAG_EVENT:
+    case NEU_REQ_DEL_TAG_EVENT:
+    case NEU_REQ_UPDATE_TAG_EVENT: {
         handle_events(plugin, header->type, data);
         break;
     }

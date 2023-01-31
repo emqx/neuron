@@ -25,6 +25,7 @@
 
 #include "parser/neu_json_group_config.h"
 #include "parser/neu_json_node.h"
+#include "parser/neu_json_tag.h"
 
 #include "monitor.h"
 #include "mqtt_handle.h"
@@ -62,8 +63,7 @@ static char *generate_heartbeat_json(neu_plugin_t *plugin, UT_array *states)
 static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
                                  void *data, char **topic_p)
 {
-    char *json_str                                   = NULL;
-    int (*encode_fn)(void *json_object, void *param) = NULL;
+    char *json_str = NULL;
     union {
         neu_json_add_node_req_t         add_node;
         neu_json_del_node_req_t         del_node;
@@ -72,38 +72,44 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
         neu_json_add_group_config_req_t add_grp;
         neu_json_del_group_config_req_t del_grp;
         neu_json_update_group_req_t     update_grp;
-    } json_req;
+        neu_json_add_tags_req_t         add_tags;
+        neu_json_del_tags_req_t         del_tags;
+    } json_req = {};
 
     switch (event) {
     case NEU_REQ_ADD_NODE_EVENT: {
         neu_req_add_node_t *add_node = data;
         json_req.add_node.name       = add_node->node;
         json_req.add_node.plugin     = add_node->plugin;
-        encode_fn                    = neu_json_encode_add_node_req;
         *topic_p                     = plugin->config->node_add_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_add_node_req,
+                              &json_str);
         break;
     }
     case NEU_REQ_DEL_NODE_EVENT: {
         neu_req_del_node_t *del_node = data;
         json_req.del_node.name       = del_node->node;
-        encode_fn                    = neu_json_encode_del_node_req;
         *topic_p                     = plugin->config->node_del_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_del_node_req,
+                              &json_str);
         break;
     }
     case NEU_REQ_NODE_CTL_EVENT: {
         neu_req_node_ctl_t *node_ctl = data;
         json_req.node_ctl.node       = node_ctl->node;
         json_req.node_ctl.cmd        = node_ctl->ctl;
-        encode_fn                    = neu_json_encode_node_ctl_req;
         *topic_p                     = plugin->config->node_ctl_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_node_ctl_req,
+                              &json_str);
         break;
     }
     case NEU_REQ_NODE_SETTING_EVENT: {
         neu_req_node_setting_t *node_setting = data;
         json_req.node_setting.node           = node_setting->node;
         json_req.node_setting.setting        = node_setting->setting;
-        encode_fn                            = neu_json_encode_node_setting_req;
         *topic_p = plugin->config->node_setting_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_node_setting_req,
+                              &json_str);
         break;
     }
     case NEU_REQ_ADD_GROUP_EVENT: {
@@ -111,16 +117,18 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
         json_req.add_grp.node        = add_grp->driver;
         json_req.add_grp.group       = add_grp->group;
         json_req.add_grp.interval    = add_grp->interval;
-        encode_fn                    = neu_json_encode_add_group_config_req;
         *topic_p                     = plugin->config->group_add_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_add_group_config_req,
+                              &json_str);
         break;
     }
     case NEU_REQ_DEL_GROUP_EVENT: {
         neu_req_del_group_t *del_grp = data;
         json_req.del_grp.node        = del_grp->driver;
         json_req.del_grp.group       = del_grp->group;
-        encode_fn                    = neu_json_encode_del_group_config_req;
         *topic_p                     = plugin->config->group_del_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_del_group_config_req,
+                              &json_str);
         break;
     }
     case NEU_REQ_UPDATE_GROUP_EVENT: {
@@ -128,8 +136,61 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
         json_req.update_grp.node           = update_grp->driver;
         json_req.update_grp.group          = update_grp->group;
         json_req.update_grp.interval       = update_grp->interval;
-        encode_fn = neu_json_encode_add_group_config_req;
-        *topic_p  = plugin->config->group_update_topic;
+        *topic_p                           = plugin->config->group_update_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_add_group_config_req,
+                              &json_str);
+        break;
+    }
+    case NEU_REQ_ADD_TAG_EVENT:
+    case NEU_REQ_UPDATE_TAG_EVENT: {
+        neu_req_add_tag_t *add_tag = data;
+        json_req.add_tags.node     = add_tag->driver;
+        json_req.add_tags.group    = add_tag->group;
+        json_req.add_tags.n_tag    = add_tag->n_tag;
+        json_req.add_tags.tags =
+            calloc(add_tag->n_tag, sizeof(*json_req.add_tags.tags));
+        if (NULL == json_req.add_tags.tags) {
+            plog_error(plugin, "calloc fail");
+            break;
+        }
+        for (uint16_t i = 0; i < add_tag->n_tag; ++i) {
+            json_req.add_tags.tags[i].type      = add_tag->tags[i].type;
+            json_req.add_tags.tags[i].name      = add_tag->tags[i].name;
+            json_req.add_tags.tags[i].attribute = add_tag->tags[i].attribute;
+            json_req.add_tags.tags[i].address   = add_tag->tags[i].address;
+            json_req.add_tags.tags[i].decimal   = add_tag->tags[i].decimal;
+            json_req.add_tags.tags[i].precision = add_tag->tags[i].precision;
+            json_req.add_tags.tags[i].description =
+                add_tag->tags[i].description;
+        }
+        *topic_p = NEU_REQ_ADD_TAG_EVENT == event
+            ? plugin->config->tag_add_topic
+            : plugin->config->tag_update_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_add_tags_req,
+                              &json_str);
+
+        free(json_req.add_tags.tags);
+        break;
+    }
+    case NEU_REQ_DEL_TAG_EVENT: {
+        neu_req_del_tag_t *del_tag = data;
+        json_req.del_tags.node     = del_tag->driver;
+        json_req.del_tags.group    = del_tag->group;
+        json_req.del_tags.n_tags   = del_tag->n_tag;
+        json_req.del_tags.tags =
+            calloc(del_tag->n_tag, sizeof(*json_req.del_tags.tags));
+        if (NULL == json_req.del_tags.tags) {
+            plog_error(plugin, "calloc fail");
+            break;
+        }
+        for (uint16_t i = 0; i < del_tag->n_tag; ++i) {
+            json_req.del_tags.tags[i] = del_tag->tags[i];
+        }
+        *topic_p = plugin->config->tag_del_topic;
+        neu_json_encode_by_fn(&json_req, neu_json_encode_del_tags_req,
+                              &json_str);
+
+        free(json_req.del_tags.tags);
         break;
     }
     default: {
@@ -139,7 +200,6 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
     }
     }
 
-    neu_json_encode_by_fn(&json_req, encode_fn, &json_str);
     return json_str;
 }
 
@@ -252,6 +312,21 @@ int handle_events(neu_plugin_t *plugin, neu_reqresp_type_e event, void *data)
 end:
     if (NEU_REQ_NODE_SETTING_EVENT == event) {
         free(((neu_req_node_setting_t *) data)->setting);
+    } else if (NEU_REQ_ADD_TAG_EVENT == event ||
+               NEU_REQ_UPDATE_TAG_EVENT == event) {
+        neu_req_add_tag_t *add_tag = data;
+        for (uint16_t i = 0; i < add_tag->n_tag; i++) {
+            free(add_tag->tags[i].address);
+            free(add_tag->tags[i].name);
+            free(add_tag->tags[i].description);
+        }
+        free(add_tag->tags);
+    } else if (NEU_REQ_DEL_TAG_EVENT == event) {
+        neu_req_del_tag_t *del_tag = data;
+        for (uint16_t i = 0; i < del_tag->n_tag; i++) {
+            free(del_tag->tags[i]);
+        }
+        free(del_tag->tags);
     }
     return rv;
 }

@@ -51,6 +51,9 @@ typedef struct {
     char *group_add_topic;
     char *group_del_topic;
     char *group_update_topic;
+    char *tag_add_topic;
+    char *tag_del_topic;
+    char *tag_update_topic;
 } monitor_config_t;
 
 int  monitor_config_parse(neu_plugin_t *plugin, const char *setting,
