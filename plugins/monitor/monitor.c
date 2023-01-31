@@ -185,6 +185,13 @@ static inline void stop_heartbeart_timer(neu_plugin_t *plugin)
 
 static int start_hearbeat_timer(neu_plugin_t *plugin, uint64_t interval)
 {
+    neu_event_timer_t *timer = NULL;
+
+    if (0 == interval) {
+        plog_info(plugin, "heartbeat disabled");
+        goto end;
+    }
+
     if (NULL == plugin->events) {
         plugin->events = neu_event_new();
         if (NULL == plugin->events) {
@@ -200,12 +207,13 @@ static int start_hearbeat_timer(neu_plugin_t *plugin, uint64_t interval)
         .usr_data    = plugin,
     };
 
-    neu_event_timer_t *timer = neu_event_add_timer(plugin->events, param);
+    timer = neu_event_add_timer(plugin->events, param);
     if (NULL == timer) {
         plog_error(plugin, "neu_event_add_timer fail");
         return NEU_ERR_EINTERNAL;
     }
 
+end:
     if (plugin->heartbeat_timer) {
         neu_event_del_timer(plugin->events, plugin->heartbeat_timer);
     }
@@ -216,7 +224,7 @@ static int start_hearbeat_timer(neu_plugin_t *plugin, uint64_t interval)
     return 0;
 }
 
-static void stop_timers_and_mqtt(neu_plugin_t *plugin)
+static void uninit_timers_and_mqtt(neu_plugin_t *plugin)
 {
     stop_heartbeart_timer(plugin);
 
@@ -278,8 +286,9 @@ static int monitor_plugin_close(neu_plugin_t *plugin)
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     pthread_mutex_destroy(&plugin->mutex);
+    plog_info(plugin, "Success to free plugin: %s",
+              neu_plugin_module.module_name);
     free(plugin);
-    nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
 
     return rv;
 }
@@ -289,7 +298,7 @@ static int monitor_plugin_init(neu_plugin_t *plugin)
     int rv = 0;
     (void) plugin;
 
-    nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    plog_info(plugin, "Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -297,9 +306,9 @@ static int monitor_plugin_uninit(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    stop_timers_and_mqtt(plugin);
+    uninit_timers_and_mqtt(plugin);
 
-    nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    plog_info(plugin, "Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -313,13 +322,6 @@ static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
     if (0 != rv) {
         plog_error(plugin, "monitor_config_parse fail");
         return NEU_ERR_NODE_SETTING_INVALID;
-    }
-
-    if (config.heartbeat_interval == 0) {
-        // heartbeat disabled, no need for mqtt functionality
-        stop_timers_and_mqtt(plugin);
-        monitor_config_fini(&config);
-        return 0;
     }
 
     if (NULL == plugin->config) {
