@@ -77,7 +77,6 @@ Neuron 文档地址：[https://neugates.io/docs/zh/latest/](https://neugates.io/
 ```
 $ git clone https://github.com/emqx/neuron
 $ cd neuron
-$ git submodule update --init
 $ mkdir build && cd build
 $ cmake .. && make
 ```

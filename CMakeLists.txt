@@ -44,10 +44,6 @@ add_custom_target(neuron-version
   COMMAND ${CMAKE_COMMAND} -P
           ${CMAKE_CURRENT_SOURCE_DIR}/cmake/neuron-version.cmake)
 
-configure_file(extern/uthash/include/uthash.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/uthash.h)
-configure_file(extern/uthash/include/utarray.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utarray.h)
-configure_file(extern/uthash/include/utlist.h ${CMAKE_SOURCE_DIR}/include/neuron/utils/utlist.h)
-
 find_package(nng CONFIG REQUIRED)
 find_package(Threads)
 

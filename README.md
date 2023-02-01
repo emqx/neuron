@@ -74,7 +74,6 @@ The Neuron documentation is available at [neugates.io/docs/en/latest/](https://n
 ```
 $ git clone https://github.com/emqx/neuron
 $ cd neuron
-$ git submodule update --init
 $ mkdir build && cd build
 $ cmake .. && make
 ```
