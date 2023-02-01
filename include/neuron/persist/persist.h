@@ -86,7 +86,7 @@ static inline void neu_persist_user_info_fini(neu_persist_user_info_t *info)
  * Create persister.
  * @return 0 on success, -1 otherwise.
  */
-int neu_persister_create();
+int neu_persister_create(const char *schema_dir);
 /**
  * Destroy perister.
  */

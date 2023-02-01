@@ -430,7 +430,7 @@ static int apply_schemas(sqlite3 *db, const char *dir)
     return rv;
 }
 
-int neu_persister_create()
+int neu_persister_create(const char *schema_dir)
 {
     int rv = sqlite3_open(db_file, &global_db);
 
@@ -455,7 +455,7 @@ int neu_persister_create()
         return -1;
     }
 
-    rv = apply_schemas(global_db, g_config_dir);
+    rv = apply_schemas(global_db, schema_dir);
     if (rv != 0) {
         nlog_fatal("db apply schemas fail");
         sqlite3_close(global_db);
