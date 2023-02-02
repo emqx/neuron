@@ -226,8 +226,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
 
-    nlog_info("manager recv msg from: %s to %s, type: %s", header->sender,
-              header->receiver, neu_reqresp_type_string(header->type));
+    nlog_debug("manager recv msg from: %s to %s, type: %s", header->sender,
+               header->receiver, neu_reqresp_type_string(header->type));
     switch (header->type) {
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
@@ -658,7 +658,7 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
     nng_msg_dup(&out_msg, msg);
     nng_msg_set_pipe(out_msg, pipe);
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
-        nlog_info("forward msg to pipe %d", pipe.id);
+        nlog_debug("forward msg to pipe %d", pipe.id);
     } else {
         nng_msg_free(out_msg);
     }
@@ -673,7 +673,7 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
     nng_msg_dup(&out_msg, msg);
     nng_msg_set_pipe(out_msg, pipe);
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
-        nlog_info("forward msg to %s", node);
+        nlog_debug("forward msg to %s", node);
     } else {
         nng_msg_free(out_msg);
     }

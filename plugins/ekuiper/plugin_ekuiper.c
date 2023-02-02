@@ -229,7 +229,7 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
 {
     bool disconnected = false;
 
-    plog_info(plugin, "handling request type: %d", header->type);
+    plog_debug(plugin, "handling request type: %d", header->type);
 
     nng_mtx_lock(plugin->mtx);
     disconnected =
