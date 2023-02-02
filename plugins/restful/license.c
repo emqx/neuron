@@ -109,31 +109,35 @@ static uint64_t get_asn1_ts(ASN1_TIME *time, char **ts_str)
 
 static int scan_bitvec(uint8_t vec[], size_t size, const char *hex)
 {
-    if ('0' == *hex && 'x' == tolower(*(hex + 1))) {
-        hex += 2;
+    // 0xFFFFFFFFFFFFF
+    // skip 0x
+    char *tmp   = strdup(hex);
+    char *start = tmp;
+    int   index = 0;
+
+    tmp += 2;
+    if (strlen(tmp) % 2 == 1) {
+        tmp -= 1;
+        tmp[0] = '0';
     }
 
-    size_t i   = 0;
-    size_t len = strlen(hex);
-
-    while (i < len && i / 2 < size) {
-        char    c = hex[len - 1 - i];
+    for (int i = strlen(tmp) - 2; i >= 0; i -= 2) {
         uint8_t v = 0;
-        if ('0' <= c && c <= '9') {
-            v = c - '0';
-        } else if ('a' <= c && c <= 'f') {
-            v = 10 + c - 'a';
-        } else if ('A' <= c && c <= 'F') {
-            v = 10 + c - 'A';
-        } else {
-            break;
-        }
 
-        vec[i / 2] += v << ((i & 0x01) * 4);
-        ++i;
+        if (sscanf(tmp + i, "%02hhX", &v) != 1) {
+            free(start);
+            return -1;
+        }
+        if ((size_t) index > size) {
+            free(start);
+            return -1;
+        }
+        vec[index] = v;
+        index += 1;
     }
 
-    return (i == len) ? 0 : -1;
+    free(start);
+    return 0;
 }
 
 void print_bitvec(char *s, size_t size, uint8_t vec[], size_t n)
