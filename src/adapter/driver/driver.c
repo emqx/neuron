@@ -846,8 +846,8 @@ static int read_callback(void *usr_data)
             group->driver->adapter.plugin, &group->grp);
 
         spend = global_timestamp - spend;
-        nlog_info("%s-%s timer: %" PRId64, group->driver->adapter.name,
-                  group->name, spend);
+        nlog_debug("%s-%s timer: %" PRId64, group->driver->adapter.name,
+                   group->name, spend);
 
         neu_adapter_update_group_metric(&group->driver->adapter, group->name,
                                         NEU_METRIC_GROUP_LAST_TIMER_MS, spend);

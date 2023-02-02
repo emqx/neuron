@@ -68,7 +68,7 @@ static int neuron_run(const neu_cli_args_t *args)
     rv = neu_persister_create(args->config_dir);
     assert(rv == 0);
 
-    zlog_notice(neuron, "neuron process, daemon: %d, version: %s (%s %s)",
+    zlog_notice(neuron, "neuron start, daemon: %d, version: %s (%s %s)",
                 args->daemonized, NEURON_VERSION,
                 NEURON_GIT_REV NEURON_GIT_DIFF, NEURON_BUILD_DATE);
     g_manager = neu_manager_create();
