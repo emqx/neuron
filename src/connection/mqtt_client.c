@@ -243,7 +243,7 @@ static void task_handle_pub(task_t *task, neu_mqtt_client_t *client)
         log(error, "send PUBLISH error: %s", nng_strerror(rv));
         log(error, "pub [%s, QoS%d] fail", task->pub.topic, task->pub.qos);
     } else {
-        log(info, "pub [%s, QoS%d] %" PRIu32 " bytes", task->pub.topic,
+        log(debug, "pub [%s, QoS%d] %" PRIu32 " bytes", task->pub.topic,
             task->pub.qos, task->pub.len);
     }
 
