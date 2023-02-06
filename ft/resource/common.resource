@@ -17,8 +17,8 @@ Resource    simulator.resource
 ${test_data_dir}     ft/data
 
 
-${PLUGIN_MODBUS_TCP}	modbus-tcp
-${PLUGIN_MQTT}    mqtt
+${PLUGIN_MODBUS_TCP}	Modbus TCP community
+${PLUGIN_MQTT}    MQTT
 
 ${MQTT_CMD_NONE}                             
 
