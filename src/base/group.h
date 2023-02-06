@@ -42,9 +42,12 @@ UT_array *     neu_group_query_tag(neu_group_t *group, const char *name);
 UT_array *     neu_group_get_read_tag(neu_group_t *group);
 uint16_t       neu_group_tag_size(neu_group_t *group);
 neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag);
+void neu_group_split_static_tags(neu_group_t *group, UT_array **static_tags,
+                                 UT_array **other_tags);
 
 typedef void (*neu_group_change_fn)(void *arg, int64_t timestamp,
-                                    UT_array *tags, uint32_t interval);
+                                    UT_array *static_tags, UT_array *other_tags,
+                                    uint32_t interval);
 void neu_group_change_test(neu_group_t *group, int64_t timestamp, void *arg,
                            neu_group_change_fn fn);
 bool neu_group_is_change(neu_group_t *group, int64_t timestamp);

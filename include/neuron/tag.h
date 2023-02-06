@@ -33,6 +33,7 @@ typedef enum {
     NEU_ATTRIBUTE_READ      = 1,
     NEU_ATTRIBUTE_WRITE     = 2,
     NEU_ATTRIBUTE_SUBSCRIBE = 4,
+    NEU_ATTRIBUTE_STATIC    = 8,
 } neu_attribute_e;
 
 typedef enum {

@@ -42,6 +42,7 @@ typedef struct group {
 
     int64_t      timestamp;
     neu_group_t *group;
+    UT_array *   static_tags;
 
     neu_event_timer_t *report;
     neu_event_timer_t *read;
@@ -177,6 +178,7 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
         free(el->name);
         utarray_free(el->grp.tags);
 
+        utarray_free(el->static_tags);
         neu_group_destroy(el->group);
         free(el);
     }
@@ -395,8 +397,17 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             break;
         }
 
-        driver->adapter.module->intf_funs->driver.write_tag(
-            driver->adapter.plugin, (void *) req, tag, cmd->value.value);
+        if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+            neu_driver_cache_add(g->driver->cache, g->name, tag->name,
+                                 cmd->value);
+            neu_resp_error_t error = { .error = NEU_ERR_SUCCESS };
+            req->type              = NEU_RESP_ERROR;
+            driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        } else {
+            driver->adapter.module->intf_funs->driver.write_tag(
+                driver->adapter.plugin, (void *) req, tag, cmd->value.value);
+        }
+
         free(tag->address);
         free(tag->name);
         free(tag->description);
@@ -429,7 +440,8 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         find->name           = strdup(name);
         find->group          = neu_group_new(name, interval);
         find->grp.group_name = strdup(name);
-        find->grp.tags       = neu_group_get_tag(find->group);
+        neu_group_split_static_tags(find->group, &find->static_tags,
+                                    &find->grp.tags);
 
         param.cb     = report_callback;
         find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
@@ -501,11 +513,17 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         free(find->grp.group_name);
         free(find->name);
 
+        utarray_foreach(find->static_tags, neu_datatag_t *, tag)
+        {
+            neu_driver_cache_del(driver->cache, name, tag->name);
+        }
+
         utarray_foreach(find->grp.tags, neu_datatag_t *, tag)
         {
             neu_driver_cache_del(driver->cache, name, tag->name);
         }
 
+        utarray_free(find->static_tags);
         utarray_free(find->grp.tags);
         neu_group_destroy(find->group);
         free(find);
@@ -782,8 +800,8 @@ static int report_callback(void *usr_data)
     return 0;
 }
 
-static void group_change(void *arg, int64_t timestamp, UT_array *tags,
-                         uint32_t interval)
+static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
+                         UT_array *other_tags, uint32_t interval)
 {
     group_t *group   = (group_t *) arg;
     group->timestamp = timestamp;
@@ -792,12 +810,29 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
     if (group->grp.group_free != NULL)
         group->grp.group_free(&group->grp);
 
+    utarray_foreach(group->static_tags, neu_datatag_t *, tag)
+    {
+        neu_driver_cache_del(group->driver->cache, group->name, tag->name);
+    }
+
     utarray_foreach(group->grp.tags, neu_datatag_t *, tag)
     {
         neu_driver_cache_del(group->driver->cache, group->name, tag->name);
     }
 
-    utarray_foreach(tags, neu_datatag_t *, tag)
+    utarray_foreach(static_tags, neu_datatag_t *, tag)
+    {
+        neu_dvalue_t value = { 0 };
+
+        value.precision = tag->precision;
+        value.type      = NEU_TYPE_ERROR;
+        value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+
+        neu_driver_cache_add(group->driver->cache, group->name, tag->name,
+                             value);
+    }
+
+    utarray_foreach(other_tags, neu_datatag_t *, tag)
     {
         neu_dvalue_t value = { 0 };
 
@@ -816,13 +851,17 @@ static void group_change(void *arg, int64_t timestamp, UT_array *tags,
         .user_data  = NULL,
     };
 
-    grp.tags = tags;
+    grp.tags = other_tags;
     free(group->grp.group_name);
+    if (group->static_tags != NULL) {
+        utarray_free(group->static_tags);
+    }
     if (group->grp.tags != NULL) {
         utarray_free(group->grp.tags);
     }
 
-    group->grp = grp;
+    group->static_tags = static_tags;
+    group->grp         = grp;
     nlog_notice("group: %s changed", group->name);
 }
 
@@ -1083,7 +1122,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
             break;
         }
 
-        if ((timestamp - value.timestamp) > timeout) {
+        if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
+            (timestamp - value.timestamp) > timeout) {
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
