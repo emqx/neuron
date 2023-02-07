@@ -19,11 +19,12 @@
 BEGIN TRANSACTION;
 
 DROP TABLE
-  old_subscriptions;
+  IF EXISTS old_subscriptions;
 
 ALTER TABLE
   subscriptions RENAME TO old_subscriptions;
 
+-- add column params for subscription parameters
 CREATE TABLE
   IF NOT EXISTS subscriptions (
     app_name TEXT NOT NULL,
@@ -37,7 +38,7 @@ CREATE TABLE
   );
 
 INSERT INTO
-  subscriptions (app_name, driver_name, group_name, params)
+  subscriptions
 SELECT
   app_name,
   driver_name,
