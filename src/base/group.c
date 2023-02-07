@@ -43,6 +43,8 @@ struct neu_group {
 
 static UT_array *to_array(tag_elem_t *tags);
 static UT_array *to_read_array(tag_elem_t *tags);
+static void      split_static_array(tag_elem_t *tags, UT_array **static_tags,
+                                    UT_array **other_tags);
 static void      update_timestamp(neu_group_t *group);
 
 neu_group_t *neu_group_new(const char *name, uint32_t interval)
@@ -249,12 +251,19 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
     return result;
 }
 
+void neu_group_split_static_tags(neu_group_t *group, UT_array **static_tags,
+                                 UT_array **other_tags)
+{
+    return split_static_array(group->tags, static_tags, other_tags);
+}
+
 void neu_group_change_test(neu_group_t *group, int64_t timestamp, void *arg,
                            neu_group_change_fn fn)
 {
     if (group->timestamp != timestamp) {
-        UT_array *tags = to_array(group->tags);
-        fn(arg, group->timestamp, tags, group->interval);
+        UT_array *static_tags = NULL, *other_tags = NULL;
+        split_static_array(group->tags, &static_tags, &other_tags);
+        fn(arg, group->timestamp, static_tags, other_tags, group->interval);
     }
 }
 
@@ -302,4 +311,21 @@ static UT_array *to_read_array(tag_elem_t *tags)
     }
 
     return array;
+}
+
+static void split_static_array(tag_elem_t *tags, UT_array **static_tags,
+                               UT_array **other_tags)
+{
+    tag_elem_t *el = NULL, *tmp = NULL;
+
+    utarray_new(*static_tags, neu_tag_get_icd());
+    utarray_new(*other_tags, neu_tag_get_icd());
+    HASH_ITER(hh, tags, el, tmp)
+    {
+        if (neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_STATIC)) {
+            utarray_push_back(*static_tags, el->tag);
+        } else {
+            utarray_push_back(*other_tags, el->tag);
+        }
+    }
 }
