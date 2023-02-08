@@ -65,10 +65,7 @@ void neu_group_destroy(neu_group_t *group)
     {
         HASH_DEL(group->tags, el);
         free(el->name);
-        free(el->tag->name);
-        free(el->tag->address);
-        free(el->tag->description);
-        free(el->tag);
+        neu_tag_free(el->tag);
         free(el);
     }
 
@@ -118,18 +115,9 @@ int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
         return NEU_ERR_TAG_NAME_CONFLICT;
     }
 
-    el                   = calloc(1, sizeof(tag_elem_t));
-    el->name             = strdup(tag->name);
-    el->tag              = calloc(1, sizeof(neu_datatag_t));
-    el->tag->name        = strdup(tag->name);
-    el->tag->address     = strdup(tag->address);
-    el->tag->description = strdup(tag->description);
-    el->tag->type        = tag->type;
-    el->tag->attribute   = tag->attribute;
-    el->tag->precision   = tag->precision;
-    el->tag->decimal     = tag->decimal;
-    el->tag->option      = tag->option;
-    memcpy(el->tag->meta, tag->meta, sizeof(tag->meta));
+    el       = calloc(1, sizeof(tag_elem_t));
+    el->name = strdup(tag->name);
+    el->tag  = neu_tag_dup(tag);
 
     HASH_ADD_STR(group->tags, name, el);
     update_timestamp(group);
@@ -144,18 +132,7 @@ int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
 
     HASH_FIND_STR(group->tags, tag->name, el);
     if (el != NULL) {
-        free(el->tag->address);
-        el->tag->address = strdup(tag->address);
-
-        free(el->tag->description);
-        el->tag->description = strdup(tag->description);
-
-        el->tag->type      = tag->type;
-        el->tag->attribute = tag->attribute;
-        el->tag->precision = tag->precision;
-        el->tag->decimal   = tag->decimal;
-        el->tag->option    = tag->option;
-        memcpy(el->tag->meta, tag->meta, sizeof(tag->meta));
+        neu_tag_copy(el->tag, tag);
 
         update_timestamp(group);
         ret = NEU_ERR_SUCCESS;
@@ -173,10 +150,7 @@ int neu_group_del_tag(neu_group_t *group, const char *tag_name)
     if (el != NULL) {
         HASH_DEL(group->tags, el);
         free(el->name);
-        free(el->tag->name);
-        free(el->tag->address);
-        free(el->tag->description);
-        free(el->tag);
+        neu_tag_free(el->tag);
         free(el);
 
         update_timestamp(group);

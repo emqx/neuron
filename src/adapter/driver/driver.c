@@ -400,6 +400,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
             neu_driver_cache_add(g->driver->cache, g->name, tag->name,
                                  cmd->value);
+            neu_tag_set_static_value(tag, &cmd->value.value);
             neu_resp_error_t error = { .error = NEU_ERR_SUCCESS };
             req->type              = NEU_RESP_ERROR;
             driver->adapter.cb_funs.response(&driver->adapter, req, &error);
@@ -825,8 +826,11 @@ static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
         neu_dvalue_t value = { 0 };
 
         value.precision = tag->precision;
-        value.type      = NEU_TYPE_ERROR;
-        value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+        value.type      = tag->type;
+        if (0 != neu_tag_get_static_value(tag, &value.value)) {
+            value.type      = NEU_TYPE_ERROR;
+            value.value.i32 = NEU_ERR_EINTERNAL;
+        }
 
         neu_driver_cache_add(group->driver->cache, group->name, tag->name,
                              value);

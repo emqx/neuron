@@ -87,13 +87,17 @@ typedef struct {
     uint8_t                   meta[NEU_TAG_META_SIZE];
 } neu_datatag_t;
 
-inline static bool neu_tag_attribute_test(neu_datatag_t * tag,
-                                          neu_attribute_e attribute)
+UT_icd *neu_tag_get_icd();
+
+neu_datatag_t *neu_tag_dup(const neu_datatag_t *tag);
+void           neu_tag_copy(neu_datatag_t *tag, const neu_datatag_t *other);
+void           neu_tag_free(neu_datatag_t *tag);
+
+inline static bool neu_tag_attribute_test(const neu_datatag_t *tag,
+                                          neu_attribute_e      attribute)
 {
     return (tag->attribute & attribute) == attribute;
 }
-
-UT_icd *neu_tag_get_icd();
 
 /**
  * @brief Special usage of parsing tag address, e.g. setting length of string
@@ -116,5 +120,8 @@ int neu_datatag_string_etoh(char *str, int len);
 int neu_datatag_string_dtoh(char *str, int len);
 int neu_datatag_string_tod(char *str, int len, int buf_len);
 int neu_datatag_string_toe(char *str, int len, int buf_len);
+
+int neu_tag_get_static_value(const neu_datatag_t *tag, neu_value_u *value);
+int neu_tag_set_static_value(neu_datatag_t *tag, neu_value_u *value);
 
 #endif
