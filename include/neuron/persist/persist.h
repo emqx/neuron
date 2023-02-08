@@ -177,6 +177,17 @@ int neu_persister_update_tag(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tag);
 
 /**
+ * Update node tag value.
+ * @param driver_name               name of the driver who owns the tags
+ * @param group_name                name of the group
+ * @param tag                       the tag to update
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_update_tag_value(const char *         driver_name,
+                                   const char *         group_name,
+                                   const neu_datatag_t *tag);
+
+/**
  * Delete node tags.
  * @param driver_name               name of the driver who owns the tags
  * @param group_name                name of the group
