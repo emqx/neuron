@@ -210,16 +210,7 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
 
     HASH_FIND_STR(group->tags, tag, find);
     if (find != NULL) {
-        result              = calloc(1, sizeof(neu_datatag_t));
-        result->type        = find->tag->type;
-        result->attribute   = find->tag->attribute;
-        result->precision   = find->tag->precision;
-        result->decimal     = find->tag->decimal;
-        result->option      = find->tag->option;
-        result->name        = strdup(find->tag->name);
-        result->address     = strdup(find->tag->address);
-        result->description = strdup(find->tag->description);
-        memcpy(result->meta, find->tag->meta, sizeof(find->tag->meta));
+        result = neu_tag_dup(find->tag);
     }
 
     return result;

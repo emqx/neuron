@@ -102,6 +102,16 @@ void adapter_storage_update_tag(const char *node, const char *group,
     }
 }
 
+void adapter_storage_update_tag_value(const char *node, const char *group,
+                                      const neu_datatag_t *tag)
+{
+    int rv = neu_persister_update_tag_value(node, group, tag);
+    if (0 != rv) {
+        nlog_error("fail update value tag:%s adapter:%s grp:%s", tag->name,
+                   node, group);
+    }
+}
+
 void adapter_storage_del_tag(const char *node, const char *group,
                              const char *name)
 {
