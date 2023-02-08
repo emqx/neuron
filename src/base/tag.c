@@ -24,20 +24,42 @@ config_ **/
 #include "errcodes.h"
 #include "tag.h"
 
+#define GET_STATIC_VALUE_PTR(tag, out)                      \
+    do {                                                    \
+        memcpy(&(out), (tag)->meta, sizeof(neu_value_u *)); \
+    } while (0)
+
+#define SET_STATIC_VALUE_PTR(tag, ptr)                      \
+    do {                                                    \
+        memcpy((tag)->meta, &(ptr), sizeof(neu_value_u *)); \
+    } while (0)
+
 static void tag_array_copy(void *_dst, const void *_src)
 {
     neu_datatag_t *dst = (neu_datatag_t *) _dst;
     neu_datatag_t *src = (neu_datatag_t *) _src;
 
-    dst->type      = src->type;
-    dst->attribute = src->attribute;
-    dst->precision = src->precision;
-    dst->decimal   = src->decimal;
-    dst->option    = src->option;
-    memcpy(dst->meta, src->meta, sizeof(src->meta));
+    dst->type        = src->type;
+    dst->attribute   = src->attribute;
+    dst->precision   = src->precision;
+    dst->decimal     = src->decimal;
+    dst->option      = src->option;
     dst->address     = strdup(src->address);
     dst->name        = strdup(src->name);
     dst->description = strdup(src->description);
+
+    if (NEU_ATTRIBUTE_STATIC & src->attribute) {
+        neu_value_u *dst_val = NULL, *src_val = NULL;
+        GET_STATIC_VALUE_PTR(src, src_val);
+        if (src_val && (dst_val = calloc(1, sizeof(*dst_val)))) {
+            memcpy(dst_val, src_val, sizeof(*dst_val));
+            SET_STATIC_VALUE_PTR(dst, dst_val);
+        } else {
+            memset(dst->meta, 0, sizeof(dst->meta));
+        }
+    } else {
+        memcpy(dst->meta, src->meta, sizeof(src->meta));
+    }
 }
 
 static void tag_array_free(void *_elt)
@@ -47,6 +69,13 @@ static void tag_array_free(void *_elt)
     free(elt->name);
     free(elt->address);
     free(elt->description);
+
+    if (NEU_ATTRIBUTE_STATIC & elt->attribute) {
+        neu_value_u *cur = NULL;
+        GET_STATIC_VALUE_PTR(elt, cur);
+        free(cur);
+        memset(elt->meta, 0, sizeof(elt->meta));
+    }
 }
 
 static UT_icd tag_icd = { sizeof(neu_datatag_t), NULL, tag_array_copy,
@@ -55,6 +84,29 @@ static UT_icd tag_icd = { sizeof(neu_datatag_t), NULL, tag_array_copy,
 UT_icd *neu_tag_get_icd()
 {
     return &tag_icd;
+}
+
+neu_datatag_t *neu_tag_dup(const neu_datatag_t *tag)
+{
+    neu_datatag_t *new = calloc(1, sizeof(*new));
+    tag_array_copy(new, tag);
+    return new;
+}
+
+void neu_tag_copy(neu_datatag_t *tag, const neu_datatag_t *other)
+{
+    if (tag) {
+        tag_array_free(tag);
+        tag_array_copy(tag, other);
+    }
+}
+
+void neu_tag_free(neu_datatag_t *tag)
+{
+    if (tag) {
+        tag_array_free(tag);
+        free(tag);
+    }
 }
 
 static char *find_last_character(char *str, char character)
@@ -345,4 +397,43 @@ int neu_datatag_string_toe(char *str, int len, int buf_len)
 
     free(t);
     return len * 2;
+}
+
+int neu_tag_get_static_value(const neu_datatag_t *tag, neu_value_u *value)
+{
+    neu_value_u *cur = NULL;
+
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+        return -1;
+    }
+
+    GET_STATIC_VALUE_PTR(tag, cur);
+    if (NULL == cur) {
+        return -1;
+    }
+
+    memcpy(value, cur, sizeof(*cur));
+    return 0;
+}
+
+int neu_tag_set_static_value(neu_datatag_t *tag, neu_value_u *value)
+{
+    neu_value_u *cur = NULL;
+
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+        return -1;
+    }
+
+    GET_STATIC_VALUE_PTR(tag, cur);
+    if (NULL == cur) {
+        cur = calloc(1, sizeof(*cur));
+        if (NULL == cur) {
+            return -1;
+        }
+        SET_STATIC_VALUE_PTR(tag, cur);
+    }
+
+    memcpy(cur, value, sizeof(*cur));
+
+    return 0;
 }
