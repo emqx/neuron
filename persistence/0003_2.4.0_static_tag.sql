@@ -19,35 +19,46 @@
 BEGIN TRANSACTION;
 
 DROP TABLE
-  IF EXISTS old_subscriptions;
+  IF EXISTS old_tags;
 
 ALTER TABLE
-  subscriptions RENAME TO old_subscriptions;
+  tags RENAME TO old_tags;
 
--- add column params for subscription parameters
+-- alter attribute column constraint for static tags
+-- add value column
 CREATE TABLE
-  IF NOT EXISTS subscriptions (
-    app_name TEXT NOT NULL,
+  IF NOT EXISTS tags (
     driver_name TEXT NOT NULL,
     group_name TEXT NOT NULL,
-    params TEXT DEFAULT NULL,
-    CHECK (app_name != driver_name),
-    UNIQUE (app_name, driver_name, group_name),
-    FOREIGN KEY (app_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE,
+    name TEXT NULL check(length(name) <= 64),
+    address TEXT NULL check(length(address) <= 128),
+    attribute INTEGER NOT NULL check(attribute BETWEEN 0 AND 15),
+    PRECISION INTEGER NOT NULL check(PRECISION BETWEEN 0 AND 17),
+    decimal REAL NOT NULL,
+    TYPE INTEGER NOT NULL check(TYPE BETWEEN 0 AND 19),
+    description TEXT NULL check(length(description) <= 128),
+    value TEXT DEFAULT NULL,
+    UNIQUE (driver_name, group_name, name),
     FOREIGN KEY (driver_name, group_name) REFERENCES groups (driver_name, name) ON UPDATE CASCADE ON DELETE CASCADE
   );
 
 INSERT INTO
-  subscriptions
+  tags
 SELECT
-  app_name,
   driver_name,
   group_name,
+  name,
+  address,
+  attribute,
+  PRECISION,
+  decimal,
+  TYPE,
+  description,
   NULL
 FROM
-  old_subscriptions;
+  old_tags;
 
 DROP TABLE
-  old_subscriptions;
+  old_tags;
 
 COMMIT;
