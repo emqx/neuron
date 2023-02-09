@@ -699,11 +699,15 @@ int neu_tag_load_static_value(neu_datatag_t *tag, const char *s)
         .t    = NEU_JSON_VALUE,
     };
 
-    if (0 != neu_json_decode_value(jval, &elem)) {
-        return -1;
+    int rv = neu_json_decode_value(jval, &elem);
+    if (0 == rv) {
+        rv = neu_tag_set_static_value_json(tag, elem.t, &elem.v);
     }
 
-    int rv = neu_tag_set_static_value_json(tag, elem.t, &elem.v);
-    json_decref(jval);
+    if (NEU_JSON_STR == elem.t) {
+        free(elem.v.val_str);
+    }
+    neu_json_decode_free(jval);
+
     return rv;
 }
