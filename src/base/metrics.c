@@ -20,6 +20,7 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <sys/statvfs.h>
+#include <sys/sysinfo.h>
 #include <unistd.h>
 
 #include "adapter.h"
@@ -281,6 +282,7 @@ void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
     uint64_t uptime_seconds = (neu_time_ms() - g_start_ts_) / 1000;
     pthread_rwlock_rdlock(&g_metrics_mtx_);
     g_metrics_.cpu_percent          = cpu;
+    g_metrics_.cpu_cores            = get_nprocs();
     g_metrics_.mem_used_bytes       = mem_used;
     g_metrics_.disk_size_gibibytes  = disk_size;
     g_metrics_.disk_used_gibibytes  = disk_used;
