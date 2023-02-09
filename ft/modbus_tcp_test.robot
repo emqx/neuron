@@ -46,6 +46,8 @@ ${input_bit_1_name_wrong}   	  {"name": "input_bit", "address": "1!100001", "att
 ${input_bit_1_attribute_unmatch}    {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
 ${input_bit_1_type_unmatch}   	  {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 
+${hold_int16_static}      {"name": "hold_int16", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_INT16}, "value": 1}
+
 *** Test Cases ***
 Set a node with right settings, it should be success.
 	[Template]	Set a ${node} with right ${node_settings}, it will be success.
@@ -131,6 +133,14 @@ Read some tags at time, it will be success.
 	${input_tags}=	Create List	${input_bit_1}	${input_bit_2}	${input_bit_3}	${input_bit_4}	${input_bit_5}
 	Read some ${input_tags} from ${modbus_node}, it will be success.
 
+Read static tag, it should be success.
+	[Template]	Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
+	${hold_int16_static}     hold_int16     ${modbus_node}    Compare Tag Value As Int        1
+
+Write a static tag, it should be success.
+	[Template]	Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
+	${hold_int16_static}     hold_int16     ${modbus_node}    Compare Tag Value As Int        2
+
 Write and read a tag with same name and same address that in different groups, it should be success.
 	${groups}=	Create List	group-1	group-2	group-3
 	Write and read a ${hold_int16} with same hold_int16 and same address in different ${groups} that from ${modbus_node}, using Compare Tag Value As Int to check the 2, it will be success.
@@ -149,6 +159,10 @@ Update a tag with unmatch address and types and attribute, it should be failure.
 	${input_bit_1}	${input_bit_1_attribute_unmatch}	${modbus_node}	200	${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
 	${input_bit_1}	${input_bit_1_type_unmatch}	${modbus_node}	200	${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
 	${input_bit_1}	${input_bit_1_name_wrong}	${modbus_node}	200	${NEU_ERR_TAG_NOT_EXIST}
+
+Update to be a static, it will be success
+	[Template]	Update a ${tag} by a ${tag_update} named ${tag_name} from ${node} , it can read and write, using ${check} to check the ${value}, it will be success.
+	${hold_int16}	${hold_int16_static}	hold_int16	${modbus_node}	Compare Tag Value As Int  42
 
 Write a value to a tag that don't exit in plc or neuron, it will be failure.
 	[Template]	Write a ${value} to a ${tag} with named ${tag_name} that don't exist in neuron or plc from ${node}, it will be failure.
