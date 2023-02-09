@@ -162,6 +162,14 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
             json_req.add_tags.tags[i].precision = add_tag->tags[i].precision;
             json_req.add_tags.tags[i].description =
                 add_tag->tags[i].description;
+            if (neu_tag_attribute_test(&add_tag->tags[i],
+                                       NEU_ATTRIBUTE_STATIC)) {
+                neu_tag_get_static_value_json(&add_tag->tags[i],
+                                              &json_req.add_tags.tags[i].t,
+                                              &json_req.add_tags.tags[i].value);
+            } else {
+                json_req.add_tags.tags[i].t = NEU_JSON_UNDEFINE;
+            }
         }
         *topic_p = NEU_REQ_ADD_TAG_EVENT == event
             ? plugin->config->tag_add_topic
