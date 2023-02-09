@@ -103,6 +103,13 @@ void neu_tag_copy(neu_datatag_t *tag, const neu_datatag_t *other)
     }
 }
 
+void neu_tag_fini(neu_datatag_t *tag)
+{
+    if (tag) {
+        tag_array_free(tag);
+    }
+}
+
 void neu_tag_free(neu_datatag_t *tag)
 {
     if (tag) {

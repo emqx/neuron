@@ -91,6 +91,7 @@ UT_icd *neu_tag_get_icd();
 
 neu_datatag_t *neu_tag_dup(const neu_datatag_t *tag);
 void           neu_tag_copy(neu_datatag_t *tag, const neu_datatag_t *other);
+void           neu_tag_fini(neu_datatag_t *tag);
 void           neu_tag_free(neu_datatag_t *tag);
 
 inline static bool neu_tag_attribute_test(const neu_datatag_t *tag,

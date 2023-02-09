@@ -316,9 +316,7 @@ end:
                NEU_REQ_UPDATE_TAG_EVENT == event) {
         neu_req_add_tag_t *add_tag = data;
         for (uint16_t i = 0; i < add_tag->n_tag; i++) {
-            free(add_tag->tags[i].address);
-            free(add_tag->tags[i].name);
-            free(add_tag->tags[i].description);
+            neu_tag_fini(&add_tag->tags[i]);
         }
         free(add_tag->tags);
     } else if (NEU_REQ_DEL_TAG_EVENT == event) {
