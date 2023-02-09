@@ -368,7 +368,7 @@ int neu_json_encode(void *json_object, char **str)
 void *neu_json_decode_new(const char *buf)
 {
     json_error_t error;
-    json_t *     root = json_loads(buf, 0, &error);
+    json_t *     root = json_loads(buf, JSON_DECODE_ANY, &error);
 
     if (root == NULL) {
         zlog_error(

@@ -21,6 +21,8 @@ config_ **/
 #include <stdio.h>
 #include <string.h>
 
+#include <jansson.h>
+
 #include "errcodes.h"
 #include "tag.h"
 
@@ -416,7 +418,7 @@ int neu_tag_get_static_value(const neu_datatag_t *tag, neu_value_u *value)
     return 0;
 }
 
-int neu_tag_set_static_value(neu_datatag_t *tag, neu_value_u *value)
+int neu_tag_set_static_value(neu_datatag_t *tag, const neu_value_u *value)
 {
     neu_value_u *cur = NULL;
 
@@ -436,4 +438,265 @@ int neu_tag_set_static_value(neu_datatag_t *tag, neu_value_u *value)
     memcpy(cur, value, sizeof(*cur));
 
     return 0;
+}
+
+int neu_tag_get_static_value_json(neu_datatag_t *tag, neu_json_type_e *t,
+                                  neu_json_value_u *v)
+{
+    neu_value_u *value = NULL;
+    GET_STATIC_VALUE_PTR(tag, value);
+
+    if (NULL == value) {
+        return -1;
+    }
+
+    switch (tag->type) {
+    case NEU_TYPE_BIT:
+        *t         = NEU_JSON_INT;
+        v->val_bit = value->u8;
+        break;
+    case NEU_TYPE_BOOL:
+        *t          = NEU_JSON_BOOL;
+        v->val_bool = value->boolean;
+        break;
+    case NEU_TYPE_INT8:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->i8;
+        break;
+    case NEU_TYPE_UINT8:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->u8;
+        break;
+    case NEU_TYPE_INT16:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->i16;
+        break;
+    case NEU_TYPE_WORD:
+    case NEU_TYPE_UINT16:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->u16;
+        break;
+    case NEU_TYPE_INT32:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->i32;
+        break;
+    case NEU_TYPE_DWORD:
+    case NEU_TYPE_UINT32:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->u32;
+        break;
+    case NEU_TYPE_INT64:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->i64;
+        break;
+    case NEU_TYPE_LWORD:
+    case NEU_TYPE_UINT64:
+        *t         = NEU_JSON_INT;
+        v->val_int = value->u64;
+        break;
+    case NEU_TYPE_FLOAT:
+        *t           = NEU_JSON_FLOAT;
+        v->val_float = value->f32;
+        break;
+    case NEU_TYPE_DOUBLE:
+        *t            = NEU_JSON_DOUBLE;
+        v->val_double = value->d64;
+        break;
+    case NEU_TYPE_STRING:
+        *t         = NEU_JSON_STR;
+        v->val_str = value->str;
+        break;
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+int neu_tag_set_static_value_json(neu_datatag_t *tag, neu_json_type_e t,
+                                  const neu_json_value_u *v)
+{
+    int         rv    = 0;
+    neu_value_u value = { 0 };
+
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+        return -1;
+    }
+
+    switch (t) {
+    case NEU_JSON_BIT: {
+        if (NEU_TYPE_BIT == tag->type) {
+            value.u8 = v->val_bit;
+        } else {
+            rv = -1;
+        }
+        break;
+    }
+    case NEU_JSON_BOOL: {
+        if (NEU_TYPE_BOOL == tag->type) {
+            value.boolean = v->val_bool;
+        } else {
+            rv = -1;
+        }
+        break;
+    }
+    case NEU_JSON_INT: {
+        switch (tag->type) {
+        case NEU_TYPE_BIT:
+            value.u8 = v->val_int;
+            break;
+        case NEU_TYPE_INT8:
+            value.i8 = v->val_int;
+            break;
+        case NEU_TYPE_UINT8:
+            value.u8 = v->val_int;
+            break;
+        case NEU_TYPE_INT16:
+            value.i16 = v->val_int;
+            break;
+        case NEU_TYPE_WORD:
+        case NEU_TYPE_UINT16:
+            value.u16 = v->val_int;
+            break;
+        case NEU_TYPE_INT32:
+            value.i32 = v->val_int;
+            break;
+        case NEU_TYPE_DWORD:
+        case NEU_TYPE_UINT32:
+            value.u32 = v->val_int;
+            break;
+        case NEU_TYPE_INT64:
+            value.i64 = v->val_int;
+            break;
+        case NEU_TYPE_LWORD:
+        case NEU_TYPE_UINT64:
+            value.u64 = v->val_int;
+            break;
+        default:
+            rv = -1;
+            break;
+        }
+        break;
+    }
+    case NEU_JSON_FLOAT: {
+        if (NEU_TYPE_FLOAT == tag->type) {
+            value.f32 = v->val_float;
+        } else {
+            rv = -1;
+        }
+        break;
+    }
+    case NEU_JSON_DOUBLE: {
+        if (NEU_TYPE_DOUBLE == tag->type) {
+            value.d64 = v->val_float;
+        } else {
+            rv = -1;
+        }
+        break;
+    }
+    case NEU_JSON_STR: {
+        if (NEU_TYPE_STRING == tag->type) {
+            snprintf(value.str, sizeof(value.str), "%s", v->val_str);
+        } else {
+            rv = -1;
+        }
+        break;
+    }
+    default:
+        rv = -1;
+    }
+
+    if (0 == rv) {
+        rv = neu_tag_set_static_value(tag, &value);
+    }
+
+    return rv;
+}
+
+char *neu_tag_dump_static_value(const neu_datatag_t *tag)
+{
+    json_t *jval = NULL;
+
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+        return NULL;
+    }
+
+    neu_value_u value = { 0 };
+    if (0 != neu_tag_get_static_value(tag, &value)) {
+        return NULL;
+    }
+
+    switch (tag->type) {
+    case NEU_TYPE_BOOL:
+        jval = json_boolean(value.boolean);
+        break;
+    case NEU_TYPE_INT8:
+        jval = json_integer(value.i8);
+        break;
+    case NEU_TYPE_BIT:
+    case NEU_TYPE_UINT8:
+        jval = json_integer(value.u8);
+        break;
+    case NEU_TYPE_INT16:
+        jval = json_integer(value.i16);
+        break;
+    case NEU_TYPE_WORD:
+    case NEU_TYPE_UINT16:
+        jval = json_integer(value.u16);
+        break;
+    case NEU_TYPE_INT32:
+        jval = json_integer(value.i32);
+        break;
+    case NEU_TYPE_DWORD:
+    case NEU_TYPE_UINT32:
+        jval = json_integer(value.u32);
+        break;
+    case NEU_TYPE_INT64:
+        jval = json_integer(value.i64);
+        break;
+    case NEU_TYPE_LWORD:
+    case NEU_TYPE_UINT64:
+        jval = json_integer(value.u64);
+        break;
+    case NEU_TYPE_FLOAT:
+        jval = json_real(value.f32);
+        break;
+    case NEU_TYPE_DOUBLE:
+        jval = json_real(value.d64);
+        break;
+    case NEU_TYPE_STRING:
+        jval = json_string(value.str);
+        break;
+    default:
+        break;
+    }
+
+    char *s = json_dumps(jval, JSON_ENCODE_ANY);
+    json_decref(jval);
+    return s;
+}
+
+int neu_tag_load_static_value(neu_datatag_t *tag, const char *s)
+{
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) || !s) {
+        return -1;
+    }
+
+    void *jval = neu_json_decode_new(s);
+    if (NULL == jval) {
+        return -1;
+    }
+
+    neu_json_elem_t elem = {
+        .name = NULL,
+        .t    = NEU_JSON_VALUE,
+    };
+
+    if (0 != neu_json_decode_value(jval, &elem)) {
+        return -1;
+    }
+
+    int rv = neu_tag_set_static_value_json(tag, elem.t, &elem.v);
+    json_decref(jval);
+    return rv;
 }

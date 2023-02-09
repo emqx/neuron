@@ -261,10 +261,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             driver->adapter.cb_funs.driver.write_response(
                 &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
-            free(tag->address);
-            free(tag->name);
-            free(tag->description);
-            free(tag);
+            neu_tag_free(tag);
             return;
         }
         if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
@@ -398,21 +395,21 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         }
 
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
-            neu_driver_cache_add(g->driver->cache, g->name, tag->name,
-                                 cmd->value);
+            neu_driver_cache_update(g->driver->cache, g->name, tag->name,
+                                    global_timestamp, cmd->value);
             neu_tag_set_static_value(tag, &cmd->value.value);
+            neu_group_update_tag(g->group, tag);
+            adapter_storage_update_tag_value(cmd->driver, cmd->group, tag);
             neu_resp_error_t error = { .error = NEU_ERR_SUCCESS };
             req->type              = NEU_RESP_ERROR;
             driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+            free(req);
         } else {
             driver->adapter.module->intf_funs->driver.write_tag(
                 driver->adapter.plugin, (void *) req, tag, cmd->value.value);
         }
 
-        free(tag->address);
-        free(tag->name);
-        free(tag->description);
-        free(tag);
+        neu_tag_free(tag);
     }
 }
 

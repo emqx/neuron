@@ -37,6 +37,8 @@ void adapter_storage_add_tags(const char *node, const char *group,
                               const neu_datatag_t *tags, size_t n);
 void adapter_storage_update_tag(const char *node, const char *group,
                                 const neu_datatag_t *tag);
+void adapter_storage_update_tag_value(const char *node, const char *group,
+                                      const neu_datatag_t *tag);
 void adapter_storage_del_tag(const char *node, const char *group,
                              const char *name);
 
