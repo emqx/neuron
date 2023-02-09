@@ -587,9 +587,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(manager, header, &e);
             for (int i = 0; i < cmd->n_tag; i++) {
-                free(cmd->tags[i].address);
-                free(cmd->tags[i].name);
-                free(cmd->tags[i].description);
+                neu_tag_fini(&cmd->tags[i]);
             }
             free(cmd->tags);
         } else {

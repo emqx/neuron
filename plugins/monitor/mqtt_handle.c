@@ -162,6 +162,14 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
             json_req.add_tags.tags[i].precision = add_tag->tags[i].precision;
             json_req.add_tags.tags[i].description =
                 add_tag->tags[i].description;
+            if (neu_tag_attribute_test(&add_tag->tags[i],
+                                       NEU_ATTRIBUTE_STATIC)) {
+                neu_tag_get_static_value_json(&add_tag->tags[i],
+                                              &json_req.add_tags.tags[i].t,
+                                              &json_req.add_tags.tags[i].value);
+            } else {
+                json_req.add_tags.tags[i].t = NEU_JSON_UNDEFINE;
+            }
         }
         *topic_p = NEU_REQ_ADD_TAG_EVENT == event
             ? plugin->config->tag_add_topic
@@ -316,9 +324,7 @@ end:
                NEU_REQ_UPDATE_TAG_EVENT == event) {
         neu_req_add_tag_t *add_tag = data;
         for (uint16_t i = 0; i < add_tag->n_tag; i++) {
-            free(add_tag->tags[i].address);
-            free(add_tag->tags[i].name);
-            free(add_tag->tags[i].description);
+            neu_tag_fini(&add_tag->tags[i]);
         }
         free(add_tag->tags);
     } else if (NEU_REQ_DEL_TAG_EVENT == event) {

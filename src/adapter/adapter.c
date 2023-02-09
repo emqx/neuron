@@ -680,9 +680,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
-            free(cmd->tags[i].address);
-            free(cmd->tags[i].name);
-            free(cmd->tags[i].description);
+            neu_tag_fini(&cmd->tags[i]);
         }
 
         if (resp.index) {
@@ -724,9 +722,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
 
         for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
-            free(cmd->tags[i].address);
-            free(cmd->tags[i].name);
-            free(cmd->tags[i].description);
+            neu_tag_fini(&cmd->tags[i]);
         }
         if (resp.index > 0) {
             cmd->n_tag = resp.index;
