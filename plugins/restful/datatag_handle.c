@@ -59,6 +59,10 @@ void handle_add_tags(nng_aio *aio)
                 } else {
                     cmd.tags[i].description = strdup("");
                 }
+                if (NEU_ATTRIBUTE_STATIC & req->tags[i].attribute) {
+                    neu_tag_set_static_value_json(&cmd.tags[i], req->tags[i].t,
+                                                  &req->tags[i].value);
+                }
             }
 
             ret = neu_plugin_op(plugin, header, &cmd);
@@ -142,6 +146,10 @@ void handle_update_tags(nng_aio *aio)
                     cmd.tags[i].description = strdup(req->tags[i].description);
                 } else {
                     cmd.tags[i].description = strdup("");
+                }
+                if (NEU_ATTRIBUTE_STATIC & req->tags[i].attribute) {
+                    neu_tag_set_static_value_json(&cmd.tags[i], req->tags[i].t,
+                                                  &req->tags[i].value);
                 }
             }
 

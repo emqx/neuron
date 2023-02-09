@@ -25,9 +25,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <jansson.h>
+
 #include "json/json.h"
 
 #include "neu_json_tag.h"
+#include "tag.h"
 
 int neu_json_encode_add_tags_req(void *json_object, void *param)
 {
@@ -73,6 +76,11 @@ int neu_json_encode_add_tags_req(void *json_object, void *param)
                 .t         = NEU_JSON_STR,
                 .v.val_str = p_tag->description,
             },
+            {
+                .name = "value",
+                .t    = p_tag->t,
+                .v    = p_tag->value,
+            },
         };
         tag_array = neu_json_encode_array(tag_array, tag_elems,
                                           NEU_JSON_ELEM_SIZE(tag_elems));
@@ -103,8 +111,9 @@ int neu_json_encode_add_tags_req(void *json_object, void *param)
 
 int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
 {
-    int                      ret      = 0;
-    void *                   json_obj = NULL;
+    int                          ret      = 0;
+    void *                       json_obj = NULL;
+    neu_json_add_tags_req_tag_t *p_tag    = NULL;
     neu_json_add_tags_req_t *req = calloc(1, sizeof(neu_json_add_tags_req_t));
     if (req == NULL) {
         return -1;
@@ -135,7 +144,7 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
     }
 
     req->tags = calloc(req->n_tag, sizeof(neu_json_add_tags_req_tag_t));
-    neu_json_add_tags_req_tag_t *p_tag = req->tags;
+    p_tag     = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = {
             {
@@ -169,13 +178,17 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
                 .t         = NEU_JSON_STR,
                 .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
             },
+            {
+                .name      = "value",
+                .t         = NEU_JSON_VALUE,
+                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            },
         };
+
         ret = neu_json_decode_array_by_json(
             json_obj, "tags", i, NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
-        if (ret != 0) {
-            goto decode_fail;
-        }
 
+        // set the fields before check for easy clean up on error
         p_tag->type        = tag_elems[0].v.val_int;
         p_tag->name        = tag_elems[1].v.val_str;
         p_tag->attribute   = tag_elems[2].v.val_int;
@@ -183,6 +196,20 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
         p_tag->decimal     = tag_elems[4].v.val_double;
         p_tag->precision   = tag_elems[5].v.val_int;
         p_tag->description = tag_elems[6].v.val_str;
+        p_tag->t           = tag_elems[7].t;
+        p_tag->value       = tag_elems[7].v;
+
+        if (ret != 0) {
+            goto decode_fail;
+        }
+
+        if (((NEU_ATTRIBUTE_STATIC & p_tag->attribute) &&
+             NEU_JSON_UNDEFINE == p_tag->t) ||
+            (!(NEU_ATTRIBUTE_STATIC & p_tag->attribute) &&
+             NEU_JSON_UNDEFINE != p_tag->t)) {
+            goto decode_fail;
+        }
+
         p_tag++;
     }
 
@@ -191,11 +218,22 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
 
 decode_fail:
     if (req->tags != NULL) {
+        while (p_tag >= req->tags) {
+            free(p_tag->description);
+            free(p_tag->name);
+            free(p_tag->address);
+            if (NEU_JSON_STR == p_tag->t) {
+                free(p_tag->value.val_str);
+            }
+            p_tag--;
+        }
         free(req->tags);
     }
     if (req != NULL) {
         free(req);
     }
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
     ret = -1;
 
 decode_exit:
@@ -215,6 +253,9 @@ void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req)
         }
         free(p_tag->name);
         free(p_tag->address);
+        if (NEU_JSON_STR == p_tag->t) {
+            free(p_tag->value.val_str);
+        }
         p_tag++;
     }
 
@@ -436,9 +477,10 @@ int neu_json_encode_get_tags_resp(void *json_object, void *param)
 int neu_json_decode_update_tags_req(char *                       buf,
                                     neu_json_update_tags_req_t **result)
 {
-    int                         ret      = 0;
-    void *                      json_obj = NULL;
-    neu_json_update_tags_req_t *req =
+    int                             ret      = 0;
+    void *                          json_obj = NULL;
+    neu_json_update_tags_req_tag_t *p_tag    = NULL;
+    neu_json_update_tags_req_t *    req =
         calloc(1, sizeof(neu_json_update_tags_req_t));
     if (req == NULL) {
         return -1;
@@ -469,7 +511,7 @@ int neu_json_decode_update_tags_req(char *                       buf,
     }
 
     req->tags = calloc(req->n_tag, sizeof(neu_json_update_tags_req_tag_t));
-    neu_json_update_tags_req_tag_t *p_tag = req->tags;
+    p_tag     = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = {
             {
@@ -503,13 +545,16 @@ int neu_json_decode_update_tags_req(char *                       buf,
                 .t         = NEU_JSON_STR,
                 .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
             },
+            {
+                .name      = "value",
+                .t         = NEU_JSON_VALUE,
+                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+            },
         };
         ret = neu_json_decode_array_by_json(
             json_obj, "tags", i, NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
-        if (ret != 0) {
-            goto decode_fail;
-        }
 
+        // set the fields before check for easy clean up on error
         p_tag->type        = tag_elems[0].v.val_int;
         p_tag->name        = tag_elems[1].v.val_str;
         p_tag->attribute   = tag_elems[2].v.val_int;
@@ -517,6 +562,20 @@ int neu_json_decode_update_tags_req(char *                       buf,
         p_tag->decimal     = tag_elems[4].v.val_double;
         p_tag->precision   = tag_elems[5].v.val_int;
         p_tag->description = tag_elems[6].v.val_str;
+        p_tag->t           = tag_elems[7].t;
+        p_tag->value       = tag_elems[7].v;
+
+        if (ret != 0) {
+            goto decode_fail;
+        }
+
+        if (((NEU_ATTRIBUTE_STATIC & p_tag->attribute) &&
+             NEU_JSON_UNDEFINE == p_tag->t) ||
+            (!(NEU_ATTRIBUTE_STATIC & p_tag->attribute) &&
+             NEU_JSON_UNDEFINE != p_tag->t)) {
+            goto decode_fail;
+        }
+
         p_tag++;
     }
 
@@ -525,11 +584,22 @@ int neu_json_decode_update_tags_req(char *                       buf,
 
 decode_fail:
     if (req->tags != NULL) {
+        while (p_tag >= req->tags) {
+            free(p_tag->description);
+            free(p_tag->name);
+            free(p_tag->address);
+            if (NEU_JSON_STR == p_tag->t) {
+                free(p_tag->value.val_str);
+            }
+            p_tag--;
+        }
         free(req->tags);
     }
     if (req != NULL) {
         free(req);
     }
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
     ret = -1;
 
 decode_exit:
@@ -549,6 +619,9 @@ void neu_json_decode_update_tags_req_free(neu_json_update_tags_req_t *req)
         }
         free(p_tag->name);
         free(p_tag->address);
+        if (NEU_JSON_STR == p_tag->t) {
+            free(p_tag->value.val_str);
+        }
         p_tag++;
     }
 

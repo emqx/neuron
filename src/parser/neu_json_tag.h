@@ -32,13 +32,15 @@ extern "C" {
 #endif
 
 typedef struct {
-    char *  address;
-    char *  name;
-    char *  description;
-    int64_t type;
-    int64_t attribute;
-    int64_t precision;
-    double  decimal;
+    char *           address;
+    char *           name;
+    char *           description;
+    int64_t          type;
+    int64_t          attribute;
+    int64_t          precision;
+    double           decimal;
+    neu_json_type_e  t;
+    neu_json_value_u value;
 } neu_json_add_tags_req_tag_t;
 
 typedef struct {
@@ -90,13 +92,15 @@ typedef struct {
 int neu_json_encode_get_tags_resp(void *json_object, void *param);
 
 typedef struct {
-    char *  name;
-    char *  address;
-    char *  description;
-    int64_t type;
-    int64_t attribute;
-    int64_t precision;
-    double  decimal;
+    char *           name;
+    char *           address;
+    char *           description;
+    int64_t          type;
+    int64_t          attribute;
+    int64_t          precision;
+    double           decimal;
+    neu_json_type_e  t;
+    neu_json_value_u value;
 } neu_json_update_tags_req_tag_t;
 
 typedef struct {
