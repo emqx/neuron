@@ -17,7 +17,7 @@ jobs:
         run: |
           helm install neuron deploy/charts/neuron\
             --set image.repository="emqx/neuron"\
-            --set image.tag="2.0.1"
+            --set image.tag="2.2.14"
       - name: Check deployment
         timeout-minutes: 5
         run: |
