@@ -599,6 +599,11 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
         return NEU_ERR_TAG_PRECISION_INVALID;
     }
 
+    if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE) &&
+        neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+        return NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
+    }
+
     ret = driver->adapter.module->intf_funs->driver.validate_tag(
         driver->adapter.plugin, tag);
     if (ret != NEU_ERR_SUCCESS) {
