@@ -48,7 +48,7 @@ static void find_os_info()
 
     if (NULL == fgets(buf, sizeof(buf), f)) {
         nlog_error("no command output");
-        fclose(f);
+        pclose(f);
         return;
     }
     buf[strcspn(buf, "\n")] = 0;
@@ -57,14 +57,14 @@ static void find_os_info()
 
     if (NULL == fgets(buf, sizeof(buf), f)) {
         nlog_error("no command output");
-        fclose(f);
+        pclose(f);
         return;
     }
     buf[strcspn(buf, "\n")] = 0;
     strncpy(g_metrics_.kernel, buf, sizeof(g_metrics_.kernel));
     g_metrics_.kernel[sizeof(g_metrics_.kernel) - 1] = 0;
 
-    fclose(f);
+    pclose(f);
 }
 
 static size_t parse_memory_fields(int col)
@@ -87,7 +87,7 @@ static size_t parse_memory_fields(int col)
         nlog_error("no command output");
     }
 
-    fclose(f);
+    pclose(f);
     return val;
 }
 
