@@ -46,6 +46,7 @@ extern "C" {
 #include "utils/utlist.h"
 
 #include "connection/neu_connection.h"
+#include "connection/neu_connection_eth.h"
 #include "event/event.h"
 
 #include "json/json.h"

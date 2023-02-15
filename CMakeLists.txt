@@ -66,6 +66,7 @@ set(NEURON_BASE_SOURCES
     src/base/group.c
     src/base/metrics.c
     src/connection/connection.c
+    src/connection/connection_eth.c
     src/connection/mqtt_client.c
     src/event/event_linux.c
     src/event/event_unix.c
