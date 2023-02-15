@@ -270,7 +270,8 @@ static UT_array *to_read_array(tag_elem_t *tags)
     HASH_ITER(hh, tags, el, tmp)
     {
         if (neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_READ) ||
-            neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
+            neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_SUBSCRIBE) ||
+            neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_STATIC)) {
             utarray_push_back(array, el->tag);
         }
     }
