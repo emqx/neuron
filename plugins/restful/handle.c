@@ -26,6 +26,7 @@
 
 #include "adapter_handle.h"
 #include "datatag_handle.h"
+#include "file_handle.h"
 #include "group_config_handle.h"
 #include "log_handle.h"
 #include "normal_handle.h"
@@ -97,6 +98,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/log/level",
     },
+    {
+        .url = "/api/v2/file",
+    }
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -300,6 +304,12 @@ static struct neu_http_handler rest_handlers[] = {
         .url           = "/api/v2/version",
         .value.handler = handle_get_version,
     },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/file",
+        .value.handler = handle_download_file,
+    }
 };
 
 void neu_rest_handler(const struct neu_http_handler **handlers, uint32_t *size)
