@@ -100,6 +100,9 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/file",
+    },
+    {
+        .url = "/api/v2/file/info",
     }
 };
 
@@ -309,6 +312,13 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/file",
         .value.handler = handle_download_file,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/file/info",
+        .value.handler = handle_file_info,
+
     }
 };
 

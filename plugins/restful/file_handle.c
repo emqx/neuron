@@ -25,6 +25,7 @@
 #include <strings.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #include <nng/nng.h>
@@ -41,6 +42,95 @@
 
 #include "file_handle.h"
 #include "log_handle.h"
+#include "parser/neu_json_file.h"
+
+void handle_file_info(nng_aio *aio)
+{
+    char dir_path[128] = { 0 };
+
+    int            n_file      = 0;
+    struct dirent *files       = { 0 };
+    char *         f_name[256] = { 0 };
+    char           c_time[32]  = { 0 };
+    char           m_time[32]  = { 0 };
+
+    neu_json_get_file_list_resp_t file_resp = { 0 };
+    char *                        result    = NULL;
+
+    NEU_VALIDATE_JWT(aio);
+
+    if (neu_http_get_param_str(aio, "dir_path", dir_path, sizeof(dir_path)) <=
+        0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        });
+
+        return;
+    }
+
+    /*check whether the directory exists*/
+    if (0 != access(dir_path, F_OK)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_NOT_EXIST, {
+            neu_http_response(aio, error_code.error, result_error);
+        });
+
+        return;
+    }
+
+    /*open directory*/
+    DIR *dir = opendir(dir_path);
+    if (dir == NULL) {
+        nlog_error("open a directory failed");
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_OPEN_FAILURE, {
+            neu_http_response(aio, error_code.error, result_error);
+        });
+
+        return;
+    }
+
+    /*read directory*/
+    while ((files = readdir(dir)) != NULL) {
+        if (strcmp(files->d_name, ".") == 0 ||
+            strcmp(files->d_name, "..") == 0) {
+            continue;
+        }
+
+        f_name[n_file] = files->d_name;
+        ++n_file;
+    }
+
+    /*handle response*/
+    file_resp.n_file = n_file;
+    file_resp.file = calloc(file_resp.n_file, sizeof(neu_json_get_file_resp_t));
+
+    for (int i = 0; i < file_resp.n_file; i++) {
+        char        file_path[512] = { 0 };
+        struct stat statbuf;
+
+        sprintf(file_path, "%s/%s", dir_path, f_name[i]);
+        stat(file_path, &statbuf);
+
+        strncpy(c_time, ctime(&statbuf.st_ctim.tv_sec),
+                strlen(ctime(&statbuf.st_ctim.tv_sec)) - 1);
+        strncpy(m_time, ctime(&statbuf.st_mtim.tv_sec),
+                strlen(ctime(&statbuf.st_mtim.tv_sec)) - 1);
+
+        file_resp.file[i].name  = f_name[i];
+        file_resp.file[i].size  = statbuf.st_size;
+        file_resp.file[i].ctime = c_time;
+        file_resp.file[i].mtime = m_time;
+    }
+
+    neu_json_encode_by_fn(&file_resp, neu_json_encode_get_file_list_resp,
+                          &result);
+
+    closedir(dir);
+    neu_http_ok(aio, result);
+    free(result);
+    free(file_resp.file);
+
+    return;
+}
 
 void handle_download_file(nng_aio *aio)
 {
