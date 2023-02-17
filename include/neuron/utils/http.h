@@ -82,6 +82,9 @@ int         neu_http_not_found(nng_aio *aio, char *content);
 int         neu_http_conflict(nng_aio *aio, char *content);
 int         neu_http_internal_error(nng_aio *aio, char *content);
 
+int neu_http_response_file(nng_aio *aio, void *data, size_t len,
+                           const char *disposition);
+
 #ifdef __cplusplus
 }
 #endif
