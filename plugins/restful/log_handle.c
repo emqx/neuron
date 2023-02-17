@@ -110,7 +110,7 @@ void handle_logs_files(nng_aio *aio)
 
     // handle http response
     strcpy(disp, "attachment; filename=neuron_logs.tar.gz");
-    rv = http_resp_files(aio, data, len, disp);
+    rv = neu_http_response_file(aio, data, len, disp);
     if (0 != rv) {
         return;
     }
@@ -178,41 +178,6 @@ void handle_log_level(nng_aio *aio)
 
             utarray_free(log_files);
         })
-}
-
-int http_resp_files(nng_aio *aio, void *data, size_t len,
-                    const char *disposition)
-{
-    nng_http_res *res = NULL;
-    int           rv  = 0;
-
-    if (((rv = nng_http_res_alloc(&res)) != 0) ||
-        ((rv = nng_http_res_set_status(res, NNG_HTTP_STATUS_OK)) != 0) ||
-        ((rv = nng_http_res_set_header(res, "Content-Type",
-                                       "application/octet-stream")) != 0) ||
-        ((rv = nng_http_res_set_header(res, "Content-Disposition",
-                                       disposition)) != 0) ||
-        ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Origin",
-                                       "*")) != 0) ||
-        ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Methods",
-                                       "POST,GET,PUT,DELETE,OPTIONS")) != 0) ||
-        ((rv = nng_http_res_set_header(res, "Access-Control-Allow-Headers",
-                                       "*")) != 0) ||
-        ((rv = nng_http_res_set_header(res, "Access-Control-Expose-Headers",
-                                       "Content-Disposition")) != 0) ||
-        ((rv = nng_http_res_copy_data(res, data, len)) != 0)) {
-        nng_http_res_free(res);
-        free(data);
-        nng_aio_finish(aio, rv);
-
-        return -1;
-    }
-
-    free(data);
-    nng_aio_set_output(aio, 0, res);
-    nng_aio_finish(aio, 0);
-
-    return 0;
 }
 
 static inline bool ends_with(const char *str, const char *suffix)
