@@ -17,17 +17,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#ifndef _NEU_LOG_HANDLE_H_
-#define _NEU_LOG_HANDLE_H_
+#ifndef _NEU_FILE_HANDLE_H_
+#define _NEU_FILE_HANDLE_H_
 
 #include <nng/nng.h>
 
-// void handle_get_log(nng_aio *aio);
-void handle_logs_files(nng_aio *aio);
-void handle_log_level(nng_aio *aio);
-
-int read_file(const char *file_name, void **datap, size_t *lenp);
-int http_resp_files(nng_aio *aio, void *data, size_t len,
-                    const char *disposition);
+void handle_download_file(nng_aio *aio);
 
 #endif

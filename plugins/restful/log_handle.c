@@ -44,10 +44,6 @@
 
 UT_array *collect_log_files();
 
-int        read_file(const char *file_name, void **datap, size_t *lenp);
-static int http_resp_files(nng_aio *aio, void *data, size_t len,
-                           const char *disposition);
-
 void handle_logs_files(nng_aio *aio)
 {
     char   path[128] = { 0 };
@@ -184,8 +180,8 @@ void handle_log_level(nng_aio *aio)
         })
 }
 
-static int http_resp_files(nng_aio *aio, void *data, size_t len,
-                           const char *disposition)
+int http_resp_files(nng_aio *aio, void *data, size_t len,
+                    const char *disposition)
 {
     nng_http_res *res = NULL;
     int           rv  = 0;

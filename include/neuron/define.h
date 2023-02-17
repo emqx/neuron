@@ -37,6 +37,7 @@
 #define NEU_USER_PASSWORD_MIN_LEN 4
 #define NEU_USER_PASSWORD_MAX_LEN 16
 #define NEU_LOG_LEVEL_LEN 9
+#define NEU_FILE_PATH_LEN 128
 
 extern int  default_log_level;
 extern bool disable_jwt;
