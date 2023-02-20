@@ -41,7 +41,9 @@ int neu_json_encode_by_fn(void *param, neu_json_encode_fn fn, char **result)
         }
     }
 
-    return neu_json_encode(object, result);
+    int ret = neu_json_encode(object, result);
+    neu_json_decode_free(object);
+    return ret;
 }
 
 int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
@@ -64,7 +66,9 @@ int neu_json_encode_with_mqtt(void *param, neu_json_encode_fn fn,
         }
     }
 
-    return neu_json_encode(object, result);
+    int ret = neu_json_encode(object, result);
+    neu_json_decode_free(object);
+    return ret;
 }
 
 int neu_parse_param(const char *buf, char **err_param, int n,

@@ -173,6 +173,7 @@ TEST(JsonTest, EncodeField)
     EXPECT_STREQ(result, buf);
 
     free(result);
+    neu_json_decode_free(ob);
 }
 
 TEST(JsonTest, EncodeArray)
@@ -241,6 +242,7 @@ TEST(JsonTest, EncodeArray)
     EXPECT_STREQ(result, buf);
 
     free(result);
+    neu_json_decode_free(ob);
 }
 
 int main(int argc, char **argv)

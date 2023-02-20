@@ -344,7 +344,7 @@ void *neu_json_encode_new()
 
 void neu_json_encode_free(void *json_object)
 {
-    free(json_object);
+    json_decref(json_object);
 }
 
 int neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n)
@@ -359,8 +359,6 @@ int neu_json_encode_field(void *json_object, neu_json_elem_t *elem, int n)
 int neu_json_encode(void *json_object, char **str)
 {
     *str = json_dumps(json_object, JSON_REAL_PRECISION(16));
-
-    json_decref(json_object);
 
     return 0;
 }
