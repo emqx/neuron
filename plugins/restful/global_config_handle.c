@@ -26,6 +26,7 @@
 #include "errcodes.h"
 #include "parser/neu_json_group_config.h"
 #include "parser/neu_json_node.h"
+#include "parser/neu_json_tag.h"
 #include "plugin.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
@@ -40,6 +41,7 @@ typedef enum {
     STATE_GET_APP,
     STATE_GET_DRIVER,
     STATE_GET_GROUP,
+    STATE_GET_TAG,
     STATE_END,
 } context_state_e;
 
@@ -51,12 +53,15 @@ typedef struct {
     UT_array *      apps;
     UT_array *      drivers;
     UT_array *      groups;
+    void *          iter;
 } context_t;
 
 static int get_nodes(context_t *ctx, neu_node_type_e type);
 static int get_nodes_resp(context_t *ctx, neu_resp_get_node_t *nodes);
 static int get_groups(context_t *ctx, int unused);
 static int get_groups_resp(context_t *ctx, neu_resp_get_driver_group_t *groups);
+static int get_tags(context_t *ctx, neu_resp_driver_group_info_t *info);
+static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags);
 
 static context_t *context_new(nng_aio *aio)
 {
@@ -124,6 +129,22 @@ static void context_next(context_t *ctx, neu_reqresp_type_e type, void *data)
         break;
     case STATE_GET_GROUP:
         NEXT(ctx, get_groups_resp, data);
+        ctx->iter  = NULL;
+        ctx->state = STATE_GET_TAG;
+        // fall through
+    case STATE_GET_TAG:
+        if (NULL == ctx->iter) {
+            // generate empty array on fall through
+            NEXT(ctx, get_tags_resp, NULL);
+        } else if (NEU_RESP_ERROR != type) {
+            NEXT(ctx, get_tags_resp, data);
+        }
+        // ignore error response message, keep going
+        ctx->iter = utarray_next(ctx->groups, ctx->iter);
+        if (ctx->iter) {
+            NEXT(ctx, get_tags, ctx->iter);
+            break;
+        }
         ctx->state = STATE_END;
         break;
     default:
@@ -249,6 +270,99 @@ static int get_groups_resp(context_t *ctx, neu_resp_get_driver_group_t *groups)
 end:
     free(gconfig_res.groups);
     ctx->groups = groups->groups;
+    return rv;
+}
+
+static int get_tags(context_t *ctx, neu_resp_driver_group_info_t *info)
+{
+    int           rv     = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = ctx->aio,
+        .type = NEU_REQ_GET_TAG,
+    };
+
+    neu_req_get_tag_t cmd = { 0 };
+    strcpy(cmd.driver, info->driver);
+    strcpy(cmd.group, info->group);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        rv = NEU_ERR_IS_BUSY;
+    }
+
+    return rv;
+}
+
+static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
+{
+    int                      rv       = 0;
+    neu_json_get_tags_resp_t tags_res = { 0 };
+    json_t *                 tag_obj  = NULL;
+    void *                   tag_arr  = NULL;
+
+    // allocate `tags` array if none
+    if (NULL == (tag_arr = json_object_get(ctx->json, "tags")) &&
+        (NULL == (tag_arr = json_array()) ||
+         // tag array ownership moved
+         0 != json_object_set_new(ctx->json, "tags", tag_arr))) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    if (NULL == tags || 0 == utarray_len(tags->tags)) {
+        // empty tags array, all done
+        goto end;
+    }
+
+    tags_res.n_tag = utarray_len(tags->tags);
+    tags_res.tags =
+        calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
+    if (NULL == tags_res.tags) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    utarray_foreach(tags->tags, neu_datatag_t *, tag)
+    {
+        int index = utarray_eltidx(tags->tags, tag);
+
+        tags_res.tags[index].name        = tag->name;
+        tags_res.tags[index].address     = tag->address;
+        tags_res.tags[index].description = tag->description;
+        tags_res.tags[index].type        = tag->type;
+        tags_res.tags[index].attribute   = tag->attribute;
+        tags_res.tags[index].precision   = tag->precision;
+        tags_res.tags[index].decimal     = tag->decimal;
+    }
+
+    // accumulate tag object in `tags` array
+    if (NULL == (tag_obj = json_object()) ||
+        // tag object ownership moved
+        0 != json_array_append_new(tag_arr, tag_obj)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    // encode `tags` data
+    if (0 != neu_json_encode_get_tags_resp(tag_obj, &tags_res)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    neu_resp_driver_group_info_t *info = ctx->iter;
+    // encode `driver` and `group`
+    if (0 !=
+            json_object_set_new(tag_obj, "driver", json_string(info->driver)) ||
+        0 != json_object_set_new(tag_obj, "group", json_string(info->group))) {
+        rv = NEU_ERR_EINTERNAL;
+    }
+
+end:
+    free(tags_res.tags);
+    if (tags && tags->tags) {
+        utarray_free(tags->tags);
+    }
     return rv;
 }
 
