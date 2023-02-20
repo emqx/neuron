@@ -39,6 +39,7 @@ typedef enum {
     STATE_START,
     STATE_GET_APP,
     STATE_GET_DRIVER,
+    STATE_GET_GROUP,
     STATE_END,
 } context_state_e;
 
@@ -49,10 +50,13 @@ typedef struct {
     void *          json;
     UT_array *      apps;
     UT_array *      drivers;
+    UT_array *      groups;
 } context_t;
 
 static int get_nodes(context_t *ctx, neu_node_type_e type);
 static int get_nodes_resp(context_t *ctx, neu_resp_get_node_t *nodes);
+static int get_groups(context_t *ctx, int unused);
+static int get_groups_resp(context_t *ctx, neu_resp_get_driver_group_t *groups);
 
 static context_t *context_new(nng_aio *aio)
 {
@@ -83,6 +87,9 @@ static void context_free(context_t *ctx)
         if (ctx->drivers) {
             utarray_free(ctx->drivers);
         }
+        if (ctx->groups) {
+            utarray_free(ctx->groups);
+        }
         free(ctx);
     }
 }
@@ -112,6 +119,11 @@ static void context_next(context_t *ctx, neu_reqresp_type_e type, void *data)
         break;
     case STATE_GET_DRIVER:
         NEXT(ctx, get_nodes_resp, data);
+        NEXT(ctx, get_groups, 0);
+        ctx->state = STATE_GET_GROUP;
+        break;
+    case STATE_GET_GROUP:
+        NEXT(ctx, get_groups_resp, data);
         ctx->state = STATE_END;
         break;
     default:
@@ -187,6 +199,56 @@ end:
     }
 
     free(nodes_res.nodes);
+    return rv;
+}
+
+static int get_groups(context_t *ctx, int unused)
+{
+    (void) unused;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = ctx->aio,
+        .type = NEU_REQ_GET_DRIVER_GROUP,
+    };
+    neu_req_get_group_t cmd = { 0 };
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int get_groups_resp(context_t *ctx, neu_resp_get_driver_group_t *groups)
+{
+    int                              rv          = 0;
+    neu_json_get_driver_group_resp_t gconfig_res = { 0 };
+
+    gconfig_res.n_group = utarray_len(groups->groups);
+    gconfig_res.groups  = calloc(gconfig_res.n_group,
+                                sizeof(neu_json_get_driver_group_resp_group_t));
+    if (NULL == gconfig_res.groups) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    utarray_foreach(groups->groups, neu_resp_driver_group_info_t *, group)
+    {
+        int index = utarray_eltidx(groups->groups, group);
+        gconfig_res.groups[index].driver    = group->driver;
+        gconfig_res.groups[index].group     = group->group;
+        gconfig_res.groups[index].interval  = group->interval;
+        gconfig_res.groups[index].tag_count = group->tag_count;
+    }
+
+    if (0 != neu_json_encode_get_driver_group_resp(ctx->json, &gconfig_res)) {
+        rv = NEU_ERR_EINTERNAL;
+    }
+
+end:
+    free(gconfig_res.groups);
+    ctx->groups = groups->groups;
     return rv;
 }
 
