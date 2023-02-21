@@ -43,6 +43,8 @@ typedef enum {
     STATE_GET_GROUP,
     STATE_GET_TAG,
     STATE_GET_SUBSCRIPTION,
+    STATE_GET_APP_SETTING,
+    STATE_GET_DRIVER_SETTING,
     STATE_END,
 } context_state_e;
 
@@ -66,6 +68,9 @@ static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags);
 static int get_subscriptions(context_t *ctx, neu_resp_node_info_t *info);
 static int get_subscriptions_resp(context_t *                     ctx,
                                   neu_resp_get_subscribe_group_t *groups);
+static int get_setting(context_t *ctx, neu_resp_node_info_t *info);
+static int get_setting_resp(context_t *                  ctx,
+                            neu_resp_get_node_setting_t *setting);
 
 static context_t *context_new(nng_aio *aio)
 {
@@ -157,6 +162,35 @@ static void context_next(context_t *ctx, neu_reqresp_type_e type, void *data)
         ctx->iter = utarray_next(ctx->apps, ctx->iter);
         if (ctx->iter) {
             NEXT(ctx, get_subscriptions, ctx->iter);
+            break;
+        }
+        ctx->state = STATE_GET_APP_SETTING;
+        // fall through
+    case STATE_GET_APP_SETTING:
+        if (NULL == ctx->iter) {
+            // generate empty array on fall through
+            NEXT(ctx, get_setting_resp, NULL);
+        } else if (NEU_RESP_ERROR != type) {
+            NEXT(ctx, get_setting_resp, data);
+        }
+        // ignore error response message, keep going
+        ctx->iter = utarray_next(ctx->apps, ctx->iter);
+        if (ctx->iter) {
+            NEXT(ctx, get_setting, ctx->iter);
+            break;
+        }
+        ctx->state = STATE_GET_DRIVER_SETTING;
+        // fall through
+    case STATE_GET_DRIVER_SETTING:
+        if (NULL == ctx->iter) {
+            // generate empty array on fall through
+            NEXT(ctx, get_setting_resp, NULL);
+        } else if (NEU_RESP_ERROR != type) {
+            NEXT(ctx, get_setting_resp, data);
+        }
+        ctx->iter = utarray_next(ctx->drivers, ctx->iter);
+        if (ctx->iter) {
+            NEXT(ctx, get_setting, ctx->iter);
             break;
         }
         ctx->state = STATE_END;
@@ -459,6 +493,70 @@ end:
     free(sub_grp_configs.groups);
     if (groups && groups->groups) {
         utarray_free(groups->groups);
+    }
+    return rv;
+}
+
+static int get_setting(context_t *ctx, neu_resp_node_info_t *info)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = ctx->aio,
+        .type = NEU_REQ_GET_NODE_SETTING,
+    };
+
+    neu_req_get_node_setting_t cmd = { 0 };
+    strcpy(cmd.ndoe, info->node);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int get_setting_resp(context_t *                  ctx,
+                            neu_resp_get_node_setting_t *setting)
+{
+    int     rv          = 0;
+    json_t *setting_obj = NULL;
+    json_t *setting_arr = NULL;
+
+    // allocate `settings` array if none
+    if (NULL == (setting_arr = json_object_get(ctx->json, "settings")) &&
+        (NULL == (setting_arr = json_array()) ||
+         // tag array ownership moved
+         0 != json_object_set_new(ctx->json, "settings", setting_arr))) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    if (NULL == setting) {
+        // empty subscriptions array, all done
+        goto end;
+    }
+
+    // accumulate setting object in `settings` array
+    if (NULL == (setting_obj = json_object()) ||
+        // setting object ownership moved
+        0 != json_array_append_new(setting_arr, setting_obj)) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    neu_json_get_node_setting_resp_t resp = {
+        .node    = setting->node,
+        .setting = setting->setting,
+    };
+
+    if (0 != neu_json_encode_get_node_setting_resp(setting_obj, &resp)) {
+        rv = NEU_ERR_EINTERNAL;
+    }
+
+end:
+    if (setting) {
+        free(setting->setting);
     }
     return rv;
 }
