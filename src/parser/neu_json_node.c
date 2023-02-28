@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <jansson.h>
+
 #include "json/json.h"
 
 #include "neu_json_node.h"
@@ -241,8 +243,15 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
     int                        ret  = 0;
     neu_json_get_nodes_resp_t *resp = (neu_json_get_nodes_resp_t *) param;
 
-    void *                          node_array = neu_json_array();
-    neu_json_get_nodes_resp_node_t *p_node     = resp->nodes;
+    // accumulate data in nodes array if any
+    void *node_array = json_object_get(json_object, "nodes");
+    if (node_array) {
+        json_incref(node_array);
+    } else {
+        node_array = json_array();
+    }
+
+    neu_json_get_nodes_resp_node_t *p_node = resp->nodes;
     for (int i = 0; i < resp->n_node; i++) {
         neu_json_elem_t node_elems[] = {
             {

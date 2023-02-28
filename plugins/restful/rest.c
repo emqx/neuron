@@ -28,6 +28,7 @@
 #include "argparse.h"
 #include "datatag_handle.h"
 #include "define.h"
+#include "global_config_handle.h"
 #include "group_config_handle.h"
 #include "handle.h"
 #include "plugin_handle.h"
@@ -166,6 +167,12 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
                                 neu_reqresp_head_t *header, void *data)
 {
     (void) plugin;
+
+    if (nng_aio_get_input(header->ctx, 3)) {
+        // catch all response messages for global config request
+        handle_global_config_resp(header->ctx, header->type, data);
+        return 0;
+    }
 
     switch (header->type) {
     case NEU_RESP_ERROR: {
