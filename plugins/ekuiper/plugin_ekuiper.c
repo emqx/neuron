@@ -237,7 +237,7 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
     nng_mtx_unlock(plugin->mtx);
 
     if (disconnected) {
-        plog_notice(plugin, "not connected");
+        plog_debug(plugin, "not connected");
         return -1;
     }
 
