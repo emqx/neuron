@@ -236,11 +236,6 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         NEU_NODE_LINK_STATE_DISCONNECTED == plugin->common.link_state;
     nng_mtx_unlock(plugin->mtx);
 
-    if (disconnected) {
-        plog_debug(plugin, "not connected");
-        return -1;
-    }
-
     switch (header->type) {
     case NEU_RESP_ERROR: {
         neu_resp_error_t *error = (neu_resp_error_t *) data;
@@ -248,10 +243,21 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
+        if (disconnected) {
+            plog_debug(plugin, "not connected");
+            return -1;
+        }
         neu_reqresp_trans_data_t *trans_data = data;
         send_data(plugin, trans_data);
         break;
     }
+    case NEU_REQ_SUBSCRIBE_GROUP: {
+        neu_req_subscribe_t *sub_info = data;
+        free(sub_info->params);
+        break;
+    }
+    case NEU_REQ_UNSUBSCRIBE_GROUP:
+        break;
     default:
         plog_notice(plugin, "unsupported request type: %d", header->type);
         break;
