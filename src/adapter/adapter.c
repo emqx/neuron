@@ -1048,9 +1048,11 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 {
     nng_msg *msg = neu_msg_gen(header, data);
 
-    if (nng_sendmsg(adapter->sock, msg, 0) != 0) {
+    int ret = nng_sendmsg(adapter->sock, msg, 0);
+    if (ret != 0) {
         nng_msg_free(msg);
-        nlog_error("adapter reply fail! adapter:%s receiver:%s", adapter->name, header->receiver);
+        nlog_warn("reply %s to %s of %s, error:%s", header->sender, header->receiver,
+                    neu_reqresp_type_string(header->type), nng_strerror(ret));
     }
 
 }
