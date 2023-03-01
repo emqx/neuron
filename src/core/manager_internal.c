@@ -199,6 +199,7 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
         nlog_info("send %s to %s", neu_reqresp_type_string(header.type), app);
     } else {
+        free(cmd.params);
         nng_msg_free(out_msg);
     }
 
