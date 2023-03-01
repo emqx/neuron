@@ -4,7 +4,7 @@
     "description": "IP address to listen for connections from eKuiper",
     "attribute": "required",
     "type": "string",
-    "default": "127.0.0.1",
+    "default": "0.0.0.0",
     "valid": {
       "length": 255
     }
