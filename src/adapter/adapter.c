@@ -1048,7 +1048,13 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 {
     nng_msg *msg = neu_msg_gen(header, data);
 
-    nng_sendmsg(adapter->sock, msg, 0);
+    int ret = nng_sendmsg(adapter->sock, msg, 0);
+    if (ret != 0) {
+        nng_msg_free(msg);
+        nlog_warn("%s reply %s to %s, error: %s",header->sender,
+                  neu_reqresp_type_string(header->type), header->receiver, nng_strerror(ret));
+    }
+
 }
 
 inline static void notify_monitor(neu_adapter_t *    adapter,
