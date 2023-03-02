@@ -5,6 +5,7 @@
             "regex": ""
         }
     ],
+    "group_interval": 1000,
     "file_length": {
         "name": "file_length",
         "description": "",

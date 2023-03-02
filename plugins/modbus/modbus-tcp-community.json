@@ -25,6 +25,7 @@
 			"regex": "^[0-9]+!([0-1][0-9]+|[3-4][0-9]+\\.([0-9]|[0-1][0-5]))$"
 		}
 	],
+	"group_interval": 1000,
 	"host": {
 		"name": "host",
 		"description": "local ip in server mode, remote device ip in client mode",
