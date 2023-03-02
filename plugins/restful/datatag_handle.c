@@ -230,6 +230,12 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
         tags_res.tags[index].attribute   = tag->attribute;
         tags_res.tags[index].precision   = tag->precision;
         tags_res.tags[index].decimal     = tag->decimal;
+        if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+            neu_tag_get_static_value_json(tag, &tags_res.tags[index].t,
+                                          &tags_res.tags[index].value);
+        } else {
+            tags_res.tags[index].t = NEU_JSON_UNDEFINE;
+        }
     }
 
     neu_json_encode_by_fn(&tags_res, neu_json_encode_get_tags_resp, &result);
