@@ -75,13 +75,15 @@ int  neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result);
 void neu_json_decode_del_tags_req_free(neu_json_del_tags_req_t *req);
 
 typedef struct {
-    char *  address;
-    char *  name;
-    char *  description;
-    int64_t type;
-    int64_t attribute;
-    int64_t precision;
-    double  decimal;
+    char *           address;
+    char *           name;
+    char *           description;
+    int64_t          type;
+    int64_t          attribute;
+    int64_t          precision;
+    double           decimal;
+    neu_json_type_e  t;
+    neu_json_value_u value;
 } neu_json_get_tags_resp_tag_t;
 
 typedef struct {

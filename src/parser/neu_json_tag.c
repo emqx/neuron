@@ -120,6 +120,9 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
     }
 
     json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        goto decode_fail;
+    }
 
     neu_json_elem_t req_elems[] = { {
                                         .name = "node",
@@ -144,7 +147,11 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
     }
 
     req->tags = calloc(req->n_tag, sizeof(neu_json_add_tags_req_tag_t));
-    p_tag     = req->tags;
+    if (NULL == req->tags) {
+        goto decode_fail;
+    }
+
+    p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = {
             {
@@ -217,8 +224,8 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
     goto decode_exit;
 
 decode_fail:
-    if (req->tags != NULL) {
-        while (p_tag >= req->tags) {
+    if (req) {
+        while (p_tag && p_tag >= req->tags) {
             free(p_tag->description);
             free(p_tag->name);
             free(p_tag->address);
@@ -228,8 +235,6 @@ decode_fail:
             p_tag--;
         }
         free(req->tags);
-    }
-    if (req != NULL) {
         free(req);
     }
     free(req_elems[0].v.val_str);
@@ -245,6 +250,9 @@ decode_exit:
 
 void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req)
 {
+    if (NULL == req) {
+        return;
+    }
 
     neu_json_add_tags_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
@@ -457,6 +465,11 @@ int neu_json_encode_get_tags_resp(void *json_object, void *param)
                 .t         = NEU_JSON_STR,
                 .v.val_str = p_tag->description,
             },
+            {
+                .name = "value",
+                .t    = p_tag->t,
+                .v    = p_tag->value,
+            },
         };
         tag_array = neu_json_encode_array(tag_array, tag_elems,
                                           NEU_JSON_ELEM_SIZE(tag_elems));
@@ -487,6 +500,9 @@ int neu_json_decode_update_tags_req(char *                       buf,
     }
 
     json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        goto decode_fail;
+    }
 
     neu_json_elem_t req_elems[] = { {
                                         .name = "node",
@@ -511,7 +527,11 @@ int neu_json_decode_update_tags_req(char *                       buf,
     }
 
     req->tags = calloc(req->n_tag, sizeof(neu_json_update_tags_req_tag_t));
-    p_tag     = req->tags;
+    if (NULL == req->tags) {
+        goto decode_fail;
+    }
+
+    p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
         neu_json_elem_t tag_elems[] = {
             {
@@ -583,8 +603,8 @@ int neu_json_decode_update_tags_req(char *                       buf,
     goto decode_exit;
 
 decode_fail:
-    if (req->tags != NULL) {
-        while (p_tag >= req->tags) {
+    if (req) {
+        while (p_tag && p_tag >= req->tags) {
             free(p_tag->description);
             free(p_tag->name);
             free(p_tag->address);
@@ -594,8 +614,6 @@ decode_fail:
             p_tag--;
         }
         free(req->tags);
-    }
-    if (req != NULL) {
         free(req);
     }
     free(req_elems[0].v.val_str);
@@ -611,6 +629,9 @@ decode_exit:
 
 void neu_json_decode_update_tags_req_free(neu_json_update_tags_req_t *req)
 {
+    if (NULL == req) {
+        return;
+    }
 
     neu_json_update_tags_req_tag_t *p_tag = req->tags;
     for (int i = 0; i < req->n_tag; i++) {
