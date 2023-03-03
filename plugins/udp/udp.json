@@ -1,0 +1,30 @@
+{
+    "tag_regex": [
+        {
+            "type": 13,
+            "regex": ""
+        }
+    ],
+    "port": {
+        "name": "port",
+        "description": "bind port in udp server",
+        "attribute": "required",
+        "type": "int",
+        "default": 9702,
+        "valid": {
+        "min": 1,
+        "max": 65535
+        }
+    },
+    "buf_size": {
+        "name": "buf_size",
+        "description": "buffer size",
+        "attribute": "required",
+        "type": "int",
+        "default": 128,
+        "valid": {
+        "min": 64,
+        "max": 512
+        }
+    }
+}
