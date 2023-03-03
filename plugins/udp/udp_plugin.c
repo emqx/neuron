@@ -31,14 +31,14 @@
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    neu_events_t       *udp_server_events;
+    neu_events_t*       udp_server_events;
     int                 udp_server_fd;
     bool                running;
     int                 port;
     int                 buf_size;
-    char               *buffer;
+    char*               buffer;
     int                 index;
-    neu_event_io_t     *event;
+    neu_event_io_t*     event;
     pthread_mutex_t     mutex;
     /* data */
 };
@@ -155,7 +155,7 @@ static int driver_setting(neu_plugin_t *plugin, const char *config)
 {
     neu_json_elem_t port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t buf_size  = { .name = "buf_size", .t = NEU_JSON_INT };
-    char           *err_param = NULL;
+    char*           err_param = NULL;
 
     int ret = neu_parse_param(config, &err_param, 2, &port, &buf_size);
     if (ret != 0) {
@@ -242,9 +242,9 @@ static int udp_io_cb(enum neu_event_io_type type, int fd, void *usr_data)
         return 0;
     }
 
-    char buf[1024] = { 0 };
+    char buf[64] = { 0 };
 
-    ssize_t res = recvfrom(fd, buf, 1024, MSG_DONTWAIT, NULL, NULL);
+    ssize_t res = recvfrom(fd, buf, sizeof(buf), MSG_DONTWAIT, NULL, NULL);
     if (-1 == res) {
         plog_warn(plugin, "recvfrom error:%s", strerror(errno));
         return 0;
@@ -252,11 +252,13 @@ static int udp_io_cb(enum neu_event_io_type type, int fd, void *usr_data)
 
     if (res > 0) {
         pthread_mutex_lock(&plugin->mutex);
-        if (plugin->index >= plugin->buf_size) {
+        if (plugin->index + res > plugin->buf_size) {
             plog_warn(plugin, "buffer is full, dump old data!");
             plugin->index = 0;
             memset(plugin->buffer, 0, plugin->buf_size);
         }
+
+
         memcpy(plugin->buffer + plugin->index, buf, res);
         plugin->index += res;
         pthread_mutex_unlock(&plugin->mutex);
