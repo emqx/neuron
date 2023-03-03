@@ -258,7 +258,6 @@ static int udp_io_cb(enum neu_event_io_type type, int fd, void *usr_data)
             memset(plugin->buffer, 0, plugin->buf_size);
         }
 
-
         memcpy(plugin->buffer + plugin->index, buf, res);
         plugin->index += res;
         pthread_mutex_unlock(&plugin->mutex);
