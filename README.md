@@ -108,9 +108,11 @@ $ ctest --output-on-failure
 To run all functional testers
 
 ```shell
+$ sudo apt-get install -y mosquitto
 $ mosquitto -v &
-$ pip3 install -r ft/requirements.txt
-$ python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
+$ python3 -m pip install -U pip
+$ python3 -m pip install -r ft/requirements.txt
+$ python3 -m robot --maxerroelines=600 -P ft/ -d ft/reports ft
 ```
 
 ### Pressure test

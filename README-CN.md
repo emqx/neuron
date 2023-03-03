@@ -112,9 +112,11 @@ $ ctest --output-on-failure
 运行所有的功能测试
 
 ```shell
+$ sudo apt-get install -y mosquitto
 $ mosquitto -v &
-$ pip3 install -r ft/requirements.txt
-$ python3 -m robot -P ft/ --variable neuron_api:http -d ft/http_reports ft
+$ python3 -m pip install -U pip
+$ python3 -m pip install -r ft/requirements.txt
+$ python3 -m robot --maxerroelines=600 -P ft/ -d ft/reports ft
 ```
 
 ### 压力测试
