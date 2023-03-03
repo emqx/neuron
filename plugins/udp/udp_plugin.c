@@ -31,14 +31,14 @@
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    neu_events_t*       udp_server_events;
+    neu_events_t *      udp_server_events;
     int                 udp_server_fd;
     bool                running;
     int                 port;
     int                 buf_size;
-    char*               buffer;
+    char *              buffer;
     int                 index;
-    neu_event_io_t*     event;
+    neu_event_io_t *    event;
     pthread_mutex_t     mutex;
     /* data */
 };
@@ -155,7 +155,7 @@ static int driver_setting(neu_plugin_t *plugin, const char *config)
 {
     neu_json_elem_t port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t buf_size  = { .name = "buf_size", .t = NEU_JSON_INT };
-    char*           err_param = NULL;
+    char *          err_param = NULL;
 
     int ret = neu_parse_param(config, &err_param, 2, &port, &buf_size);
     if (ret != 0) {
