@@ -285,7 +285,7 @@ static int udp_server_init(neu_plugin_t *plugin)
 
     struct sockaddr_in sa = { 0 };
     sa.sin_family         = AF_INET;
-    sa.sin_addr.s_addr    = INADDR_ANY;
+    sa.sin_addr.s_addr    = htonl(INADDR_ANY);
     sa.sin_port           = htons(plugin->port);
 
     int ret = bind(sfd, (struct sockaddr *) &sa, sizeof(struct sockaddr_in));
