@@ -25,6 +25,7 @@
 #include "json/json.h"
 
 #include "neu_json_global_config.h"
+#include "parser/neu_json_group_config.h"
 
 int neu_json_decode_global_config_req(char *                         buf,
                                       neu_json_global_config_req_t **result)
@@ -41,7 +42,10 @@ int neu_json_decode_global_config_req(char *                         buf,
     }
 
     int ret = 0;
-    if (0 == neu_json_decode_get_nodes_resp_json(json_obj, &req->nodes)) {
+    if (0 == neu_json_decode_get_nodes_resp_json(json_obj, &req->nodes) &&
+        0 ==
+            neu_json_decode_get_driver_group_resp_json(json_obj,
+                                                       &req->groups)) {
         *result = req;
     } else {
         ret = -1;
@@ -56,6 +60,7 @@ void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req)
 {
     if (req) {
         neu_json_decode_get_nodes_resp_free(req->nodes);
+        neu_json_decode_get_driver_group_resp_free(req->groups);
         free(req);
     }
 }

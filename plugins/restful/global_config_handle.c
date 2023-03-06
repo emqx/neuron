@@ -49,6 +49,7 @@ typedef enum {
     STATE_DEL_APP,
     STATE_DEL_DRIVER,
     STATE_ADD_NODE,
+    STATE_ADD_GROUP,
     STATE_END,
 } context_state_e;
 
@@ -90,6 +91,8 @@ static int get_setting_resp(context_t *                  ctx,
 
 static int del_node(context_t *ctx, neu_resp_node_info_t *info);
 static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req);
+static int add_group(context_t *                             ctx,
+                     neu_json_get_driver_group_resp_group_t *data);
 
 static inline bool is_static_node(const char *name, const char *plugin)
 {
@@ -330,6 +333,28 @@ static void put_context_next(context_t *ctx, neu_reqresp_type_e type,
 
         if (ctx->idx < (size_t) nodes->n_node) {
             NEXT(ctx, add_node, &nodes->nodes[ctx->idx]);
+            ++ctx->idx;
+            break;
+        }
+
+        ctx->idx   = 0;
+        ctx->state = STATE_ADD_GROUP;
+    }
+        // fall through
+
+    case STATE_ADD_GROUP: {
+        neu_resp_error_t *                err    = data;
+        neu_json_get_driver_group_resp_t *groups = ctx->req->groups;
+
+        if (ctx->idx > 0 && 0 != err->error) {
+            // received error response
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        if (ctx->idx < (size_t) groups->n_group) {
+            NEXT(ctx, add_group, &groups->groups[ctx->idx]);
             ++ctx->idx;
             break;
         }
@@ -743,6 +768,28 @@ static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req)
     neu_req_add_node_t cmd = { 0 };
     strcpy(cmd.node, req->name);
     strcpy(cmd.plugin, req->plugin);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int add_group(context_t *                             ctx,
+                     neu_json_get_driver_group_resp_group_t *data)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .type = NEU_REQ_ADD_GROUP,
+        .ctx  = ctx->aio,
+    };
+
+    neu_req_add_group_t cmd = { 0 };
+    strcpy(cmd.driver, data->driver);
+    strcpy(cmd.group, data->group);
+    cmd.interval = data->interval;
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
