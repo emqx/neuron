@@ -22,6 +22,7 @@
 
 #include "json/json.h"
 
+#include "parser/neu_json_group_config.h"
 #include "parser/neu_json_node.h"
 
 #ifdef __cplusplus
@@ -29,7 +30,8 @@ extern "C" {
 #endif
 
 typedef struct {
-    neu_json_get_nodes_resp_t *nodes;
+    neu_json_get_nodes_resp_t *       nodes;
+    neu_json_get_driver_group_resp_t *groups;
 } neu_json_global_config_req_t;
 
 int  neu_json_decode_global_config_req(char *                         buf,

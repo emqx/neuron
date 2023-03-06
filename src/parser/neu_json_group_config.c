@@ -280,6 +280,105 @@ int neu_json_encode_get_driver_group_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_decode_get_driver_group_resp(
+    char *buf, neu_json_get_driver_group_resp_t **result)
+{
+    json_t *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        return -1;
+    }
+
+    int ret = neu_json_decode_get_driver_group_resp_json(json_obj, result);
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+int neu_json_decode_get_driver_group_resp_json(
+    void *json_obj, neu_json_get_driver_group_resp_t **result)
+{
+    int                               ret       = 0;
+    json_t *                          grp_array = NULL;
+    neu_json_get_driver_group_resp_t *resp      = NULL;
+
+    grp_array = json_object_get(json_obj, "groups");
+    if (!json_is_array(grp_array)) {
+        goto decode_fail;
+    }
+
+    resp = calloc(1, sizeof(*resp));
+    if (resp == NULL) {
+        goto decode_fail;
+    }
+
+    resp->n_group = json_array_size(grp_array);
+    if (resp->n_group <= 0) {
+        goto decode_fail;
+    }
+
+    resp->groups = calloc(resp->n_group, sizeof(*resp->groups));
+    if (NULL == resp->groups) {
+        goto decode_fail;
+    }
+
+    for (int i = 0; i < resp->n_group; i++) {
+        neu_json_elem_t group_elems[] = {
+            {
+                .name = "driver",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "group",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "interval",
+                .t    = NEU_JSON_INT,
+            },
+            {
+                .name = "tag_count",
+                .t    = NEU_JSON_INT,
+            },
+        };
+
+        ret = neu_json_decode_by_json(json_array_get(grp_array, i),
+                                      NEU_JSON_ELEM_SIZE(group_elems),
+                                      group_elems);
+
+        // set the fields before check for easy clean up on error
+        resp->groups[i].driver    = group_elems[0].v.val_str;
+        resp->groups[i].group     = group_elems[1].v.val_str;
+        resp->groups[i].interval  = group_elems[2].v.val_int;
+        resp->groups[i].tag_count = group_elems[3].v.val_int;
+
+        if (ret != 0) {
+            goto decode_fail;
+        }
+    }
+
+    *result = resp;
+    goto decode_exit;
+
+decode_fail:
+    neu_json_decode_get_driver_group_resp_free(resp);
+    ret = -1;
+
+decode_exit:
+    return ret;
+}
+
+void neu_json_decode_get_driver_group_resp_free(
+    neu_json_get_driver_group_resp_t *resp)
+{
+    if (resp) {
+        for (int i = 0; i < resp->n_group; ++i) {
+            free(resp->groups[i].driver);
+            free(resp->groups[i].group);
+        }
+        free(resp->groups);
+        free(resp);
+    }
+}
+
 int neu_json_encode_get_subscribe_resp(void *object, void *param)
 {
     int                            ret = 0;
