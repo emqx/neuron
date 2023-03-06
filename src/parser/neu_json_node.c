@@ -281,6 +281,94 @@ int neu_json_encode_get_nodes_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_decode_get_nodes_resp(char *                      buf,
+                                   neu_json_get_nodes_resp_t **result)
+{
+    json_t *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        return -1;
+    }
+
+    int ret = neu_json_decode_get_nodes_resp_json(json_obj, result);
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+int neu_json_decode_get_nodes_resp_json(void *                      json_obj,
+                                        neu_json_get_nodes_resp_t **result)
+{
+    int                        ret        = 0;
+    json_t *                   node_array = NULL;
+    neu_json_get_nodes_resp_t *resp       = NULL;
+    int                        i          = 0;
+
+    node_array = json_object_get(json_obj, "nodes");
+    if (!json_is_array(node_array)) {
+        goto decode_fail;
+    }
+
+    resp = calloc(1, sizeof(*resp));
+    if (resp == NULL) {
+        goto decode_fail;
+    }
+
+    resp->n_node = json_array_size(node_array);
+    if (resp->n_node <= 0) {
+        goto decode_fail;
+    }
+
+    resp->nodes = calloc(resp->n_node, sizeof(neu_json_get_nodes_resp_node_t));
+    if (NULL == resp->nodes) {
+        goto decode_fail;
+    }
+
+    for (i = 0; i < resp->n_node; i++) {
+        neu_json_elem_t tag_elems[] = {
+            {
+                .name = "name",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "plugin",
+                .t    = NEU_JSON_STR,
+            },
+        };
+
+        ret = neu_json_decode_by_json(json_array_get(node_array, i),
+                                      NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
+
+        // set the fields before check for easy clean up on error
+        resp->nodes[i].name   = tag_elems[0].v.val_str;
+        resp->nodes[i].plugin = tag_elems[1].v.val_str;
+
+        if (ret != 0) {
+            goto decode_fail;
+        }
+    }
+
+    *result = resp;
+    goto decode_exit;
+
+decode_fail:
+    neu_json_decode_get_nodes_resp_free(resp);
+    ret = -1;
+
+decode_exit:
+    return ret;
+}
+
+void neu_json_decode_get_nodes_resp_free(neu_json_get_nodes_resp_t *resp)
+{
+    if (resp) {
+        for (int i = 0; i < resp->n_node; ++i) {
+            free(resp->nodes[i].name);
+            free(resp->nodes[i].plugin);
+        }
+        free(resp->nodes);
+        free(resp);
+    }
+}
+
 int neu_json_decode_update_node_req(char *                       buf,
                                     neu_json_update_node_req_t **result)
 {

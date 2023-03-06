@@ -16,17 +16,28 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
-#ifndef _NEU_PLUGIN_REST_GLOBAL_CONFIG_HANDLE_H_
-#define _NEU_PLUGIN_REST_GLOBAL_CONFIG_HANDLE_H_
 
-#include <nng/nng.h>
+#ifndef _NEU_JSON_API_NEU_JSON_GLOBAL_CONFIG_H_
+#define _NEU_JSON_API_NEU_JSON_GLOBAL_CONFIG_H_
 
-#include "adapter.h"
+#include "json/json.h"
 
-void handle_get_global_config(nng_aio *aio);
-void handle_put_global_config(nng_aio *aio);
+#include "parser/neu_json_node.h"
 
-void handle_global_config_resp(nng_aio *aio, neu_reqresp_type_e type,
-                               void *data);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct {
+    neu_json_get_nodes_resp_t *nodes;
+} neu_json_global_config_req_t;
+
+int  neu_json_decode_global_config_req(char *                         buf,
+                                       neu_json_global_config_req_t **result);
+void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

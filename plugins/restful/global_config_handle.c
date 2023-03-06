@@ -24,6 +24,7 @@
 #include "adapter.h"
 #include "define.h"
 #include "errcodes.h"
+#include "parser/neu_json_global_config.h"
 #include "parser/neu_json_group_config.h"
 #include "parser/neu_json_node.h"
 #include "parser/neu_json_tag.h"
@@ -45,18 +46,33 @@ typedef enum {
     STATE_GET_SUBSCRIPTION,
     STATE_GET_APP_SETTING,
     STATE_GET_DRIVER_SETTING,
+    STATE_DEL_APP,
+    STATE_DEL_DRIVER,
+    STATE_ADD_NODE,
     STATE_END,
 } context_state_e;
 
 typedef struct {
     nng_aio *       aio;
+    bool            get;
     context_state_e state;
     int             error;
-    void *          json;
-    UT_array *      apps;
-    UT_array *      drivers;
-    UT_array *      groups;
-    void *          iter;
+    union {
+        // get
+        struct {
+            void *    json;
+            UT_array *apps;
+            UT_array *drivers;
+            UT_array *groups;
+            void *    iter;
+        };
+        // put
+        struct {
+            neu_json_global_config_req_t *req;
+            UT_array *                    nodes;
+            size_t                        idx;
+        };
+    };
 } context_t;
 
 static int get_nodes(context_t *ctx, neu_node_type_e type);
@@ -72,7 +88,15 @@ static int get_setting(context_t *ctx, neu_resp_node_info_t *info);
 static int get_setting_resp(context_t *                  ctx,
                             neu_resp_get_node_setting_t *setting);
 
-static context_t *context_new(nng_aio *aio)
+static int del_node(context_t *ctx, neu_resp_node_info_t *info);
+static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req);
+
+static inline bool is_static_node(const char *name, const char *plugin)
+{
+    return 0 == strcmp("monitor", name) && 0 == strcmp("Monitor", plugin);
+}
+
+static context_t *context_new(nng_aio *aio, bool get)
 {
     context_t *ctx = calloc(1, sizeof(*ctx));
     if (!ctx) {
@@ -80,10 +104,10 @@ static context_t *context_new(nng_aio *aio)
     }
 
     ctx->aio   = aio;
+    ctx->get   = get;
     ctx->state = STATE_START;
 
-    ctx->json = neu_json_encode_new();
-    if (!ctx->json) {
+    if (get && !(ctx->json = neu_json_encode_new())) {
         free(ctx);
         return NULL;
     }
@@ -93,7 +117,11 @@ static context_t *context_new(nng_aio *aio)
 
 static void context_free(context_t *ctx)
 {
-    if (ctx) {
+    if (NULL == ctx) {
+        return;
+    }
+
+    if (ctx->get) {
         neu_json_encode_free(ctx->json);
         if (ctx->apps) {
             utarray_free(ctx->apps);
@@ -104,8 +132,14 @@ static void context_free(context_t *ctx)
         if (ctx->groups) {
             utarray_free(ctx->groups);
         }
-        free(ctx);
+    } else {
+        if (ctx->nodes) {
+            utarray_free(ctx->nodes);
+        }
+        neu_json_decode_global_config_req_free(ctx->req);
     }
+
+    free(ctx);
 }
 
 #define NEXT(ctx, action, ...)                     \
@@ -117,7 +151,8 @@ static void context_free(context_t *ctx)
         }                                          \
     }
 
-static void context_next(context_t *ctx, neu_reqresp_type_e type, void *data)
+static void get_context_next(context_t *ctx, neu_reqresp_type_e type,
+                             void *data)
 {
     char *result = NULL;
 
@@ -212,6 +247,117 @@ static void context_next(context_t *ctx, neu_reqresp_type_e type, void *data)
             free(result);
         }
         context_free(ctx);
+    }
+}
+
+static void put_context_next(context_t *ctx, neu_reqresp_type_e type,
+                             void *data)
+{
+    (void) type;
+
+    switch (ctx->state) {
+    case STATE_START:
+        NEXT(ctx, get_nodes, NEU_NA_TYPE_APP);
+        ctx->state = STATE_GET_APP;
+        break;
+
+    case STATE_GET_APP:
+    case STATE_GET_DRIVER:
+        ctx->nodes = ((neu_resp_get_node_t *) data)->nodes;
+        ctx->idx   = 0;
+        ctx->state =
+            STATE_GET_APP == ctx->state ? STATE_DEL_APP : STATE_DEL_DRIVER;
+        // fall through
+
+    case STATE_DEL_APP:
+    case STATE_DEL_DRIVER: {
+        neu_resp_error_t *    err  = data;
+        neu_resp_node_info_t *info = NULL;
+
+        if (ctx->idx > 0 && 0 != err->error) {
+            // received error response
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        // skip static nodes
+        for (; ctx->idx < utarray_len(ctx->nodes); ++ctx->idx, info = NULL) {
+            info = utarray_eltptr(ctx->nodes, ctx->idx);
+            if (!is_static_node(info->node, info->plugin)) {
+                break;
+            }
+        }
+
+        if (info) {
+            NEXT(ctx, del_node, info);
+            ++ctx->idx;
+            break;
+        }
+
+        utarray_free(ctx->nodes);
+        ctx->nodes = NULL;
+
+        if (STATE_DEL_APP == ctx->state) {
+            NEXT(ctx, get_nodes, NEU_NA_TYPE_DRIVER);
+            ctx->state = STATE_GET_DRIVER;
+            break;
+        }
+
+        ctx->idx   = 0;
+        ctx->state = STATE_ADD_NODE;
+    }
+        // fall through
+
+    case STATE_ADD_NODE: {
+        neu_resp_error_t *         err   = data;
+        neu_json_get_nodes_resp_t *nodes = ctx->req->nodes;
+
+        if (ctx->idx > 0 && 0 != err->error) {
+            // received error response
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        // skip static nodes
+        for (; ctx->idx < (size_t) nodes->n_node; ++ctx->idx) {
+            if (!is_static_node(nodes->nodes[ctx->idx].name,
+                                nodes->nodes[ctx->idx].plugin)) {
+                break;
+            }
+        }
+
+        if (ctx->idx < (size_t) nodes->n_node) {
+            NEXT(ctx, add_node, &nodes->nodes[ctx->idx]);
+            ++ctx->idx;
+            break;
+        }
+
+        ctx->state = STATE_END;
+        break;
+    }
+
+    default:
+        ctx->error = NEU_ERR_EINTERNAL;
+        ctx->state = STATE_END;
+        break;
+    }
+
+    if (STATE_END == ctx->state) {
+        NEU_JSON_RESPONSE_ERROR(ctx->error, {
+            neu_http_response(ctx->aio, ctx->error, result_error);
+        });
+        context_free(ctx);
+    }
+}
+
+static void context_next(context_t *ctx, neu_reqresp_type_e type, void *data)
+{
+    if (ctx->get) {
+        get_context_next(ctx, type, data);
+    } else {
+        put_context_next(ctx, type, data);
     }
 }
 
@@ -567,11 +713,49 @@ end:
     return rv;
 }
 
+static int del_node(context_t *ctx, neu_resp_node_info_t *info)
+{
+    neu_plugin_t *     plugin = neu_rest_get_plugin();
+    neu_reqresp_head_t header = {
+        .ctx  = ctx->aio,
+        .type = NEU_REQ_DEL_NODE,
+    };
+
+    neu_req_del_node_t cmd = { 0 };
+    strcpy(cmd.node, info->node);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .type = NEU_REQ_ADD_NODE,
+        .ctx  = ctx->aio,
+    };
+
+    neu_req_add_node_t cmd = { 0 };
+    strcpy(cmd.node, req->name);
+    strcpy(cmd.plugin, req->plugin);
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
 void handle_get_global_config(nng_aio *aio)
 {
     NEU_VALIDATE_JWT(aio);
 
-    context_t *ctx = context_new(aio);
+    context_t *ctx = context_new(aio, true);
     if (NULL == ctx) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
             neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
@@ -581,6 +765,24 @@ void handle_get_global_config(nng_aio *aio)
 
     nng_aio_set_input(aio, 3, ctx);
     context_next(ctx, NEU_REQ_GET_NODE, NULL);
+}
+
+void handle_put_global_config(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_global_config_req_t, neu_json_decode_global_config_req, {
+            context_t *ctx = context_new(aio, false);
+            if (NULL == ctx) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                    neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+                });
+            } else {
+                nng_aio_set_input(aio, 3, ctx);
+                context_next(ctx, NEU_REQ_GET_NODE, NULL);
+                ctx->req = req;
+                req      = NULL;
+            }
+        });
 }
 
 void handle_global_config_resp(nng_aio *aio, neu_reqresp_type_e type,

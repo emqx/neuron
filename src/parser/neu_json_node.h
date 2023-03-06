@@ -80,7 +80,12 @@ typedef struct {
     neu_json_get_nodes_resp_node_t *nodes;
 } neu_json_get_nodes_resp_t;
 
-int neu_json_encode_get_nodes_resp(void *json_object, void *param);
+int  neu_json_encode_get_nodes_resp(void *json_object, void *param);
+int  neu_json_decode_get_nodes_resp(char *                      buf,
+                                    neu_json_get_nodes_resp_t **result);
+int  neu_json_decode_get_nodes_resp_json(void *                      json_obj,
+                                         neu_json_get_nodes_resp_t **result);
+void neu_json_decode_get_nodes_resp_free(neu_json_get_nodes_resp_t *result);
 
 typedef struct {
     char *  name;
