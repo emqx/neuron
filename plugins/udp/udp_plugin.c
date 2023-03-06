@@ -40,7 +40,7 @@ struct neu_plugin {
     int                 index;
     neu_event_io_t *    event;
     pthread_mutex_t     mutex;
-    /* data */
+    int                 recv_bytes;
 };
 
 static neu_plugin_t *driver_open(void);
@@ -119,10 +119,11 @@ static int driver_init(neu_plugin_t *plugin)
 
     plugin->udp_server_fd = -1;
 
-    plugin->port     = -1;
-    plugin->buf_size = 124;
-    plugin->buffer   = calloc(1, plugin->buf_size);
-    plugin->index    = 0;
+    plugin->port       = -1;
+    plugin->buf_size   = 124;
+    plugin->buffer     = calloc(1, plugin->buf_size);
+    plugin->index      = 0;
+    plugin->recv_bytes = 0;
 
     return 0;
 }
@@ -199,6 +200,9 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         return 0;
     }
 
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+
     utarray_foreach(group->tags, neu_datatag_t *, tag)
     {
         neu_dvalue_t dvalue = { 0 };
@@ -211,6 +215,8 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         plugin->common.adapter_callbacks->driver.update(
             plugin->common.adapter, group->group_name, tag->name, dvalue);
     }
+    update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES,
+                  plugin->recv_bytes, NULL);
     return 0;
 }
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
@@ -260,6 +266,7 @@ static int udp_io_cb(enum neu_event_io_type type, int fd, void *usr_data)
 
         memcpy(plugin->buffer + plugin->index, buf, res);
         plugin->index += res;
+        plugin->recv_bytes += res;
         pthread_mutex_unlock(&plugin->mutex);
     }
 
@@ -322,6 +329,7 @@ static int udp_server_stop(neu_plugin_t *plugin)
         plugin->running           = false;
         plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
         plugin->index             = 0;
+        plugin->recv_bytes        = 0;
         memset(plugin->buffer, 0, plugin->buf_size);
     }
     return 0;
