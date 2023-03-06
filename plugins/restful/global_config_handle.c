@@ -33,6 +33,7 @@
 #include "json/neu_json_fn.h"
 
 #include "handle.h"
+#include "tag.h"
 #include "utils/http.h"
 
 #include "group_config_handle.h"
@@ -50,6 +51,7 @@ typedef enum {
     STATE_DEL_DRIVER,
     STATE_ADD_NODE,
     STATE_ADD_GROUP,
+    STATE_ADD_TAG,
     STATE_END,
 } context_state_e;
 
@@ -93,6 +95,7 @@ static int del_node(context_t *ctx, neu_resp_node_info_t *info);
 static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req);
 static int add_group(context_t *                             ctx,
                      neu_json_get_driver_group_resp_group_t *data);
+static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data);
 
 static inline bool is_static_node(const char *name, const char *plugin)
 {
@@ -355,6 +358,28 @@ static void put_context_next(context_t *ctx, neu_reqresp_type_e type,
 
         if (ctx->idx < (size_t) groups->n_group) {
             NEXT(ctx, add_group, &groups->groups[ctx->idx]);
+            ++ctx->idx;
+            break;
+        }
+
+        ctx->idx   = 0;
+        ctx->state = STATE_ADD_TAG;
+    }
+        // fall through
+
+    case STATE_ADD_TAG: {
+        neu_resp_add_tag_t *               resp = data;
+        neu_json_global_config_req_tags_t *tags = ctx->req->tags;
+
+        if (ctx->idx > 0 && 0 != resp->error) {
+            // received error response
+            ctx->error = resp->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        if (ctx->idx < (size_t) tags->n_tag) {
+            NEXT(ctx, add_tag, &tags->tags[ctx->idx]);
             ++ctx->idx;
             break;
         }
@@ -796,6 +821,63 @@ static int add_group(context_t *                             ctx,
     }
 
     return 0;
+}
+
+static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data)
+{
+    int           ret    = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .type = NEU_REQ_ADD_TAG,
+        .ctx  = ctx->aio,
+    };
+
+    neu_req_add_tag_t cmd = { 0 };
+    strcpy(cmd.driver, data->node);
+    strcpy(cmd.group, data->group);
+    cmd.n_tag = data->n_tag;
+    cmd.tags  = calloc(data->n_tag, sizeof(neu_datatag_t));
+    if (NULL == cmd.tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    int i = 0;
+    for (; i < data->n_tag; i++) {
+        cmd.tags[i].attribute = data->tags[i].attribute;
+        cmd.tags[i].type      = data->tags[i].type;
+        cmd.tags[i].precision = data->tags[i].precision;
+        cmd.tags[i].decimal   = data->tags[i].decimal;
+        cmd.tags[i].address   = strdup(data->tags[i].address);
+        cmd.tags[i].name      = strdup(data->tags[i].name);
+        cmd.tags[i].description =
+            strdup(data->tags[i].description ? data->tags[i].description : "");
+
+        if (NULL == cmd.tags[i].address || NULL == cmd.tags[i].name ||
+            NULL == cmd.tags[i].description) {
+            ret = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+
+        if (NEU_ATTRIBUTE_STATIC & data->tags[i].attribute) {
+            neu_tag_set_static_value_json(&cmd.tags[i], data->tags[i].t,
+                                          &data->tags[i].value);
+        }
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        ret = NEU_ERR_IS_BUSY;
+        goto error;
+    }
+
+    return ret;
+
+error:
+    for (int j = 0; j < i && j < cmd.n_tag; ++j) {
+        neu_tag_fini(&cmd.tags[j]);
+    }
+    free(cmd.tags);
+    return ret;
 }
 
 void handle_get_global_config(nng_aio *aio)
