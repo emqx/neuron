@@ -24,14 +24,26 @@
 
 #include "parser/neu_json_group_config.h"
 #include "parser/neu_json_node.h"
+#include "parser/neu_json_tag.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-    neu_json_get_nodes_resp_t *       nodes;
-    neu_json_get_driver_group_resp_t *groups;
+    int                      n_tag;
+    neu_json_add_tags_req_t *tags;
+} neu_json_global_config_req_tags_t;
+
+int neu_json_decode_global_config_req_tags(
+    void *json_obj, neu_json_global_config_req_tags_t **result);
+void neu_json_decode_global_config_req_tags_free(
+    neu_json_global_config_req_tags_t *tags);
+
+typedef struct {
+    neu_json_get_nodes_resp_t *        nodes;
+    neu_json_get_driver_group_resp_t * groups;
+    neu_json_global_config_req_tags_t *tags;
 } neu_json_global_config_req_t;
 
 int  neu_json_decode_global_config_req(char *                         buf,
