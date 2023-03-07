@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include <arpa/inet.h>
+#include <linux/if_ether.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netpacket/packet.h>
