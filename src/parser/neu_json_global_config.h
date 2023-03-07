@@ -51,10 +51,21 @@ void neu_json_decode_global_config_req_subscriptions_free(
     neu_json_global_config_req_subscriptions_t *req_sub);
 
 typedef struct {
+    int                          n_setting;
+    neu_json_node_setting_req_t *settings;
+} neu_json_global_config_req_settings_t;
+
+int neu_json_decode_global_config_req_settings(
+    void *json_obj, neu_json_global_config_req_settings_t **result);
+void neu_json_decode_global_config_req_settings_free(
+    neu_json_global_config_req_settings_t *req_settings);
+
+typedef struct {
     neu_json_get_nodes_resp_t *                 nodes;
     neu_json_get_driver_group_resp_t *          groups;
     neu_json_global_config_req_tags_t *         tags;
     neu_json_global_config_req_subscriptions_t *subscriptions;
+    neu_json_global_config_req_settings_t *     settings;
 } neu_json_global_config_req_t;
 
 int  neu_json_decode_global_config_req(char *                         buf,

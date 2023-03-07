@@ -354,6 +354,83 @@ void neu_json_decode_global_config_req_subscriptions_free(
     free(req_sub);
 }
 
+static inline void fini_node_setting(neu_json_node_setting_req_t *req)
+{
+    free(req->node);
+    free(req->setting);
+}
+
+int neu_json_decode_global_config_req_settings(
+    void *json_obj, neu_json_global_config_req_settings_t **result)
+{
+    json_t *settings_array = json_object_get(json_obj, "settings");
+    if (!json_is_array(settings_array)) {
+        nlog_error("no `settings` array field");
+        return -1;
+    }
+
+    neu_json_global_config_req_settings_t *req = calloc(1, sizeof(*req));
+    if (NULL == req) {
+        nlog_error("calloc fail");
+        return -1;
+    }
+
+    req->n_setting = json_array_size(settings_array);
+    req->settings  = calloc(req->n_setting, sizeof(*req->settings));
+    if (NULL == req->settings) {
+        free(req);
+        nlog_error("calloc fail");
+        return -1;
+    }
+
+    neu_json_node_setting_req_t *p = req->settings;
+    for (int i = 0; i < req->n_setting; ++i) {
+        json_t *setting_obj = json_array_get(settings_array, i);
+        json_t *node_obj    = json_object_get(setting_obj, "node");
+
+        if (NULL == node_obj) {
+            nlog_error("no settings `node` field");
+            goto error;
+        }
+
+        p->node = strdup(json_string_value(node_obj));
+        if (NULL == p->node) {
+            nlog_error("strdup fail");
+            goto error;
+        }
+
+        if (0 != neu_json_dump_key(setting_obj, "params", &p->setting, true)) {
+            free(p->node);
+            nlog_error("no settings `params` field");
+            goto error;
+        }
+        ++p;
+    }
+
+    *result = req;
+    return 0;
+
+error:
+    while (--p >= req->settings) {
+        fini_node_setting(p);
+    }
+    free(req->settings);
+    free(req);
+    return -1;
+}
+
+void neu_json_decode_global_config_req_settings_free(
+    neu_json_global_config_req_settings_t *req_settings)
+{
+    if (req_settings) {
+        for (int i = 0; i < req_settings->n_setting; ++i) {
+            fini_node_setting(&req_settings->settings[i]);
+        }
+        free(req_settings->settings);
+        free(req_settings);
+    }
+}
+
 int neu_json_decode_global_config_req(char *                         buf,
                                       neu_json_global_config_req_t **result)
 {
@@ -376,7 +453,10 @@ int neu_json_decode_global_config_req(char *                         buf,
         0 == neu_json_decode_global_config_req_tags(json_obj, &req->tags) &&
         0 ==
             neu_json_decode_global_config_req_subscriptions(
-                json_obj, &req->subscriptions)) {
+                json_obj, &req->subscriptions) &&
+        0 ==
+            neu_json_decode_global_config_req_settings(json_obj,
+                                                       &req->settings)) {
         *result = req;
     } else {
         ret = -1;
@@ -395,6 +475,7 @@ void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req)
         neu_json_decode_global_config_req_tags_free(req->tags);
         neu_json_decode_global_config_req_subscriptions_free(
             req->subscriptions);
+        neu_json_decode_global_config_req_settings_free(req->settings);
         free(req);
     }
 }
