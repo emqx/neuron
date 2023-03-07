@@ -58,43 +58,27 @@ void handle_logs_files(nng_aio *aio)
 
     VALIDATE_JWT(aio);
 
-    rv = mkdir("neuron_logs", S_IRWXU);
-    if (0 != rv && EEXIST == errno) {
-        rv = 0;
-    }
-
-    // check if coredump exists
-    rv = access("./core", F_OK);
-    if (0 == rv) {
-        rv = system("cp -r ./core neuron_logs");
-        if (0 != rv) {
-            nlog_error("failed to copy coredump file");
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-                http_response(aio, error_code.error, result_error);
-            });
-            return;
-        }
-    }
-
-    rv = system("cp -r ./logs neuron_logs");
+    /* check whether the neuron directory exists */
+    rv = access("../neuron", F_OK);
     if (0 != rv) {
-        nlog_error("failed to copy logs file");
+        nlog_error("The neuron directory does not exists");
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_NOT_EXIST, {
+            http_response(aio, error_code.error, result_error);
+        });
+        return;
+    }
+
+    /* tar the neuron directory */
+    rv = system("tar -zcvf neuron_debug.tar.gz ../neuron");
+    if (0 != rv) {
+        nlog_error("failed to create neuron_debug.tar.gz");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
             http_response(aio, error_code.error, result_error);
         });
         return;
     }
 
-    rv = system("tar -zcvf neuron_logs.tar.gz neuron_logs");
-    if (0 != rv) {
-        nlog_error("failed to create neuron_logs.tar.gz");
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-            http_response(aio, error_code.error, result_error);
-        });
-        return;
-    }
-
-    strcpy(path, "neuron_logs.tar.gz");
+    strcpy(path, "neuron_debug.tar.gz");
     rv = read_file(path, &data, &len);
     if (0 != rv) {
         NEU_JSON_RESPONSE_ERROR(
@@ -102,18 +86,8 @@ void handle_logs_files(nng_aio *aio)
         return;
     }
 
-    // delete neuron_logs folder from build
-    rv = system("rm -rf neuron_logs.tar.gz neuron_logs");
-    if (0 != rv) {
-        nlog_error("failed to delete neuron_logs folder");
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-            http_response(aio, error_code.error, result_error);
-        });
-        return;
-    }
-
-    // handle http response
-    strcpy(disp, "attachment; filename=neuron_logs.tar.gz");
+    /* handle http response */
+    strcpy(disp, "attachment; filename=neuron_debug.tar.gz");
     rv = http_resp_files(aio, data, len, disp);
     if (0 != rv) {
         return;
