@@ -25,7 +25,6 @@
 #include <unistd.h>
 
 #include <arpa/inet.h>
-#include <linux/if_ether.h>
 #include <net/ethernet.h>
 #include <net/if.h>
 #include <netpacket/packet.h>
@@ -35,6 +34,10 @@
 #include "event/event.h"
 #include "utils/log.h"
 #include "utils/utextend.h"
+
+#ifndef ETH_P_LLDP
+#define ETH_P_LLDP 0x88CC
+#endif
 
 typedef struct neu_conn_eth_sub {
     uint16_t protocol;
