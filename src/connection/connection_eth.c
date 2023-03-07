@@ -71,10 +71,11 @@ typedef struct interface_conn {
 
     lldp_callback_elem_t *lldp_callbacks;
     callback_elem_t *     callbacks;
-    pthread_mutex_t *     mtx;
+    pthread_mutex_t       mtx;
 } interface_conn_t;
 
-static pthread_mutex_t *mtx = NULL;
+static pthread_mutex_t mtx      = { 0 };
+static bool            mtx_init = false;
 #define interface_max 4
 static interface_conn_t in_conns[interface_max];
 
@@ -93,15 +94,16 @@ static char *lldp_parse_port_id(uint16_t n_byte, uint8_t *bytes);
 
 neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
 {
-    if (mtx == NULL) {
-        pthread_mutex_init(mtx, NULL);
+    if (!mtx_init) {
+        pthread_mutex_init(&mtx, NULL);
+        mtx_init = true;
     }
 
     neu_conn_eth_t *conn_eth = calloc(1, sizeof(neu_conn_eth_t));
     int             i        = 0;
     bool            find     = false;
 
-    pthread_mutex_lock(mtx);
+    pthread_mutex_lock(&mtx);
 
     for (i = 0; i < interface_max; i++) {
         if (in_conns[i].interface != NULL &&
@@ -123,7 +125,7 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
                 in_conns[i].profinet_fd = init_socket(interface, 0x8892);
                 in_conns[i].lldp_fd     = init_socket(interface, ETH_P_LLDP);
                 get_mac(conn_eth, interface);
-                pthread_mutex_init(in_conns[i].mtx, NULL);
+                pthread_mutex_init(&in_conns[i].mtx, NULL);
                 conn_eth->ic = &in_conns[i];
 
                 param.fd       = in_conns[i].profinet_fd;
@@ -144,7 +146,7 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
         }
     }
 
-    pthread_mutex_unlock(mtx);
+    pthread_mutex_unlock(&mtx);
 
     conn_eth->ctx = ctx;
     return conn_eth;
@@ -152,7 +154,7 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
 
 int neu_conn_eth_uninit(neu_conn_eth_t *conn)
 {
-    pthread_mutex_lock(mtx);
+    pthread_mutex_lock(&mtx);
     conn->ic->count -= 1;
     if (conn->ic->count == 0) {
         neu_event_del_io(conn->ic->events, conn->ic->profinet_event);
@@ -163,9 +165,9 @@ int neu_conn_eth_uninit(neu_conn_eth_t *conn)
         uninit_socket(conn->ic->lldp_fd);
 
         free(conn->ic->interface);
-        pthread_mutex_destroy(conn->ic->mtx);
+        pthread_mutex_destroy(&conn->ic->mtx);
     }
-    pthread_mutex_unlock(mtx);
+    pthread_mutex_unlock(&mtx);
 
     free(conn);
 
@@ -196,7 +198,7 @@ neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn,
     key.protocol = protocol;
     memcpy(key.mac, mac, ETH_ALEN);
 
-    pthread_mutex_lock(conn->ic->mtx);
+    pthread_mutex_lock(&conn->ic->mtx);
 
     HASH_FIND(hh, conn->ic->callbacks, &key, sizeof(callback_elem_key_t), elem);
     if (elem == NULL) {
@@ -214,7 +216,7 @@ neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn,
                  elem);
     }
 
-    pthread_mutex_unlock(conn->ic->mtx);
+    pthread_mutex_unlock(&conn->ic->mtx);
 
     return sub;
 }
@@ -227,7 +229,7 @@ int neu_conn_eth_unregister(neu_conn_eth_t *conn, neu_conn_eth_sub_t *sub)
     key.protocol = sub->protocol;
     memcpy(key.mac, sub->mac, ETH_ALEN);
 
-    pthread_mutex_lock(conn->ic->mtx);
+    pthread_mutex_lock(&conn->ic->mtx);
 
     HASH_FIND(hh, conn->ic->callbacks, &key, sizeof(callback_elem_key_t), elem);
     if (elem != NULL) {
@@ -235,7 +237,7 @@ int neu_conn_eth_unregister(neu_conn_eth_t *conn, neu_conn_eth_sub_t *sub)
         free(elem);
     }
 
-    pthread_mutex_unlock(conn->ic->mtx);
+    pthread_mutex_unlock(&conn->ic->mtx);
 
     free(sub);
 
@@ -248,7 +250,7 @@ int neu_conn_eth_register_lldp(neu_conn_eth_t *conn, const char *device,
     lldp_callback_elem_t *elem = NULL;
     int                   ret  = 0;
 
-    pthread_mutex_lock(conn->ic->mtx);
+    pthread_mutex_lock(&conn->ic->mtx);
 
     HASH_FIND_STR(conn->ic->lldp_callbacks, device, elem);
     if (elem != NULL) {
@@ -262,7 +264,7 @@ int neu_conn_eth_register_lldp(neu_conn_eth_t *conn, const char *device,
         HASH_ADD_STR(conn->ic->lldp_callbacks, device, elem);
     }
 
-    pthread_mutex_unlock(conn->ic->mtx);
+    pthread_mutex_unlock(&conn->ic->mtx);
 
     return ret;
 }
@@ -271,13 +273,13 @@ int neu_conn_eth_unregister_lldp(neu_conn_eth_t *conn, const char *device)
 {
     lldp_callback_elem_t *elem = NULL;
 
-    pthread_mutex_lock(conn->ic->mtx);
+    pthread_mutex_lock(&conn->ic->mtx);
     HASH_FIND_STR(conn->ic->lldp_callbacks, device, elem);
     if (elem != NULL) {
         HASH_DEL(conn->ic->lldp_callbacks, elem);
         free(elem);
     }
-    pthread_mutex_unlock(conn->ic->mtx);
+    pthread_mutex_unlock(&conn->ic->mtx);
 
     return 0;
 }
@@ -439,15 +441,16 @@ struct lldp_tvl {
 
 static char *lldp_parse_port_id(uint16_t n_byte, uint8_t *bytes)
 {
-    struct lldp_tvl *    tvl                        = (struct lldp_tvl *) bytes;
-    static __thread char port_id[NEU_NODE_NAME_LEN] = { 0 };
+    struct lldp_tvl *tvl = (struct lldp_tvl *) bytes;
 
     if (n_byte < sizeof(struct lldp_tvl) + tvl->length) {
         return NULL;
     }
 
     if (tvl->type == PORT_ID_TLV_TYPE) {
-        uint8_t *data = (uint8_t *) &tvl[1];
+        static __thread char port_id[NEU_NODE_NAME_LEN] = { 0 };
+        uint8_t *            data                       = (uint8_t *) &tvl[1];
+
         strncpy(port_id, (char *) data + 1, tvl->length - 1);
         return port_id;
     } else {
