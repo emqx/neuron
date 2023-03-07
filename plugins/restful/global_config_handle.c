@@ -52,6 +52,7 @@ typedef enum {
     STATE_ADD_NODE,
     STATE_ADD_GROUP,
     STATE_ADD_TAG,
+    STATE_ADD_SUBSCRIPTION,
     STATE_END,
 } context_state_e;
 
@@ -96,6 +97,7 @@ static int add_node(context_t *ctx, neu_json_get_nodes_resp_node_t *req);
 static int add_group(context_t *                             ctx,
                      neu_json_get_driver_group_resp_group_t *data);
 static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data);
+static int add_subscription(context_t *ctx, neu_json_subscribe_req_t *data);
 
 static inline bool is_static_node(const char *name, const char *plugin)
 {
@@ -380,6 +382,29 @@ static void put_context_next(context_t *ctx, neu_reqresp_type_e type,
 
         if (ctx->idx < (size_t) tags->n_tag) {
             NEXT(ctx, add_tag, &tags->tags[ctx->idx]);
+            ++ctx->idx;
+            break;
+        }
+
+        ctx->idx   = 0;
+        ctx->state = STATE_ADD_SUBSCRIPTION;
+    }
+        // fall through
+
+    case STATE_ADD_SUBSCRIPTION: {
+        neu_resp_error_t *                          err = data;
+        neu_json_global_config_req_subscriptions_t *subs =
+            ctx->req->subscriptions;
+
+        if (ctx->idx > 0 && 0 != err->error) {
+            // received error response
+            ctx->error = err->error;
+            ctx->state = STATE_END;
+            break;
+        }
+
+        if (ctx->idx < (size_t) subs->n_subscription) {
+            NEXT(ctx, add_subscription, &subs->subscriptions[ctx->idx]);
             ++ctx->idx;
             break;
         }
@@ -878,6 +903,29 @@ error:
     }
     free(cmd.tags);
     return ret;
+}
+
+static int add_subscription(context_t *ctx, neu_json_subscribe_req_t *data)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = ctx->aio,
+        .type = NEU_REQ_SUBSCRIBE_GROUP,
+    };
+
+    neu_req_subscribe_t cmd = { 0 };
+    strcpy(cmd.app, data->app);
+    strcpy(cmd.driver, data->driver);
+    strcpy(cmd.group, data->group);
+    cmd.params   = data->params; // ownership moved
+    data->params = NULL;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
 }
 
 void handle_get_global_config(nng_aio *aio)
