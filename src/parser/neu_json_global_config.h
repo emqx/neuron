@@ -41,9 +41,20 @@ void neu_json_decode_global_config_req_tags_free(
     neu_json_global_config_req_tags_t *tags);
 
 typedef struct {
-    neu_json_get_nodes_resp_t *        nodes;
-    neu_json_get_driver_group_resp_t * groups;
-    neu_json_global_config_req_tags_t *tags;
+    int                       n_subscription;
+    neu_json_subscribe_req_t *subscriptions;
+} neu_json_global_config_req_subscriptions_t;
+
+int neu_json_decode_global_config_req_subscriptions(
+    void *json_obj, neu_json_global_config_req_subscriptions_t **result);
+void neu_json_decode_global_config_req_subscriptions_free(
+    neu_json_global_config_req_subscriptions_t *req_sub);
+
+typedef struct {
+    neu_json_get_nodes_resp_t *                 nodes;
+    neu_json_get_driver_group_resp_t *          groups;
+    neu_json_global_config_req_tags_t *         tags;
+    neu_json_global_config_req_subscriptions_t *subscriptions;
 } neu_json_global_config_req_t;
 
 int  neu_json_decode_global_config_req(char *                         buf,

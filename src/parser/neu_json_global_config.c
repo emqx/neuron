@@ -220,6 +220,140 @@ void neu_json_decode_global_config_req_tags_free(
     free(req_tags);
 }
 
+static int decode_subscribe_req(json_t *json_obj, neu_json_subscribe_req_t *req)
+{
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "driver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+    };
+
+    int ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                      req_elems);
+    if (ret != 0) {
+        goto error;
+    }
+
+    ret = neu_json_dump_key(json_obj, "params", &req->params, false);
+    if (0 != ret) {
+        goto error;
+    }
+
+    req->driver = req_elems[0].v.val_str;
+    req->group  = req_elems[1].v.val_str;
+    return 0;
+
+error:
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
+    return -1;
+}
+
+static inline void fini_subscribe_req(neu_json_subscribe_req_t *req)
+{
+    free(req->app);
+    free(req->driver);
+    free(req->group);
+    free(req->params);
+}
+
+int neu_json_decode_global_config_req_subscriptions(
+    void *json_obj, neu_json_global_config_req_subscriptions_t **result)
+{
+    int                                         n_subscription = 0;
+    json_t *                                    sub_array      = NULL;
+    neu_json_subscribe_req_t *                  p              = NULL;
+    neu_json_global_config_req_subscriptions_t *req            = NULL;
+
+    sub_array = json_object_get(json_obj, "subscriptions");
+    if (!json_is_array(sub_array)) {
+        nlog_error("no `subscriptions` array field");
+        return -1;
+    }
+
+    for (size_t i = 0; i < json_array_size(sub_array); ++i) {
+        json_t *grp_array =
+            json_object_get(json_array_get(sub_array, i), "groups");
+        if (!json_is_array(grp_array)) {
+            nlog_error("no subscriptions `group` field");
+            return -1;
+        }
+        n_subscription += json_array_size(grp_array);
+    }
+
+    req = calloc(1, sizeof(*req));
+    if (NULL == req) {
+        nlog_error("calloc fail");
+        return -1;
+    }
+
+    req->n_subscription = n_subscription;
+    req->subscriptions =
+        calloc(req->n_subscription, sizeof(*req->subscriptions));
+    if (NULL == req->subscriptions) {
+        free(req);
+        nlog_error("calloc fail");
+        return -1;
+    }
+
+    p = req->subscriptions;
+    for (int i = 0; i < req->n_subscription; ++i) {
+        json_t *sub_obj = json_array_get(sub_array, i);
+        json_t *app_obj = json_object_get(sub_obj, "app");
+
+        if (NULL == app_obj) {
+            nlog_error("no subscriptions `app` field");
+            goto error;
+        }
+
+        json_t *grp_array = json_object_get(sub_obj, "groups");
+        for (size_t j = 0; j < json_array_size(grp_array); ++j) {
+            p->app = strdup(json_string_value(app_obj));
+            if (NULL == p->app) {
+                nlog_error("strdup fail");
+                goto error;
+            }
+            if (0 != decode_subscribe_req(json_array_get(grp_array, j), p)) {
+                free(p->app);
+                goto error;
+            }
+        }
+
+        ++p;
+    }
+
+    *result = req;
+    return 0;
+
+error:
+    while (--p >= req->subscriptions) {
+        fini_subscribe_req(p);
+    }
+    free(req->subscriptions);
+    free(req);
+    return -1;
+}
+
+void neu_json_decode_global_config_req_subscriptions_free(
+    neu_json_global_config_req_subscriptions_t *req_sub)
+{
+    if (NULL == req_sub) {
+        return;
+    }
+
+    for (int i = 0; i < req_sub->n_subscription; ++i) {
+        fini_subscribe_req(&req_sub->subscriptions[i]);
+    }
+
+    free(req_sub->subscriptions);
+    free(req_sub);
+}
+
 int neu_json_decode_global_config_req(char *                         buf,
                                       neu_json_global_config_req_t **result)
 {
@@ -239,7 +373,10 @@ int neu_json_decode_global_config_req(char *                         buf,
         0 ==
             neu_json_decode_get_driver_group_resp_json(json_obj,
                                                        &req->groups) &&
-        0 == neu_json_decode_global_config_req_tags(json_obj, &req->tags)) {
+        0 == neu_json_decode_global_config_req_tags(json_obj, &req->tags) &&
+        0 ==
+            neu_json_decode_global_config_req_subscriptions(
+                json_obj, &req->subscriptions)) {
         *result = req;
     } else {
         ret = -1;
@@ -256,6 +393,8 @@ void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req)
         neu_json_decode_get_nodes_resp_free(req->nodes);
         neu_json_decode_get_driver_group_resp_free(req->groups);
         neu_json_decode_global_config_req_tags_free(req->tags);
+        neu_json_decode_global_config_req_subscriptions_free(
+            req->subscriptions);
         free(req);
     }
 }
