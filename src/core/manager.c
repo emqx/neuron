@@ -54,7 +54,7 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
 inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
                                    nng_pipe pipe);
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
-                               const char *ndoe);
+                               const char *node);
 inline static void notify_monitor(neu_manager_t *    manager,
                                   neu_reqresp_type_e event, void *data);
 static void start_static_adapter(neu_manager_t *manager, const char *name);

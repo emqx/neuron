@@ -758,7 +758,7 @@ static int get_setting(context_t *ctx, neu_resp_node_info_t *info)
     };
 
     neu_req_get_node_setting_t cmd = { 0 };
-    strcpy(cmd.ndoe, info->node);
+    strcpy(cmd.node, info->node);
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
