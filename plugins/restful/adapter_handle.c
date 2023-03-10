@@ -195,7 +195,7 @@ void handle_get_node_setting(nng_aio *aio)
 
     header.ctx  = aio;
     header.type = NEU_REQ_GET_NODE_SETTING;
-    strcpy(cmd.ndoe, node_name);
+    strcpy(cmd.node, node_name);
 
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
