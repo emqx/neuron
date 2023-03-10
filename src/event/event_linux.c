@@ -88,6 +88,11 @@ static void *event_loop(void *arg)
         if (ret == 0) {
             continue;
         }
+
+        if (ret == -1 && errno == EINTR) {
+            continue;
+        }
+
         if (ret == -1 || events->stop) {
             zlog_warn(neuron, "event loop exit, errno: %s(%d), stop: %d",
                       strerror(errno), errno, events->stop);
