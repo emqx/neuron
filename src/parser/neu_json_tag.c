@@ -252,13 +252,18 @@ int neu_json_encode_add_tags_req(void *json_object, void *param)
     int                      ret = 0;
     neu_json_add_tags_req_t *req = param;
 
-    void *               tag_array = neu_json_array();
-    neu_json_tag_array_t arr       = {
+    void *tag_array = neu_json_array();
+    if (NULL == tag_array) {
+        return -1;
+    }
+
+    neu_json_tag_array_t arr = {
         .len  = req->n_tag,
         .tags = req->tags,
     };
     ret = neu_json_encode_tag_array(tag_array, &arr);
     if (0 != ret) {
+        neu_json_encode_free(tag_array);
         return ret;
     }
 
@@ -517,13 +522,18 @@ int neu_json_encode_get_tags_resp(void *json_object, void *param)
     int                       ret  = 0;
     neu_json_get_tags_resp_t *resp = (neu_json_get_tags_resp_t *) param;
 
-    void *               tag_array = neu_json_array();
-    neu_json_tag_array_t arr       = {
+    void *tag_array = neu_json_array();
+    if (NULL == tag_array) {
+        return -1;
+    }
+
+    neu_json_tag_array_t arr = {
         .len  = resp->n_tag,
         .tags = resp->tags,
     };
     ret = neu_json_encode_tag_array(tag_array, &arr);
     if (0 != ret) {
+        neu_json_encode_free(tag_array);
         return ret;
     }
 
