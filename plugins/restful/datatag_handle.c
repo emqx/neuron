@@ -216,8 +216,7 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
     char *                   result   = NULL;
 
     tags_res.n_tag = utarray_len(tags->tags);
-    tags_res.tags =
-        calloc(tags_res.n_tag, sizeof(neu_json_get_tags_resp_tag_t));
+    tags_res.tags  = calloc(tags_res.n_tag, sizeof(neu_json_tag_t));
 
     utarray_foreach(tags->tags, neu_datatag_t *, tag)
     {
