@@ -32,128 +32,56 @@
 
 static void fini_add_tags_req(neu_json_add_tags_req_t *req)
 {
-    neu_json_add_tags_req_tag_t *p_tag = req->tags;
-    for (int i = 0; i < req->n_tag; i++) {
-        free(p_tag->description);
-        free(p_tag->name);
-        free(p_tag->address);
-        if (NEU_JSON_STR == p_tag->t) {
-            free(p_tag->value.val_str);
-        }
-        p_tag++;
-    }
+    neu_json_tag_array_t arr = {
+        .len  = req->n_tag,
+        .tags = req->tags,
+    };
+    neu_json_decode_tag_array_fini(&arr);
 
-    free(req->tags);
     free(req->node);
     free(req->group);
 }
 
 static int decode_add_tags_req(void *json_obj, neu_json_add_tags_req_t *req)
 {
-    int                          ret   = 0;
-    neu_json_add_tags_req_tag_t *p_tag = NULL;
+    int ret = 0;
 
-    neu_json_elem_t req_elems[] = { {
-                                        .name = "driver",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "group",
-                                        .t    = NEU_JSON_STR,
-                                    } };
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "driver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "tags",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
-    // set the fields before check for easy clean up on error
-    req->node  = req_elems[0].v.val_str;
-    req->group = req_elems[1].v.val_str;
     if (0 != ret) {
         goto decode_fail;
     }
 
-    req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
-    if (req->n_tag <= 0) {
+    neu_json_tag_array_t arr = { 0 };
+    ret = neu_json_decode_tag_array_json(req_elems[2].v.val_object, &arr);
+    if (0 != ret) {
         goto decode_fail;
     }
 
-    req->tags = calloc(req->n_tag, sizeof(*req->tags));
-    if (NULL == req->tags) {
-        goto decode_fail;
-    }
-
-    p_tag = req->tags;
-    for (int i = 0; i < req->n_tag; i++) {
-        neu_json_elem_t tag_elems[] = {
-            {
-                .name = "type",
-                .t    = NEU_JSON_INT,
-            },
-            {
-                .name = "name",
-                .t    = NEU_JSON_STR,
-            },
-            {
-                .name = "attribute",
-                .t    = NEU_JSON_INT,
-            },
-            {
-                .name = "address",
-                .t    = NEU_JSON_STR,
-            },
-            {
-                .name      = "decimal",
-                .t         = NEU_JSON_DOUBLE,
-                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
-            },
-            {
-                .name      = "precision",
-                .t         = NEU_JSON_INT,
-                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
-            },
-            {
-                .name      = "description",
-                .t         = NEU_JSON_STR,
-                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
-            },
-            {
-                .name      = "value",
-                .t         = NEU_JSON_VALUE,
-                .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
-            },
-        };
-
-        ret = neu_json_decode_array_by_json(
-            json_obj, "tags", i, NEU_JSON_ELEM_SIZE(tag_elems), tag_elems);
-
-        // set the fields before check for easy clean up on error
-        p_tag->type        = tag_elems[0].v.val_int;
-        p_tag->name        = tag_elems[1].v.val_str;
-        p_tag->attribute   = tag_elems[2].v.val_int;
-        p_tag->address     = tag_elems[3].v.val_str;
-        p_tag->decimal     = tag_elems[4].v.val_double;
-        p_tag->precision   = tag_elems[5].v.val_int;
-        p_tag->description = tag_elems[6].v.val_str;
-        p_tag->t           = tag_elems[7].t;
-        p_tag->value       = tag_elems[7].v;
-
-        if (0 != ret) {
-            goto decode_fail;
-        }
-
-        if (((NEU_ATTRIBUTE_STATIC & p_tag->attribute) &&
-             NEU_JSON_UNDEFINE == p_tag->t) ||
-            (!(NEU_ATTRIBUTE_STATIC & p_tag->attribute) &&
-             NEU_JSON_UNDEFINE != p_tag->t)) {
-            goto decode_fail;
-        }
-
-        p_tag++;
-    }
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+    req->n_tag = arr.len;
+    req->tags  = arr.tags;
 
     return 0;
 
 decode_fail:
-    fini_add_tags_req(req);
-    memset(req, 0, sizeof(*req));
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
     return -1;
 }
 
