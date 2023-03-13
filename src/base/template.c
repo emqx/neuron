@@ -1,0 +1,175 @@
+/**
+ * NEURON IIoT System for Industry 4.0
+ * Copyright (C) 2020-2023 EMQ Technologies Co., Ltd All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
+
+#include "group.h"
+#include "utils/utarray.h"
+#include "utils/uthash.h"
+
+#include "template.h"
+
+typedef struct {
+    neu_group_t *  group;
+    UT_hash_handle hh;
+} group_entry_t;
+
+struct neu_template_s {
+    char *         name;
+    char *         plugin;
+    group_entry_t *groups;
+};
+
+static inline void group_entry_free(group_entry_t *ent)
+{
+    neu_group_destroy(ent->group);
+    free(ent);
+}
+
+neu_template_t *neu_template_new(const char *name, const char *plugin)
+{
+    neu_template_t *tmpl = calloc(1, sizeof(*tmpl));
+    if (NULL == tmpl) {
+        return NULL;
+    }
+
+    tmpl->name = strdup(name);
+    if (NULL == tmpl->name) {
+        free(tmpl);
+        return NULL;
+    }
+
+    tmpl->plugin = strdup(plugin);
+    if (NULL == tmpl->plugin) {
+        free(tmpl->name);
+        free(tmpl);
+        return NULL;
+    }
+
+    return tmpl;
+}
+
+void neu_template_free(neu_template_t *tmpl)
+{
+    if (tmpl) {
+        group_entry_t *ent = NULL, *tmp = NULL;
+        HASH_ITER(hh, tmpl->groups, ent, tmp)
+        {
+            HASH_DEL(tmpl->groups, ent);
+            group_entry_free(ent);
+        }
+
+        free(tmpl->name);
+        free(tmpl->plugin);
+        free(tmpl);
+    }
+}
+
+const char *neu_template_name(const neu_template_t *tmpl)
+{
+    return tmpl->name;
+}
+
+const char *neu_template_plugin(const neu_template_t *tmpl)
+{
+    return tmpl->plugin;
+}
+
+const neu_group_t *neu_template_get_group(const neu_template_t *tmpl,
+                                          const char *          group)
+{
+    group_entry_t *ent = NULL;
+    HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
+    return ent ? ent->group : NULL;
+}
+
+int neu_template_add_group(neu_template_t *tmpl, const char *group,
+                           uint32_t interval)
+{
+    group_entry_t *ent = calloc(1, sizeof(*ent));
+    if (NULL == ent) {
+        return -1;
+    }
+
+    ent->group = neu_group_new(group, interval);
+    if (NULL == ent->group) {
+        free(ent);
+        return -1;
+    }
+
+    HASH_ADD_KEYPTR(hh, tmpl->groups, group, strlen(group), ent);
+
+    return 0;
+}
+
+int neu_template_del_group(neu_template_t *tmpl, const char *group)
+{
+    group_entry_t *ent = NULL;
+    HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
+    if (NULL == ent) {
+        return -1;
+    }
+
+    HASH_DEL(tmpl->groups, ent);
+    group_entry_free(ent);
+    return 0;
+}
+
+int neu_template_update_group(neu_template_t *tmpl, const char *group,
+                              uint32_t interval)
+{
+    group_entry_t *ent = NULL;
+    HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
+    if (NULL == ent) {
+        return -1;
+    }
+
+    return neu_group_update(ent->group, interval);
+}
+
+void neu_template_for_each_group(const neu_template_t *tmpl,
+                                 void (*cb)(const neu_group_t *group,
+                                            void *             data),
+                                 void *data)
+{
+    group_entry_t *ent = NULL;
+    HASH_LOOP(hh, tmpl->groups, ent) { cb(ent->group, data); }
+}
+
+int neu_template_add_tag(neu_template_t *tmpl, const char *group,
+                         neu_datatag_t *tag)
+{
+    group_entry_t *ent = NULL;
+    HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
+    if (NULL == ent) {
+        return -1;
+    }
+
+    return neu_group_add_tag(ent->group, tag);
+}
+
+int neu_template_update_tag(neu_template_t *tmpl, const char *group,
+                            neu_datatag_t *tag)
+{
+    group_entry_t *ent = NULL;
+    HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
+    if (NULL == ent) {
+        return -1;
+    }
+
+    return neu_group_update_tag(ent->group, tag);
+}
