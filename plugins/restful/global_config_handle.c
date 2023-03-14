@@ -149,6 +149,7 @@ static void context_free(context_t *ctx)
         neu_json_decode_global_config_req_free(ctx->req);
     }
 
+    nng_aio_set_input(ctx->aio, 3, NULL);
     free(ctx);
 }
 
