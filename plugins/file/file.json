@@ -7,8 +7,10 @@
     ],
     "group_interval": 1000,
     "file_length": {
-        "name": "file_length",
+        "name": "File Max Length",
+        "name_zh": "文件最大长度",
         "description": "",
+        "description_zh": "",
         "attribute": "required",
         "type": "int",
         "default": 512,

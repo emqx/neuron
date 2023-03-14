@@ -1,7 +1,9 @@
 {
   "client-id": {
-    "name": "client-id",
-    "description": "MQTT client id",
+    "name": "Client ID",
+    "name_zh": "客户端ID",
+    "description": "Neuron MQTT client id",
+    "description_zh": "Neuron MQTT客户端ID",
     "type": "string",
     "attribute": "required",
     "default": "${node-name}",
@@ -10,8 +12,10 @@
     }
   },
   "format": {
-    "name": "upload format",
+    "name": "Upload Format",
+    "name_zh": "上报数据格式",
     "description": "JSON format of the data reported in the upload topic. In values mode, data are split into `values` and `errors` sub objects. In tags mode, tag data are put in a single array.",
+    "description_zh": "上报数据的JSON格式。在values模式下，数据被分为`values`和`errors`两个子对象。在tags模式下，tag数据被放在一个数组中。",
     "attribute": "required",
     "type": "map",
     "default": 0,
@@ -29,8 +33,10 @@
     }
   },
   "cache-mem-size": {
-    "name": "cache memory size (MB)",
+    "name": "Cache Memory Size (MB)",
+    "name_zh": "缓存内存大小（MB）",
     "description": "Max in-memory cache size in megabytes when MQTT connection exception occurs. Should be smaller than cache disk size.",
+    "description_zh": "当MQTT连接异常时，最大的内存缓存大小（单位：MB）。应该小于缓存磁盘大小。",
     "type": "int",
     "attribute": "required",
     "default": 0,
@@ -40,8 +46,10 @@
     }
   },
   "cache-disk-size": {
-    "name": "cache disk size (MB)",
+    "name": "Cache Disk Size (MB)",
+    "name_zh": "缓存磁盘大小（MB）",
     "description": "Max in-disk cache size in megabytes when MQTT connection exception occurs. Should be larger than cache memory size. If nonzero, cache memory size should also be nonzero.",
+    "description_zh": "当MQTT连接异常时，最大的磁盘缓存大小（单位：MB）。应该大于缓存内存大小。如果不为0，缓存内存大小也不应该为0。",
     "type": "int",
     "attribute": "required",
     "default": 0,
@@ -51,8 +59,10 @@
     }
   },
   "host": {
-    "name": "host",
+    "name": "Broker Host",
+    "name_zh": "服务器地址",
     "description": "MQTT broker host",
+    "description_zh": "MQTT服务器地址",
     "attribute": "required",
     "type": "string",
     "default": "broker.emqx.io",
@@ -61,8 +71,10 @@
     }
   },
   "port": {
-    "name": "port",
+    "name": "Broker Port",
+    "name_zh": "服务器端口",
     "description": "MQTT broker port",
+    "description_zh": "MQTT服务器端口",
     "attribute": "required",
     "type": "int",
     "default": 1883,
@@ -72,8 +84,10 @@
     }
   },
   "username": {
-    "name": "username",
+    "name": "Username",
+    "name_zh": "用户名",
     "description": "User name",
+    "description_zh": "用户名",
     "attribute": "optional",
     "type": "string",
     "default": "",
@@ -82,18 +96,22 @@
     }
   },
   "password": {
-    "name": "password",
+    "name": "Password",
+    "name_zh": "密码",
     "description": "Password",
+    "description_zh": "密码",
     "attribute": "optional",
     "type": "string",
     "default": "",
     "valid": {
-      "length":255 
+      "length": 255
     }
   },
   "ssl": {
-    "name": "ssl",
+    "name": "SSL",
+    "name_zh": "SSL",
     "description": "Enable SSL connection",
+    "description_zh": "是否启用SSL连接",
     "attribute": "optional",
     "type": "bool",
     "default": false,
@@ -101,7 +119,9 @@
   },
   "ca": {
     "name": "CA",
+    "name_zh": "CA证书",
     "description": "CA certificate file",
+    "description_zh": "CA证书文件",
     "attribute": "required",
     "type": "file",
     "condition": {
@@ -113,8 +133,10 @@
     }
   },
   "cert": {
-    "name": "client cert",
-    "description": "client x509 certificate file",
+    "name": "Client Cert",
+    "name_zh": "客户端证书",
+    "description": "Client x509 certificate file",
+    "description_zh": "客户端证书文件",
     "attribute": "optional",
     "type": "file",
     "condition": {
@@ -126,8 +148,10 @@
     }
   },
   "key": {
-    "name": "client key",
-    "description": "client key file",
+    "name": "Client Private Key",
+    "name_zh": "客户端私钥",
+    "description": "Client private key file",
+    "description_zh": "客户端私钥文件",
     "attribute": "optional",
     "type": "file",
     "condition": {
@@ -139,8 +163,10 @@
     }
   },
   "keypass": {
-    "name": "keypass",
-    "description": "key password",
+    "name": "Keypass",
+    "name_zh": "私钥密码",
+    "description": "Private key password",
+    "description_zh": "私钥密码",
     "attribute": "optional",
     "type": "string",
     "condition": {

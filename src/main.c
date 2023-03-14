@@ -42,13 +42,12 @@ static void sig_handler(int sig)
 {
     nlog_warn("recv sig: %d", sig);
 
-    if (sig != SIGABRT) {
+    if (sig == SIGINT || sig == SIGTERM) {
         neu_manager_destroy(g_manager);
         neu_persister_destroy();
     }
     zlog_fini();
     exit_flag = true;
-    exit(-1);
 }
 
 static int neuron_run(const neu_cli_args_t *args)
