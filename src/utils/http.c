@@ -397,7 +397,6 @@ int neu_http_response_file(nng_aio *aio, void *data, size_t len,
                                        "Content-Disposition")) != 0) ||
         ((rv = nng_http_res_copy_data(res, data, len)) != 0)) {
         nng_http_res_free(res);
-        free(data);
         nng_aio_finish(aio, rv);
 
         return -1;
@@ -407,7 +406,6 @@ int neu_http_response_file(nng_aio *aio, void *data, size_t len,
     nlog_notice("%s %s [%d]", nng_http_req_get_method(nng_req),
                 nng_http_req_get_uri(nng_req), NNG_HTTP_STATUS_OK);
 
-    free(data);
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
 
