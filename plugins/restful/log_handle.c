@@ -54,14 +54,14 @@ void handle_logs_files(nng_aio *aio)
     size_t len  = 0;
     int    rv   = 0;
 
-    NEU_VALIDATE_JWT(aio);
+    VALIDATE_JWT(aio);
 
     /* check whether the neuron directory exists */
     rv = access("../neuron", F_OK);
     if (0 != rv) {
         nlog_error("The neuron directory does not exists");
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_NOT_EXIST, {
-            neu_http_response(aio, error_code.error, result_error);
+            http_response(aio, error_code.error, result_error);
         });
         return;
     }
@@ -71,7 +71,7 @@ void handle_logs_files(nng_aio *aio)
     if (rv == -1) {
         nlog_error("failed to create neuron_debug.tar.gz, rv: %d", rv);
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-            neu_http_response(aio, error_code.error, result_error);
+            http_response(aio, error_code.error, result_error);
         });
         return;
     } else {
@@ -80,7 +80,7 @@ void handle_logs_files(nng_aio *aio)
                 nlog_error("failed to create neuron_debug.tar.gz, rv: %d",
                            WEXITSTATUS(rv));
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-                    neu_http_response(aio, error_code.error, result_error);
+                    http_response(aio, error_code.error, result_error);
                 });
                 return;
             }
@@ -88,7 +88,7 @@ void handle_logs_files(nng_aio *aio)
             nlog_error("failed to create neuron_debug.tar.gz, rv: %d",
                        WEXITSTATUS(rv));
             NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-                neu_http_response(aio, error_code.error, result_error);
+                http_response(aio, error_code.error, result_error);
             });
             return;
         }
@@ -97,13 +97,13 @@ void handle_logs_files(nng_aio *aio)
     rv = read_file("/tmp/neuron_debug.tar.gz", &data, &len);
     if (0 != rv) {
         NEU_JSON_RESPONSE_ERROR(
-            rv, { neu_http_response(aio, error_code.error, result_error); });
+            rv, { http_response(aio, error_code.error, result_error); });
         return;
     }
 
     /* handle http response */
-    rv = neu_http_response_file(aio, data, len,
-                                "attachment; filename=neuron_debug.tar.gz");
+    rv = http_resp_files(aio, data, len,
+                        "attachment; filename=neuron_debug.tar.gz");
 
     nlog_notice("download neuron_debug.tar.gz, ret: %d", rv);
 }
