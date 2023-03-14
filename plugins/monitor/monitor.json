@@ -1,7 +1,9 @@
 {
   "client-id": {
-    "name": "client-id",
-    "description": "MQTT client id",
+    "name": "Client ID",
+    "name_zh": "客户端ID",
+    "description": "Neuron MQTT client id",
+    "description_zh": "Neuron MQTT客户端ID",
     "type": "string",
     "attribute": "required",
     "default": "${node-name}",
@@ -10,8 +12,10 @@
     }
   },
   "event-topic-prefix": {
-    "name": "event topic prefix",
+    "name": "Event Topic Prefix",
+    "name_zh": "事件主题前缀",
     "description": "Prefix of the topics to which publish event messages.",
+    "description_zh": "事件消息发布的主题前缀",
     "type": "string",
     "attribute": "required",
     "default": "/neuron/{client-id}",
@@ -20,8 +24,10 @@
     }
   },
   "heartbeat-interval": {
-    "name": "heartbeat interval (seconds)",
-    "description": "Interval in seconds between two heartbeat messages. Setting to zero will disable heartbeat monitoring.",
+    "name": "Heartbeat Interval",
+    "name_zh": "心跳间隔",
+    "description": "Interval in seconds between two heartbeat messages. Setting to zero will disable heartbeat monitoring.(seconds)",
+    "description_zh": "两个心跳消息之间的间隔时间，设置为0将禁用心跳监控。(秒)",
     "attribute": "required",
     "type": "int",
     "default": 0,
@@ -30,8 +36,10 @@
     }
   },
   "heartbeat-topic": {
-    "name": "heartbeat topic",
+    "name": "Heartbeat Topic",
+    "name_zh": "心跳主题",
     "description": "Topic to which publish heartbeat messages.",
+    "description_zh": "心跳消息发布的主题",
     "type": "string",
     "attribute": "required",
     "default": "/neuron/${node-name}/heartbeat",
@@ -40,8 +48,10 @@
     }
   },
   "host": {
-    "name": "host",
+    "name": "Broker Host",
+    "name_zh": "服务器地址",
     "description": "MQTT broker host",
+    "description_zh": "MQTT服务器地址",
     "attribute": "required",
     "type": "string",
     "default": "broker.emqx.io",
@@ -50,8 +60,10 @@
     }
   },
   "port": {
-    "name": "port",
+    "name": "Broker Port",
+    "name_zh": "服务器端口",
     "description": "MQTT broker port",
+    "description_zh": "MQTT服务器端口",
     "attribute": "required",
     "type": "int",
     "default": 1883,
@@ -61,8 +73,10 @@
     }
   },
   "username": {
-    "name": "username",
+    "name": "Username",
+    "name_zh": "用户名",
     "description": "User name",
+    "description_zh": "用户名",
     "attribute": "optional",
     "type": "string",
     "default": "",
@@ -71,18 +85,22 @@
     }
   },
   "password": {
-    "name": "password",
+    "name": "Password",
+    "name_zh": "密码",
     "description": "Password",
+    "description_zh": "密码",
     "attribute": "optional",
     "type": "string",
     "default": "",
     "valid": {
-      "length":255 
+      "length": 255
     }
   },
   "ssl": {
-    "name": "ssl",
+    "name": "SSL",
+    "name_zh": "SSL",
     "description": "Enable SSL connection",
+    "description_zh": "是否启用SSL连接",
     "attribute": "optional",
     "type": "bool",
     "default": false,
@@ -90,7 +108,9 @@
   },
   "ca": {
     "name": "CA",
+    "name_zh": "CA证书",
     "description": "CA certificate file",
+    "description_zh": "CA证书文件",
     "attribute": "required",
     "type": "file",
     "condition": {
@@ -102,8 +122,10 @@
     }
   },
   "cert": {
-    "name": "client cert",
-    "description": "client x509 certificate file",
+    "name": "Client Cert",
+    "name_zh": "客户端证书",
+    "description": "Client x509 certificate file",
+    "description_zh": "客户端证书文件",
     "attribute": "optional",
     "type": "file",
     "condition": {
@@ -115,8 +137,10 @@
     }
   },
   "key": {
-    "name": "client key",
-    "description": "client key file",
+    "name": "Client Private Key",
+    "name_zh": "客户端私钥",
+    "description": "Client private key file",
+    "description_zh": "客户端私钥文件",
     "attribute": "optional",
     "type": "file",
     "condition": {
@@ -128,8 +152,10 @@
     }
   },
   "keypass": {
-    "name": "keypass",
-    "description": "key password",
+    "name": "Keypass",
+    "name_zh": "私钥密码",
+    "description": "Private key password",
+    "description_zh": "私钥密码",
     "attribute": "optional",
     "type": "string",
     "condition": {

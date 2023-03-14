@@ -27,8 +27,10 @@
 	],
 	"group_interval": 1000,
 	"host": {
-		"name": "host",
-		"description": "local ip in server mode, remote device ip in client mode",
+		"name": "Device IP Address",
+		"name_zh": "设备IP地址",
+		"description": "Target device IPv4 address",
+		"description_zh": "目标设备IPv4地址",
 		"attribute": "required",
 		"type": "string",
 		"valid": {
@@ -37,8 +39,10 @@
 		}
 	},
 	"port": {
-		"name": "port",
-		"description": "local port in server mode, remote device port in client mode",
+		"name": "Device Port",
+		"name_zh": "设备端口",
+		"description": "Target device port number",
+		"description_zh": "目标设备端口号",
 		"attribute": "required",
 		"type": "int",
 		"default": 502,
@@ -48,8 +52,10 @@
 		}
 	},
 	"timeout": {
-		"name": "timeout",
-		"description": "recv msg timeout(ms)",
+		"name": "Recv Timeout",
+		"name_zh": "接收超时时间",
+		"description": "Recv msg timeout(ms)",
+		"description_zh": "接收消息超时时间(毫秒)",
 		"attribute": "required",
 		"type": "int",
 		"default": 3000,
