@@ -186,7 +186,6 @@ void handle_download_file(nng_aio *aio)
     /*handle http response*/
     sprintf(http_resp, "%s%s", "attachment; filename=", file_name);
     rv = neu_http_response_file(aio, file_data, file_len, http_resp);
-    if (0 != rv) {
-        return;
-    }
+    free(file_data);
+    nlog_notice("download file %s, rv: %d", file_name, rv);
 }
