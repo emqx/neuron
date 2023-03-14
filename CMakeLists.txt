@@ -104,6 +104,7 @@ set(NEURON_SOURCES
     src/core/subscribe.c
     src/core/plugin_manager.c
     src/core/node_manager.c
+    src/core/template_manager.c
     src/core/storage.c
     src/adapter/storage.c
     src/adapter/adapter.c
