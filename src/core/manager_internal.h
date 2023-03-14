@@ -29,15 +29,17 @@
 #include "node_manager.h"
 #include "plugin_manager.h"
 #include "subscribe.h"
+#include "template_manager.h"
 
 typedef struct neu_manager {
     nng_socket      socket;
     neu_events_t *  events;
     neu_event_io_t *loop;
 
-    neu_plugin_manager_t *plugin_manager;
-    neu_node_manager_t *  node_manager;
-    neu_subscribe_mgr_t * subscribe_manager;
+    neu_plugin_manager_t *  plugin_manager;
+    neu_node_manager_t *    node_manager;
+    neu_subscribe_mgr_t *   subscribe_manager;
+    neu_template_manager_t *template_manager;
 
     neu_event_timer_t *timer_timestamp;
 

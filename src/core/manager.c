@@ -89,6 +89,7 @@ neu_manager_t *neu_manager_create()
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
+    manager->template_manager  = neu_template_manager_create();
 
     rv = nng_pair1_open_poly(&manager->socket);
     assert(rv == 0);
@@ -169,6 +170,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     neu_subscribe_manager_destroy(manager->subscribe_manager);
     neu_node_manager_destroy(manager->node_manager);
     neu_plugin_manager_destroy(manager->plugin_manager);
+    neu_template_manager_destroy(manager->template_manager);
 
     nng_close(manager->socket);
     neu_event_del_io(manager->events, manager->loop);
