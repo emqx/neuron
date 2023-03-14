@@ -103,7 +103,7 @@ void handle_logs_files(nng_aio *aio)
 
     /* handle http response */
     rv = http_resp_files(aio, data, len,
-                        "attachment; filename=neuron_debug.tar.gz");
+                         "attachment; filename=neuron_debug.tar.gz");
 
     nlog_notice("download neuron_debug.tar.gz, ret: %d", rv);
 }
