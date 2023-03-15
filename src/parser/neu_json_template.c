@@ -1,0 +1,310 @@
+/**
+ * NEURON IIoT System for Industry 4.0
+ * Copyright (C) 2020-2023 EMQ Technologies Co., Ltd All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ **/
+
+#include <jansson.h>
+
+#include "json/json.h"
+
+#include "neu_json_template.h"
+
+int neu_json_encode_template_group(void *json_obj, void *param)
+{
+    int                        ret = 0;
+    neu_json_template_group_t *grp = param;
+
+    void *tag_array = neu_json_array();
+    if (NULL == tag_array) {
+        return -1;
+    }
+
+    ret = neu_json_encode_tag_array(tag_array, &grp->tags);
+    if (0 != ret) {
+        neu_json_encode_free(tag_array);
+        return ret;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name      = "name",
+            .t         = NEU_JSON_STR,
+            .v.val_str = grp->name,
+        },
+        {
+            .name      = "interval",
+            .t         = NEU_JSON_INT,
+            .v.val_int = grp->interval,
+        },
+        {
+            .name         = "tags",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = tag_array,
+        },
+    };
+
+    ret = neu_json_encode_field(json_obj, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
+int neu_json_decode_template_group(void *                     json_obj,
+                                   neu_json_template_group_t *grp)
+{
+    int                  ret  = 0;
+    neu_json_tag_array_t tags = { 0 };
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "interval",
+            .t    = NEU_JSON_INT,
+        },
+        {
+            .name = "tags",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (0 != ret) {
+        goto error;
+    }
+
+    ret = neu_json_decode_tag_array_json(req_elems[2].v.val_object, &tags);
+    if (0 != ret) {
+        goto error;
+    }
+
+    grp->name     = req_elems[0].v.val_str;
+    grp->interval = req_elems[1].v.val_int;
+    grp->tags     = tags;
+
+    return 0;
+
+error:
+    free(req_elems[0].v.val_str);
+    return -1;
+}
+
+void neu_json_decode_template_group_fini(neu_json_template_group_t *grp)
+{
+    free(grp->name);
+    neu_json_decode_tag_array_fini(&grp->tags);
+}
+
+int neu_json_encode_template_group_array(void *json_obj, void *param)
+{
+    neu_json_template_group_array_t *array = param;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    for (int i = 0; i < array->len; i++) {
+        json_t *grp_obj = json_object();
+        if (NULL == grp_obj || 0 != json_array_append_new(json_obj, grp_obj)) {
+            return -1;
+        }
+        if (0 != neu_json_encode_template_group(grp_obj, &array->groups[i])) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int neu_json_decode_template_group_array_json(
+    void *json_obj, neu_json_template_group_array_t *arr)
+{
+    int                        len    = 0;
+    neu_json_template_group_t *groups = NULL;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    len = json_array_size(json_obj);
+    if (0 == len) {
+        // success on empty group array
+        arr->len    = 0;
+        arr->groups = NULL;
+        return 0;
+    }
+
+    groups = calloc(len, sizeof(*groups));
+    if (NULL == groups) {
+        return -1;
+    }
+
+    int i = 0;
+    for (i = 0; i < len; i++) {
+        json_t *grp_obj = json_array_get(json_obj, i);
+        if (0 != neu_json_decode_template_group(grp_obj, &groups[i])) {
+            goto decode_fail;
+        }
+    }
+
+    arr->len    = len;
+    arr->groups = groups;
+    return 0;
+
+decode_fail:
+    while (--i > 0) {
+        neu_json_decode_template_group_fini(&groups[i]);
+    }
+    free(groups);
+    return -1;
+}
+
+void neu_json_decode_template_group_array_fini(
+    neu_json_template_group_array_t *arr)
+{
+    for (int i = 0; i < arr->len; ++i) {
+        neu_json_decode_template_group_fini(&arr->groups[i]);
+    }
+    free(arr->groups);
+}
+
+int neu_json_encode_template(void *json_obj, void *param)
+{
+    int                  ret  = 0;
+    neu_json_template_t *tmpl = param;
+
+    void *grp_array = neu_json_array();
+    if (NULL == grp_array) {
+        return -1;
+    }
+
+    ret = neu_json_encode_template_group_array(grp_array, &tmpl->groups);
+    if (0 != ret) {
+        neu_json_encode_free(grp_array);
+        return ret;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name      = "name",
+            .t         = NEU_JSON_STR,
+            .v.val_str = tmpl->name,
+        },
+        {
+            .name      = "plugin",
+            .t         = NEU_JSON_STR,
+            .v.val_str = tmpl->plugin,
+        },
+        {
+            .name         = "groups",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = grp_array,
+        },
+    };
+
+    ret = neu_json_encode_field(json_obj, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
+int neu_json_decode_template(char *buf, neu_json_template_t **result)
+{
+    neu_json_template_t *tmpl = calloc(1, sizeof(neu_json_add_tags_req_t));
+    if (tmpl == NULL) {
+        return -1;
+    }
+
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(tmpl);
+        return -1;
+    }
+
+    int ret = neu_json_decode_template_json(json_obj, tmpl);
+    if (0 == ret) {
+        *result = tmpl;
+    } else {
+        free(tmpl);
+    }
+
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+int neu_json_decode_template_json(void *json_obj, neu_json_template_t *tmpl)
+{
+    int                             ret  = 0;
+    neu_json_template_group_array_t grps = { 0 };
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "plugin",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "groups",
+            .t         = NEU_JSON_OBJECT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (0 != ret) {
+        goto error;
+    }
+
+    ret = neu_json_decode_template_group_array_json(req_elems[2].v.val_object,
+                                                    &grps);
+    if (req_elems[2].v.val_object && 0 != ret) {
+        goto error;
+    }
+
+    tmpl->name   = req_elems[0].v.val_str;
+    tmpl->plugin = req_elems[1].v.val_str;
+    tmpl->groups = grps;
+
+    return 0;
+
+error:
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
+    return -1;
+}
+
+void neu_json_decode_template_fini(neu_json_template_t *tmpl)
+{
+    free(tmpl->name);
+    free(tmpl->plugin);
+    neu_json_decode_template_group_array_fini(&tmpl->groups);
+}
+
+void neu_json_decode_template_free(neu_json_template_t *tmpl)
+{
+    if (tmpl) {
+        neu_json_decode_template_fini(tmpl);
+        free(tmpl);
+    }
+}
