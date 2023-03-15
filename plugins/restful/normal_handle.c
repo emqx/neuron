@@ -169,8 +169,12 @@ void handle_get_plugin_schema(nng_aio *aio)
 
     const char *schema_name = neu_http_get_param(aio, "schema_name", &len);
     if (schema_name == NULL || len == 0) {
-        neu_http_bad_request(aio, "{\"error\": 1002}");
-        return;
+        // fall back to `plugin_name` param
+        schema_name = neu_http_get_param(aio, "plugin_name", &len);
+        if (schema_name == NULL || len == 0) {
+            neu_http_bad_request(aio, "{\"error\": 1002}");
+            return;
+        }
     }
 
     if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
