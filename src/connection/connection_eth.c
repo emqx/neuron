@@ -68,10 +68,12 @@ typedef struct interface_conn {
 
     int     lldp_fd;
     int     profinet_fd;
+    int     vlan_fd;
     uint8_t mac[ETH_ALEN];
 
     neu_event_io_t *profinet_event;
     neu_event_io_t *lldp_event;
+    neu_event_io_t *vlan_event;
 
     lldp_callback_elem_t *lldp_callbacks;
     callback_elem_t *     callbacks;
@@ -92,8 +94,9 @@ static int get_mac(neu_conn_eth_t *conn, const char *interface);
 static int init_socket(const char *interface, uint16_t protocol);
 static int uninit_socket(int fd);
 
-static int profinet_msg_cb(enum neu_event_io_type type, int fd, void *usr_data);
 static int lldp_msg_cb(enum neu_event_io_type type, int fd, void *usr_data);
+static int eth_msg_cb(enum neu_event_io_type type, int fd, void *usr_data);
+
 static char *lldp_parse_port_id(uint16_t n_byte, uint8_t *bytes);
 
 neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
@@ -126,15 +129,18 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
                 in_conns[i].interface = strdup(interface);
                 in_conns[i].events    = neu_event_new();
                 in_conns[i].count += 1;
+
                 in_conns[i].profinet_fd = init_socket(interface, 0x8892);
                 in_conns[i].lldp_fd     = init_socket(interface, ETH_P_LLDP);
+                in_conns[i].vlan_fd     = init_socket(interface, 0x8100);
+
                 get_mac(conn_eth, interface);
                 pthread_mutex_init(&in_conns[i].mtx, NULL);
                 conn_eth->ic = &in_conns[i];
 
                 param.fd       = in_conns[i].profinet_fd;
                 param.usr_data = (void *) conn_eth;
-                param.cb       = profinet_msg_cb;
+                param.cb       = eth_msg_cb;
 
                 in_conns[i].profinet_event =
                     neu_event_add_io(in_conns[i].events, param);
@@ -143,6 +149,12 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
                 param.cb = lldp_msg_cb;
 
                 in_conns[i].lldp_event =
+                    neu_event_add_io(in_conns[i].events, param);
+
+                param.fd = in_conns[i].vlan_fd;
+                param.cb = eth_msg_cb;
+
+                in_conns[i].vlan_event =
                     neu_event_add_io(in_conns[i].events, param);
 
                 break;
@@ -163,10 +175,13 @@ int neu_conn_eth_uninit(neu_conn_eth_t *conn)
     if (conn->ic->count == 0) {
         neu_event_del_io(conn->ic->events, conn->ic->profinet_event);
         neu_event_del_io(conn->ic->events, conn->ic->lldp_event);
+        neu_event_del_io(conn->ic->events, conn->ic->vlan_event);
+
         neu_event_close(conn->ic->events);
 
         uninit_socket(conn->ic->profinet_fd);
         uninit_socket(conn->ic->lldp_fd);
+        uninit_socket(conn->ic->vlan_fd);
 
         free(conn->ic->interface);
         pthread_mutex_destroy(&conn->ic->mtx);
@@ -294,6 +309,7 @@ int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
     int            fd   = 0;
     int            ret  = 0;
     struct ethhdr *ehdr = (struct ethhdr *) bytes;
+    (void) dst_mac;
 
     switch (protocol) {
     case 0x8892:
@@ -302,15 +318,15 @@ int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
     case ETH_P_LLDP:
         fd = conn->ic->lldp_fd;
         break;
+    case 0x8100:
+        fd = conn->ic->vlan_fd;
+        break;
     default:
         assert(1 == 0);
         break;
     }
 
-    memset(bytes, 0, sizeof(struct ethhdr));
     memcpy(ehdr->h_source, conn->ic->mac, ETH_ALEN);
-    memcpy(ehdr->h_dest, dst_mac, ETH_ALEN);
-    ehdr->h_proto = htons(protocol);
 
     ret = send(fd, bytes, n_byte, 0);
     return ret;
@@ -381,16 +397,40 @@ static int uninit_socket(int fd)
     return 0;
 }
 
-static int profinet_msg_cb(enum neu_event_io_type type, int fd, void *usr_data)
+static int eth_msg_cb(enum neu_event_io_type type, int fd, void *usr_data)
 {
     neu_conn_eth_t *conn = (neu_conn_eth_t *) usr_data;
 
     switch (type) {
-    case NEU_EVENT_IO_READ:
+    case NEU_EVENT_IO_READ: {
+        callback_elem_key_t key  = { 0 };
+        callback_elem_t *   elem = NULL;
+
+        memset(conn->ic->buf, 0, sizeof(conn->ic->buf));
+        int ret = recv(fd, conn->ic->buf, sizeof(conn->ic->buf), 0);
+
+        if (ret < ETH_HLEN) {
+            nlog_warn("eth recv length < %d msg", ETH_HLEN);
+            return 0;
+        }
+
+        struct ethhdr *ehdr = (struct ethhdr *) conn->ic->buf;
+
+        key.protocol = ntohs(ehdr->h_proto);
+        memcpy(key.mac, ehdr->h_source, ETH_ALEN);
+
+        HASH_FIND(hh, conn->ic->callbacks, &key, sizeof(key), elem);
+
+        if (elem != NULL) {
+            elem->callback(conn, conn->ctx, key.protocol, ret - ETH_HLEN,
+                           conn->ic->buf + ETH_HLEN, ehdr->h_source);
+        }
+
         break;
+    }
     case NEU_EVENT_IO_CLOSED:
     case NEU_EVENT_IO_HUP:
-        nlog_warn("eth conn profinet error type: %d, fd: %d(%s)", type, fd,
+        nlog_warn("eth conn eth error type: %d, fd: %d(%s)", type, fd,
                   conn->ic->interface);
         break;
     }
@@ -408,7 +448,8 @@ static int lldp_msg_cb(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_EVENT_IO_READ:
         memset(conn->ic->buf, 0, sizeof(conn->ic->buf));
         ret     = recv(fd, conn->ic->buf, sizeof(conn->ic->buf), 0);
-        port_id = lldp_parse_port_id(ret, conn->ic->buf);
+        port_id = lldp_parse_port_id(ret - sizeof(struct ethhdr),
+                                     conn->ic->buf + sizeof(struct ethhdr));
 
         if (port_id != NULL) {
             lldp_callback_elem_t *elem = NULL;
