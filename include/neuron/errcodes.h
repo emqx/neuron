@@ -94,6 +94,10 @@ typedef enum {
     NEU_ERR_LICENSE_TOKEN_NOT_MATCH = 2406,
     NEU_ERR_LICENSE_BAD_CLOCK       = 2407,
 
+    NEU_ERR_TEMPLATE_EXIST         = 2500,
+    NEU_ERR_TEMPLATE_NOT_FOUND     = 2501,
+    NEU_ERR_TEMPLATE_NAME_TOO_LONG = 2502,
+
     // common error codes for plugins
     NEU_ERR_PLUGIN_READ_FAILURE            = 3000,
     NEU_ERR_PLUGIN_WRITE_FAILURE           = 3001,
@@ -106,6 +110,8 @@ typedef enum {
     NEU_ERR_PLUGIN_NOT_RUNNING             = 3010,
     NEU_ERR_PLUGIN_TAG_NOT_READY           = 3011,
     NEU_ERR_PLUGIN_PACKET_OUT_OF_ORDER     = 3012,
+    NEU_ERR_PLUGIN_NAME_TOO_LONG           = 3013,
+    NEU_ERR_PLUGIN_NOT_FOUND               = 3014,
 
     NEU_ERR_MQTT_FAILURE                        = 4000,
     NEU_ERR_MQTT_NO_CERTFILESET                 = 4001,

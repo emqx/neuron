@@ -33,6 +33,7 @@
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
+#include "template_handle.h"
 #include "utils/http.h"
 #include "version_handle.h"
 
@@ -107,6 +108,9 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/global/config",
+    },
+    {
+        .url = "/api/v2/template",
     },
 };
 
@@ -334,6 +338,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/global/config",
         .value.handler = handle_put_global_config,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/template",
+        .value.handler = handle_add_template,
     },
 };
 
