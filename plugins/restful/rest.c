@@ -34,6 +34,7 @@
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
+#include "template_handle.h"
 #include "utils/http.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"

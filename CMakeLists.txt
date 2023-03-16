@@ -120,6 +120,7 @@ set(NEURON_SOURCES
     plugins/restful/global_config_handle.c
     plugins/restful/group_config_handle.c
     plugins/restful/plugin_handle.c
+    plugins/restful/template_handle.c
     plugins/restful/version_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c)
