@@ -325,6 +325,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GROUP_NAME_TOO_LONG:
     case NEU_ERR_INVALID_PASSWORD_LEN:
     case NEU_ERR_DUPLICATE_PASSWORD:
+    case NEU_ERR_TEMPLATE_NAME_TOO_LONG:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_FILE_NOT_EXIST:
@@ -337,6 +338,8 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GROUP_NOT_EXIST:
     case NEU_ERR_GROUP_NOT_SUBSCRIBE:
     case NEU_ERR_COMMAND_EXECUTION_FAILED:
+    case NEU_ERR_TEMPLATE_NOT_FOUND:
+    case NEU_ERR_PLUGIN_NOT_FOUND:
         status = NNG_HTTP_STATUS_NOT_FOUND;
         break;
     case NEU_ERR_NODE_EXIST:
@@ -350,6 +353,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_GROUP_NOT_ALLOW:
     case NEU_ERR_LIBRARY_NOT_ALLOW_CREATE_INSTANCE:
     case NEU_ERR_NODE_NOT_ALLOW_DELETE:
+    case NEU_ERR_TEMPLATE_EXIST:
         status = NNG_HTTP_STATUS_CONFLICT;
         break;
     case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
