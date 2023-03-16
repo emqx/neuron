@@ -27,10 +27,25 @@ typedef struct neu_template_manager_s neu_template_manager_t;
 neu_template_manager_t *neu_template_manager_create();
 void neu_template_manager_destroy(neu_template_manager_t *mgr);
 
+int neu_template_manager_count(const neu_template_manager_t *mgr);
+
+// NOTE: this function takes ownership of argument `tmpl`
 int neu_template_manager_add(neu_template_manager_t *mgr, neu_template_t *tmpl);
+
 int neu_template_manager_del(neu_template_manager_t *mgr, const char *name);
 
-const neu_template_t *
-neu_template_manager_find(const neu_template_manager_t *mgr, const char *name);
+// NOTE: ownership of the return template belongs to the manager.
+//       user must not alter the name or plugin of the return template.
+neu_template_t *neu_template_manager_find(const neu_template_manager_t *mgr,
+                                          const char *                  name);
+
+// Iterate through templates and apply `cb` each.
+// NOTE: `cb` must not alter the name or plugin of the template.
+//       `cb` must not delete the template.
+int neu_template_manager_for_each(neu_template_manager_t *mgr,
+                                  int (*cb)(neu_template_t *tmpl, void *data),
+                                  void *data);
+
+void neu_template_manager_clear(neu_template_manager_t *mgr);
 
 #endif

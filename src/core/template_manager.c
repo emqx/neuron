@@ -18,13 +18,14 @@
  **/
 
 #include "base/template.h"
+#include "errcodes.h"
 #include "utils/uthash.h"
 
 #include "template_manager.h"
 
 typedef struct {
     neu_template_t *tmpl;
-    UT_hash_handle  hh;
+    UT_hash_handle  hh_name;
 } name_entry_t;
 
 static inline void template_entry_free(name_entry_t *ent)
@@ -49,46 +50,82 @@ void neu_template_manager_destroy(neu_template_manager_t *mgr)
         return;
     }
 
-    name_entry_t *ent = NULL, *tmp = NULL;
-    HASH_ITER(hh, mgr->name_map, ent, tmp)
-    {
-        HASH_DEL(mgr->name_map, ent);
-        template_entry_free(ent);
-    }
+    neu_template_manager_clear(mgr);
 
     free(mgr);
 }
 
 int neu_template_manager_add(neu_template_manager_t *mgr, neu_template_t *tmpl)
 {
-    name_entry_t *ent = calloc(1, sizeof(*ent));
-    if (NULL == ent) {
-        return -1;
+    name_entry_t *ent  = NULL;
+    const char *  name = neu_template_name(tmpl);
+
+    HASH_FIND(hh_name, mgr->name_map, name, strlen(name), ent);
+    if (ent) {
+        neu_template_free(tmpl);
+        return NEU_ERR_TEMPLATE_EXIST;
     }
 
-    ent->tmpl        = tmpl;
-    const char *name = neu_template_name(tmpl);
-    HASH_ADD_KEYPTR(hh, mgr->name_map, name, strlen(name), ent);
+    ent = calloc(1, sizeof(*ent));
+    if (NULL == ent) {
+        neu_template_free(tmpl);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    ent->tmpl = tmpl;
+    HASH_ADD_KEYPTR(hh_name, mgr->name_map, name, strlen(name), ent);
     return 0;
 }
 
 int neu_template_manager_del(neu_template_manager_t *mgr, const char *name)
 {
     name_entry_t *ent = NULL;
-    HASH_FIND(hh, mgr->name_map, name, strlen(name), ent);
+    HASH_FIND(hh_name, mgr->name_map, name, strlen(name), ent);
     if (NULL == ent) {
-        return -1;
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
     }
 
-    HASH_DEL(mgr->name_map, ent);
+    HASH_DELETE(hh_name, mgr->name_map, ent);
     template_entry_free(ent);
     return 0;
 }
 
-const neu_template_t *
-neu_template_manager_find(const neu_template_manager_t *mgr, const char *name)
+int neu_template_manager_count(const neu_template_manager_t *mgr)
+{
+    return HASH_CNT(hh_name, mgr->name_map);
+}
+
+neu_template_t *neu_template_manager_find(const neu_template_manager_t *mgr,
+                                          const char *                  name)
 {
     name_entry_t *ent = NULL;
-    HASH_FIND(hh, mgr->name_map, name, strlen(name), ent);
+    HASH_FIND(hh_name, mgr->name_map, name, strlen(name), ent);
     return ent ? ent->tmpl : NULL;
+}
+
+int neu_template_manager_for_each(neu_template_manager_t *mgr,
+                                  int (*cb)(neu_template_t *tmpl, void *data),
+                                  void *data)
+{
+    int           rv  = 0;
+    name_entry_t *ent = NULL, *tmp = NULL;
+
+    HASH_ITER(hh_name, mgr->name_map, ent, tmp)
+    {
+        if (0 != (rv = cb(ent->tmpl, data))) {
+            break;
+        }
+    }
+
+    return rv;
+}
+
+void neu_template_manager_clear(neu_template_manager_t *mgr)
+{
+    name_entry_t *ent = NULL, *tmp = NULL;
+    HASH_ITER(hh_name, mgr->name_map, ent, tmp)
+    {
+        HASH_DELETE(hh_name, mgr->name_map, ent);
+        template_entry_free(ent);
+    }
 }
