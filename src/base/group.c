@@ -73,16 +73,12 @@ void neu_group_destroy(neu_group_t *group)
     free(group);
 }
 
-const char *neu_group_get_name(neu_group_t *group)
+const char *neu_group_get_name(const neu_group_t *group)
 {
-    static __thread char name[NEU_GROUP_NAME_LEN] = { 0 };
-
-    strncpy(name, group->name, sizeof(name));
-
-    return name;
+    return group->name;
 }
 
-uint32_t neu_group_get_interval(neu_group_t *group)
+uint32_t neu_group_get_interval(const neu_group_t *group)
 {
     uint32_t interval = 0;
 
@@ -106,7 +102,7 @@ int neu_group_update(neu_group_t *group, uint32_t interval)
     return 0;
 }
 
-int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
+int neu_group_add_tag(neu_group_t *group, const neu_datatag_t *tag)
 {
     tag_elem_t *el = NULL;
 
@@ -125,7 +121,7 @@ int neu_group_add_tag(neu_group_t *group, neu_datatag_t *tag)
     return 0;
 }
 
-int neu_group_update_tag(neu_group_t *group, neu_datatag_t *tag)
+int neu_group_update_tag(neu_group_t *group, const neu_datatag_t *tag)
 {
     tag_elem_t *el  = NULL;
     int         ret = NEU_ERR_TAG_NOT_EXIST;
@@ -160,7 +156,7 @@ int neu_group_del_tag(neu_group_t *group, const char *tag_name)
     return ret;
 }
 
-UT_array *neu_group_get_tag(neu_group_t *group)
+UT_array *neu_group_get_tag(const neu_group_t *group)
 {
     UT_array *array = NULL;
 
@@ -194,7 +190,7 @@ UT_array *neu_group_get_read_tag(neu_group_t *group)
     return array;
 }
 
-uint16_t neu_group_tag_size(neu_group_t *group)
+uint16_t neu_group_tag_size(const neu_group_t *group)
 {
     uint16_t size = 0;
 
