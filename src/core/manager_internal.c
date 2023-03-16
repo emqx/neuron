@@ -25,6 +25,7 @@
 #include "adapter/driver/driver_internal.h"
 
 #include "manager_internal.h"
+#include "template_manager.h"
 
 int neu_manager_add_plugin(neu_manager_t *manager, const char *library)
 {
@@ -100,6 +101,38 @@ UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type,
                                 const char *plugin, const char *node)
 {
     return neu_node_manager_filter(manager->node_manager, type, plugin, node);
+}
+
+int neu_manager_add_template(neu_manager_t *         manager,
+                             neu_req_add_template_t *req)
+{
+    int             rv   = 0;
+    neu_template_t *tmpl = neu_template_new(req->name, req->plugin);
+    if (NULL == tmpl) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    for (int i = 0; i < req->n_group; ++i) {
+        neu_reqresp_template_group_t *grp = &req->groups[i];
+        if (0 !=
+            (rv = neu_template_add_group(tmpl, grp->name, grp->interval))) {
+            goto error;
+        }
+
+        for (int j = 0; j < grp->n_tag; ++j) {
+            if (0 !=
+                (rv = neu_template_add_tag(tmpl, grp->name, &grp->tags[j]))) {
+                goto error;
+            }
+        }
+    }
+
+    rv = neu_template_manager_add(manager->template_manager, tmpl);
+    return rv;
+
+error:
+    neu_template_free(tmpl);
+    return rv;
 }
 
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
