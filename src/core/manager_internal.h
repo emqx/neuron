@@ -57,6 +57,9 @@ int       neu_manager_del_node(neu_manager_t *manager, const char *node_name);
 UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type,
                                 const char *plugin, const char *node);
 
+int neu_manager_add_template(neu_manager_t *         manager,
+                             neu_req_add_template_t *req);
+
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 
 int       neu_manager_subscribe(neu_manager_t *manager, const char *app,

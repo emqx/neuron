@@ -37,23 +37,29 @@ void            neu_template_free(neu_template_t *tmpl);
 const char *neu_template_name(const neu_template_t *tmpl);
 const char *neu_template_plugin(const neu_template_t *tmpl);
 
-const neu_group_t *neu_template_get_group(const neu_template_t *tmpl,
-                                          const char *          group);
+size_t neu_template_group_num(const neu_template_t *tmpl);
+
+// NOTE: ownership of the return group belongs to the template.
+//       user must not alter the name the return group.
+neu_group_t *neu_template_get_group(const neu_template_t *tmpl,
+                                    const char *          group);
+
 int neu_template_add_group(neu_template_t *tmpl, const char *group,
                            uint32_t interval);
 int neu_template_del_group(neu_template_t *tmpl, const char *group);
 int neu_template_update_group(neu_template_t *tmpl, const char *group,
                               uint32_t interval);
 
-void neu_template_for_each_group(const neu_template_t *tmpl,
-                                 void (*cb)(const neu_group_t *group,
-                                            void *             data),
-                                 void *data);
+// Iterate through groups in the template and apply `cb` each.
+// NOTE: `cb` must not alter the group name or delete the group.
+int neu_template_for_each_group(neu_template_t *tmpl,
+                                int (*cb)(neu_group_t *group, void *data),
+                                void *data);
 
 int neu_template_add_tag(neu_template_t *tmpl, const char *group,
-                         neu_datatag_t *tag);
+                         const neu_datatag_t *tag);
 int neu_template_update_tag(neu_template_t *tmpl, const char *group,
-                            neu_datatag_t *tag);
+                            const neu_datatag_t *tag);
 
 #ifdef __cplusplus
 }

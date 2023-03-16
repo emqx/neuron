@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include "errcodes.h"
 #include "group.h"
 #include "utils/utarray.h"
 #include "utils/uthash.h"
@@ -89,8 +90,8 @@ const char *neu_template_plugin(const neu_template_t *tmpl)
     return tmpl->plugin;
 }
 
-const neu_group_t *neu_template_get_group(const neu_template_t *tmpl,
-                                          const char *          group)
+neu_group_t *neu_template_get_group(const neu_template_t *tmpl,
+                                    const char *          group)
 {
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
@@ -100,15 +101,22 @@ const neu_group_t *neu_template_get_group(const neu_template_t *tmpl,
 int neu_template_add_group(neu_template_t *tmpl, const char *group,
                            uint32_t interval)
 {
-    group_entry_t *ent = calloc(1, sizeof(*ent));
+    group_entry_t *ent = NULL;
+
+    HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
+    if (ent) {
+        return NEU_ERR_GROUP_EXIST;
+    }
+
+    ent = calloc(1, sizeof(*ent));
     if (NULL == ent) {
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     ent->group = neu_group_new(group, interval);
     if (NULL == ent->group) {
         free(ent);
-        return -1;
+        return NEU_ERR_EINTERNAL;
     }
 
     HASH_ADD_KEYPTR(hh, tmpl->groups, group, strlen(group), ent);
@@ -121,7 +129,7 @@ int neu_template_del_group(neu_template_t *tmpl, const char *group)
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
     if (NULL == ent) {
-        return -1;
+        return NEU_ERR_GROUP_NOT_EXIST;
     }
 
     HASH_DEL(tmpl->groups, ent);
@@ -135,40 +143,52 @@ int neu_template_update_group(neu_template_t *tmpl, const char *group,
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
     if (NULL == ent) {
-        return -1;
+        return NEU_ERR_GROUP_NOT_EXIST;
     }
 
     return neu_group_update(ent->group, interval);
 }
 
-void neu_template_for_each_group(const neu_template_t *tmpl,
-                                 void (*cb)(const neu_group_t *group,
-                                            void *             data),
-                                 void *data)
+size_t neu_template_group_num(const neu_template_t *tmpl)
 {
-    group_entry_t *ent = NULL;
-    HASH_LOOP(hh, tmpl->groups, ent) { cb(ent->group, data); }
+    return HASH_COUNT(tmpl->groups);
+}
+
+int neu_template_for_each_group(neu_template_t *tmpl,
+                                int (*cb)(neu_group_t *group, void *data),
+                                void *data)
+{
+    int            rv  = 0;
+    group_entry_t *ent = NULL, *tmp = NULL;
+    HASH_ITER(hh, tmpl->groups, ent, tmp)
+    {
+        if (0 != (rv = cb(ent->group, data))) {
+            break;
+        }
+    }
+
+    return rv;
 }
 
 int neu_template_add_tag(neu_template_t *tmpl, const char *group,
-                         neu_datatag_t *tag)
+                         const neu_datatag_t *tag)
 {
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
     if (NULL == ent) {
-        return -1;
+        return NEU_ERR_GROUP_NOT_EXIST;
     }
 
     return neu_group_add_tag(ent->group, tag);
 }
 
 int neu_template_update_tag(neu_template_t *tmpl, const char *group,
-                            neu_datatag_t *tag)
+                            const neu_datatag_t *tag)
 {
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
     if (NULL == ent) {
-        return -1;
+        return NEU_ERR_GROUP_NOT_EXIST;
     }
 
     return neu_group_update_tag(ent->group, tag);
