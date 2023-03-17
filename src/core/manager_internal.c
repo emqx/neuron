@@ -67,8 +67,8 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
         return NEU_ERR_NODE_EXIST;
     }
 
-    ret = neu_plugin_manager_create_instance(manager->plugin_manager,
-                                             plugin_name, &instance);
+    ret = neu_plugin_manager_create_instance(manager->plugin_manager, info.name,
+                                             &instance);
     if (ret != 0) {
         return NEU_ERR_LIBRARY_FAILED_TO_OPEN;
     }
