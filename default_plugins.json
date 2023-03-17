@@ -1,33 +1,9 @@
 {
 	"plugins": [
 		"libplugin-mqtt.so",
-		"libplugin-sparkplugb.so",
-		"libplugin-websocket.so",
 		"libplugin-ekuiper.so",
 		"libplugin-monitor.so",
-		"libplugin-ads.so",
-		"libplugin-bacnet.so",
-		"libplugin-dlt645-2007.so",
-		"libplugin-EtherNet-IP.so",
-		"libplugin-focas.so",
-		"libplugin-file.so",
-		"libplugin-HJ212.so",
-		"libplugin-iec104.so",
-		"libplugin-iec61850.so",
-		"libplugin-knx.so",
-		"libplugin-modbus-tcp.so",
-		"libplugin-modbus-rtu.so",
 		"libplugin-modbus-tcp-comm.so",
-		"libplugin-modbus-qh-tcp.so",
-		"libplugin-qna3e.so",
-		"libplugin-a1e.so",
-		"libplugin-nona11.so",
-		"libplugin-opcua.so",
-		"libplugin-fins.so",
-		"libplugin-Profinet.so",
-		"libplugin-s7comm.so",
-		"libplugin-s7comm-for-300.so",
-		"libplugin-s5fetch-write.so",
-		"libplugin-license-server.so"
+		"libplugin-file.so"
 	]
 }
