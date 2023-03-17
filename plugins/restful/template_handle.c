@@ -160,3 +160,25 @@ void handle_add_template(nng_aio *aio)
             }
         })
 }
+
+void handle_del_template(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_VALIDATE_JWT(aio);
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_DEL_TEMPLATE,
+    };
+
+    neu_req_del_template_t cmd = { 0 };
+
+    neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name));
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
