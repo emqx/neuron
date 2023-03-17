@@ -135,6 +135,16 @@ error:
     return rv;
 }
 
+int neu_manager_del_template(neu_manager_t *manager, const char *name)
+{
+    return neu_template_manager_del(manager->template_manager, name);
+}
+
+void neu_manager_clear_template(neu_manager_t *manager)
+{
+    return neu_template_manager_clear(manager->template_manager);
+}
+
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 {
     UT_array *drivers =
