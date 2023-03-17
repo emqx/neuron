@@ -182,3 +182,138 @@ void handle_del_template(nng_aio *aio)
         });
     }
 }
+
+void handle_get_template(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_VALIDATE_JWT(aio);
+
+    neu_reqresp_head_t header = {
+        .ctx = aio,
+    };
+    neu_req_get_template_t cmd = { 0 };
+
+    if (neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name)) <= 0) {
+        header.type = NEU_REQ_GET_TEMPLATES;
+    } else {
+        header.type = NEU_REQ_GET_TEMPLATE;
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
+
+void handle_get_template_resp(nng_aio *aio, neu_resp_get_template_t *resp)
+{
+    int                        rv     = 0;
+    int                        i      = 0;
+    char *                     result = NULL;
+    neu_json_template_group_t *grp    = NULL;
+
+    if (0 == resp->n_group) {
+        // no groups
+        goto end;
+    }
+
+    grp = calloc(resp->n_group, sizeof(*grp));
+    if (NULL == grp) {
+        rv = NEU_ERR_EINTERNAL;
+        goto end;
+    }
+
+    for (i = 0; i < resp->n_group; ++i) {
+        grp[i].name     = resp->groups[i].name;
+        grp[i].interval = resp->groups[i].interval;
+
+        if (0 == resp->groups[i].n_tag) {
+            // no tags
+            continue;
+        }
+
+        neu_json_tag_array_t tags = { 0 };
+        tags.len                  = resp->groups[i].n_tag;
+        tags.tags                 = calloc(tags.len, sizeof(*tags.tags));
+        if (NULL == tags.tags) {
+            rv = NEU_ERR_EINTERNAL;
+            goto end;
+        }
+
+        for (int j = 0; j < tags.len; ++j) {
+            neu_datatag_t *tag       = &resp->groups[i].tags[j];
+            tags.tags[j].name        = tag->name;
+            tags.tags[j].address     = tag->address;
+            tags.tags[j].description = tag->description;
+            tags.tags[j].type        = tag->type;
+            tags.tags[j].attribute   = tag->attribute;
+            tags.tags[j].precision   = tag->precision;
+            tags.tags[j].decimal     = tag->decimal;
+            if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+                neu_tag_get_static_value_json(tag, &tags.tags[j].t,
+                                              &tags.tags[j].value);
+            } else {
+                tags.tags[j].t = NEU_JSON_UNDEFINE;
+            }
+        }
+
+        grp[i].tags = tags;
+    }
+
+end:
+    if (0 == rv) {
+        neu_json_template_t res = {
+            .name          = resp->name,
+            .plugin        = resp->plugin,
+            .groups.len    = resp->n_group,
+            .groups.groups = grp,
+        };
+        neu_json_encode_by_fn(&res, neu_json_encode_template, &result);
+    } else {
+        neu_json_error_resp_t error_code = { .error = rv };
+        neu_json_encode_by_fn(&error_code, neu_json_encode_error_resp, &result);
+    }
+
+    neu_http_ok(aio, result);
+
+    while (--i >= 0) {
+        free(grp[i].tags.tags);
+    }
+    free(grp);
+    free(result);
+    neu_reqresp_template_fini(resp);
+    return;
+}
+
+void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp)
+
+{
+    neu_json_template_info_t *info = calloc(resp->n_templates, sizeof(*info));
+    if (NULL == info) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+        });
+        neu_resp_get_templates_fini(resp);
+        return;
+    }
+
+    for (int i = 0; i < resp->n_templates; ++i) {
+        info[i].name   = resp->templates[i].name;
+        info[i].plugin = resp->templates[i].plugin;
+    }
+
+    char *                         result = NULL;
+    neu_json_template_info_array_t res    = {
+        .len  = resp->n_templates,
+        .info = info,
+    };
+    neu_json_encode_by_fn(&res, neu_json_encode_get_templates_resp, &result);
+
+    neu_http_ok(aio, result);
+    free(result);
+    free(info);
+    neu_resp_get_templates_fini(resp);
+    return;
+}

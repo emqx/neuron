@@ -62,4 +62,19 @@ int  neu_json_decode_template_json(void *json_obj, neu_json_template_t *tmpl);
 void neu_json_decode_template_fini(neu_json_template_t *tmpl);
 void neu_json_decode_template_free(neu_json_template_t *tmpl);
 
+typedef struct {
+    char *name;
+    char *plugin;
+} neu_json_template_info_t;
+
+typedef struct {
+    int                       len;
+    neu_json_template_info_t *info;
+} neu_json_template_info_array_t;
+
+int neu_json_encode_template_info_array(void *json_obj, void *param);
+
+// param should be a neu_json_template_info_array_t
+int neu_json_encode_get_templates_resp(void *json_obj, void *param);
+
 #endif

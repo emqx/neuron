@@ -145,6 +145,90 @@ void neu_manager_clear_template(neu_manager_t *manager)
     return neu_template_manager_clear(manager->template_manager);
 }
 
+static int accumulate_template_group(neu_group_t *grp, void *data)
+{
+    neu_reqresp_template_t *resp = data;
+
+    // increase group count
+    neu_reqresp_template_group_t *resp_grp = &resp->groups[resp->n_group++];
+
+    // copy group name and interval
+    strcpy(resp_grp->name, neu_group_get_name(grp));
+    resp_grp->interval = neu_group_get_interval(grp);
+
+    // copy tags
+    UT_array *tags  = neu_group_get_tag(grp);
+    resp_grp->n_tag = utarray_len(tags);
+    resp_grp->tags  = utarray_steal(tags);
+    utarray_free(tags);
+
+    return 0;
+}
+
+int neu_manager_get_template(neu_manager_t *manager, const char *name,
+                             neu_resp_get_template_t *resp)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, name);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    neu_resp_get_template_t data  = { 0 };
+    size_t                  count = neu_template_group_num(tmpl);
+    if (0 == count) {
+        goto end;
+    }
+
+    data.groups = calloc(count, sizeof(*data.groups));
+    if (NULL == data.groups) {
+        return -1;
+    }
+
+    int rv =
+        neu_template_for_each_group(tmpl, accumulate_template_group, &data);
+    if (0 != rv) {
+        neu_reqresp_template_fini(&data);
+        return rv;
+    }
+
+end:
+    strncpy(data.name, neu_template_name(tmpl), sizeof(data.name));
+    strncpy(data.plugin, neu_template_plugin(tmpl), sizeof(data.plugin));
+    *resp = data;
+
+    return 0;
+}
+
+static int accumulate_template(neu_template_t *tmpl, void *data)
+{
+    neu_resp_get_templates_t *resp = data;
+    neu_resp_template_info_t *info = &resp->templates[resp->n_templates++];
+    strncpy(info->name, neu_template_name(tmpl), sizeof(info->name));
+    strncpy(info->plugin, neu_template_plugin(tmpl), sizeof(info->plugin));
+    return 0;
+}
+
+int neu_manager_get_templates(neu_manager_t *           manager,
+                              neu_resp_get_templates_t *resp)
+{
+    int count = neu_template_manager_count(manager->template_manager);
+    if (0 == count) {
+        resp->n_templates = 0;
+        return 0;
+    }
+
+    resp->templates = calloc(count, sizeof(*resp->templates));
+    if (NULL == resp->templates) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    // guaranteed to success
+    neu_template_manager_for_each(manager->template_manager,
+                                  accumulate_template, resp);
+    return 0;
+}
+
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 {
     UT_array *drivers =

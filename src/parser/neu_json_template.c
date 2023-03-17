@@ -308,3 +308,69 @@ void neu_json_decode_template_free(neu_json_template_t *tmpl)
         free(tmpl);
     }
 }
+
+int neu_json_encode_template_info_array(void *json_obj, void *param)
+{
+    int                             ret = 0;
+    neu_json_template_info_array_t *arr = param;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    for (int i = 0; i < arr->len; ++i) {
+        json_t *info_obj = NULL;
+        if (NULL == (info_obj = json_object()) ||
+            // ownership of info_obj moved
+            0 != json_array_append_new(json_obj, info_obj)) {
+            ret = -1;
+            break;
+        }
+
+        neu_json_elem_t req_elems[] = {
+            {
+                .name      = "name",
+                .t         = NEU_JSON_STR,
+                .v.val_str = arr->info[i].name,
+            },
+            {
+                .name      = "plugin",
+                .t         = NEU_JSON_STR,
+                .v.val_str = arr->info[i].plugin,
+            },
+        };
+        // ownership of info_obj moved
+        ret = neu_json_encode_field(info_obj, req_elems,
+                                    NEU_JSON_ELEM_SIZE(req_elems));
+        if (0 != ret) {
+            break;
+        }
+    }
+
+    return ret;
+}
+
+int neu_json_encode_get_templates_resp(void *json_obj, void *param)
+{
+    void *info_array = neu_json_array();
+    if (NULL == info_array) {
+        return -1;
+    }
+
+    if (0 != neu_json_encode_template_info_array(info_array, param)) {
+        neu_json_encode_free(info_array);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name         = "templates",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = info_array,
+        },
+    };
+
+    // ownership of info_array moved
+    return neu_json_encode_field(json_obj, req_elems,
+                                 NEU_JSON_ELEM_SIZE(req_elems));
+}

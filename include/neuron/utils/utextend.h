@@ -39,6 +39,14 @@ static inline UT_array *utarray_clone(UT_array *array)
     return result;
 }
 
+static inline void *utarray_steal(UT_array *array)
+{
+    void *data = array->d;
+    array->i   = 0;
+    array->n   = 0;
+    return data;
+}
+
 #define utarray_foreach(array, type, elem)                      \
     for (type elem = (type) utarray_front(array); elem != NULL; \
          elem      = (type) utarray_next(array, elem))
