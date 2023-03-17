@@ -485,6 +485,11 @@ typedef struct {
     neu_resp_template_info_t *templates;
 } neu_resp_get_templates_t;
 
+static inline void neu_resp_get_templates_fini(neu_resp_get_templates_t *resp)
+{
+    free(resp->templates);
+}
+
 typedef struct neu_req_update_license {
 } neu_req_update_license_t;
 

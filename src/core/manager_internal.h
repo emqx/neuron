@@ -61,6 +61,10 @@ int  neu_manager_add_template(neu_manager_t *         manager,
                               neu_req_add_template_t *req);
 int  neu_manager_del_template(neu_manager_t *manager, const char *name);
 void neu_manager_clear_template(neu_manager_t *manager);
+int  neu_manager_get_template(neu_manager_t *manager, const char *name,
+                              neu_resp_get_template_t *resp);
+int  neu_manager_get_templates(neu_manager_t *           manager,
+                               neu_resp_get_templates_t *resp);
 
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 
