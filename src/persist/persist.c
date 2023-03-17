@@ -465,6 +465,11 @@ int neu_persister_create(const char *schema_dir)
     return 0;
 }
 
+sqlite3 *neu_persister_get_db()
+{
+    return global_db;
+}
+
 void neu_persister_destroy()
 {
     sqlite3_close(global_db);
