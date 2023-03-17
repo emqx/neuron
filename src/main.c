@@ -45,8 +45,8 @@ static void sig_handler(int sig)
     if (sig == SIGINT || sig == SIGTERM) {
         neu_manager_destroy(g_manager);
         neu_persister_destroy();
+        zlog_fini();
     }
-    zlog_fini();
     exit_flag = true;
 }
 
