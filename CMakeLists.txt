@@ -59,6 +59,9 @@ else()
   link_directories(/usr/local/lib)
 endif()
 
+set(PERSIST_SOURCES
+    src/persist/persist.c
+    src/persist/json/persist_json_plugin.c)
 aux_source_directory(src/parser NEURON_SRC_PARSE)
 set(NEURON_BASE_SOURCES
     src/base/tag.c
@@ -74,7 +77,8 @@ set(NEURON_BASE_SOURCES
     src/utils/neu_jwt.c
     src/utils/base64.c
     src/utils/async_queue.c
-    src/utils/mem_cache.c)
+    src/utils/mem_cache.c
+    ${PERSIST_SOURCES})
 
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 
@@ -89,9 +93,6 @@ add_dependencies(neuron-base neuron-version)
 #find_package(MbedTLS)
 target_link_libraries(neuron-base mbedtls mbedx509 mbedcrypto)
 
-set(PERSIST_SOURCES
-    src/persist/persist.c
-    src/persist/json/persist_json_plugin.c)
 set(NEURON_SOURCES
     src/main.c
     src/argparse.c
@@ -123,8 +124,7 @@ set(NEURON_SOURCES
     plugins/restful/proxy.c
     plugins/restful/websocket.c
     plugins/monitor/monitor.c
-    plugins/monitor/metric_handle.c
-    ${PERSIST_SOURCES})
+    plugins/monitor/metric_handle.c)
 
 set(CMAKE_BUILD_RPATH ./)
 add_executable(neuron)
