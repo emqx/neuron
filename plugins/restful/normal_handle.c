@@ -160,21 +160,151 @@ static char *file_string_read(size_t *length, const char *const path)
     return data;
 }
 
+static struct {
+    const char *plugin;
+    const char *schema;
+} g_plugin_to_schema_map_[] = {
+    {
+        .plugin = "Beckhoff ADS",
+        .schema = "ads",
+    },
+    {
+        .plugin = "BACnet/IP",
+        .schema = "bacnet",
+    },
+    {
+        .plugin = "DLT645-2007",
+        .schema = "dlt645",
+    },
+    {
+        .plugin = "eKuiper",
+        .schema = "ekuiper",
+    },
+    {
+        .plugin = "EtherNet/IP(CIP)",
+        .schema = "EtherNet-IP",
+    },
+    {
+        .plugin = "Fanuc Focas Ethernet",
+        .schema = "focas",
+    },
+    {
+        .plugin = "File",
+        .schema = "file",
+    },
+    {
+        .plugin = "HJ212-2017",
+        .schema = "hj",
+    },
+    {
+        .plugin = "IEC60870-5-104",
+        .schema = "iec104",
+    },
+    {
+        .plugin = "IEC61850",
+        .schema = "iec61850",
+    },
+    {
+        .plugin = "KNXnet/IP",
+        .schema = "knx",
+    },
+    {
+        .plugin = "Mitsubishi 3E",
+        .schema = "qna3e",
+    },
+    {
+        .plugin = "Mitsubishi 1E",
+        .schema = "a1e",
+    },
+    {
+        .plugin = "Modbus RTU",
+        .schema = "modbus-rtu",
+    },
+    {
+        .plugin = "Modbus TCP community",
+        .schema = "modbus-tcp-community",
+    },
+    {
+        .plugin = "Modbus TCP QH",
+        .schema = "modbus-qh-tcp",
+    },
+    {
+        .plugin = "Monitor",
+        .schema = "monitor",
+    },
+    {
+        .plugin = "MQTT",
+        .schema = "mqtt",
+    },
+    {
+        .plugin = "NON A11",
+        .schema = "nona11",
+    },
+    {
+        .plugin = "OPC UA",
+        .schema = "opcua",
+    },
+    {
+        .plugin = "Omron FINS",
+        .schema = "fins",
+    },
+    {
+        .plugin = "Profinet",
+        .schema = "profinet",
+    },
+    {
+        .plugin = "Siemens S7 ISOTCP",
+        .schema = "s7comm",
+    },
+    {
+        .plugin = "Siemens S7 ISOTCP for 300/400",
+        .schema = "s7comm_for_300",
+    },
+    {
+        .plugin = "Siemens FetchWrite",
+        .schema = "s5fetch-write",
+    },
+    {
+        .plugin = "SparkPlugB",
+        .schema = "sparkplugb",
+    },
+    {
+        .plugin = "WebSocket",
+        .schema = "websocket",
+    },
+};
+
+static inline const char *plugin_name_to_schema_name(const char *name)
+{
+    for (size_t i = 0; i <
+         sizeof(g_plugin_to_schema_map_) / sizeof(g_plugin_to_schema_map_[0]);
+         ++i) {
+        if (0 == strcmp(name, g_plugin_to_schema_map_[i].plugin)) {
+            return g_plugin_to_schema_map_[i].schema;
+        }
+    }
+
+    return name;
+}
+
 void handle_get_plugin_schema(nng_aio *aio)
 {
-    size_t len         = 0;
-    char * schema_path = NULL;
+    size_t      len                        = 0;
+    char *      schema_path                = NULL;
+    char        param[NEU_PLUGIN_NAME_LEN] = { 0 };
+    const char *schema_name                = param;
 
     NEU_VALIDATE_JWT(aio);
 
-    const char *schema_name = neu_http_get_param(aio, "schema_name", &len);
-    if (schema_name == NULL || len == 0) {
+    int rv = neu_http_get_param_str(aio, "schema_name", param, sizeof(param));
+    if (-2 == rv) {
         // fall back to `plugin_name` param
-        schema_name = neu_http_get_param(aio, "plugin_name", &len);
-        if (schema_name == NULL || len == 0) {
-            neu_http_bad_request(aio, "{\"error\": 1002}");
-            return;
-        }
+        rv = neu_http_get_param_str(aio, "plugin_name", param, sizeof(param));
+        schema_name = plugin_name_to_schema_name(param);
+    }
+    if (rv < 0) {
+        neu_http_bad_request(aio, "{\"error\": 1002}");
+        return;
     }
 
     if (0 > neu_asprintf(&schema_path, "%s/schema/%s.json", g_plugin_dir,
