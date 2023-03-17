@@ -25,5 +25,6 @@
 #include "adapter.h"
 
 void handle_add_template(nng_aio *aio);
+void handle_del_template(nng_aio *aio);
 
 #endif
