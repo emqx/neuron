@@ -24,7 +24,9 @@
 extern "C" {
 #endif
 
-#include "adapter/adapter_info.h"
+#include <sqlite3.h>
+
+#include "adapter_info.h"
 #include "persist/json/persist_json_plugin.h"
 
 typedef neu_json_plugin_req_plugin_t neu_persist_plugin_info_t;
@@ -89,6 +91,8 @@ int neu_persister_create(const char *schema_dir);
  * Destroy perister.
  */
 void neu_persister_destroy();
+
+sqlite3 *neu_persister_get_db();
 
 /**
  * Persist nodes.
