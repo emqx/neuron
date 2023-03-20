@@ -27,6 +27,7 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "connection/mqtt_client.h"
 #include "plugin.h"
 
 typedef enum {
@@ -49,6 +50,7 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
 typedef struct {
     char *               client_id;       // client id
     mqtt_upload_format_e format;          // upload format
+    neu_mqtt_qos_e       qos;             // message QoS
     size_t               cache;           // cache enable flag
     size_t               cache_mem_size;  // cache memory size in bytes
     size_t               cache_disk_size; // cache disk size in bytes

@@ -286,16 +286,18 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
     }
 
     if (0 !=
-        neu_mqtt_client_subscribe(plugin->client, 0, plugin->read_req_topic,
-                                  plugin, handle_read_req)) {
+        neu_mqtt_client_subscribe(plugin->client, plugin->config.qos,
+                                  plugin->read_req_topic, plugin,
+                                  handle_read_req)) {
         plog_error(plugin, "subscribe [%s] fail", plugin->read_req_topic);
         rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
         goto end;
     }
 
     if (0 !=
-        neu_mqtt_client_subscribe(plugin->client, 0, plugin->write_req_topic,
-                                  plugin, handle_write_req)) {
+        neu_mqtt_client_subscribe(plugin->client, plugin->config.qos,
+                                  plugin->write_req_topic, plugin,
+                                  handle_write_req)) {
         plog_error(plugin, "subscribe [%s] fail", plugin->write_req_topic);
         rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
         goto end;

@@ -282,7 +282,7 @@ static void task_handle_sub(task_t *task, neu_mqtt_client_t *client)
 
     rc = nng_mqtt_msg_get_suback_return_codes(msg, &n);
     log(info, "recv SUBACK return_code:%d", *rc);
-    rv             = *rc;
+    rv             = 0x80 == *rc ? -1 : 0;
     task->sub->ack = true;
     client->suback_count += 1;
 

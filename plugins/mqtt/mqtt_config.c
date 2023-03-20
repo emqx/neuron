@@ -122,9 +122,15 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     char *      err_param   = NULL;
     const char *placeholder = "********";
 
-    neu_json_elem_t client_id      = { .name = "client-id", .t = NEU_JSON_STR };
-    neu_json_elem_t format         = { .name = "format", .t = NEU_JSON_INT };
-    neu_json_elem_t cache_mem_size = { .name = "cache-mem-size",
+    neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t qos       = {
+        .name      = "qos",
+        .t         = NEU_JSON_INT,
+        .v.val_int = NEU_MQTT_QOS0,               // default to QoS0
+        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
+    };
+    neu_json_elem_t format          = { .name = "format", .t = NEU_JSON_INT };
+    neu_json_elem_t cache_mem_size  = { .name = "cache-mem-size",
                                        .t    = NEU_JSON_INT };
     neu_json_elem_t cache_disk_size = { .name = "cache-disk-size",
                                         .t    = NEU_JSON_INT };
@@ -143,7 +149,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 6, &client_id, &format,
+    ret = neu_parse_param(setting, &err_param, 7, &client_id, &format, &qos,
                           &cache_mem_size, &cache_disk_size, &host, &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
@@ -153,6 +159,12 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     // client-id, required
     if (0 == strlen(client_id.v.val_str)) {
         plog_error(plugin, "setting empty client-id");
+        goto error;
+    }
+
+    // qos, optional, default to QoS0
+    if (qos.v.val_int < NEU_MQTT_QOS0 || NEU_MQTT_QOS2 < qos.v.val_int) {
+        plog_error(plugin, "setting invalid qos: %" PRIi64, qos.v.val_int);
         goto error;
     }
 
@@ -223,6 +235,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     }
 
     config->client_id = client_id.v.val_str;
+    config->qos       = qos.v.val_int;
     config->format    = format.v.val_int;
     config->cache =
         0 != cache_mem_size.v.val_int || 0 != cache_disk_size.v.val_int;
@@ -238,6 +251,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->keypass         = keypass.v.val_str;
 
     plog_info(plugin, "config client-id      : %s", config->client_id);
+    plog_info(plugin, "config qos            : %d", config->qos);
     plog_info(plugin, "config format         : %s",
               mqtt_upload_format_str(config->format));
     plog_info(plugin, "config cache          : %zu", config->cache);
