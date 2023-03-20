@@ -11,6 +11,19 @@
       "length": 255
     }
   },
+  "qos": {
+    "name": "QoS level",
+    "name_zh": "消息服务质量",
+    "description": "MQTT QoS level for message delivery",
+    "description_zh": "MQTT消息传输使用的服务质量等级",
+    "type": "int",
+    "attribute": "optional",
+    "default": 0,
+    "valid": {
+      "min": 0,
+      "max": 2
+    }
+  },
   "format": {
     "name": "Upload Format",
     "name_zh": "上报数据格式",
