@@ -31,6 +31,7 @@ typedef struct neu_conn_eth neu_conn_eth_t;
 neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx);
 int             neu_conn_eth_uninit(neu_conn_eth_t *conn);
 int             neu_conn_eth_check_interface(const char *interface);
+void            neu_conn_eth_get_mac(neu_conn_eth_t *conn, uint8_t *mac);
 
 typedef void (*neu_conn_eth_msg_callback)(neu_conn_eth_t *conn, void *ctx,
                                           uint16_t protocol, uint16_t n_byte,
