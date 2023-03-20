@@ -216,7 +216,7 @@ static int get_schema_version(sqlite3 *db, char **version_p, bool *dirty_p)
 {
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT version, dirty FROM migrations ORDER BY "
-                        "migration_id DESC LIMIT 1";
+                        "version DESC LIMIT 1";
 
     if (SQLITE_OK != sqlite3_prepare_v2(db, query, -1, &stmt, NULL)) {
         nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(db));
@@ -289,6 +289,37 @@ static int extract_schema_info(const char *file, char **version_p,
     return 0;
 }
 
+static int should_apply(sqlite3 *db, const char *version)
+{
+    int           rv   = 0;
+    sqlite3_stmt *stmt = NULL;
+    const char *  sql  = "SELECT count(*) FROM migrations WHERE version=?";
+
+    if (SQLITE_OK != sqlite3_prepare_v2(db, sql, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", sql, sqlite3_errmsg(global_db));
+        rv = -1;
+        goto end;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, version, -1, NULL)) {
+        nlog_error("bind `%s` with version=`%s` fail: %s", sql, version,
+                   sqlite3_errmsg(global_db));
+        rv = -1;
+        goto end;
+    }
+
+    if (SQLITE_ROW == sqlite3_step(stmt)) {
+        rv = sqlite3_column_int(stmt, 0) == 0 ? 1 : 0;
+    } else {
+        nlog_warn("query `%s` fail: %s", sql, sqlite3_errmsg(global_db));
+        rv = -1;
+    }
+
+end:
+    sqlite3_finalize(stmt);
+    return rv;
+}
+
 static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
 {
     int   rv          = 0;
@@ -315,6 +346,14 @@ static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
         nlog_warn("extract `%s` schema info fail, ignore", path);
         free(path);
         return 0;
+    }
+
+    rv = should_apply(db, version);
+    if (rv <= 0) {
+        free(version);
+        free(description);
+        free(path);
+        return rv;
     }
 
     rv = read_file_string(path, &sql);
@@ -358,6 +397,30 @@ end:
     return rv;
 }
 
+static UT_array *collect_schemas(const char *dir)
+{
+    DIR *          dirp  = NULL;
+    struct dirent *dent  = NULL;
+    UT_array *     files = NULL;
+
+    if ((dirp = opendir(dir)) == NULL) {
+        nlog_error("fail open dir: %s", dir);
+        return NULL;
+    }
+
+    utarray_new(files, &ut_str_icd);
+
+    while (NULL != (dent = readdir(dirp))) {
+        if (ends_with(dent->d_name, ".sql")) {
+            char *file = dent->d_name;
+            utarray_push_back(files, &file);
+        }
+    }
+
+    closedir(dirp);
+    return files;
+}
+
 static int apply_schemas(sqlite3 *db, const char *dir)
 {
     int rv = 0;
@@ -385,26 +448,11 @@ static int apply_schemas(sqlite3 *db, const char *dir)
         return NEU_ERR_EINTERNAL;
     }
 
-    DIR *          dirp = NULL;
-    struct dirent *dent = NULL;
-    if ((dirp = opendir(dir)) == NULL) {
-        nlog_error("fail open dir: %s", dir);
+    UT_array *files = collect_schemas(dir);
+    if (NULL == files) {
         free(version);
         return NEU_ERR_EINTERNAL;
     }
-
-    UT_array *files = NULL;
-    utarray_new(files, &ut_str_icd);
-
-    while (NULL != (dent = readdir(dirp))) {
-        if (ends_with(dent->d_name, ".sql")) {
-            char *file = dent->d_name;
-            utarray_push_back(files, &file);
-        }
-    }
-
-    closedir(dirp);
-    dirp = NULL;
 
     if (0 == utarray_len(files)) {
         nlog_warn("directory `%s` contains no schema files", dir);
@@ -414,10 +462,6 @@ static int apply_schemas(sqlite3 *db, const char *dir)
 
     utarray_foreach(files, char **, file)
     {
-        if (version && strncmp(*file, version, strlen(version)) <= 0) {
-            continue;
-        }
-
         if (0 != apply_schema_file(db, dir, *file)) {
             rv = NEU_ERR_EINTERNAL;
             break;
