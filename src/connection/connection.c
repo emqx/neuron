@@ -407,6 +407,22 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     return ret;
 }
 
+void neu_conn_connect(neu_conn_t *conn)
+{
+    pthread_mutex_lock(&conn->mtx);
+    conn_connect(conn);
+    pthread_mutex_unlock(&conn->mtx);
+}
+
+int neu_conn_fd(neu_conn_t *conn)
+{
+    int fd = -1;
+    pthread_mutex_lock(&conn->mtx);
+    fd = conn->fd;
+    pthread_mutex_unlock(&conn->mtx);
+    return fd;
+}
+
 void neu_conn_disconnect(neu_conn_t *conn)
 {
     pthread_mutex_lock(&conn->mtx);
