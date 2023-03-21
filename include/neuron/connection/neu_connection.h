@@ -155,7 +155,6 @@ void neu_conn_destory(neu_conn_t *conn);
  */
 void neu_conn_connect(neu_conn_t *conn);
 
-
 /**
  * @brief Get connection fd
  *
@@ -165,7 +164,6 @@ void neu_conn_connect(neu_conn_t *conn);
  * failure.
  */
 int neu_conn_fd(neu_conn_t *conn);
-
 
 /**
  * @brief Disconnect
