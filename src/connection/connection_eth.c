@@ -193,6 +193,11 @@ int neu_conn_eth_uninit(neu_conn_eth_t *conn)
     return 0;
 }
 
+void neu_conn_eth_get_mac(neu_conn_eth_t *conn, uint8_t *mac)
+{
+    memcpy(mac, conn->ic->mac, ETH_ALEN);
+}
+
 int neu_conn_eth_check_interface(const char *interface)
 {
     struct ifreq ifr = { 0 };
