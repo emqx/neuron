@@ -19,6 +19,7 @@
 
 #include "connection/mqtt_client.h"
 #include "errcodes.h"
+#include "utils/asprintf.h"
 #include "version.h"
 #include "json/neu_json_mqtt.h"
 #include "json/neu_json_rw.h"
@@ -503,12 +504,25 @@ int handle_trans_data(neu_plugin_t *            plugin,
     return rv;
 }
 
+static inline char *default_upload_topic(neu_req_subscribe_t *info)
+{
+    char *t = NULL;
+    neu_asprintf(&t, "/neuron/%s/%s/%s", info->app, info->driver, info->group);
+    return t;
+}
+
 int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
 {
     int rv = 0;
 
     neu_json_elem_t topic = { .name = "topic", .t = NEU_JSON_STR };
-    if (0 != neu_parse_param(sub_info->params, NULL, 1, &topic)) {
+    if (NULL == sub_info->params) {
+        // no parameters, try default topic
+        topic.v.val_str = default_upload_topic(sub_info);
+        if (NULL == topic.v.val_str) {
+            goto end;
+        }
+    } else if (0 != neu_parse_param(sub_info->params, NULL, 1, &topic)) {
         plog_error(plugin, "parse `%s` for topic fail", sub_info->params);
         rv = NEU_ERR_GROUP_PARAMETER_INVALID;
         goto end;
