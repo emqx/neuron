@@ -9,7 +9,7 @@ on:
 
 env:
   VERSION: 2.4.0
-  UI_VERSION: 2.4
+  UI_VERSION: 2.3
   BRANCH: main
 
 jobs:
