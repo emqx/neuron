@@ -148,6 +148,26 @@ neu_conn_t *neu_conn_reconfig(neu_conn_t *conn, neu_conn_param_t *param);
 void neu_conn_destory(neu_conn_t *conn);
 
 /**
+ * @brief Connect
+ *
+ *
+ * @param[in] conn
+ */
+void neu_conn_connect(neu_conn_t *conn);
+
+
+/**
+ * @brief Get connection fd
+ *
+ *
+ * @param[in] conn
+ * @return Successfully returns a number greater than 0, -1 or 0 on
+ * failure.
+ */
+int neu_conn_fd(neu_conn_t *conn);
+
+
+/**
  * @brief Disconnect
  *
  *
