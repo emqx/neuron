@@ -960,3 +960,19 @@ int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
 
     return ret;
 }
+
+
+int neu_conn_fd(neu_conn_t *conn)
+{
+    pthread_mutex_lock(&conn->mtx);
+    if (conn->stop) {
+        pthread_mutex_unlock(&conn->mtx);
+        return -1;
+    } else {
+        if (!conn->is_connected) {
+            conn_connect(conn);
+        }
+    }
+    pthread_mutex_unlock(&conn->mtx);
+    return conn->fd;
+}
