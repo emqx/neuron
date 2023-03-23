@@ -230,7 +230,7 @@ int neu_json_decode_global_config_req_subscriptions(
     }
 
     p = req->subscriptions;
-    for (int i = 0; i < req->n_subscription; ++i) {
+    for (size_t i = 0; i < json_array_size(sub_array); ++i) {
         json_t *sub_obj = json_array_get(sub_array, i);
         json_t *app_obj = json_object_get(sub_obj, "app");
 
@@ -250,9 +250,8 @@ int neu_json_decode_global_config_req_subscriptions(
                 free(p->app);
                 goto error;
             }
+            ++p;
         }
-
-        ++p;
     }
 
     *result = req;
