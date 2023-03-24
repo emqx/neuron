@@ -67,6 +67,7 @@ void handle_logs_files(nng_aio *aio)
     }
 
     /* tar the neuron directory */
+    system("rm -rf /tmp/neuron_debug.tar.gz");
     rv = system("tar -zcvf /tmp/neuron_debug.tar.gz ../neuron");
     if (rv == -1) {
         nlog_error("failed to create neuron_debug.tar.gz, rv: %d", rv);
