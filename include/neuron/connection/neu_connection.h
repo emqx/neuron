@@ -266,11 +266,11 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
 typedef int (*neu_conn_stream_consume_fn)(
     void *context, neu_protocol_unpack_buf_t *protocol_buf);
 
-void neu_conn_stream_consume(neu_conn_t *conn, void *context,
-                             neu_conn_stream_consume_fn fn);
+int neu_conn_stream_consume(neu_conn_t *conn, void *context,
+                            neu_conn_stream_consume_fn fn);
 
-void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
-                                        neu_conn_stream_consume_fn fn);
+int neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
+                                       neu_conn_stream_consume_fn fn);
 
 typedef neu_buf_result_t (*neu_conn_process_msg)(
     void *context, neu_protocol_unpack_buf_t *protocol_buf);
