@@ -867,8 +867,8 @@ static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
     }
 }
 
-void neu_conn_stream_consume(neu_conn_t *conn, void *context,
-                             neu_conn_stream_consume_fn fn)
+int neu_conn_stream_consume(neu_conn_t *conn, void *context,
+                            neu_conn_stream_consume_fn fn)
 {
     ssize_t ret = neu_conn_recv(conn, conn->buf + conn->offset,
                                 conn->buf_size - conn->offset);
@@ -898,10 +898,12 @@ void neu_conn_stream_consume(neu_conn_t *conn, void *context,
                     conn->offset);
         }
     }
+
+    return ret;
 }
 
-void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
-                                        neu_conn_stream_consume_fn fn)
+int neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
+                                       neu_conn_stream_consume_fn fn)
 {
     ssize_t ret = neu_conn_tcp_server_recv(conn, fd, conn->buf + conn->offset,
                                            conn->buf_size - conn->offset);
@@ -928,6 +930,7 @@ void neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
                     conn->offset);
         }
     }
+    return ret;
 }
 
 int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
