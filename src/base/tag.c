@@ -579,6 +579,12 @@ int neu_tag_set_static_value_json(neu_datatag_t *tag, neu_json_type_e t,
         case NEU_TYPE_UINT64:
             value.u64 = v->val_int;
             break;
+        case NEU_TYPE_FLOAT:
+            value.f32 = v->val_int;
+            break;
+        case NEU_TYPE_DOUBLE:
+            value.d64 = v->val_int;
+            break;
         default:
             rv = -1;
             break;
@@ -588,14 +594,18 @@ int neu_tag_set_static_value_json(neu_datatag_t *tag, neu_json_type_e t,
     case NEU_JSON_FLOAT: {
         if (NEU_TYPE_FLOAT == tag->type) {
             value.f32 = v->val_float;
+        } else if (NEU_TYPE_DOUBLE == tag->type) {
+            value.d64 = v->val_float;
         } else {
             rv = -1;
         }
         break;
     }
     case NEU_JSON_DOUBLE: {
-        if (NEU_TYPE_DOUBLE == tag->type) {
-            value.d64 = v->val_float;
+        if (NEU_TYPE_FLOAT == tag->type) {
+            value.f32 = v->val_double;
+        } else if (NEU_TYPE_DOUBLE == tag->type) {
+            value.d64 = v->val_double;
         } else {
             rv = -1;
         }
