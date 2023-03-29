@@ -14,15 +14,15 @@ Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and A
 The following are some important features of Neuron:
 
 - Edge native application with real-time capability to leverage the low latency network of edge side.
-- Loosely-coupled modularity [architecture design](https://neugates.io/docs/en/latest/architecture.html) for extending more functional services by pluggable modules.
+- Loosely-coupled modularity [architecture design](https://neugates.io/docs/en/latest/project/architecture/architecture.html) for extending more functional services by pluggable modules.
 - Support hot plugins that can update device and application modules during runtime.
-- Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and [more](https://neugates.io/docs/en/latest/module-plugins/module-list.html).
+- Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and [more](https://neugates.io/docs/en/latest/introduction/module-list/module-list.html).
 - Support simultaneous connection of a large number of industrial devices with different protocols.
 - Combine with the rule engine function provided by [eKuiper](https://www.lfedge.org/projects/ekuiper) to quickly implement rule-based device control or AI/ML analytics.
-- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via [SparkplugB](https://neugates.io/docs/en/latest/use_cases.html) solution.
+- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via [SparkplugB](https://neugates.io/docs/en/latest/use-cases/use_cases.html) solution.
 - Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
 - Support installation of native executable or deployed in containerized enviornment.
-- Control industrial devices, and make changes to the parameters and data tags through [API](https://neugates.io/docs/en/latest/api.html) and [MQTT](https://neugates.io/docs/en/latest/mqtt.html) services.
+- Control industrial devices, and make changes to the parameters and data tags through [API](https://neugates.io/docs/en/latest/http-api/configuration.html) and [MQTT](https://neugates.io/docs/en/latest/north-apps/mqtt/api.html) services.
 - Highly integrated with other EMQ products, including [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), [eKuiper](https://ekuiper.org/).
 - The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/getting-started/license_policy.html) to run.
 
