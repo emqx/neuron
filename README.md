@@ -36,7 +36,7 @@ For more information, please visit [Neuron homepage](https://neugates.io/).
 docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=true --restart=always emqx/neuron:latest
 ```
 
-Next, please follow the [getting started guide](https://neugates.io/docs/en/latest/getting-started/quick_start.html#run-for-the-first-time) to tour the Neuron features.
+Next, please follow the [getting started guide](https://neugates.io/docs/en/latest/quick-start/installation.html) to tour the Neuron features.
 
 > **Limitations**
 >
@@ -48,7 +48,7 @@ Next, please follow the [getting started guide](https://neugates.io/docs/en/late
 
 If you prefer to install and manage Neuron yourself, you can download the latest version from [neugates.io/downloads?os=Linux](https://neugates.io/downloads?os=Linux).
 
-For more installation options, see the [Neuron installation documentation](https://neugates.io/docs/en/latest/getting-started/installation.html).
+For more installation options, see the [Neuron installation documentation](https://neugates.io/docs/en/latest/quick-start/installation.html).
 
 ## Documentation
 
