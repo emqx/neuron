@@ -40,7 +40,7 @@ Neuron 是一款开源的、轻量级工业协议网关软件，支持数十种�
 docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=true --restart=always emqx/neuron:latest
 ```
 
-接下来请参考 [入门指南](https://neugates.io/docs/zh/latest/getting-started/quick_start.html#运行和使用) 开启您的 Neuron 之旅。
+接下来请参考 [入门指南](https://neugates.io/docs/en/latest/quick-start/installation.html) 开启您的 Neuron 之旅。
 
 > **提示**
 >
@@ -52,7 +52,7 @@ docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=
 
 您可以从 [neugates.io/zh/downloads?os=Linux](https://neugates.io/zh/downloads?os=Linux) 下载不同格式的 Neuron 安装包进行手动安装。
 
-也可以直接访问 [Neuron 安装文档](https://neugates.io/docs/zh/latest/getting-started/installation.html) 查看不同安装方式的操作步骤。
+也可以直接访问 [Neuron 安装文档](https://neugates.io/docs/en/latest/quick-start/installation.html) 查看不同安装方式的操作步骤。
 
 ## 文档
 
