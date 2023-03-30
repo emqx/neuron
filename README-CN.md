@@ -28,7 +28,7 @@ Neuron 是一款开源的、轻量级工业协议网关软件，支持数十种�
 - 支持在本地安装可执行文件或部署在容器化环境中。
 - 控制工业设备，通过[API](https://neugates.io/docs/en/latest/http-api/configuration.html)和[MQTT](https://neugates.io/docs/en/latest/north-apps/mqtt/api.html) 服务更改参数和数据标签。
 - 与其他 EMQ 产品高度集成，包括  [EMQX](https://www.emqx.com/zh/products/emqx)、[NanoMQ](https://nanomq.io/zh)、[eKuiper](https://ekuiper.org/zh)。
-- 核心框架和 Modbus、MQTT 和 eKuiper 的代码在 LGPLv3 的许可下开源。商业模块需要 [EMQ 许可证](https://neugates.io/docs/en/latest/getting-started/license_policy.html) 才能运行。
+- 核心框架和 Modbus、MQTT 和 eKuiper 的代码在 LGPLv3 的许可下开源。商业模块需要 [EMQ 许可证](https://neugates.io/docs/en/latest/introduction/license-describe.html) 才能运行。
 
 获取更多信息，请访问 [Neuron 官网](https://neugates.io/zh)。
 
