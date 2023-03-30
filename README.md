@@ -24,7 +24,7 @@ The following are some important features of Neuron:
 - Support installation of native executable or deployed in containerized enviornment.
 - Control industrial devices, and make changes to the parameters and data tags through [API](https://neugates.io/docs/en/latest/http-api/configuration.html) and [MQTT](https://neugates.io/docs/en/latest/north-apps/mqtt/api.html) services.
 - Highly integrated with other EMQ products, including [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), [eKuiper](https://ekuiper.org/).
-- The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/getting-started/license_policy.html) to run.
+- The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/introduction/license-describe.html) to run.
 
 For more information, please visit [Neuron homepage](https://neugates.io/).
 
