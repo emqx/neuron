@@ -78,7 +78,7 @@ void handle_logs_files(nng_aio *aio)
         return;
     } else {
         if (WIFEXITED(rv)) {
-            if (WEXITSTATUS(rv) != 0) {
+            if (WEXITSTATUS(rv) < 0) {
                 nlog_error("failed to create neuron_debug.tar.gz, rv: %d",
                            WEXITSTATUS(rv));
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
