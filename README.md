@@ -14,7 +14,7 @@ Neuron is an Industrial IoT (IIoT) connectivity server for modern big data and A
 The following are some important features of Neuron:
 
 - Edge native application with real-time capability to leverage the low latency network of edge side.
-- Loosely-coupled modularity [architecture design](https://neugates.io/docs/en/latest/project/architecture/architecture.html) for extending more functional services by pluggable modules.
+- Loosely-coupled modularity [architecture design](https://neugates.io/docs/en/latest/architecture/architecture.html) for extending more functional services by pluggable modules.
 - Support hot plugins that can update device and application modules during runtime.
 - Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and [more](https://neugates.io/docs/en/latest/introduction/module-list/module-list.html).
 - Support simultaneous connection of a large number of industrial devices with different protocols.
