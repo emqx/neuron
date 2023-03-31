@@ -12,8 +12,8 @@
     }
   },
   "qos": {
-    "name": "QoS level",
-    "name_zh": "消息服务质量",
+    "name": "QoS Level",
+    "name_zh": "QoS 等级",
     "description": "MQTT QoS level for message delivery",
     "description_zh": "MQTT消息传输使用的服务质量等级",
     "type": "int",
@@ -176,9 +176,9 @@
     }
   },
   "keypass": {
-    "name": "Keypass",
+    "name": "Client Private Key Password",
     "name_zh": "私钥密码",
-    "description": "Private key password",
+    "description": "Client private key password",
     "description_zh": "私钥密码",
     "attribute": "optional",
     "type": "string",
