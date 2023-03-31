@@ -31,6 +31,7 @@
 
 #include "neu_json_tag.h"
 #include "tag.h"
+#include "type.h"
 
 int neu_json_encode_tag(void *json_obj, void *param)
 {
@@ -151,10 +152,7 @@ int neu_json_decode_tag_json(void *json_obj, neu_json_tag_t *tag_p)
         goto decode_fail;
     }
 
-    if (((NEU_ATTRIBUTE_STATIC & tag.attribute) &&
-         NEU_JSON_UNDEFINE == tag.t) ||
-        (!(NEU_ATTRIBUTE_STATIC & tag.attribute) &&
-         NEU_JSON_UNDEFINE != tag.t)) {
+    if (!neu_json_tag_check_type(&tag)) {
         goto decode_fail;
     }
 
@@ -174,6 +172,41 @@ void neu_json_decode_tag_fini(neu_json_tag_t *tag)
     if (NEU_JSON_STR == tag->t) {
         free(tag->value.val_str);
     }
+}
+
+int neu_json_tag_check_type(neu_json_tag_t *tag)
+{
+    if (NEU_ATTRIBUTE_STATIC & tag->attribute) {
+        switch (tag->type) {
+        case NEU_TYPE_BIT:
+        case NEU_TYPE_INT8:
+        case NEU_TYPE_UINT8:
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
+        case NEU_TYPE_INT32:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_WORD:
+        case NEU_TYPE_DWORD:
+        case NEU_TYPE_LWORD:
+            return NEU_JSON_INT == tag->t;
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_DOUBLE:
+            return NEU_JSON_INT == tag->t || NEU_JSON_FLOAT == tag->t ||
+                NEU_JSON_DOUBLE == tag->t;
+        case NEU_TYPE_BOOL:
+            return NEU_JSON_BOOL == tag->t;
+        case NEU_TYPE_BYTES:
+        case NEU_TYPE_STRING:
+            return NEU_JSON_STR == tag->t;
+        }
+    } else {
+        // non-static tag should have no initial value
+        return NEU_JSON_UNDEFINE == tag->t;
+    }
+
+    return true;
 }
 
 int neu_json_encode_tag_array(void *json_obj, void *param)

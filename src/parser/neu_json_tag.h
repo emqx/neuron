@@ -46,6 +46,7 @@ typedef struct {
 int  neu_json_encode_tag(void *json_obj, void *param);
 int  neu_json_decode_tag_json(void *json_obj, neu_json_tag_t *tag_p);
 void neu_json_decode_tag_fini(neu_json_tag_t *tag);
+int  neu_json_tag_check_type(neu_json_tag_t *tag);
 
 typedef struct {
     int             len;
