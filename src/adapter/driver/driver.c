@@ -608,10 +608,12 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
         return NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;
     }
 
-    ret = driver->adapter.module->intf_funs->driver.validate_tag(
-        driver->adapter.plugin, tag);
-    if (ret != NEU_ERR_SUCCESS) {
-        return ret;
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+        ret = driver->adapter.module->intf_funs->driver.validate_tag(
+            driver->adapter.plugin, tag);
+        if (ret != NEU_ERR_SUCCESS) {
+            return ret;
+        }
     }
 
     neu_datatag_parse_addr_option(tag, &tag->option);
@@ -678,10 +680,12 @@ int neu_adapter_driver_update_tag(neu_adapter_driver_t *driver,
         return NEU_ERR_TAG_PRECISION_INVALID;
     }
 
-    ret = driver->adapter.module->intf_funs->driver.validate_tag(
-        driver->adapter.plugin, tag);
-    if (ret != NEU_ERR_SUCCESS) {
-        return ret;
+    if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+        ret = driver->adapter.module->intf_funs->driver.validate_tag(
+            driver->adapter.plugin, tag);
+        if (ret != NEU_ERR_SUCCESS) {
+            return ret;
+        }
     }
 
     neu_datatag_parse_addr_option(tag, &tag->option);
