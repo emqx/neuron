@@ -94,19 +94,23 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
     if (value.type == NEU_TYPE_ERROR && tag == NULL) {
         group_t *g = find_group(driver, group);
         if (g != NULL) {
-            UT_array *tags = neu_group_get_read_tag(g->group);
+            UT_array *tags      = neu_group_get_read_tag(g->group);
+            uint64_t  err_count = 0;
 
             utarray_foreach(tags, neu_datatag_t *, t)
             {
+                if (neu_tag_attribute_test(t, NEU_ATTRIBUTE_STATIC)) {
+                    continue;
+                }
                 neu_driver_cache_update(driver->cache, group, t->name,
                                         global_timestamp, value);
+                ++err_count;
             }
-            driver->adapter.cb_funs.update_metric(&driver->adapter,
-                                                  NEU_METRIC_TAG_READS_TOTAL,
-                                                  utarray_len(tags), NULL);
             driver->adapter.cb_funs.update_metric(
-                &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
-                utarray_len(tags), NULL);
+                &driver->adapter, NEU_METRIC_TAG_READS_TOTAL, err_count, NULL);
+            driver->adapter.cb_funs.update_metric(
+                &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, err_count,
+                NULL);
             utarray_free(tags);
         }
     } else {
