@@ -42,8 +42,6 @@
 #include "log_handle.h"
 #include "utils/utarray.h"
 
-UT_array *collect_log_files();
-
 void handle_logs_files(nng_aio *aio)
 {
     void * data = NULL;
@@ -114,92 +112,41 @@ void handle_log_level(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_log_level_req_t,
         neu_json_decode_update_log_level_req, {
-            char node_name[NEU_NODE_NAME_LEN] = { 0 };
+            int                        ret    = 0;
+            neu_reqresp_head_t         header = { 0 };
+            neu_req_update_log_level_t cmd    = { 0 };
+            zlog_category_t *          ct = zlog_get_category(req->node_name);
+            zlog_category_t *          neuron = zlog_get_category("neuron");
 
-            UT_array *log_files = collect_log_files();
-
-            utarray_foreach(log_files, char **, log_file)
-            {
-                if (strncmp(*log_file, req->node_name, strlen(*log_file) - 4) ==
-                    0) {
-                    strcpy(node_name, req->node_name);
-                }
-            }
-
-            if (strlen(node_name) == 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NOT_EXIST, {
+            ret = zlog_level_switch(ct, ZLOG_LEVEL_DEBUG);
+            if (ret != 0) {
+                nlog_error("Modify node log level fail, node_name:%s, "
+                           "ret: %d,",
+                           req->node_name, ret);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
-            } else {
-                int                        ret    = 0;
-                neu_reqresp_head_t         header = { 0 };
-                neu_req_update_log_level_t cmd    = { 0 };
-                zlog_category_t *          ct = zlog_get_category(node_name);
-                zlog_category_t *          neuron = zlog_get_category("neuron");
-
-                ret = zlog_level_switch(ct, ZLOG_LEVEL_DEBUG);
-                if (ret != 0) {
-                    nlog_error("Modify node log level fail, node_name:%s, "
-                               "ret: %d,",
-                               node_name, ret);
-                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-                        neu_http_response(aio, error_code.error, result_error);
-                    });
-                }
-
-                ret = zlog_level_switch(neuron, ZLOG_LEVEL_DEBUG);
-                if (ret != 0) {
-                    nlog_error("Modify neuron log level fail, ret: %d", ret);
-                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-                        neu_http_response(aio, error_code.error, result_error);
-                    });
-                }
-
-                header.ctx  = aio;
-                header.type = NEU_REQ_UPDATE_LOG_LEVEL;
-                strcpy(cmd.node, req->node_name);
-
-                ret = neu_plugin_op(plugin, header, &cmd);
-                if (ret != 0) {
-                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                    });
-                }
             }
 
-            utarray_free(log_files);
+            ret = zlog_level_switch(neuron, ZLOG_LEVEL_DEBUG);
+            if (ret != 0) {
+                nlog_error("Modify neuron log level fail, ret: %d", ret);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            }
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_UPDATE_LOG_LEVEL;
+            strcpy(cmd.node, req->node_name);
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
         })
-}
-
-static inline bool ends_with(const char *str, const char *suffix)
-{
-    size_t m = strlen(str);
-    size_t n = strlen(suffix);
-    return m >= n && !strcmp(str + m - n, suffix);
-}
-
-UT_array *collect_log_files()
-{
-    DIR *dp = opendir("./logs");
-    if (NULL == dp) {
-        nlog_error("open logs directory fail");
-        return NULL;
-    }
-
-    UT_array *log_files = NULL;
-    utarray_new(log_files, &ut_str_icd);
-
-    struct dirent *de = NULL;
-    while (NULL != (de = readdir(dp))) {
-        char *name = de->d_name;
-        if (ends_with(de->d_name, ".log")) {
-            utarray_push_back(log_files, &name);
-        }
-    }
-
-    closedir(dp);
-
-    return log_files;
 }
 
 int read_file(const char *file_name, void **datap, size_t *lenp)
