@@ -32,6 +32,10 @@ static void plugin_group_free(neu_plugin_group_t *pgp);
 
 int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 {
+    neu_adapter_update_metric_cb_t update_metric =
+        plugin->common.adapter_callbacks->update_metric;
+    int64_t rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+
     struct file_group_data *gd     = NULL;
     int                     length = plugin->file_length;
 
@@ -83,12 +87,16 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         strncpy(dvalue.value.str, buf, strlen(buf));
         fclose(f);
 
+        rtt = 1;
+
     dvalue_result:
         plugin->common.adapter_callbacks->driver.update(
             plugin->common.adapter, group->group_name, tag->name, dvalue);
 
         free(buf);
     }
+
+    update_metric(plugin->common.adapter, NEU_METRIC_LAST_RTT_MS, rtt, NULL);
 
     return 0;
 }
