@@ -16,12 +16,24 @@
     "name_zh": "QoS 等级",
     "description": "MQTT QoS level for message delivery",
     "description_zh": "MQTT消息传输使用的服务质量等级",
-    "type": "int",
+    "type": "map",
     "attribute": "optional",
     "default": 0,
     "valid": {
-      "min": 0,
-      "max": 2
+      "map": [
+        {
+          "key": "QoS 0",
+          "value": 0
+        },
+        {
+          "key": "QoS 1",
+          "value": 1
+        },
+        {
+          "key": "QoS 2",
+          "value": 2
+        }
+      ]
     }
   },
   "format": {
