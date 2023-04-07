@@ -740,6 +740,18 @@ static void conn_connect(neu_conn_t *conn)
             cfsetospeed(&tty_opt, B600);
             cfsetispeed(&tty_opt, B600);
             break;
+        case NEU_CONN_TTY_BAUD_300:
+            cfsetospeed(&tty_opt, B300);
+            cfsetispeed(&tty_opt, B300);
+            break;
+        case NEU_CONN_TTY_BAUD_200:
+            cfsetospeed(&tty_opt, B200);
+            cfsetispeed(&tty_opt, B200);
+            break;
+        case NEU_CONN_TTY_BAUD_150:
+            cfsetospeed(&tty_opt, B150);
+            cfsetispeed(&tty_opt, B150);
+            break;
         }
 
         switch (conn->param.params.tty_client.parity) {
