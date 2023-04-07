@@ -45,7 +45,7 @@ jobs:
 
   ut:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-${{ env.BRANCH }}
+    container: ghcr.io/neugates/build:x86_64-v2.4
 
     steps:
       - uses: actions/checkout@v2
@@ -66,7 +66,7 @@ jobs:
 
   ft:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-${{ env.BRANCH }}
+    container: ghcr.io/neugates/build:x86_64-v2.4
 
     steps:
       - uses: actions/checkout@v2
