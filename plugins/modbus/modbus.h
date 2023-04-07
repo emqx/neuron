@@ -1,21 +1,3 @@
-/**
- * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- **/
 #ifndef _NEU_M_PLUGIN_MODBUS_H_
 #define _NEU_M_PLUGIN_MODBUS_H_
 
@@ -91,6 +73,15 @@ void modbus_data_wrap(neu_protocol_pack_buf_t *buf, uint8_t n_byte,
                       uint8_t *bytes);
 int  modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
                         struct modbus_data *       out_data);
+
+struct modbus_crc {
+    uint16_t crc;
+} __attribute__((packed));
+
+void modbus_crc_set(neu_protocol_pack_buf_t *buf);
+void modbus_crc_wrap(neu_protocol_pack_buf_t *buf);
+int  modbus_crc_unwrap(neu_protocol_unpack_buf_t *buf,
+                       struct modbus_crc *        out_crc);
 
 const char *modbus_area_to_str(modbus_area_e area);
 

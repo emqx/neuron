@@ -1,27 +1,28 @@
-/**
- * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 3 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- **/
 #include <assert.h>
 #include <netinet/in.h>
 
 #include <neuron.h>
 
 #include "modbus.h"
+
+static uint16_t calcrc(uint8_t *buf, int len)
+{
+    uint16_t crc     = 0xffff;
+    uint16_t crcpoly = 0xa001;
+
+    for (int i = 0; i < len; i++) {
+        uint8_t x = buf[i];
+        crc ^= x;
+        for (int k = 0; k < 8; k++) {
+            uint16_t usepoly = crc & 0x1;
+            crc >>= 1;
+            if (usepoly)
+                crc ^= crcpoly;
+        }
+    }
+
+    return crc;
+}
 
 void modbus_header_wrap(neu_protocol_pack_buf_t *buf, uint16_t seq)
 {
@@ -147,6 +148,40 @@ int modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
     *out_data = *mdata;
 
     return sizeof(struct modbus_data);
+}
+
+void modbus_crc_set(neu_protocol_pack_buf_t *buf)
+{
+    uint16_t  crc   = calcrc(neu_protocol_pack_buf_get(buf),
+                          neu_protocol_pack_buf_used_size(buf) - 2);
+    uint16_t *p_crc = (uint16_t *) neu_protocol_pack_buf_set(
+        buf, neu_protocol_pack_buf_used_size(buf) - 2, 2);
+
+    *p_crc = crc;
+}
+
+void modbus_crc_wrap(neu_protocol_pack_buf_t *buf)
+{
+    assert(neu_protocol_pack_buf_unused_size(buf) >= sizeof(struct modbus_crc));
+    struct modbus_crc *crc = (struct modbus_crc *) neu_protocol_pack_buf(
+        buf, sizeof(struct modbus_crc));
+
+    crc->crc = 0;
+}
+
+int modbus_crc_unwrap(neu_protocol_unpack_buf_t *buf,
+                      struct modbus_crc *        out_crc)
+{
+    struct modbus_crc *crc = (struct modbus_crc *) neu_protocol_unpack_buf(
+        buf, sizeof(struct modbus_crc));
+
+    if (crc == NULL) {
+        return 0;
+    }
+
+    *out_crc = *crc;
+
+    return sizeof(struct modbus_crc);
 }
 
 const char *modbus_area_to_str(modbus_area_e area)
