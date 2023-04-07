@@ -302,6 +302,8 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                         (double) (cmd->value.value.d64 / tag->decimal);
                 } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
                     cmd->value.value.d64 = cmd->value.value.d64 / tag->decimal;
+                } else if (cmd->value.type == NEU_TYPE_FLOAT) {
+                    cmd->value.value.f32 = cmd->value.value.f32 / tag->decimal;
                 }
                 break;
             default:
@@ -360,8 +362,11 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             }
             break;
         case NEU_TYPE_FLOAT:
-            cmd->value.type      = NEU_TYPE_FLOAT;
-            cmd->value.value.f32 = (float) cmd->value.value.d64;
+            if (NEU_TYPE_FLOAT != cmd->value.type) {
+                cmd->value.value.f32 = (float) cmd->value.value.d64;
+                cmd->value.type      = NEU_TYPE_FLOAT;
+            }
+
             switch (tag->option.value32.endian) {
             case NEU_DATATAG_ENDIAN_LB32:
                 neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
