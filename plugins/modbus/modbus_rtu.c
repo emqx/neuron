@@ -59,13 +59,19 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 const neu_plugin_module_t neu_plugin_module = {
     .version     = NEURON_PLUGIN_VER_1_0,
-    .schema      = "modbus-tcp",
-    .module_name = "Modbus TCP",
+    .schema      = "modbus-rtu",
+    .module_name = "Modbus RTU",
     .module_descr =
-        "The modbus tcp plugin is an enhanced version of the modbus tcp "
-        "plugin, users can choose to connect as a client or a server.",
-    .module_descr_zh = "该插件是 modbus tcp "
-                       "插件的加强版,用户可选择作为客户端连接，还是服务端连接",
+        "This plugin is used to connect devices using modbus rtu protocol. "
+        "Support serial and TCP communication methods. When using TCP "
+        "communication, it is necessary to use the pass-through function of "
+        "DTU to convert serial data into IP data and transmit it through "
+        "the network. Selecting client/server is also supported.",
+    .module_descr_zh =
+        "该插件用于连接使用 modbus rtu 协议的设备。支持串口和 TCP "
+        "两种通信方式。使用 TCP 通信时,需要使用 DTU "
+        "的透传功能,将串口数据转为 IP "
+        "数据并通过网络传输。也支持选择客户端/服务端。",
     .intf_funs = &plugin_intf_funs,
     .kind      = NEU_PLUGIN_KIND_SYSTEM,
     .type      = NEU_NA_TYPE_DRIVER,
@@ -91,9 +97,9 @@ static int driver_close(neu_plugin_t *plugin)
 
 static int driver_init(neu_plugin_t *plugin)
 {
-    plugin->protocol = MODBUS_PROTOCOL_TCP;
+    plugin->protocol = MODBUS_PROTOCOL_RTU;
     plugin->events   = neu_event_new();
-    plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_TCP,
+    plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_RTU,
                                         modbus_send_msg, modbus_value_handle,
                                         modbus_write_resp);
 
@@ -133,44 +139,85 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
     char *           err_param = NULL;
-    neu_json_elem_t  port      = { .name = "port", .t = NEU_JSON_INT };
-    neu_json_elem_t  timeout   = { .name = "timeout", .t = NEU_JSON_INT };
-    neu_json_elem_t  host      = { .name = "host", .t = NEU_JSON_STR };
-    neu_json_elem_t  interval  = { .name = "interval", .t = NEU_JSON_INT };
-    neu_json_elem_t  mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
-    neu_conn_param_t param = { 0 };
+    neu_conn_param_t param     = { 0 };
 
-    ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
-                          &timeout, &interval);
+    neu_json_elem_t link     = { .name = "link", .t = NEU_JSON_INT };
+    neu_json_elem_t timeout  = { .name = "timeout", .t = NEU_JSON_INT };
+    neu_json_elem_t interval = { .name = "interval", .t = NEU_JSON_INT };
+
+    neu_json_elem_t mode = { .name = "connection_mode", .t = NEU_JSON_INT };
+    neu_json_elem_t host = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t port = { .name = "port", .t = NEU_JSON_INT };
+
+    neu_json_elem_t device = { .name = "device", .t = NEU_JSON_STR };
+    neu_json_elem_t stop   = { .name = "stop", .t = NEU_JSON_INT };
+    neu_json_elem_t parity = { .name = "parity", .t = NEU_JSON_INT };
+    neu_json_elem_t baud   = { .name = "baud", .t = NEU_JSON_INT };
+    neu_json_elem_t data   = { .name = "data", .t = NEU_JSON_INT };
+
+    ret = neu_parse_param((char *) config, &err_param, 3, &link, &timeout,
+                          &interval);
+    if (ret != 0) {
+        plog_warn(plugin, "config: %s, decode link & timeout error: %s", config,
+                  err_param);
+        free(err_param);
+        return -1;
+    }
+
+    plugin->interval = interval.v.val_int;
+    if (link.v.val_int == 0) {
+        ret = neu_parse_param((char *) config, &err_param, 5, &device, &stop,
+                              &parity, &baud, &data);
+    } else {
+        ret = neu_parse_param((char *) config, &err_param, 3, &mode, &host,
+                              &port);
+    }
 
     if (ret != 0) {
         plog_warn(plugin, "config: %s, decode error: %s", config, err_param);
         free(err_param);
-        free(host.v.val_str);
         return -1;
     }
 
-    param.log        = plugin->common.log;
-    plugin->interval = interval.v.val_int;
-    if (mode.v.val_int == 1) {
-        param.type                           = NEU_CONN_TCP_SERVER;
-        param.params.tcp_server.ip           = host.v.val_str;
-        param.params.tcp_server.port         = port.v.val_int;
-        param.params.tcp_server.start_listen = modbus_tcp_server_listen;
-        param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
-        param.params.tcp_server.timeout      = timeout.v.val_int;
-        param.params.tcp_server.max_link     = 1;
-        plugin->is_server                    = true;
-    } else {
-        param.type                      = NEU_CONN_TCP_CLIENT;
-        param.params.tcp_client.ip      = host.v.val_str;
-        param.params.tcp_client.port    = port.v.val_int;
-        param.params.tcp_client.timeout = timeout.v.val_int;
-        plugin->is_server               = false;
-    }
+    param.log = plugin->common.log;
+    if (link.v.val_int == 0) {
+        param.type = NEU_CONN_TTY_CLIENT;
 
-    plog_info(plugin, "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
-              host.v.val_str, port.v.val_int, mode.v.val_int);
+        param.params.tty_client.device  = device.v.val_str;
+        param.params.tty_client.baud    = baud.v.val_int;
+        param.params.tty_client.data    = data.v.val_int;
+        param.params.tty_client.parity  = parity.v.val_int;
+        param.params.tty_client.stop    = stop.v.val_int;
+        param.params.tty_client.timeout = timeout.v.val_int;
+
+        plugin->is_serial = true;
+        plog_info(plugin,
+                  "config: device: %s, baud: %" PRId64 ", data: %" PRId64
+                  ", parity: %" PRId64 ", stop: %" PRId64 "",
+                  device.v.val_str, baud.v.val_int, data.v.val_int,
+                  parity.v.val_int, stop.v.val_int);
+    } else {
+        if (mode.v.val_int == 1) {
+            param.type                           = NEU_CONN_TCP_SERVER;
+            param.params.tcp_server.ip           = host.v.val_str;
+            param.params.tcp_server.port         = port.v.val_int;
+            param.params.tcp_server.start_listen = modbus_tcp_server_listen;
+            param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
+            param.params.tcp_server.timeout      = timeout.v.val_int;
+            param.params.tcp_server.max_link     = 1;
+            plugin->is_server                    = true;
+        } else {
+            param.type                      = NEU_CONN_TCP_CLIENT;
+            param.params.tcp_client.ip      = host.v.val_str;
+            param.params.tcp_client.port    = port.v.val_int;
+            param.params.tcp_client.timeout = timeout.v.val_int;
+            plugin->is_server               = false;
+        }
+
+        plog_info(plugin,
+                  "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
+                  host.v.val_str, port.v.val_int, mode.v.val_int);
+    }
 
     if (plugin->conn != NULL) {
         plugin->conn = neu_conn_reconfig(plugin->conn, &param);
@@ -181,7 +228,12 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
                          modbus_conn_disconnected);
     }
 
-    free(host.v.val_str);
+    if (link.v.val_int == 0) {
+        free(device.v.val_str);
+    } else {
+        free(host.v.val_str);
+    }
+
     return 0;
 }
 

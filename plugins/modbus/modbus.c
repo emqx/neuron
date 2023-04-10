@@ -23,6 +23,25 @@
 
 #include "modbus.h"
 
+static uint16_t calcrc(uint8_t *buf, int len)
+{
+    uint16_t crc     = 0xffff;
+    uint16_t crcpoly = 0xa001;
+
+    for (int i = 0; i < len; i++) {
+        uint8_t x = buf[i];
+        crc ^= x;
+        for (int k = 0; k < 8; k++) {
+            uint16_t usepoly = crc & 0x1;
+            crc >>= 1;
+            if (usepoly)
+                crc ^= crcpoly;
+        }
+    }
+
+    return crc;
+}
+
 void modbus_header_wrap(neu_protocol_pack_buf_t *buf, uint16_t seq)
 {
     assert(neu_protocol_pack_buf_unused_size(buf) >=
@@ -147,6 +166,40 @@ int modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
     *out_data = *mdata;
 
     return sizeof(struct modbus_data);
+}
+
+void modbus_crc_set(neu_protocol_pack_buf_t *buf)
+{
+    uint16_t  crc   = calcrc(neu_protocol_pack_buf_get(buf),
+                          neu_protocol_pack_buf_used_size(buf) - 2);
+    uint16_t *p_crc = (uint16_t *) neu_protocol_pack_buf_set(
+        buf, neu_protocol_pack_buf_used_size(buf) - 2, 2);
+
+    *p_crc = crc;
+}
+
+void modbus_crc_wrap(neu_protocol_pack_buf_t *buf)
+{
+    assert(neu_protocol_pack_buf_unused_size(buf) >= sizeof(struct modbus_crc));
+    struct modbus_crc *crc = (struct modbus_crc *) neu_protocol_pack_buf(
+        buf, sizeof(struct modbus_crc));
+
+    crc->crc = 0;
+}
+
+int modbus_crc_unwrap(neu_protocol_unpack_buf_t *buf,
+                      struct modbus_crc *        out_crc)
+{
+    struct modbus_crc *crc = (struct modbus_crc *) neu_protocol_unpack_buf(
+        buf, sizeof(struct modbus_crc));
+
+    if (crc == NULL) {
+        return 0;
+    }
+
+    *out_crc = *crc;
+
+    return sizeof(struct modbus_crc);
 }
 
 const char *modbus_area_to_str(modbus_area_e area)
