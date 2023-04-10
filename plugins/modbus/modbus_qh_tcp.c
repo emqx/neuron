@@ -59,18 +59,21 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 const neu_plugin_module_t neu_plugin_module = {
     .version     = NEURON_PLUGIN_VER_1_0,
-    .schema      = "modbus-tcp",
-    .module_name = "Modbus TCP",
+    .schema      = "modbus-qh-tcp",
+    .module_name = "Modbus TCP QH",
     .module_descr =
-        "The modbus tcp plugin is an enhanced version of the modbus tcp "
-        "plugin, users can choose to connect as a client or a server.",
-    .module_descr_zh = "该插件是 modbus tcp "
-                       "插件的加强版,用户可选择作为客户端连接，还是服务端连接",
-    .intf_funs = &plugin_intf_funs,
-    .kind      = NEU_PLUGIN_KIND_SYSTEM,
-    .type      = NEU_NA_TYPE_DRIVER,
-    .display   = true,
-    .single    = false,
+        "The modbus-qh-tcp plugin is an optimized version of modbus tcp, which "
+        "expands the packet description field to two bytes, limiting the "
+        "maximum length of Modbus tcp packets to 64KB",
+    .module_descr_zh =
+        "该插件是 modbus-tcp 插件的优化版，数据包描述字段扩展为连个字节,限制 "
+        "Modbus TCP 数据包的最大长度为 64KB。",
+    .intf_funs  = &plugin_intf_funs,
+    .kind       = NEU_PLUGIN_KIND_SYSTEM,
+    .type       = NEU_NA_TYPE_DRIVER,
+    .display    = true,
+    .single     = false,
+    .timer_type = NEU_EVENT_TIMER_NOBLOCK,
 };
 
 static neu_plugin_t *driver_open(void)
@@ -136,22 +139,19 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t  port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t  timeout   = { .name = "timeout", .t = NEU_JSON_INT };
     neu_json_elem_t  host      = { .name = "host", .t = NEU_JSON_STR };
-    neu_json_elem_t  interval  = { .name = "interval", .t = NEU_JSON_INT };
     neu_json_elem_t  mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
     neu_conn_param_t param = { 0 };
 
-    ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
-                          &timeout, &interval);
+    ret = neu_parse_param((char *) config, &err_param, 4, &port, &host, &mode,
+                          &timeout);
 
     if (ret != 0) {
-        plog_warn(plugin, "config: %s, decode error: %s", config, err_param);
+        plog_info(plugin, "config: %s, decode error: %s", config, err_param);
         free(err_param);
-        free(host.v.val_str);
         return -1;
     }
 
-    param.log        = plugin->common.log;
-    plugin->interval = interval.v.val_int;
+    param.log = plugin->common.log;
     if (mode.v.val_int == 1) {
         param.type                           = NEU_CONN_TCP_SERVER;
         param.params.tcp_server.ip           = host.v.val_str;
@@ -200,7 +200,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 
     int ret = modbus_tag_to_point(tag, &point);
     if (ret == 0) {
-        plog_debug(
+        plog_info(
             plugin,
             "validate tag success, name: %s, address: %s, type: %d, slave id: "
             "%d, start address: %d, n register: %d, area: %s",
@@ -214,7 +214,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 {
-    return modbus_group_timer(plugin, group, 0xfa);
+    return modbus_group_timer(plugin, group, 0xffff);
 }
 
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,

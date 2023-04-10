@@ -17,7 +17,7 @@ Resource    simulator.resource
 ${test_data_dir}     ft/data
 
 
-${PLUGIN_MODBUS_TCP}	Modbus TCP community
+${PLUGIN_MODBUS_TCP}	Modbus TCP
 ${PLUGIN_MQTT}    MQTT
 
 ${MQTT_CMD_NONE}                             
@@ -39,7 +39,7 @@ ${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "u
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
 ...                                          "username": "", "password": "", "ca":"", "cert":"", "key":"", "keypass":""}
 
-${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "timeout": 3000}
+${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "connection_mode": 0, "timeout": 3000, "interval": 20}
 
 *** Variables ***
 ${neuron_process}
