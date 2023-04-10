@@ -69,7 +69,8 @@ struct neu_conn {
 static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
                                        struct sockaddr_in client);
 static void conn_tcp_server_del_client(neu_conn_t *conn, int fd);
-static int  conn_tcp_server_replace_client(neu_conn_t *conn, int fd);
+static int  conn_tcp_server_replace_client(neu_conn_t *conn, int fd,
+                                           struct sockaddr_in client);
 
 static void conn_tcp_server_listen(neu_conn_t *conn);
 static void conn_tcp_server_stop(neu_conn_t *conn);
@@ -191,7 +192,7 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
     }
 
     if (conn->tcp_server.n_client >= conn->param.params.tcp_server.max_link) {
-        int free_fd = conn_tcp_server_replace_client(conn, fd);
+        int free_fd = conn_tcp_server_replace_client(conn, fd, client);
         if (free_fd > 0) {
             zlog_warn(conn->param.log, "replace old client %d with %d", free_fd,
                       fd);
@@ -898,7 +899,8 @@ static void conn_tcp_server_del_client(neu_conn_t *conn, int fd)
     }
 }
 
-static int conn_tcp_server_replace_client(neu_conn_t *conn, int fd)
+static int conn_tcp_server_replace_client(neu_conn_t *conn, int fd,
+                                          struct sockaddr_in client)
 {
     for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
         if (conn->tcp_server.clients[i].fd > 0) {
@@ -907,7 +909,8 @@ static int conn_tcp_server_replace_client(neu_conn_t *conn, int fd)
             close(conn->tcp_server.clients[i].fd);
             conn->tcp_server.clients[i].fd = 0;
 
-            conn->tcp_server.clients[i].fd = fd;
+            conn->tcp_server.clients[i].fd     = fd;
+            conn->tcp_server.clients[i].client = client;
             return ret;
         }
     }
