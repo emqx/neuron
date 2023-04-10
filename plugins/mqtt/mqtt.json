@@ -39,19 +39,19 @@
   "format": {
     "name": "Upload Format",
     "name_zh": "上报数据格式",
-    "description": "JSON format of the data reported in the upload topic. In values mode, data are split into `values` and `errors` sub objects. In tags mode, tag data are put in a single array.",
-    "description_zh": "上报数据的 JSON 格式。在 format-values 格式下，数据被分为 `values` 和 `errors` 两个子对象。在 format-tags 格式下，数据被放在一个数组中。",
+    "description": "JSON format of the data reported. In values-mode, data are split into `values` and `errors` sub objects. In tags-mode, tag data are put in a single array.",
+    "description_zh": "上报数据的 JSON 格式。在 values-format 格式下，数据被分为 `values` 和 `errors` 两个子对象。在 tags-format 格式下，数据被放在一个数组中。",
     "attribute": "required",
     "type": "map",
     "default": 0,
     "valid": {
       "map": [
         {
-          "key": "format-values",
+          "key": "values-format",
           "value": 0
         },
         {
-          "key": "format-tags",
+          "key": "tags-format",
           "value": 1
         }
       ]
