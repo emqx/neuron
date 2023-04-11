@@ -1,0 +1,305 @@
+{
+	"tag_regex": [
+		{
+			"type": 3,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 4,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 5,
+			"regex": "^[0-9]+![3-4][0-9]+(#BB|#BL|#LL|#LB|)$"
+		},
+		{
+			"type": 6,
+			"regex": "^[0-9]+![3-4][0-9]+(#BB|#BL|#LL|#LB|)$"
+		},
+		{
+			"type": 7,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 8,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 9,
+			"regex": "^[0-9]+![3-4][0-9]+(#BB|#BL|#LL|#LB|)$"
+		},
+		{
+			"type": 10,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 11,
+			"regex": "^[0-9]+!([0-1][0-9]+|[3-4][0-9]+\\.([0-9]|[0-1][0-5]))$"
+		},
+		{
+			"type": 13,
+			"regex": "^[0-9]+![3-4][0-9]+\\.[0-9]+(H|L|)$"
+		}
+	],
+	"group_interval": 1000,
+	"link": {
+		"name": "Physical Link",
+		"name_zh": "物理链路",
+		"description": "Serial or Ethernet",
+		"description_zh": "串口连接或以太网连接",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "Serial",
+					"value": 0
+				},
+				{
+					"key": "TCP",
+					"value": 1
+				}
+			]
+		}
+	},
+	"timeout": {
+		"name": "Connection Timeout",
+		"name_zh": "连接超时时间",
+		"description": "Connection timeout(ms)",
+		"description_zh": "连接超时时间，单位为毫秒",
+		"attribute": "required",
+		"type": "int",
+		"default": 3000,
+		"valid": {
+			"min": 1000,
+			"max": 30000
+		}
+	},
+	"interval": {
+		"name": "Send Interval",
+		"name_zh": "指令发送间隔",
+		"description": "Send reading instruction interval(ms)",
+		"description_zh": "发送读指令时间间隔，单位为毫秒",
+		"attribute": "required",
+		"type": "int",
+		"default": 20,
+		"valid": {
+			"min": 0,
+			"max": 3000
+		}
+	},
+	"device": {
+		"name": "Serial Device",
+		"name_zh": "串口设备",
+		"description": "Serial device path",
+		"description_zh": "串口设备路径",
+		"attribute": "required",
+		"type": "string",
+		"condition": {
+			"field": "link",
+			"value": 0
+		},
+		"valid": {
+			"length": 30
+		}
+	},
+	"stop": {
+		"name": "Stop Bits",
+		"name_zh": "停止位",
+		"description": "Stop bits",
+		"description_zh": "停止位",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "1",
+					"value": 0
+				},
+				{
+					"key": "2",
+					"value": 1
+				}
+			]
+		},
+		"condition": {
+			"field": "link",
+			"value": 0
+		}
+	},
+	"parity": {
+		"name": "Parity",
+		"name_zh": "校验位",
+		"description": "Parity",
+		"description_zh": "校验位",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "none",
+					"value": 0
+				},
+				{
+					"key": "odd",
+					"value": 1
+				},
+				{
+					"key": "even",
+					"value": 2
+				},
+				{
+					"key": "mark",
+					"value": 3
+				},
+				{
+					"key": "space",
+					"value": 4
+				}
+			]
+		},
+		"condition": {
+			"field": "link",
+			"value": 0
+		}
+	},
+	"baud": {
+		"name": "Baud Rate",
+		"name_zh": "波特率",
+		"description": "Baud rate",
+		"description_zh": "波特率",
+		"attribute": "required",
+		"type": "map",
+		"default": 4,
+		"valid": {
+			"map": [
+				{
+					"key": "2400",
+					"value": 6
+				},
+				{
+					"key": "4800",
+					"value": 5
+				},
+				{
+					"key": "9600",
+					"value": 4
+				},
+				{
+					"key": "19200",
+					"value": 3
+				},
+				{
+					"key": "38400",
+					"value": 2
+				},
+				{
+					"key": "57600",
+					"value": 1
+				},
+				{
+					"key": "115200",
+					"value": 0
+				}
+			]
+		},
+		"condition": {
+			"field": "link",
+			"value": 0
+		}
+	},
+	"data": {
+		"name": "Data Bits",
+		"name_zh": "数据位",
+		"description": "Data bits",
+		"description_zh": "数据位",
+		"attribute": "required",
+		"type": "map",
+		"default": 3,
+		"valid": {
+			"map": [
+				{
+					"key": "5",
+					"value": 0
+				},
+				{
+					"key": "6",
+					"value": 1
+				},
+				{
+					"key": "7",
+					"value": 2
+				},
+				{
+					"key": "8",
+					"value": 3
+				}
+			]
+		},
+		"condition": {
+			"field": "link",
+			"value": 0
+		}
+	},
+	"host": {
+		"name": "IP Address",
+		"name_zh": "IP地址",
+		"description": "Local IP in server mode, remote device IP in client mode",
+		"description_zh": "服务端模式中填写本地 IP，客户端模式中填写目标设备 IP",
+		"attribute": "required",
+		"type": "string",
+		"valid": {
+			"regex": "/^((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)$/",
+			"length": 30
+		},
+		"condition": {
+			"field": "link",
+			"value": 1
+		}
+	},
+	"port": {
+		"name": "Port",
+		"name_zh": "端口号",
+		"description": "Local port in server mode, remote device port in client mode",
+		"description_zh": "服务端模式中填写本地端口号，客户端模式中填写远程设备端口号",
+		"attribute": "required",
+		"type": "int",
+		"default": 502,
+		"valid": {
+			"min": 1,
+			"max": 65535
+		},
+		"condition": {
+			"field": "link",
+			"value": 1
+		}
+	},
+	"connection_mode": {
+		"name": "Connection Mode",
+		"name_zh": "连接模式",
+		"description": "Neuron as the client, or as the server",
+		"description_zh": "Neuron 作为客户端或服务端",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "Client",
+					"value": 0
+				},
+				{
+					"key": "Server",
+					"value": 1
+				}
+			]
+		},
+		"condition": {
+			"field": "link",
+			"value": 1
+		}
+	}
+}

@@ -205,7 +205,11 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
         *res_len += sizeof(struct modbus_data);
         *res_len += len;
 
-        res_data->n_byte = len;
+        if (len > 0xff) {
+            res_data->n_byte = 0xff;
+        } else {
+            res_data->n_byte = len;
+        }
         res_header->len += sizeof(struct modbus_data) + len;
         break;
     case MODBUS_WRITE_S_COIL:

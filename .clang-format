@@ -12,4 +12,3 @@ PointerAlignment: Right
 SpaceAfterCStyleCast: true
 AllowShortFunctionsOnASingleLine: Inline
 BreakBeforeBinaryOperators: None
-

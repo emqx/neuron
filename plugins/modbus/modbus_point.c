@@ -123,6 +123,16 @@ int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
             point->n_register = 2;
         }
         break;
+    case NEU_TYPE_UINT64:
+    case NEU_TYPE_INT64:
+    case NEU_TYPE_DOUBLE:
+        if (point->area == MODBUS_AREA_COIL ||
+            point->area == MODBUS_AREA_INPUT) {
+            ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
+        } else {
+            point->n_register = 4;
+        }
+        break;
     case NEU_TYPE_STRING:
         if (point->area == MODBUS_AREA_COIL ||
             point->area == MODBUS_AREA_INPUT) {
