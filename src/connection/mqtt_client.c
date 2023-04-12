@@ -150,6 +150,7 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg);
 
 static inline task_t *client_alloc_task(neu_mqtt_client_t *client);
 static inline void    client_free_task(neu_mqtt_client_t *client, task_t *task);
+static inline size_t  client_task_free_list_len(neu_mqtt_client_t *client);
 static inline void    client_add_subscription(neu_mqtt_client_t *client,
                                               subscription_t *   sub);
 static int            client_send_sub_msg(neu_mqtt_client_t *client,
@@ -543,6 +544,16 @@ static inline void client_free_task(neu_mqtt_client_t *client, task_t *task)
     memset(&task->pub, 0, sizeof(task_union));
     // prepend in the hope to help locality
     DL_PREPEND(client->task_free_list, task);
+}
+
+static inline size_t client_task_free_list_len(neu_mqtt_client_t *client)
+{
+    size_t  count = 0;
+    task_t *elt   = NULL;
+    // count by iterating the list,
+    // this won't be a problem as a short free list is expected
+    DL_COUNT(client->task_free_list, elt, count);
+    return count;
 }
 
 static inline void client_add_subscription(neu_mqtt_client_t *client,
@@ -1149,6 +1160,12 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     }
 
     nng_mtx_lock(client->mtx);
+    // wait for all tasks
+    while (client_task_free_list_len(client) != client->task_count) {
+        nng_mtx_unlock(client->mtx);
+        nng_msleep(100);
+        nng_mtx_lock(client->mtx);
+    }
     client->open = false;
     nng_mtx_unlock(client->mtx);
 
