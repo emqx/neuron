@@ -51,13 +51,25 @@ jobs:
         run: |
           git config --global --add safe.directory $(pwd)
           mkdir -p build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           make -j4
 
       - name: unit test
         run: |
           cd build
-          ctest --output-on-failure
+          sudo apt install -y lcov
+          ctest --output-on-failure -O tests/reports/ut.log --output-junit tests/reports/output.xml
+          lcov --capture --directory . --output-file  testneuron.info --test-name testneuron
+          genhtml -o result testneuron.info
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: ut_result
+          path: |
+            build/tests/reports/ut.log
+            build/tests/reports/output.xml
+            build/result/index.html
+            build/neuron.log
 
   ft:
     runs-on: ubuntu-20.04
