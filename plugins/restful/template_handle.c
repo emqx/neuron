@@ -52,9 +52,15 @@ static int set_tag_by_json(neu_datatag_t *tag, neu_json_tag_t *json_tag)
     tag->precision   = json_tag->precision;
     tag->decimal     = json_tag->decimal;
     tag->description = json_tag->description;
+    // ownership moved
+    json_tag->name        = NULL;
+    json_tag->address     = NULL;
+    json_tag->description = NULL;
 
-    if (NEU_ATTRIBUTE_STATIC & json_tag->attribute) {
-        neu_tag_set_static_value_json(tag, json_tag->t, &json_tag->value);
+    if ((NEU_ATTRIBUTE_STATIC & json_tag->attribute) &&
+        0 !=
+            neu_tag_set_static_value_json(tag, json_tag->t, &json_tag->value)) {
+        return NEU_ERR_EINTERNAL;
     }
 
     return 0;
@@ -73,13 +79,14 @@ static int move_template_json(neu_req_add_template_t *cmd,
         return NEU_ERR_PLUGIN_NAME_TOO_LONG;
     }
 
-    cmd->n_group = req->groups.len;
-    cmd->groups  = calloc(cmd->n_group, sizeof(*cmd->groups));
+    cmd->n_group = 0;
+    cmd->groups  = calloc(req->groups.len, sizeof(*cmd->groups));
     if (NULL == cmd->groups) {
         return NEU_ERR_EINTERNAL;
     }
 
     for (int i = 0; i < req->groups.len; i++) {
+        ++cmd->n_group;
         neu_json_template_group_t *   req_grp = &req->groups.groups[i];
         neu_reqresp_template_group_t *cmd_grp = &cmd->groups[i];
 
@@ -93,8 +100,8 @@ static int move_template_json(neu_req_add_template_t *cmd,
             goto error;
         }
 
-        cmd_grp->n_tag = req_grp->tags.len;
-        cmd_grp->tags  = calloc(cmd_grp->n_tag, sizeof(*cmd_grp->tags));
+        cmd_grp->n_tag = 0;
+        cmd_grp->tags  = calloc(req_grp->tags.len, sizeof(*cmd_grp->tags));
         if (NULL == cmd_grp->tags) {
             ret = NEU_ERR_EINTERNAL;
             goto error;
@@ -104,6 +111,7 @@ static int move_template_json(neu_req_add_template_t *cmd,
         cmd_grp->interval = req_grp->interval;
 
         for (int j = 0; j < req_grp->tags.len; ++j) {
+            ++cmd_grp->n_tag;
             neu_datatag_t * tag     = &cmd_grp->tags[j];
             neu_json_tag_t *req_tag = &req_grp->tags.tags[j];
             if (0 != (ret = set_tag_by_json(tag, req_tag))) {
@@ -115,19 +123,13 @@ static int move_template_json(neu_req_add_template_t *cmd,
     strncpy(cmd->name, req->name, sizeof(cmd->name));
     strncpy(cmd->plugin, req->plugin, sizeof(cmd->plugin));
 
-    for (int i = 0; i < req->groups.len; ++i) {
-        for (int j = 0; j < req->groups.groups[i].tags.len; ++j) {
-            // ownership moved
-            req->groups.groups[i].tags.tags[j].name        = NULL;
-            req->groups.groups[i].tags.tags[j].address     = NULL;
-            req->groups.groups[i].tags.tags[j].description = NULL;
-        }
-    }
-
     return ret;
 
 error:
-    for (int i = 0; i < cmd->n_group && cmd->groups[i].tags; ++i) {
+    for (int i = 0; i < cmd->n_group; ++i) {
+        for (int j = 0; j < cmd->groups[i].n_tag; ++j) {
+            neu_tag_fini(&cmd->groups[i].tags[j]);
+        }
         free(cmd->groups[i].tags);
     }
     free(cmd->groups);

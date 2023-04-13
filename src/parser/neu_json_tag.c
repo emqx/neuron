@@ -199,7 +199,8 @@ int neu_json_tag_check_type(neu_json_tag_t *tag)
             return NEU_JSON_BOOL == tag->t;
         case NEU_TYPE_BYTES:
         case NEU_TYPE_STRING:
-            return NEU_JSON_STR == tag->t;
+            return NEU_JSON_STR == tag->t &&
+                strlen(tag->value.val_str) < NEU_VALUE_SIZE;
         }
     } else {
         // non-static tag should have no initial value
