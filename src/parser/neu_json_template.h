@@ -77,4 +77,17 @@ int neu_json_encode_template_info_array(void *json_obj, void *param);
 // param should be a neu_json_template_info_array_t
 int neu_json_encode_get_templates_resp(void *json_obj, void *param);
 
+typedef struct {
+    char *          tmpl;
+    char *          group;
+    int             n_tag;
+    neu_json_tag_t *tags;
+} neu_json_template_mod_tags_req_t;
+
+int neu_json_encode_template_mod_tags_req(void *json_obj, void *param);
+int neu_json_decode_template_mod_tags_req(
+    char *buf, neu_json_template_mod_tags_req_t **result);
+void neu_json_decode_template_mod_tags_req_free(
+    neu_json_template_mod_tags_req_t *req);
+
 #endif

@@ -374,3 +374,127 @@ int neu_json_encode_get_templates_resp(void *json_obj, void *param)
     return neu_json_encode_field(json_obj, req_elems,
                                  NEU_JSON_ELEM_SIZE(req_elems));
 }
+
+int neu_json_encode_template_mod_tags_req(void *json_obj, void *param)
+{
+    int                               ret = 0;
+    neu_json_template_mod_tags_req_t *req = param;
+
+    void *tag_array = neu_json_array();
+    if (NULL == tag_array) {
+        return -1;
+    }
+
+    neu_json_tag_array_t arr = {
+        .len  = req->n_tag,
+        .tags = req->tags,
+    };
+    ret = neu_json_encode_tag_array(tag_array, &arr);
+    if (0 != ret) {
+        neu_json_encode_free(tag_array);
+        return ret;
+    }
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "template",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->tmpl,
+                                    },
+                                    {
+                                        .name      = "group",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->group,
+                                    },
+                                    {
+                                        .name         = "tags",
+                                        .t            = NEU_JSON_OBJECT,
+                                        .v.val_object = tag_array,
+                                    } };
+
+    ret = neu_json_encode_field(json_obj, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
+int neu_json_decode_template_mod_tags_req(
+    char *buf, neu_json_template_mod_tags_req_t **result)
+{
+    int                               ret      = 0;
+    void *                            json_obj = NULL;
+    neu_json_template_mod_tags_req_t *req      = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        goto decode_fail;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "template",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "tags",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    neu_json_tag_array_t arr = { 0 };
+    ret = neu_json_decode_tag_array_json(req_elems[2].v.val_object, &arr);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+    if (arr.len <= 0) {
+        goto decode_fail;
+    }
+
+    req->tmpl  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+    req->n_tag = arr.len;
+    req->tags  = arr.tags;
+    *result    = req;
+    goto decode_exit;
+
+decode_fail:
+    free(req);
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_template_mod_tags_req_free(
+    neu_json_template_mod_tags_req_t *req)
+{
+    if (NULL == req) {
+        return;
+    }
+
+    neu_json_tag_array_t arr = {
+        .len  = req->n_tag,
+        .tags = req->tags,
+    };
+    neu_json_decode_tag_array_fini(&arr);
+
+    free(req->tmpl);
+    free(req->group);
+    free(req);
+}
