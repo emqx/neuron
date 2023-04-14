@@ -432,6 +432,24 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &resp);
         break;
     }
+    case NEU_REQ_GET_TEMPLATE_TAG: {
+        neu_req_get_template_tag_t *cmd =
+            (neu_req_get_template_tag_t *) &header[1];
+        neu_resp_error_t   e    = { 0 };
+        neu_resp_get_tag_t resp = { 0 };
+
+        e.error = neu_manager_get_template_tags(manager, cmd, &resp.tags);
+
+        strcpy(header->receiver, header->sender);
+        if (0 == e.error) {
+            header->type = NEU_RESP_GET_TEMPLATE_TAG;
+            reply(manager, header, &resp);
+        } else {
+            header->type = NEU_RESP_ERROR;
+            reply(manager, header, &e);
+        }
+        break;
+    }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
         int                 error =
@@ -741,6 +759,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_UPDATE_TAG:
     case NEU_RESP_UPDATE_TEMPLATE_TAG:
     case NEU_RESP_GET_TAG:
+    case NEU_RESP_GET_TEMPLATE_TAG:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_RESP_GET_NODE_STATE:

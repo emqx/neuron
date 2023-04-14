@@ -305,6 +305,28 @@ int neu_manager_del_template_tags(neu_manager_t *             manager,
     return 0;
 }
 
+int neu_manager_get_template_tags(neu_manager_t *             manager,
+                                  neu_req_get_template_tag_t *req,
+                                  UT_array **                 tags_p)
+{
+    int          ret = 0;
+    neu_group_t *grp = NULL;
+
+    ret = neu_template_manager_find_group(manager->template_manager, req->tmpl,
+                                          req->group, &grp);
+    if (0 != ret) {
+        return ret;
+    }
+
+    if (strlen(req->name) > 0) {
+        *tags_p = neu_group_query_tag(grp, req->name);
+    } else {
+        *tags_p = neu_group_get_tag(grp);
+    }
+
+    return 0;
+}
+
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 {
     UT_array *drivers =
