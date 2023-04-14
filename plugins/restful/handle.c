@@ -112,6 +112,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/template",
     },
+    {
+        .url = "/api/v2/template/tag",
+    },
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -356,6 +359,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/template",
         .value.handler = handle_get_template,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/template/tag",
+        .value.handler = handle_add_template_tags,
     },
 };
 

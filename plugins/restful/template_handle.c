@@ -157,6 +157,7 @@ void handle_add_template(nng_aio *aio)
             }
 
             if (0 != ret) {
+                neu_reqresp_template_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
             }
@@ -318,4 +319,56 @@ void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp)
     free(info);
     neu_resp_get_templates_fini(resp);
     return;
+}
+
+static int send_template_tags_req(nng_aio *aio, neu_reqresp_type_e type,
+                                  neu_json_template_mod_tags_req_t *req)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    int ret = 0;
+    int i   = 0;
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = type,
+    };
+
+    neu_req_add_template_tag_t cmd = { 0 };
+    strcpy(cmd.tmpl, req->tmpl);
+    strcpy(cmd.group, req->group);
+
+    cmd.tags = calloc(req->n_tag, sizeof(neu_datatag_t));
+    if (NULL == cmd.tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    for (i = 0; i < req->n_tag; i++) {
+        cmd.n_tag += 1;
+        if (0 != (ret = set_tag_by_json(&cmd.tags[i], &req->tags[i]))) {
+            neu_req_add_template_tag_fini(&cmd);
+            return ret;
+        }
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        neu_req_add_template_tag_fini(&cmd);
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return ret;
+}
+
+void handle_add_template_tags(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_template_mod_tags_req_t,
+        neu_json_decode_template_mod_tags_req, {
+            int ret =
+                send_template_tags_req(aio, NEU_REQ_ADD_TEMPLATE_TAG, req);
+            if (0 != ret) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
 }
