@@ -68,6 +68,9 @@ int  neu_manager_get_templates(neu_manager_t *           manager,
 int  neu_manager_add_template_tags(neu_manager_t *             manager,
                                    neu_req_add_template_tag_t *req,
                                    uint16_t *                  index_p);
+int  neu_manager_update_template_tags(neu_manager_t *             manager,
+                                      neu_req_add_template_tag_t *req,
+                                      uint16_t *                  index_p);
 
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 

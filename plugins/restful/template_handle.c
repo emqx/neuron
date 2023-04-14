@@ -372,3 +372,17 @@ void handle_add_template_tags(nng_aio *aio)
             }
         })
 }
+
+void handle_update_template_tags(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_template_mod_tags_req_t,
+        neu_json_decode_template_mod_tags_req, {
+            int ret =
+                send_template_tags_req(aio, NEU_REQ_UPDATE_TEMPLATE_TAG, req);
+            if (0 != ret) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}

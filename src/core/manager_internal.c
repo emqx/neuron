@@ -260,6 +260,37 @@ int neu_manager_add_template_tags(neu_manager_t *             manager,
     return ret;
 }
 
+int neu_manager_update_template_tags(neu_manager_t *                manager,
+                                     neu_req_update_template_tag_t *req,
+                                     uint16_t *                     index_p)
+{
+    int ret = 0;
+
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, req->tmpl);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    neu_group_t *grp = neu_template_get_group(tmpl, req->group);
+    if (NULL == grp) {
+        return NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    int i = 0;
+    for (; i < req->n_tag; ++i) {
+        if (0 != (ret = neu_group_update_tag(grp, &req->tags[i]))) {
+            break;
+        }
+    }
+
+    if (index_p) {
+        *index_p = i;
+    }
+
+    return ret;
+}
+
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 {
     UT_array *drivers =
