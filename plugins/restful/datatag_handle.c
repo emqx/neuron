@@ -39,7 +39,7 @@ void handle_add_tags(nng_aio *aio)
             if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
                     neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
-                                  result_error);
+                                      result_error);
                 });
             } else {
                 int                ret    = 0;
