@@ -387,8 +387,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_READ_GROUP:
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
     case NEU_RESP_ADD_TAG:
+    case NEU_RESP_ADD_TEMPLATE_TAG:
     case NEU_RESP_UPDATE_TAG:
+    case NEU_RESP_UPDATE_TEMPLATE_TAG:
     case NEU_RESP_GET_TAG:
+    case NEU_RESP_GET_TEMPLATE_TAG:
     case NEU_RESP_GET_NODE:
     case NEU_RESP_GET_PLUGIN:
     case NEU_RESP_GET_TEMPLATE:
@@ -1147,6 +1150,18 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_RESP_GET_TEMPLATES:
         data_size = sizeof(neu_resp_get_templates_t);
         break;
+    case NEU_REQ_ADD_TEMPLATE_TAG:
+        data_size = sizeof(neu_req_add_template_tag_t);
+        break;
+    case NEU_REQ_DEL_TEMPLATE_TAG:
+        data_size = sizeof(neu_req_del_template_tag_t);
+        break;
+    case NEU_REQ_UPDATE_TEMPLATE_TAG:
+        data_size = sizeof(neu_req_update_template_tag_t);
+        break;
+    case NEU_REQ_GET_TEMPLATE_TAG:
+        data_size = sizeof(neu_req_get_template_tag_t);
+        break;
     case NEU_REQ_ADD_NODE:
     case NEU_REQ_ADD_NODE_EVENT:
         data_size = sizeof(neu_req_add_node_t);
@@ -1185,9 +1200,11 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_req_add_tag_t);
         break;
     case NEU_RESP_ADD_TAG:
+    case NEU_RESP_ADD_TEMPLATE_TAG:
         data_size = sizeof(neu_resp_add_tag_t);
         break;
     case NEU_RESP_UPDATE_TAG:
+    case NEU_RESP_UPDATE_TEMPLATE_TAG:
         data_size = sizeof(neu_resp_update_tag_t);
         break;
     case NEU_REQ_UPDATE_TAG:
@@ -1202,6 +1219,7 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_req_get_tag_t);
         break;
     case NEU_RESP_GET_TAG:
+    case NEU_RESP_GET_TEMPLATE_TAG:
         data_size = sizeof(neu_resp_get_tag_t);
         break;
     case NEU_REQ_SUBSCRIBE_GROUP:

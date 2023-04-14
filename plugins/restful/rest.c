@@ -197,6 +197,7 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
                                      (neu_resp_get_driver_group_t *) data);
         break;
     case NEU_RESP_ADD_TAG:
+    case NEU_RESP_ADD_TEMPLATE_TAG:
         handle_add_tags_resp(header->ctx, (neu_resp_add_tag_t *) data);
         break;
     case NEU_RESP_UPDATE_TAG:
