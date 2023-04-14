@@ -321,8 +321,8 @@ void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp)
     return;
 }
 
-static int send_template_tags_req(nng_aio *aio, neu_reqresp_type_e type,
-                                  neu_json_template_mod_tags_req_t *req)
+static int send_template_mod_tags_req(nng_aio *aio, neu_reqresp_type_e type,
+                                      neu_json_template_mod_tags_req_t *req)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
@@ -359,13 +359,47 @@ static int send_template_tags_req(nng_aio *aio, neu_reqresp_type_e type,
     return ret;
 }
 
+static int send_template_del_tags_req(nng_aio *                         aio,
+                                      neu_json_template_del_tags_req_t *req)
+{
+    int           ret    = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_DEL_TEMPLATE_TAG,
+    };
+
+    neu_req_del_template_tag_t cmd = { 0 };
+    strcpy(cmd.tmpl, req->tmpl);
+    strcpy(cmd.group, req->group);
+
+    cmd.n_tag = req->n_tags;
+    cmd.tags  = calloc(req->n_tags, sizeof(char *));
+    if (NULL == cmd.tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    for (int i = 0; i < req->n_tags; i++) {
+        cmd.tags[i]  = req->tags[i];
+        req->tags[i] = NULL; // ownership moved
+    }
+
+    if (ret != neu_plugin_op(plugin, header, &cmd)) {
+        neu_req_del_template_tag_fini(&cmd);
+        ret = NEU_ERR_IS_BUSY;
+    }
+
+    return ret;
+}
+
 void handle_add_template_tags(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_template_mod_tags_req_t,
         neu_json_decode_template_mod_tags_req, {
             int ret =
-                send_template_tags_req(aio, NEU_REQ_ADD_TEMPLATE_TAG, req);
+                send_template_mod_tags_req(aio, NEU_REQ_ADD_TEMPLATE_TAG, req);
             if (0 != ret) {
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
@@ -378,8 +412,21 @@ void handle_update_template_tags(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_template_mod_tags_req_t,
         neu_json_decode_template_mod_tags_req, {
-            int ret =
-                send_template_tags_req(aio, NEU_REQ_UPDATE_TEMPLATE_TAG, req);
+            int ret = send_template_mod_tags_req(
+                aio, NEU_REQ_UPDATE_TEMPLATE_TAG, req);
+            if (0 != ret) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}
+
+void handle_del_template_tags(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_template_del_tags_req_t,
+        neu_json_decode_template_del_tags_req, {
+            int ret = send_template_del_tags_req(aio, req);
             if (0 != ret) {
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });

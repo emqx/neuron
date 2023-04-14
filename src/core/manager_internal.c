@@ -291,6 +291,30 @@ int neu_manager_update_template_tags(neu_manager_t *                manager,
     return ret;
 }
 
+int neu_manager_del_template_tags(neu_manager_t *             manager,
+                                  neu_req_del_template_tag_t *req)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, req->tmpl);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    neu_group_t *grp = neu_template_get_group(tmpl, req->group);
+    if (NULL == grp) {
+        return NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    int i = 0;
+    for (; i < req->n_tag; ++i) {
+        // the only possible error is that the tag does not exist
+        // in which case we just ignore and continue
+        neu_group_del_tag(grp, req->tags[i]);
+    }
+
+    return 0;
+}
+
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 {
     UT_array *drivers =

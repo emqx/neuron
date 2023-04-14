@@ -415,6 +415,23 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &resp);
         break;
     }
+    case NEU_REQ_DEL_TEMPLATE_TAG: {
+        neu_req_del_template_tag_t *cmd =
+            (neu_req_del_template_tag_t *) &header[1];
+        neu_resp_error_t resp = { 0 };
+
+        resp.error = neu_manager_del_template_tags(manager, cmd);
+        if (0 == resp.error) {
+            // TODO: storage
+        }
+
+        neu_req_del_template_tag_fini(cmd);
+
+        header->type = NEU_RESP_ERROR;
+        strcpy(header->receiver, header->sender);
+        reply(manager, header, &resp);
+        break;
+    }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
         int                 error =
