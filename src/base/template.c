@@ -119,7 +119,8 @@ int neu_template_add_group(neu_template_t *tmpl, const char *group,
         return NEU_ERR_EINTERNAL;
     }
 
-    HASH_ADD_KEYPTR(hh, tmpl->groups, group, strlen(group), ent);
+    HASH_ADD_KEYPTR(hh, tmpl->groups, neu_group_get_name(ent->group),
+                    strlen(group), ent);
 
     return 0;
 }
