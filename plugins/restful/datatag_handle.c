@@ -36,40 +36,48 @@ void handle_add_tags(nng_aio *aio)
 
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
-            int                ret    = 0;
-            neu_reqresp_head_t header = { 0 };
-            neu_req_add_tag_t  cmd    = { 0 };
-
-            header.ctx  = aio;
-            header.type = NEU_REQ_ADD_TAG;
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            cmd.n_tag = req->n_tag;
-            cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
-
-            for (int i = 0; i < req->n_tag; i++) {
-                cmd.tags[i].attribute = req->tags[i].attribute;
-                cmd.tags[i].type      = req->tags[i].type;
-                cmd.tags[i].precision = req->tags[i].precision;
-                cmd.tags[i].decimal   = req->tags[i].decimal;
-                cmd.tags[i].address   = strdup(req->tags[i].address);
-                cmd.tags[i].name      = strdup(req->tags[i].name);
-                if (req->tags[i].description != NULL) {
-                    cmd.tags[i].description = strdup(req->tags[i].description);
-                } else {
-                    cmd.tags[i].description = strdup("");
-                }
-                if (NEU_ATTRIBUTE_STATIC & req->tags[i].attribute) {
-                    neu_tag_set_static_value_json(&cmd.tags[i], req->tags[i].t,
-                                                  &req->tags[i].value);
-                }
-            }
-
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
+                    http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
+                                  result_error);
                 });
+            } else {
+                int                ret    = 0;
+                neu_reqresp_head_t header = { 0 };
+                neu_req_add_tag_t  cmd    = { 0 };
+
+                header.ctx  = aio;
+                header.type = NEU_REQ_ADD_TAG;
+                strcpy(cmd.driver, req->node);
+                strcpy(cmd.group, req->group);
+                cmd.n_tag = req->n_tag;
+                cmd.tags  = calloc(req->n_tag, sizeof(neu_datatag_t));
+
+                for (int i = 0; i < req->n_tag; i++) {
+                    cmd.tags[i].attribute = req->tags[i].attribute;
+                    cmd.tags[i].type      = req->tags[i].type;
+                    cmd.tags[i].precision = req->tags[i].precision;
+                    cmd.tags[i].decimal   = req->tags[i].decimal;
+                    cmd.tags[i].address   = strdup(req->tags[i].address);
+                    cmd.tags[i].name      = strdup(req->tags[i].name);
+                    if (req->tags[i].description != NULL) {
+                        cmd.tags[i].description =
+                            strdup(req->tags[i].description);
+                    } else {
+                        cmd.tags[i].description = strdup("");
+                    }
+                    if (NEU_ATTRIBUTE_STATIC & req->tags[i].attribute) {
+                        neu_tag_set_static_value_json(
+                            &cmd.tags[i], req->tags[i].t, &req->tags[i].value);
+                    }
+                }
+
+                ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }
