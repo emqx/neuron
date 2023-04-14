@@ -529,6 +529,15 @@ typedef struct {
     char **  tags;
 } neu_req_del_template_tag_t;
 
+static inline void
+neu_req_del_template_tag_fini(neu_req_del_template_tag_t *req)
+{
+    for (uint16_t i = 0; i < req->n_tag; ++i) {
+        free(req->tags[i]);
+    }
+    free(req->tags);
+}
+
 typedef struct neu_req_get_template_tag {
     char tmpl[NEU_TEMPLATE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
