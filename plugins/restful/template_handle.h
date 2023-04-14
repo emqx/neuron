@@ -31,5 +31,6 @@ void handle_get_template_resp(nng_aio *aio, neu_resp_get_template_t *resp);
 void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp);
 
 void handle_add_template_tags(nng_aio *aio);
+void handle_update_template_tags(nng_aio *aio);
 
 #endif
