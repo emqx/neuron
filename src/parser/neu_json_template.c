@@ -17,6 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <string.h>
+
 #include <jansson.h>
 
 #include "json/json.h"
@@ -496,5 +498,125 @@ void neu_json_decode_template_mod_tags_req_free(
 
     free(req->tmpl);
     free(req->group);
+    free(req);
+}
+
+int neu_json_encode_template_del_tags_req(void *json_object, void *param)
+{
+    int                               ret = 0;
+    neu_json_template_del_tags_req_t *req = param;
+
+    void *                        tag_array = neu_json_array();
+    neu_json_del_tags_req_name_t *p_name    = req->tags;
+    for (int i = 0; i < req->n_tags; i++) {
+        neu_json_elem_t tag_elems[] = {
+            {
+                .name      = NULL,
+                .t         = NEU_JSON_STR,
+                .v.val_str = *p_name,
+            },
+        };
+        tag_array = neu_json_encode_array_value(tag_array, tag_elems,
+                                                NEU_JSON_ELEM_SIZE(tag_elems));
+        p_name++;
+    }
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "template",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->tmpl,
+                                    },
+                                    {
+                                        .name      = "group",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->group,
+                                    },
+                                    {
+                                        .name         = "tags",
+                                        .t            = NEU_JSON_OBJECT,
+                                        .v.val_object = tag_array,
+                                    } };
+
+    ret = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
+int neu_json_decode_template_del_tags_req(
+    char *buf, neu_json_template_del_tags_req_t **result)
+{
+    int                               ret       = 0;
+    void *                            json_obj  = NULL;
+    neu_json_template_del_tags_req_t *req       = NULL;
+    json_t *                          names_arr = NULL;
+
+    req = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        goto error;
+    }
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name = "template",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "group",
+                                        .t    = NEU_JSON_STR,
+                                    } };
+    ret       = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    req->tmpl = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+    if (ret != 0) {
+        goto error;
+    }
+
+    names_arr = json_object_get(json_obj, "tags");
+    if (!json_is_array(names_arr)) {
+        goto error;
+    }
+
+    size_t n_tags = json_array_size(names_arr);
+    req->tags     = calloc(n_tags, sizeof(req->tags[0]));
+    for (size_t i = 0; i < n_tags; i++) {
+        req->n_tags += 1;
+        json_t *name = json_array_get(names_arr, i);
+        if (!json_is_string(name) ||
+            NULL == (req->tags[i] = strdup(json_string_value(name)))) {
+            goto error;
+        }
+    }
+
+    *result = req;
+    neu_json_decode_free(json_obj);
+    return 0;
+
+error:
+    neu_json_decode_template_del_tags_req_free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
+}
+
+void neu_json_decode_template_del_tags_req_free(
+    neu_json_template_del_tags_req_t *req)
+{
+    if (NULL == req) {
+        return;
+    }
+
+    free(req->tmpl);
+    free(req->group);
+
+    for (int i = 0; i < req->n_tags; i++) {
+        free(req->tags[i]);
+    }
+    free(req->tags);
+
     free(req);
 }

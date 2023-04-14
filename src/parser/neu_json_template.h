@@ -90,4 +90,17 @@ int neu_json_decode_template_mod_tags_req(
 void neu_json_decode_template_mod_tags_req_free(
     neu_json_template_mod_tags_req_t *req);
 
+typedef struct {
+    char * tmpl;
+    char * group;
+    int    n_tags;
+    char **tags;
+} neu_json_template_del_tags_req_t;
+
+int neu_json_encode_template_del_tags_req(void *json_object, void *param);
+int neu_json_decode_template_del_tags_req(
+    char *buf, neu_json_template_del_tags_req_t **result);
+void neu_json_decode_template_del_tags_req_free(
+    neu_json_template_del_tags_req_t *req);
+
 #endif
