@@ -205,6 +205,7 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         handle_update_tags_resp(header->ctx, (neu_resp_update_tag_t *) data);
         break;
     case NEU_RESP_GET_TAG:
+    case NEU_RESP_GET_TEMPLATE_TAG:
         handle_get_tags_resp(header->ctx, (neu_resp_get_tag_t *) data);
         break;
     case NEU_RESP_GET_SUBSCRIBE_GROUP:

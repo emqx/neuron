@@ -39,6 +39,12 @@ int neu_template_manager_del(neu_template_manager_t *mgr, const char *name);
 neu_template_t *neu_template_manager_find(const neu_template_manager_t *mgr,
                                           const char *                  name);
 
+// NOTE: ownership of the return group belongs to the manager.
+//       user must not alter the name of the return group.
+int neu_template_manager_find_group(const neu_template_manager_t *mgr,
+                                    const char *name, const char *group_name,
+                                    neu_group_t **group_p);
+
 // Iterate through templates and apply `cb` each.
 // NOTE: `cb` must not alter the name or plugin of the template.
 //       `cb` must not delete the template.

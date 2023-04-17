@@ -103,6 +103,27 @@ neu_template_t *neu_template_manager_find(const neu_template_manager_t *mgr,
     return ent ? ent->tmpl : NULL;
 }
 
+int neu_template_manager_find_group(const neu_template_manager_t *mgr,
+                                    const char *name, const char *group_name,
+                                    neu_group_t **group_p)
+{
+    neu_template_t *tmpl = neu_template_manager_find(mgr, name);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    neu_group_t *grp = neu_template_get_group(tmpl, group_name);
+    if (NULL == grp) {
+        return NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    if (group_p) {
+        *group_p = grp;
+    }
+
+    return 0;
+}
+
 int neu_template_manager_for_each(neu_template_manager_t *mgr,
                                   int (*cb)(neu_template_t *tmpl, void *data),
                                   void *data)

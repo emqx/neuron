@@ -233,17 +233,13 @@ int neu_manager_add_template_tags(neu_manager_t *             manager,
                                   neu_req_add_template_tag_t *req,
                                   uint16_t *                  index_p)
 {
-    int ret = 0;
+    int          ret = 0;
+    neu_group_t *grp = NULL;
 
-    neu_template_t *tmpl =
-        neu_template_manager_find(manager->template_manager, req->tmpl);
-    if (NULL == tmpl) {
-        return NEU_ERR_TEMPLATE_NOT_FOUND;
-    }
-
-    neu_group_t *grp = neu_template_get_group(tmpl, req->group);
-    if (NULL == grp) {
-        return NEU_ERR_GROUP_NOT_EXIST;
+    ret = neu_template_manager_find_group(manager->template_manager, req->tmpl,
+                                          req->group, &grp);
+    if (0 != ret) {
+        return ret;
     }
 
     int i = 0;
@@ -264,17 +260,13 @@ int neu_manager_update_template_tags(neu_manager_t *                manager,
                                      neu_req_update_template_tag_t *req,
                                      uint16_t *                     index_p)
 {
-    int ret = 0;
+    int          ret = 0;
+    neu_group_t *grp = NULL;
 
-    neu_template_t *tmpl =
-        neu_template_manager_find(manager->template_manager, req->tmpl);
-    if (NULL == tmpl) {
-        return NEU_ERR_TEMPLATE_NOT_FOUND;
-    }
-
-    neu_group_t *grp = neu_template_get_group(tmpl, req->group);
-    if (NULL == grp) {
-        return NEU_ERR_GROUP_NOT_EXIST;
+    ret = neu_template_manager_find_group(manager->template_manager, req->tmpl,
+                                          req->group, &grp);
+    if (0 != ret) {
+        return ret;
     }
 
     int i = 0;
@@ -294,15 +286,13 @@ int neu_manager_update_template_tags(neu_manager_t *                manager,
 int neu_manager_del_template_tags(neu_manager_t *             manager,
                                   neu_req_del_template_tag_t *req)
 {
-    neu_template_t *tmpl =
-        neu_template_manager_find(manager->template_manager, req->tmpl);
-    if (NULL == tmpl) {
-        return NEU_ERR_TEMPLATE_NOT_FOUND;
-    }
+    int          ret = 0;
+    neu_group_t *grp = NULL;
 
-    neu_group_t *grp = neu_template_get_group(tmpl, req->group);
-    if (NULL == grp) {
-        return NEU_ERR_GROUP_NOT_EXIST;
+    ret = neu_template_manager_find_group(manager->template_manager, req->tmpl,
+                                          req->group, &grp);
+    if (0 != ret) {
+        return ret;
     }
 
     int i = 0;
@@ -310,6 +300,28 @@ int neu_manager_del_template_tags(neu_manager_t *             manager,
         // the only possible error is that the tag does not exist
         // in which case we just ignore and continue
         neu_group_del_tag(grp, req->tags[i]);
+    }
+
+    return 0;
+}
+
+int neu_manager_get_template_tags(neu_manager_t *             manager,
+                                  neu_req_get_template_tag_t *req,
+                                  UT_array **                 tags_p)
+{
+    int          ret = 0;
+    neu_group_t *grp = NULL;
+
+    ret = neu_template_manager_find_group(manager->template_manager, req->tmpl,
+                                          req->group, &grp);
+    if (0 != ret) {
+        return ret;
+    }
+
+    if (strlen(req->name) > 0) {
+        *tags_p = neu_group_query_tag(grp, req->name);
+    } else {
+        *tags_p = neu_group_get_tag(grp);
     }
 
     return 0;
