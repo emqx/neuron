@@ -1,9 +1,9 @@
 {
   "client-id": {
     "name": "Client ID",
-    "name_zh": "客户端ID",
-    "description": "Neuron MQTT client id",
-    "description_zh": "Neuron MQTT客户端ID",
+    "name_zh": "客户端 ID",
+    "description": "MQTT client ID",
+    "description_zh": "MQTT 客户端 ID",
     "type": "string",
     "attribute": "required",
     "default": "${node-name}",
@@ -27,7 +27,7 @@
     "name": "Heartbeat Interval",
     "name_zh": "心跳间隔",
     "description": "Interval in seconds between two heartbeat messages. Setting to zero will disable heartbeat monitoring.(seconds)",
-    "description_zh": "两个心跳消息之间的间隔时间，设置为0将禁用心跳监控。(秒)",
+    "description_zh": "每个心跳消息之间的间隔时间（秒），设置为 0 将禁用心跳消息。",
     "attribute": "required",
     "type": "int",
     "default": 0,
@@ -51,7 +51,7 @@
     "name": "Broker Host",
     "name_zh": "服务器地址",
     "description": "MQTT broker host",
-    "description_zh": "MQTT服务器地址",
+    "description_zh": "MQTT 服务器地址",
     "attribute": "required",
     "type": "string",
     "default": "broker.emqx.io",
@@ -63,7 +63,7 @@
     "name": "Broker Port",
     "name_zh": "服务器端口",
     "description": "MQTT broker port",
-    "description_zh": "MQTT服务器端口",
+    "description_zh": "MQTT 服务器端口",
     "attribute": "required",
     "type": "int",
     "default": 1883,
@@ -75,8 +75,8 @@
   "username": {
     "name": "Username",
     "name_zh": "用户名",
-    "description": "User name",
-    "description_zh": "用户名",
+    "description": "MQTT user name",
+    "description_zh": "MQTT 用户名",
     "attribute": "optional",
     "type": "string",
     "default": "",
@@ -87,8 +87,8 @@
   "password": {
     "name": "Password",
     "name_zh": "密码",
-    "description": "Password",
-    "description_zh": "密码",
+    "description": "MQTT user password",
+    "description_zh": "MQTT 用户密码",
     "attribute": "optional",
     "type": "string",
     "default": "",
@@ -100,7 +100,7 @@
     "name": "SSL",
     "name_zh": "SSL",
     "description": "Enable SSL connection",
-    "description_zh": "是否启用SSL连接",
+    "description_zh": "是否启用 SSL 连接",
     "attribute": "optional",
     "type": "bool",
     "default": false,
@@ -108,9 +108,9 @@
   },
   "ca": {
     "name": "CA",
-    "name_zh": "CA证书",
-    "description": "CA certificate file",
-    "description_zh": "CA证书文件",
+    "name_zh": "CA 证书",
+    "description": "CA certificate which signs the server certificate",
+    "description_zh": "签发服务器证书的 CA 证书",
     "attribute": "required",
     "type": "file",
     "condition": {
@@ -124,8 +124,8 @@
   "cert": {
     "name": "Client Cert",
     "name_zh": "客户端证书",
-    "description": "Client x509 certificate file",
-    "description_zh": "客户端证书文件",
+    "description": "Client x509 certificate when using two way authentication",
+    "description_zh": "使用双向认证时，客户端的 x509 证书",
     "attribute": "optional",
     "type": "file",
     "condition": {
@@ -139,8 +139,8 @@
   "key": {
     "name": "Client Private Key",
     "name_zh": "客户端私钥",
-    "description": "Client private key file",
-    "description_zh": "客户端私钥文件",
+    "description": "Client private key when using two way authentication",
+    "description_zh": "使用双向认证时，客户端的私钥",
     "attribute": "optional",
     "type": "file",
     "condition": {
@@ -152,10 +152,10 @@
     }
   },
   "keypass": {
-    "name": "Keypass",
-    "name_zh": "私钥密码",
-    "description": "Private key password",
-    "description_zh": "私钥密码",
+    "name": "Client Private Key Password",
+    "name_zh": "客户端私钥密码",
+    "description": "Client private key password when using two way authentication with an encrypted client private key",
+    "description_zh": "使用加密的客户端私钥进行双向认证时，客户端私钥的密码",
     "attribute": "optional",
     "type": "string",
     "condition": {
