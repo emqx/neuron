@@ -105,9 +105,6 @@ int neu_json_decode_global_config_req_tags(
     }
 
     req->n_tag = json_array_size(tag_array);
-    if (req->n_tag <= 0) {
-        goto decode_fail;
-    }
 
     req->tags = calloc(req->n_tag, sizeof(*req->tags));
     if (NULL == req->tags) {
