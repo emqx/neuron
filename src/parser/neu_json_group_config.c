@@ -311,9 +311,6 @@ int neu_json_decode_get_driver_group_resp_json(
     }
 
     resp->n_group = json_array_size(grp_array);
-    if (resp->n_group <= 0) {
-        goto decode_fail;
-    }
 
     resp->groups = calloc(resp->n_group, sizeof(*resp->groups));
     if (NULL == resp->groups) {
