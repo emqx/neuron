@@ -154,6 +154,7 @@ typedef struct {
     unsigned            cpu_cores;
     size_t              mem_total_bytes;
     size_t              mem_used_bytes;
+    size_t              mem_cache_bytes;
     size_t              disk_size_gibibytes;
     size_t              disk_used_gibibytes;
     size_t              disk_avail_gibibytes;
