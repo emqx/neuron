@@ -101,6 +101,11 @@ static inline size_t memory_used()
     return parse_memory_fields(3);
 }
 
+static inline size_t memory_cache()
+{
+    return parse_memory_fields(6);
+}
+
 static inline int disk_usage(size_t *size_p, size_t *used_p, size_t *avail_p)
 {
     struct statvfs buf = {};
@@ -276,6 +281,7 @@ void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
 {
     unsigned cpu       = cpu_usage();
     size_t   mem_used  = memory_used();
+    size_t   mem_cache = memory_cache();
     size_t   disk_size = 0, disk_used = 0, disk_avail = 0;
     disk_usage(&disk_size, &disk_used, &disk_avail);
     bool     core_dumped    = has_core_dumps();
@@ -284,6 +290,7 @@ void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
     g_metrics_.cpu_percent          = cpu;
     g_metrics_.cpu_cores            = get_nprocs();
     g_metrics_.mem_used_bytes       = mem_used;
+    g_metrics_.mem_cache_bytes      = mem_cache;
     g_metrics_.disk_size_gibibytes  = disk_size;
     g_metrics_.disk_used_gibibytes  = disk_used;
     g_metrics_.disk_avail_gibibytes = disk_avail;

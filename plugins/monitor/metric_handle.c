@@ -31,10 +31,10 @@
 
 // clang-format off
 #define METRIC_GLOBAL_TMPL                                                       \
-    "# HELP distro OS distribution\n"                                            \
-    "distro %s\n"                                                                \
-    "# HELP kernel OS kernel version\n"                                          \
-    "kernel %s\n"                                                                \
+    "# HELP os_info OS distro and kernel version\n"                              \
+    "# TYPE os_info gauge\n"                                                     \
+    "os_info[version=\"%s\"] 0\n"                                                \
+    "os_info[kernel=\"%s\"] 0\n"                                                 \
     "# HELP cpu_percent Total CPU utilisation percentage\n"                      \
     "# TYPE cpu_percent gauge\n"                                                 \
     "cpu_percent %u\n"                                                           \
@@ -47,6 +47,12 @@
     "# HELP mem_used_bytes Used memory in bytes\n"                               \
     "# TYPE mem_used_bytes gauge\n"                                              \
     "mem_used_bytes %zu\n"                                                       \
+    "# HELP mem_cache Memory buffer/cache size in bytes\n"                       \
+    "# TYPE mem_cache gauge\n"                                                   \
+    "mem_cache_bytes %zu\n"                                                      \
+    "# HELP rss_bytes RSS (Resident Set Size) in bytes\n"                        \
+    "# TYPE rss_bytes gauge\n"                                                   \
+    "rss_bytes %zu\n"                                                            \
     "# HELP disk_size_gibibytes Disk size in gibibytes\n"                        \
     "# TYPE disk_size_gibibytes counter\n"                                       \
     "disk_size_gibibytes %zu\n"                                                  \
@@ -141,6 +147,7 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
 {
     fprintf(stream, METRIC_GLOBAL_TMPL, metrics->distro, metrics->kernel,
             metrics->cpu_percent, metrics->cpu_cores, metrics->mem_total_bytes,
+            metrics->mem_used_bytes, metrics->mem_cache_bytes,
             metrics->mem_used_bytes, metrics->disk_size_gibibytes,
             metrics->disk_used_gibibytes, metrics->disk_avail_gibibytes,
             metrics->core_dumped, metrics->uptime_seconds, metrics->north_nodes,
