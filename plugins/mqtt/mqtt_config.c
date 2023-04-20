@@ -115,6 +115,79 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     return 0;
 }
 
+static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
+                              neu_json_elem_t *offline_cache,
+                              neu_json_elem_t *cache_mem_size,
+                              neu_json_elem_t *cache_disk_size)
+{
+    int   ret          = 0;
+    char *err_param    = NULL;
+    bool  flag_present = true; // whether setting has `offline-cache`
+
+    // offline-cache flag, optional
+    ret = neu_parse_param(setting, NULL, 1, offline_cache);
+    if (0 != ret) {
+        plog_info(plugin, "setting no offline cache flag");
+        flag_present = false; // `offline-cache` not present in setting
+    }
+
+    if (flag_present && !offline_cache->v.val_bool) {
+        // cache explicitly disabled in setting
+        cache_mem_size->v.val_int  = 0;
+        cache_disk_size->v.val_int = 0;
+        return 0;
+    }
+
+    // we are here because one of the following:
+    //    1. `offline-cache` presents to be true in setting
+    //    2. no `offline-cache` in setting
+    // we require `cache_mem_size` and `cache_disk_size` to present in both
+    // cases, especially in case 2 for backward compatibility.
+
+    ret = neu_parse_param(setting, &err_param, 2, cache_mem_size,
+                          cache_disk_size);
+    if (0 != ret) {
+        plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
+        free(err_param);
+        return -1;
+    }
+
+    if (cache_mem_size->v.val_int > 1024 ||
+        (flag_present && cache_mem_size->v.val_int < 1)) {
+        plog_error(plugin, "setting invalid cache memory size: %" PRIi64,
+                   cache_mem_size->v.val_int);
+        return -1;
+    }
+
+    if (cache_disk_size->v.val_int > 10240 ||
+        (flag_present && cache_disk_size->v.val_int < 1)) {
+        plog_error(plugin, "setting invalid cache disk size: %" PRIi64,
+                   cache_disk_size->v.val_int);
+        return -1;
+    }
+
+    if (cache_mem_size->v.val_int > cache_disk_size->v.val_int) {
+        plog_error(plugin,
+                   "setting cache memory size %" PRIi64
+                   " larger than cache disk size %" PRIi64,
+                   cache_mem_size->v.val_int, cache_disk_size->v.val_int);
+        return -1;
+    }
+
+    if (0 == cache_mem_size->v.val_int && 0 != cache_disk_size->v.val_int) {
+        plog_error(plugin,
+                   "setting cache disk size %" PRIi64 " without memory cache",
+                   cache_disk_size->v.val_int);
+        return -1;
+    }
+
+    if (!flag_present) {
+        offline_cache->v.val_bool = cache_mem_size->v.val_int > 0;
+    }
+
+    return 0;
+}
+
 int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
                       mqtt_config_t *config)
 {
@@ -130,6 +203,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
     };
     neu_json_elem_t format          = { .name = "format", .t = NEU_JSON_INT };
+    neu_json_elem_t offline_cache   = { .name = "offline-cache",
+                                      .t    = NEU_JSON_BOOL };
     neu_json_elem_t cache_mem_size  = { .name = "cache-mem-size",
                                        .t    = NEU_JSON_INT };
     neu_json_elem_t cache_disk_size = { .name = "cache-disk-size",
@@ -149,8 +224,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 7, &client_id, &format, &qos,
-                          &cache_mem_size, &cache_disk_size, &host, &port);
+    ret = neu_parse_param(setting, &err_param, 5, &client_id, &format, &qos,
+                          &host, &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
         goto error;
@@ -176,32 +251,10 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    // cache memory size, required
-    if (cache_mem_size.v.val_int > 1024) {
-        plog_error(plugin, "setting invalid cache memory size: %" PRIi64,
-                   cache_mem_size.v.val_int);
-        goto error;
-    }
-
-    // cache disk size, required
-    if (cache_disk_size.v.val_int > 10240) {
-        plog_error(plugin, "setting invalid cache disk size: %" PRIi64,
-                   cache_disk_size.v.val_int);
-        goto error;
-    }
-
-    if (cache_mem_size.v.val_int > cache_disk_size.v.val_int) {
-        plog_error(plugin,
-                   "setting cache memory size %" PRIi64
-                   " larger than cache disk size %" PRIi64,
-                   cache_mem_size.v.val_int, cache_disk_size.v.val_int);
-        goto error;
-    }
-
-    if (0 == cache_mem_size.v.val_int && 0 != cache_disk_size.v.val_int) {
-        plog_error(plugin,
-                   "setting cache disk size %" PRIi64 " without memory cache",
-                   cache_disk_size.v.val_int);
+    // offline cache
+    ret = parse_cache_params(plugin, setting, &offline_cache, &cache_mem_size,
+                             &cache_disk_size);
+    if (0 != ret) {
         goto error;
     }
 
@@ -234,11 +287,10 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    config->client_id = client_id.v.val_str;
-    config->qos       = qos.v.val_int;
-    config->format    = format.v.val_int;
-    config->cache =
-        0 != cache_mem_size.v.val_int || 0 != cache_disk_size.v.val_int;
+    config->client_id       = client_id.v.val_str;
+    config->qos             = qos.v.val_int;
+    config->format          = format.v.val_int;
+    config->cache           = offline_cache.v.val_bool;
     config->cache_mem_size  = cache_mem_size.v.val_int * MB;
     config->cache_disk_size = cache_disk_size.v.val_int * MB;
     config->host            = host.v.val_str;
