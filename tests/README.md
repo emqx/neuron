@@ -1,15 +1,15 @@
 # Test
-
-To run all unit testers
+Unit testing uses googletest testing framework, testing point processing, JSON reading, architecture, HTTP acquisition, and other small-scale tests.
+To run all unit tests.
 
 ```shell
 $ cd build
 $ ctest --output-on-failure
 ```
 
-Introducing coverage statistics using LCOV
+To introduce coverage statistics using LCOV:
 
-Adding parameter -DUSE_GCOV=1 during compilation.
+Add parameter -DUSE_GCOV=1 during compilation
 
 Generate image files .gcno and data files .gcda under build/tests/CMakeFiles/.dir
 
