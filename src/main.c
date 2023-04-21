@@ -48,6 +48,7 @@ static void sig_handler(int sig)
         zlog_fini();
     }
     exit_flag = true;
+    exit(-1);
 }
 
 static int neuron_run(const neu_cli_args_t *args)

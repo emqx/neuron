@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <assert.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -134,9 +135,9 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
                 in_conns[i].lldp_fd     = init_socket(interface, ETH_P_LLDP);
                 in_conns[i].vlan_fd     = init_socket(interface, 0x8100);
 
-                get_mac(conn_eth, interface);
                 pthread_mutex_init(&in_conns[i].mtx, NULL);
                 conn_eth->ic = &in_conns[i];
+                get_mac(conn_eth, interface);
 
                 param.fd       = in_conns[i].profinet_fd;
                 param.usr_data = (void *) conn_eth;
@@ -201,11 +202,18 @@ void neu_conn_eth_get_mac(neu_conn_eth_t *conn, uint8_t *mac)
 int neu_conn_eth_check_interface(const char *interface)
 {
     struct ifreq ifr = { 0 };
-    int          fd  = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    int          fd  = socket(PF_PACKET, SOCK_RAW, ETH_P_IPV6);
     int          ret = -1;
+
+    if (fd <= 0) {
+        return -1;
+    }
 
     strcpy(ifr.ifr_name, interface);
     ret = ioctl(fd, SIOCGIFHWADDR, &ifr);
+    if (ret != 0) {
+        return -1;
+    }
 
     close(fd);
     return ret;
@@ -308,13 +316,11 @@ int neu_conn_eth_unregister_lldp(neu_conn_eth_t *conn, const char *device)
     return 0;
 }
 
-int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
-                      uint16_t protocol, uint16_t n_byte, uint8_t *bytes)
+int neu_conn_eth_send(neu_conn_eth_t *conn, uint16_t protocol, uint16_t n_byte,
+                      uint8_t *bytes)
 {
-    int            fd   = 0;
-    int            ret  = 0;
-    struct ethhdr *ehdr = (struct ethhdr *) bytes;
-    (void) dst_mac;
+    int fd  = 0;
+    int ret = 0;
 
     switch (protocol) {
     case 0x8892:
@@ -330,8 +336,6 @@ int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
         assert(1 == 0);
         break;
     }
-
-    memcpy(ehdr->h_source, conn->ic->mac, ETH_ALEN);
 
     ret = send(fd, bytes, n_byte, 0);
     return ret;
