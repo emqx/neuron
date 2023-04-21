@@ -20,7 +20,6 @@
 
 #include <neuron.h>
 
-#include "modbus_req.h"
 #include "modbus_stack.h"
 
 struct modbus_stack {
@@ -29,16 +28,10 @@ struct modbus_stack {
     modbus_stack_value      value_fn;
     modbus_stack_write_resp write_resp;
 
-    modbus_protocol_e protocol;
-    uint16_t          read_seq;
-    uint16_t          write_seq;
-
-    uint8_t *buf;
-    uint16_t buf_size;
+    uint16_t seq;
 };
 
-modbus_stack_t *modbus_stack_create(void *ctx, modbus_protocol_e protocol,
-                                    modbus_stack_send       send_fn,
+modbus_stack_t *modbus_stack_create(void *ctx, modbus_stack_send send_fn,
                                     modbus_stack_value      value_fn,
                                     modbus_stack_write_resp write_resp)
 {
@@ -48,17 +41,12 @@ modbus_stack_t *modbus_stack_create(void *ctx, modbus_protocol_e protocol,
     stack->send_fn    = send_fn;
     stack->value_fn   = value_fn;
     stack->write_resp = write_resp;
-    stack->protocol   = protocol;
-
-    stack->buf_size = 256;
-    stack->buf      = calloc(stack->buf_size, 1);
 
     return stack;
 }
 
 void modbus_stack_destroy(modbus_stack_t *stack)
 {
-    free(stack->buf);
     free(stack);
 }
 
@@ -68,14 +56,9 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
     struct modbus_code   code   = { 0 };
     int                  ret    = 0;
 
-    if (stack->protocol == MODBUS_PROTOCOL_TCP) {
-        ret = modbus_header_unwrap(buf, &header);
-        if (ret < 0) {
-            plog_warn((neu_plugin_t *) stack->ctx, "try modbus rtu driver");
-        }
-        if (ret <= 0) {
-            return ret;
-        }
+    ret = modbus_header_unwrap(buf, &header);
+    if (ret <= 0) {
+        return ret;
     }
 
     ret = modbus_code_unwrap(buf, &code);
@@ -95,19 +78,8 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
             return ret;
         }
 
-        if (stack->protocol == MODBUS_PROTOCOL_TCP && data.n_byte == 0xff) {
-            bytes = neu_protocol_unpack_buf(buf,
-                                            header.len -
-                                                sizeof(struct modbus_code) -
-                                                sizeof(struct modbus_data));
-            stack->value_fn(stack->ctx, code.slave_id,
-                            header.len - sizeof(struct modbus_code) -
-                                sizeof(struct modbus_data),
-                            bytes, 0);
-        } else {
-            bytes = neu_protocol_unpack_buf(buf, data.n_byte);
-            stack->value_fn(stack->ctx, code.slave_id, data.n_byte, bytes, 0);
-        }
+        bytes = neu_protocol_unpack_buf(buf, data.n_byte);
+        stack->value_fn(stack->ctx, code.slave_id, data.n_byte, bytes);
 
         break;
     }
@@ -123,14 +95,6 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
         break;
     }
 
-    if (stack->protocol == MODBUS_PROTOCOL_RTU) {
-        struct modbus_crc crc = { 0 };
-        ret                   = modbus_crc_unwrap(buf, &crc);
-        if (ret <= 0) {
-            return ret;
-        }
-    }
-
     return neu_protocol_unpack_buf_used_size(buf);
 }
 
@@ -144,9 +108,6 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
 
     neu_protocol_pack_buf_init(&pbuf, buf, sizeof(buf));
 
-    if (stack->protocol == MODBUS_PROTOCOL_RTU) {
-        modbus_crc_wrap(&pbuf);
-    }
     modbus_address_wrap(&pbuf, start_address, n_reg);
 
     switch (area) {
@@ -171,23 +132,14 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
     *response_size += sizeof(struct modbus_code);
     *response_size += sizeof(struct modbus_data);
 
-    switch (stack->protocol) {
-    case MODBUS_PROTOCOL_TCP:
-        modbus_header_wrap(&pbuf, stack->read_seq++);
-        *response_size += sizeof(struct modbus_header);
-        break;
-    case MODBUS_PROTOCOL_RTU:
-        modbus_crc_set(&pbuf);
-        *response_size += 2;
-        break;
-    }
+    modbus_header_wrap(&pbuf, stack->seq++);
+    *response_size += sizeof(struct modbus_header);
 
     ret = stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
                          neu_protocol_pack_buf_get(&pbuf));
     if (ret <= 0) {
-        stack->value_fn(stack->ctx, 0, 0, NULL, NEU_ERR_PLUGIN_DISCONNECTED);
+        stack->value_fn(stack->ctx, 0, 0, NULL);
     }
-
     return ret;
 }
 
@@ -196,14 +148,11 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
                        uint16_t n_reg, uint8_t *bytes, uint8_t n_byte,
                        uint16_t *response_size)
 {
-    static __thread neu_protocol_pack_buf_t pbuf = { 0 };
+    uint8_t *               buf  = calloc(256, 1);
+    neu_protocol_pack_buf_t pbuf = { 0 };
+    int                     ret  = 0;
 
-    memset(stack->buf, 0, stack->buf_size);
-    neu_protocol_pack_buf_init(&pbuf, stack->buf, stack->buf_size);
-
-    if (stack->protocol == MODBUS_PROTOCOL_RTU) {
-        modbus_crc_wrap(&pbuf);
-    }
+    neu_protocol_pack_buf_init(&pbuf, buf, 256);
 
     switch (area) {
     case MODBUS_AREA_COIL:
@@ -220,34 +169,22 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
         modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_M_HOLD_REG);
         break;
     default:
-        stack->write_resp(stack->ctx, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
+        assert(false);
         break;
     }
     *response_size += sizeof(struct modbus_code);
     *response_size += sizeof(struct modbus_address);
 
-    switch (stack->protocol) {
-    case MODBUS_PROTOCOL_TCP:
-        modbus_header_wrap(&pbuf, stack->write_seq++);
-        *response_size += sizeof(struct modbus_header);
-        break;
-    case MODBUS_PROTOCOL_RTU:
-        modbus_crc_set(&pbuf);
-        *response_size += 2;
-        break;
-    }
+    modbus_header_wrap(&pbuf, stack->seq++);
+    *response_size += sizeof(struct modbus_header);
 
-    int ret = stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
-                             neu_protocol_pack_buf_get(&pbuf));
+    ret = stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
+                         neu_protocol_pack_buf_get(&pbuf));
     if (ret > 0) {
         stack->write_resp(stack->ctx, req, NEU_ERR_SUCCESS);
     } else {
         stack->write_resp(stack->ctx, req, NEU_ERR_PLUGIN_DISCONNECTED);
     }
+    free(buf);
     return ret;
-}
-
-bool modbus_stack_is_rtu(modbus_stack_t *stack)
-{
-    return stack->protocol == MODBUS_PROTOCOL_RTU;
 }

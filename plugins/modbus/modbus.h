@@ -92,15 +92,6 @@ void modbus_data_wrap(neu_protocol_pack_buf_t *buf, uint8_t n_byte,
 int  modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
                         struct modbus_data *       out_data);
 
-struct modbus_crc {
-    uint16_t crc;
-} __attribute__((packed));
-
-void modbus_crc_set(neu_protocol_pack_buf_t *buf);
-void modbus_crc_wrap(neu_protocol_pack_buf_t *buf);
-int  modbus_crc_unwrap(neu_protocol_unpack_buf_t *buf,
-                       struct modbus_crc *        out_crc);
-
 const char *modbus_area_to_str(modbus_area_e area);
 
 #endif
