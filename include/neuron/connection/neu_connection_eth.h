@@ -48,7 +48,7 @@ neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn,
                                           neu_conn_eth_msg_callback callback);
 int neu_conn_eth_unregister(neu_conn_eth_t *conn, neu_conn_eth_sub_t *sub);
 
-int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
-                      uint16_t protocol, uint16_t n_byte, uint8_t *bytes);
+int neu_conn_eth_send(neu_conn_eth_t *conn, uint16_t protocol, uint16_t n_byte,
+                      uint8_t *bytes);
 
 #endif
