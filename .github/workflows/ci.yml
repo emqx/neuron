@@ -8,7 +8,7 @@ on:
       - published
 
 env:
-  VERSION: 2.4.2
+  VERSION: 2.4.3
   UI_VERSION: 2.4.2
   BRANCH: v2.4
 
