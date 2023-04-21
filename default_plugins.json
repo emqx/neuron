@@ -3,9 +3,7 @@
 		"libplugin-mqtt.so",
 		"libplugin-ekuiper.so",
 		"libplugin-monitor.so",
-		"libplugin-modbus-tcp.so",
-		"libplugin-modbus-rtu.so",
-		"libplugin-modbus-qh-tcp.so",
+		"libplugin-modbus-tcp-comm.so",
 		"libplugin-file.so"
 	]
 }

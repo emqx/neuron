@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "neuron.h"
+#include <neuron.h>
 
 #include "modbus_s.h"
 
@@ -31,7 +31,6 @@ zlog_category_t *neuron           = NULL;
 neu_events_t *   events           = NULL;
 neu_event_io_t * tcp_server_event = NULL;
 neu_conn_t *     conn             = NULL;
-int64_t          global_timestamp = 0;
 
 static void start_listen(void *data, int fd);
 static void stop_listen(void *data, int fd);
@@ -223,7 +222,7 @@ static int recv_msg(enum neu_event_io_type type, int fd, void *usr_data)
     switch (type) {
     case NEU_EVENT_IO_READ: {
         ssize_t len        = 0;
-        uint8_t res[20000] = { 0 };
+        uint8_t res[60000] = { 0 };
         int     res_len    = 0;
 
         len = neu_conn_tcp_server_recv(conn, fd, buf->buf + buf->len,

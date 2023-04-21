@@ -70,9 +70,13 @@ Read some ${tags} from ${node}, it will be success.
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
-	${res}=	Add Tags  ${node}  group  ${tags}
-	Check Response Status  ${res}  200
-	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+	Log	${tags}
+
+	FOR 	${tag} 	IN 	@{tags}
+		${res}=	Add Tags  ${node}  group  ${tag}
+		Check Response Status 	${res} 	200
+		Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+	END
 
 	Sleep 	290ms
 	${res}=	Read Tags  ${node}  group
@@ -234,7 +238,7 @@ Write a ${value} to a ${tag} with named ${tag_name} that don't exist in neuron o
 
 	[Teardown]	Del Group  ${node}  group
 
-Read a ${tag} with named ${tag_name} that don't exist in plc form ${node}, it will be failure ${error}.
+Read a ${tag} with named ${tag_name} that don't exist in plc form ${node}, it will be failure.
 	[Tags]	Driver 	15
 
 	${res}=	Add Group  ${node}  group  100
@@ -248,7 +252,7 @@ Read a ${tag} with named ${tag_name} that don't exist in plc form ${node}, it wi
 	Sleep	290ms
 	${res}=	Read Tags  ${node}  group
 	Check Response Status 	${res} 	200
-	Check Tag Error As Int  ${res}[tags]  ${tag_name}  ${error}
+	Check Tag Error As Int  ${res}  ${tag_name}  ${NEU_ERR_TAG_NOT_EXIST}
 
 	[Teardown]	Del Group  ${node}  group
 

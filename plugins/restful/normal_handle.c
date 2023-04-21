@@ -225,6 +225,14 @@ static struct {
         .schema = "modbus-tcp",
     },
     {
+        .plugin = "Modbus TCP community",
+        .schema = "modbus-tcp-community",
+    },
+    {
+        .plugin = "Modbus TCP QH",
+        .schema = "modbus-qh-tcp",
+    },
+    {
         .plugin = "Monitor",
         .schema = "monitor",
     },
