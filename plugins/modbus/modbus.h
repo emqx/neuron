@@ -35,7 +35,7 @@
 /* big-endian order */
 
 typedef enum modbus_action {
-    MODBUS_ACTION_DEFAULT  = 0,
+    MODBUS_ACTION_DEFAULT        = 0,
     MODBUS_ACTION_HOLD_REG_WRITE = 1
 } modbus_action_e;
 
