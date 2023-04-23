@@ -450,6 +450,20 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         break;
     }
+    case NEU_REQ_INST_TEMPLATE: {
+        neu_req_inst_template_t *cmd = (neu_req_inst_template_t *) &header[1];
+        neu_resp_error_t         e   = { 0 };
+
+        e.error = neu_manager_instantiate_template(manager, cmd);
+        if (NEU_ERR_SUCCESS == e.error) {
+            manager_storage_inst_node(manager, cmd->tmpl, cmd->node);
+        }
+
+        header->type = NEU_RESP_ERROR;
+        strcpy(header->receiver, header->sender);
+        reply(manager, header, &e);
+        break;
+    }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
         int                 error =

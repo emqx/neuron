@@ -327,6 +327,72 @@ int neu_manager_get_template_tags(neu_manager_t *             manager,
     return 0;
 }
 
+static int add_template_group(neu_group_t *grp, void *data)
+{
+    neu_adapter_driver_t *driver   = data;
+    const char *          name     = neu_group_get_name(grp);
+    uint32_t              interval = neu_group_get_interval(grp);
+
+    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
+        return NEU_ERR_GROUP_PARAMETER_INVALID;
+    }
+
+    int ret = neu_adapter_driver_add_group(driver, name, interval);
+    if (0 != ret) {
+        return ret;
+    }
+
+    UT_array *tags = neu_group_get_tag(grp);
+    if (NULL == tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    utarray_foreach(tags, neu_datatag_t *, tag)
+    {
+        ret = neu_adapter_driver_add_tag(driver, name, tag);
+        if (0 != ret) {
+            break;
+        }
+    }
+
+    utarray_free(tags);
+    return ret;
+}
+
+int neu_manager_instantiate_template(neu_manager_t *          manager,
+                                     neu_req_inst_template_t *req)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, req->tmpl);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    int ret = neu_manager_add_node(manager, req->node,
+                                   neu_template_plugin(tmpl), false);
+    if (0 != ret) {
+        return ret;
+    }
+
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, req->node);
+    neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
+
+    if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+        ret = NEU_ERR_GROUP_NOT_ALLOW;
+        goto end;
+    }
+
+    ret = neu_template_for_each_group(tmpl, add_template_group, driver);
+
+end:
+    if (0 != ret) {
+        neu_manager_del_node(manager, req->node);
+    }
+
+    return ret;
+}
+
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager)
 {
     UT_array *drivers =

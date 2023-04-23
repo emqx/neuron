@@ -16,8 +16,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include "errcodes.h"
 #include "utils/log.h"
 
+#include "adapter/storage.h"
 #include "storage.h"
 
 void manager_strorage_plugin(neu_manager_t *manager)
@@ -80,6 +82,45 @@ void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
     if (0 != rv) {
         nlog_error("fail delete subscription app:%s driver:%s group:%s", app,
                    driver, group);
+    }
+}
+
+static int save_group_and_tags(neu_group_t *grp, void *data)
+{
+    const char *node     = data;
+    const char *name     = neu_group_get_name(grp);
+    uint32_t    interval = neu_group_get_interval(grp);
+
+    UT_array *tags = neu_group_get_tag(grp);
+    if (NULL == tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    adapter_storage_add_group(node, name, interval);
+    adapter_storage_add_tags(node, name, utarray_front(tags),
+                             utarray_len(tags));
+
+    utarray_free(tags);
+    return 0;
+}
+
+void manager_storage_inst_node(neu_manager_t *manager, const char *tmpl_name,
+                               const char *node)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, tmpl_name);
+    if (NULL == tmpl) {
+        nlog_error("save instantiated node `%s`, fail, no template `%s`", node,
+                   tmpl_name);
+        return;
+    }
+
+    manager_storage_add_node(manager, node);
+
+    int rv =
+        neu_template_for_each_group(tmpl, save_group_and_tags, (void *) node);
+    if (0 != rv) {
+        nlog_error("save instantiated node `%s` groups and tags fail", node);
     }
 }
 

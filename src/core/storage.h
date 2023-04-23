@@ -33,6 +33,9 @@ void manager_storage_subscribe(neu_manager_t *manager, const char *app,
 void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
                                  const char *driver, const char *group);
 
+void manager_storage_inst_node(neu_manager_t *manager, const char *tmpl_name,
+                               const char *node);
+
 int manager_load_plugin(neu_manager_t *manager);
 int manager_load_node(neu_manager_t *manager);
 int manager_load_subscribe(neu_manager_t *manager);
