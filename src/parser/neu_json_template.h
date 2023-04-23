@@ -103,4 +103,13 @@ int neu_json_decode_template_del_tags_req(
 void neu_json_decode_template_del_tags_req_free(
     neu_json_template_del_tags_req_t *req);
 
+typedef struct {
+    char *name;
+    char *node;
+} neu_json_template_inst_req_t;
+
+int  neu_json_decode_template_inst_req(char *                         buf,
+                                       neu_json_template_inst_req_t **result);
+void neu_json_decode_template_inst_req_free(neu_json_template_inst_req_t *req);
+
 #endif
