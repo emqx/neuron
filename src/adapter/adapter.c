@@ -1162,6 +1162,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_GET_TEMPLATE_TAG:
         data_size = sizeof(neu_req_get_template_tag_t);
         break;
+    case NEU_REQ_INST_TEMPLATE:
+        data_size = sizeof(neu_req_inst_template_t);
+        break;
     case NEU_REQ_ADD_NODE:
     case NEU_REQ_ADD_NODE_EVENT:
         data_size = sizeof(neu_req_add_node_t);
