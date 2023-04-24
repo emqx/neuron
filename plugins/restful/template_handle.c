@@ -468,3 +468,26 @@ void handle_get_template_tags(nng_aio *aio)
         });
     }
 }
+
+void handle_instantiate_template(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_template_inst_req_t, neu_json_decode_template_inst_req, {
+            neu_plugin_t *plugin = neu_rest_get_plugin();
+
+            neu_reqresp_head_t header = { 0 };
+            header.ctx                = aio;
+            header.type               = NEU_REQ_INST_TEMPLATE;
+
+            neu_req_inst_template_t cmd = { 0 };
+            strncpy(cmd.tmpl, req->name, sizeof(cmd.tmpl));
+            strncpy(cmd.node, req->node, sizeof(cmd.node));
+
+            int ret = neu_plugin_op(plugin, header, &cmd);
+            if (0 != ret) {
+                ret = NEU_ERR_IS_BUSY;
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}

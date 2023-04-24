@@ -35,4 +35,6 @@ void handle_update_template_tags(nng_aio *aio);
 void handle_del_template_tags(nng_aio *aio);
 void handle_get_template_tags(nng_aio *aio);
 
+void handle_instantiate_template(nng_aio *aio);
+
 #endif

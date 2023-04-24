@@ -101,6 +101,7 @@ typedef enum neu_reqresp_type {
     NEU_RESP_UPDATE_TEMPLATE_TAG,
     NEU_REQ_GET_TEMPLATE_TAG,
     NEU_RESP_GET_TEMPLATE_TAG,
+    NEU_REQ_INST_TEMPLATE,
 
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_NODES_STATE,
@@ -185,6 +186,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_UPDATE_TEMPLATE_TAG] = "REQ_RESP_UPDATE_TEMPLATE_TAG",
     [NEU_REQ_GET_TEMPLATE_TAG]     = "REQ_REQ_GET_TEMPLATE_TAG",
     [NEU_RESP_GET_TEMPLATE_TAG]    = "REQ_RESP_GET_TEMPLATE_TAG",
+    [NEU_REQ_INST_TEMPLATE]        = "NEU_REQ_INST_TEMPLATE",
 
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
@@ -543,6 +545,11 @@ typedef struct neu_req_get_template_tag {
     char group[NEU_GROUP_NAME_LEN];
     char name[NEU_TAG_NAME_LEN];
 } neu_req_get_template_tag_t;
+
+typedef struct {
+    char tmpl[NEU_TEMPLATE_NAME_LEN];
+    char node[NEU_NODE_NAME_LEN];
+} neu_req_inst_template_t;
 
 typedef struct neu_req_update_license {
 } neu_req_update_license_t;
