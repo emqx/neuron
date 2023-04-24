@@ -138,16 +138,17 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                       enum modbus_area area, uint16_t start_address,
                       uint16_t n_reg, uint16_t *response_size)
 {
-    static __thread uint8_t                 buf[16] = { 0 };
-    static __thread neu_protocol_pack_buf_t pbuf    = { 0 };
-    int                                     ret     = 0;
+    static __thread uint8_t                 buf[16]  = { 0 };
+    static __thread neu_protocol_pack_buf_t pbuf     = { 0 };
+    int                                     ret      = 0;
+    modbus_action_e                         m_action = MODBUS_ACTION_DEFAULT;
 
     neu_protocol_pack_buf_init(&pbuf, buf, sizeof(buf));
 
     if (stack->protocol == MODBUS_PROTOCOL_RTU) {
         modbus_crc_wrap(&pbuf);
     }
-    modbus_address_wrap(&pbuf, start_address, n_reg);
+    modbus_address_wrap(&pbuf, start_address, n_reg, m_action);
 
     switch (area) {
     case MODBUS_AREA_COIL:
@@ -196,7 +197,8 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
                        uint16_t n_reg, uint8_t *bytes, uint8_t n_byte,
                        uint16_t *response_size)
 {
-    static __thread neu_protocol_pack_buf_t pbuf = { 0 };
+    static __thread neu_protocol_pack_buf_t pbuf     = { 0 };
+    modbus_action_e                         m_action = MODBUS_ACTION_DEFAULT;
 
     memset(stack->buf, 0, stack->buf_size);
     neu_protocol_pack_buf_init(&pbuf, stack->buf, stack->buf_size);
@@ -208,16 +210,19 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
     switch (area) {
     case MODBUS_AREA_COIL:
         if (*bytes > 0) {
-            modbus_address_wrap(&pbuf, start_address, 0xff00);
+            modbus_address_wrap(&pbuf, start_address, 0xff00, m_action);
         } else {
-            modbus_address_wrap(&pbuf, start_address, 0);
+            modbus_address_wrap(&pbuf, start_address, 0, m_action);
         }
         modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_S_COIL);
         break;
     case MODBUS_AREA_HOLD_REGISTER:
-        modbus_data_wrap(&pbuf, n_byte, bytes);
-        modbus_address_wrap(&pbuf, start_address, n_reg);
-        modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_M_HOLD_REG);
+        m_action = MODBUS_ACTION_HOLD_REG_WRITE;
+        modbus_data_wrap(&pbuf, n_byte, bytes, m_action);
+        modbus_address_wrap(&pbuf, start_address, n_reg, m_action);
+        modbus_code_wrap(&pbuf, slave_id,
+                         n_reg > 1 ? MODBUS_WRITE_M_HOLD_REG
+                                   : MODBUS_WRITE_S_HOLD_REG);
         break;
     default:
         stack->write_resp(stack->ctx, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);

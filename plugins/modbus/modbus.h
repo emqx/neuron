@@ -34,6 +34,11 @@
 
 /* big-endian order */
 
+typedef enum modbus_action {
+    MODBUS_ACTION_DEFAULT        = 0,
+    MODBUS_ACTION_HOLD_REG_WRITE = 1
+} modbus_action_e;
+
 typedef enum modbus_function {
     MODBUS_READ_COIL        = 0x1,
     MODBUS_READ_INPUT       = 0x02,
@@ -78,7 +83,7 @@ struct modbus_address {
 } __attribute__((packed));
 
 void modbus_address_wrap(neu_protocol_pack_buf_t *buf, uint16_t start,
-                         uint16_t n_register);
+                         uint16_t n_register, enum modbus_action m_action);
 int  modbus_address_unwrap(neu_protocol_unpack_buf_t *buf,
                            struct modbus_address *    out_address);
 
@@ -88,7 +93,7 @@ struct modbus_data {
 } __attribute__((packed));
 
 void modbus_data_wrap(neu_protocol_pack_buf_t *buf, uint8_t n_byte,
-                      uint8_t *bytes);
+                      uint8_t *bytes, enum modbus_action action);
 int  modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
                         struct modbus_data *       out_data);
 

@@ -134,6 +134,7 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
         break;
     case MODBUS_WRITE_S_COIL:
     case MODBUS_WRITE_M_COIL:
+    case MODBUS_WRITE_S_HOLD_REG:
     case MODBUS_WRITE_M_HOLD_REG:
         modbus_write(&tcp_registers[code->slave_id - 1], code->function,
                      address, data, value);
@@ -214,12 +215,14 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
         break;
     case MODBUS_WRITE_S_COIL:
     case MODBUS_WRITE_M_COIL:
+    case MODBUS_WRITE_S_HOLD_REG: 
     case MODBUS_WRITE_M_HOLD_REG:
         nlog_info(
             "write register: slave: %d, function: %d, address: %d, n: %d, "
             "nbyte: %d\n",
             code->slave_id, code->function, ntohs(address->start_address),
-            ntohs(address->n_reg), data->n_byte);
+            code->function != MODBUS_WRITE_S_HOLD_REG ? ntohs(address->n_reg) : 1,
+            code->function != MODBUS_WRITE_S_HOLD_REG ? data->n_byte : 2);
         modbus_write(&tcp_registers[code->slave_id - 1], code->function,
                      address, data, value);
         *res_address = *address;
@@ -321,6 +324,14 @@ static void modbus_write(struct modbus_register *reg, uint8_t function,
                 reg->coil[ntohs(address->start_address) + i].value = 0;
             }
         }
+        break;
+    case MODBUS_WRITE_S_HOLD_REG:
+        reg->hold_register[ntohs(address->start_address)].value = 0;
+
+        reg->hold_register[ntohs(address->start_address)].value |=
+            *(uint8_t *) &((struct modbus_data *) &address->n_reg)[0] << 8;
+        reg->hold_register[ntohs(address->start_address)].value |=
+            *(uint8_t *) &((struct modbus_data *) &address->n_reg)[1];
         break;
     case MODBUS_WRITE_M_HOLD_REG:
         for (int i = 0; i < data->n_byte; i++) {

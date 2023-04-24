@@ -107,16 +107,24 @@ int modbus_code_unwrap(neu_protocol_unpack_buf_t *buf,
 }
 
 void modbus_address_wrap(neu_protocol_pack_buf_t *buf, uint16_t start,
-                         uint16_t n_register)
+                         uint16_t n_register, enum modbus_action action)
 {
-    assert(neu_protocol_pack_buf_unused_size(buf) >=
-           sizeof(struct modbus_address));
-    struct modbus_address *address =
-        (struct modbus_address *) neu_protocol_pack_buf(
-            buf, sizeof(struct modbus_address));
+    if (action == MODBUS_ACTION_HOLD_REG_WRITE && n_register == 1) {
+        assert(neu_protocol_pack_buf_unused_size(buf) >= sizeof(start));
+        uint16_t *address =
+            (uint16_t *) neu_protocol_pack_buf(buf, sizeof(start));
 
-    address->start_address = htons(start);
-    address->n_reg         = htons(n_register);
+        *address = htons(start);
+    } else {
+        assert(neu_protocol_pack_buf_unused_size(buf) >=
+               sizeof(struct modbus_address));
+        struct modbus_address *address =
+            (struct modbus_address *) neu_protocol_pack_buf(
+                buf, sizeof(struct modbus_address));
+
+        address->start_address = htons(start);
+        address->n_reg         = htons(n_register);
+    }
 }
 
 int modbus_address_unwrap(neu_protocol_unpack_buf_t *buf,
@@ -138,7 +146,7 @@ int modbus_address_unwrap(neu_protocol_unpack_buf_t *buf,
 }
 
 void modbus_data_wrap(neu_protocol_pack_buf_t *buf, uint8_t n_byte,
-                      uint8_t *bytes)
+                      uint8_t *bytes, enum modbus_action action)
 {
     assert(neu_protocol_pack_buf_unused_size(buf) >=
            sizeof(struct modbus_data) + n_byte);
@@ -146,10 +154,13 @@ void modbus_data_wrap(neu_protocol_pack_buf_t *buf, uint8_t n_byte,
 
     memcpy(data, bytes, n_byte);
 
-    struct modbus_data *mdata = (struct modbus_data *) neu_protocol_pack_buf(
-        buf, sizeof(struct modbus_data));
+    if (action == MODBUS_ACTION_DEFAULT || n_byte > 2) {
+        struct modbus_data *mdata =
+            (struct modbus_data *) neu_protocol_pack_buf(
+                buf, sizeof(struct modbus_data));
 
-    mdata->n_byte = n_byte;
+        mdata->n_byte = n_byte;
+    }
 }
 
 int modbus_data_unwrap(neu_protocol_unpack_buf_t *buf,
