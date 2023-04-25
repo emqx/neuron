@@ -54,6 +54,11 @@ typedef struct {
     char *hash;
 } neu_persist_user_info_t;
 
+typedef struct {
+    char *name;
+    char *plugin_name;
+} neu_persist_template_info_t;
+
 static inline void neu_persist_plugin_infos_free(UT_array *plugin_infos)
 {
     utarray_free(plugin_infos);
@@ -320,6 +325,35 @@ int neu_persister_load_user(const char *              user_name,
  * @return 0 on success, none-zero on failure
  */
 int neu_persister_delete_user(const char *user_name);
+
+/**
+ * Persist templates.
+ * @param name                      template name
+ * @param plugin                    plugin name
+ * @return 0 on success, non-zero on failure
+ */
+int neu_persister_store_template(const char *name, const char *plugin);
+
+/**
+ * Load template infos.
+ * @param[out] infos                used to return pointer to heap allocated
+ *                                  vector of neu_persist_template_info_t.
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_load_templates(UT_array **infos);
+
+/**
+ * Delete template.
+ * @param name                      template name
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_delete_template(const char *name);
+
+/**
+ * Delete all templates.
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_clear_templates();
 
 #ifdef __cplusplus
 }

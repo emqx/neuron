@@ -1233,3 +1233,80 @@ int neu_persister_delete_user(const char *user_name)
 {
     return execute_sql(global_db, "DELETE FROM users WHERE name=%Q", user_name);
 }
+
+int neu_persister_store_template(const char *name, const char *plugin)
+{
+    return execute_sql(global_db,
+                       "INSERT INTO templates (name, plugin_name) "
+                       "VALUES (%Q, %Q)",
+                       name, plugin);
+}
+
+static inline void
+neu_persist_template_info_fini(neu_persist_template_info_t *info)
+{
+    free(info->name);
+    free(info->plugin_name);
+}
+
+static UT_icd template_info_icd = {
+    sizeof(neu_persist_template_info_t),
+    NULL,
+    NULL,
+    (dtor_f *) neu_persist_template_info_fini,
+};
+
+int neu_persister_load_templates(UT_array **infos)
+{
+    int           rv    = 0;
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT name, plugin_name FROM templates;";
+
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    utarray_new(*infos, &template_info_icd);
+
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_template_info_t info = {};
+        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == name) {
+            break;
+        }
+
+        char *plugin_name = strdup((char *) sqlite3_column_text(stmt, 1));
+        if (NULL == plugin_name) {
+            free(name);
+            break;
+        }
+
+        info.name        = name;
+        info.plugin_name = plugin_name;
+        utarray_push_back(*infos, &info);
+
+        step = sqlite3_step(stmt);
+    }
+
+    if (SQLITE_DONE != step) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return rv;
+}
+
+int neu_persister_delete_template(const char *name)
+{
+    // rely on foreign key constraints to remove groups and tags
+    return execute_sql(global_db, "DELETE FROM templates WHERE name=%Q;", name);
+}
+
+int neu_persister_clear_templates()
+{
+    // rely on foreign key constraints to remove groups and tags
+    return execute_sql(global_db, "DELETE FROM templates");
+}
