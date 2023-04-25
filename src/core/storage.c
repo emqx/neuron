@@ -124,6 +124,41 @@ void manager_storage_inst_node(neu_manager_t *manager, const char *tmpl_name,
     }
 }
 
+void manager_storage_add_template(neu_manager_t *manager, const char *tmpl_name)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, tmpl_name);
+    if (NULL == tmpl) {
+        nlog_error("no template `%s` to fail", tmpl_name);
+        return;
+    }
+
+    int rv = neu_persister_store_template(tmpl_name, neu_template_plugin(tmpl));
+    if (0 != rv) {
+        nlog_error("failed to store template info");
+    }
+}
+
+void manager_storage_del_template(neu_manager_t *manager, const char *tmpl_name)
+{
+    (void) manager;
+
+    int rv = neu_persister_delete_template(tmpl_name);
+    if (0 != rv) {
+        nlog_error("failed to delete template info");
+    }
+}
+
+void manager_storage_clear_templates(neu_manager_t *manager)
+{
+    (void) manager;
+
+    int rv = neu_persister_clear_templates();
+    if (0 != rv) {
+        nlog_error("failed to clear templates info");
+    }
+}
+
 int manager_load_plugin(neu_manager_t *manager)
 {
     UT_array *plugin_infos = NULL;

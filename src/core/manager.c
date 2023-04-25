@@ -317,7 +317,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         e.error = neu_manager_add_template(manager, cmd);
         if (NEU_ERR_SUCCESS == e.error) {
-            // TODO: storage
+            manager_storage_add_template(manager, cmd->name);
         }
 
         neu_reqresp_template_fini(cmd);
@@ -332,12 +332,12 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (strlen(cmd->name) > 0) {
             e.error = neu_manager_del_template(manager, cmd->name);
+            if (NEU_ERR_SUCCESS == e.error) {
+                manager_storage_del_template(manager, cmd->name);
+            }
         } else {
             neu_manager_clear_template(manager);
-        }
-
-        if (NEU_ERR_SUCCESS == e.error) {
-            // TODO: storage
+            manager_storage_clear_templates(manager);
         }
 
         header->type = NEU_RESP_ERROR;
