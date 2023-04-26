@@ -1003,7 +1003,8 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
             break;
         }
 
-        if ((timestamp - value.timestamp) > timeout) {
+        if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
+            (timestamp - value.timestamp) > timeout) {
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
