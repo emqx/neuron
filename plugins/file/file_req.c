@@ -60,6 +60,7 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
             dvalue.value.i32 = NEU_ERR_FILE_NOT_EXIST;
             goto dvalue_result;
         }
+
         if ((f = fopen(tag->address, "rb+")) == NULL) {
             nlog_error("open file:%s", tag->address);
             dvalue.type      = NEU_TYPE_ERROR;
@@ -67,27 +68,31 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
             goto dvalue_result;
         }
 
+        fseek(f, 0, SEEK_END);
+        int size = ftell(f);
+        if (size >= length) {
+            dvalue.type      = NEU_TYPE_ERROR;
+            dvalue.value.i32 = NEU_ERR_FILE_TOO_LONG;
+
+            fclose(f);
+            goto dvalue_result;
+        }
+
+        fseek(f, 0, SEEK_SET);
         int ret = fread(buf, sizeof(char), length, f);
         if (ret == 0) {
             nlog_error("read file failed:%s", tag->address);
             dvalue.type      = NEU_TYPE_ERROR;
             dvalue.value.i32 = NEU_ERR_FILE_READ_FAILURE;
-            goto dvalue_result;
-        }
 
-        fseek(f, 0, SEEK_END);
-        int size = ftell(f);
-        if (size > length) {
-            dvalue.type      = NEU_TYPE_ERROR;
-            dvalue.value.i32 = NEU_ERR_FILE_TOO_LONG;
+            fclose(f);
             goto dvalue_result;
         }
 
         dvalue.type = NEU_TYPE_STRING;
         strncpy(dvalue.value.str, buf, strlen(buf));
-        fclose(f);
-
         rtt = 1;
+        fclose(f);
 
     dvalue_result:
         plugin->common.adapter_callbacks->driver.update(
