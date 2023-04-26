@@ -33,8 +33,8 @@
 #define METRIC_GLOBAL_TMPL                                                       \
     "# HELP os_info OS distro and kernel version\n"                              \
     "# TYPE os_info gauge\n"                                                     \
-    "os_info[version=\"%s\"] 0\n"                                                \
-    "os_info[kernel=\"%s\"] 0\n"                                                 \
+    "os_info{version=\"%s\"} 0\n"                                                \
+    "os_info{kernel=\"%s\"} 0\n"                                                 \
     "# HELP cpu_percent Total CPU utilisation percentage\n"                      \
     "# TYPE cpu_percent gauge\n"                                                 \
     "cpu_percent %u\n"                                                           \
