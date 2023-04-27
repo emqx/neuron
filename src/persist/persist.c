@@ -1051,6 +1051,30 @@ static UT_icd group_info_icd = {
     (dtor_f *) neu_persist_group_info_fini,
 };
 
+static int collect_group_info(sqlite3_stmt *stmt, UT_array **group_infos)
+{
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_persist_group_info_t info = {};
+        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
+        if (NULL == name) {
+            break;
+        }
+
+        info.name     = name;
+        info.interval = sqlite3_column_int(stmt, 1);
+        utarray_push_back(*group_infos, &info);
+
+        step = sqlite3_step(stmt);
+    }
+
+    if (SQLITE_DONE != step) {
+        return -1;
+    }
+
+    return 0;
+}
+
 int neu_persister_load_groups(const char *driver_name, UT_array **group_infos)
 {
     sqlite3_stmt *stmt = NULL;
@@ -1069,22 +1093,7 @@ int neu_persister_load_groups(const char *driver_name, UT_array **group_infos)
         goto error;
     }
 
-    int step = sqlite3_step(stmt);
-    while (SQLITE_ROW == step) {
-        neu_persist_group_info_t info = {};
-        char *name = strdup((char *) sqlite3_column_text(stmt, 0));
-        if (NULL == name) {
-            break;
-        }
-
-        info.name     = name;
-        info.interval = sqlite3_column_int(stmt, 1);
-        utarray_push_back(*group_infos, &info);
-
-        step = sqlite3_step(stmt);
-    }
-
-    if (SQLITE_DONE != step) {
+    if (0 != collect_group_info(stmt, group_infos)) {
         nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
         // do not set return code, return partial or empty result
     }
@@ -1309,4 +1318,66 @@ int neu_persister_clear_templates()
 {
     // rely on foreign key constraints to remove groups and tags
     return execute_sql(global_db, "DELETE FROM templates");
+}
+
+int neu_persister_store_template_group(const char *              tmpl_name,
+                                       neu_persist_group_info_t *group_info)
+{
+    return execute_sql(global_db,
+                       "INSERT INTO template_groups ("
+                       " tmpl_name, name, interval) VALUES (%Q, %Q, %u)",
+                       tmpl_name, group_info->name,
+                       (unsigned) group_info->interval);
+}
+
+int neu_persister_update_template_group(const char *              tmpl_name,
+                                        neu_persist_group_info_t *group_info)
+{
+    return execute_sql(
+        global_db,
+        "UPDATE template_groups SET interval=%i WHERE tmpl_name=%Q AND name=%Q",
+        group_info->interval, tmpl_name, group_info->name);
+}
+
+int neu_persister_load_template_groups(const char *tmpl_name,
+                                       UT_array ** group_infos)
+{
+    sqlite3_stmt *stmt = NULL;
+    const char *  query =
+        "SELECT name, interval FROM template_groups WHERE tmpl_name=?";
+
+    utarray_new(*group_infos, &group_info_icd);
+
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, tmpl_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, tmpl_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (0 != collect_group_info(stmt, group_infos)) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*group_infos);
+    *group_infos = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_delete_template_group(const char *tmpl_name,
+                                        const char *group_name)
+{
+    // rely on foreign key constraints to delete tags
+    return execute_sql(
+        global_db, "DELETE FROM template_groups WHERE tmpl_name=%Q AND name=%Q",
+        tmpl_name, group_name);
 }
