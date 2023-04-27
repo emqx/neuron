@@ -720,15 +720,85 @@ int neu_persister_store_tag(const char *driver_name, const char *group_name,
     return rv;
 }
 
+static int put_tags(const char *query, sqlite3_stmt *stmt,
+                    const neu_datatag_t *tags, size_t n)
+{
+    for (size_t i = 0; i < n; ++i) {
+        const neu_datatag_t *tag = &tags[i];
+
+        sqlite3_reset(stmt);
+
+        if (SQLITE_OK != sqlite3_bind_text(stmt, 3, tag->name, -1, NULL)) {
+            nlog_error("bind `%s` with name=`%s` fail: %s", query, tag->name,
+                       sqlite3_errmsg(global_db));
+            return -1;
+        }
+
+        if (SQLITE_OK != sqlite3_bind_text(stmt, 4, tag->address, -1, NULL)) {
+            nlog_error("bind `%s` with address=`%s` fail: %s", query,
+                       tag->address, sqlite3_errmsg(global_db));
+            return -1;
+        }
+
+        if (SQLITE_OK != sqlite3_bind_int(stmt, 5, tag->attribute)) {
+            nlog_error("bind `%s` with attribute=`%i` fail: %s", query,
+                       tag->attribute, sqlite3_errmsg(global_db));
+            return -1;
+        }
+
+        if (SQLITE_OK != sqlite3_bind_int(stmt, 6, tag->precision)) {
+            nlog_error("bind `%s` with precision=`%i` fail: %s", query,
+                       tag->precision, sqlite3_errmsg(global_db));
+            return -1;
+        }
+
+        if (SQLITE_OK != sqlite3_bind_int(stmt, 7, tag->type)) {
+            nlog_error("bind `%s` with type=`%i` fail: %s", query, tag->type,
+                       sqlite3_errmsg(global_db));
+            return -1;
+        }
+
+        if (SQLITE_OK != sqlite3_bind_double(stmt, 8, tag->decimal)) {
+            nlog_error("bind `%s` with decimal=`%f` fail: %s", query,
+                       tag->decimal, sqlite3_errmsg(global_db));
+            return -1;
+        }
+
+        if (SQLITE_OK !=
+            sqlite3_bind_text(stmt, 9, tag->description, -1, NULL)) {
+            nlog_error("bind `%s` with description=`%s` fail: %s", query,
+                       tag->description, sqlite3_errmsg(global_db));
+            return -1;
+        }
+
+        char *val_str = neu_tag_dump_static_value(tag);
+        if (SQLITE_OK != sqlite3_bind_text(stmt, 10, val_str, -1, NULL)) {
+            nlog_error("bind `%s` with value=`%s` fail: %s", query, val_str,
+                       sqlite3_errmsg(global_db));
+            free(val_str);
+            return -1;
+        }
+
+        if (SQLITE_DONE != sqlite3_step(stmt)) {
+            nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(global_db));
+            free(val_str);
+            return -1;
+        }
+
+        free(val_str);
+    }
+
+    return 0;
+}
+
 int neu_persister_store_tags(const char *driver_name, const char *group_name,
                              const neu_datatag_t *tags, size_t n)
 {
-    char *        val_str = NULL;
-    sqlite3_stmt *stmt    = NULL;
-    const char *  query   = "INSERT INTO tags ("
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "INSERT INTO tags ("
                         " driver_name, group_name, name, address, attribute,"
                         " precision, type, decimal, description, value"
-                        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
 
     if (SQLITE_OK != sqlite3_exec(global_db, "BEGIN", NULL, NULL, NULL)) {
         nlog_error("begin transaction fail: %s", sqlite3_errmsg(global_db));
@@ -740,80 +810,20 @@ int neu_persister_store_tags(const char *driver_name, const char *group_name,
         goto error;
     }
 
-    for (size_t i = 0; i < n; ++i) {
-        const neu_datatag_t *tag = &tags[i];
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
+        nlog_error("bind `%s` with driver_name=`%s` fail: %s", query,
+                   driver_name, sqlite3_errmsg(global_db));
+        goto error;
+    }
 
-        sqlite3_reset(stmt);
-        val_str = neu_tag_dump_static_value(tag);
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
+        nlog_error("bind `%s` with group_name=`%s` fail: %s", query, group_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
 
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 1, driver_name, -1, NULL)) {
-            nlog_error("bind `%s` with driver_name=`%s` fail: %s", query,
-                       driver_name, sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
-            nlog_error("bind `%s` with group_name=`%s` fail: %s", query,
-                       group_name, sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 3, tag->name, -1, NULL)) {
-            nlog_error("bind `%s` with name=`%s` fail: %s", query, tag->name,
-                       sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 4, tag->address, -1, NULL)) {
-            nlog_error("bind `%s` with address=`%s` fail: %s", query,
-                       tag->address, sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_int(stmt, 5, tag->attribute)) {
-            nlog_error("bind `%s` with attribute=`%i` fail: %s", query,
-                       tag->attribute, sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_int(stmt, 6, tag->precision)) {
-            nlog_error("bind `%s` with precision=`%i` fail: %s", query,
-                       tag->precision, sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_int(stmt, 7, tag->type)) {
-            nlog_error("bind `%s` with type=`%i` fail: %s", query, tag->type,
-                       sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_double(stmt, 8, tag->decimal)) {
-            nlog_error("bind `%s` with decimal=`%f` fail: %s", query,
-                       tag->decimal, sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK !=
-            sqlite3_bind_text(stmt, 9, tag->description, -1, NULL)) {
-            nlog_error("bind `%s` with description=`%s` fail: %s", query,
-                       tag->description, sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 10, val_str, -1, NULL)) {
-            nlog_error("bind `%s` with value=`%s` fail: %s", query, val_str,
-                       sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        if (SQLITE_DONE != sqlite3_step(stmt)) {
-            nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(global_db));
-            goto error;
-        }
-
-        free(val_str);
-        val_str = NULL;
+    if (0 != put_tags(query, stmt, tags, n)) {
+        goto error;
     }
 
     if (SQLITE_OK != sqlite3_exec(global_db, "COMMIT", NULL, NULL, NULL)) {
@@ -828,8 +838,36 @@ error:
     nlog_info("rollback transaction");
     sqlite3_exec(global_db, "ROLLBACK", NULL, NULL, NULL);
     sqlite3_finalize(stmt);
-    free(val_str);
     return NEU_ERR_EINTERNAL;
+}
+
+static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
+{
+    int step = sqlite3_step(stmt);
+    while (SQLITE_ROW == step) {
+        neu_datatag_t tag = {
+            .name        = (char *) sqlite3_column_text(stmt, 0),
+            .address     = (char *) sqlite3_column_text(stmt, 1),
+            .attribute   = sqlite3_column_int(stmt, 2),
+            .precision   = sqlite3_column_int64(stmt, 3),
+            .type        = sqlite3_column_int(stmt, 4),
+            .decimal     = sqlite3_column_double(stmt, 5),
+            .description = (char *) sqlite3_column_text(stmt, 6),
+        };
+        utarray_push_back(*tags, &tag);
+        if (neu_tag_attribute_test(&tag, NEU_ATTRIBUTE_STATIC)) {
+            neu_tag_load_static_value(utarray_back(*tags),
+                                      (char *) sqlite3_column_text(stmt, 7));
+        }
+
+        step = sqlite3_step(stmt);
+    }
+
+    if (SQLITE_DONE != step) {
+        return -1;
+    }
+
+    return 0;
 }
 
 int neu_persister_load_tags(const char *driver_name, const char *group_name,
@@ -860,27 +898,7 @@ int neu_persister_load_tags(const char *driver_name, const char *group_name,
         goto error;
     }
 
-    int step = sqlite3_step(stmt);
-    while (SQLITE_ROW == step) {
-        neu_datatag_t tag = {
-            .name        = (char *) sqlite3_column_text(stmt, 0),
-            .address     = (char *) sqlite3_column_text(stmt, 1),
-            .attribute   = sqlite3_column_int(stmt, 2),
-            .precision   = sqlite3_column_int64(stmt, 3),
-            .type        = sqlite3_column_int(stmt, 4),
-            .decimal     = sqlite3_column_double(stmt, 5),
-            .description = (char *) sqlite3_column_text(stmt, 6),
-        };
-        utarray_push_back(*tags, &tag);
-        if (neu_tag_attribute_test(&tag, NEU_ATTRIBUTE_STATIC)) {
-            neu_tag_load_static_value(utarray_back(*tags),
-                                      (char *) sqlite3_column_text(stmt, 7));
-        }
-
-        step = sqlite3_step(stmt);
-    }
-
-    if (SQLITE_DONE != step) {
+    if (0 != collect_tag_info(stmt, tags)) {
         nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
         // do not set return code, return partial or empty result
     }
@@ -1380,4 +1398,210 @@ int neu_persister_delete_template_group(const char *tmpl_name,
     return execute_sql(
         global_db, "DELETE FROM template_groups WHERE tmpl_name=%Q AND name=%Q",
         tmpl_name, group_name);
+}
+
+int neu_persister_store_template_tags(const char *         tmpl_name,
+                                      const char *         group_name,
+                                      const neu_datatag_t *tags, size_t n)
+{
+    char *        val_str = NULL;
+    sqlite3_stmt *stmt    = NULL;
+    const char *  query   = "INSERT INTO template_tags ("
+                        " tmpl_name, group_name, name, address, attribute,"
+                        " precision, type, decimal, description, value"
+                        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
+
+    if (SQLITE_OK != sqlite3_exec(global_db, "BEGIN", NULL, NULL, NULL)) {
+        nlog_error("begin transaction fail: %s", sqlite3_errmsg(global_db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, tmpl_name, -1, NULL)) {
+        nlog_error("bind `%s` with tmpl_name=`%s` fail: %s", query, tmpl_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
+        nlog_error("bind `%s` with group_name=`%s` fail: %s", query, group_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (0 != put_tags(query, stmt, tags, n)) {
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_exec(global_db, "COMMIT", NULL, NULL, NULL)) {
+        nlog_error("commit transaction fail: %s", sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    nlog_info("rollback transaction");
+    sqlite3_exec(global_db, "ROLLBACK", NULL, NULL, NULL);
+    sqlite3_finalize(stmt);
+    free(val_str);
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_load_template_tags(const char *tmpl_name,
+                                     const char *group_name, UT_array **tags)
+{
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "SELECT name, address, attribute, precision, type, "
+                        "decimal, description, value "
+                        "FROM tags WHERE tmpl_name=? AND group_name=? "
+                        "ORDER BY rowid ASC";
+
+    utarray_new(*tags, neu_tag_get_icd());
+
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, tmpl_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, tmpl_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
+        nlog_error("bind `%s` with `%s` fail: %s", query, group_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (0 != collect_tag_info(stmt, tags)) {
+        nlog_warn("query `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        // do not set return code, return partial or empty result
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    utarray_free(*tags);
+    *tags = NULL;
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_update_template_tags(const char *         tmpl_name,
+                                       const char *         group_name,
+                                       const neu_datatag_t *tags, size_t n)
+{
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "UPDATE template_tags SET"
+                        "  address=?4, attribute=?5, precision=?6, type=?7,"
+                        "  decimal=?8, description=?9, value=?10 "
+                        "WHERE tmpl_name=?1 AND group_name=?2 AND name=?3";
+
+    if (SQLITE_OK != sqlite3_exec(global_db, "BEGIN", NULL, NULL, NULL)) {
+        nlog_error("begin transaction fail: %s", sqlite3_errmsg(global_db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, tmpl_name, -1, NULL)) {
+        nlog_error("bind `%s` with tmpl_name=`%s` fail: %s", query, tmpl_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
+        nlog_error("bind `%s` with group_name=`%s` fail: %s", query, group_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (0 != put_tags(query, stmt, tags, n)) {
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_exec(global_db, "COMMIT", NULL, NULL, NULL)) {
+        nlog_error("commit transaction fail: %s", sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    nlog_info("rollback transaction");
+    sqlite3_exec(global_db, "ROLLBACK", NULL, NULL, NULL);
+    sqlite3_finalize(stmt);
+    return NEU_ERR_EINTERNAL;
+}
+
+int neu_persister_delete_template_tags(const char *       tmpl_name,
+                                       const char *       group_name,
+                                       const char *const *tags, size_t n_tag)
+{
+    sqlite3_stmt *stmt  = NULL;
+    const char *  query = "DELETE FROM template_tags WHERE tmpl_name=? AND "
+                        "group_name=? AND name=?";
+
+    if (SQLITE_OK != sqlite3_exec(global_db, "BEGIN", NULL, NULL, NULL)) {
+        nlog_error("begin transaction fail: %s", sqlite3_errmsg(global_db));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (SQLITE_OK != sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL)) {
+        nlog_error("prepare `%s` fail: %s", query, sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 1, tmpl_name, -1, NULL)) {
+        nlog_error("bind `%s` with tmpl_name=`%s` fail: %s", query, tmpl_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    if (SQLITE_OK != sqlite3_bind_text(stmt, 2, group_name, -1, NULL)) {
+        nlog_error("bind `%s` with group_name=`%s` fail: %s", query, group_name,
+                   sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    for (size_t i = 0; i < n_tag; ++i) {
+        sqlite3_reset(stmt);
+
+        if (SQLITE_OK != sqlite3_bind_text(stmt, 3, tags[i], -1, NULL)) {
+            nlog_error("bind `%s` with tmpl_name=`%s` fail: %s", query,
+                       tmpl_name, sqlite3_errmsg(global_db));
+            goto error;
+        }
+
+        if (SQLITE_DONE != sqlite3_step(stmt)) {
+            nlog_error("sqlite3_step fail: %s", sqlite3_errmsg(global_db));
+            goto error;
+        }
+    }
+
+    if (SQLITE_OK != sqlite3_exec(global_db, "COMMIT", NULL, NULL, NULL)) {
+        nlog_error("commit transaction fail: %s", sqlite3_errmsg(global_db));
+        goto error;
+    }
+
+    sqlite3_finalize(stmt);
+    return 0;
+
+error:
+    nlog_info("rollback transaction");
+    sqlite3_exec(global_db, "ROLLBACK", NULL, NULL, NULL);
+    sqlite3_finalize(stmt);
+    return NEU_ERR_EINTERNAL;
 }
