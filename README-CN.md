@@ -18,17 +18,17 @@ Neuron 是一款开源的、轻量级工业协议网关软件，支持数十种�
 以下是 Neuron 的一些重要特性：
 
 - 具有实时能力的边缘原生应用程序可以利用边缘端的低延迟网络。
-- 松耦合模块化 [架构设计](https://neugates.io/docs/en/latest/architecture/architecture.html) 通过可插拔模块扩展更多功能服务。
+- 松耦合模块化 [架构设计](https://neugates.io/docs/zh/latest/introduction/architecture/architecture.html) 通过可插拔模块扩展更多功能服务。
 - 支持可以在运行时更新设备和应用程序模块的热插件。
-- 支持多种工业设备协议，包括 Modbus、OPCUA、Ethernet/IP、IEC104、BACnet 等 [更多协议](https://neugates.io/docs/en/latest/introduction/module-list/module-list.html)。
+- 支持多种工业设备协议，包括 Modbus、OPCUA、Ethernet/IP、IEC104、BACnet 等 [更多协议](https://neugates.io/docs/zh/latest/configuration/south-devices/south-devices.html)。
 - 支持同时连接大量不同协议的工业设备。
 - 结合[eKuiper](https://www.lfedge.org/projects/ekuiper)提供的规则引擎功能，快速实现基于规则的设备控制或 AI/ML 分析。
-- 通过 [SparkplugB](https://neugates.io/docs/en/latest/use-cases/use_cases.html) 解决方案支持对工业应用程序的数据访问，例如 MES 或 ERP、SCADA、historian 和数据分析软件。
+- 通过 [SparkplugB](https://neugates.io/docs/zh/latest/use-cases/use_cases.html#mqtt-sparkplugb-%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88) 解决方案支持对工业应用程序的数据访问，例如 MES 或 ERP、SCADA、historian 和数据分析软件。
 - 具有非常低的内存占用，小于 10M 的内存占用和 CPU 使用率，可以在 ARM、x86 和 RISC-V 等资源有限的硬件上运行。
 - 支持在本地安装可执行文件或部署在容器化环境中。
-- 控制工业设备，通过[API](https://neugates.io/docs/en/latest/http-api/configuration.html)和[MQTT](https://neugates.io/docs/en/latest/north-apps/mqtt/api.html) 服务更改参数和数据标签。
+- 控制工业设备，通过[HTTP API](https://neugates.io/docs/zh/latest/http-api/http-api.html)和[MQTT API](https://neugates.io/docs/en/latest/north-apps/mqtt/api.html) 服务更改参数和数据标签。
 - 与其他 EMQ 产品高度集成，包括  [EMQX](https://www.emqx.com/zh/products/emqx)、[NanoMQ](https://nanomq.io/zh)、[eKuiper](https://ekuiper.org/zh)。
-- 核心框架和 Modbus、MQTT 和 eKuiper 的代码在 LGPLv3 的许可下开源。商业模块需要 [EMQ 许可证](https://neugates.io/docs/en/latest/introduction/license-describe.html) 才能运行。
+- 核心框架和 Modbus、MQTT 和 eKuiper 的代码在 LGPLv3 的许可下开源。商业模块需要 [EMQ 许可证](https://neugates.io/docs/zh/latest/introduction/license-describe.html) 才能运行。
 
 获取更多信息，请访问 [Neuron 官网](https://neugates.io/zh)。
 
@@ -40,7 +40,7 @@ Neuron 是一款开源的、轻量级工业协议网关软件，支持数十种�
 docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=true --restart=always emqx/neuron:latest
 ```
 
-接下来请参考 [入门指南](https://neugates.io/docs/en/latest/quick-start/installation.html) 开启您的 Neuron 之旅。
+接下来请参考 [快速入门](https://neugates.io/docs/zh/latest/quick-start/hardware-specifications.html) 开启您的 Neuron 之旅。
 
 > **提示**
 >
@@ -52,7 +52,7 @@ docker run -d --name neuron -p 7000:7000 -p 7001:7001 -p 9081:9081 --privileged=
 
 您可以从 [neugates.io/zh/downloads?os=Linux](https://neugates.io/zh/downloads?os=Linux) 下载不同格式的 Neuron 安装包进行手动安装。
 
-也可以直接访问 [Neuron 安装文档](https://neugates.io/docs/en/latest/quick-start/installation.html) 查看不同安装方式的操作步骤。
+也可以直接访问 [Neuron 安装文档](https://neugates.io/docs/zh/latest/installation/installation.html) 查看不同安装方式的操作步骤。
 
 ## 文档
 
