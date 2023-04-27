@@ -36,6 +36,12 @@ void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
 void manager_storage_inst_node(neu_manager_t *manager, const char *tmpl_name,
                                const char *node);
 
+void manager_storage_add_template(neu_manager_t *manager,
+                                  const char *   tmpl_name);
+void manager_storage_del_template(neu_manager_t *manager,
+                                  const char *   tmpl_name);
+void manager_storage_clear_templates(neu_manager_t *manager);
+
 int manager_load_plugin(neu_manager_t *manager);
 int manager_load_node(neu_manager_t *manager);
 int manager_load_subscribe(neu_manager_t *manager);
