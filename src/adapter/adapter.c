@@ -1150,6 +1150,18 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_RESP_GET_TEMPLATES:
         data_size = sizeof(neu_resp_get_templates_t);
         break;
+    case NEU_REQ_ADD_TEMPLATE_GROUP:
+        data_size = sizeof(neu_req_add_template_group_t);
+        break;
+    case NEU_REQ_DEL_TEMPLATE_GROUP:
+        data_size = sizeof(neu_req_del_template_group_t);
+        break;
+    case NEU_REQ_UPDATE_TEMPLATE_GROUP:
+        data_size = sizeof(neu_req_update_template_group_t);
+        break;
+    case NEU_REQ_GET_TEMPLATE_GROUP:
+        data_size = sizeof(neu_req_get_template_group_t);
+        break;
     case NEU_REQ_ADD_TEMPLATE_TAG:
         data_size = sizeof(neu_req_add_template_tag_t);
         break;
