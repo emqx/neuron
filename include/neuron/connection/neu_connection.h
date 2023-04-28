@@ -30,6 +30,7 @@ typedef enum neu_conn_type {
     NEU_CONN_TCP_CLIENT,
     NEU_CONN_UDP,
     NEU_CONN_TTY_CLIENT,
+    NEU_CONN_UDP_TO,
 } neu_conn_type_e;
 
 typedef enum neu_conn_tty_baud {
@@ -102,6 +103,12 @@ typedef struct neu_conn_param {
             uint16_t dst_port;
             uint16_t timeout; // millisecond
         } udp;
+
+        struct {
+            char *   src_ip;
+            uint16_t src_port;
+            uint16_t timeout; // millisecond
+        } udpto;
 
         struct {
             char *                device;
@@ -231,6 +238,8 @@ int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd);
  * less than or equal to 0 fails.
  */
 ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len);
+ssize_t neu_conn_udp_sendto(neu_conn_t *conn, uint8_t *buf, ssize_t len,
+                            void *dst);
 
 /**
  * @brief Receive data via connection read.
@@ -242,6 +251,8 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len);
  * received, less than or equal to 0 fails.
  */
 ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len);
+ssize_t neu_conn_udp_recvfrom(neu_conn_t *conn, uint8_t *buf, ssize_t len,
+                              void *src);
 
 /**
  * @brief Specify the client to send data.
