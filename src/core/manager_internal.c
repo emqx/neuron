@@ -229,6 +229,30 @@ int neu_manager_get_templates(neu_manager_t *           manager,
     return 0;
 }
 
+int neu_manager_add_template_group(neu_manager_t *               manager,
+                                   neu_req_add_template_group_t *req)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, req->tmpl);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    return neu_template_add_group(tmpl, req->group, req->interval);
+}
+
+int neu_manager_update_template_group(neu_manager_t *                  manager,
+                                      neu_req_update_template_group_t *req)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, req->tmpl);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    return neu_template_update_group(tmpl, req->group, req->interval);
+}
+
 int neu_manager_add_template_tags(neu_manager_t *             manager,
                                   neu_req_add_template_tag_t *req,
                                   uint16_t *                  index_p)

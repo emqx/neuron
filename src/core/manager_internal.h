@@ -65,6 +65,10 @@ int  neu_manager_get_template(neu_manager_t *manager, const char *name,
                               neu_resp_get_template_t *resp);
 int  neu_manager_get_templates(neu_manager_t *           manager,
                                neu_resp_get_templates_t *resp);
+int  neu_manager_add_template_group(neu_manager_t *               manager,
+                                    neu_req_add_template_group_t *req);
+int  neu_manager_update_template_group(neu_manager_t *                  manager,
+                                       neu_req_update_template_group_t *req);
 int  neu_manager_add_template_tags(neu_manager_t *             manager,
                                    neu_req_add_template_tag_t *req,
                                    uint16_t *                  index_p);
