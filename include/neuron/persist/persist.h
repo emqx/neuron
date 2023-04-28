@@ -355,6 +355,90 @@ int neu_persister_delete_template(const char *name);
  */
 int neu_persister_clear_templates();
 
+/**
+ * Persist template group.
+ * @param tmpl_name                 template name.
+ * @param group_info                group info to persist.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_store_template_group(const char *              tmpl_name,
+                                       neu_persist_group_info_t *group_info);
+
+/**
+ * Update template group.
+ * @param tmpl_name                 template name.
+ * @param group_info                group info to persist.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_update_template_group(const char *              tmpl_name,
+                                        neu_persist_group_info_t *group_info);
+
+/**
+ * Load all group infos of a template.
+ * @param tmpl_name                 template name.
+ * @param[out] group_infos          used to return pointer to heap allocated
+ *                                  vector of neu_persist_group_info_t.
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_template_groups(const char *tmpl_name,
+                                       UT_array ** group_infos);
+
+/**
+ * Delete template group.
+ * @param tmpl_name                 template name.
+ * @param group_name                name of the group.
+ * @return 0 on success, none-zero on failure
+ */
+int neu_persister_delete_template_group(const char *tmpl_name,
+                                        const char *group_name);
+
+/**
+ * Persist template tags.
+ * @param tmpl_name                 name of the template
+ * @param group_name                name of the group
+ * @param tags                      the tags to store
+ * @param n                         the number of tags
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_store_template_tags(const char *         tmpl_name,
+                                      const char *         group_name,
+                                      const neu_datatag_t *tags, size_t n);
+
+/**
+ * Load template tag infos.
+ * @param tmpl_name                 name of the template
+ * @param group_name                name of the group
+ * @param[out] tag_infos            used to return pointer to heap allocated
+ *                                  vector of neu_datatag_t
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_template_tags(const char *tmpl_name,
+                                     const char *group_name,
+                                     UT_array ** tag_infos);
+
+/**
+ * Update template tags.
+ * @param tmpl_name                 name of the template
+ * @param group_name                name of the group
+ * @param tags                      the tags to store
+ * @param n                         the number of tags
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_update_template_tags(const char *         tmpl_name,
+                                       const char *         group_name,
+                                       const neu_datatag_t *tags, size_t n);
+
+/**
+ * Delete template tags.
+ * @param tmpl_name                 name of the template
+ * @param group_name                name of the group
+ * @param tag_name                  name of the tag
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_delete_template_tags(const char *       tmpl_name,
+                                       const char *       group_name,
+                                       const char *const *tags, size_t n_tag);
+
 #ifdef __cplusplus
 }
 #endif

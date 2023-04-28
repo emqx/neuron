@@ -41,6 +41,23 @@ void manager_storage_add_template(neu_manager_t *manager,
 void manager_storage_del_template(neu_manager_t *manager,
                                   const char *   tmpl_name);
 void manager_storage_clear_templates(neu_manager_t *manager);
+void manager_storage_add_template_group(const char *tmpl, const char *group,
+                                        uint32_t interval);
+void manager_storage_update_template_group(const char *tmpl, const char *group,
+                                           uint32_t interval);
+void manager_storage_del_template_group(const char *tmpl, const char *group);
+void manager_storage_add_template_tag(const char *tmpl, const char *group,
+                                      const neu_datatag_t *tag);
+void manager_storage_add_template_tags(const char *tmpl, const char *group,
+                                       const neu_datatag_t *tags, size_t n);
+void manager_storage_update_template_tag(const char *tmpl, const char *group,
+                                         const neu_datatag_t *tag);
+void manager_storage_update_template_tags(const char *tmpl, const char *group,
+                                          const neu_datatag_t *tags, size_t n);
+void manager_storage_del_template_tag(const char *tmpl, const char *group,
+                                      const char *tag);
+void manager_storage_del_template_tags(const char *tmpl, const char *group,
+                                       const char *const *tags, size_t n);
 
 int manager_load_plugin(neu_manager_t *manager);
 int manager_load_node(neu_manager_t *manager);
