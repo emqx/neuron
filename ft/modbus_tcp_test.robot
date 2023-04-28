@@ -25,6 +25,12 @@ ${hold_int32}     {"name": "hold_int32", "address": "1!400003", "attribute": ${T
 ${hold_uint32}    {"name": "hold_uint32", "address": "1!400015", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_UINT32}}
 ${hold_float}     {"name": "hold_float", "address": "1!400017", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_FLOAT}}
 ${hold_string}    {"name": "hold_string", "address": "1!400020.10", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_STRING}}
+${hold_int16_s}     {"name": "hold_int16_s", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_INT16}, "value": 1}
+${hold_uint16_s}    {"name": "hold_uint16_s", "address": "1!400002", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_UINT16}, "value": 1}
+${hold_int32_s}     {"name": "hold_int32_s", "address": "1!400003", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_INT32}, "value": 1}
+${hold_uint32_s}    {"name": "hold_uint32_s", "address": "1!400015", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_UINT32}, "value": 1}
+${hold_float_s}     {"name": "hold_float_s", "address": "1!400017", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_FLOAT}, "value": 1.0}
+${hold_string_s}    {"name": "hold_string_s", "address": "1!400020.10", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_STRING}, "value": "a"}
 
 ${coil_bit_1}    {"name": "coil_bit_1", "address": "1!000001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
 ${coil_bit_2}    {"name": "coil_bit_2", "address": "1!000002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
@@ -49,9 +55,19 @@ ${input_register_string}    {"name": "input_register_string", "address": "1!3012
 ${hold_int16_address_update} 	{"name": "hold_int16", "address": "1!400100", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}}
 ${hold_int16_type_update} 		{"name": "hold_int16", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT32}}
 
-${input_bit_1_name_wrong}   	  {"name": "input_bit", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
+${input_bit_1_name_wrong}   	    {"name": "input_bit", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}
 ${input_bit_1_attribute_unmatch}    {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
-${input_bit_1_type_unmatch}   	  {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
+${input_bit_1_type_unmatch}   	    {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
+
+${hold_int16_decimal}     {"name": "hold_int16_decimal", "address": "1!400003", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}, "decimal": 0.1}
+${hold_uint16_decimal}    {"name": "hold_uint16_decimal", "address": "1!400002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_UINT16}, "decimal": 0.1}
+${hold_int32_decimal}     {"name": "hold_int32_decimal", "address": "1!400003", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT32}, "decimal": 0.1}
+${hold_uint32_decimal}    {"name": "hold_uint32_decimal", "address": "1!400015", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_UINT32}, "decimal": 0.1}
+${hold_float_decimal}     {"name": "hold_float_decimal", "address": "1!400017", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_FLOAT}, "decimal": 0.1}
+${hold_double_decimal}    {"name": "hold_double_decimal", "address": "1!400027", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_DOUBLE}, "decimal": 0.1}
+
+${hold_float_precision}      {"name": "hold_float_precision", "address": "1!400030", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_FLOAT}, "precision": 2}
+${hold_double_precision}     {"name": "hold_double_precision", "address": "1!400040", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_DOUBLE}, "precision": 2}
 
 *** Test Cases ***
 Set a node with right settings, it should be success.
@@ -64,12 +80,18 @@ Set a node with wrong settings, it should be failure.
 
 Set tags with multiple address and types and attribute, it should be success.
 	[Template]	Add a ${tag} with right address and type and attribute from ${node}, it will be success.
-	${hold_int16}	${modbus_tcp_node}
-	${hold_uint16}	${modbus_tcp_node}
-	${hold_int32}	${modbus_tcp_node}
-	${hold_uint32}	${modbus_tcp_node}
-	${hold_float}	${modbus_tcp_node}
-	${hold_string}	${modbus_tcp_node}
+	${hold_int16}	  ${modbus_tcp_node}
+	${hold_uint16}	  ${modbus_tcp_node}
+	${hold_int32}	  ${modbus_tcp_node}
+	${hold_uint32}	  ${modbus_tcp_node}
+	${hold_float}	  ${modbus_tcp_node}
+	${hold_string}	  ${modbus_tcp_node}
+	${hold_int16_s}	  ${modbus_tcp_node}
+	${hold_uint16_s}  ${modbus_tcp_node}
+	${hold_int32_s}	  ${modbus_tcp_node}
+	${hold_uint32_s}  ${modbus_tcp_node}
+	${hold_float_s}	  ${modbus_tcp_node}
+	${hold_string_s}  ${modbus_tcp_node}
 
 	${coil_bit_1}	${modbus_tcp_node}
 	${coil_bit_2}	${modbus_tcp_node}
@@ -77,11 +99,11 @@ Set tags with multiple address and types and attribute, it should be success.
 	${coil_bit_4}	${modbus_tcp_node}
 	${coil_bit_5}	${modbus_tcp_node}
 
-	${input_register_int16}	${modbus_tcp_node}
+	${input_register_int16}	    ${modbus_tcp_node}
 	${input_register_uint16}	${modbus_tcp_node}
-	${input_register_int32}	${modbus_tcp_node}
+	${input_register_int32}	    ${modbus_tcp_node}
 	${input_register_uint32}	${modbus_tcp_node}
-	${input_register_float}	${modbus_tcp_node}
+	${input_register_float}	    ${modbus_tcp_node}
 	${input_register_string}	${modbus_tcp_node}
 
 	${input_bit_1}	${modbus_tcp_node}
@@ -92,8 +114,8 @@ Set tags with multiple address and types and attribute, it should be success.
 
 Set tags with unmatch address, type or attribute, it should be failure.
 	[Template]	Set a ${tag} with unmatch address, type or attribute from ${node}, it will be failure and return ${resp_status} and ${error_code}.
-	${input_bit_1_type_unmatch}	${modbus_tcp_node}	200	${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
-	${input_bit_1_attribute_unmatch}	${modbus_tcp_node}	200	${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}	
+	${input_bit_1_type_unmatch}	        ${modbus_tcp_node}	200	 ${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
+	${input_bit_1_attribute_unmatch}	${modbus_tcp_node}	200	 ${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}	
 	
 Write and Read all type tag with same slave id in hold register and coil, it should be success.
 	[Template]	Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
@@ -143,13 +165,41 @@ Write and read a tag with same name but different address that in different grou
 Update a tag with right address and types and attribute, it will be success
 	[Template]	Update a ${tag} by a ${tag_update} named ${tag_name} from ${node} , it can read and write, using ${check} to check the ${value}, it will be success.
 	${hold_int16}	${hold_int16_address_update}	hold_int16	${modbus_tcp_node}	Compare Tag Value As Int  120
-	${hold_int16}	${hold_int16_type_update}	hold_int16	${modbus_tcp_node}	Compare Tag Value As Int  120
+	${hold_int16}	${hold_int16_type_update}	    hold_int16	${modbus_tcp_node}	Compare Tag Value As Int  120
+
+Add a tag with decimal, it should return success
+	[Template]	Add a ${tag} with right address and type and attribute from ${node}, it will be success.
+	${hold_int16_decimal}	${modbus_tcp_node}
+	${hold_uint16_decimal}	${modbus_tcp_node}
+	${hold_int32_decimal}	${modbus_tcp_node}
+	${hold_uint32_decimal}	${modbus_tcp_node}
+	${hold_float_decimal}	${modbus_tcp_node}
+	${hold_double_decimal}	${modbus_tcp_node}
+
+Write and read a value to a tag with decimal, it should return success	
+	[Template]	Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
+	${hold_int16_decimal}     hold_int16_decimal     ${modbus_tcp_node}	  Compare Tag Value As Int        120
+	${hold_uint16_decimal}    hold_uint16_decimal    ${modbus_tcp_node}	  Compare Tag Value As Int        120
+    ${hold_int32_decimal}     hold_int32_decimal     ${modbus_tcp_node}	  Compare Tag Value As Int        120
+	${hold_uint32_decimal}    hold_uint32_decimal    ${modbus_tcp_node}	  Compare Tag Value As Int        120
+	${hold_float_decimal}     hold_float_decimal     ${modbus_tcp_node}	  Compare Tag Value As Float      120.5
+	${hold_double_decimal}    hold_double_decimal    ${modbus_tcp_node}	  Compare Tag Value As Float      120.5
+
+Add a tag with precision, it should return success
+	[Template]	Add a ${tag} with right address and type and attribute from ${node}, it will be success.
+	${hold_float_precision}	    ${modbus_tcp_node}
+	${hold_double_precision}	${modbus_tcp_node}
+
+Write and read a value to a tag with precision, it should return success	
+	[Template]	Write and Read a ${tag} named ${tag_name} from ${node}, using ${check} to check the ${value}, it will be success.
+	${hold_float_precision}     hold_float_precision     ${modbus_tcp_node}	Compare Tag Value As Float        120.5
+	${hold_double_precision}    hold_double_precision    ${modbus_tcp_node}	Compare Tag Value As Float        1111111111111111111111111111111111111111.1
 
 Update a tag with unmatch address and types and attribute, it should be failure.
 	[Template]	Update a ${tag} by a ${tag_update} with the unmatch settings from ${node} , it will be failure and return ${resp_status} and ${error_code}.
-	${input_bit_1}	${input_bit_1_attribute_unmatch}	${modbus_tcp_node}	200	${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
-	${input_bit_1}	${input_bit_1_type_unmatch}	${modbus_tcp_node}	200	${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
-	${input_bit_1}	${input_bit_1_name_wrong}	${modbus_tcp_node}	200	${NEU_ERR_TAG_NOT_EXIST}
+	${input_bit_1}	${input_bit_1_attribute_unmatch}	${modbus_tcp_node}	200	 ${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
+	${input_bit_1}	${input_bit_1_type_unmatch}	        ${modbus_tcp_node}	200	 ${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
+	${input_bit_1}	${input_bit_1_name_wrong}	        ${modbus_tcp_node}	200	 ${NEU_ERR_TAG_NOT_EXIST}
 
 Write a value to a tag that don't exit in plc or neuron, it will be failure.
 	[Template]	Write a ${value} to a ${tag} with named ${tag_name} that don't exist in neuron or plc from ${node}, it will be failure.
