@@ -438,6 +438,25 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &e);
         break;
     }
+    case NEU_REQ_GET_TEMPLATE_GROUP: {
+        neu_req_get_template_group_t *cmd =
+            (neu_req_get_template_group_t *) &header[1];
+        neu_resp_error_t     e    = { 0 };
+        neu_resp_get_group_t resp = { 0 };
+
+        neu_msg_exchange(header);
+
+        e.error = neu_manager_get_template_group(manager, cmd, &resp.groups);
+        if (NEU_ERR_SUCCESS != e.error) {
+            header->type = NEU_RESP_ERROR;
+            reply(manager, header, &e);
+            break;
+        }
+
+        header->type = NEU_RESP_GET_GROUP;
+        reply(manager, header, &resp);
+        break;
+    }
     case NEU_REQ_ADD_TEMPLATE_TAG: {
         neu_req_add_template_tag_t *cmd =
             (neu_req_add_template_tag_t *) &header[1];

@@ -265,6 +265,47 @@ int neu_manager_del_template_group(neu_manager_t *               manager,
     return neu_template_del_group(tmpl, req->group);
 }
 
+static int accumulate_group_info(neu_group_t *grp, void *data)
+{
+    UT_array **           vec  = data;
+    neu_resp_group_info_t info = { 0 };
+
+    info.interval  = neu_group_get_interval(grp);
+    info.tag_count = neu_group_tag_size(grp);
+    strncpy(info.name, neu_group_get_name(grp), sizeof(info.name));
+
+    utarray_push_back(*vec, &info);
+    return 0;
+}
+
+int neu_manager_get_template_group(neu_manager_t *               manager,
+                                   neu_req_get_template_group_t *req,
+                                   UT_array **                   group_info_p)
+{
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, req->tmpl);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
+    }
+
+    UT_array *vec = NULL;
+    UT_icd    icd = { sizeof(neu_resp_group_info_t), NULL, NULL, NULL };
+
+    utarray_new(vec, &icd);
+    if (NULL == vec) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    int ret = neu_template_for_each_group(tmpl, accumulate_group_info, &vec);
+    if (0 == ret) {
+        *group_info_p = vec;
+    } else {
+        utarray_free(vec);
+    }
+
+    return ret;
+}
+
 int neu_manager_add_template_tags(neu_manager_t *             manager,
                                   neu_req_add_template_tag_t *req,
                                   uint16_t *                  index_p)

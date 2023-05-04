@@ -573,3 +573,31 @@ void handle_instantiate_template(nng_aio *aio)
             }
         })
 }
+
+void handle_get_template_group(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_VALIDATE_JWT(aio);
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_GET_TEMPLATE_GROUP,
+    };
+
+    neu_req_get_template_group_t cmd = { 0 };
+    int ret = neu_http_get_param_str(aio, "name", cmd.tmpl, sizeof(cmd.tmpl));
+    if (ret <= 0 || (size_t) ret >= sizeof(cmd.tmpl)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+        });
+        return;
+    }
+
+    ret = neu_plugin_op(plugin, header, &cmd);
+    if (ret != 0) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+        });
+    }
+}
