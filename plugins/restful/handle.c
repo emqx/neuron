@@ -408,6 +408,12 @@ static struct neu_http_handler rest_handlers[] = {
         .url           = "/api/v2/template/group",
         .value.handler = handle_update_template_group,
     },
+    {
+        .method        = NEU_HTTP_METHOD_DELETE,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/template/group",
+        .value.handler = handle_del_template_group,
+    },
 };
 
 void neu_rest_handler(const struct neu_http_handler **handlers, uint32_t *size)

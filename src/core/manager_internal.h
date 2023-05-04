@@ -69,6 +69,8 @@ int  neu_manager_add_template_group(neu_manager_t *               manager,
                                     neu_req_add_template_group_t *req);
 int  neu_manager_update_template_group(neu_manager_t *                  manager,
                                        neu_req_update_template_group_t *req);
+int  neu_manager_del_template_group(neu_manager_t *               manager,
+                                    neu_req_del_template_group_t *req);
 int  neu_manager_add_template_tags(neu_manager_t *             manager,
                                    neu_req_add_template_tag_t *req,
                                    uint16_t *                  index_p);

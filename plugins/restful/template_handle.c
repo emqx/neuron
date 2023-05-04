@@ -380,6 +380,29 @@ void handle_update_template_group(nng_aio *aio)
     process_mod_template_group(aio, NEU_REQ_UPDATE_TEMPLATE_GROUP);
 }
 
+void handle_del_template_group(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_template_del_group_req_t,
+        neu_json_decode_template_del_group_req, {
+            neu_reqresp_head_t header = { 0 };
+            header.ctx                = aio;
+            header.type               = NEU_REQ_DEL_TEMPLATE_GROUP;
+
+            neu_req_add_template_group_t cmd = { 0 };
+            strcpy(cmd.tmpl, req->tmpl);
+            strcpy(cmd.group, req->group);
+
+            if (0 != neu_plugin_op(plugin, header, &cmd)) {
+                int ret = NEU_ERR_IS_BUSY;
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}
+
 static int send_template_mod_tags_req(nng_aio *aio, neu_reqresp_type_e type,
                                       neu_json_template_mod_tags_req_t *req)
 {

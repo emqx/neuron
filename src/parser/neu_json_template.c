@@ -463,6 +463,81 @@ void neu_json_decode_template_mod_group_req_free(
     }
 }
 
+int neu_json_encode_template_del_group_req(void *json_object, void *param)
+{
+    int                                ret = 0;
+    neu_json_template_del_group_req_t *req = param;
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "template",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->tmpl,
+                                    },
+                                    {
+                                        .name      = "group",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->group,
+                                    } };
+    ret                         = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+
+    return ret;
+}
+
+int neu_json_decode_template_del_group_req(
+    char *buf, neu_json_template_del_group_req_t **result)
+{
+    int                                ret      = 0;
+    void *                             json_obj = NULL;
+    neu_json_template_del_group_req_t *req      = NULL;
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        return -1;
+    }
+
+    req = calloc(1, sizeof(*req));
+    if (NULL == req) {
+        goto decode_fail;
+    }
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name = "template",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "group",
+                                        .t    = NEU_JSON_STR,
+                                    } };
+    ret       = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    req->tmpl = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    *result = req;
+    neu_json_decode_free(json_obj);
+    return 0;
+
+decode_fail:
+    neu_json_decode_template_del_group_req_free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
+}
+
+void neu_json_decode_template_del_group_req_free(
+    neu_json_template_del_group_req_t *req)
+{
+    if (req) {
+        free(req->tmpl);
+        free(req->group);
+        free(req);
+    }
+}
+
 int neu_json_encode_template_mod_tags_req(void *json_obj, void *param)
 {
     int                               ret = 0;
