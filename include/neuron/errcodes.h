@@ -113,6 +113,7 @@ typedef enum {
     NEU_ERR_PLUGIN_PACKET_OUT_OF_ORDER     = 3012,
     NEU_ERR_PLUGIN_NAME_TOO_LONG           = 3013,
     NEU_ERR_PLUGIN_NOT_FOUND               = 3014,
+    NEU_ERR_PLUGIN_DEVICE_NOT_RESPONSE     = 3015,
 
     NEU_ERR_MQTT_FAILURE                        = 4000,
     NEU_ERR_MQTT_NO_CERTFILESET                 = 4001,
