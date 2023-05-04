@@ -66,7 +66,7 @@ const neu_plugin_module_t neu_plugin_module = {
         "expands the packet description field to two bytes, limiting the "
         "maximum length of Modbus tcp packets to 64KB",
     .module_descr_zh =
-        "该插件是 modbus-tcp 插件的优化版，数据包描述字段扩展为连个字节,限制 "
+        "该插件是 modbus-tcp 插件的优化版，数据包描述字段扩展为两个字节,限制 "
         "Modbus TCP 数据包的最大长度为 64KB。",
     .intf_funs  = &plugin_intf_funs,
     .kind       = NEU_PLUGIN_KIND_SYSTEM,

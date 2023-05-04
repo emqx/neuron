@@ -14,6 +14,8 @@ ${tag1update}       {"name": "tag1", "address": "1!400002", "attribute": ${TAG_A
 ${tag_desc}         {"name": "tag_desc", "description": "description info", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 ${tag1_static}               {"name": "tag1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_INT16}, "value": 1}
 ${tag1_static_no_value}      {"name": "tag1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_STATIC_RW}, "type": ${TAG_TYPE_INT16}}
+${tag_decimal}               {"name": "tag_decimal", "address": "1!400003", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}, "decimal": 0.1}
+
 
 *** Test Cases ***
 Add tags to non-existent node, it should return failure
@@ -183,3 +185,25 @@ Add a tag with description, it should return success
 	Should Be Equal As Strings	${res}[tags][0][description]	description info
 	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_READ}
 	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_INT16}
+
+	[Teardown]	Del Tags  modbus-node  group  "tag_desc"
+
+Add a tag with decimal, it should return success
+  	${res}=	Add Tags	modbus-node	group	${tag_decimal}
+
+  	Check Response Status           ${res}        200
+  	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
+	Should Be Equal As Integers	${res}[index]	1
+
+	${res}=		Get Tags  modbus-node  group
+
+  	Check Response Status           ${res}        200
+	${len} =	Get Length	${res}[tags]
+ 	Should Be Equal As Integers	${len}		1
+	
+	Should Be Equal As Strings	${res}[tags][0][name]		tag_decimal
+	Should Be Equal As Strings	${res}[tags][0][address]	1!400003
+	Should Be Equal As Strings	${res}[tags][0][decimal]	0.1
+	Should Be Equal As Strings	${res}[tags][0][attribute]	${TAG_ATTRIBUTE_RW}
+	Should Be Equal As Strings	${res}[tags][0][type]		${TAG_TYPE_INT16}
+

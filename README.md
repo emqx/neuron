@@ -92,49 +92,6 @@ $ ./neuron
 >Change the log level in the rules in the zlog.conf file. Available levels include INFO, DEBUG, NOTICE, WARN, ERROR and FATAL.
 >
 
-## Test
-
-To run all unit testers
-
-```shell
-$ cd build
-$ ctest --output-on-failure
-```
-
-### Functional test
-
-To run all functional testers
-
-```shell
-$ sudo apt-get install -y mosquitto
-$ mosquitto -v &
-$ python3 -m pip install -U pip
-$ python3 -m pip install -r ft/requirements.txt
-$ python3 -m robot --maxerroelines=600 -P ft/ -d ft/reports ft
-```
-
-### Pressure test
-
-There are datasets for pressure testing in directory `ft/data/persistence/`.
-
-To run pressure tests
-
-```shell
-# python dependencies
-$ pip3 install -r ft/requirements.txt
-
-# through http api, on dataset total-10k
-$ python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-10k -d ft/http-total-10k ft/pressure.test
-# through http api, on dataset total-50k
-$ python3 -m robot -P ft/ --variable neuron_api:http --variable dataset:total-50k -d ft/http-total-50k ft/pressure.test
-
-# A MQTT broker is needed if using the mqtt api, mosquitto in this example
-$ mosquitto -v &
-
-# through mqtt api, on dataset simple-1k
-$ python3 -m robot -P ft/ --variable neuron_api:mqtt --variable dataset:simple-1k -d ft/mqtt-simple-1k ft/pressure.test
-```
-
 ## License
 
 See [LICENSE](./LICENSE).
