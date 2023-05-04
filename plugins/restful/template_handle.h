@@ -32,6 +32,7 @@ void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp);
 
 void handle_add_template_group(nng_aio *aio);
 void handle_update_template_group(nng_aio *aio);
+void handle_del_template_group(nng_aio *aio);
 
 void handle_add_template_tags(nng_aio *aio);
 void handle_update_template_tags(nng_aio *aio);
