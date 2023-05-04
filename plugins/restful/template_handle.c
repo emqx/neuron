@@ -321,6 +321,65 @@ void handle_get_templates_resp(nng_aio *aio, neu_resp_get_templates_t *resp)
     return;
 }
 
+static inline int
+send_template_mod_group_req(nng_aio *aio, neu_reqresp_type_e type,
+                            neu_json_template_mod_group_req_t *req)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = type,
+    };
+
+    neu_req_add_template_group_t cmd = { 0 };
+    strcpy(cmd.tmpl, req->tmpl);
+    strcpy(cmd.group, req->group);
+    cmd.interval = req->interval;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+static inline void process_mod_template_group(nng_aio *          aio,
+                                              neu_reqresp_type_e type)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_template_mod_group_req_t,
+        neu_json_decode_template_mod_group_req, {
+            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
+                    neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
+                                      result_error);
+                });
+            } else if (req->interval < NEU_GROUP_INTERVAL_LIMIT) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_PARAMETER_INVALID, {
+                    neu_http_response(aio, NEU_ERR_GROUP_PARAMETER_INVALID,
+                                      result_error);
+                });
+            } else {
+                int ret = send_template_mod_group_req(aio, type, req);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(
+                        ret, { neu_http_response(aio, ret, result_error); });
+                }
+            }
+        })
+}
+
+void handle_add_template_group(nng_aio *aio)
+{
+    process_mod_template_group(aio, NEU_REQ_ADD_TEMPLATE_GROUP);
+}
+
+void handle_update_template_group(nng_aio *aio)
+{
+    process_mod_template_group(aio, NEU_REQ_UPDATE_TEMPLATE_GROUP);
+}
+
 static int send_template_mod_tags_req(nng_aio *aio, neu_reqresp_type_e type,
                                       neu_json_template_mod_tags_req_t *req)
 {

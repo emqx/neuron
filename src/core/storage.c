@@ -85,7 +85,7 @@ void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
     }
 }
 
-static int save_group_and_tags(neu_group_t *grp, void *data)
+static int save_node_group_and_tags(neu_group_t *grp, void *data)
 {
     const char *node     = data;
     const char *name     = neu_group_get_name(grp);
@@ -117,11 +117,30 @@ void manager_storage_inst_node(neu_manager_t *manager, const char *tmpl_name,
 
     manager_storage_add_node(manager, node);
 
-    int rv =
-        neu_template_for_each_group(tmpl, save_group_and_tags, (void *) node);
+    int rv = neu_template_for_each_group(tmpl, save_node_group_and_tags,
+                                         (void *) node);
     if (0 != rv) {
         nlog_error("save instantiated node `%s` groups and tags fail", node);
     }
+}
+
+static int save_tmpl_group_and_tags(neu_group_t *grp, void *data)
+{
+    const char *tmpl_name = data;
+    const char *name      = neu_group_get_name(grp);
+    uint32_t    interval  = neu_group_get_interval(grp);
+
+    UT_array *tags = neu_group_get_tag(grp);
+    if (NULL == tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    manager_storage_add_template_group(tmpl_name, name, interval);
+    manager_storage_add_template_tags(tmpl_name, name, utarray_front(tags),
+                                      utarray_len(tags));
+
+    utarray_free(tags);
+    return 0;
 }
 
 void manager_storage_add_template(neu_manager_t *manager, const char *tmpl_name)
@@ -136,6 +155,13 @@ void manager_storage_add_template(neu_manager_t *manager, const char *tmpl_name)
     int rv = neu_persister_store_template(tmpl_name, neu_template_plugin(tmpl));
     if (0 != rv) {
         nlog_error("failed to store template info");
+        return;
+    }
+
+    rv = neu_template_for_each_group(tmpl, save_tmpl_group_and_tags,
+                                     (void *) tmpl_name);
+    if (0 != rv) {
+        nlog_error("save template `%s` groups and tags fail", tmpl_name);
     }
 }
 
@@ -156,6 +182,127 @@ void manager_storage_clear_templates(neu_manager_t *manager)
     int rv = neu_persister_clear_templates();
     if (0 != rv) {
         nlog_error("failed to clear templates info");
+    }
+}
+
+void manager_storage_add_template_group(const char *tmpl, const char *group,
+                                        uint32_t interval)
+{
+    neu_persist_group_info_t info = {
+        .name     = (char *) group,
+        .interval = interval,
+    };
+
+    int rv = neu_persister_store_template_group(tmpl, &info);
+    if (0 != rv) {
+        nlog_error("store template:%s grp:%s, interval:%" PRIu32 " fail", tmpl,
+                   group, interval);
+    }
+}
+
+void manager_storage_update_template_group(const char *tmpl, const char *group,
+                                           uint32_t interval)
+{
+    neu_persist_group_info_t info = {
+        .name     = (char *) group,
+        .interval = interval,
+    };
+
+    int rv = neu_persister_update_template_group(tmpl, &info);
+    if (0 != rv) {
+        nlog_error("update template:%s grp:%s, interval:%" PRIu32 " fail", tmpl,
+                   group, interval);
+    }
+}
+
+void manager_storage_del_template_group(const char *tmpl, const char *group)
+{
+    int rv = neu_persister_delete_template_group(tmpl, group);
+    if (0 != rv) {
+        nlog_error("delete template:%s grp:%s fail" PRIu32, tmpl, group);
+    }
+}
+
+void manager_storage_add_template_tag(const char *tmpl, const char *group,
+                                      const neu_datatag_t *tag)
+{
+    int rv = neu_persister_store_template_tags(tmpl, group, tag, 1);
+    if (0 != rv) {
+        nlog_error("store tag:%s template:%s grp:%s fail", tag->name, tmpl,
+                   group);
+    }
+}
+
+void manager_storage_add_template_tags(const char *tmpl, const char *group,
+                                       const neu_datatag_t *tags, size_t n)
+{
+    if (0 == n) {
+        return;
+    }
+
+    if (1 == n) {
+        return manager_storage_add_template_tag(tmpl, group, &tags[0]);
+    }
+
+    int rv = neu_persister_store_template_tags(tmpl, group, tags, n);
+    if (0 != rv) {
+        nlog_error("store %zu tags:[%s ... %s] template:%s grp:%s fail", n,
+                   tags->name, tags[n - 1].name, tmpl, group);
+    }
+}
+
+void manager_storage_update_template_tag(const char *tmpl, const char *group,
+                                         const neu_datatag_t *tag)
+{
+    int rv = neu_persister_update_template_tags(tmpl, group, tag, 1);
+    if (0 != rv) {
+        nlog_error("update tag:%s template:%s grp:%s fail", tag->name, tmpl,
+                   group);
+    }
+}
+
+void manager_storage_update_template_tags(const char *tmpl, const char *group,
+                                          const neu_datatag_t *tags, size_t n)
+{
+    if (0 == n) {
+        return;
+    }
+
+    if (1 == n) {
+        return manager_storage_update_template_tag(tmpl, group, &tags[0]);
+    }
+
+    int rv = neu_persister_update_template_tags(tmpl, group, tags, n);
+    if (0 != rv) {
+        nlog_error("update %zu tags:[%s ... %s] template:%s grp:%s fail", n,
+                   tags->name, tags[n - 1].name, tmpl, group);
+    }
+}
+
+void manager_storage_del_template_tag(const char *tmpl, const char *group,
+                                      const char *tag)
+{
+    int rv = neu_persister_delete_template_tags(tmpl, group, &tag, 1);
+    if (0 != rv) {
+        nlog_error("delete tag:%s template:%s grp:%s fail", tag, tmpl, group);
+    }
+}
+
+void manager_storage_del_template_tags(const char *tmpl, const char *group,
+                                       const char *const *tags, size_t n)
+{
+    if (0 == n) {
+        return;
+    }
+
+    if (1 == n) {
+        return manager_storage_del_template_tag(tmpl, group, tags[0]);
+    }
+
+    int rv = neu_persister_delete_template_tags(tmpl, group, tags, n);
+    if (0 != rv) {
+        nlog_error("del %zu tags:[%s ... %s] template:%s grp:%s fail", n,
+                   tags[0], tags[n - 1], tmpl, group);
     }
 }
 

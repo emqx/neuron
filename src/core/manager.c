@@ -380,6 +380,48 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &resp);
         break;
     }
+    case NEU_REQ_ADD_TEMPLATE_GROUP: {
+        neu_req_add_template_group_t *cmd =
+            (neu_req_add_template_group_t *) &header[1];
+        neu_resp_error_t e = { 0 };
+
+        if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
+            e.error = NEU_ERR_GROUP_PARAMETER_INVALID;
+        } else {
+            e.error = neu_manager_add_template_group(manager, cmd);
+        }
+
+        if (e.error == NEU_ERR_SUCCESS) {
+            manager_storage_add_template_group(cmd->tmpl, cmd->group,
+                                               cmd->interval);
+        }
+
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_ERROR;
+        reply(manager, header, &e);
+        break;
+    }
+    case NEU_REQ_UPDATE_TEMPLATE_GROUP: {
+        neu_req_update_template_group_t *cmd =
+            (neu_req_update_template_group_t *) &header[1];
+        neu_resp_error_t e = { 0 };
+
+        if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
+            e.error = NEU_ERR_GROUP_PARAMETER_INVALID;
+        } else {
+            e.error = neu_manager_update_template_group(manager, cmd);
+        }
+
+        if (e.error == NEU_ERR_SUCCESS) {
+            manager_storage_update_template_group(cmd->tmpl, cmd->group,
+                                                  cmd->interval);
+        }
+
+        neu_msg_exchange(header);
+        header->type = NEU_RESP_ERROR;
+        reply(manager, header, &e);
+        break;
+    }
     case NEU_REQ_ADD_TEMPLATE_TAG: {
         neu_req_add_template_tag_t *cmd =
             (neu_req_add_template_tag_t *) &header[1];
@@ -387,7 +429,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         resp.error = neu_manager_add_template_tags(manager, cmd, &resp.index);
         if (resp.index > 0) {
-            // TODO: storage
+            manager_storage_add_template_tags(cmd->tmpl, cmd->group, cmd->tags,
+                                              cmd->n_tag);
         }
 
         neu_req_add_template_tag_fini(cmd);
@@ -405,7 +448,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         resp.error =
             neu_manager_update_template_tags(manager, cmd, &resp.index);
         if (resp.index > 0) {
-            // TODO: storage
+            manager_storage_update_template_tags(cmd->tmpl, cmd->group,
+                                                 cmd->tags, cmd->n_tag);
         }
 
         neu_req_update_template_tag_fini(cmd);
@@ -422,7 +466,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         resp.error = neu_manager_del_template_tags(manager, cmd);
         if (0 == resp.error) {
-            // TODO: storage
+            manager_storage_del_template_tags(cmd->tmpl, cmd->group,
+                                              (const char *const *) cmd->tags,
+                                              cmd->n_tag);
         }
 
         neu_req_del_template_tag_fini(cmd);
