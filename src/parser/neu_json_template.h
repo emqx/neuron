@@ -90,6 +90,17 @@ void neu_json_decode_template_mod_group_req_free(
     neu_json_template_mod_group_req_t *req);
 
 typedef struct {
+    char *tmpl;
+    char *group;
+} neu_json_template_del_group_req_t;
+
+int neu_json_encode_template_del_group_req(void *json_object, void *param);
+int neu_json_decode_template_del_group_req(
+    char *buf, neu_json_template_del_group_req_t **result);
+void neu_json_decode_template_del_group_req_free(
+    neu_json_template_del_group_req_t *req);
+
+typedef struct {
     char *          tmpl;
     char *          group;
     int             n_tag;
