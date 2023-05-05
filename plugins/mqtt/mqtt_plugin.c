@@ -18,6 +18,7 @@
  **/
 
 #include "utils/asprintf.h"
+#include "utils/time.h"
 
 #include "mqtt_config.h"
 #include "mqtt_handle.h"
@@ -81,10 +82,6 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
     plugin->read_req_topic = NULL;
     free(plugin->read_resp_topic);
     plugin->read_resp_topic = NULL;
-    free(plugin->write_req_topic);
-    plugin->write_req_topic = NULL;
-    free(plugin->write_resp_topic);
-    plugin->write_resp_topic = NULL;
 
     route_tbl_free(plugin->route_tbl);
 
@@ -159,6 +156,65 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
     return rv;
 }
 
+static int create_topic(neu_plugin_t *plugin)
+{
+    if (plugin->read_req_topic) {
+        // topics already created
+        return 0;
+    }
+
+    neu_asprintf(&plugin->read_req_topic, "/neuron/%s/read/req",
+                 plugin->common.name);
+    if (NULL == plugin->read_req_topic) {
+        return -1;
+    }
+
+    neu_asprintf(&plugin->read_resp_topic, "/neuron/%s/read/resp",
+                 plugin->common.name);
+    if (NULL == plugin->read_resp_topic) {
+        free(plugin->read_req_topic);
+        plugin->read_req_topic = NULL;
+        return -1;
+    }
+
+    return 0;
+}
+
+static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
+{
+    if (0 != create_topic(plugin)) {
+        plog_error(plugin, "create topics fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  plugin->read_req_topic, plugin,
+                                  handle_read_req)) {
+        plog_error(plugin, "subscribe [%s] fail", plugin->read_req_topic);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
+    if (0 !=
+        neu_mqtt_client_subscribe(plugin->client, config->qos,
+                                  config->write_req_topic, plugin,
+                                  handle_write_req)) {
+        plog_error(plugin, "subscribe [%s] fail",
+                   plugin->config.write_req_topic);
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
+
+    return 0;
+}
+
+static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
+{
+    neu_mqtt_client_unsubscribe(plugin->client, plugin->read_req_topic);
+    neu_mqtt_client_unsubscribe(plugin->client, config->write_req_topic);
+    neu_msleep(100); // wait for message completion
+    return 0;
+}
+
 static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
 {
     int           rv          = 0;
@@ -181,7 +237,8 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         }
     } else if (neu_mqtt_client_is_open(plugin->client)) {
         started = true;
-        rv      = neu_mqtt_client_close(plugin->client);
+        unsubscribe(plugin, &plugin->config);
+        rv = neu_mqtt_client_close(plugin->client);
         if (0 != rv) {
             plog_error(plugin, "neu_mqtt_client_close fail");
             rv = NEU_ERR_EINTERNAL;
@@ -195,10 +252,15 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         goto error;
     }
 
-    if (started && 0 != neu_mqtt_client_open(plugin->client)) {
-        plog_error(plugin, "neu_mqtt_client_open fail");
-        rv = NEU_ERR_MQTT_CONNECT_FAILURE;
-        goto error;
+    if (started) {
+        if (0 != neu_mqtt_client_open(plugin->client)) {
+            plog_error(plugin, "neu_mqtt_client_open fail");
+            rv = NEU_ERR_MQTT_CONNECT_FAILURE;
+            goto error;
+        }
+        if (0 != (rv = subscribe(plugin, &config))) {
+            goto error;
+        }
     }
 
     if (plugin->config.host) {
@@ -214,52 +276,6 @@ error:
     plog_info(plugin, "config plugin `%s` fail", plugin_name);
     mqtt_config_fini(&config);
     return rv;
-}
-
-static int create_topic(neu_plugin_t *plugin)
-{
-    if (plugin->read_req_topic) {
-        // topics already created
-        return 0;
-    }
-
-    neu_asprintf(&plugin->read_req_topic, "/neuron/%s/read/req",
-                 plugin->common.name);
-    if (NULL == plugin->read_req_topic) {
-        return -1;
-    }
-
-    neu_asprintf(&plugin->read_resp_topic, "/neuron/%s/read/resp",
-                 plugin->common.name);
-    if (NULL == plugin->read_resp_topic) {
-        free(plugin->read_req_topic);
-        plugin->read_req_topic = NULL;
-        return -1;
-    }
-
-    neu_asprintf(&plugin->write_req_topic, "/neuron/%s/write/req",
-                 plugin->common.name);
-    if (NULL == plugin->write_req_topic) {
-        free(plugin->read_req_topic);
-        plugin->read_req_topic = NULL;
-        free(plugin->read_resp_topic);
-        plugin->read_resp_topic = NULL;
-        return -1;
-    }
-
-    neu_asprintf(&plugin->write_resp_topic, "/neuron/%s/write/resp",
-                 plugin->common.name);
-    if (NULL == plugin->write_resp_topic) {
-        free(plugin->read_req_topic);
-        plugin->read_req_topic = NULL;
-        free(plugin->read_resp_topic);
-        plugin->read_resp_topic = NULL;
-        free(plugin->write_req_topic);
-        plugin->write_req_topic = NULL;
-        return -1;
-    }
-
-    return 0;
 }
 
 static int mqtt_plugin_start(neu_plugin_t *plugin)
@@ -279,29 +295,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
         goto end;
     }
 
-    if (0 != create_topic(plugin)) {
-        plog_error(plugin, "create topics fail");
-        rv = NEU_ERR_EINTERNAL;
-        goto end;
-    }
-
-    if (0 !=
-        neu_mqtt_client_subscribe(plugin->client, plugin->config.qos,
-                                  plugin->read_req_topic, plugin,
-                                  handle_read_req)) {
-        plog_error(plugin, "subscribe [%s] fail", plugin->read_req_topic);
-        rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
-        goto end;
-    }
-
-    if (0 !=
-        neu_mqtt_client_subscribe(plugin->client, plugin->config.qos,
-                                  plugin->write_req_topic, plugin,
-                                  handle_write_req)) {
-        plog_error(plugin, "subscribe [%s] fail", plugin->write_req_topic);
-        rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
-        goto end;
-    }
+    rv = subscribe(plugin, &plugin->config);
 
 end:
     if (0 == rv) {
@@ -317,6 +311,7 @@ end:
 static int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
     if (plugin->client) {
+        unsubscribe(plugin, &plugin->config);
         neu_mqtt_client_close(plugin->client);
         plog_info(plugin, "mqtt client closed");
     }
