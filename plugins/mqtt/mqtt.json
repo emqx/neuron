@@ -57,6 +57,30 @@
       ]
     }
   },
+  "write-req-topic": {
+    "name": "Write Request Topic",
+    "name_zh": "写请求主题",
+    "description": "MQTT topic to receive write request messages.",
+    "description_zh": "接收点位写入请求的 MQTT 主题。",
+    "attribute": "required",
+    "type": "string",
+    "default": "/neuron/${node-name}/write/req",
+    "valid": {
+      "length": 255
+    }
+  },
+  "write-resp-topic": {
+    "name": "Write Response Topic",
+    "name_zh": "写响应主题",
+    "description": "MQTT topic to send write response messages.",
+    "description_zh": "发送点位写入响应的 MQTT 主题。",
+    "attribute": "required",
+    "type": "string",
+    "default": "/neuron/${node-name}/write/resp",
+    "valid": {
+      "length": 255
+    }
+  },
   "offline-cache": {
     "name": "Offline Data Caching",
     "name_zh": "离线缓存",
