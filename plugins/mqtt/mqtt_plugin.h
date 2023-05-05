@@ -49,8 +49,6 @@ struct neu_plugin {
     int64_t             cache_metric_update_ts;
     char *              read_req_topic;
     char *              read_resp_topic;
-    char *              write_req_topic;
-    char *              write_resp_topic;
     route_entry_t *     route_tbl;
 };
 

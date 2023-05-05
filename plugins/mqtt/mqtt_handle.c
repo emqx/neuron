@@ -373,7 +373,7 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    char *         topic = plugin->write_resp_topic;
+    char *         topic = plugin->config.write_resp_topic;
     neu_mqtt_qos_e qos   = plugin->config.qos;
     rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
     json_str = NULL;
