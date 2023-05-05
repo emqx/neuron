@@ -33,6 +33,7 @@ extern "C" {
 
 typedef struct {
     char *uuid;
+    char *topic;
 } neu_json_mqtt_t;
 
 typedef struct {

@@ -196,7 +196,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     const char *placeholder = "********";
 
     neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
-    neu_json_elem_t qos       = {
+    neu_json_elem_t topic = { .name = "down-mqtt-topic", .t = NEU_JSON_STR };
+    neu_json_elem_t qos   = {
         .name      = "qos",
         .t         = NEU_JSON_INT,
         .v.val_int = NEU_MQTT_QOS0,               // default to QoS0
@@ -270,6 +271,12 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    // download topic, optional
+    ret = neu_parse_param(setting, NULL, 1, &topic);
+    if (0 != ret) {
+        plog_info(plugin, "setting no topic");
+    }
+
     // username, optional
     ret = neu_parse_param(setting, NULL, 1, &username);
     if (0 != ret) {
@@ -288,6 +295,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     }
 
     config->client_id       = client_id.v.val_str;
+    config->topic           = topic.v.val_str;
     config->qos             = qos.v.val_int;
     config->format          = format.v.val_int;
     config->cache           = offline_cache.v.val_bool;
@@ -303,6 +311,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->keypass         = keypass.v.val_str;
 
     plog_info(plugin, "config client-id      : %s", config->client_id);
+    plog_info(plugin, "config topic          : %s", config->topic);
     plog_info(plugin, "config qos            : %d", config->qos);
     plog_info(plugin, "config format         : %s",
               mqtt_upload_format_str(config->format));
@@ -349,6 +358,7 @@ error:
 void mqtt_config_fini(mqtt_config_t *config)
 {
     free(config->client_id);
+    free(config->topic);
     free(config->host);
     free(config->username);
     free(config->password);

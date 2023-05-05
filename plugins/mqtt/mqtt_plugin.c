@@ -303,6 +303,17 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
         goto end;
     }
 
+    if (0 != strlen(plugin->config.topic)) {
+        if (0 !=
+            neu_mqtt_client_subscribe(plugin->client, plugin->config.qos,
+                                      plugin->config.topic, plugin,
+                                      handle_write_req)) {
+            plog_error(plugin, "subscribe [%s] fail", plugin->config.topic);
+            rv = NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+            goto end;
+        }
+    }
+
 end:
     if (0 == rv) {
         plog_info(plugin, "start plugin `%s` success", plugin_name);

@@ -11,6 +11,18 @@
       "length": 255
     }
   },
+  "down-mqtt-topic": {
+    "name": "Down MQTT Topic",
+    "name_zh": "下行的 MQTT 主题",
+    "description": "Down Command MQTT Topic",
+    "description_zh": "下行指令的 MQTT 主题",
+    "type": "string",
+    "attribute": "optional",
+    "default": "",
+    "valid": {
+      "length": 255
+    }
+  },
   "qos": {
     "name": "QoS Level",
     "name_zh": "QoS 等级",

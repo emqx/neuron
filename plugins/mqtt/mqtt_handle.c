@@ -308,7 +308,6 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
     neu_json_write_req_t *req    = NULL;
 
     (void) qos;
-    (void) topic;
 
     neu_adapter_update_metric_cb_t update_metric =
         plugin->common.adapter_callbacks->update_metric;
@@ -337,8 +336,8 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
         free(json_str);
         return;
     }
-
-    rv = send_write_req(plugin, mqtt, req);
+    mqtt->topic = (char *) topic;
+    rv          = send_write_req(plugin, mqtt, req);
     if (0 != rv) {
         neu_json_decode_mqtt_req_free(mqtt);
     }
@@ -373,8 +372,9 @@ int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
         goto end;
     }
 
-    char *         topic = plugin->write_resp_topic;
-    neu_mqtt_qos_e qos   = plugin->config.qos;
+    char *topic = NULL;
+    neu_asprintf(&topic, "%s/resp", mqtt_json->topic);
+    neu_mqtt_qos_e qos = plugin->config.qos;
     rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
     json_str = NULL;
 

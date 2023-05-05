@@ -49,6 +49,7 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
 
 typedef struct {
     char *               client_id;       // client id
+    char *               topic;           // topic
     mqtt_upload_format_e format;          // upload format
     neu_mqtt_qos_e       qos;             // message QoS
     size_t               cache;           // cache enable flag
