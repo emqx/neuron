@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include "utils/asprintf.h"
 #include "json/json.h"
 #include "json/neu_json_param.h"
 
@@ -203,6 +204,18 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
     };
     neu_json_elem_t format          = { .name = "format", .t = NEU_JSON_INT };
+    neu_json_elem_t write_req_topic = {
+        .name      = "write-req-topic",
+        .t         = NEU_JSON_STR,
+        .v.val_str = NULL,
+        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
+    };
+    neu_json_elem_t write_resp_topic = {
+        .name      = "write-resp-topic",
+        .t         = NEU_JSON_STR,
+        .v.val_str = NULL,
+        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
+    };
     neu_json_elem_t offline_cache   = { .name = "offline-cache",
                                       .t    = NEU_JSON_BOOL };
     neu_json_elem_t cache_mem_size  = { .name = "cache-mem-size",
@@ -224,8 +237,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         return -1;
     }
 
-    ret = neu_parse_param(setting, &err_param, 5, &client_id, &format, &qos,
-                          &host, &port);
+    ret = neu_parse_param(setting, &err_param, 7, &client_id, &qos, &format,
+                          &write_req_topic, &write_resp_topic, &host, &port);
     if (0 != ret) {
         plog_error(plugin, "parsing setting fail, key: `%s`", err_param);
         goto error;
@@ -248,6 +261,22 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         MQTT_UPLOAD_FORMAT_TAGS != format.v.val_int) {
         plog_error(plugin, "setting invalid format: %" PRIi64,
                    format.v.val_int);
+        goto error;
+    }
+
+    // write request topic
+    if (NULL == write_req_topic.v.val_str &&
+        0 > neu_asprintf(&write_req_topic.v.val_str, "/neuron/%s/write/req",
+                         plugin->common.name)) {
+        plog_error(plugin, "setting write request topic error");
+        goto error;
+    }
+
+    // write response topic
+    if (NULL == write_resp_topic.v.val_str &&
+        0 > neu_asprintf(&write_resp_topic.v.val_str, "/neuron/%s/write/resp",
+                         plugin->common.name)) {
+        plog_error(plugin, "setting write request topic error");
         goto error;
     }
 
@@ -287,55 +316,61 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    config->client_id       = client_id.v.val_str;
-    config->qos             = qos.v.val_int;
-    config->format          = format.v.val_int;
-    config->cache           = offline_cache.v.val_bool;
-    config->cache_mem_size  = cache_mem_size.v.val_int * MB;
-    config->cache_disk_size = cache_disk_size.v.val_int * MB;
-    config->host            = host.v.val_str;
-    config->port            = port.v.val_int;
-    config->username        = username.v.val_str;
-    config->password        = password.v.val_str;
-    config->ca              = ca.v.val_str;
-    config->cert            = cert.v.val_str;
-    config->key             = key.v.val_str;
-    config->keypass         = keypass.v.val_str;
+    config->client_id        = client_id.v.val_str;
+    config->qos              = qos.v.val_int;
+    config->format           = format.v.val_int;
+    config->write_req_topic  = write_req_topic.v.val_str;
+    config->write_resp_topic = write_resp_topic.v.val_str;
+    config->cache            = offline_cache.v.val_bool;
+    config->cache_mem_size   = cache_mem_size.v.val_int * MB;
+    config->cache_disk_size  = cache_disk_size.v.val_int * MB;
+    config->host             = host.v.val_str;
+    config->port             = port.v.val_int;
+    config->username         = username.v.val_str;
+    config->password         = password.v.val_str;
+    config->ca               = ca.v.val_str;
+    config->cert             = cert.v.val_str;
+    config->key              = key.v.val_str;
+    config->keypass          = keypass.v.val_str;
 
-    plog_info(plugin, "config client-id      : %s", config->client_id);
-    plog_info(plugin, "config qos            : %d", config->qos);
-    plog_info(plugin, "config format         : %s",
+    plog_info(plugin, "config client-id       : %s", config->client_id);
+    plog_info(plugin, "config qos             : %d", config->qos);
+    plog_info(plugin, "config format          : %s",
               mqtt_upload_format_str(config->format));
-    plog_info(plugin, "config cache          : %zu", config->cache);
-    plog_info(plugin, "config cache-mem-size : %zu", config->cache_mem_size);
-    plog_info(plugin, "config cache-disk-size: %zu", config->cache_disk_size);
-    plog_info(plugin, "config host           : %s", config->host);
-    plog_info(plugin, "config port           : %" PRIu16, config->port);
+    plog_info(plugin, "config write-req-topic : %s", config->write_req_topic);
+    plog_info(plugin, "config write-resp-topic: %s", config->write_req_topic);
+    plog_info(plugin, "config cache           : %zu", config->cache);
+    plog_info(plugin, "config cache-mem-size  : %zu", config->cache_mem_size);
+    plog_info(plugin, "config cache-disk-size : %zu", config->cache_disk_size);
+    plog_info(plugin, "config host            : %s", config->host);
+    plog_info(plugin, "config port            : %" PRIu16, config->port);
 
     if (config->username) {
-        plog_info(plugin, "config username       : %s", config->username);
+        plog_info(plugin, "config username        : %s", config->username);
     }
     if (config->password) {
-        plog_info(plugin, "config password       : %s",
+        plog_info(plugin, "config password        : %s",
                   0 == strlen(config->password) ? "" : placeholder);
     }
     if (config->ca) {
-        plog_info(plugin, "config ca             : %s", placeholder);
+        plog_info(plugin, "config ca              : %s", placeholder);
     }
     if (config->cert) {
-        plog_info(plugin, "config cert           : %s", placeholder);
+        plog_info(plugin, "config cert            : %s", placeholder);
     }
     if (config->key) {
-        plog_info(plugin, "config key            : %s", placeholder);
+        plog_info(plugin, "config key             : %s", placeholder);
     }
     if (config->keypass) {
-        plog_info(plugin, "config keypass        : %s", placeholder);
+        plog_info(plugin, "config keypass         : %s", placeholder);
     }
 
     return 0;
 
 error:
     free(err_param);
+    free(write_req_topic.v.val_str);
+    free(write_resp_topic.v.val_str);
     free(host.v.val_str);
     free(username.v.val_str);
     free(password.v.val_str);
@@ -349,6 +384,8 @@ error:
 void mqtt_config_fini(mqtt_config_t *config)
 {
     free(config->client_id);
+    free(config->write_req_topic);
+    free(config->write_resp_topic);
     free(config->host);
     free(config->username);
     free(config->password);
