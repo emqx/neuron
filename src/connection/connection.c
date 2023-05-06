@@ -33,6 +33,10 @@
 
 #include "connection/neu_connection.h"
 
+#ifndef CMSPAR
+#define CMSPAR	  010000000000	/* mark or space (stick) parity */
+#endif
+
 struct tcp_client {
     int                fd;
     struct sockaddr_in client;
