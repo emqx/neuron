@@ -26,12 +26,22 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <time.h>
 
 static inline int64_t neu_time_ms()
 {
     struct timeval tv = { 0 };
     gettimeofday(&tv, NULL);
     return (int64_t) tv.tv_sec * 1000 + (int64_t) tv.tv_usec / 1000;
+}
+
+static inline void neu_msleep(unsigned msec)
+{
+    struct timespec tv = {
+        .tv_sec  = msec / 1000,
+        .tv_nsec = (msec % 1000) * 1000000,
+    };
+    nanosleep(&tv, NULL);
 }
 
 #ifdef __cplusplus
