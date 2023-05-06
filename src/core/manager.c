@@ -482,6 +482,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             forward_msg(manager, msg, cmd->app);
             manager_storage_subscribe(manager, cmd->app, cmd->driver,
                                       cmd->group, cmd->params);
+        } else {
+            free(cmd->params);
         }
 
         header->type = NEU_RESP_ERROR;
