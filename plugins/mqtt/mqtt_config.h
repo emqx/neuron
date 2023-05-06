@@ -48,20 +48,22 @@ static inline const char *mqtt_upload_format_str(mqtt_upload_format_e f)
 }
 
 typedef struct {
-    char *               client_id;       // client id
-    mqtt_upload_format_e format;          // upload format
-    neu_mqtt_qos_e       qos;             // message QoS
-    size_t               cache;           // cache enable flag
-    size_t               cache_mem_size;  // cache memory size in bytes
-    size_t               cache_disk_size; // cache disk size in bytes
-    char *               host;            // broker host
-    uint16_t             port;            // broker port
-    char *               username;        // user name
-    char *               password;        // user password
-    char *               ca;              // CA
-    char *               cert;            // client cert
-    char *               key;             // client key
-    char *               keypass;         // client key password
+    char *               client_id;        // client id
+    neu_mqtt_qos_e       qos;              // message QoS
+    mqtt_upload_format_e format;           // upload format
+    char *               write_req_topic;  // write request topic
+    char *               write_resp_topic; // write response topic
+    size_t               cache;            // cache enable flag
+    size_t               cache_mem_size;   // cache memory size in bytes
+    size_t               cache_disk_size;  // cache disk size in bytes
+    char *               host;             // broker host
+    uint16_t             port;             // broker port
+    char *               username;         // user name
+    char *               password;         // user password
+    char *               ca;               // CA
+    char *               cert;             // client cert
+    char *               key;              // client key
+    char *               keypass;          // client key password
 } mqtt_config_t;
 
 int  mqtt_config_parse(neu_plugin_t *plugin, const char *setting,

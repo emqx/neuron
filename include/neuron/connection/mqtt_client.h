@@ -114,6 +114,8 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
                               const char *topic, void *data,
                               neu_mqtt_client_subscribe_cb_t cb);
 
+int neu_mqtt_client_unsubscribe(neu_mqtt_client_t *client, const char *topic);
+
 #ifdef __cplusplus
 }
 #endif

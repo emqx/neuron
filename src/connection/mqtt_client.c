@@ -33,6 +33,7 @@
 #include "connection/mqtt_client.h"
 #include "event/event.h"
 #include "utils/asprintf.h"
+#include "utils/time.h"
 #include "utils/utextend.h"
 #include "utils/uthash.h"
 #include "utils/utlist.h"
@@ -68,6 +69,7 @@ typedef struct {
 typedef enum {
     TASK_PUB,
     TASK_SUB,
+    TASK_UNSUB,
     TASK_RECV,
 } task_kind_e;
 
@@ -133,7 +135,8 @@ static inline void    tasks_free(task_t *tasks);
 static void           task_cb(void *arg);
 static void           task_handle_pub(task_t *task, neu_mqtt_client_t *client);
 static void           task_handle_sub(task_t *task, neu_mqtt_client_t *client);
-static void           task_handle_recv(task_t *task, neu_mqtt_client_t *client);
+static void task_handle_unsub(task_t *task, neu_mqtt_client_t *client);
+static void task_handle_recv(task_t *task, neu_mqtt_client_t *client);
 
 static subscription_t *       subscription_new(neu_mqtt_client_t *client,
                                                neu_mqtt_qos_e qos, const char *topic,
@@ -221,6 +224,8 @@ static void task_cb(void *arg)
         task_handle_pub(task, client);
     } else if (TASK_SUB == task->kind) {
         task_handle_sub(task, client);
+    } else if (TASK_UNSUB == task->kind) {
+        task_handle_unsub(task, client);
     } else if (TASK_RECV == task->kind) {
         task_handle_recv(task, client);
     } else {
@@ -291,6 +296,41 @@ end:
     // TODO: handle retry subscribe on failure
     log(info, "sub [%s, QoS%d], %s", task->sub->topic, task->sub->qos,
         (0 == rv) ? "OK" : "FAIL");
+    nng_msg_free(msg);
+    return;
+}
+
+static void task_handle_unsub(task_t *task, neu_mqtt_client_t *client)
+{
+    int      rv  = 0;
+    nng_msg *msg = NULL;
+    nng_aio *aio = task->aio;
+
+    if (0 != (rv = nng_aio_result(aio))) {
+        log(error, "send UNSUBSCRIBE error: %s", nng_strerror(rv));
+        goto end;
+    }
+
+    msg = nng_aio_get_msg(aio);
+    if (NULL == msg) {
+        rv = -1;
+        goto end;
+    }
+
+    nng_mqtt_packet_type pt = nng_mqtt_msg_get_packet_type(msg);
+    if (NNG_MQTT_UNSUBACK != pt) {
+        log(error, "recv packet type:%d, expect UNSUBACK packet", pt);
+        rv = -1;
+        goto end;
+    }
+
+end:
+    if (task->sub) {
+        log(info, "unsub [%s, QoS%d], %s", task->sub->topic, task->sub->qos,
+            (0 == rv) ? "OK" : "FAIL");
+    } else {
+        log(info, "unsub %s", (0 == rv) ? "OK" : "FAIL");
+    }
     nng_msg_free(msg);
     return;
 }
@@ -535,7 +575,7 @@ static inline void client_free_task(neu_mqtt_client_t *client, task_t *task)
 {
     nng_aio_set_msg(task->aio, NULL);
 
-    if (TASK_SUB == task->kind) {
+    if (TASK_SUB == task->kind || TASK_UNSUB == task->kind) {
         subscription_free(task->sub);
     } else if (TASK_RECV == task->kind) {
         subscription_free(task->recv.sub);
@@ -569,6 +609,16 @@ static inline void client_add_subscription(neu_mqtt_client_t *client,
     HASH_ADD_STR(client->subscriptions, topic, sub);
 }
 
+static inline void client_del_subscription(neu_mqtt_client_t *client,
+                                           subscription_t *   sub)
+{
+    HASH_DEL(client->subscriptions, sub);
+    if (sub->ack) {
+        client->suback_count -= 1;
+    }
+    subscription_free(sub);
+}
+
 static int client_send_sub_msg(neu_mqtt_client_t *client,
                                subscription_t *   subscription)
 {
@@ -600,6 +650,38 @@ static int client_send_sub_msg(neu_mqtt_client_t *client,
 
     task->kind = TASK_SUB;
     task->sub  = subscription_ref(subscription);
+    nng_aio_set_msg(task->aio, sub_msg);
+    nng_send_aio(client->sock, task->aio);
+
+    return 0;
+}
+
+static int client_send_unsub_msg(neu_mqtt_client_t *client,
+                                 subscription_t *   subscription)
+{
+    int      rv      = 0;
+    nng_msg *sub_msg = NULL;
+
+    if ((rv = nng_mqtt_msg_alloc(&sub_msg, 0)) != 0) {
+        log(error, "nng_mqtt_msg_alloc fail: %s", nng_strerror(rv));
+        return -1;
+    }
+
+    nng_mqtt_topic mqtt_topic = { .buf    = (uint8_t *) subscription->topic,
+                                  .length = strlen(subscription->topic) };
+
+    nng_mqtt_msg_set_packet_type(sub_msg, NNG_MQTT_UNSUBSCRIBE);
+    nng_mqtt_msg_set_unsubscribe_topics(sub_msg, &mqtt_topic, 1);
+
+    task_t *task = client_alloc_task(client);
+    if (NULL == task) {
+        log(error, "client_alloc_task fail");
+        nng_msg_free(sub_msg);
+        return -1;
+    }
+
+    task->kind = TASK_UNSUB;
+    task->sub  = subscription ? subscription_ref(subscription) : NULL;
     nng_aio_set_msg(task->aio, sub_msg);
     nng_send_aio(client->sock, task->aio);
 
@@ -1163,7 +1245,7 @@ int neu_mqtt_client_close(neu_mqtt_client_t *client)
     // wait for all tasks
     while (client_task_free_list_len(client) != client->task_count) {
         nng_mtx_unlock(client->mtx);
-        nng_msleep(100);
+        neu_msleep(100);
         nng_mtx_lock(client->mtx);
     }
     client->open = false;
@@ -1259,5 +1341,45 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
 error:
     nng_mtx_unlock(client->mtx);
     subscription_free(subscription);
+    return -1;
+}
+
+int neu_mqtt_client_unsubscribe(neu_mqtt_client_t *client, const char *topic)
+{
+    int             rv           = 0;
+    subscription_t *subscription = NULL;
+
+    nng_mtx_lock(client->mtx);
+    if (NULL == client->recv_aio) {
+        if ((rv = nng_aio_alloc(&client->recv_aio, recv_cb, client)) != 0) {
+            log(error, "nng_aio_alloc fail: %s", nng_strerror(rv));
+            goto error;
+        }
+        if (client->connected) {
+            // connect_cb already fired, then start receiving
+            client_start_recv(client);
+        }
+    }
+
+    HASH_FIND_STR(client->subscriptions, topic, subscription);
+
+    if (client->connected) {
+        // send a unsubscribe message even subscription is NULL
+        if (client_send_unsub_msg(client, subscription) < 0) {
+            log(error, "client_send_unsub_msg fail");
+            goto error;
+        }
+    }
+
+    if (subscription) {
+        client_del_subscription(client, subscription);
+    }
+
+    nng_mtx_unlock(client->mtx);
+
+    return 0;
+
+error:
+    nng_mtx_unlock(client->mtx);
     return -1;
 }
