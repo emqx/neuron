@@ -401,7 +401,7 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                    conn->fd, len, ret, strerror(errno), errno);
     }
 
-    if (errno == EPIPE || ret == -1 || ret == 0) {
+    if (errno == EPIPE || ret == -1 || (ret == 0 && errno != 0)) {
         conn_disconnect(conn);
     }
 
