@@ -34,18 +34,21 @@ static bool tag_sort(neu_tag_sort_t *sort, void *tag, void *tag_to_be_sorted);
 
 int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
 {
-    int ret = NEU_ERR_SUCCESS;
-    ret     = neu_datatag_parse_addr_option(tag, &point->option);
+    int      ret           = NEU_ERR_SUCCESS;
+    uint32_t start_address = 0;
+    ret                    = neu_datatag_parse_addr_option(tag, &point->option);
     if (ret != 0) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
     }
 
     char area = 0;
-    int  n    = sscanf(tag->address, "%hhu!%c%hu", &point->slave_id, &area,
-                   &point->start_address);
-    if (n != 3 || point->start_address == 0) {
+    int  n    = sscanf(tag->address, "%hhu!%c%u", &point->slave_id, &area,
+                   &start_address);
+    if (n != 3 || start_address == 0) {
         return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
     }
+
+    point->start_address = (uint16_t) start_address;
 
     point->start_address -= 1;
     point->type = tag->type;
