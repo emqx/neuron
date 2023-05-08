@@ -84,9 +84,14 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
         return 0;
     }
 
-    // ca, required if ssl enabled
-    ret = parse_b64_param(plugin, setting, ca);
+    // ca, optional
+    ret = neu_parse_param(setting, NULL, 1, ca);
     if (0 != ret) {
+        plog_info(plugin, "setting no ca");
+        return 0;
+    }
+
+    if (0 != decode_b64_param(plugin, ca)) {
         return -1;
     }
 
@@ -308,6 +313,7 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     config->port               = port.v.val_int;
     config->username           = username.v.val_str;
     config->password           = password.v.val_str;
+    config->ssl                = ssl.v.val_bool;
     config->ca                 = ca.v.val_str;
     config->cert               = cert.v.val_str;
     config->key                = key.v.val_str;
@@ -329,6 +335,8 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
         plog_info(plugin, "config password          : %s",
                   0 == strlen(config->password) ? "" : placeholder);
     }
+
+    plog_info(plugin, "config ssl               : %d", config->ssl);
     if (config->ca) {
         plog_info(plugin, "config ca                : %s", placeholder);
     }

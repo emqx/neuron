@@ -38,6 +38,7 @@ typedef struct {
     uint16_t port;               // broker port
     char *   username;           // user name
     char *   password;           // user password
+    bool     ssl;                // ssl flag
     char *   ca;                 // CA
     char *   cert;               // client cert
     char *   key;                // client key
