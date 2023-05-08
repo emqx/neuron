@@ -97,8 +97,8 @@ static int driver_init(neu_plugin_t *plugin)
     plugin->protocol = MODBUS_PROTOCOL_TCP;
     plugin->events   = neu_event_new();
     plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_TCP,
-                                        modbus_send_msg, modbus_value_handle,
-                                        modbus_write_resp);
+                                           modbus_send_msg, modbus_value_handle,
+                                           modbus_write_resp);
 
     return 0;
 }
@@ -135,7 +135,7 @@ static int driver_stop(neu_plugin_t *plugin)
 static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
-    char *           err_param = NULL;
+    char            *err_param = NULL;
     neu_json_elem_t  port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t  timeout   = { .name = "timeout", .t = NEU_JSON_INT };
     neu_json_elem_t  host      = { .name = "host", .t = NEU_JSON_STR };
@@ -168,7 +168,6 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         param.params.tcp_client.timeout = timeout.v.val_int;
         plugin->is_server               = false;
     }
-
     plog_info(plugin, "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
               host.v.val_str, port.v.val_int, mode.v.val_int);
 
