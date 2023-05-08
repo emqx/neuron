@@ -1005,8 +1005,8 @@ int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
     return 0;
 }
 
-int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
-                            const char *cert, const char *key,
+int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
+                            const char *ca, const char *cert, const char *key,
                             const char *keypass)
 {
     int             rv  = 0;
@@ -1015,7 +1015,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
 
-    if (NULL == ca) {
+    if (!enabled) {
         // disable tls
         log(info, "tls disabled");
         if (client->tls_cfg) {
@@ -1057,7 +1057,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
         }
     }
 
-    if ((rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
+    if (ca && (rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
         log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
         rv = -1;
     }
