@@ -100,7 +100,7 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
 
     plog_send_protocol(plugin, bytes, n_byte);
 
-    if (plugin->is_server) {
+    if (plugin->is_server && plugin->protocol == MODBUS_PROTOCOL_TCP) {
         ret = neu_conn_tcp_server_send(plugin->conn, plugin->client_fd, bytes,
                                        n_byte);
     } else {
@@ -388,7 +388,7 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
 
-    if (plugin->is_server) {
+    if (plugin->is_server && plugin->protocol == MODBUS_PROTOCOL_TCP) {
         ret = neu_conn_tcp_server_recv(plugin->conn, plugin->client_fd,
                                        recv_buf, response_size);
     } else {

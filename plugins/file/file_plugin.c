@@ -81,8 +81,7 @@ static int driver_close(neu_plugin_t *plugin)
 
 static int driver_init(neu_plugin_t *plugin)
 {
-    plugin->events            = neu_event_new();
-    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
+    plugin->events = neu_event_new();
 
     return 0;
 }
@@ -97,14 +96,14 @@ static int driver_uninit(neu_plugin_t *plugin)
 
 static int driver_start(neu_plugin_t *plugin)
 {
-    (void) plugin;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
 
     return 0;
 }
 
 static int driver_stop(neu_plugin_t *plugin)
 {
-    (void) plugin;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
 
     return 0;
 }
@@ -121,7 +120,8 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         return -1;
     }
 
-    plugin->file_length = file_length.v.val_int;
+    plugin->file_length       = file_length.v.val_int;
+    plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
 
     return 0;
 }

@@ -100,8 +100,8 @@ static int driver_init(neu_plugin_t *plugin)
     plugin->protocol = MODBUS_PROTOCOL_RTU;
     plugin->events   = neu_event_new();
     plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_RTU,
-                                           modbus_send_msg, modbus_value_handle,
-                                           modbus_write_resp);
+                                        modbus_send_msg, modbus_value_handle,
+                                        modbus_write_resp);
 
     return 0;
 }
@@ -138,7 +138,7 @@ static int driver_stop(neu_plugin_t *plugin)
 static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
-    char            *err_param = NULL;
+    char *           err_param = NULL;
     neu_conn_param_t param     = { 0 };
 
     neu_json_elem_t link     = { .name = "link", .t = NEU_JSON_INT };
@@ -165,13 +165,20 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         return -1;
     }
 
+    if (timeout.v.val_int <= 0) {
+        plog_warn(plugin, "config: %s, set timeout error: %s", config,
+                  err_param);
+        free(err_param);
+        return -1;
+    }
+
     plugin->interval = interval.v.val_int;
     if (link.v.val_int == 0) {
         ret = neu_parse_param((char *) config, &err_param, 5, &device, &stop,
                               &parity, &baud, &data);
     } else {
-        ret = neu_parse_param((char *) config, &err_param, 3, &mode, &host,
-                              &port);
+        ret = neu_parse_param((char *) config, &err_param, 4, &mode, &host,
+                              &port, &tmode);
     }
 
     if (ret != 0) {
@@ -200,9 +207,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     } else {
         if (tmode.v.val_int == 1) {
             param.type                = NEU_CONN_UDP;
-            param.params.udp.timeout  = 0;
+            param.params.udp.timeout  = 3000;
             param.params.udp.src_ip   = "0.0.0.0";
-            param.params.udp.src_port = 502;
+            param.params.udp.src_port = 0;
             param.params.udp.dst_ip   = host.v.val_str;
             param.params.udp.dst_port = port.v.val_int;
             plugin->is_server         = false;
