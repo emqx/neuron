@@ -192,4 +192,10 @@ neu_protocol_unpack_buf_used_size(neu_protocol_unpack_buf_t *buf)
     return buf->offset;
 }
 
+inline static void
+neu_protocol_unpack_buf_use_all(neu_protocol_unpack_buf_t *buf)
+{
+    buf->offset = buf->size;
+}
+
 #endif
