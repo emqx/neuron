@@ -281,7 +281,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     if (NULL == write_resp_topic.v.val_str &&
         0 > neu_asprintf(&write_resp_topic.v.val_str, "/neuron/%s/write/resp",
                          plugin->common.name)) {
-        plog_error(plugin, "setting write request topic error");
+        plog_error(plugin, "setting write response topic error");
         goto error;
     }
 
@@ -344,7 +344,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_info(plugin, "config format          : %s",
               mqtt_upload_format_str(config->format));
     plog_info(plugin, "config write-req-topic : %s", config->write_req_topic);
-    plog_info(plugin, "config write-resp-topic: %s", config->write_req_topic);
+    plog_info(plugin, "config write-resp-topic: %s", config->write_resp_topic);
     plog_info(plugin, "config cache           : %zu", config->cache);
     plog_info(plugin, "config cache-mem-size  : %zu", config->cache_mem_size);
     plog_info(plugin, "config cache-disk-size : %zu", config->cache_disk_size);
