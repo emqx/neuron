@@ -124,8 +124,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     rv = nng_pair1_open(&adapter->sock);
     assert(rv == 0);
-    nng_socket_set_int(adapter->sock, NNG_OPT_RECVBUF, 128);
-    nng_socket_set_int(adapter->sock, NNG_OPT_SENDBUF, 128);
+    nng_socket_set_int(adapter->sock, NNG_OPT_RECVBUF, 2048);
+    nng_socket_set_int(adapter->sock, NNG_OPT_SENDBUF, 2048);
     nng_socket_set_ms(adapter->sock, NNG_OPT_SENDTIMEO, 1000);
     nng_socket_get_int(adapter->sock, NNG_OPT_RECVFD, &adapter->recv_fd);
 
