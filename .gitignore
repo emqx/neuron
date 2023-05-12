@@ -17,3 +17,6 @@ tmp
 *.rpm
 neuron-sdk
 .vscode
+log.html
+output.xml
+report.html
