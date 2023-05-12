@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <math.h>
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdlib.h>
 
 #include <nng/nng.h>
@@ -37,12 +38,20 @@
 #include "errcodes.h"
 #include "tag.h"
 
+typedef struct to_be_write_tag {
+    neu_datatag_t *tag;
+    neu_value_u    value;
+    void *         req;
+} to_be_write_tag_t;
+
 typedef struct group {
     char *name;
 
-    int64_t      timestamp;
-    neu_group_t *group;
-    UT_array *   static_tags;
+    int64_t         timestamp;
+    neu_group_t *   group;
+    UT_array *      static_tags;
+    UT_array *      wt_tags;
+    pthread_mutex_t wt_mtx;
 
     neu_event_timer_t *report;
     neu_event_timer_t *read;
@@ -74,6 +83,7 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
 static group_t *find_group(neu_adapter_driver_t *driver, const char *name);
+static void     store_write_tag(group_t *group, to_be_write_tag_t *tag);
 
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 {
@@ -182,7 +192,13 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
         free(el->name);
         utarray_free(el->grp.tags);
 
+        utarray_foreach(el->wt_tags, to_be_write_tag_t *, tag)
+        {
+            neu_tag_free(tag->tag);
+        }
+
         utarray_free(el->static_tags);
+        utarray_free(el->wt_tags);
         neu_group_destroy(el->group);
         free(el);
     }
@@ -414,8 +430,12 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             driver->adapter.cb_funs.response(&driver->adapter, req, &error);
             free(req);
         } else {
-            driver->adapter.module->intf_funs->driver.write_tag(
-                driver->adapter.plugin, (void *) req, tag, cmd->value.value);
+            to_be_write_tag_t wtag = { 0 };
+            wtag.req               = (void *) req;
+            wtag.value             = cmd->value.value;
+            wtag.tag               = neu_tag_dup(tag);
+
+            store_write_tag(g, &wtag);
         }
 
         neu_tag_free(tag);
@@ -429,6 +449,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
 int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                                  uint32_t interval)
 {
+    UT_icd   icd  = { sizeof(to_be_write_tag_t), NULL, NULL, NULL };
     group_t *find = NULL;
     int      ret  = NEU_ERR_GROUP_EXIST;
 
@@ -442,6 +463,10 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
             .usr_data    = (void *) find,
             .type        = NEU_EVENT_TIMER_NOBLOCK,
         };
+
+        pthread_mutex_init(&find->wt_mtx, NULL);
+
+        utarray_new(find->wt_tags, &icd);
 
         find->driver         = driver;
         find->name           = strdup(name);
@@ -530,11 +555,18 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
             neu_driver_cache_del(driver->cache, name, tag->name);
         }
 
+        utarray_foreach(find->wt_tags, to_be_write_tag_t *, tag)
+        {
+            neu_tag_free(tag->tag);
+        }
+
         utarray_free(find->static_tags);
         utarray_free(find->grp.tags);
+        utarray_free(find->wt_tags);
         neu_group_destroy(find->group);
         free(find);
 
+        pthread_mutex_destroy(&find->wt_mtx);
         neu_adapter_del_group_metrics(&driver->adapter, name);
         ret = NEU_ERR_SUCCESS;
     }
@@ -892,6 +924,17 @@ static int read_callback(void *usr_data)
         return 0;
     }
 
+    pthread_mutex_lock(&group->wt_mtx);
+    utarray_foreach(group->wt_tags, to_be_write_tag_t *, wtag)
+    {
+        group->driver->adapter.module->intf_funs->driver.write_tag(
+            group->driver->adapter.plugin, (void *) wtag->req, wtag->tag,
+            wtag->value);
+        neu_tag_free(wtag->tag);
+    }
+    utarray_clear(group->wt_tags);
+    pthread_mutex_unlock(&group->wt_mtx);
+
     if (neu_group_is_change(group->group, group->timestamp)) {
         neu_group_change_test(group->group, group->timestamp, (void *) group,
                               group_change);
@@ -1198,4 +1241,11 @@ static void read_group(int64_t timestamp, int64_t timeout,
             }
         }
     }
+}
+
+static void store_write_tag(group_t *group, to_be_write_tag_t *tag)
+{
+    pthread_mutex_lock(&group->wt_mtx);
+    utarray_push_back(group->wt_tags, tag);
+    pthread_mutex_unlock(&group->wt_mtx);
 }
