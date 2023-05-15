@@ -121,6 +121,10 @@ neu_manager_t *neu_manager_create()
     }
     utarray_free(single_plugins);
 
+    if (manager_load_template(manager) != 0) {
+        nlog_warn("load template error");
+    }
+
     manager_load_node(manager);
     while (neu_node_manager_exist_uninit(manager->node_manager)) {
         usleep(1000 * 100);
