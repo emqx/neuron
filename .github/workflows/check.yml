@@ -57,6 +57,7 @@ jobs:
       - name: unit test
         run: |
           cd build
+          sudo apt-get update
           sudo apt install -y lcov
           ctest --output-on-failure -O tests/reports/ut.log --output-junit tests/reports/output.xml
           lcov --capture --directory . --output-file  testneuron.info --test-name testneuron
