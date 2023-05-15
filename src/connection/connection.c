@@ -398,9 +398,10 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         break;
     }
     if (ret <= 0) {
-        zlog_error(conn->param.log,
-                   "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
-                   conn->fd, len, ret, strerror(errno), errno);
+        zlog_error(
+            conn->param.log,
+            "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d), type:%d",
+            conn->fd, len, ret, strerror(errno), errno, conn->param.type);
     }
 
     if (errno == EPIPE || ret == -1 || (ret == 0 && errno != 0)) {

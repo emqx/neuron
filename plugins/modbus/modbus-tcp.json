@@ -42,6 +42,27 @@
 		}
 	],
 	"group_interval": 1000,
+	"transport_mode": {
+		"name": "Transport Mode",
+		"name_zh": "传输模式",
+		"description": "Neuron as the client, or as the server",
+		"description_zh": "TCP 传输或 UDP 传输",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "TCP",
+					"value": 0
+				},
+				{
+					"key": "UDP",
+					"value": 1
+				}
+			]
+		}
+	},
 	"connection_mode": {
 		"name": "Connection Mode",
 		"name_zh": "连接模式",
@@ -61,6 +82,10 @@
 					"value": 1
 				}
 			]
+		},
+		"condition": {
+			"field": "transport_mode",
+			"value": 0
 		}
 	},
 	"interval": {

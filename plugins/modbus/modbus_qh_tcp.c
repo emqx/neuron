@@ -168,7 +168,6 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         param.params.tcp_client.timeout = timeout.v.val_int;
         plugin->is_server               = false;
     }
-
     plog_info(plugin, "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
               host.v.val_str, port.v.val_int, mode.v.val_int);
 

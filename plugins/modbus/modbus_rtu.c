@@ -63,13 +63,13 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name = "Modbus RTU",
     .module_descr =
         "This plugin is used to connect devices using modbus rtu protocol. "
-        "Support serial and TCP communication methods. When using TCP "
+        "Support serial,TCP and UDP communication methods. When using TCP "
         "communication, it is necessary to use the pass-through function of "
         "DTU to convert serial data into IP data and transmit it through "
         "the network. Selecting client/server is also supported.",
     .module_descr_zh =
-        "该插件用于连接使用 modbus rtu 协议的设备。支持串口和 TCP "
-        "两种通信方式。使用 TCP 通信时,需要使用 DTU "
+        "该插件用于连接使用 modbus rtu 协议的设备。支持串口,TCP 和 UDP "
+        "三种通信方式。使用 TCP 通信时,需要使用 DTU "
         "的透传功能,将串口数据转为 IP "
         "数据并通过网络传输。也支持选择客户端/服务端。",
     .intf_funs = &plugin_intf_funs,
@@ -145,9 +145,10 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t timeout  = { .name = "timeout", .t = NEU_JSON_INT };
     neu_json_elem_t interval = { .name = "interval", .t = NEU_JSON_INT };
 
-    neu_json_elem_t mode = { .name = "connection_mode", .t = NEU_JSON_INT };
-    neu_json_elem_t host = { .name = "host", .t = NEU_JSON_STR };
-    neu_json_elem_t port = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
+    neu_json_elem_t tmode = { .name = "transport_mode", .t = NEU_JSON_INT };
+    neu_json_elem_t host  = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t port  = { .name = "port", .t = NEU_JSON_INT };
 
     neu_json_elem_t device = { .name = "device", .t = NEU_JSON_STR };
     neu_json_elem_t stop   = { .name = "stop", .t = NEU_JSON_INT };
@@ -164,13 +165,20 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         return -1;
     }
 
+    if (timeout.v.val_int <= 0) {
+        plog_warn(plugin, "config: %s, set timeout error: %s", config,
+                  err_param);
+        free(err_param);
+        return -1;
+    }
+
     plugin->interval = interval.v.val_int;
     if (link.v.val_int == 0) {
         ret = neu_parse_param((char *) config, &err_param, 5, &device, &stop,
                               &parity, &baud, &data);
     } else {
-        ret = neu_parse_param((char *) config, &err_param, 3, &mode, &host,
-                              &port);
+        ret = neu_parse_param((char *) config, &err_param, 4, &mode, &host,
+                              &port, &tmode);
     }
 
     if (ret != 0) {
@@ -197,23 +205,33 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
                   device.v.val_str, baud.v.val_int, data.v.val_int,
                   parity.v.val_int, stop.v.val_int);
     } else {
-        if (mode.v.val_int == 1) {
-            param.type                           = NEU_CONN_TCP_SERVER;
-            param.params.tcp_server.ip           = host.v.val_str;
-            param.params.tcp_server.port         = port.v.val_int;
-            param.params.tcp_server.start_listen = modbus_tcp_server_listen;
-            param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
-            param.params.tcp_server.timeout      = timeout.v.val_int;
-            param.params.tcp_server.max_link     = 1;
-            plugin->is_server                    = true;
+        if (tmode.v.val_int == 1) {
+            param.type                = NEU_CONN_UDP;
+            param.params.udp.timeout  = 3000;
+            param.params.udp.src_ip   = "0.0.0.0";
+            param.params.udp.src_port = 0;
+            param.params.udp.dst_ip   = host.v.val_str;
+            param.params.udp.dst_port = port.v.val_int;
+            plugin->is_server         = false;
         } else {
-            param.type                      = NEU_CONN_TCP_CLIENT;
-            param.params.tcp_client.ip      = host.v.val_str;
-            param.params.tcp_client.port    = port.v.val_int;
-            param.params.tcp_client.timeout = timeout.v.val_int;
-            plugin->is_server               = false;
+            if (mode.v.val_int == 1) {
+                param.type                           = NEU_CONN_TCP_SERVER;
+                param.params.tcp_server.ip           = host.v.val_str;
+                param.params.tcp_server.port         = port.v.val_int;
+                param.params.tcp_server.start_listen = modbus_tcp_server_listen;
+                param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
+                param.params.tcp_server.timeout      = timeout.v.val_int;
+                param.params.tcp_server.max_link     = 1;
+                plugin->is_server                    = true;
+            }
+            if (mode.v.val_int == 0) {
+                param.type                      = NEU_CONN_TCP_CLIENT;
+                param.params.tcp_client.ip      = host.v.val_str;
+                param.params.tcp_client.port    = port.v.val_int;
+                param.params.tcp_client.timeout = timeout.v.val_int;
+                plugin->is_server               = false;
+            }
         }
-
         plog_info(plugin,
                   "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
                   host.v.val_str, port.v.val_int, mode.v.val_int);
@@ -252,13 +270,13 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 
     int ret = modbus_tag_to_point(tag, &point);
     if (ret == 0) {
-        plog_debug(
-            plugin,
-            "validate tag success, name: %s, address: %s, type: %d, slave id: "
-            "%d, start address: %d, n register: %d, area: %s",
-            tag->name, tag->address, tag->type, point.slave_id,
-            point.start_address, point.n_register,
-            modbus_area_to_str(point.area));
+        plog_debug(plugin,
+                   "validate tag success, name: %s, address: %s, type: %d, "
+                   "slave id: "
+                   "%d, start address: %d, n register: %d, area: %s",
+                   tag->name, tag->address, tag->type, point.slave_id,
+                   point.start_address, point.n_register,
+                   modbus_area_to_str(point.area));
     }
 
     return ret;
