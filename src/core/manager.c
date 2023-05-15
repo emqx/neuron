@@ -315,7 +315,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t        e   = { 0 };
         neu_req_add_template_t *cmd = (neu_req_add_template_t *) &header[1];
 
-        e.error = neu_manager_add_template(manager, cmd);
+        e.error = neu_manager_add_template(manager, cmd->name, cmd->plugin,
+                                           cmd->n_group, cmd->groups);
         if (NEU_ERR_SUCCESS == e.error) {
             manager_storage_add_template(manager, cmd->name);
         }
@@ -388,7 +389,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
             e.error = NEU_ERR_GROUP_PARAMETER_INVALID;
         } else {
-            e.error = neu_manager_add_template_group(manager, cmd);
+            e.error = neu_manager_add_template_group(manager, cmd->tmpl,
+                                                     cmd->group, cmd->interval);
         }
 
         if (e.error == NEU_ERR_SUCCESS) {
@@ -462,7 +464,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             (neu_req_add_template_tag_t *) &header[1];
         neu_resp_add_tag_t resp = { 0 };
 
-        resp.error = neu_manager_add_template_tags(manager, cmd, &resp.index);
+        resp.error = neu_manager_add_template_tags(
+            manager, cmd->tmpl, cmd->group, cmd->n_tag, cmd->tags, &resp.index);
         if (resp.index > 0) {
             manager_storage_add_template_tags(cmd->tmpl, cmd->group, cmd->tags,
                                               cmd->n_tag);
