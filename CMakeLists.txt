@@ -32,7 +32,7 @@ if(NOT DISABLE_WERROR)
 endif()
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -g")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O1")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} -O0")
 
 if(NOT DISABLE_ASAN)
   set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS} -fsanitize=address")
