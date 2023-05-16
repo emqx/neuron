@@ -109,7 +109,7 @@ typedef union {
     double   d64;
     char     str[NEU_VALUE_SIZE];
     uint8_t  bytes[NEU_VALUE_SIZE];
-} neu_value_u;
+} __attribute__((packed)) neu_value_u;
 
 typedef struct {
     neu_type_e  type;
