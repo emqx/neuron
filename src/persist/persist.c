@@ -1459,7 +1459,7 @@ int neu_persister_load_template_tags(const char *tmpl_name,
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT name, address, attribute, precision, type, "
                         "decimal, description, value "
-                        "FROM tags WHERE tmpl_name=? AND group_name=? "
+                        "FROM template_tags WHERE tmpl_name=? AND group_name=? "
                         "ORDER BY rowid ASC";
 
     utarray_new(*tags, neu_tag_get_icd());
