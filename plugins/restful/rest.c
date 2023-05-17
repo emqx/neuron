@@ -55,7 +55,7 @@ static nng_http_server *server_init()
     nng_http_server *server;
 
     snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7000");
-    nlog_info("bind url: %s", host_port);
+    nlog_notice("bind url: %s", host_port);
 
     int ret = nng_url_parse(&url, host_port);
     if (ret != 0) {
@@ -105,7 +105,7 @@ static neu_plugin_t *dashb_plugin_open(void)
         goto server_init_fail;
     }
 
-    nlog_info("Success to create plugin: %s", neu_plugin_module.module_name);
+    nlog_notice("Success to create plugin: %s", neu_plugin_module.module_name);
     return plugin;
 
 server_init_fail:
@@ -121,13 +121,11 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    nlog_info("Success to before free plugin: %s",
-              neu_plugin_module.module_name);
     nng_http_server_stop(plugin->server);
     nng_http_server_release(plugin->server);
 
     free(plugin);
-    nlog_info("Success to free plugin: %s", neu_plugin_module.module_name);
+    nlog_notice("Success to free plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -139,7 +137,7 @@ static int dashb_plugin_init(neu_plugin_t *plugin)
 
     rv = neu_jwt_init(g_config_dir);
 
-    nlog_info("Initialize plugin: %s", neu_plugin_module.module_name);
+    nlog_notice("Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -149,7 +147,7 @@ static int dashb_plugin_uninit(neu_plugin_t *plugin)
 
     (void) plugin;
 
-    nlog_info("Uninitialize plugin: %s", neu_plugin_module.module_name);
+    nlog_notice("Uninitialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -160,7 +158,7 @@ static int dashb_plugin_config(neu_plugin_t *plugin, const char *configs)
     (void) plugin;
     (void) configs;
 
-    nlog_info("config plugin: %s", neu_plugin_module.module_name);
+    nlog_notice("config plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
