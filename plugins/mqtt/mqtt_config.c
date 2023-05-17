@@ -72,19 +72,19 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     // ssl, optional
     int ret = neu_parse_param(setting, NULL, 1, ssl);
     if (0 != ret) {
-        plog_info(plugin, "setting no ssl");
+        plog_notice(plugin, "setting no ssl");
         return 0;
     }
 
     if (false == ssl->v.val_bool) {
-        plog_info(plugin, "setting ssl disabled");
+        plog_notice(plugin, "setting ssl disabled");
         return 0;
     }
 
     // ca, optional
     ret = neu_parse_param(setting, NULL, 1, ca);
     if (0 != ret) {
-        plog_info(plugin, "setting no ca");
+        plog_notice(plugin, "setting no ca");
         return 0;
     }
 
@@ -95,7 +95,7 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     // cert, optional
     ret = neu_parse_param(setting, NULL, 1, cert);
     if (0 != ret) {
-        plog_info(plugin, "setting no cert");
+        plog_notice(plugin, "setting no cert");
         return 0;
     }
 
@@ -112,7 +112,7 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     // keypass, optional
     ret = neu_parse_param(setting, NULL, 1, keypass);
     if (0 != ret) {
-        plog_info(plugin, "setting no keypass");
+        plog_notice(plugin, "setting no keypass");
     } else if (0 == strlen(keypass->v.val_str)) {
         plog_error(plugin, "setting invalid keypass");
         return -1;
@@ -133,7 +133,7 @@ static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
     // offline-cache flag, optional
     ret = neu_parse_param(setting, NULL, 1, offline_cache);
     if (0 != ret) {
-        plog_info(plugin, "setting no offline cache flag");
+        plog_notice(plugin, "setting no offline cache flag");
         flag_present = false; // `offline-cache` not present in setting
     }
 
@@ -307,13 +307,13 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     // username, optional
     ret = neu_parse_param(setting, NULL, 1, &username);
     if (0 != ret) {
-        plog_info(plugin, "setting no username");
+        plog_notice(plugin, "setting no username");
     }
 
     // password, optional
     ret = neu_parse_param(setting, NULL, 1, &password);
     if (0 != ret) {
-        plog_info(plugin, "setting no password");
+        plog_notice(plugin, "setting no password");
     }
 
     ret = parse_ssl_params(plugin, setting, &ssl, &ca, &cert, &key, &keypass);
@@ -339,38 +339,40 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     config->key              = key.v.val_str;
     config->keypass          = keypass.v.val_str;
 
-    plog_info(plugin, "config client-id       : %s", config->client_id);
-    plog_info(plugin, "config qos             : %d", config->qos);
-    plog_info(plugin, "config format          : %s",
-              mqtt_upload_format_str(config->format));
-    plog_info(plugin, "config write-req-topic : %s", config->write_req_topic);
-    plog_info(plugin, "config write-resp-topic: %s", config->write_resp_topic);
-    plog_info(plugin, "config cache           : %zu", config->cache);
-    plog_info(plugin, "config cache-mem-size  : %zu", config->cache_mem_size);
-    plog_info(plugin, "config cache-disk-size : %zu", config->cache_disk_size);
-    plog_info(plugin, "config host            : %s", config->host);
-    plog_info(plugin, "config port            : %" PRIu16, config->port);
+    plog_notice(plugin, "config client-id       : %s", config->client_id);
+    plog_notice(plugin, "config qos             : %d", config->qos);
+    plog_notice(plugin, "config format          : %s",
+                mqtt_upload_format_str(config->format));
+    plog_notice(plugin, "config write-req-topic : %s", config->write_req_topic);
+    plog_notice(plugin, "config write-resp-topic: %s",
+                config->write_resp_topic);
+    plog_notice(plugin, "config cache           : %zu", config->cache);
+    plog_notice(plugin, "config cache-mem-size  : %zu", config->cache_mem_size);
+    plog_notice(plugin, "config cache-disk-size : %zu",
+                config->cache_disk_size);
+    plog_notice(plugin, "config host            : %s", config->host);
+    plog_notice(plugin, "config port            : %" PRIu16, config->port);
 
     if (config->username) {
-        plog_info(plugin, "config username        : %s", config->username);
+        plog_notice(plugin, "config username        : %s", config->username);
     }
     if (config->password) {
-        plog_info(plugin, "config password        : %s",
-                  0 == strlen(config->password) ? "" : placeholder);
+        plog_notice(plugin, "config password        : %s",
+                    0 == strlen(config->password) ? "" : placeholder);
     }
 
-    plog_info(plugin, "config ssl             : %d", config->ssl);
+    plog_notice(plugin, "config ssl             : %d", config->ssl);
     if (config->ca) {
-        plog_info(plugin, "config ca              : %s", placeholder);
+        plog_notice(plugin, "config ca              : %s", placeholder);
     }
     if (config->cert) {
-        plog_info(plugin, "config cert            : %s", placeholder);
+        plog_notice(plugin, "config cert            : %s", placeholder);
     }
     if (config->key) {
-        plog_info(plugin, "config key             : %s", placeholder);
+        plog_notice(plugin, "config key             : %s", placeholder);
     }
     if (config->keypass) {
-        plog_info(plugin, "config keypass         : %s", placeholder);
+        plog_notice(plugin, "config keypass         : %s", placeholder);
     }
 
     return 0;
