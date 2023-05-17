@@ -56,7 +56,7 @@ void handle_login(nng_aio *aio)
             neu_user_t *          user       = neu_load_user(req->name);
 
             if (NULL == user) {
-                nlog_warn("could not find user `%s`", req->name);
+                nlog_error("could not find user `%s`", req->name);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
@@ -81,7 +81,7 @@ void handle_login(nng_aio *aio)
                 jwt_free_str(token);
                 free(result);
             } else {
-                nlog_warn("user `%s` password check fail", req->name);
+                nlog_error("user `%s` password check fail", req->name);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
