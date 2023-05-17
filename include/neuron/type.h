@@ -112,6 +112,85 @@ typedef union {
     uint8_t  bytes[NEU_VALUE_SIZE];
 } neu_value_u;
 
+static inline char *neu_value_str(neu_type_e type, neu_value_u value)
+{
+    static __thread char str[32] = { 0 };
+
+    switch (type) {
+    case NEU_TYPE_INT8:
+        snprintf(str, sizeof(str), "type: %s, value: %i", neu_type_string(type),
+                 value.i8);
+        break;
+    case NEU_TYPE_UINT8:
+        snprintf(str, sizeof(str), "type: %s, value: %u", neu_type_string(type),
+                 value.u8);
+        break;
+    case NEU_TYPE_INT16:
+        snprintf(str, sizeof(str), "type: %s, value: %i", neu_type_string(type),
+                 value.i16);
+        break;
+    case NEU_TYPE_WORD:
+    case NEU_TYPE_UINT16:
+        snprintf(str, sizeof(str), "type: %s, value: %u", neu_type_string(type),
+                 value.u16);
+        break;
+    case NEU_TYPE_INT32:
+        snprintf(str, sizeof(str), "type: %s, value: %i", neu_type_string(type),
+                 value.i32);
+        break;
+    case NEU_TYPE_DWORD:
+    case NEU_TYPE_UINT32:
+        snprintf(str, sizeof(str), "type: %s, value: %u", neu_type_string(type),
+                 value.u32);
+        break;
+    case NEU_TYPE_INT64:
+#if __WORDSIZE == 64
+        snprintf(str, sizeof(str), "type: %s, value: %li",
+                 neu_type_string(type), value.i64);
+#else
+        snprintf(str, sizeof(str), "type: %s, value: %lli",
+                 neu_type_string(type), value.i64);
+#endif
+        break;
+    case NEU_TYPE_LWORD:
+    case NEU_TYPE_UINT64:
+#if __WORDSIZE == 64
+        snprintf(str, sizeof(str), "type: %s, value: %lu",
+                 neu_type_string(type), value.u64);
+#else
+        snprintf(str, sizeof(str), "type: %s, value: %llu",
+                 neu_type_string(type), value.u64);
+#endif
+        break;
+    case NEU_TYPE_FLOAT:
+        snprintf(str, sizeof(str), "type: %s, value: %f", neu_type_string(type),
+                 value.f32);
+        break;
+    case NEU_TYPE_DOUBLE:
+        snprintf(str, sizeof(str), "type: %s, value: %f", neu_type_string(type),
+                 value.d64);
+        break;
+    case NEU_TYPE_BIT:
+        snprintf(str, sizeof(str), "type: %s, value: %u", neu_type_string(type),
+                 value.u8);
+        break;
+    case NEU_TYPE_BOOL:
+        snprintf(str, sizeof(str), "type: %s, value: %u", neu_type_string(type),
+                 value.boolean);
+        break;
+    case NEU_TYPE_STRING: {
+        snprintf(str, sizeof(str), "type: %s, value: %c%c%c",
+                 neu_type_string(type), value.str[0], value.str[1],
+                 value.str[2]);
+        break;
+    }
+    default:
+        break;
+    }
+
+    return str;
+}
+
 typedef struct {
     neu_type_e  type;
     neu_value_u value;
