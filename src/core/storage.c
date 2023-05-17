@@ -391,3 +391,68 @@ int manager_load_subscribe(neu_manager_t *manager)
     utarray_free(nodes);
     return 0;
 }
+
+static int load_template_group_and_tags(neu_manager_t *manager,
+                                        const char *   tmpl_name)
+{
+    int       rv          = 0;
+    UT_array *group_infos = NULL;
+
+    rv = neu_persister_load_template_groups(tmpl_name, &group_infos);
+    if (0 != rv) {
+        nlog_warn("load template %s group fail", tmpl_name);
+        return rv;
+    }
+
+    utarray_foreach(group_infos, neu_persist_group_info_t *, p)
+    {
+        neu_manager_add_template_group(manager, tmpl_name, p->name,
+                                       p->interval);
+
+        UT_array *tags = NULL;
+        rv = neu_persister_load_template_tags(tmpl_name, p->name, &tags);
+        if (0 != rv) {
+            nlog_warn("load template:%s group:%s tags fail", tmpl_name,
+                      p->name);
+            continue;
+        }
+
+        neu_manager_add_template_tags(manager, tmpl_name, p->name,
+                                      utarray_len(tags), utarray_front(tags),
+                                      NULL);
+
+        utarray_free(tags);
+    }
+
+    utarray_free(group_infos);
+    return rv;
+}
+
+int manager_load_template(neu_manager_t *manager)
+{
+    int       rv         = 0;
+    UT_array *tmpl_infos = NULL;
+
+    rv = neu_persister_load_templates(&tmpl_infos);
+    if (0 != rv) {
+        nlog_error("failed to load template infos");
+        return -1;
+    }
+
+    utarray_foreach(tmpl_infos, neu_persist_template_info_t *, tmpl_info)
+    {
+        rv = neu_manager_add_template(manager, tmpl_info->name,
+                                      tmpl_info->plugin_name, 0, NULL);
+        const char *ok_or_err = (0 == rv) ? "success" : "fail";
+        nlog_info("load template name:%s plugin:%s %s", tmpl_info->name,
+                  tmpl_info->plugin_name, ok_or_err);
+        if (0 != rv) {
+            continue; // ignore error, load as much data as possible
+        }
+
+        load_template_group_and_tags(manager, tmpl_info->name);
+    }
+
+    utarray_free(tmpl_infos);
+    return rv;
+}

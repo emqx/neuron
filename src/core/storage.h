@@ -62,5 +62,6 @@ void manager_storage_del_template_tags(const char *tmpl, const char *group,
 int manager_load_plugin(neu_manager_t *manager);
 int manager_load_node(neu_manager_t *manager);
 int manager_load_subscribe(neu_manager_t *manager);
+int manager_load_template(neu_manager_t *manager);
 
 #endif
