@@ -179,8 +179,9 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
                  value.boolean);
         break;
     case NEU_TYPE_STRING: {
-        snprintf(str, sizeof(str), "type: %s, value: %s", neu_type_string(type),
-                 value.str);
+        snprintf(str, sizeof(str), "type: %s, value: %c%c%c",
+                 neu_type_string(type), value.str[0], value.str[1],
+                 value.str[2]);
         break;
     }
     default:
