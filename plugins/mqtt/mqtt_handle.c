@@ -194,8 +194,8 @@ static char *generate_write_resp_json(neu_plugin_t *    plugin,
 static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                                 neu_json_read_req_t *req)
 {
-    plog_info(plugin, "read uuid:%s, group:%s, node:%s", mqtt->uuid, req->group,
-              req->node);
+    plog_notice(plugin, "read uuid:%s, group:%s, node:%s", mqtt->uuid,
+                req->group, req->node);
 
     neu_reqresp_head_t header = { 0 };
     header.ctx                = mqtt;
@@ -214,8 +214,8 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 static int send_write_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                           neu_json_write_req_t *req)
 {
-    plog_info(plugin, "write uuid:%s, group:%s, node:%s", mqtt->uuid,
-              req->group, req->node);
+    plog_notice(plugin, "write uuid:%s, group:%s, node:%s", mqtt->uuid,
+                req->group, req->node);
 
     neu_reqresp_head_t  header = { 0 };
     neu_req_write_tag_t cmd    = { 0 };
@@ -538,8 +538,8 @@ int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info)
         goto end;
     }
 
-    plog_info(plugin, "route driver:%s group:%s to topic:%s", sub_info->driver,
-              sub_info->group, topic.v.val_str);
+    plog_notice(plugin, "route driver:%s group:%s to topic:%s",
+                sub_info->driver, sub_info->group, topic.v.val_str);
 
 end:
     free(sub_info->params);
@@ -550,7 +550,7 @@ int handle_unsubscribe_group(neu_plugin_t *         plugin,
                              neu_req_unsubscribe_t *unsub_info)
 {
     route_tbl_del(&plugin->route_tbl, unsub_info->driver, unsub_info->group);
-    plog_info(plugin, "del route driver:%s group:%s", unsub_info->driver,
-              unsub_info->group);
+    plog_notice(plugin, "del route driver:%s group:%s", unsub_info->driver,
+                unsub_info->group);
     return 0;
 }
