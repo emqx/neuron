@@ -97,8 +97,9 @@ neu_manager_t *neu_manager_create()
     rv = nng_listen(manager->socket, url, NULL, 0);
     assert(rv == 0);
 
-    nng_socket_set_int(manager->socket, NNG_OPT_RECVBUF, 2048);
-    nng_socket_set_int(manager->socket, NNG_OPT_SENDBUF, 2048);
+    nng_socket_set_int(manager->socket, NNG_OPT_RECVBUF, 8192);
+    nng_socket_set_int(manager->socket, NNG_OPT_SENDBUF, 8292);
+    nng_socket_set_ms(manager->socket, NNG_OPT_SENDTIMEO, 1000);
     nng_socket_get_int(manager->socket, NNG_OPT_RECVFD, &param.fd);
     manager->loop = neu_event_add_io(manager->events, param);
 
@@ -899,6 +900,7 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
         nlog_debug("forward msg to pipe %d", pipe.id);
     } else {
+        nlog_warn("forward msg to pipe %d fail", pipe.id);
         nng_msg_free(out_msg);
     }
 }
@@ -914,6 +916,7 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
         nlog_debug("forward msg to %s", node);
     } else {
+        nlog_warn("forward msg to pipe (%s)%d fail", node, pipe.id);
         nng_msg_free(out_msg);
     }
 }
