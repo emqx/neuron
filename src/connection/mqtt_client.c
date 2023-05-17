@@ -287,14 +287,14 @@ static void task_handle_sub(task_t *task, neu_mqtt_client_t *client)
     }
 
     rc = nng_mqtt_msg_get_suback_return_codes(msg, &n);
-    log(info, "recv SUBACK return_code:%d", *rc);
+    log(debug, "recv SUBACK return_code:%d", *rc);
     rv             = 0x80 == *rc ? -1 : 0;
     task->sub->ack = true;
     client->suback_count += 1;
 
 end:
     // TODO: handle retry subscribe on failure
-    log(info, "sub [%s, QoS%d], %s", task->sub->topic, task->sub->qos,
+    log(notice, "sub [%s, QoS%d], %s", task->sub->topic, task->sub->qos,
         (0 == rv) ? "OK" : "FAIL");
     nng_msg_free(msg);
     return;
@@ -326,10 +326,10 @@ static void task_handle_unsub(task_t *task, neu_mqtt_client_t *client)
 
 end:
     if (task->sub) {
-        log(info, "unsub [%s, QoS%d], %s", task->sub->topic, task->sub->qos,
+        log(notice, "unsub [%s, QoS%d], %s", task->sub->topic, task->sub->qos,
             (0 == rv) ? "OK" : "FAIL");
     } else {
-        log(info, "unsub %s", (0 == rv) ? "OK" : "FAIL");
+        log(notice, "unsub %s", (0 == rv) ? "OK" : "FAIL");
     }
     nng_msg_free(msg);
     return;
@@ -431,7 +431,7 @@ static void connect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_mqtt_client_connection_cb_t cb     = NULL;
     void *                          data   = NULL;
 
-    log(info, "mqtt client connected");
+    log(notice, "mqtt client connected");
 
     nng_mtx_lock(client->mtx);
     // start receiving
@@ -457,7 +457,7 @@ static void disconnect_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     neu_mqtt_client_connection_cb_t cb     = NULL;
     void *                          data   = NULL;
 
-    log(info, "mqtt client disconnected");
+    log(notice, "mqtt client disconnected");
     nng_mtx_lock(client->mtx);
     client->connected = false;
     cb                = client->disconnect_cb;
@@ -511,7 +511,7 @@ static void recv_cb(void *arg)
     uint8_t     qos   = nng_mqtt_msg_get_publish_qos(msg);
 
     (void) payload;
-    log(info, "recv [%.*s, QoS%d] %" PRIu32 " bytes", (unsigned) topic_len,
+    log(debug, "recv [%.*s, QoS%d] %" PRIu32 " bytes", (unsigned) topic_len,
         topic, (int) qos, payload_len);
 
     // find matching subscription
@@ -565,7 +565,7 @@ static inline task_t *client_alloc_task(neu_mqtt_client_t *client)
     // the task queue length should be a small number due to reuse
     // log info every time the task queue length increments by 32
     if (0 == (client->task_count & (32 - 1))) {
-        log(info, "task queue length: %zu", client->task_count);
+        log(debug, "task queue length: %zu", client->task_count);
     }
 
     return task;
@@ -1017,7 +1017,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
 
     if (NULL == ca) {
         // disable tls
-        log(info, "tls disabled");
+        log(debug, "tls disabled");
         if (client->tls_cfg) {
             nng_tls_config_free(client->tls_cfg);
             client->tls_cfg = NULL;
@@ -1077,7 +1077,7 @@ int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
 
     if (0 == mem_size_bytes && 0 == db_size_bytes) {
         // disable cache
-        log(info, "cache disabled");
+        log(debug, "cache disabled");
         if (client->sqlite_cfg) {
             nng_mqtt_free_sqlite_opt(client->sqlite_cfg);
             client->sqlite_cfg = NULL;
