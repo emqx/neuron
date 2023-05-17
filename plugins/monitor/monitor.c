@@ -37,15 +37,15 @@ static void connect_cb(void *data)
 {
     neu_plugin_t *plugin      = data;
     plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
-    plog_info(plugin, "plugin `%s` connected", neu_plugin_module.module_name);
+    plog_notice(plugin, "plugin `%s` connected", neu_plugin_module.module_name);
 }
 
 static void disconnect_cb(void *data)
 {
     neu_plugin_t *plugin      = data;
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-    plog_info(plugin, "plugin `%s` disconnected",
-              neu_plugin_module.module_name);
+    plog_notice(plugin, "plugin `%s` disconnected",
+                neu_plugin_module.module_name);
 }
 
 static nng_http_server *server_init()
@@ -54,7 +54,7 @@ static nng_http_server *server_init()
     nng_http_server *server    = NULL;
     const char *     host_port = "http://0.0.0.0:7000";
 
-    nlog_info("monitor bind url: %s", host_port);
+    nlog_notice("monitor bind url: %s", host_port);
 
     int ret = nng_url_parse(&url, host_port);
     if (0 != ret) {
@@ -179,7 +179,7 @@ static inline void stop_heartbeart_timer(neu_plugin_t *plugin)
     if (plugin->heartbeat_timer) {
         neu_event_del_timer(plugin->events, plugin->heartbeat_timer);
         plugin->heartbeat_timer = NULL;
-        plog_info(plugin, "heartbeat timer stopped");
+        plog_notice(plugin, "heartbeat timer stopped");
     }
 }
 
@@ -219,7 +219,7 @@ end:
     }
     plugin->heartbeat_timer = timer;
 
-    plog_info(plugin, "start_hearbeat_timer interval: %" PRIu64, interval);
+    plog_notice(plugin, "start_hearbeat_timer interval: %" PRIu64, interval);
 
     return 0;
 }
@@ -286,8 +286,8 @@ static int monitor_plugin_close(neu_plugin_t *plugin)
     nng_http_server_stop(plugin->api_server);
     nng_http_server_release(plugin->api_server);
     pthread_mutex_destroy(&plugin->mutex);
-    plog_info(plugin, "Success to free plugin: %s",
-              neu_plugin_module.module_name);
+    plog_notice(plugin, "Success to free plugin: %s",
+                neu_plugin_module.module_name);
     free(plugin);
 
     return rv;
@@ -298,7 +298,7 @@ static int monitor_plugin_init(neu_plugin_t *plugin)
     int rv = 0;
     (void) plugin;
 
-    plog_info(plugin, "Initialize plugin: %s", neu_plugin_module.module_name);
+    plog_notice(plugin, "Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
 }
 
@@ -308,7 +308,8 @@ static int monitor_plugin_uninit(neu_plugin_t *plugin)
 
     uninit_timers_and_mqtt(plugin);
 
-    plog_info(plugin, "Uninitialize plugin: %s", neu_plugin_module.module_name);
+    plog_notice(plugin, "Uninitialize plugin: %s",
+                neu_plugin_module.module_name);
     return rv;
 }
 
@@ -372,7 +373,7 @@ static int monitor_plugin_config(neu_plugin_t *plugin, const char *setting)
     memmove(plugin->config, &config, sizeof(config));
     // `config` moved, do not call monitor_config_fini
 
-    plog_info(plugin, "config plugin `%s` success", plugin_name);
+    plog_notice(plugin, "config plugin `%s` success", plugin_name);
     return 0;
 
 error:
@@ -423,7 +424,7 @@ static int monitor_plugin_start(neu_plugin_t *plugin)
     const char *plugin_name = neu_plugin_module.module_name;
 
     if (NULL == plugin->mqtt_client) {
-        plog_info(plugin, "mqtt client is NULL");
+        plog_notice(plugin, "mqtt client is NULL");
         goto end;
     }
 
@@ -443,7 +444,7 @@ static int monitor_plugin_start(neu_plugin_t *plugin)
 end:
     if (0 == rv) {
         plugin->started = true;
-        plog_info(plugin, "start plugin `%s` success", plugin_name);
+        plog_notice(plugin, "start plugin `%s` success", plugin_name);
     } else {
         plog_error(plugin, "start plugin `%s` failed, error %d", plugin_name,
                    rv);
@@ -456,13 +457,13 @@ static int monitor_plugin_stop(neu_plugin_t *plugin)
 {
     if (plugin->mqtt_client) {
         neu_mqtt_client_close(plugin->mqtt_client);
-        plog_info(plugin, "mqtt client closed");
+        plog_notice(plugin, "mqtt client closed");
     }
 
     stop_heartbeart_timer(plugin);
     plugin->started = false;
-    plog_info(plugin, "stop plugin `%s` success",
-              neu_plugin_module.module_name);
+    plog_notice(plugin, "stop plugin `%s` success",
+                neu_plugin_module.module_name);
     return 0;
 }
 
