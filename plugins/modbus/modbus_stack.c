@@ -187,6 +187,8 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                          neu_protocol_pack_buf_get(&pbuf));
     if (ret <= 0) {
         stack->value_fn(stack->ctx, 0, 0, NULL, NEU_ERR_PLUGIN_DISCONNECTED);
+        plog_warn((neu_plugin_t *) stack->ctx, "send read req fail, %hhu!%hu",
+                  slave_id, start_address);
     }
 
     return ret;
@@ -246,8 +248,12 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
                              neu_protocol_pack_buf_get(&pbuf));
     if (ret > 0) {
         stack->write_resp(stack->ctx, req, NEU_ERR_SUCCESS);
+        plog_notice((neu_plugin_t *) stack->ctx, "send write req, %hhu!%hu",
+                    slave_id, start_address);
     } else {
         stack->write_resp(stack->ctx, req, NEU_ERR_PLUGIN_DISCONNECTED);
+        plog_warn((neu_plugin_t *) stack->ctx, "send write req fail, %hhu!%hu",
+                  slave_id, start_address);
     }
     return ret;
 }
