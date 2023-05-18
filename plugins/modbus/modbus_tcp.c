@@ -99,11 +99,13 @@ static int driver_init(neu_plugin_t *plugin)
                                         modbus_send_msg, modbus_value_handle,
                                         modbus_write_resp);
 
+    plog_notice(plugin, "%s init success", plugin->common.name);
     return 0;
 }
 
 static int driver_uninit(neu_plugin_t *plugin)
 {
+    plog_notice(plugin, "%s uninit start", plugin->common.name);
     if (plugin->conn != NULL) {
         neu_conn_destory(plugin->conn);
     }
@@ -114,7 +116,7 @@ static int driver_uninit(neu_plugin_t *plugin)
 
     neu_event_close(plugin->events);
 
-    plog_info(plugin, "node: modbus uninit ok");
+    plog_notice(plugin, "%s uninit success", plugin->common.name);
 
     return 0;
 }
@@ -122,12 +124,14 @@ static int driver_uninit(neu_plugin_t *plugin)
 static int driver_start(neu_plugin_t *plugin)
 {
     neu_conn_start(plugin->conn);
+    plog_notice(plugin, "%s start success", plugin->common.name);
     return 0;
 }
 
 static int driver_stop(neu_plugin_t *plugin)
 {
     neu_conn_stop(plugin->conn);
+    plog_notice(plugin, "%s stop success", plugin->common.name);
     return 0;
 }
 
@@ -147,15 +151,15 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
                           &timeout, &interval, &tmode);
 
     if (ret != 0) {
-        plog_warn(plugin, "config: %s, decode error: %s", config, err_param);
+        plog_error(plugin, "config: %s, decode error: %s", config, err_param);
         free(err_param);
         free(host.v.val_str);
         return -1;
     }
 
     if (timeout.v.val_int <= 0) {
-        plog_warn(plugin, "config: %s, set timeout error: %s", config,
-                  err_param);
+        plog_error(plugin, "config: %s, set timeout error: %s", config,
+                   err_param);
         free(err_param);
         return -1;
     }
@@ -190,8 +194,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
             plugin->is_server               = false;
         }
     }
-    plog_info(plugin, "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
-              host.v.val_str, port.v.val_int, mode.v.val_int);
+    plog_notice(plugin,
+                "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
+                host.v.val_str, port.v.val_int, mode.v.val_int);
 
     if (plugin->conn != NULL) {
         plugin->conn = neu_conn_reconfig(plugin->conn, &param);
@@ -221,7 +226,15 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 
     int ret = modbus_tag_to_point(tag, &point);
     if (ret == 0) {
-        plog_debug(
+        plog_notice(
+            plugin,
+            "validate tag success, name: %s, address: %s, type: %d, slave id: "
+            "%d, start address: %d, n register: %d, area: %s",
+            tag->name, tag->address, tag->type, point.slave_id,
+            point.start_address, point.n_register,
+            modbus_area_to_str(point.area));
+    } else {
+        plog_error(
             plugin,
             "validate tag success, name: %s, address: %s, type: %d, slave id: "
             "%d, start address: %d, n register: %d, area: %s",
@@ -229,7 +242,6 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
             point.start_address, point.n_register,
             modbus_area_to_str(point.area));
     }
-
     return ret;
 }
 
