@@ -30,15 +30,15 @@ static void connect_cb(void *data)
 {
     neu_plugin_t *plugin      = data;
     plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
-    plog_info(plugin, "plugin `%s` connected", neu_plugin_module.module_name);
+    plog_notice(plugin, "plugin `%s` connected", neu_plugin_module.module_name);
 }
 
 static void disconnect_cb(void *data)
 {
     neu_plugin_t *plugin      = data;
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
-    plog_info(plugin, "plugin `%s` disconnected",
-              neu_plugin_module.module_name);
+    plog_notice(plugin, "plugin `%s` disconnected",
+                neu_plugin_module.module_name);
 }
 
 static neu_plugin_t *mqtt_plugin_open(void)
@@ -51,7 +51,7 @@ static neu_plugin_t *mqtt_plugin_open(void)
 static int mqtt_plugin_close(neu_plugin_t *plugin)
 {
     const char *name = neu_plugin_module.module_name;
-    plog_info(plugin, "success to free plugin:%s", name);
+    plog_notice(plugin, "success to free plugin:%s", name);
 
     free(plugin);
     return NEU_ERR_SUCCESS;
@@ -59,8 +59,8 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 
 static int mqtt_plugin_init(neu_plugin_t *plugin)
 {
-    plog_info(plugin, "initialize plugin `%s` success",
-              neu_plugin_module.module_name);
+    plog_notice(plugin, "initialize plugin `%s` success",
+                neu_plugin_module.module_name);
     neu_adapter_register_metric_cb_t register_metric =
         plugin->common.adapter_callbacks->register_metric;
     register_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
@@ -85,8 +85,8 @@ static int mqtt_plugin_uninit(neu_plugin_t *plugin)
 
     route_tbl_free(plugin->route_tbl);
 
-    plog_info(plugin, "uninitialize plugin `%s` success",
-              neu_plugin_module.module_name);
+    plog_notice(plugin, "uninitialize plugin `%s` success",
+                neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
 }
 
@@ -269,11 +269,11 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
     }
     memmove(&plugin->config, &config, sizeof(config));
 
-    plog_info(plugin, "config plugin `%s` success", plugin_name);
+    plog_notice(plugin, "config plugin `%s` success", plugin_name);
     return 0;
 
 error:
-    plog_info(plugin, "config plugin `%s` fail", plugin_name);
+    plog_error(plugin, "config plugin `%s` fail", plugin_name);
     mqtt_config_fini(&config);
     return rv;
 }
@@ -299,7 +299,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
 
 end:
     if (0 == rv) {
-        plog_info(plugin, "start plugin `%s` success", plugin_name);
+        plog_notice(plugin, "start plugin `%s` success", plugin_name);
     } else {
         plog_error(plugin, "start plugin `%s` failed, error %d", plugin_name,
                    rv);
@@ -313,11 +313,11 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
     if (plugin->client) {
         unsubscribe(plugin, &plugin->config);
         neu_mqtt_client_close(plugin->client);
-        plog_info(plugin, "mqtt client closed");
+        plog_notice(plugin, "mqtt client closed");
     }
 
-    plog_info(plugin, "stop plugin `%s` success",
-              neu_plugin_module.module_name);
+    plog_notice(plugin, "stop plugin `%s` success",
+                neu_plugin_module.module_name);
     return NEU_ERR_SUCCESS;
 }
 

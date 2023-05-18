@@ -34,8 +34,8 @@ static neu_plugin_t *ekuiper_plugin_open(void)
 
     neu_plugin_common_init(&plugin->common);
 
-    zlog_info(neuron, "success to create plugin: %s",
-              neu_plugin_module.module_name);
+    zlog_notice(neuron, "success to create plugin: %s",
+                neu_plugin_module.module_name);
     return plugin;
 }
 
@@ -44,8 +44,8 @@ static int ekuiper_plugin_close(neu_plugin_t *plugin)
     int rv = 0;
 
     free(plugin);
-    zlog_info(neuron, "success to free plugin: %s",
-              neu_plugin_module.module_name);
+    zlog_notice(neuron, "success to free plugin: %s",
+                neu_plugin_module.module_name);
     return rv;
 }
 
@@ -91,7 +91,7 @@ static int ekuiper_plugin_init(neu_plugin_t *plugin)
 
     plugin->recv_aio = recv_aio;
 
-    plog_info(plugin, "plugin initialized");
+    plog_notice(plugin, "plugin initialized");
     return rv;
 }
 
@@ -104,7 +104,7 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
     free(plugin->host);
     free(plugin->url);
 
-    plog_info(plugin, "plugin uninitialized");
+    plog_notice(plugin, "plugin uninitialized");
     return rv;
 }
 
@@ -172,7 +172,7 @@ static int parse_config(neu_plugin_t *plugin, const char *setting,
     *host_p = host.v.val_str;
     *port_p = port.v.val_int;
 
-    plog_info(plugin, "config host:%s port:%" PRIu16, *host_p, *port_p);
+    plog_notice(plugin, "config host:%s port:%" PRIu16, *host_p, *port_p);
 
     return 0;
 
@@ -201,7 +201,7 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *setting)
         goto error;
     }
 
-    plog_info(plugin, "config success");
+    plog_notice(plugin, "config success");
 
     free(plugin->host);
     plugin->host = host;
@@ -220,7 +220,7 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *setting)
 error:
     free(url);
     free(host);
-    plog_info(plugin, "config failure");
+    plog_error(plugin, "config failure");
     return rv;
 }
 
@@ -239,7 +239,7 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
     switch (header->type) {
     case NEU_RESP_ERROR: {
         neu_resp_error_t *error = (neu_resp_error_t *) data;
-        plog_info(plugin, "receive resp errcode: %d", error->error);
+        plog_debug(plugin, "receive resp errcode: %d", error->error);
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
@@ -259,7 +259,7 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
     case NEU_REQ_UNSUBSCRIBE_GROUP:
         break;
     default:
-        plog_notice(plugin, "unsupported request type: %d", header->type);
+        plog_warn(plugin, "unsupported request type: %d", header->type);
         break;
     }
 

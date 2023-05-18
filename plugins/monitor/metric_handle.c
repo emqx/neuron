@@ -109,8 +109,8 @@ static int response(nng_aio *aio, char *content, enum nng_http_status status)
     nng_http_res_set_status(res, status);
 
     nng_http_req *nng_req = nng_aio_get_input(aio, 0);
-    nlog_notice("%s %s [%d]", nng_http_req_get_method(nng_req),
-                nng_http_req_get_uri(nng_req), status);
+    nlog_info("%s %s [%d]", nng_http_req_get_method(nng_req),
+              nng_http_req_get_uri(nng_req), status);
 
     nng_aio_set_output(aio, 0, res);
     nng_aio_finish(aio, 0);
@@ -282,8 +282,8 @@ void handle_get_metric(nng_aio *aio)
     const char *cat_param = neu_http_get_param(aio, "category", &cat_param_len);
     if (NULL != cat_param &&
         !parse_metrics_catgory(cat_param, cat_param_len, &cat)) {
-        plog_info(plugin, "invalid metrics category: %.*s", (int) cat_param_len,
-                  cat_param);
+        plog_error(plugin, "invalid metrics category: %.*s",
+                   (int) cat_param_len, cat_param);
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         goto end;
     }
