@@ -90,7 +90,7 @@ static int driver_init(neu_plugin_t *plugin)
 {
     plugin->events = neu_event_new();
     plugin->stack  = modbus_stack_create((void *) plugin, modbus_send_msg,
-                                         modbus_value_handle, modbus_write_resp);
+                                        modbus_value_handle, modbus_write_resp);
     plog_notice(plugin, "%s init success", plugin->common.name);
 
     return 0;
@@ -131,7 +131,7 @@ static int driver_stop(neu_plugin_t *plugin)
 static int driver_config(neu_plugin_t *plugin, const char *config)
 {
     int              ret       = 0;
-    char            *err_param = NULL;
+    char *           err_param = NULL;
     neu_json_elem_t  port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t  timeout   = { .name = "timeout", .t = NEU_JSON_INT };
     neu_json_elem_t  host      = { .name = "host", .t = NEU_JSON_STR };
@@ -196,7 +196,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
     } else {
         plog_error(
             plugin,
-            "validate tag success, name: %s, address: %s, type: %d, slave id: "
+            "validate tag error, name: %s, address: %s, type: %d, slave id: "
             "%d, start address: %d, n register: %d, area: %s",
             tag->name, tag->address, tag->type, point.slave_id,
             point.start_address, point.n_register,
