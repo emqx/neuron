@@ -63,15 +63,11 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name = "Modbus RTU",
     .module_descr =
         "This plugin is used to connect devices using modbus rtu protocol. "
-        "Support serial,TCP and UDP communication methods. When using TCP "
-        "communication, it is necessary to use the pass-through function of "
-        "DTU to convert serial data into IP data and transmit it through "
-        "the network. Selecting client/server is also supported.",
+        "Support serial,TCP and UDP communication methods. Selecting "
+        "client/server is also supported.",
     .module_descr_zh =
-        "该插件用于连接使用 modbus rtu 协议的设备。支持串口,TCP 和 UDP "
-        "三种通信方式。使用 TCP 通信时,需要使用 DTU "
-        "的透传功能,将串口数据转为 IP "
-        "数据并通过网络传输。也支持选择客户端/服务端。",
+        "该插件用于连接使用 modbus rtu 协议的设备。支持串口, TCP 和 UDP "
+        "三种通信方式。也支持选择客户端/服务端。",
     .intf_funs = &plugin_intf_funs,
     .kind      = NEU_PLUGIN_KIND_SYSTEM,
     .type      = NEU_NA_TYPE_DRIVER,
@@ -283,7 +279,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
                     modbus_area_to_str(point.area));
     } else {
         plog_error(plugin,
-                   "validate tag success, name: %s, address: %s, type: %d, "
+                   "validate tag error, name: %s, address: %s, type: %d, "
                    "slave id: "
                    "%d, start address: %d, n register: %d, area: %s",
                    tag->name, tag->address, tag->type, point.slave_id,
