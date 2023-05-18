@@ -75,19 +75,19 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     // ssl, optional
     int ret = neu_parse_param(setting, NULL, 1, ssl);
     if (0 != ret) {
-        plog_info(plugin, "setting no ssl");
+        plog_notice(plugin, "setting no ssl");
         return 0;
     }
 
     if (false == ssl->v.val_bool) {
-        plog_info(plugin, "setting ssl disabled");
+        plog_notice(plugin, "setting ssl disabled");
         return 0;
     }
 
     // ca, optional
     ret = neu_parse_param(setting, NULL, 1, ca);
     if (0 != ret) {
-        plog_info(plugin, "setting no ca");
+        plog_notice(plugin, "setting no ca");
         return 0;
     }
 
@@ -98,7 +98,7 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     // cert, optional
     ret = neu_parse_param(setting, NULL, 1, cert);
     if (0 != ret) {
-        plog_info(plugin, "setting no cert");
+        plog_notice(plugin, "setting no cert");
         return 0;
     }
 
@@ -115,7 +115,7 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     // keypass, optional
     ret = neu_parse_param(setting, NULL, 1, keypass);
     if (0 != ret) {
-        plog_info(plugin, "setting no keypass");
+        plog_notice(plugin, "setting no keypass");
     } else if (0 == strlen(keypass->v.val_str)) {
         plog_error(plugin, "setting invalid keypass");
         return -1;
@@ -285,13 +285,13 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     // username, optional
     ret = neu_parse_param(setting, NULL, 1, &username);
     if (0 != ret) {
-        plog_info(plugin, "setting no username");
+        plog_notice(plugin, "setting no username");
     }
 
     // password, optional
     ret = neu_parse_param(setting, NULL, 1, &password);
     if (0 != ret) {
-        plog_info(plugin, "setting no password");
+        plog_notice(plugin, "setting no password");
     }
 
     ret = parse_ssl_params(plugin, setting, &ssl, &ca, &cert, &key, &keypass);
@@ -319,50 +319,56 @@ int monitor_config_parse(neu_plugin_t *plugin, const char *setting,
     config->key                = key.v.val_str;
     config->keypass            = keypass.v.val_str;
 
-    plog_info(plugin, "config client-id         : %s", config->client_id);
-    plog_info(plugin, "config event-topic-prefix: %s",
-              config->event_topic_prefix);
-    plog_info(plugin, "config heartbeat-interval: %" PRIu64,
-              config->heartbeat_interval);
-    plog_info(plugin, "config heartbeat-topic   : %s", config->heartbeat_topic);
-    plog_info(plugin, "config host              : %s", config->host);
-    plog_info(plugin, "config port              : %" PRIu16, config->port);
+    plog_notice(plugin, "config client-id         : %s", config->client_id);
+    plog_notice(plugin, "config event-topic-prefix: %s",
+                config->event_topic_prefix);
+    plog_notice(plugin, "config heartbeat-interval: %" PRIu64,
+                config->heartbeat_interval);
+    plog_notice(plugin, "config heartbeat-topic   : %s",
+                config->heartbeat_topic);
+    plog_notice(plugin, "config host              : %s", config->host);
+    plog_notice(plugin, "config port              : %" PRIu16, config->port);
 
     if (config->username) {
-        plog_info(plugin, "config username          : %s", config->username);
+        plog_notice(plugin, "config username          : %s", config->username);
     }
     if (config->password) {
-        plog_info(plugin, "config password          : %s",
-                  0 == strlen(config->password) ? "" : placeholder);
+        plog_notice(plugin, "config password          : %s",
+                    0 == strlen(config->password) ? "" : placeholder);
     }
 
-    plog_info(plugin, "config ssl               : %d", config->ssl);
+    plog_notice(plugin, "config ssl               : %d", config->ssl);
     if (config->ca) {
-        plog_info(plugin, "config ca                : %s", placeholder);
+        plog_notice(plugin, "config ca                : %s", placeholder);
     }
     if (config->cert) {
-        plog_info(plugin, "config cert              : %s", placeholder);
+        plog_notice(plugin, "config cert              : %s", placeholder);
     }
     if (config->key) {
-        plog_info(plugin, "config key               : %s", placeholder);
+        plog_notice(plugin, "config key               : %s", placeholder);
     }
     if (config->keypass) {
-        plog_info(plugin, "config keypass           : %s", placeholder);
+        plog_notice(plugin, "config keypass           : %s", placeholder);
     }
 
-    plog_info(plugin, "node add event topic     : %s", config->node_add_topic);
-    plog_info(plugin, "node del event topic     : %s", config->node_del_topic);
-    plog_info(plugin, "node ctl event topic     : %s", config->node_ctl_topic);
-    plog_info(plugin, "node setting event topic : %s",
-              config->node_setting_topic);
-    plog_info(plugin, "group add topic          : %s", config->group_add_topic);
-    plog_info(plugin, "group del topic          : %s", config->group_del_topic);
-    plog_info(plugin, "group update topic       : %s",
-              config->group_update_topic);
-    plog_info(plugin, "tag add topic            : %s", config->tag_add_topic);
-    plog_info(plugin, "tag del topic            : %s", config->tag_del_topic);
-    plog_info(plugin, "tag update topic         : %s",
-              config->tag_update_topic);
+    plog_notice(plugin, "node add event topic     : %s",
+                config->node_add_topic);
+    plog_notice(plugin, "node del event topic     : %s",
+                config->node_del_topic);
+    plog_notice(plugin, "node ctl event topic     : %s",
+                config->node_ctl_topic);
+    plog_notice(plugin, "node setting event topic : %s",
+                config->node_setting_topic);
+    plog_notice(plugin, "group add topic          : %s",
+                config->group_add_topic);
+    plog_notice(plugin, "group del topic          : %s",
+                config->group_del_topic);
+    plog_notice(plugin, "group update topic       : %s",
+                config->group_update_topic);
+    plog_notice(plugin, "tag add topic            : %s", config->tag_add_topic);
+    plog_notice(plugin, "tag del topic            : %s", config->tag_del_topic);
+    plog_notice(plugin, "tag update topic         : %s",
+                config->tag_update_topic);
 
     return 0;
 
