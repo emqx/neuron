@@ -89,17 +89,30 @@ static const adapter_callbacks_t callback_funs = {
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0); \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_MSGS_TOTAL, 0);
 
-neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
+static inline void start_log_level_timer(neu_adapter_t *adapter)
 {
-    int                     rv          = 0;
-    neu_adapter_t *         adapter     = NULL;
-    neu_event_io_param_t    param       = { 0 };
     neu_event_timer_param_t timer_level = {
         .second      = 30,
         .millisecond = 0,
         .cb          = level_check,
+        .usr_data    = adapter,
         .type        = NEU_EVENT_TIMER_BLOCK,
     };
+
+    adapter->timer_lev = neu_event_add_timer(adapter->events, timer_level);
+}
+
+static inline void stop_log_level_timer(neu_adapter_t *adapter)
+{
+    neu_event_del_timer(adapter->events, adapter->timer_lev);
+    adapter->timer_lev = NULL;
+}
+
+neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
+{
+    int                  rv      = 0;
+    neu_adapter_t *      adapter = NULL;
+    neu_event_io_param_t param   = { 0 };
 
     switch (info->module->type) {
     case NEU_NA_TYPE_DRIVER:
@@ -178,8 +191,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     rv = nng_dial(adapter->sock, neu_manager_get_url(), &adapter->dialer, 0);
     assert(rv == 0);
 
-    timer_level.usr_data = (void *) adapter;
-    adapter->timer_lev   = neu_event_add_timer(adapter->events, timer_level);
+    start_log_level_timer(adapter);
 
     nlog_info("Success to create adapter: %s", adapter->name);
 
@@ -823,7 +835,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
-    neu_event_del_timer(adapter->events, adapter->timer_lev);
+    stop_log_level_timer(adapter);
 
     nlog_info("Stop the adapter(%s)", adapter->name);
     return 0;
