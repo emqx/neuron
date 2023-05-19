@@ -567,8 +567,10 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
     nng_msg_set_pipe(out_msg, pipe);
 
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
-        nlog_info("send %s to %s", neu_reqresp_type_string(header.type), app);
+        nlog_notice("send %s to %s", neu_reqresp_type_string(header.type), app);
     } else {
+        nlog_warn("send %s to %s failed", neu_reqresp_type_string(header.type),
+                  app);
         free(cmd.params);
         nng_msg_free(out_msg);
     }

@@ -140,6 +140,7 @@ neu_manager_t *neu_manager_create()
     manager->timer_timestamp =
         neu_event_add_timer(manager->events, timestamp_timer_param);
 
+    nlog_notice("manager start");
     return manager;
 }
 
@@ -182,7 +183,7 @@ void neu_manager_destroy(neu_manager_t *manager)
     neu_event_close(manager->events);
 
     free(manager);
-    nlog_warn("manager exit");
+    nlog_notice("manager exit");
 }
 
 const char *neu_manager_get_url()
@@ -233,8 +234,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
 
-    nlog_debug("manager recv msg from: %s to %s, type: %s", header->sender,
-               header->receiver, neu_reqresp_type_string(header->type));
+    nlog_info("manager recv msg from: %s to %s, type: %s", header->sender,
+              header->receiver, neu_reqresp_type_string(header->type));
     switch (header->type) {
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
@@ -258,7 +259,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         utarray_foreach(pipes, nng_pipe *, pipe)
         {
             forward_msg_dup(manager, msg, *pipe);
-            nlog_info("forward license update to pipe: %d", pipe->id);
+            nlog_notice("forward license update to pipe: %d", pipe->id);
         }
         utarray_free(pipes);
 
@@ -905,7 +906,7 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
     nng_msg_dup(&out_msg, msg);
     nng_msg_set_pipe(out_msg, pipe);
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
-        nlog_debug("forward msg to pipe %d", pipe.id);
+        nlog_info("forward msg to pipe %d", pipe.id);
     } else {
         nlog_warn("forward msg to pipe %d fail", pipe.id);
         nng_msg_free(out_msg);
@@ -921,7 +922,7 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
     nng_msg_dup(&out_msg, msg);
     nng_msg_set_pipe(out_msg, pipe);
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
-        nlog_debug("forward msg to %s", node);
+        nlog_info("forward msg to %s", node);
     } else {
         nlog_warn("forward msg to pipe (%s)%d fail", node, pipe.id);
         nng_msg_free(out_msg);
