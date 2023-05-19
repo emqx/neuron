@@ -383,8 +383,8 @@ static int apply_schema_file(sqlite3 *db, const char *dir, const char *file)
 
 end:
     if (0 == rv) {
-        nlog_info("success apply schema `%s`, version=`%s` description=`%s`",
-                  path, version, description);
+        nlog_notice("success apply schema `%s`, version=`%s` description=`%s`",
+                    path, version, description);
     } else {
         nlog_error("fail apply schema `%s`, version=`%s` description=`%s`",
                    path, version, description);
@@ -441,7 +441,7 @@ static int apply_schemas(sqlite3 *db, const char *dir)
         return NEU_ERR_EINTERNAL;
     }
 
-    nlog_info("schema head version=%s", version ? version : "none");
+    nlog_notice("schema head version=%s", version ? version : "none");
 
     if (dirty) {
         nlog_error("database is dirty, need manual intervention");
@@ -825,7 +825,7 @@ int neu_persister_store_tags(const char *driver_name, const char *group_name,
     return 0;
 
 error:
-    nlog_info("rollback transaction");
+    nlog_warn("rollback transaction");
     sqlite3_exec(global_db, "ROLLBACK", NULL, NULL, NULL);
     sqlite3_finalize(stmt);
     free(val_str);
