@@ -34,7 +34,7 @@ static bool           exit_flag         = false;
 static neu_manager_t *g_manager         = NULL;
 zlog_category_t *     neuron            = NULL;
 bool                  disable_jwt       = false;
-int                   default_log_level = ZLOG_LEVEL_INFO;
+int                   default_log_level = ZLOG_LEVEL_NOTICE;
 
 int64_t global_timestamp = 0;
 
