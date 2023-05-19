@@ -89,17 +89,30 @@ static const adapter_callbacks_t callback_funs = {
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0); \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_MSGS_TOTAL, 0);
 
-neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
+static inline void start_log_level_timer(neu_adapter_t *adapter)
 {
-    int                     rv          = 0;
-    neu_adapter_t *         adapter     = NULL;
-    neu_event_io_param_t    param       = { 0 };
     neu_event_timer_param_t timer_level = {
         .second      = 30,
         .millisecond = 0,
         .cb          = level_check,
+        .usr_data    = adapter,
         .type        = NEU_EVENT_TIMER_BLOCK,
     };
+
+    adapter->timer_lev = neu_event_add_timer(adapter->events, timer_level);
+}
+
+static inline void stop_log_level_timer(neu_adapter_t *adapter)
+{
+    neu_event_del_timer(adapter->events, adapter->timer_lev);
+    adapter->timer_lev = NULL;
+}
+
+neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
+{
+    int                  rv      = 0;
+    neu_adapter_t *      adapter = NULL;
+    neu_event_io_param_t param   = { 0 };
 
     switch (info->module->type) {
     case NEU_NA_TYPE_DRIVER:
@@ -178,13 +191,55 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     rv = nng_dial(adapter->sock, neu_manager_get_url(), &adapter->dialer, 0);
     assert(rv == 0);
 
-    timer_level.usr_data = (void *) adapter;
-    adapter->timer_lev   = neu_event_add_timer(adapter->events, timer_level);
+    start_log_level_timer(adapter);
 
     nlog_notice("Success to create adapter: %s", adapter->name);
 
     adapter_storage_state(adapter->name, adapter->state);
     return adapter;
+}
+
+int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
+{
+    char *name = strdup(new_name);
+    if (NULL == name) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    zlog_category_t *log = zlog_get_category(name);
+    if (NULL == log) {
+        free(name);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    stop_log_level_timer(adapter);
+    if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
+        neu_adapter_driver_stop_group_timer((neu_adapter_driver_t *) adapter);
+    }
+
+    // fix metrics
+    if (adapter->metrics) {
+        neu_metrics_del_node(adapter);
+    }
+    free(adapter->name);
+    adapter->name          = name;
+    adapter->metrics->name = name;
+    if (adapter->metrics) {
+        neu_metrics_add_node(adapter);
+    }
+
+    // fix log
+    neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
+    common->log                 = log;
+    strcpy(common->name, adapter->name);
+    zlog_level_switch(common->log, default_log_level);
+
+    start_log_level_timer(adapter);
+    if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
+        neu_adapter_driver_start_group_timer((neu_adapter_driver_t *) adapter);
+    }
+
+    return 0;
 }
 
 void neu_adapter_init(neu_adapter_t *adapter, bool auto_start)
@@ -797,6 +852,11 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
 
     if (NULL != adapter->metrics) {
         neu_metrics_del_node(adapter);
+        neu_metric_entry_t *e = NULL;
+        HASH_LOOP(hh, adapter->metrics->entries, e)
+        {
+            neu_metrics_unregister_entry(e->name);
+        }
         neu_node_metrics_free(adapter->metrics);
     }
 
@@ -824,7 +884,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
-    neu_event_del_timer(adapter->events, adapter->timer_lev);
+    stop_log_level_timer(adapter);
 
     nlog_notice("Stop the adapter(%s)", adapter->name);
     return 0;
