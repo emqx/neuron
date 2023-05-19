@@ -132,7 +132,7 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
             &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
             NEU_TYPE_ERROR == value.type, NULL);
     }
-    nlog_debug(
+    nlog_info(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64,
         driver->adapter.name, group, tag, neu_type_string(value.type),
         global_timestamp);
@@ -913,7 +913,8 @@ static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
 
     group->static_tags = static_tags;
     group->grp         = grp;
-    nlog_notice("group: %s changed", group->name);
+    nlog_notice("group: %s changed, timestamp: %" PRIi64, group->name,
+                timestamp);
 }
 
 static int read_callback(void *usr_data)
@@ -970,7 +971,7 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
             if (neu_driver_cache_get_changed(cache, group, tag->name, &value) !=
                 0) {
-                nlog_debug("tag: %s not changed", tag->name);
+                nlog_info("tag: %s not changed", tag->name);
                 continue;
             }
         } else {
