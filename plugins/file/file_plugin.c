@@ -74,6 +74,9 @@ static neu_plugin_t *driver_open(void)
 
 static int driver_close(neu_plugin_t *plugin)
 {
+    plog_notice(plugin, "close and free `%s` plugin success",
+                plugin->common.name);
+
     free(plugin);
 
     return 0;
@@ -83,13 +86,17 @@ static int driver_init(neu_plugin_t *plugin)
 {
     plugin->events = neu_event_new();
 
+    plog_notice(plugin, "initialize `%s` plugin success", plugin->common.name);
+
     return 0;
 }
 
 static int driver_uninit(neu_plugin_t *plugin)
 {
     neu_event_close(plugin->events);
-    plog_info(plugin, "node; file uininit ok");
+
+    plog_notice(plugin, "uninitialize `%s` plugin success",
+                plugin->common.name);
 
     return 0;
 }
@@ -98,12 +105,16 @@ static int driver_start(neu_plugin_t *plugin)
 {
     plugin->common.link_state = NEU_NODE_LINK_STATE_CONNECTED;
 
+    plog_notice(plugin, "start `%s` plugin success", plugin->common.name);
+
     return 0;
 }
 
 static int driver_stop(neu_plugin_t *plugin)
 {
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+
+    plog_notice(plugin, "stop `%s` plugin success", plugin->common.name);
 
     return 0;
 }
@@ -115,7 +126,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
 
     int ret = neu_parse_param((char *) config, &err_param, 1, &file_length);
     if (ret != 0) {
-        plog_warn(plugin, "config:%s, decode error: %s", config, err_param);
+        plog_error(plugin, "config:%s, decode error: %s", config, err_param);
         free(err_param);
         return -1;
     }
@@ -138,8 +149,8 @@ static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
 {
-    plog_debug(plugin, "validate tag success, name:%s, address:%s,type:%d ",
-               tag->name, tag->address, tag->type);
+    plog_notice(plugin, "validate tag success, name:%s, address:%s, type:%d ",
+                tag->name, tag->address, tag->type);
 
     return 0;
 }
@@ -152,5 +163,10 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                         neu_value_u value)
 {
-    return file_write(plugin, req, tag, value);
+    int ret = file_write(plugin, req, tag, value);
+
+    plog_notice(plugin, "write response, ret: %d, tag_name: %s, type: %d", ret,
+                tag->name, tag->type);
+
+    return ret;
 }

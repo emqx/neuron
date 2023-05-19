@@ -62,7 +62,7 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         }
 
         if ((f = fopen(tag->address, "rb+")) == NULL) {
-            nlog_error("open file:%s", tag->address);
+            nlog_warn("open file:%s", tag->address);
             dvalue.type      = NEU_TYPE_ERROR;
             dvalue.value.i32 = NEU_ERR_FILE_OPEN_FAILURE;
             goto dvalue_result;
@@ -81,7 +81,7 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         fseek(f, 0, SEEK_SET);
         int ret = fread(buf, sizeof(char), length, f);
         if (ret == 0) {
-            nlog_error("read file failed:%s", tag->address);
+            nlog_warn("read file failed:%s", tag->address);
             dvalue.type      = NEU_TYPE_ERROR;
             dvalue.value.i32 = NEU_ERR_FILE_READ_FAILURE;
 
@@ -125,7 +125,7 @@ int file_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
     int   ret = 0;
 
     if (0 == fwrite(value.str, sizeof(char), strlen(value.str), fp)) {
-        nlog_error("write file failed:%s", tag->address);
+        nlog_warn("write file failed:%s", tag->address);
         ret = NEU_ERR_FILE_WRITE_FAILURE;
         goto dvalue_result;
     }
