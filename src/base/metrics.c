@@ -189,7 +189,7 @@ static inline void metrics_unregister_entry(const char *name)
     HASH_FIND_STR(g_metrics_.registered_metrics, name, e);
     if (0 == --e->value) {
         HASH_DEL(g_metrics_.registered_metrics, e);
-        nlog_info("del entry:%s", e->name);
+        nlog_notice("del entry:%s", e->name);
         neu_metric_entry_free(e);
     }
 }
