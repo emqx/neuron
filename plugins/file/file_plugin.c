@@ -74,10 +74,10 @@ static neu_plugin_t *driver_open(void)
 
 static int driver_close(neu_plugin_t *plugin)
 {
-    free(plugin);
-
     plog_notice(plugin, "close and free `%s` plugin success",
                 plugin->common.name);
+
+    free(plugin);
 
     return 0;
 }
@@ -165,8 +165,9 @@ static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
 {
     int ret = file_write(plugin, req, tag, value);
 
-    plog_notice(plugin, "write response, ret: %d, tag_name: %s, type: %d", ret,
-                tag->name, tag->type);
+    plog_notice(plugin,
+                "write response, ret: %d, tag_name: %s, type: %d, address: %s",
+                ret, tag->name, tag->type, tag->address);
 
     return ret;
 }
