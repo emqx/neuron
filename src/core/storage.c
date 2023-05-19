@@ -96,7 +96,7 @@ int manager_load_plugin(neu_manager_t *manager)
     {
         rv                    = neu_manager_add_plugin(manager, *name);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        nlog_info("load plugin %s, lib:%s", ok_or_err, *name);
+        nlog_notice("load plugin %s, lib:%s", ok_or_err, *name);
     }
 
     utarray_foreach(plugin_infos, char **, name) { free(*name); }
@@ -122,9 +122,9 @@ int manager_load_node(neu_manager_t *manager)
             manager, node_info->name, node_info->plugin_name,
             node_info->state == NEU_NODE_RUNNING_STATE_RUNNING);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
-        nlog_info("load adapter %s type:%d, name:%s plugin:%s state:%d",
-                  ok_or_err, node_info->type, node_info->name,
-                  node_info->plugin_name, node_info->state);
+        nlog_notice("load adapter %s type:%d, name:%s plugin:%s state:%d",
+                    ok_or_err, node_info->type, node_info->name,
+                    node_info->plugin_name, node_info->state);
     }
 
     utarray_free(node_infos);
@@ -151,9 +151,9 @@ int manager_load_subscribe(neu_manager_t *manager)
                                            info->driver_name, info->group_name,
                                            info->params);
                 const char *ok_or_err = (0 == rv) ? "success" : "fail";
-                nlog_info("%s load subscription app:%s driver:%s grp:%s",
-                          ok_or_err, node->node, info->driver_name,
-                          info->group_name);
+                nlog_notice("%s load subscription app:%s driver:%s grp:%s",
+                            ok_or_err, node->node, info->driver_name,
+                            info->group_name);
                 if (0 == rv) {
                     neu_manager_send_subscribe(manager, node->node,
                                                info->driver_name,
