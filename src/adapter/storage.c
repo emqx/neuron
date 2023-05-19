@@ -125,7 +125,7 @@ int adapter_load_setting(const char *node, char **setting)
 {
     int rv = neu_persister_load_node_setting(node, (const char **) setting);
     if (0 != rv) {
-        nlog_info("load %s setting fail", node);
+        nlog_error("load %s setting fail", node);
         return -1;
     }
 
