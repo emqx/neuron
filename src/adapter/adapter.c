@@ -181,7 +181,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     timer_level.usr_data = (void *) adapter;
     adapter->timer_lev   = neu_event_add_timer(adapter->events, timer_level);
 
-    nlog_info("Success to create adapter: %s", adapter->name);
+    nlog_notice("Success to create adapter: %s", adapter->name);
 
     adapter_storage_state(adapter->name, adapter->state);
     return adapter;
@@ -371,8 +371,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     nng_recvmsg(adapter->sock, &msg, 0);
     header = (neu_reqresp_head_t *) nng_msg_body(msg);
-    nlog_debug("adapter(%s) recv msg from: %s, type: %s", adapter->name,
-               header->sender, neu_reqresp_type_string(header->type));
+    nlog_info("adapter(%s) recv msg from: %s, type: %s", adapter->name,
+              header->sender, neu_reqresp_type_string(header->type));
 
     switch (header->type) {
     case NEU_RESP_GET_DRIVER_GROUP:
@@ -755,9 +755,10 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         strcpy(name, adapter->name);
         strcpy(receiver, header->receiver);
         if (nng_sendmsg(adapter->sock, uninit_msg, 0) == 0) {
-            nlog_warn("%s send uninit msg to %s", name, receiver);
+            nlog_notice("%s send uninit msg to %s", name, receiver);
         } else {
             nng_msg_free(uninit_msg);
+            nlog_error("%s send uninit msg to %s failed", name, receiver);
         }
         break;
     }
@@ -822,7 +823,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
 
     neu_event_del_timer(adapter->events, adapter->timer_lev);
 
-    nlog_info("Stop the adapter(%s)", adapter->name);
+    nlog_notice("Stop the adapter(%s)", adapter->name);
     return 0;
 }
 
