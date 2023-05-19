@@ -217,10 +217,10 @@ int neu_conn_tcp_server_accept(neu_conn_t *conn)
     conn->connected(conn->data, fd);
     conn->callback_trigger = true;
 
-    zlog_info(conn->param.log, "%s:%d accpet new client: %s:%d, fd: %d",
-              conn->param.params.tcp_server.ip,
-              conn->param.params.tcp_server.port, inet_ntoa(client.sin_addr),
-              ntohs(client.sin_port), fd);
+    zlog_notice(conn->param.log, "%s:%d accpet new client: %s:%d, fd: %d",
+                conn->param.params.tcp_server.ip,
+                conn->param.params.tcp_server.port, inet_ntoa(client.sin_addr),
+                ntohs(client.sin_port), fd);
 
     pthread_mutex_unlock(&conn->mtx);
 
@@ -673,9 +673,9 @@ static void conn_tcp_server_listen(neu_conn_t *conn)
         conn->tcp_server.is_listen = true;
 
         conn->param.params.tcp_server.start_listen(conn->data, fd);
-        zlog_info(conn->param.log, "tcp server listen %s:%d success, fd: %d",
-                  conn->param.params.tcp_server.ip,
-                  conn->param.params.tcp_server.port, fd);
+        zlog_notice(conn->param.log, "tcp server listen %s:%d success, fd: %d",
+                    conn->param.params.tcp_server.ip,
+                    conn->param.params.tcp_server.port, fd);
     }
 }
 
@@ -683,9 +683,9 @@ static void conn_tcp_server_stop(neu_conn_t *conn)
 {
     if (conn->param.type == NEU_CONN_TCP_SERVER &&
         conn->tcp_server.is_listen == true) {
-        zlog_info(conn->param.log, "tcp server close %s:%d, fd: %d",
-                  conn->param.params.tcp_server.ip,
-                  conn->param.params.tcp_server.port, conn->fd);
+        zlog_notice(conn->param.log, "tcp server close %s:%d, fd: %d",
+                    conn->param.params.tcp_server.ip,
+                    conn->param.params.tcp_server.port, conn->fd);
 
         conn->param.params.tcp_server.stop_listen(conn->data, conn->fd);
 
@@ -745,9 +745,9 @@ static void conn_connect(neu_conn_t *conn)
             conn->is_connected = false;
             return;
         } else {
-            zlog_info(conn->param.log, "connect %s:%d success",
-                      conn->param.params.tcp_client.ip,
-                      conn->param.params.tcp_client.port);
+            zlog_notice(conn->param.log, "connect %s:%d success",
+                        conn->param.params.tcp_client.ip,
+                        conn->param.params.tcp_client.port);
             conn->is_connected = true;
             conn->fd           = fd;
         }
@@ -800,9 +800,9 @@ static void conn_connect(neu_conn_t *conn)
             conn->is_connected = false;
             return;
         } else {
-            zlog_info(conn->param.log, "connect %s:%d success",
-                      conn->param.params.udp.dst_ip,
-                      conn->param.params.udp.dst_port);
+            zlog_notice(conn->param.log, "connect %s:%d success",
+                        conn->param.params.udp.dst_ip,
+                        conn->param.params.udp.dst_port);
             conn->is_connected = true;
             conn->fd           = fd;
         }
@@ -1161,8 +1161,16 @@ int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
         neu_protocol_unpack_buf_init(&pbuf, conn->buf, conn->offset);
         neu_buf_result_t result = fn(context, &pbuf);
         if (result.need > 0) {
-            assert(result.need <= conn->buf_size - conn->offset);
-            ret = neu_conn_recv(conn, conn->buf + conn->offset, result.need);
+            if (result.need <= conn->buf_size - conn->offset) {
+                ret =
+                    neu_conn_recv(conn, conn->buf + conn->offset, result.need);
+            } else {
+                zlog_error(conn->param.log,
+                           "no enough recv buf, need: %" PRIu16
+                           " , buf size: %" PRIu16 " offset: %" PRIu16,
+                           result.need, conn->buf_size, conn->offset);
+                return -1;
+            }
         } else {
             return result.used;
         }
@@ -1185,8 +1193,16 @@ int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
         neu_buf_result_t result = fn(context, &pbuf);
         if (result.need > 0) {
             assert(result.need <= conn->buf_size - conn->offset);
-            ret = neu_conn_tcp_server_recv(conn, fd, conn->buf + conn->offset,
-                                           result.need);
+            if (result.need <= conn->buf_size - conn->offset) {
+                ret = neu_conn_tcp_server_recv(
+                    conn, fd, conn->buf + conn->offset, result.need);
+            } else {
+                zlog_error(conn->param.log,
+                           "no enough recv buf, need: %" PRIu16
+                           " , buf size: %" PRIu16 " offset: %" PRIu16,
+                           result.need, conn->buf_size, conn->offset);
+                return -1;
+            }
         } else {
             return result.used;
         }
