@@ -231,6 +231,7 @@ static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
             if (e) {
                 fprintf(stream, "%s{node=\"%s\"} %" PRIu64 "\n", e->name,
                         n->name, e->value);
+
                 continue;
             }
 

@@ -214,7 +214,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)
     } else {
         plog_error(
             plugin,
-            "validate tag success, name: %s, address: %s, type: %d, slave id: "
+            "validate tag error, name: %s, address: %s, type: %d, slave id: "
             "%d, start address: %d, n register: %d, area: %s",
             tag->name, tag->address, tag->type, point.slave_id,
             point.start_address, point.n_register,
