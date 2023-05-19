@@ -129,7 +129,7 @@ int neuron_already_running()
 
     snprintf(buf, sizeof(buf), "%ld", (long) getpid());
     size = write(fd, buf, strlen(buf) + 1);
-    nlog_warn("write %s ret: %d, %s(%d)", NEURON_DAEMON_LOCK_FNAME, size,
+    nlog_warn("write %s, error %s(%d)", NEURON_DAEMON_LOCK_FNAME,
               strerror(errno), errno);
     assert(size != -1);
 
