@@ -30,6 +30,9 @@ int  neu_adapter_driver_stop(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_init(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_uninit(neu_adapter_driver_t *driver);
 
+void neu_adapter_driver_start_group_timer(neu_adapter_driver_t *driver);
+void neu_adapter_driver_stop_group_timer(neu_adapter_driver_t *driver);
+
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req);
 

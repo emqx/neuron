@@ -199,6 +199,49 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     return adapter;
 }
 
+int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
+{
+    char *name = strdup(new_name);
+    if (NULL == name) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    zlog_category_t *log = zlog_get_category(name);
+    if (NULL == log) {
+        free(name);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    stop_log_level_timer(adapter);
+    if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
+        neu_adapter_driver_stop_group_timer((neu_adapter_driver_t *) adapter);
+    }
+
+    // fix metrics
+    if (adapter->metrics) {
+        neu_metrics_del_node(adapter);
+    }
+    free(adapter->name);
+    adapter->name          = name;
+    adapter->metrics->name = name;
+    if (adapter->metrics) {
+        neu_metrics_add_node(adapter);
+    }
+
+    // fix log
+    neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
+    common->log                 = log;
+    strcpy(common->name, adapter->name);
+    zlog_level_switch(common->log, default_log_level);
+
+    start_log_level_timer(adapter);
+    if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
+        neu_adapter_driver_start_group_timer((neu_adapter_driver_t *) adapter);
+    }
+
+    return 0;
+}
+
 void neu_adapter_init(neu_adapter_t *adapter, bool auto_start)
 {
     neu_reqresp_head_t  header   = { .type = NEU_REQ_NODE_INIT };
@@ -808,6 +851,11 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
 
     if (NULL != adapter->metrics) {
         neu_metrics_del_node(adapter);
+        neu_metric_entry_t *e = NULL;
+        HASH_LOOP(hh, adapter->metrics->entries, e)
+        {
+            neu_metrics_unregister_entry(e->name);
+        }
         neu_node_metrics_free(adapter->metrics);
     }
 

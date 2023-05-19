@@ -244,11 +244,6 @@ void neu_metrics_del_node(const neu_adapter_t *adapter)
 {
     pthread_rwlock_wrlock(&g_metrics_mtx_);
     HASH_DEL(g_metrics_.node_metrics, adapter->metrics);
-    neu_metric_entry_t *e = NULL;
-    HASH_LOOP(hh, adapter->metrics->entries, e)
-    {
-        metrics_unregister_entry(e->name);
-    }
     pthread_rwlock_unlock(&g_metrics_mtx_);
 }
 

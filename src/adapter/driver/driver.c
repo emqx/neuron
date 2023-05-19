@@ -190,6 +190,42 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
     return 0;
 }
 
+void neu_adapter_driver_start_group_timer(neu_adapter_driver_t *driver)
+{
+    group_t *el = NULL, *tmp = NULL;
+
+    HASH_ITER(hh, driver->groups, el, tmp)
+    {
+        uint32_t                interval = neu_group_get_interval(el->group);
+        neu_event_timer_param_t param    = {
+            .second      = interval / 1000,
+            .millisecond = interval % 1000,
+            .usr_data    = el,
+            .type        = NEU_EVENT_TIMER_NOBLOCK,
+        };
+
+        param.cb   = report_callback;
+        el->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+
+        param.type = driver->adapter.module->timer_type;
+        param.cb   = read_callback;
+        el->read   = neu_event_add_timer(driver->driver_events, param);
+    }
+}
+
+void neu_adapter_driver_stop_group_timer(neu_adapter_driver_t *driver)
+{
+    group_t *el = NULL, *tmp = NULL;
+
+    HASH_ITER(hh, driver->groups, el, tmp)
+    {
+        neu_adapter_del_timer((neu_adapter_t *) driver, el->report);
+        el->report = NULL;
+        neu_event_del_timer(driver->driver_events, el->read);
+        el->read = NULL;
+    }
+}
+
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
