@@ -88,10 +88,11 @@ int  neu_json_decode_get_nodes_resp_json(void *                      json_obj,
 void neu_json_decode_get_nodes_resp_free(neu_json_get_nodes_resp_t *result);
 
 typedef struct {
-    char *  name;
-    int64_t id;
+    char *name;
+    char *new_name;
 } neu_json_update_node_req_t;
 
+int  neu_json_encode_update_node_req(void *json_object, void *param);
 int  neu_json_decode_update_node_req(char *                       buf,
                                      neu_json_update_node_req_t **result);
 void neu_json_decode_update_node_req_free(neu_json_update_node_req_t *req);
