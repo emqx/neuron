@@ -37,6 +37,8 @@ int neu_node_manager_add_static(neu_node_manager_t *mgr,
                                 neu_adapter_t *     adapter);
 int neu_node_manager_add_single(neu_node_manager_t *mgr, neu_adapter_t *adapter,
                                 bool display);
+int neu_node_manager_update_name(neu_node_manager_t *mgr, const char *node_name,
+                                 const char *new_node_name);
 int neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
                             nng_pipe pipe);
 bool     neu_node_manager_exist_uninit(neu_node_manager_t *mgr);
@@ -54,6 +56,7 @@ UT_array *     neu_node_manager_get_adapter(neu_node_manager_t *mgr,
                                             neu_node_type_e     type);
 neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name);
 bool neu_node_manager_is_single(neu_node_manager_t *mgr, const char *name);
+bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name);
 
 // nng_pipe array
 UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,

@@ -222,9 +222,9 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
         neu_metrics_del_node(adapter);
     }
     free(adapter->name);
-    adapter->name          = name;
-    adapter->metrics->name = name;
+    adapter->name = name;
     if (adapter->metrics) {
+        adapter->metrics->name = name;
         neu_metrics_add_node(adapter);
     }
 
@@ -354,6 +354,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(header.receiver, cmd->driver);
         break;
     }
+    case NEU_REQ_UPDATE_NODE:
     case NEU_REQ_NODE_CTL:
     case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_GET_NODE_SETTING:
@@ -686,6 +687,18 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_msg_exchange(header);
         header->type = NEU_RESP_ERROR;
         reply(adapter, header, &error);
+        break;
+    }
+    case NEU_REQ_NODE_RENAME: {
+        neu_req_node_rename_t *cmd  = (neu_req_node_rename_t *) &header[1];
+        neu_resp_node_rename_t resp = { 0 };
+        resp.error = neu_adapter_rename(adapter, cmd->new_name);
+        strcpy(header->receiver, header->sender);
+        strcpy(header->sender, cmd->new_name);
+        strcpy(resp.node, cmd->node);
+        strcpy(resp.new_name, cmd->new_name);
+        header->type = NEU_RESP_NODE_RENAME;
+        reply(adapter, header, &resp);
         break;
     }
     case NEU_REQ_DEL_TAG: {
@@ -1242,6 +1255,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_ADD_NODE_EVENT:
         data_size = sizeof(neu_req_add_node_t);
         break;
+    case NEU_REQ_UPDATE_NODE:
+        data_size = sizeof(neu_req_update_node_t);
+        break;
     case NEU_REQ_DEL_NODE:
     case NEU_REQ_DEL_NODE_EVENT:
         data_size = sizeof(neu_req_del_node_t);
@@ -1327,6 +1343,12 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_NODE_CTL:
     case NEU_REQ_NODE_CTL_EVENT:
         data_size = sizeof(neu_req_node_ctl_t);
+        break;
+    case NEU_REQ_NODE_RENAME:
+        data_size = sizeof(neu_req_node_rename_t);
+        break;
+    case NEU_RESP_NODE_RENAME:
+        data_size = sizeof(neu_resp_node_rename_t);
         break;
     case NEU_REQ_GET_NODE_STATE:
         data_size = sizeof(neu_req_get_node_state_t);

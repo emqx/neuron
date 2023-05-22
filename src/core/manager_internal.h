@@ -56,6 +56,8 @@ int       neu_manager_add_node(neu_manager_t *manager, const char *node_name,
 int       neu_manager_del_node(neu_manager_t *manager, const char *node_name);
 UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type,
                                 const char *plugin, const char *node);
+int       neu_manager_update_node_name(neu_manager_t *manager, const char *node,
+                                       const char *new_name);
 
 int  neu_manager_add_template(neu_manager_t *manager, const char *name,
                               const char *plugin, uint16_t n_group,

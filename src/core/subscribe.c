@@ -231,3 +231,39 @@ void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,
         }
     }
 }
+
+int neu_subscribe_manager_update_app_name(neu_subscribe_mgr_t *mgr,
+                                          const char *app, const char *new_name)
+{
+    sub_elem_t *el = NULL, *tmp = NULL;
+
+    HASH_ITER(hh, mgr->ss, el, tmp)
+    {
+        utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
+        {
+            if (strcmp(app, sub_app->app_name) == 0) {
+                strcpy(sub_app->app_name, new_name);
+            }
+        }
+    }
+
+    return 0;
+}
+
+int neu_subscribe_manager_update_driver_name(neu_subscribe_mgr_t *mgr,
+                                             const char *         driver,
+                                             const char *         new_name)
+{
+    sub_elem_t *el = NULL, *tmp = NULL;
+
+    HASH_ITER(hh, mgr->ss, el, tmp)
+    {
+        if (strcmp(driver, el->key.driver) == 0) {
+            HASH_DEL(mgr->ss, el);
+            strcpy(el->key.driver, new_name);
+            HASH_ADD(hh, mgr->ss, key, sizeof(sub_elem_key_t), el);
+        }
+    }
+
+    return 0;
+}

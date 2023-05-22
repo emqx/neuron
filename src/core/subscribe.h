@@ -56,4 +56,11 @@ int  neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
 void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,
                                   const char *group);
 
+int neu_subscribe_manager_update_app_name(neu_subscribe_mgr_t *mgr,
+                                          const char *         app,
+                                          const char *         new_name);
+int neu_subscribe_manager_update_driver_name(neu_subscribe_mgr_t *mgr,
+                                             const char *         driver,
+                                             const char *         new_name);
+
 #endif

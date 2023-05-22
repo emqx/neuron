@@ -103,6 +103,24 @@ UT_array *neu_manager_get_nodes(neu_manager_t *manager, neu_node_type_e type,
     return neu_node_manager_filter(manager->node_manager, type, plugin, node);
 }
 
+int neu_manager_update_node_name(neu_manager_t *manager, const char *node,
+                                 const char *new_name)
+{
+    int ret = 0;
+    if (neu_node_manager_is_driver(manager->node_manager, node)) {
+        ret = neu_subscribe_manager_update_driver_name(
+            manager->subscribe_manager, node, new_name);
+    } else {
+        ret = neu_subscribe_manager_update_app_name(manager->subscribe_manager,
+                                                    node, new_name);
+    }
+    if (0 == ret) {
+        ret =
+            neu_node_manager_update_name(manager->node_manager, node, new_name);
+    }
+    return ret;
+}
+
 int neu_manager_add_template(neu_manager_t *manager, const char *name,
                              const char *plugin, uint16_t n_group,
                              neu_reqresp_template_group_t *groups)
