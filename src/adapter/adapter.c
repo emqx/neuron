@@ -222,9 +222,9 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
         neu_metrics_del_node(adapter);
     }
     free(adapter->name);
-    adapter->name          = name;
-    adapter->metrics->name = name;
+    adapter->name = name;
     if (adapter->metrics) {
+        adapter->metrics->name = name;
         neu_metrics_add_node(adapter);
     }
 
