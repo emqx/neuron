@@ -69,6 +69,12 @@ Add Node
   ${res}        Object  response body
   [RETURN]      ${res}[0]
 
+Update Node
+  [Arguments]   ${name}   ${new_name}
+  PUT           /api/v2/node  {"name": "${name}", "new_name": "${new_name}"}
+  ${res}        Object  response body
+  [RETURN]      ${res}[0]
+
 Del Node
   [Arguments]   ${name}
   DELETE        /api/v2/node  {"name": "${name}"}

@@ -6,14 +6,16 @@ Suite Setup       Neuron Context Ready
 Suite Teardown    Neuron Context Stop
 
 *** Variables ***
-${test_gconfig1}    test_gconfig1
-${test_gconfig2}    test_gconfig2
-${test_gconfig3}    test_gconfig3
-${modbus-tcp-1}     modbus-tcp-1
-${modbus-tcp-2}     modbus-tcp-2
-${modbus-tcp-3}     modbus-tcp-3
-${modbus-tcp-4}     modbus-tcp-4
-${mqtt-1}           mqtt-1
+${test_gconfig1}        test_gconfig1
+${test_gconfig2}        test_gconfig2
+${test_gconfig3}        test_gconfig3
+${modbus-tcp-1}         modbus-tcp-1
+${modbus-tcp-2}         modbus-tcp-2
+${modbus-tcp-3}         modbus-tcp-3
+${modbus-tcp-4}         modbus-tcp-4
+${modbus-tcp-1-new}     modbus-tcp-1-new
+${mqtt-1}               mqtt-1
+${mqtt-1-new}           mqtt-1-new
 ${tag1}             {"name": "tag1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 ${tag2}             {"name": "tag2", "address": "1!00001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
 ${tag3}             {"name": "tag3", "address": "2!400003", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT32}}
@@ -279,6 +281,94 @@ Get the subscribed groups after stopping and restarting Neuron, it should return
 	Should Be Equal As Strings	${res}[groups][1][group]	${test_gconfig2}
 
     	[Teardown]    Neuron Stop Running    ${process} 
+
+Update driver name, it should keep the setting, groups, tags and subscription
+    ${process} =                  Neuron Start Running
+
+    ${res} =                      Update Node                 ${modbus-tcp-1}       ${modbus-tcp-1-new}
+    Check Response Status         ${res}                      200
+    Check Error Code              ${res}                      ${NEU_ERR_SUCCESS}
+
+    Neuron Stop Running           ${process}
+    ${process} =                  Neuron Start Running
+
+    ${res} =                      Get Node Setting            ${modbus-tcp-1-new}
+    ${params} =                   Set Variable                ${res}[params]
+    Check Response Status         ${res}                      200
+    Should Be Equal As Strings    ${res}[node]                ${modbus-tcp-1-new}
+    Should Be Equal As Integers   ${params}[port]             502
+    Should Be Equal As Integers   ${params}[timeout]          3000
+    Should Be Equal As Strings    ${params}[host]             127.0.0.1
+
+    ${res} =                      Get Tags                    ${modbus-tcp-1-new}    ${test_gconfig1}
+    Check Response Status         ${res}                      200
+    ${len} =                      Get Length                  ${res}[tags]
+    Should Be Equal As Integers   ${len}                      2
+    ${tag1} =   Tag Find By Name  ${res}[tags]                tag1
+    Should Be Equal As Strings    ${tag1}[name]               tag1
+    Should Be Equal As Strings    ${tag1}[address]            1!400002
+    Should Be Equal As Strings    ${tag1}[attribute]          ${TAG_ATTRIBUTE_READ}
+    Should Be Equal As Strings    ${tag1}[type]               ${TAG_TYPE_INT16}
+    ${tag2} =   Tag Find By Name  ${res}[tags]                tag2
+    Should Be Equal As Strings    ${tag2}[name]               tag2
+    Should Be Equal As Strings    ${tag2}[address]            1!00001
+    Should Be Equal As Strings    ${tag2}[attribute]          ${TAG_ATTRIBUTE_RW}
+    Should Be Equal As Strings    ${tag2}[type]               ${TAG_TYPE_BIT}
+
+    ${res} =                      Get Subscribe Group         ${mqtt-1}
+    ${len} =                      Get Length                  ${res}[groups]
+    Should Be Equal As Integers   ${len}                      2
+    Should Be Equal As Strings    ${res}[groups][0][driver]   ${modbus-tcp-1-new}
+    Should Be Equal As Strings    ${res}[groups][0][group]    ${test_gconfig1}
+    Should Be Equal As Strings    ${res}[groups][1][driver]   ${modbus-tcp-1-new}
+    Should Be Equal As Strings    ${res}[groups][1][group]    ${test_gconfig2}
+
+    ${res} =                      Update Node                 ${modbus-tcp-1-new}   ${modbus-tcp-1}
+    Check Response Status         ${res}                      200
+    Check Error Code              ${res}                      ${NEU_ERR_SUCCESS}
+
+    [Teardown]                    Neuron Stop Running         ${process}
+
+Update app name, it should keep the setting and subscription
+    ${process} =                  Neuron Start Running
+
+    ${res} =                      Update Node                 ${mqtt-1}             ${mqtt-1-new}
+    Check Response Status         ${res}                      200
+    Check Error Code              ${res}                      ${NEU_ERR_SUCCESS}
+
+    Neuron Stop Running           ${process}
+    ${process} =                  Neuron Start Running
+
+    ${res} =                      Get Node Setting            ${mqtt-1-new}
+    ${params} =                   Set Variable                ${res}[params]
+    Check Response Status         ${res}                      200
+    Should Be Equal As Strings    ${res}[node]                ${mqtt-1-new}
+    Should Be Equal As Strings    ${params}[upload-topic]     /neuron/mqtt-1/upload
+    Should Be Equal As Strings    ${params}[heartbeat-topic]  /neuron/mqtt-1/heartbeat
+    Should Be Equal As Integers   ${params}[format]           0
+    Should Not Be True            ${params}[ssl]
+    Should Be Equal As Strings    ${params}[host]             127.0.0.1
+    Should Be Equal As Integers   ${params}[port]             1883
+    Should Be Equal As Strings    ${params}[username]         admin
+    Should Be Equal As Strings    ${params}[password]         0000
+    Should Be Empty               ${params}[ca]
+    Should Be Empty               ${params}[cert]
+    Should Be Empty               ${params}[key]
+    Should Be Empty               ${params}[keypass]
+
+    ${res} =                      Get Subscribe Group         ${mqtt-1-new}
+    ${len} =                      Get Length                  ${res}[groups]
+    Should Be Equal As Integers   ${len}                      2
+    Should Be Equal As Strings    ${res}[groups][0][driver]   ${modbus-tcp-1}
+    Should Be Equal As Strings    ${res}[groups][0][group]    ${test_gconfig1}
+    Should Be Equal As Strings    ${res}[groups][1][driver]   ${modbus-tcp-1}
+    Should Be Equal As Strings    ${res}[groups][1][group]    ${test_gconfig2}
+
+    ${res} =                      Update Node                 ${mqtt-1-new}           ${mqtt-1}
+    Check Response Status         ${res}                      200
+    Check Error Code              ${res}                      ${NEU_ERR_SUCCESS}
+
+    [Teardown]                    Neuron Stop Running         ${process}
 
 Get the unsubscribed groups after stopping ande restarting Neuron, it should return failure
     	${process} =    Neuron Start Running
