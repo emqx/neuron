@@ -55,6 +55,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_NODE_UNINIT,
     NEU_RESP_NODE_UNINIT,
     NEU_REQ_ADD_NODE,
+    NEU_REQ_UPDATE_NODE,
     NEU_REQ_DEL_NODE,
     NEU_REQ_GET_NODE,
     NEU_RESP_GET_NODE,
@@ -66,6 +67,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_NODES_STATE,
     NEU_RESP_GET_NODES_STATE,
     NEU_REQ_NODE_CTL,
+    NEU_REQ_NODE_RENAME,
+    NEU_RESP_NODE_RENAME,
 
     NEU_REQ_ADD_GROUP,
     NEU_REQ_DEL_GROUP,
@@ -144,6 +147,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_NODE_UNINIT]       = "NEU_REQ_NODE_UNINIT",
     [NEU_RESP_NODE_UNINIT]      = "NEU_RESP_NODE_UNINIT",
     [NEU_REQ_ADD_NODE]          = "NEU_REQ_ADD_NODE",
+    [NEU_REQ_UPDATE_NODE]       = "NEU_REQ_UPDATE_NODE",
     [NEU_REQ_DEL_NODE]          = "NEU_REQ_DEL_NODE",
     [NEU_REQ_GET_NODE]          = "NEU_REQ_GET_NODE",
     [NEU_RESP_GET_NODE]         = "NEU_RESP_GET_NODE",
@@ -155,6 +159,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_NODES_STATE]   = "NEU_REQ_GET_NODES_STATE",
     [NEU_RESP_GET_NODES_STATE]  = "NEU_RESP_GET_NODES_STATE",
     [NEU_REQ_NODE_CTL]          = "NEU_REQ_NODE_CTL",
+    [NEU_REQ_NODE_RENAME]       = "NEU_REQ_NODE_RENAME",
+    [NEU_RESP_NODE_RENAME]      = "NEU_RESP_NODE_RENAME",
 
     [NEU_REQ_ADD_GROUP]         = "NEU_REQ_ADD_GROUP",
     [NEU_REQ_DEL_GROUP]         = "NEU_REQ_DEL_GROUP",
@@ -269,6 +275,11 @@ typedef struct neu_req_add_node {
     char node[NEU_NODE_NAME_LEN];
     char plugin[NEU_PLUGIN_NAME_LEN];
 } neu_req_add_node_t;
+
+typedef struct neu_req_update_node {
+    char node[NEU_NODE_NAME_LEN];
+    char new_name[NEU_NODE_NAME_LEN];
+} neu_req_update_node_t;
 
 typedef struct neu_req_del_node {
     char node[NEU_NODE_NAME_LEN];
@@ -426,6 +437,17 @@ typedef struct neu_req_node_ctl {
     char              node[NEU_NODE_NAME_LEN];
     neu_adapter_ctl_e ctl;
 } neu_req_node_ctl_t;
+
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+    char new_name[NEU_NODE_NAME_LEN];
+} neu_req_node_rename_t;
+
+typedef struct {
+    char node[NEU_NODE_NAME_LEN];
+    char new_name[NEU_NODE_NAME_LEN];
+    int  error;
+} neu_resp_node_rename_t;
 
 typedef struct neu_req_get_node_state {
     char node[NEU_NODE_NAME_LEN];
