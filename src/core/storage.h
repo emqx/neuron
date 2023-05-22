@@ -27,6 +27,8 @@
 void manager_strorage_plugin(neu_manager_t *manager);
 void manager_storage_del_node(neu_manager_t *manager, const char *node);
 void manager_storage_add_node(neu_manager_t *manager, const char *node);
+void manager_storage_update_node(neu_manager_t *manager, const char *node,
+                                 const char *new_name);
 void manager_storage_subscribe(neu_manager_t *manager, const char *app,
                                const char *driver, const char *group,
                                const char *params);

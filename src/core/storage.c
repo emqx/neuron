@@ -56,6 +56,13 @@ void manager_storage_add_node(neu_manager_t *manager, const char *node)
     neu_persist_node_info_fini(&node_info);
 }
 
+void manager_storage_update_node(neu_manager_t *manager, const char *node,
+                                 const char *new_name)
+{
+    (void) manager;
+    neu_persister_update_node(node, new_name);
+}
+
 void manager_storage_del_node(neu_manager_t *manager, const char *node)
 {
     (void) manager;

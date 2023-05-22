@@ -20,8 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "adapter/adapter_internal.h"
+#include "errcodes.h"
 
+#include "adapter/adapter_internal.h"
 #include "node_manager.h"
 
 typedef struct node_entity {
@@ -99,6 +100,29 @@ int neu_node_manager_add_single(neu_node_manager_t *mgr, neu_adapter_t *adapter,
     node->display = display;
     node->single  = true;
 
+    HASH_ADD_STR(mgr->nodes, name, node);
+
+    return 0;
+}
+
+int neu_node_manager_update_name(neu_node_manager_t *mgr, const char *node_name,
+                                 const char *new_node_name)
+{
+    node_entity_t *node = NULL;
+
+    HASH_FIND_STR(mgr->nodes, node_name, node);
+    if (NULL == node) {
+        return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    char *new_name = strdup(new_node_name);
+    if (NULL == new_name) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    HASH_DEL(mgr->nodes, node);
+    free(node->name);
+    node->name = new_name;
     HASH_ADD_STR(mgr->nodes, name, node);
 
     return 0;
@@ -261,6 +285,18 @@ bool neu_node_manager_is_single(neu_node_manager_t *mgr, const char *name)
     HASH_FIND_STR(mgr->nodes, name, node);
     if (node != NULL) {
         return node->single;
+    }
+
+    return false;
+}
+
+bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name)
+{
+    node_entity_t *node = NULL;
+
+    HASH_FIND_STR(mgr->nodes, name, node);
+    if (node != NULL) {
+        return NEU_NA_TYPE_DRIVER == node->adapter->module->type;
     }
 
     return false;

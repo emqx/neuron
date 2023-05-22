@@ -689,6 +689,18 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(adapter, header, &error);
         break;
     }
+    case NEU_REQ_NODE_RENAME: {
+        neu_req_node_rename_t *cmd  = (neu_req_node_rename_t *) &header[1];
+        neu_resp_node_rename_t resp = { 0 };
+        resp.error = neu_adapter_rename(adapter, cmd->new_name);
+        strcpy(header->receiver, header->sender);
+        strcpy(header->sender, cmd->new_name);
+        strcpy(resp.node, cmd->node);
+        strcpy(resp.new_name, cmd->new_name);
+        header->type = NEU_RESP_NODE_RENAME;
+        reply(adapter, header, &resp);
+        break;
+    }
     case NEU_REQ_DEL_TAG: {
         neu_req_del_tag_t *cmd   = (neu_req_del_tag_t *) &header[1];
         neu_resp_error_t   error = { 0 };
