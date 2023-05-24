@@ -125,7 +125,16 @@ int neu_manager_add_template(neu_manager_t *manager, const char *name,
                              const char *plugin, uint16_t n_group,
                              neu_reqresp_template_group_t *groups)
 {
-    int             rv   = 0;
+    int rv = 0;
+
+    if (!neu_plugin_manager_exists(manager->plugin_manager, plugin)) {
+        return NEU_ERR_PLUGIN_NOT_FOUND;
+    }
+
+    if (neu_plugin_manager_is_single(manager->plugin_manager, plugin)) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE;
+    }
+
     neu_template_t *tmpl = neu_template_new(name, plugin);
     if (NULL == tmpl) {
         return NEU_ERR_EINTERNAL;
