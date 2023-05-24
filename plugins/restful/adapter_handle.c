@@ -62,6 +62,30 @@ void handle_add_adapter(nng_aio *aio)
         })
 }
 
+void handle_update_adapter(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_update_node_req_t, neu_json_decode_update_node_req, {
+            int                   ret    = 0;
+            neu_reqresp_head_t    header = { 0 };
+            neu_req_update_node_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_UPDATE_NODE;
+            strcpy(cmd.node, req->name);
+            strcpy(cmd.new_name, req->new_name);
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
+        })
+}
+
 void handle_del_adapter(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();

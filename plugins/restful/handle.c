@@ -217,6 +217,12 @@ static struct neu_http_handler rest_handlers[] = {
         .value.handler = handle_add_adapter,
     },
     {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/node",
+        .value.handler = handle_update_adapter,
+    },
+    {
         .method        = NEU_HTTP_METHOD_DELETE,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/node",

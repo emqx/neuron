@@ -59,6 +59,57 @@ Get APP node, it should be success.
 	Check Response Status  ${res}	200
 	Node Should Exist    ${res}[nodes]    mqtt-node
 
+Update driver node name, it should fail if the node does not exist
+	${res} =    Update Node    modbus-node-nonexistent    mqtt-node
+
+	Check Response Status    ${res}    404
+	Check Error Code         ${res}    ${NEU_ERR_NODE_NOT_EXIST}
+
+Update driver node name, it should fail if node name conflicts
+	${res} =    Update Node    modbus-node    mqtt-node
+
+	Check Response Status    ${res}    409
+	Check Error Code         ${res}    ${NEU_ERR_NODE_EXIST}
+
+Update node name to the same, it should fail as name conflicts
+	${res} =    Update Node    modbus-node    modbus-node
+	Check Response Status    ${res}    409
+	Check Error Code         ${res}    ${NEU_ERR_NODE_EXIST}
+
+	${res} =    Update Node    mqtt-node      mqtt-node
+	Check Response Status    ${res}    409
+	Check Error Code         ${res}    ${NEU_ERR_NODE_EXIST}
+
+Update monitor node, it should fail
+	${res} =    Update Node    monitor        monitor-new
+
+	Check Response Status    ${res}    400
+	Check Error Code         ${res}    ${NEU_ERR_NODE_NOT_ALLOW_UPDATE}
+
+Update node name to monitor, it should fail
+	${res} =    Update Node    modbus-node    monitor
+
+	Check Response Status    ${res}    409
+	Check Error Code         ${res}    ${NEU_ERR_NODE_EXIST}
+
+Update driver node name, it should success
+	${res} =    Update Node    modbus-node    modbus-node-new
+	Check Response Status    ${res}    200
+	Check Error Code         ${res}    ${NEU_ERR_SUCCESS}
+
+	${res} =    Update Node    modbus-node-new    modbus-node
+	Check Response Status    ${res}    200
+	Check Error Code         ${res}    ${NEU_ERR_SUCCESS}
+
+Update app node name, it should success
+	${res} =    Update Node    mqtt-node      mqtt-node-new
+	Check Response Status    ${res}    200
+	Check Error Code         ${res}    ${NEU_ERR_SUCCESS}
+
+	${res} =    Update Node    mqtt-node-new  mqtt-node
+	Check Response Status    ${res}    200
+	Check Error Code         ${res}    ${NEU_ERR_SUCCESS}
+
 Delete a APP node with an existing name, it should be success.
 	${res}=		Del Node  mqtt-node
 
