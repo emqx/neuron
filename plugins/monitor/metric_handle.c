@@ -159,7 +159,14 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
 static inline void
 gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
 {
+    fprintf(stream,
+            "# HELP node_type Driver(1) or APP(2)\n"
+            "# TYPE node_type gauge\n"
+            "node_type{node=\"%s\"} %d\n",
+            node_metrics->name, node_metrics->type);
+
     neu_metric_entry_t *e = NULL;
+
     HASH_LOOP(hh, node_metrics->entries, e)
     {
         fprintf(stream,
@@ -208,9 +215,28 @@ static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
     neu_group_metrics_t *g = NULL;
     neu_node_metrics_t * n = NULL;
 
+    bool commented = false;
+    HASH_LOOP(hh, metrics->node_metrics, n)
+    {
+        if (!(type_filter & n->type)) {
+            continue;
+        }
+
+        if (!commented) {
+            commented = true;
+            fprintf(stream,
+                    "# HELP node_type Driver(1) or APP(2)\n"
+                    "# TYPE node_type gauge\n");
+        }
+
+        fprintf(stream, "node_type{node=\"%s\"} %d\n", n->name, n->type);
+    }
+
+    n = NULL;
+
     HASH_LOOP(hh, metrics->registered_metrics, r)
     {
-        bool commented = false;
+        commented = false;
         HASH_LOOP(hh, metrics->node_metrics, n)
         {
             if (!(type_filter & n->type)) {
