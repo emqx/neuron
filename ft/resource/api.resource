@@ -199,6 +199,12 @@ Del Template
   ${res}        Object  response body
   [RETURN]      ${res}[0]
 
+Inst Template
+  [Arguments]   ${name}   ${node}
+  POST          /api/v2/template/inst      {"name": "${name}", "node": "${node}" }
+  ${res}        Object  response body
+  [RETURN]      ${res}[0]
+
 Get Template
   [Arguments]   ${name}
   GET           /api/v2/template?name=${name}
