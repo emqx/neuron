@@ -153,11 +153,11 @@ void handle_add_template(nng_aio *aio)
             if (0 == ret) {
                 if (0 != neu_plugin_op(plugin, header, &cmd)) {
                     ret = NEU_ERR_IS_BUSY;
+                    neu_reqresp_template_fini(&cmd);
                 }
             }
 
             if (0 != ret) {
-                neu_reqresp_template_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
             }
