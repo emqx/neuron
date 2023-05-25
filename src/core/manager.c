@@ -267,7 +267,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_node_init_t *init = (neu_req_node_init_t *) &header[1];
         nng_pipe             pipe = nng_msg_get_pipe(msg);
 
-        neu_node_manager_update(manager->node_manager, init->node, pipe);
+        if (0 !=
+            neu_node_manager_update(manager->node_manager, init->node, pipe)) {
+            nlog_warn("bind node %s to pipe(%d) fail", init->node, pipe.id);
+            break;
+        }
 
         if (init->auto_start) {
             neu_adapter_t *adapter =

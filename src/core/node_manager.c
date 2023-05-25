@@ -134,7 +134,9 @@ int neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
     node_entity_t *node = NULL;
 
     HASH_FIND_STR(mgr->nodes, name, node);
-    assert(node != NULL);
+    if (NULL == node) {
+        return -1;
+    }
     node->pipe = pipe;
 
     return 0;
