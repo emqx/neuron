@@ -21,6 +21,7 @@
 #define _NEU_TEMPLATE_MANAGER_H_
 
 #include "base/template.h"
+#include "core/plugin_manager.h"
 
 typedef struct neu_template_manager_s neu_template_manager_t;
 
@@ -29,8 +30,9 @@ void neu_template_manager_destroy(neu_template_manager_t *mgr);
 
 int neu_template_manager_count(const neu_template_manager_t *mgr);
 
-// NOTE: this function takes ownership of argument `tmpl`
-int neu_template_manager_add(neu_template_manager_t *mgr, neu_template_t *tmpl);
+// NOTE: this function takes ownership of argument `tmpl` and `inst`
+int neu_template_manager_add(neu_template_manager_t *mgr, neu_template_t *tmpl,
+                             neu_plugin_instance_t *inst);
 
 int neu_template_manager_del(neu_template_manager_t *mgr, const char *name);
 

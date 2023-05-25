@@ -17,6 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <dlfcn.h>
+
 #include "base/template.h"
 #include "errcodes.h"
 #include "utils/uthash.h"
@@ -24,13 +26,21 @@
 #include "template_manager.h"
 
 typedef struct {
-    neu_template_t *tmpl;
-    UT_hash_handle  hh_name;
+    neu_template_t *       tmpl;
+    neu_plugin_instance_t *inst;
+    UT_hash_handle         hh_name;
 } name_entry_t;
+
+static inline void free_plugin_instance(neu_plugin_instance_t *inst)
+{
+    dlclose(inst->handle);
+    free(inst);
+}
 
 static inline void template_entry_free(name_entry_t *ent)
 {
     neu_template_free(ent->tmpl);
+    free_plugin_instance(ent->inst);
     free(ent);
 }
 
@@ -55,7 +65,8 @@ void neu_template_manager_destroy(neu_template_manager_t *mgr)
     free(mgr);
 }
 
-int neu_template_manager_add(neu_template_manager_t *mgr, neu_template_t *tmpl)
+int neu_template_manager_add(neu_template_manager_t *mgr, neu_template_t *tmpl,
+                             neu_plugin_instance_t *inst)
 {
     name_entry_t *ent  = NULL;
     const char *  name = neu_template_name(tmpl);
@@ -63,16 +74,19 @@ int neu_template_manager_add(neu_template_manager_t *mgr, neu_template_t *tmpl)
     HASH_FIND(hh_name, mgr->name_map, name, strlen(name), ent);
     if (ent) {
         neu_template_free(tmpl);
+        free_plugin_instance(inst);
         return NEU_ERR_TEMPLATE_EXIST;
     }
 
     ent = calloc(1, sizeof(*ent));
     if (NULL == ent) {
         neu_template_free(tmpl);
+        free_plugin_instance(inst);
         return NEU_ERR_EINTERNAL;
     }
 
     ent->tmpl = tmpl;
+    ent->inst = inst;
     HASH_ADD_KEYPTR(hh_name, mgr->name_map, name, strlen(name), ent);
     return 0;
 }

@@ -27,12 +27,16 @@ extern "C" {
 #include <stdint.h>
 
 #include "group.h"
+#include "plugin.h"
 #include "tag.h"
 
 typedef struct neu_template_s neu_template_t;
 
 neu_template_t *neu_template_new(const char *name, const char *plugin);
 void            neu_template_free(neu_template_t *tmpl);
+
+void neu_template_set_tag_validator(neu_template_t *           tmpl,
+                                    neu_plugin_tag_validator_t validator);
 
 const char *neu_template_name(const neu_template_t *tmpl);
 const char *neu_template_plugin(const neu_template_t *tmpl);

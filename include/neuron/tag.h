@@ -108,7 +108,7 @@ inline static bool neu_tag_attribute_test(const neu_datatag_t *tag,
  * @param[in] option contain actions that the label can perform.
  * @return  0 on success, -1 on failure.
  */
-int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
+int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
                                   neu_datatag_addr_option_u *option);
 
 bool neu_datatag_string_is_utf8(char *data, int len);
