@@ -71,8 +71,8 @@ static int move_template_json(neu_req_add_template_t *cmd,
 {
     int ret = 0;
 
-    if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
-        return NEU_ERR_NODE_NAME_TOO_LONG;
+    if (strlen(req->name) >= NEU_TEMPLATE_NAME_LEN) {
+        return NEU_ERR_TEMPLATE_NAME_TOO_LONG;
     }
 
     if (strlen(req->plugin) >= NEU_PLUGIN_NAME_LEN) {

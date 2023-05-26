@@ -10,6 +10,7 @@ Suite Teardown    Stop Neuronx
 ${g_plugin}         ${PLUGIN_MODBUS_TCP}
 ${g_template}       template-modbus
 ${g_node}           modbus
+${g_long_str}       ${{'a'*200}}
 &{g_tag1}           name=tag1     address=1!400001      attribute=${3}   type=${4}    precision=${1}    decimal=${0}
 &{g_tag2}           name=tag2     address=1!400009      attribute=${1}   type=${11}
 &{g_tag_bad_type}   name=tag3     address=1!000001      attribute=${1}   type=${4}
@@ -27,6 +28,14 @@ Create a template with a plugin that does not exist, it should fail.
     Check Error Code              ${res}                ${NEU_ERR_PLUGIN_NOT_FOUND}
 
     [Teardown]                    Del Template          ${g_template}
+
+
+Create a template with too long name, it should fail.
+    ${res} =                      Add Template          ${g_long_str}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_long_str}
 
 
 Create a template having no group, it should success.
@@ -57,8 +66,7 @@ Create a template with invalid group interval, it should fail.
 
 
 Create a template with too long group name, it should fail.
-    ${name} =                     Evaluate              "a"*200
-    ${group} =                    Create Dictionary     name=${name}                  interval=${2000}      tags=${g_tags}
+    ${group} =                    Create Dictionary     name=${g_long_str}            interval=${2000}      tags=${g_tags}
     ${groups} =                   Create List           ${group}
 
     ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${groups}
@@ -203,6 +211,8 @@ When a template is created, its data should be persisted.
     ${res} =                      Get Template          ${g_template}
     Check Response Status         ${res}                404
     Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
 
 
 Instantiate a node from a nonexistent template, it should fail.
