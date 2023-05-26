@@ -185,3 +185,27 @@ Write Tags
   POST                /api/v2/write           {"node": "${node}", "group": "${group}", "tag": "${tag}", "value": ${value}}
   ${res} =            Object  response body
   [RETURN]            ${res}[0]
+
+Add Template
+  [Arguments]   ${name}   ${plugin}   ${groups}
+  ${data} =     Evaluate              json.dumps(${groups})   json
+  POST          /api/v2/template      {"name": "${name}", "plugin": "${plugin}", "groups": ${data} }
+  ${res}        Object  response body
+  [RETURN]      ${res}[0]
+
+Del Template
+  [Arguments]   ${name}
+  DELETE        /api/v2/template?name=${name}
+  ${res}        Object  response body
+  [RETURN]      ${res}[0]
+
+Get Template
+  [Arguments]   ${name}
+  GET           /api/v2/template?name=${name}
+  ${res}        Object  response body
+  [RETURN]      ${res}[0]
+
+Get Templates
+  GET           /api/v2/template
+  ${res}        Object  response body
+  [RETURN]      ${res}[0]

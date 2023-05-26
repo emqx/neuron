@@ -30,9 +30,10 @@ typedef struct {
 } group_entry_t;
 
 struct neu_template_s {
-    char *         name;
-    char *         plugin;
-    group_entry_t *groups;
+    char *                     name;
+    char *                     plugin;
+    neu_plugin_tag_validator_t tag_validator;
+    group_entry_t *            groups;
 };
 
 static inline void group_entry_free(group_entry_t *ent)
@@ -78,6 +79,12 @@ void neu_template_free(neu_template_t *tmpl)
         free(tmpl->plugin);
         free(tmpl);
     }
+}
+
+void neu_template_set_tag_validator(neu_template_t *           tmpl,
+                                    neu_plugin_tag_validator_t validator)
+{
+    tmpl->tag_validator = validator;
 }
 
 const char *neu_template_name(const neu_template_t *tmpl)
@@ -174,10 +181,19 @@ int neu_template_for_each_group(neu_template_t *tmpl,
 int neu_template_add_tag(neu_template_t *tmpl, const char *group,
                          const neu_datatag_t *tag)
 {
+    int            ret = 0;
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
     if (NULL == ent) {
         return NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    if (NULL == tmpl->tag_validator) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE;
+    }
+
+    if (0 != (ret = tmpl->tag_validator(tag))) {
+        return ret;
     }
 
     return neu_group_add_tag(ent->group, tag);
@@ -186,10 +202,20 @@ int neu_template_add_tag(neu_template_t *tmpl, const char *group,
 int neu_template_update_tag(neu_template_t *tmpl, const char *group,
                             const neu_datatag_t *tag)
 {
+    int ret = 0;
+
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
     if (NULL == ent) {
         return NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    if (NULL == tmpl->tag_validator) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE;
+    }
+
+    if (0 != (ret = tmpl->tag_validator(tag))) {
+        return ret;
     }
 
     return neu_group_update_tag(ent->group, tag);

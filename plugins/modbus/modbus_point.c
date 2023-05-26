@@ -32,7 +32,7 @@ static __thread uint16_t modbus_read_max_byte = 255;
 static int  tag_cmp(neu_tag_sort_elem_t *tag1, neu_tag_sort_elem_t *tag2);
 static bool tag_sort(neu_tag_sort_t *sort, void *tag, void *tag_to_be_sorted);
 
-int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point)
+int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
 {
     int      ret           = NEU_ERR_SUCCESS;
     uint32_t start_address = 0;

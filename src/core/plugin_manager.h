@@ -46,8 +46,12 @@ int neu_plugin_manager_del(neu_plugin_manager_t *mgr, const char *plugin_name);
 UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr);
 // neu_resp_plugin_info_t array
 UT_array *neu_plugin_manager_get_single(neu_plugin_manager_t *mgr);
-int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
-                            neu_resp_plugin_info_t *info);
+int  neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
+                             neu_resp_plugin_info_t *info);
+bool neu_plugin_manager_exists(neu_plugin_manager_t *mgr,
+                               const char *          plugin_name);
+bool neu_plugin_manager_is_single(neu_plugin_manager_t *mgr,
+                                  const char *          plugin_name);
 
 int  neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
                                         const char *           plugin_name,

@@ -37,6 +37,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config);
 static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                           void *data);
 
+static int driver_tag_validator(const neu_datatag_t *tag);
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
@@ -52,9 +53,10 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .setting = driver_config,
     .request = driver_request,
 
-    .driver.validate_tag = driver_validate_tag,
-    .driver.group_timer  = driver_group_timer,
-    .driver.write_tag    = driver_write,
+    .driver.validate_tag  = driver_validate_tag,
+    .driver.group_timer   = driver_group_timer,
+    .driver.write_tag     = driver_write,
+    .driver.tag_validator = driver_tag_validator,
 };
 
 const neu_plugin_module_t neu_plugin_module = {
@@ -262,6 +264,12 @@ static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     (void) head;
     (void) data;
     return 0;
+}
+
+static int driver_tag_validator(const neu_datatag_t *tag)
+{
+    modbus_point_t point = { 0 };
+    return modbus_tag_to_point(tag, &point);
 }
 
 static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag)

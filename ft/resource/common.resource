@@ -70,6 +70,11 @@ Neuron Ready
     Start Neuron
     Sleep           3
 
+List Length Should Be
+    [Arguments]    ${data}    ${len}
+    ${res} =                      Get Length          ${data}
+    Should Be Equal As Integers   ${len}              ${res}
+
 Compare Tag Value As Bool
     [Arguments]    ${tags}    ${name}    ${value}
 

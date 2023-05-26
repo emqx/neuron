@@ -16,6 +16,8 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include <dlfcn.h>
+
 #include "utils/log.h"
 
 #include "adapter.h"
@@ -121,15 +123,58 @@ int neu_manager_update_node_name(neu_manager_t *manager, const char *node,
     return ret;
 }
 
+static inline neu_plugin_instance_t *
+new_plugin_instance(neu_plugin_manager_t *plugin_manager, const char *plugin)
+{
+    neu_plugin_instance_t *inst = calloc(1, sizeof(*inst));
+    if (NULL == inst) {
+        return NULL;
+    }
+
+    if (0 != neu_plugin_manager_create_instance(plugin_manager, plugin, inst)) {
+        free(inst);
+        return NULL;
+    }
+
+    return inst;
+}
+
+static inline void free_plugin_instance(neu_plugin_instance_t *inst)
+{
+    if (inst) {
+        dlclose(inst->handle);
+        free(inst);
+    }
+}
+
 int neu_manager_add_template(neu_manager_t *manager, const char *name,
                              const char *plugin, uint16_t n_group,
                              neu_reqresp_template_group_t *groups)
 {
-    int             rv   = 0;
-    neu_template_t *tmpl = neu_template_new(name, plugin);
-    if (NULL == tmpl) {
+    int rv = 0;
+
+    if (!neu_plugin_manager_exists(manager->plugin_manager, plugin)) {
+        return NEU_ERR_PLUGIN_NOT_FOUND;
+    }
+
+    if (neu_plugin_manager_is_single(manager->plugin_manager, plugin)) {
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE;
+    }
+
+    neu_plugin_instance_t *plug_inst =
+        new_plugin_instance(manager->plugin_manager, plugin);
+    if (NULL == plug_inst) {
         return NEU_ERR_EINTERNAL;
     }
+
+    neu_template_t *tmpl = neu_template_new(name, plugin);
+    if (NULL == tmpl) {
+        free_plugin_instance(plug_inst);
+        return NEU_ERR_EINTERNAL;
+    }
+
+    neu_template_set_tag_validator(
+        tmpl, plug_inst->module->intf_funs->driver.tag_validator);
 
     for (int i = 0; i < n_group; ++i) {
         neu_reqresp_template_group_t *grp = &groups[i];
@@ -146,11 +191,12 @@ int neu_manager_add_template(neu_manager_t *manager, const char *name,
         }
     }
 
-    rv = neu_template_manager_add(manager->template_manager, tmpl);
+    rv = neu_template_manager_add(manager->template_manager, tmpl, plug_inst);
     return rv;
 
 error:
     neu_template_free(tmpl);
+    free_plugin_instance(plug_inst);
     return rv;
 }
 

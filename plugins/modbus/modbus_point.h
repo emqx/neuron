@@ -40,7 +40,7 @@ typedef struct modbus_point {
     char                      name[NEU_TAG_NAME_LEN];
 } modbus_point_t;
 
-int modbus_tag_to_point(neu_datatag_t *tag, modbus_point_t *point);
+int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point);
 
 typedef struct modbus_read_cmd {
     uint8_t       slave_id;

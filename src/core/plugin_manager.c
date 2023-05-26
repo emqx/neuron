@@ -254,6 +254,27 @@ int neu_plugin_manager_find(neu_plugin_manager_t *mgr, const char *plugin_name,
     return ret;
 }
 
+bool neu_plugin_manager_exists(neu_plugin_manager_t *mgr,
+                               const char *          plugin_name)
+{
+    plugin_entity_t *plugin = NULL;
+    HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
+    return NULL != plugin;
+}
+
+bool neu_plugin_manager_is_single(neu_plugin_manager_t *mgr,
+                                  const char *          plugin_name)
+{
+    plugin_entity_t *plugin = NULL;
+    HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
+
+    if (NULL == plugin) {
+        return false;
+    }
+
+    return plugin->single;
+}
+
 int neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
                                        const char *           plugin_name,
                                        neu_plugin_instance_t *instance)

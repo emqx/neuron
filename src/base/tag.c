@@ -131,7 +131,7 @@ static char *find_last_character(char *str, char character)
     return ret;
 }
 
-int neu_datatag_parse_addr_option(neu_datatag_t *            datatag,
+int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
                                   neu_datatag_addr_option_u *option)
 {
     int ret = 0;
