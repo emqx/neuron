@@ -376,18 +376,17 @@ int neu_manager_add_template_tags(neu_manager_t *manager, const char *tmpl_name,
                                   const char *group, uint16_t n_tag,
                                   neu_datatag_t *tags, uint16_t *index_p)
 {
-    int          ret = 0;
-    neu_group_t *grp = NULL;
+    int ret = 0;
 
-    ret = neu_template_manager_find_group(manager->template_manager, tmpl_name,
-                                          group, &grp);
-    if (0 != ret) {
-        return ret;
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, tmpl_name);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
     }
 
     int i = 0;
     for (; i < n_tag; ++i) {
-        if (0 != (ret = neu_group_add_tag(grp, &tags[i]))) {
+        if (0 != (ret = neu_template_add_tag(tmpl, group, &tags[i]))) {
             break;
         }
     }
@@ -403,18 +402,18 @@ int neu_manager_update_template_tags(neu_manager_t *                manager,
                                      neu_req_update_template_tag_t *req,
                                      uint16_t *                     index_p)
 {
-    int          ret = 0;
-    neu_group_t *grp = NULL;
+    int ret = 0;
 
-    ret = neu_template_manager_find_group(manager->template_manager, req->tmpl,
-                                          req->group, &grp);
-    if (0 != ret) {
-        return ret;
+    neu_template_t *tmpl =
+        neu_template_manager_find(manager->template_manager, req->tmpl);
+    if (NULL == tmpl) {
+        return NEU_ERR_TEMPLATE_NOT_FOUND;
     }
 
     int i = 0;
     for (; i < req->n_tag; ++i) {
-        if (0 != (ret = neu_group_update_tag(grp, &req->tags[i]))) {
+        if (0 !=
+            (ret = neu_template_update_tag(tmpl, req->group, &req->tags[i]))) {
             break;
         }
     }
