@@ -215,3 +215,27 @@ Get Templates
   GET           /api/v2/template
   ${res}        Object  response body
   [RETURN]      ${res}[0]
+
+Add Template Group
+  [Arguments]         ${tmpl}                 ${group}            ${interval}
+  POST                /api/v2/template/group  {"template": "${tmpl}", "group": "${group}", "interval": ${interval}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Put Template Group
+  [Arguments]         ${tmpl}                 ${group}            ${interval}
+  PUT                 /api/v2/template/group  {"template": "${tmpl}", "group": "${group}", "interval": ${interval}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Del Template Group
+  [Arguments]         ${tmpl}                 ${group}
+  DELETE              /api/v2/template/group  {"template": "${tmpl}", "group": "${group}"}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Get Template Groups
+  [Arguments]         ${tmpl}
+  GET                 /api/v2/template/group?name=${tmpl}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]

@@ -273,6 +273,221 @@ Instantiated node should be persisted.
     ...                           AND                   Del Template                  ${g_template}
 
 
+Add group to nonexistent template, it should fail.
+    ${res} =                      Add Template Group    ${g_template}                 ${g_group1}[name]     ${2000}
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add group with conflicting name to existing template, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Group    ${g_template}                 ${g_group1}[name]     ${2000}
+    Check Response Status         ${res}                409
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add group with invalid interval to existing template, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Group    ${g_template}                 ${g_group1}[name]     ${10}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_PARAMETER_INVALID}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add group with too long name to existing template, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Group    ${g_template}                 ${g_long_str}         ${2000}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add group to existing template, it should success.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Group    ${g_template}                 ${g_group1}[name]     ${g_group1}[interval]
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Have Only One Group    ${res}[groups]        ${g_group1}[name]             ${g_group1}[interval]
+    Group Tag Count Should Be     ${res}[groups][0]     0
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get groups from nonexistent template, it should fail.
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+
+Get groups when there are no groups, it should return empty result.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Be Empty               ${res}[groups]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get groups from existent template having one group, it should success.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Have Only One Group    ${res}[groups]        ${g_group1}[name]             ${g_group1}[interval]
+    Group Tag Count Should Be     ${res}[groups][0]     2
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update group interval when template does not exist, it should fail.
+    ${res} =                      Put Template Group    ${g_template}                 ${g_group1}[name]     ${1000}
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update group interval when group does not exist, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Group    ${g_template}                 ${g_group1}[name]     ${1000}
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update group interval to invalid value, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Group    ${g_template}                 ${g_group1}[name]     ${10}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_PARAMETER_INVALID}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update group interval, it should success.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Group    ${g_template}                 ${g_group1}[name]     ${1000}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Have Only One Group    ${res}[groups]        ${g_group1}[name]             ${1000}
+    Group Tag Count Should Be     ${res}[groups][0]     2
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete group from nonexistent template, it should fail.
+    ${res} =                      Del Template Group    ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+
+Delete nonexistent group from existent template, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Group    ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete group from existent template, it should success.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Group    ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Be Empty               ${res}[groups]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Template groups should be persisted.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Group    ${g_template}                 ${g_group1}[name]     ${g_group1}[interval]
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    Restart Neuron
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Have Only One Group    ${res}[groups]        ${g_group1}[name]             ${g_group1}[interval]
+    Group Tag Count Should Be     ${res}[groups][0]     0
+
+    ${res} =                      Put Template Group    ${g_template}                 ${g_group1}[name]     ${1000}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    Restart Neuron
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Have Only One Group    ${res}[groups]        ${g_group1}[name]             ${1000}
+    Group Tag Count Should Be     ${res}[groups][0]     0
+
+    ${res} =                      Del Template Group    ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    Restart Neuron
+
+    ${res} =                      Get Template Groups   ${g_template}
+    Check Response Status         ${res}                200
+    Should Be Empty               ${res}[groups]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 *** Keywords ***
 Restart Neuron
     ${result} =                   Terminate Process     ${neuron_process}
