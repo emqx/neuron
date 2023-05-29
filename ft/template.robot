@@ -7,14 +7,20 @@ Suite Teardown    Stop Neuronx
 
 
 *** Variables ***
+${ATTR_RW}          ${${TAG_ATTRIBUTE_RW}}
+${ATTR_RD}          ${${TAG_ATTRIBUTE_READ}}
+${TYPE_I16}         ${${TAG_TYPE_INT16}}
+${TYPE_U16}         ${${TAG_TYPE_UINT16}}
+${TYPE_BIT}         ${${TAG_TYPE_BIT}}
+
 ${g_plugin}         ${PLUGIN_MODBUS_TCP}
 ${g_template}       template-modbus
 ${g_node}           modbus
 ${g_long_str}       ${{'a'*200}}
-&{g_tag1}           name=tag1     address=1!400001      attribute=${3}   type=${4}    precision=${1}    decimal=${0}
-&{g_tag2}           name=tag2     address=1!400009      attribute=${1}   type=${11}
-&{g_tag_bad_type}   name=tag3     address=1!000001      attribute=${1}   type=${4}
-&{g_tag_bad_addr}   name=tag4     address=F!400009      attribute=${1}   type=${11}
+&{g_tag1}           name=tag1     address=1!400001      attribute=${${ATTR_RW}}       type=${${TYPE_U16}}   precision=${1}    decimal=${0}
+&{g_tag2}           name=tag2     address=1!400009      attribute=${${ATTR_RD}}       type=${${TYPE_BIT}}
+${g_tag_bad_type}   ${{{**$g_tag1, 'address':'0!000001'}}}
+${g_tag_bad_addr}   ${{{**$g_tag2, 'address':'F!400009'}}}
 @{g_tags}           ${g_tag1}     ${g_tag2}
 &{g_group1}         name=group1   interval=${2000}      tags=${g_tags}
 @{g_groups}         ${g_group1}
@@ -488,6 +494,378 @@ Template groups should be persisted.
     [Teardown]                    Del Template          ${g_template}
 
 
+Add tag to nonexistent template, it should fail.
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    #Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add tag to nonexistent template group, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    #Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add tag with conflicting name to existing template group, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    #Check Response Status         ${res}                409
+    Check Error Code              ${res}                ${NEU_ERR_TAG_NAME_CONFLICT}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add tag with too long name to existing template group, it should fail.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    &{tag} =                      New Tag From          ${g_tag1}                     name=${g_long_str}
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${tag}
+    Check Response Status         ${res}                206
+    Check Error Code              ${res}                ${NEU_ERR_TAG_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add tag with invalid type to existing template group, it should fail.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag_bad_type}
+    #Check Response Status         ${res}                206
+    Check Error Code              ${res}                ${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add tag with invalid address to existing template group, it should fail.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag_bad_addr}
+    #Check Response Status         ${res}                206
+    Check Error Code              ${res}                ${NEU_ERR_TAG_ADDRESS_FORMAT_INVALID}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add tag to existing template group, it should success.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add many tags to existing template group, it should success.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     @{g_tags}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Should Match Test Tags        ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags from nonexistent template, it should fail.
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags from nonexistent template group, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags when there are none from existent template group, it should return empty result.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Should Be Empty               ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags from existent template group, it should return the tags.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Should Match Test Tags        ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags by name pattern when there is no match, it should return empty result.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Grep Template Tags    ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
+    Check Response Status         ${res}                200
+    Should Be Empty               ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags by name pattern when there is one match, it should return the matched tag.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Grep Template Tags    ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
+    Check Response Status         ${res}                200
+    List Length Should Be         ${res}[tags]          1
+    Should Match Test Tag1        ${res}[tags][0]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags by name pattern, it should return all matched tags.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Grep Template Tags    ${g_template}                 ${g_group1}[name]     tag
+    Check Response Status         ${res}                200
+    Should Match Test Tags        ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag when template does not exist, it should fail.
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    #Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag when template group does not exist, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    #Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag when template tag does not exist, it should fail.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    #Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TAG_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag name to invalid value, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    &{tag} =                      New Tag From          ${g_tag1}                     name=${g_long_str}
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${tag}
+    Check Response Status         ${res}                206
+    Check Error Code              ${res}                ${NEU_ERR_TAG_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag type to invalid value, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag_bad_type}
+    #Check Response Status         ${res}                206
+    Check Error Code              ${res}                ${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag address to invalid value, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag_bad_addr}
+    #Check Response Status         ${res}                206
+    Check Error Code              ${res}                ${NEU_ERR_TAG_ADDRESS_FORMAT_INVALID}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update one tag, it should success.
+    &{tag} =                      New Tag From          ${g_tag1}                     address=1!400002
+    Add Template And Tags         ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]   ${tag}                ${g_tag2}
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Should Match Test Tags        ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update many tags, it should success.
+    &{tag1} =                     New Tag From          ${g_tag1}                     type=${${TAG_TYPE_INT16}}
+    &{tag2} =                     New Tag From          ${g_tag2}                     address=1!400008
+    Add Template And Tags         ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]   ${tag1}               ${tag2}
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     @{g_tags}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Should Match Test Tags        ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete tag when template does not exist, it should fail.
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete tag when template group does not exist, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete tag when template tag does not exist, it trivially success.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete one tag, it should keep other tags untouched.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    List Length Should Be         ${res}[tags]          1
+    Should Match Test Tag2        ${res}[tags][0]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete all tags, it should success.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]         ${g_tag2}[name]
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    List Length Should Be         ${res}[tags]          0
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Template tags should be persisted.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    &{tag1} =                     New Tag From          ${g_tag1}                     address=1!400002
+    &{tag2} =                     New Tag From          ${g_tag2}                     address=1!400008
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${tag1}                 ${tag2}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    Restart Neuron
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    List Length Should Be         ${res}[tags]          2
+    Should Be Equal As Tags       ${res}[tags][0]       ${tag1}
+    Should Be Equal As Tags       ${res}[tags][1]       ${tag2}
+
+    Restart Neuron
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     @{g_tags}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Should Match Test Tags        ${res}[tags]
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
+
+    Restart Neuron
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    List Length Should Be         ${res}[tags]          1
+    Should Match Test Tag2        ${res}[tags][0]
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag2}[name]
+
+    Restart Neuron
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
+    Check Response Status         ${res}                200
+    Should Be Empty               ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 *** Keywords ***
 Restart Neuron
     ${result} =                   Terminate Process     ${neuron_process}
@@ -498,24 +876,46 @@ Restart Neuron
     Sleep   1
 
 
+Should Be Equal As Tags
+    [Arguments]                   ${tag1}               ${tag2}
+    Should Be Equal As Strings    ${tag1}[name]         ${tag2}[name]
+    Should Be Equal As Strings    ${tag1}[address]      ${tag2}[address]
+    Should Be Equal As Integers   ${tag1}[attribute]    ${tag2}[attribute]
+    Should Be Equal As Integers   ${tag1}[type]         ${tag2}[type]
+
+    IF        'decimal' in $tag1 and 'decimal' in $tag2
+    Should Be Equal As Integers   ${tag1}[decimal]      ${tag2}[decimal]
+    ELSE IF   'decimal' in $tag1
+    Should Be Equal As Integers   ${tag1}[decimal]      0
+    ELSE IF   'decimal' in $tag2
+    Should Be Equal As Integers   ${tag2}[decimal]      0
+    END
+
+    IF        'precision' in $tag1 and 'precision' in $tag2
+    Should Be Equal As Integers   ${tag1}[precision]    ${tag2}[precision]
+    ELSE IF   'precision' in $tag1
+    Should Be Equal As Integers   ${tag1}[precision]    0
+    ELSE IF   'precision' in $tag2
+    Should Be Equal As Integers   ${tag2}[precision]    0
+    END
+
+    IF        'description' in $tag1 and 'description' in $tag2
+    Should Be Equal As Strings    ${tag1}[description]  ${tag2}[description]
+    ELSE IF   'description' in $tag1
+    Should Be Equal As Strings    ${tag1}[description]  ${EMPTY}
+    ELSE IF   'description' in $tag2
+    Should Be Equal As Strings    ${tag2}[description]  ${EMPTY}
+    END
+
+
 Should Match Test Tag1
     [Arguments]                   ${tag}
-    Should Be Equal As Strings    ${tag}[name]          ${g_tag1}[name]
-    Should Be Equal As Strings    ${tag}[address]       ${g_tag1}[address]
-    Should Be Equal As Integers   ${tag}[attribute]     ${g_tag1}[attribute]
-    Should Be Equal As Integers   ${tag}[type]          ${g_tag1}[type]
-    Should Be Equal As Integers   ${tag}[decimal]       ${g_tag1}[decimal]
-    Should Be Equal As Integers   ${tag}[precision]     ${g_tag1}[precision]
+    Should Be Equal As Tags       ${tag}                ${g_tag1}
 
 
 Should Match Test Tag2
     [Arguments]                   ${tag}
-    Should Be Equal As Strings    ${tag}[name]          ${g_tag2}[name]
-    Should Be Equal As Strings    ${tag}[address]       ${g_tag2}[address]
-    Should Be Equal As Integers   ${tag}[attribute]     ${g_tag2}[attribute]
-    Should Be Equal As Integers   ${tag}[type]          ${g_tag2}[type]
-    Should Be Equal As Integers   ${tag}[decimal]       0
-    Should Be Equal As Integers   ${tag}[precision]     0
+    Should Be Equal As Tags       ${tag}                ${g_tag2}
 
 
 Should Match Test Tags
@@ -554,3 +954,29 @@ Should Match Test Template
     ${res}=                       Get Tags              ${node_name}                  ${g_group1}[name]
     Check Response Status         ${res}                200
     Should Match Test Tags        ${res}[tags]
+
+
+New Tag From
+    [Arguments]                   ${tag}                &{updates}
+    ${copy}                       Evaluate              {**$tag, **$updates}
+    [Return]                      ${copy}
+
+
+Add Template And One Group
+    [Arguments]                   ${tmpl}               ${plugin}                     ${group}              ${interval}
+    ${res} =                      Add Template          ${tmpl}                       ${plugin}             ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Group    ${tmpl}                       ${group}              ${interval}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+
+Add Template And Tags
+    [Arguments]                   ${tmpl}               ${plugin}                     ${group}              ${interval}             @{tags}
+    Add Template And One Group    ${tmpl}               ${plugin}                     ${group}              ${interval}
+
+    ${res} =                      Add Template Tags     ${tmpl}                       ${group}              @{tags}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
