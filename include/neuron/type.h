@@ -143,25 +143,19 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
         snprintf(str, sizeof(str), "type: %s, value: %u", neu_type_string(type),
                  value.u32);
         break;
-    case NEU_TYPE_INT64:
-#if __WORDSIZE == 64
-        snprintf(str, sizeof(str), "type: %s, value: %li",
-                 neu_type_string(type), value.i64);
-#else
-        snprintf(str, sizeof(str), "type: %s, value: %lli",
-                 neu_type_string(type), value.i64);
-#endif
+    case NEU_TYPE_INT64: {
+        long long int i = value.i64;
+        snprintf(str, sizeof(str), "type: %s, value: %lld",
+                 neu_type_string(type), i);
         break;
+    }
     case NEU_TYPE_LWORD:
-    case NEU_TYPE_UINT64:
-#if __WORDSIZE == 64
-        snprintf(str, sizeof(str), "type: %s, value: %lu",
-                 neu_type_string(type), value.u64);
-#else
+    case NEU_TYPE_UINT64: {
+        long long unsigned int i = value.u64;
         snprintf(str, sizeof(str), "type: %s, value: %llu",
-                 neu_type_string(type), value.u64);
-#endif
+                 neu_type_string(type), i);
         break;
+    }
     case NEU_TYPE_FLOAT:
         snprintf(str, sizeof(str), "type: %s, value: %f", neu_type_string(type),
                  value.f32);
