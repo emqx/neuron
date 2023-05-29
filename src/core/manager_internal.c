@@ -530,6 +530,7 @@ int neu_manager_instantiate_template(neu_manager_t *          manager,
 
 end:
     if (0 != ret) {
+        neu_adapter_uninit(adapter);
         neu_manager_del_node(manager, req->node);
     }
 
