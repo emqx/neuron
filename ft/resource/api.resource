@@ -215,3 +215,60 @@ Get Templates
   GET           /api/v2/template
   ${res}        Object  response body
   [RETURN]      ${res}[0]
+
+Add Template Group
+  [Arguments]         ${tmpl}                 ${group}            ${interval}
+  POST                /api/v2/template/group  {"template": "${tmpl}", "group": "${group}", "interval": ${interval}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Put Template Group
+  [Arguments]         ${tmpl}                 ${group}            ${interval}
+  PUT                 /api/v2/template/group  {"template": "${tmpl}", "group": "${group}", "interval": ${interval}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Del Template Group
+  [Arguments]         ${tmpl}                 ${group}
+  DELETE              /api/v2/template/group  {"template": "${tmpl}", "group": "${group}"}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Get Template Groups
+  [Arguments]         ${tmpl}
+  GET                 /api/v2/template/group?name=${tmpl}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Add Template Tags
+  [Arguments]         ${tmpl}                 ${group}            @{tags}
+  ${data} =           Evaluate                json.dumps(${tags})             json
+  POST                /api/v2/template/tag    {"template": "${tmpl}", "group": "${group}", "tags": ${data}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Get Template Tags
+  [Arguments]         ${tmpl}                 ${group}
+  GET                 /api/v2/template/tag?template=${tmpl}&group=${group}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Grep Template Tags
+  [Arguments]         ${tmpl}                 ${group}            ${pattern}
+  GET                 /api/v2/template/tag?template=${tmpl}&group=${group}&name=${pattern}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Put Template Tags
+  [Arguments]         ${tmpl}                 ${group}            @{tags}
+  ${data} =           Evaluate                json.dumps(${tags})             json
+  PUT                 /api/v2/template/tag    {"template": "${tmpl}", "group": "${group}", "tags": ${data}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Del Template Tags
+  [Arguments]         ${tmpl}                 ${group}            @{tags}
+  ${data} =           Evaluate                json.dumps(${tags})             json
+  DELETE              /api/v2/template/tag    {"template": "${tmpl}", "group": "${group}", "tags": ${data}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
