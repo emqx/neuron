@@ -89,7 +89,7 @@ static void *event_loop(void *arg)
             continue;
         }
 
-        if (ret == -1 && errno == EINTR) {
+        if (ret == -1) {
             continue;
         }
 
