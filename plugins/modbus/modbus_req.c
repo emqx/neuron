@@ -159,6 +159,7 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
             modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id, 0, NULL,
                                 NEU_ERR_PLUGIN_DISCONNECTED);
             rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+            neu_conn_disconnect(plugin->conn);
         }
         if (plugin->interval > 0) {
             struct timespec t1 = { .tv_sec  = plugin->interval / 1000,
