@@ -917,6 +917,33 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_READ_GROUP:
         forward_msg(manager, msg, header->receiver);
         break;
+
+    case NEU_REQ_ADD_NDRIVER_MAP: {
+        neu_req_ndriver_map_t *cmd   = (neu_req_ndriver_map_t *) &header[1];
+        neu_resp_error_t       error = { 0 };
+
+        // TODO
+        nlog_info("add map ndriver:`%s` driver:`%s` group:`%s`", cmd->ndriver,
+                  cmd->driver, cmd->group);
+
+        header->type = NEU_RESP_ERROR;
+        strcpy(header->receiver, header->sender);
+        reply(manager, header, &error);
+        break;
+    }
+    case NEU_REQ_DEL_NDRIVER_MAP: {
+        neu_req_ndriver_map_t *cmd   = (neu_req_ndriver_map_t *) &header[1];
+        neu_resp_error_t       error = { 0 };
+
+        // TODO
+        nlog_info("del map ndriver:`%s` driver:`%s` group:`%s`", cmd->ndriver,
+                  cmd->driver, cmd->group);
+
+        header->type = NEU_RESP_ERROR;
+        strcpy(header->receiver, header->sender);
+        reply(manager, header, &error);
+        break;
+    }
     case NEU_REQ_UPDATE_LOG_LEVEL:
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
