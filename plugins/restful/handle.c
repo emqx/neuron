@@ -30,6 +30,7 @@
 #include "global_config_handle.h"
 #include "group_config_handle.h"
 #include "log_handle.h"
+#include "ndriver_handle.h"
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
@@ -120,6 +121,9 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/template/inst",
+    },
+    {
+        .url = "/api/v2/ndriver/map",
     },
 };
 
@@ -425,6 +429,18 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/template/group",
         .value.handler = handle_get_template_group,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/ndriver/map",
+        .value.handler = handle_add_ndriver_map,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_DELETE,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/ndriver/map",
+        .value.handler = handle_del_ndriver_map,
     },
 };
 
