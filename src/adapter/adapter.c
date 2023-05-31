@@ -1386,6 +1386,10 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_RESP_GET_DRIVER_GROUP:
         data_size = sizeof(neu_resp_get_driver_group_t);
         break;
+    case NEU_REQ_ADD_NDRIVER_MAP:
+    case NEU_REQ_DEL_NDRIVER_MAP:
+        data_size = sizeof(neu_req_ndriver_map_t);
+        break;
     case NEU_REQ_UPDATE_LOG_LEVEL:
         data_size = sizeof(neu_req_update_log_level_t);
         break;
