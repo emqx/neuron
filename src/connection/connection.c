@@ -237,6 +237,8 @@ int neu_conn_tcp_server_close_client(neu_conn_t *conn, int fd)
 
     conn->disconnected(conn->data, fd);
     conn_tcp_server_del_client(conn, fd);
+    conn->offset = 0;
+    memset(conn->buf, 0, conn->buf_size);
 
     pthread_mutex_unlock(&conn->mtx);
     return 0;
@@ -1012,6 +1014,7 @@ int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
                 return -1;
             }
         } else {
+            neu_conn_disconnect(conn);
             return result.used;
         }
     }
@@ -1044,6 +1047,7 @@ int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
                 return -1;
             }
         } else {
+            neu_conn_tcp_server_close_client(conn, fd);
             return result.used;
         }
     }
