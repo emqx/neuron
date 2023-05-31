@@ -62,7 +62,7 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         }
 
         if ((f = fopen(tag->address, "rb+")) == NULL) {
-            nlog_warn("open file:%s", tag->address);
+            nlog_warn("fail open to read and write file: %s", tag->address);
             dvalue.type      = NEU_TYPE_ERROR;
             dvalue.value.i32 = NEU_ERR_FILE_OPEN_FAILURE;
             goto dvalue_result;
@@ -71,8 +71,11 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         fseek(f, 0, SEEK_END);
         int size = ftell(f);
         if (size >= length) {
+            nlog_warn(
+                "the file length exceeds the set value, file: %s, length: %d",
+                tag->address, size);
             dvalue.type      = NEU_TYPE_ERROR;
-            dvalue.value.i32 = NEU_ERR_FILE_TOO_LONG;
+            dvalue.value.i32 = NEU_ERR_STRING_TOO_LONG;
 
             fclose(f);
             goto dvalue_result;
@@ -84,6 +87,14 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
             nlog_warn("read file failed:%s", tag->address);
             dvalue.type      = NEU_TYPE_ERROR;
             dvalue.value.i32 = NEU_ERR_FILE_READ_FAILURE;
+
+            fclose(f);
+            goto dvalue_result;
+        } else if (ret >= NEU_VALUE_SIZE) {
+            nlog_warn("the file length exceeds the maximum, file: %s, ret: %d",
+                      tag->address, ret);
+            dvalue.type      = NEU_TYPE_ERROR;
+            dvalue.value.i32 = NEU_ERR_STRING_TOO_LONG;
 
             fclose(f);
             goto dvalue_result;
@@ -121,19 +132,32 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
 int file_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                neu_value_u value)
 {
-    FILE *fp  = fopen(tag->address, "w");
-    int   ret = 0;
+    FILE *fp     = NULL;
+    int   ret    = 0;
+    int   length = strlen(value.str);
 
-    if (0 == fwrite(value.str, sizeof(char), strlen(value.str), fp)) {
-        nlog_warn("write file failed:%s", tag->address);
-        ret = NEU_ERR_FILE_WRITE_FAILURE;
+    if (length >= NEU_VALUE_SIZE) {
+        nlog_warn("write file exceeds the maximum value, file: %s, length: %d",
+                  tag->address, length);
+        ret = NEU_ERR_STRING_TOO_LONG;
+
         goto dvalue_result;
     }
 
+    fp = fopen(tag->address, "w");
+
+    if (0 == fwrite(value.str, sizeof(char), strlen(value.str), fp)) {
+        nlog_warn("write file failed: %s", tag->address);
+        ret = NEU_ERR_FILE_WRITE_FAILURE;
+
+        fclose(fp);
+        goto dvalue_result;
+    }
+
+    fclose(fp);
     neu_datatag_string_ltoh(value.str, strlen(value.str));
 
 dvalue_result:
-    fclose(fp);
     plugin->common.adapter_callbacks->driver.write_response(
         plugin->common.adapter, req, ret);
 
