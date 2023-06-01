@@ -942,8 +942,7 @@ int neu_conn_stream_consume(neu_conn_t *conn, void *context,
             if (used == 0) {
                 break;
             } else if (used == -1) {
-                memset(conn->buf, 0, conn->buf_size);
-                conn->offset = 0;
+                neu_conn_disconnect(conn);
                 break;
             }
         }
@@ -974,8 +973,7 @@ int neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
             if (used == 0) {
                 break;
             } else if (used == -1) {
-                memset(conn->buf, 0, conn->buf_size);
-                conn->offset = 0;
+                neu_conn_tcp_server_close_client(conn, fd);
                 break;
             }
         }
@@ -1013,6 +1011,8 @@ int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
                            result.need, conn->buf_size, conn->offset);
                 return -1;
             }
+        } else if (result.need == 0) {
+            return result.used;
         } else {
             neu_conn_disconnect(conn);
             return result.used;
@@ -1046,6 +1046,8 @@ int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
                            result.need, conn->buf_size, conn->offset);
                 return -1;
             }
+        } else if (result.need == 0) {
+            return result.used;
         } else {
             neu_conn_tcp_server_close_client(conn, fd);
             return result.used;
