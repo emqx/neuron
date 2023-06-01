@@ -116,3 +116,51 @@ void neu_json_decode_ndriver_map_free(neu_json_ndriver_map_t *req)
         free(req);
     }
 }
+
+int neu_json_encode_ndriver_group_array(void *json_arr, void *param)
+{
+    neu_json_ndriver_map_group_array_t *resp =
+        (neu_json_ndriver_map_group_array_t *) param;
+
+    for (int i = 0; i < resp->n_group; i++) {
+        json_t *ob = json_object();
+
+        if (0 !=
+                json_object_set_new(ob, "driver",
+                                    json_string(resp->groups[i].driver)) ||
+            0 !=
+                json_object_set_new(ob, "group",
+                                    json_string(resp->groups[i].group)) ||
+            0 != json_array_append_new(json_arr, ob)) {
+            json_decref(ob);
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int neu_json_encode_get_ndriver_maps_resp(void *json_obj, void *param)
+{
+    int ret = 0;
+
+    void *group_array = neu_json_array();
+    if (NULL == group_array) {
+        return -1;
+    }
+
+    if (0 != neu_json_encode_ndriver_group_array(group_array, param)) {
+        neu_json_encode_free(group_array);
+        return -1;
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "groups",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = group_array,
+    } };
+    ret                          = neu_json_encode_field(json_obj, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
