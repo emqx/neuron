@@ -452,6 +452,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_PLUGIN:
     case NEU_RESP_GET_TEMPLATE:
     case NEU_RESP_GET_TEMPLATES:
+    case NEU_RESP_GET_NDRIVER_MAPS:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
     case NEU_REQRESP_TRANS_DATA:
@@ -1390,6 +1391,12 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_ADD_NDRIVER_MAP:
     case NEU_REQ_DEL_NDRIVER_MAP:
         data_size = sizeof(neu_req_ndriver_map_t);
+        break;
+    case NEU_REQ_GET_NDRIVER_MAPS:
+        data_size = sizeof(neu_req_get_ndriver_maps_t);
+        break;
+    case NEU_RESP_GET_NDRIVER_MAPS:
+        data_size = sizeof(neu_resp_get_ndriver_maps_t);
         break;
     case NEU_REQ_UPDATE_LOG_LEVEL:
         data_size = sizeof(neu_req_update_log_level_t);
