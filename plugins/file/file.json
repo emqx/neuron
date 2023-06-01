@@ -15,7 +15,8 @@
         "type": "int",
         "default": 512,
         "valid": {
-            "min": 1
+            "min": 1,
+            "max": 512
         }
     }
 }
