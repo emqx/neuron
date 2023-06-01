@@ -124,6 +124,7 @@ set(NEURON_SOURCES
     plugins/restful/normal_handle.c
     plugins/restful/rw_handle.c
     plugins/restful/adapter_handle.c
+    plugins/restful/ndriver_handle.c
     plugins/restful/datatag_handle.c
     plugins/restful/global_config_handle.c
     plugins/restful/group_config_handle.c

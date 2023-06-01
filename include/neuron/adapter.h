@@ -114,6 +114,9 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_NODES_STATE,
     NEU_REQRESP_NODE_DELETED,
 
+    NEU_REQ_ADD_NDRIVER_MAP,
+    NEU_REQ_DEL_NDRIVER_MAP,
+
     NEU_REQ_UPDATE_LOG_LEVEL,
 
     NEU_REQ_ADD_NODE_EVENT,
@@ -205,6 +208,9 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
     [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
+
+    [NEU_REQ_ADD_NDRIVER_MAP] = "NEU_REQ_ADD_NDRIVER_MAP",
+    [NEU_REQ_DEL_NDRIVER_MAP] = "NEU_REQ_DEL_NDRIVER_MAP",
 
     [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
 
@@ -633,6 +639,12 @@ typedef struct {
 typedef struct {
     char node[NEU_NODE_NAME_LEN];
 } neu_reqresp_node_deleted_t;
+
+typedef struct {
+    char ndriver[NEU_NODE_NAME_LEN];
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+} neu_req_ndriver_map_t;
 
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];
