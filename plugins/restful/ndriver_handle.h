@@ -25,5 +25,8 @@
 
 void handle_add_ndriver_map(nng_aio *aio);
 void handle_del_ndriver_map(nng_aio *aio);
+void handle_get_ndriver_maps(nng_aio *aio);
+void handle_get_ndriver_maps_resp(nng_aio *                    aio,
+                                  neu_resp_get_ndriver_maps_t *groups);
 
 #endif

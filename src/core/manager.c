@@ -946,6 +946,28 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &error);
         break;
     }
+    case NEU_REQ_GET_NDRIVER_MAPS: {
+        neu_req_get_ndriver_maps_t *cmd =
+            (neu_req_get_ndriver_maps_t *) &header[1];
+        neu_resp_error_t            e    = { 0 };
+        neu_resp_get_ndriver_maps_t resp = { 0 };
+
+        // TODO
+        (void) cmd;
+        UT_icd icd = { sizeof(neu_resp_get_ndriver_maps_t), NULL, NULL, NULL };
+        utarray_new(resp.groups, &icd);
+
+        strcpy(header->receiver, header->sender);
+        if (0 == e.error) {
+            header->type = NEU_RESP_GET_NDRIVER_MAPS;
+            reply(manager, header, &resp);
+        } else {
+            header->type = NEU_RESP_ERROR;
+            reply(manager, header, &e);
+        }
+
+        break;
+    }
     case NEU_REQ_UPDATE_LOG_LEVEL:
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {

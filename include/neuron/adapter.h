@@ -116,6 +116,8 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_ADD_NDRIVER_MAP,
     NEU_REQ_DEL_NDRIVER_MAP,
+    NEU_REQ_GET_NDRIVER_MAPS,
+    NEU_RESP_GET_NDRIVER_MAPS,
 
     NEU_REQ_UPDATE_LOG_LEVEL,
 
@@ -209,8 +211,10 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
     [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
 
-    [NEU_REQ_ADD_NDRIVER_MAP] = "NEU_REQ_ADD_NDRIVER_MAP",
-    [NEU_REQ_DEL_NDRIVER_MAP] = "NEU_REQ_DEL_NDRIVER_MAP",
+    [NEU_REQ_ADD_NDRIVER_MAP]   = "NEU_REQ_ADD_NDRIVER_MAP",
+    [NEU_REQ_DEL_NDRIVER_MAP]   = "NEU_REQ_DEL_NDRIVER_MAP",
+    [NEU_REQ_GET_NDRIVER_MAPS]  = "NEU_REQ_GET_NDRIVER_MAPS",
+    [NEU_RESP_GET_NDRIVER_MAPS] = "NEU_RESP_GET_NDRIVER_MAPS",
 
     [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
 
@@ -645,6 +649,19 @@ typedef struct {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
 } neu_req_ndriver_map_t;
+
+typedef struct {
+    char ndriver[NEU_NODE_NAME_LEN];
+} neu_req_get_ndriver_maps_t;
+
+typedef struct {
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+} neu_resp_ndriver_map_info_t;
+
+typedef struct {
+    UT_array *groups; // array of neu_resp_ndriver_map_info_t
+} neu_resp_get_ndriver_maps_t;
 
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];

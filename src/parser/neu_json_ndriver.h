@@ -36,6 +36,20 @@ int  neu_json_encode_ndriver_map(void *json_object, void *param);
 int  neu_json_decode_ndriver_map(char *buf, neu_json_ndriver_map_t **result);
 void neu_json_decode_ndriver_map_free(neu_json_ndriver_map_t *req);
 
+typedef struct {
+    char *driver;
+    char *group;
+} neu_json_ndriver_map_group_t;
+
+typedef struct {
+    int                           n_group;
+    neu_json_ndriver_map_group_t *groups;
+} neu_json_ndriver_map_group_array_t;
+
+int neu_json_encode_ndriver_group_array(void *json_obj, void *param);
+
+int neu_json_encode_get_ndriver_maps_resp(void *json_object, void *param);
+
 #ifdef __cplusplus
 }
 #endif

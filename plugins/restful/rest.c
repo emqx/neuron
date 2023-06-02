@@ -31,6 +31,7 @@
 #include "global_config_handle.h"
 #include "group_config_handle.h"
 #include "handle.h"
+#include "ndriver_handle.h"
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
@@ -231,6 +232,10 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_GET_TEMPLATES:
         handle_get_templates_resp(header->ctx,
                                   (neu_resp_get_templates_t *) data);
+        break;
+    case NEU_RESP_GET_NDRIVER_MAPS:
+        handle_get_ndriver_maps_resp(header->ctx,
+                                     (neu_resp_get_ndriver_maps_t *) data);
         break;
     default:
         nlog_fatal("recv unhandle msg: %s",
