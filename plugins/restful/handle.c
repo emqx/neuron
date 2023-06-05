@@ -125,6 +125,9 @@ static struct neu_http_handler cors_handler[] = {
     {
         .url = "/api/v2/ndriver/map",
     },
+    {
+        .url = "/api/v2/ndriver/tag",
+    },
 };
 
 static struct neu_http_handler rest_handlers[] = {
@@ -447,6 +450,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/ndriver/map",
         .value.handler = handle_get_ndriver_maps,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/ndriver/tag",
+        .value.handler = handle_get_ndriver_tags,
     },
 };
 
