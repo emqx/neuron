@@ -10,7 +10,7 @@ Suite Teardown	Modbus Test Teardown
 ${modbus_rtu_node}	modbus_rtu_node
 ${PLUGIN-MODBUS-RTU}	Modbus RTU
 
-${MODBUS_RTU_CONFIG}	{"link": 1, "timeout": 3000, "interval": 10, "device": "", "stop": 0, "parity": 0, "baud": 4,"data": 3, "host": "127.0.0.1", "port": 60503, "connection_mode": 0, "transport_mode": 0}
+${MODBUS_RTU_CONFIG}	{"link": 1, "timeout": 3000, "max_retries": 0, "retry_interval": 0, "interval": 10, "device": "", "stop": 0, "parity": 0, "baud": 4,"data": 3, "host": "127.0.0.1", "port": 60503, "connection_mode": 0, "transport_mode": 0}
 ${MODBUS_RTU_CONFIG_WRANING}	{"link": 1, "host": "127.0.0.1","port": 60503,"connection_mode": 0}
 
 ${hold_bit}       {"name": "hold_bit", "address": "1!400001.15", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_BIT}}

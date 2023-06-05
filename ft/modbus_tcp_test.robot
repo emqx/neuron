@@ -14,7 +14,7 @@ ${PLUGIN-MODBUS-TCP}   Modbus TCP
 
 ${modbus_tcp_node}	modbus_tcp_node
 
-${MODBUS_TCP_CONFIG}   {"connection_mode": 0, "transport_mode": 0, "interval": 0, "host": "127.0.0.1","port": 60502,"timeout": 3000}
+${MODBUS_TCP_CONFIG}   {"connection_mode": 0, "transport_mode": 0, "max_retries": 0, "retry_interval": 0, "interval": 0, "host": "127.0.0.1","port": 60502,"timeout": 3000}
 
 ${MODBUS_TCP_CONFIG_WRONG} 	{"connection_mode": 0,"host": "127.0.0.1", "port": 60502}
 
