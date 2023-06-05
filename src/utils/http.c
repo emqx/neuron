@@ -125,10 +125,15 @@ static char *get_param(const char *url, const char *name, size_t *len_p)
         return NULL;
     }
 
-    int   len = strlen(name);
-    char *p   = strstr(query, name);
+    int len = strlen(name);
+    if (0 == len || NULL != strpbrk(name, "?&=#")) {
+        return NULL;
+    }
+
+    char *p = strstr(query, name);
     while (NULL != p) {
-        if (0 == p[len] || '&' == p[len] || '=' == p[len] || '#' == p[len]) {
+        if (('?' == p[-1] || '&' == p[-1]) &&
+            (0 == p[len] || '&' == p[len] || '=' == p[len] || '#' == p[len])) {
             break;
         }
         p = strstr(p + len, name);

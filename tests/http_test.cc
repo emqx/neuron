@@ -41,13 +41,18 @@ TEST(HTTPTest, http_get_param)
         { .uri = "/?node_id=1", .name = "node=", .val = NULL, .len = 0 },
         { .uri = "/?node_id=1", .name = "node&", .val = NULL, .len = 0 },
         { .uri = "/?node_id=1", .name = "node_id=", .val = NULL, .len = 0 },
+        { .uri = "/?node_id=1", .name = "id", .val = NULL, .len = 0 },
 
         { .uri = "/?node_id", .name = "node_id", .val = "", .len = 0 },
+        { .uri = "/?node_id", .name = "id", .val = NULL, .len = 0 },
         { .uri = "/?node_id=", .name = "node_id", .val = "", .len = 0 },
+        { .uri = "/?node_id=", .name = "id", .val = NULL, .len = 0 },
         { .uri = "/?node_id#", .name = "node_id", .val = "#", .len = 0 },
+        { .uri = "/?node_id#", .name = "id", .val = NULL, .len = 0 },
 
         { .uri = "/?node_id=1", .name = "node_id", .val = "1", .len = 1 },
         { .uri = "/?node_id=1&", .name = "node_id", .val = "1", .len = 1 },
+        { .uri = "/?node_id=1&", .name = "id", .val = NULL, .len = 0 },
         { .uri  = "/?node_id=1&type=1",
           .name = "node_id",
           .val  = "1",
@@ -64,7 +69,11 @@ TEST(HTTPTest, http_get_param)
         len             = 0;
         const char *val = neu_http_get_param(aio, data[i].name, &len);
         EXPECT_EQ(len, data[i].len);
-        EXPECT_EQ(strncmp(val, data[i].val, len), 0);
+        if (val && data[i].val) {
+            EXPECT_EQ(strncmp(val, data[i].val, len), 0);
+        } else {
+            EXPECT_EQ(val, data[i].val);
+        }
     }
 
     nng_aio_free(aio);
