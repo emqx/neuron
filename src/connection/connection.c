@@ -401,15 +401,9 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         zlog_error(conn->param.log,
                    "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
                    conn->fd, len, ret, strerror(errno), errno);
-    }
-
-    if (errno == EPIPE || ret == -1 || (ret == 0 && errno != 0)) {
-        conn_disconnect(conn);
-    }
-
-    if (ret > 0 && conn->callback_trigger == false) {
-        conn->connected(conn->data, conn->fd);
-        conn->callback_trigger = true;
+        if (errno == EPIPE || (ret == 0 && errno != 0)) {
+            conn_disconnect(conn);
+        }
     }
 
     pthread_mutex_unlock(&conn->mtx);
@@ -848,6 +842,14 @@ static void conn_connect(neu_conn_t *conn)
 
 static void conn_disconnect(neu_conn_t *conn)
 {
+    conn->is_connected = false;
+    if (conn->callback_trigger == true) {
+        conn->disconnected(conn->data, conn->fd);
+        conn->callback_trigger = false;
+    }
+    conn->offset = 0;
+    memset(conn->buf, 0, conn->buf_size);
+
     switch (conn->param.type) {
     case NEU_CONN_TCP_SERVER:
         for (int i = 0; i < conn->param.params.tcp_server.max_link; i++) {
@@ -867,14 +869,6 @@ static void conn_disconnect(neu_conn_t *conn)
         }
         break;
     }
-
-    conn->is_connected = false;
-    if (conn->callback_trigger == true) {
-        conn->disconnected(conn->data, conn->fd);
-        conn->callback_trigger = false;
-    }
-    conn->offset = 0;
-    memset(conn->buf, 0, conn->buf_size);
 }
 
 static void conn_tcp_server_add_client(neu_conn_t *conn, int fd,
