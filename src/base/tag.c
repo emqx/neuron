@@ -721,3 +721,58 @@ int neu_tag_load_static_value(neu_datatag_t *tag, const char *s)
 
     return rv;
 }
+
+static inline void ndriver_tag_cpy(void *_dst, const void *_src)
+{
+    neu_ndriver_tag_t *dst = (neu_ndriver_tag_t *) _dst;
+    neu_ndriver_tag_t *src = (neu_ndriver_tag_t *) _src;
+
+    dst->name      = strdup(src->name);
+    dst->address   = strdup(src->address);
+    dst->attribute = src->attribute;
+    dst->type      = src->type;
+    dst->params    = src->params ? strdup(src->params) : NULL;
+}
+
+static inline void ndriver_tag_dtor(void *_elt)
+{
+    neu_ndriver_tag_t *elt = (neu_ndriver_tag_t *) _elt;
+    free(elt->name);
+    free(elt->address);
+    free(elt->params);
+}
+
+UT_icd ndriver_tag_icd = { sizeof(neu_datatag_t), NULL, ndriver_tag_cpy,
+                           ndriver_tag_dtor };
+
+UT_icd *neu_ndriver_tag_get_icd()
+{
+    return &ndriver_tag_icd;
+}
+
+neu_datatag_t *neu_ndriver_tag_dup(const neu_ndriver_tag_t *tag)
+{
+    neu_datatag_t *new = calloc(1, sizeof(*new));
+    ndriver_tag_cpy(new, tag);
+    return new;
+}
+
+void neu_ndriver_tag_copy(neu_ndriver_tag_t *      tag,
+                          const neu_ndriver_tag_t *other)
+{
+    ndriver_tag_dtor(tag);
+    ndriver_tag_cpy(tag, other);
+}
+
+void neu_ndriver_tag_fini(neu_ndriver_tag_t *tag)
+{
+    ndriver_tag_dtor(tag);
+}
+
+void neu_ndriver_tag_free(neu_ndriver_tag_t *tag)
+{
+    if (tag) {
+        ndriver_tag_dtor(tag);
+        free(tag);
+    }
+}
