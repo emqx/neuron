@@ -148,6 +148,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t  mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
     neu_json_elem_t  tmode = { .name = "transport_mode", .t = NEU_JSON_INT };
     neu_conn_param_t param = { 0 };
+    neu_json_elem_t  max_retries = { .name = "max_retries", .t = NEU_JSON_INT };
+    neu_json_elem_t  retry_interval = { .name = "retry_interval",
+                                       .t    = NEU_JSON_INT };
 
     ret = neu_parse_param((char *) config, &err_param, 6, &port, &host, &mode,
                           &timeout, &interval, &tmode);
@@ -166,8 +169,18 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         return -1;
     }
 
-    param.log        = plugin->common.log;
-    plugin->interval = interval.v.val_int;
+    ret = neu_parse_param((char *) config, &err_param, 2, &port, &max_retries,
+                          &retry_interval);
+    if (ret != 0) {
+        free(err_param);
+        max_retries.v.val_int    = 0;
+        retry_interval.v.val_int = 0;
+    }
+
+    param.log              = plugin->common.log;
+    plugin->interval       = interval.v.val_int;
+    plugin->max_retries    = max_retries.v.val_int;
+    plugin->retry_interval = retry_interval.v.val_int;
 
     if (tmode.v.val_int == 1) {
         param.type                = NEU_CONN_UDP;
