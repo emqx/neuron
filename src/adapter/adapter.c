@@ -373,6 +373,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(header.receiver, cmd->node);
         break;
     }
+    case NEU_REQ_GET_NDRIVER_TAGS: {
+        neu_req_get_ndriver_tags_t *cmd = (neu_req_get_ndriver_tags_t *) data;
+        strcpy(header.receiver, cmd->ndriver);
+        break;
+    }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
         neu_req_update_log_level_t *cmd = (neu_req_update_log_level_t *) data;
         strcpy(header.receiver, cmd->node);
@@ -453,6 +458,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_TEMPLATE:
     case NEU_RESP_GET_TEMPLATES:
     case NEU_RESP_GET_NDRIVER_MAPS:
+    case NEU_RESP_GET_NDRIVER_TAGS:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
     case NEU_REQRESP_TRANS_DATA:
@@ -832,6 +838,28 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             nng_msg_free(uninit_msg);
             nlog_error("%s send uninit msg to %s failed", name, receiver);
         }
+        break;
+    }
+    case NEU_REQ_GET_NDRIVER_TAGS: {
+        neu_req_get_ndriver_tags_t *cmd =
+            (neu_req_get_ndriver_tags_t *) &header[1];
+        neu_resp_error_t error = { .error = 0 };
+        UT_array *       tags  = NULL;
+
+        // TODO
+        (void) cmd;
+        utarray_new(tags, neu_ndriver_tag_get_icd());
+
+        neu_msg_exchange(header);
+        if (error.error != NEU_ERR_SUCCESS) {
+            header->type = NEU_RESP_ERROR;
+            reply(adapter, header, &error);
+        } else {
+            neu_resp_get_tag_t resp = { .tags = tags };
+            header->type            = NEU_RESP_GET_NDRIVER_TAGS;
+            reply(adapter, header, &resp);
+        }
+
         break;
     }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
@@ -1397,6 +1425,12 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     case NEU_RESP_GET_NDRIVER_MAPS:
         data_size = sizeof(neu_resp_get_ndriver_maps_t);
+        break;
+    case NEU_REQ_GET_NDRIVER_TAGS:
+        data_size = sizeof(neu_req_get_ndriver_tags_t);
+        break;
+    case NEU_RESP_GET_NDRIVER_TAGS:
+        data_size = sizeof(neu_resp_get_ndriver_tags_t);
         break;
     case NEU_REQ_UPDATE_LOG_LEVEL:
         data_size = sizeof(neu_req_update_log_level_t);
