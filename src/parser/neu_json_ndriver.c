@@ -164,3 +164,95 @@ int neu_json_encode_get_ndriver_maps_resp(void *json_obj, void *param)
 
     return ret;
 }
+
+int neu_json_encode_ndriver_tag(void *json_obj, void *param)
+{
+    int                     ret = 0;
+    neu_json_ndriver_tag_t *tag = param;
+
+    neu_json_elem_t elems[] = {
+        {
+            .name      = "name",
+            .t         = NEU_JSON_STR,
+            .v.val_str = tag->name,
+        },
+        {
+            .name      = "address",
+            .t         = NEU_JSON_STR,
+            .v.val_str = tag->address,
+        },
+        {
+            .name      = "attribute",
+            .t         = NEU_JSON_INT,
+            .v.val_int = tag->attribute,
+        },
+        {
+            .name      = "type",
+            .t         = NEU_JSON_INT,
+            .v.val_int = tag->type,
+        },
+    };
+
+    ret = neu_json_encode_field(json_obj, elems, NEU_JSON_ELEM_SIZE(elems));
+    if (0 != ret) {
+        return -1;
+    }
+
+    neu_json_elem_t params_elem[] = {
+        {
+            .name      = "params",
+            .t         = NEU_JSON_STR,
+            .v.val_str = tag->params,
+        },
+    };
+    ret = neu_json_encode_field(json_obj, params_elem,
+                                NEU_JSON_ELEM_SIZE(params_elem));
+
+    return ret;
+}
+
+int neu_json_encode_ndriver_tag_array(void *json_obj, void *param)
+{
+    neu_json_ndriver_tag_array_t *array = param;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    for (int i = 0; i < array->len; i++) {
+        json_t *tag_obj = json_object();
+        if (NULL == tag_obj || 0 != json_array_append_new(json_obj, tag_obj)) {
+            return -1;
+        }
+        if (0 != neu_json_encode_ndriver_tag(tag_obj, &array->data[i])) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+int neu_json_encode_get_ndriver_tags_resp(void *json_obj, void *param)
+{
+    int ret = 0;
+
+    void *tags_array = neu_json_array();
+    if (NULL == tags_array) {
+        return -1;
+    }
+
+    if (0 != neu_json_encode_ndriver_tag_array(tags_array, param)) {
+        neu_json_encode_free(tags_array);
+        return -1;
+    }
+
+    neu_json_elem_t resp_elems[] = { {
+        .name         = "tags",
+        .t            = NEU_JSON_OBJECT,
+        .v.val_object = tags_array,
+    } };
+    ret                          = neu_json_encode_field(json_obj, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
