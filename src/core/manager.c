@@ -970,6 +970,28 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+    case NEU_REQ_UPDATE_NDRIVER_TAG_PARAM:
+    case NEU_REQ_UPDATE_NDRIVER_TAG_INFO: {
+        if (NULL !=
+            neu_node_manager_find(manager->node_manager, header->receiver)) {
+            forward_msg(manager, msg, header->receiver);
+            break;
+        }
+
+        neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+        header->type       = NEU_RESP_ERROR;
+        neu_msg_exchange(header);
+        reply(manager, header, &e);
+
+        if (NEU_REQ_UPDATE_NDRIVER_TAG_PARAM == header->type) {
+            neu_req_update_ndriver_tag_param_fini(
+                (neu_req_update_ndriver_tag_param_t *) &header[1]);
+        } else {
+            neu_req_update_ndriver_tag_info_fini(
+                (neu_req_update_ndriver_tag_info_t *) &header[1]);
+        }
+        break;
+    }
     case NEU_REQ_UPDATE_LOG_LEVEL:
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
