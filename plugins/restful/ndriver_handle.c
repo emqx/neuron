@@ -147,6 +147,108 @@ void handle_get_ndriver_maps_resp(nng_aio *                    aio,
     utarray_free(groups->groups);
 }
 
+static inline int
+send_update_ndriver_tag_param_req(nng_aio *                                aio,
+                                  neu_json_update_ndriver_tag_param_req_t *req)
+{
+    int           ret    = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_UPDATE_NDRIVER_TAG_PARAM,
+    };
+
+    neu_req_update_ndriver_tag_param_t cmd = { 0 };
+    cmd.n_tag                              = req->tags.len;
+    cmd.tags = calloc(cmd.n_tag, sizeof(cmd.tags[0]));
+    if (NULL == cmd.tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    strcpy(cmd.ndriver, req->ndriver);
+    strcpy(cmd.driver, req->driver);
+    strcpy(cmd.group, req->group);
+
+    for (int i = 0; i < req->tags.len; i++) {
+        cmd.tags[i].name         = req->tags.data[i].name;
+        req->tags.data[i].name   = NULL; // ownership moved
+        cmd.tags[i].params       = req->tags.data[i].params;
+        req->tags.data[i].params = NULL; // ownership moved
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        ret = NEU_ERR_IS_BUSY;
+        neu_req_update_ndriver_tag_param_fini(&cmd);
+    }
+
+    return ret;
+}
+
+void handle_put_ndriver_tag_param(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_update_ndriver_tag_param_req_t,
+        neu_json_decode_update_ndriver_tag_param_req, {
+            int ret = send_update_ndriver_tag_param_req(aio, req);
+            if (0 != ret) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}
+
+static inline int
+send_update_ndriver_tag_info_req(nng_aio *                               aio,
+                                 neu_json_update_ndriver_tag_info_req_t *req)
+{
+    int           ret    = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_UPDATE_NDRIVER_TAG_INFO,
+    };
+
+    neu_req_update_ndriver_tag_info_t cmd = { 0 };
+    cmd.n_tag                             = req->tags.len;
+    cmd.tags = calloc(cmd.n_tag, sizeof(cmd.tags[0]));
+    if (NULL == cmd.tags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    strcpy(cmd.ndriver, req->ndriver);
+    strcpy(cmd.driver, req->driver);
+    strcpy(cmd.group, req->group);
+
+    for (int i = 0; i < req->tags.len; i++) {
+        cmd.tags[i].name          = req->tags.data[i].name;
+        req->tags.data[i].name    = NULL; // ownership moved
+        cmd.tags[i].address       = req->tags.data[i].address;
+        req->tags.data[i].address = NULL; // ownership moved
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        ret = NEU_ERR_IS_BUSY;
+        neu_req_update_ndriver_tag_info_fini(&cmd);
+    }
+
+    return ret;
+}
+
+void handle_put_ndriver_tag_info(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_update_ndriver_tag_info_req_t,
+        neu_json_decode_update_ndriver_tag_info_req, {
+            int ret = send_update_ndriver_tag_info_req(aio, req);
+            if (0 != ret) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}
+
 void handle_get_ndriver_tags(nng_aio *aio)
 {
     int           ret    = 0;

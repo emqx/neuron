@@ -29,6 +29,8 @@ void handle_get_ndriver_maps(nng_aio *aio);
 void handle_get_ndriver_maps_resp(nng_aio *                    aio,
                                   neu_resp_get_ndriver_maps_t *groups);
 
+void handle_put_ndriver_tag_param(nng_aio *aio);
+void handle_put_ndriver_tag_info(nng_aio *aio);
 void handle_get_ndriver_tags(nng_aio *aio);
 void handle_get_ndriver_tags_resp(nng_aio *                    aio,
                                   neu_resp_get_ndriver_tags_t *tags);
