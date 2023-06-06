@@ -50,6 +50,25 @@ int neu_json_encode_ndriver_group_array(void *json_obj, void *param);
 
 int neu_json_encode_get_ndriver_maps_resp(void *json_object, void *param);
 
+typedef struct {
+    char *  name;
+    char *  address;
+    int64_t attribute;
+    int64_t type;
+    char *  params;
+} neu_json_ndriver_tag_t;
+
+int neu_json_encode_ndriver_tag(void *json_obj, void *param);
+
+typedef struct {
+    int                     len;
+    neu_json_ndriver_tag_t *data;
+} neu_json_ndriver_tag_array_t;
+
+int neu_json_encode_ndriver_tag_array(void *json_obj, void *param);
+
+int neu_json_encode_get_ndriver_tags_resp(void *json_obj, void *param);
+
 #ifdef __cplusplus
 }
 #endif

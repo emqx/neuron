@@ -93,9 +93,9 @@ void handle_get_ndriver_maps(nng_aio *aio)
     NEU_VALIDATE_JWT(aio);
 
     neu_req_get_ndriver_maps_t cmd = { 0 };
-    if (neu_http_get_param_str(aio, "ndriver", cmd.ndriver,
-                               sizeof(cmd.ndriver)) <= 0 ||
-        strlen(cmd.ndriver) >= NEU_NODE_NAME_LEN) {
+    ret = neu_http_get_param_str(aio, "ndriver", cmd.ndriver,
+                                 sizeof(cmd.ndriver));
+    if (ret <= 0 || (size_t) ret >= sizeof(cmd.ndriver)) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             neu_http_response(aio, error_code.error, result_error);
         })
@@ -145,4 +145,86 @@ void handle_get_ndriver_maps_resp(nng_aio *                    aio,
     free(result);
     free(group_arr.groups);
     utarray_free(groups->groups);
+}
+
+void handle_get_ndriver_tags(nng_aio *aio)
+{
+    int           ret    = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_VALIDATE_JWT(aio);
+
+    neu_req_get_ndriver_tags_t cmd = { 0 };
+
+    ret = neu_http_get_param_str(aio, "ndriver", cmd.ndriver,
+                                 sizeof(cmd.ndriver));
+    if (ret <= 0 || (size_t) ret >= sizeof(cmd.ndriver)) {
+        ret = NEU_ERR_PARAM_IS_WRONG;
+        goto end;
+    }
+
+    ret = neu_http_get_param_str(aio, "driver", cmd.driver, sizeof(cmd.driver));
+    if (ret <= 0 || (size_t) ret >= sizeof(cmd.driver)) {
+        ret = NEU_ERR_PARAM_IS_WRONG;
+        goto end;
+    }
+
+    ret = neu_http_get_param_str(aio, "group", cmd.group, sizeof(cmd.group));
+    if (ret <= 0 || (size_t) ret >= sizeof(cmd.group)) {
+        ret = NEU_ERR_PARAM_IS_WRONG;
+        goto end;
+    }
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_GET_NDRIVER_TAGS,
+    };
+
+    if (0 != (ret = neu_plugin_op(plugin, header, &cmd))) {
+        ret = NEU_ERR_IS_BUSY;
+    }
+
+end:
+    if (0 != ret) {
+        NEU_JSON_RESPONSE_ERROR(ret,
+                                { neu_http_response(aio, ret, result_error); });
+    }
+}
+
+void handle_get_ndriver_tags_resp(nng_aio *                    aio,
+                                  neu_resp_get_ndriver_tags_t *tags)
+{
+    char *                       result   = NULL;
+    neu_json_ndriver_tag_array_t tags_res = { 0 };
+
+    tags_res.len  = utarray_len(tags->tags);
+    tags_res.data = calloc(tags_res.len, sizeof(tags_res.data[0]));
+    if (NULL == tags_res.data) {
+        goto end;
+    }
+
+    for (int i = 0; i < tags_res.len; ++i) {
+        neu_ndriver_tag_t *tag     = utarray_eltptr(tags->tags, (size_t) i);
+        tags_res.data[i].name      = tag->name;
+        tags_res.data[i].address   = tag->address;
+        tags_res.data[i].attribute = tag->attribute;
+        tags_res.data[i].type      = tag->type;
+        tags_res.data[i].params    = tag->params;
+    }
+
+    neu_json_encode_by_fn(&tags_res, neu_json_encode_get_ndriver_tags_resp,
+                          &result);
+
+end:
+    if (result) {
+        neu_http_ok(aio, result);
+    } else {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
+            neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
+        });
+    }
+
+    free(result);
+    free(tags_res.data);
+    utarray_free(tags->tags);
 }
