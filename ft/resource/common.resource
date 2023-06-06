@@ -39,12 +39,12 @@ ${MQTT_CONFIG}                              {"client-id": "${MQTT_CLIENTID}", "u
 ...                                          "ssl": false, "host": "${MQTT_CONFIG_HOST}", "port": ${MQTT_CONFIG_PORT},
 ...                                          "username": "", "password": "", "ca":"", "cert":"", "key":"", "keypass":""}
 
-${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "connection_mode": 0, "transport_mode": 0, "timeout": 3000, "interval": 20, "max_retries": 0, "retry_interval": 0}
+${MODBUS_TCP_CONFIG}	                    {"host": "127.0.0.1", "port": 60502, "connection_mode": 0, "transport_mode": 0, "timeout": 3000, "interval": 20}
 
 *** Variables ***
 ${neuron_process}
 
-${MODBUS_PLUS_TCP_CONFIG}                   {"host": "127.0.0.1", "port": 60502, "connection_mode": 0, "transport_mode": 0, "timeout": 3000, "max_retries": 0, "retry_interval": 0}
+${MODBUS_PLUS_TCP_CONFIG}                   {"host": "127.0.0.1", "port": 60502, "connection_mode": 0, "transport_mode": 0, "timeout": 3000}
 
 *** Keywords ***
 Start Neuronx
