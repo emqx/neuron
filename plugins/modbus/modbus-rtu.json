@@ -76,6 +76,32 @@
 			"max": 30000
 		}
 	},
+	"max_retries": {
+		"name": "Maximum Retry Times",
+		"name_zh": "最大重试次数",
+		"description": "The maximum number of retries after a failed attempt to send a read command",
+		"description_zh": "发送读取指令失败后最大重试次数",
+		"attribute": "required",
+		"type": "int",
+		"default": 0,
+		"valid": {
+			"min": 0,
+			"max": 3
+		}
+	},
+	"retry_interval": {
+		"name": "Retry Interval",
+		"name_zh": "指令重新发送间隔",
+		"description": "Resend reading instruction interval(ms) after a failed attempt to send a read command",
+		"description_zh": "发送读取指令失败后重新发送读指令时间间隔，单位为毫秒",
+		"attribute": "required",
+		"type": "int",
+		"default": 0,
+		"valid": {
+			"min": 20,
+			"max": 10000
+		}
+	},
 	"interval": {
 		"name": "Send Interval",
 		"name_zh": "指令发送间隔",
@@ -304,7 +330,7 @@
 	"transport_mode": {
 		"name": "Transport Mode",
 		"name_zh": "传输模式",
-		"description": "Neuron as the client, or as the server",
+		"description": "TCP transfer or UDP transfer",
 		"description_zh": "TCP 传输或 UDP 传输",
 		"attribute": "required",
 		"type": "map",

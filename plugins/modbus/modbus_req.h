@@ -41,6 +41,8 @@ struct neu_plugin {
     modbus_protocol_e protocol;
 
     uint16_t interval;
+    uint16_t retry_interval;
+    uint16_t max_retries;
 };
 
 void modbus_conn_connected(void *data, int fd);

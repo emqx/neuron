@@ -110,6 +110,22 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes)
     return ret;
 }
 
+int modbus_stack_read_retry(neu_plugin_t *plugin, struct modbus_group_data *gd,
+                            uint16_t i, uint16_t j, uint16_t *response_size)
+{
+    struct timespec t3 = { .tv_sec = plugin->retry_interval / 1000,
+                           .tv_nsec =
+                               1000 * 1000 * (plugin->retry_interval % 1000) };
+    struct timespec t4 = { 0 };
+    nanosleep(&t3, &t4);
+    plog_notice(plugin, "Resend read req. Times:%hu", j + 1);
+    int ret = modbus_stack_read(plugin->stack, gd->cmd_sort->cmd[i].slave_id,
+                                gd->cmd_sort->cmd[i].area,
+                                gd->cmd_sort->cmd[i].start_address,
+                                gd->cmd_sort->cmd[i].n_register, response_size);
+    return ret;
+}
+
 int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
                        uint16_t max_byte)
 {
@@ -156,10 +172,20 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
             rtt = neu_time_ms() - read_tms;
         }
         if (ret <= 0) {
-            modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id, 0, NULL,
-                                NEU_ERR_PLUGIN_DISCONNECTED);
-            rtt = NEU_METRIC_LAST_RTT_MS_MAX;
-            neu_conn_disconnect(plugin->conn);
+            for (uint16_t j = 0; j < plugin->max_retries; j++) {
+                ret = modbus_stack_read_retry(plugin, gd, i, j, &response_size);
+                if (ret > 0) {
+                    ret = process_protocol_buf(plugin, response_size);
+                    rtt = neu_time_ms() - read_tms;
+                    break;
+                }
+            }
+            if (ret <= 0) {
+                modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id, 0,
+                                    NULL, NEU_ERR_PLUGIN_DISCONNECTED);
+                rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+                neu_conn_disconnect(plugin->conn);
+            }
         }
         if (plugin->interval > 0) {
             struct timespec t1 = { .tv_sec  = plugin->interval / 1000,
