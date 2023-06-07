@@ -253,8 +253,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_UPDATE_LICENSE: {
-        UT_array *pipes = neu_node_manager_get_pipes(manager->node_manager,
-                                                     NEU_NA_TYPE_DRIVER);
+        UT_array *pipes = neu_node_manager_get_pipes_all(manager->node_manager);
 
         utarray_foreach(pipes, nng_pipe *, pipe)
         {

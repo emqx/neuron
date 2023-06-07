@@ -355,6 +355,8 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     case NEU_REQRESP_NODE_DELETED:
         break;
+    case NEU_REQ_UPDATE_LICENSE:
+        break;
     default:
         error = NEU_ERR_MQTT_FAILURE;
         break;

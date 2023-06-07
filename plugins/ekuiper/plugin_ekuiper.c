@@ -258,6 +258,8 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
     }
     case NEU_REQ_UNSUBSCRIBE_GROUP:
         break;
+    case NEU_REQ_UPDATE_LICENSE:
+        break;
     default:
         plog_warn(plugin, "unsupported request type: %d", header->type);
         break;
