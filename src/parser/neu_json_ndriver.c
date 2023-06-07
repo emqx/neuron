@@ -256,3 +256,342 @@ int neu_json_encode_get_ndriver_tags_resp(void *json_obj, void *param)
 
     return ret;
 }
+
+void neu_json_ndriver_tag_param_fini(neu_json_ndriver_tag_param_t *tag_param)
+{
+    free(tag_param->name);
+    free(tag_param->params);
+}
+
+int neu_json_decode_ndriver_tag_param_json(
+    void *json_obj, neu_json_ndriver_tag_param_t *tag_param_p)
+{
+    if (NULL == tag_param_p) {
+        return -1;
+    }
+
+    neu_json_elem_t tag_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+    };
+
+    int ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(tag_elems),
+                                      tag_elems);
+    if (0 != ret) {
+        return -1;
+    }
+
+    neu_json_ndriver_tag_param_t tag_param = {
+        .name = tag_elems[0].v.val_str,
+    };
+
+    ret = neu_json_dump_key(json_obj, "params", &tag_param.params, true);
+    if (0 != ret) {
+        free(tag_param.name);
+        return -1;
+    }
+
+    *tag_param_p = tag_param;
+    return 0;
+}
+
+void neu_json_ndriver_tag_param_array_fini(
+    neu_json_ndriver_tag_param_array_t *arr)
+{
+    for (int i = 0; i < arr->len; ++i) {
+        neu_json_ndriver_tag_param_fini(&arr->data[i]);
+    }
+}
+
+int neu_json_decode_ndriver_tag_param_array_json(
+    void *json_obj, neu_json_ndriver_tag_param_array_t *arr)
+{
+    int                           len  = 0;
+    neu_json_ndriver_tag_param_t *data = NULL;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    len = json_array_size(json_obj);
+    if (0 == len) {
+        // success on empty tag array
+        arr->len  = 0;
+        arr->data = NULL;
+        return 0;
+    }
+
+    data = calloc(len, sizeof(*data));
+    if (NULL == data) {
+        return -1;
+    }
+
+    int i = 0;
+    for (i = 0; i < len; i++) {
+        json_t *obj = json_array_get(json_obj, i);
+        if (0 != neu_json_decode_ndriver_tag_param_json(obj, &data[i])) {
+            goto error;
+        }
+    }
+
+    arr->len  = len;
+    arr->data = data;
+    return 0;
+
+error:
+    while (--i > 0) {
+        neu_json_ndriver_tag_param_fini(&data[i]);
+    }
+    free(data);
+    return -1;
+}
+
+int neu_json_decode_update_ndriver_tag_param_req(
+    char *buf, neu_json_update_ndriver_tag_param_req_t **result)
+{
+    int                                      ret      = 0;
+    void *                                   json_obj = NULL;
+    neu_json_update_ndriver_tag_param_req_t *req      = calloc(1, sizeof(*req));
+    if (NULL == req) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        goto error;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "ndriver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "driver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "tags",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    // set the fields before check for easy clean up on error
+    req->ndriver = req_elems[0].v.val_str;
+    req->driver  = req_elems[1].v.val_str;
+    req->group   = req_elems[2].v.val_str;
+
+    if (0 != ret) {
+        goto error;
+    }
+
+    ret = neu_json_decode_ndriver_tag_param_array_json(
+        req_elems[3].v.val_object, &req->tags);
+    if (ret != 0) {
+        goto error;
+    }
+    if (0 == req->tags.len) {
+        goto error;
+    }
+
+    neu_json_decode_free(json_obj);
+    *result = req;
+    return 0;
+
+error:
+    neu_json_decode_update_ndriver_tag_param_req_free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
+}
+
+void neu_json_decode_update_ndriver_tag_param_req_free(
+    neu_json_update_ndriver_tag_param_req_t *req)
+{
+    if (req) {
+        free(req->ndriver);
+        free(req->driver);
+        free(req->group);
+        neu_json_ndriver_tag_param_array_fini(&req->tags);
+        free(req->tags.data);
+        free(req);
+    }
+}
+
+void neu_json_ndriver_tag_info_fini(neu_json_ndriver_tag_info_t *tag_info)
+{
+    free(tag_info->name);
+    free(tag_info->address);
+}
+
+int neu_json_decode_ndriver_tag_info_json(
+    void *json_obj, neu_json_ndriver_tag_info_t *tag_info_p)
+{
+    if (NULL == tag_info_p) {
+        return -1;
+    }
+
+    neu_json_elem_t tag_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "address",
+            .t    = NEU_JSON_STR,
+        },
+    };
+
+    int ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(tag_elems),
+                                      tag_elems);
+
+    // set the fields before check for easy clean up on error
+    neu_json_ndriver_tag_info_t tag_info = {
+        .name    = tag_elems[0].v.val_str,
+        .address = tag_elems[1].v.val_str,
+    };
+
+    if (0 != ret) {
+        goto error;
+    }
+
+    *tag_info_p = tag_info;
+    return 0;
+
+error:
+    neu_json_ndriver_tag_info_fini(&tag_info);
+    return -1;
+}
+
+void neu_json_ndriver_tag_info_array_fini(
+    neu_json_ndriver_tag_info_array_t *arr)
+{
+    for (int i = 0; i < arr->len; ++i) {
+        neu_json_ndriver_tag_info_fini(&arr->data[i]);
+    }
+}
+
+int neu_json_decode_ndriver_tag_info_array_json(
+    void *json_obj, neu_json_ndriver_tag_info_array_t *arr)
+{
+    int                          len  = 0;
+    neu_json_ndriver_tag_info_t *data = NULL;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    len = json_array_size(json_obj);
+    if (0 == len) {
+        // success on empty tag array
+        arr->len  = 0;
+        arr->data = NULL;
+        return 0;
+    }
+
+    data = calloc(len, sizeof(*data));
+    if (NULL == data) {
+        return -1;
+    }
+
+    int i = 0;
+    for (i = 0; i < len; i++) {
+        json_t *obj = json_array_get(json_obj, i);
+        if (0 != neu_json_decode_ndriver_tag_info_json(obj, &data[i])) {
+            goto error;
+        }
+    }
+
+    arr->len  = len;
+    arr->data = data;
+    return 0;
+
+error:
+    while (--i > 0) {
+        neu_json_ndriver_tag_info_fini(&data[i]);
+    }
+    free(data);
+    return -1;
+}
+
+int neu_json_decode_update_ndriver_tag_info_req(
+    char *buf, neu_json_update_ndriver_tag_info_req_t **result)
+{
+    int                                     ret      = 0;
+    void *                                  json_obj = NULL;
+    neu_json_update_ndriver_tag_info_req_t *req      = calloc(1, sizeof(*req));
+    if (NULL == req) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        goto error;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "ndriver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "driver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "tags",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    // set the fields before check for easy clean up on error
+    req->ndriver = req_elems[0].v.val_str;
+    req->driver  = req_elems[1].v.val_str;
+    req->group   = req_elems[2].v.val_str;
+
+    if (0 != ret) {
+        goto error;
+    }
+
+    ret = neu_json_decode_ndriver_tag_info_array_json(req_elems[3].v.val_object,
+                                                      &req->tags);
+    if (ret != 0) {
+        goto error;
+    }
+    if (0 == req->tags.len) {
+        goto error;
+    }
+
+    neu_json_decode_free(json_obj);
+    *result = req;
+    return 0;
+
+error:
+    neu_json_decode_update_ndriver_tag_info_req_free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
+}
+
+void neu_json_decode_update_ndriver_tag_info_req_free(
+    neu_json_update_ndriver_tag_info_req_t *req)
+{
+    if (req) {
+        free(req->ndriver);
+        free(req->driver);
+        free(req->group);
+        neu_json_ndriver_tag_info_array_fini(&req->tags);
+        free(req->tags.data);
+        free(req);
+    }
+}

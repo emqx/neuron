@@ -69,6 +69,68 @@ int neu_json_encode_ndriver_tag_array(void *json_obj, void *param);
 
 int neu_json_encode_get_ndriver_tags_resp(void *json_obj, void *param);
 
+typedef struct {
+    char *name;
+    char *params;
+} neu_json_ndriver_tag_param_t;
+
+void neu_json_ndriver_tag_param_fini(neu_json_ndriver_tag_param_t *tag_param);
+int  neu_json_decode_ndriver_tag_param_json(
+     void *json_obj, neu_json_ndriver_tag_param_t *tag_param_p);
+
+typedef struct {
+    int                           len;
+    neu_json_ndriver_tag_param_t *data;
+} neu_json_ndriver_tag_param_array_t;
+
+void neu_json_ndriver_tag_param_array_fini(
+    neu_json_ndriver_tag_param_array_t *arr);
+int neu_json_decode_ndriver_tag_param_array_json(
+    void *json_obj, neu_json_ndriver_tag_param_array_t *arr);
+
+typedef struct {
+    char *                             ndriver;
+    char *                             driver;
+    char *                             group;
+    neu_json_ndriver_tag_param_array_t tags;
+} neu_json_update_ndriver_tag_param_req_t;
+
+int neu_json_decode_update_ndriver_tag_param_req(
+    char *buf, neu_json_update_ndriver_tag_param_req_t **result);
+void neu_json_decode_update_ndriver_tag_param_req_free(
+    neu_json_update_ndriver_tag_param_req_t *req);
+
+typedef struct {
+    char *name;
+    char *address;
+} neu_json_ndriver_tag_info_t;
+
+void neu_json_ndriver_tag_info_fini(neu_json_ndriver_tag_info_t *tag_info);
+int  neu_json_decode_ndriver_tag_info_json(
+     void *json_obj, neu_json_ndriver_tag_info_t *tag_info_p);
+
+typedef struct {
+    int                          len;
+    neu_json_ndriver_tag_info_t *data;
+} neu_json_ndriver_tag_info_array_t;
+
+void neu_json_ndriver_tag_info_array_fini(
+    neu_json_ndriver_tag_info_array_t *arr);
+int neu_json_decode_ndriver_tag_info_array_json(
+    void *json_obj, neu_json_ndriver_tag_info_array_t *arr);
+
+typedef struct {
+    char *                            ndriver;
+    char *                            driver;
+    char *                            group;
+    neu_json_ndriver_tag_info_array_t tags;
+} neu_json_update_ndriver_tag_info_req_t;
+
+int neu_json_decode_update_ndriver_tag_info_req(
+    char *buf, neu_json_update_ndriver_tag_info_req_t **result);
+void neu_json_decode_update_ndriver_tag_info_req_free(
+    neu_json_update_ndriver_tag_info_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif
