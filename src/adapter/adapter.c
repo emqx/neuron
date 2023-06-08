@@ -118,6 +118,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     case NEU_NA_TYPE_DRIVER:
         adapter = (neu_adapter_t *) neu_adapter_driver_create();
         break;
+    case NEU_NA_TYPE_NDRIVER:
     case NEU_NA_TYPE_APP:
         adapter = calloc(1, sizeof(neu_adapter_t));
         break;
@@ -149,6 +150,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
         }
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
         break;
+    case NEU_NA_TYPE_NDRIVER:
     case NEU_NA_TYPE_APP:
         if (adapter->module->display) {
             REGISTER_APP_METRICS(adapter);
@@ -481,14 +483,14 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_READ_GROUP: {
         neu_resp_error_t error = { 0 };
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+            neu_adapter_driver_read_group((neu_adapter_driver_t *) adapter,
+                                          header);
+        } else {
             error.error  = NEU_ERR_GROUP_NOT_ALLOW;
             header->type = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(adapter, header, &error);
-        } else {
-            neu_adapter_driver_read_group((neu_adapter_driver_t *) adapter,
-                                          header);
         }
 
         break;
@@ -496,16 +498,16 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_WRITE_TAG: {
         neu_resp_error_t error = { 0 };
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-            error.error  = NEU_ERR_GROUP_NOT_ALLOW;
-            header->type = NEU_RESP_ERROR;
-            neu_msg_exchange(header);
-            reply(adapter, header, &error);
-        } else {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             void *msg_dump = calloc(nng_msg_len(msg), 1);
             memcpy(msg_dump, header, nng_msg_len(msg));
             neu_adapter_driver_write_tag((neu_adapter_driver_t *) adapter,
                                          msg_dump);
+        } else {
+            error.error  = NEU_ERR_GROUP_NOT_ALLOW;
+            header->type = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(adapter, header, &error);
         }
 
         break;
@@ -562,18 +564,18 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_GROUP: {
         neu_msg_exchange(header);
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-            neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_ALLOW };
-
-            header->type = NEU_RESP_ERROR;
-            reply(adapter, header, &error);
-        } else {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             neu_resp_get_group_t resp = {
                 .groups = neu_adapter_driver_get_group(
                     (neu_adapter_driver_t *) adapter)
             };
             header->type = NEU_RESP_GET_GROUP;
             reply(adapter, header, &resp);
+        } else {
+            neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_ALLOW };
+
+            header->type = NEU_RESP_ERROR;
+            reply(adapter, header, &error);
         }
         break;
     }
@@ -582,11 +584,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t   error = { .error = 0 };
         UT_array *         tags  = NULL;
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-            error.error = NEU_ERR_GROUP_NOT_ALLOW;
-        } else {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             error.error = neu_adapter_driver_query_tag(
                 (neu_adapter_driver_t *) adapter, cmd->group, cmd->name, &tags);
+        } else {
+            error.error = NEU_ERR_GROUP_NOT_ALLOW;
         }
 
         neu_msg_exchange(header);
@@ -609,12 +611,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
             error.error = NEU_ERR_GROUP_PARAMETER_INVALID;
         } else {
-            if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-                error.error = NEU_ERR_GROUP_NOT_ALLOW;
-            } else {
+            if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
                 error.error = neu_adapter_driver_add_group(
                     (neu_adapter_driver_t *) adapter, cmd->group,
                     cmd->interval);
+            } else {
+                error.error = NEU_ERR_GROUP_NOT_ALLOW;
             }
         }
 
@@ -635,12 +637,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
             error.error = NEU_ERR_GROUP_PARAMETER_INVALID;
         } else {
-            if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-                error.error = NEU_ERR_GROUP_NOT_ALLOW;
-            } else {
+            if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
                 error.error = neu_adapter_driver_update_group(
                     (neu_adapter_driver_t *) adapter, cmd->group,
                     cmd->interval);
+            } else {
+                error.error = NEU_ERR_GROUP_NOT_ALLOW;
             }
         }
 
@@ -659,11 +661,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_del_group_t *cmd   = (neu_req_del_group_t *) &header[1];
         neu_resp_error_t     error = { 0 };
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-            error.error = NEU_ERR_GROUP_NOT_ALLOW;
-        } else {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             error.error = neu_adapter_driver_del_group(
                 (neu_adapter_driver_t *) adapter, cmd->group);
+        } else {
+            error.error = NEU_ERR_GROUP_NOT_ALLOW;
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
@@ -714,9 +716,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_del_tag_t *cmd   = (neu_req_del_tag_t *) &header[1];
         neu_resp_error_t   error = { 0 };
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-            error.error = NEU_ERR_GROUP_NOT_ALLOW;
-        } else {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             for (int i = 0; i < cmd->n_tag; i++) {
                 int ret = neu_adapter_driver_del_tag(
                     (neu_adapter_driver_t *) adapter, cmd->group, cmd->tags[i]);
@@ -725,6 +725,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                                             cmd->tags[i]);
                 }
             }
+        } else {
+            error.error = NEU_ERR_GROUP_NOT_ALLOW;
         }
 
         if (0 == error.error) {
@@ -745,9 +747,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_add_tag_t *cmd  = (neu_req_add_tag_t *) &header[1];
         neu_resp_add_tag_t resp = { 0 };
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-            resp.error = NEU_ERR_GROUP_NOT_ALLOW;
-        } else {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             for (int i = 0; i < cmd->n_tag; i++) {
                 int ret =
                     neu_adapter_driver_add_tag((neu_adapter_driver_t *) adapter,
@@ -759,6 +759,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     break;
                 }
             }
+        } else {
+            resp.error = NEU_ERR_GROUP_NOT_ALLOW;
         }
 
         for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
@@ -784,9 +786,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_update_tag_t *cmd  = (neu_req_update_tag_t *) &header[1];
         neu_resp_update_tag_t resp = { 0 };
 
-        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-            resp.error = NEU_ERR_GROUP_NOT_ALLOW;
-        } else {
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             for (int i = 0; i < cmd->n_tag; i++) {
                 int ret = neu_adapter_driver_update_tag(
                     (neu_adapter_driver_t *) adapter, cmd->group,
@@ -801,6 +801,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                     break;
                 }
             }
+        } else {
+            resp.error = NEU_ERR_GROUP_NOT_ALLOW;
         }
 
         for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
