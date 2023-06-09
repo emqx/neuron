@@ -28,6 +28,7 @@ void handle_rw_init();
 void handle_rw_uninit();
 void handle_read(nng_aio *aio);
 void handle_write(nng_aio *aio);
+void handle_write_tags(nng_aio *aio);
 void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp);
 
 #endif

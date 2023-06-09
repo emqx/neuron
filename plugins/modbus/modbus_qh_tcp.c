@@ -57,6 +57,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .driver.group_timer   = driver_group_timer,
     .driver.write_tag     = driver_write,
     .driver.tag_validator = driver_tag_validator,
+    .driver.write_tags    = NULL,
 };
 
 const neu_plugin_module_t neu_plugin_module = {

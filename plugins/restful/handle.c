@@ -75,6 +75,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/write",
     },
     {
+        .url = "/api/v2/write/tags",
+    },
+    {
         .url = "/api/v2/subscribe",
     },
     {
@@ -276,6 +279,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/write",
         .value.handler = handle_write,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/write/tags",
+        .value.handler = handle_write_tags,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,

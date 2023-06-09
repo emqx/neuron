@@ -786,6 +786,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAG:
+    case NEU_REQ_WRITE_TAGS:
     case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_GET_TAG:
     case NEU_REQ_GET_NDRIVER_TAGS:
