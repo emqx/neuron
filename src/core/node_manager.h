@@ -46,21 +46,19 @@ void     neu_node_manager_del(neu_node_manager_t *mgr, const char *name);
 uint16_t neu_node_manager_size(neu_node_manager_t *mgr);
 
 // neu_resp_node_info array
-UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type);
-UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, neu_node_type_e type,
+UT_array *neu_node_manager_get(neu_node_manager_t *mgr, int type);
+UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                                   const char *plugin, const char *node);
 UT_array *neu_node_manager_get_all(neu_node_manager_t *mgr);
 
 // neu_adapter_t array
-UT_array *     neu_node_manager_get_adapter(neu_node_manager_t *mgr,
-                                            neu_node_type_e     type);
+UT_array *     neu_node_manager_get_adapter(neu_node_manager_t *mgr, int type);
 neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name);
 bool neu_node_manager_is_single(neu_node_manager_t *mgr, const char *name);
 bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name);
 
 // nng_pipe array
-UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,
-                                     neu_node_type_e     type);
+UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr, int type);
 UT_array *neu_node_manager_get_pipes_all(neu_node_manager_t *mgr);
 nng_pipe  neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name);
 

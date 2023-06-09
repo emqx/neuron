@@ -173,7 +173,7 @@ bool neu_node_manager_exist_uninit(neu_node_manager_t *mgr)
     return false;
 }
 
-UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
+UT_array *neu_node_manager_get(neu_node_manager_t *mgr, int type)
 {
     UT_array *     array = NULL;
     UT_icd         icd   = { sizeof(neu_resp_node_info_t), NULL, NULL, NULL };
@@ -184,7 +184,7 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         if (!el->is_static && el->display) {
-            if (el->adapter->module->type == type) {
+            if (el->adapter->module->type & type) {
                 neu_resp_node_info_t info = { 0 };
                 strcpy(info.node, el->adapter->name);
                 strcpy(info.plugin, el->adapter->module->module_name);
@@ -196,7 +196,7 @@ UT_array *neu_node_manager_get(neu_node_manager_t *mgr, neu_node_type_e type)
     return array;
 }
 
-UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, neu_node_type_e type,
+UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, int type,
                                   const char *plugin, const char *node)
 {
     UT_array *     array = NULL;
@@ -208,7 +208,7 @@ UT_array *neu_node_manager_filter(neu_node_manager_t *mgr, neu_node_type_e type,
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         if (!el->is_static && el->display) {
-            if (el->adapter->module->type == type) {
+            if (el->adapter->module->type & type) {
                 if (strlen(plugin) > 0 &&
                     strcmp(el->adapter->module->module_name, plugin) != 0) {
                     continue;
@@ -247,8 +247,7 @@ UT_array *neu_node_manager_get_all(neu_node_manager_t *mgr)
     return array;
 }
 
-UT_array *neu_node_manager_get_adapter(neu_node_manager_t *mgr,
-                                       neu_node_type_e     type)
+UT_array *neu_node_manager_get_adapter(neu_node_manager_t *mgr, int type)
 {
     UT_array *     array = NULL;
     node_entity_t *el = NULL, *tmp = NULL;
@@ -258,7 +257,7 @@ UT_array *neu_node_manager_get_adapter(neu_node_manager_t *mgr,
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         if (!el->is_static && el->display) {
-            if (el->adapter->module->type == type) {
+            if (el->adapter->module->type & type) {
                 utarray_push_back(array, &el->adapter);
             }
         }
@@ -304,8 +303,7 @@ bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name)
     return false;
 }
 
-UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,
-                                     neu_node_type_e     type)
+UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr, int type)
 {
     UT_icd         icd   = { sizeof(nng_pipe), NULL, NULL, NULL };
     UT_array *     pipes = NULL;
@@ -316,7 +314,7 @@ UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr,
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         if (!el->is_static) {
-            if (el->adapter->module->type == type) {
+            if (el->adapter->module->type & type) {
                 nng_pipe pipe = el->pipe;
                 utarray_push_back(pipes, &pipe);
             }

@@ -363,8 +363,8 @@ int manager_load_node(neu_manager_t *manager)
 
 int manager_load_subscribe(neu_manager_t *manager)
 {
-    UT_array *nodes =
-        neu_node_manager_get(manager->node_manager, NEU_NA_TYPE_APP);
+    UT_array *nodes = neu_node_manager_get(
+        manager->node_manager, NEU_NA_TYPE_APP | NEU_NA_TYPE_NDRIVER);
 
     utarray_foreach(nodes, neu_resp_node_info_t *, node)
     {

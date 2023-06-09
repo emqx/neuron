@@ -345,11 +345,11 @@ void handle_get_metric(nng_aio *aio)
         neu_metrics_visist((neu_metrics_cb_t) gen_node_metrics, &ctx);
         break;
     case NEU_METRICS_CATEGORY_APP:
-        ctx.filter = NEU_NA_TYPE_APP;
+        ctx.filter = NEU_NA_TYPE_APP | NEU_NA_TYPE_NDRIVER;
         neu_metrics_visist((neu_metrics_cb_t) gen_node_metrics, &ctx);
         break;
     case NEU_METRICS_CATEGORY_ALL:
-        ctx.filter = NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP;
+        ctx.filter = NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_NDRIVER | NEU_NA_TYPE_APP;
         neu_metrics_visist((neu_metrics_cb_t) gen_global_metrics, stream);
         neu_metrics_visist((neu_metrics_cb_t) gen_node_metrics, &ctx);
         break;
