@@ -132,6 +132,30 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
     return groups;
 }
 
+UT_array *neu_subscribe_manager_get_ndriver_maps(neu_subscribe_mgr_t *mgr,
+                                                 const char *         ndriver)
+{
+    UT_array *groups = NULL;
+    UT_icd    icd = { sizeof(neu_resp_ndriver_map_info_t), NULL, NULL, NULL };
+    utarray_new(groups, &icd);
+
+    sub_elem_t *el = NULL, *tmp = NULL;
+    HASH_ITER(hh, mgr->ss, el, tmp)
+    {
+        utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
+        {
+            if (strcmp(sub_app->app_name, ndriver) == 0) {
+                neu_resp_ndriver_map_info_t info = { 0 };
+                strncpy(info.driver, el->key.driver, sizeof(info.driver));
+                strncpy(info.group, el->key.group, sizeof(info.group));
+                utarray_push_back(groups, &info);
+            }
+        }
+    }
+
+    return groups;
+}
+
 void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app)
 {
     sub_elem_t *el = NULL, *tmp = NULL;

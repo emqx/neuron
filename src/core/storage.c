@@ -92,6 +92,20 @@ void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
     }
 }
 
+void manager_storage_add_ndriver_map(neu_manager_t *manager,
+                                     const char *ndriver, const char *driver,
+                                     const char *group)
+{
+    return manager_storage_subscribe(manager, ndriver, driver, group, NULL);
+}
+
+void manager_storage_del_ndriver_map(neu_manager_t *manager,
+                                     const char *ndriver, const char *driver,
+                                     const char *group)
+{
+    return manager_storage_unsubscribe(manager, ndriver, driver, group);
+}
+
 static int save_node_group_and_tags(neu_group_t *grp, void *data)
 {
     const char *node     = data;
