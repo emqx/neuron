@@ -110,7 +110,7 @@
 		"type": "int",
 		"default": 0,
 		"valid": {
-			"min": 20,
+			"min": 0,
 			"max": 10000
 		}
 	},
