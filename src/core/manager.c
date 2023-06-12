@@ -926,9 +926,13 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_ndriver_map_t *cmd   = (neu_req_ndriver_map_t *) &header[1];
         neu_resp_error_t       error = { 0 };
 
-        // TODO
-        nlog_info("add map ndriver:`%s` driver:`%s` group:`%s`", cmd->ndriver,
-                  cmd->driver, cmd->group);
+        error.error = neu_manager_add_ndriver_map(manager, cmd->ndriver,
+                                                  cmd->driver, cmd->group);
+        if (error.error == NEU_ERR_SUCCESS) {
+            forward_msg(manager, msg, cmd->ndriver);
+            manager_storage_add_ndriver_map(manager, cmd->ndriver, cmd->driver,
+                                            cmd->group);
+        }
 
         header->type = NEU_RESP_ERROR;
         strcpy(header->receiver, header->sender);
@@ -939,9 +943,13 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_ndriver_map_t *cmd   = (neu_req_ndriver_map_t *) &header[1];
         neu_resp_error_t       error = { 0 };
 
-        // TODO
-        nlog_info("del map ndriver:`%s` driver:`%s` group:`%s`", cmd->ndriver,
-                  cmd->driver, cmd->group);
+        error.error = neu_manager_del_ndriver_map(manager, cmd->ndriver,
+                                                  cmd->driver, cmd->group);
+        if (error.error == NEU_ERR_SUCCESS) {
+            forward_msg(manager, msg, cmd->ndriver);
+            manager_storage_del_ndriver_map(manager, cmd->ndriver, cmd->driver,
+                                            cmd->group);
+        }
 
         header->type = NEU_RESP_ERROR;
         strcpy(header->receiver, header->sender);
@@ -954,10 +962,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t            e    = { 0 };
         neu_resp_get_ndriver_maps_t resp = { 0 };
 
-        // TODO
-        (void) cmd;
-        UT_icd icd = { sizeof(neu_resp_get_ndriver_maps_t), NULL, NULL, NULL };
-        utarray_new(resp.groups, &icd);
+        e.error =
+            neu_manager_get_ndriver_maps(manager, cmd->ndriver, &resp.groups);
 
         strcpy(header->receiver, header->sender);
         if (0 == e.error) {

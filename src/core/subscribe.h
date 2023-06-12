@@ -47,6 +47,8 @@ UT_array *neu_subscribe_manager_find(neu_subscribe_mgr_t *mgr,
 UT_array *neu_subscribe_manager_find_by_driver(neu_subscribe_mgr_t *mgr,
                                                const char *         driver);
 UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app);
+UT_array *neu_subscribe_manager_get_ndriver_maps(neu_subscribe_mgr_t *mgr,
+                                                 const char *         ndriver);
 void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app);
 int  neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                                const char *app, const char *group,

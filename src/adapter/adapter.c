@@ -861,6 +861,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         break;
     }
+    case NEU_REQ_ADD_NDRIVER_MAP: {
+        break;
+    }
+    case NEU_REQ_DEL_NDRIVER_MAP: {
+        break;
+    }
     case NEU_REQ_UPDATE_NDRIVER_TAG_PARAM: {
         neu_req_update_ndriver_tag_param_t *cmd =
             (neu_req_update_ndriver_tag_param_t *) &header[1];

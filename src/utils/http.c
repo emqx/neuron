@@ -324,6 +324,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_SETTING_INVALID:
     case NEU_ERR_NODE_NOT_ALLOW_UPDATE:
     case NEU_ERR_NODE_NOT_ALLOW_SUBSCRIBE:
+    case NEU_ERR_NODE_NOT_ALLOW_MAP:
     case NEU_ERR_LIBRARY_INFO_INVALID:
     case NEU_ERR_LICENSE_INVALID:
     case NEU_ERR_GROUP_PARAMETER_INVALID:
