@@ -64,6 +64,11 @@ struct neu_plugin_group {
 
 typedef int (*neu_plugin_tag_validator_t)(const neu_datatag_t *tag);
 
+typedef struct {
+    neu_datatag_t *tag;
+    neu_value_u    value;
+} neu_plugin_tag_value_t;
+
 typedef struct neu_plugin_intf_funs {
     neu_plugin_t *(*open)(void);
     int (*close)(neu_plugin_t *plugin);
@@ -81,6 +86,9 @@ typedef struct neu_plugin_intf_funs {
             int (*group_timer)(neu_plugin_t *plugin, neu_plugin_group_t *group);
             int (*write_tag)(neu_plugin_t *plugin, void *req,
                              neu_datatag_t *tag, neu_value_u value);
+            int (*write_tags)(
+                neu_plugin_t *plugin, void *req,
+                UT_array *tag_values); // UT_array {neu_datatag_t, neu_value_u}
             neu_plugin_tag_validator_t tag_validator;
         } driver;
     };

@@ -65,6 +65,22 @@ int  neu_json_decode_write_req(char *buf, neu_json_write_req_t **result);
 void neu_json_decode_write_req_free(neu_json_write_req_t *req);
 
 typedef struct {
+    char *               tag;
+    enum neu_json_type   t;
+    union neu_json_value value;
+} neu_json_write_tags_elem_t;
+
+typedef struct {
+    char *                      group;
+    char *                      node;
+    int                         n_tag;
+    neu_json_write_tags_elem_t *tags;
+} neu_json_write_tags_req_t;
+int  neu_json_decode_write_tags_req(char *                      buf,
+                                    neu_json_write_tags_req_t **result);
+void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req);
+
+typedef struct {
     char *group;
     char *node;
 } neu_json_read_req_t;

@@ -39,8 +39,10 @@
 #include "tag.h"
 
 typedef struct to_be_write_tag {
+    bool           single;
     neu_datatag_t *tag;
     neu_value_u    value;
+    UT_array *     tvs;
     void *         req;
 } to_be_write_tag_t;
 
@@ -96,6 +98,15 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     free(req);
 }
 
+static void update_im(neu_adapter_t *adapter, const char *group,
+                      const char *tag, neu_dvalue_t value)
+{
+    (void) adapter;
+    (void) group;
+    (void) tag;
+    (void) value;
+}
+
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value)
 {
@@ -146,6 +157,7 @@ neu_adapter_driver_t *neu_adapter_driver_create()
     driver->driver_events                         = neu_event_new();
     driver->adapter.cb_funs.driver.update         = update;
     driver->adapter.cb_funs.driver.write_response = write_response;
+    driver->adapter.cb_funs.driver.update_im      = update_im;
 
     return driver;
 }
@@ -286,6 +298,223 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     driver->adapter.cb_funs.response(&driver->adapter, req, &resp);
 }
 
+static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
+                      neu_dvalue_t *value)
+{
+    switch (tag->type) {
+    case NEU_TYPE_BOOL:
+    case NEU_TYPE_STRING:
+        break;
+    case NEU_TYPE_BIT:
+        value->type     = NEU_TYPE_BIT;
+        value->value.u8 = (uint8_t) value->value.u64;
+        break;
+    case NEU_TYPE_UINT8:
+    case NEU_TYPE_INT8:
+        value->type     = NEU_TYPE_UINT8;
+        value->value.u8 = (uint8_t) value->value.u64;
+        break;
+    case NEU_TYPE_INT16:
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_WORD:
+        value->type      = NEU_TYPE_UINT16;
+        value->value.u16 = (uint16_t) value->value.u64;
+        if (tag->option.value16.endian == NEU_DATATAG_ENDIAN_B16) {
+            value->value.u16 = htons(value->value.u16);
+        }
+        break;
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_INT32:
+    case NEU_TYPE_DWORD:
+        value->type      = NEU_TYPE_UINT32;
+        value->value.u32 = (uint32_t) value->value.u64;
+        switch (tag->option.value32.endian) {
+        case NEU_DATATAG_ENDIAN_LB32:
+            neu_ntohs_p((uint16_t *) value->value.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            break;
+        case NEU_DATATAG_ENDIAN_BB32:
+            value->value.u32 = htonl(value->value.u32);
+            break;
+        case NEU_DATATAG_ENDIAN_BL32:
+            value->value.u32 = htonl(value->value.u32);
+            neu_ntohs_p((uint16_t *) value->value.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            break;
+        case NEU_DATATAG_ENDIAN_LL32:
+        default:
+            break;
+        }
+        break;
+    case NEU_TYPE_FLOAT:
+        if (value_type != NEU_TYPE_FLOAT) {
+            value->type      = NEU_TYPE_FLOAT;
+            value->value.f32 = (float) value->value.d64;
+        }
+
+        switch (tag->option.value32.endian) {
+        case NEU_DATATAG_ENDIAN_LB32:
+            neu_ntohs_p((uint16_t *) value->value.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            break;
+        case NEU_DATATAG_ENDIAN_BB32:
+            value->value.u32 = htonl(value->value.u32);
+            break;
+        case NEU_DATATAG_ENDIAN_BL32:
+            value->value.u32 = htonl(value->value.u32);
+            neu_ntohs_p((uint16_t *) value->value.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            break;
+        case NEU_DATATAG_ENDIAN_LL32:
+        default:
+            break;
+        }
+
+        break;
+    case NEU_TYPE_DOUBLE:
+    case NEU_TYPE_UINT64:
+    case NEU_TYPE_INT64:
+    case NEU_TYPE_LWORD:
+        switch (tag->option.value64.endian) {
+        case NEU_DATATAG_ENDIAN_B64:
+            value->value.u64 = neu_ntohll(value->value.u64);
+            break;
+        case NEU_DATATAG_ENDIAN_L64:
+        default:
+            break;
+        }
+        break;
+    default:
+        assert(false);
+        break;
+    }
+}
+
+static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
+                        neu_value_u *value, double decimal)
+{
+    switch (tag_type) {
+    case NEU_TYPE_INT8:
+    case NEU_TYPE_UINT8:
+    case NEU_TYPE_INT16:
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_INT32:
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_INT64:
+    case NEU_TYPE_UINT64:
+    case NEU_TYPE_WORD:
+    case NEU_TYPE_LWORD:
+    case NEU_TYPE_DWORD:
+        if (value_type == NEU_TYPE_INT64 || NEU_TYPE_LWORD) {
+            value->u64 = value->u64 / decimal;
+        } else if (value_type == NEU_TYPE_DOUBLE) {
+            value->u64 = (uint64_t) round(value->d64 / decimal);
+        }
+        break;
+    case NEU_TYPE_FLOAT:
+    case NEU_TYPE_DOUBLE:
+        if (value_type == NEU_TYPE_INT64) {
+            value->d64 = (double) (value->d64 / decimal);
+        } else if (value_type == NEU_TYPE_DOUBLE) {
+            value->d64 = value->d64 / decimal;
+        } else if (value_type == NEU_TYPE_FLOAT) {
+            value->f32 = value->f32 / decimal;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+static void free_tags(neu_req_write_tags_t *cmd)
+{
+    free(cmd->tags);
+}
+
+void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
+                                   neu_reqresp_head_t *  req)
+{
+    neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) &req[1];
+
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
+        free_tags(cmd);
+        return;
+    }
+
+    if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
+        free_tags(cmd);
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
+        return;
+    }
+
+    group_t *g = find_group(driver, cmd->group);
+
+    if (g == NULL) {
+        neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
+        req->type              = NEU_RESP_ERROR;
+        free_tags(cmd);
+        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        free(req);
+        return;
+    }
+
+    UT_array *tags = NULL;
+    UT_icd    icd  = { sizeof(neu_plugin_tag_value_t), NULL, NULL, NULL };
+    utarray_new(tags, &icd);
+    for (int i = 0; i < cmd->n_tag; i++) {
+        neu_plugin_tag_value_t tv = { 0 };
+
+        neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tags[i].tag);
+        if (tag != NULL && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
+            neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false) {
+            tv.tag = neu_tag_dup(tag);
+
+            if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
+                if (cmd->tags[i].value.type == NEU_TYPE_INT64) {
+                    tv.value.d64 = (double) tv.value.u64;
+                }
+            }
+            if (tag->decimal != 0) {
+                cal_decimal(tag->type, cmd->tags[i].value.type,
+                            &cmd->tags[i].value.value, tag->decimal);
+            }
+            fix_value(tag, cmd->tags[i].value.type, &cmd->tags[i].value);
+
+            tv.value = cmd->tags[i].value.value;
+            utarray_push_back(tags, &tv);
+        } else {
+            if (tag != NULL) {
+                neu_tag_free(tag);
+            }
+        }
+    }
+
+    if (utarray_len(tags) != (unsigned int) cmd->n_tag) {
+        neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
+        req->type              = NEU_RESP_ERROR;
+        free_tags(cmd);
+        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        free(req);
+        utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
+        {
+            neu_tag_free(tv->tag);
+        }
+        utarray_free(tags);
+        return;
+    }
+
+    to_be_write_tag_t wtag = { 0 };
+    wtag.single            = false;
+    wtag.req               = (void *) req;
+    wtag.tvs               = tags;
+
+    store_write_tag(g, &wtag);
+    free_tags(cmd);
+}
+
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req)
 {
@@ -327,133 +556,11 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         }
 
         if (tag->decimal != 0) {
-            switch (tag->type) {
-            case NEU_TYPE_INT8:
-            case NEU_TYPE_UINT8:
-            case NEU_TYPE_INT16:
-            case NEU_TYPE_UINT16:
-            case NEU_TYPE_INT32:
-            case NEU_TYPE_UINT32:
-            case NEU_TYPE_INT64:
-            case NEU_TYPE_UINT64:
-            case NEU_TYPE_WORD:
-            case NEU_TYPE_LWORD:
-            case NEU_TYPE_DWORD:
-                if (cmd->value.type == NEU_TYPE_INT64 ||
-                    cmd->value.type == NEU_TYPE_LWORD) {
-                    cmd->value.value.u64 = cmd->value.value.u64 / tag->decimal;
-                } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
-                    cmd->value.value.u64 =
-                        (uint64_t) round(cmd->value.value.d64 / tag->decimal);
-                }
-                break;
-            case NEU_TYPE_FLOAT:
-            case NEU_TYPE_DOUBLE:
-                if (cmd->value.type == NEU_TYPE_INT64) {
-                    cmd->value.value.d64 =
-                        (double) (cmd->value.value.d64 / tag->decimal);
-                } else if (cmd->value.type == NEU_TYPE_DOUBLE) {
-                    cmd->value.value.d64 = cmd->value.value.d64 / tag->decimal;
-                } else if (cmd->value.type == NEU_TYPE_FLOAT) {
-                    cmd->value.value.f32 = cmd->value.value.f32 / tag->decimal;
-                }
-                break;
-            default:
-                break;
-            }
+            cal_decimal(tag->type, cmd->value.type, &cmd->value.value,
+                        tag->decimal);
         }
 
-        switch (tag->type) {
-        case NEU_TYPE_BOOL:
-        case NEU_TYPE_STRING:
-            break;
-        case NEU_TYPE_BIT:
-            cmd->value.type     = NEU_TYPE_BIT;
-            cmd->value.value.u8 = (uint8_t) cmd->value.value.u64;
-            break;
-        case NEU_TYPE_UINT8:
-        case NEU_TYPE_INT8:
-            cmd->value.type     = NEU_TYPE_UINT8;
-            cmd->value.value.u8 = (uint8_t) cmd->value.value.u64;
-            break;
-        case NEU_TYPE_INT16:
-        case NEU_TYPE_UINT16:
-        case NEU_TYPE_WORD:
-            cmd->value.type      = NEU_TYPE_UINT16;
-            cmd->value.value.u16 = (uint16_t) cmd->value.value.u64;
-            switch (tag->option.value16.endian) {
-            case NEU_DATATAG_ENDIAN_B16:
-                cmd->value.value.u16 = htons(cmd->value.value.u16);
-                break;
-            case NEU_DATATAG_ENDIAN_L16:
-            default:
-                break;
-            }
-            break;
-        case NEU_TYPE_UINT32:
-        case NEU_TYPE_INT32:
-        case NEU_TYPE_DWORD:
-            cmd->value.type      = NEU_TYPE_UINT32;
-            cmd->value.value.u32 = (uint32_t) cmd->value.value.u64;
-            switch (tag->option.value32.endian) {
-            case NEU_DATATAG_ENDIAN_LB32:
-                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
-                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
-                break;
-            case NEU_DATATAG_ENDIAN_BB32:
-                cmd->value.value.u32 = htonl(cmd->value.value.u32);
-                break;
-            case NEU_DATATAG_ENDIAN_BL32:
-                cmd->value.value.u32 = htonl(cmd->value.value.u32);
-                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
-                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
-                break;
-            case NEU_DATATAG_ENDIAN_LL32:
-            default:
-                break;
-            }
-            break;
-        case NEU_TYPE_FLOAT:
-            if (NEU_TYPE_FLOAT != cmd->value.type) {
-                cmd->value.value.f32 = (float) cmd->value.value.d64;
-                cmd->value.type      = NEU_TYPE_FLOAT;
-            }
-
-            switch (tag->option.value32.endian) {
-            case NEU_DATATAG_ENDIAN_LB32:
-                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
-                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
-                break;
-            case NEU_DATATAG_ENDIAN_BB32:
-                cmd->value.value.u32 = htonl(cmd->value.value.u32);
-                break;
-            case NEU_DATATAG_ENDIAN_BL32:
-                cmd->value.value.u32 = htonl(cmd->value.value.u32);
-                neu_ntohs_p((uint16_t *) cmd->value.value.bytes);
-                neu_ntohs_p((uint16_t *) (cmd->value.value.bytes + 2));
-                break;
-            case NEU_DATATAG_ENDIAN_LL32:
-            default:
-                break;
-            }
-            break;
-        case NEU_TYPE_DOUBLE:
-        case NEU_TYPE_UINT64:
-        case NEU_TYPE_INT64:
-        case NEU_TYPE_LWORD:
-            switch (tag->option.value64.endian) {
-            case NEU_DATATAG_ENDIAN_B64:
-                cmd->value.value.u64 = neu_ntohll(cmd->value.value.u64);
-                break;
-            case NEU_DATATAG_ENDIAN_L64:
-            default:
-                break;
-            }
-            break;
-        default:
-            assert(false);
-            break;
-        }
+        fix_value(tag, cmd->value.type, &cmd->value);
 
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
             neu_driver_cache_update(g->driver->cache, g->name, tag->name,
@@ -467,6 +574,7 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             free(req);
         } else {
             to_be_write_tag_t wtag = { 0 };
+            wtag.single            = true;
             wtag.req               = (void *) req;
             wtag.value             = cmd->value.value;
             wtag.tag               = neu_tag_dup(tag);
@@ -593,7 +701,15 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 
         utarray_foreach(find->wt_tags, to_be_write_tag_t *, tag)
         {
-            neu_tag_free(tag->tag);
+            if (tag->single) {
+                neu_tag_free(tag->tag);
+            } else {
+                utarray_foreach(tag->tvs, neu_plugin_tag_value_t *, tv)
+                {
+                    neu_tag_free(tv->tag);
+                }
+                utarray_free(tag->tvs);
+            }
         }
 
         utarray_free(find->static_tags);
@@ -964,10 +1080,20 @@ static int read_callback(void *usr_data)
     pthread_mutex_lock(&group->wt_mtx);
     utarray_foreach(group->wt_tags, to_be_write_tag_t *, wtag)
     {
-        group->driver->adapter.module->intf_funs->driver.write_tag(
-            group->driver->adapter.plugin, (void *) wtag->req, wtag->tag,
-            wtag->value);
-        neu_tag_free(wtag->tag);
+        if (wtag->single) {
+            group->driver->adapter.module->intf_funs->driver.write_tag(
+                group->driver->adapter.plugin, (void *) wtag->req, wtag->tag,
+                wtag->value);
+            neu_tag_free(wtag->tag);
+        } else {
+            group->driver->adapter.module->intf_funs->driver.write_tags(
+                group->driver->adapter.plugin, (void *) wtag->req, wtag->tvs);
+            utarray_foreach(wtag->tvs, neu_plugin_tag_value_t *, tv)
+            {
+                neu_tag_free(tv->tag);
+            }
+            utarray_free(wtag->tvs);
+        }
     }
     utarray_clear(group->wt_tags);
     pthread_mutex_unlock(&group->wt_mtx);

@@ -181,6 +181,96 @@ void neu_json_decode_write_req_free(neu_json_write_req_t *req)
     free(req);
 }
 
+int neu_json_decode_write_tags_req(char *                      buf,
+                                   neu_json_write_tags_req_t **result)
+{
+    int                        ret      = 0;
+    void *                     json_obj = NULL;
+    neu_json_write_tags_req_t *req =
+        calloc(1, sizeof(neu_json_write_tags_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj                    = neu_json_decode_new(buf);
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "tags",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        free(req);
+        neu_json_decode_free(json_obj);
+        return -1;
+    }
+
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+
+    req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
+    if (req->n_tag <= 0) {
+        free(req);
+        neu_json_decode_free(json_obj);
+        return -1;
+    }
+
+    req->tags = calloc(req->n_tag, sizeof(neu_json_write_tags_elem_t));
+    for (int i = 0; i < req->n_tag; i++) {
+        neu_json_elem_t v_elems[] = {
+            {
+                .name = "tag",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "value",
+                .t    = NEU_JSON_VALUE,
+            },
+        };
+
+        ret = neu_json_decode_array_by_json(
+            json_obj, "tags", i, NEU_JSON_ELEM_SIZE(v_elems), v_elems);
+        if (ret != 0) {
+            free(req->tags);
+            free(req);
+            neu_json_decode_free(json_obj);
+        }
+
+        req->tags[i].tag   = v_elems[0].v.val_str;
+        req->tags[i].t     = v_elems[1].t;
+        req->tags[i].value = v_elems[1].v;
+    }
+    *result = req;
+
+    neu_json_decode_free(json_obj);
+    return 0;
+}
+
+void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
+{
+    free(req->group);
+    free(req->node);
+
+    for (int i = 0; i < req->n_tag; i++) {
+        free(req->tags[i].tag);
+        if (req->tags[i].t == NEU_JSON_STR) {
+            free(req->tags[i].value.val_str);
+        }
+    }
+    free(req->tags);
+    free(req);
+}
+
 int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
 {
     int                  ret      = 0;

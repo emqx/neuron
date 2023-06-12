@@ -43,6 +43,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_READ_GROUP,
     NEU_RESP_READ_GROUP,
     NEU_REQ_WRITE_TAG,
+    NEU_REQ_WRITE_TAGS,
 
     NEU_REQ_SUBSCRIBE_GROUP,
     NEU_REQ_UNSUBSCRIBE_GROUP,
@@ -144,6 +145,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_READ_GROUP]  = "NEU_REQ_READ_GROUP",
     [NEU_RESP_READ_GROUP] = "NEU_RESP_READ_GROUP",
     [NEU_REQ_WRITE_TAG]   = "NEU_REQ_WRITE_TAG",
+    [NEU_REQ_WRITE_TAGS]  = "NEU_REQ_WRITE_TAGS",
 
     [NEU_REQ_SUBSCRIBE_GROUP]      = "NEU_REQ_SUBSCRIBE_GROUP",
     [NEU_REQ_UNSUBSCRIBE_GROUP]    = "NEU_REQ_UNSUBSCRIBE_GROUP",
@@ -634,6 +636,14 @@ typedef struct neu_resp_tag_value {
     neu_dvalue_t value;
 } neu_resp_tag_value_t;
 
+typedef struct neu_req_write_tags {
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+
+    int                   n_tag;
+    neu_resp_tag_value_t *tags;
+} neu_req_write_tags_t;
+
 typedef struct {
     char                  driver[NEU_NODE_NAME_LEN];
     char                  group[NEU_GROUP_NAME_LEN];
@@ -783,6 +793,8 @@ typedef struct adapter_callbacks {
                            const char *tag, neu_dvalue_t value);
             void (*write_response)(neu_adapter_t *adapter, void *req,
                                    int error);
+            void (*update_im)(neu_adapter_t *adapter, const char *group,
+                              const char *tag, neu_dvalue_t value);
         } driver;
     };
 } adapter_callbacks_t;

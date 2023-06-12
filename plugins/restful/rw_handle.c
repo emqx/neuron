@@ -61,6 +61,15 @@ void handle_write(nng_aio *aio)
             neu_reqresp_head_t  header = { 0 };
             neu_req_write_tag_t cmd    = { 0 };
 
+            if (req->t == NEU_JSON_STR &&
+                strlen(req->value.val_str) >= NEU_VALUE_SIZE) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
+                    neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
+                                      result_error);
+                });
+                return;
+            }
+
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAG;
 
@@ -74,13 +83,8 @@ void handle_write(nng_aio *aio)
                 cmd.value.value.u64 = req->value.val_int;
                 break;
             case NEU_JSON_STR:
-                if (strlen(req->value.val_str) >= NEU_VALUE_SIZE) {
-                    cmd.value.type      = NEU_TYPE_ERROR;
-                    cmd.value.value.i32 = NEU_ERR_STRING_TOO_LONG;
-                } else {
-                    cmd.value.type = NEU_TYPE_STRING;
-                    strcpy(cmd.value.value.str, req->value.val_str);
-                }
+                cmd.value.type = NEU_TYPE_STRING;
+                strcpy(cmd.value.value.str, req->value.val_str);
                 break;
             case NEU_JSON_DOUBLE:
                 cmd.value.type      = NEU_TYPE_DOUBLE;
@@ -95,18 +99,76 @@ void handle_write(nng_aio *aio)
                 break;
             }
 
-            if (cmd.value.type == NEU_TYPE_ERROR) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
-                    neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
-                                      result_error);
+            int ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
-            } else {
-                int ret = neu_plugin_op(plugin, header, &cmd);
-                if (ret != 0) {
-                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                    });
+            }
+        })
+}
+
+void handle_write_tags(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_write_tags_req_t, neu_json_decode_write_tags_req, {
+            neu_reqresp_head_t   header = { 0 };
+            neu_req_write_tags_t cmd    = { 0 };
+
+            for (int i = 0; i < req->n_tag; i++) {
+                if (req->tags[i].t == NEU_JSON_STR) {
+                    if (strlen(req->tags[i].value.val_str) >= NEU_VALUE_SIZE) {
+                        NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
+                            neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
+                                              result_error);
+                        });
+                        return;
+                    }
                 }
+            }
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_WRITE_TAGS;
+
+            strcpy(cmd.driver, req->node);
+            strcpy(cmd.group, req->group);
+            cmd.n_tag = req->n_tag;
+            cmd.tags  = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+
+            for (int i = 0; i < cmd.n_tag; i++) {
+                strcpy(cmd.tags[i].tag, req->tags[i].tag);
+                switch (req->tags[i].t) {
+                case NEU_JSON_INT:
+                    cmd.tags[i].value.type      = NEU_TYPE_INT64;
+                    cmd.tags[i].value.value.u64 = req->tags[i].value.val_int;
+                    break;
+                case NEU_JSON_STR:
+                    cmd.tags[i].value.type = NEU_TYPE_STRING;
+                    strcpy(cmd.tags[i].value.value.str,
+                           req->tags[i].value.val_str);
+                    break;
+                case NEU_JSON_DOUBLE:
+                    cmd.tags[i].value.type      = NEU_TYPE_DOUBLE;
+                    cmd.tags[i].value.value.d64 = req->tags[i].value.val_double;
+                    break;
+                case NEU_JSON_BOOL:
+                    cmd.tags[i].value.type = NEU_TYPE_BOOL;
+                    cmd.tags[i].value.value.boolean =
+                        req->tags[i].value.val_bool;
+                    break;
+                default:
+                    assert(false);
+                    break;
+                }
+            }
+
+            int ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
             }
         })
 }
