@@ -198,15 +198,9 @@ int neu_json_encode_ndriver_tag(void *json_obj, void *param)
         return -1;
     }
 
-    neu_json_elem_t params_elem[] = {
-        {
-            .name      = "params",
-            .t         = NEU_JSON_STR,
-            .v.val_str = tag->params,
-        },
-    };
-    ret = neu_json_encode_field(json_obj, params_elem,
-                                NEU_JSON_ELEM_SIZE(params_elem));
+    if (tag->params) {
+        ret = neu_json_load_key(json_obj, "params", tag->params, true);
+    }
 
     return ret;
 }
