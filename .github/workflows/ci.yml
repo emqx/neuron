@@ -8,8 +8,8 @@ on:
       - published
 
 env:
-  VERSION: 2.4.0
-  UI_VERSION: 2.4.0
+  VERSION: 2.5.0
+  UI_VERSION: 2.4.6
   BRANCH: main
 
 jobs:
