@@ -17,6 +17,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+
 #include "errcodes.h"
 #include "neuron.h"
 #include "utils/asprintf.h"
@@ -127,7 +131,8 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
     if ((rv = nng_listen(plugin->sock, url, NULL, 0)) != 0) {
         plog_error(plugin, "nng_listen: %s", nng_strerror(rv));
         nng_close(plugin->sock);
-        return NEU_ERR_EINTERNAL;
+        rv = (NNG_EADDRINVAL == rv) ? NEU_ERR_INVALID_IP_ADDRESS
+                                    : NEU_ERR_EINTERNAL;
     }
 
     nng_recv_aio(plugin->sock, plugin->recv_aio);
@@ -163,6 +168,12 @@ static int parse_config(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
+    struct in_addr addr;
+    if (0 == inet_aton(host.v.val_str, &addr)) {
+        plog_error(plugin, "inet_aton fail: %s", host.v.val_str);
+        goto error;
+    }
+
     // port, required
     if (0 == port.v.val_int || port.v.val_int > 65535) {
         plog_error(plugin, "setting invalid port: %" PRIi64, port.v.val_int);
@@ -182,6 +193,24 @@ error:
     return -1;
 }
 
+static inline int check_url_listenable(neu_plugin_t *plugin, const char *url)
+{
+    int rv = nng_pair0_open(&plugin->sock);
+    if (0 != rv) {
+        plog_error(plugin, "nng_pair0_open: %s", nng_strerror(rv));
+        return NEU_ERR_EINTERNAL;
+    }
+
+    if (0 != (rv = nng_listen(plugin->sock, url, NULL, 0))) {
+        plog_error(plugin, "nng_listen: %s", nng_strerror(rv));
+        rv = (NNG_EADDRINVAL == rv) ? NEU_ERR_INVALID_IP_ADDRESS
+                                    : NEU_ERR_EINTERNAL;
+    }
+
+    nng_close(plugin->sock);
+    return rv;
+}
+
 static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *setting)
 {
     int      rv   = 0;
@@ -198,6 +227,10 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *setting)
     if (NULL == url) {
         plog_error(plugin, "create url fail");
         rv = NEU_ERR_EINTERNAL;
+        goto error;
+    }
+
+    if (0 != (rv = check_url_listenable(plugin, url))) {
         goto error;
     }
 
