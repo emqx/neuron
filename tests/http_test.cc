@@ -113,6 +113,11 @@ TEST(HTTPTest, http_get_param_str)
     EXPECT_EQ(ret, 3);
     EXPECT_EQ(0, strcmp("组", buf));
 
+    nng_http_req_set_uri(req, "/?group=%E7%BB%84");
+    ret = neu_http_get_param_str(aio, "group", buf, 3);
+    EXPECT_EQ(ret, 3);
+    EXPECT_EQ(0, strncmp("组", buf, 2));
+
     nng_aio_free(aio);
     nng_http_req_free(req);
     nng_url_free(url);

@@ -77,7 +77,7 @@ ssize_t neu_url_decode(const char *s, size_t len, char *buf, size_t size)
         }
         buf[j++] = c;
     }
-    buf[(j < size) ? j : --j] = '\0';
+    buf[(j < size) ? j : j - 1] = '\0';
     return j;
 }
 
