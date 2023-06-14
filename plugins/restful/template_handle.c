@@ -170,14 +170,21 @@ void handle_del_template(nng_aio *aio)
 
     NEU_VALIDATE_JWT(aio);
 
+    neu_req_del_template_t cmd = { 0 };
+
+    int ret = neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name));
+    // optional parameter
+    if (-2 != ret && (ret <= 0 || sizeof(cmd.name) <= (size_t) ret)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+        });
+        return;
+    }
+
     neu_reqresp_head_t header = {
         .ctx  = aio,
         .type = NEU_REQ_DEL_TEMPLATE,
     };
-
-    neu_req_del_template_t cmd = { 0 };
-
-    neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name));
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
@@ -197,10 +204,19 @@ void handle_get_template(nng_aio *aio)
     };
     neu_req_get_template_t cmd = { 0 };
 
-    if (neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name)) <= 0) {
+    int ret = neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name));
+    if (0 < ret && (size_t) ret < sizeof(cmd.name)) {
+        // valid name parameter provided
+        header.type = NEU_REQ_GET_TEMPLATE;
+    } else if (-2 == ret) {
+        // no name parameter
         header.type = NEU_REQ_GET_TEMPLATES;
     } else {
-        header.type = NEU_REQ_GET_TEMPLATE;
+        // invalid name parameter
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
+        });
+        return;
     }
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
@@ -327,15 +343,23 @@ send_template_mod_group_req(nng_aio *aio, neu_reqresp_type_e type,
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = type,
-    };
+    if (strlen(req->tmpl) >= NEU_TEMPLATE_NAME_LEN) {
+        return NEU_ERR_TEMPLATE_NAME_TOO_LONG;
+    } else if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+        return NEU_ERR_GROUP_NAME_TOO_LONG;
+    } else if (req->interval < NEU_GROUP_INTERVAL_LIMIT) {
+        return NEU_ERR_GROUP_PARAMETER_INVALID;
+    }
 
     neu_req_add_template_group_t cmd = { 0 };
     strcpy(cmd.tmpl, req->tmpl);
     strcpy(cmd.group, req->group);
     cmd.interval = req->interval;
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = type,
+    };
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         return NEU_ERR_IS_BUSY;
@@ -350,22 +374,10 @@ static inline void process_mod_template_group(nng_aio *          aio,
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_template_mod_group_req_t,
         neu_json_decode_template_mod_group_req, {
-            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
-                    neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
-                                      result_error);
-                });
-            } else if (req->interval < NEU_GROUP_INTERVAL_LIMIT) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_PARAMETER_INVALID, {
-                    neu_http_response(aio, NEU_ERR_GROUP_PARAMETER_INVALID,
-                                      result_error);
-                });
-            } else {
-                int ret = send_template_mod_group_req(aio, type, req);
-                if (ret != 0) {
-                    NEU_JSON_RESPONSE_ERROR(
-                        ret, { neu_http_response(aio, ret, result_error); });
-                }
+            int ret = send_template_mod_group_req(aio, type, req);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
             }
         })
 }
@@ -380,23 +392,43 @@ void handle_update_template_group(nng_aio *aio)
     process_mod_template_group(aio, NEU_REQ_UPDATE_TEMPLATE_GROUP);
 }
 
-void handle_del_template_group(nng_aio *aio)
+static inline int
+send_template_del_group_req(nng_aio *                          aio,
+                            neu_json_template_del_group_req_t *req)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
+    if (strlen(req->tmpl) >= NEU_TEMPLATE_NAME_LEN) {
+        return NEU_ERR_TEMPLATE_NAME_TOO_LONG;
+    }
+
+    if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+        return NEU_ERR_GROUP_NAME_TOO_LONG;
+    }
+
+    neu_req_add_template_tag_t cmd = { 0 };
+    strcpy(cmd.tmpl, req->tmpl);
+    strcpy(cmd.group, req->group);
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_DEL_TEMPLATE_GROUP,
+    };
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+void handle_del_template_group(nng_aio *aio)
+{
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_template_del_group_req_t,
         neu_json_decode_template_del_group_req, {
-            neu_reqresp_head_t header = { 0 };
-            header.ctx                = aio;
-            header.type               = NEU_REQ_DEL_TEMPLATE_GROUP;
-
-            neu_req_add_template_group_t cmd = { 0 };
-            strcpy(cmd.tmpl, req->tmpl);
-            strcpy(cmd.group, req->group);
-
-            if (0 != neu_plugin_op(plugin, header, &cmd)) {
-                int ret = NEU_ERR_IS_BUSY;
+            int ret = send_template_del_group_req(aio, req);
+            if (0 != ret) {
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
             }
@@ -406,15 +438,16 @@ void handle_del_template_group(nng_aio *aio)
 static int send_template_mod_tags_req(nng_aio *aio, neu_reqresp_type_e type,
                                       neu_json_template_mod_tags_req_t *req)
 {
+    int           ret    = 0;
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    int ret = 0;
-    int i   = 0;
+    if (strlen(req->tmpl) >= NEU_TEMPLATE_NAME_LEN) {
+        return NEU_ERR_TEMPLATE_NAME_TOO_LONG;
+    }
 
-    neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = type,
-    };
+    if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+        return NEU_ERR_GROUP_NAME_TOO_LONG;
+    }
 
     neu_req_add_template_tag_t cmd = { 0 };
     strcpy(cmd.tmpl, req->tmpl);
@@ -425,13 +458,18 @@ static int send_template_mod_tags_req(nng_aio *aio, neu_reqresp_type_e type,
         return NEU_ERR_EINTERNAL;
     }
 
-    for (i = 0; i < req->n_tag; i++) {
+    for (int i = 0; i < req->n_tag; i++) {
         cmd.n_tag += 1;
         if (0 != (ret = set_tag_by_json(&cmd.tags[i], &req->tags[i]))) {
             neu_req_add_template_tag_fini(&cmd);
             return ret;
         }
     }
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = type,
+    };
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         neu_req_add_template_tag_fini(&cmd);
@@ -447,25 +485,37 @@ static int send_template_del_tags_req(nng_aio *                         aio,
     int           ret    = 0;
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    neu_reqresp_head_t header = {
-        .ctx  = aio,
-        .type = NEU_REQ_DEL_TEMPLATE_TAG,
-    };
+    if (strlen(req->tmpl) >= NEU_TEMPLATE_NAME_LEN) {
+        return NEU_ERR_TEMPLATE_NAME_TOO_LONG;
+    }
+
+    if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+        return NEU_ERR_GROUP_NAME_TOO_LONG;
+    }
 
     neu_req_del_template_tag_t cmd = { 0 };
     strcpy(cmd.tmpl, req->tmpl);
     strcpy(cmd.group, req->group);
 
-    cmd.n_tag = req->n_tags;
-    cmd.tags  = calloc(req->n_tags, sizeof(char *));
+    cmd.tags = calloc(req->n_tags, sizeof(char *));
     if (NULL == cmd.tags) {
         return NEU_ERR_EINTERNAL;
     }
 
     for (int i = 0; i < req->n_tags; i++) {
+        if (strlen(req->tags[i]) >= NEU_TAG_NAME_LEN) {
+            neu_req_del_template_tag_fini(&cmd);
+            return NEU_ERR_TAG_NAME_TOO_LONG;
+        }
         cmd.tags[i]  = req->tags[i];
         req->tags[i] = NULL; // ownership moved
+        cmd.n_tag += 1;
     }
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_DEL_TEMPLATE_TAG,
+    };
 
     if (ret != neu_plugin_op(plugin, header, &cmd)) {
         neu_req_del_template_tag_fini(&cmd);
@@ -530,44 +580,74 @@ void handle_get_template_tags(nng_aio *aio)
 
     neu_req_get_template_tag_t cmd = { 0 };
 
-    if (neu_http_get_param_str(aio, "template", cmd.tmpl, sizeof(cmd.tmpl)) <=
-            0 ||
-        neu_http_get_param_str(aio, "group", cmd.group, sizeof(cmd.group)) <=
-            0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-            neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
-        })
-        return;
+    ret = neu_http_get_param_str(aio, "template", cmd.tmpl, sizeof(cmd.tmpl));
+    // required parameter
+    if (ret <= 0 || sizeof(cmd.tmpl) <= (size_t) ret) {
+        ret = NEU_ERR_PARAM_IS_WRONG;
+        goto end;
     }
 
-    // optional
-    neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name));
+    ret = neu_http_get_param_str(aio, "group", cmd.group, sizeof(cmd.group));
+    // required parameter
+    if (ret <= 0 || sizeof(cmd.tmpl) <= (size_t) ret) {
+        ret = NEU_ERR_PARAM_IS_WRONG;
+        goto end;
+    }
+
+    ret = neu_http_get_param_str(aio, "name", cmd.name, sizeof(cmd.name));
+    // optional parameter
+    if (-2 != ret && (ret <= 0 || sizeof(cmd.name) <= (size_t) ret)) {
+        ret = NEU_ERR_PARAM_IS_WRONG;
+        goto end;
+    }
 
     ret = neu_plugin_op(plugin, header, &cmd);
-    if (ret != 0) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-            neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-        });
+    if (0 != ret) {
+        ret = NEU_ERR_IS_BUSY;
     }
+
+end:
+    if (0 != ret) {
+        NEU_JSON_RESPONSE_ERROR(ret,
+                                { neu_http_response(aio, ret, result_error); });
+    }
+}
+
+static inline int send_template_inst_req(nng_aio *                     aio,
+                                         neu_json_template_inst_req_t *req)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    if (strlen(req->name) >= NEU_TEMPLATE_NAME_LEN) {
+        return NEU_ERR_TEMPLATE_NAME_TOO_LONG;
+    }
+
+    if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+        return NEU_ERR_PLUGIN_NAME_TOO_LONG;
+    }
+
+    neu_req_inst_template_t cmd = { 0 };
+    strncpy(cmd.tmpl, req->name, sizeof(cmd.tmpl));
+    strncpy(cmd.node, req->node, sizeof(cmd.node));
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_INST_TEMPLATE,
+    };
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
 }
 
 void handle_instantiate_template(nng_aio *aio)
 {
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_template_inst_req_t, neu_json_decode_template_inst_req, {
-            neu_plugin_t *plugin = neu_rest_get_plugin();
-
-            neu_reqresp_head_t header = { 0 };
-            header.ctx                = aio;
-            header.type               = NEU_REQ_INST_TEMPLATE;
-
-            neu_req_inst_template_t cmd = { 0 };
-            strncpy(cmd.tmpl, req->name, sizeof(cmd.tmpl));
-            strncpy(cmd.node, req->node, sizeof(cmd.node));
-
-            int ret = neu_plugin_op(plugin, header, &cmd);
+            int ret = send_template_inst_req(aio, req);
             if (0 != ret) {
-                ret = NEU_ERR_IS_BUSY;
                 NEU_JSON_RESPONSE_ERROR(
                     ret, { neu_http_response(aio, ret, result_error); });
             }
@@ -587,7 +667,8 @@ void handle_get_template_group(nng_aio *aio)
 
     neu_req_get_template_group_t cmd = { 0 };
     int ret = neu_http_get_param_str(aio, "name", cmd.tmpl, sizeof(cmd.tmpl));
-    if (ret <= 0 || (size_t) ret >= sizeof(cmd.tmpl)) {
+    // required parameter
+    if (ret <= 0 || sizeof(cmd.tmpl) <= (size_t) ret) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             neu_http_response(aio, NEU_ERR_PARAM_IS_WRONG, result_error);
         });
