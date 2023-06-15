@@ -126,10 +126,24 @@ Create a template with singleton plugin, it should fail.
     [Teardown]                    Del Template          ${g_template}
 
 
+Create a template with north plugin, it should fail.
+    ${res} =                      Add Template          ${g_template}                 MQTT                  ${g_empty}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 Get nonexistent template, it should fail.
     ${res} =                      Get Template          ${g_template}
     Check Response Status         ${res}                404
     Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+
+Get a template using too long name query parameter, it should fail.
+    ${res} =                      Get Template          ${g_long_str}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PARAM_IS_WRONG}
 
 
 Get an existent template having no groups, it should success.
@@ -184,6 +198,12 @@ Delete a nonexistent template, it should fail.
     ${res} =                      Del Template          ${g_template}
     Check Response Status         ${res}                404
     Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+
+Delete a template using too long name query parameter, it should fail.
+    ${res} =                      Del Template          ${g_long_str}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PARAM_IS_WRONG}
 
 
 Delete an existent template, it should success.
@@ -311,6 +331,18 @@ Add group with invalid interval to existing template, it should fail.
     [Teardown]                    Del Template          ${g_template}
 
 
+Add group using too long template name in request, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Add Template Group    ${g_long_str}                 ${g_group1}[name]     ${2000}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 Add group with too long name to existing template, it should fail.
     ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
     Check Response Status         ${res}                200
@@ -346,6 +378,18 @@ Get groups from nonexistent template, it should fail.
     Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
 
 
+Get groups using too long name query parameter, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Groups   ${g_long_str}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PARAM_IS_WRONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 Get groups when there are no groups, it should return empty result.
     ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
     Check Response Status         ${res}                200
@@ -375,6 +419,30 @@ Update group interval when template does not exist, it should fail.
     ${res} =                      Put Template Group    ${g_template}                 ${g_group1}[name]     ${1000}
     Check Response Status         ${res}                404
     Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update group using too long template name in request, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Group    ${g_long_str}                 ${g_group1}[name]     ${2000}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update group using too long group name in request, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Group    ${g_template}                 ${g_long_str}         ${2000}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NAME_TOO_LONG}
 
     [Teardown]                    Del Template          ${g_template}
 
@@ -434,6 +502,30 @@ Delete nonexistent group from existent template, it should fail.
     ${res} =                      Del Template Group    ${g_template}                 ${g_group1}[name]
     Check Response Status         ${res}                404
     Check Error Code              ${res}                ${NEU_ERR_GROUP_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete group using too long template name in request, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Group    ${g_long_str}                 ${g_group1}[name]
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete group using too long group name in request, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Group    ${g_template}                 ${g_long_str}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NAME_TOO_LONG}
 
     [Teardown]                    Del Template          ${g_template}
 
@@ -526,6 +618,26 @@ Add tag with conflicting name to existing template group, it should fail.
     [Teardown]                    Del Template          ${g_template}
 
 
+Add tag using too long template name in request, it should fail.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Add Template Tags     ${g_long_str}                 ${g_group1}[name]     ${g_tag1}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Add tag using too long group name in request, it should fail.
+    Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
+
+    ${res} =                      Add Template Tags     ${g_template}                 ${g_long_str}         ${g_tag1}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 Add tag with too long name to existing template group, it should fail.
     Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
 
@@ -601,6 +713,30 @@ Get tags from nonexistent template group, it should fail.
     [Teardown]                    Del Template          ${g_template}
 
 
+Get tags using too long template name query parameter, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_long_str}                 ${g_group1}[name]
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PARAM_IS_WRONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags using too long group name query parameter, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Get Template Tags     ${g_template}                 ${g_long_str}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PARAM_IS_WRONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 Get tags when there are none from existent template group, it should return empty result.
     Add Template And One Group    ${g_template}         ${g_plugin}                   ${g_group1}[name]     ${g_group1}[interval]
 
@@ -619,6 +755,18 @@ Get tags from existent template group, it should return the tags.
     ${res} =                      Get Template Tags     ${g_template}                 ${g_group1}[name]
     Check Response Status         ${res}                200
     Should Match Test Tags        ${res}[tags]
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Get tags using too long tag name query parameter, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Grep Template Tags    ${g_template}                 ${g_group1}[name]     ${g_long_str}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PARAM_IS_WRONG}
 
     [Teardown]                    Del Template          ${g_template}
 
@@ -684,6 +832,30 @@ Update tag when template tag does not exist, it should fail.
     ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}
     #Check Response Status         ${res}                404
     Check Error Code              ${res}                ${NEU_ERR_TAG_NOT_EXIST}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag using too long template name in request, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Tags     ${g_long_str}                 ${g_group1}[name]     ${g_tag1}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Update tag using too long group name in request, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Put Template Tags     ${g_template}                 ${g_long_str}         ${g_tag1}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NAME_TOO_LONG}
 
     [Teardown]                    Del Template          ${g_template}
 
@@ -782,6 +954,42 @@ Delete tag when template tag does not exist, it trivially success.
     ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]
     Check Response Status         ${res}                200
     Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete tag using too long template name in request, it should should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Tags     ${g_long_str}                 ${g_group1}[name]     ${g_tag1}[name]
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete tag using too long group name in request, it should should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_long_str}         ${g_tag1}[name]
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_GROUP_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
+Delete tag using too long tag name in request, it should should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${res} =                      Del Template Tags     ${g_template}                 ${g_group1}[name]     ${g_tag1}[name]         ${g_long_str}
+    #Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_TAG_NAME_TOO_LONG}
 
     [Teardown]                    Del Template          ${g_template}
 
