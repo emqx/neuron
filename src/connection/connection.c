@@ -47,6 +47,7 @@ struct neu_conn {
     void *           data;
     bool             is_connected;
     bool             stop;
+    bool             connection_ok;
 
     neu_conn_callback connected;
     neu_conn_callback disconnected;
@@ -341,8 +342,14 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                        conn->fd, len, ret, strerror(errno), errno);
         }
 
-        if (ret == -1 && errno != EAGAIN) {
-            conn_disconnect(conn);
+        if (ret == -1) {
+            if (errno != EAGAIN) {
+                conn_disconnect(conn);
+            } else {
+                if (conn->connection_ok == true) {
+                    conn_disconnect(conn);
+                }
+            }
         }
 
         if (ret > 0 && conn->callback_trigger == false) {
@@ -353,6 +360,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
 
     if (ret > 0) {
         conn->state.send_bytes += ret;
+        conn->connection_ok = true;
     }
 
     pthread_mutex_unlock(&conn->mtx);
@@ -995,7 +1003,8 @@ static void conn_connect(neu_conn_t *conn)
 
 static void conn_disconnect(neu_conn_t *conn)
 {
-    conn->is_connected = false;
+    conn->is_connected  = false;
+    conn->connection_ok = false;
     if (conn->callback_trigger == true) {
         conn->disconnected(conn->data, conn->fd);
         conn->callback_trigger = false;
