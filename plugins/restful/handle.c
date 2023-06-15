@@ -153,12 +153,6 @@ static struct neu_http_handler rest_handlers[] = {
         .value.path = "/web",
     },
     {
-        .method        = NEU_HTTP_METHOD_UNDEFINE,
-        .type          = NEU_HTTP_HANDLER_PROXY,
-        .url           = "/api/v2/ekuiper",
-        .value.dst_url = "http://127.0.0.1:9081",
-    },
-    {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/ping",
