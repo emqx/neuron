@@ -59,6 +59,19 @@ Get APP node, it should be success.
 	Check Response Status  ${res}	200
 	Node Should Exist    ${res}[nodes]    mqtt-node
 
+Update node name to empty string, it should fail.
+	${res} =    Update Node    modbus-node                ${EMPTY}
+
+	Check Response Status    ${res}    400
+	Check Error Code         ${res}    ${NEU_ERR_NODE_NAME_EMPTY}
+
+Update node name to excessive long string, it should fail.
+	${name} =   Evaluate       'a'*200
+	${res} =    Update Node    modbus-node                ${name}
+
+	Check Response Status    ${res}    400
+	Check Error Code         ${res}    ${NEU_ERR_NODE_NAME_TOO_LONG}
+
 Update driver node name, it should fail if the node does not exist
 	${res} =    Update Node    modbus-node-nonexistent    mqtt-node
 
