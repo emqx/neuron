@@ -167,6 +167,11 @@ int neu_manager_add_template(neu_manager_t *manager, const char *name,
         return NEU_ERR_EINTERNAL;
     }
 
+    if (NEU_NA_TYPE_DRIVER != plug_inst->module->type) {
+        free_plugin_instance(plug_inst);
+        return NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE;
+    }
+
     neu_template_t *tmpl = neu_template_new(name, plugin);
     if (NULL == tmpl) {
         free_plugin_instance(plug_inst);
@@ -521,7 +526,7 @@ int neu_manager_instantiate_template(neu_manager_t *          manager,
     neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
 
     if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
-        ret = NEU_ERR_GROUP_NOT_ALLOW;
+        ret = NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE;
         goto end;
     }
 
