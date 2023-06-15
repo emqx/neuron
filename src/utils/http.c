@@ -333,6 +333,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LIBRARY_FAILED_TO_OPEN:
     case NEU_ERR_LIBRARY_MODULE_INVALID:
     case NEU_ERR_NODE_NAME_TOO_LONG:
+    case NEU_ERR_NODE_NAME_EMPTY:
     case NEU_ERR_GROUP_NAME_TOO_LONG:
     case NEU_ERR_INVALID_PASSWORD_LEN:
     case NEU_ERR_DUPLICATE_PASSWORD:
