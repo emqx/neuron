@@ -62,26 +62,47 @@ void handle_add_adapter(nng_aio *aio)
         })
 }
 
-void handle_update_adapter(nng_aio *aio)
+static inline int send_node_update_req(nng_aio *                   aio,
+                                       neu_json_update_node_req_t *req)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
+    int len = strlen(req->name);
+    if (NEU_NODE_NAME_LEN <= len) {
+        return NEU_ERR_NODE_NAME_TOO_LONG;
+    }
+
+    len = strlen(req->new_name);
+    if (NEU_NODE_NAME_LEN <= len) {
+        return NEU_ERR_NODE_NAME_TOO_LONG;
+    } else if (0 == len) {
+        return NEU_ERR_NODE_NAME_EMPTY;
+    }
+
+    neu_req_update_node_t cmd = { 0 };
+    strcpy(cmd.node, req->name);
+    strcpy(cmd.new_name, req->new_name);
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_UPDATE_NODE,
+    };
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+void handle_update_adapter(nng_aio *aio)
+{
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_node_req_t, neu_json_decode_update_node_req, {
-            int                   ret    = 0;
-            neu_reqresp_head_t    header = { 0 };
-            neu_req_update_node_t cmd    = { 0 };
-
-            header.ctx  = aio;
-            header.type = NEU_REQ_UPDATE_NODE;
-            strcpy(cmd.node, req->name);
-            strcpy(cmd.new_name, req->new_name);
-
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+            int ret = send_node_update_req(aio, req);
+            if (0 != ret) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
             }
         })
 }
