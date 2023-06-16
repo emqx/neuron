@@ -61,7 +61,7 @@ const char *usage_text =
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
 "    --log                log to the stdout\n"
-"    --log_level <LEVEL>  default log level(DEBUG,INFO)\n"
+"    --log_level <LEVEL>  default log level(DEBUG,NOTICE)\n"
 "    --reset-password     reset dashboard to use default password\n"
 "    --restart <POLICY>   restart policy to apply when neuron daemon terminates,\n"
 "                           - never,      never restart (default)\n"
@@ -254,8 +254,8 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         if (strcmp(log_level, "DEBUG") == 0) {
             default_log_level = ZLOG_LEVEL_DEBUG;
         }
-        if (strcmp(log_level, "INFO") == 0) {
-            default_log_level = ZLOG_LEVEL_INFO;
+        if (strcmp(log_level, "NOTICE") == 0) {
+            default_log_level = ZLOG_LEVEL_NOTICE;
         }
         free(log_level);
     }
