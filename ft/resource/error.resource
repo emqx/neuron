@@ -28,7 +28,10 @@ ${NEU_ERR_NODE_NOT_RUNNING}                     2008
 ${NEU_ERR_NODE_IS_STOPED}                       2009
 ${NEU_ERR_NODE_NAME_TOO_LONG}                   2010
 ${NEU_ERR_NODE_NOT_ALLOW_DELETE}                2011
+${NEU_ERR_NODE_NOT_ALLOW_SUBSCRIBE}             2012
 ${NEU_ERR_NODE_NOT_ALLOW_UPDATE}                2013
+${NEU_ERR_NODE_NOT_ALLOW_MAP}                   2014
+${NEU_ERR_NODE_NAME_EMPTY}                      2015
 
 ${NEU_ERR_GROUP_ALREADY_SUBSCRIBED}             2101
 ${NEU_ERR_GROUP_NOT_SUBSCRIBE}                  2102
