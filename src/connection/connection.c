@@ -491,6 +491,10 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         } else {
             conn->block = false;
         }
+        zlog_notice(conn->param.log, "tcp server %s:%d, timeout: %d, block: %d",
+                    conn->param.params.tcp_server.ip,
+                    conn->param.params.tcp_server.port,
+                    conn->param.params.tcp_server.timeout, conn->block);
         break;
     case NEU_CONN_TCP_CLIENT:
         conn->param.params.tcp_client.ip = strdup(param->params.tcp_client.ip);
@@ -498,6 +502,10 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->param.params.tcp_client.timeout =
             param->params.tcp_client.timeout;
         conn->block = conn->param.params.tcp_client.timeout > 0;
+        zlog_notice(conn->param.log, "tcp client %s:%d, timeout: %d, block: %d",
+                    conn->param.params.tcp_client.ip,
+                    conn->param.params.tcp_client.port,
+                    conn->param.params.tcp_client.timeout, conn->block);
         break;
     case NEU_CONN_UDP:
         conn->param.params.udp.src_ip   = strdup(param->params.udp.src_ip);
@@ -506,6 +514,11 @@ static void conn_init_param(neu_conn_t *conn, neu_conn_param_t *param)
         conn->param.params.udp.dst_port = param->params.udp.dst_port;
         conn->param.params.udp.timeout  = param->params.udp.timeout;
         conn->block                     = conn->param.params.udp.timeout > 0;
+        zlog_notice(
+            conn->param.log, "udp %s:%d -> %s:%d, timeout: %d, block: %d",
+            conn->param.params.udp.src_ip, conn->param.params.udp.src_port,
+            conn->param.params.udp.dst_ip, conn->param.params.udp.dst_port,
+            conn->param.params.udp.timeout, conn->block);
         break;
     case NEU_CONN_TTY_CLIENT:
         conn->param.params.tty_client.device =
@@ -628,9 +641,9 @@ static void conn_connect(neu_conn_t *conn)
             conn->is_connected = false;
             return;
         } else {
-            zlog_notice(conn->param.log, "connect %s:%d success",
+            zlog_notice(conn->param.log, "connect %s:%d, block: %d success",
                         conn->param.params.tcp_client.ip,
-                        conn->param.params.tcp_client.port);
+                        conn->param.params.tcp_client.port, conn->block);
             conn->is_connected = true;
             conn->fd           = fd;
         }
