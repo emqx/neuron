@@ -55,6 +55,7 @@ typedef struct group {
 
     neu_event_timer_t *report;
     neu_event_timer_t *read;
+    neu_event_timer_t *write;
 
     neu_plugin_group_t    grp;
     neu_adapter_driver_t *driver;
@@ -73,6 +74,7 @@ struct neu_adapter_driver {
 
 static int  report_callback(void *usr_data);
 static int  read_callback(void *usr_data);
+static int  write_callback(void *usr_data);
 static void read_group(int64_t timestamp, int64_t timeout,
                        neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, neu_resp_tag_value_t *datas);
@@ -185,6 +187,7 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 
         neu_adapter_del_timer((neu_adapter_t *) driver, el->report);
         neu_event_del_timer(driver->driver_events, el->read);
+        neu_event_del_timer(driver->driver_events, el->write);
         if (el->grp.group_free != NULL) {
             el->grp.group_free(&el->grp);
         }
@@ -481,6 +484,11 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         param.cb     = read_callback;
         find->read   = neu_event_add_timer(driver->driver_events, param);
 
+        param.second      = 0;
+        param.millisecond = 100;
+        param.cb          = write_callback;
+        find->write       = neu_event_add_timer(driver->driver_events, param);
+
         REGISTER_GROUP_METRIC(&driver->adapter, find->name,
                               NEU_METRIC_GROUP_TAGS_TOTAL,
                               neu_group_tag_size(find->group));
@@ -539,6 +547,7 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 
         neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
         neu_event_del_timer(driver->driver_events, find->read);
+        neu_event_del_timer(driver->driver_events, find->write);
         if (find->grp.group_free != NULL) {
             find->grp.group_free(&find->grp);
         }
@@ -917,7 +926,7 @@ static void group_change(void *arg, int64_t timestamp, UT_array *static_tags,
                 timestamp);
 }
 
-static int read_callback(void *usr_data)
+static int write_callback(void *usr_data)
 {
     group_t *                group = (group_t *) usr_data;
     neu_node_running_state_e state = group->driver->adapter.state;
@@ -935,6 +944,17 @@ static int read_callback(void *usr_data)
     }
     utarray_clear(group->wt_tags);
     pthread_mutex_unlock(&group->wt_mtx);
+
+    return 0;
+}
+
+static int read_callback(void *usr_data)
+{
+    group_t *                group = (group_t *) usr_data;
+    neu_node_running_state_e state = group->driver->adapter.state;
+    if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        return 0;
+    }
 
     if (neu_group_is_change(group->group, group->timestamp)) {
         neu_group_change_test(group->group, group->timestamp, (void *) group,
