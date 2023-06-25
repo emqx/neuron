@@ -338,6 +338,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_INVALID_PASSWORD_LEN:
     case NEU_ERR_DUPLICATE_PASSWORD:
     case NEU_ERR_TEMPLATE_NAME_TOO_LONG:
+    case NEU_ERR_PLUGIN_NAME_TOO_LONG:
     case NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
