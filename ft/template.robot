@@ -44,6 +44,14 @@ Create a template with too long name, it should fail.
     [Teardown]                    Del Template          ${g_long_str}
 
 
+Create a template with too long plugin name, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_long_str}         ${g_groups}
+    Check Response Status         ${res}                400
+    Check Error Code              ${res}                ${NEU_ERR_PLUGIN_NAME_TOO_LONG}
+
+    [Teardown]                    Del Template          ${g_template}
+
+
 Create a template having no group, it should success.
     ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_empty}
     Check Response Status         ${res}                200
