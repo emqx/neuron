@@ -405,12 +405,22 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
         }
         break;
     }
-    if (ret <= 0) {
-        zlog_error(conn->param.log,
-                   "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
-                   conn->fd, len, ret, strerror(errno), errno);
-        if (ret == 0 || (ret == -1 && errno != EAGAIN)) {
+    if (conn->param.type == NEU_CONN_TTY_CLIENT) {
+        if (ret == -1) {
+            zlog_error(
+                conn->param.log,
+                "tty conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
+                conn->fd, len, ret, strerror(errno), errno);
             conn_disconnect(conn);
+        }
+    } else {
+        if (ret <= 0) {
+            zlog_error(conn->param.log,
+                       "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
+                       conn->fd, len, ret, strerror(errno), errno);
+            if (ret == 0 || (ret == -1 && errno != EAGAIN)) {
+                conn_disconnect(conn);
+            }
         }
     }
 
