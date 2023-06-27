@@ -272,3 +272,68 @@ Del Template Tags
   DELETE              /api/v2/template/tag    {"template": "${tmpl}", "group": "${group}", "tags": ${data}}
   ${res} =            Object  response body
   [RETURN]            ${res}[0]
+
+Get all metrics
+  GET                 /api/v2/metrics
+  ${res} =            String  response body
+  [RETURN]            ${res}
+
+Get single node metrics
+  [Arguments]         ${node_name}            ${category}
+  GET                 /api/v2/metrics?node=${node_name}&category=${category}
+  ${res} =            String  response body
+  [RETURN]            ${res}
+
+Get metrics lines
+  ${lines}=    Get all metrics
+  ${lines_str}=    Convert To String  ${lines}
+  ${lines_str}   Evaluate       str(${lines_str}).strip('[]')
+  ${lines_str}   Evaluate       str(${lines_str}).strip(\"'\")
+  ${nlines}=    Split String   ${lines_str}    \n
+  Remove From List   ${nlines}   -1
+  [RETURN]            ${nlines}
+
+Get parameter lines
+  [Arguments]         ${nlines}
+  ${description_lines}    Create List
+  ${parameter_lines}      Create List
+  FOR    ${line}    IN    @{nlines}
+      ${first_char}=    Get Substring    ${line}    0    1
+      IF    "${first_char}"=="#"
+          Append To List   ${description_lines}   ${line}
+      ELSE
+          Append To List   ${parameter_lines}     ${line}
+      END
+  END
+  [RETURN]            ${parameter_lines}
+
+Check endswith isdigit
+  [Arguments]         ${parameter_lines}
+  FOR    ${line}    IN    @{parameter_lines}
+      ${last_char}=   Get Substring   ${line}   -1
+      Should Be True   '${last_char}'.isdigit()
+  END
+
+Check node state
+  [Arguments]         ${parameter_lines}
+  ${link_state}    Create List
+  ${running_state}    Create List
+  ${node_state}=    Get Node State    monitor
+  
+  FOR    ${line}    IN    @{parameter_lines}
+      ${param}=    Get Substring    ${line}    0    10
+      IF    "${param}"=="link_state"
+          Append To List   ${link_state}    ${line}
+      END
+      IF    "${param}"=="running_st"
+          Append To List   ${running_state}    ${line}
+      END
+  END
+  
+  ${metrics_link}=   Get Substring   ${link_state}[0]   -1
+  ${metrics_link}=    Convert To Integer    ${metrics_link}
+  Should Be Equal As Integers    ${metrics_link}    ${node_state}[link]
+
+  ${metrics_running}=   Get Substring   ${running_state}[0]   -1
+  ${metrics_running}=    Convert To Integer    ${metrics_running}
+  Should Be Equal As Integers    ${metrics_running}    ${node_state}[running]
