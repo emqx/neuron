@@ -21,6 +21,7 @@ ${NEU_ERR_IP_ADDRESS_IN_USE}                    1016
 ${NEU_ERR_INVALID_USER}                         1017
 ${NEU_ERR_INVALID_PASSWORD}                     1018
 
+
 ${NEU_ERR_NODE_EXIST}                           2002
 ${NEU_ERR_NODE_NOT_EXIST}                       2003
 ${NEU_ERR_NODE_SETTING_INVALID}                 2004
