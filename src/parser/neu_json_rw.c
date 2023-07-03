@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <jansson.h>
+
 #include "json/json.h"
 
 #include "json/neu_json_rw.h"
@@ -116,14 +118,19 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
 
 int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
 {
-    int                   ret      = 0;
-    void *                json_obj = NULL;
-    neu_json_write_req_t *req      = calloc(1, sizeof(neu_json_write_req_t));
-    if (req == NULL) {
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
         return -1;
     }
 
-    json_obj = neu_json_decode_new(buf);
+    int ret = neu_json_decode_write_req_json(json_obj, result);
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+int decode_write_req_json(void *json_obj, neu_json_write_req_t *req)
+{
+    int ret = 0;
 
     neu_json_elem_t req_elems[] = {
         {
@@ -155,17 +162,30 @@ int neu_json_decode_write_req(char *buf, neu_json_write_req_t **result)
     req->t     = req_elems[3].t;
     req->value = req_elems[3].v;
 
-    *result = req;
     goto decode_exit;
 
 decode_fail:
-    free(req);
     ret = -1;
 
 decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
+    return ret;
+}
+
+int neu_json_decode_write_req_json(void *                 json_obj,
+                                   neu_json_write_req_t **result)
+{
+    neu_json_write_req_t *req = calloc(1, sizeof(neu_json_write_req_t));
+    if (req == NULL) {
+        return -1;
     }
+
+    int ret = decode_write_req_json(json_obj, req);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
+    }
+
     return ret;
 }
 
@@ -184,15 +204,21 @@ void neu_json_decode_write_req_free(neu_json_write_req_t *req)
 int neu_json_decode_write_tags_req(char *                      buf,
                                    neu_json_write_tags_req_t **result)
 {
-    int                        ret      = 0;
-    void *                     json_obj = NULL;
-    neu_json_write_tags_req_t *req =
-        calloc(1, sizeof(neu_json_write_tags_req_t));
-    if (req == NULL) {
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
         return -1;
     }
 
-    json_obj                    = neu_json_decode_new(buf);
+    int ret = neu_json_decode_write_tags_req_json(json_obj, result);
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+static int decode_write_tags_req_json(void *                     json_obj,
+                                      neu_json_write_tags_req_t *req)
+{
+    int ret = 0;
+
     neu_json_elem_t req_elems[] = {
         {
             .name = "node",
@@ -210,8 +236,6 @@ int neu_json_decode_write_tags_req(char *                      buf,
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
     if (ret != 0) {
-        free(req);
-        neu_json_decode_free(json_obj);
         return -1;
     }
 
@@ -220,8 +244,6 @@ int neu_json_decode_write_tags_req(char *                      buf,
 
     req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
     if (req->n_tag <= 0) {
-        free(req);
-        neu_json_decode_free(json_obj);
         return -1;
     }
 
@@ -240,20 +262,42 @@ int neu_json_decode_write_tags_req(char *                      buf,
 
         ret = neu_json_decode_array_by_json(
             json_obj, "tags", i, NEU_JSON_ELEM_SIZE(v_elems), v_elems);
-        if (ret != 0) {
-            free(req->tags);
-            free(req);
-            neu_json_decode_free(json_obj);
-        }
-
         req->tags[i].tag   = v_elems[0].v.val_str;
         req->tags[i].t     = v_elems[1].t;
         req->tags[i].value = v_elems[1].v;
-    }
-    *result = req;
 
-    neu_json_decode_free(json_obj);
+        if (ret != 0) {
+            while (i-- >= 0) {
+                free(req->tags[i].tag);
+                if (NEU_JSON_STR == req->tags[i].t) {
+                    free(req->tags[i].value.val_str);
+                }
+            }
+            free(req->tags);
+            req->tags = NULL;
+        }
+    }
+
     return 0;
+}
+
+int neu_json_decode_write_tags_req_json(void *                      json_obj,
+                                        neu_json_write_tags_req_t **result)
+{
+    neu_json_write_tags_req_t *req =
+        calloc(1, sizeof(neu_json_write_tags_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    int ret = decode_write_tags_req_json(json_obj, req);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
+    }
+
+    return ret;
 }
 
 void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
@@ -269,6 +313,50 @@ void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
     }
     free(req->tags);
     free(req);
+}
+
+int neu_json_decode_write(char *buf, neu_json_write_t **result)
+{
+    neu_json_write_t *req = calloc(1, sizeof(*req));
+    if (NULL == req) {
+        return -1;
+    }
+
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    int ret = 0;
+    if (NULL == json_object_get(json_obj, "tags")) {
+        req->singular = true;
+        ret           = decode_write_req_json(json_obj, &req->single);
+    } else {
+        req->singular = false;
+        ret           = decode_write_tags_req_json(json_obj, &req->plural);
+    }
+
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
+    }
+
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+void neu_json_decode_write_free(neu_json_write_t *req)
+{
+    if (req) {
+        if (req->singular) {
+            neu_json_decode_write_req_free((neu_json_write_req_t *) req);
+        } else {
+            neu_json_decode_write_tags_req_free(
+                (neu_json_write_tags_req_t *) req);
+        }
+    }
 }
 
 int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
