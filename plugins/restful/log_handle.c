@@ -63,7 +63,8 @@ void handle_logs_files(nng_aio *aio)
     rv = system("rm -rf /tmp/neuron_debug.tar.gz");
     nlog_warn("remove old neuron_debug.tar.gz, rv: %d", rv);
     /* tar the neuron directory */
-    rv = system("tar -zcvf /tmp/neuron_debug.tar.gz ../neuron");
+    rv = system("tar -zcvf /tmp/neuron_debug.tar.gz "
+                "--exclude='persistence/neuron.lic' ../neuron");
     if (rv == -1) {
         nlog_error("failed to create neuron_debug.tar.gz, rv: %d", rv);
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
