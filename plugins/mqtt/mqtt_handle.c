@@ -211,10 +211,10 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return 0;
 }
 
-static int send_write_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
-                          neu_json_write_req_t *req)
+static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                              neu_json_write_req_t *req)
 {
-    plog_notice(plugin, "write uuid:%s, group:%s, node:%s", mqtt->uuid,
+    plog_notice(plugin, "write tag uuid:%s, group:%s, node:%s", mqtt->uuid,
                 req->group, req->node);
 
     neu_reqresp_head_t  header = { 0 };
@@ -251,6 +251,69 @@ static int send_write_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
         plog_error(plugin, "neu_plugin_op(NEU_REQ_WRITE_TAG) fail");
+        return -1;
+    }
+
+    return 0;
+}
+
+static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
+                               neu_json_write_tags_req_t *req)
+{
+    plog_notice(plugin, "write tags uuid:%s, group:%s, node:%s", mqtt->uuid,
+                req->group, req->node);
+
+    for (int i = 0; i < req->n_tag; i++) {
+        if (req->tags[i].t == NEU_JSON_STR) {
+            if (strlen(req->tags[i].value.val_str) >= NEU_VALUE_SIZE) {
+                return -1;
+            }
+        }
+    }
+
+    neu_reqresp_head_t header = {
+        .ctx  = mqtt,
+        .type = NEU_REQ_WRITE_TAGS,
+    };
+
+    neu_req_write_tags_t cmd = { 0 };
+    strcpy(cmd.driver, req->node);
+    strcpy(cmd.group, req->group);
+    cmd.n_tag = req->n_tag;
+    cmd.tags  = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+    if (NULL == cmd.tags) {
+        return -1;
+    }
+
+    for (int i = 0; i < cmd.n_tag; i++) {
+        strcpy(cmd.tags[i].tag, req->tags[i].tag);
+        switch (req->tags[i].t) {
+        case NEU_JSON_INT:
+            cmd.tags[i].value.type      = NEU_TYPE_INT64;
+            cmd.tags[i].value.value.u64 = req->tags[i].value.val_int;
+            break;
+        case NEU_JSON_STR:
+            cmd.tags[i].value.type = NEU_TYPE_STRING;
+            strcpy(cmd.tags[i].value.value.str, req->tags[i].value.val_str);
+            break;
+        case NEU_JSON_DOUBLE:
+            cmd.tags[i].value.type      = NEU_TYPE_DOUBLE;
+            cmd.tags[i].value.value.d64 = req->tags[i].value.val_double;
+            break;
+        case NEU_JSON_BOOL:
+            cmd.tags[i].value.type          = NEU_TYPE_BOOL;
+            cmd.tags[i].value.value.boolean = req->tags[i].value.val_bool;
+            break;
+        default:
+            plog_error(plugin, "invalid tag value type: %d", req->tags[i].t);
+            free(cmd.tags);
+            return -1;
+        }
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        plog_error(plugin, "neu_plugin_op(NEU_REQ_WRITE_TAGS) fail");
+        free(cmd.tags);
         return -1;
     }
 
@@ -303,9 +366,9 @@ static inline int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
 void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
                       const uint8_t *payload, uint32_t len, void *data)
 {
-    int                   rv     = 0;
-    neu_plugin_t *        plugin = data;
-    neu_json_write_req_t *req    = NULL;
+    int               rv     = 0;
+    neu_plugin_t *    plugin = data;
+    neu_json_write_t *req    = NULL;
 
     (void) qos;
     (void) topic;
@@ -330,20 +393,24 @@ void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
         return;
     }
 
-    rv = neu_json_decode_write_req(json_str, &req);
+    rv = neu_json_decode_write(json_str, &req);
     if (0 != rv) {
-        plog_error(plugin, "neu_json_decode_write_req fail");
+        plog_error(plugin, "neu_json_decode_write fail");
         neu_json_decode_mqtt_req_free(mqtt);
         free(json_str);
         return;
     }
 
-    rv = send_write_req(plugin, mqtt, req);
+    if (req->singular) {
+        rv = send_write_tag_req(plugin, mqtt, &req->single);
+    } else {
+        rv = send_write_tags_req(plugin, mqtt, &req->plural);
+    }
     if (0 != rv) {
         neu_json_decode_mqtt_req_free(mqtt);
     }
 
-    neu_json_decode_write_req_free(req);
+    neu_json_decode_write_free(req);
     free(json_str);
 }
 
