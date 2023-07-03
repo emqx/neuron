@@ -104,3 +104,17 @@ jobs:
             ft/reports/output.xml
             ft/reports/report.html
             build/neuron.log
+
+      - name: Checkout neuron-test
+        uses: actions/checkout@v2
+        with:
+          repository: neugates/neuron-test
+          path: neuron-test
+          ref: main
+        env:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run pytest
+        run: |
+          cd neuron-test
+          pytest
