@@ -439,6 +439,54 @@ int neu_persister_delete_template_tags(const char *       tmpl_name,
                                        const char *       group_name,
                                        const char *const *tags, size_t n_tag);
 
+/**
+ * Persist ndriver tags.
+ * @param ndriver_name              name of the ndriver who owns the tags
+ * @param group_name                name of the group
+ * @param tags                      the tags to store
+ * @param n                         the number of tags
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_store_ndriver_tags(const char *             ndriver_name,
+                                     const char *             group_name,
+                                     const neu_ndriver_tag_t *tags, size_t n);
+
+/**
+ * Load ndriver tag infos.
+ * @param ndriver_name              name of the ndriver who owns the tags
+ * @param group_name                name of the group
+ * @param[out] tag_infos            used to return pointer to heap allocated
+ *                                  vector of neu_ndriver_tag_t
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_load_ndriver_tags(const char *ndriver_name,
+                                    const char *group_name,
+                                    UT_array ** tag_infos);
+
+/**
+ * Update ndriver tags.
+ * @param driver_name               name of the ndriver who owns the tags
+ * @param group_name                name of the group
+ * @param tags                      the tags to store
+ * @param n                         the number of tags
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_update_ndriver_tags(const char *             ndriver_name,
+                                      const char *             group_name,
+                                      const neu_ndriver_tag_t *tag, size_t n);
+
+/**
+ * Delete ndriver tags.
+ * @param ndriver_name              name of the ndriver who owns the tags
+ * @param group_name                name of the group
+ * @param tags                      the tags to delete
+ * @param n                         the number of tags
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_delete_ndriver_tags(const char *       ndriver_name,
+                                      const char *       group_name,
+                                      const char *const *tags, size_t n_tag);
+
 #ifdef __cplusplus
 }
 #endif
