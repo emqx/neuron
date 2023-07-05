@@ -148,10 +148,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t timeout  = { .name = "timeout", .t = NEU_JSON_INT };
     neu_json_elem_t interval = { .name = "interval", .t = NEU_JSON_INT };
 
-    neu_json_elem_t mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
-    neu_json_elem_t tmode = { .name = "transport_mode", .t = NEU_JSON_INT };
-    neu_json_elem_t host  = { .name = "host", .t = NEU_JSON_STR };
-    neu_json_elem_t port  = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t mode = { .name = "connection_mode", .t = NEU_JSON_INT };
+    neu_json_elem_t host = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t port = { .name = "port", .t = NEU_JSON_INT };
 
     neu_json_elem_t device = { .name = "device", .t = NEU_JSON_STR };
     neu_json_elem_t stop   = { .name = "stop", .t = NEU_JSON_INT };
@@ -184,8 +183,8 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         ret = neu_parse_param((char *) config, &err_param, 5, &device, &stop,
                               &parity, &baud, &data);
     } else {
-        ret = neu_parse_param((char *) config, &err_param, 4, &mode, &host,
-                              &port, &tmode);
+        ret = neu_parse_param((char *) config, &err_param, 3, &mode, &host,
+                              &port);
     }
 
     if (ret != 0) {
@@ -223,33 +222,24 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
                     device.v.val_str, baud.v.val_int, data.v.val_int,
                     parity.v.val_int, stop.v.val_int);
     } else {
-        if (tmode.v.val_int == 1) {
-            param.type                = NEU_CONN_UDP;
-            param.params.udp.timeout  = 3000;
-            param.params.udp.src_ip   = "0.0.0.0";
-            param.params.udp.src_port = 0;
-            param.params.udp.dst_ip   = host.v.val_str;
-            param.params.udp.dst_port = port.v.val_int;
-            plugin->is_server         = false;
-        } else {
-            if (mode.v.val_int == 1) {
-                param.type                           = NEU_CONN_TCP_SERVER;
-                param.params.tcp_server.ip           = host.v.val_str;
-                param.params.tcp_server.port         = port.v.val_int;
-                param.params.tcp_server.start_listen = modbus_tcp_server_listen;
-                param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
-                param.params.tcp_server.timeout      = timeout.v.val_int;
-                param.params.tcp_server.max_link     = 1;
-                plugin->is_server                    = true;
-            }
-            if (mode.v.val_int == 0) {
-                param.type                      = NEU_CONN_TCP_CLIENT;
-                param.params.tcp_client.ip      = host.v.val_str;
-                param.params.tcp_client.port    = port.v.val_int;
-                param.params.tcp_client.timeout = timeout.v.val_int;
-                plugin->is_server               = false;
-            }
+        if (mode.v.val_int == 1) {
+            param.type                           = NEU_CONN_TCP_SERVER;
+            param.params.tcp_server.ip           = host.v.val_str;
+            param.params.tcp_server.port         = port.v.val_int;
+            param.params.tcp_server.start_listen = modbus_tcp_server_listen;
+            param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
+            param.params.tcp_server.timeout      = timeout.v.val_int;
+            param.params.tcp_server.max_link     = 1;
+            plugin->is_server                    = true;
         }
+        if (mode.v.val_int == 0) {
+            param.type                      = NEU_CONN_TCP_CLIENT;
+            param.params.tcp_client.ip      = host.v.val_str;
+            param.params.tcp_client.port    = port.v.val_int;
+            param.params.tcp_client.timeout = timeout.v.val_int;
+            plugin->is_server               = false;
+        }
+
         plog_notice(plugin,
                     "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
                     host.v.val_str, port.v.val_int, mode.v.val_int);

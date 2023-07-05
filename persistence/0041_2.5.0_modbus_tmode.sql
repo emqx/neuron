@@ -28,7 +28,7 @@ FROM nodes
 WHERE 
     settings.node_name = nodes.name
     AND JSON_EXTRACT(json(setting), '$.params.transport_mode') IS NULL 
-    AND (nodes.plugin_name='modbus-qh-tcp' OR nodes.plugin_name='modbus-plus-tcp' OR nodes.plugin_name='modbus-rtu' OR nodes.plugin_name='modbus-tcp' OR nodes.plugin_name='Modbus TCP' OR nodes.plugin_name='Modbus RTU' OR nodes.plugin_name='Modbus TCP QH');
+    AND (nodes.plugin_name='modbus-qh-tcp' OR nodes.plugin_name='modbus-plus-tcp' OR nodes.plugin_name='modbus-tcp' OR nodes.plugin_name='Modbus TCP' OR nodes.plugin_name='Modbus TCP QH');
 
 UPDATE settings
 SET setting = JSON_SET(json(setting), '$.params.connection_mode', 0)
