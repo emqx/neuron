@@ -58,7 +58,7 @@ void handle_login(nng_aio *aio)
 
             if (NULL == user) {
                 nlog_error("could not find user `%s`", req->name);
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
             } else if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
@@ -90,7 +90,7 @@ void handle_login(nng_aio *aio)
                 free(result);
             } else {
                 nlog_error("user `%s` password check fail", req->name);
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_PASSWORD, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
             }
@@ -114,10 +114,10 @@ void handle_password(nng_aio *aio)
                 rv = NEU_ERR_INVALID_PASSWORD_LEN;
             } else if (NULL == (user = neu_load_user(req->name))) {
                 nlog_error("could not find user `%s`", req->name);
-                rv = NEU_ERR_INVALID_USER_OR_PASSWORD;
+                rv = NEU_ERR_INVALID_USER;
             } else if (!neu_user_check_password(user, req->old_pass)) {
                 nlog_error("user `%s` password check fail", req->name);
-                rv = NEU_ERR_INVALID_USER_OR_PASSWORD;
+                rv = NEU_ERR_INVALID_PASSWORD;
             } else if (0 !=
                        (rv = neu_user_update_password(user, req->new_pass))) {
                 nlog_error("user `%s` update password fail", req->name);
