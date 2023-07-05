@@ -18,6 +18,8 @@ ${NEU_ERR_DUPLICATE_PASSWORD}                   1013
 ${NEU_ERR_COMMAND_EXECUTION_FAILED}             1014
 ${NEU_ERR_IP_ADDRESS_INVALID}                   1015
 ${NEU_ERR_IP_ADDRESS_IN_USE}                    1016
+${NEU_ERR_INVALID_USER}                         1017
+${NEU_ERR_INVALID_PASSWORD}                     1018
 
 ${NEU_ERR_NODE_EXIST}                           2002
 ${NEU_ERR_NODE_NOT_EXIST}                       2003
