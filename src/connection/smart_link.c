@@ -274,11 +274,13 @@ static int set_serial_mode(const char *dev_path, int baudrate, int mode)
     }
 
     close(switch_fd);
+    ret = serial_fd;
+    pthread_mutex_unlock(&mode_switch_mtx);
+    return ret;
 out2:
     close(serial_fd);
     serial_fd = -1;
 out:
     pthread_mutex_unlock(&mode_switch_mtx);
-    ret = serial_fd;
     return ret;
 }
