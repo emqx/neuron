@@ -89,6 +89,12 @@ set(NEURON_BASE_SOURCES
     src/utils/async_queue.c
     src/utils/mem_cache.c
     ${PERSIST_SOURCES})
+  
+if (SMART_LINK) 
+  message(STATUS "using smart link")
+  add_definitions(-DNEU_SMART_LINK)
+  set(NEURON_BASE_SOURCES ${NEURON_BASE_SOURCES} src/connection/smart_link.c)
+endif()
 
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 
