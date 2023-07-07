@@ -230,7 +230,7 @@ static int set_serial_mode(const char *dev_path, int baudrate, int mode)
         break;
     }
 
-    if ((serial_fd = open(dev_path, O_RDWR | O_NOCTTY | O_NDELAY)) < 0) {
+    if ((serial_fd = open(dev_path, O_RDWR | O_NOCTTY)) < 0) {
         fprintf(stderr, "open %s failed, fd: %d, strerr: %s\n", dev_path,
                 serial_fd, strerror(errno));
         goto out;
@@ -276,7 +276,9 @@ static int set_serial_mode(const char *dev_path, int baudrate, int mode)
     close(switch_fd);
 out2:
     close(serial_fd);
+    serial_fd = -1;
 out:
     pthread_mutex_unlock(&mode_switch_mtx);
+    ret = serial_fd;
     return ret;
 }
