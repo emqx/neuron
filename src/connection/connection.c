@@ -854,15 +854,18 @@ static void conn_connect(neu_conn_t *conn)
         break;
     }
     case NEU_CONN_TTY_CLIENT: {
+        struct termios tty_opt = { 0 };
 #ifdef NEU_SMART_LINK
 #include "connection/neu_smart_link.h"
         int ret =
             neu_conn_smart_link_auto_set(conn->param.params.tty_client.device);
         zlog_notice(conn->param.log, "smart link ret: %d", ret);
-#endif
-        struct termios tty_opt = { 0 };
-
+        if (ret > 0) {
+            fd = ret;
+        }
+#else
         fd = open(conn->param.params.tty_client.device, O_RDWR | O_NOCTTY, 0);
+#endif
         if (fd <= 0) {
             zlog_error(conn->param.log, "open %s error: %s(%d)",
                        conn->param.params.tty_client.device, strerror(errno),
