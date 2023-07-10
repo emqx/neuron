@@ -286,7 +286,8 @@ static void split_static_array(tag_elem_t *tags, UT_array **static_tags,
     {
         if (neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_STATIC)) {
             utarray_push_back(*static_tags, el->tag);
-        } else {
+        } else if (neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_SUBSCRIBE) ||
+                   neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_READ)) {
             utarray_push_back(*other_tags, el->tag);
         }
     }
