@@ -68,7 +68,7 @@ static int read_file(const char *path, char **buf)
     rewind(fp);
 
     *buf = calloc(1, size + 1);
-    if (buf == NULL) {
+    if (*buf == NULL) {
         fclose(fp);
         return -1;
     }
