@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <pthread.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -49,9 +50,12 @@
 
 #define PATH_MAX_SIZE 128
 
-static const char *plugin_file = "persistence/plugins.json";
-static const char *db_file     = "persistence/sqlite.db";
-static sqlite3 *   global_db   = NULL;
+static const char *plugin_file       = "persistence/plugins.json";
+static const char *db_file           = "persistence/sqlite.db";
+static sqlite3 *   global_db         = NULL;
+pthread_rwlock_t   global_rwlock     = PTHREAD_RWLOCK_INITIALIZER;
+static size_t      global_node_count = 0;
+static size_t      global_tag_count  = 0;
 
 static inline bool ends_with(const char *str, const char *suffix)
 {
@@ -474,6 +478,40 @@ static int apply_schemas(sqlite3 *db, const char *dir)
     return rv;
 }
 
+static inline int node_count_load()
+{
+    int           rv    = 0;
+    sqlite3_stmt *stmt  = NULL;
+    char *        query = "select count(*) from nodes";
+
+    if (SQLITE_OK == sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL) &&
+        SQLITE_ROW == sqlite3_step(stmt)) {
+        global_node_count = sqlite3_column_int(stmt, 0);
+    } else {
+        rv = -1;
+    }
+
+    sqlite3_finalize(stmt);
+    return rv;
+}
+
+static inline int tag_count_load()
+{
+    int           rv    = 0;
+    sqlite3_stmt *stmt  = NULL;
+    char *        query = "select count(*) from tags";
+
+    if (SQLITE_OK == sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL) &&
+        SQLITE_ROW == sqlite3_step(stmt)) {
+        global_tag_count = sqlite3_column_int(stmt, 0);
+    } else {
+        rv = -1;
+    }
+
+    sqlite3_finalize(stmt);
+    return rv;
+}
+
 int neu_persister_create(const char *schema_dir)
 {
     int rv = sqlite3_open(db_file, &global_db);
@@ -506,12 +544,48 @@ int neu_persister_create(const char *schema_dir)
         return -1;
     }
 
+    if (0 != node_count_load() || 0 != tag_count_load()) {
+        nlog_fatal("load node/tag count fail");
+        sqlite3_close(global_db);
+        return -1;
+    }
+
     return 0;
 }
 
 sqlite3 *neu_persister_get_db()
 {
     return global_db;
+}
+
+static inline void node_count_add(int n)
+{
+    pthread_rwlock_wrlock(&global_rwlock);
+    global_node_count += n;
+    pthread_rwlock_unlock(&global_rwlock);
+}
+
+int neu_persister_node_count()
+{
+    pthread_rwlock_rdlock(&global_rwlock);
+    int cnt = global_node_count;
+    pthread_rwlock_unlock(&global_rwlock);
+    return cnt;
+}
+
+static inline void tag_count_add(int n)
+{
+    pthread_rwlock_wrlock(&global_rwlock);
+    global_tag_count += n;
+    pthread_rwlock_unlock(&global_rwlock);
+}
+
+int neu_persister_tag_count()
+{
+    pthread_rwlock_rdlock(&global_rwlock);
+    int cnt = global_tag_count;
+    pthread_rwlock_unlock(&global_rwlock);
+    return cnt;
 }
 
 void neu_persister_destroy()
@@ -521,10 +595,15 @@ void neu_persister_destroy()
 
 int neu_persister_store_node(neu_persist_node_info_t *info)
 {
-    return execute_sql(global_db,
-                       "INSERT INTO nodes (name, type, state, plugin_name) "
-                       "VALUES (%Q, %i, %i, %Q)",
-                       info->name, info->type, info->state, info->plugin_name);
+    int rv =
+        execute_sql(global_db,
+                    "INSERT INTO nodes (name, type, state, plugin_name) "
+                    "VALUES (%Q, %i, %i, %Q)",
+                    info->name, info->type, info->state, info->plugin_name);
+    if (0 == rv) {
+        node_count_add(1);
+    }
+    return rv;
 }
 
 static UT_icd node_info_icd = {
@@ -585,8 +664,12 @@ int neu_persister_delete_node(const char *node_name)
 {
     // rely on foreign key constraints to remove settings, groups, tags and
     // subscriptions
-    return execute_sql(global_db, "DELETE FROM nodes WHERE name=%Q;",
-                       node_name);
+    int rv =
+        execute_sql(global_db, "DELETE FROM nodes WHERE name=%Q;", node_name);
+    if (0 == rv) {
+        node_count_add(-1);
+    }
+    return rv;
 }
 
 int neu_persister_update_node(const char *node_name, const char *new_name)
@@ -716,6 +799,9 @@ int neu_persister_store_tag(const char *driver_name, const char *group_name,
                          tag->attribute, tag->precision, tag->type,
                          tag->decimal, tag->description, val_str);
 
+    if (0 == rv) {
+        tag_count_add(1);
+    }
     free(val_str);
     return rv;
 }
@@ -821,6 +907,7 @@ int neu_persister_store_tags(const char *driver_name, const char *group_name,
         goto error;
     }
 
+    tag_count_add(n);
     sqlite3_finalize(stmt);
     return 0;
 
@@ -926,10 +1013,14 @@ int neu_persister_update_tag_value(const char *         driver_name,
 int neu_persister_delete_tag(const char *driver_name, const char *group_name,
                              const char *tag_name)
 {
-    return execute_sql(
+    int rv = execute_sql(
         global_db,
         "DELETE FROM tags WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
         driver_name, group_name, tag_name);
+    if (0 == rv) {
+        tag_count_add(-1);
+    }
+    return rv;
 }
 
 int neu_persister_store_subscription(const char *app_name,
