@@ -158,6 +158,7 @@ neu_events_t *neu_event_new(void)
     events->stop     = false;
 
     pthread_create(&events->thread, NULL, event_loop, events);
+    pthread_detach(events->thread);
 
     return events;
 };
