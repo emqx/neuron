@@ -103,10 +103,53 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 static void update_im(neu_adapter_t *adapter, const char *group,
                       const char *tag, neu_dvalue_t value)
 {
-    (void) adapter;
-    (void) group;
-    (void) tag;
-    (void) value;
+    neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
+    neu_reqresp_head_t    header = { 0 };
+
+    if (tag == NULL || value.type == NEU_TYPE_ERROR) {
+        nlog_warn("update_im tag is null or value is error");
+        return;
+    }
+
+    UT_array *tags = neu_adapter_driver_get_ptag(driver, group, tag);
+    neu_driver_cache_update(driver->cache, group, tag, global_timestamp, value);
+    driver->adapter.cb_funs.update_metric(&driver->adapter,
+                                          NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
+    neu_datatag_t *first = utarray_front(tags);
+
+    if (first == NULL ||
+        !neu_tag_attribute_test(first, NEU_ATTRIBUTE_SUBSCRIBE)) {
+        utarray_free(tags);
+        nlog_info("update immediately, driver: %s, "
+                  "group: %s, tag: %s, type: %s, "
+                  "timestamp: %" PRId64,
+                  driver->adapter.name, group, tag, neu_type_string(value.type),
+                  global_timestamp);
+        return;
+    }
+
+    nlog_info("update and report immediately, driver: %s, "
+              "group: %s, tag: %s, type: %s, "
+              "timestamp: %" PRId64,
+              driver->adapter.name, group, tag, neu_type_string(value.type),
+              global_timestamp);
+
+    header.type                    = NEU_REQRESP_TRANS_DATA;
+    neu_reqresp_trans_data_t *data = calloc(
+        1, sizeof(neu_reqresp_trans_data_t) + sizeof(neu_resp_tag_value_t));
+
+    strcpy(data->driver, driver->adapter.name);
+    strcpy(data->group, group);
+
+    data->n_tag = read_report_group(global_timestamp, 0, driver->cache, group,
+                                    tags, (neu_resp_tag_value_t *) &data[1]);
+
+    if (data->n_tag > 0) {
+        driver->adapter.cb_funs.response(&driver->adapter, &header, data);
+    }
+
+    utarray_free(tags);
+    free(data);
 }
 
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
@@ -973,6 +1016,25 @@ UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
     return tags;
 }
 
+UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
+                                      const char *group, const char *tag)
+{
+    group_t * find = NULL;
+    UT_array *tags = NULL;
+
+    HASH_FIND_STR(driver->groups, group, find);
+    if (find != NULL) {
+        neu_datatag_t *t = neu_group_find_tag(find->group, tag);
+        if (t != NULL) {
+            utarray_new(tags, neu_tag_get_icd());
+            utarray_push_back(tags, &t);
+            neu_tag_free(t);
+        }
+    }
+
+    return tags;
+}
+
 static int report_callback(void *usr_data)
 {
     group_t *                group  = (group_t *) usr_data;
@@ -1230,7 +1292,7 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
         }
 
         if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
-            (timestamp - value.timestamp) > timeout) {
+            (timestamp - value.timestamp) > timeout && timeout > 0) {
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
