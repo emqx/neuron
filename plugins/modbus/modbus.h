@@ -40,14 +40,23 @@ typedef enum modbus_action {
 } modbus_action_e;
 
 typedef enum modbus_function {
-    MODBUS_READ_COIL        = 0x1,
-    MODBUS_READ_INPUT       = 0x02,
-    MODBUS_READ_HOLD_REG    = 0x03,
-    MODBUS_READ_INPUT_REG   = 0x04,
-    MODBUS_WRITE_S_COIL     = 0x05,
-    MODBUS_WRITE_S_HOLD_REG = 0x06,
-    MODBUS_WRITE_M_HOLD_REG = 0x10,
-    MODBUS_WRITE_M_COIL     = 0x0F
+    MODBUS_READ_COIL            = 0x1,
+    MODBUS_READ_INPUT           = 0x02,
+    MODBUS_READ_HOLD_REG        = 0x03,
+    MODBUS_READ_INPUT_REG       = 0x04,
+    MODBUS_WRITE_S_COIL         = 0x05,
+    MODBUS_WRITE_S_HOLD_REG     = 0x06,
+    MODBUS_WRITE_M_HOLD_REG     = 0x10,
+    MODBUS_WRITE_M_COIL         = 0x0F,
+    MODBUS_READ_COIL_ERR        = 0x81,
+    MODBUS_READ_INPUT_ERR       = 0x82,
+    MODBUS_READ_HOLD_REG_ERR    = 0x83,
+    MODBUS_READ_INPUT_REG_ERR   = 0x84,
+    MODBUS_WRITE_S_COIL_ERR     = 0x85,
+    MODBUS_WRITE_S_HOLD_REG_ERR = 0x86,
+    MODBUS_WRITE_M_HOLD_REG_ERR = 0x90,
+    MODBUS_WRITE_M_COIL_ERR     = 0x8F,
+    MODBUS_DEVICE_ERR           = -2
 } modbus_function_e;
 
 typedef enum modbus_area {
