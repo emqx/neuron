@@ -451,7 +451,7 @@ static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
     case NEU_TYPE_WORD:
     case NEU_TYPE_LWORD:
     case NEU_TYPE_DWORD:
-        if (value_type == NEU_TYPE_INT64 || NEU_TYPE_LWORD) {
+        if (value_type == NEU_TYPE_INT64 || value_type == NEU_TYPE_LWORD) {
             value->u64 = value->u64 / decimal;
         } else if (value_type == NEU_TYPE_DOUBLE) {
             value->u64 = (uint64_t) round(value->d64 / decimal);
