@@ -207,8 +207,8 @@ typedef struct neu_resp_error {
 } neu_resp_error_t;
 
 typedef struct {
-    char node[NEU_NODE_NAME_LEN];
-    bool auto_start;
+    char                     node[NEU_NODE_NAME_LEN];
+    neu_node_running_state_e state;
 } neu_req_node_init_t, neu_req_node_uninit_t, neu_resp_node_uninit_t;
 
 typedef struct neu_req_add_plugin {

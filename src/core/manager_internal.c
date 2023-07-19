@@ -43,7 +43,8 @@ UT_array *neu_manager_get_plugins(neu_manager_t *manager)
 }
 
 int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
-                         const char *plugin_name, bool start)
+                         const char *             plugin_name,
+                         neu_node_running_state_e state)
 {
     neu_adapter_t *       adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
@@ -77,7 +78,7 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
 
     adapter = neu_adapter_create(&adapter_info);
     neu_node_manager_add(manager->node_manager, adapter);
-    neu_adapter_init(adapter, start);
+    neu_adapter_init(adapter, state);
 
     return NEU_ERR_SUCCESS;
 }

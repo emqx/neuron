@@ -118,9 +118,8 @@ int manager_load_node(neu_manager_t *manager)
 
     utarray_foreach(node_infos, neu_persist_node_info_t *, node_info)
     {
-        rv = neu_manager_add_node(
-            manager, node_info->name, node_info->plugin_name,
-            node_info->state == NEU_NODE_RUNNING_STATE_RUNNING);
+        rv                    = neu_manager_add_node(manager, node_info->name,
+                                  node_info->plugin_name, node_info->state);
         const char *ok_or_err = (0 == rv) ? "success" : "fail";
         nlog_notice("load adapter %s type:%d, name:%s plugin:%s state:%d",
                     ok_or_err, node_info->type, node_info->name,
