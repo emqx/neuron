@@ -30,7 +30,8 @@ struct modbus_group_data {
 };
 
 static void plugin_group_free(neu_plugin_group_t *pgp);
-static int  process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size);
+static int  process_protocol_buf(neu_plugin_t *plugin, uint8_t slave_id,
+                                 uint16_t response_size);
 
 void modbus_conn_connected(void *data, int fd)
 {
@@ -162,29 +163,137 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
         plugin->cmd_idx        = i;
         uint16_t response_size = 0;
         uint64_t read_tms      = neu_time_ms();
-
-        int ret = modbus_stack_read(
+        int      ret_buf       = 0;
+        int      ret_r         = modbus_stack_read(
             plugin->stack, gd->cmd_sort->cmd[i].slave_id,
             gd->cmd_sort->cmd[i].area, gd->cmd_sort->cmd[i].start_address,
             gd->cmd_sort->cmd[i].n_register, &response_size);
-        if (ret > 0) {
-            ret = process_protocol_buf(plugin, response_size);
-            rtt = neu_time_ms() - read_tms;
-        }
-        if (ret <= 0) {
+        if (ret_r > 0) {
+            ret_buf = process_protocol_buf(
+                plugin, gd->cmd_sort->cmd[i].slave_id, response_size);
+            if (ret_buf > 0) {
+                rtt = neu_time_ms() - read_tms;
+            } else if (ret_buf == 0) {
+                for (uint16_t j = 0; j < plugin->max_retries; j++) {
+                    ret_r = modbus_stack_read_retry(plugin, gd, i, j,
+                                                    &response_size);
+                    if (ret_r > 0) {
+                        ret_buf = process_protocol_buf(
+                            plugin, gd->cmd_sort->cmd[i].slave_id,
+                            response_size);
+                        if (ret_buf > 0) {
+                            rtt = neu_time_ms() - read_tms;
+                            break;
+                        } else if (ret_buf < 0) {
+                            if (ret_buf == -1) {
+                                modbus_value_handle(
+                                    plugin, gd->cmd_sort->cmd[i].slave_id, 0,
+                                    NULL,
+                                    NEU_ERR_PLUGIN_PROTOCOL_DECODE_FAILURE);
+                                plog_error(
+                                    plugin,
+                                    "modbus message error, skip, %hhu!%hu",
+                                    gd->cmd_sort->cmd[i].slave_id,
+                                    gd->cmd_sort->cmd[i].start_address);
+                            } else if (ret_buf == -2) {
+                                modbus_value_handle(
+                                    plugin, gd->cmd_sort->cmd[i].slave_id, 0,
+                                    NULL, NEU_ERR_PLUGIN_READ_FAILURE);
+                                plog_error(
+                                    plugin,
+                                    "modbus device response error, skip, "
+                                    "%hhu!%hu",
+                                    gd->cmd_sort->cmd[i].slave_id,
+                                    gd->cmd_sort->cmd[i].start_address);
+                            }
+                            rtt = neu_time_ms() - read_tms;
+                            break;
+                        }
+                    } else {
+                        modbus_value_handle(plugin,
+                                            gd->cmd_sort->cmd[i].slave_id, 0,
+                                            NULL, NEU_ERR_PLUGIN_DISCONNECTED);
+                        rtt = NEU_METRIC_LAST_RTT_MS_MAX;
+                        neu_conn_disconnect(plugin->conn);
+                        break;
+                    }
+                }
+                if (ret_r > 0 && ret_buf == 0) {
+                    modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id,
+                                        0, NULL,
+                                        NEU_ERR_PLUGIN_DEVICE_NOT_RESPONSE);
+                    plog_warn(plugin,
+                              "no modbus response received, skip, %hhu!%hu",
+                              gd->cmd_sort->cmd[i].slave_id,
+                              gd->cmd_sort->cmd[i].start_address);
+                }
+            } else if (ret_buf < 0) {
+                if (ret_buf == -1) {
+                    modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id,
+                                        0, NULL,
+                                        NEU_ERR_PLUGIN_PROTOCOL_DECODE_FAILURE);
+                    plog_error(plugin, "modbus message error, skip, %hhu!%hu",
+                               gd->cmd_sort->cmd[i].slave_id,
+                               gd->cmd_sort->cmd[i].start_address);
+                } else if (ret_buf == -2) {
+                    modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id,
+                                        0, NULL, NEU_ERR_PLUGIN_READ_FAILURE);
+                    plog_error(plugin,
+                               "modbus device response error, skip, %hhu!%hu",
+                               gd->cmd_sort->cmd[i].slave_id,
+                               gd->cmd_sort->cmd[i].start_address);
+                }
+                rtt = neu_time_ms() - read_tms;
+            }
+        } else {
             for (uint16_t j = 0; j < plugin->max_retries; j++) {
-                ret = modbus_stack_read_retry(plugin, gd, i, j, &response_size);
-                if (ret > 0) {
-                    ret = process_protocol_buf(plugin, response_size);
-                    rtt = neu_time_ms() - read_tms;
-                    break;
+                ret_r =
+                    modbus_stack_read_retry(plugin, gd, i, j, &response_size);
+                if (ret_r > 0) {
+                    ret_buf = process_protocol_buf(
+                        plugin, gd->cmd_sort->cmd[i].slave_id, response_size);
+                    if (ret_buf > 0) {
+                        rtt = neu_time_ms() - read_tms;
+                        break;
+                    } else if (ret_buf < 0) {
+                        if (ret_buf == -1) {
+                            modbus_value_handle(
+                                plugin, gd->cmd_sort->cmd[i].slave_id, 0, NULL,
+                                NEU_ERR_PLUGIN_PROTOCOL_DECODE_FAILURE);
+                            plog_error(plugin,
+                                       "modbus message error, skip, %hhu!%hu",
+                                       gd->cmd_sort->cmd[i].slave_id,
+                                       gd->cmd_sort->cmd[i].start_address);
+                        } else if (ret_buf == -2) {
+                            modbus_value_handle(
+                                plugin, gd->cmd_sort->cmd[i].slave_id, 0, NULL,
+                                NEU_ERR_PLUGIN_READ_FAILURE);
+                            plog_error(plugin,
+                                       "modbus device response error, skip, "
+                                       "%hhu!%hu",
+                                       gd->cmd_sort->cmd[i].slave_id,
+                                       gd->cmd_sort->cmd[i].start_address);
+                        }
+                        rtt = neu_time_ms() - read_tms;
+                        break;
+                    } else if (ret_buf == 0) {
+                        modbus_value_handle(
+                            plugin, gd->cmd_sort->cmd[i].slave_id, 0, NULL,
+                            NEU_ERR_PLUGIN_DEVICE_NOT_RESPONSE);
+                        plog_warn(plugin,
+                                  "no modbus response received, skip, %hhu!%hu",
+                                  gd->cmd_sort->cmd[i].slave_id,
+                                  gd->cmd_sort->cmd[i].start_address);
+                        continue;
+                    }
                 }
             }
-            if (ret <= 0) {
+            if (ret_r <= 0) {
                 modbus_value_handle(plugin, gd->cmd_sort->cmd[i].slave_id, 0,
                                     NULL, NEU_ERR_PLUGIN_DISCONNECTED);
                 rtt = NEU_METRIC_LAST_RTT_MS_MAX;
                 neu_conn_disconnect(plugin->conn);
+                break;
             }
         }
         if (plugin->interval > 0) {
@@ -216,13 +325,24 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
     uint16_t start_address = gd->cmd_sort->cmd[plugin->cmd_idx].start_address;
     uint16_t n_register    = gd->cmd_sort->cmd[plugin->cmd_idx].n_register;
 
-    if (error != NEU_ERR_SUCCESS) {
+    if (error == NEU_ERR_PLUGIN_DISCONNECTED) {
         neu_dvalue_t dvalue = { 0 };
 
         dvalue.type      = NEU_TYPE_ERROR;
         dvalue.value.i32 = error;
         plugin->common.adapter_callbacks->driver.update(
             plugin->common.adapter, gd->group, NULL, dvalue);
+        return 0;
+    } else if (error != NEU_ERR_SUCCESS) {
+        utarray_foreach(gd->cmd_sort->cmd[plugin->cmd_idx].tags,
+                        modbus_point_t **, p_tag)
+        {
+            neu_dvalue_t dvalue = { 0 };
+            dvalue.type         = NEU_TYPE_ERROR;
+            dvalue.value.i32    = error;
+            plugin->common.adapter_callbacks->driver.update(
+                plugin->common.adapter, gd->group, (*p_tag)->name, dvalue);
+        }
         return 0;
     }
 
@@ -380,7 +500,7 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                              point.start_address, point.n_register, value.bytes,
                              n_byte, &response_size);
     if (ret > 0) {
-        process_protocol_buf(plugin, response_size);
+        process_protocol_buf(plugin, point.slave_id, response_size);
     }
 
     return 0;
@@ -409,29 +529,99 @@ static void plugin_group_free(neu_plugin_group_t *pgp)
     free(gd);
 }
 
-static int process_protocol_buf(neu_plugin_t *plugin, uint16_t response_size)
+static int process_protocol_buf(neu_plugin_t *plugin, uint8_t slave_id,
+                                uint16_t response_size)
 {
     uint8_t *                 recv_buf = calloc(response_size, 1);
     neu_protocol_unpack_buf_t pbuf     = { 0 };
     ssize_t                   ret      = 0;
-
-    if (plugin->is_server && plugin->protocol == MODBUS_PROTOCOL_TCP) {
-        ret = neu_conn_tcp_server_recv(plugin->conn, plugin->client_fd,
-                                       recv_buf, response_size);
-    } else {
-        ret = neu_conn_recv(plugin->conn, recv_buf, response_size);
-    }
-
-    if (ret == response_size) {
-        if (response_size < 512) {
-            plog_recv_protocol(plugin, recv_buf, ret);
+    if (plugin->protocol == MODBUS_PROTOCOL_TCP) {
+        if (plugin->is_server) {
+            ret = neu_conn_tcp_server_recv(plugin->conn, plugin->client_fd,
+                                           recv_buf,
+                                           sizeof(struct modbus_header));
+        } else {
+            ret = neu_conn_recv(plugin->conn, recv_buf,
+                                sizeof(struct modbus_header));
         }
-        neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
-        ret = modbus_stack_recv(plugin->stack, &pbuf);
-    } else {
-        ret = -1;
-    }
 
+        if (ret == 0 || ret == -1) {
+            free(recv_buf);
+            return 0;
+        }
+
+        if (ret == sizeof(struct modbus_header)) {
+            struct modbus_header *header = (struct modbus_header *) recv_buf;
+            int                   ret1   = 0;
+
+            if (htons(header->len) >
+                response_size - sizeof(struct modbus_header)) {
+                free(recv_buf);
+                return -1;
+            }
+
+            plog_recv_protocol(plugin, recv_buf, ret);
+            if (plugin->is_server) {
+                ret1 = neu_conn_tcp_server_recv(
+                    plugin->conn, plugin->client_fd,
+                    recv_buf + sizeof(struct modbus_header),
+                    htons(header->len));
+            } else {
+                ret1 = neu_conn_recv(plugin->conn,
+                                     recv_buf + sizeof(struct modbus_header),
+                                     htons(header->len));
+            }
+            if (ret1 != htons(header->len)) {
+                free(recv_buf);
+                return -1;
+            }
+            ret += ret1;
+        } else {
+            free(recv_buf);
+            return -1;
+        }
+
+        if (ret > 0) {
+            if (ret < 512) {
+                plog_recv_protocol(plugin, recv_buf, ret);
+            }
+            neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
+            int ret_s = modbus_stack_recv(plugin->stack, slave_id, &pbuf);
+            if (ret_s == MODBUS_DEVICE_ERR) {
+                ret = ret_s;
+            } else {
+                if (ret != response_size) {
+                    ret = -1;
+                } else {
+                    ret = ret_s;
+                }
+            }
+        }
+    } else if (plugin->protocol == MODBUS_PROTOCOL_RTU) {
+        ret = neu_conn_recv(plugin->conn, recv_buf, response_size);
+
+        if (ret == 0 || ret == -1) {
+            free(recv_buf);
+            return 0;
+        }
+
+        if (ret > 0) {
+            if (response_size < 512) {
+                plog_recv_protocol(plugin, recv_buf, ret);
+            }
+            neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
+            int ret_s = modbus_stack_recv(plugin->stack, 0, &pbuf);
+            if (ret_s == MODBUS_DEVICE_ERR) {
+                ret = ret_s;
+            } else {
+                if (ret != response_size) {
+                    ret = -1;
+                } else {
+                    ret = ret_s;
+                }
+            }
+        }
+    }
     free(recv_buf);
     return ret;
 }

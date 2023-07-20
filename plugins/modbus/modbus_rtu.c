@@ -66,11 +66,11 @@ const neu_plugin_module_t neu_plugin_module = {
     .module_name = "Modbus RTU",
     .module_descr =
         "This plugin is used to connect devices using modbus rtu protocol. "
-        "Support serial,TCP and UDP communication methods. Selecting "
+        "Support serial and TCP communication methods. Selecting "
         "client/server is also supported.",
     .module_descr_zh =
-        "该插件用于连接使用 modbus rtu 协议的设备。支持串口, TCP 和 UDP "
-        "三种通信方式。也支持选择客户端/服务端。",
+        "该插件用于连接使用 modbus rtu 协议的设备。支持串口, TCP "
+        "两种通信方式。也支持选择客户端/服务端。",
     .intf_funs = &plugin_intf_funs,
     .kind      = NEU_PLUGIN_KIND_SYSTEM,
     .type      = NEU_NA_TYPE_DRIVER,
