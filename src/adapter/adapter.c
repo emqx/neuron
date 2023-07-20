@@ -187,7 +187,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     return adapter;
 }
 
-void neu_adapter_init(neu_adapter_t *adapter, bool auto_start)
+void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state)
 {
     neu_reqresp_head_t  header   = { .type = NEU_REQ_NODE_INIT };
     neu_req_node_init_t init     = { 0 };
@@ -197,8 +197,8 @@ void neu_adapter_init(neu_adapter_t *adapter, bool auto_start)
     strcpy(header.receiver, "manager");
 
     strcpy(init.node, adapter->name);
-    init.auto_start = auto_start;
-    init_msg        = neu_msg_gen(&header, &init);
+    init.state = state;
+    init_msg   = neu_msg_gen(&header, &init);
 
     nng_sendmsg(adapter->sock, init_msg, 0);
 }
