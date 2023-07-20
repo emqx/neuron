@@ -62,7 +62,8 @@ void modbus_stack_destroy(modbus_stack_t *stack)
     free(stack);
 }
 
-int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
+int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
+                      neu_protocol_unpack_buf_t *buf)
 {
     struct modbus_header header = { 0 };
     struct modbus_code   code   = { 0 };
@@ -74,13 +75,19 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
             plog_warn((neu_plugin_t *) stack->ctx, "try modbus rtu driver");
         }
         if (ret <= 0) {
-            return ret;
+            return -1;
         }
     }
 
     ret = modbus_code_unwrap(buf, &code);
     if (ret <= 0) {
-        return ret;
+        return -1;
+    }
+
+    if (stack->protocol == MODBUS_PROTOCOL_TCP) {
+        if (code.slave_id != slave_id) {
+            return -1;
+        }
     }
 
     switch (code.function) {
@@ -92,7 +99,7 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
         uint8_t *          bytes = NULL;
         ret                      = modbus_data_unwrap(buf, &data);
         if (ret <= 0) {
-            return ret;
+            return -1;
         }
 
         if (stack->protocol == MODBUS_PROTOCOL_TCP && data.n_byte == 0xff) {
@@ -116,18 +123,38 @@ int modbus_stack_recv(modbus_stack_t *stack, neu_protocol_unpack_buf_t *buf)
     case MODBUS_WRITE_M_COIL: {
         struct modbus_address address = { 0 };
         ret                           = modbus_address_unwrap(buf, &address);
+        if (ret <= 0) {
+            return -1;
+        }
         break;
     }
+    case MODBUS_READ_COIL_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_READ_INPUT_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_READ_HOLD_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_READ_INPUT_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_S_COIL_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_S_HOLD_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_M_HOLD_REG_ERR:
+        return MODBUS_DEVICE_ERR;
+    case MODBUS_WRITE_M_COIL_ERR:
+        return MODBUS_DEVICE_ERR;
     case MODBUS_WRITE_S_HOLD_REG:
-    default:
         break;
+    default:
+        return -1;
     }
 
     if (stack->protocol == MODBUS_PROTOCOL_RTU) {
         struct modbus_crc crc = { 0 };
         ret                   = modbus_crc_unwrap(buf, &crc);
         if (ret <= 0) {
-            return ret;
+            return -1;
         }
     }
 
