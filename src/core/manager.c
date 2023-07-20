@@ -274,10 +274,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        if (init->auto_start) {
+        if (init->state == NEU_NODE_RUNNING_STATE_RUNNING ||
+            init->state == NEU_NODE_RUNNING_STATE_STOPPED) {
             neu_adapter_t *adapter =
                 neu_node_manager_find(manager->node_manager, init->node);
             neu_adapter_start(adapter);
+            if (init->state == NEU_NODE_RUNNING_STATE_STOPPED) {
+                neu_adapter_stop(adapter);
+            }
         }
 
         nlog_notice("bind node %s to pipe(%d)", init->node, pipe.id);
