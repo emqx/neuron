@@ -23,11 +23,13 @@ config_ **/
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "define.h"
 #include "type.h"
 #include "utils/utextend.h"
 #include "json/json.h"
 
-#define NEU_TAG_META_SIZE 20
+#define NEU_TAG_META_LENGTH 20
+#define NEU_TAG_META_SIZE 3
 
 typedef enum {
     NEU_ATTRIBUTE_READ      = 1,
@@ -84,8 +86,13 @@ typedef struct {
     double                    decimal;
     char *                    description;
     neu_datatag_addr_option_u option;
-    uint8_t                   meta[NEU_TAG_META_SIZE];
+    uint8_t                   meta[NEU_TAG_META_LENGTH];
 } neu_datatag_t;
+
+typedef struct neu_tag_meta {
+    char         name[NEU_TAG_NAME_LEN];
+    neu_dvalue_t value;
+} neu_tag_meta_t;
 
 UT_icd *neu_tag_get_icd();
 

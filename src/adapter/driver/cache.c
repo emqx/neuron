@@ -42,6 +42,8 @@ struct elem {
 
     neu_dvalue_t value;
 
+    neu_tag_meta_t metas[NEU_TAG_META_SIZE];
+
     tkey_t         key;
     UT_hash_handle hh;
 };
@@ -125,7 +127,8 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
 
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
                              const char *tag, int64_t timestamp,
-                             neu_dvalue_t value)
+                             neu_dvalue_t value, neu_tag_meta_t *metas,
+                             int n_meta)
 {
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
@@ -187,6 +190,10 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
 
         elem->value.type  = value.type;
         elem->value.value = value.value;
+        memset(elem->metas, 0, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
+        for (int i = 0; i < n_meta; i++) {
+            memcpy(&elem->metas[i], &metas[i], sizeof(neu_tag_meta_t));
+        }
     }
 
     nng_mtx_unlock(cache->mtx);
@@ -239,6 +246,14 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
+        }
+
+        for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+            if (elem->metas[i].name != NULL &&
+                strlen(elem->metas[i].name) > 0) {
+                memcpy(&value->metas[i], &elem->metas[i],
+                       sizeof(neu_tag_meta_t));
+            }
         }
 
         ret = 0;
@@ -297,6 +312,14 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
+        }
+
+        for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+            if (elem->metas[i].name != NULL &&
+                strlen(elem->metas[i].name) > 0) {
+                memcpy(&value->metas[i], &elem->metas[i],
+                       sizeof(neu_tag_meta_t));
+            }
         }
 
         if (elem->value.type != NEU_TYPE_ERROR) {
