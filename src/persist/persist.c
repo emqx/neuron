@@ -54,8 +54,8 @@ static const char *plugin_file       = "persistence/plugins.json";
 static const char *db_file           = "persistence/sqlite.db";
 static sqlite3 *   global_db         = NULL;
 pthread_rwlock_t   global_rwlock     = PTHREAD_RWLOCK_INITIALIZER;
-static size_t      global_node_count = 0;
-static size_t      global_tag_count  = 0;
+static int         global_node_count = 0;
+static int         global_tag_count  = 0;
 
 static inline bool ends_with(const char *str, const char *suffix)
 {
