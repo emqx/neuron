@@ -125,10 +125,11 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
     nng_mtx_unlock(cache->mtx);
 }
 
-void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
-                             const char *tag, int64_t timestamp,
-                             neu_dvalue_t value, neu_tag_meta_t *metas,
-                             int n_meta)
+void neu_driver_cache_update_change(neu_driver_cache_t *cache,
+                                    const char *group, const char *tag,
+                                    int64_t timestamp, neu_dvalue_t value,
+                                    neu_tag_meta_t *metas, int n_meta,
+                                    bool change)
 {
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
@@ -188,6 +189,10 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
             }
         }
 
+        if (change) {
+            elem->changed = true;
+        }
+
         elem->value.type  = value.type;
         elem->value.value = value.value;
         memset(elem->metas, 0, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
@@ -197,6 +202,15 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
     }
 
     nng_mtx_unlock(cache->mtx);
+}
+
+void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
+                             const char *tag, int64_t timestamp,
+                             neu_dvalue_t value, neu_tag_meta_t *metas,
+                             int n_meta)
+{
+    neu_driver_cache_update_change(cache, group, tag, timestamp, value, metas,
+                                   n_meta, false);
 }
 
 int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
