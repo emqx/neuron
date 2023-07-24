@@ -56,17 +56,22 @@ void handle_del_plugin(nng_aio *aio)
 
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_plugin_req_t, neu_json_decode_del_plugin_req, {
-            int                  ret    = 0;
             neu_reqresp_head_t   header = { 0 };
             neu_req_del_plugin_t cmd    = { 0 };
 
             header.ctx  = aio;
             header.type = NEU_REQ_DEL_PLUGIN;
-            strcpy(cmd.plugin, req->plugin);
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+            if (strlen(req->plugin) <= sizeof(cmd.plugin)) {
+                strcpy(cmd.plugin, req->plugin);
+                int ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
+            } else {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_BODY_IS_WRONG, {
+                    neu_http_response(aio, NEU_ERR_BODY_IS_WRONG, result_error);
                 });
             }
         })
