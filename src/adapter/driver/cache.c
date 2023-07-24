@@ -123,9 +123,10 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
     nng_mtx_unlock(cache->mtx);
 }
 
-void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
-                             const char *tag, int64_t timestamp,
-                             neu_dvalue_t value)
+void neu_driver_cache_update_change(neu_driver_cache_t *cache,
+                                    const char *group, const char *tag,
+                                    int64_t timestamp, neu_dvalue_t value,
+                                    bool change)
 {
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
@@ -185,11 +186,21 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
             }
         }
 
+        if (change) {
+            elem->changed = true;
+        }
         elem->value.type  = value.type;
         elem->value.value = value.value;
     }
 
     nng_mtx_unlock(cache->mtx);
+}
+
+void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
+                             const char *tag, int64_t timestamp,
+                             neu_dvalue_t value)
+{
+    neu_driver_cache_update_change(cache, group, tag, timestamp, value, false);
 }
 
 int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,

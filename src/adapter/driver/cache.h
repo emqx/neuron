@@ -34,6 +34,10 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
                              const char *tag, int64_t timestamp,
                              neu_dvalue_t value);
+void neu_driver_cache_update_change(neu_driver_cache_t *cache,
+                                    const char *group, const char *tag,
+                                    int64_t timestamp, neu_dvalue_t value,
+                                    bool change);
 
 void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
                           const char *tag);
