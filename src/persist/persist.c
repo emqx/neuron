@@ -486,7 +486,9 @@ static inline int node_count_load()
 
     if (SQLITE_OK == sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL) &&
         SQLITE_ROW == sqlite3_step(stmt)) {
+        pthread_rwlock_wrlock(&global_rwlock);
         global_node_count = sqlite3_column_int(stmt, 0);
+        pthread_rwlock_unlock(&global_rwlock);
     } else {
         rv = -1;
     }
@@ -503,7 +505,9 @@ static inline int tag_count_load()
 
     if (SQLITE_OK == sqlite3_prepare_v2(global_db, query, -1, &stmt, NULL) &&
         SQLITE_ROW == sqlite3_step(stmt)) {
+        pthread_rwlock_wrlock(&global_rwlock);
         global_tag_count = sqlite3_column_int(stmt, 0);
+        pthread_rwlock_unlock(&global_rwlock);
     } else {
         rv = -1;
     }
@@ -668,6 +672,7 @@ int neu_persister_delete_node(const char *node_name)
         execute_sql(global_db, "DELETE FROM nodes WHERE name=%Q;", node_name);
     if (0 == rv) {
         node_count_add(-1);
+        tag_count_load();
     }
     return rv;
 }
@@ -1192,9 +1197,13 @@ error:
 int neu_persister_delete_group(const char *driver_name, const char *group_name)
 {
     // rely on foreign key constraints to delete tags and subscriptions
-    return execute_sql(global_db,
-                       "DELETE FROM groups WHERE driver_name=%Q AND name=%Q",
-                       driver_name, group_name);
+    int rv = execute_sql(global_db,
+                         "DELETE FROM groups WHERE driver_name=%Q AND name=%Q",
+                         driver_name, group_name);
+    if (0 == rv) {
+        tag_count_load();
+    }
+    return rv;
 }
 
 int neu_persister_store_node_setting(const char *node_name, const char *setting)
