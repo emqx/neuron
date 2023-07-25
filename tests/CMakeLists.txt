@@ -42,9 +42,17 @@ target_include_directories(tag_sort_test PRIVATE
 target_link_libraries(tag_sort_test neuron-base gtest_main gtest)
 #target_link_directories(modbus_point_test PRIVATE /usr/local/lib)
 
+add_executable(modbus_test modbus_test.cc
+				${CMAKE_SOURCE_DIR}/plugins/modbus/modbus.c
+				${CMAKE_SOURCE_DIR}/plugins/modbus/modbus_point.c)
+target_include_directories(modbus_test PRIVATE
+				${CMAKE_SOURCE_DIR}/plugins/modbus)
+target_link_libraries(modbus_test neuron-base gtest_main gtest pthread zlog)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
 gtest_discover_tests(jwt_test)
 gtest_discover_tests(base64_test)
 gtest_discover_tests(tag_sort_test)
+gtest_discover_tests(modbus_test)
