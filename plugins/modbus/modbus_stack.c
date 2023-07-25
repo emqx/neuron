@@ -165,10 +165,11 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
                       enum modbus_area area, uint16_t start_address,
                       uint16_t n_reg, uint16_t *response_size)
 {
-    static __thread uint8_t                 buf[16]  = { 0 };
-    static __thread neu_protocol_pack_buf_t pbuf     = { 0 };
-    int                                     ret      = 0;
-    modbus_action_e                         m_action = MODBUS_ACTION_DEFAULT;
+    static __thread uint8_t                 buf[16] = { 0 };
+    static __thread neu_protocol_pack_buf_t pbuf    = { 0 };
+    int                                     ret     = 0;
+    *response_size                                  = 0;
+    modbus_action_e m_action                        = MODBUS_ACTION_DEFAULT;
 
     neu_protocol_pack_buf_init(&pbuf, buf, sizeof(buf));
 
