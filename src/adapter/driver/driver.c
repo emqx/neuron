@@ -155,13 +155,14 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     neu_reqresp_head_t    header = { 0 };
 
     if (tag == NULL || value.type == NEU_TYPE_ERROR) {
-        nlog_warn("update_im tag is null or value is error");
+        nlog_warn("update_im tag is null or value is error %d",
+                  value.value.i32);
         return;
     }
 
     UT_array *tags = neu_adapter_driver_get_ptag(driver, group, tag);
-    neu_driver_cache_update(driver->cache, group, tag, global_timestamp, value,
-                            NULL, 0);
+    neu_driver_cache_update_change(driver->cache, group, tag, global_timestamp,
+                                   value, NULL, 0, true);
     driver->adapter.cb_funs.update_metric(&driver->adapter,
                                           NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
     neu_datatag_t *first = utarray_front(tags);
@@ -1041,7 +1042,7 @@ UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
         neu_datatag_t *t = neu_group_find_tag(find->group, tag);
         if (t != NULL) {
             utarray_new(tags, neu_tag_get_icd());
-            utarray_push_back(tags, &t);
+            utarray_push_back(tags, t);
             neu_tag_free(t);
         }
     }
