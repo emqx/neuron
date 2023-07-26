@@ -34,6 +34,8 @@ void daemonize();
  */
 int neuron_already_running();
 
+int neuron_stop();
+
 #ifdef __cplusplus
 }
 #endif

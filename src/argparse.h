@@ -46,6 +46,7 @@ typedef struct {
     char * log_init_file;
     char * config_dir;
     char * plugin_dir;
+    bool   stop;
 } neu_cli_args_t;
 
 /** Parse command line arguments.
