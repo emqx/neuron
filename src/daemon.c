@@ -135,3 +135,34 @@ int neuron_already_running()
 
     return 0;
 }
+
+int neuron_stop()
+{
+    int  ret     = -1;
+    int  fd      = -1;
+    char buf[16] = { 0 };
+    fd           = open(NEURON_DAEMON_LOCK_FNAME, O_RDONLY);
+    if (fd < 0) {
+        nlog_error("cannot open %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
+                   strerror(errno));
+        return ret;
+    }
+    int size = read(fd, buf, sizeof(buf) - 1);
+    if (size <= 0) {
+        nlog_error("cannot read %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
+                   strerror(errno));
+        ret = -1;
+    } else {
+        pid_t pid = -1;
+        if (sscanf(buf, "%d", &pid) == 1) {
+            if (kill(pid, SIGINT) == -1) {
+                ret = -1;
+            } else {
+                ret = 0;
+            }
+        }
+    }
+    close(fd);
+
+    return ret;
+}
