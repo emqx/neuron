@@ -133,6 +133,55 @@ static inline bool file_exists(const char *const path)
     return -1 != stat(path, &buf);
 }
 
+static inline void load_env(neu_cli_args_t *args, char **log_level_out,
+                            char **config_dir_out, char **plugin_dir_out)
+{
+
+    char *daemon = getenv(NEU_ENV_DAEMON);
+    if (daemon != NULL) {
+        if (strcmp(daemon, "1") == 0) {
+            args->daemonized = true;
+        }
+    }
+
+    char *log = getenv(NEU_ENV_LOG);
+    if (log != NULL) {
+        if (strcmp(log, "1") == 0) {
+            args->dev_log = true;
+        }
+    }
+
+    char *log_level = getenv(NEU_ENV_LOG_LEVEL);
+    if (log_level != NULL) {
+        *log_level_out = strdup(log_level);
+    }
+
+    char *restart = getenv(NEU_ENV_RESTART);
+    if (restart != NULL) {
+        int ret = parse_restart_policy(restart, &args->restart);
+        if (ret < 0) {
+            printf("neuron NEU_ENV_RESTART setting error!\n");
+        }
+    }
+
+    char *disable_auth = getenv(NEU_ENV_DISABLE_AUTH);
+    if (disable_auth != NULL) {
+        if (strcmp(disable_auth, "1") == 0) {
+            args->disable_auth = true;
+        }
+    }
+
+    char *config_dir = getenv(NEU_ENV_CONFIG_DIR);
+    if (config_dir != NULL) {
+        *config_dir_out = strdup(config_dir);
+    }
+
+    char *plugin_dir = getenv(NEU_ENV_PLUGIN_DIR);
+    if (plugin_dir != NULL) {
+        *plugin_dir_out = strdup(plugin_dir);
+    }
+}
+
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 {
     int           ret                 = 0;
@@ -158,6 +207,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 
     memset(args, 0, sizeof(*args));
 
+    // load env
+    load_env(args, &log_level, &config_dir, &plugin_dir);
+
     int c            = 0;
     int option_index = 0;
 
@@ -177,6 +229,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             args->dev_log = true;
             break;
         case 'o':
+            if (log_level != NULL) {
+                free(log_level);
+            }
             log_level = strdup(optarg);
             break;
         case 'r':
@@ -197,9 +252,15 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             args->disable_auth = true;
             break;
         case 'c':
+            if (config_dir != NULL) {
+                free(config_dir);
+            }
             config_dir = strdup(optarg);
             break;
         case 'p':
+            if (plugin_dir != NULL) {
+                free(plugin_dir);
+            }
             plugin_dir = strdup(optarg);
             break;
         case 's':
