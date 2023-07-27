@@ -110,9 +110,23 @@ int main(int argc, char *argv[])
     zlog_level_switch(neuron, default_log_level);
 
     if (neuron_already_running()) {
-        nlog_fatal("neuron process already running, exit.");
-        rv = -1;
+        if (args.stop) {
+            rv = neuron_stop();
+            nlog_notice("neuron stop ret=%d", rv);
+            if (rv == 0) {
+                printf("neuron stop successfully.\n");
+            }
+        } else {
+            nlog_fatal("neuron process already running, exit.");
+            rv = -1;
+        }
         goto main_end;
+    } else {
+        if (args.stop) {
+            rv = 0;
+            printf("neuron no running.\n");
+            goto main_end;
+        }
     }
 
     for (size_t i = 0; i < args.restart; ++i) {

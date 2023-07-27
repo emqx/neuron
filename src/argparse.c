@@ -60,6 +60,7 @@ const char *usage_text =
 "OPTIONS:\n"
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
+"    --stop               stop running neuron\n"
 "    --log                log to the stdout\n"
 "    --log_level <LEVEL>  default log level(DEBUG,NOTICE)\n"
 "    --reset-password     reset dashboard to use default password\n"
@@ -151,6 +152,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "disable_auth", no_argument, NULL, 'a' },
         { "config_dir", required_argument, NULL, 'c' },
         { "plugin_dir", required_argument, NULL, 'p' },
+        { "stop", no_argument, NULL, 's' },
         { NULL, 0, NULL, 0 },
     };
 
@@ -199,6 +201,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             break;
         case 'p':
             plugin_dir = strdup(optarg);
+            break;
+        case 's':
+            args->stop = true;
             break;
         case '?':
         default:
