@@ -153,9 +153,9 @@ int neuron_stop()
                    strerror(errno));
         ret = -1;
     } else {
-        pid_t pid = -1;
-        if (sscanf(buf, "%d", &pid) == 1) {
-            if (kill(pid, SIGINT) == -1) {
+        long pid = -1;
+        if (sscanf(buf, "%ld", &pid) == 1) {
+            if (kill((pid_t) pid, SIGINT) == -1) {
                 ret = -1;
             } else {
                 ret = 0;

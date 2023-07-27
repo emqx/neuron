@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
         goto main_end;
     } else {
         if (args.stop) {
-            rv = -1;
+            rv = 0;
             printf("neuron no running.\n");
             goto main_end;
         }
