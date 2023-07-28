@@ -546,10 +546,9 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
 
             tv.value = cmd->tags[i].value.value;
             utarray_push_back(tags, &tv);
-        } else {
-            if (tag != NULL) {
-                neu_tag_free(tag);
-            }
+        }
+        if (tag != NULL) {
+            neu_tag_free(tag);
         }
     }
 
