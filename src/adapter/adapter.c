@@ -321,6 +321,22 @@ static int adapter_update_metric(neu_adapter_t *adapter,
     return 0;
 }
 
+static void adapter_reset_metrics(neu_adapter_t *adapter)
+{
+    neu_metric_entry_t *entry = NULL;
+    if (NULL == adapter->metrics) {
+        return;
+    }
+
+    HASH_LOOP(hh, adapter->metrics->entries, entry) { entry->value = 0; }
+
+    neu_group_metrics_t *g = NULL;
+    HASH_LOOP(hh, adapter->metrics->group_metrics, g)
+    {
+        HASH_LOOP(hh, g->entries, entry) { entry->value = 0; }
+    }
+}
+
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
                            void *data)
 {
@@ -1056,6 +1072,7 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_STOPPED;
         adapter_storage_state(adapter->name, adapter->state);
+        adapter_reset_metrics(adapter);
     }
 
     return error;
