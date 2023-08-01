@@ -138,31 +138,35 @@ int neuron_already_running()
 
 int neuron_stop()
 {
-    int  ret     = -1;
-    int  fd      = -1;
-    char buf[16] = { 0 };
-    fd           = open(NEURON_DAEMON_LOCK_FNAME, O_RDONLY);
-    if (fd < 0) {
+    int ret = -1;
+
+    FILE *fp = fopen(NEURON_DAEMON_LOCK_FNAME, "r");
+    if (NULL == fp) {
         nlog_error("cannot open %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
                    strerror(errno));
         return ret;
     }
-    int size = read(fd, buf, sizeof(buf) - 1);
-    if (size <= 0) {
-        nlog_error("cannot read %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
-                   strerror(errno));
-        ret = -1;
-    } else {
-        long pid = -1;
-        if (sscanf(buf, "%ld", &pid) == 1) {
-            if (kill((pid_t) pid, SIGINT) == -1) {
-                ret = -1;
-            } else {
-                ret = 0;
-            }
-        }
-    }
-    close(fd);
 
+    long pid = -1;
+    if (1 != fscanf(fp, "%ld", &pid)) {
+        nlog_error("cannot scan pid from: %s\n", NEURON_DAEMON_LOCK_FNAME);
+        goto end;
+    }
+
+    pid_t gid = getpgid((pid_t) pid);
+    if (-1 == gid) {
+        nlog_error("cannot get gpid reason: %s\n", strerror(errno));
+        goto end;
+    }
+
+    if (0 == kill((pid_t)(-gid), SIGINT)) {
+        ret = 0;
+    } else {
+        nlog_error("cannot kill gpid:%ld reason: %s\n", (long) gid,
+                   strerror(errno));
+    }
+
+end:
+    fclose(fp);
     return ret;
 }
