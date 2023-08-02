@@ -81,6 +81,18 @@ void manager_storage_subscribe(neu_manager_t *manager, const char *app,
     }
 }
 
+void manager_storage_update_subscribe(neu_manager_t *manager, const char *app,
+                                      const char *driver, const char *group,
+                                      const char *params)
+{
+    (void) manager;
+    int rv = neu_persister_update_subscription(app, driver, group, params);
+    if (0 != rv) {
+        nlog_error("fail update subscription app:%s driver:%s group:%s", app,
+                   driver, group);
+    }
+}
+
 void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
                                  const char *driver, const char *group)
 {

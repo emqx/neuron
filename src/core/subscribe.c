@@ -211,6 +211,44 @@ int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
     return NEU_ERR_SUCCESS;
 }
 
+int neu_subscribe_manager_update_params(neu_subscribe_mgr_t *mgr,
+                                        const char *app, const char *driver,
+                                        const char *group, const char *params)
+{
+    sub_elem_key_t key = { 0 };
+    strncpy(key.driver, driver, sizeof(key.driver));
+    strncpy(key.group, group, sizeof(key.group));
+
+    sub_elem_t *find = NULL;
+    HASH_FIND(hh, mgr->ss, &key, sizeof(sub_elem_key_t), find);
+
+    if (NULL == find) {
+        return NEU_ERR_GROUP_NOT_SUBSCRIBE;
+    }
+
+    neu_app_subscribe_t *app_sub = NULL;
+    utarray_foreach(find->apps, neu_app_subscribe_t *, sub)
+    {
+        if (strcmp(sub->app_name, app) == 0) {
+            app_sub = sub;
+            break;
+        }
+    }
+
+    if (NULL == app_sub) {
+        return NEU_ERR_GROUP_NOT_SUBSCRIBE;
+    }
+
+    char *p = strdup(params);
+    if (NULL == p) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    free(app_sub->params);
+    app_sub->params = p;
+    return NEU_ERR_SUCCESS;
+}
+
 int neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
                                 const char *app, const char *group)
 {

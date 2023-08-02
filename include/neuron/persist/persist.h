@@ -222,6 +222,19 @@ int neu_persister_store_subscription(const char *app_name,
                                      const char *params);
 
 /**
+ * Update subscriptions.
+ * @param app_name                  name of the app node
+ * @param driver_name               name of the driver node
+ * @param group_name                name of the group
+ * @param params                    subscription params
+ * @return 0 on success, non-zero otherwise
+ */
+int neu_persister_update_subscription(const char *app_name,
+                                      const char *driver_name,
+                                      const char *group_name,
+                                      const char *params);
+
+/**
  * Load adapter subscriptions.
  * @param app_name                  name of the app node
  * @param[out] subscription_infos   used to return pointer to heap allocated

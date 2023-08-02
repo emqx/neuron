@@ -1066,6 +1066,17 @@ int neu_persister_store_subscription(const char *app_name,
         app_name, driver_name, group_name, params);
 }
 
+int neu_persister_update_subscription(const char *app_name,
+                                      const char *driver_name,
+                                      const char *group_name,
+                                      const char *params)
+{
+    return execute_sql(global_db,
+                       "UPDATE subscriptions SET params=%Q "
+                       "WHERE app_name=%Q AND driver_name=%Q AND group_name=%Q",
+                       params, app_name, driver_name, group_name);
+}
+
 static UT_icd subscription_info_icd = {
     sizeof(neu_persist_subscription_info_t),
     NULL,
