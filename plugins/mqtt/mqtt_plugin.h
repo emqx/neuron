@@ -107,6 +107,24 @@ static inline int route_tbl_add_new(route_entry_t **tbl, const char *driver,
     return 0;
 }
 
+// NOTE: we take ownership of `topic`
+static inline int route_tbl_update(route_entry_t **tbl, const char *driver,
+                                   const char *group, char *topic)
+{
+    route_entry_t *find = NULL;
+
+    find = route_tbl_get(tbl, driver, group);
+    if (NULL == find) {
+        free(topic);
+        return NEU_ERR_GROUP_NOT_SUBSCRIBE;
+    }
+
+    free(find->topic);
+    find->topic = topic;
+
+    return 0;
+}
+
 static inline void route_tbl_del(route_entry_t **tbl, const char *driver,
                                  const char *group)
 {

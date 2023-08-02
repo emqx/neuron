@@ -43,6 +43,8 @@ int handle_trans_data(neu_plugin_t *            plugin,
                       neu_reqresp_trans_data_t *trans_data);
 
 int handle_subscribe_group(neu_plugin_t *plugin, neu_req_subscribe_t *sub_info);
+int handle_update_subscribe(neu_plugin_t *       plugin,
+                            neu_req_subscribe_t *sub_info);
 int handle_unsubscribe_group(neu_plugin_t *         plugin,
                              neu_req_unsubscribe_t *unsub_info);
 
