@@ -27,7 +27,7 @@
 #include "mqtt_handle.h"
 #include "mqtt_plugin.h"
 
-static int tag_values_to_json(neu_resp_tag_value_t *tags, uint16_t len,
+static int tag_values_to_json(neu_resp_tag_value_meta_t *tags, uint16_t len,
                               neu_json_read_resp_t *json)
 {
     if (0 == len) {
@@ -42,10 +42,103 @@ static int tag_values_to_json(neu_resp_tag_value_t *tags, uint16_t len,
     }
 
     for (int i = 0; i < json->n_tag; i++) {
-        neu_resp_tag_value_t *tag  = &tags[i];
-        neu_type_e            type = tag->value.type;
-        json->tags[i].name         = tag->tag;
-        json->tags[i].error        = NEU_ERR_SUCCESS;
+        neu_resp_tag_value_meta_t *tag  = &tags[i];
+        neu_type_e                 type = tag->value.type;
+        json->tags[i].name              = tag->tag;
+        json->tags[i].error             = NEU_ERR_SUCCESS;
+
+        for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+            if (strlen(tag->metas[k].name) > 0) {
+                json->tags[i].n_meta++;
+            } else {
+                break;
+            }
+        }
+
+        if (json->tags[i].n_meta > 0) {
+            json->tags[i].metas = (neu_json_tag_meta_t *) calloc(
+                json->tags[i].n_meta, sizeof(neu_json_tag_meta_t));
+        }
+
+        for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+            if (strlen(tag->metas[k].name) > 0) {
+                json->tags[i].metas[k].name = tag->metas[k].name;
+                switch (tag->metas[k].value.type) {
+                case NEU_TYPE_UINT8:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.u8;
+                    break;
+                case NEU_TYPE_INT8:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.i8;
+                    break;
+                case NEU_TYPE_INT16:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.i16;
+                    break;
+                case NEU_TYPE_INT32:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.i32;
+                    break;
+                case NEU_TYPE_INT64:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.i64;
+                    break;
+                case NEU_TYPE_WORD:
+                case NEU_TYPE_UINT16:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.u16;
+                    break;
+                case NEU_TYPE_DWORD:
+                case NEU_TYPE_UINT32:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.u32;
+                    break;
+                case NEU_TYPE_LWORD:
+                case NEU_TYPE_UINT64:
+                    json->tags[i].metas[k].t = NEU_JSON_INT;
+                    json->tags[i].metas[k].value.val_int =
+                        tag->metas[k].value.value.u64;
+                    break;
+                case NEU_TYPE_FLOAT:
+                    json->tags[i].metas[k].t = NEU_JSON_FLOAT;
+                    json->tags[i].metas[k].value.val_float =
+                        tag->metas[k].value.value.f32;
+                    break;
+                case NEU_TYPE_DOUBLE:
+                    json->tags[i].metas[k].t = NEU_JSON_DOUBLE;
+                    json->tags[i].metas[k].value.val_double =
+                        tag->metas[k].value.value.d64;
+                    break;
+                case NEU_TYPE_BOOL:
+                    json->tags[i].metas[k].t = NEU_JSON_BOOL;
+                    json->tags[i].metas[k].value.val_bool =
+                        tag->metas[k].value.value.boolean;
+                    break;
+                case NEU_TYPE_BIT:
+                    json->tags[i].metas[k].t = NEU_JSON_BIT;
+                    json->tags[i].metas[k].value.val_bit =
+                        tag->metas[k].value.value.u8;
+                    break;
+                case NEU_TYPE_STRING:
+                    json->tags[i].metas[k].t = NEU_JSON_STR;
+                    json->tags[i].metas[k].value.val_str =
+                        tag->metas[k].value.value.str;
+                    break;
+                default:
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
 
         switch (type) {
         case NEU_TYPE_ERROR:
@@ -122,13 +215,13 @@ static char *generate_upload_json(neu_plugin_t *            plugin,
                                   neu_reqresp_trans_data_t *data,
                                   mqtt_upload_format_e      format)
 {
-    neu_resp_tag_value_t *   tags     = data->tags;
-    uint16_t                 len      = data->n_tag;
-    char *                   json_str = NULL;
-    neu_json_read_periodic_t header   = { .group     = (char *) data->group,
+    neu_resp_tag_value_meta_t *tags     = data->tags;
+    uint16_t                   len      = data->n_tag;
+    char *                     json_str = NULL;
+    neu_json_read_periodic_t   header   = { .group     = (char *) data->group,
                                         .node      = (char *) data->driver,
                                         .timestamp = global_timestamp };
-    neu_json_read_resp_t     json     = { 0 };
+    neu_json_read_resp_t       json     = { 0 };
 
     if (0 != tag_values_to_json(tags, len, &json)) {
         plog_error(plugin, "tag_values_to_json fail");
@@ -147,6 +240,12 @@ static char *generate_upload_json(neu_plugin_t *            plugin,
         plog_warn(plugin, "invalid upload format: %d", format);
     }
 
+    for (int i = 0; i < json.n_tag; i++) {
+        if (json.tags[i].n_meta > 0) {
+            free(json.tags[i].metas);
+        }
+    }
+
     if (json.tags) {
         free(json.tags);
     }
@@ -157,10 +256,10 @@ static char *generate_read_resp_json(neu_plugin_t *         plugin,
                                      neu_json_mqtt_t *      mqtt,
                                      neu_resp_read_group_t *data)
 {
-    neu_resp_tag_value_t *tags     = data->tags;
-    uint16_t              len      = data->n_tag;
-    char *                json_str = NULL;
-    neu_json_read_resp_t  json     = { 0 };
+    neu_resp_tag_value_meta_t *tags     = data->tags;
+    uint16_t                   len      = data->n_tag;
+    char *                     json_str = NULL;
+    neu_json_read_resp_t       json     = { 0 };
 
     if (0 != tag_values_to_json(tags, len, &json)) {
         plog_error(plugin, "tag_values_to_json fail");

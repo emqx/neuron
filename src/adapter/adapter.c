@@ -1487,7 +1487,7 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_trans_data_t *trans = (neu_reqresp_trans_data_t *) data;
         data_size                       = sizeof(neu_reqresp_trans_data_t) +
-            trans->n_tag * sizeof(neu_resp_tag_value_t);
+            trans->n_tag * sizeof(neu_resp_tag_value_meta_t);
         break;
     }
     case NEU_REQ_UPDATE_LICENSE:

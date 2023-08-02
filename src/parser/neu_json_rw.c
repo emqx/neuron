@@ -29,6 +29,8 @@
 
 #include "json/json.h"
 
+#include "define.h"
+
 #include "json/neu_json_rw.h"
 
 int neu_json_encode_read_resp(void *json_object, void *param)
@@ -39,7 +41,7 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     void *                    tag_array = neu_json_array();
     neu_json_read_resp_tag_t *p_tag     = resp->tags;
     for (int i = 0; i < resp->n_tag; i++) {
-        neu_json_elem_t tag_elems[2] = { 0 };
+        neu_json_elem_t tag_elems[2 + NEU_TAG_META_SIZE] = { 0 };
 
         tag_elems[0].name      = "name";
         tag_elems[0].t         = NEU_JSON_STR;
@@ -56,8 +58,14 @@ int neu_json_encode_read_resp(void *json_object, void *param)
             tag_elems[1].precision = p_tag->precision;
         }
 
-        tag_array = neu_json_encode_array(tag_array, tag_elems,
-                                          NEU_JSON_ELEM_SIZE(tag_elems));
+        for (int k = 0; k < p_tag->n_meta; k++) {
+            tag_elems[2 + k].name = p_tag->metas[k].name;
+            tag_elems[2 + k].t    = p_tag->metas[k].t;
+            tag_elems[2 + k].v    = p_tag->metas[k].value;
+        }
+
+        tag_array =
+            neu_json_encode_array(tag_array, tag_elems, 2 + p_tag->n_meta);
         p_tag++;
     }
 
@@ -77,9 +85,11 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
     int                   ret  = 0;
     neu_json_read_resp_t *resp = (neu_json_read_resp_t *) param;
 
-    void *                    values = neu_json_encode_new();
-    void *                    errors = neu_json_encode_new();
-    neu_json_read_resp_tag_t *p_tag  = resp->tags;
+    void *values = neu_json_encode_new();
+    void *errors = neu_json_encode_new();
+    void *metas  = neu_json_encode_new();
+
+    neu_json_read_resp_tag_t *p_tag = resp->tags;
     for (int i = 0; i < resp->n_tag; i++) {
         neu_json_elem_t tag_elem = { 0 };
 
@@ -96,20 +106,45 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
             neu_json_encode_field(errors, &tag_elem, 1);
         }
 
+        if (p_tag->n_meta > 0) {
+            void *meta = neu_json_encode_new();
+            for (int k = 0; k < p_tag->n_meta; k++) {
+                neu_json_elem_t meta_elem = { 0 };
+                meta_elem.name            = p_tag->metas[k].name;
+                meta_elem.t               = p_tag->metas[k].t;
+                meta_elem.v               = p_tag->metas[k].value;
+                neu_json_encode_field(meta, &meta_elem, 1);
+            }
+
+            neu_json_elem_t meta_elem = { 0 };
+            meta_elem.name            = p_tag->name;
+            meta_elem.t               = NEU_JSON_OBJECT;
+            meta_elem.v.val_object    = meta;
+            neu_json_encode_field(metas, &meta_elem, 1);
+        }
+
         p_tag++;
     }
 
-    neu_json_elem_t resp_elems[] = { {
-                                         .name         = "values",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = values,
-                                     },
-                                     {
-                                         .name         = "errors",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = errors,
+    neu_json_elem_t resp_elems[] = {
+        {
+            .name         = "values",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = values,
+        },
+        {
+            .name         = "errors",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = errors,
 
-                                     } };
+        },
+        {
+            .name         = "metas",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = metas,
+
+        },
+    };
 
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));

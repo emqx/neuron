@@ -213,6 +213,148 @@ void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
                                    n_meta, false);
 }
 
+int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
+                              const char *tag, neu_driver_cache_value_t *value,
+                              neu_tag_meta_t *metas, int n_meta)
+{
+    struct elem *elem = NULL;
+    int          ret  = -1;
+    tkey_t       key  = to_key(group, tag);
+
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
+
+    if (elem != NULL) {
+        value->timestamp       = elem->timestamp;
+        value->value.type      = elem->value.type;
+        value->value.precision = elem->value.precision;
+
+        assert(n_meta <= NEU_TAG_META_SIZE);
+        memcpy(metas, elem->metas, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
+
+        switch (elem->value.type) {
+        case NEU_TYPE_INT8:
+        case NEU_TYPE_UINT8:
+        case NEU_TYPE_BIT:
+            value->value.value.u8 = elem->value.value.u8;
+            break;
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
+        case NEU_TYPE_WORD:
+            value->value.value.u16 = elem->value.value.u16;
+            break;
+        case NEU_TYPE_INT32:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_DWORD:
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_ERROR:
+            value->value.value.u32 = elem->value.value.u32;
+            break;
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_LWORD:
+            value->value.value.u64 = elem->value.value.u64;
+            break;
+        case NEU_TYPE_BOOL:
+            value->value.value.boolean = elem->value.value.boolean;
+            break;
+        case NEU_TYPE_STRING:
+        case NEU_TYPE_BYTES:
+            memcpy(value->value.value.str, elem->value.value.str,
+                   sizeof(elem->value.value.str));
+            break;
+        }
+
+        for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+            if (elem->metas[i].name != NULL &&
+                strlen(elem->metas[i].name) > 0) {
+                memcpy(&value->metas[i], &elem->metas[i],
+                       sizeof(neu_tag_meta_t));
+            }
+        }
+
+        ret = 0;
+    }
+
+    nng_mtx_unlock(cache->mtx);
+
+    return ret;
+}
+
+int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
+                                      const char *group, const char *tag,
+                                      neu_driver_cache_value_t *value,
+                                      neu_tag_meta_t *metas, int n_meta)
+{
+    struct elem *elem = NULL;
+    int          ret  = -1;
+    tkey_t       key  = to_key(group, tag);
+
+    nng_mtx_lock(cache->mtx);
+    HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
+
+    if (elem != NULL && elem->changed) {
+        value->timestamp       = elem->timestamp;
+        value->value.type      = elem->value.type;
+        value->value.precision = elem->value.precision;
+
+        assert(n_meta <= NEU_TAG_META_SIZE);
+        memcpy(metas, elem->metas, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
+
+        switch (elem->value.type) {
+        case NEU_TYPE_INT8:
+        case NEU_TYPE_UINT8:
+        case NEU_TYPE_BIT:
+            value->value.value.u8 = elem->value.value.u8;
+            break;
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
+        case NEU_TYPE_WORD:
+            value->value.value.u16 = elem->value.value.u16;
+            break;
+        case NEU_TYPE_INT32:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_ERROR:
+        case NEU_TYPE_DWORD:
+            value->value.value.u32 = elem->value.value.u32;
+            break;
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_LWORD:
+            value->value.value.u64 = elem->value.value.u64;
+            break;
+        case NEU_TYPE_BOOL:
+            value->value.value.boolean = elem->value.value.boolean;
+            break;
+        case NEU_TYPE_STRING:
+        case NEU_TYPE_BYTES:
+            memcpy(value->value.value.str, elem->value.value.str,
+                   sizeof(elem->value.value.str));
+            break;
+        }
+
+        for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
+            if (elem->metas[i].name != NULL &&
+                strlen(elem->metas[i].name) > 0) {
+                memcpy(&value->metas[i], &elem->metas[i],
+                       sizeof(neu_tag_meta_t));
+            }
+        }
+
+        if (elem->value.type != NEU_TYPE_ERROR) {
+            elem->changed = false;
+        }
+        ret = 0;
+    }
+
+    nng_mtx_unlock(cache->mtx);
+
+    return ret;
+}
+
 int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
                          const char *tag, neu_driver_cache_value_t *value)
 {

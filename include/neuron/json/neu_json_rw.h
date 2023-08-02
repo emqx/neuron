@@ -38,11 +38,19 @@ typedef struct {
 } neu_json_read_periodic_t;
 
 typedef struct {
+    char *               name;
+    enum neu_json_type   t;
+    union neu_json_value value;
+} neu_json_tag_meta_t;
+
+typedef struct {
     int64_t              error;
     char *               name;
     enum neu_json_type   t;
     union neu_json_value value;
     uint8_t              precision;
+    int                  n_meta;
+    neu_json_tag_meta_t *metas;
 } neu_json_read_resp_tag_t;
 
 typedef struct {
