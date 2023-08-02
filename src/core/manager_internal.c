@@ -624,6 +624,14 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
     return manager_subscribe(manager, app, driver, group, params);
 }
 
+int neu_manager_update_subscribe(neu_manager_t *manager, const char *app,
+                                 const char *driver, const char *group,
+                                 const char *params)
+{
+    return neu_subscribe_manager_update_params(manager->subscribe_manager, app,
+                                               driver, group, params);
+}
+
 int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
                                const char *driver, const char *group,
                                const char *params)

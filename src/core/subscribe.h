@@ -64,5 +64,8 @@ int neu_subscribe_manager_update_app_name(neu_subscribe_mgr_t *mgr,
 int neu_subscribe_manager_update_driver_name(neu_subscribe_mgr_t *mgr,
                                              const char *         driver,
                                              const char *         new_name);
+int neu_subscribe_manager_update_params(neu_subscribe_mgr_t *mgr,
+                                        const char *app, const char *driver,
+                                        const char *group, const char *params);
 
 #endif

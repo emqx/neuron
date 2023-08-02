@@ -465,6 +465,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_REQ_SUBSCRIBE_GROUP:
+    case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
     case NEU_REQ_UNSUBSCRIBE_GROUP:
     case NEU_RESP_READ_GROUP:
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
@@ -1422,6 +1423,7 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_resp_get_tag_t);
         break;
     case NEU_REQ_SUBSCRIBE_GROUP:
+    case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
         data_size = sizeof(neu_req_subscribe_t);
         break;
     case NEU_REQ_UNSUBSCRIBE_GROUP:

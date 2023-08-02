@@ -194,27 +194,50 @@ void handle_get_driver_group_resp(nng_aio *                    aio,
     utarray_free(groups->groups);
 }
 
-void handle_grp_subscribe(nng_aio *aio)
+static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
+                                 neu_json_subscribe_req_t *req)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = type,
+    };
+
+    neu_req_subscribe_t cmd = { 0 };
+    strcpy(cmd.app, req->app);
+    strcpy(cmd.driver, req->driver);
+    strcpy(cmd.group, req->group);
+    cmd.params  = req->params; // ownership moved
+    req->params = NULL;
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+void handle_grp_subscribe(nng_aio *aio)
+{
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req, {
-            int                 ret    = 0;
-            neu_req_subscribe_t cmd    = { 0 };
-            neu_reqresp_head_t  header = { 0 };
-            header.ctx                 = aio;
-            header.type                = NEU_REQ_SUBSCRIBE_GROUP;
-            strcpy(cmd.app, req->app);
-            strcpy(cmd.driver, req->driver);
-            strcpy(cmd.group, req->group);
-            cmd.params  = req->params; // ownership moved
-            req->params = NULL;
-            ret         = neu_plugin_op(plugin, header, &cmd);
+            int ret = send_subscribe(aio, NEU_REQ_SUBSCRIBE_GROUP, req);
             if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}
+
+void handle_grp_update_subscribe(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_subscribe_req_t, neu_json_decode_subscribe_req, {
+            int ret = send_subscribe(aio, NEU_REQ_UPDATE_SUBSCRIBE_GROUP, req);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
             }
         })
 }
