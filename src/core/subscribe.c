@@ -239,8 +239,8 @@ int neu_subscribe_manager_update_params(neu_subscribe_mgr_t *mgr,
         return NEU_ERR_GROUP_NOT_SUBSCRIBE;
     }
 
-    char *p = strdup(params);
-    if (NULL == p) {
+    char *p = NULL;
+    if (params && NULL == (p = strdup(params))) {
         return NEU_ERR_EINTERNAL;
     }
 
