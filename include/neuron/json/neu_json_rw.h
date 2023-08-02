@@ -27,6 +27,8 @@
 
 #include "json/json.h"
 
+#include "tag.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -112,6 +114,9 @@ int  neu_json_decode_read_req(char *buf, neu_json_read_req_t **result);
 void neu_json_decode_read_req_free(neu_json_read_req_t *req);
 
 int neu_json_encode_read_periodic_resp(void *json_object, void *param);
+
+void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
+                            neu_json_read_resp_tag_t *json_tag);
 
 #ifdef __cplusplus
 }

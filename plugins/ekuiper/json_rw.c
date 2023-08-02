@@ -43,87 +43,12 @@ int wrap_tag_data(neu_json_read_resp_tag_t * json_tag,
     if (json_tag->n_meta > 0) {
         json_tag->metas = (neu_json_tag_meta_t *) calloc(
             json_tag->n_meta, sizeof(neu_json_tag_meta_t));
-    }
-
-    for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
-        if (strlen(tag_value->metas[k].name) > 0) {
-            json_tag->metas[k].name = tag_value->metas[k].name;
-            switch (tag_value->metas[k].value.type) {
-            case NEU_TYPE_UINT8:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.u8;
-                break;
-            case NEU_TYPE_INT8:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.i8;
-                break;
-            case NEU_TYPE_INT16:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.i16;
-                break;
-            case NEU_TYPE_INT32:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.i32;
-                break;
-            case NEU_TYPE_INT64:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.i64;
-                break;
-            case NEU_TYPE_WORD:
-            case NEU_TYPE_UINT16:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.u16;
-                break;
-            case NEU_TYPE_DWORD:
-            case NEU_TYPE_UINT32:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.u32;
-                break;
-            case NEU_TYPE_LWORD:
-            case NEU_TYPE_UINT64:
-                json_tag->metas[k].t = NEU_JSON_INT;
-                json_tag->metas[k].value.val_int =
-                    tag_value->metas[k].value.value.u64;
-                break;
-            case NEU_TYPE_FLOAT:
-                json_tag->metas[k].t = NEU_JSON_FLOAT;
-                json_tag->metas[k].value.val_float =
-                    tag_value->metas[k].value.value.f32;
-                break;
-            case NEU_TYPE_DOUBLE:
-                json_tag->metas[k].t = NEU_JSON_DOUBLE;
-                json_tag->metas[k].value.val_double =
-                    tag_value->metas[k].value.value.d64;
-                break;
-            case NEU_TYPE_BOOL:
-                json_tag->metas[k].t = NEU_JSON_BOOL;
-                json_tag->metas[k].value.val_bool =
-                    tag_value->metas[k].value.value.boolean;
-                break;
-            case NEU_TYPE_BIT:
-                json_tag->metas[k].t = NEU_JSON_BIT;
-                json_tag->metas[k].value.val_bit =
-                    tag_value->metas[k].value.value.u8;
-                break;
-            case NEU_TYPE_STRING:
-                json_tag->metas[k].t = NEU_JSON_STR;
-                json_tag->metas[k].value.val_str =
-                    tag_value->metas[k].value.value.str;
-                break;
-            default:
-                break;
-            }
-        } else {
-            break;
+        if (json_tag->metas == NULL) {
+            return -1;
         }
     }
+
+    neu_json_metas_to_json(tag_value->metas, NEU_TAG_META_SIZE, json_tag);
 
     json_tag->name  = tag_value->tag;
     json_tag->error = NEU_ERR_SUCCESS;
@@ -230,17 +155,25 @@ int json_encode_read_resp_tags(void *json_object, void *param)
     neu_reqresp_trans_data_t *trans_data    = resp->trans_data;
     void *                    values_object = NULL;
     void *                    errors_object = NULL;
-    void *                    metas_object  = neu_json_encode_new();
+    void *                    metas_object  = NULL;
+
+    metas_object = neu_json_encode_new();
+    if (NULL == metas_object) {
+        plog_error(plugin, "ekuiper cannot allocate json object");
+        return -1;
+    }
 
     values_object = neu_json_encode_new();
     if (NULL == values_object) {
         plog_error(plugin, "ekuiper cannot allocate json object");
+        json_decref(metas_object);
         return -1;
     }
     errors_object = neu_json_encode_new();
     if (NULL == errors_object) {
         plog_error(plugin, "ekuiper cannot allocate json object");
         json_decref(values_object);
+        json_decref(metas_object);
         return -1;
     }
 
@@ -274,7 +207,7 @@ int json_encode_read_resp_tags(void *json_object, void *param)
                 .t            = NEU_JSON_OBJECT,
                 .v.val_object = meta,
             };
-            ret = neu_json_encode_field(metas_object, &meta_elem, 1);
+            neu_json_encode_field(metas_object, &meta_elem, 1);
             free(json_tag.metas);
         }
 
@@ -284,6 +217,7 @@ int json_encode_read_resp_tags(void *json_object, void *param)
         if (0 != ret) {
             json_decref(errors_object);
             json_decref(values_object);
+            json_decref(metas_object);
             return ret;
         }
     }

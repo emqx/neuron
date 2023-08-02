@@ -1386,7 +1386,9 @@ static void read_group(int64_t timestamp, int64_t timeout,
 
         strcpy(datas[index].tag, tag->name);
 
-        if (neu_driver_cache_get(cache, group, tag->name, &value) != 0) {
+        if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
+                                      datas[index].metas,
+                                      NEU_TAG_META_SIZE) != 0) {
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
             continue;
