@@ -612,9 +612,9 @@ int neu_persister_store_node(neu_persist_node_info_t *info)
                         "INSERT INTO nodes (name, type, state, plugin_name) "
                         "VALUES (%Q, %i, %i, %Q)",
                         info->name, info->type, info->state, info->plugin_name);
-    }
-    if (0 == rv) {
-        node_count_add(1);
+        if (0 == rv) {
+            node_count_add(1);
+        }
     }
     return rv;
 }
