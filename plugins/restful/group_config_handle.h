@@ -34,6 +34,7 @@ void handle_get_driver_group_resp(nng_aio *                    aio,
 void handle_grp_subscribe(nng_aio *aio);
 void handle_grp_update_subscribe(nng_aio *aio);
 void handle_grp_unsubscribe(nng_aio *aio);
+void handle_grp_subscribes(nng_aio *aio);
 void handle_grp_get_subscribe(nng_aio *aio);
 void handle_grp_get_subscribe_resp(nng_aio *                       aio,
                                    neu_resp_get_subscribe_group_t *groups);

@@ -265,6 +265,47 @@ void handle_grp_unsubscribe(nng_aio *aio)
         })
 }
 
+static inline int send_subscribe_groups(nng_aio *                        aio,
+                                        neu_json_subscribe_groups_req_t *req)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_SUBSCRIBE_GROUPS,
+    };
+
+    neu_req_subscribe_groups_t cmd = {
+        .app     = req->app,
+        .n_group = req->n_group,
+        .groups  = (neu_req_subscribe_group_info_t *) req->groups,
+    };
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    // ownership moved
+    req->app     = NULL;
+    req->n_group = 0;
+    req->groups  = NULL;
+
+    return 0;
+}
+
+void handle_grp_subscribes(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_subscribe_groups_req_t,
+        neu_json_decode_subscribe_groups_req, {
+            int ret = send_subscribe_groups(aio, req);
+            if (0 != ret) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
+}
+
 void handle_grp_get_subscribe(nng_aio *aio)
 {
     int                           ret    = 0;
