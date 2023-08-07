@@ -29,6 +29,9 @@
 
 #include "json/json.h"
 
+#include "define.h"
+#include "tag.h"
+
 #include "json/neu_json_rw.h"
 
 int neu_json_encode_read_resp(void *json_object, void *param)
@@ -39,7 +42,7 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     void *                    tag_array = neu_json_array();
     neu_json_read_resp_tag_t *p_tag     = resp->tags;
     for (int i = 0; i < resp->n_tag; i++) {
-        neu_json_elem_t tag_elems[2] = { 0 };
+        neu_json_elem_t tag_elems[2 + NEU_TAG_META_SIZE] = { 0 };
 
         tag_elems[0].name      = "name";
         tag_elems[0].t         = NEU_JSON_STR;
@@ -56,8 +59,14 @@ int neu_json_encode_read_resp(void *json_object, void *param)
             tag_elems[1].precision = p_tag->precision;
         }
 
-        tag_array = neu_json_encode_array(tag_array, tag_elems,
-                                          NEU_JSON_ELEM_SIZE(tag_elems));
+        for (int k = 0; k < p_tag->n_meta; k++) {
+            tag_elems[2 + k].name = p_tag->metas[k].name;
+            tag_elems[2 + k].t    = p_tag->metas[k].t;
+            tag_elems[2 + k].v    = p_tag->metas[k].value;
+        }
+
+        tag_array =
+            neu_json_encode_array(tag_array, tag_elems, 2 + p_tag->n_meta);
         p_tag++;
     }
 
@@ -77,9 +86,11 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
     int                   ret  = 0;
     neu_json_read_resp_t *resp = (neu_json_read_resp_t *) param;
 
-    void *                    values = neu_json_encode_new();
-    void *                    errors = neu_json_encode_new();
-    neu_json_read_resp_tag_t *p_tag  = resp->tags;
+    void *values = neu_json_encode_new();
+    void *errors = neu_json_encode_new();
+    void *metas  = neu_json_encode_new();
+
+    neu_json_read_resp_tag_t *p_tag = resp->tags;
     for (int i = 0; i < resp->n_tag; i++) {
         neu_json_elem_t tag_elem = { 0 };
 
@@ -96,20 +107,45 @@ int neu_json_encode_read_resp1(void *json_object, void *param)
             neu_json_encode_field(errors, &tag_elem, 1);
         }
 
+        if (p_tag->n_meta > 0) {
+            void *meta = neu_json_encode_new();
+            for (int k = 0; k < p_tag->n_meta; k++) {
+                neu_json_elem_t meta_elem = { 0 };
+                meta_elem.name            = p_tag->metas[k].name;
+                meta_elem.t               = p_tag->metas[k].t;
+                meta_elem.v               = p_tag->metas[k].value;
+                neu_json_encode_field(meta, &meta_elem, 1);
+            }
+
+            neu_json_elem_t meta_elem = { 0 };
+            meta_elem.name            = p_tag->name;
+            meta_elem.t               = NEU_JSON_OBJECT;
+            meta_elem.v.val_object    = meta;
+            neu_json_encode_field(metas, &meta_elem, 1);
+        }
+
         p_tag++;
     }
 
-    neu_json_elem_t resp_elems[] = { {
-                                         .name         = "values",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = values,
-                                     },
-                                     {
-                                         .name         = "errors",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = errors,
+    neu_json_elem_t resp_elems[] = {
+        {
+            .name         = "values",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = values,
+        },
+        {
+            .name         = "errors",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = errors,
 
-                                     } };
+        },
+        {
+            .name         = "metas",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = metas,
+
+        },
+    };
 
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
@@ -433,4 +469,76 @@ int neu_json_encode_read_periodic_resp(void *json_object, void *param)
                                 NEU_JSON_ELEM_SIZE(resp_elems));
 
     return ret;
+}
+
+void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
+                            neu_json_read_resp_tag_t *json_tag)
+{
+    for (int k = 0; k < n_meta; k++) {
+        if (strlen(metas[k].name) > 0) {
+            json_tag->metas[k].name = metas[k].name;
+            switch (metas[k].value.type) {
+            case NEU_TYPE_UINT8:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u8;
+                break;
+            case NEU_TYPE_INT8:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i8;
+                break;
+            case NEU_TYPE_INT16:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i16;
+                break;
+            case NEU_TYPE_INT32:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i32;
+                break;
+            case NEU_TYPE_INT64:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.i64;
+                break;
+            case NEU_TYPE_WORD:
+            case NEU_TYPE_UINT16:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u16;
+                break;
+            case NEU_TYPE_DWORD:
+            case NEU_TYPE_UINT32:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u32;
+                break;
+            case NEU_TYPE_LWORD:
+            case NEU_TYPE_UINT64:
+                json_tag->metas[k].t             = NEU_JSON_INT;
+                json_tag->metas[k].value.val_int = metas[k].value.value.u64;
+                break;
+            case NEU_TYPE_FLOAT:
+                json_tag->metas[k].t               = NEU_JSON_FLOAT;
+                json_tag->metas[k].value.val_float = metas[k].value.value.f32;
+                break;
+            case NEU_TYPE_DOUBLE:
+                json_tag->metas[k].t                = NEU_JSON_DOUBLE;
+                json_tag->metas[k].value.val_double = metas[k].value.value.d64;
+                break;
+            case NEU_TYPE_BOOL:
+                json_tag->metas[k].t = NEU_JSON_BOOL;
+                json_tag->metas[k].value.val_bool =
+                    metas[k].value.value.boolean;
+                break;
+            case NEU_TYPE_BIT:
+                json_tag->metas[k].t             = NEU_JSON_BIT;
+                json_tag->metas[k].value.val_bit = metas[k].value.value.u8;
+                break;
+            case NEU_TYPE_STRING:
+                json_tag->metas[k].t             = NEU_JSON_STR;
+                json_tag->metas[k].value.val_str = metas[k].value.value.str;
+                break;
+            default:
+                break;
+            }
+        } else {
+            break;
+        }
+    }
 }

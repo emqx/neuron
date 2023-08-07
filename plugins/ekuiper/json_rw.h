@@ -38,8 +38,8 @@ typedef struct {
     uint64_t timestamp;
 } json_read_resp_header_t;
 
-int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
-                  neu_resp_tag_value_t *    tag_value);
+int wrap_tag_data(neu_json_read_resp_tag_t * json_tag,
+                  neu_resp_tag_value_meta_t *tag_value);
 
 typedef struct {
     neu_plugin_t *            plugin;

@@ -638,6 +638,12 @@ typedef struct neu_resp_tag_value {
     neu_dvalue_t value;
 } neu_resp_tag_value_t;
 
+typedef struct neu_resp_tag_value_meta {
+    char           tag[NEU_TAG_NAME_LEN];
+    neu_dvalue_t   value;
+    neu_tag_meta_t metas[NEU_TAG_META_SIZE];
+} neu_resp_tag_value_meta_t;
+
 typedef struct neu_req_write_tags {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
@@ -647,17 +653,17 @@ typedef struct neu_req_write_tags {
 } neu_req_write_tags_t;
 
 typedef struct {
-    char                  driver[NEU_NODE_NAME_LEN];
-    char                  group[NEU_GROUP_NAME_LEN];
-    uint16_t              n_tag;
-    neu_resp_tag_value_t *tags;
+    char                       driver[NEU_NODE_NAME_LEN];
+    char                       group[NEU_GROUP_NAME_LEN];
+    uint16_t                   n_tag;
+    neu_resp_tag_value_meta_t *tags;
 } neu_resp_read_group_t;
 
 typedef struct {
-    char                 driver[NEU_NODE_NAME_LEN];
-    char                 group[NEU_GROUP_NAME_LEN];
-    uint16_t             n_tag;
-    neu_resp_tag_value_t tags[];
+    char                      driver[NEU_NODE_NAME_LEN];
+    char                      group[NEU_GROUP_NAME_LEN];
+    uint16_t                  n_tag;
+    neu_resp_tag_value_meta_t tags[];
 } neu_reqresp_trans_data_t;
 
 typedef struct {
@@ -799,7 +805,8 @@ typedef struct adapter_callbacks {
             void (*write_response)(neu_adapter_t *adapter, void *req,
                                    int error);
             void (*update_im)(neu_adapter_t *adapter, const char *group,
-                              const char *tag, neu_dvalue_t value);
+                              const char *tag, neu_dvalue_t value,
+                              neu_tag_meta_t *metas, int n_meta);
         } driver;
     };
 } adapter_callbacks_t;

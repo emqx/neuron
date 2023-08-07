@@ -25,12 +25,30 @@
 #include "json_rw.h"
 #include "plugin_ekuiper.h"
 
-int wrap_tag_data(neu_json_read_resp_tag_t *json_tag,
-                  neu_resp_tag_value_t *    tag_value)
+int wrap_tag_data(neu_json_read_resp_tag_t * json_tag,
+                  neu_resp_tag_value_meta_t *tag_value)
 {
     if (NULL == json_tag || NULL == tag_value) {
         return -1;
     }
+
+    for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+        if (strlen(tag_value->metas[k].name) > 0) {
+            json_tag->n_meta++;
+        } else {
+            break;
+        }
+    }
+
+    if (json_tag->n_meta > 0) {
+        json_tag->metas = (neu_json_tag_meta_t *) calloc(
+            json_tag->n_meta, sizeof(neu_json_tag_meta_t));
+        if (json_tag->metas == NULL) {
+            return -1;
+        }
+    }
+
+    neu_json_metas_to_json(tag_value->metas, NEU_TAG_META_SIZE, json_tag);
 
     json_tag->name  = tag_value->tag;
     json_tag->error = NEU_ERR_SUCCESS;
@@ -137,16 +155,25 @@ int json_encode_read_resp_tags(void *json_object, void *param)
     neu_reqresp_trans_data_t *trans_data    = resp->trans_data;
     void *                    values_object = NULL;
     void *                    errors_object = NULL;
+    void *                    metas_object  = NULL;
+
+    metas_object = neu_json_encode_new();
+    if (NULL == metas_object) {
+        plog_error(plugin, "ekuiper cannot allocate json object");
+        return -1;
+    }
 
     values_object = neu_json_encode_new();
     if (NULL == values_object) {
         plog_error(plugin, "ekuiper cannot allocate json object");
+        json_decref(metas_object);
         return -1;
     }
     errors_object = neu_json_encode_new();
     if (NULL == errors_object) {
         plog_error(plugin, "ekuiper cannot allocate json object");
         json_decref(values_object);
+        json_decref(metas_object);
         return -1;
     }
 
@@ -164,12 +191,33 @@ int json_encode_read_resp_tags(void *json_object, void *param)
             .precision = trans_data->tags[i].value.precision,
         };
 
+        if (json_tag.n_meta > 0) {
+            void *meta = neu_json_encode_new();
+            for (int k = 0; k < json_tag.n_meta; k++) {
+                neu_json_elem_t meta_elem = {
+                    .name = json_tag.metas[k].name,
+                    .t    = json_tag.metas[k].t,
+                    .v    = json_tag.metas[k].value,
+                };
+                neu_json_encode_field(meta, &meta_elem, 1);
+            }
+
+            neu_json_elem_t meta_elem = {
+                .name         = json_tag.name,
+                .t            = NEU_JSON_OBJECT,
+                .v.val_object = meta,
+            };
+            neu_json_encode_field(metas_object, &meta_elem, 1);
+            free(json_tag.metas);
+        }
+
         ret = neu_json_encode_field((0 != json_tag.error) ? errors_object
                                                           : values_object,
                                     &tag_elem, 1);
         if (0 != ret) {
             json_decref(errors_object);
             json_decref(values_object);
+            json_decref(metas_object);
             return ret;
         }
     }
@@ -184,6 +232,11 @@ int json_encode_read_resp_tags(void *json_object, void *param)
                                          .t            = NEU_JSON_OBJECT,
                                          .v.val_object = errors_object,
 
+                                     },
+                                     {
+                                         .name         = "metas",
+                                         .t            = NEU_JSON_OBJECT,
+                                         .v.val_object = metas_object,
                                      } };
     // steals `values_object` and `errors_object`
     ret = neu_json_encode_field(json_object, resp_elems,

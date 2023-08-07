@@ -182,8 +182,25 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
     api_res.tags  = calloc(api_res.n_tag, sizeof(neu_json_read_resp_tag_t));
 
     for (int i = 0; i < resp->n_tag; i++) {
+        neu_resp_tag_value_meta_t *tag = &resp->tags[i];
+
         api_res.tags[i].name  = resp->tags[i].tag;
         api_res.tags[i].error = NEU_ERR_SUCCESS;
+
+        for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+            if (strlen(tag->metas[k].name) > 0) {
+                api_res.tags[i].n_meta++;
+            } else {
+                break;
+            }
+        }
+
+        if (api_res.tags[i].n_meta > 0) {
+            api_res.tags[i].metas = (neu_json_tag_meta_t *) calloc(
+                api_res.tags[i].n_meta, sizeof(neu_json_tag_meta_t));
+        }
+
+        neu_json_metas_to_json(tag->metas, NEU_TAG_META_SIZE, &api_res.tags[i]);
 
         switch (resp->tags[i].value.type) {
         case NEU_TYPE_INT8:
@@ -254,6 +271,11 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
     }
 
     neu_json_encode_by_fn(&api_res, neu_json_encode_read_resp, &result);
+    for (int i = 0; i < resp->n_tag; i++) {
+        if (api_res.tags[i].n_meta > 0) {
+            free(api_res.tags[i].metas);
+        }
+    }
     neu_http_ok(aio, result);
     free(api_res.tags);
     free(result);

@@ -40,6 +40,9 @@
 #define NEU_LOG_LEVEL_LEN 9
 #define NEU_FILE_PATH_LEN 128
 
+#define NEU_TAG_META_LENGTH 20
+#define NEU_TAG_META_SIZE 3
+
 extern int  default_log_level;
 extern bool disable_jwt;
 

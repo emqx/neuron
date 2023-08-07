@@ -28,9 +28,6 @@ config_ **/
 #include "utils/utextend.h"
 #include "json/json.h"
 
-#define NEU_TAG_META_LENGTH 20
-#define NEU_TAG_META_SIZE 3
-
 typedef enum {
     NEU_ATTRIBUTE_READ      = 1,
     NEU_ATTRIBUTE_WRITE     = 2,
