@@ -81,6 +81,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/subscribe",
     },
     {
+        .url = "/api/v2/subscribes",
+    },
+    {
         .url = "/api/v2/schema",
     },
     {
@@ -303,6 +306,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/subscribe",
         .value.handler = handle_grp_get_subscribe,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/subscribes",
+        .value.handler = handle_grp_subscribes,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

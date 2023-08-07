@@ -24,6 +24,41 @@ North APP subscribe existent group, it should return success
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
+North APP update subscribe nonexistent group, it should return success
+	${res}=     Update Subscribe    mqtt        modbus-node   group1  topic=/neuron
+
+	Check Response Status           ${res}      404
+	Check Error Code                ${res}      ${NEU_ERR_GROUP_NOT_SUBSCRIBE}
+
+North APP update subscribe existent group, it should return success
+	${res}=     Update Subscribe    mqtt        modbus-node   group   topic=/neuron
+
+	Check Response Status           ${res}      200
+	Check Error Code                ${res}      ${NEU_ERR_SUCCESS}
+
+North APP subscribe multiple nonexistent groups, it should fail.
+	${g1} =     Evaluate            {"driver":"modbus-node", "group": "group1"}
+	${g2} =     Evaluate            {"driver": "modbus-node", "group": "group2", "params":{"topic":"/neuron"}}
+
+	${res}=     Subscribe Groups    mqtt        ${g1}         ${g2}
+
+	Check Response Status           ${res}      404
+	Check Error Code                ${res}      ${NEU_ERR_GROUP_NOT_EXIST}
+
+North APP subscribe multiple groups, it should return success
+	Add Group   modbus-node         group1      1000
+	Add Group   modbus-node         group2      1000
+	${g1} =     Evaluate            {"driver":"modbus-node", "group": "group1"}
+	${g2} =     Evaluate            {"driver": "modbus-node", "group": "group2", "params":{"topic":"/neuron"}}
+
+	${res}=     Subscribe Groups    mqtt        ${g1}         ${g2}
+
+	Check Response Status           ${res}      200
+	Check Error Code                ${res}      ${NEU_ERR_SUCCESS}
+
+  [Teardown]  Run Keywords        Del Group   modbus-node   group1
+  ...         AND                 Del Group   modbus-node   group2
+
 Query the subscribers of the group, it should return all nodes subscribed to this group
 	${res} =                  Get Subscribe Group		mqtt
 	Check Response Status     ${res}                          200
@@ -32,6 +67,7 @@ Query the subscribers of the group, it should return all nodes subscribed to thi
  	Should Be Equal As Integers	${len}		1
 	Should Be Equal As Strings	${res}[groups][0][driver]	modbus-node
 	Should Be Equal As Strings	${res}[groups][0][group]	group
+	Should Be Equal As Strings	${res}[groups][0][params][topic]	/neuron
 
 	Add Group  modbus-node  group1  1000
 	Subscribe Group  mqtt  modbus-node  group1

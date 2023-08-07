@@ -131,6 +131,23 @@ int neu_json_decode_update_group_config_req(
 void neu_json_decode_update_group_config_req_free(
     neu_json_update_group_config_req_t *req);
 
+typedef struct {
+    char *driver;
+    char *group;
+    char *params;
+} neu_json_subscribe_groups_info_t;
+
+typedef struct {
+    char *                            app;
+    int                               n_group;
+    neu_json_subscribe_groups_info_t *groups;
+} neu_json_subscribe_groups_req_t;
+
+int neu_json_decode_subscribe_groups_req(
+    char *buf, neu_json_subscribe_groups_req_t **result);
+void neu_json_decode_subscribe_groups_req_free(
+    neu_json_subscribe_groups_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif

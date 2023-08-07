@@ -701,6 +701,36 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(manager, header, &error);
         break;
     }
+    case NEU_REQ_SUBSCRIBE_GROUPS: {
+        neu_req_subscribe_groups_t *cmd =
+            (neu_req_subscribe_groups_t *) &header[1];
+        neu_resp_error_t error = { 0 };
+
+        for (uint16_t i = 0; i < cmd->n_group; ++i) {
+            neu_req_subscribe_group_info_t *info = &cmd->groups[i];
+
+            error.error = neu_manager_subscribe(manager, cmd->app, info->driver,
+                                                info->group, info->params);
+            if (0 != error.error) {
+                break;
+            }
+
+            error.error = neu_manager_send_subscribe(
+                manager, cmd->app, info->driver, info->group, info->params);
+            if (0 != error.error) {
+                break;
+            }
+
+            manager_storage_subscribe(manager, cmd->app, info->driver,
+                                      info->group, info->params);
+        }
+
+        neu_req_subscribe_groups_fini(cmd);
+        header->type = NEU_RESP_ERROR;
+        strcpy(header->receiver, header->sender);
+        reply(manager, header, &error);
+        break;
+    }
     case NEU_REQ_UPDATE_SUBSCRIBE_GROUP: {
         neu_req_subscribe_t *cmd   = (neu_req_subscribe_t *) &header[1];
         neu_resp_error_t     error = { 0 };

@@ -597,3 +597,129 @@ void neu_json_decode_update_group_config_req_free(
 
     free(req);
 }
+
+int neu_json_decode_subscribe_groups_info_json(
+    void *json_obj, neu_json_subscribe_groups_info_t *info)
+{
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "driver",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+    };
+    int ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                      req_elems);
+    if (ret != 0) {
+        free(req_elems[0].v.val_str);
+        free(req_elems[1].v.val_str);
+        return -1;
+    }
+
+    info->driver = req_elems[0].v.val_str;
+    info->group  = req_elems[1].v.val_str;
+
+    ret = dump_params(json_obj, &info->params);
+    if (0 != ret) {
+        free(req_elems[0].v.val_str);
+        free(req_elems[1].v.val_str);
+        return -1;
+    }
+
+    return 0;
+}
+
+void neu_json_decode_subscribe_groups_info_fini(
+    neu_json_subscribe_groups_info_t *req)
+{
+    free(req->driver);
+    free(req->group);
+    free(req->params);
+}
+
+int neu_json_decode_subscribe_groups_req(
+    char *buf, neu_json_subscribe_groups_req_t **result)
+{
+    int                               ret      = 0;
+    void *                            json_obj = NULL;
+    neu_json_subscribe_groups_req_t * req      = NULL;
+    neu_json_subscribe_groups_info_t *groups   = NULL;
+
+    req = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "app",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "groups",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (0 != ret) {
+        goto error;
+    }
+
+    json_t *group_arr = req_elems[1].v.val_object;
+    if (!json_is_array(group_arr)) {
+        goto error;
+    }
+
+    int n_group = json_array_size(group_arr);
+    groups      = calloc(n_group, sizeof(groups[0]));
+    if (NULL == groups) {
+        goto error;
+    }
+
+    for (int i = 0; i < n_group; ++i) {
+        void *info = json_array_get(group_arr, i);
+        if (0 != neu_json_decode_subscribe_groups_info_json(info, &groups[i])) {
+            while (--i >= 0) {
+                neu_json_decode_subscribe_groups_info_fini(&groups[i]);
+            }
+            goto error;
+        }
+    }
+
+    req->app     = req_elems[0].v.val_str;
+    req->n_group = n_group;
+    req->groups  = groups;
+    *result      = req;
+    neu_json_decode_free(json_obj);
+    return 0;
+
+error:
+    free(req_elems[0].v.val_str);
+    free(groups);
+    free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
+}
+
+void neu_json_decode_subscribe_groups_req_free(
+    neu_json_subscribe_groups_req_t *req)
+{
+    if (req) {
+        free(req->app);
+        for (int i = 0; i < req->n_group; ++i) {
+            neu_json_decode_subscribe_groups_info_fini(&req->groups[i]);
+        }
+        free(req->groups);
+        free(req);
+    }
+}
