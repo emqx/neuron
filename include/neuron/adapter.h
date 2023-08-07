@@ -48,6 +48,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_SUBSCRIBE_GROUP,
     NEU_REQ_UNSUBSCRIBE_GROUP,
     NEU_REQ_UPDATE_SUBSCRIBE_GROUP,
+    NEU_REQ_SUBSCRIBE_GROUPS,
     NEU_REQ_GET_SUBSCRIBE_GROUP,
     NEU_RESP_GET_SUBSCRIBE_GROUP,
     NEU_REQ_GET_SUB_DRIVER_TAGS,
@@ -151,6 +152,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_SUBSCRIBE_GROUP]        = "NEU_REQ_SUBSCRIBE_GROUP",
     [NEU_REQ_UNSUBSCRIBE_GROUP]      = "NEU_REQ_UNSUBSCRIBE_GROUP",
     [NEU_REQ_UPDATE_SUBSCRIBE_GROUP] = "NEU_REQ_UPDATE_SUBSCRIBE_GROUP",
+    [NEU_REQ_SUBSCRIBE_GROUPS]       = "NEU_REQ_SUBSCRIBE_GROUPS",
     [NEU_REQ_GET_SUBSCRIBE_GROUP]    = "NEU_REQ_GET_SUBSCRIBE_GROUP",
     [NEU_RESP_GET_SUBSCRIBE_GROUP]   = "NEU_RESP_GET_SUBSCRIBE_GROUP",
     [NEU_REQ_GET_SUB_DRIVER_TAGS]    = "NEU_REQ_GET_SUB_DRIVER_TAGS",
@@ -399,6 +401,30 @@ typedef struct {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
 } neu_req_unsubscribe_t;
+
+typedef struct {
+    char *driver;
+    char *group;
+    char *params;
+} neu_req_subscribe_group_info_t;
+
+typedef struct {
+    char *                          app;
+    uint16_t                        n_group;
+    neu_req_subscribe_group_info_t *groups;
+} neu_req_subscribe_groups_t;
+
+static inline void
+neu_req_subscribe_groups_fini(neu_req_subscribe_groups_t *req)
+{
+    for (uint16_t i = 0; i < req->n_group; ++i) {
+        free(req->groups[i].driver);
+        free(req->groups[i].group);
+        free(req->groups[i].params);
+    }
+    free(req->groups);
+    free(req->app);
+}
 
 typedef struct neu_req_get_subscribe_group {
     char app[NEU_NODE_NAME_LEN];

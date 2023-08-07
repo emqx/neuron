@@ -1429,6 +1429,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_UNSUBSCRIBE_GROUP:
         data_size = sizeof(neu_req_unsubscribe_t);
         break;
+    case NEU_REQ_SUBSCRIBE_GROUPS:
+        data_size = sizeof(neu_req_subscribe_groups_t);
+        break;
     case NEU_REQ_GET_SUBSCRIBE_GROUP:
     case NEU_REQ_GET_SUB_DRIVER_TAGS:
         data_size = sizeof(neu_req_get_subscribe_group_t);
