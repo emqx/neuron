@@ -141,6 +141,20 @@ Unsubscribe Group
   ${res} =            Object  response body
   [RETURN]            ${res}[0]
 
+Update Subscribe
+  [Arguments]         ${app}       ${driver}                ${group}            &{params}
+  ${data} =           Evaluate     json.dumps(${params})    json
+  PUT                 /api/v2/subscribe   {"app": "${app}", "driver": "${driver}", "group": "${group}", "params": ${data}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
+Subscribe Groups
+  [Arguments]         ${app}       @{groups}
+  ${data} =           Evaluate     json.dumps(${groups})    json
+  POST                /api/v2/subscribes  {"app": "${app}", "groups": ${data}}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
 Get Subscribe Group
   [Arguments]         ${app}
   GET                 /api/v2/subscribe?app=${app}
