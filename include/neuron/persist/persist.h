@@ -270,8 +270,9 @@ int neu_persister_store_group(const char *              driver_name,
  * @param group_info                group info to persist.
  * @return 0 on success, non-zero otherwise
  */
-int neu_persister_update_group(const char *              driver_name,
+int neu_persister_update_group(const char *driver_name, const char *group_name,
                                neu_persist_group_info_t *group_info);
+
 /**
  * Load all group config infos under an adapter.
  * @param driver_name               name of the driver who owns the group

@@ -124,6 +124,13 @@ int neu_manager_update_node_name(neu_manager_t *manager, const char *node,
     return ret;
 }
 
+int neu_manager_update_group_name(neu_manager_t *manager, const char *driver,
+                                  const char *group, const char *new_name)
+{
+    return neu_subscribe_manager_update_group_name(manager->subscribe_manager,
+                                                   driver, group, new_name);
+}
+
 static inline neu_plugin_instance_t *
 new_plugin_instance(neu_plugin_manager_t *plugin_manager, const char *plugin)
 {

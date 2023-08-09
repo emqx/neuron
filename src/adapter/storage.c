@@ -45,14 +45,14 @@ void adapter_storage_add_group(const char *node, const char *group,
 }
 
 void adapter_storage_update_group(const char *node, const char *group,
-                                  uint32_t interval)
+                                  const char *new_name, uint32_t interval)
 {
     neu_persist_group_info_t info = {
-        .name     = (char *) group,
+        .name     = (char *) new_name,
         .interval = interval,
     };
 
-    int rv = neu_persister_update_group(node, &info);
+    int rv = neu_persister_update_group(node, group, &info);
     if (0 != rv) {
         nlog_error("fail update adapter:%s group:%s, interval: %u", node, group,
                    interval);

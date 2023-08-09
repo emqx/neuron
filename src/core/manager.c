@@ -873,6 +873,19 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
+    case NEU_RESP_UPDATE_GROUP: {
+        neu_resp_update_group_t *resp = (neu_resp_update_group_t *) &header[1];
+        if (0 == resp->error) {
+            neu_manager_update_group_name(manager, resp->driver, resp->group,
+                                          resp->new_name);
+        }
+
+        neu_resp_error_t e = { .error = resp->error };
+        header->type       = NEU_RESP_ERROR;
+        reply(manager, header, &e);
+        break;
+    }
+
     case NEU_REQ_ADD_NODE_EVENT:
     case NEU_REQ_DEL_NODE_EVENT:
     case NEU_REQ_NODE_CTL_EVENT:

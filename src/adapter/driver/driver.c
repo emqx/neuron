@@ -712,33 +712,66 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
 }
 
 int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
-                                    const char *name, uint32_t interval)
+                                    const char *name, const char *new_name,
+                                    uint32_t interval)
 {
+    int      ret  = 0;
     group_t *find = NULL;
-    int      ret  = NEU_ERR_GROUP_NOT_EXIST;
 
     HASH_FIND_STR(driver->groups, name, find);
-    if (find != NULL) {
-        neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
-        neu_event_del_timer(driver->driver_events, find->read);
-
-        neu_event_timer_param_t param = {
-            .second      = interval / 1000,
-            .millisecond = interval % 1000,
-            .usr_data    = (void *) find,
-            .type        = NEU_EVENT_TIMER_NOBLOCK,
-        };
-
-        neu_group_set_interval(find->group, interval);
-
-        param.cb     = report_callback;
-        find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
-        param.type   = driver->adapter.module->timer_type;
-        param.cb     = read_callback;
-        find->read   = neu_event_add_timer(driver->driver_events, param);
-
-        ret = NEU_ERR_SUCCESS;
+    if (NULL == find) {
+        return NEU_ERR_GROUP_NOT_EXIST;
     }
+
+    if (NULL != new_name && 0 == strlen(new_name)) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    // stop the timer first to avoid race condition
+    neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
+    neu_event_del_timer(driver->driver_events, find->read);
+
+    // a diminutive value should keep the interval untouched
+    if (interval < NEU_GROUP_INTERVAL_LIMIT) {
+        interval = neu_group_get_interval(find->group);
+    }
+
+    // update group name if a different name is provided
+    if (NULL != new_name && 0 != strcmp(name, new_name)) {
+        char *new_name_cp1 = strdup(new_name);
+        char *new_name_cp2 = strdup(new_name);
+        if (new_name_cp1 && new_name_cp2 &&
+            0 == neu_group_set_name(find->group, new_name)) {
+            HASH_DEL(driver->groups, find);
+            free(find->name);
+            find->name = new_name_cp1;
+            free(find->grp.group_name);
+            find->grp.group_name = new_name_cp2;
+            neu_adapter_metric_update_group_name((neu_adapter_t *) driver, name,
+                                                 new_name);
+            HASH_ADD_STR(driver->groups, name, find);
+        } else {
+            free(new_name_cp1);
+            free(new_name_cp2);
+            ret = NEU_ERR_EINTERNAL;
+        }
+    }
+
+    neu_event_timer_param_t param = {
+        .second      = interval / 1000,
+        .millisecond = interval % 1000,
+        .usr_data    = (void *) find,
+        .type        = NEU_EVENT_TIMER_NOBLOCK,
+    };
+
+    neu_group_set_interval(find->group, interval);
+
+    // restore the timers
+    param.cb     = report_callback;
+    find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+    param.type   = driver->adapter.module->timer_type;
+    param.cb     = read_callback;
+    find->read   = neu_event_add_timer(driver->driver_events, param);
 
     return ret;
 }
