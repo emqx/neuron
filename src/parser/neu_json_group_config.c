@@ -540,60 +540,113 @@ void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req)
     free(req);
 }
 
+int neu_json_encode_update_group_config_req(void *json_object, void *param)
+{
+    int                                 ret = 0;
+    neu_json_update_group_config_req_t *req = param;
+
+    neu_json_elem_t req_elems[] = { {
+                                        .name      = "node",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->node,
+                                    },
+                                    {
+                                        .name      = "group",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->group,
+                                    },
+                                    {
+                                        .name      = "new_name",
+                                        .t         = NEU_JSON_STR,
+                                        .v.val_str = req->new_name,
+                                    } };
+    ret                         = neu_json_encode_field(json_object, req_elems,
+                                NEU_JSON_ELEM_SIZE(req_elems));
+    if (0 != ret) {
+        return ret;
+    }
+
+    if (req->set_interval) {
+        neu_json_elem_t interval_elem = {
+            .name      = "interval",
+            .t         = NEU_JSON_INT,
+            .v.val_int = req->interval,
+        };
+        ret = neu_json_encode_field(json_object, &interval_elem, 1);
+    }
+
+    return ret;
+}
+
 int neu_json_decode_update_group_config_req(
     char *buf, neu_json_update_group_config_req_t **result)
 {
-    int                                 ret      = 0;
-    void *                              json_obj = NULL;
-    neu_json_update_group_config_req_t *req =
-        calloc(1, sizeof(neu_json_update_group_config_req_t));
+    int ret = 0;
+
+    neu_json_update_group_config_req_t *req = calloc(1, sizeof(*req));
     if (req == NULL) {
         return -1;
     }
 
-    json_obj = neu_json_decode_new(buf);
-
-    neu_json_elem_t req_elems[] = { {
-                                        .name = "node_name",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "name",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "interval",
-                                        .t    = NEU_JSON_INT,
-                                    } };
-    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
-                                  req_elems);
-    if (ret != 0) {
-        goto decode_fail;
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
     }
 
-    req->node_name = req_elems[0].v.val_str;
-    req->name      = req_elems[1].v.val_str;
-    req->interval  = req_elems[2].v.val_int;
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "new_name",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+    ret       = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    req->node = req_elems[0].v.val_str;
+    req->group    = req_elems[1].v.val_str;
+    req->new_name = req_elems[2].v.val_str;
+    if (0 != ret) {
+        goto error;
+    }
+
+    neu_json_elem_t interval_elem = {
+        .name = "interval",
+        .t    = NEU_JSON_INT,
+    };
+    ret = neu_json_decode_by_json(json_obj, 1, &interval_elem);
+    if (0 == ret) {
+        req->set_interval = true;
+        req->interval     = interval_elem.v.val_int;
+    } else if (NULL == req->new_name) {
+        // at least one of `new_name` or `interval` should be provided
+        goto error;
+    }
 
     *result = req;
-    goto decode_exit;
+    neu_json_decode_free(json_obj);
+    return 0;
 
-decode_fail:
-    free(req);
-    ret = -1;
-
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
-    }
-    return ret;
+error:
+    neu_json_decode_update_group_config_req_free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
 }
 
 void neu_json_decode_update_group_config_req_free(
     neu_json_update_group_config_req_t *req)
 {
-    free(req->node_name);
-    free(req->name);
+    free(req->node);
+    free(req->group);
+    free(req->new_name);
 
     free(req);
 }

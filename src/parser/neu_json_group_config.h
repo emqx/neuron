@@ -44,6 +44,20 @@ void neu_json_decode_add_group_config_req_free(
     neu_json_add_group_config_req_t *req);
 
 typedef struct {
+    char *  node;
+    char *  group;
+    char *  new_name;
+    bool    set_interval;
+    int64_t interval;
+} neu_json_update_group_config_req_t;
+
+int neu_json_encode_update_group_config_req(void *json_object, void *param);
+int neu_json_decode_update_group_config_req(
+    char *buf, neu_json_update_group_config_req_t **result);
+void neu_json_decode_update_group_config_req_free(
+    neu_json_update_group_config_req_t *req);
+
+typedef struct {
     char *group;
     char *node;
 } neu_json_del_group_config_req_t;
@@ -119,17 +133,6 @@ typedef struct {
 int  neu_json_decode_unsubscribe_req(char *                       buf,
                                      neu_json_unsubscribe_req_t **result);
 void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req);
-
-typedef struct {
-    char *  name;
-    char *  node_name;
-    int64_t interval;
-} neu_json_update_group_config_req_t;
-
-int neu_json_decode_update_group_config_req(
-    char *buf, neu_json_update_group_config_req_t **result);
-void neu_json_decode_update_group_config_req_free(
-    neu_json_update_group_config_req_t *req);
 
 typedef struct {
     char *driver;
