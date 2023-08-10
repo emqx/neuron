@@ -27,7 +27,7 @@ struct modbus_sort_ctx {
     uint16_t end;
 };
 
-static __thread uint16_t modbus_read_max_byte = 255;
+static __thread uint16_t modbus_read_max_byte = 250;
 
 static int  tag_cmp(neu_tag_sort_elem_t *tag1, neu_tag_sort_elem_t *tag2);
 static bool tag_sort(neu_tag_sort_t *sort, void *tag, void *tag_to_be_sorted);
