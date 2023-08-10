@@ -40,7 +40,8 @@ jobs:
 
   ut:
     runs-on: ubuntu-20.04
-    container: neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-main
+
 
     steps:
       - uses: actions/checkout@v2
@@ -74,7 +75,7 @@ jobs:
 
   ft:
     runs-on: ubuntu-20.04
-    container: neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-main
 
     steps:
       - uses: actions/checkout@v2
