@@ -665,30 +665,29 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_UPDATE_GROUP: {
-        neu_req_update_group_t *cmd   = (neu_req_update_group_t *) &header[1];
-        neu_resp_error_t        error = { 0 };
+        neu_req_update_group_t *cmd  = (neu_req_update_group_t *) &header[1];
+        neu_resp_update_group_t resp = { 0 };
 
-        if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
-            error.error = NEU_ERR_GROUP_PARAMETER_INVALID;
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+            resp.error = neu_adapter_driver_update_group(
+                (neu_adapter_driver_t *) adapter, cmd->group, cmd->new_name,
+                cmd->interval);
         } else {
-            if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
-                error.error = neu_adapter_driver_update_group(
-                    (neu_adapter_driver_t *) adapter, cmd->group,
-                    cmd->interval);
-            } else {
-                error.error = NEU_ERR_GROUP_NOT_ALLOW;
-            }
+            resp.error = NEU_ERR_GROUP_NOT_ALLOW;
         }
 
-        if (error.error == NEU_ERR_SUCCESS) {
+        if (resp.error == NEU_ERR_SUCCESS) {
             adapter_storage_update_group(adapter->name, cmd->group,
-                                         cmd->interval);
+                                         cmd->new_name, cmd->interval);
             notify_monitor(adapter, NEU_REQ_UPDATE_GROUP_EVENT, cmd);
         }
 
+        strcpy(resp.driver, cmd->driver);
+        strcpy(resp.group, cmd->group);
+        strcpy(resp.new_name, cmd->new_name);
+        header->type = NEU_RESP_UPDATE_GROUP;
         neu_msg_exchange(header);
-        header->type = NEU_RESP_ERROR;
-        reply(adapter, header, &error);
+        reply(adapter, header, &resp);
         break;
     }
     case NEU_REQ_DEL_GROUP: {
@@ -1213,6 +1212,34 @@ int neu_adapter_update_group_metric(neu_adapter_t *adapter,
     return 0;
 }
 
+int neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
+                                         const char *   group_name,
+                                         const char *   new_group_name)
+{
+    neu_group_metrics_t *group_metrics = NULL;
+
+    if (NULL == adapter->metrics) {
+        return -1;
+    }
+
+    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
+    if (NULL == group_metrics) {
+        return -1;
+    }
+
+    char *name = strdup(new_group_name);
+    if (NULL == name) {
+        return -1;
+    }
+
+    HASH_DEL(adapter->metrics->group_metrics, group_metrics);
+    free(group_metrics->name);
+    group_metrics->name = name;
+    HASH_ADD_STR(adapter->metrics->group_metrics, name, group_metrics);
+
+    return 0;
+}
+
 void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
                                    const char *   group_name)
 {
@@ -1383,6 +1410,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_REQ_UPDATE_GROUP:
     case NEU_REQ_UPDATE_GROUP_EVENT:
         data_size = sizeof(neu_req_update_group_t);
+        break;
+    case NEU_RESP_UPDATE_GROUP:
+        data_size = sizeof(neu_resp_update_group_t);
         break;
     case NEU_REQ_DEL_GROUP:
     case NEU_REQ_DEL_GROUP_EVENT:

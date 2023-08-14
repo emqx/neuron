@@ -61,27 +61,68 @@ void handle_add_group_config(nng_aio *aio)
         })
 }
 
-void handle_update_group(nng_aio *aio)
+static inline int send_update_group(nng_aio *                           aio,
+                                    neu_json_update_group_config_req_t *req)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
-    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
-        aio, neu_json_update_group_req_t, neu_json_decode_add_group_config_req,
-        {
-            int                 ret    = 0;
-            neu_reqresp_head_t  header = { 0 };
-            neu_req_add_group_t cmd    = { 0 };
+    if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+        return NEU_ERR_NODE_NAME_TOO_LONG;
+    } else if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+        return NEU_ERR_GROUP_NAME_TOO_LONG;
+    } else if (req->set_interval &&
+               (req->interval < NEU_GROUP_INTERVAL_LIMIT ||
+                req->interval > UINT32_MAX)) {
+        return NEU_ERR_GROUP_PARAMETER_INVALID;
+    }
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_UPDATE_GROUP;
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            cmd.interval = req->interval;
-            ret          = neu_plugin_op(plugin, header, &cmd);
+    // for backward compatibility,
+    // `new_name` or `interval` (inclusive) should be provided
+    if (!req->new_name && !req->set_interval) {
+        return NEU_ERR_BODY_IS_WRONG;
+    }
+
+    neu_req_update_group_t cmd = { 0 };
+
+    if (req->new_name) {
+        // if `new_name` is provided, then it should be valid
+        int len = strlen(req->new_name);
+        if (0 == len) {
+            return NEU_ERR_BODY_IS_WRONG;
+        } else if (len >= NEU_GROUP_NAME_LEN) {
+            return NEU_ERR_GROUP_NAME_TOO_LONG;
+        }
+        strcpy(cmd.new_name, req->new_name);
+    } else {
+        // if `new_name` is omitted, then keep the node name
+        strcpy(cmd.new_name, req->group);
+    }
+
+    strcpy(cmd.driver, req->node);
+    strcpy(cmd.group, req->group);
+    cmd.interval = req->set_interval ? req->interval : 0;
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_UPDATE_GROUP,
+    };
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+void handle_update_group(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_update_group_config_req_t,
+        neu_json_decode_update_group_config_req, {
+            int ret = send_update_group(aio, req);
             if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
             }
         })
 }

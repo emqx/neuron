@@ -29,7 +29,7 @@ void adapter_storage_setting(const char *node, const char *setting);
 void adapter_storage_add_group(const char *node, const char *group,
                                uint32_t interval);
 void adapter_storage_update_group(const char *node, const char *group,
-                                  uint32_t interval);
+                                  const char *new_name, uint32_t interval);
 void adapter_storage_del_group(const char *node, const char *group);
 void adapter_storage_add_tag(const char *node, const char *group,
                              const neu_datatag_t *tag);

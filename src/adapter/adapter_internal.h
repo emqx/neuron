@@ -94,6 +94,9 @@ int  neu_adapter_register_group_metric(neu_adapter_t *adapter,
 int  neu_adapter_update_group_metric(neu_adapter_t *adapter,
                                      const char *   group_name,
                                      const char *metric_name, uint64_t n);
+int  neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
+                                          const char *   group_name,
+                                          const char *   new_group_name);
 void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
                                    const char *   group_name);
 

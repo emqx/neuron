@@ -78,6 +78,18 @@ const char *neu_group_get_name(const neu_group_t *group)
     return group->name;
 }
 
+int neu_group_set_name(neu_group_t *group, const char *name)
+{
+    char *new_name = NULL;
+    if (NULL == name || NULL == (new_name = strdup(name))) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    free(group->name);
+    group->name = new_name;
+    return 0;
+}
+
 uint32_t neu_group_get_interval(const neu_group_t *group)
 {
     uint32_t interval = 0;

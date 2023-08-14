@@ -59,6 +59,8 @@ UT_array *neu_manager_get_nodes(neu_manager_t *manager, int type,
                                 const char *plugin, const char *node);
 int       neu_manager_update_node_name(neu_manager_t *manager, const char *node,
                                        const char *new_name);
+int neu_manager_update_group_name(neu_manager_t *manager, const char *driver,
+                                  const char *group, const char *new_name);
 
 int  neu_manager_add_template(neu_manager_t *manager, const char *name,
                               const char *plugin, uint16_t n_group,
