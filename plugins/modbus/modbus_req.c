@@ -445,7 +445,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
 }
 
 int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
-                 neu_value_u value)
+                 neu_value_u value, bool response)
 {
     modbus_point_t point = { 0 };
     int            ret   = modbus_tag_to_point(tag, &point);
@@ -498,12 +498,44 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
     uint16_t response_size = 0;
     ret = modbus_stack_write(plugin->stack, req, point.slave_id, point.area,
                              point.start_address, point.n_register, value.bytes,
-                             n_byte, &response_size);
+                             n_byte, &response_size, response);
     if (ret > 0) {
         process_protocol_buf(plugin, point.slave_id, response_size);
     }
 
-    return 0;
+    return ret;
+}
+
+int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
+                     neu_value_u value)
+{
+    int ret = 0;
+    ret     = modbus_write(plugin, req, tag, value, true);
+    return ret;
+}
+
+int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
+{
+    int ret = 0;
+    int rv  = 0;
+
+    utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
+    {
+        ret = modbus_write(plugin, req, tv->tag, tv->value, false);
+        if (ret <= 0) {
+            rv = 1;
+        }
+    }
+
+    if (rv == 0) {
+        plugin->common.adapter_callbacks->driver.write_response(
+            plugin->common.adapter, req, NEU_ERR_SUCCESS);
+    } else {
+        plugin->common.adapter_callbacks->driver.write_response(
+            plugin->common.adapter, req, NEU_ERR_PLUGIN_DISCONNECTED);
+    }
+
+    return ret;
 }
 
 int modbus_write_resp(void *ctx, void *req, int error)

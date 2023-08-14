@@ -58,7 +58,11 @@ int modbus_send_msg(void *ctx, uint16_t n_byte, uint8_t *bytes);
 int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                         uint8_t *bytes, int error);
 int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
-                 neu_value_u value);
+                 neu_value_u value, bool response);
+int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
+                     neu_value_u value);
+int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags);
+
 int modbus_write_resp(void *ctx, void *req, int error);
 
 #endif

@@ -52,7 +52,7 @@ int  modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
 int  modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
                         enum modbus_area area, uint16_t start_address,
                         uint16_t n_reg, uint8_t *bytes, uint8_t n_byte,
-                        uint16_t *response_size);
+                        uint16_t *response_size, bool response);
 bool modbus_stack_is_rtu(modbus_stack_t *stack);
 
 #endif
