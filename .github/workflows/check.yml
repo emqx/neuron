@@ -104,3 +104,37 @@ jobs:
             ft/reports/output.xml
             ft/reports/report.html
             build/neuron.log
+
+  pyft:
+    runs-on: ubuntu-20.04
+    container: neugates/build:x86_64-main
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      
+      - name: compile
+        run: |
+          git config --global --add safe.directory $(pwd)
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          make -j4
+
+      - name: fetch neu-ft
+        uses: actions/checkout@v2
+        with:
+            repository: neugates/neu-ft
+            path: neu-ft
+
+      - name: function test
+        run: |
+          pip install -U pytest
+          pip install requests
+          pytest -s neu-ft/neuron
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pyft_result
+          path: |
+            neu-ft/neuron/report
