@@ -504,9 +504,9 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) &req[1];
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        free_tags(cmd);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
-        free_tags(cmd);
         return;
     }
 
