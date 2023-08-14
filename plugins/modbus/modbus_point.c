@@ -31,6 +31,9 @@ static __thread uint16_t modbus_read_max_byte = 250;
 
 static int  tag_cmp(neu_tag_sort_elem_t *tag1, neu_tag_sort_elem_t *tag2);
 static bool tag_sort(neu_tag_sort_t *sort, void *tag, void *tag_to_be_sorted);
+static int  tag_cmp_write(neu_tag_sort_elem_t *tag1, neu_tag_sort_elem_t *tag2);
+static bool tag_sort_write(neu_tag_sort_t *sort, void *tag,
+                           void *tag_to_be_sorted);
 
 int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
 {
@@ -165,6 +168,15 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
     return ret;
 }
 
+int modbus_write_tag_to_point(const neu_plugin_tag_value_t *tag,
+                              modbus_point_write_t *        point)
+{
+    int ret      = NEU_ERR_SUCCESS;
+    ret          = modbus_tag_to_point(tag->tag, &point->point);
+    point->value = tag->value;
+    return ret;
+}
+
 modbus_read_cmd_sort_t *modbus_tag_sort(UT_array *tags, uint16_t max_byte)
 {
     modbus_read_max_byte          = max_byte;
@@ -186,6 +198,112 @@ modbus_read_cmd_sort_t *modbus_tag_sort(UT_array *tags, uint16_t max_byte)
         sort_result->cmd[i].start_address = tag->start_address;
         sort_result->cmd[i].n_register    = ctx->end - ctx->start;
 
+        free(result->sorts[i].info.context);
+    }
+
+    neu_tag_sort_free(result);
+    return sort_result;
+}
+
+int cal_n_byte(int type, neu_value_u *value, neu_datatag_addr_option_u option)
+{
+    int n = 0;
+    switch (type) {
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_INT16:
+        n          = sizeof(uint16_t);
+        value->u16 = htons(value->u16);
+        break;
+    case NEU_TYPE_FLOAT:
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_INT32:
+        n          = sizeof(uint32_t);
+        value->u32 = htonl(value->u32);
+        break;
+
+    case NEU_TYPE_DOUBLE:
+    case NEU_TYPE_INT64:
+    case NEU_TYPE_UINT64:
+        n          = sizeof(uint64_t);
+        value->u64 = neu_htonll(value->u64);
+        break;
+    case NEU_TYPE_BIT: {
+        n = sizeof(uint8_t);
+        break;
+    }
+    case NEU_TYPE_STRING: {
+        n = option.string.length;
+        switch (option.string.type) {
+        case NEU_DATATAG_STRING_TYPE_H:
+            break;
+        case NEU_DATATAG_STRING_TYPE_L:
+            neu_datatag_string_ltoh(value->str, option.string.length);
+            break;
+        case NEU_DATATAG_STRING_TYPE_D:
+            break;
+        case NEU_DATATAG_STRING_TYPE_E:
+            break;
+        }
+        break;
+    }
+    default:
+        assert(1 == 0);
+        break;
+    }
+    return n;
+}
+
+modbus_write_cmd_sort_t *modbus_write_tags_sort(UT_array *tags)
+{
+    neu_tag_sort_result_t *result =
+        neu_tag_sort(tags, tag_sort_write, tag_cmp_write);
+
+    modbus_write_cmd_sort_t *sort_result =
+        calloc(1, sizeof(modbus_write_cmd_sort_t));
+    sort_result->n_cmd = result->n_sort;
+    sort_result->cmd   = calloc(result->n_sort, sizeof(modbus_write_cmd_t));
+    for (uint16_t i = 0; i < result->n_sort; i++) {
+        modbus_point_write_t *tag =
+            *(modbus_point_write_t **) utarray_front(result->sorts[i].tags);
+        struct modbus_sort_ctx *ctx = result->sorts[i].info.context;
+
+        int num_tags              = utarray_len(result->sorts[i].tags);
+        sort_result->cmd[i].bytes = calloc(num_tags, sizeof(neu_value_u));
+        int      n_byte = 0, n_byte_tag = 0;
+        uint8_t *data_bit = calloc((num_tags + 7) / 8, sizeof(uint8_t));
+        int      k        = 0;
+        utarray_foreach(result->sorts[i].tags, modbus_point_write_t **, tag_s)
+        {
+            if ((*tag_s)->point.area == MODBUS_AREA_COIL) {
+                n_byte_tag = cal_n_byte((*tag_s)->point.type, &(*tag_s)->value,
+                                        (*tag_s)->point.option);
+                data_bit[k / 8] += ((*tag_s)->value.i8) << k % 8;
+                n_byte += n_byte_tag;
+                k++;
+            } else {
+                n_byte_tag = cal_n_byte((*tag_s)->point.type, &(*tag_s)->value,
+                                        (*tag_s)->point.option);
+                memcpy(sort_result->cmd[i].bytes +
+                           2 *
+                               ((*tag_s)->point.start_address -
+                                tag->point.start_address),
+                       &((*tag_s)->value), n_byte_tag);
+                n_byte += n_byte_tag;
+            }
+        }
+        if ((*(modbus_point_write_t **) utarray_front(result->sorts[i].tags))
+                ->point.area == MODBUS_AREA_COIL) {
+            memcpy(sort_result->cmd[i].bytes, data_bit, (k + 7) / 8);
+        }
+
+        sort_result->cmd[i].tags     = utarray_clone(result->sorts[i].tags);
+        sort_result->cmd[i].slave_id = tag->point.slave_id;
+        sort_result->cmd[i].area     = tag->point.area;
+        sort_result->cmd[i].start_address = tag->point.start_address;
+        sort_result->cmd[i].n_register    = ctx->end - ctx->start;
+        sort_result->cmd[i].n_byte        = n_byte;
+
+        free(data_bit);
         free(result->sorts[i].info.context);
     }
 
@@ -266,7 +384,7 @@ static bool tag_sort(neu_tag_sort_t *sort, void *tag, void *tag_to_be_sorted)
     switch (t1->area) {
     case MODBUS_AREA_COIL:
     case MODBUS_AREA_INPUT:
-        if ((ctx->end - ctx->start) / 8 >= modbus_read_max_byte - 1) {
+        if ((ctx->end - ctx->start + 7) / 8 >= modbus_read_max_byte) {
             return false;
         }
         break;
@@ -284,6 +402,93 @@ static bool tag_sort(neu_tag_sort_t *sort, void *tag, void *tag_to_be_sorted)
 
     if (t2->start_address + t2->n_register > ctx->end) {
         ctx->end = t2->start_address + t2->n_register;
+    }
+
+    return true;
+}
+
+static int tag_cmp_write(neu_tag_sort_elem_t *tag1, neu_tag_sort_elem_t *tag2)
+{
+    modbus_point_write_t *p_t1 = (modbus_point_write_t *) tag1->tag;
+    modbus_point_write_t *p_t2 = (modbus_point_write_t *) tag2->tag;
+
+    if (p_t1->point.slave_id > p_t2->point.slave_id) {
+        return 1;
+    } else if (p_t1->point.slave_id < p_t2->point.slave_id) {
+        return -1;
+    }
+
+    if (p_t1->point.area > p_t2->point.area) {
+        return 1;
+    } else if (p_t1->point.area < p_t2->point.area) {
+        return -1;
+    }
+
+    if (p_t1->point.start_address > p_t2->point.start_address) {
+        return 1;
+    } else if (p_t1->point.start_address < p_t2->point.start_address) {
+        return -1;
+    }
+
+    if (p_t1->point.n_register > p_t2->point.n_register) {
+        return 1;
+    } else if (p_t1->point.n_register < p_t2->point.n_register) {
+        return -1;
+    }
+
+    return 0;
+}
+
+static bool tag_sort_write(neu_tag_sort_t *sort, void *tag,
+                           void *tag_to_be_sorted)
+{
+    modbus_point_write_t *  t1  = (modbus_point_write_t *) tag;
+    modbus_point_write_t *  t2  = (modbus_point_write_t *) tag_to_be_sorted;
+    struct modbus_sort_ctx *ctx = NULL;
+
+    if (sort->info.context == NULL) {
+        sort->info.context = calloc(1, sizeof(struct modbus_sort_ctx));
+        ctx                = (struct modbus_sort_ctx *) sort->info.context;
+        ctx->start         = t1->point.start_address;
+        ctx->end           = t1->point.start_address + t1->point.n_register;
+        return true;
+    }
+
+    ctx = (struct modbus_sort_ctx *) sort->info.context;
+
+    if (t1->point.slave_id != t2->point.slave_id) {
+        return false;
+    }
+
+    if (t1->point.area != t2->point.area) {
+        return false;
+    }
+
+    if (t2->point.start_address > ctx->end) {
+        return false;
+    }
+
+    switch (t1->point.area) {
+    case MODBUS_AREA_COIL:
+    case MODBUS_AREA_INPUT:
+        if ((ctx->end - ctx->start) / 8 >= modbus_read_max_byte - 1) {
+            return false;
+        }
+        break;
+    case MODBUS_AREA_INPUT_REGISTER:
+    case MODBUS_AREA_HOLD_REGISTER: {
+        uint16_t now_bytes = (ctx->end - ctx->start) * 2;
+        uint16_t add_now   = now_bytes + t2->point.n_register * 2;
+        if (add_now >= modbus_read_max_byte) {
+            return false;
+        }
+
+        break;
+    }
+    }
+
+    if (t2->point.start_address + t2->point.n_register > ctx->end) {
+        ctx->end = t2->point.start_address + t2->point.n_register;
     }
 
     return true;

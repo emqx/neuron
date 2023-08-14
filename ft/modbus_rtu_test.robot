@@ -48,6 +48,13 @@ ${input_bit_1_name_wrong}           {"name": "input_bit", "address": "1!100001",
 ${input_bit_1_attribute_unmatch}    {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_BIT}}
 ${input_bit_1_type_unmatch}         {"name": "input_bit_1", "address": "1!100001", "attribute": ${TAG_ATTRIBUTE_READ}, "type": ${TAG_TYPE_INT16}}
 
+${hold_int16_1}     {"name": "hold_int16_1", "address": "1!400001", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}}
+${hold_int16_2}     {"name": "hold_int16_2", "address": "1!400002", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}}
+${hold_int16_3}     {"name": "hold_int16_3", "address": "1!400003", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_INT16}}
+${hold_string_tags_1}    {"name": "hold_string_tags_1", "address": "1!40001.4", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_STRING}}
+${hold_string_tags_2}    {"name": "hold_string_tags_2", "address": "1!40003.4", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_STRING}}
+${hold_string_tags_3}    {"name": "hold_string_tags_3", "address": "1!40005.4", "attribute": ${TAG_ATTRIBUTE_RW}, "type": ${TAG_TYPE_STRING}}
+
 *** Test Cases ***
 Set a node with right settings, it should be success.
     [Template]	Set a ${node} with right ${node_settings}, it will be success.
@@ -145,6 +152,12 @@ Update a tag with unmatch address and types and attribute, it should be failure.
     ${input_bit_1}	${input_bit_1_attribute_unmatch}	${modbus_rtu_node}	200	${NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT}
     ${input_bit_1}	${input_bit_1_type_unmatch}	${modbus_rtu_node}	200	${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
     ${input_bit_1}	${input_bit_1_name_wrong}	${modbus_rtu_node}	200	${NEU_ERR_TAG_NOT_EXIST}
+
+Write 3 tags 1 time, it should return success
+    [Template]  Write and Read ${tag_data1}, ${tag_data2} and ${tag_data3} named ${tag1}, ${tag2} and ${tag3} from ${node}, using ${check} to check the ${value1}, ${value2} and ${value3}, it will be success.
+    ${hold_int16_1}     ${hold_int16_2}    ${hold_int16_3}    hold_int16_1    hold_int16_2    hold_int16_3     ${modbus_rtu_node}	  Compare Tag Value As Int        1    2    3
+	${coil_bit_1}       ${coil_bit_2}      ${coil_bit_3}      coil_bit_1      coil_bit_2      coil_bit_3       ${modbus_rtu_node}    Compare Tag Value As Int        1    0    1
+	${hold_string_tags_1}     ${hold_string_tags_2}    ${hold_string_tags_3}    hold_string_tags_1    hold_string_tags_2    hold_string_tags_3    ${modbus_rtu_node}	  Compare Tag Value As Strings        "a"    "b"    "c"
 
 Write a value to a tag that don't exit in plc or neuron, it will be failure.
     [Template]	Write a ${value} to a ${tag} with named ${tag_name} that don't exist in neuron or plc from ${node}, it will be failure.
