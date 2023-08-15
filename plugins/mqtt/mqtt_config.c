@@ -124,7 +124,8 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
 static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
                               neu_json_elem_t *offline_cache,
                               neu_json_elem_t *cache_mem_size,
-                              neu_json_elem_t *cache_disk_size)
+                              neu_json_elem_t *cache_disk_size,
+                              neu_json_elem_t *cache_sync_interval)
 {
     int   ret          = 0;
     char *err_param    = NULL;
@@ -139,8 +140,9 @@ static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
 
     if (flag_present && !offline_cache->v.val_bool) {
         // cache explicitly disabled in setting
-        cache_mem_size->v.val_int  = 0;
-        cache_disk_size->v.val_int = 0;
+        cache_mem_size->v.val_int      = 0;
+        cache_disk_size->v.val_int     = 0;
+        cache_sync_interval->v.val_int = 0;
         return 0;
     }
 
@@ -191,6 +193,20 @@ static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
         offline_cache->v.val_bool = cache_mem_size->v.val_int > 0;
     }
 
+    // cache-sync-interval, optional for backward compatibility
+    ret = neu_parse_param(setting, NULL, 1, cache_sync_interval);
+    if (0 == ret) {
+        if (cache_sync_interval->v.val_int < NEU_MQTT_CACHE_SYNC_INTERVAL_MIN ||
+            NEU_MQTT_CACHE_SYNC_INTERVAL_MAX < cache_sync_interval->v.val_int) {
+            plog_error(plugin, "setting invalid cache sync interval: %" PRIi64,
+                       cache_sync_interval->v.val_int);
+            return -1;
+        }
+    } else {
+        plog_notice(plugin, "setting no cache sync interval");
+        cache_sync_interval->v.val_int = NEU_MQTT_CACHE_SYNC_INTERVAL_DEFAULT;
+    }
+
     return 0;
 }
 
@@ -221,21 +237,23 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         .v.val_str = NULL,
         .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL, // for backward compatibility
     };
-    neu_json_elem_t offline_cache   = { .name = "offline-cache",
+    neu_json_elem_t offline_cache       = { .name = "offline-cache",
                                       .t    = NEU_JSON_BOOL };
-    neu_json_elem_t cache_mem_size  = { .name = "cache-mem-size",
+    neu_json_elem_t cache_mem_size      = { .name = "cache-mem-size",
                                        .t    = NEU_JSON_INT };
-    neu_json_elem_t cache_disk_size = { .name = "cache-disk-size",
+    neu_json_elem_t cache_disk_size     = { .name = "cache-disk-size",
                                         .t    = NEU_JSON_INT };
-    neu_json_elem_t host            = { .name = "host", .t = NEU_JSON_STR };
-    neu_json_elem_t port            = { .name = "port", .t = NEU_JSON_INT };
-    neu_json_elem_t username        = { .name = "username", .t = NEU_JSON_STR };
-    neu_json_elem_t password        = { .name = "password", .t = NEU_JSON_STR };
-    neu_json_elem_t ssl             = { .name = "ssl", .t = NEU_JSON_BOOL };
-    neu_json_elem_t ca              = { .name = "ca", .t = NEU_JSON_STR };
-    neu_json_elem_t cert            = { .name = "cert", .t = NEU_JSON_STR };
-    neu_json_elem_t key             = { .name = "key", .t = NEU_JSON_STR };
-    neu_json_elem_t keypass         = { .name = "keypass", .t = NEU_JSON_STR };
+    neu_json_elem_t cache_sync_interval = { .name = "cache-sync-interval",
+                                            .t    = NEU_JSON_INT };
+    neu_json_elem_t host                = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t port                = { .name = "port", .t = NEU_JSON_INT };
+    neu_json_elem_t username = { .name = "username", .t = NEU_JSON_STR };
+    neu_json_elem_t password = { .name = "password", .t = NEU_JSON_STR };
+    neu_json_elem_t ssl      = { .name = "ssl", .t = NEU_JSON_BOOL };
+    neu_json_elem_t ca       = { .name = "ca", .t = NEU_JSON_STR };
+    neu_json_elem_t cert     = { .name = "cert", .t = NEU_JSON_STR };
+    neu_json_elem_t key      = { .name = "key", .t = NEU_JSON_STR };
+    neu_json_elem_t keypass  = { .name = "keypass", .t = NEU_JSON_STR };
 
     if (NULL == setting || NULL == config) {
         plog_error(plugin, "invalid argument, null pointer");
@@ -287,7 +305,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 
     // offline cache
     ret = parse_cache_params(plugin, setting, &offline_cache, &cache_mem_size,
-                             &cache_disk_size);
+                             &cache_disk_size, &cache_sync_interval);
     if (0 != ret) {
         goto error;
     }
@@ -321,23 +339,24 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
         goto error;
     }
 
-    config->client_id        = client_id.v.val_str;
-    config->qos              = qos.v.val_int;
-    config->format           = format.v.val_int;
-    config->write_req_topic  = write_req_topic.v.val_str;
-    config->write_resp_topic = write_resp_topic.v.val_str;
-    config->cache            = offline_cache.v.val_bool;
-    config->cache_mem_size   = cache_mem_size.v.val_int * MB;
-    config->cache_disk_size  = cache_disk_size.v.val_int * MB;
-    config->host             = host.v.val_str;
-    config->port             = port.v.val_int;
-    config->username         = username.v.val_str;
-    config->password         = password.v.val_str;
-    config->ssl              = ssl.v.val_bool;
-    config->ca               = ca.v.val_str;
-    config->cert             = cert.v.val_str;
-    config->key              = key.v.val_str;
-    config->keypass          = keypass.v.val_str;
+    config->client_id           = client_id.v.val_str;
+    config->qos                 = qos.v.val_int;
+    config->format              = format.v.val_int;
+    config->write_req_topic     = write_req_topic.v.val_str;
+    config->write_resp_topic    = write_resp_topic.v.val_str;
+    config->cache               = offline_cache.v.val_bool;
+    config->cache_mem_size      = cache_mem_size.v.val_int * MB;
+    config->cache_disk_size     = cache_disk_size.v.val_int * MB;
+    config->cache_sync_interval = cache_sync_interval.v.val_int;
+    config->host                = host.v.val_str;
+    config->port                = port.v.val_int;
+    config->username            = username.v.val_str;
+    config->password            = password.v.val_str;
+    config->ssl                 = ssl.v.val_bool;
+    config->ca                  = ca.v.val_str;
+    config->cert                = cert.v.val_str;
+    config->key                 = key.v.val_str;
+    config->keypass             = keypass.v.val_str;
 
     plog_notice(plugin, "config client-id       : %s", config->client_id);
     plog_notice(plugin, "config qos             : %d", config->qos);
@@ -350,6 +369,8 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
     plog_notice(plugin, "config cache-mem-size  : %zu", config->cache_mem_size);
     plog_notice(plugin, "config cache-disk-size : %zu",
                 config->cache_disk_size);
+    plog_notice(plugin, "config cache-sync-interval : %zu",
+                config->cache_sync_interval);
     plog_notice(plugin, "config host            : %s", config->host);
     plog_notice(plugin, "config port            : %" PRIu16, config->port);
 
