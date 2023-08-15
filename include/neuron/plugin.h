@@ -90,6 +90,10 @@ typedef struct neu_plugin_intf_funs {
                 neu_plugin_t *plugin, void *req,
                 UT_array *tag_values); // UT_array {neu_datatag_t, neu_value_u}
             neu_plugin_tag_validator_t tag_validator;
+            int (*add_tags)(neu_plugin_t *plugin, neu_datatag_t *tags,
+                            int n_tag);
+            int (*del_tags)(neu_plugin_t *plugin, neu_datatag_t *tags,
+                            int n_tag);
         } driver;
     };
 
