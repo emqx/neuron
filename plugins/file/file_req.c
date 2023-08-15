@@ -84,10 +84,16 @@ int file_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
         fseek(f, 0, SEEK_SET);
         int ret = fread(buf, sizeof(char), length, f);
         if (ret == 0) {
-            nlog_warn("read file failed:%s", tag->address);
-            dvalue.type      = NEU_TYPE_ERROR;
-            dvalue.value.i32 = NEU_ERR_FILE_READ_FAILURE;
-
+            if (feof(f)) {
+                nlog_warn("file is empty:%s", tag->address);
+                dvalue.type      = NEU_TYPE_ERROR;
+                dvalue.value.i32 = NEU_ERR_FILE_READ_NULL;
+            } else if (ferror(f)) {
+                nlog_warn("read file failed: %s", tag->address);
+                clearerr(f);
+                dvalue.type      = NEU_TYPE_ERROR;
+                dvalue.value.i32 = NEU_ERR_FILE_READ_FAILURE;
+            }
             fclose(f);
             goto dvalue_result;
         } else if (ret >= NEU_VALUE_SIZE) {
