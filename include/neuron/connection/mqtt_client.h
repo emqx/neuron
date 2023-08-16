@@ -35,6 +35,10 @@ extern "C" {
 #define NEU_METRIC_CACHED_MSGS_NUM_TYPE NEU_METRIC_TYPE_GAUAGE
 #define NEU_METRIC_CACHED_MSGS_NUM_HELP "Number of messages cached"
 
+#define NEU_MQTT_CACHE_SYNC_INTERVAL_MIN 10
+#define NEU_MQTT_CACHE_SYNC_INTERVAL_MAX 12000
+#define NEU_MQTT_CACHE_SYNC_INTERVAL_DEFAULT 100
+
 typedef enum {
     NEU_MQTT_VERSION_V31  = 3,
     NEU_MQTT_VERSION_V311 = 4,
@@ -83,6 +87,9 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
                             const char *keypass);
 int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
                                    size_t mem_size_bytes, size_t db_size_bytes);
+// default to NEU_MQTT_CACHE_SYNC_INTERVAL_DEFAULT if not set
+int neu_mqtt_client_set_cache_sync_interval(neu_mqtt_client_t *client,
+                                            uint32_t           interval);
 int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
                                       zlog_category_t *  cat);
 
