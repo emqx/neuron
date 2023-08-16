@@ -134,7 +134,7 @@
       "field": "offline-cache",
       "value": true
     },
-    "default": 1000,
+    "default": 100,
     "valid": {
       "min": 10,
       "max": 120000
