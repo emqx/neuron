@@ -62,7 +62,6 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
 int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                      neu_value_u value);
 int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags);
-
 int modbus_write_resp(void *ctx, void *req, int error);
 
 #endif

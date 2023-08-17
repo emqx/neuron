@@ -239,13 +239,21 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
 
     switch (area) {
     case MODBUS_AREA_COIL:
-        if (*bytes > 0) {
-            modbus_address_wrap(&pbuf, start_address, 0xff00, m_action);
+        if (n_byte > 1) {
+            n_reg = n_byte;
+            modbus_data_wrap(&pbuf, (n_byte + 7) / 8, bytes, m_action);
+            modbus_address_wrap(&pbuf, start_address, n_reg, m_action);
+            modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_M_COIL);
+            break;
         } else {
-            modbus_address_wrap(&pbuf, start_address, 0, m_action);
+            if (*bytes > 0) {
+                modbus_address_wrap(&pbuf, start_address, 0xff00, m_action);
+            } else {
+                modbus_address_wrap(&pbuf, start_address, 0, m_action);
+            }
+            modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_S_COIL);
+            break;
         }
-        modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_S_COIL);
-        break;
     case MODBUS_AREA_HOLD_REGISTER:
         m_action = MODBUS_ACTION_HOLD_REG_WRITE;
         modbus_data_wrap(&pbuf, n_byte, bytes, m_action);

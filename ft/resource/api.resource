@@ -200,6 +200,12 @@ Write Tags
   ${res} =            Object  response body
   [RETURN]            ${res}[0]
 
+Write 3 Tags 1 Time
+  [Arguments]         ${node}    ${group}    ${tag1}     ${value1}    ${tag2}     ${value2}    ${tag3}     ${value3}
+  POST                /api/v2/write/tags           {"node": "${node}", "group": "${group}", "tags": [{"tag": "${tag1}", "value": ${value1}}, {"tag": "${tag2}", "value": ${value2}}, {"tag": "${tag3}", "value": ${value3}}]}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
 Add Template
   [Arguments]   ${name}   ${plugin}   ${groups}
   ${data} =     Evaluate              json.dumps(${groups})   json

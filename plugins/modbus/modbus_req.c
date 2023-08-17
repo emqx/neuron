@@ -29,6 +29,11 @@ struct modbus_group_data {
     modbus_read_cmd_sort_t *cmd_sort;
 };
 
+struct modbus_write_tags_data {
+    UT_array *               tags;
+    modbus_write_cmd_sort_t *cmd_sort;
+};
+
 static void plugin_group_free(neu_plugin_group_t *pgp);
 static int  process_protocol_buf(neu_plugin_t *plugin, uint8_t slave_id,
                                  uint16_t response_size);
@@ -516,14 +521,44 @@ int modbus_write_tag(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
 
 int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
 {
-    int ret = 0;
-    int rv  = 0;
+    struct modbus_write_tags_data *gtags = NULL;
+    int                            ret   = 0;
+    int                            rv    = 0;
 
-    utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
+    gtags = calloc(1, sizeof(struct modbus_write_tags_data));
+
+    utarray_new(gtags->tags, &ut_ptr_icd);
+    utarray_foreach(tags, neu_plugin_tag_value_t *, tag)
     {
-        ret = modbus_write(plugin, req, tv->tag, tv->value, false);
+        modbus_point_write_t *p = calloc(1, sizeof(modbus_point_write_t));
+        ret                     = modbus_write_tag_to_point(tag, p);
+        assert(ret == 0);
+
+        utarray_push_back(gtags->tags, &p);
+    }
+    gtags->cmd_sort = modbus_write_tags_sort(gtags->tags);
+    for (uint16_t i = 0; i < gtags->cmd_sort->n_cmd; i++) {
+        uint16_t response_size = 0;
+
+        ret = modbus_stack_write(
+            plugin->stack, req, gtags->cmd_sort->cmd[i].slave_id,
+            gtags->cmd_sort->cmd[i].area, gtags->cmd_sort->cmd[i].start_address,
+            gtags->cmd_sort->cmd[i].n_register, gtags->cmd_sort->cmd[i].bytes,
+            gtags->cmd_sort->cmd[i].n_byte, &response_size, false);
+        if (ret > 0) {
+            process_protocol_buf(plugin, gtags->cmd_sort->cmd[i].slave_id,
+                                 response_size);
+        }
+
         if (ret <= 0) {
             rv = 1;
+        }
+        if (plugin->interval > 0) {
+            struct timespec t1 = { .tv_sec  = plugin->interval / 1000,
+                                   .tv_nsec = 1000 * 1000 *
+                                       (plugin->interval % 1000) };
+            struct timespec t2 = { 0 };
+            nanosleep(&t1, &t2);
         }
     }
 
@@ -535,6 +570,15 @@ int modbus_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
             plugin->common.adapter, req, NEU_ERR_PLUGIN_DISCONNECTED);
     }
 
+    for (uint16_t i = 0; i < gtags->cmd_sort->n_cmd; i++) {
+        utarray_free(gtags->cmd_sort->cmd[i].tags);
+        free(gtags->cmd_sort->cmd[i].bytes);
+    }
+    free(gtags->cmd_sort->cmd);
+    free(gtags->cmd_sort);
+    utarray_foreach(gtags->tags, modbus_point_write_t **, tag) { free(*tag); }
+    utarray_free(gtags->tags);
+    free(gtags);
     return ret;
 }
 
