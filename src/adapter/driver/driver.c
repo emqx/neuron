@@ -242,6 +242,7 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
     {
         HASH_DEL(driver->groups, el);
 
+        neu_adapter_driver_try_del_tag(driver, neu_group_tag_size(el->group));
         neu_adapter_del_timer((neu_adapter_t *) driver, el->report);
         neu_event_del_timer(driver->driver_events, el->read);
         neu_event_del_timer(driver->driver_events, el->write);
@@ -733,6 +734,8 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     if (find != NULL) {
         HASH_DEL(driver->groups, find);
 
+        neu_adapter_driver_try_del_tag(driver, neu_group_tag_size(find->group));
+
         neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
         neu_event_del_timer(driver->driver_events, find->read);
         neu_event_del_timer(driver->driver_events, find->write);
@@ -823,11 +826,43 @@ UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver)
     return groups;
 }
 
-int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
-                               neu_datatag_t *tag)
+int neu_adapter_driver_try_add_tag(neu_adapter_driver_t *driver,
+                                   const char *group, neu_datatag_t *tags,
+                                   int n_tag)
 {
-    int      ret  = NEU_ERR_SUCCESS;
-    group_t *find = NULL;
+    int ret = 0;
+    if (driver->adapter.module->intf_funs->driver.add_tags != NULL) {
+        ret = driver->adapter.module->intf_funs->driver.add_tags(
+            driver->adapter.plugin, group, tags, n_tag);
+    }
+    return ret;
+}
+
+int neu_adapter_driver_load_tag(neu_adapter_driver_t *driver, const char *group,
+                                neu_datatag_t *tags, int n_tag)
+{
+    int ret = 0;
+    if (driver->adapter.module->intf_funs->driver.load_tags != NULL) {
+        ret = driver->adapter.module->intf_funs->driver.load_tags(
+            driver->adapter.plugin, group, tags, n_tag);
+    }
+    return ret;
+}
+
+int neu_adapter_driver_try_del_tag(neu_adapter_driver_t *driver, int n_tag)
+{
+    int ret = 0;
+    if (driver->adapter.module->intf_funs->driver.del_tags != NULL) {
+        ret = driver->adapter.module->intf_funs->driver.del_tags(
+            driver->adapter.plugin, n_tag);
+    }
+    return ret;
+}
+
+int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
+                                    const char *group, neu_datatag_t *tag)
+{
+    (void) group;
 
     if (strlen(tag->name) >= NEU_TAG_NAME_LEN) {
         return NEU_ERR_TAG_NAME_TOO_LONG;
@@ -851,12 +886,23 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     }
 
     if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
-        ret = driver->adapter.module->intf_funs->driver.validate_tag(
+        int ret = driver->adapter.module->intf_funs->driver.validate_tag(
             driver->adapter.plugin, tag);
         if (ret != NEU_ERR_SUCCESS) {
             return ret;
         }
     }
+
+    neu_datatag_parse_addr_option(tag, &tag->option);
+
+    return NEU_ERR_SUCCESS;
+}
+
+int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
+                               neu_datatag_t *tag)
+{
+    int      ret  = NEU_ERR_SUCCESS;
+    group_t *find = NULL;
 
     neu_datatag_parse_addr_option(tag, &tag->option);
 
@@ -892,6 +938,7 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
     }
 
     if (ret == NEU_ERR_SUCCESS) {
+        neu_adapter_driver_try_del_tag(driver, 1);
         neu_adapter_update_group_metric(&driver->adapter, group,
                                         NEU_METRIC_GROUP_TAGS_TOTAL,
                                         neu_group_tag_size(find->group));

@@ -46,7 +46,7 @@ UT_array *neu_manager_get_plugins(neu_manager_t *manager)
 
 int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
                          const char *             plugin_name,
-                         neu_node_running_state_e state)
+                         neu_node_running_state_e state, bool load)
 {
     neu_adapter_t *       adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
@@ -78,7 +78,10 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter = neu_adapter_create(&adapter_info);
+    adapter = neu_adapter_create(&adapter_info, load);
+    if (adapter == NULL) {
+        return neu_adapter_error();
+    }
     neu_node_manager_add(manager->node_manager, adapter);
     neu_adapter_init(adapter, state);
 
@@ -517,7 +520,7 @@ int neu_manager_instantiate_template(neu_manager_t *          manager,
     }
 
     int ret = neu_manager_add_node(manager, req->node,
-                                   neu_template_plugin(tmpl), false);
+                                   neu_template_plugin(tmpl), false, false);
     if (0 != ret) {
         return ret;
     }
