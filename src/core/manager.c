@@ -564,7 +564,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
         int                 error =
-            neu_manager_add_node(manager, cmd->node, cmd->plugin, false);
+            neu_manager_add_node(manager, cmd->node, cmd->plugin, false, false);
         neu_resp_error_t e = { .error = error };
 
         if (error == NEU_ERR_SUCCESS) {
@@ -1159,7 +1159,7 @@ static void start_static_adapter(neu_manager_t *manager, const char *name)
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter = neu_adapter_create(&adapter_info);
+    adapter = neu_adapter_create(&adapter_info, true);
     neu_node_manager_add_static(manager->node_manager, adapter);
     neu_adapter_init(adapter, false);
     neu_adapter_start(adapter);
@@ -1182,7 +1182,7 @@ static void start_single_adapter(neu_manager_t *manager, const char *name,
 
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
-    adapter             = neu_adapter_create(&adapter_info);
+    adapter             = neu_adapter_create(&adapter_info, true);
 
     neu_node_manager_add_single(manager->node_manager, adapter, display);
     if (display) {

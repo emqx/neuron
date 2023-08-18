@@ -72,9 +72,7 @@ typedef struct {
 typedef struct neu_plugin_intf_funs {
     neu_plugin_t *(*open)(void);
     int (*close)(neu_plugin_t *plugin);
-    int (*init)(neu_plugin_t *plugin); // create node by API
-    int (*load)(
-        neu_plugin_t *plugin); // crate node using data from the database
+    int (*init)(neu_plugin_t *plugin, bool load);
     int (*uninit)(neu_plugin_t *plugin);
     int (*start)(neu_plugin_t *plugin);
     int (*stop)(neu_plugin_t *plugin);
@@ -99,8 +97,7 @@ typedef struct neu_plugin_intf_funs {
             int (*add_tags)(neu_plugin_t *plugin, const char *group,
                             neu_datatag_t *tags,
                             int            n_tag); // create tags by API
-            int (*del_tags)(neu_plugin_t *plugin, const char *group,
-                            neu_datatag_t *tags, int n_tag);
+            int (*del_tags)(neu_plugin_t *plugin, int n_tag);
         } driver;
     };
 
