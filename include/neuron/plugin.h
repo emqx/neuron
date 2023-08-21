@@ -72,7 +72,7 @@ typedef struct {
 typedef struct neu_plugin_intf_funs {
     neu_plugin_t *(*open)(void);
     int (*close)(neu_plugin_t *plugin);
-    int (*init)(neu_plugin_t *plugin);
+    int (*init)(neu_plugin_t *plugin, bool load);
     int (*uninit)(neu_plugin_t *plugin);
     int (*start)(neu_plugin_t *plugin);
     int (*stop)(neu_plugin_t *plugin);
@@ -90,6 +90,14 @@ typedef struct neu_plugin_intf_funs {
                 neu_plugin_t *plugin, void *req,
                 UT_array *tag_values); // UT_array {neu_datatag_t, neu_value_u}
             neu_plugin_tag_validator_t tag_validator;
+
+            int (*load_tags)(
+                neu_plugin_t *plugin, const char *group, neu_datatag_t *tags,
+                int n_tag); // create tags using data from the database
+            int (*add_tags)(neu_plugin_t *plugin, const char *group,
+                            neu_datatag_t *tags,
+                            int            n_tag); // create tags by API
+            int (*del_tags)(neu_plugin_t *plugin, int n_tag);
         } driver;
     };
 
