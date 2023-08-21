@@ -1025,6 +1025,12 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
         goto end;
     }
 
+    if (NULL == client->host) {
+        log(error, "no client host");
+        rv = -1;
+        goto end;
+    }
+
     if (client->tls_cfg) {
         cfg = client->tls_cfg;
     } else {
@@ -1035,6 +1041,12 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
             goto end;
         }
         client->tls_cfg = cfg;
+    }
+
+    if (0 != (rv = nng_tls_config_server_name(client->tls_cfg, client->host))) {
+        log(error, "nng_tls_config_server_name fail: %s", nng_strerror(rv));
+        rv = -1;
+        goto end;
     }
 
     if (cert != NULL && key != NULL) {
