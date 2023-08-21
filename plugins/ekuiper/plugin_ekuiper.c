@@ -73,8 +73,9 @@ static void pipe_rm_cb(nng_pipe p, nng_pipe_ev ev, void *arg)
     nng_mtx_unlock(plugin->mtx);
 }
 
-static int ekuiper_plugin_init(neu_plugin_t *plugin)
+static int ekuiper_plugin_init(neu_plugin_t *plugin, bool load)
 {
+    (void) load;
     int      rv       = 0;
     nng_aio *recv_aio = NULL;
 

@@ -57,8 +57,9 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_init(neu_plugin_t *plugin)
+static int mqtt_plugin_init(neu_plugin_t *plugin, bool load)
 {
+    (void) load;
     plog_notice(plugin, "initialize plugin `%s` success",
                 neu_plugin_module.module_name);
     neu_adapter_register_metric_cb_t register_metric =

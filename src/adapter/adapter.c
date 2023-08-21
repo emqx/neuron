@@ -65,6 +65,8 @@ static const adapter_callbacks_t callback_funs = {
     .update_metric   = adapter_update_metric,
 };
 
+static __thread int create_adapter_error = 0;
+
 #define REGISTER_METRIC(adapter, name, init) \
     adapter_register_metric(adapter, name, name##_HELP, name##_TYPE, init);
 
@@ -108,9 +110,20 @@ static inline void stop_log_level_timer(neu_adapter_t *adapter)
     adapter->timer_lev = NULL;
 }
 
-neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
+int neu_adapter_error()
+{
+    return create_adapter_error;
+}
+
+void neu_adapter_set_error(int error)
+{
+    create_adapter_error = error;
+}
+
+neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
 {
     int                  rv      = 0;
+    int                  init_rv = 0;
     neu_adapter_t *      adapter = NULL;
     neu_event_io_param_t param   = { 0 };
 
@@ -170,7 +183,8 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
 
     zlog_level_switch(common->log, default_log_level);
 
-    adapter->module->intf_funs->init(adapter->plugin);
+    init_rv = adapter->module->intf_funs->init(adapter->plugin, load);
+
     if (adapter_load_setting(adapter->name, &adapter->setting) == 0) {
         if (adapter->module->intf_funs->setting(adapter->plugin,
                                                 adapter->setting) == 0) {
@@ -198,7 +212,23 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info)
     nlog_notice("Success to create adapter: %s", adapter->name);
 
     adapter_storage_state(adapter->name, adapter->state);
-    return adapter;
+
+    if (init_rv != 0) {
+        nlog_warn("Failed to init adapter: %s", adapter->name);
+        neu_adapter_set_error(init_rv);
+
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+            neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
+        }
+        stop_log_level_timer(adapter);
+        neu_event_del_io(adapter->events, adapter->nng_io);
+
+        neu_adapter_destroy(adapter);
+        return NULL;
+    } else {
+        neu_adapter_set_error(0);
+        return adapter;
+    }
 }
 
 int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
@@ -782,9 +812,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             for (int i = 0; i < cmd->n_tag; i++) {
-                int ret =
-                    neu_adapter_driver_add_tag((neu_adapter_driver_t *) adapter,
-                                               cmd->group, &cmd->tags[i]);
+                int ret = neu_adapter_driver_validate_tag(
+                    (neu_adapter_driver_t *) adapter, cmd->group,
+                    &cmd->tags[i]);
                 if (ret == 0) {
                     resp.index += 1;
                 } else {
@@ -794,6 +824,28 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             }
         } else {
             resp.error = NEU_ERR_GROUP_NOT_ALLOW;
+        }
+
+        if (resp.index > 0) {
+            int ret = neu_adapter_driver_try_add_tag(
+                (neu_adapter_driver_t *) adapter, cmd->group, cmd->tags,
+                resp.index);
+            if (ret != 0) {
+                resp.index = 0;
+                resp.error = ret;
+            }
+        }
+
+        for (int i = 0; i < resp.index; i++) {
+            int ret = neu_adapter_driver_add_tag(
+                (neu_adapter_driver_t *) adapter, cmd->group, &cmd->tags[i]);
+            if (ret != 0) {
+                neu_adapter_driver_try_del_tag((neu_adapter_driver_t *) adapter,
+                                               resp.index - i);
+                resp.index = i;
+                resp.error = ret;
+                break;
+            }
         }
 
         for (uint16_t i = resp.index; i < cmd->n_tag; i++) {
