@@ -505,13 +505,30 @@ static int add_template_group(neu_group_t *grp, void *data)
         return NEU_ERR_EINTERNAL;
     }
 
+    ret = neu_adapter_driver_try_add_tag(driver, name, utarray_eltptr(tags, 0),
+                                         utarray_len(tags));
+    if (0 != ret) {
+        utarray_free(tags);
+        return ret;
+    }
+
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
+        // this invocation is not necessary since we validate when adding tags
+        // we keep it here as an act of defensive programming
+        ret = neu_adapter_driver_validate_tag(driver, name, tag);
+        if (0 != ret) {
+            break;
+        }
+
         ret = neu_adapter_driver_add_tag(driver, name, tag);
         if (0 != ret) {
             break;
         }
     }
+
+    // we do not call neu_adapter_driver_try_del_tag here,
+    // relying on neu_adapter_driver_uninit to delete the tags
 
     utarray_free(tags);
     return ret;
@@ -545,6 +562,7 @@ int neu_manager_instantiate_template(neu_manager_t *          manager,
 
 end:
     if (0 != ret) {
+        // this will call neu_adapter_driver_try_del_tag to cleanup
         neu_adapter_uninit(adapter);
         neu_manager_del_node(manager, req->node);
     }
