@@ -31,8 +31,12 @@
 #include <string.h>
 
 #include "utils/log.h"
+#include "utils/time.h"
 
 #include "daemon.h"
+
+#define STOP_TIMEOUT 20000
+#define STOP_TICK 2000
 
 void daemonize()
 {
@@ -93,6 +97,45 @@ static inline int lock_file(int fd)
     fl.l_whence = SEEK_SET;
     fl.l_len    = 0;
     return fcntl(fd, F_SETLK, &fl);
+}
+
+static int neuron_wait_exit(uint32_t ms)
+{
+    uint32_t tick = 0;
+    int      ret  = -1;
+    int      fd   = -1;
+
+    fd = open(NEURON_DAEMON_LOCK_FNAME, O_WRONLY);
+    if (fd < 0) {
+        nlog_error("cannot open %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
+                   strerror(errno));
+        exit(1);
+    }
+
+    do {
+        // try to lock file
+        if (lock_file(fd) < 0) {
+            if (EACCES == errno || EAGAIN == errno) {
+                // a neuron process is running
+                printf("neuron is stopping.\n");
+            } else {
+                close(fd);
+                nlog_error("cannot lock %s reason: %s\n",
+                           NEURON_DAEMON_LOCK_FNAME, strerror(errno));
+                exit(1);
+            }
+        } else {
+            printf("neuron had stopped.\n");
+            ret = 0;
+            break;
+        }
+
+        neu_msleep(STOP_TICK);
+        tick += STOP_TICK;
+
+    } while (tick < ms);
+    close(fd);
+    return ret;
 }
 
 int neuron_already_running()
@@ -160,7 +203,9 @@ int neuron_stop()
     }
 
     if (0 == kill((pid_t)(-gid), SIGINT)) {
-        ret = 0;
+        if (neuron_wait_exit(STOP_TIMEOUT) == 0) {
+            ret = 0;
+        }
     } else {
         nlog_error("cannot kill gpid:%ld reason: %s\n", (long) gid,
                    strerror(errno));
