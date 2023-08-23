@@ -27,6 +27,7 @@
 
 #include <jansson.h>
 
+#include "utils/log.h"
 #include "json/json.h"
 
 #include "neu_json_group_config.h"
@@ -618,14 +619,14 @@ int neu_json_decode_update_group_config_req(
         goto error;
     }
 
-    neu_json_elem_t interval_elem = {
-        .name = "interval",
-        .t    = NEU_JSON_INT,
-    };
-    ret = neu_json_decode_by_json(json_obj, 1, &interval_elem);
-    if (0 == ret) {
+    json_t *json_interval = json_object_get(json_obj, "interval");
+    if (NULL != json_interval) {
+        if (!json_is_integer(json_interval)) {
+            nlog_error("decode interval is not integer");
+            goto error;
+        }
         req->set_interval = true;
-        req->interval     = interval_elem.v.val_int;
+        req->interval     = json_integer_value(json_interval);
     } else if (NULL == req->new_name) {
         // at least one of `new_name` or `interval` should be provided
         goto error;

@@ -724,8 +724,17 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
         return NEU_ERR_GROUP_NOT_EXIST;
     }
 
-    if (NULL != new_name && 0 == strlen(new_name)) {
-        return NEU_ERR_EINTERNAL;
+    if (NULL != new_name) {
+        if (0 == strlen(new_name)) {
+            return NEU_ERR_EINTERNAL;
+        }
+        if (0 != strcmp(name, new_name)) {
+            group_t *other = NULL;
+            HASH_FIND_STR(driver->groups, new_name, other);
+            if (NULL != other) {
+                return NEU_ERR_GROUP_EXIST;
+            }
+        }
     }
 
     // stop the timer first to avoid race condition
