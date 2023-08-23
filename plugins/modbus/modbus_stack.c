@@ -225,7 +225,7 @@ int modbus_stack_read(modbus_stack_t *stack, uint8_t slave_id,
 int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
                        enum modbus_area area, uint16_t start_address,
                        uint16_t n_reg, uint8_t *bytes, uint8_t n_byte,
-                       uint16_t *response_size)
+                       uint16_t *response_size, bool response)
 {
     static __thread neu_protocol_pack_buf_t pbuf     = { 0 };
     modbus_action_e                         m_action = MODBUS_ACTION_DEFAULT;
@@ -239,13 +239,21 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
 
     switch (area) {
     case MODBUS_AREA_COIL:
-        if (*bytes > 0) {
-            modbus_address_wrap(&pbuf, start_address, 0xff00, m_action);
+        if (n_byte > 1) {
+            n_reg = n_byte;
+            modbus_data_wrap(&pbuf, (n_byte + 7) / 8, bytes, m_action);
+            modbus_address_wrap(&pbuf, start_address, n_reg, m_action);
+            modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_M_COIL);
+            break;
         } else {
-            modbus_address_wrap(&pbuf, start_address, 0, m_action);
+            if (*bytes > 0) {
+                modbus_address_wrap(&pbuf, start_address, 0xff00, m_action);
+            } else {
+                modbus_address_wrap(&pbuf, start_address, 0, m_action);
+            }
+            modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_S_COIL);
+            break;
         }
-        modbus_code_wrap(&pbuf, slave_id, MODBUS_WRITE_S_COIL);
-        break;
     case MODBUS_AREA_HOLD_REGISTER:
         m_action = MODBUS_ACTION_HOLD_REG_WRITE;
         modbus_data_wrap(&pbuf, n_byte, bytes, m_action);
@@ -275,13 +283,17 @@ int modbus_stack_write(modbus_stack_t *stack, void *req, uint8_t slave_id,
     int ret = stack->send_fn(stack->ctx, neu_protocol_pack_buf_used_size(&pbuf),
                              neu_protocol_pack_buf_get(&pbuf));
     if (ret > 0) {
-        stack->write_resp(stack->ctx, req, NEU_ERR_SUCCESS);
-        plog_notice((neu_plugin_t *) stack->ctx, "send write req, %hhu!%hu",
-                    slave_id, start_address);
+        if (response) {
+            stack->write_resp(stack->ctx, req, NEU_ERR_SUCCESS);
+            plog_notice((neu_plugin_t *) stack->ctx, "send write req, %hhu!%hu",
+                        slave_id, start_address);
+        }
     } else {
-        stack->write_resp(stack->ctx, req, NEU_ERR_PLUGIN_DISCONNECTED);
-        plog_warn((neu_plugin_t *) stack->ctx, "send write req fail, %hhu!%hu",
-                  slave_id, start_address);
+        if (response) {
+            stack->write_resp(stack->ctx, req, NEU_ERR_PLUGIN_DISCONNECTED);
+            plog_warn((neu_plugin_t *) stack->ctx,
+                      "send write req fail, %hhu!%hu", slave_id, start_address);
+        }
     }
     return ret;
 }
