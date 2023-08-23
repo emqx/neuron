@@ -32,6 +32,7 @@
 
 #include "argparse.h"
 #include "persist/persist.h"
+#include "utils/log.h"
 #include "version.h"
 #include "json/json.h"
 #include "json/neu_json_param.h"
@@ -230,8 +231,7 @@ end:
 
 static inline int load_config_file(int argc, char *argv[],
                                    struct option *long_options, char *opts,
-                                   neu_cli_args_t *args, char **log_level_out,
-                                   char **config_dir_out, char **plugin_dir_out)
+                                   neu_cli_args_t *args)
 {
     char *config_file = NULL;
     int   ret         = -1;
@@ -242,13 +242,12 @@ static inline int load_config_file(int argc, char *argv[],
 
     do {
         if (!config_file) {
-            ret = 0;
-            break;
+            config_file = strdup(NEURON_CONFIG_FNAME);
         }
 
         if (!file_exists(config_file)) {
-            fprintf(stderr, "configuration file `%s` not exists\n",
-                    config_file);
+            printf("configuration file `%s` not exists\n", config_file);
+            nlog_error("configuration file `%s` not exists\n", config_file);
             break;
         }
 
@@ -267,86 +266,34 @@ static inline int load_config_file(int argc, char *argv[],
         root = neu_json_decode_new(buf);
         if (root == NULL) {
             printf("config file %s foramt error!\n", config_file);
+            nlog_error("config file %s foramt error!\n", config_file);
             break;
         }
 
-        neu_json_elem_t restart = { .name = "restart", .t = NEU_JSON_STR };
-        ret                     = neu_json_decode_value(root, &restart);
-        if (ret == 0) {
-            ret = parse_restart_policy(restart.v.val_str, &args->restart);
-            if (ret != 0) {
-                printf("config file restart is invalid policy!\n");
-                free(restart.v.val_str);
-                ret = -1;
-                break;
-            }
-        }
+        neu_json_elem_t elems[] = { { .name = "disable_auth",
+                                      .t    = NEU_JSON_INT },
+                                    { .name = "ip", .t = NEU_JSON_STR },
+                                    { .name = "port", .t = NEU_JSON_INT } };
 
-        neu_json_elem_t daemon = { .name = "daemon", .t = NEU_JSON_INT };
-        ret                    = neu_json_decode_value(root, &daemon);
-        if (ret == 0) {
-            if (daemon.v.val_int != 0) {
-                args->daemonized = true;
-            } else {
-                args->daemonized = false;
-            }
-        }
-
-        neu_json_elem_t log = { .name = "log", .t = NEU_JSON_INT };
-        ret                 = neu_json_decode_value(root, &log);
-        if (ret == 0) {
-            if (log.v.val_int != 0) {
-                args->dev_log = true;
-            } else {
-                args->dev_log = false;
-            }
-        }
-
-        neu_json_elem_t log_level = { .name = "log_level", .t = NEU_JSON_STR };
-        ret                       = neu_json_decode_value(root, &log_level);
-        if (ret == 0) {
-            if (*log_level_out != NULL) {
-                free(*log_level_out);
-            }
-            *log_level_out = strdup(log_level.v.val_str);
-        }
-
-        neu_json_elem_t disable_auth = { .name = "disable_auth",
-                                         .t    = NEU_JSON_INT };
-        ret = neu_json_decode_value(root, &disable_auth);
-        if (ret == 0) {
-            if (disable_auth.v.val_int != 0) {
+        if (neu_json_decode_by_json(root, 3, elems) == 0) {
+            if (elems[0].v.val_int != 0) {
                 args->disable_auth = true;
             } else {
                 args->disable_auth = false;
             }
-        }
 
-        neu_json_elem_t config_dir = { .name = "config_dir",
-                                       .t    = NEU_JSON_STR };
-        ret                        = neu_json_decode_value(root, &config_dir);
-        if (ret == 0) {
-            if (*config_dir_out != NULL) {
-                free(*config_dir_out);
+            if (elems[1].v.val_str != NULL) {
+                args->ip = strdup(elems[1].v.val_str);
+                free(elems[1].v.val_str);
             }
-            *config_dir_out = strdup(config_dir.v.val_str);
-        }
 
-        neu_json_elem_t plugin_dir = { .name = "plugin_dir",
-                                       .t    = NEU_JSON_STR };
-        ret                        = neu_json_decode_value(root, &plugin_dir);
-        if (ret == 0) {
-            if (*plugin_dir_out != NULL) {
-                free(*plugin_dir_out);
-            }
-            *plugin_dir_out = strdup(plugin_dir.v.val_str);
+            args->port = elems[2].v.val_int;
+            ret        = 0;
+        } else {
+            printf("config file %s elems error! must had ip, port and "
+                   "disable_auth.\n",
+                   config_file);
         }
-
-        free(log_level.v.val_str);
-        free(restart.v.val_str);
-        free(config_dir.v.val_str);
-        free(plugin_dir.v.val_str);
-        ret = 0;
 
     } while (0);
 
@@ -395,8 +342,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     int option_index = 0;
 
     // load config file
-    if (load_config_file(argc, argv, long_options, opts, args, &log_level,
-                         &config_dir, &plugin_dir) < 0) {
+    if (load_config_file(argc, argv, long_options, opts, args) < 0) {
         ret = 1;
         goto quit;
     }
@@ -535,5 +481,6 @@ void neu_cli_args_fini(neu_cli_args_t *args)
         free(args->log_init_file);
         free(args->config_dir);
         free(args->plugin_dir);
+        free(args->ip);
     }
 }
