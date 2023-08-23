@@ -142,7 +142,7 @@ static int parse_cache_params(neu_plugin_t *plugin, const char *setting,
         // cache explicitly disabled in setting
         cache_mem_size->v.val_int      = 0;
         cache_disk_size->v.val_int     = 0;
-        cache_sync_interval->v.val_int = 0;
+        cache_sync_interval->v.val_int = NEU_MQTT_CACHE_SYNC_INTERVAL_DEFAULT;
         return 0;
     }
 
