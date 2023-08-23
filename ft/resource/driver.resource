@@ -293,3 +293,37 @@ Write and read a ${value} to a ${tag} named ${tag_name} when the ${node} is stop
 	Check Tag Error As Int  ${res}[tags]  ${tag_name}  ${NEU_ERR_PLUGIN_NOT_RUNNING}
 
 	[Teardown]	Del Group  ${node}  group
+
+Write and Read ${tag_data1}, ${tag_data2} and ${tag_data3} named ${tag1}, ${tag2} and ${tag3} from ${node}, using ${check} to check the ${value1}, ${value2} and ${value3}, it will be success.
+	[Tags]	Driver 	18
+
+	${res}=	Add Group  ${node}  group  100
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=	Add Tags  ${node}  group  ${tag_data1}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=	Add Tags  ${node}  group  ${tag_data2}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=	Add Tags  ${node}  group  ${tag_data3}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	Sleep	290ms
+	${res}=	Write 3 Tags 1 Time  ${node}  group  ${tag1}  ${value1}  ${tag2}  ${value2}  ${tag3}  ${value3}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	Sleep	100ms
+	${res}=	Read Tags  ${node}  group
+	Check Response Status  ${res}  200
+
+	Run Keyword	${check}	${res}[tags]	${tag1}	${value1}
+	Run Keyword	${check}	${res}[tags]	${tag2}	${value2}
+	Run Keyword	${check}	${res}[tags]	${tag3}	${value3}
+
+	[Teardown]	Del Group    ${node} 	group

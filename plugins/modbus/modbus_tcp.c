@@ -42,6 +42,7 @@ static int driver_validate_tag(neu_plugin_t *plugin, neu_datatag_t *tag);
 static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group);
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                         neu_value_u value);
+static int driver_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags);
 
 static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .open    = driver_open,
@@ -57,7 +58,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .driver.group_timer   = driver_group_timer,
     .driver.write_tag     = driver_write,
     .driver.tag_validator = driver_tag_validator,
-    .driver.write_tags    = NULL,
+    .driver.write_tags    = driver_write_tags,
     .driver.add_tags      = NULL,
     .driver.load_tags     = NULL,
     .driver.del_tags      = NULL,
@@ -148,7 +149,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     char *           err_param = NULL;
     neu_json_elem_t  port      = { .name = "port", .t = NEU_JSON_INT };
     neu_json_elem_t  timeout   = { .name = "timeout", .t = NEU_JSON_INT };
-    neu_json_elem_t  host      = { .name = "host", .t = NEU_JSON_STR };
+    neu_json_elem_t  host      = { .name      = "host",
+                             .t         = NEU_JSON_STR,
+                             .v.val_str = NULL };
     neu_json_elem_t  interval  = { .name = "interval", .t = NEU_JSON_INT };
     neu_json_elem_t  mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
     neu_json_elem_t  tmode = { .name = "transport_mode", .t = NEU_JSON_INT };
@@ -163,7 +166,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     if (ret != 0) {
         plog_error(plugin, "config: %s, decode error: %s", config, err_param);
         free(err_param);
-        free(host.v.val_str);
+        if (host.v.val_str != NULL) {
+            free(host.v.val_str);
+        }
         return -1;
     }
 
@@ -279,5 +284,10 @@ static int driver_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group)
 static int driver_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
                         neu_value_u value)
 {
-    return modbus_write(plugin, req, tag, value);
+    return modbus_write_tag(plugin, req, tag, value);
+}
+
+static int driver_write_tags(neu_plugin_t *plugin, void *req, UT_array *tags)
+{
+    return modbus_write_tags(plugin, req, tags);
 }
