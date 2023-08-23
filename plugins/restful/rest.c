@@ -130,8 +130,9 @@ static int dashb_plugin_close(neu_plugin_t *plugin)
     return rv;
 }
 
-static int dashb_plugin_init(neu_plugin_t *plugin)
+static int dashb_plugin_init(neu_plugin_t *plugin, bool load)
 {
+    (void) load;
     int rv = 0;
 
     (void) plugin;

@@ -123,6 +123,23 @@
       "max": 10240
     }
   },
+  "cache-sync-interval": {
+    "name": "Cache Sync Interval (MS)",
+    "name_zh": "缓存消息重传间隔（MS）",
+    "description": "When MQTT connection restores, cached messages will be synchronised to the broker. This controls the interval in milliseconds between each message to synchronise.",
+    "description_zh": "当 MQTT 连接重建后，缓存的消息会被同步到服务器。此配置项控制消息重传时每条消息之间的时间间隔，以毫秒为单位。",
+    "type": "int",
+    "attribute": "required",
+    "condition": {
+      "field": "offline-cache",
+      "value": true
+    },
+    "default": 100,
+    "valid": {
+      "min": 10,
+      "max": 120000
+    }
+  },
   "host": {
     "name": "Broker Host",
     "name_zh": "服务器地址",

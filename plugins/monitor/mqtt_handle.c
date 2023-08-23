@@ -65,15 +65,15 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
 {
     char *json_str = NULL;
     union {
-        neu_json_add_node_req_t         add_node;
-        neu_json_del_node_req_t         del_node;
-        neu_json_node_ctl_req_t         node_ctl;
-        neu_json_node_setting_req_t     node_setting;
-        neu_json_add_group_config_req_t add_grp;
-        neu_json_del_group_config_req_t del_grp;
-        neu_json_update_group_req_t     update_grp;
-        neu_json_add_tags_req_t         add_tags;
-        neu_json_del_tags_req_t         del_tags;
+        neu_json_add_node_req_t            add_node;
+        neu_json_del_node_req_t            del_node;
+        neu_json_node_ctl_req_t            node_ctl;
+        neu_json_node_setting_req_t        node_setting;
+        neu_json_add_group_config_req_t    add_grp;
+        neu_json_del_group_config_req_t    del_grp;
+        neu_json_update_group_config_req_t update_grp;
+        neu_json_add_tags_req_t            add_tags;
+        neu_json_del_tags_req_t            del_tags;
     } json_req = {};
 
     switch (event) {
@@ -135,8 +135,11 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
         neu_req_update_group_t *update_grp = data;
         json_req.update_grp.node           = update_grp->driver;
         json_req.update_grp.group          = update_grp->group;
-        json_req.update_grp.interval       = update_grp->interval;
-        *topic_p                           = plugin->config->group_update_topic;
+        json_req.update_grp.new_name       = update_grp->new_name;
+        json_req.update_grp.set_interval =
+            update_grp->interval >= NEU_GROUP_INTERVAL_LIMIT;
+        json_req.update_grp.interval = update_grp->interval;
+        *topic_p                     = plugin->config->group_update_topic;
         neu_json_encode_by_fn(&json_req, neu_json_encode_add_group_config_req,
                               &json_str);
         break;

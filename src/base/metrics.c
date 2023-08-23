@@ -101,6 +101,31 @@ static inline size_t memory_used()
     return parse_memory_fields(3);
 }
 
+static inline size_t neuron_memory_used()
+{
+    FILE * f       = NULL;
+    char   buf[32] = {};
+    size_t val     = 0;
+    pid_t  pid     = getpid();
+
+    sprintf(buf, "ps -o rss= %ld", (long) pid);
+
+    f = popen(buf, "r");
+    if (NULL == f) {
+        nlog_error("popen command fail");
+        return 0;
+    }
+
+    if (NULL != fgets(buf, sizeof(buf), f)) {
+        val = atoll(buf);
+    } else {
+        nlog_error("no command output");
+    }
+
+    pclose(f);
+    return val * 1024;
+}
+
 static inline size_t memory_cache()
 {
     return parse_memory_fields(6);
@@ -275,7 +300,7 @@ void neu_metrics_unregister_entry(const char *name)
 void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
 {
     unsigned cpu       = cpu_usage();
-    size_t   mem_used  = memory_used();
+    size_t   mem_used  = neuron_memory_used();
     size_t   mem_cache = memory_cache();
     size_t   disk_size = 0, disk_used = 0, disk_avail = 0;
     disk_usage(&disk_size, &disk_used, &disk_avail);

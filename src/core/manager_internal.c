@@ -46,7 +46,7 @@ UT_array *neu_manager_get_plugins(neu_manager_t *manager)
 
 int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
                          const char *             plugin_name,
-                         neu_node_running_state_e state)
+                         neu_node_running_state_e state, bool load)
 {
     neu_adapter_t *       adapter      = NULL;
     neu_plugin_instance_t instance     = { 0 };
@@ -78,7 +78,10 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
     adapter_info.handle = instance.handle;
     adapter_info.module = instance.module;
 
-    adapter = neu_adapter_create(&adapter_info);
+    adapter = neu_adapter_create(&adapter_info, load);
+    if (adapter == NULL) {
+        return neu_adapter_error();
+    }
     neu_node_manager_add(manager->node_manager, adapter);
     neu_adapter_init(adapter, state);
 
@@ -122,6 +125,13 @@ int neu_manager_update_node_name(neu_manager_t *manager, const char *node,
             neu_node_manager_update_name(manager->node_manager, node, new_name);
     }
     return ret;
+}
+
+int neu_manager_update_group_name(neu_manager_t *manager, const char *driver,
+                                  const char *group, const char *new_name)
+{
+    return neu_subscribe_manager_update_group_name(manager->subscribe_manager,
+                                                   driver, group, new_name);
 }
 
 static inline neu_plugin_instance_t *
@@ -495,13 +505,30 @@ static int add_template_group(neu_group_t *grp, void *data)
         return NEU_ERR_EINTERNAL;
     }
 
+    ret = neu_adapter_driver_try_add_tag(driver, name, utarray_eltptr(tags, 0),
+                                         utarray_len(tags));
+    if (0 != ret) {
+        utarray_free(tags);
+        return ret;
+    }
+
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
+        // this invocation is not necessary since we validate when adding tags
+        // we keep it here as an act of defensive programming
+        ret = neu_adapter_driver_validate_tag(driver, name, tag);
+        if (0 != ret) {
+            break;
+        }
+
         ret = neu_adapter_driver_add_tag(driver, name, tag);
         if (0 != ret) {
             break;
         }
     }
+
+    // we do not call neu_adapter_driver_try_del_tag here,
+    // relying on neu_adapter_driver_uninit to delete the tags
 
     utarray_free(tags);
     return ret;
@@ -517,7 +544,7 @@ int neu_manager_instantiate_template(neu_manager_t *          manager,
     }
 
     int ret = neu_manager_add_node(manager, req->node,
-                                   neu_template_plugin(tmpl), false);
+                                   neu_template_plugin(tmpl), false, false);
     if (0 != ret) {
         return ret;
     }
@@ -535,6 +562,7 @@ int neu_manager_instantiate_template(neu_manager_t *          manager,
 
 end:
     if (0 != ret) {
+        // this will call neu_adapter_driver_try_del_tag to cleanup
         neu_adapter_uninit(adapter);
         neu_manager_del_node(manager, req->node);
     }

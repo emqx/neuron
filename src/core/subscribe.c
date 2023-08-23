@@ -329,3 +329,27 @@ int neu_subscribe_manager_update_driver_name(neu_subscribe_mgr_t *mgr,
 
     return 0;
 }
+
+int neu_subscribe_manager_update_group_name(neu_subscribe_mgr_t *mgr,
+                                            const char *         driver,
+                                            const char *         group,
+                                            const char *         new_name)
+{
+    sub_elem_t *   find = NULL;
+    sub_elem_key_t key  = { 0 };
+
+    strncpy(key.driver, driver, sizeof(key.driver));
+    strncpy(key.group, group, sizeof(key.group));
+
+    HASH_FIND(hh, mgr->ss, &key, sizeof(sub_elem_key_t), find);
+
+    if (NULL == find) {
+        return NEU_ERR_GROUP_NOT_SUBSCRIBE;
+    }
+
+    HASH_DEL(mgr->ss, find);
+    strcpy(find->key.group, new_name);
+    HASH_ADD(hh, mgr->ss, key, sizeof(sub_elem_key_t), find);
+
+    return 0;
+}

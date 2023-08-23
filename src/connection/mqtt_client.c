@@ -112,6 +112,7 @@ struct neu_mqtt_client_s {
     char *                          url;
     nng_tls_config *                tls_cfg;
     nng_msg *                       conn_msg;
+    nng_duration                    retry;
     bool                            open;
     bool                            connected;
     neu_mqtt_client_connection_cb_t connect_cb;
@@ -844,6 +845,7 @@ neu_mqtt_client_t *neu_mqtt_client_new(neu_mqtt_version_e version)
     }
 
     client->version    = version;
+    client->retry      = NEU_MQTT_CACHE_SYNC_INTERVAL_DEFAULT;
     client->task_limit = 1024;
 
     return client;
@@ -1025,6 +1027,12 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
         goto end;
     }
 
+    if (NULL == client->host) {
+        log(error, "no client host");
+        rv = -1;
+        goto end;
+    }
+
     if (client->tls_cfg) {
         cfg = client->tls_cfg;
     } else {
@@ -1035,6 +1043,12 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
             goto end;
         }
         client->tls_cfg = cfg;
+    }
+
+    if (0 != (rv = nng_tls_config_server_name(client->tls_cfg, client->host))) {
+        log(error, "nng_tls_config_server_name fail: %s", nng_strerror(rv));
+        rv = -1;
+        goto end;
     }
 
     if (cert != NULL && key != NULL) {
@@ -1113,6 +1127,26 @@ end:
     return rv;
 }
 
+int neu_mqtt_client_set_cache_sync_interval(neu_mqtt_client_t *client,
+                                            uint32_t           interval)
+{
+    int rv = 0;
+
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
+
+    // sync interval should be within reasonable range
+    if (NEU_MQTT_CACHE_SYNC_INTERVAL_MIN <= interval &&
+        interval <= NEU_MQTT_CACHE_SYNC_INTERVAL_MAX) {
+        client->retry = interval;
+    } else {
+        rv = -1;
+    }
+
+    nng_mtx_unlock(client->mtx);
+    return rv;
+}
+
 int neu_mqtt_client_set_zlog_category(neu_mqtt_client_t *client,
                                       zlog_category_t *  cat)
 {
@@ -1153,6 +1187,13 @@ int neu_mqtt_client_open(neu_mqtt_client_t *client)
 
     if (0 != client_start_timer(client)) {
         log(error, "client_start_timer fail");
+        goto error;
+    }
+
+    if ((rv = nng_socket_set_ms(client->sock, NNG_OPT_MQTT_RETRY_INTERVAL,
+                                client->retry)) != 0) {
+        log(error, "nng_socket_set_ms(%" PRIu32 ") fail: %s", client->retry,
+            nng_strerror(rv));
         goto error;
     }
 

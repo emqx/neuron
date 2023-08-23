@@ -117,6 +117,14 @@ Add Group
   ${res} =            Object  response body
   [RETURN]            ${res}[0]
 
+Update Group
+  [Arguments]         ${node}              ${group}            &{updates}
+  ${dict} =           Evaluate             {"node":$node, "group":$group, **$updates}
+  ${data} =           Evaluate             json.dumps(${dict})            json
+  PUT                 /api/v2/group        ${data}
+  ${res} =            Object  response body
+  [RETURN]            ${res}[0]
+
 Del Group
   [Arguments]         ${node}              ${group}
   DELETE              /api/v2/group         {"node": "${node}", "group": "${group}"}
