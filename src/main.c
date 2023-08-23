@@ -35,6 +35,7 @@ static neu_manager_t *g_manager         = NULL;
 zlog_category_t *     neuron            = NULL;
 bool                  disable_jwt       = false;
 int                   default_log_level = ZLOG_LEVEL_NOTICE;
+char                  host_port[24]     = { 0 };
 
 int64_t global_timestamp = 0;
 
@@ -98,6 +99,7 @@ int main(int argc, char *argv[])
     neu_cli_args_init(&args, argc, argv);
 
     disable_jwt = args.disable_auth;
+    snprintf(host_port, sizeof(host_port), "http://%s:%d", args.ip, args.port);
 
     if (args.daemonized) {
         // become a daemon, this should be before calling `init`
