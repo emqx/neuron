@@ -141,8 +141,7 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
     rv = neu_mqtt_client_set_cache_sync_interval(client,
                                                  config->cache_sync_interval);
     if (0 != rv) {
-        plog_error(plugin,
-                   "neu_mqtt_client_set_msg_cache_upload_interval fail");
+        plog_error(plugin, "neu_mqtt_client_set_msg_cache_sync_interval fail");
         return -1;
     }
 
