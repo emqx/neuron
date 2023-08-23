@@ -153,6 +153,17 @@ Update group with too long new name, it should fail.
 
   [Teardown]                    Del Node              modbus-node
 
+Update group name to conflicting group name, it should fail.
+  Add Node                      modbus-node           ${PLUGIN-MODBUS-TCP}
+  Add Group                     modbus-node           group                 1000
+  Add Group                     modbus-node           grp                   1000
+
+  ${res} =                      Update Group          modbus-node           group         new_name=grp
+  Check Response Status         ${res}                409
+  Check Error Code              ${res}                ${NEU_ERR_GROUP_EXIST}
+
+  [Teardown]                    Del Node              modbus-node
+
 Update group name, it should success.
   Add Node                      modbus-node           ${PLUGIN-MODBUS-TCP}
   Add Group                     modbus-node           group                 1000
