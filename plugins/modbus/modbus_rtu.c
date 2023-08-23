@@ -29,7 +29,7 @@
 static neu_plugin_t *driver_open(void);
 
 static int driver_close(neu_plugin_t *plugin);
-static int driver_init(neu_plugin_t *plugin);
+static int driver_init(neu_plugin_t *plugin, bool load);
 static int driver_uninit(neu_plugin_t *plugin);
 static int driver_start(neu_plugin_t *plugin);
 static int driver_stop(neu_plugin_t *plugin);
@@ -59,6 +59,9 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .driver.write_tag     = driver_write,
     .driver.tag_validator = driver_tag_validator,
     .driver.write_tags    = driver_write_tags,
+    .driver.add_tags      = NULL,
+    .driver.load_tags     = NULL,
+    .driver.del_tags      = NULL,
 };
 
 const neu_plugin_module_t neu_plugin_module = {
@@ -95,8 +98,9 @@ static int driver_close(neu_plugin_t *plugin)
     return 0;
 }
 
-static int driver_init(neu_plugin_t *plugin)
+static int driver_init(neu_plugin_t *plugin, bool load)
 {
+    (void) load;
     plugin->protocol = MODBUS_PROTOCOL_RTU;
     plugin->events   = neu_event_new();
     plugin->stack    = modbus_stack_create((void *) plugin, MODBUS_PROTOCOL_RTU,

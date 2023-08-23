@@ -157,6 +157,7 @@ int adapter_load_group_and_tag(neu_adapter_driver_t *driver)
         utarray_foreach(tags, neu_datatag_t *, tag)
         {
             neu_adapter_driver_add_tag(driver, p->name, tag);
+            neu_adapter_driver_load_tag(driver, p->name, tag, 1);
         }
 
         utarray_free(tags);

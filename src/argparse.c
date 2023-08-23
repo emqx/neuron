@@ -18,6 +18,7 @@
  **/
 
 #include <errno.h>
+#include <fcntl.h>
 #include <getopt.h>
 #include <inttypes.h>
 #include <stdio.h>
@@ -32,6 +33,8 @@
 #include "argparse.h"
 #include "persist/persist.h"
 #include "version.h"
+#include "json/json.h"
+#include "json/neu_json_param.h"
 
 #define OPTIONAL_ARGUMENT_IS_PRESENT                             \
     ((optarg == NULL && optind < argc && argv[optind][0] != '-') \
@@ -71,6 +74,7 @@ const char *usage_text =
 "                           - NUMBER,     restart max NUMBER of times\n"
 "    --version            print version information\n"
 "    --disable_auth       disable http api auth\n"
+"    --config_file <PATH> startup parameter configuration file\n"
 "    --config_dir <DIR>   directory from which neuron reads configuration\n"
 "    --plugin_dir <DIR>   directory from which neuron loads plugin lib files\n"
 "\n";
@@ -133,6 +137,234 @@ static inline bool file_exists(const char *const path)
     return -1 != stat(path, &buf);
 }
 
+static inline int load_env(neu_cli_args_t *args, char **log_level_out,
+                           char **config_dir_out, char **plugin_dir_out)
+{
+
+    int   ret    = 0;
+    char *daemon = getenv(NEU_ENV_DAEMON);
+    if (daemon != NULL) {
+        if (strcmp(daemon, "1") == 0) {
+            args->daemonized = true;
+        } else {
+            args->daemonized = false;
+        }
+    }
+
+    char *log = getenv(NEU_ENV_LOG);
+    if (log != NULL) {
+        if (strcmp(log, "1") == 0) {
+            args->dev_log = true;
+        } else {
+            args->dev_log = false;
+        }
+    }
+
+    char *log_level = getenv(NEU_ENV_LOG_LEVEL);
+    if (log_level != NULL) {
+        if (*log_level_out != NULL) {
+            free(*log_level_out);
+        }
+        *log_level_out = strdup(log_level);
+    }
+
+    char *restart = getenv(NEU_ENV_RESTART);
+    if (restart != NULL) {
+        int t = parse_restart_policy(restart, &args->restart);
+        if (t < 0) {
+            printf("neuron NEU_ENV_RESTART setting error!\n");
+            ret = -1;
+        }
+    }
+
+    char *disable_auth = getenv(NEU_ENV_DISABLE_AUTH);
+    if (disable_auth != NULL) {
+        if (strcmp(disable_auth, "1") == 0) {
+            args->disable_auth = true;
+        } else {
+            args->disable_auth = false;
+        }
+    }
+
+    char *config_dir = getenv(NEU_ENV_CONFIG_DIR);
+    if (config_dir != NULL) {
+        if (*config_dir_out != NULL) {
+            free(*config_dir_out);
+        }
+        *config_dir_out = strdup(config_dir);
+    }
+
+    char *plugin_dir = getenv(NEU_ENV_PLUGIN_DIR);
+    if (plugin_dir != NULL) {
+        if (*plugin_dir_out != NULL) {
+            free(*plugin_dir_out);
+        }
+        *plugin_dir_out = strdup(plugin_dir);
+    }
+
+    return ret;
+}
+
+static inline void resolve_config_file_path(int argc, char *argv[],
+                                            struct option *long_options,
+                                            char *opts, char **config_file)
+{
+    int c            = 0;
+    int option_index = 0;
+    while ((c = getopt_long(argc, argv, opts, long_options, &option_index)) !=
+           -1) {
+        switch (c) {
+        case 'c':
+            if (0 == strcmp("config_file", long_options[option_index].name)) {
+                *config_file = strdup(optarg);
+                goto end;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+end:
+    optind = 0;
+}
+
+static inline int load_config_file(int argc, char *argv[],
+                                   struct option *long_options, char *opts,
+                                   neu_cli_args_t *args, char **log_level_out,
+                                   char **config_dir_out, char **plugin_dir_out)
+{
+    char *config_file = NULL;
+    int   ret         = -1;
+    int   fd          = -1;
+    void *root        = NULL;
+
+    resolve_config_file_path(argc, argv, long_options, opts, &config_file);
+
+    do {
+        if (!config_file) {
+            ret = 0;
+            break;
+        }
+
+        if (!file_exists(config_file)) {
+            fprintf(stderr, "configuration file `%s` not exists\n",
+                    config_file);
+            break;
+        }
+
+        char buf[512] = { 0 };
+        fd            = open(config_file, O_RDONLY);
+        if (fd < 0) {
+            printf("cannot open %s reason: %s\n", config_file, strerror(errno));
+            break;
+        }
+        int size = read(fd, buf, sizeof(buf) - 1);
+        if (size <= 0) {
+            printf("cannot read %s reason: %s\n", config_file, strerror(errno));
+            break;
+        }
+
+        root = neu_json_decode_new(buf);
+        if (root == NULL) {
+            printf("config file %s foramt error!\n", config_file);
+            break;
+        }
+
+        neu_json_elem_t restart = { .name = "restart", .t = NEU_JSON_STR };
+        ret                     = neu_json_decode_value(root, &restart);
+        if (ret == 0) {
+            ret = parse_restart_policy(restart.v.val_str, &args->restart);
+            if (ret != 0) {
+                printf("config file restart is invalid policy!\n");
+                free(restart.v.val_str);
+                ret = -1;
+                break;
+            }
+        }
+
+        neu_json_elem_t daemon = { .name = "daemon", .t = NEU_JSON_INT };
+        ret                    = neu_json_decode_value(root, &daemon);
+        if (ret == 0) {
+            if (daemon.v.val_int != 0) {
+                args->daemonized = true;
+            } else {
+                args->daemonized = false;
+            }
+        }
+
+        neu_json_elem_t log = { .name = "log", .t = NEU_JSON_INT };
+        ret                 = neu_json_decode_value(root, &log);
+        if (ret == 0) {
+            if (log.v.val_int != 0) {
+                args->dev_log = true;
+            } else {
+                args->dev_log = false;
+            }
+        }
+
+        neu_json_elem_t log_level = { .name = "log_level", .t = NEU_JSON_STR };
+        ret                       = neu_json_decode_value(root, &log_level);
+        if (ret == 0) {
+            if (*log_level_out != NULL) {
+                free(*log_level_out);
+            }
+            *log_level_out = strdup(log_level.v.val_str);
+        }
+
+        neu_json_elem_t disable_auth = { .name = "disable_auth",
+                                         .t    = NEU_JSON_INT };
+        ret = neu_json_decode_value(root, &disable_auth);
+        if (ret == 0) {
+            if (disable_auth.v.val_int != 0) {
+                args->disable_auth = true;
+            } else {
+                args->disable_auth = false;
+            }
+        }
+
+        neu_json_elem_t config_dir = { .name = "config_dir",
+                                       .t    = NEU_JSON_STR };
+        ret                        = neu_json_decode_value(root, &config_dir);
+        if (ret == 0) {
+            if (*config_dir_out != NULL) {
+                free(*config_dir_out);
+            }
+            *config_dir_out = strdup(config_dir.v.val_str);
+        }
+
+        neu_json_elem_t plugin_dir = { .name = "plugin_dir",
+                                       .t    = NEU_JSON_STR };
+        ret                        = neu_json_decode_value(root, &plugin_dir);
+        if (ret == 0) {
+            if (*plugin_dir_out != NULL) {
+                free(*plugin_dir_out);
+            }
+            *plugin_dir_out = strdup(plugin_dir.v.val_str);
+        }
+
+        free(log_level.v.val_str);
+        free(restart.v.val_str);
+        free(config_dir.v.val_str);
+        free(plugin_dir.v.val_str);
+        ret = 0;
+
+    } while (0);
+
+    if (config_file) {
+        free(config_file);
+    }
+
+    if (fd) {
+        close(fd);
+    }
+
+    if (root) {
+        neu_json_decode_free(root);
+    }
+
+    return ret;
+}
+
 void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 {
     int           ret                 = 0;
@@ -150,6 +382,7 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
         { "restart", required_argument, NULL, 'r' },
         { "version", no_argument, NULL, 'v' },
         { "disable_auth", no_argument, NULL, 'a' },
+        { "config_file", required_argument, NULL, 'c' },
         { "config_dir", required_argument, NULL, 'c' },
         { "plugin_dir", required_argument, NULL, 'p' },
         { "stop", no_argument, NULL, 's' },
@@ -160,6 +393,19 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
 
     int c            = 0;
     int option_index = 0;
+
+    // load config file
+    if (load_config_file(argc, argv, long_options, opts, args, &log_level,
+                         &config_dir, &plugin_dir) < 0) {
+        ret = 1;
+        goto quit;
+    }
+
+    // load env
+    if (load_env(args, &log_level, &config_dir, &plugin_dir) < 0) {
+        ret = 1;
+        goto quit;
+    }
 
     while ((c = getopt_long(argc, argv, opts, long_options, &option_index)) !=
            -1) {
@@ -177,6 +423,9 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             args->dev_log = true;
             break;
         case 'o':
+            if (log_level != NULL) {
+                free(log_level);
+            }
             log_level = strdup(optarg);
             break;
         case 'r':
@@ -197,9 +446,17 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
             args->disable_auth = true;
             break;
         case 'c':
-            config_dir = strdup(optarg);
+            if (0 == strcmp("config_dir", long_options[option_index].name)) {
+                if (config_dir != NULL) {
+                    free(config_dir);
+                }
+                config_dir = strdup(optarg);
+            }
             break;
         case 'p':
+            if (plugin_dir != NULL) {
+                free(plugin_dir);
+            }
             plugin_dir = strdup(optarg);
             break;
         case 's':

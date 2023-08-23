@@ -292,10 +292,11 @@ static int monitor_plugin_close(neu_plugin_t *plugin)
     return rv;
 }
 
-static int monitor_plugin_init(neu_plugin_t *plugin)
+static int monitor_plugin_init(neu_plugin_t *plugin, bool load)
 {
     int rv = 0;
     (void) plugin;
+    (void) load;
 
     plog_notice(plugin, "Initialize plugin: %s", neu_plugin_module.module_name);
     return rv;
