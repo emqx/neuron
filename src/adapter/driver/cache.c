@@ -85,6 +85,12 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     HASH_ITER(hh, cache->table, elem, tmp)
     {
         HASH_DEL(cache->table, elem);
+        if (elem->value.type == NEU_TYPE_PTR) {
+            if (elem->value.value.ptr.ptr != NULL) {
+                free(elem->value.value.ptr.ptr);
+                elem->value.value.ptr.ptr = NULL;
+            }
+        }
         free(elem);
     }
     nng_mtx_unlock(cache->mtx);
@@ -162,6 +168,18 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
                     elem->changed = true;
                 }
                 break;
+            case NEU_TYPE_PTR: {
+                if (elem->value.value.ptr.length != value.value.ptr.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcmp(elem->value.value.ptr.ptr, value.value.ptr.ptr,
+                               value.value.ptr.length) != 0) {
+                        elem->changed = true;
+                    }
+                }
+
+                break;
+            }
             case NEU_TYPE_FLOAT:
                 if (elem->value.precision == 0) {
                     elem->changed = elem->value.value.f32 != value.value.f32;
@@ -193,8 +211,20 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             elem->changed = true;
         }
 
-        elem->value.type  = value.type;
-        elem->value.value = value.value;
+        elem->value.type = value.type;
+        if (elem->value.type == NEU_TYPE_PTR) {
+            elem->value.value.ptr.length = value.value.ptr.length;
+            elem->value.value.ptr.type   = value.value.ptr.type;
+            if (elem->value.value.ptr.ptr != NULL) {
+                free(elem->value.value.ptr.ptr);
+            }
+            elem->value.value.ptr.ptr = calloc(1, value.value.ptr.length);
+            memcpy(elem->value.value.ptr.ptr, value.value.ptr.ptr,
+                   value.value.ptr.length);
+        } else {
+            elem->value.value = value.value;
+        }
+
         memset(elem->metas, 0, sizeof(neu_tag_meta_t) * NEU_TAG_META_SIZE);
         for (int i = 0; i < n_meta; i++) {
             memcpy(&elem->metas[i], &metas[i], sizeof(neu_tag_meta_t));
@@ -263,6 +293,14 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
         case NEU_TYPE_BYTES:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
+            break;
+        case NEU_TYPE_PTR:
+            value->value.value.ptr.length = elem->value.value.ptr.length;
+            value->value.value.ptr.type   = elem->value.value.ptr.type;
+            value->value.value.ptr.ptr =
+                calloc(1, elem->value.value.ptr.length);
+            memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
+                   elem->value.value.ptr.length);
             break;
         }
 
@@ -334,6 +372,14 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
+        case NEU_TYPE_PTR:
+            value->value.value.ptr.length = elem->value.value.ptr.length;
+            value->value.value.ptr.type   = elem->value.value.ptr.type;
+            value->value.value.ptr.ptr =
+                calloc(1, elem->value.value.ptr.length);
+            memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
+                   elem->value.value.ptr.length);
+            break;
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
@@ -402,6 +448,14 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
+        case NEU_TYPE_PTR:
+            value->value.value.ptr.length = elem->value.value.ptr.length;
+            value->value.value.ptr.type   = elem->value.value.ptr.type;
+            value->value.value.ptr.ptr =
+                calloc(1, elem->value.value.ptr.length);
+            memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
+                   elem->value.value.ptr.length);
+            break;
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
@@ -468,6 +522,13 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
+        case NEU_TYPE_PTR:
+            value->value.value.ptr.length = elem->value.value.ptr.length;
+            value->value.value.ptr.type   = elem->value.value.ptr.type;
+            value->value.value.ptr.ptr =
+                calloc(1, elem->value.value.ptr.length);
+            memcpy(value->value.value.ptr.ptr, elem->value.value.ptr.ptr,
+                   elem->value.value.ptr.length);
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
@@ -500,6 +561,12 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
 
     if (elem != NULL) {
         HASH_DEL(cache->table, elem);
+        if (elem->value.type == NEU_TYPE_PTR) {
+            if (elem->value.value.ptr.ptr != NULL) {
+                free(elem->value.value.ptr.ptr);
+                elem->value.value.ptr.ptr = NULL;
+            }
+        }
         free(elem);
     }
 

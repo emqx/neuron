@@ -49,6 +49,7 @@ typedef enum {
     NEU_TYPE_WORD   = 16,
     NEU_TYPE_DWORD  = 17,
     NEU_TYPE_LWORD  = 18,
+    NEU_TYPE_PTR    = 19,
 } neu_type_e;
 
 inline static const char *neu_type_string(neu_type_e type)
@@ -90,26 +91,35 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_DWORD";
     case NEU_TYPE_LWORD:
         return "NEU_TYPE_LWORD";
+    case NEU_TYPE_PTR:
+        return "NEU_TYPE_PTR";
     }
 
     return "";
 }
 
+typedef struct {
+    neu_type_e type; // string or bytes
+    uint16_t   length;
+    uint8_t *  ptr;
+} neu_value_ptr_t;
+
 #define NEU_VALUE_SIZE 128
 typedef union {
-    bool     boolean;
-    int8_t   i8;
-    uint8_t  u8;
-    int16_t  i16;
-    uint16_t u16;
-    int32_t  i32;
-    uint32_t u32;
-    int64_t  i64;
-    uint64_t u64;
-    float    f32;
-    double   d64;
-    char     str[NEU_VALUE_SIZE];
-    uint8_t  bytes[NEU_VALUE_SIZE];
+    bool            boolean;
+    int8_t          i8;
+    uint8_t         u8;
+    int16_t         i16;
+    uint16_t        u16;
+    int32_t         i32;
+    uint32_t        u32;
+    int64_t         i64;
+    uint64_t        u64;
+    float           f32;
+    double          d64;
+    char            str[NEU_VALUE_SIZE];
+    uint8_t         bytes[NEU_VALUE_SIZE];
+    neu_value_ptr_t ptr;
 } neu_value_u;
 
 static inline char *neu_value_str(neu_type_e type, neu_value_u value)

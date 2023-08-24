@@ -1408,7 +1408,15 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
-            datas[index].value = value.value;
+            if (value.value.type == NEU_TYPE_PTR) {
+                datas[index].value.type = NEU_TYPE_PTR;
+                datas[index].value.value.ptr.length =
+                    value.value.value.ptr.length;
+                datas[index].value.value.ptr.type = value.value.value.ptr.type;
+                datas[index].value.value.ptr.ptr  = value.value.value.ptr.ptr;
+            } else {
+                datas[index].value = value.value;
+            }
             if (tag->decimal != 0) {
                 datas[index].value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {
@@ -1549,7 +1557,15 @@ static void read_group(int64_t timestamp, int64_t timeout,
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
-            datas[index].value = value.value;
+            if (value.value.type == NEU_TYPE_PTR) {
+                datas[index].value.type = NEU_TYPE_PTR;
+                datas[index].value.value.ptr.length =
+                    value.value.value.ptr.length;
+                datas[index].value.value.ptr.type = value.value.value.ptr.type;
+                datas[index].value.value.ptr.ptr  = value.value.value.ptr.ptr;
+            } else {
+                datas[index].value = value.value;
+            }
             if (tag->decimal != 0) {
                 datas[index].value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {

@@ -109,6 +109,10 @@ int wrap_tag_data(neu_json_read_resp_tag_t * json_tag,
         json_tag->t             = NEU_JSON_STR;
         json_tag->value.val_str = tag_value->value.value.str;
         break;
+    case NEU_TYPE_PTR:
+        json_tag->t             = NEU_JSON_STR;
+        json_tag->value.val_str = (char *) tag_value->value.value.ptr.ptr;
+        break;
     case NEU_TYPE_ERROR:
         json_tag->t             = NEU_JSON_INT;
         json_tag->value.val_int = tag_value->value.value.i32;

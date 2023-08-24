@@ -125,6 +125,10 @@ static int tag_values_to_json(neu_resp_tag_value_meta_t *tags, uint16_t len,
             json->tags[i].t             = NEU_JSON_STR;
             json->tags[i].value.val_str = tag->value.value.str;
             break;
+        case NEU_TYPE_PTR:
+            json->tags[i].t             = NEU_JSON_STR;
+            json->tags[i].value.val_str = (char *) tag->value.value.ptr.ptr;
+            break;
         default:
             break;
         }
