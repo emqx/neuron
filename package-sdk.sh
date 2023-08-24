@@ -54,6 +54,7 @@ cp dev.conf ${package_name}/config/
 cp neuron.key ${package_name}/config/
 cp neuron.pem ${package_name}/config/
 cp default_plugins.json ${package_name}/config/
+cp neuron.json ${package_name}/config/
 
 cp build/plugins/schema/ekuiper.json \
     build/plugins/schema/monitor.json \
