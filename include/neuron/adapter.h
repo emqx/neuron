@@ -113,6 +113,7 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_TEMPLATE_TAG,
     NEU_RESP_GET_TEMPLATE_TAG,
     NEU_REQ_INST_TEMPLATE,
+    NEU_REQ_INST_TEMPLATES,
 
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_NODES_STATE,
@@ -218,6 +219,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_TEMPLATE_TAG]      = "REQ_REQ_GET_TEMPLATE_TAG",
     [NEU_RESP_GET_TEMPLATE_TAG]     = "REQ_RESP_GET_TEMPLATE_TAG",
     [NEU_REQ_INST_TEMPLATE]         = "NEU_REQ_INST_TEMPLATE",
+    [NEU_REQ_INST_TEMPLATES]        = "NEU_REQ_INST_TEMPLATES",
 
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
@@ -659,6 +661,25 @@ typedef struct {
     char tmpl[NEU_TEMPLATE_NAME_LEN];
     char node[NEU_NODE_NAME_LEN];
 } neu_req_inst_template_t;
+
+typedef struct {
+    char *tmpl;
+    char *node;
+} neu_req_inst_templates_info_t;
+
+typedef struct {
+    uint16_t                       n_inst;
+    neu_req_inst_templates_info_t *insts;
+} neu_req_inst_templates_t;
+
+static inline void neu_req_inst_templates_fini(neu_req_inst_templates_t *req)
+{
+    for (uint16_t i = 0; i < req->n_inst; ++i) {
+        free(req->insts[i].tmpl);
+        free(req->insts[i].node);
+    }
+    free(req->insts);
+}
 
 typedef struct neu_req_update_license {
 } neu_req_update_license_t;

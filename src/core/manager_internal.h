@@ -92,8 +92,11 @@ int neu_manager_del_template_tags(neu_manager_t *             manager,
 int neu_manager_get_template_tags(neu_manager_t *             manager,
                                   neu_req_get_template_tag_t *req,
                                   UT_array **                 tags_p);
-int neu_manager_instantiate_template(neu_manager_t *          manager,
-                                     neu_req_inst_template_t *req);
+int neu_manager_instantiate_template(neu_manager_t *manager,
+                                     const char *   tmpl_name,
+                                     const char *   node_name);
+int neu_manager_instantiate_templates(neu_manager_t *           manager,
+                                      neu_req_inst_templates_t *req);
 
 UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 
