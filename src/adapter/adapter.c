@@ -18,6 +18,7 @@
  **/
 
 #include <assert.h>
+#include <dirent.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <pthread.h>
@@ -108,6 +109,35 @@ static inline void stop_log_level_timer(neu_adapter_t *adapter)
 {
     neu_event_del_timer(adapter->events, adapter->timer_lev);
     adapter->timer_lev = NULL;
+}
+
+static UT_array *collect_logs(const char *dir, const char *node)
+{
+    DIR *          dirp                         = NULL;
+    struct dirent *dent                         = NULL;
+    UT_array *     files                        = NULL;
+    char           flag[NEU_NODE_NAME_LEN + 2]  = { 0 };
+    char           flag_[NEU_NODE_NAME_LEN + 2] = { 0 };
+
+    if ((dirp = opendir(dir)) == NULL) {
+        nlog_error("fail open dir: %s", dir);
+        return NULL;
+    }
+
+    utarray_new(files, &ut_str_icd);
+    snprintf(flag, sizeof(flag), "%s.", node);
+    snprintf(flag_, sizeof(flag_), "%s_", node);
+
+    while (NULL != (dent = readdir(dirp))) {
+        if (strstr(dent->d_name, flag) != NULL ||
+            strstr(dent->d_name, flag_) != NULL) {
+            char *file = dent->d_name;
+            utarray_push_back(files, &file);
+        }
+    }
+
+    closedir(dirp);
+    return files;
 }
 
 int neu_adapter_error()
@@ -1029,6 +1059,28 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
             neu_metrics_unregister_entry(e->name);
         }
         neu_node_metrics_free(adapter->metrics);
+    }
+
+    char *setting = NULL;
+    if (adapter_load_setting(adapter->name, &setting) != 0) {
+        UT_array *files = collect_logs("./logs", adapter->name);
+        if (files != NULL) {
+            if (0 == utarray_len(files)) {
+                nlog_warn("directory logs contains no log files");
+            }
+
+            utarray_foreach(files, char **, file)
+            {
+                char path[NEU_NODE_NAME_LEN + 10] = { 0 };
+                snprintf(path, sizeof(path), "./logs/%s", *file);
+                if (remove(path) != 0) {
+                    nlog_warn("rm %s file fail", path);
+                }
+            }
+            utarray_free(files);
+        }
+    } else {
+        free(setting);
     }
 
     if (adapter->name != NULL) {
