@@ -1141,6 +1141,8 @@ int neu_mqtt_client_set_cache_sync_interval(neu_mqtt_client_t *client,
         client->retry = interval;
     } else {
         rv = -1;
+        // client->retry = 100;
+        // rv            = 0;
     }
 
     nng_mtx_unlock(client->mtx);

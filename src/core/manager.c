@@ -49,10 +49,13 @@ static const char *const url = "inproc://neu_manager";
 
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data);
 static int manager_level_check(void *usr_data);
-inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
-                         void *data);
+inline static void     reply(neu_manager_t *manager, neu_reqresp_head_t *header,
+                             void *data);
+inline static nng_msg *trans_data_dup(nng_msg *msg);
+inline static void     trans_data_free(nng_msg *msg);
+typedef nng_msg *(*msg_dup)(nng_msg *msg);
 inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
-                                   nng_pipe pipe);
+                                   nng_pipe pipe, msg_dup dup);
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *node);
 inline static void notify_monitor(neu_manager_t *    manager,
@@ -244,12 +247,13 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (apps != NULL) {
             utarray_foreach(apps, neu_app_subscribe_t *, app)
             {
-                forward_msg_dup(manager, msg, app->pipe);
+                forward_msg_dup(manager, msg, app->pipe, trans_data_dup);
                 nlog_debug("forward trans data to pipe: %d", app->pipe.id);
             }
             utarray_free(apps);
-            break;
         }
+
+        trans_data_free(msg);
         break;
     }
     case NEU_REQ_UPDATE_LICENSE: {
@@ -257,7 +261,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         utarray_foreach(pipes, nng_pipe *, pipe)
         {
-            forward_msg_dup(manager, msg, *pipe);
+            forward_msg_dup(manager, msg, *pipe, NULL);
             nlog_notice("forward license update to pipe: %d", pipe->id);
         }
         utarray_free(pipes);
@@ -1091,17 +1095,49 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 }
 
 inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
-                                   nng_pipe pipe)
+                                   nng_pipe pipe, msg_dup dup)
 {
     nng_msg *out_msg;
 
     nng_msg_dup(&out_msg, msg);
+    if (dup != NULL) {
+        out_msg = dup(out_msg);
+    }
     nng_msg_set_pipe(out_msg, pipe);
     if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
         nlog_info("forward msg to pipe %d", pipe.id);
     } else {
         nlog_warn("forward msg to pipe %d fail", pipe.id);
         nng_msg_free(out_msg);
+    }
+}
+
+inline static nng_msg *trans_data_dup(nng_msg *msg)
+{
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) nng_msg_body(msg);
+    assert(header->type == NEU_REQRESP_TRANS_DATA);
+    neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
+
+    for (int i = 0; i < cmd->n_tag; i++) {
+        if (cmd->tags[i].value.type == NEU_TYPE_PTR) {
+            uint8_t *ptr = calloc(cmd->tags[i].value.value.ptr.length, 1);
+            cmd->tags[i].value.value.ptr.ptr = ptr;
+        }
+    }
+
+    return msg;
+}
+
+inline static void trans_data_free(nng_msg *msg)
+{
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) nng_msg_body(msg);
+    assert(header->type == NEU_REQRESP_TRANS_DATA);
+    neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
+
+    for (int i = 0; i < cmd->n_tag; i++) {
+        if (cmd->tags[i].value.type == NEU_TYPE_PTR) {
+            free(cmd->tags[i].value.value.ptr.ptr);
+        }
     }
 }
 

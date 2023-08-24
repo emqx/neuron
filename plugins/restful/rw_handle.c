@@ -265,6 +265,11 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
             api_res.tags[i].value.val_int = resp->tags[i].value.value.i32;
             api_res.tags[i].error         = resp->tags[i].value.value.i32;
             break;
+        case NEU_TYPE_PTR:
+            api_res.tags[i].t = NEU_JSON_STR;
+            api_res.tags[i].value.val_str =
+                (char *) resp->tags[i].value.value.ptr.ptr;
+            break;
         default:
             break;
         }
@@ -272,6 +277,9 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
 
     neu_json_encode_by_fn(&api_res, neu_json_encode_read_resp, &result);
     for (int i = 0; i < resp->n_tag; i++) {
+        if (resp->tags[i].value.type == NEU_TYPE_PTR) {
+            free(resp->tags[i].value.value.ptr.ptr);
+        }
         if (api_res.tags[i].n_meta > 0) {
             free(api_res.tags[i].metas);
         }

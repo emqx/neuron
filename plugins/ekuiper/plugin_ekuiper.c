@@ -301,12 +301,18 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         break;
     }
     case NEU_REQRESP_TRANS_DATA: {
+        neu_reqresp_trans_data_t *trans_data = data;
+
         if (disconnected) {
             plog_debug(plugin, "not connected");
-            return -1;
+        } else {
+            send_data(plugin, trans_data);
         }
-        neu_reqresp_trans_data_t *trans_data = data;
-        send_data(plugin, trans_data);
+        for (int i = 0; i < trans_data->n_tag; i++) {
+            if (trans_data->tags[i].value.type == NEU_TYPE_PTR) {
+                free(trans_data->tags[i].value.value.ptr.ptr);
+            }
+        }
         break;
     }
     case NEU_REQ_SUBSCRIBE_GROUP:
