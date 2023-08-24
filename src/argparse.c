@@ -64,7 +64,7 @@ const char *usage_text =
 "OPTIONS:\n"
 "    -d, --daemon         run as daemon process\n"
 "    -h, --help           show this help message\n"
-"    --stop               stop running neuron\n"
+"    stop                 stop running neuron\n"
 "    --log                log to the stdout\n"
 "    --log_level <LEVEL>  default log level(DEBUG,NOTICE)\n"
 "    --reset-password     reset dashboard to use default password\n"
@@ -136,6 +136,15 @@ static inline bool file_exists(const char *const path)
 {
     struct stat buf = { 0 };
     return -1 != stat(path, &buf);
+}
+
+static inline int load_spec_arg(int argc, char *argv[], neu_cli_args_t *args)
+{
+    int ret = 0;
+    if (argc > 1 && strcmp(argv[1], "stop") == 0) {
+        args->stop = true;
+    }
+    return ret;
 }
 
 static inline int load_env(neu_cli_args_t *args, char **log_level_out,
@@ -341,6 +350,11 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
     int c            = 0;
     int option_index = 0;
 
+    if (load_spec_arg(argc, argv, args) < 0) {
+        ret = 1;
+        goto quit;
+    }
+
     // load config file
     if (load_config_file(argc, argv, long_options, opts, args) < 0) {
         ret = 1;
@@ -404,9 +418,6 @@ void neu_cli_args_init(neu_cli_args_t *args, int argc, char *argv[])
                 free(plugin_dir);
             }
             plugin_dir = strdup(optarg);
-            break;
-        case 's':
-            args->stop = true;
             break;
         case '?':
         default:

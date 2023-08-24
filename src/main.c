@@ -117,6 +117,8 @@ int main(int argc, char *argv[])
             nlog_notice("neuron stop ret=%d", rv);
             if (rv == 0) {
                 printf("neuron stop successfully.\n");
+            } else {
+                printf("neuron stop failed.\n");
             }
         } else {
             nlog_fatal("neuron process already running, exit.");
