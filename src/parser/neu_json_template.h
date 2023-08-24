@@ -135,4 +135,14 @@ int  neu_json_decode_template_inst_req(char *                         buf,
                                        neu_json_template_inst_req_t **result);
 void neu_json_decode_template_inst_req_free(neu_json_template_inst_req_t *req);
 
+typedef struct {
+    neu_json_template_inst_req_t *insts;
+    int                           len;
+} neu_json_template_insts_req_t;
+
+int  neu_json_decode_template_insts_req(char *                          buf,
+                                        neu_json_template_insts_req_t **result);
+void neu_json_decode_template_insts_req_free(
+    neu_json_template_insts_req_t *req);
+
 #endif
