@@ -227,6 +227,13 @@ Inst Template
   ${res}        Object  response body
   [RETURN]      ${res}[0]
 
+Inst Templates
+  [Arguments]   @{insts}
+  ${data} =     Evaluate                   json.dumps(${insts})          json
+  POST          /api/v2/template/instances  {"nodes": ${data}}
+  ${res}        Object  response body
+  [RETURN]      ${res}[0]
+
 Get Template
   [Arguments]   ${name}
   GET           /api/v2/template?name=${name}
