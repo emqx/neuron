@@ -109,4 +109,6 @@ extern zlog_category_t *neuron;
     zlog_debug(log, "%s", log_protocol_buf);                                 \
     free(log_protocol_buf);
 
+void remove_logs(const char *node);
+
 #endif

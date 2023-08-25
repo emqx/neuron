@@ -88,6 +88,7 @@ set(NEURON_BASE_SOURCES
     src/utils/base64.c
     src/utils/async_queue.c
     src/utils/mem_cache.c
+    src/utils/log.c
     ${PERSIST_SOURCES})
   
 if (SMART_LINK) 
