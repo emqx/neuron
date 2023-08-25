@@ -80,6 +80,17 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_BOOL:
         json_object_set_new(ob, ele.name, json_boolean(ele.v.val_bool));
         break;
+    case NEU_JSON_BYTES: {
+        void *bytes = json_array();
+
+        for (int i = 0; i < ele.v.val_bytes.length; i++) {
+            json_array_append_new(bytes,
+                                  json_integer(ele.v.val_bytes.bytes[i]));
+        }
+
+        json_object_set_new(ob, ele.name, bytes);
+        break;
+    }
     case NEU_JSON_OBJECT:
         json_object_set_new(ob, ele.name, ele.v.val_object);
         break;
@@ -117,6 +128,8 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
             ele->t = NEU_JSON_BOOL;
         } else if (json_is_integer(ob)) {
             ele->t = NEU_JSON_INT;
+        } else if (json_is_array(ob)) {
+            ele->t = NEU_JSON_BYTES;
         }
     }
 
@@ -147,6 +160,23 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     case NEU_JSON_BOOL:
         ele->v.val_bool = json_boolean_value(ob);
         break;
+    case NEU_JSON_BYTES: {
+        json_t *value = NULL;
+
+        ele->v.val_bytes.length = json_array_size(ob);
+        if (ele->v.val_bytes.length > 0) {
+            int index = 0;
+
+            ele->v.val_bytes.bytes =
+                calloc(ele->v.val_bytes.length, sizeof(uint8_t));
+            json_array_foreach(ob, index, value)
+            {
+                ele->v.val_bytes.bytes[index] =
+                    (uint8_t) json_integer_value(value);
+            }
+        }
+        break;
+    }
     case NEU_JSON_OBJECT:
         ele->v.val_object = ob;
         break;

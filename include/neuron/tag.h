@@ -69,6 +69,10 @@ typedef union {
     } string;
 
     struct {
+        uint8_t length;
+    } bytes;
+
+    struct {
         bool    op;
         uint8_t bit;
     } bit;
