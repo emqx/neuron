@@ -151,66 +151,81 @@ static inline int load_env(neu_cli_args_t *args, char **log_level_out,
                            char **config_dir_out, char **plugin_dir_out)
 {
 
-    int   ret    = 0;
-    char *daemon = getenv(NEU_ENV_DAEMON);
-    if (daemon != NULL) {
-        if (strcmp(daemon, "1") == 0) {
-            args->daemonized = true;
-        } else {
-            args->daemonized = false;
+    int ret = 0;
+    do {
+        char *daemon = getenv(NEU_ENV_DAEMON);
+        if (daemon != NULL) {
+            if (strcmp(daemon, "1") == 0) {
+                args->daemonized = true;
+            } else if (strcmp(daemon, "0") == 0) {
+                args->daemonized = false;
+            } else {
+                printf("neuron NEURON_DAEMON setting error!\n");
+                ret = -1;
+                break;
+            }
         }
-    }
 
-    char *log = getenv(NEU_ENV_LOG);
-    if (log != NULL) {
-        if (strcmp(log, "1") == 0) {
-            args->dev_log = true;
-        } else {
-            args->dev_log = false;
+        char *log = getenv(NEU_ENV_LOG);
+        if (log != NULL) {
+            if (strcmp(log, "1") == 0) {
+                args->dev_log = true;
+            } else if (strcmp(log, "0") == 0) {
+                args->dev_log = false;
+            } else {
+                printf("neuron NEURON_LOG setting error!\n");
+                ret = -1;
+                break;
+            }
         }
-    }
 
-    char *log_level = getenv(NEU_ENV_LOG_LEVEL);
-    if (log_level != NULL) {
-        if (*log_level_out != NULL) {
-            free(*log_level_out);
+        char *log_level = getenv(NEU_ENV_LOG_LEVEL);
+        if (log_level != NULL) {
+            if (*log_level_out != NULL) {
+                free(*log_level_out);
+            }
+            *log_level_out = strdup(log_level);
         }
-        *log_level_out = strdup(log_level);
-    }
 
-    char *restart = getenv(NEU_ENV_RESTART);
-    if (restart != NULL) {
-        int t = parse_restart_policy(restart, &args->restart);
-        if (t < 0) {
-            printf("neuron NEU_ENV_RESTART setting error!\n");
-            ret = -1;
+        char *restart = getenv(NEU_ENV_RESTART);
+        if (restart != NULL) {
+            int t = parse_restart_policy(restart, &args->restart);
+            if (t < 0) {
+                printf("neuron NEURON_RESTART setting error!\n");
+                ret = -1;
+                break;
+            }
         }
-    }
 
-    char *disable_auth = getenv(NEU_ENV_DISABLE_AUTH);
-    if (disable_auth != NULL) {
-        if (strcmp(disable_auth, "1") == 0) {
-            args->disable_auth = true;
-        } else {
-            args->disable_auth = false;
+        char *disable_auth = getenv(NEU_ENV_DISABLE_AUTH);
+        if (disable_auth != NULL) {
+            if (strcmp(disable_auth, "1") == 0) {
+                args->disable_auth = true;
+            } else if (strcmp(disable_auth, "0") == 0) {
+                args->disable_auth = false;
+            } else {
+                printf("neuron NEURON_DISABLE_AUTH setting error!\n");
+                ret = -1;
+                break;
+            }
         }
-    }
 
-    char *config_dir = getenv(NEU_ENV_CONFIG_DIR);
-    if (config_dir != NULL) {
-        if (*config_dir_out != NULL) {
-            free(*config_dir_out);
+        char *config_dir = getenv(NEU_ENV_CONFIG_DIR);
+        if (config_dir != NULL) {
+            if (*config_dir_out != NULL) {
+                free(*config_dir_out);
+            }
+            *config_dir_out = strdup(config_dir);
         }
-        *config_dir_out = strdup(config_dir);
-    }
 
-    char *plugin_dir = getenv(NEU_ENV_PLUGIN_DIR);
-    if (plugin_dir != NULL) {
-        if (*plugin_dir_out != NULL) {
-            free(*plugin_dir_out);
+        char *plugin_dir = getenv(NEU_ENV_PLUGIN_DIR);
+        if (plugin_dir != NULL) {
+            if (*plugin_dir_out != NULL) {
+                free(*plugin_dir_out);
+            }
+            *plugin_dir_out = strdup(plugin_dir);
         }
-        *plugin_dir_out = strdup(plugin_dir);
-    }
+    } while (0);
 
     return ret;
 }
@@ -247,6 +262,10 @@ static inline int load_config_file(int argc, char *argv[],
     int   fd          = -1;
     void *root        = NULL;
 
+    neu_json_elem_t elems[] = { { .name = "disable_auth", .t = NEU_JSON_INT },
+                                { .name = "ip", .t = NEU_JSON_STR },
+                                { .name = "port", .t = NEU_JSON_INT } };
+
     resolve_config_file_path(argc, argv, long_options, opts, &config_file);
 
     do {
@@ -279,25 +298,34 @@ static inline int load_config_file(int argc, char *argv[],
             break;
         }
 
-        neu_json_elem_t elems[] = { { .name = "disable_auth",
-                                      .t    = NEU_JSON_INT },
-                                    { .name = "ip", .t = NEU_JSON_STR },
-                                    { .name = "port", .t = NEU_JSON_INT } };
-
         if (neu_json_decode_by_json(root, 3, elems) == 0) {
-            if (elems[0].v.val_int != 0) {
+            if (elems[0].v.val_int == 1) {
                 args->disable_auth = true;
-            } else {
+            } else if (elems[0].v.val_int == 0) {
                 args->disable_auth = false;
+            } else {
+                printf("config file %s disable_auth setting error!\n",
+                       config_file);
+                break;
             }
 
             if (elems[1].v.val_str != NULL) {
                 args->ip = strdup(elems[1].v.val_str);
-                free(elems[1].v.val_str);
+            } else {
+                printf("config file %s ip setting error!\n", config_file);
+                break;
             }
 
-            args->port = elems[2].v.val_int;
-            ret        = 0;
+            if (elems[2].v.val_int > 0) {
+                args->port = elems[2].v.val_int;
+            } else {
+                printf("config file %s port setting error! must greater than "
+                       "0\n",
+                       config_file);
+                break;
+            }
+
+            ret = 0;
         } else {
             printf("config file %s elems error! must had ip, port and "
                    "disable_auth.\n",
@@ -316,6 +344,10 @@ static inline int load_config_file(int argc, char *argv[],
 
     if (root) {
         neu_json_decode_free(root);
+    }
+
+    if (elems[1].v.val_str != NULL) {
+        free(elems[1].v.val_str);
     }
 
     return ret;
