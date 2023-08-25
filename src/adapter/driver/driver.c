@@ -110,7 +110,16 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta)
 {
-    neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
+    neu_adapter_driver_t *         driver = (neu_adapter_driver_t *) adapter;
+    neu_adapter_update_metric_cb_t update_metric =
+        driver->adapter.cb_funs.update_metric;
+
+    if (value.type == NEU_TYPE_ERROR) {
+        update_metric(&driver->adapter, NEU_METRIC_GROUP_LAST_ERROR_CODE,
+                      value.value.i32, group);
+        update_metric(&driver->adapter, NEU_METRIC_GROUP_LAST_ERROR_TS,
+                      global_timestamp, group);
+    }
 
     if (value.type == NEU_TYPE_ERROR && tag == NULL) {
         group_t *g = find_group(driver, group);
@@ -127,21 +136,18 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
                                         global_timestamp, value, NULL, 0);
                 ++err_count;
             }
-            driver->adapter.cb_funs.update_metric(
-                &driver->adapter, NEU_METRIC_TAG_READS_TOTAL, err_count, NULL);
-            driver->adapter.cb_funs.update_metric(
-                &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, err_count,
-                NULL);
+            update_metric(&driver->adapter, NEU_METRIC_TAG_READS_TOTAL,
+                          err_count, NULL);
+            update_metric(&driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
+                          err_count, NULL);
             utarray_free(tags);
         }
     } else {
         neu_driver_cache_update(driver->cache, group, tag, global_timestamp,
                                 value, metas, n_meta);
-        driver->adapter.cb_funs.update_metric(
-            &driver->adapter, NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
-        driver->adapter.cb_funs.update_metric(
-            &driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
-            NEU_TYPE_ERROR == value.type, NULL);
+        update_metric(&driver->adapter, NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
+        update_metric(&driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
+                      NEU_TYPE_ERROR == value.type, NULL);
     }
     nlog_info(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64
@@ -704,6 +710,10 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                               NEU_METRIC_GROUP_LAST_SEND_MSGS, 0);
         REGISTER_GROUP_METRIC(&driver->adapter, find->name,
                               NEU_METRIC_GROUP_LAST_TIMER_MS, 0);
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_LAST_ERROR_CODE, 0);
+        REGISTER_GROUP_METRIC(&driver->adapter, find->name,
+                              NEU_METRIC_GROUP_LAST_ERROR_TS, 0);
 
         HASH_ADD_STR(driver->groups, name, find);
         ret = NEU_ERR_SUCCESS;
