@@ -98,6 +98,20 @@ typedef enum {
 #define NEU_METRIC_GROUP_LAST_TIMER_MS_HELP \
     "Time in milliseconds consumed on last group timer invocation"
 
+// maintained by neuron core
+// group last error code
+#define NEU_METRIC_GROUP_LAST_ERROR_CODE "group_last_error_code"
+#define NEU_METRIC_GROUP_LAST_ERROR_CODE_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_GROUP_LAST_ERROR_CODE_HELP \
+    "Last encountered error code in group data acquisition"
+
+// maintained by neuron core
+// group last error timestamp
+#define NEU_METRIC_GROUP_LAST_ERROR_TS "group_last_error_timestamp_ms"
+#define NEU_METRIC_GROUP_LAST_ERROR_TS_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_GROUP_LAST_ERROR_TS_HELP \
+    "Timestamp (ms) of the last encountered error in group data acquisition"
+
 // number of messages sent
 #define NEU_METRIC_SEND_MSGS_TOTAL "send_msgs_total"
 #define NEU_METRIC_SEND_MSGS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
