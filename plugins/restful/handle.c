@@ -129,6 +129,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/template/inst",
     },
     {
+        .url = "/api/v2/template/instances",
+    },
+    {
         .url = "/api/v2/ndriver/map",
     },
     {
@@ -432,6 +435,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/template/inst",
         .value.handler = handle_instantiate_template,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/template/instances",
+        .value.handler = handle_instantiate_templates,
     },
     {
         .method        = NEU_HTTP_METHOD_POST,

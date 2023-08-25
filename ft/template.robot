@@ -307,6 +307,78 @@ Instantiated node should be persisted.
     ...                           AND                   Del Template                  ${g_template}
 
 
+Instantiate a batch with a nonexistent template, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${inst1} =                    Create Dictionary     name=${g_template}            node=node1
+    ${inst2} =                    Create Dictionary     name=not-exist-tmpl           node=node2
+    ${res} =                      Inst Templates        ${inst1}                      ${inst2}
+    Check Response Status         ${res}                404
+    Check Error Code              ${res}                ${NEU_ERR_TEMPLATE_NOT_FOUND}
+
+    [Teardown]                    Run Keywords          Del Node                      node1
+    ...                           AND                   Del Node                      node2
+    ...                           AND                   Del Template                  ${g_template}
+
+
+Instantiate a batch with conflicting name from an existent template, it should fail.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${inst1} =                    Create Dictionary     name=${g_template}            node=node
+    ${inst2} =                    Create Dictionary     name=${g_template}            node=node
+    ${res} =                      Inst Templates        ${inst1}                      ${inst2}
+    Check Response Status         ${res}                409
+    Check Error Code              ${res}                ${NEU_ERR_NODE_EXIST}
+
+    [Teardown]                    Run Keywords          Del Node                      node
+    ...                           AND                   Del Node                      node
+    ...                           AND                   Del Template                  ${g_template}
+
+
+Instantiate a batch from existent templates, it should success.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${inst1} =                    Create Dictionary     name=${g_template}            node=node1
+    ${inst2} =                    Create Dictionary     name=${g_template}            node=node2
+    ${res} =                      Inst Templates        ${inst1}                      ${inst2}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    Should Match Test Template    node1
+    Should Match Test Template    node2
+
+    [Teardown]                    Run Keywords          Del Node                      node1
+    ...                           AND                   Del Node                      node2
+    ...                           AND                   Del Template                  ${g_template}
+
+
+Instantiated batch should be persisted.
+    ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${g_groups}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    ${inst1} =                    Create Dictionary     name=${g_template}            node=node1
+    ${inst2} =                    Create Dictionary     name=${g_template}            node=node2
+    ${res} =                      Inst Templates        ${inst1}                      ${inst2}
+    Check Response Status         ${res}                200
+    Check Error Code              ${res}                ${NEU_ERR_SUCCESS}
+
+    Restart Neuron
+
+    Should Match Test Template    node1
+    Should Match Test Template    node2
+
+    [Teardown]                    Run Keywords          Del Node                      node1
+    ...                           AND                   Del Node                      node2
+    ...                           AND                   Del Template                  ${g_template}
+
+
 Add group to nonexistent template, it should fail.
     ${res} =                      Add Template Group    ${g_template}                 ${g_group1}[name]     ${2000}
     Check Response Status         ${res}                404
@@ -1157,8 +1229,9 @@ Should Match Test Template
     [Arguments]                   ${node_name}
     ${res}=                       Get Nodes             ${NODE_DRIVER}
     Check Response Status         ${res}                200
-    List Length Should Be         ${res}[nodes]         1
-    Set Local Variable            ${node}               ${res}[nodes][0]
+    ${nodes}=                     Evaluate              list(filter(lambda x: x['name'] == '${node_name}', $res['nodes']))
+    List Length Should Be         ${nodes}              1
+    Set Local Variable            ${node}               ${nodes}[0]
     Should Be Equal As Strings    ${node}[name]         ${node_name}
     Should Be Equal As Strings    ${node}[plugin]       ${g_plugin}
 

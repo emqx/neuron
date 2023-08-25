@@ -534,37 +534,73 @@ static int add_template_group(neu_group_t *grp, void *data)
     return ret;
 }
 
-int neu_manager_instantiate_template(neu_manager_t *          manager,
-                                     neu_req_inst_template_t *req)
+int neu_manager_instantiate_template(neu_manager_t *manager,
+                                     const char *   tmpl_name,
+                                     const char *   node_name)
 {
+    int ret = 0;
+
     neu_template_t *tmpl =
-        neu_template_manager_find(manager->template_manager, req->tmpl);
+        neu_template_manager_find(manager->template_manager, tmpl_name);
     if (NULL == tmpl) {
-        return NEU_ERR_TEMPLATE_NOT_FOUND;
+        ret = NEU_ERR_TEMPLATE_NOT_FOUND;
+        goto end;
     }
 
-    int ret = neu_manager_add_node(manager, req->node,
-                                   neu_template_plugin(tmpl), false, false);
+    ret = neu_manager_add_node(manager, node_name, neu_template_plugin(tmpl),
+                               false, false);
     if (0 != ret) {
-        return ret;
+        goto end;
     }
 
     neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, req->node);
+        neu_node_manager_find(manager->node_manager, node_name);
     neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
 
     if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
         ret = NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE;
+        neu_adapter_uninit(adapter);
+        neu_manager_del_node(manager, node_name);
         goto end;
     }
 
     ret = neu_template_for_each_group(tmpl, add_template_group, driver);
-
-end:
     if (0 != ret) {
         // this will call neu_adapter_driver_try_del_tag to cleanup
         neu_adapter_uninit(adapter);
-        neu_manager_del_node(manager, req->node);
+        neu_manager_del_node(manager, node_name);
+    }
+
+end:
+    if (0 == ret) {
+        nlog_notice("instantiate tmpl:%s node:%s success", tmpl_name,
+                    node_name);
+    } else {
+        nlog_error("instantiate tmpl:%s node:%s ret:%d", tmpl_name, node_name,
+                   ret);
+    }
+    return ret;
+}
+
+int neu_manager_instantiate_templates(neu_manager_t *           manager,
+                                      neu_req_inst_templates_t *req)
+{
+    int ret = 0;
+
+    for (int i = 0; i < req->n_inst; ++i) {
+        ret = neu_manager_instantiate_template(manager, req->insts[i].tmpl,
+                                               req->insts[i].node);
+        if (0 != ret) {
+            // revert on error, destroy nodes instantiated thus far
+            while (--i >= 0) {
+                neu_adapter_t *adapter = neu_node_manager_find(
+                    manager->node_manager, req->insts[i].node);
+                // this will call neu_adapter_driver_try_del_tag to cleanup
+                neu_adapter_uninit(adapter);
+                neu_manager_del_node(manager, req->insts[i].node);
+            }
+            break;
+        }
     }
 
     return ret;

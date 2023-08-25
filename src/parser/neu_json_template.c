@@ -21,6 +21,7 @@
 
 #include <jansson.h>
 
+#include "utils/log.h"
 #include "json/json.h"
 
 #include "neu_json_template.h"
@@ -782,6 +783,34 @@ void neu_json_decode_template_del_tags_req_free(
     free(req);
 }
 
+int decode_template_inst_req_json(void *                        json_obj,
+                                  neu_json_template_inst_req_t *req)
+{
+    int ret = 0;
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (0 != ret) {
+        free(req_elems[0].v.val_str);
+        free(req_elems[1].v.val_str);
+        return ret;
+    }
+
+    req->name = req_elems[0].v.val_str;
+    req->node = req_elems[1].v.val_str;
+    return ret;
+}
+
 int neu_json_decode_template_inst_req(char *                         buf,
                                       neu_json_template_inst_req_t **result)
 {
@@ -796,35 +825,19 @@ int neu_json_decode_template_inst_req(char *                         buf,
 
     json_obj = neu_json_decode_new(buf);
     if (NULL == json_obj) {
-        goto error;
+        free(req);
+        return -1;
     }
 
-    neu_json_elem_t req_elems[] = {
-        {
-            .name = "name",
-            .t    = NEU_JSON_STR,
-        },
-        {
-            .name = "node",
-            .t    = NEU_JSON_STR,
-        },
-    };
-    ret       = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
-                                  req_elems);
-    req->name = req_elems[0].v.val_str;
-    req->node = req_elems[1].v.val_str;
-    if (ret != 0) {
-        goto error;
+    ret = decode_template_inst_req_json(json_obj, req);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
     }
 
-    *result = req;
     neu_json_decode_free(json_obj);
-    return 0;
-
-error:
-    neu_json_decode_template_inst_req_free(req);
-    neu_json_decode_free(json_obj);
-    return -1;
+    return ret;
 }
 
 void neu_json_decode_template_inst_req_free(neu_json_template_inst_req_t *req)
@@ -832,6 +845,71 @@ void neu_json_decode_template_inst_req_free(neu_json_template_inst_req_t *req)
     if (req) {
         free(req->name);
         free(req->node);
+        free(req);
+    }
+}
+
+int neu_json_decode_template_insts_req(char *                          buf,
+                                       neu_json_template_insts_req_t **result)
+{
+    neu_json_template_insts_req_t *req      = NULL;
+    void *                         json_obj = NULL;
+
+    req = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    json_t *json_arr = json_object_get(json_obj, "nodes");
+    if (NULL == json_arr) {
+        nlog_error("decode no key: node");
+        goto error;
+    }
+
+    if (!json_is_array(json_arr)) {
+        nlog_error("decode key `node` is not array");
+        goto error;
+    }
+
+    int len    = json_array_size(json_arr);
+    req->insts = calloc(len, sizeof(req->insts[0]));
+    if (NULL == req->insts) {
+        goto error;
+    }
+
+    for (int i = 0; i < len; ++i) {
+        if (0 !=
+            decode_template_inst_req_json(json_array_get(json_arr, i),
+                                          &req->insts[i])) {
+            break;
+        }
+        req->len += 1;
+    }
+
+    *result = req;
+    neu_json_decode_free(json_obj);
+    return 0;
+
+error:
+    neu_json_decode_template_insts_req_free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
+}
+
+void neu_json_decode_template_insts_req_free(neu_json_template_insts_req_t *req)
+{
+    if (req) {
+        for (int i = 0; i < req->len; ++i) {
+            free(req->insts[i].name);
+            free(req->insts[i].node);
+        }
+        free(req->insts);
         free(req);
     }
 }
