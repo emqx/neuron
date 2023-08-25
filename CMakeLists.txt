@@ -150,6 +150,7 @@ target_link_options(neuron PRIVATE "LINKER:--dynamic-list-data")
 #copy file for run
 file(COPY ${CMAKE_SOURCE_DIR}/zlog.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/dev.conf DESTINATION ${CMAKE_BINARY_DIR}/config)
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.json DESTINATION ${CMAKE_BINARY_DIR}/config)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/logs)
 file(COPY ${CMAKE_SOURCE_DIR}/.gitkeep DESTINATION ${CMAKE_BINARY_DIR}/persistence)
 file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/config)

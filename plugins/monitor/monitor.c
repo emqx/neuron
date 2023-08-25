@@ -50,9 +50,8 @@ static void disconnect_cb(void *data)
 
 static nng_http_server *server_init()
 {
-    nng_url *        url       = NULL;
-    nng_http_server *server    = NULL;
-    const char *     host_port = "http://0.0.0.0:7000";
+    nng_url *        url    = NULL;
+    nng_http_server *server = NULL;
 
     nlog_notice("monitor bind url: %s", host_port);
 

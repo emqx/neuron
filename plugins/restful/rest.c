@@ -52,10 +52,8 @@ struct neu_plugin {
 static nng_http_server *server_init()
 {
     nng_url *        url;
-    char             host_port[24] = { 0 };
     nng_http_server *server;
 
-    snprintf(host_port, sizeof(host_port), "http://0.0.0.0:7000");
     nlog_notice("bind url: %s", host_port);
 
     int ret = nng_url_parse(&url, host_port);

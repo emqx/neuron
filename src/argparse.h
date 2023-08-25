@@ -34,6 +34,8 @@
 #define NEU_ENV_CONFIG_DIR "NEURON_CONFIG_DIR"
 #define NEU_ENV_PLUGIN_DIR "NEURON_PLUGIN_DIR"
 
+#define NEURON_CONFIG_FNAME "./config/neuron.json"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -55,6 +57,8 @@ typedef struct {
     char * config_dir;
     char * plugin_dir;
     bool   stop;
+    char * ip;
+    int    port;
 } neu_cli_args_t;
 
 /** Parse command line arguments.
