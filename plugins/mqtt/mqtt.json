@@ -243,20 +243,5 @@
     "valid": {
       "length": 81960
     }
-  },
-  "keypass": {
-    "name": "Client Private Key Password",
-    "name_zh": "客户端私钥密码",
-    "description": "Client private key password when using two way authentication with an encrypted client private key",
-    "description_zh": "使用加密的客户端私钥进行双向认证时，客户端私钥的密码",
-    "attribute": "optional",
-    "type": "string",
-    "condition": {
-      "field": "ssl",
-      "value": true
-    },
-    "valid": {
-      "length": 256
-    }
   }
 }

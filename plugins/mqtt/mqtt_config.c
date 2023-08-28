@@ -110,6 +110,7 @@ static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
     }
 
     // keypass, optional
+    // keep it here for backward compatibility with version 2.5
     ret = neu_parse_param(setting, NULL, 1, keypass);
     if (0 != ret) {
         plog_notice(plugin, "setting no keypass");

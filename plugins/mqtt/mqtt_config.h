@@ -66,6 +66,8 @@ typedef struct {
     char *               cert;                // client cert
     char *               key;                 // client key
     char *               keypass;             // client key password
+                                              // remove in 2.6, keep it here
+                                              // for backward compatibility
 } mqtt_config_t;
 
 int  mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
