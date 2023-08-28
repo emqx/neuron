@@ -137,6 +137,19 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
     int ret = 0;
 
     switch (datatag->type) {
+    case NEU_TYPE_BYTES: {
+        char *op = find_last_character(datatag->address, '.');
+
+        if (op == NULL) {
+            ret = -1;
+        } else {
+            int n = sscanf(op, ".%hhd", &option->bytes.length);
+            if (n != 1 || option->string.length <= 0) {
+                ret = -1;
+            }
+        }
+        break;
+    }
     case NEU_TYPE_STRING: {
         char *op = find_last_character(datatag->address, '.');
 

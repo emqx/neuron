@@ -96,6 +96,9 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
             point->option.string.length <= 0) {
             return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
         }
+        if (point->type == NEU_TYPE_BYTES && point->option.bytes.length <= 0) {
+            return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+        }
         if (point->type == NEU_TYPE_BIT && point->option.bit.bit > 15) {
             return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
         }
@@ -158,6 +161,18 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
                 point->n_register = point->option.string.length;
                 break;
             }
+        }
+        break;
+    case NEU_TYPE_BYTES:
+        if (point->area == MODBUS_AREA_COIL ||
+            point->area == MODBUS_AREA_INPUT) {
+            ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
+        } else {
+            if (point->option.bytes.length > 128) {
+                return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
+            }
+            point->n_register =
+                point->option.bytes.length / 2 + point->option.bytes.length % 2;
         }
         break;
     default:
@@ -244,6 +259,10 @@ int cal_n_byte(int type, neu_value_u *value, neu_datatag_addr_option_u option)
         case NEU_DATATAG_STRING_TYPE_E:
             break;
         }
+        break;
+    }
+    case NEU_TYPE_BYTES: {
+        n = option.bytes.length;
         break;
     }
     default:

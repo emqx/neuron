@@ -159,13 +159,24 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             case NEU_TYPE_BIT:
             case NEU_TYPE_BOOL:
             case NEU_TYPE_STRING:
-            case NEU_TYPE_BYTES:
             case NEU_TYPE_WORD:
             case NEU_TYPE_DWORD:
             case NEU_TYPE_LWORD:
                 if (memcmp(&elem->value.value, &value.value,
                            sizeof(value.value)) != 0) {
                     elem->changed = true;
+                }
+                break;
+            case NEU_TYPE_BYTES:
+                if (elem->value.value.bytes.length !=
+                    value.value.bytes.length) {
+                    elem->changed = true;
+                } else {
+                    if (memcpy(elem->value.value.bytes.bytes,
+                               value.value.bytes.bytes,
+                               value.value.bytes.length) != 0) {
+                        elem->changed = true;
+                    }
                 }
                 break;
             case NEU_TYPE_PTR: {
@@ -290,9 +301,14 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
-        case NEU_TYPE_BYTES:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
+            break;
+        case NEU_TYPE_BYTES:
+            value->value.value.bytes.length = elem->value.value.bytes.length;
+            memcpy(value->value.value.bytes.bytes,
+                   elem->value.value.bytes.bytes,
+                   elem->value.value.bytes.length);
             break;
         case NEU_TYPE_PTR:
             value->value.value.ptr.length = elem->value.value.ptr.length;
@@ -368,9 +384,14 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
-        case NEU_TYPE_BYTES:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
+            break;
+        case NEU_TYPE_BYTES:
+            value->value.value.bytes.length = elem->value.value.bytes.length;
+            memcpy(value->value.value.bytes.bytes,
+                   elem->value.value.bytes.bytes,
+                   elem->value.value.bytes.length);
             break;
         case NEU_TYPE_PTR:
             value->value.value.ptr.length = elem->value.value.ptr.length;
@@ -444,9 +465,14 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
-        case NEU_TYPE_BYTES:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
+            break;
+        case NEU_TYPE_BYTES:
+            value->value.value.bytes.length = elem->value.value.bytes.length;
+            memcpy(value->value.value.bytes.bytes,
+                   elem->value.value.bytes.bytes,
+                   elem->value.value.bytes.length);
             break;
         case NEU_TYPE_PTR:
             value->value.value.ptr.length = elem->value.value.ptr.length;
@@ -518,9 +544,14 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
-        case NEU_TYPE_BYTES:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
+            break;
+        case NEU_TYPE_BYTES:
+            value->value.value.bytes.length = elem->value.value.bytes.length;
+            memcpy(value->value.value.bytes.bytes,
+                   elem->value.value.bytes.bytes,
+                   elem->value.value.bytes.length);
             break;
         case NEU_TYPE_PTR:
             value->value.value.ptr.length = elem->value.value.ptr.length;

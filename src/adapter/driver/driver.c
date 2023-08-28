@@ -378,6 +378,7 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     switch (tag->type) {
     case NEU_TYPE_BOOL:
     case NEU_TYPE_STRING:
+    case NEU_TYPE_BYTES:
         break;
     case NEU_TYPE_BIT:
         value->type     = NEU_TYPE_BIT;
@@ -404,16 +405,16 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         value->value.u32 = (uint32_t) value->value.u64;
         switch (tag->option.value32.endian) {
         case NEU_DATATAG_ENDIAN_LB32:
-            neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes + 2);
             break;
         case NEU_DATATAG_ENDIAN_BB32:
             value->value.u32 = htonl(value->value.u32);
             break;
         case NEU_DATATAG_ENDIAN_BL32:
             value->value.u32 = htonl(value->value.u32);
-            neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes + 2);
             break;
         case NEU_DATATAG_ENDIAN_LL32:
         default:
@@ -428,16 +429,16 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
 
         switch (tag->option.value32.endian) {
         case NEU_DATATAG_ENDIAN_LB32:
-            neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes + 2);
             break;
         case NEU_DATATAG_ENDIAN_BB32:
             value->value.u32 = htonl(value->value.u32);
             break;
         case NEU_DATATAG_ENDIAN_BL32:
             value->value.u32 = htonl(value->value.u32);
-            neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes);
+            neu_ntohs_p((uint16_t *) value->value.bytes.bytes + 2);
             break;
         case NEU_DATATAG_ENDIAN_LL32:
         default:
@@ -1374,8 +1375,8 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_INT32:
             switch (tag->option.value32.endian) {
             case NEU_DATATAG_ENDIAN_LB32: {
-                uint16_t *v1 = (uint16_t *) value.value.value.bytes;
-                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
 
                 neu_htons_p(v1);
                 neu_htons_p(v2);
@@ -1386,8 +1387,8 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
                 break;
             case NEU_DATATAG_ENDIAN_BL32:
                 value.value.value.u32 = htonl(value.value.value.u32);
-                uint16_t *v1          = (uint16_t *) value.value.value.bytes;
-                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
 
                 neu_htons_p(v1);
                 neu_htons_p(v2);
@@ -1523,8 +1524,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
         case NEU_TYPE_INT32:
             switch (tag->option.value32.endian) {
             case NEU_DATATAG_ENDIAN_LB32: {
-                uint16_t *v1 = (uint16_t *) value.value.value.bytes;
-                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
 
                 neu_htons_p(v1);
                 neu_htons_p(v2);
@@ -1535,8 +1536,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
                 break;
             case NEU_DATATAG_ENDIAN_BL32:
                 value.value.value.u32 = htonl(value.value.value.u32);
-                uint16_t *v1          = (uint16_t *) value.value.value.bytes;
-                uint16_t *v2 = (uint16_t *) (value.value.value.bytes + 2);
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
 
                 neu_htons_p(v1);
                 neu_htons_p(v2);

@@ -129,6 +129,12 @@ static int tag_values_to_json(neu_resp_tag_value_meta_t *tags, uint16_t len,
             json->tags[i].t             = NEU_JSON_STR;
             json->tags[i].value.val_str = (char *) tag->value.value.ptr.ptr;
             break;
+        case NEU_TYPE_BYTES:
+            json->tags[i].t = NEU_JSON_BYTES;
+            json->tags[i].value.val_bytes.length =
+                tag->value.value.bytes.length;
+            json->tags[i].value.val_bytes.bytes = tag->value.value.bytes.bytes;
+            break;
         default:
             break;
         }
@@ -269,6 +275,12 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         cmd.value.type          = NEU_TYPE_BOOL;
         cmd.value.value.boolean = req->value.val_bool;
         break;
+    case NEU_JSON_BYTES:
+        cmd.value.type               = NEU_TYPE_BYTES;
+        cmd.value.value.bytes.length = req->value.val_bytes.length;
+        memcpy(cmd.value.value.bytes.bytes, req->value.val_bytes.bytes,
+               req->value.val_bytes.length);
+        break;
     default:
         plog_error(plugin, "invalid tag value type: %d", req->t);
         return -1;
@@ -328,6 +340,14 @@ static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         case NEU_JSON_BOOL:
             cmd.tags[i].value.type          = NEU_TYPE_BOOL;
             cmd.tags[i].value.value.boolean = req->tags[i].value.val_bool;
+            break;
+        case NEU_JSON_BYTES:
+            cmd.tags[i].value.type = NEU_TYPE_BYTES;
+            cmd.tags[i].value.value.bytes.length =
+                req->tags[i].value.val_bytes.length;
+            memcpy(cmd.tags[i].value.value.bytes.bytes,
+                   req->tags[i].value.val_bytes.bytes,
+                   req->tags[i].value.val_bytes.length);
             break;
         default:
             plog_error(plugin, "invalid tag value type: %d", req->tags[i].t);

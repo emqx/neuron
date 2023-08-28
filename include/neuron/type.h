@@ -105,21 +105,27 @@ typedef struct {
 } neu_value_ptr_t;
 
 #define NEU_VALUE_SIZE 128
+
+typedef struct {
+    uint8_t bytes[NEU_VALUE_SIZE];
+    uint8_t length;
+} __attribute__((packed)) neu_value_bytes_t;
+
 typedef union {
-    bool            boolean;
-    int8_t          i8;
-    uint8_t         u8;
-    int16_t         i16;
-    uint16_t        u16;
-    int32_t         i32;
-    uint32_t        u32;
-    int64_t         i64;
-    uint64_t        u64;
-    float           f32;
-    double          d64;
-    char            str[NEU_VALUE_SIZE];
-    uint8_t         bytes[NEU_VALUE_SIZE];
-    neu_value_ptr_t ptr;
+    bool              boolean;
+    int8_t            i8;
+    uint8_t           u8;
+    int16_t           i16;
+    uint16_t          u16;
+    int32_t           i32;
+    uint32_t          u32;
+    int64_t           i64;
+    uint64_t          u64;
+    float             f32;
+    double            d64;
+    char              str[NEU_VALUE_SIZE];
+    neu_value_bytes_t bytes;
+    neu_value_ptr_t   ptr;
 } neu_value_u;
 
 static inline char *neu_value_str(neu_type_e type, neu_value_u value)

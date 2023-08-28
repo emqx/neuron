@@ -233,6 +233,9 @@ void neu_json_decode_write_req_free(neu_json_write_req_t *req)
     if (req->t == NEU_JSON_STR) {
         free(req->value.val_str);
     }
+    if (req->t == NEU_JSON_BYTES && req->value.val_bytes.length > 0) {
+        free(req->value.val_bytes.bytes);
+    }
 
     free(req);
 }
@@ -345,6 +348,10 @@ void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req)
         free(req->tags[i].tag);
         if (req->tags[i].t == NEU_JSON_STR) {
             free(req->tags[i].value.val_str);
+        }
+        if (req->tags[i].t == NEU_JSON_BYTES &&
+            req->tags[i].value.val_bytes.length > 0) {
+            free(req->tags[i].value.val_bytes.bytes);
         }
     }
     free(req->tags);

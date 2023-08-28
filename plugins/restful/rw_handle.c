@@ -70,6 +70,15 @@ void handle_write(nng_aio *aio)
                 return;
             }
 
+            if (req->t == NEU_JSON_BYTES &&
+                req->value.val_bytes.length > NEU_VALUE_SIZE) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_STRING_TOO_LONG, {
+                    neu_http_response(aio, NEU_ERR_STRING_TOO_LONG,
+                                      result_error);
+                });
+                return;
+            }
+
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAG;
 
@@ -85,6 +94,12 @@ void handle_write(nng_aio *aio)
             case NEU_JSON_STR:
                 cmd.value.type = NEU_TYPE_STRING;
                 strcpy(cmd.value.value.str, req->value.val_str);
+                break;
+            case NEU_JSON_BYTES:
+                cmd.value.type               = NEU_TYPE_BYTES;
+                cmd.value.value.bytes.length = req->value.val_bytes.length;
+                memcpy(cmd.value.value.bytes.bytes, req->value.val_bytes.bytes,
+                       req->value.val_bytes.length);
                 break;
             case NEU_JSON_DOUBLE:
                 cmd.value.type      = NEU_TYPE_DOUBLE;
@@ -157,6 +172,14 @@ void handle_write_tags(nng_aio *aio)
                     cmd.tags[i].value.type = NEU_TYPE_BOOL;
                     cmd.tags[i].value.value.boolean =
                         req->tags[i].value.val_bool;
+                    break;
+                case NEU_JSON_BYTES:
+                    cmd.tags[i].value.type = NEU_TYPE_BYTES;
+                    cmd.tags[i].value.value.bytes.length =
+                        req->tags[i].value.val_bytes.length;
+                    memcpy(cmd.tags[i].value.value.bytes.bytes,
+                           req->tags[i].value.val_bytes.bytes,
+                           req->tags[i].value.val_bytes.length);
                     break;
                 default:
                     assert(false);
@@ -259,6 +282,13 @@ void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
         case NEU_TYPE_STRING:
             api_res.tags[i].t             = NEU_JSON_STR;
             api_res.tags[i].value.val_str = resp->tags[i].value.value.str;
+            break;
+        case NEU_TYPE_BYTES:
+            api_res.tags[i].t = NEU_JSON_BYTES;
+            api_res.tags[i].value.val_bytes.length =
+                resp->tags[i].value.value.bytes.length;
+            api_res.tags[i].value.val_bytes.bytes =
+                resp->tags[i].value.value.bytes.bytes;
             break;
         case NEU_TYPE_ERROR:
             api_res.tags[i].t             = NEU_JSON_INT;

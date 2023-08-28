@@ -37,17 +37,24 @@ typedef enum neu_json_type {
     NEU_JSON_FLOAT,
     NEU_JSON_BOOL,
     NEU_JSON_OBJECT,
+    NEU_JSON_BYTES,
     NEU_JSON_VALUE = NEU_JSON_UNDEFINE
 } neu_json_type_e;
 
+typedef struct {
+    uint8_t *bytes;
+    uint8_t  length;
+} neu_json_value_bytes_t;
+
 typedef union neu_json_value {
-    int64_t val_int;
-    uint8_t val_bit;
-    float   val_float;
-    double  val_double;
-    bool    val_bool;
-    char *  val_str;
-    void *  val_object;
+    int64_t                val_int;
+    uint8_t                val_bit;
+    float                  val_float;
+    double                 val_double;
+    bool                   val_bool;
+    char *                 val_str;
+    void *                 val_object;
+    neu_json_value_bytes_t val_bytes;
 } neu_json_value_u;
 
 typedef enum neu_json_attribute {

@@ -367,10 +367,11 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
             case MODBUS_AREA_INPUT_REGISTER:
                 if (n_byte >= ((*p_tag)->start_address - start_address) * 2 +
                         (*p_tag)->n_register * 2) {
-                    memcpy(dvalue.value.bytes,
+                    memcpy(dvalue.value.bytes.bytes,
                            bytes +
                                ((*p_tag)->start_address - start_address) * 2,
                            (*p_tag)->n_register * 2);
+                    dvalue.value.bytes.length = (*p_tag)->n_register * 2;
                 }
                 break;
             case MODBUS_AREA_COIL:
@@ -406,7 +407,7 @@ int modbus_value_handle(void *ctx, uint8_t slave_id, uint16_t n_byte,
                 case MODBUS_AREA_HOLD_REGISTER:
                 case MODBUS_AREA_INPUT_REGISTER: {
                     neu_value16_u v16 = { 0 };
-                    v16.value         = htons(*(uint16_t *) dvalue.value.bytes);
+                    v16.value = htons(*(uint16_t *) dvalue.value.bytes.bytes);
                     dvalue.value.u8 =
                         neu_value16_get_bit(v16, (*p_tag)->option.bit.bit);
                     break;
@@ -495,15 +496,19 @@ int modbus_write(neu_plugin_t *plugin, void *req, neu_datatag_t *tag,
         n_byte = point.option.string.length;
         break;
     }
+    case NEU_TYPE_BYTES: {
+        n_byte = point.option.bytes.length;
+        break;
+    }
     default:
         assert(1 == 0);
         break;
     }
 
     uint16_t response_size = 0;
-    ret = modbus_stack_write(plugin->stack, req, point.slave_id, point.area,
-                             point.start_address, point.n_register, value.bytes,
-                             n_byte, &response_size, response);
+    ret                    = modbus_stack_write(
+        plugin->stack, req, point.slave_id, point.area, point.start_address,
+        point.n_register, value.bytes.bytes, n_byte, &response_size, response);
     if (ret > 0) {
         process_protocol_buf(plugin, point.slave_id, response_size);
     }

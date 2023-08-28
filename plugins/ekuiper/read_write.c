@@ -144,6 +144,12 @@ int write_data(neu_plugin_t *plugin, json_write_req_t *write_req)
         cmd.value.type          = NEU_TYPE_BOOL;
         cmd.value.value.boolean = write_req->value.val_bool;
         break;
+    case NEU_JSON_BYTES:
+        cmd.value.type               = NEU_TYPE_BYTES;
+        cmd.value.value.bytes.length = write_req->value.val_bytes.length;
+        memcpy(cmd.value.value.bytes.bytes, write_req->value.val_bytes.bytes,
+               write_req->value.val_bytes.length);
+        break;
     default:
         assert(false);
         break;

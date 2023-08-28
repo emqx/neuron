@@ -118,6 +118,11 @@ int wrap_tag_data(neu_json_read_resp_tag_t * json_tag,
         json_tag->value.val_int = tag_value->value.value.i32;
         json_tag->error         = tag_value->value.value.i32;
         break;
+    case NEU_TYPE_BYTES:
+        json_tag->t                      = NEU_JSON_BYTES;
+        json_tag->value.val_bytes.length = tag_value->value.value.bytes.length;
+        json_tag->value.val_bytes.bytes  = tag_value->value.value.bytes.bytes;
+        break;
     default:
         break;
     }
