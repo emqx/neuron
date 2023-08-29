@@ -71,6 +71,7 @@ struct neu_adapter_driver {
     neu_driver_cache_t *cache;
     neu_events_t *      driver_events;
 
+    size_t        tag_cnt;
     struct group *groups;
 };
 
@@ -988,6 +989,9 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     ret = neu_group_add_tag(find->group, tag);
 
     if (ret == NEU_ERR_SUCCESS) {
+        driver->tag_cnt += 1;
+        driver->adapter.cb_funs.update_metric(
+            &driver->adapter, NEU_METRIC_TAGS_TOTAL, driver->tag_cnt, NULL);
         neu_adapter_update_group_metric(&driver->adapter, group,
                                         NEU_METRIC_GROUP_TAGS_TOTAL,
                                         neu_group_tag_size(find->group));
@@ -1011,6 +1015,9 @@ int neu_adapter_driver_del_tag(neu_adapter_driver_t *driver, const char *group,
 
     if (ret == NEU_ERR_SUCCESS) {
         neu_adapter_driver_try_del_tag(driver, 1);
+        driver->tag_cnt -= 1;
+        driver->adapter.cb_funs.update_metric(
+            &driver->adapter, NEU_METRIC_TAGS_TOTAL, driver->tag_cnt, NULL);
         neu_adapter_update_group_metric(&driver->adapter, group,
                                         NEU_METRIC_GROUP_TAGS_TOTAL,
                                         neu_group_tag_size(find->group));
