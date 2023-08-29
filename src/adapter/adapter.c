@@ -79,6 +79,7 @@ static __thread int create_adapter_error = 0;
                     NEU_METRIC_LAST_RTT_MS_MAX);             \
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_BYTES, 0);      \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_BYTES, 0);      \
+    REGISTER_METRIC(adapter, NEU_METRIC_TAGS_TOTAL, 0);      \
     REGISTER_METRIC(adapter, NEU_METRIC_TAG_READS_TOTAL, 0); \
     REGISTER_METRIC(adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL, 0);
 

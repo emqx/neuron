@@ -81,6 +81,12 @@ typedef enum {
 
 // maintained by neuron core
 // number of tags in group
+#define NEU_METRIC_TAGS_TOTAL "tags_total"
+#define NEU_METRIC_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_TAGS_TOTAL_HELP "Total number of tags in the node"
+
+// maintained by neuron core
+// number of tags in group
 #define NEU_METRIC_GROUP_TAGS_TOTAL "group_tags_total"
 #define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
 #define NEU_METRIC_GROUP_TAGS_TOTAL_HELP "Total number of tags in the group"
