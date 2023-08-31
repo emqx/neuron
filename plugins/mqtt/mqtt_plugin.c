@@ -377,6 +377,7 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         error = handle_update_driver(plugin, data);
         break;
     case NEU_REQRESP_NODE_DELETED:
+        error = handle_del_driver(plugin, data);
         break;
     case NEU_REQ_UPDATE_LICENSE:
         break;

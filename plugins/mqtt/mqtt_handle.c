@@ -707,3 +707,10 @@ int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req)
                 req->new_name);
     return 0;
 }
+
+int handle_del_driver(neu_plugin_t *plugin, neu_reqresp_node_deleted_t *req)
+{
+    route_tbl_del_driver(&plugin->route_tbl, req->node);
+    plog_notice(plugin, "delete route driver:%s", req->node);
+    return 0;
+}

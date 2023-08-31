@@ -140,6 +140,18 @@ static inline void route_tbl_update_driver(route_entry_t **tbl,
     }
 }
 
+static inline void route_tbl_del_driver(route_entry_t **tbl, const char *driver)
+{
+    route_entry_t *e = NULL, *tmp = NULL;
+    HASH_ITER(hh, *tbl, e, tmp)
+    {
+        if (0 == strcmp(e->key.driver, driver)) {
+            HASH_DEL(*tbl, e);
+            route_entry_free(e);
+        }
+    }
+}
+
 static inline void route_tbl_del(route_entry_t **tbl, const char *driver,
                                  const char *group)
 {
