@@ -888,6 +888,21 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (0 == resp->error) {
             neu_manager_update_node_name(manager, resp->node, resp->new_name);
             manager_storage_update_node(manager, resp->node, resp->new_name);
+
+            if (neu_node_manager_is_driver(manager->node_manager,
+                                           resp->new_name)) {
+                UT_array *apps = neu_subscribe_manager_find_by_driver(
+                    manager->subscribe_manager, resp->new_name);
+
+                // notify app node about driver renaming
+                utarray_foreach(apps, neu_app_subscribe_t *, app)
+                {
+                    header->type = NEU_REQ_UPDATE_NODE;
+                    forward_msg(manager, msg, app->app_name);
+                }
+
+                utarray_free(apps);
+            }
         }
 
         neu_resp_error_t e = { .error = resp->error };

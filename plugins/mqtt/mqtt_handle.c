@@ -699,3 +699,18 @@ int handle_unsubscribe_group(neu_plugin_t *         plugin,
                 unsub_info->group);
     return 0;
 }
+
+int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req)
+{
+    route_tbl_update_driver(&plugin->route_tbl, req->node, req->new_name);
+    plog_notice(plugin, "update route driver:%s to %s", req->node,
+                req->new_name);
+    return 0;
+}
+
+int handle_del_driver(neu_plugin_t *plugin, neu_reqresp_node_deleted_t *req)
+{
+    route_tbl_del_driver(&plugin->route_tbl, req->node);
+    plog_notice(plugin, "delete route driver:%s", req->node);
+    return 0;
+}
