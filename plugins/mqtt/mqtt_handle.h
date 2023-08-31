@@ -48,6 +48,8 @@ int handle_update_subscribe(neu_plugin_t *       plugin,
 int handle_unsubscribe_group(neu_plugin_t *         plugin,
                              neu_req_unsubscribe_t *unsub_info);
 
+int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req);
+
 #ifdef __cplusplus
 }
 #endif
