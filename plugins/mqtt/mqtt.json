@@ -6,7 +6,7 @@
     "description_zh": "MQTT 客户端 ID",
     "type": "string",
     "attribute": "required",
-    "default": "${node-name}",
+    "default": "neuron_${random_str}",
     "valid": {
       "length": 255
     }
