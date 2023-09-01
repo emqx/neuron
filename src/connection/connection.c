@@ -318,28 +318,55 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
     }
 
     if (conn->is_connected) {
-        switch (conn->param.type) {
-        case NEU_CONN_UDP_TO:
-        case NEU_CONN_TCP_SERVER:
-            assert(false);
-            break;
-        case NEU_CONN_TCP_CLIENT:
-        case NEU_CONN_UDP:
-            if (conn->block) {
-                ret = send(conn->fd, buf, len, MSG_NOSIGNAL);
-            } else {
-                ret = send(conn->fd, buf, len, MSG_NOSIGNAL | MSG_DONTWAIT);
+        int retry = 0;
+        while (ret < len) {
+            int rc = 0;
+
+            switch (conn->param.type) {
+            case NEU_CONN_UDP_TO:
+            case NEU_CONN_TCP_SERVER:
+                assert(false);
+                break;
+            case NEU_CONN_TCP_CLIENT:
+            case NEU_CONN_UDP:
+                if (conn->block) {
+                    rc = send(conn->fd, buf + ret, len - ret, MSG_NOSIGNAL);
+                } else {
+                    rc = send(conn->fd, buf + ret, len - ret,
+                              MSG_NOSIGNAL | MSG_WAITALL);
+                }
+                break;
+            case NEU_CONN_TTY_CLIENT:
+                rc = write(conn->fd, buf + ret, len - ret);
+                break;
             }
-            break;
-        case NEU_CONN_TTY_CLIENT:
-            ret = write(conn->fd, buf, len);
-            break;
-        }
-        if (ret != len) {
-            zlog_error(conn->param.log,
-                       "conn fd: %d, send buf len: %zd, ret: %zd, "
-                       "errno: %s(%d)",
-                       conn->fd, len, ret, strerror(errno), errno);
+
+            if (rc > 0) {
+                ret += rc;
+                if (ret == len) {
+                    break;
+                }
+            } else {
+                if (rc == -1 && errno == EAGAIN) {
+                    if (retry > 50) {
+                        zlog_error(conn->param.log,
+                                   "conn fd: %d, send buf len: %zd, ret: %zd, "
+                                   "errno: %s(%d)",
+                                   conn->fd, len, ret, strerror(errno), errno);
+                        break;
+                    } else {
+                        sleep(1);
+                        retry++;
+                        zlog_warn(conn->param.log,
+                                  "not all data send, retry: %d, ret: "
+                                  "%zd(%d), len: %zd",
+                                  retry, ret, rc, len);
+                    }
+                } else {
+                    ret = rc;
+                    break;
+                }
+            }
         }
 
         if (ret == -1) {
@@ -1119,14 +1146,12 @@ int neu_conn_stream_consume(neu_conn_t *conn, void *context,
             } else if (used == -1) {
                 neu_conn_disconnect(conn);
                 break;
+            } else {
+                conn->offset -= used;
+                memmove(conn->buf, conn->buf + used, conn->offset);
+                neu_protocol_unpack_buf_init(&protocol_buf, conn->buf,
+                                             conn->offset);
             }
-        }
-        if (conn->offset != 0) {
-            conn->offset -= neu_protocol_unpack_buf_used_size(&protocol_buf);
-            memmove(conn->buf,
-                    conn->buf +
-                        neu_protocol_unpack_buf_used_size(&protocol_buf),
-                    conn->offset);
         }
     }
 
