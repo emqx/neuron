@@ -140,6 +140,18 @@ static inline void route_tbl_update_driver(route_entry_t **tbl,
     }
 }
 
+static inline void route_tbl_update_group(route_entry_t **tbl,
+                                          const char *driver, const char *group,
+                                          const char *new_name)
+{
+    route_entry_t *e = route_tbl_get(tbl, driver, group);
+    if (e) {
+        HASH_DEL(*tbl, e);
+        strcpy(e->key.group, new_name);
+        HASH_ADD(hh, *tbl, key, sizeof(e->key), e);
+    }
+}
+
 static inline void route_tbl_del_driver(route_entry_t **tbl, const char *driver)
 {
     route_entry_t *e = NULL, *tmp = NULL;

@@ -700,6 +700,15 @@ int handle_unsubscribe_group(neu_plugin_t *         plugin,
     return 0;
 }
 
+int handle_update_group(neu_plugin_t *plugin, neu_req_update_group_t *req)
+{
+    route_tbl_update_group(&plugin->route_tbl, req->driver, req->group,
+                           req->new_name);
+    plog_notice(plugin, "update route driver:%s group:%s to %s", req->driver,
+                req->group, req->new_name);
+    return 0;
+}
+
 int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req)
 {
     route_tbl_update_driver(&plugin->route_tbl, req->node, req->new_name);
