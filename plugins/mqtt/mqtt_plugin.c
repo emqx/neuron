@@ -373,6 +373,9 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
     case NEU_REQ_UNSUBSCRIBE_GROUP:
         error = handle_unsubscribe_group(plugin, data);
         break;
+    case NEU_REQ_UPDATE_GROUP:
+        error = handle_update_group(plugin, data);
+        break;
     case NEU_REQ_UPDATE_NODE:
         error = handle_update_driver(plugin, data);
         break;

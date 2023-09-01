@@ -501,6 +501,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
+    case NEU_REQ_UPDATE_GROUP:
     case NEU_REQ_SUBSCRIBE_GROUP:
     case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
     case NEU_REQ_UNSUBSCRIBE_GROUP:
@@ -701,7 +702,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         reply(adapter, header, &error);
         break;
     }
-    case NEU_REQ_UPDATE_GROUP: {
+    case NEU_REQ_UPDATE_DRIVER_GROUP: {
         neu_req_update_group_t *cmd  = (neu_req_update_group_t *) &header[1];
         neu_resp_update_group_t resp = { 0 };
 
@@ -722,7 +723,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         strcpy(resp.driver, cmd->driver);
         strcpy(resp.group, cmd->group);
         strcpy(resp.new_name, cmd->new_name);
-        header->type = NEU_RESP_UPDATE_GROUP;
+        header->type = NEU_RESP_UPDATE_DRIVER_GROUP;
         neu_msg_exchange(header);
         reply(adapter, header, &resp);
         break;
@@ -1477,10 +1478,11 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         data_size = sizeof(neu_req_add_group_t);
         break;
     case NEU_REQ_UPDATE_GROUP:
+    case NEU_REQ_UPDATE_DRIVER_GROUP:
     case NEU_REQ_UPDATE_GROUP_EVENT:
         data_size = sizeof(neu_req_update_group_t);
         break;
-    case NEU_RESP_UPDATE_GROUP:
+    case NEU_RESP_UPDATE_DRIVER_GROUP:
         data_size = sizeof(neu_resp_update_group_t);
         break;
     case NEU_REQ_DEL_GROUP:
