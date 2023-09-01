@@ -868,7 +868,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_TAG:
     case NEU_REQ_GET_NDRIVER_TAGS:
     case NEU_REQ_NODE_CTL:
-    case NEU_REQ_UPDATE_GROUP:
     case NEU_REQ_ADD_GROUP: {
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
@@ -911,11 +910,25 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
-    case NEU_RESP_UPDATE_GROUP: {
+    case NEU_RESP_UPDATE_DRIVER_GROUP: {
         neu_resp_update_group_t *resp = (neu_resp_update_group_t *) &header[1];
         if (0 == resp->error) {
             neu_manager_update_group_name(manager, resp->driver, resp->group,
                                           resp->new_name);
+
+            UT_array *apps = neu_subscribe_manager_find(
+                manager->subscribe_manager, resp->driver, resp->new_name);
+
+            if (NULL != apps) {
+                // notify app node about group renaming
+                utarray_foreach(apps, neu_app_subscribe_t *, app)
+                {
+                    header->type = NEU_REQ_UPDATE_GROUP;
+                    forward_msg(manager, msg, app->app_name);
+                }
+
+                utarray_free(apps);
+            }
         }
 
         neu_resp_error_t e = { .error = resp->error };
@@ -935,6 +948,29 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UPDATE_TAG_EVENT: {
         if (neu_node_manager_find(manager->node_manager, header->receiver)) {
             forward_msg(manager, msg, header->receiver);
+        }
+
+        break;
+    }
+
+    case NEU_REQ_UPDATE_GROUP: {
+        neu_resp_error_t e = { 0 };
+
+        if (neu_node_manager_find(manager->node_manager, header->receiver) ==
+            NULL) {
+            e.error = NEU_ERR_NODE_NOT_EXIST;
+        } else if (!neu_node_manager_is_driver(manager->node_manager,
+                                               header->receiver)) {
+            e.error = NEU_ERR_GROUP_NOT_ALLOW;
+        } else {
+            header->type = NEU_REQ_UPDATE_DRIVER_GROUP;
+            forward_msg(manager, msg, header->receiver);
+        }
+
+        if (e.error) {
+            header->type = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
         }
 
         break;

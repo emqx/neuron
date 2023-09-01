@@ -76,7 +76,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_ADD_GROUP,
     NEU_REQ_DEL_GROUP,
     NEU_REQ_UPDATE_GROUP,
-    NEU_RESP_UPDATE_GROUP,
+    NEU_REQ_UPDATE_DRIVER_GROUP,
+    NEU_RESP_UPDATE_DRIVER_GROUP,
     NEU_REQ_GET_GROUP,
     NEU_RESP_GET_GROUP,
     NEU_REQ_GET_DRIVER_GROUP,
@@ -179,14 +180,15 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_NODE_RENAME]       = "NEU_REQ_NODE_RENAME",
     [NEU_RESP_NODE_RENAME]      = "NEU_RESP_NODE_RENAME",
 
-    [NEU_REQ_ADD_GROUP]         = "NEU_REQ_ADD_GROUP",
-    [NEU_REQ_DEL_GROUP]         = "NEU_REQ_DEL_GROUP",
-    [NEU_REQ_UPDATE_GROUP]      = "NEU_REQ_UPDATE_GROUP",
-    [NEU_RESP_UPDATE_GROUP]     = "NEU_RESP_UPDATE_GROUP",
-    [NEU_REQ_GET_GROUP]         = "NEU_REQ_GET_GROUP",
-    [NEU_RESP_GET_GROUP]        = "NEU_RESP_GET_GROUP",
-    [NEU_REQ_GET_DRIVER_GROUP]  = "NEU_REQ_GET_DRIVER_GROUP",
-    [NEU_RESP_GET_DRIVER_GROUP] = "NEU_RESP_GET_DRIVER_GROUP",
+    [NEU_REQ_ADD_GROUP]            = "NEU_REQ_ADD_GROUP",
+    [NEU_REQ_DEL_GROUP]            = "NEU_REQ_DEL_GROUP",
+    [NEU_REQ_UPDATE_GROUP]         = "NEU_REQ_UPDATE_GROUP",
+    [NEU_REQ_UPDATE_DRIVER_GROUP]  = "NEU_REQ_UPDATE_DRIVER_GROUP",
+    [NEU_RESP_UPDATE_DRIVER_GROUP] = "NEU_RESP_UPDATE_DRIVER_GROUP",
+    [NEU_REQ_GET_GROUP]            = "NEU_REQ_GET_GROUP",
+    [NEU_RESP_GET_GROUP]           = "NEU_RESP_GET_GROUP",
+    [NEU_REQ_GET_DRIVER_GROUP]     = "NEU_REQ_GET_DRIVER_GROUP",
+    [NEU_RESP_GET_DRIVER_GROUP]    = "NEU_RESP_GET_DRIVER_GROUP",
 
     [NEU_REQ_ADD_TAG]     = "NEU_REQ_ADD_TAG",
     [NEU_RESP_ADD_TAG]    = "NEU_RESP_ADD_TAG",
@@ -345,7 +347,11 @@ typedef struct {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
     char new_name[NEU_GROUP_NAME_LEN];
-    int  error;
+    struct {
+        int      error;
+        uint32_t unused; // padding for memory layout compatible with
+                         // neu_req_update_group_t
+    };
 } neu_resp_update_group_t;
 
 typedef struct neu_req_del_group {
