@@ -16,7 +16,7 @@ Generate image files .gcno and data files .gcda under build/tests/CMakeFiles/.di
 Execute the following command in the build folder to generate an intermediate file for HTML:
 
 ```shell
-$ lcov --capture --directory . -- output-file testneuron.info --test-name testneuron
+$ lcov --capture --directory . --output-file testneuron.info --test-name testneuron
 ```
 
 Execute the following command in the build folder to generate an HTML file in the result folder under the build folder:
