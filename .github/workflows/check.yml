@@ -7,6 +7,9 @@ on:
     types:
       - published
 
+env:
+  BRANCH: v2.6
+
 jobs:
   clang_format_check:
     runs-on: ubuntu-20.04
@@ -40,7 +43,7 @@ jobs:
 
   ut:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-${{ env.BRANCH }}
 
 
     steps:
@@ -75,7 +78,7 @@ jobs:
 
   ft:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-${{ env.BRANCH }}
 
     steps:
       - uses: actions/checkout@v2
@@ -108,7 +111,7 @@ jobs:
 
   pyft:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-${{ env.BRANCH }}
 
     steps:
       - uses: actions/checkout@v2
