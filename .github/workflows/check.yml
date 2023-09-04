@@ -112,8 +112,6 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           gcov: true
-          gcov_include: plugins/mqtt plugins/monitor plugins/modbus
-
 
   pyft:
     runs-on: ubuntu-20.04
