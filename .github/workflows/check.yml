@@ -73,6 +73,13 @@ jobs:
             build/result/index.html
             build/neuron.log
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          gcov: true
+
   ft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
@@ -146,4 +153,11 @@ jobs:
           name: pyft_result
           path: |
             neu-ft/neuron/report
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          gcov: true            
 
