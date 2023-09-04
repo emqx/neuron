@@ -1191,6 +1191,8 @@ inline static nng_msg *trans_data_dup(nng_msg *msg)
     for (int i = 0; i < cmd->n_tag; i++) {
         if (cmd->tags[i].value.type == NEU_TYPE_PTR) {
             uint8_t *ptr = calloc(cmd->tags[i].value.value.ptr.length, 1);
+            memcpy(ptr, cmd->tags[i].value.value.ptr.ptr,
+                   cmd->tags[i].value.value.ptr.length);
             cmd->tags[i].value.value.ptr.ptr = ptr;
         }
     }
