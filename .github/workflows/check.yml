@@ -106,6 +106,12 @@ jobs:
             ft/reports/report.html
             build/neuron.log
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          gcov: true
+          gcov_include: -r .
+
   pyft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
