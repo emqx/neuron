@@ -106,6 +106,15 @@ jobs:
             ft/reports/report.html
             build/neuron.log
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          gcov: true
+          gcov_include: plugins/mqtt plugins/monitor plugins/modbus
+
+
   pyft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
@@ -140,10 +149,3 @@ jobs:
           path: |
             neu-ft/neuron/report
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-        with:
-          gcov: true
-          gcov_include: plugins/mqtt plugins/monitor plugins/modbus
