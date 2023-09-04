@@ -142,6 +142,8 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
           gcov: true
           gcov_include: plugins/mqtt plugins/monitor plugins/modbus
