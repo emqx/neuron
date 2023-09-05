@@ -27,11 +27,10 @@
 
 static UT_array *collect_logs(const char *dir, const char *node)
 {
-    DIR *          dirp                         = NULL;
-    struct dirent *dent                         = NULL;
-    UT_array *     files                        = NULL;
-    char           flag[NEU_NODE_NAME_LEN + 2]  = { 0 };
-    char           flag_[NEU_NODE_NAME_LEN + 2] = { 0 };
+    DIR *          dirp                        = NULL;
+    struct dirent *dent                        = NULL;
+    UT_array *     files                       = NULL;
+    char           flag[NEU_NODE_NAME_LEN + 2] = { 0 };
 
     if ((dirp = opendir(dir)) == NULL) {
         nlog_error("fail open dir: %s", dir);
@@ -40,11 +39,9 @@ static UT_array *collect_logs(const char *dir, const char *node)
 
     utarray_new(files, &ut_str_icd);
     snprintf(flag, sizeof(flag), "%s.", node);
-    snprintf(flag_, sizeof(flag_), "%s_", node);
 
     while (NULL != (dent = readdir(dirp))) {
-        if (strstr(dent->d_name, flag) != NULL ||
-            strstr(dent->d_name, flag_) != NULL) {
+        if (strstr(dent->d_name, flag) != NULL) {
             char *file = dent->d_name;
             utarray_push_back(files, &file);
         }
