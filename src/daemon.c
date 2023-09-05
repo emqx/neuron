@@ -35,7 +35,7 @@
 
 #include "daemon.h"
 
-#define STOP_TIMEOUT 20000
+#define STOP_TIMEOUT 10000
 #define STOP_TICK 2000
 
 void daemonize()
@@ -205,6 +205,10 @@ int neuron_stop()
     if (0 == kill((pid_t)(-gid), SIGINT)) {
         if (neuron_wait_exit(STOP_TIMEOUT) == 0) {
             ret = 0;
+        } else {
+            if (0 == kill((pid_t)(-gid), SIGKILL)) {
+                ret = 0;
+            }
         }
     } else {
         nlog_error("cannot kill gpid:%ld reason: %s\n", (long) gid,
