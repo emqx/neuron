@@ -775,6 +775,7 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
             find->grp.group_name = new_name_cp2;
             neu_adapter_metric_update_group_name((neu_adapter_t *) driver, name,
                                                  new_name);
+            find->timestamp = global_timestamp; // trigger group_change
             HASH_ADD_STR(driver->groups, name, find);
         } else {
             free(new_name_cp1);
