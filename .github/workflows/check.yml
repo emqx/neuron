@@ -73,6 +73,11 @@ jobs:
             build/result/index.html
             build/neuron.log
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          gcov: true
+
   ft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
@@ -86,7 +91,7 @@ jobs:
         run: |
           git config --global --add safe.directory $(pwd)
           mkdir -p build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           make -j4
 
       - name: function test
@@ -106,6 +111,11 @@ jobs:
             ft/reports/report.html
             build/neuron.log
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          gcov: true
+
   pyft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
@@ -119,7 +129,7 @@ jobs:
         run: |
           git config --global --add safe.directory $(pwd)
           mkdir -p build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
+          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           make -j4
 
       - name: fetch neu-ft
@@ -139,3 +149,9 @@ jobs:
           name: pyft_result
           path: |
             neu-ft/neuron/report
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          gcov: true            
+
