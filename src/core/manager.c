@@ -441,15 +441,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             (neu_req_update_template_group_t *) &header[1];
         neu_resp_error_t e = { 0 };
 
-        if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
-            e.error = NEU_ERR_GROUP_PARAMETER_INVALID;
-        } else {
-            e.error = neu_manager_update_template_group(manager, cmd);
-        }
+        e.error = neu_manager_update_template_group(manager, cmd);
 
         if (e.error == NEU_ERR_SUCCESS) {
             manager_storage_update_template_group(cmd->tmpl, cmd->group,
-                                                  cmd->interval);
+                                                  cmd->new_name, cmd->interval);
         }
 
         neu_msg_exchange(header);

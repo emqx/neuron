@@ -1487,12 +1487,32 @@ int neu_persister_store_template_group(const char *              tmpl_name,
 }
 
 int neu_persister_update_template_group(const char *              tmpl_name,
+                                        const char *              group_name,
                                         neu_persist_group_info_t *group_info)
 {
-    return execute_sql(
-        global_db,
-        "UPDATE template_groups SET interval=%i WHERE tmpl_name=%Q AND name=%Q",
-        group_info->interval, tmpl_name, group_info->name);
+    int  ret             = -1;
+    bool update_name     = (0 != strcmp(group_name, group_info->name));
+    bool update_interval = (NEU_GROUP_INTERVAL_LIMIT <= group_info->interval);
+
+    if (update_name && update_interval) {
+        ret = execute_sql(global_db,
+                          "UPDATE template_groups SET name=%Q, interval=%i "
+                          "WHERE tmpl_name=%Q AND name=%Q",
+                          group_info->name, group_info->interval, tmpl_name,
+                          group_name);
+    } else if (update_name) {
+        ret = execute_sql(global_db,
+                          "UPDATE template_groups SET name=%Q "
+                          "WHERE tmpl_name=%Q AND name=%Q",
+                          group_info->name, tmpl_name, group_name);
+    } else if (update_interval) {
+        ret = execute_sql(global_db,
+                          "UPDATE template_groups SET interval=%i "
+                          "WHERE tmpl_name=%Q AND name=%Q",
+                          group_info->interval, tmpl_name, group_name);
+    }
+
+    return ret;
 }
 
 int neu_persister_load_template_groups(const char *tmpl_name,

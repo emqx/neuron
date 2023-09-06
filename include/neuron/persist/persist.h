@@ -383,10 +383,12 @@ int neu_persister_store_template_group(const char *              tmpl_name,
 /**
  * Update template group.
  * @param tmpl_name                 template name.
+ * @param group_name                group name.
  * @param group_info                group info to persist.
  * @return 0 on success, non-zero otherwise
  */
 int neu_persister_update_template_group(const char *              tmpl_name,
+                                        const char *              group_name,
                                         neu_persist_group_info_t *group_info);
 
 /**
