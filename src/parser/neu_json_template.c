@@ -464,6 +464,79 @@ void neu_json_decode_template_mod_group_req_free(
     }
 }
 
+int neu_json_decode_template_update_group_req(
+    char *buf, neu_json_template_update_group_req_t **result)
+{
+    int ret = 0;
+
+    neu_json_template_update_group_req_t *req = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "template",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "new_name",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+    ret       = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    req->tmpl = req_elems[0].v.val_str;
+    req->group    = req_elems[1].v.val_str;
+    req->new_name = req_elems[2].v.val_str;
+    if (0 != ret) {
+        goto error;
+    }
+
+    json_t *json_interval = json_object_get(json_obj, "interval");
+    if (NULL != json_interval) {
+        if (!json_is_integer(json_interval)) {
+            nlog_error("decode interval is not integer");
+            goto error;
+        }
+        req->set_interval = true;
+        req->interval     = json_integer_value(json_interval);
+    } else if (NULL == req->new_name) {
+        // at least one of `new_name` or `interval` should be provided
+        goto error;
+    }
+
+    *result = req;
+    neu_json_decode_free(json_obj);
+    return 0;
+
+error:
+    neu_json_decode_template_update_group_req_free(req);
+    neu_json_decode_free(json_obj);
+    return -1;
+}
+
+void neu_json_decode_template_update_group_req_free(
+    neu_json_template_update_group_req_t *req)
+{
+    free(req->tmpl);
+    free(req->group);
+    free(req->new_name);
+
+    free(req);
+}
+
 int neu_json_encode_template_del_group_req(void *json_object, void *param)
 {
     int                                ret = 0;
