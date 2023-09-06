@@ -258,8 +258,9 @@ Add Template Group
   [RETURN]            ${res}[0]
 
 Put Template Group
-  [Arguments]         ${tmpl}                 ${group}            ${interval}
-  PUT                 /api/v2/template/group  {"template": "${tmpl}", "group": "${group}", "interval": ${interval}}
+  [Arguments]         ${tmpl}                 ${group}            &{updates}
+  ${data} =           Evaluate                json.dumps({"template": "${tmpl}", "group": "${group}", **$updates})     json
+  PUT                 /api/v2/template/group  ${data}
   ${res} =            Object  response body
   [RETURN]            ${res}[0]
 
