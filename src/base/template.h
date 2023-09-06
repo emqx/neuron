@@ -51,8 +51,10 @@ neu_group_t *neu_template_get_group(const neu_template_t *tmpl,
 int neu_template_add_group(neu_template_t *tmpl, const char *group,
                            uint32_t interval);
 int neu_template_del_group(neu_template_t *tmpl, const char *group);
-int neu_template_update_group(neu_template_t *tmpl, const char *group,
-                              uint32_t interval);
+int neu_template_update_group_interval(neu_template_t *tmpl, const char *group,
+                                       uint32_t interval);
+int neu_template_update_group_name(neu_template_t *tmpl, const char *group,
+                                   const char *new_name);
 
 // Iterate through groups in the template and apply `cb` each.
 // NOTE: `cb` must not alter the group name or delete the group.
