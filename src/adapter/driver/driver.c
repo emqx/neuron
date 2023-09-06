@@ -846,6 +846,10 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
             }
         }
 
+        driver->tag_cnt -= neu_group_tag_size(find->group);
+        driver->adapter.cb_funs.update_metric(
+            &driver->adapter, NEU_METRIC_TAGS_TOTAL, driver->tag_cnt, NULL);
+
         utarray_free(find->static_tags);
         utarray_free(find->grp.tags);
         utarray_free(find->wt_tags);
