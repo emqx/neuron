@@ -35,7 +35,7 @@ static neu_manager_t *g_manager         = NULL;
 zlog_category_t *     neuron            = NULL;
 bool                  disable_jwt       = false;
 int                   default_log_level = ZLOG_LEVEL_NOTICE;
-char                  host_port[24]     = { 0 };
+char                  host_port[32]     = { 0 };
 
 int64_t global_timestamp = 0;
 
