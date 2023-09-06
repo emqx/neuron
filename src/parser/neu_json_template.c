@@ -378,10 +378,10 @@ int neu_json_encode_get_templates_resp(void *json_obj, void *param)
                                  NEU_JSON_ELEM_SIZE(req_elems));
 }
 
-int neu_json_encode_template_mod_group_req(void *json_obj, void *param)
+int neu_json_encode_template_add_group_req(void *json_obj, void *param)
 {
     int                                ret = 0;
-    neu_json_template_mod_group_req_t *req = param;
+    neu_json_template_add_group_req_t *req = param;
 
     neu_json_elem_t req_elems[] = { {
                                         .name      = "template",
@@ -404,12 +404,12 @@ int neu_json_encode_template_mod_group_req(void *json_obj, void *param)
     return ret;
 }
 
-int neu_json_decode_template_mod_group_req(
-    char *buf, neu_json_template_mod_group_req_t **result)
+int neu_json_decode_template_add_group_req(
+    char *buf, neu_json_template_add_group_req_t **result)
 {
     int                                ret      = 0;
     void *                             json_obj = NULL;
-    neu_json_template_mod_group_req_t *req      = NULL;
+    neu_json_template_add_group_req_t *req      = NULL;
 
     json_obj = neu_json_decode_new(buf);
     if (NULL == json_obj) {
@@ -449,13 +449,13 @@ int neu_json_decode_template_mod_group_req(
     return 0;
 
 decode_fail:
-    neu_json_decode_template_mod_group_req_free(req);
+    neu_json_decode_template_add_group_req_free(req);
     neu_json_decode_free(json_obj);
     return -1;
 }
 
-void neu_json_decode_template_mod_group_req_free(
-    neu_json_template_mod_group_req_t *req)
+void neu_json_decode_template_add_group_req_free(
+    neu_json_template_add_group_req_t *req)
 {
     if (req) {
         free(req->tmpl);
