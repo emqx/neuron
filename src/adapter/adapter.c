@@ -301,6 +301,11 @@ neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
     return adapter->module->type;
 }
 
+neu_tag_cache_type_e neu_adapter_get_tag_cache_type(neu_adapter_t *adapter)
+{
+    return adapter->module->cache_type;
+}
+
 static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
                                    const char *help, neu_metric_type_e type,
                                    uint64_t init)

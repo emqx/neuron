@@ -116,6 +116,7 @@ typedef struct neu_plugin_module {
     bool                          single;
     const char *                  single_name;
     neu_event_timer_type_e        timer_type;
+    neu_tag_cache_type_e          cache_type;
 } neu_plugin_module_t;
 
 inline static neu_plugin_common_t *
