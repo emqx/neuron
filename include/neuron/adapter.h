@@ -612,7 +612,14 @@ typedef struct {
     char     tmpl[NEU_TEMPLATE_NAME_LEN];
     char     group[NEU_GROUP_NAME_LEN];
     uint32_t interval;
-} neu_req_add_template_group_t, neu_req_update_template_group_t;
+} neu_req_add_template_group_t;
+
+typedef struct {
+    char     tmpl[NEU_TEMPLATE_NAME_LEN];
+    char     group[NEU_GROUP_NAME_LEN];
+    char     new_name[NEU_GROUP_NAME_LEN];
+    uint32_t interval;
+} neu_req_update_template_group_t;
 
 typedef struct {
     char tmpl[NEU_TEMPLATE_NAME_LEN];

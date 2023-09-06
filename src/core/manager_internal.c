@@ -332,7 +332,21 @@ int neu_manager_update_template_group(neu_manager_t *                  manager,
         return NEU_ERR_TEMPLATE_NOT_FOUND;
     }
 
-    return neu_template_update_group(tmpl, req->group, req->interval);
+    int rv = 0;
+
+    if (strlen(req->new_name) > 0 && 0 != strcmp(req->group, req->new_name)) {
+        rv = neu_template_update_group_name(tmpl, req->group, req->new_name);
+        if (0 != rv) {
+            return rv;
+        }
+    }
+
+    if (req->interval >= NEU_GROUP_INTERVAL_LIMIT) {
+        rv = neu_template_update_group_interval(tmpl, req->new_name,
+                                                req->interval);
+    }
+
+    return rv;
 }
 
 int neu_manager_del_template_group(neu_manager_t *               manager,

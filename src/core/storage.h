@@ -55,7 +55,8 @@ void manager_storage_clear_templates(neu_manager_t *manager);
 void manager_storage_add_template_group(const char *tmpl, const char *group,
                                         uint32_t interval);
 void manager_storage_update_template_group(const char *tmpl, const char *group,
-                                           uint32_t interval);
+                                           const char *new_name,
+                                           uint32_t    interval);
 void manager_storage_del_template_group(const char *tmpl, const char *group);
 void manager_storage_add_template_tag(const char *tmpl, const char *group,
                                       const neu_datatag_t *tag);
