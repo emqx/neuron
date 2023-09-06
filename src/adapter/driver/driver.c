@@ -79,6 +79,7 @@ static int  report_callback(void *usr_data);
 static int  read_callback(void *usr_data);
 static int  write_callback(void *usr_data);
 static void read_group(int64_t timestamp, int64_t timeout,
+                       neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, neu_resp_tag_value_meta_t *datas);
 static int  read_report_group(int64_t timestamp, int64_t timeout,
@@ -365,6 +366,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
         read_group(global_timestamp,
                    neu_group_get_interval(group) *
                        NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                   neu_adapter_get_tag_cache_type(&driver->adapter),
                    driver->cache, cmd->group, tags, resp.tags);
     }
 
@@ -1496,6 +1498,7 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
 }
 
 static void read_group(int64_t timestamp, int64_t timeout,
+                       neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, neu_resp_tag_value_meta_t *datas)
 {
@@ -1575,7 +1578,8 @@ static void read_group(int64_t timestamp, int64_t timeout,
             break;
         }
 
-        if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
+        if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
+            !neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
             (timestamp - value.timestamp) > timeout) {
             datas[index].value.type      = NEU_TYPE_ERROR;
             datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;

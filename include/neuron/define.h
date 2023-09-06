@@ -72,4 +72,9 @@ typedef enum {
     NEU_NODE_RUNNING_STATE_STOPPED = 4,
 } neu_node_running_state_e;
 
+typedef enum {
+    NEU_TAG_CACHE_TYPE_INTERVAL = 0,
+    NEU_TAG_CACHE_TYPE_NEVER,
+} neu_tag_cache_type_e;
+
 #endif
