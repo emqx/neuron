@@ -90,6 +90,19 @@ void neu_json_decode_template_mod_group_req_free(
     neu_json_template_mod_group_req_t *req);
 
 typedef struct {
+    char *  tmpl;
+    char *  group;
+    char *  new_name;
+    bool    set_interval;
+    int64_t interval;
+} neu_json_template_update_group_req_t;
+
+int neu_json_decode_template_update_group_req(
+    char *buf, neu_json_template_update_group_req_t **result);
+void neu_json_decode_template_update_group_req_free(
+    neu_json_template_update_group_req_t *req);
+
+typedef struct {
     char *tmpl;
     char *group;
 } neu_json_template_del_group_req_t;
