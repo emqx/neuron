@@ -54,8 +54,8 @@ void adapter_storage_update_group(const char *node, const char *group,
 
     int rv = neu_persister_update_group(node, group, &info);
     if (0 != rv) {
-        nlog_error("fail update adapter:%s group:%s, interval: %u", node, group,
-                   interval);
+        nlog_error("fail update adapter:%s group:%s, new_name:%s interval: %u",
+                   node, group, new_name, interval);
     }
 }
 

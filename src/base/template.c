@@ -145,8 +145,8 @@ int neu_template_del_group(neu_template_t *tmpl, const char *group)
     return 0;
 }
 
-int neu_template_update_group(neu_template_t *tmpl, const char *group,
-                              uint32_t interval)
+int neu_template_update_group_interval(neu_template_t *tmpl, const char *group,
+                                       uint32_t interval)
 {
     group_entry_t *ent = NULL;
     HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
@@ -155,6 +155,31 @@ int neu_template_update_group(neu_template_t *tmpl, const char *group,
     }
 
     return neu_group_update(ent->group, interval);
+}
+
+int neu_template_update_group_name(neu_template_t *tmpl, const char *group,
+                                   const char *new_name)
+{
+    if (0 == strcmp(group, new_name)) {
+        return 0;
+    }
+
+    if (NULL != neu_template_get_group(tmpl, new_name)) {
+        return NEU_ERR_GROUP_EXIST;
+    }
+
+    group_entry_t *ent = NULL;
+    HASH_FIND(hh, tmpl->groups, group, strlen(group), ent);
+    if (NULL == ent) {
+        return NEU_ERR_GROUP_NOT_EXIST;
+    }
+
+    HASH_DEL(tmpl->groups, ent);
+    int rv   = neu_group_set_name(ent->group, new_name);
+    new_name = neu_group_get_name(ent->group);
+    HASH_ADD_KEYPTR(hh, tmpl->groups, new_name, strlen(new_name), ent);
+
+    return rv;
 }
 
 size_t neu_template_group_num(const neu_template_t *tmpl)

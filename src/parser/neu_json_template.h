@@ -81,13 +81,26 @@ typedef struct {
     char *  tmpl;
     char *  group;
     int64_t interval;
-} neu_json_template_mod_group_req_t;
+} neu_json_template_add_group_req_t;
 
-int neu_json_encode_template_mod_group_req(void *json_obj, void *param);
-int neu_json_decode_template_mod_group_req(
-    char *buf, neu_json_template_mod_group_req_t **result);
-void neu_json_decode_template_mod_group_req_free(
-    neu_json_template_mod_group_req_t *req);
+int neu_json_encode_template_add_group_req(void *json_obj, void *param);
+int neu_json_decode_template_add_group_req(
+    char *buf, neu_json_template_add_group_req_t **result);
+void neu_json_decode_template_add_group_req_free(
+    neu_json_template_add_group_req_t *req);
+
+typedef struct {
+    char *  tmpl;
+    char *  group;
+    char *  new_name;
+    bool    set_interval;
+    int64_t interval;
+} neu_json_template_update_group_req_t;
+
+int neu_json_decode_template_update_group_req(
+    char *buf, neu_json_template_update_group_req_t **result);
+void neu_json_decode_template_update_group_req_free(
+    neu_json_template_update_group_req_t *req);
 
 typedef struct {
     char *tmpl;
