@@ -23,6 +23,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <arpa/inet.h>
+
 #define NNG_SUPP_TLS 1
 #define NNG_SUPP_SQLITE 1
 #include <nng/mqtt/mqtt_client.h>
@@ -1045,7 +1047,10 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
         client->tls_cfg = cfg;
     }
 
-    if (0 != (rv = nng_tls_config_server_name(client->tls_cfg, client->host))) {
+    // validate server name and enable SNI only when host is not an IP address
+    struct sockaddr_in sa;
+    if (0 == inet_pton(AF_INET, client->host, &sa.sin_addr) &&
+        0 != (rv = nng_tls_config_server_name(client->tls_cfg, client->host))) {
         log(error, "nng_tls_config_server_name fail: %s", nng_strerror(rv));
         rv = -1;
         goto end;
