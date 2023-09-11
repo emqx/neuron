@@ -1323,7 +1323,7 @@ static int read_callback(void *usr_data)
                               group_change);
     }
 
-    if (group->grp.tags != NULL) {
+    if (group->grp.tags != NULL && utarray_len(group->grp.tags) > 0) {
         int64_t spend = global_timestamp;
 
         group->driver->adapter.module->intf_funs->driver.group_timer(
