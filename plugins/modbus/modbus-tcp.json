@@ -46,27 +46,6 @@
 		}
 	],
 	"group_interval": 1000,
-	"transport_mode": {
-		"name": "Transport Mode",
-		"name_zh": "传输模式",
-		"description": "TCP transfer or UDP transfer",
-		"description_zh": "TCP 传输或 UDP 传输",
-		"attribute": "required",
-		"type": "map",
-		"default": 0,
-		"valid": {
-			"map": [
-				{
-					"key": "TCP",
-					"value": 0
-				},
-				{
-					"key": "UDP",
-					"value": 1
-				}
-			]
-		}
-	},
 	"connection_mode": {
 		"name": "Connection Mode",
 		"name_zh": "连接模式",
@@ -86,10 +65,6 @@
 					"value": 1
 				}
 			]
-		},
-		"condition": {
-			"field": "transport_mode",
-			"value": 0
 		}
 	},
 	"max_retries": {
@@ -137,11 +112,7 @@
 		"description": "Local IP in server mode, remote device IP in client mode",
 		"description_zh": "服务端模式中填写本地 IP，客户端模式中填写目标设备 IP",
 		"attribute": "required",
-		"type": "string",
-		"valid": {
-			"regex": "/^((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)$/",
-			"length": 30
-		}
+		"type": "string"		
 	},
 	"port": {
 		"name": "Port",

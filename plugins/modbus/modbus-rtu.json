@@ -305,10 +305,6 @@
 		"description_zh": "服务端模式中填写本地 IP，客户端模式中填写目标设备 IP",
 		"attribute": "required",
 		"type": "string",
-		"valid": {
-			"regex": "/^((2[0-4]\\d|25[0-5]|[01]?\\d\\d?)\\.){3}(2[0-4]\\d|25[0-5]|[01]?\\d\\d?)$/",
-			"length": 30
-		},
 		"condition": {
 			"field": "link",
 			"value": 1
