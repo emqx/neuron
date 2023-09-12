@@ -384,7 +384,7 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         switch (tag->option.value32.endian) {
         case NEU_DATATAG_ENDIAN_LB32:
             neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) (value->value.bytes + 2));
             break;
         case NEU_DATATAG_ENDIAN_BB32:
             value->value.u32 = htonl(value->value.u32);
@@ -392,7 +392,7 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         case NEU_DATATAG_ENDIAN_BL32:
             value->value.u32 = htonl(value->value.u32);
             neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) (value->value.bytes + 2));
             break;
         case NEU_DATATAG_ENDIAN_LL32:
         default:
@@ -408,7 +408,7 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         switch (tag->option.value32.endian) {
         case NEU_DATATAG_ENDIAN_LB32:
             neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) (value->value.bytes + 2));
             break;
         case NEU_DATATAG_ENDIAN_BB32:
             value->value.u32 = htonl(value->value.u32);
@@ -416,7 +416,7 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
         case NEU_DATATAG_ENDIAN_BL32:
             value->value.u32 = htonl(value->value.u32);
             neu_ntohs_p((uint16_t *) value->value.bytes);
-            neu_ntohs_p((uint16_t *) value->value.bytes + 2);
+            neu_ntohs_p((uint16_t *) (value->value.bytes + 2));
             break;
         case NEU_DATATAG_ENDIAN_LL32:
         default:
