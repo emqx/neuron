@@ -304,7 +304,7 @@ int neu_subscribe_manager_update_app_name(neu_subscribe_mgr_t *mgr,
         utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
         {
             if (strcmp(app, sub_app->app_name) == 0) {
-                strcpy(sub_app->app_name, new_name);
+                strncpy(sub_app->app_name, new_name, sizeof(sub_app->app_name));
             }
         }
     }
@@ -322,7 +322,7 @@ int neu_subscribe_manager_update_driver_name(neu_subscribe_mgr_t *mgr,
     {
         if (strcmp(driver, el->key.driver) == 0) {
             HASH_DEL(mgr->ss, el);
-            strcpy(el->key.driver, new_name);
+            strncpy(el->key.driver, new_name, sizeof(el->key.driver));
             HASH_ADD(hh, mgr->ss, key, sizeof(sub_elem_key_t), el);
         }
     }
@@ -348,7 +348,7 @@ int neu_subscribe_manager_update_group_name(neu_subscribe_mgr_t *mgr,
     }
 
     HASH_DEL(mgr->ss, find);
-    strcpy(find->key.group, new_name);
+    strncpy(find->key.group, new_name, sizeof(find->key.group));
     HASH_ADD(hh, mgr->ss, key, sizeof(sub_elem_key_t), find);
 
     return 0;
