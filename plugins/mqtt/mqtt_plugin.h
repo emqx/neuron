@@ -134,7 +134,7 @@ static inline void route_tbl_update_driver(route_entry_t **tbl,
     {
         if (0 == strcmp(e->key.driver, driver)) {
             HASH_DEL(*tbl, e);
-            strcpy(e->key.driver, new_name);
+            strncpy(e->key.driver, new_name, sizeof(e->key.driver));
             HASH_ADD(hh, *tbl, key, sizeof(e->key), e);
         }
     }
@@ -147,7 +147,7 @@ static inline void route_tbl_update_group(route_entry_t **tbl,
     route_entry_t *e = route_tbl_get(tbl, driver, group);
     if (e) {
         HASH_DEL(*tbl, e);
-        strcpy(e->key.group, new_name);
+        strncpy(e->key.group, new_name, sizeof(e->key.group));
         HASH_ADD(hh, *tbl, key, sizeof(e->key), e);
     }
 }
