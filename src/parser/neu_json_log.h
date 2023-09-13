@@ -35,6 +35,7 @@ typedef char *neu_json_get_log_resp_row_t;
 
 typedef struct {
     char *node_name;
+    char *log_level;
 } neu_json_update_log_level_req_t;
 
 typedef struct {
