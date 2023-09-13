@@ -56,7 +56,6 @@ inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 inline static void notify_monitor(neu_adapter_t *    adapter,
                                   neu_reqresp_type_e event, void *data);
-static int         level_check(void *usr_data);
 
 static const adapter_callbacks_t callback_funs = {
     .command         = adapter_command,
@@ -91,25 +90,6 @@ static __thread int create_adapter_error = 0;
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSGS_TOTAL, 0);       \
     REGISTER_METRIC(adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 0); \
     REGISTER_METRIC(adapter, NEU_METRIC_RECV_MSGS_TOTAL, 0);
-
-static inline void start_log_level_timer(neu_adapter_t *adapter)
-{
-    neu_event_timer_param_t timer_level = {
-        .second      = 30,
-        .millisecond = 0,
-        .cb          = level_check,
-        .usr_data    = adapter,
-        .type        = NEU_EVENT_TIMER_BLOCK,
-    };
-
-    adapter->timer_lev = neu_event_add_timer(adapter->events, timer_level);
-}
-
-static inline void stop_log_level_timer(neu_adapter_t *adapter)
-{
-    neu_event_del_timer(adapter->events, adapter->timer_lev);
-    adapter->timer_lev = NULL;
-}
 
 int neu_adapter_error()
 {
@@ -208,10 +188,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     rv = nng_dial(adapter->sock, neu_manager_get_url(), &adapter->dialer, 0);
     assert(rv == 0);
 
-    start_log_level_timer(adapter);
-
-    nlog_notice("Success to create adapter: %s", adapter->name);
-
     adapter_storage_state(adapter->name, adapter->state);
 
     if (init_rv != 0) {
@@ -221,7 +197,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
         }
-        stop_log_level_timer(adapter);
         neu_event_del_io(adapter->events, adapter->nng_io);
 
         neu_adapter_destroy(adapter);
@@ -247,7 +222,6 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
         return NEU_ERR_EINTERNAL;
     }
 
-    stop_log_level_timer(adapter);
     if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
         neu_adapter_driver_stop_group_timer((neu_adapter_driver_t *) adapter);
     }
@@ -269,7 +243,6 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
     strcpy(common->name, adapter->name);
     zlog_level_switch(common->log, default_log_level);
 
-    start_log_level_timer(adapter);
     if (NEU_NA_TYPE_DRIVER == adapter->module->type) {
         neu_adapter_driver_start_group_timer((neu_adapter_driver_t *) adapter);
     }
@@ -1075,8 +1048,6 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
     }
 
-    stop_log_level_timer(adapter);
-
     nlog_notice("Stop the adapter(%s)", adapter->name);
     return 0;
 }
@@ -1190,8 +1161,9 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
     neu_node_state_t     state  = { 0 };
     neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
 
-    state.link    = common->link_state;
-    state.running = adapter->state;
+    state.link      = common->link_state;
+    state.running   = adapter->state;
+    state.log_level = common->log_level;
 
     return state;
 }
@@ -1361,29 +1333,6 @@ inline static void notify_monitor(neu_adapter_t *    adapter,
         nlog_warn("notify %s of %s, error: %s", header.receiver,
                   neu_reqresp_type_string(header.type), nng_strerror(ret));
     }
-}
-
-static int level_check(void *usr_data)
-{
-    neu_adapter_t *adapter = (neu_adapter_t *) usr_data;
-
-    if (0 != adapter->timestamp_lev) {
-        struct timeval   tv      = { 0 };
-        int64_t          diff    = 0;
-        int64_t          delay_s = 600;
-        zlog_category_t *ct      = zlog_get_category(adapter->name);
-
-        gettimeofday(&tv, NULL);
-        diff = tv.tv_sec - adapter->timestamp_lev;
-        if (delay_s <= diff) {
-            int ret = zlog_level_switch(ct, default_log_level);
-            if (0 != ret) {
-                nlog_error("Modify default log level fail, ret:%d", ret);
-            }
-        }
-    }
-
-    return 0;
 }
 
 void *neu_msg_gen(neu_reqresp_head_t *header, void *data)

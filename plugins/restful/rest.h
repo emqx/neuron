@@ -20,8 +20,17 @@
 #ifndef _NEU_PLUGIN_REST_H_
 #define _NEU_PLUGIN_REST_H_
 
+#include "handle.h"
 #include "plugin.h"
+#include <nng/nng.h>
+#include <nng/supplemental/http/http.h>
 
 extern const neu_plugin_module_t default_dashboard_plugin_module;
+
+struct neu_plugin {
+    neu_plugin_common_t    common;
+    nng_http_server *      server;
+    neu_rest_handle_ctx_t *handle_ctx;
+};
 
 #endif

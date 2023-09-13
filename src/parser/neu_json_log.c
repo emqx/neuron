@@ -43,9 +43,13 @@ int neu_json_decode_update_log_level_req(
     }
 
     neu_json_elem_t req_elems[] = { {
-        .name = "node",
-        .t    = NEU_JSON_STR,
-    } };
+                                        .name = "node",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "level",
+                                        .t    = NEU_JSON_STR,
+                                    } };
 
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -54,6 +58,7 @@ int neu_json_decode_update_log_level_req(
     }
 
     req->node_name = req_elems[0].v.val_str;
+    req->log_level = req_elems[1].v.val_str;
 
     *result = req;
     goto decode_exit;
@@ -71,9 +76,15 @@ decode_exit:
 void neu_json_decode_update_log_level_req_free(
     neu_json_update_log_level_req_t *req)
 {
-    free(req->node_name);
-
-    free(req);
+    if (req->node_name != NULL) {
+        free(req->node_name);
+    }
+    if (req->log_level != NULL) {
+        free(req->log_level);
+    }
+    if (req != NULL) {
+        free(req);
+    }
 }
 
 int neu_json_encode_get_log_resp(void *json_object, void *param)

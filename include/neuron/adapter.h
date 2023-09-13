@@ -34,6 +34,7 @@ extern "C" {
 typedef struct {
     neu_node_running_state_e running;
     neu_node_link_state_e    link;
+    char *                   log_level;
 } neu_node_state_t;
 
 typedef enum neu_reqresp_type {

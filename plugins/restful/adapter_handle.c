@@ -30,6 +30,7 @@
 #include "utils/http.h"
 
 #include "adapter_handle.h"
+#include "rest.h"
 
 void handle_add_adapter(nng_aio *aio)
 {
@@ -330,9 +331,12 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
     neu_json_get_node_state_resp_t res    = { 0 };
     char *                         result = NULL;
 
-    res.link    = state->state.link;
-    res.running = state->state.running;
-    res.rtt     = state->rtt;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    res.link      = state->state.link;
+    res.running   = state->state.running;
+    res.rtt       = state->rtt;
+    res.log_level = plugin->common.log_level;
 
     neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
 

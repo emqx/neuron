@@ -43,12 +43,6 @@
 
 #define neu_plugin_module default_dashboard_plugin_module
 
-struct neu_plugin {
-    neu_plugin_common_t    common;
-    nng_http_server *      server;
-    neu_rest_handle_ctx_t *handle_ctx;
-};
-
 static nng_http_server *server_init()
 {
     nng_url *        url;

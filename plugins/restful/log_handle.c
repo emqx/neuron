@@ -40,6 +40,7 @@
 #include "json/neu_json_fn.h"
 
 #include "log_handle.h"
+#include "rest.h"
 #include "utils/utarray.h"
 
 void handle_logs_files(nng_aio *aio)
@@ -118,20 +119,52 @@ void handle_log_level(nng_aio *aio)
             neu_req_update_log_level_t cmd    = { 0 };
             zlog_category_t *          ct = zlog_get_category(req->node_name);
             zlog_category_t *          neuron = zlog_get_category("neuron");
+            int                        log_level;
 
-            ret = zlog_level_switch(ct, ZLOG_LEVEL_DEBUG);
+            if (0 == strcmp(req->log_level, "debug")) {
+                log_level                = ZLOG_LEVEL_DEBUG;
+                plugin->common.log_level = "debug";
+            } else if (0 == strcmp(req->log_level, "info")) {
+                log_level                = ZLOG_LEVEL_INFO;
+                plugin->common.log_level = "info";
+            } else if (0 == strcmp(req->log_level, "notice")) {
+                log_level                = ZLOG_LEVEL_NOTICE;
+                plugin->common.log_level = "notice";
+            } else if (0 == strcmp(req->log_level, "warn")) {
+                log_level                = ZLOG_LEVEL_WARN;
+                plugin->common.log_level = "warn";
+            } else if (0 == strcmp(req->log_level, "error")) {
+                log_level                = ZLOG_LEVEL_ERROR;
+                plugin->common.log_level = "error";
+            } else if (0 == strcmp(req->log_level, "fatal")) {
+                log_level                = ZLOG_LEVEL_FATAL;
+                plugin->common.log_level = "fatal";
+            } else {
+                plugin->common.log_level = "unknow";
+                nlog_error(
+                    "Failed to modify log_level of the node, node_name:%s, ",
+                    req->node_name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+                goto end;
+            }
+
+            ret = zlog_level_switch(ct, log_level);
             if (ret != 0) {
-                nlog_error("Modify node log level fail, node_name:%s, "
-                           "ret: %d,",
-                           req->node_name, ret);
+                nlog_error(
+                    "Failed to modify log_level of the node, node_name:%s, "
+                    "ret: %d,",
+                    req->node_name, ret);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
             }
 
-            ret = zlog_level_switch(neuron, ZLOG_LEVEL_DEBUG);
+            ret = zlog_level_switch(neuron, log_level);
             if (ret != 0) {
-                nlog_error("Modify neuron log level fail, ret: %d", ret);
+                nlog_error("Failed to modify log_level of the node, ret: %d",
+                           ret);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
@@ -147,6 +180,7 @@ void handle_log_level(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
+        end:;
         })
 }
 

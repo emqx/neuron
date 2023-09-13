@@ -48,7 +48,6 @@
 static const char *const url = "inproc://neu_manager";
 
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data);
-static int manager_level_check(void *usr_data);
 inline static void     reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                              void *data);
 inline static nng_msg *trans_data_dup(nng_msg *msg);
@@ -79,13 +78,6 @@ neu_manager_t *neu_manager_create()
         .millisecond = 10,
         .cb          = update_timestamp,
         .type        = NEU_EVENT_TIMER_NOBLOCK,
-    };
-
-    neu_event_timer_param_t timer_level = {
-        .second      = 60,
-        .millisecond = 0,
-        .cb          = manager_level_check,
-        .type        = NEU_EVENT_TIMER_BLOCK,
     };
 
     manager->events            = neu_event_new();
@@ -135,9 +127,6 @@ neu_manager_t *neu_manager_create()
     }
 
     manager_load_subscribe(manager);
-
-    timer_level.usr_data = (void *) manager;
-    manager->timer_lev   = neu_event_add_timer(manager->events, timer_level);
 
     timestamp_timer_param.usr_data = (void *) manager;
     manager->timer_timestamp =
@@ -192,29 +181,6 @@ void neu_manager_destroy(neu_manager_t *manager)
 const char *neu_manager_get_url()
 {
     return url;
-}
-
-static int manager_level_check(void *usr_data)
-{
-    neu_manager_t *manager = (neu_manager_t *) usr_data;
-
-    if (0 != manager->timestamp_lev_manager) {
-        struct timeval   tv      = { 0 };
-        int64_t          diff    = { 0 };
-        int64_t          delay_s = 600;
-        zlog_category_t *neuron  = zlog_get_category("neuron");
-
-        gettimeofday(&tv, NULL);
-        diff = tv.tv_sec - manager->timestamp_lev_manager;
-        if (delay_s <= diff) {
-            int ret = zlog_level_switch(neuron, default_log_level);
-            if (0 != ret) {
-                nlog_error("Modify default log level fail, ret:%d", ret);
-            }
-        }
-    }
-
-    return 0;
 }
 
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
