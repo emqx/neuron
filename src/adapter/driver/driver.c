@@ -989,6 +989,8 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
     group_t *find = NULL;
 
     neu_datatag_parse_addr_option(tag, &tag->option);
+    driver->adapter.module->intf_funs->driver.validate_tag(
+        driver->adapter.plugin, tag);
 
     HASH_FIND_STR(driver->groups, group, find);
     if (find == NULL) {
