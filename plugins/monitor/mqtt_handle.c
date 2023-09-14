@@ -140,8 +140,8 @@ static char *generate_event_json(neu_plugin_t *plugin, neu_reqresp_type_e event,
             update_grp->interval >= NEU_GROUP_INTERVAL_LIMIT;
         json_req.update_grp.interval = update_grp->interval;
         *topic_p                     = plugin->config->group_update_topic;
-        neu_json_encode_by_fn(&json_req, neu_json_encode_add_group_config_req,
-                              &json_str);
+        neu_json_encode_by_fn(
+            &json_req, neu_json_encode_update_group_config_req, &json_str);
         break;
     }
     case NEU_REQ_ADD_TAG_EVENT:
