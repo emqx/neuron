@@ -260,6 +260,10 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 
 int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
 {
+    if (io == NULL) {
+        return 0;
+    }
+
     struct event_data *data = (struct event_data *) io->event_data;
     zlog_notice(neuron, "del io: %d from epoll: %d", io->fd, events->epoll_fd);
 
