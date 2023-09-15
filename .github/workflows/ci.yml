@@ -9,7 +9,7 @@ on:
 
 env:
   VERSION: 2.6.0
-  UI_VERSION: 2.6.0-beta1
+  UI_VERSION: 2.6.0
   BRANCH: v2.6
 
 jobs:
