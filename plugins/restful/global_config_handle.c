@@ -103,7 +103,10 @@ static int add_setting(context_t *ctx, neu_json_node_setting_req_t *data);
 
 static inline bool is_static_node(const char *name, const char *plugin)
 {
-    return 0 == strcmp("monitor", name) && 0 == strcmp("Monitor", plugin);
+    (void) name;
+    (void) plugin;
+    return false;
+    // return 0 == strcmp("monitor", name) && 0 == strcmp("Monitor", plugin);
 }
 
 static context_t *context_new(nng_aio *aio, bool get)

@@ -32,6 +32,7 @@ typedef struct node_entity {
     bool           is_static;
     bool           display;
     bool           single;
+    bool           is_monitor;
     nng_pipe       pipe;
 
     UT_hash_handle hh;
@@ -40,11 +41,16 @@ typedef struct node_entity {
 
 struct neu_node_manager {
     node_entity_t *nodes;
+    UT_array *     monitors;
 };
 
 neu_node_manager_t *neu_node_manager_create()
 {
     neu_node_manager_t *node_manager = calloc(1, sizeof(neu_node_manager_t));
+
+    if (node_manager) {
+        utarray_new(node_manager->monitors, &ut_ptr_icd);
+    }
 
     return node_manager;
 }
@@ -60,6 +66,7 @@ void neu_node_manager_destroy(neu_node_manager_t *mgr)
         free(el);
     }
 
+    utarray_free(mgr->monitors);
     free(mgr);
 }
 
@@ -70,8 +77,14 @@ int neu_node_manager_add(neu_node_manager_t *mgr, neu_adapter_t *adapter)
     node->adapter = adapter;
     node->name    = strdup(adapter->name);
     node->display = true;
+    node->is_monitor =
+        (0 == strcmp(node->adapter->module->module_name, "Monitor"));
 
     HASH_ADD_STR(mgr->nodes, name, node);
+
+    if (node->is_monitor) {
+        utarray_push_back(mgr->monitors, &node);
+    }
 
     return 0;
 }
@@ -149,6 +162,10 @@ void neu_node_manager_del(neu_node_manager_t *mgr, const char *name)
     HASH_FIND_STR(mgr->nodes, name, node);
     if (node != NULL) {
         HASH_DEL(mgr->nodes, node);
+        if (node->is_monitor) {
+            utarray_erase(mgr->monitors, utarray_eltidx(mgr->monitors, node),
+                          1);
+        }
         free(node->name);
         free(node);
     }
@@ -352,6 +369,31 @@ nng_pipe neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name)
     }
 
     return pipe;
+}
+
+bool neu_node_manager_is_monitor(neu_node_manager_t *mgr, const char *name)
+{
+    node_entity_t *node = NULL;
+    HASH_FIND_STR(mgr->nodes, name, node);
+    return node ? node->is_monitor : false;
+}
+
+int neu_node_manager_for_each_monitor(neu_node_manager_t *mgr,
+                                      int (*cb)(const char *name, nng_pipe pipe,
+                                                void *data),
+                                      void *data)
+{
+    int rv = 0;
+
+    utarray_foreach(mgr->monitors, node_entity_t **, node)
+    {
+        rv = cb((*node)->name, (*node)->pipe, data);
+        if (0 != rv) {
+            break;
+        }
+    }
+
+    return rv;
 }
 
 UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)

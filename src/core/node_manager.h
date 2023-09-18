@@ -62,6 +62,12 @@ UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr, int type);
 UT_array *neu_node_manager_get_pipes_all(neu_node_manager_t *mgr);
 nng_pipe  neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name);
 
+bool neu_node_manager_is_monitor(neu_node_manager_t *mgr, const char *name);
+int  neu_node_manager_for_each_monitor(neu_node_manager_t *mgr,
+                                       int (*)(const char *name, nng_pipe pipe,
+                                              void *data),
+                                       void *data);
+
 // neu_nodes_state_t array
 UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr);
 
