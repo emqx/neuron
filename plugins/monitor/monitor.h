@@ -33,11 +33,9 @@
 
 struct neu_plugin {
     neu_plugin_common_t common;
-    pthread_mutex_t     mutex;
     bool                started;
     neu_events_t *      events;
     neu_event_timer_t * heartbeat_timer;
-    nng_http_server *   api_server;
     monitor_config_t *  config;
     neu_mqtt_client_t * mqtt_client;
 };

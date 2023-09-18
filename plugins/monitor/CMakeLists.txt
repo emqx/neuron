@@ -6,7 +6,6 @@ file(COPY ${CMAKE_SOURCE_DIR}/plugins/monitor/monitor.json DESTINATION ${CMAKE_B
 set(src
     monitor.c
     monitor_config.c
-    metric_handle.c
     mqtt_handle.c
 )
 
