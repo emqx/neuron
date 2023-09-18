@@ -684,7 +684,7 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
                           const char *driver, const char *group,
                           const char *params)
 {
-    if (0 == strcmp(app, "monitor")) {
+    if (neu_node_manager_is_monitor(manager->node_manager, app)) {
         // filter out monitor node
         return NEU_ERR_NODE_NOT_ALLOW_SUBSCRIBE;
     }
