@@ -125,6 +125,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+          fetch-depth: 0
       
       - name: compile
         run: |
@@ -133,11 +134,25 @@ jobs:
           cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
           make -j4
 
+      - name: get neuron current branch
+        shell: bash
+        run: |
+          if [ '${{ github.event_name }}' == 'push' ]; then
+            branch=${{ github.ref_name }}
+          elif [ '${{ github.event_name }}' == 'pull_request' ]; then
+            branch=${{ github.event.pull_request.base.ref }}
+          elif [ '${{ github.event_name }}' == 'release' ]; then
+            branch=${{ github.event.release.target_commitish }}
+          fi
+          echo "BRANCH=$branch" >> $GITHUB_ENV
+          echo "neuron current branch is $branch"
+
       - name: fetch neu-ft
         uses: actions/checkout@v2
         with:
             repository: neugates/neu-ft
             path: neu-ft
+            ref: ${{ env.BRANCH }}
 
       - name: function test
         run: |
