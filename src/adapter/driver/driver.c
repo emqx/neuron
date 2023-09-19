@@ -104,6 +104,8 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 
     req->type = NEU_RESP_ERROR;
 
+    nlog_notice("write tag response <%p>", req->ctx);
+
     adapter->cb_funs.response(adapter, req, &nerror);
     free(req);
 }
@@ -707,7 +709,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         find->read   = neu_event_add_timer(driver->driver_events, param);
 
         param.second      = 0;
-        param.millisecond = 100;
+        param.millisecond = 3;
         param.cb          = write_callback;
         find->write       = neu_event_add_timer(driver->driver_events, param);
 
