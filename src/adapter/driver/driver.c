@@ -313,12 +313,20 @@ void neu_adapter_driver_start_group_timer(neu_adapter_driver_t *driver)
             .type        = NEU_EVENT_TIMER_NOBLOCK,
         };
 
-        param.cb   = report_callback;
-        el->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
-
         param.type = driver->adapter.module->timer_type;
         param.cb   = read_callback;
         el->read   = neu_event_add_timer(driver->driver_events, param);
+
+        struct timespec t1 = {
+            .tv_sec  = 0,
+            .tv_nsec = 1000 * 1000 * 20,
+        };
+        struct timespec t2 = { 0 };
+        nanosleep(&t1, &t2);
+
+        param.type = NEU_EVENT_TIMER_NOBLOCK;
+        param.cb   = report_callback;
+        el->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
     }
 }
 
@@ -702,11 +710,20 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         neu_group_split_static_tags(find->group, &find->static_tags,
                                     &find->grp.tags);
 
+        param.type = driver->adapter.module->timer_type;
+        param.cb   = read_callback;
+        find->read = neu_event_add_timer(driver->driver_events, param);
+
+        struct timespec t1 = {
+            .tv_sec  = 0,
+            .tv_nsec = 1000 * 1000 * 20,
+        };
+        struct timespec t2 = { 0 };
+        nanosleep(&t1, &t2);
+
+        param.type   = NEU_EVENT_TIMER_NOBLOCK;
         param.cb     = report_callback;
         find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
-        param.type   = driver->adapter.module->timer_type;
-        param.cb     = read_callback;
-        find->read   = neu_event_add_timer(driver->driver_events, param);
 
         param.second      = 0;
         param.millisecond = 3;
@@ -798,11 +815,21 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
     neu_group_set_interval(find->group, interval);
 
     // restore the timers
+
+    param.type = driver->adapter.module->timer_type;
+    param.cb   = read_callback;
+    find->read = neu_event_add_timer(driver->driver_events, param);
+
+    struct timespec t1 = {
+        .tv_sec  = 0,
+        .tv_nsec = 1000 * 1000 * 20,
+    };
+    struct timespec t2 = { 0 };
+    nanosleep(&t1, &t2);
+
+    param.type   = NEU_EVENT_TIMER_NOBLOCK;
     param.cb     = report_callback;
     find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
-    param.type   = driver->adapter.module->timer_type;
-    param.cb     = read_callback;
-    find->read   = neu_event_add_timer(driver->driver_events, param);
 
     return ret;
 }
