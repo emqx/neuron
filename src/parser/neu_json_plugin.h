@@ -33,7 +33,11 @@ extern "C" {
 
 typedef struct {
     char *library;
+    char *schema_file;
+    char *so_file;
 } neu_json_add_plugin_req_t;
+
+typedef neu_json_add_plugin_req_t neu_json_update_plugin_req_t;
 
 int  neu_json_decode_add_plugin_req(char *                      buf,
                                     neu_json_add_plugin_req_t **result);

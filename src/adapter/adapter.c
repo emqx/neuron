@@ -18,6 +18,7 @@
  **/
 
 #include <assert.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <pthread.h>
@@ -230,6 +231,16 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         neu_adapter_set_error(0);
         return adapter;
     }
+}
+
+bool neu_adapter_reset(neu_adapter_t *adapter, neu_adapter_info_t *info)
+{
+    if (adapter->state == NEU_NODE_RUNNING_STATE_RUNNING) {
+        return false;
+    }
+    adapter->module = info->module;
+    adapter->handle = info->handle;
+    return true;
 }
 
 int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
@@ -1062,6 +1073,13 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     free(adapter);
 }
 
+void neu_adapter_handle_close(neu_adapter_t *adapter)
+{
+    dlclose(adapter->handle);
+    adapter->handle = NULL;
+    adapter->module = NULL;
+}
+
 int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
@@ -1406,6 +1424,9 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     case NEU_REQ_DEL_PLUGIN:
         data_size = sizeof(neu_req_del_plugin_t);
+        break;
+    case NEU_REQ_UPDATE_PLUGIN:
+        data_size = sizeof(neu_req_update_plugin_t);
         break;
     case NEU_REQ_GET_PLUGIN:
         data_size = sizeof(neu_req_get_plugin_t);

@@ -269,6 +269,12 @@ static struct neu_http_handler rest_handlers[] = {
         .value.handler = handle_del_plugin,
     },
     {
+        .method        = NEU_HTTP_METHOD_PUT,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/plugin",
+        .value.handler = handle_update_plugin,
+    },
+    {
         .method        = NEU_HTTP_METHOD_POST,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/read",

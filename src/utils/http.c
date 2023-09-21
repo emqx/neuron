@@ -343,6 +343,11 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_TEMPLATE_NAME_TOO_LONG:
     case NEU_ERR_PLUGIN_NAME_TOO_LONG:
     case NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE:
+    case NEU_ERR_LIBRARY_IN_USE:
+    case NEU_ERR_LIBRARY_ADD_FAIL:
+    case NEU_ERR_LIBRARY_MODULE_ALREADY_EXIST:
+    case NEU_ERR_LIBRARY_MODULE_NOT_EXISTS:
+    case NEU_ERR_LIBRARY_MODULE_KIND_NOT_SUPPORT:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_FILE_NOT_EXIST:

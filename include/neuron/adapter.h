@@ -93,6 +93,7 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_ADD_PLUGIN,
     NEU_REQ_DEL_PLUGIN,
+    NEU_REQ_UPDATE_PLUGIN,
     NEU_REQ_GET_PLUGIN,
     NEU_RESP_GET_PLUGIN,
 
@@ -198,10 +199,11 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_GET_TAG]     = "NEU_REQ_GET_TAG",
     [NEU_RESP_GET_TAG]    = "NEU_RESP_GET_TAG",
 
-    [NEU_REQ_ADD_PLUGIN]  = "NEU_REQ_ADD_PLUGIN",
-    [NEU_REQ_DEL_PLUGIN]  = "NEU_REQ_DEL_PLUGIN",
-    [NEU_REQ_GET_PLUGIN]  = "NEU_REQ_GET_PLUGIN",
-    [NEU_RESP_GET_PLUGIN] = "NEU_RESP_GET_PLUGIN",
+    [NEU_REQ_ADD_PLUGIN]    = "NEU_REQ_ADD_PLUGIN",
+    [NEU_REQ_DEL_PLUGIN]    = "NEU_REQ_DEL_PLUGIN",
+    [NEU_REQ_UPDATE_PLUGIN] = "NEU_REQ_UPDATE_PLUGIN",
+    [NEU_REQ_GET_PLUGIN]    = "NEU_REQ_GET_PLUGIN",
+    [NEU_RESP_GET_PLUGIN]   = "NEU_RESP_GET_PLUGIN",
 
     [NEU_REQ_ADD_TEMPLATE]          = "NEU_REQ_ADD_TEMPLATE",
     [NEU_REQ_DEL_TEMPLATE]          = "NEU_REQ_DEL_TEMPLATE",
@@ -272,8 +274,12 @@ typedef struct {
 } neu_req_node_init_t, neu_req_node_uninit_t, neu_resp_node_uninit_t;
 
 typedef struct neu_req_add_plugin {
-    char library[NEU_PLUGIN_LIBRARY_LEN];
+    char  library[NEU_PLUGIN_LIBRARY_LEN];
+    char *schema_file;
+    char *so_file;
 } neu_req_add_plugin_t;
+
+typedef neu_req_add_plugin_t neu_req_update_plugin_t;
 
 typedef struct neu_req_del_plugin {
     char plugin[NEU_PLUGIN_NAME_LEN];

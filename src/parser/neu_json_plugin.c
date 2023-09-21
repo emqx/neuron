@@ -43,16 +43,26 @@ int neu_json_decode_add_plugin_req(char *                      buf,
     json_obj = neu_json_decode_new(buf);
 
     neu_json_elem_t req_elems[] = { {
-        .name = "library",
-        .t    = NEU_JSON_STR,
-    } };
+                                        .name = "library",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "schema_file",
+                                        .t    = NEU_JSON_STR,
+                                    },
+                                    {
+                                        .name = "so_file",
+                                        .t    = NEU_JSON_STR,
+                                    } };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
     if (ret != 0) {
         goto decode_fail;
     }
 
-    req->library = req_elems[0].v.val_str;
+    req->library     = req_elems[0].v.val_str;
+    req->schema_file = req_elems[1].v.val_str;
+    req->so_file     = req_elems[2].v.val_str;
 
     *result = req;
     goto decode_exit;

@@ -35,6 +35,7 @@
 #include "errcodes.h"
 #include "utils/asprintf.h"
 #include "utils/log.h"
+#include "utils/time.h"
 
 #include "argparse.h"
 #include "persist/json/persist_json_plugin.h"
@@ -56,6 +57,7 @@ static sqlite3 *   global_db         = NULL;
 pthread_rwlock_t   global_rwlock     = PTHREAD_RWLOCK_INITIALIZER;
 static int         global_node_count = 0;
 static int         global_tag_count  = 0;
+static const char *tmp_path          = "tmp";
 
 static inline bool ends_with(const char *str, const char *suffix)
 {
@@ -709,10 +711,10 @@ int neu_persister_store_plugins(UT_array *plugin_infos)
 
     utarray_foreach(plugin_infos, neu_resp_plugin_info_t *, plugin)
     {
-        if (NEU_PLUGIN_KIND_SYSTEM == plugin->kind) {
-            // filter out system plugins
-            continue;
-        }
+        // if (NEU_PLUGIN_KIND_SYSTEM == plugin->kind) {
+        //     // filter out system plugins
+        //     continue;
+        // }
         plugin_resp.plugins[index] = plugin->library;
         index++;
     }
@@ -1762,4 +1764,65 @@ error:
     sqlite3_exec(global_db, "ROLLBACK", NULL, NULL, NULL);
     sqlite3_finalize(stmt);
     return NEU_ERR_EINTERNAL;
+}
+
+char *neu_persister_save_file_tmp(const char *file_data, uint32_t len,
+                                  const char *suffix)
+{
+    struct stat st;
+
+    if (stat(tmp_path, &st) == -1) {
+        if (mkdir(tmp_path, 0700) == -1) {
+            nlog_error("%s mkdir fail", tmp_path);
+            return NULL;
+        }
+    }
+
+    char *file_name = calloc(1, 128);
+    snprintf(file_name, 128, "%s/%" PRId64 ".%s", tmp_path, neu_time_ms(),
+             suffix);
+    FILE *fp = NULL;
+    fp       = fopen(file_name, "wb+");
+    if (fp == NULL) {
+        nlog_error("not create tmp file: %s, err:%s", file_name,
+                   strerror(errno));
+        free(file_name);
+        return NULL;
+    }
+
+    size_t size = fwrite(file_data, 1, len, fp);
+
+    if (size < len) {
+        fclose(fp);
+        free(file_name);
+        return NULL;
+    }
+
+    fclose(fp);
+
+    return file_name;
+}
+
+bool neu_persister_library_exists(const char *library)
+{
+    bool      ret          = false;
+    UT_array *plugin_infos = NULL;
+
+    int rv = neu_persister_load_plugins(&plugin_infos);
+    if (rv != 0) {
+        return ret;
+    }
+
+    utarray_foreach(plugin_infos, char **, name)
+    {
+        if (strcmp(library, *name) == 0) {
+            ret = true;
+            break;
+        }
+    }
+
+    utarray_foreach(plugin_infos, char **, name) { free(*name); }
+    utarray_free(plugin_infos);
+
+    return ret;
 }
