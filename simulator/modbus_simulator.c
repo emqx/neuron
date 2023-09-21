@@ -99,8 +99,8 @@ static void sig_handler(int sig)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) {
-        printf("./modbus_simulator rtu/tcp port\n");
+    if (argc != 4) {
+        printf("./modbus_simulator rtu/tcp port ip_v4/ip_v6\n");
         return -1;
     }
 
@@ -119,13 +119,23 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    bool mode_ipv6 = false;
+    if (strncmp(argv[3], "ip_v6", strlen("ip_v6")) == 0) {
+        mode_ipv6 = true;
+    } else if (strncmp(argv[3], "ip_v4", strlen("ip_v4")) == 0) {
+        mode_ipv6 = false;
+    } else {
+        printf("./modbus_simulator rtu/tcp port ip_v4/ip_v6\n");
+        return -1;
+    }
+
     zlog_init("./config/dev.conf");
     neuron = zlog_get_category("neuron");
 
     neu_conn_param_t param = {
         .log                            = neuron,
         .type                           = NEU_CONN_TCP_SERVER,
-        .params.tcp_server.ip           = "0.0.0.0",
+        .params.tcp_server.ip           = mode_ipv6 ? "::" : "0.0.0.0",
         .params.tcp_server.port         = (uint16_t) port,
         .params.tcp_server.timeout      = 0,
         .params.tcp_server.max_link     = 10,

@@ -154,14 +154,13 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
                              .v.val_str = NULL };
     neu_json_elem_t  interval  = { .name = "interval", .t = NEU_JSON_INT };
     neu_json_elem_t  mode  = { .name = "connection_mode", .t = NEU_JSON_INT };
-    neu_json_elem_t  tmode = { .name = "transport_mode", .t = NEU_JSON_INT };
     neu_conn_param_t param = { 0 };
     neu_json_elem_t  max_retries = { .name = "max_retries", .t = NEU_JSON_INT };
     neu_json_elem_t  retry_interval = { .name = "retry_interval",
                                        .t    = NEU_JSON_INT };
 
-    ret = neu_parse_param((char *) config, &err_param, 6, &port, &host, &mode,
-                          &timeout, &interval, &tmode);
+    ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
+                          &timeout, &interval);
 
     if (ret != 0) {
         plog_error(plugin, "config: %s, decode error: %s", config, err_param);
@@ -192,33 +191,24 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plugin->max_retries    = max_retries.v.val_int;
     plugin->retry_interval = retry_interval.v.val_int;
 
-    if (tmode.v.val_int == 1) {
-        param.type                = NEU_CONN_UDP;
-        param.params.udp.timeout  = 3000;
-        param.params.udp.src_ip   = "0.0.0.0";
-        param.params.udp.src_port = 0;
-        param.params.udp.dst_ip   = host.v.val_str;
-        param.params.udp.dst_port = port.v.val_int;
-        plugin->is_server         = false;
-    } else {
-        if (mode.v.val_int == 1) {
-            param.type                           = NEU_CONN_TCP_SERVER;
-            param.params.tcp_server.ip           = host.v.val_str;
-            param.params.tcp_server.port         = port.v.val_int;
-            param.params.tcp_server.start_listen = modbus_tcp_server_listen;
-            param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
-            param.params.tcp_server.timeout      = timeout.v.val_int;
-            param.params.tcp_server.max_link     = 1;
-            plugin->is_server                    = true;
-        }
-        if (mode.v.val_int == 0) {
-            param.type                      = NEU_CONN_TCP_CLIENT;
-            param.params.tcp_client.ip      = host.v.val_str;
-            param.params.tcp_client.port    = port.v.val_int;
-            param.params.tcp_client.timeout = timeout.v.val_int;
-            plugin->is_server               = false;
-        }
+    if (mode.v.val_int == 1) {
+        param.type                           = NEU_CONN_TCP_SERVER;
+        param.params.tcp_server.ip           = host.v.val_str;
+        param.params.tcp_server.port         = port.v.val_int;
+        param.params.tcp_server.start_listen = modbus_tcp_server_listen;
+        param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
+        param.params.tcp_server.timeout      = timeout.v.val_int;
+        param.params.tcp_server.max_link     = 1;
+        plugin->is_server                    = true;
     }
+    if (mode.v.val_int == 0) {
+        param.type                      = NEU_CONN_TCP_CLIENT;
+        param.params.tcp_client.ip      = host.v.val_str;
+        param.params.tcp_client.port    = port.v.val_int;
+        param.params.tcp_client.timeout = timeout.v.val_int;
+        plugin->is_server               = false;
+    }
+
     plog_notice(plugin,
                 "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
                 host.v.val_str, port.v.val_int, mode.v.val_int);

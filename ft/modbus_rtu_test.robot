@@ -193,5 +193,5 @@ Modbus Test Teardown
     Terminate All Processes    kill=false
 
 Start Modbus-RTU Simulator
-    ${handle} =	Start Process    ${MODBUS_TCP_SERVER_SIMULATOR}	rtu	60503   cwd=build/simulator
+    ${handle} =	Start Process    ${MODBUS_TCP_SERVER_SIMULATOR}	rtu	60503  ip_v4   cwd=build/simulator
     [Return]	${handle}

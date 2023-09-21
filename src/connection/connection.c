@@ -677,15 +677,34 @@ static void conn_tcp_server_listen(neu_conn_t *conn)
 {
     if (conn->param.type == NEU_CONN_TCP_SERVER &&
         conn->tcp_server.is_listen == false) {
-        int fd  = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
-        int ret = 0;
-        struct sockaddr_in local = {
-            .sin_family      = AF_INET,
-            .sin_port        = htons(conn->param.params.tcp_server.port),
-            .sin_addr.s_addr = inet_addr(conn->param.params.tcp_server.ip),
-        };
+        int fd = -1, ret = 0;
 
-        ret = bind(fd, (struct sockaddr *) &local, sizeof(local));
+        if (is_ipv4(conn->param.params.tcp_server.ip)) {
+            struct sockaddr_in local = {
+                .sin_family      = AF_INET,
+                .sin_port        = htons(conn->param.params.tcp_server.port),
+                .sin_addr.s_addr = inet_addr(conn->param.params.tcp_server.ip),
+            };
+
+            fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+
+            ret = bind(fd, (struct sockaddr *) &local, sizeof(local));
+        } else if (is_ipv6(conn->param.params.tcp_server.ip)) {
+            struct sockaddr_in6 local = { 0 };
+            local.sin6_family         = AF_INET6;
+            local.sin6_port = htons(conn->param.params.tcp_server.port);
+            inet_pton(AF_INET6, conn->param.params.tcp_server.ip,
+                      &local.sin6_addr);
+
+            fd = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+
+            ret = bind(fd, (struct sockaddr *) &local, sizeof(local));
+        } else {
+            zlog_error(conn->param.log, "invalid ip: %s",
+                       conn->param.params.tcp_server.ip);
+            return;
+        }
+
         if (ret != 0) {
             close(fd);
             zlog_error(conn->param.log, "tcp bind %s:%d fail, errno: %s",
@@ -756,20 +775,46 @@ static void conn_connect(neu_conn_t *conn)
                     (conn->param.params.tcp_client.timeout % 1000) * 1000,
             };
 
-            fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            if (is_ipv4(conn->param.params.tcp_client.ip)) {
+                fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            } else {
+                fd = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+            }
+
             setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
             setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
         } else {
-            fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+            if (is_ipv4(conn->param.params.tcp_client.ip)) {
+                fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+            } else {
+                fd = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
+            }
         }
-        struct sockaddr_in remote = {
-            .sin_family      = AF_INET,
-            .sin_port        = htons(conn->param.params.tcp_client.port),
-            .sin_addr.s_addr = inet_addr(conn->param.params.tcp_client.ip),
-        };
 
-        ret = connect(fd, (struct sockaddr *) &remote,
-                      sizeof(struct sockaddr_in));
+        if (is_ipv4(conn->param.params.tcp_client.ip)) {
+            struct sockaddr_in remote = {
+                .sin_family      = AF_INET,
+                .sin_port        = htons(conn->param.params.tcp_client.port),
+                .sin_addr.s_addr = inet_addr(conn->param.params.tcp_client.ip),
+            };
+
+            ret = connect(fd, (struct sockaddr *) &remote,
+                          sizeof(struct sockaddr_in));
+        } else if (is_ipv6(conn->param.params.tcp_client.ip)) {
+            struct sockaddr_in6 remote_ip6 = { 0 };
+            remote_ip6.sin6_family         = AF_INET6;
+            remote_ip6.sin6_port = htons(conn->param.params.tcp_client.port);
+            inet_pton(AF_INET6, conn->param.params.tcp_client.ip,
+                      &remote_ip6.sin6_addr);
+
+            ret = connect(fd, (struct sockaddr *) &remote_ip6,
+                          sizeof(remote_ip6));
+        } else {
+            zlog_error(conn->param.log, "invalid ip: %s",
+                       conn->param.params.tcp_server.ip);
+            return;
+        }
+
         if (ret != 0 && errno != EINPROGRESS) {
             close(fd);
             zlog_error(conn->param.log, "connect %s:%d error: %s(%d)",
@@ -794,22 +839,50 @@ static void conn_connect(neu_conn_t *conn)
                 .tv_usec = (conn->param.params.udp.timeout % 1000) * 1000,
             };
 
-            fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            if (is_ipv4(conn->param.params.udp.dst_ip)) {
+                fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            } else {
+                fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+            }
+
             setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
             setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
         } else {
-            fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+            if (is_ipv4(conn->param.params.udp.dst_ip)) {
+                fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+            } else {
+                fd = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+            }
         }
+
         int so_broadcast = 1;
         setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &so_broadcast,
                    sizeof(so_broadcast));
-        struct sockaddr_in local = {
-            .sin_family      = AF_INET,
-            .sin_port        = htons(conn->param.params.udp.src_port),
-            .sin_addr.s_addr = inet_addr(conn->param.params.udp.src_ip),
-        };
 
-        ret = bind(fd, (struct sockaddr *) &local, sizeof(struct sockaddr_in));
+        if (is_ipv4(conn->param.params.udp.src_ip)) {
+            struct sockaddr_in local = {
+                .sin_family      = AF_INET,
+                .sin_port        = htons(conn->param.params.udp.src_port),
+                .sin_addr.s_addr = inet_addr(conn->param.params.udp.src_ip),
+            };
+
+            ret = bind(fd, (struct sockaddr *) &local,
+                       sizeof(struct sockaddr_in));
+        } else if (is_ipv6(conn->param.params.udp.src_ip)) {
+            struct sockaddr_in6 local = { 0 };
+            local.sin6_family         = AF_INET6;
+            local.sin6_port           = htons(conn->param.params.udp.src_port);
+            inet_pton(AF_INET6, conn->param.params.udp.src_ip,
+                      &local.sin6_addr);
+
+            ret = bind(fd, (struct sockaddr *) &local,
+                       sizeof(struct sockaddr_in6));
+        } else {
+            zlog_error(conn->param.log, "invalid ip: %s",
+                       conn->param.params.tcp_server.ip);
+            return;
+        }
+
         if (ret != 0) {
             close(fd);
             zlog_error(conn->param.log, "bind %s:%d error: %s(%d)",
@@ -819,13 +892,29 @@ static void conn_connect(neu_conn_t *conn)
             return;
         }
 
-        struct sockaddr_in remote = {
-            .sin_family      = AF_INET,
-            .sin_port        = htons(conn->param.params.udp.dst_port),
-            .sin_addr.s_addr = inet_addr(conn->param.params.udp.dst_ip),
-        };
-        ret = connect(fd, (struct sockaddr *) &remote,
-                      sizeof(struct sockaddr_in));
+        if (is_ipv4(conn->param.params.udp.dst_ip)) {
+            struct sockaddr_in remote = {
+                .sin_family      = AF_INET,
+                .sin_port        = htons(conn->param.params.udp.dst_port),
+                .sin_addr.s_addr = inet_addr(conn->param.params.udp.dst_ip),
+            };
+            ret = connect(fd, (struct sockaddr *) &remote,
+                          sizeof(struct sockaddr_in));
+        } else if (is_ipv6(conn->param.params.udp.dst_ip)) {
+            struct sockaddr_in6 remote = { 0 };
+            remote.sin6_family         = AF_INET6;
+            remote.sin6_port           = htons(conn->param.params.udp.dst_port);
+            inet_pton(AF_INET6, conn->param.params.udp.dst_ip,
+                      &remote.sin6_addr);
+
+            ret = connect(fd, (struct sockaddr *) &remote,
+                          sizeof(struct sockaddr_in6));
+        } else {
+            zlog_error(conn->param.log, "invalid ip: %s",
+                       conn->param.params.tcp_server.ip);
+            return;
+        }
+
         if (ret != 0 && errno != EINPROGRESS) {
             close(fd);
             zlog_error(conn->param.log, "connect %s:%d error: %s(%d)",
@@ -849,22 +938,54 @@ static void conn_connect(neu_conn_t *conn)
                 .tv_usec = (conn->param.params.udpto.timeout % 1000) * 1000,
             };
 
-            fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            if (is_ipv4(conn->param.params.udpto.src_ip)) {
+                fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+            } else {
+                fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+            }
             setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
             setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
         } else {
-            fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+            if (is_ipv4(conn->param.params.udpto.src_ip)) {
+                fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+            } else {
+                fd = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+            }
         }
         int so_broadcast = 1;
         setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &so_broadcast,
                    sizeof(so_broadcast));
-        struct sockaddr_in local = {
-            .sin_family      = AF_INET,
-            .sin_port        = htons(conn->param.params.udpto.src_port),
-            .sin_addr.s_addr = inet_addr(conn->param.params.udpto.src_ip),
-        };
 
-        ret = bind(fd, (struct sockaddr *) &local, sizeof(struct sockaddr_in));
+        if (is_ipv4(conn->param.params.udpto.src_ip)) {
+            fd = socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+
+            struct sockaddr_in local = {
+                .sin_family      = AF_INET,
+                .sin_port        = htons(conn->param.params.udpto.src_port),
+                .sin_addr.s_addr = inet_addr(conn->param.params.udpto.src_ip),
+            };
+
+            ret = bind(fd, (struct sockaddr *) &local,
+                       sizeof(struct sockaddr_in));
+        } else if (is_ipv6(conn->param.params.udp.dst_ip)) {
+            fd = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+
+            struct sockaddr_in6 local = {
+                .sin6_family = AF_INET6,
+                .sin6_port   = htons(conn->param.params.udpto.src_port),
+            };
+
+            inet_pton(AF_INET6, conn->param.params.udpto.src_ip,
+                      &local.sin6_addr);
+
+            ret = bind(fd, (struct sockaddr *) &local,
+                       sizeof(struct sockaddr_in6));
+        } else {
+            zlog_error(conn->param.log, "invalid ip: %s",
+                       conn->param.params.tcp_server.ip);
+            return;
+        }
+
         if (ret != 0) {
             close(fd);
             zlog_error(conn->param.log, "bind %s:%d error: %s(%d)",
@@ -1255,4 +1376,16 @@ int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
     }
 
     return ret;
+}
+
+int is_ipv4(const char *ip)
+{
+    struct sockaddr_in sa;
+    return inet_pton(AF_INET, ip, &(sa.sin_addr)) != 0;
+}
+
+int is_ipv6(const char *ip)
+{
+    struct sockaddr_in6 sa;
+    return inet_pton(AF_INET6, ip, &(sa.sin6_addr)) != 0;
 }
