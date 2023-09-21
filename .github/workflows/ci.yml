@@ -88,133 +88,27 @@ jobs:
           name: neuron-sdk-debug-${{ matrix.arch[2] }}
           path: |
             neuron-sdk-debug-*.tar.gz
-
-  create_daily_release:
-    runs-on: ubuntu-20.04
-    if: github.event_name == 'push'
+  
+  create_update_daily_release:
+    runs-on: ubuntu-latest
     needs: [cross-build, build-debug-sdk]
-
     steps:
-      - name: delete old daily-pre-release
-        uses: dev-drprasad/delete-tag-and-release@v0.2.1
-        with:
-          delete_release: true
-          tag_name: ${{ env.BRANCH }}-daily
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: create daily-pre-release
-        id: create_release
-        uses: actions/create-release@v1
+      - uses: actions/download-artifact@v3
+      
+      - uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          name: Daily Release(${{ env.BRANCH }})
           tag_name: ${{ env.BRANCH }}-daily
-          release_name: Daily Release(${{ env.BRANCH }})
           draft: false
           prerelease: true
+          files: |
+            neuron-sdk-${{ env.VERSION }}-arm64.tar.gz
+            neuron-sdk-${{ env.VERSION }}-armhf.tar.gz
+            neuron-sdk-${{ env.VERSION }}-amd64.tar.gz
+            neuron-sdk-debug-${{ env.VERSION }}-amd64.tar.gz
 
-      - shell: bash
-        run: |
-          echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: release_url
-          path: release_url.txt
-        
-  upload_daily_release_asset:
-    runs-on: ubuntu-20.04
-    if: github.event_name == 'push'
-    needs: create_daily_release
-    strategy:
-      matrix:
-        arch: [arm64, armhf, amd64]
-        type: [neuron-sdk]
-        package: [tar.gz]
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: release_url
-
-      - id: release_url
-        run: |
-          value=`cat release_url.txt`
-          echo "name=$value" >> $GITHUB_OUTPUT
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ matrix.type }}-${{ matrix.arch }}
-      
-      - id: package
-        run: echo "name=${{ matrix.type }}-${{ env.VERSION }}-${{ matrix.arch }}.${{ matrix.package }}" >> $GITHUB_OUTPUT
-
-      - name: upload daily release asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.release_url.outputs.name }}
-          asset_path: ./${{ steps.package.outputs.name }}
-          asset_name: ${{ matrix.type }}-${{ env.VERSION }}-daily-linux-${{ matrix.arch }}.${{ matrix.package }}
-          asset_content_type: application/octet-stream
-
-  upload_daily_release_debug_asset:
-    runs-on: ubuntu-20.04
-    if: github.event_name == 'push'
-    needs: create_daily_release
-    strategy:
-      matrix:
-        arch: [amd64]
-        type: [neuron-sdk-debug]
-        package: [tar.gz]
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: release_url
-
-      - id: release_url
-        run: |
-          value=`cat release_url.txt`
-          echo "name=$value" >> $GITHUB_OUTPUT
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: ${{ matrix.type }}-${{ matrix.arch }}
-      
-      - id: package
-        run: echo "name=${{ matrix.type }}-${{ env.VERSION }}-${{ matrix.arch }}.${{ matrix.package }}" >> $GITHUB_OUTPUT
-
-      - name: upload daily release asset
-        id: upload-release-asset
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.release_url.outputs.name }}
-          asset_path: ./${{ steps.package.outputs.name }}
-          asset_name: ${{ matrix.type }}-${{ env.VERSION }}-daily-linux-${{ matrix.arch }}.${{ matrix.package }}
-          asset_content_type: application/octet-stream
-
-  clean:
-    runs-on: ubuntu-20.04
-    needs: [upload_daily_release_asset, upload_daily_release_debug_asset]
-    steps:
-      - uses: geekyeggo/delete-artifact@v1
-        with:
-          name: release_url
-  
   release:
     runs-on: ubuntu-20.04
     if: github.event_name == 'release'
