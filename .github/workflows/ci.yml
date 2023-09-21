@@ -9,7 +9,7 @@ on:
 
 env:
   VERSION: 2.6.0
-  UI_VERSION: 2.5.0
+  UI_VERSION: 2.6.0
   BRANCH: main
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
     container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-main
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -67,7 +67,7 @@ jobs:
     container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-main
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -134,7 +134,7 @@ jobs:
         package: [tar.gz]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -176,7 +176,7 @@ jobs:
         package: [tar.gz]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -226,7 +226,7 @@ jobs:
         package: [tar.gz]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
