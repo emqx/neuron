@@ -5,8 +5,8 @@ Resource            resource/api.resource
 Resource            resource/common.resource
 Resource            resource/error.resource
 
-Suite Setup         Start Neuronx
-Suite Teardown      Stop Neuronx
+Suite Setup         Metrics Test Setup
+Suite Teardown      Metrics Test Teardown
 
 
 *** Test Cases ***
@@ -31,3 +31,13 @@ Check node state, it should return success
     ${parameter_lines}=    Get parameter lines    ${nlines}
 
     Check node state    ${parameter_lines}
+
+*** Keywords ***
+Metrics Test Setup
+    Start Neuronx
+    ${res}=         Add Node    monitor           ${PLUGIN_MONITOR}
+    Check Response Status       ${res}            200
+
+Metrics Test Teardown
+    Del Node        monitor
+    Stop Neuronx

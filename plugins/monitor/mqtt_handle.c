@@ -322,20 +322,12 @@ int handle_events(neu_plugin_t *plugin, neu_reqresp_type_e event, void *data)
 
 end:
     if (NEU_REQ_NODE_SETTING_EVENT == event) {
-        free(((neu_req_node_setting_t *) data)->setting);
+        neu_req_node_setting_fini(data);
     } else if (NEU_REQ_ADD_TAG_EVENT == event ||
                NEU_REQ_UPDATE_TAG_EVENT == event) {
-        neu_req_add_tag_t *add_tag = data;
-        for (uint16_t i = 0; i < add_tag->n_tag; i++) {
-            neu_tag_fini(&add_tag->tags[i]);
-        }
-        free(add_tag->tags);
+        neu_req_add_tag_fini(data);
     } else if (NEU_REQ_DEL_TAG_EVENT == event) {
-        neu_req_del_tag_t *del_tag = data;
-        for (uint16_t i = 0; i < del_tag->n_tag; i++) {
-            free(del_tag->tags[i]);
-        }
-        free(del_tag->tags);
+        neu_req_del_tag_fini(data);
     }
     return rv;
 }

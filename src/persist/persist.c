@@ -600,21 +600,12 @@ void neu_persister_destroy()
 int neu_persister_store_node(neu_persist_node_info_t *info)
 {
     int rv = 0;
-    if (strcmp(info->plugin_name, "Monitor") == 0) {
-        rv = execute_sql(
-            global_db,
-            "INSERT OR IGNORE INTO nodes (name, type, state, plugin_name) "
-            "VALUES (%Q, %i, %i, %Q)",
-            info->name, info->type, info->state, info->plugin_name);
-    } else {
-        rv =
-            execute_sql(global_db,
-                        "INSERT INTO nodes (name, type, state, plugin_name) "
-                        "VALUES (%Q, %i, %i, %Q)",
-                        info->name, info->type, info->state, info->plugin_name);
-        if (0 == rv) {
-            node_count_add(1);
-        }
+    rv     = execute_sql(global_db,
+                     "INSERT INTO nodes (name, type, state, plugin_name) "
+                     "VALUES (%Q, %i, %i, %Q)",
+                     info->name, info->type, info->state, info->plugin_name);
+    if (0 == rv) {
+        node_count_add(1);
     }
     return rv;
 }

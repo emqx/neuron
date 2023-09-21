@@ -23,7 +23,6 @@
 
 #include "errcodes.h"
 #include "event/event.h"
-#include "metric_handle.h"
 #include "monitor.h"
 #include "mqtt_handle.h"
 #include "utils/http_handler.h"
@@ -46,59 +45,6 @@ static void disconnect_cb(void *data)
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
     plog_notice(plugin, "plugin `%s` disconnected",
                 neu_plugin_module.module_name);
-}
-
-static nng_http_server *server_init()
-{
-    nng_url *        url    = NULL;
-    nng_http_server *server = NULL;
-
-    nlog_notice("monitor bind url: %s", host_port);
-
-    int ret = nng_url_parse(&url, host_port);
-    if (0 != ret) {
-        return NULL;
-    }
-
-    ret = nng_http_server_hold(&server, url);
-    if (0 != ret) {
-        nlog_error("monitor server bind error: %d", ret);
-    }
-
-    nng_url_free(url);
-    return server;
-}
-
-static struct neu_http_handler api_handlers[] = {
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/metrics",
-        .value.handler = handle_get_metric,
-    },
-};
-
-static int add_handlers(nng_http_server *server)
-{
-    struct neu_http_handler cors = {
-        .method        = NEU_HTTP_METHOD_OPTIONS,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .value.handler = neu_http_handle_cors,
-    };
-
-    for (size_t i = 0; i < sizeof(api_handlers) / sizeof(api_handlers[0]);
-         ++i) {
-        if (0 != neu_http_add_handler(server, &api_handlers[0])) {
-            return -1;
-        }
-
-        cors.url = api_handlers[i].url;
-        if (0 != neu_http_add_handler(server, &cors)) {
-            return -1;
-        }
-    }
-
-    return 0;
 }
 
 static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
@@ -253,26 +199,6 @@ static neu_plugin_t *monitor_plugin_open(void)
 
     neu_plugin_common_init(&plugin->common);
 
-    if (0 != pthread_mutex_init(&plugin->mutex, NULL)) {
-        free(plugin);
-        return NULL;
-    }
-
-    plugin->api_server = server_init();
-    if (NULL == plugin->api_server) {
-        nlog_error("fail to create monitor server");
-        free(plugin);
-        return NULL;
-    }
-
-    if (0 != add_handlers(plugin->api_server) ||
-        0 != nng_http_server_start(plugin->api_server)) {
-        nlog_error("fail to start monitor server");
-        nng_http_server_release(plugin->api_server);
-        free(plugin);
-        return NULL;
-    }
-
     g_monitor_plugin_ = plugin;
     return plugin;
 }
@@ -281,9 +207,6 @@ static int monitor_plugin_close(neu_plugin_t *plugin)
 {
     int rv = 0;
 
-    nng_http_server_stop(plugin->api_server);
-    nng_http_server_release(plugin->api_server);
-    pthread_mutex_destroy(&plugin->mutex);
     plog_notice(plugin, "Success to free plugin: %s",
                 neu_plugin_module.module_name);
     free(plugin);
@@ -493,7 +416,7 @@ const neu_plugin_module_t neu_plugin_module = {
     .kind            = NEU_PLUGIN_KIND_SYSTEM,
     .type            = NEU_NA_TYPE_APP,
     .display         = true,
-    .single          = true,
+    .single          = false,
     .single_name     = "monitor",
 };
 

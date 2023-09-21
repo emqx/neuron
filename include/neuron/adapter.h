@@ -391,6 +391,30 @@ typedef struct {
     neu_datatag_t *tags;
 } neu_req_add_tag_t, neu_req_update_tag_t;
 
+static inline void neu_req_add_tag_fini(neu_req_add_tag_t *req)
+{
+    for (uint16_t i = 0; i < req->n_tag; i++) {
+        neu_tag_fini(&req->tags[i]);
+    }
+    free(req->tags);
+}
+
+static inline int neu_req_add_tag_copy(neu_req_add_tag_t *dst,
+                                       neu_req_add_tag_t *src)
+{
+    strcpy(dst->driver, src->driver);
+    strcpy(dst->group, src->group);
+    dst->tags = (neu_datatag_t *) calloc(src->n_tag, sizeof(src->tags[0]));
+    if (NULL == dst->tags) {
+        return -1;
+    }
+    dst->n_tag = src->n_tag;
+    for (uint16_t i = 0; i < src->n_tag; i++) {
+        neu_tag_copy(&dst->tags[i], &src->tags[i]);
+    }
+    return 0;
+}
+
 typedef struct {
     uint16_t index;
     int      error;
@@ -402,6 +426,36 @@ typedef struct neu_req_del_tag {
     uint16_t n_tag;
     char **  tags;
 } neu_req_del_tag_t;
+
+static inline void neu_req_del_tag_fini(neu_req_del_tag_t *req)
+{
+    for (uint16_t i = 0; i < req->n_tag; i++) {
+        free(req->tags[i]);
+    }
+    free(req->tags);
+}
+
+static inline int neu_req_del_tag_copy(neu_req_del_tag_t *dst,
+                                       neu_req_del_tag_t *src)
+{
+    strcpy(dst->driver, src->driver);
+    strcpy(dst->group, src->group);
+    dst->tags = (char **) calloc(src->n_tag, sizeof(src->tags[0]));
+    if (NULL == dst->tags) {
+        return -1;
+    }
+    dst->n_tag = src->n_tag;
+    for (uint16_t i = 0; i < src->n_tag; ++i) {
+        dst->tags[i] = strdup(src->tags[i]);
+        if (NULL == dst->tags[i]) {
+            while (i-- > 0) {
+                free(dst->tags[i]);
+            }
+            free(dst->tags);
+        }
+    }
+    return 0;
+}
 
 typedef struct neu_req_get_tag {
     char driver[NEU_NODE_NAME_LEN];
@@ -490,6 +544,19 @@ typedef struct neu_req_node_setting {
     char  node[NEU_NODE_NAME_LEN];
     char *setting;
 } neu_req_node_setting_t;
+
+static inline void neu_req_node_setting_fini(neu_req_node_setting_t *req)
+{
+    free(req->setting);
+}
+
+static inline int neu_req_node_setting_copy(neu_req_node_setting_t *dst,
+                                            neu_req_node_setting_t *src)
+{
+    strcpy(dst->node, src->node);
+    dst->setting = strdup(src->setting);
+    return dst->setting ? 0 : -1;
+}
 
 typedef struct neu_req_get_node_setting {
     char node[NEU_NODE_NAME_LEN];

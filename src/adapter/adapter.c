@@ -1347,7 +1347,7 @@ inline static void notify_monitor(neu_adapter_t *    adapter,
                                   neu_reqresp_type_e event, void *data)
 {
     neu_reqresp_head_t header = {
-        .receiver = "monitor",
+        .receiver = "manager",
         .type     = event,
     };
 
