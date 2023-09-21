@@ -321,8 +321,7 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
-            if (elem->metas[i].name != NULL &&
-                strlen(elem->metas[i].name) > 0) {
+            if (strlen(elem->metas[i].name) > 0) {
                 memcpy(&value->metas[i], &elem->metas[i],
                        sizeof(neu_tag_meta_t));
             }
@@ -404,8 +403,7 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
-            if (elem->metas[i].name != NULL &&
-                strlen(elem->metas[i].name) > 0) {
+            if (strlen(elem->metas[i].name) > 0) {
                 memcpy(&value->metas[i], &elem->metas[i],
                        sizeof(neu_tag_meta_t));
             }
@@ -485,8 +483,7 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
-            if (elem->metas[i].name != NULL &&
-                strlen(elem->metas[i].name) > 0) {
+            if (strlen(elem->metas[i].name) > 0) {
                 memcpy(&value->metas[i], &elem->metas[i],
                        sizeof(neu_tag_meta_t));
             }
@@ -563,8 +560,7 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
         }
 
         for (int i = 0; i < NEU_TAG_META_SIZE; i++) {
-            if (elem->metas[i].name != NULL &&
-                strlen(elem->metas[i].name) > 0) {
+            if (strlen(elem->metas[i].name) > 0) {
                 memcpy(&value->metas[i], &elem->metas[i],
                        sizeof(neu_tag_meta_t));
             }
