@@ -78,6 +78,8 @@ jobs:
         with:
           gcov: true
           fail_ci_if_error: true
+          gcov_include: include plugins src
+          gcov_ignore: tests simulator
 
   ft:
     runs-on: ubuntu-20.04
@@ -116,6 +118,8 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           gcov: true
+          gcov_include: include plugins src
+          gcov_ignore: tests simulator
 
   pyft:
     runs-on: ubuntu-20.04
@@ -170,4 +174,6 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           gcov: true            
+          gcov_include: include plugins src
+          gcov_ignore: tests simulator
 

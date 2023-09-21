@@ -79,6 +79,10 @@ void handle_write(nng_aio *aio)
                 return;
             }
 
+            nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+            nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
+                        nng_http_req_get_uri(nng_req));
+
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAG;
 
@@ -144,6 +148,9 @@ void handle_write_tags(nng_aio *aio)
                 }
             }
 
+            nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+            nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
+                        nng_http_req_get_uri(nng_req));
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAGS;
 
