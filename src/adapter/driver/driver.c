@@ -776,9 +776,9 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         utarray_free(find->grp.tags);
         utarray_free(find->wt_tags);
         neu_group_destroy(find->group);
+        pthread_mutex_destroy(&find->wt_mtx);
         free(find);
 
-        pthread_mutex_destroy(&find->wt_mtx);
         neu_adapter_del_group_metrics(&driver->adapter, name);
         ret = NEU_ERR_SUCCESS;
     }
