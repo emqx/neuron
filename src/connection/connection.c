@@ -970,10 +970,9 @@ static void conn_connect(neu_conn_t *conn)
         } else if (is_ipv6(conn->param.params.udp.dst_ip)) {
             fd = socket(AF_INET6, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
 
-            struct sockaddr_in6 local = {
-                .sin6_family = AF_INET6,
-                .sin6_port   = htons(conn->param.params.udpto.src_port),
-            };
+            struct sockaddr_in6 local = { 0 };
+            local.sin6_family         = AF_INET6;
+            local.sin6_port = htons(conn->param.params.udpto.src_port);
 
             inet_pton(AF_INET6, conn->param.params.udpto.src_ip,
                       &local.sin6_addr);
