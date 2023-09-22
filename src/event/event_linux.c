@@ -38,42 +38,71 @@
 
 struct neu_event_timer {
     int                    fd;
-    void *                 event_data;
+    struct event_data *    event_data;
     struct itimerspec      value;
     neu_event_timer_type_e type;
-
-    nng_mtx *mtx;
-    bool     stop;
+    nng_mtx *              mtx;
+    bool                   stop;
 };
 
 struct neu_event_io {
-    int   fd;
-    void *event_data;
+    int                fd;
+    struct event_data *event_data;
 };
-
 struct event_data {
     enum {
-        TIMER,
-        IO,
+        TIMER = 0,
+        IO    = 1,
     } type;
     union {
         neu_event_io_callback    io;
         neu_event_timer_callback timer;
     } callback;
     union {
-        struct neu_event_io *   io;
-        struct neu_event_timer *timer;
+        neu_event_io_t    io;
+        neu_event_timer_t timer;
     } ctx;
 
     void *usr_data;
     int   fd;
+    int   index;
+    bool  use;
 };
 
 struct neu_events {
     int       epoll_fd;
     pthread_t thread;
     bool      stop;
+
+    pthread_mutex_t   mtx;
+    int               n_event;
+    struct event_data event_datas[256];
 };
+
+static int get_free_event(neu_events_t *events)
+{
+    int ret = -1;
+    pthread_mutex_lock(&events->mtx);
+    for (int i = 0; i < 256; i++) {
+        if (events->event_datas[i].use == false) {
+            events->event_datas[i].use   = true;
+            events->event_datas[i].index = i;
+            ret                          = i;
+            break;
+        }
+    }
+
+    pthread_mutex_unlock(&events->mtx);
+    return ret;
+}
+
+static void free_event(neu_events_t *events, int index)
+{
+    pthread_mutex_lock(&events->mtx);
+    events->event_datas[index].use   = false;
+    events->event_datas[index].index = 0;
+    pthread_mutex_unlock(&events->mtx);
+}
 
 static void *event_loop(void *arg)
 {
@@ -103,27 +132,27 @@ static void *event_loop(void *arg)
 
         switch (data->type) {
         case TIMER:
+            nng_mtx_lock(data->ctx.timer.mtx);
             if ((event.events & EPOLLIN) == EPOLLIN) {
                 uint64_t t;
 
-                nng_mtx_lock(data->ctx.timer->mtx);
                 ssize_t size = read(data->fd, &t, sizeof(t));
                 (void) size;
 
-                if (!data->ctx.timer->stop) {
-                    if (data->ctx.timer->type == NEU_EVENT_TIMER_BLOCK) {
+                if (!data->ctx.timer.stop) {
+                    if (data->ctx.timer.type == NEU_EVENT_TIMER_BLOCK) {
                         epoll_ctl(epoll_fd, EPOLL_CTL_DEL, data->fd, NULL);
                         ret = data->callback.timer(data->usr_data);
-                        timerfd_settime(data->fd, 0, &data->ctx.timer->value,
+                        timerfd_settime(data->fd, 0, &data->ctx.timer.value,
                                         NULL);
                         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, data->fd, &event);
                     } else {
                         ret = data->callback.timer(data->usr_data);
                     }
                 }
-                nng_mtx_unlock(data->ctx.timer->mtx);
             }
 
+            nng_mtx_unlock(data->ctx.timer.mtx);
             break;
         case IO:
             if ((event.events & EPOLLHUP) == EPOLLHUP) {
@@ -155,6 +184,8 @@ neu_events_t *neu_event_new(void)
 
     events->epoll_fd = epoll_create(1);
     events->stop     = false;
+    events->n_event  = 0;
+    pthread_mutex_init(&events->mtx, NULL);
 
     pthread_create(&events->thread, NULL, event_loop, events);
 
@@ -167,6 +198,7 @@ int neu_event_close(neu_events_t *events)
     close(events->epoll_fd);
 
     pthread_join(events->thread, NULL);
+    pthread_mutex_destroy(&events->mtx);
 
     free(events);
     return 0;
@@ -183,23 +215,29 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
         .it_interval.tv_sec  = timer.second,
         .it_interval.tv_nsec = timer.millisecond * 1000 * 1000,
     };
-    struct event_data *data      = calloc(1, sizeof(struct event_data));
-    struct epoll_event event     = { .events = EPOLLIN, .data.ptr = data };
-    neu_event_timer_t *timer_ctx = calloc(1, sizeof(neu_event_timer_t));
+    int index = get_free_event(events);
+    assert(index >= 0);
+
+    neu_event_timer_t *timer_ctx = &events->event_datas[index].ctx.timer;
+    timer_ctx->event_data        = &events->event_datas[index];
+
+    struct epoll_event event = {
+        .events   = EPOLLIN,
+        .data.ptr = timer_ctx->event_data,
+    };
 
     timerfd_settime(timer_fd, 0, &value, NULL);
 
-    data->type           = TIMER;
-    data->fd             = timer_fd;
-    data->usr_data       = timer.usr_data;
-    data->callback.timer = timer.cb;
-    data->ctx.timer      = timer_ctx;
+    timer_ctx->event_data->type           = TIMER;
+    timer_ctx->event_data->fd             = timer_fd;
+    timer_ctx->event_data->usr_data       = timer.usr_data;
+    timer_ctx->event_data->callback.timer = timer.cb;
+    timer_ctx->event_data->ctx.timer = events->event_datas[index].ctx.timer;
 
-    timer_ctx->value      = value;
-    timer_ctx->fd         = timer_fd;
-    timer_ctx->event_data = data;
-    timer_ctx->stop       = false;
-    timer_ctx->type       = timer.type;
+    timer_ctx->value = value;
+    timer_ctx->fd    = timer_fd;
+    timer_ctx->type  = timer.type;
+    timer_ctx->stop  = false;
     nng_mtx_alloc(&timer_ctx->mtx);
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, timer_fd, &event);
@@ -220,36 +258,35 @@ int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
                 events->epoll_fd);
 
     timer->stop = true;
+    epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);
 
     nng_mtx_lock(timer->mtx);
     close(timer->fd);
-    epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);
-    free(timer->event_data);
     nng_mtx_unlock(timer->mtx);
 
     nng_mtx_free(timer->mtx);
-    free(timer);
-
+    free_event(events, timer->event_data->index);
     return 0;
 }
 
 neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 {
-    int                ret    = 0;
-    neu_event_io_t *   io_ctx = calloc(1, sizeof(neu_event_io_t));
-    struct event_data *data   = calloc(1, sizeof(struct event_data));
-    struct epoll_event event  = { .events =
-                                     EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP,
-                                 .data.ptr = data };
+    int             ret      = 0;
+    int             index    = get_free_event(events);
+    neu_event_io_t *io_ctx   = &events->event_datas[index].ctx.io;
+    io_ctx->event_data       = &events->event_datas[index];
+    struct epoll_event event = {
+        .events   = EPOLLIN | EPOLLERR | EPOLLHUP | EPOLLRDHUP,
+        .data.ptr = io_ctx->event_data,
+    };
 
-    data->type        = IO;
-    data->fd          = io.fd;
-    data->usr_data    = io.usr_data;
-    data->callback.io = io.cb;
-    data->ctx.io      = io_ctx;
+    io_ctx->event_data->type        = IO;
+    io_ctx->event_data->fd          = io.fd;
+    io_ctx->event_data->usr_data    = io.usr_data;
+    io_ctx->event_data->callback.io = io.cb;
+    io_ctx->event_data->ctx.io      = events->event_datas[index].ctx.io;
 
-    io_ctx->fd         = io.fd;
-    io_ctx->event_data = data;
+    io_ctx->fd = io.fd;
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, io.fd, &event);
 
@@ -265,19 +302,11 @@ int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
         return 0;
     }
 
-    struct event_data *data = (struct event_data *) io->event_data;
     zlog_notice(neuron, "del io: %d from epoll: %d", io->fd, events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
-    switch (data->type) {
-    case TIMER:
-        free(data->ctx.timer);
-        break;
-    case IO:
-        free(data->ctx.io);
-        break;
-    }
-    free(data);
+    close(io->fd);
+    free_event(events, io->event_data->index);
 
     return 0;
 }
