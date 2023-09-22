@@ -129,6 +129,7 @@ set(NEURON_SOURCES
     plugins/restful/handle.c
     plugins/restful/log_handle.c
     plugins/restful/file_handle.c
+    plugins/restful/metric_handle.c
     plugins/restful/normal_handle.c
     plugins/restful/rw_handle.c
     plugins/restful/adapter_handle.c

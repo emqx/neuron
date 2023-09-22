@@ -1,6 +1,6 @@
 /**
  * NEURON IIoT System for Industry 4.0
- * Copyright (C) 2020-2022 EMQ Technologies Co., Ltd All rights reserved.
+ * Copyright (C) 2020-2023 EMQ Technologies Co., Ltd All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,12 +22,11 @@
 #include "define.h"
 #include "metrics.h"
 #include "utils/asprintf.h"
+#include "utils/http.h"
+#include "utils/http_handler.h"
 #include "utils/log.h"
 
 #include "metric_handle.h"
-#include "monitor.h"
-#include "utils/http.h"
-#include "utils/http_handler.h"
 
 // clang-format off
 #define METRIC_GLOBAL_TMPL                                                       \
@@ -298,19 +297,18 @@ static void gen_node_metrics(const neu_metrics_t *metrics, struct context *ctx)
 
 void handle_get_metric(nng_aio *aio)
 {
-    int           status = NNG_HTTP_STATUS_OK;
-    char *        result = NULL;
-    size_t        len    = 0;
-    FILE *        stream = NULL;
-    neu_plugin_t *plugin = neu_monitor_get_plugin();
+    int    status = NNG_HTTP_STATUS_OK;
+    char * result = NULL;
+    size_t len    = 0;
+    FILE * stream = NULL;
 
     neu_metrics_category_e cat           = NEU_METRICS_CATEGORY_ALL;
     size_t                 cat_param_len = 0;
     const char *cat_param = neu_http_get_param(aio, "category", &cat_param_len);
     if (NULL != cat_param &&
         !parse_metrics_catgory(cat_param, cat_param_len, &cat)) {
-        plog_error(plugin, "invalid metrics category: %.*s",
-                   (int) cat_param_len, cat_param);
+        nlog_error("invalid metrics category: %.*s", (int) cat_param_len,
+                   cat_param);
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         goto end;
     }

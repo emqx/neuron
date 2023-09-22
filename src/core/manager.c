@@ -58,8 +58,8 @@ inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
                                    nng_pipe pipe, msg_dup dup);
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *node);
-inline static void notify_monitor(neu_manager_t *    manager,
-                                  neu_reqresp_type_e event, void *data);
+inline static void notify_monitors(neu_manager_t *    manager,
+                                   neu_reqresp_type_e event, void *data);
 static void start_static_adapter(neu_manager_t *manager, const char *name);
 static int  update_timestamp(void *usr_data);
 static void start_single_adapter(neu_manager_t *manager, const char *name,
@@ -588,7 +588,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error == NEU_ERR_SUCCESS) {
             manager_storage_add_node(manager, cmd->node);
-            notify_monitor(manager, NEU_REQ_ADD_NODE_EVENT, cmd);
+            notify_monitors(manager, NEU_REQ_ADD_NODE_EVENT, cmd);
         }
 
         header->type = NEU_RESP_ERROR;
@@ -600,12 +600,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_update_node_t *cmd = (neu_req_update_node_t *) &header[1];
         neu_resp_error_t       e   = { 0 };
 
-        if (0 == strcmp("monitor", cmd->node)) {
-            e.error = NEU_ERR_NODE_NOT_ALLOW_UPDATE;
-        } else if (0 == strcmp("monitor", cmd->new_name)) {
-            e.error = NEU_ERR_NODE_EXIST;
-        } else if (NULL ==
-                   neu_node_manager_find(manager->node_manager, cmd->node)) {
+        if (NULL == neu_node_manager_find(manager->node_manager, cmd->node)) {
             e.error = NEU_ERR_NODE_NOT_EXIST;
         } else if (NULL !=
                    neu_node_manager_find(manager->node_manager,
@@ -657,7 +652,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         }
         header->type = NEU_REQ_NODE_UNINIT;
         forward_msg(manager, msg, header->receiver);
-        notify_monitor(manager, NEU_REQ_DEL_NODE_EVENT, cmd);
+        notify_monitors(manager, NEU_REQ_DEL_NODE_EVENT, cmd);
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
             UT_array *apps = neu_subscribe_manager_find_by_driver(
                 manager->subscribe_manager, cmd->node);
@@ -936,16 +931,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_NODE_EVENT:
     case NEU_REQ_DEL_NODE_EVENT:
     case NEU_REQ_NODE_CTL_EVENT:
+    case NEU_REQ_NODE_SETTING_EVENT:
     case NEU_REQ_ADD_GROUP_EVENT:
     case NEU_REQ_DEL_GROUP_EVENT:
     case NEU_REQ_UPDATE_GROUP_EVENT:
     case NEU_REQ_ADD_TAG_EVENT:
     case NEU_REQ_DEL_TAG_EVENT:
     case NEU_REQ_UPDATE_TAG_EVENT: {
-        if (neu_node_manager_find(manager->node_manager, header->receiver)) {
-            forward_msg(manager, msg, header->receiver);
-        }
-
+        notify_monitors(manager, header->type, &header[1]);
         break;
     }
 
@@ -1027,8 +1020,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
-    case NEU_REQ_NODE_SETTING:
-    case NEU_REQ_NODE_SETTING_EVENT: {
+    case NEU_REQ_NODE_SETTING: {
         neu_req_node_setting_t *cmd = (neu_req_node_setting_t *) &header[1];
 
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
@@ -1225,29 +1217,93 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
     }
 }
 
-inline static void notify_monitor(neu_manager_t *    manager,
-                                  neu_reqresp_type_e event, void *data)
+struct notify_monitor_ctx {
+    neu_manager_t *    manager;
+    neu_reqresp_type_e event;
+    void *             data;
+};
+
+static int notify_monitor(const char *name, nng_pipe pipe, void *arg)
 {
-    nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, "monitor");
+    struct notify_monitor_ctx *ctx     = arg;
+    void *                     data    = NULL;
+    neu_req_node_setting_t     setting = { 0 };
+    neu_req_add_tag_t          mod_tag = { 0 };
+    neu_req_del_tag_t          del_tag = { 0 };
+
+    // monitor not ready, ignore
     if (0 == pipe.id) {
-        nlog_error("no monitor node");
-        return;
+        return 0;
     }
 
-    neu_reqresp_head_t header = {
-        .sender   = "manager",
-        .receiver = "monitor",
-        .type     = event,
-    };
+    // copy message data
+    switch (ctx->event) {
+    case NEU_REQ_NODE_SETTING_EVENT: {
+        if (0 != neu_req_node_setting_copy(&setting, ctx->data)) {
+            return -1;
+        }
+        data = &setting;
+        break;
+    }
+    case NEU_REQ_ADD_TAG_EVENT:
+    case NEU_REQ_UPDATE_TAG_EVENT: {
+        if (0 != neu_req_add_tag_copy(&mod_tag, ctx->data)) {
+            return -1;
+        }
+        data = &mod_tag;
+        break;
+    }
+    case NEU_REQ_DEL_TAG_EVENT: {
+        if (0 != neu_req_del_tag_copy(&del_tag, ctx->data)) {
+            return -1;
+        }
+        data = &del_tag;
+        break;
+    }
+    default:
+        data = ctx->data;
+    }
 
+    // message header
+    neu_reqresp_head_t header = {
+        .sender = "manager",
+        .type   = ctx->event,
+    };
+    strcpy(header.receiver, name);
+
+    // send message
     nng_msg *msg = neu_msg_gen(&header, data);
     nng_msg_set_pipe(msg, pipe);
 
-    int ret = nng_sendmsg(manager->socket, msg, 0);
+    int ret = nng_sendmsg(ctx->manager->socket, msg, 0);
     if (ret != 0) {
         nng_msg_free(msg);
         nlog_warn("notify %s of %s, error: %s", header.receiver,
                   neu_reqresp_type_string(header.type), nng_strerror(ret));
+    }
+
+    return 0;
+}
+
+inline static void notify_monitors(neu_manager_t *    manager,
+                                   neu_reqresp_type_e event, void *data)
+{
+    struct notify_monitor_ctx ctx = {
+        .manager = manager,
+        .event   = event,
+        .data    = data,
+    };
+
+    neu_node_manager_for_each_monitor(manager->node_manager, notify_monitor,
+                                      &ctx);
+
+    if (NEU_REQ_NODE_SETTING_EVENT == event) {
+        neu_req_node_setting_fini(data);
+    } else if (NEU_REQ_ADD_TAG_EVENT == event ||
+               NEU_REQ_UPDATE_TAG_EVENT == event) {
+        neu_req_add_tag_fini(data);
+    } else if (NEU_REQ_DEL_TAG_EVENT == event) {
+        neu_req_del_tag_fini(data);
     }
 }
 
