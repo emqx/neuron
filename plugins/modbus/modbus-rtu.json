@@ -327,6 +327,18 @@
 			"value": 1
 		}
 	},
+	"interface_name": {
+		"name": "Interface Name",
+		"name_zh": "网络接口名",
+		"description": "IPv6 link-local addresses require specifying their associated network interface",
+		"description_zh": "ipv6 链路本地地址需要指定其所在的网络接口",
+		"attribute": "optional",
+		"type": "string"	,
+		"condition": {
+			"field": "link",
+			"value": 1
+		}	
+	},
 	"connection_mode": {
 		"name": "Connection Mode",
 		"name_zh": "连接模式",

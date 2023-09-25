@@ -29,6 +29,8 @@
 #include <fcntl.h>
 #include <termios.h>
 
+#include <net/if.h>
+
 #include "utils/log.h"
 
 #include "connection/neu_connection.h"
@@ -696,6 +698,12 @@ static void conn_tcp_server_listen(neu_conn_t *conn)
             inet_pton(AF_INET6, conn->param.params.tcp_server.ip,
                       &local.sin6_addr);
 
+            char *ipv6_address = conn->param.params.tcp_server.ip;
+            if (strncmp(ipv6_address, "fe80", 4) == 0) {
+                local.sin6_scope_id = if_nametoindex(
+                    conn->param.params.tcp_server.interface_name);
+            }
+
             fd = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP);
 
             ret = bind(fd, (struct sockaddr *) &local, sizeof(local));
@@ -807,6 +815,12 @@ static void conn_connect(neu_conn_t *conn)
             inet_pton(AF_INET6, conn->param.params.tcp_client.ip,
                       &remote_ip6.sin6_addr);
 
+            char *ipv6_address = conn->param.params.tcp_client.ip;
+            if (strncmp(ipv6_address, "fe80", 4) == 0) {
+                remote_ip6.sin6_scope_id = if_nametoindex(
+                    conn->param.params.tcp_client.interface_name);
+            }
+
             ret = connect(fd, (struct sockaddr *) &remote_ip6,
                           sizeof(remote_ip6));
         } else {
@@ -875,6 +889,12 @@ static void conn_connect(neu_conn_t *conn)
             inet_pton(AF_INET6, conn->param.params.udp.src_ip,
                       &local.sin6_addr);
 
+            char *ipv6_address = conn->param.params.udp.src_ip;
+            if (strncmp(ipv6_address, "fe80", 4) == 0) {
+                local.sin6_scope_id =
+                    if_nametoindex(conn->param.params.udp.interface_name);
+            }
+
             ret = bind(fd, (struct sockaddr *) &local,
                        sizeof(struct sockaddr_in6));
         } else {
@@ -906,6 +926,12 @@ static void conn_connect(neu_conn_t *conn)
             remote.sin6_port           = htons(conn->param.params.udp.dst_port);
             inet_pton(AF_INET6, conn->param.params.udp.dst_ip,
                       &remote.sin6_addr);
+
+            char *ipv6_address = conn->param.params.udp.dst_ip;
+            if (strncmp(ipv6_address, "fe80", 4) == 0) {
+                remote.sin6_scope_id =
+                    if_nametoindex(conn->param.params.udp.interface_name);
+            }
 
             ret = connect(fd, (struct sockaddr *) &remote,
                           sizeof(struct sockaddr_in6));
@@ -976,6 +1002,12 @@ static void conn_connect(neu_conn_t *conn)
 
             inet_pton(AF_INET6, conn->param.params.udpto.src_ip,
                       &local.sin6_addr);
+
+            char *ipv6_address = conn->param.params.udpto.src_ip;
+            if (strncmp(ipv6_address, "fe80", 4) == 0) {
+                local.sin6_scope_id =
+                    if_nametoindex(conn->param.params.udpto.interface_name);
+            }
 
             ret = bind(fd, (struct sockaddr *) &local,
                        sizeof(struct sockaddr_in6));

@@ -158,6 +158,9 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     neu_json_elem_t  max_retries = { .name = "max_retries", .t = NEU_JSON_INT };
     neu_json_elem_t  retry_interval = { .name = "retry_interval",
                                        .t    = NEU_JSON_INT };
+    neu_json_elem_t  interface_name = { .name      = "interface_name",
+                                       .t         = NEU_JSON_STR,
+                                       .v.val_str = NULL };
 
     ret = neu_parse_param((char *) config, &err_param, 5, &port, &host, &mode,
                           &timeout, &interval);
@@ -178,7 +181,13 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
         return -1;
     }
 
-    ret = neu_parse_param((char *) config, &err_param, 2, &port, &max_retries,
+    ret = neu_parse_param((char *) config, &err_param, 1, &interface_name);
+    if (ret != 0) {
+        free(err_param);
+        interface_name.v.val_str = NULL;
+    }
+
+    ret = neu_parse_param((char *) config, &err_param, 2, &max_retries,
                           &retry_interval);
     if (ret != 0) {
         free(err_param);
@@ -192,26 +201,30 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     plugin->retry_interval = retry_interval.v.val_int;
 
     if (mode.v.val_int == 1) {
-        param.type                           = NEU_CONN_TCP_SERVER;
-        param.params.tcp_server.ip           = host.v.val_str;
-        param.params.tcp_server.port         = port.v.val_int;
-        param.params.tcp_server.start_listen = modbus_tcp_server_listen;
-        param.params.tcp_server.stop_listen  = modbus_tcp_server_stop;
-        param.params.tcp_server.timeout      = timeout.v.val_int;
-        param.params.tcp_server.max_link     = 1;
-        plugin->is_server                    = true;
+        param.type                             = NEU_CONN_TCP_SERVER;
+        param.params.tcp_server.ip             = host.v.val_str;
+        param.params.tcp_server.interface_name = interface_name.v.val_str;
+        param.params.tcp_server.port           = port.v.val_int;
+        param.params.tcp_server.start_listen   = modbus_tcp_server_listen;
+        param.params.tcp_server.stop_listen    = modbus_tcp_server_stop;
+        param.params.tcp_server.timeout        = timeout.v.val_int;
+        param.params.tcp_server.max_link       = 1;
+        plugin->is_server                      = true;
     }
     if (mode.v.val_int == 0) {
-        param.type                      = NEU_CONN_TCP_CLIENT;
-        param.params.tcp_client.ip      = host.v.val_str;
-        param.params.tcp_client.port    = port.v.val_int;
-        param.params.tcp_client.timeout = timeout.v.val_int;
-        plugin->is_server               = false;
+        param.type                             = NEU_CONN_TCP_CLIENT;
+        param.params.tcp_client.ip             = host.v.val_str;
+        param.params.tcp_client.interface_name = interface_name.v.val_str;
+        param.params.tcp_client.port           = port.v.val_int;
+        param.params.tcp_client.timeout        = timeout.v.val_int;
+        plugin->is_server                      = false;
     }
 
     plog_notice(plugin,
-                "config: host: %s, port: %" PRId64 ", mode: %" PRId64 "",
-                host.v.val_str, port.v.val_int, mode.v.val_int);
+                "config: host: %s, port: %" PRId64 ", mode: %" PRId64
+                ", interface_name: %s",
+                host.v.val_str, port.v.val_int, mode.v.val_int,
+                interface_name.v.val_str);
 
     if (plugin->conn != NULL) {
         plugin->conn = neu_conn_reconfig(plugin->conn, &param);
@@ -223,6 +236,7 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
     }
 
     free(host.v.val_str);
+    free(interface_name.v.val_str);
     return 0;
 }
 
