@@ -86,6 +86,7 @@ typedef struct neu_conn_param {
             uint16_t          port;
             uint16_t          timeout; // millisecond
             int               max_link;
+            char *            interface_name;
             neu_conn_callback start_listen;
             neu_conn_callback stop_listen;
         } tcp_server;
@@ -94,6 +95,7 @@ typedef struct neu_conn_param {
             char *   ip;
             uint16_t port;
             uint16_t timeout; // millisecond
+            char *   interface_name;
         } tcp_client;
 
         struct {
@@ -102,12 +104,14 @@ typedef struct neu_conn_param {
             char *   dst_ip;
             uint16_t dst_port;
             uint16_t timeout; // millisecond
+            char *   interface_name;
         } udp;
 
         struct {
             char *   src_ip;
             uint16_t src_port;
             uint16_t timeout; // millisecond
+            char *   interface_name;
         } udpto;
 
         struct {
