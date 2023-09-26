@@ -1201,6 +1201,26 @@ inline static void trans_data_free(nng_msg *msg)
     }
 }
 
+inline static int send_high_msg(nng_socket socket, nng_msg *msg)
+{
+    nng_aio *aio = NULL;
+    int      ret = 0;
+
+    nng_aio_alloc(&aio, NULL, NULL);
+    nng_aio_set_timeout(aio, 3000);
+    nng_aio_set_msg(aio, msg);
+
+    nng_send_aio(socket, aio);
+    nng_aio_wait(aio);
+    if (nng_aio_result(aio) != 0) {
+        nlog_warn("send msg faile");
+        ret = -1;
+    }
+    nng_aio_free(aio);
+
+    return ret;
+}
+
 inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
                                const char *node)
 {
@@ -1209,11 +1229,11 @@ inline static void forward_msg(neu_manager_t *manager, nng_msg *msg,
 
     nng_msg_dup(&out_msg, msg);
     nng_msg_set_pipe(out_msg, pipe);
-    if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
+
+    if (send_high_msg(manager->socket, msg) == 0) {
         nlog_info("forward msg to %s", node);
     } else {
         nlog_warn("forward msg to pipe (%s)%d fail", node, pipe.id);
-        nng_msg_free(out_msg);
     }
 }
 
@@ -1361,12 +1381,9 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
         neu_node_manager_get_pipe(manager->node_manager, header->receiver);
 
     nng_msg_set_pipe(msg, pipe);
-    int ret = nng_sendmsg(manager->socket, msg, 0);
-
-    if (ret != 0) {
-        nng_msg_free(msg);
-        nlog_warn("reply %s to %s, error: %d",
-                  neu_reqresp_type_string(header->type), header->receiver, ret);
+    if (send_high_msg(manager->socket, msg) != 0) {
+        nlog_warn("reply %s to %s fail", neu_reqresp_type_string(header->type),
+                  header->receiver);
     }
 }
 

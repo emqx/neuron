@@ -111,6 +111,26 @@ static inline void stop_log_level_timer(neu_adapter_t *adapter)
     adapter->timer_lev = NULL;
 }
 
+inline static int send_high_msg(nng_socket socket, nng_msg *msg)
+{
+    nng_aio *aio = NULL;
+    int      ret = 0;
+
+    nng_aio_alloc(&aio, NULL, NULL);
+    nng_aio_set_timeout(aio, 3000);
+    nng_aio_set_msg(aio, msg);
+
+    nng_send_aio(socket, aio);
+    nng_aio_wait(aio);
+    if (nng_aio_result(aio) != 0) {
+        nlog_warn("send msg faile");
+        ret = -1;
+    }
+    nng_aio_free(aio);
+
+    return ret;
+}
+
 int neu_adapter_error()
 {
     return create_adapter_error;
@@ -451,10 +471,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
 
     msg = neu_msg_gen(&header, data);
 
-    ret = nng_sendmsg(adapter->sock, msg, 0);
-    if (ret != 0) {
-        nng_msg_free(msg);
-    }
+    ret = send_high_msg(adapter->sock, msg);
 
     return ret;
 }
@@ -472,10 +489,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
     }
 
     nng_msg *msg = neu_msg_gen(header, data);
-    int      ret = nng_sendmsg(adapter->sock, msg, 0);
-    if (ret != 0) {
-        nng_msg_free(msg);
-    }
+    int      ret = send_high_msg(adapter->sock, msg);
 
     return ret;
 }
