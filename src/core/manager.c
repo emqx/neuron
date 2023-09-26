@@ -102,7 +102,7 @@ neu_manager_t *neu_manager_create()
 
     nng_socket_set_int(manager->socket, NNG_OPT_RECVBUF, 8192);
     nng_socket_set_int(manager->socket, NNG_OPT_SENDBUF, 8292);
-    nng_socket_set_ms(manager->socket, NNG_OPT_SENDTIMEO, 1000 * 10);
+    nng_socket_set_ms(manager->socket, NNG_OPT_SENDTIMEO, 1000);
     nng_socket_get_int(manager->socket, NNG_OPT_RECVFD, &param.fd);
     manager->loop = neu_event_add_io(manager->events, param);
 
