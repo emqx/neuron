@@ -19,6 +19,7 @@
 #include <dlfcn.h>
 
 #include "utils/log.h"
+#include "json/neu_json_param.h"
 
 #include "adapter.h"
 #include "errcodes.h"
@@ -693,6 +694,19 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
 
     if (adapter == NULL) {
         return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    // guard against empty mqtt topic parameter
+    // this is not an elegant solution due to the current architecture
+    if (params && 0 == strcmp(adapter->module->module_name, "MQTT")) {
+        neu_json_elem_t elem = { .name = "topic", .t = NEU_JSON_STR };
+        neu_json_decode((char *) params, 1, &elem);
+        neu_parse_param(params, NULL, 1, &elem);
+        if (elem.v.val_str && 0 == strlen(elem.v.val_str)) {
+            free(elem.v.val_str);
+            return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+        }
+        free(elem.v.val_str);
     }
 
     if (NEU_NA_TYPE_APP != neu_adapter_get_type(adapter)) {
