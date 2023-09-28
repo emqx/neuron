@@ -29,6 +29,4 @@
 neu_manager_t *neu_manager_create();
 void           neu_manager_destroy(neu_manager_t *manager);
 
-const char *neu_manager_get_url(void);
-
 #endif

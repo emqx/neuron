@@ -20,7 +20,7 @@
 #ifndef _NEU_SUBSCRIBE_H_
 #define _NEU_SUBSCRIBE_H_
 
-#include <nng/nng.h>
+#include <netinet/in.h>
 
 #include "define.h"
 #include "utils/utextend.h"
@@ -28,9 +28,10 @@
 typedef struct neu_subscribe_mgr neu_subscribe_mgr_t;
 
 typedef struct neu_app_subscribe {
-    char     app_name[NEU_NODE_NAME_LEN];
-    char *   params;
-    nng_pipe pipe;
+    char  app_name[NEU_NODE_NAME_LEN];
+    char *params;
+
+    struct sockaddr_in addr;
 } neu_app_subscribe_t;
 
 static inline void neu_app_subscribe_fini(neu_app_subscribe_t *app_sub)
@@ -52,7 +53,7 @@ UT_array *neu_subscribe_manager_get_ndriver_maps(neu_subscribe_mgr_t *mgr,
 void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app);
 int  neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                                const char *app, const char *group,
-                               const char *params, nng_pipe pipe);
+                               const char *params, struct sockaddr_in addr);
 int  neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
                                  const char *app, const char *group);
 void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,
