@@ -45,6 +45,14 @@ North APP subscribe multiple nonexistent groups, it should fail.
 	Check Response Status           ${res}      404
 	Check Error Code                ${res}      ${NEU_ERR_GROUP_NOT_EXIST}
 
+North MQTT APP subscribe with empty topic, it should fail.
+	${g1} =     Evaluate            {"driver": "modbus-node", "group": "group1", "params":{"topic":""}}
+
+	${res}=     Subscribe Groups    mqtt        ${g1}
+
+	Check Response Status           ${res}      200
+	Check Error Code                ${res}      ${NEU_ERR_MQTT_SUBSCRIBE_FAILURE}
+
 North APP subscribe multiple groups, it should return success
 	Add Group   modbus-node         group1      1000
 	Add Group   modbus-node         group2      1000
