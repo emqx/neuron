@@ -24,6 +24,13 @@ North APP subscribe existent group, it should return success
 	Check Response Status  ${res}  200
 	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
 
+North MQTT APP subscribe with empty topic, it should fail.
+	POST                /api/v2/subscribe  {"app": "mqtt", "driver": "modbus-node", "group": "group", "params":{"topic":""}}
+	${res} =            Object  response body
+
+	Check Response Status           ${res}      200
+	Check Error Code                ${res}      ${NEU_ERR_MQTT_SUBSCRIBE_FAILURE}
+
 Query the subscribers of the group, it should return all nodes subscribed to this group
 	${res} =                  Get Subscribe Group		mqtt
 	Check Response Status     ${res}                          200
