@@ -20,9 +20,6 @@
 #ifndef _NEU_MANAGER_INTERNAL_H_
 #define _NEU_MANAGER_INTERNAL_H_
 
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
-
 #include "event/event.h"
 #include "persist/persist.h"
 
@@ -32,7 +29,10 @@
 #include "template_manager.h"
 
 typedef struct neu_manager {
-    nng_socket      socket;
+    int     server_fd;
+    uint8_t buf[NEU_MSG_MAX_SIZE];
+    uint8_t recv_buf[NEU_MSG_MAX_SIZE];
+    //    nng_socket      socket;
     neu_events_t *  events;
     neu_event_io_t *loop;
 

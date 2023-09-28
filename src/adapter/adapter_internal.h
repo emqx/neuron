@@ -20,10 +20,7 @@
 #ifndef ADAPTER_INTERNAL_H
 #define ADAPTER_INTERNAL_H
 
-#include <nng/nng.h>
-#include <nng/protocol/pair1/pair.h>
-#include <nng/supplemental/util/platform.h>
-
+#include "define.h"
 #include "event/event.h"
 #include "plugin.h"
 
@@ -42,12 +39,12 @@ struct neu_adapter {
     neu_plugin_module_t *module;
     neu_plugin_t *       plugin;
 
-    nng_socket sock;
-    nng_dialer dialer;
+    uint8_t         buf[NEU_MSG_MAX_SIZE];
+    uint8_t         recv_buf[NEU_MSG_MAX_SIZE];
+    neu_event_io_t *control_io;
+    int             control_fd;
 
-    neu_events_t *  events;
-    neu_event_io_t *nng_io;
-    int             recv_fd;
+    neu_events_t *events;
 
     neu_event_timer_t *timer_lev;
     int64_t            timestamp_lev;

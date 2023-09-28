@@ -22,9 +22,6 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
-
 #include "event/event.h"
 #include "utils/log.h"
 #include "utils/utextend.h"

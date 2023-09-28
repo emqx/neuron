@@ -260,6 +260,7 @@ typedef struct neu_reqresp_head {
     void *             ctx;
     char               sender[NEU_NODE_NAME_LEN];
     char               receiver[NEU_NODE_NAME_LEN];
+    uint32_t           len;
 } neu_reqresp_head_t;
 
 typedef struct neu_resp_error {
@@ -903,7 +904,8 @@ typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];
 } neu_req_update_log_level_t;
 
-void *neu_msg_gen(neu_reqresp_head_t *header, void *data);
+void  neu_msg_gen(neu_reqresp_head_t *header, void *data);
+void *neu_trans_data_gen(neu_reqresp_head_t *header, void *data);
 
 inline static void neu_msg_exchange(neu_reqresp_head_t *header)
 {

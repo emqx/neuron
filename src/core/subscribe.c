@@ -175,7 +175,7 @@ void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app)
 
 int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                               const char *app, const char *group,
-                              const char *params, nng_pipe pipe)
+                              const char *params, struct sockaddr_in addr)
 {
     sub_elem_t *        find    = NULL;
     sub_elem_key_t      key     = { 0 };
@@ -184,7 +184,7 @@ int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
     strncpy(key.driver, driver, sizeof(key.driver));
     strncpy(key.group, group, sizeof(key.group));
     strncpy(app_sub.app_name, app, sizeof(app_sub.app_name));
-    app_sub.pipe = pipe;
+    app_sub.addr = addr;
 
     if (params && NULL == (app_sub.params = strdup(params))) {
         return NEU_ERR_EINTERNAL;
