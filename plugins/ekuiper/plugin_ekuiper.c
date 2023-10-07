@@ -308,11 +308,6 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         } else {
             send_data(plugin, trans_data);
         }
-        for (int i = 0; i < trans_data->n_tag; i++) {
-            if (trans_data->tags[i].value.type == NEU_TYPE_PTR) {
-                free(trans_data->tags[i].value.value.ptr.ptr);
-            }
-        }
         break;
     }
     case NEU_REQ_UPDATE_NODE: {
@@ -328,8 +323,6 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         break;
     }
     case NEU_REQ_UNSUBSCRIBE_GROUP:
-        break;
-    case NEU_REQ_UPDATE_LICENSE:
         break;
     default:
         plog_warn(plugin, "unsupported request type: %d", header->type);

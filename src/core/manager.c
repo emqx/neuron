@@ -50,7 +50,6 @@
 #define DEFAULT_DASHBOARD_ADAPTER_NAME DEFAULT_DASHBOARD_PLUGIN_NAME
 
 static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data);
-static int manager_level_check(void *usr_data);
 
 inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                          void *data);
@@ -75,6 +74,11 @@ typedef struct {
     char *plugin;
     bool  ret;
 } template_each_cb_data_t;
+uint16_t neu_manager_get_port()
+{
+    static uint16_t port = 10000;
+    return port++;
+}
 
 neu_manager_t *neu_manager_create()
 {
@@ -225,37 +229,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     nlog_info("manager recv msg from: %s to %s, type: %s", header->sender,
               header->receiver, neu_reqresp_type_string(header->type));
     switch (header->type) {
-    case NEU_REQRESP_TRANS_DATA: {
-
-        // neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *)
-        // &header[1]; UT_array *apps =
-        // neu_subscribe_manager_find(manager->subscribe_manager, cmd->driver,
-        // cmd->group);
-        // if (apps != NULL) {
-        // utarray_foreach(apps, neu_app_subscribe_t *, app)
-        //{
-        // forward_msg_dup(manager, msg, app->pipe, trans_data_dup);
-        // nlog_debug("forward trans data to pipe: %d", app->pipe.id);
-        //}
-        // utarray_free(apps);
-        //}
-
-        // trans_data_free(msg);
-        break;
-    }
-    case NEU_REQ_UPDATE_LICENSE: {
-        // UT_array *pipes =
-        // neu_node_manager_get_pipes_all(manager->node_manager);
-
-        // utarray_foreach(pipes, nng_pipe *, pipe)
-        //{
-        // forward_msg_dup(manager, msg, *pipe, NULL);
-        // nlog_notice("forward license update to pipe: %d", pipe->id);
-        //}
-        // utarray_free(pipes);
-
-        break;
-    }
     case NEU_REQ_NODE_INIT: {
         neu_req_node_init_t *init = (neu_req_node_init_t *) &header[1];
 
@@ -1043,14 +1016,17 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_SUBSCRIBE_GROUP: {
-        neu_req_subscribe_t *cmd   = (neu_req_subscribe_t *) &header[1];
-        neu_resp_error_t     error = { 0 };
+        neu_req_subscribe_t *cmd      = (neu_req_subscribe_t *) &header[1];
+        neu_resp_error_t     error    = { 0 };
+        uint16_t             app_port = 0;
 
         error.error = neu_manager_subscribe(manager, cmd->app, cmd->driver,
-                                            cmd->group, cmd->params);
+                                            cmd->group, cmd->params, &app_port);
 
         if (error.error == NEU_ERR_SUCCESS) {
+            cmd->port = app_port;
             forward_msg(manager, header, cmd->app);
+            forward_msg(manager, header, cmd->driver);
             manager_storage_subscribe(manager, cmd->app, cmd->driver,
                                       cmd->group, cmd->params);
         } else {
@@ -1070,14 +1046,16 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         for (uint16_t i = 0; i < cmd->n_group; ++i) {
             neu_req_subscribe_group_info_t *info = &cmd->groups[i];
 
-            error.error = neu_manager_subscribe(manager, cmd->app, info->driver,
-                                                info->group, info->params);
+            error.error =
+                neu_manager_subscribe(manager, cmd->app, info->driver,
+                                      info->group, info->params, &info->port);
             if (0 != error.error) {
                 break;
             }
 
-            error.error = neu_manager_send_subscribe(
-                manager, cmd->app, info->driver, info->group, info->params);
+            error.error = neu_manager_send_subscribe(manager, cmd->app,
+                                                     info->driver, info->group,
+                                                     info->port, info->params);
             if (0 != error.error) {
                 break;
             }
@@ -1121,6 +1099,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             forward_msg(manager, header, cmd->app);
+            forward_msg(manager, header, cmd->driver);
             manager_storage_unsubscribe(manager, cmd->app, cmd->driver,
                                         cmd->group);
         }
@@ -1497,55 +1476,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     return 0;
 }
-
-// inline static void forward_msg_dup(neu_manager_t *manager, nng_msg *msg,
-// nng_pipe pipe, msg_dup dup)
-//{
-// nng_msg *out_msg;
-
-// nng_msg_dup(&out_msg, msg);
-// if (dup != NULL) {
-// out_msg = dup(out_msg);
-//}
-// nng_msg_set_pipe(out_msg, pipe);
-// if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
-// nlog_info("forward msg to pipe %d", pipe.id);
-//} else {
-// nlog_warn("forward msg to pipe %d fail", pipe.id);
-// nng_msg_free(out_msg);
-//}
-//}
-
-// inline static nng_msg *trans_data_dup(nng_msg *msg)
-//{
-// neu_reqresp_head_t *header = (neu_reqresp_head_t *) nng_msg_body(msg);
-// assert(header->type == NEU_REQRESP_TRANS_DATA);
-// neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
-
-// for (int i = 0; i < cmd->n_tag; i++) {
-// if (cmd->tags[i].value.type == NEU_TYPE_PTR) {
-// uint8_t *ptr = calloc(cmd->tags[i].value.value.ptr.length, 1);
-// memcpy(ptr, cmd->tags[i].value.value.ptr.ptr,
-// cmd->tags[i].value.value.ptr.length);
-// cmd->tags[i].value.value.ptr.ptr = ptr;
-//}
-//}
-
-// return msg;
-//}
-
-// inline static void trans_data_free(nng_msg *msg)
-//{
-// neu_reqresp_head_t *header = (neu_reqresp_head_t *) nng_msg_body(msg);
-// assert(header->type == NEU_REQRESP_TRANS_DATA);
-// neu_reqresp_trans_data_t *cmd = (neu_reqresp_trans_data_t *) &header[1];
-
-// for (int i = 0; i < cmd->n_tag; i++) {
-// if (cmd->tags[i].value.type == NEU_TYPE_PTR) {
-// free(cmd->tags[i].value.value.ptr.ptr);
-//}
-//}
-//}
 
 inline static void forward_msg(neu_manager_t *     manager,
                                neu_reqresp_head_t *header, const char *node)

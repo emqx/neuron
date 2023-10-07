@@ -332,8 +332,6 @@ static int monitor_plugin_request(neu_plugin_t *      plugin,
         handle_events(plugin, header->type, data);
         break;
     }
-    case NEU_REQ_UPDATE_LICENSE:
-        break;
     default:
         nlog_warn("recv unsupported msg: %s",
                   neu_reqresp_type_string(header->type));

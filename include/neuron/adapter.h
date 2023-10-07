@@ -24,7 +24,10 @@
 extern "C" {
 #endif
 
+#include <pthread.h>
 #include <stdint.h>
+
+#include "json/neu_json_rw.h"
 
 #include "define.h"
 #include "metrics.h"
@@ -38,7 +41,6 @@ typedef struct {
 
 typedef enum neu_reqresp_type {
     NEU_RESP_ERROR,
-    NEU_REQ_UPDATE_LICENSE,
 
     NEU_REQ_READ_GROUP,
     NEU_RESP_READ_GROUP,
@@ -145,8 +147,7 @@ typedef enum neu_reqresp_type {
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
-    [NEU_RESP_ERROR]         = "NEU_RESP_ERROR",
-    [NEU_REQ_UPDATE_LICENSE] = "NEU_REQ_UPDATE_LICENSE",
+    [NEU_RESP_ERROR] = "NEU_RESP_ERROR",
 
     [NEU_REQ_READ_GROUP]  = "NEU_REQ_READ_GROUP",
     [NEU_RESP_READ_GROUP] = "NEU_RESP_READ_GROUP",
@@ -475,10 +476,11 @@ typedef struct neu_resp_get_tag {
 } neu_resp_get_tag_t;
 
 typedef struct {
-    char  app[NEU_NODE_NAME_LEN];
-    char  driver[NEU_NODE_NAME_LEN];
-    char  group[NEU_GROUP_NAME_LEN];
-    char *params;
+    char     app[NEU_NODE_NAME_LEN];
+    char     driver[NEU_NODE_NAME_LEN];
+    char     group[NEU_GROUP_NAME_LEN];
+    uint16_t port;
+    char *   params;
 } neu_req_subscribe_t;
 
 typedef struct {
@@ -488,9 +490,10 @@ typedef struct {
 } neu_req_unsubscribe_t;
 
 typedef struct {
-    char *driver;
-    char *group;
-    char *params;
+    char *   driver;
+    char *   group;
+    uint16_t port;
+    char *   params;
 } neu_req_subscribe_group_info_t;
 
 typedef struct {
@@ -768,9 +771,6 @@ static inline void neu_req_inst_templates_fini(neu_req_inst_templates_t *req)
     free(req->insts);
 }
 
-typedef struct neu_req_update_license {
-} neu_req_update_license_t;
-
 typedef struct neu_req_read_group {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
@@ -794,6 +794,12 @@ typedef struct neu_resp_tag_value_meta {
     neu_tag_meta_t metas[NEU_TAG_META_SIZE];
 } neu_resp_tag_value_meta_t;
 
+static inline UT_icd *neu_resp_tag_value_meta_icd()
+{
+    static UT_icd icd = { sizeof(neu_resp_tag_value_meta_t), NULL, NULL, NULL };
+    return &icd;
+}
+
 typedef struct neu_req_write_tags {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
@@ -803,18 +809,149 @@ typedef struct neu_req_write_tags {
 } neu_req_write_tags_t;
 
 typedef struct {
-    char                       driver[NEU_NODE_NAME_LEN];
-    char                       group[NEU_GROUP_NAME_LEN];
-    uint16_t                   n_tag;
-    neu_resp_tag_value_meta_t *tags;
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+
+    UT_array *tags; // neu_resp_tag_value_meta_t
 } neu_resp_read_group_t;
 
+static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
+{
+    utarray_foreach(resp->tags, neu_resp_tag_value_meta_t *, tag_value)
+    {
+        if (tag_value->value.type == NEU_TYPE_PTR) {
+            free(tag_value->value.value.ptr.ptr);
+        }
+    }
+    utarray_free(resp->tags);
+}
+
 typedef struct {
-    char                      driver[NEU_NODE_NAME_LEN];
-    char                      group[NEU_GROUP_NAME_LEN];
-    uint16_t                  n_tag;
-    neu_resp_tag_value_meta_t tags[];
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+
+    uint16_t        index;
+    pthread_mutex_t mtx;
+    UT_array *      tags; // neu_resp_tag_value_meta_t
 } neu_reqresp_trans_data_t;
+
+static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
+{
+    pthread_mutex_lock(&data->mtx);
+    if (data->index > 0) {
+        data->index -= 1;
+    }
+
+    if (data->index == 0) {
+        utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
+        {
+            if (tag_value->value.type == NEU_TYPE_PTR) {
+                free(tag_value->value.value.ptr.ptr);
+            }
+        }
+        utarray_free(data->tags);
+        pthread_mutex_unlock(&data->mtx);
+        pthread_mutex_destroy(&data->mtx);
+    } else {
+        pthread_mutex_unlock(&data->mtx);
+    }
+}
+
+static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
+                                         neu_json_read_resp_tag_t * tag_json)
+{
+    tag_json->name  = tag_value->tag;
+    tag_json->error = 0;
+
+    for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+        if (strlen(tag_value->metas[k].name) > 0) {
+            tag_json->n_meta++;
+        } else {
+            break;
+        }
+    }
+    if (tag_json->n_meta > 0) {
+        tag_json->metas = (neu_json_tag_meta_t *) calloc(
+            tag_json->n_meta, sizeof(neu_json_tag_meta_t));
+    }
+    neu_json_metas_to_json(tag_value->metas, NEU_TAG_META_SIZE, tag_json);
+
+    switch (tag_value->value.type) {
+    case NEU_TYPE_ERROR:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i32;
+        tag_json->error         = tag_value->value.value.i32;
+        break;
+    case NEU_TYPE_UINT8:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u8;
+        break;
+    case NEU_TYPE_INT8:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i8;
+        break;
+    case NEU_TYPE_INT16:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i16;
+        break;
+    case NEU_TYPE_INT32:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i32;
+        break;
+    case NEU_TYPE_INT64:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i64;
+        break;
+    case NEU_TYPE_WORD:
+    case NEU_TYPE_UINT16:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u16;
+        break;
+    case NEU_TYPE_DWORD:
+    case NEU_TYPE_UINT32:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u32;
+        break;
+    case NEU_TYPE_LWORD:
+    case NEU_TYPE_UINT64:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u64;
+        break;
+    case NEU_TYPE_FLOAT:
+        tag_json->t               = NEU_JSON_FLOAT;
+        tag_json->value.val_float = tag_value->value.value.f32;
+        tag_json->precision       = tag_value->value.precision;
+        break;
+    case NEU_TYPE_DOUBLE:
+        tag_json->t                = NEU_JSON_DOUBLE;
+        tag_json->value.val_double = tag_value->value.value.d64;
+        tag_json->precision        = tag_value->value.precision;
+        break;
+    case NEU_TYPE_BOOL:
+        tag_json->t              = NEU_JSON_BOOL;
+        tag_json->value.val_bool = tag_value->value.value.boolean;
+        break;
+    case NEU_TYPE_BIT:
+        tag_json->t             = NEU_JSON_BIT;
+        tag_json->value.val_bit = tag_value->value.value.u8;
+        break;
+    case NEU_TYPE_STRING:
+        tag_json->t             = NEU_JSON_STR;
+        tag_json->value.val_str = tag_value->value.value.str;
+        break;
+    case NEU_TYPE_PTR:
+        tag_json->t             = NEU_JSON_STR;
+        tag_json->value.val_str = (char *) tag_value->value.value.ptr.ptr;
+        break;
+    case NEU_TYPE_BYTES:
+        tag_json->t                      = NEU_JSON_BYTES;
+        tag_json->value.val_bytes.length = tag_value->value.value.bytes.length;
+        tag_json->value.val_bytes.bytes  = tag_value->value.value.bytes.bytes;
+        break;
+    default:
+        break;
+    }
+}
 
 typedef struct {
     char node[NEU_NODE_NAME_LEN];
@@ -943,6 +1080,8 @@ typedef struct adapter_callbacks {
     int (*command)(neu_adapter_t *adapter, neu_reqresp_head_t head, void *data);
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
                     void *data);
+    int (*responseto)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
+                      void *data, struct sockaddr_in dst);
     neu_adapter_register_metric_cb_t register_metric;
     neu_adapter_update_metric_cb_t   update_metric;
 
