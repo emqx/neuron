@@ -33,6 +33,8 @@
 #define NEU_ENV_DISABLE_AUTH "NEURON_DISABLE_AUTH"
 #define NEU_ENV_CONFIG_DIR "NEURON_CONFIG_DIR"
 #define NEU_ENV_PLUGIN_DIR "NEURON_PLUGIN_DIR"
+#define NEU_ENV_SYSLOG_HOST "NEURON_SYSLOG_HOST"
+#define NEU_ENV_SYSLOG_PORT "NEURON_SYSLOG_PORT"
 
 #define NEURON_CONFIG_FNAME "./config/neuron.json"
 
@@ -41,6 +43,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 extern const char *g_config_dir;
@@ -49,16 +52,18 @@ extern const char *g_plugin_dir;
 /** Neuron command line arguments.
  */
 typedef struct {
-    bool   daemonized; // flag indicating whether to run as daemon process
-    bool   dev_log;    // logging for development
-    size_t restart;    // restart policy
-    bool   disable_auth;
-    char * log_init_file;
-    char * config_dir;
-    char * plugin_dir;
-    bool   stop;
-    char * ip;
-    int    port;
+    bool     daemonized; // flag indicating whether to run as daemon process
+    bool     dev_log;    // logging for development
+    size_t   restart;    // restart policy
+    bool     disable_auth;
+    char *   log_init_file;
+    char *   config_dir;
+    char *   plugin_dir;
+    bool     stop;
+    char *   ip;
+    int      port;
+    char *   syslog_host;
+    uint16_t syslog_port;
 } neu_cli_args_t;
 
 /** Parse command line arguments.
