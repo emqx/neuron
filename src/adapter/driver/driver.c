@@ -43,6 +43,11 @@ typedef struct to_be_write_tag {
     void *         req;
 } to_be_write_tag_t;
 
+typedef struct {
+    char               app[NEU_NODE_NAME_LEN];
+    struct sockaddr_in addr;
+} sub_app_t;
+
 typedef struct group {
     char *name;
 
@@ -55,6 +60,9 @@ typedef struct group {
     neu_event_timer_t *report;
     neu_event_timer_t *read;
     neu_event_timer_t *write;
+
+    UT_array *      apps; // sub_app_t array
+    pthread_mutex_t apps_mtx;
 
     neu_plugin_group_t    grp;
     neu_adapter_driver_t *driver;
@@ -78,10 +86,10 @@ static int  write_callback(void *usr_data);
 static void read_group(int64_t timestamp, int64_t timeout,
                        neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
-                       UT_array *tags, neu_resp_tag_value_meta_t *datas);
-static int  read_report_group(int64_t timestamp, int64_t timeout,
+                       UT_array *tags, UT_array *tag_values);
+static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_driver_cache_t *cache, const char *group,
-                              UT_array *tags, neu_resp_tag_value_meta_t *datas);
+                              UT_array *tags, UT_array *tag_values);
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
                    neu_dvalue_t value);
 static void update_im(neu_adapter_t *adapter, const char *group,
@@ -161,8 +169,9 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                       const char *tag, neu_dvalue_t value,
                       neu_tag_meta_t *metas, int n_meta)
 {
-    neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
-    neu_reqresp_head_t    header = { 0 };
+    neu_adapter_driver_t *  driver    = (neu_adapter_driver_t *) adapter;
+    static __thread uint8_t buf[1024] = { 0 };
+    neu_reqresp_head_t *    header    = (neu_reqresp_head_t *) buf;
 
     if (tag == NULL || value.type == NEU_TYPE_ERROR) {
         nlog_warn("update_im tag is null or value is error %d",
@@ -198,20 +207,45 @@ static void update_im(neu_adapter_t *adapter, const char *group,
               driver->adapter.name, group, tag, neu_type_string(value.type),
               global_timestamp);
 
-    header.type                    = NEU_REQRESP_TRANS_DATA;
-    neu_reqresp_trans_data_t *data = calloc(
-        1,
-        sizeof(neu_reqresp_trans_data_t) + sizeof(neu_resp_tag_value_meta_t));
+    memset(buf, 0, sizeof(buf));
+    header->type = NEU_REQRESP_TRANS_DATA;
+    neu_reqresp_trans_data_t *data =
+        calloc(1, sizeof(neu_reqresp_trans_data_t));
 
     strcpy(data->driver, driver->adapter.name);
     strcpy(data->group, group);
+    utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
-    data->n_tag =
-        read_report_group(global_timestamp, 0, driver->cache, group, tags,
-                          (neu_resp_tag_value_meta_t *) &data[1]);
+    read_report_group(global_timestamp, 0, driver->cache, group, tags,
+                      data->tags);
 
-    if (data->n_tag > 0) {
-        driver->adapter.cb_funs.response(&driver->adapter, &header, data);
+    if (utarray_len(data->tags) > 0) {
+        group_t *find = NULL;
+        HASH_FIND_STR(driver->groups, group, find);
+        if (find != NULL) {
+            pthread_mutex_lock(&find->apps_mtx);
+
+            data->index = utarray_len(find->apps);
+            if (data->index > 0) {
+                pthread_mutex_init(&data->mtx, NULL);
+
+                utarray_foreach(find->apps, sub_app_t *, app)
+                {
+                    if (driver->adapter.cb_funs.responseto(
+                            &driver->adapter, header, data, app->addr) <= 0) {
+                        neu_trans_data_free(data);
+                    }
+                }
+            } else {
+                utarray_free(data->tags);
+            }
+
+            pthread_mutex_unlock(&find->apps_mtx);
+        } else {
+            utarray_free(data->tags);
+        }
+    } else {
+        utarray_free(data->tags);
     }
 
     utarray_free(tags);
@@ -289,6 +323,7 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
 
         utarray_free(el->static_tags);
         utarray_free(el->wt_tags);
+        utarray_free(el->apps);
         neu_group_destroy(el->group);
         free(el);
     }
@@ -356,19 +391,18 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     neu_group_t *         group = g->group;
     UT_array *            tags  = neu_group_get_read_tag(group);
 
-    resp.n_tag = utarray_len(tags);
-    resp.tags =
-        calloc(1, utarray_len(tags) * sizeof(neu_resp_tag_value_meta_t));
+    utarray_new(resp.tags, neu_resp_tag_value_meta_icd());
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
         utarray_foreach(tags, neu_datatag_t *, tag)
         {
-            int index = utarray_eltidx(tags, tag);
-            strcpy(resp.tags[index].tag, tag->name);
-            resp.tags[index].value.type      = NEU_TYPE_ERROR;
-            resp.tags[index].value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
-        }
+            neu_resp_tag_value_meta_t tag_value = { 0 };
+            strcpy(tag_value.tag, tag->name);
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
 
+            utarray_push_back(resp.tags, &tag_value);
+        }
     } else {
         read_group(global_timestamp,
                    neu_group_get_interval(group) *
@@ -681,9 +715,10 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
 int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
                                  uint32_t interval)
 {
-    UT_icd   icd  = { sizeof(to_be_write_tag_t), NULL, NULL, NULL };
-    group_t *find = NULL;
-    int      ret  = NEU_ERR_GROUP_EXIST;
+    UT_icd   icd     = { sizeof(to_be_write_tag_t), NULL, NULL, NULL };
+    UT_icd   sub_icd = { sizeof(sub_app_t), NULL, NULL, NULL };
+    group_t *find    = NULL;
+    int      ret     = NEU_ERR_GROUP_EXIST;
 
     HASH_FIND_STR(driver->groups, name, find);
     if (find == NULL) {
@@ -697,8 +732,10 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         };
 
         pthread_mutex_init(&find->wt_mtx, NULL);
+        pthread_mutex_init(&find->apps_mtx, NULL);
 
         utarray_new(find->wt_tags, &icd);
+        utarray_new(find->apps, &sub_icd);
 
         find->driver         = driver;
         find->name           = strdup(name);
@@ -881,8 +918,10 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
         utarray_free(find->static_tags);
         utarray_free(find->grp.tags);
         utarray_free(find->wt_tags);
+        utarray_free(find->apps);
         neu_group_destroy(find->group);
         pthread_mutex_destroy(&find->wt_mtx);
+        pthread_mutex_destroy(&find->apps_mtx);
         free(find);
 
         neu_adapter_del_group_metrics(&driver->adapter, name);
@@ -1203,34 +1242,55 @@ UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
 
 static int report_callback(void *usr_data)
 {
-    group_t *                group  = (group_t *) usr_data;
-    neu_reqresp_head_t       header = { 0 };
-    neu_node_running_state_e state  = group->driver->adapter.state;
+    group_t *                group     = (group_t *) usr_data;
+    static __thread uint8_t  buf[1024] = { 0 };
+    neu_reqresp_head_t *     header    = (neu_reqresp_head_t *) buf;
+    neu_node_running_state_e state     = group->driver->adapter.state;
     if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
     }
 
-    header.type = NEU_REQRESP_TRANS_DATA;
+    memset(buf, 0, sizeof(buf));
+    header->type = NEU_REQRESP_TRANS_DATA;
 
     UT_array *tags =
         neu_adapter_driver_get_read_tag(group->driver, group->name);
 
     neu_reqresp_trans_data_t *data =
-        calloc(1,
-               sizeof(neu_reqresp_trans_data_t) +
-                   utarray_len(tags) * sizeof(neu_resp_tag_value_meta_t));
+        calloc(1, sizeof(neu_reqresp_trans_data_t));
 
     strcpy(data->driver, group->driver->adapter.name);
     strcpy(data->group, group->name);
-    data->n_tag = read_report_group(global_timestamp,
-                                    neu_group_get_interval(group->group) *
-                                        NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
-                                    group->driver->cache, group->name, tags,
-                                    (neu_resp_tag_value_meta_t *) &data[1]);
+    utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
-    if (data->n_tag > 0) {
-        group->driver->adapter.cb_funs.response(&group->driver->adapter,
-                                                &header, data);
+    read_report_group(global_timestamp,
+                      neu_group_get_interval(group->group) *
+                          NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                      group->driver->cache, group->name, tags, data->tags);
+
+    if (utarray_len(data->tags) > 0) {
+        pthread_mutex_lock(&group->apps_mtx);
+
+        data->index = utarray_len(group->apps);
+
+        if (data->index > 0) {
+            pthread_mutex_init(&data->mtx, NULL);
+
+            utarray_foreach(group->apps, sub_app_t *, app)
+            {
+                if (group->driver->adapter.cb_funs.responseto(
+                        &group->driver->adapter, header, data, app->addr) <=
+                    0) {
+                    neu_trans_data_free(data);
+                }
+            }
+        } else {
+            utarray_free(data->tags);
+        }
+
+        pthread_mutex_unlock(&group->apps_mtx);
+    } else {
+        utarray_free(data->tags);
     }
     utarray_free(tags);
     free(data);
@@ -1368,39 +1428,40 @@ static int read_callback(void *usr_data)
     return 0;
 }
 
-static int read_report_group(int64_t timestamp, int64_t timeout,
-                             neu_driver_cache_t *cache, const char *group,
-                             UT_array *tags, neu_resp_tag_value_meta_t *datas)
+static void read_report_group(int64_t timestamp, int64_t timeout,
+                              neu_driver_cache_t *cache, const char *group,
+                              UT_array *tags, UT_array *tag_values)
 {
-    int index = 0;
-
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
-        neu_driver_cache_value_t value = { 0 };
+        neu_driver_cache_value_t  value     = { 0 };
+        neu_resp_tag_value_meta_t tag_value = { 0 };
 
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE)) {
             if (neu_driver_cache_meta_get_changed(cache, group, tag->name,
-                                                  &value, datas[index].metas,
+                                                  &value, tag_value.metas,
                                                   NEU_TAG_META_SIZE) != 0) {
                 nlog_info("tag: %s not changed", tag->name);
                 continue;
             }
         } else {
             if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
-                                          datas[index].metas,
+                                          tag_value.metas,
                                           NEU_TAG_META_SIZE) != 0) {
-                strcpy(datas[index].tag, tag->name);
-                datas[index].value.type      = NEU_TYPE_ERROR;
-                datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
-                index += 1;
+                strcpy(tag_value.tag, tag->name);
+                tag_value.value.type      = NEU_TYPE_ERROR;
+                tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+
+                utarray_push_back(tag_values, &tag_value);
                 continue;
             }
         }
-        strcpy(datas[index].tag, tag->name);
+        strcpy(tag_value.tag, tag->name);
 
         if (value.value.type == NEU_TYPE_ERROR) {
-            datas[index].value = value.value;
-            index += 1;
+            tag_value.value = value.value;
+
+            utarray_push_back(tag_values, &tag_value);
             continue;
         }
 
@@ -1462,95 +1523,96 @@ static int read_report_group(int64_t timestamp, int64_t timeout,
 
         if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
             (timestamp - value.timestamp) > timeout && timeout > 0) {
-            datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
             if (value.value.type == NEU_TYPE_PTR) {
-                datas[index].value.type = NEU_TYPE_PTR;
-                datas[index].value.value.ptr.length =
-                    value.value.value.ptr.length;
-                datas[index].value.value.ptr.type = value.value.value.ptr.type;
-                datas[index].value.value.ptr.ptr  = value.value.value.ptr.ptr;
+                tag_value.value.type             = NEU_TYPE_PTR;
+                tag_value.value.value.ptr.length = value.value.value.ptr.length;
+                tag_value.value.value.ptr.type   = value.value.value.ptr.type;
+                tag_value.value.value.ptr.ptr    = value.value.value.ptr.ptr;
             } else {
-                datas[index].value = value.value;
+                tag_value.value = value.value;
             }
             if (tag->decimal != 0) {
-                datas[index].value.type = NEU_TYPE_DOUBLE;
+                tag_value.value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {
                 case NEU_TYPE_INT8:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i8 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i8 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT8:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u8 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u8 * tag->decimal;
                     break;
                 case NEU_TYPE_INT16:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i16 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i16 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT16:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u16 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u16 * tag->decimal;
                     break;
                 case NEU_TYPE_INT32:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i32 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i32 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT32:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u32 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u32 * tag->decimal;
                     break;
                 case NEU_TYPE_INT64:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i64 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i64 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT64:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u64 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u64 * tag->decimal;
                     break;
                 case NEU_TYPE_FLOAT:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.f32 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.f32 * tag->decimal;
                     break;
                 case NEU_TYPE_DOUBLE:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.d64 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.d64 * tag->decimal;
                     break;
                 default:
-                    datas[index].value.type = tag->type;
+                    tag_value.value.type = tag->type;
                     break;
                 }
             }
         }
-        index += 1;
-    }
 
-    return index;
+        utarray_push_back(tag_values, &tag_value);
+    }
 }
 
 static void read_group(int64_t timestamp, int64_t timeout,
                        neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
-                       UT_array *tags, neu_resp_tag_value_meta_t *datas)
+                       UT_array *tags, UT_array *tag_values)
 {
     utarray_foreach(tags, neu_datatag_t *, tag)
     {
-        neu_driver_cache_value_t value = { 0 };
-        int                      index = utarray_eltidx(tags, tag);
+        neu_resp_tag_value_meta_t tag_value = { 0 };
+        neu_driver_cache_value_t  value     = { 0 };
 
-        strcpy(datas[index].tag, tag->name);
+        strcpy(tag_value.tag, tag->name);
 
         if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
-                                      datas[index].metas,
+                                      tag_value.metas,
                                       NEU_TAG_META_SIZE) != 0) {
-            datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+
+            utarray_push_back(tag_values, &tag_value);
             continue;
         }
 
         if (value.value.type == NEU_TYPE_ERROR) {
-            datas[index].value = value.value;
+            tag_value.value = value.value;
+            utarray_push_back(tag_values, &tag_value);
             continue;
         }
 
@@ -1613,67 +1675,67 @@ static void read_group(int64_t timestamp, int64_t timeout,
         if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
             !neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
             (timestamp - value.timestamp) > timeout) {
-            datas[index].value.type      = NEU_TYPE_ERROR;
-            datas[index].value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
             if (value.value.type == NEU_TYPE_PTR) {
-                datas[index].value.type = NEU_TYPE_PTR;
-                datas[index].value.value.ptr.length =
-                    value.value.value.ptr.length;
-                datas[index].value.value.ptr.type = value.value.value.ptr.type;
-                datas[index].value.value.ptr.ptr  = value.value.value.ptr.ptr;
+                tag_value.value.type             = NEU_TYPE_PTR;
+                tag_value.value.value.ptr.length = value.value.value.ptr.length;
+                tag_value.value.value.ptr.type   = value.value.value.ptr.type;
+                tag_value.value.value.ptr.ptr    = value.value.value.ptr.ptr;
             } else {
-                datas[index].value = value.value;
+                tag_value.value = value.value;
             }
             if (tag->decimal != 0) {
-                datas[index].value.type = NEU_TYPE_DOUBLE;
+                tag_value.value.type = NEU_TYPE_DOUBLE;
                 switch (tag->type) {
                 case NEU_TYPE_INT8:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i8 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i8 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT8:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u8 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u8 * tag->decimal;
                     break;
                 case NEU_TYPE_INT16:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i16 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i16 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT16:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u16 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u16 * tag->decimal;
                     break;
                 case NEU_TYPE_INT32:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i32 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i32 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT32:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u32 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u32 * tag->decimal;
                     break;
                 case NEU_TYPE_INT64:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.i64 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i64 * tag->decimal;
                     break;
                 case NEU_TYPE_UINT64:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.u64 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u64 * tag->decimal;
                     break;
                 case NEU_TYPE_FLOAT:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.f32 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.f32 * tag->decimal;
                     break;
                 case NEU_TYPE_DOUBLE:
-                    datas[index].value.value.d64 =
-                        (double) datas[index].value.value.d64 * tag->decimal;
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.d64 * tag->decimal;
                     break;
                 default:
-                    datas[index].value.type = tag->type;
+                    tag_value.value.type = tag->type;
                     break;
                 }
             }
         }
+        utarray_push_back(tag_values, &tag_value);
     }
 }
 
@@ -1682,4 +1744,61 @@ static void store_write_tag(group_t *group, to_be_write_tag_t *tag)
     pthread_mutex_lock(&group->wt_mtx);
     utarray_push_back(group->wt_tags, tag);
     pthread_mutex_unlock(&group->wt_mtx);
+}
+
+void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
+                                  neu_req_subscribe_t * req)
+{
+    sub_app_t sub_app = { 0 };
+    group_t * find    = NULL;
+
+    HASH_FIND_STR(driver->groups, req->group, find);
+    if (find == NULL) {
+        nlog_warn("%s sub group: %s not exist", driver->adapter.name,
+                  req->group);
+        return;
+    }
+
+    pthread_mutex_lock(&find->apps_mtx);
+    utarray_foreach(find->apps, sub_app_t *, app)
+    {
+        if (strcmp(app->app, req->app) == 0) {
+            nlog_warn("%s sub group: %s app: %s already exist",
+                      driver->adapter.name, req->group, req->app);
+            pthread_mutex_unlock(&find->apps_mtx);
+            return;
+        }
+    }
+
+    strcpy(sub_app.app, req->app);
+    sub_app.addr.sin_family      = AF_INET;
+    sub_app.addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    sub_app.addr.sin_port        = htons(req->port);
+
+    utarray_push_back(find->apps, &sub_app);
+    pthread_mutex_unlock(&find->apps_mtx);
+}
+
+void neu_adapter_driver_unsubscribe(neu_adapter_driver_t * driver,
+                                    neu_req_unsubscribe_t *req)
+{
+    group_t *find = NULL;
+
+    HASH_FIND_STR(driver->groups, req->group, find);
+    if (find == NULL) {
+        nlog_warn("%s unsub group: %s not exist", driver->adapter.name,
+                  req->group);
+        return;
+    }
+
+    pthread_mutex_lock(&find->apps_mtx);
+    utarray_foreach(find->apps, sub_app_t *, app)
+    {
+        if (strcmp(app->app, req->app) == 0) {
+            utarray_erase(find->apps, utarray_eltidx(find->apps, app), 1);
+            pthread_mutex_unlock(&find->apps_mtx);
+            return;
+        }
+    }
+    pthread_mutex_unlock(&find->apps_mtx);
 }

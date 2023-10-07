@@ -39,10 +39,16 @@ struct neu_adapter {
     neu_plugin_module_t *module;
     neu_plugin_t *       plugin;
 
-    uint8_t         buf[NEU_MSG_MAX_SIZE];
-    uint8_t         recv_buf[NEU_MSG_MAX_SIZE];
+    uint8_t buf[NEU_MSG_MAX_SIZE];
+    uint8_t recv_buf[NEU_MSG_MAX_SIZE];
+
     neu_event_io_t *control_io;
-    int             control_fd;
+    neu_event_io_t *trans_data_io;
+
+    int control_fd;
+    int trans_data_fd;
+
+    uint16_t trans_data_port;
 
     neu_events_t *events;
 
@@ -62,6 +68,8 @@ typedef struct adapter_msg_handler {
 
 int  neu_adapter_error();
 void neu_adapter_set_error(int error);
+
+uint16_t neu_adapter_trans_data_port(neu_adapter_t *adapter);
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load);
 void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state);

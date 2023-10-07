@@ -135,9 +135,10 @@ int  neu_json_decode_unsubscribe_req(char *                       buf,
 void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req);
 
 typedef struct {
-    char *driver;
-    char *group;
-    char *params;
+    char *   driver;
+    char *   group;
+    uint16_t port;
+    char *   params;
 } neu_json_subscribe_groups_info_t;
 
 typedef struct {
