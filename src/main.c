@@ -17,8 +17,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -39,6 +44,11 @@ char                  host_port[32]     = { 0 };
 
 int64_t global_timestamp = 0;
 
+struct {
+    struct sockaddr_in addr;
+    int                fd;
+} g_remote_syslog_ctx;
+
 static void sig_handler(int sig)
 {
     nlog_warn("recv sig: %d", sig);
@@ -50,6 +60,40 @@ static void sig_handler(int sig)
     }
     exit_flag = true;
     exit(-1);
+}
+
+static int remote_syslog(zlog_msg_t *msg)
+{
+    sendto(g_remote_syslog_ctx.fd, msg->buf, msg->len, 0,
+           (const struct sockaddr *) &g_remote_syslog_ctx.addr,
+           sizeof(g_remote_syslog_ctx.addr));
+    return 0;
+}
+
+static int config_remote_syslog(const char *host, uint16_t port)
+{
+    g_remote_syslog_ctx.fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (g_remote_syslog_ctx.fd < 0) {
+        return -1;
+    }
+
+    g_remote_syslog_ctx.addr.sin_family      = AF_INET;
+    g_remote_syslog_ctx.addr.sin_port        = htons(port);
+    g_remote_syslog_ctx.addr.sin_addr.s_addr = inet_addr(host);
+
+    if (0 == inet_pton(AF_INET, host, &g_remote_syslog_ctx.addr.sin_addr)) {
+        // not an valid ip address, try resolve as host name
+        struct hostent *he = gethostbyname(host);
+        if (NULL == he) {
+            return -1;
+        }
+
+        memcpy(&g_remote_syslog_ctx.addr.sin_addr, he->h_addr_list[0],
+               he->h_length);
+    }
+
+    zlog_set_record("remote_syslog", remote_syslog);
+    return 0;
 }
 
 static int neuron_run(const neu_cli_args_t *args)
@@ -107,8 +151,14 @@ int main(int argc, char *argv[])
     }
 
     zlog_init(args.log_init_file);
-    neuron = zlog_get_category("neuron");
 
+    if (args.syslog_host && strlen(args.syslog_host) > 0 &&
+        0 != config_remote_syslog(args.syslog_host, args.syslog_port)) {
+        nlog_fatal("neuron setup remote syslog fail, exit.");
+        goto main_end;
+    }
+
+    neuron = zlog_get_category("neuron");
     zlog_level_switch(neuron, default_log_level);
 
     if (neuron_already_running()) {
