@@ -20,9 +20,6 @@
 #ifndef _NEU_MANAGER_INTERNAL_H_
 #define _NEU_MANAGER_INTERNAL_H_
 
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
-
 #include "event/event.h"
 #include "persist/persist.h"
 
@@ -32,7 +29,9 @@
 #include "template_manager.h"
 
 typedef struct neu_manager {
-    nng_socket      socket;
+    int             server_fd;
+    uint8_t         buf[NEU_MSG_MAX_SIZE];
+    uint8_t         recv_buf[NEU_MSG_MAX_SIZE];
     neu_events_t *  events;
     neu_event_io_t *loop;
 
@@ -102,13 +101,13 @@ UT_array *neu_manager_get_driver_group(neu_manager_t *manager);
 
 int       neu_manager_subscribe(neu_manager_t *manager, const char *app,
                                 const char *driver, const char *group,
-                                const char *params);
+                                const char *params, uint16_t *app_port);
 int       neu_manager_update_subscribe(neu_manager_t *manager, const char *app,
                                        const char *driver, const char *group,
                                        const char *params);
 int       neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
                                      const char *driver, const char *group,
-                                     const char *params);
+                                     uint16_t app_port, const char *params);
 int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                                   const char *driver, const char *group);
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);

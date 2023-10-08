@@ -305,7 +305,6 @@ int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
     zlog_notice(neuron, "del io: %d from epoll: %d", io->fd, events->epoll_fd);
 
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
-    close(io->fd);
     free_event(events, io->event_data->index);
 
     return 0;

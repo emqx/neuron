@@ -28,15 +28,14 @@
 typedef struct node_entity {
     char *name;
 
-    neu_adapter_t *adapter;
-    bool           is_static;
-    bool           display;
-    bool           single;
-    bool           is_monitor;
-    nng_pipe       pipe;
+    neu_adapter_t *    adapter;
+    bool               is_static;
+    bool               display;
+    bool               single;
+    bool               is_monitor;
+    struct sockaddr_in addr;
 
     UT_hash_handle hh;
-
 } node_entity_t;
 
 struct neu_node_manager {
@@ -142,7 +141,7 @@ int neu_node_manager_update_name(neu_node_manager_t *mgr, const char *node_name,
 }
 
 int neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
-                            nng_pipe pipe)
+                            struct sockaddr_in addr)
 {
     node_entity_t *node = NULL;
 
@@ -150,7 +149,7 @@ int neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
     if (NULL == node) {
         return -1;
     }
-    node->pipe = pipe;
+    node->addr = addr;
 
     return 0;
 }
@@ -182,7 +181,7 @@ bool neu_node_manager_exist_uninit(neu_node_manager_t *mgr)
 
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
-        if (el->pipe.id == 0) {
+        if (el->addr.sin_port == 0) {
             return true;
         }
     }
@@ -320,55 +319,56 @@ bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name)
     return false;
 }
 
-UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr, int type)
+UT_array *neu_node_manager_get_addrs(neu_node_manager_t *mgr, int type)
 {
-    UT_icd         icd   = { sizeof(nng_pipe), NULL, NULL, NULL };
-    UT_array *     pipes = NULL;
+    UT_icd         icd   = { sizeof(struct sockaddr_in), NULL, NULL, NULL };
+    UT_array *     addrs = NULL;
     node_entity_t *el = NULL, *tmp = NULL;
 
-    utarray_new(pipes, &icd);
+    utarray_new(addrs, &icd);
 
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
         if (!el->is_static) {
             if (el->adapter->module->type & type) {
-                nng_pipe pipe = el->pipe;
-                utarray_push_back(pipes, &pipe);
+                struct sockaddr_in addr = el->addr;
+                utarray_push_back(addrs, &addr);
             }
         }
     }
 
-    return pipes;
+    return addrs;
 }
 
-UT_array *neu_node_manager_get_pipes_all(neu_node_manager_t *mgr)
+UT_array *neu_node_manager_get_addrs_all(neu_node_manager_t *mgr)
 {
-    UT_icd         icd   = { sizeof(nng_pipe), NULL, NULL, NULL };
-    UT_array *     pipes = NULL;
+    UT_icd         icd   = { sizeof(struct sockaddr_in), NULL, NULL, NULL };
+    UT_array *     addrs = NULL;
     node_entity_t *el = NULL, *tmp = NULL;
 
-    utarray_new(pipes, &icd);
+    utarray_new(addrs, &icd);
 
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
-        nng_pipe pipe = el->pipe;
-        utarray_push_back(pipes, &pipe);
+        struct sockaddr_in addr = el->addr;
+        utarray_push_back(addrs, &addr);
     }
 
-    return pipes;
+    return addrs;
 }
 
-nng_pipe neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name)
+struct sockaddr_in neu_node_manager_get_addr(neu_node_manager_t *mgr,
+                                             const char *        name)
 {
-    nng_pipe       pipe = { 0 };
-    node_entity_t *node = NULL;
+    struct sockaddr_in addr = { 0 };
+    node_entity_t *    node = NULL;
 
     HASH_FIND_STR(mgr->nodes, name, node);
     if (node != NULL) {
-        pipe = node->pipe;
+        addr = node->addr;
     }
 
-    return pipe;
+    return addr;
 }
 
 bool neu_node_manager_is_monitor(neu_node_manager_t *mgr, const char *name)
@@ -379,15 +379,16 @@ bool neu_node_manager_is_monitor(neu_node_manager_t *mgr, const char *name)
 }
 
 int neu_node_manager_for_each_monitor(neu_node_manager_t *mgr,
-                                      int (*cb)(const char *name, nng_pipe pipe,
-                                                void *data),
+                                      int (*cb)(const char *       name,
+                                                struct sockaddr_in addr,
+                                                void *             data),
                                       void *data)
 {
     int rv = 0;
 
     utarray_foreach(mgr->monitors, node_entity_t **, node)
     {
-        rv = cb((*node)->name, (*node)->pipe, data);
+        rv = cb((*node)->name, (*node)->addr, data);
         if (0 != rv) {
             break;
         }
