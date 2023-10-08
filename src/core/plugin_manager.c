@@ -19,6 +19,7 @@
 #include <assert.h>
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "errcodes.h"
 #include "utils/log.h"
@@ -79,19 +80,34 @@ void neu_plugin_manager_destroy(neu_plugin_manager_t *mgr)
 int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
                            const char *          plugin_lib_name)
 {
-    char                 lib_path[256] = { 0 };
-    void *               handle        = NULL;
-    void *               module        = NULL;
-    neu_plugin_module_t *pm            = NULL;
-    plugin_entity_t *    plugin        = NULL;
+    char                 lib_path[256]    = { 0 };
+    void *               handle           = NULL;
+    void *               module           = NULL;
+    neu_plugin_module_t *pm               = NULL;
+    plugin_entity_t *    plugin           = NULL;
+    char                 lib_paths[3][64] = { 0 };
+    snprintf(lib_paths[0], sizeof(lib_paths[0]), "%s", g_plugin_dir);
+    snprintf(lib_paths[1], sizeof(lib_paths[1]), "%s/system", g_plugin_dir);
+    snprintf(lib_paths[2], sizeof(lib_paths[2]), "%s/custom", g_plugin_dir);
 
     assert(strlen(plugin_lib_name) <= NEU_PLUGIN_LIBRARY_LEN);
-    snprintf(lib_path, sizeof(lib_path) - 1, "./plugins/%s", plugin_lib_name);
 
-    handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
+    for (size_t i = 0; i < sizeof(lib_paths) / sizeof(lib_paths[0]); i++) {
+
+        snprintf(lib_path, sizeof(lib_path) - 1, "%s/%s", lib_paths[i],
+                 plugin_lib_name);
+
+        handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
+
+        if (handle == NULL) {
+            nlog_warn("failed to open library %s, error: %s", lib_path,
+                      dlerror());
+        } else {
+            break;
+        }
+    }
 
     if (handle == NULL) {
-        nlog_warn("failed to open library %s, error: %s", lib_path, dlerror());
         return NEU_ERR_LIBRARY_FAILED_TO_OPEN;
     }
 
@@ -280,22 +296,34 @@ int neu_plugin_manager_create_instance(neu_plugin_manager_t * mgr,
                                        const char *           plugin_name,
                                        neu_plugin_instance_t *instance)
 {
-    plugin_entity_t *plugin = NULL;
+    plugin_entity_t *plugin           = NULL;
+    char             lib_paths[3][64] = { 0 };
+    snprintf(lib_paths[0], sizeof(lib_paths[0]), "%s", g_plugin_dir);
+    snprintf(lib_paths[1], sizeof(lib_paths[1]), "%s/system", g_plugin_dir);
+    snprintf(lib_paths[2], sizeof(lib_paths[2]), "%s/custom", g_plugin_dir);
 
     HASH_FIND_STR(mgr->plugins, plugin_name, plugin);
     if (plugin != NULL) {
-        char lib_path[256] = { 0 };
 
-        snprintf(lib_path, sizeof(lib_path) - 1, "%s/%s", g_plugin_dir,
-                 plugin->lib_name);
-        instance->handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
-        assert(instance->handle != NULL);
+        for (size_t i = 0; i < sizeof(lib_paths) / sizeof(lib_paths[0]); i++) {
+            char lib_path[256] = { 0 };
 
-        instance->module = (neu_plugin_module_t *) dlsym(instance->handle,
-                                                         "neu_plugin_module");
-        assert(instance->module != NULL);
-        return 0;
+            snprintf(lib_path, sizeof(lib_path) - 1, "%s/%s", lib_paths[i],
+                     plugin->lib_name);
+            instance->handle = dlopen(lib_path, RTLD_NOW | RTLD_NODELETE);
+
+            if (instance->handle == NULL) {
+                continue;
+            }
+
+            instance->module = (neu_plugin_module_t *) dlsym(
+                instance->handle, "neu_plugin_module");
+            assert(instance->module != NULL);
+            return 0;
+        }
     }
+
+    assert(instance->handle != NULL);
 
     return -1;
 }
@@ -337,4 +365,51 @@ static void entity_free(plugin_entity_t *entity)
     free(entity->description);
     free(entity->description_zh);
     free(entity);
+}
+
+bool neu_plugin_manager_create_instance_by_path(neu_plugin_manager_t *mgr,
+                                                const char *plugin_path,
+                                                neu_plugin_instance_t *instance)
+{
+
+    (void) mgr;
+
+    instance->handle = dlopen(plugin_path, RTLD_NOW | RTLD_NODELETE);
+
+    if (instance->handle == NULL) {
+        return false;
+    }
+
+    instance->module =
+        (neu_plugin_module_t *) dlsym(instance->handle, "neu_plugin_module");
+
+    if (instance->module == NULL) {
+        dlclose(instance->handle);
+        instance->handle = NULL;
+        return false;
+    }
+
+    return true;
+}
+
+bool neu_plugin_manager_remove_library(neu_plugin_manager_t *mgr,
+                                       const char *          library)
+{
+    bool ret = true;
+    (void) mgr;
+    char lib_paths[3][64] = { 0 };
+    snprintf(lib_paths[0], sizeof(lib_paths[0]), "%s", g_plugin_dir);
+    snprintf(lib_paths[1], sizeof(lib_paths[1]), "%s/system", g_plugin_dir);
+    snprintf(lib_paths[2], sizeof(lib_paths[2]), "%s/custom", g_plugin_dir);
+    char lib_path[256] = { 0 };
+    for (size_t i = 0; i < sizeof(lib_paths) / sizeof(lib_paths[0]); i++) {
+        snprintf(lib_path, sizeof(lib_path), "%s/%s", lib_paths[i], library);
+        if (access(lib_path, F_OK) != -1 && remove(lib_path) != 0) {
+            nlog_debug("library %s remove fail", lib_path);
+            ret = false;
+            break;
+        }
+    }
+
+    return ret;
 }

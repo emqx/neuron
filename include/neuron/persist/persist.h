@@ -457,6 +457,11 @@ int neu_persister_delete_template_tags(const char *       tmpl_name,
                                        const char *       group_name,
                                        const char *const *tags, size_t n_tag);
 
+char *neu_persister_save_file_tmp(const char *file_data, uint32_t len,
+                                  const char *suffix);
+
+bool neu_persister_library_exists(const char *library);
+
 #ifdef __cplusplus
 }
 #endif
