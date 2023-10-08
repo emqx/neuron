@@ -93,18 +93,6 @@ Update node name to the same, it should fail as name conflicts
 	Check Response Status    ${res}    409
 	Check Error Code         ${res}    ${NEU_ERR_NODE_EXIST}
 
-Update monitor node, it should fail
-	${res} =    Update Node    monitor        monitor-new
-
-	Check Response Status    ${res}    400
-	Check Error Code         ${res}    ${NEU_ERR_NODE_NOT_ALLOW_UPDATE}
-
-Update node name to monitor, it should fail
-	${res} =    Update Node    modbus-node    monitor
-
-	Check Response Status    ${res}    409
-	Check Error Code         ${res}    ${NEU_ERR_NODE_EXIST}
-
 Update driver node name, it should success
 	${res} =    Update Node    modbus-node    modbus-node-new
 	Check Response Status    ${res}    200

@@ -298,4 +298,7 @@ int neu_conn_wait_msg(neu_conn_t *conn, void *context, uint16_t n_byte,
 int neu_conn_tcp_server_wait_msg(neu_conn_t *conn, int fd, void *context,
                                  uint16_t n_byte, neu_conn_process_msg fn);
 
+int is_ipv4(const char *ip);
+int is_ipv6(const char *ip);
+
 #endif

@@ -37,11 +37,19 @@
 #define NEU_TAG_FLOAG_PRECISION_MAX 17
 #define NEU_USER_PASSWORD_MIN_LEN 4
 #define NEU_USER_PASSWORD_MAX_LEN 16
-#define NEU_LOG_LEVEL_LEN 9
+#define NEU_LOG_LEVEL_LEN 12
 #define NEU_FILE_PATH_LEN 128
+#define NEU_MSG_MAX_SIZE 2048
 
 #define NEU_TAG_META_LENGTH 20
 #define NEU_TAG_META_SIZE 3
+
+#define NEU_LOG_LEVEL_DEBUG "debug"
+#define NEU_LOG_LEVEL_INFO "info"
+#define NEU_LOG_LEVEL_NOTICE "notice"
+#define NEU_LOG_LEVEL_WARN "warn"
+#define NEU_LOG_LEVEL_ERROR "error"
+#define NEU_LOG_LEVEL_FATAL "fatal"
 
 extern int  default_log_level;
 extern bool disable_jwt;

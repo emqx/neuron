@@ -354,14 +354,6 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     case NEU_REQRESP_TRANS_DATA: {
         error = handle_trans_data(plugin, data);
-
-        neu_reqresp_trans_data_t *t_data = (neu_reqresp_trans_data_t *) data;
-        for (int i = 0; i < t_data->n_tag; i++) {
-            if (t_data->tags[i].value.type == NEU_TYPE_PTR) {
-                free(t_data->tags[i].value.value.ptr.ptr);
-            }
-        }
-
         break;
     }
     case NEU_REQ_SUBSCRIBE_GROUP:
@@ -381,8 +373,6 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     case NEU_REQRESP_NODE_DELETED:
         error = handle_del_driver(plugin, data);
-        break;
-    case NEU_REQ_UPDATE_LICENSE:
         break;
     default:
         error = NEU_ERR_MQTT_FAILURE;

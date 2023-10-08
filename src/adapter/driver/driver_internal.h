@@ -79,4 +79,9 @@ void      neu_adapter_driver_get_value_tag(neu_adapter_driver_t *driver,
                                            const char *group, UT_array **tags);
 UT_array *neu_adapter_driver_get_read_tag(neu_adapter_driver_t *driver,
                                           const char *          group);
+
+void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
+                                  neu_req_subscribe_t * req);
+void neu_adapter_driver_unsubscribe(neu_adapter_driver_t * driver,
+                                    neu_req_unsubscribe_t *req);
 #endif

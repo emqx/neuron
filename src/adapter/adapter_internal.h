@@ -20,10 +20,7 @@
 #ifndef ADAPTER_INTERNAL_H
 #define ADAPTER_INTERNAL_H
 
-#include <nng/nng.h>
-#include <nng/protocol/pair1/pair.h>
-#include <nng/supplemental/util/platform.h>
-
+#include "define.h"
 #include "event/event.h"
 #include "plugin.h"
 
@@ -36,18 +33,26 @@ struct neu_adapter {
 
     neu_node_running_state_e state;
 
+    char log_level[NEU_LOG_LEVEL_LEN];
+
     adapter_callbacks_t cb_funs;
 
     void *               handle;
     neu_plugin_module_t *module;
     neu_plugin_t *       plugin;
 
-    nng_socket sock;
-    nng_dialer dialer;
+    uint8_t buf[NEU_MSG_MAX_SIZE];
+    uint8_t recv_buf[NEU_MSG_MAX_SIZE];
 
-    neu_events_t *  events;
-    neu_event_io_t *nng_io;
-    int             recv_fd;
+    neu_event_io_t *control_io;
+    neu_event_io_t *trans_data_io;
+
+    int control_fd;
+    int trans_data_fd;
+
+    uint16_t trans_data_port;
+
+    neu_events_t *events;
 
     neu_event_timer_t *timer_lev;
     int64_t            timestamp_lev;
@@ -65,6 +70,8 @@ typedef struct adapter_msg_handler {
 
 int  neu_adapter_error();
 void neu_adapter_set_error(int error);
+
+uint16_t neu_adapter_trans_data_port(neu_adapter_t *adapter);
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load);
 void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state);

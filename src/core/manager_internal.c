@@ -19,6 +19,7 @@
 #include <dlfcn.h>
 
 #include "utils/log.h"
+#include "json/neu_json_param.h"
 
 #include "adapter.h"
 #include "errcodes.h"
@@ -660,9 +661,9 @@ static inline int manager_subscribe(neu_manager_t *manager, const char *app,
                                     const char *driver, const char *group,
                                     const char *params)
 {
-    int            ret  = NEU_ERR_SUCCESS;
-    nng_pipe       pipe = { 0 };
-    neu_adapter_t *adapter =
+    int                ret  = NEU_ERR_SUCCESS;
+    struct sockaddr_in addr = { 0 };
+    neu_adapter_t *    adapter =
         neu_node_manager_find(manager->node_manager, driver);
 
     if (adapter == NULL) {
@@ -675,16 +676,16 @@ static inline int manager_subscribe(neu_manager_t *manager, const char *app,
         return ret;
     }
 
-    pipe = neu_node_manager_get_pipe(manager->node_manager, app);
+    addr = neu_node_manager_get_addr(manager->node_manager, app);
     return neu_subscribe_manager_sub(manager->subscribe_manager, driver, app,
-                                     group, params, pipe);
+                                     group, params, addr);
 }
 
 int neu_manager_subscribe(neu_manager_t *manager, const char *app,
                           const char *driver, const char *group,
-                          const char *params)
+                          const char *params, uint16_t *app_port)
 {
-    if (0 == strcmp(app, "monitor")) {
+    if (neu_node_manager_is_monitor(manager->node_manager, app)) {
         // filter out monitor node
         return NEU_ERR_NODE_NOT_ALLOW_SUBSCRIBE;
     }
@@ -693,6 +694,21 @@ int neu_manager_subscribe(neu_manager_t *manager, const char *app,
 
     if (adapter == NULL) {
         return NEU_ERR_NODE_NOT_EXIST;
+    }
+
+    *app_port = neu_adapter_trans_data_port(adapter);
+
+    // guard against empty mqtt topic parameter
+    // this is not an elegant solution due to the current architecture
+    if (params && 0 == strcmp(adapter->module->module_name, "MQTT")) {
+        neu_json_elem_t elem = { .name = "topic", .t = NEU_JSON_STR };
+        neu_json_decode((char *) params, 1, &elem);
+        neu_parse_param(params, NULL, 1, &elem);
+        if (elem.v.val_str && 0 == strlen(elem.v.val_str)) {
+            free(elem.v.val_str);
+            return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+        }
+        free(elem.v.val_str);
     }
 
     if (NEU_NA_TYPE_APP != neu_adapter_get_type(adapter)) {
@@ -712,35 +728,53 @@ int neu_manager_update_subscribe(neu_manager_t *manager, const char *app,
 
 int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
                                const char *driver, const char *group,
-                               const char *params)
+                               uint16_t app_port, const char *params)
 {
-    neu_reqresp_head_t header = { 0 };
-    header.type               = NEU_REQ_SUBSCRIBE_GROUP;
-    strcpy(header.sender, "manager");
-    strcpy(header.receiver, app);
+    memset(manager->buf, 0, sizeof(manager->buf));
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) manager->buf;
+    header->type               = NEU_REQ_SUBSCRIBE_GROUP;
+    strcpy(header->sender, "manager");
+    strcpy(header->receiver, app);
 
     neu_req_subscribe_t cmd = { 0 };
     strcpy(cmd.app, app);
     strcpy(cmd.driver, driver);
     strcpy(cmd.group, group);
+    cmd.port = app_port;
 
     if (params && NULL == (cmd.params = strdup(params))) {
         return NEU_ERR_EINTERNAL;
     }
 
-    nng_msg *out_msg;
-    nng_pipe pipe = neu_node_manager_get_pipe(manager->node_manager, app);
+    struct sockaddr_in addr =
+        neu_node_manager_get_addr(manager->node_manager, app);
 
-    out_msg = neu_msg_gen(&header, &cmd);
-    nng_msg_set_pipe(out_msg, pipe);
+    neu_msg_gen(header, &cmd);
 
-    if (nng_sendmsg(manager->socket, out_msg, 0) == 0) {
-        nlog_notice("send %s to %s", neu_reqresp_type_string(header.type), app);
-    } else {
-        nlog_warn("send %s to %s failed", neu_reqresp_type_string(header.type),
-                  app);
+    int ret = sendto(manager->server_fd, header, header->len, 0,
+                     (struct sockaddr *) &addr, sizeof(addr));
+    if (ret != (int) header->len) {
+        nlog_warn("send %s to %s app failed",
+                  neu_reqresp_type_string(header->type), app);
         free(cmd.params);
-        nng_msg_free(out_msg);
+    } else {
+        nlog_notice("send %s to %s app", neu_reqresp_type_string(header->type),
+                    app);
+    }
+
+    strcpy(header->receiver, driver);
+    addr = neu_node_manager_get_addr(manager->node_manager, driver);
+
+    neu_msg_gen(header, &cmd);
+
+    ret = sendto(manager->server_fd, header, header->len, 0,
+                 (struct sockaddr *) &addr, sizeof(addr));
+    if (ret != (int) header->len) {
+        nlog_warn("send %s to %s driver failed",
+                  neu_reqresp_type_string(header->type), app);
+    } else {
+        nlog_notice("send %s to %s driver",
+                    neu_reqresp_type_string(header->type), app);
     }
 
     return 0;

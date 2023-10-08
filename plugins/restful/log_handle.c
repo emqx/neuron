@@ -40,7 +40,6 @@
 #include "json/neu_json_fn.h"
 
 #include "log_handle.h"
-#include "rest.h"
 #include "utils/utarray.h"
 
 void handle_logs_files(nng_aio *aio)
@@ -120,27 +119,28 @@ void handle_log_level(nng_aio *aio)
             zlog_category_t *          ct = zlog_get_category(req->node_name);
             zlog_category_t *          neuron = zlog_get_category("neuron");
             int                        log_level;
+            static int                 log_level_neuron = 60;
 
-            if (0 == strcmp(req->log_level, "debug")) {
-                log_level                = ZLOG_LEVEL_DEBUG;
-                plugin->common.log_level = "debug";
-            } else if (0 == strcmp(req->log_level, "info")) {
-                log_level                = ZLOG_LEVEL_INFO;
-                plugin->common.log_level = "info";
-            } else if (0 == strcmp(req->log_level, "notice")) {
-                log_level                = ZLOG_LEVEL_NOTICE;
-                plugin->common.log_level = "notice";
-            } else if (0 == strcmp(req->log_level, "warn")) {
-                log_level                = ZLOG_LEVEL_WARN;
-                plugin->common.log_level = "warn";
-            } else if (0 == strcmp(req->log_level, "error")) {
-                log_level                = ZLOG_LEVEL_ERROR;
-                plugin->common.log_level = "error";
-            } else if (0 == strcmp(req->log_level, "fatal")) {
-                log_level                = ZLOG_LEVEL_FATAL;
-                plugin->common.log_level = "fatal";
+            if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_DEBUG)) {
+                log_level = ZLOG_LEVEL_DEBUG;
+                strcpy(cmd.log_level, NEU_LOG_LEVEL_DEBUG);
+            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_INFO)) {
+                log_level = ZLOG_LEVEL_INFO;
+                strcpy(cmd.log_level, NEU_LOG_LEVEL_INFO);
+            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_NOTICE)) {
+                log_level = ZLOG_LEVEL_NOTICE;
+                strcpy(cmd.log_level, NEU_LOG_LEVEL_NOTICE);
+            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_WARN)) {
+                log_level = ZLOG_LEVEL_WARN;
+                strcpy(cmd.log_level, NEU_LOG_LEVEL_WARN);
+            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_ERROR)) {
+                log_level = ZLOG_LEVEL_ERROR;
+                strcpy(cmd.log_level, NEU_LOG_LEVEL_ERROR);
+            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_FATAL)) {
+                log_level = ZLOG_LEVEL_FATAL;
+                strcpy(cmd.log_level, NEU_LOG_LEVEL_FATAL);
             } else {
-                plugin->common.log_level = "unknow";
+                strcpy(cmd.log_level, "unknow");
                 nlog_error(
                     "Failed to modify log_level of the node, node_name:%s, ",
                     req->node_name);
@@ -161,7 +161,11 @@ void handle_log_level(nng_aio *aio)
                 });
             }
 
-            ret = zlog_level_switch(neuron, log_level);
+            if (log_level > log_level_neuron) {
+                log_level_neuron = log_level;
+            }
+
+            ret = zlog_level_switch(neuron, log_level_neuron);
             if (ret != 0) {
                 nlog_error("Failed to modify log_level of the node, ret: %d",
                            ret);

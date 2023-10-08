@@ -43,6 +43,12 @@
 
 #define neu_plugin_module default_dashboard_plugin_module
 
+struct neu_plugin {
+    neu_plugin_common_t    common;
+    nng_http_server *      server;
+    neu_rest_handle_ctx_t *handle_ctx;
+};
+
 static nng_http_server *server_init()
 {
     nng_url *        url;
@@ -233,8 +239,6 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_GET_NDRIVER_TAGS:
         handle_get_ndriver_tags_resp(header->ctx,
                                      (neu_resp_get_ndriver_tags_t *) data);
-        break;
-    case NEU_REQ_UPDATE_LICENSE:
         break;
     default:
         nlog_fatal("recv unhandle msg: %s",

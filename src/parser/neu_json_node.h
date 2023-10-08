@@ -25,6 +25,7 @@
 #ifndef _NEU_JSON_API_NEU_JSON_NODE_H_
 #define _NEU_JSON_API_NEU_JSON_NODE_H_
 
+#include "define.h"
 #include "json/json.h"
 
 #ifdef __cplusplus

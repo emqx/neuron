@@ -20,7 +20,7 @@
 #ifndef _NEU_NODE_MANAGER_H_
 #define _NEU_NODE_MANAGER_H_
 
-#include <nng/nng.h>
+#include <arpa/inet.h>
 
 #include "define.h"
 #include "utils/utextend.h"
@@ -40,7 +40,7 @@ int neu_node_manager_add_single(neu_node_manager_t *mgr, neu_adapter_t *adapter,
 int neu_node_manager_update_name(neu_node_manager_t *mgr, const char *node_name,
                                  const char *new_node_name);
 int neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
-                            nng_pipe pipe);
+                            struct sockaddr_in addr);
 bool     neu_node_manager_exist_uninit(neu_node_manager_t *mgr);
 void     neu_node_manager_del(neu_node_manager_t *mgr, const char *name);
 uint16_t neu_node_manager_size(neu_node_manager_t *mgr);
@@ -57,10 +57,16 @@ neu_adapter_t *neu_node_manager_find(neu_node_manager_t *mgr, const char *name);
 bool neu_node_manager_is_single(neu_node_manager_t *mgr, const char *name);
 bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name);
 
-// nng_pipe array
-UT_array *neu_node_manager_get_pipes(neu_node_manager_t *mgr, int type);
-UT_array *neu_node_manager_get_pipes_all(neu_node_manager_t *mgr);
-nng_pipe  neu_node_manager_get_pipe(neu_node_manager_t *mgr, const char *name);
+// addr array
+UT_array *neu_node_manager_get_addrs(neu_node_manager_t *mgr, int type);
+UT_array *neu_node_manager_get_addrs_all(neu_node_manager_t *mgr);
+struct sockaddr_in neu_node_manager_get_addr(neu_node_manager_t *mgr,
+                                             const char *        name);
+
+bool neu_node_manager_is_monitor(neu_node_manager_t *mgr, const char *name);
+int  neu_node_manager_for_each_monitor(
+     neu_node_manager_t *mgr,
+     int (*)(const char *name, struct sockaddr_in addr, void *data), void *data);
 
 // neu_nodes_state_t array
 UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr);
