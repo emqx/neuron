@@ -827,22 +827,26 @@ static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
 }
 
 typedef struct {
+    uint16_t        index;
+    pthread_mutex_t mtx;
+} neu_reqresp_trans_data_ctx_t;
+
+typedef struct {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
 
-    uint16_t        index;
-    pthread_mutex_t mtx;
-    UT_array *      tags; // neu_resp_tag_value_meta_t
+    neu_reqresp_trans_data_ctx_t *ctx;
+    UT_array *                    tags; // neu_resp_tag_value_meta_t
 } neu_reqresp_trans_data_t;
 
 static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
 {
-    pthread_mutex_lock(&data->mtx);
-    if (data->index > 0) {
-        data->index -= 1;
+    pthread_mutex_lock(&data->ctx->mtx);
+    if (data->ctx->index > 0) {
+        data->ctx->index -= 1;
     }
 
-    if (data->index == 0) {
+    if (data->ctx->index == 0) {
         utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
         {
             if (tag_value->value.type == NEU_TYPE_PTR) {
@@ -850,10 +854,11 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
             }
         }
         utarray_free(data->tags);
-        pthread_mutex_unlock(&data->mtx);
-        pthread_mutex_destroy(&data->mtx);
+        pthread_mutex_unlock(&data->ctx->mtx);
+        pthread_mutex_destroy(&data->ctx->mtx);
+        free(data->ctx);
     } else {
-        pthread_mutex_unlock(&data->mtx);
+        pthread_mutex_unlock(&data->ctx->mtx);
     }
 }
 
