@@ -170,7 +170,7 @@ add_subdirectory(plugins/monitor)
 add_subdirectory(simulator)
 
 if(NOT DISABLE_UT)
-  add_subdirectory(tests)
+  add_subdirectory(tests/ut)
 endif()
 
 # Set sane defaults for multi-lib linux systems

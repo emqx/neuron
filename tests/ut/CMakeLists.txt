@@ -1,3 +1,5 @@
+set(UT_DIRECTORY ${CMAKE_BINARY_DIR}/tests/ut)
+
 include_directories(${CMAKE_SOURCE_DIR}/include/neuron)
 
 aux_source_directory(${CMAKE_SOURCE_DIR}/src/parser SRC_PARSER)
@@ -17,8 +19,8 @@ target_include_directories(http_test PRIVATE
 	${CMAKE_SOURCE_DIR}/plugins/restful)
 target_link_libraries(http_test neuron-base gtest_main gtest jansson nng)
 
-file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${CMAKE_BINARY_DIR}/tests/config)
-file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${CMAKE_BINARY_DIR}/tests/config)
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.key DESTINATION ${UT_DIRECTORY}/config)
+file(COPY ${CMAKE_SOURCE_DIR}/neuron.pem DESTINATION ${UT_DIRECTORY}/config)
 add_executable(jwt_test jwt_test.cc)
 target_include_directories(jwt_test PRIVATE 
     ${CMAKE_SOURCE_DIR}/src 
