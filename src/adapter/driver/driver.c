@@ -225,9 +225,10 @@ static void update_im(neu_adapter_t *adapter, const char *group,
         if (find != NULL) {
             pthread_mutex_lock(&find->apps_mtx);
 
-            data->index = utarray_len(find->apps);
-            if (data->index > 0) {
-                pthread_mutex_init(&data->mtx, NULL);
+            data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+            data->ctx->index = utarray_len(find->apps);
+            if (data->ctx->index > 0) {
+                pthread_mutex_init(&data->ctx->mtx, NULL);
 
                 utarray_foreach(find->apps, sub_app_t *, app)
                 {
@@ -238,6 +239,7 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                 }
             } else {
                 utarray_free(data->tags);
+                free(data->ctx);
             }
 
             pthread_mutex_unlock(&find->apps_mtx);
@@ -1271,10 +1273,11 @@ static int report_callback(void *usr_data)
     if (utarray_len(data->tags) > 0) {
         pthread_mutex_lock(&group->apps_mtx);
 
-        data->index = utarray_len(group->apps);
+        data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+        data->ctx->index = utarray_len(group->apps);
 
-        if (data->index > 0) {
-            pthread_mutex_init(&data->mtx, NULL);
+        if (data->ctx->index > 0) {
+            pthread_mutex_init(&data->ctx->mtx, NULL);
 
             utarray_foreach(group->apps, sub_app_t *, app)
             {
@@ -1286,6 +1289,7 @@ static int report_callback(void *usr_data)
             }
         } else {
             utarray_free(data->tags);
+            free(data->ctx);
         }
 
         pthread_mutex_unlock(&group->apps_mtx);
