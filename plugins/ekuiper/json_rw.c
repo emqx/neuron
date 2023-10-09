@@ -25,111 +25,6 @@
 #include "json_rw.h"
 #include "plugin_ekuiper.h"
 
-int wrap_tag_data(neu_json_read_resp_tag_t * json_tag,
-                  neu_resp_tag_value_meta_t *tag_value)
-{
-    if (NULL == json_tag || NULL == tag_value) {
-        return -1;
-    }
-
-    for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
-        if (strlen(tag_value->metas[k].name) > 0) {
-            json_tag->n_meta++;
-        } else {
-            break;
-        }
-    }
-
-    if (json_tag->n_meta > 0) {
-        json_tag->metas = (neu_json_tag_meta_t *) calloc(
-            json_tag->n_meta, sizeof(neu_json_tag_meta_t));
-        if (json_tag->metas == NULL) {
-            return -1;
-        }
-    }
-
-    neu_json_metas_to_json(tag_value->metas, NEU_TAG_META_SIZE, json_tag);
-
-    json_tag->name  = tag_value->tag;
-    json_tag->error = NEU_ERR_SUCCESS;
-
-    switch (tag_value->value.type) {
-    case NEU_TYPE_INT8:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.i8;
-        break;
-    case NEU_TYPE_UINT8:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.u8;
-        break;
-    case NEU_TYPE_INT16:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.i16;
-        break;
-    case NEU_TYPE_WORD:
-    case NEU_TYPE_UINT16:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.u16;
-        break;
-    case NEU_TYPE_INT32:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.i32;
-        break;
-    case NEU_TYPE_DWORD:
-    case NEU_TYPE_UINT32:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.u32;
-        break;
-    case NEU_TYPE_INT64:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.i64;
-        break;
-    case NEU_TYPE_LWORD:
-    case NEU_TYPE_UINT64:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.u64;
-        break;
-    case NEU_TYPE_FLOAT:
-        json_tag->t               = NEU_JSON_FLOAT;
-        json_tag->value.val_float = tag_value->value.value.f32;
-        break;
-    case NEU_TYPE_DOUBLE:
-        json_tag->t                = NEU_JSON_DOUBLE;
-        json_tag->value.val_double = tag_value->value.value.d64;
-        break;
-    case NEU_TYPE_BIT:
-        json_tag->t             = NEU_JSON_BIT;
-        json_tag->value.val_bit = tag_value->value.value.u8;
-        break;
-    case NEU_TYPE_BOOL:
-        json_tag->t              = NEU_JSON_BOOL;
-        json_tag->value.val_bool = tag_value->value.value.boolean;
-        break;
-    case NEU_TYPE_STRING:
-        json_tag->t             = NEU_JSON_STR;
-        json_tag->value.val_str = tag_value->value.value.str;
-        break;
-    case NEU_TYPE_PTR:
-        json_tag->t             = NEU_JSON_STR;
-        json_tag->value.val_str = (char *) tag_value->value.value.ptr.ptr;
-        break;
-    case NEU_TYPE_ERROR:
-        json_tag->t             = NEU_JSON_INT;
-        json_tag->value.val_int = tag_value->value.value.i32;
-        json_tag->error         = tag_value->value.value.i32;
-        break;
-    case NEU_TYPE_BYTES:
-        json_tag->t                      = NEU_JSON_BYTES;
-        json_tag->value.val_bytes.length = tag_value->value.value.bytes.length;
-        json_tag->value.val_bytes.bytes  = tag_value->value.value.bytes.bytes;
-        break;
-    default:
-        break;
-    }
-
-    return 0;
-}
-
 int json_encode_read_resp_header(void *json_object, void *param)
 {
     int                      ret    = 0;
@@ -186,18 +81,17 @@ int json_encode_read_resp_tags(void *json_object, void *param)
         return -1;
     }
 
-    for (int i = 0; i < trans_data->n_tag; i++) {
+    utarray_foreach(trans_data->tags, neu_resp_tag_value_meta_t *, tag_value)
+    {
         neu_json_read_resp_tag_t json_tag = { 0 };
 
-        if (0 != wrap_tag_data(&json_tag, &trans_data->tags[i])) {
-            continue; // ignore
-        }
+        neu_tag_value_to_json(tag_value, &json_tag);
 
         neu_json_elem_t tag_elem = {
             .name      = json_tag.name,
             .t         = json_tag.t,
             .v         = json_tag.value,
-            .precision = trans_data->tags[i].value.precision,
+            .precision = tag_value->value.precision,
         };
 
         if (json_tag.n_meta > 0) {
@@ -231,22 +125,24 @@ int json_encode_read_resp_tags(void *json_object, void *param)
         }
     }
 
-    neu_json_elem_t resp_elems[] = { {
-                                         .name         = "values",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = values_object,
-                                     },
-                                     {
-                                         .name         = "errors",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = errors_object,
+    neu_json_elem_t resp_elems[] = {
+        {
+            .name         = "values",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = values_object,
+        },
+        {
+            .name         = "errors",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = errors_object,
 
-                                     },
-                                     {
-                                         .name         = "metas",
-                                         .t            = NEU_JSON_OBJECT,
-                                         .v.val_object = metas_object,
-                                     } };
+        },
+        {
+            .name         = "metas",
+            .t            = NEU_JSON_OBJECT,
+            .v.val_object = metas_object,
+        },
+    };
     // steals `values_object` and `errors_object`
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));

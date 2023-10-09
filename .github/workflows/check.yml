@@ -60,7 +60,7 @@ jobs:
           cd build
           sudo apt-get update
           sudo apt install -y lcov
-          ctest --output-on-failure -O tests/reports/ut.log --output-junit tests/reports/output.xml
+          ctest --output-on-failure -O tests/ut/reports/ut.log --output-junit tests/ut/reports/output.xml
           lcov --capture --directory . --output-file  testneuron.info --test-name testneuron
           genhtml -o result testneuron.info
 
@@ -68,8 +68,8 @@ jobs:
         with:
           name: ut_result
           path: |
-            build/tests/reports/ut.log
-            build/tests/reports/output.xml
+            build/tests/ut/reports/ut.log
+            build/tests/ut/reports/output.xml
             build/result/index.html
             build/neuron.log
 

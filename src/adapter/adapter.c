@@ -28,10 +28,6 @@
 #include <sys/time.h>
 #include <unistd.h>
 
-#include <nng/nng.h>
-#include <nng/protocol/pair1/pair.h>
-#include <nng/supplemental/util/platform.h>
-
 #include "utils/log.h"
 
 #include "adapter.h"
@@ -42,11 +38,16 @@
 #include "plugin.h"
 #include "storage.h"
 
+static int adapter_trans_data(enum neu_event_io_type type, int fd,
+                              void *usr_data);
 static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
                            void *data);
 static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
+static int adapter_responseto(neu_adapter_t *     adapter,
+                              neu_reqresp_head_t *header, void *data,
+                              struct sockaddr_in dst);
 static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
                                    const char *help, neu_metric_type_e type,
                                    uint64_t init);
@@ -61,6 +62,7 @@ inline static void notify_monitor(neu_adapter_t *    adapter,
 static const adapter_callbacks_t callback_funs = {
     .command         = adapter_command,
     .response        = adapter_response,
+    .responseto      = adapter_responseto,
     .register_metric = adapter_register_metric,
     .update_metric   = adapter_update_metric,
 };
@@ -119,24 +121,41 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         break;
     }
 
+    adapter->control_fd =
+        socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+    if (adapter->control_fd <= 0) {
+        free(adapter);
+        return NULL;
+    }
+    adapter->trans_data_fd =
+        socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+    if (adapter->trans_data_fd <= 0) {
+        close(adapter->control_fd);
+        free(adapter);
+        return NULL;
+    }
+
     adapter->name                    = strdup(info->name);
     adapter->events                  = neu_event_new();
     adapter->state                   = NEU_NODE_RUNNING_STATE_INIT;
     adapter->handle                  = info->handle;
     adapter->cb_funs.command         = callback_funs.command;
     adapter->cb_funs.response        = callback_funs.response;
+    adapter->cb_funs.responseto      = callback_funs.responseto;
     adapter->cb_funs.register_metric = callback_funs.register_metric;
     adapter->cb_funs.update_metric   = callback_funs.update_metric;
     adapter->module                  = info->module;
+    adapter->timestamp_lev           = 0;
+    adapter->trans_data_port         = 0;
 
-    adapter->timestamp_lev = 0;
-
-    rv = nng_pair1_open(&adapter->sock);
+    struct sockaddr_in remote = {
+        .sin_family      = AF_INET,
+        .sin_port        = htons(7788),
+        .sin_addr.s_addr = inet_addr("127.0.0.1"),
+    };
+    rv = connect(adapter->control_fd, (struct sockaddr *) &remote,
+                 sizeof(struct sockaddr_in));
     assert(rv == 0);
-    nng_socket_set_int(adapter->sock, NNG_OPT_RECVBUF, 8192);
-    nng_socket_set_int(adapter->sock, NNG_OPT_SENDBUF, 8192);
-    nng_socket_set_ms(adapter->sock, NNG_OPT_SENDTIMEO, 1000);
-    nng_socket_get_int(adapter->sock, NNG_OPT_RECVFD, &adapter->recv_fd);
 
     switch (info->module->type) {
     case NEU_NA_TYPE_DRIVER:
@@ -146,11 +165,33 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
         break;
     case NEU_NA_TYPE_NDRIVER:
-    case NEU_NA_TYPE_APP:
+    case NEU_NA_TYPE_APP: {
+        while (true) {
+            uint16_t           port  = neu_manager_get_port();
+            struct sockaddr_in local = {
+                .sin_family      = AF_INET,
+                .sin_port        = htons(port),
+                .sin_addr.s_addr = inet_addr("127.0.0.1"),
+            };
+            if (bind(adapter->trans_data_fd, (struct sockaddr *) &local,
+                     sizeof(struct sockaddr_in)) == 0) {
+                adapter->trans_data_port = port;
+                break;
+            }
+        }
+
+        param.usr_data = (void *) adapter;
+        param.cb       = adapter_trans_data;
+        param.fd       = adapter->trans_data_fd;
+
+        adapter->trans_data_io = neu_event_add_io(adapter->events, param);
+
         if (adapter->module->display) {
             REGISTER_APP_METRICS(adapter);
         }
+
         break;
+    }
     }
 
     adapter->plugin = adapter->module->intf_funs->open();
@@ -181,13 +222,11 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         adapter_load_group_and_tag((neu_adapter_driver_t *) adapter);
     }
 
-    param.fd       = adapter->recv_fd;
+    param.fd       = adapter->control_fd;
     param.usr_data = (void *) adapter;
     param.cb       = adapter_loop;
 
-    adapter->nng_io = neu_event_add_io(adapter->events, param);
-    rv = nng_dial(adapter->sock, neu_manager_get_url(), &adapter->dialer, 0);
-    assert(rv == 0);
+    adapter->control_io = neu_event_add_io(adapter->events, param);
 
     adapter_storage_state(adapter->name, adapter->state);
 
@@ -197,8 +236,10 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
             neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
+        } else {
+            neu_event_del_io(adapter->events, adapter->trans_data_io);
         }
-        neu_event_del_io(adapter->events, adapter->nng_io);
+        neu_event_del_io(adapter->events, adapter->control_io);
 
         neu_adapter_destroy(adapter);
         return NULL;
@@ -216,6 +257,11 @@ bool neu_adapter_reset(neu_adapter_t *adapter, neu_adapter_info_t *info)
     adapter->module = info->module;
     adapter->handle = info->handle;
     return true;
+}
+
+uint16_t neu_adapter_trans_data_port(neu_adapter_t *adapter)
+{
+    return adapter->trans_data_port;
 }
 
 int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
@@ -266,18 +312,24 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
 
 void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state)
 {
-    neu_reqresp_head_t  header   = { .type = NEU_REQ_NODE_INIT };
-    neu_req_node_init_t init     = { 0 };
-    nng_msg *           init_msg = NULL;
+    memset(adapter->buf, 0, sizeof(adapter->buf));
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) adapter->buf;
+    neu_req_node_init_t init   = { 0 };
 
-    strcpy(header.sender, adapter->name);
-    strcpy(header.receiver, "manager");
+    header->type = NEU_REQ_NODE_INIT;
 
+    strcpy(header->sender, adapter->name);
+    strcpy(header->receiver, "manager");
     strcpy(init.node, adapter->name);
     init.state = state;
-    init_msg   = neu_msg_gen(&header, &init);
 
-    nng_sendmsg(adapter->sock, init_msg, 0);
+    neu_msg_gen(header, &init);
+
+    int ret = send(adapter->control_fd, header, header->len, 0);
+    if (ret != (int) header->len) {
+        nlog_error("%s failed to send init msg to manager, ret: %d, errno: %d",
+                   adapter->name, ret, errno);
+    }
 }
 
 neu_node_type_e neu_adapter_get_type(neu_adapter_t *adapter)
@@ -365,21 +417,24 @@ static void adapter_reset_metrics(neu_adapter_t *adapter)
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
                            void *data)
 {
-    int      ret = 0;
-    nng_msg *msg = NULL;
+    int     ret                   = 0;
+    uint8_t buf[NEU_MSG_MAX_SIZE] = { 0 };
 
-    strcpy(header.sender, adapter->name);
-    switch (header.type) {
+    neu_reqresp_head_t *pheader = (neu_reqresp_head_t *) buf;
+    *pheader                    = header;
+
+    strcpy(pheader->sender, adapter->name);
+    switch (pheader->type) {
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAGS:
     case NEU_REQ_WRITE_TAG: {
         neu_req_read_group_t *cmd = (neu_req_read_group_t *) data;
-        strcpy(header.receiver, cmd->driver);
+        strcpy(pheader->receiver, cmd->driver);
         break;
     }
     case NEU_REQ_DEL_NODE: {
         neu_req_del_node_t *cmd = (neu_req_del_node_t *) data;
-        strcpy(header.receiver, cmd->node);
+        strcpy(pheader->receiver, cmd->node);
         break;
     }
     case NEU_REQ_UPDATE_GROUP:
@@ -387,7 +442,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_DEL_GROUP:
     case NEU_REQ_ADD_GROUP: {
         neu_req_add_group_t *cmd = (neu_req_add_group_t *) data;
-        strcpy(header.receiver, cmd->driver);
+        strcpy(pheader->receiver, cmd->driver);
         break;
     }
     case NEU_REQ_GET_TAG:
@@ -395,7 +450,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_DEL_TAG:
     case NEU_REQ_ADD_TAG: {
         neu_req_add_tag_t *cmd = (neu_req_add_tag_t *) data;
-        strcpy(header.receiver, cmd->driver);
+        strcpy(pheader->receiver, cmd->driver);
         break;
     }
     case NEU_REQ_UPDATE_NODE:
@@ -404,97 +459,181 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     case NEU_REQ_GET_NODE_SETTING:
     case NEU_REQ_NODE_SETTING: {
         neu_req_node_setting_t *cmd = (neu_req_node_setting_t *) data;
-        strcpy(header.receiver, cmd->node);
+        strcpy(pheader->receiver, cmd->node);
         break;
     }
     case NEU_REQ_GET_DRIVER_GROUP:
     case NEU_REQ_GET_SUB_DRIVER_TAGS: {
-        strcpy(header.receiver, "manager");
+        strcpy(pheader->receiver, "manager");
         break;
     }
     case NEU_REQRESP_NODE_DELETED: {
         neu_reqresp_node_deleted_t *cmd = (neu_reqresp_node_deleted_t *) data;
-        strcpy(header.receiver, cmd->node);
+        strcpy(pheader->receiver, cmd->node);
         break;
     }
     case NEU_REQ_UPDATE_NDRIVER_TAG_PARAM:
     case NEU_REQ_UPDATE_NDRIVER_TAG_INFO:
     case NEU_REQ_GET_NDRIVER_TAGS: {
         neu_req_get_ndriver_tags_t *cmd = (neu_req_get_ndriver_tags_t *) data;
-        strcpy(header.receiver, cmd->ndriver);
+        strcpy(pheader->receiver, cmd->ndriver);
         break;
     }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
         neu_req_update_log_level_t *cmd = (neu_req_update_log_level_t *) data;
-        strcpy(header.receiver, cmd->node);
+        strcpy(pheader->receiver, cmd->node);
         break;
     }
     default:
         break;
     }
 
-    msg = neu_msg_gen(&header, data);
+    neu_msg_gen(pheader, data);
 
-    ret = nng_sendmsg(adapter->sock, msg, 0);
-    if (ret != 0) {
-        nng_msg_free(msg);
+    ret = send(adapter->control_fd, pheader, pheader->len, 0);
+    if (ret != (int) pheader->len) {
+        nlog_error(
+            "adapter: %s send %d command %s failed, ret: %d-%d, errno: %s(%d)",
+            adapter->name, adapter->control_fd,
+            neu_reqresp_type_string(pheader->type), ret, pheader->len,
+            strerror(errno), errno);
+        return -1;
+    } else {
+        return 0;
     }
-
-    return ret;
 }
 
 static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data)
 {
-    switch (header->type) {
-    case NEU_REQRESP_TRANS_DATA:
-        strcpy(header->sender, adapter->name);
-        break;
-    default:
-        neu_msg_exchange(header);
-        break;
-    }
+    assert(header->type != NEU_REQRESP_TRANS_DATA);
+    neu_msg_exchange(header);
 
-    nng_msg *msg = neu_msg_gen(header, data);
-    int      ret = nng_sendmsg(adapter->sock, msg, 0);
-    if (ret != 0) {
-        nng_msg_free(msg);
+    neu_msg_gen(header, data);
+    int ret = send(adapter->control_fd, header, header->len, 0);
+    if (ret <= 0) {
+        nlog_error("adapter: %s send response %s failed, ret: %d, errno: %d",
+                   adapter->name, neu_reqresp_type_string(header->type), ret,
+                   errno);
     }
 
     return ret;
 }
 
-static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
+static int adapter_responseto(neu_adapter_t *     adapter,
+                              neu_reqresp_head_t *header, void *data,
+                              struct sockaddr_in dst)
 {
-    neu_adapter_t *     adapter = (neu_adapter_t *) usr_data;
-    nng_msg *           msg     = NULL;
-    neu_reqresp_head_t *header  = NULL;
+    assert(header->type == NEU_REQRESP_TRANS_DATA);
+    strcpy(header->sender, adapter->name);
 
+    neu_msg_gen(header, data);
+    int ret = sendto(adapter->control_fd, header, header->len, 0,
+                     (struct sockaddr *) &dst, sizeof(dst));
+    if (ret <= 0) {
+        nlog_error("adapter: %s send responseto %s failed, ret: %d, errno: %d",
+                   adapter->name, neu_reqresp_type_string(header->type), ret,
+                   errno);
+    }
+
+    return ret;
+}
+
+static int adapter_trans_data(enum neu_event_io_type type, int fd,
+                              void *usr_data)
+{
+    neu_adapter_t *adapter = (neu_adapter_t *) usr_data;
     if (type != NEU_EVENT_IO_READ) {
         nlog_warn("adapter: %s recv close, exit loop, fd: %d", adapter->name,
                   fd);
         return 0;
     }
 
-    nng_recvmsg(adapter->sock, &msg, 0);
-    header = (neu_reqresp_head_t *) nng_msg_body(msg);
-    nlog_info("adapter(%s) recv msg from: %s, type: %s", adapter->name,
-              header->sender, neu_reqresp_type_string(header->type));
+    memset(adapter->recv_buf, 0, sizeof(adapter->recv_buf));
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) adapter->recv_buf;
+
+    int rv = recv(adapter->trans_data_fd, adapter->recv_buf,
+                  sizeof(adapter->recv_buf), 0);
+    if (rv <= 0) {
+        nlog_warn("adapter: %s recv trans data failed, ret: %d, errno: %s(%d)",
+                  adapter->name, rv, strerror(errno), errno);
+        return 0;
+    }
+
+    nlog_debug("adapter(%s) recv msg from: %s %p, type: %s", adapter->name,
+               header->sender, header->ctx,
+               neu_reqresp_type_string(header->type));
+
+    if (header->type != NEU_REQRESP_TRANS_DATA &&
+        header->type != NEU_RESP_ERROR) {
+        nlog_warn("adapter: %s recv msg type error, type: %s", adapter->name,
+                  neu_reqresp_type_string(header->type));
+        return 0;
+    }
+
+    adapter->module->intf_funs->request(
+        adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+    if (header->type == NEU_REQRESP_TRANS_DATA) {
+        neu_trans_data_free((neu_reqresp_trans_data_t *) &header[1]);
+    }
+    return 0;
+}
+
+static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
+{
+    neu_adapter_t *adapter = (neu_adapter_t *) usr_data;
+    if (type != NEU_EVENT_IO_READ) {
+        nlog_warn("adapter: %s recv close, exit loop, fd: %d", adapter->name,
+                  fd);
+        return 0;
+    }
+
+    memset(adapter->recv_buf, 0, sizeof(adapter->recv_buf));
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) adapter->recv_buf;
+
+    int rv = recv(adapter->control_fd, adapter->recv_buf,
+                  sizeof(adapter->recv_buf), 0);
+    if (rv <= 0) {
+        nlog_warn("adapter: %s recv failed, ret: %d, errno: %s(%d)",
+                  adapter->name, rv, strerror(errno), errno);
+        return 0;
+    }
+
+    nlog_info("adapter(%s) recv msg from: %s %p, type: %s", adapter->name,
+              header->sender, header->ctx,
+              neu_reqresp_type_string(header->type));
 
     switch (header->type) {
+    case NEU_REQ_SUBSCRIBE_GROUP: {
+        neu_req_subscribe_t *cmd = (neu_req_subscribe_t *) &header[1];
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+            neu_adapter_driver_subscribe((neu_adapter_driver_t *) adapter, cmd);
+        } else {
+            adapter->module->intf_funs->request(
+                adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        }
+        break;
+    }
+    case NEU_REQ_UNSUBSCRIBE_GROUP: {
+        neu_req_unsubscribe_t *cmd = (neu_req_unsubscribe_t *) &header[1];
+        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+            neu_adapter_driver_unsubscribe((neu_adapter_driver_t *) adapter,
+                                           cmd);
+        } else {
+            adapter->module->intf_funs->request(
+                adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        }
+        break;
+    }
+    case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
     case NEU_RESP_GET_DRIVER_GROUP:
     case NEU_REQRESP_NODE_DELETED:
     case NEU_RESP_GET_SUB_DRIVER_TAGS:
-    case NEU_REQ_UPDATE_LICENSE:
     case NEU_REQ_UPDATE_NODE:
     case NEU_RESP_GET_NODE_STATE:
     case NEU_RESP_GET_NODES_STATE:
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_REQ_UPDATE_GROUP:
-    case NEU_REQ_SUBSCRIBE_GROUP:
-    case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
-    case NEU_REQ_UNSUBSCRIBE_GROUP:
-    case NEU_RESP_READ_GROUP:
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
     case NEU_RESP_ADD_TAG:
     case NEU_RESP_ADD_TEMPLATE_TAG:
@@ -510,7 +649,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NDRIVER_TAGS:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
-    case NEU_REQRESP_TRANS_DATA:
     case NEU_REQRESP_NODES_STATE:
     case NEU_REQ_ADD_NODE_EVENT:
     case NEU_REQ_DEL_NODE_EVENT:
@@ -524,6 +662,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_UPDATE_TAG_EVENT:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        break;
+    case NEU_RESP_READ_GROUP:
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_resp_read_free((neu_resp_read_group_t *) &header[1]);
         break;
     case NEU_REQ_READ_GROUP: {
         neu_resp_error_t error = { 0 };
@@ -544,8 +687,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t error = { 0 };
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
-            void *msg_dump = calloc(nng_msg_len(msg), 1);
-            memcpy(msg_dump, header, nng_msg_len(msg));
+            void *msg_dump = calloc(header->len, 1);
+            memcpy(msg_dump, header, header->len);
             neu_adapter_driver_write_tag((neu_adapter_driver_t *) adapter,
                                          msg_dump);
         } else {
@@ -566,8 +709,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(adapter, header, &error);
         } else {
-            void *msg_dump = calloc(nng_msg_len(msg), 1);
-            memcpy(msg_dump, header, nng_msg_len(msg));
+            void *msg_dump = calloc(header->len, 1);
+            memcpy(msg_dump, header, header->len);
             neu_adapter_driver_write_tags((neu_adapter_driver_t *) adapter,
                                           msg_dump);
         }
@@ -904,7 +1047,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_NODE_UNINIT: {
         neu_req_node_uninit_t *cmd = (neu_req_node_uninit_t *) &header[1];
-        nng_msg *              uninit_msg                  = NULL;
         char                   name[NEU_NODE_NAME_LEN]     = { 0 };
         char                   receiver[NEU_NODE_NAME_LEN] = { 0 };
 
@@ -914,15 +1056,18 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_msg_exchange(header);
         strcpy(header->sender, adapter->name);
         strcpy(cmd->node, adapter->name);
-        uninit_msg = neu_msg_gen(header, cmd);
+
+        neu_msg_gen(header, cmd);
 
         strcpy(name, adapter->name);
         strcpy(receiver, header->receiver);
-        if (nng_sendmsg(adapter->sock, uninit_msg, 0) == 0) {
-            nlog_notice("%s send uninit msg to %s", name, receiver);
+
+        int ret = send(adapter->control_fd, header, header->len, 0);
+        if (ret != (int) header->len) {
+            nlog_error("%s %d send uninit msg to %s error: %s(%d)", name,
+                       adapter->control_fd, receiver, strerror(errno), errno);
         } else {
-            nng_msg_free(uninit_msg);
-            nlog_error("%s send uninit msg to %s failed", name, receiver);
+            nlog_notice("%s send uninit msg to %s failed", name, receiver);
         }
         break;
     }
@@ -1003,18 +1148,20 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
 
     default:
+        nlog_warn("adapter: %s recv msg type error, type: %s", adapter->name,
+                  neu_reqresp_type_string(header->type));
         assert(false);
         break;
     }
-    nng_msg_free(msg);
 
     return 0;
 }
 
 void neu_adapter_destroy(neu_adapter_t *adapter)
 {
-    nng_dialer_close(adapter->dialer);
-    nng_close(adapter->sock);
+    nlog_notice("adapter %s destroy", adapter->name);
+    close(adapter->control_fd);
+    close(adapter->trans_data_fd);
 
     adapter->module->intf_funs->close(adapter->plugin);
 
@@ -1060,7 +1207,7 @@ int neu_adapter_uninit(neu_adapter_t *adapter)
     }
     adapter->module->intf_funs->uninit(adapter->plugin);
 
-    neu_event_del_io(adapter->events, adapter->nng_io);
+    neu_event_del_io(adapter->events, adapter->control_io);
 
     if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
         neu_adapter_driver_destroy((neu_adapter_driver_t *) adapter);
@@ -1321,44 +1468,44 @@ void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data)
 {
-    nng_msg *msg = neu_msg_gen(header, data);
+    neu_msg_gen(header, data);
 
-    int ret = nng_sendmsg(adapter->sock, msg, 0);
-    if (ret != 0) {
-        nng_msg_free(msg);
-        nlog_warn("%s reply %s to %s, error: %s", header->sender,
+    int ret = send(adapter->control_fd, header, header->len, 0);
+    if (ret <= 0) {
+        nlog_warn("%s reply %s to %s, error: %s(%d)", header->sender,
                   neu_reqresp_type_string(header->type), header->receiver,
-                  nng_strerror(ret));
+                  strerror(errno), errno);
     }
 }
 
 inline static void notify_monitor(neu_adapter_t *    adapter,
                                   neu_reqresp_type_e event, void *data)
 {
-    neu_reqresp_head_t header = {
-        .receiver = "manager",
-        .type     = event,
-    };
+    memset(adapter->buf, 0, sizeof(adapter->buf));
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) adapter->buf;
 
-    strncpy(header.sender, adapter->name, NEU_NODE_NAME_LEN);
+    strcpy(header->receiver, "manager");
+    strncpy(header->sender, adapter->name, NEU_NODE_NAME_LEN);
+    header->type = event;
 
-    nng_msg *msg = neu_msg_gen(&header, data);
+    neu_msg_gen(header, data);
 
-    int ret = nng_sendmsg(adapter->sock, msg, 0);
-    if (ret != 0) {
-        nng_msg_free(msg);
-        nlog_warn("notify %s of %s, error: %s", header.receiver,
-                  neu_reqresp_type_string(header.type), nng_strerror(ret));
+    int ret = send(adapter->control_fd, header, header->len, 0);
+    if (ret <= 0) {
+        nlog_warn("notify %s of %s, error: %s(%d)", header->receiver,
+                  neu_reqresp_type_string(header->type), strerror(errno),
+                  errno);
     }
 }
 
-void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
+void neu_msg_gen(neu_reqresp_head_t *header, void *data)
 {
-    nng_msg *msg       = NULL;
-    void *   body      = NULL;
-    size_t   data_size = 0;
+    size_t data_size = 0;
 
     switch (header->type) {
+    case NEU_REQRESP_TRANS_DATA:
+        data_size = sizeof(neu_reqresp_trans_data_t);
+        break;
     case NEU_REQ_NODE_INIT:
     case NEU_REQ_NODE_UNINIT:
     case NEU_RESP_NODE_UNINIT:
@@ -1562,15 +1709,6 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
     case NEU_RESP_READ_GROUP:
         data_size = sizeof(neu_resp_read_group_t);
         break;
-    case NEU_REQRESP_TRANS_DATA: {
-        neu_reqresp_trans_data_t *trans = (neu_reqresp_trans_data_t *) data;
-        data_size                       = sizeof(neu_reqresp_trans_data_t) +
-            trans->n_tag * sizeof(neu_resp_tag_value_meta_t);
-        break;
-    }
-    case NEU_REQ_UPDATE_LICENSE:
-        data_size = sizeof(neu_req_update_license_t);
-        break;
     case NEU_REQRESP_NODE_DELETED:
         data_size = sizeof(neu_reqresp_node_deleted_t);
         break;
@@ -1607,9 +1745,7 @@ void *neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     }
 
-    nng_msg_alloc(&msg, sizeof(neu_reqresp_head_t) + data_size);
-    body = nng_msg_body(msg);
-    memcpy(body, header, sizeof(neu_reqresp_head_t));
-    memcpy((uint8_t *) body + sizeof(neu_reqresp_head_t), data, data_size);
-    return msg;
+    assert(NEU_MSG_MAX_SIZE >= sizeof(neu_reqresp_head_t) + data_size);
+    memcpy((uint8_t *) &header[1], data, data_size);
+    header->len = sizeof(neu_reqresp_head_t) + data_size;
 }

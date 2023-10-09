@@ -405,17 +405,18 @@ int manager_load_subscribe(neu_manager_t *manager)
         } else {
             utarray_foreach(sub_infos, neu_persist_subscription_info_t *, info)
             {
-                rv = neu_manager_subscribe(manager, node->node,
+                uint16_t app_port = 0;
+                rv                = neu_manager_subscribe(manager, node->node,
                                            info->driver_name, info->group_name,
-                                           info->params);
+                                           info->params, &app_port);
                 const char *ok_or_err = (0 == rv) ? "success" : "fail";
                 nlog_notice("%s load subscription app:%s driver:%s grp:%s",
                             ok_or_err, node->node, info->driver_name,
                             info->group_name);
                 if (0 == rv) {
-                    neu_manager_send_subscribe(manager, node->node,
-                                               info->driver_name,
-                                               info->group_name, info->params);
+                    neu_manager_send_subscribe(
+                        manager, node->node, info->driver_name,
+                        info->group_name, app_port, info->params);
                 }
             }
 
