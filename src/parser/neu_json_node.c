@@ -184,6 +184,11 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
                                          .name      = "rtt",
                                          .t         = NEU_JSON_INT,
                                          .v.val_int = resp->rtt,
+                                     },
+                                     {
+                                         .name      = "log_level",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->log_level,
                                      } };
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
@@ -200,28 +205,31 @@ int neu_json_encode_get_nodes_state_resp(void *json_object, void *param)
     void *                      node_array = neu_json_array();
     neu_json_get_nodes_state_t *p_node     = resp->nodes;
     for (int i = 0; i < resp->n_node; i++) {
-        neu_json_elem_t node_elems[] = {
-            {
-                .name      = "node",
-                .t         = NEU_JSON_STR,
-                .v.val_str = p_node->name,
-            },
-            {
-                .name      = "running",
-                .t         = NEU_JSON_INT,
-                .v.val_int = p_node->running,
-            },
-            {
-                .name      = "link",
-                .t         = NEU_JSON_INT,
-                .v.val_int = p_node->link,
-            },
-            {
-                .name      = "rtt",
-                .t         = NEU_JSON_INT,
-                .v.val_int = p_node->rtt,
-            },
-        };
+        neu_json_elem_t node_elems[] = { {
+                                             .name      = "node",
+                                             .t         = NEU_JSON_STR,
+                                             .v.val_str = p_node->name,
+                                         },
+                                         {
+                                             .name      = "running",
+                                             .t         = NEU_JSON_INT,
+                                             .v.val_int = p_node->running,
+                                         },
+                                         {
+                                             .name      = "link",
+                                             .t         = NEU_JSON_INT,
+                                             .v.val_int = p_node->link,
+                                         },
+                                         {
+                                             .name      = "rtt",
+                                             .t         = NEU_JSON_INT,
+                                             .v.val_int = p_node->rtt,
+                                         },
+                                         {
+                                             .name      = "log_level",
+                                             .t         = NEU_JSON_STR,
+                                             .v.val_str = p_node->log_level,
+                                         } };
         node_array = neu_json_encode_array(node_array, node_elems,
                                            NEU_JSON_ELEM_SIZE(node_elems));
         p_node++;

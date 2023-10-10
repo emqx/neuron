@@ -25,6 +25,7 @@
 #ifndef _NEU_JSON_API_NEU_JSON_NODE_H_
 #define _NEU_JSON_API_NEU_JSON_NODE_H_
 
+#include "define.h"
 #include "json/json.h"
 
 #ifdef __cplusplus
@@ -52,6 +53,7 @@ typedef struct {
     int64_t running;
     int64_t link;
     int64_t rtt;
+    char *  log_level;
 } neu_json_get_node_state_resp_t;
 
 int neu_json_encode_get_node_state_resp(void *json_object, void *param);
@@ -61,6 +63,7 @@ typedef struct {
     int64_t running;
     int64_t link;
     int64_t rtt;
+    char *  log_level;
 } neu_json_get_nodes_state_t;
 
 typedef struct {

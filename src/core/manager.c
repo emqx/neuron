@@ -1175,12 +1175,13 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+
     case NEU_REQ_GET_GROUP:
     case NEU_REQ_GET_NODE_SETTING:
+    case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAG:
     case NEU_REQ_WRITE_TAGS:
-    case NEU_REQ_GET_NODE_STATE:
     case NEU_REQ_GET_TAG:
     case NEU_REQ_GET_NDRIVER_TAGS:
     case NEU_REQ_NODE_CTL:
@@ -1460,9 +1461,12 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(manager, header, &e);
         } else {
-            struct timeval tv = { 0 };
-            gettimeofday(&tv, NULL);
-            manager->timestamp_lev_manager = tv.tv_sec;
+            neu_req_update_log_level_t *cmd =
+                (neu_req_update_log_level_t *) &header[1];
+            neu_adapter_t *adapter_log =
+                neu_node_manager_find(manager->node_manager, header->receiver);
+            strcpy(neu_plugin_to_plugin_common(adapter_log->plugin)->log_level,
+                   cmd->log_level);
 
             forward_msg(manager, header, header->receiver);
         }

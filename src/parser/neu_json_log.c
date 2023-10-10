@@ -76,10 +76,15 @@ decode_exit:
 void neu_json_decode_update_log_level_req_free(
     neu_json_update_log_level_req_t *req)
 {
-    free(req->node_name);
-    free(req->log_level);
-
-    free(req);
+    if (req->node_name != NULL) {
+        free(req->node_name);
+    }
+    if (req->log_level != NULL) {
+        free(req->log_level);
+    }
+    if (req != NULL) {
+        free(req);
+    }
 }
 
 int neu_json_encode_get_log_resp(void *json_object, void *param)
