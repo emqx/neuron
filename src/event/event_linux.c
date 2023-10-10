@@ -26,9 +26,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
-
 #include "event/event.h"
 #include "utils/log.h"
 
@@ -41,7 +38,7 @@ struct neu_event_timer {
     struct event_data *    event_data;
     struct itimerspec      value;
     neu_event_timer_type_e type;
-    nng_mtx *              mtx;
+    pthread_mutex_t        mtx;
     bool                   stop;
 };
 
@@ -132,7 +129,7 @@ static void *event_loop(void *arg)
 
         switch (data->type) {
         case TIMER:
-            nng_mtx_lock(data->ctx.timer.mtx);
+            pthread_mutex_lock(&data->ctx.timer.mtx);
             if ((event.events & EPOLLIN) == EPOLLIN) {
                 uint64_t t;
 
@@ -152,7 +149,7 @@ static void *event_loop(void *arg)
                 }
             }
 
-            nng_mtx_unlock(data->ctx.timer.mtx);
+            pthread_mutex_unlock(&data->ctx.timer.mtx);
             break;
         case IO:
             if ((event.events & EPOLLHUP) == EPOLLHUP) {
@@ -238,7 +235,7 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     timer_ctx->fd    = timer_fd;
     timer_ctx->type  = timer.type;
     timer_ctx->stop  = false;
-    nng_mtx_alloc(&timer_ctx->mtx);
+    pthread_mutex_init(&timer_ctx->mtx, NULL);
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, timer_fd, &event);
 
@@ -260,11 +257,11 @@ int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
     timer->stop = true;
     epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, timer->fd, NULL);
 
-    nng_mtx_lock(timer->mtx);
+    pthread_mutex_lock(&timer->mtx);
     close(timer->fd);
-    nng_mtx_unlock(timer->mtx);
+    pthread_mutex_unlock(&timer->mtx);
 
-    nng_mtx_free(timer->mtx);
+    pthread_mutex_destroy(&timer->mtx);
     free_event(events, timer->event_data->index);
     return 0;
 }
