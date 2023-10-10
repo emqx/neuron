@@ -17,10 +17,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 config_ **/
 
+#include <pthread.h>
 #include <stdlib.h>
-
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
 
 #include "utils/async_queue.h"
 #include "utils/utextend.h"
@@ -39,7 +37,7 @@ struct neu_async_queue {
     neu_async_queue_expire expire_fn;
     neu_async_queue_free   free_fn;
 
-    nng_mtx *mtx;
+    pthread_mutex_t mtx;
 
     uint16_t max;
 
@@ -59,7 +57,7 @@ neu_async_queue_t *neu_async_queue_new(neu_async_queue_key    key_fn,
 
     q->max = max_size;
 
-    nng_mtx_alloc(&q->mtx);
+    pthread_mutex_init(&q->mtx, NULL);
 
     return q;
 }
@@ -68,16 +66,16 @@ void neu_async_queue_destroy(neu_async_queue_t *q)
 {
     element *elt = NULL, *tmp = NULL;
 
-    nng_mtx_lock(q->mtx);
+    pthread_mutex_lock(&q->mtx);
     DL_FOREACH_SAFE(q->list, elt, tmp)
     {
         q->free_fn(elt->data);
         DL_DELETE(q->list, elt);
         free(elt);
     }
-    nng_mtx_unlock(q->mtx);
+    pthread_mutex_unlock(&q->mtx);
 
-    nng_mtx_free(q->mtx);
+    pthread_mutex_destroy(&q->mtx);
     free(q);
 }
 
@@ -86,7 +84,7 @@ void neu_async_queue_push(neu_async_queue_t *q, void *elem)
     element *elt   = NULL;
     int      count = 0;
 
-    nng_mtx_lock(q->mtx);
+    pthread_mutex_lock(&q->mtx);
     DL_COUNT(q->list, elt, count);
 
     if (count == q->max && count > 0) {
@@ -102,7 +100,7 @@ void neu_async_queue_push(neu_async_queue_t *q, void *elem)
 
     DL_APPEND(q->list, elt);
 
-    nng_mtx_unlock(q->mtx);
+    pthread_mutex_unlock(&q->mtx);
 }
 
 int neu_async_queue_pop(neu_async_queue_t *q, uint64_t key, void **elem)
@@ -110,7 +108,7 @@ int neu_async_queue_pop(neu_async_queue_t *q, uint64_t key, void **elem)
     element *elt = NULL, *tmp = NULL;
     int      ret = -1;
 
-    nng_mtx_lock(q->mtx);
+    pthread_mutex_lock(&q->mtx);
     DL_FOREACH_SAFE(q->list, elt, tmp)
     {
         if (elt->key == key) {
@@ -127,7 +125,7 @@ int neu_async_queue_pop(neu_async_queue_t *q, uint64_t key, void **elem)
             }
         }
     }
-    nng_mtx_unlock(q->mtx);
+    pthread_mutex_unlock(&q->mtx);
 
     return ret;
 }
@@ -137,7 +135,7 @@ void neu_async_queue_remove(neu_async_queue_t *q, neu_async_queue_filter filter,
 {
     element *el = NULL, *tmp = NULL;
 
-    nng_mtx_lock(q->mtx);
+    pthread_mutex_lock(&q->mtx);
     DL_FOREACH_SAFE(q->list, el, tmp)
     {
         if (filter(filter_elem, el->data)) {
@@ -146,19 +144,19 @@ void neu_async_queue_remove(neu_async_queue_t *q, neu_async_queue_filter filter,
             free(el);
         }
     }
-    nng_mtx_unlock(q->mtx);
+    pthread_mutex_unlock(&q->mtx);
 }
 
 void neu_async_queue_clean(neu_async_queue_t *q)
 {
     element *el = NULL, *tmp = NULL;
 
-    nng_mtx_lock(q->mtx);
+    pthread_mutex_lock(&q->mtx);
     DL_FOREACH_SAFE(q->list, el, tmp)
     {
         DL_DELETE(q->list, el);
         q->free_fn(el->data);
         free(el);
     }
-    nng_mtx_unlock(q->mtx);
+    pthread_mutex_unlock(&q->mtx);
 }

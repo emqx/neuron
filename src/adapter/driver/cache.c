@@ -19,10 +19,8 @@
 
 #include <assert.h>
 #include <math.h>
+#include <pthread.h>
 #include <string.h>
-
-#include <nng/nng.h>
-#include <nng/supplemental/util/platform.h>
 
 #include "utils/uthash.h"
 
@@ -49,7 +47,7 @@ struct elem {
 };
 
 struct neu_driver_cache {
-    nng_mtx *mtx;
+    pthread_mutex_t mtx;
 
     struct elem *table;
 };
@@ -71,7 +69,7 @@ neu_driver_cache_t *neu_driver_cache_new()
 {
     neu_driver_cache_t *cache = calloc(1, sizeof(neu_driver_cache_t));
 
-    nng_mtx_alloc(&cache->mtx);
+    pthread_mutex_init(&cache->mtx, NULL);
 
     return cache;
 }
@@ -81,7 +79,7 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
     struct elem *elem = NULL;
     struct elem *tmp  = NULL;
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_ITER(hh, cache->table, elem, tmp)
     {
         HASH_DEL(cache->table, elem);
@@ -93,9 +91,9 @@ void neu_driver_cache_destroy(neu_driver_cache_t *cache)
         }
         free(elem);
     }
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 
-    nng_mtx_free(cache->mtx);
+    pthread_mutex_destroy(&cache->mtx);
 
     free(cache);
 }
@@ -112,7 +110,7 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem == NULL) {
@@ -128,7 +126,7 @@ void neu_driver_cache_add(neu_driver_cache_t *cache, const char *group,
     elem->changed   = false;
     elem->value     = value;
 
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 }
 
 void neu_driver_cache_update_change(neu_driver_cache_t *cache,
@@ -140,7 +138,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
     if (elem != NULL) {
         elem->timestamp = timestamp;
@@ -242,7 +240,7 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
         }
     }
 
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 }
 
 void neu_driver_cache_update(neu_driver_cache_t *cache, const char *group,
@@ -262,7 +260,7 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
     int          ret  = -1;
     tkey_t       key  = to_key(group, tag);
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL) {
@@ -330,7 +328,7 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
         ret = 0;
     }
 
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 
     return ret;
 }
@@ -344,7 +342,7 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
     int          ret  = -1;
     tkey_t       key  = to_key(group, tag);
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL && elem->changed) {
@@ -415,7 +413,7 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
         ret = 0;
     }
 
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 
     return ret;
 }
@@ -427,7 +425,7 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
     int          ret  = -1;
     tkey_t       key  = to_key(group, tag);
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL) {
@@ -492,7 +490,7 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
         ret = 0;
     }
 
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 
     return ret;
 }
@@ -505,7 +503,7 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
     int          ret  = -1;
     tkey_t       key  = to_key(group, tag);
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL && elem->changed) {
@@ -572,7 +570,7 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
         ret = 0;
     }
 
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 
     return ret;
 }
@@ -583,7 +581,7 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
     struct elem *elem = NULL;
     tkey_t       key  = to_key(group, tag);
 
-    nng_mtx_lock(cache->mtx);
+    pthread_mutex_lock(&cache->mtx);
     HASH_FIND(hh, cache->table, &key, sizeof(tkey_t), elem);
 
     if (elem != NULL) {
@@ -597,5 +595,5 @@ void neu_driver_cache_del(neu_driver_cache_t *cache, const char *group,
         free(elem);
     }
 
-    nng_mtx_unlock(cache->mtx);
+    pthread_mutex_unlock(&cache->mtx);
 }
