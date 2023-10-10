@@ -1270,8 +1270,8 @@ static int report_callback(void *usr_data)
                           NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
                       group->driver->cache, group->name, tags, data->tags);
 
-    nlog_notice("report group: %s, all tags: %d, report tags: %d", group->name,
-                utarray_len(tags), utarray_len(data->tags));
+    nlog_info("report group: %s, all tags: %d, report tags: %d", group->name,
+              utarray_len(tags), utarray_len(data->tags));
     if (utarray_len(data->tags) > 0) {
         pthread_mutex_lock(&group->apps_mtx);
 
