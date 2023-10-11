@@ -168,7 +168,8 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
             point->area == MODBUS_AREA_INPUT) {
             ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
         } else {
-            if (point->option.bytes.length > 128) {
+            if (point->option.bytes.length > 128 ||
+                point->option.bytes.length % 2 == 1) {
                 return NEU_ERR_TAG_ADDRESS_FORMAT_INVALID;
             }
             point->n_register =
