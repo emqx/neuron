@@ -1328,6 +1328,7 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
 
     state.link    = common->link_state;
     state.running = adapter->state;
+    strcpy(state.log_level, common->log_level);
 
     return state;
 }
