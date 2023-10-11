@@ -37,6 +37,7 @@ extern "C" {
 typedef struct {
     neu_node_running_state_e running;
     neu_node_link_state_e    link;
+    char                     log_level[NEU_LOG_LEVEL_LEN];
 } neu_node_state_t;
 
 typedef enum neu_reqresp_type {
@@ -1044,6 +1045,7 @@ typedef struct {
 
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];
+    char log_level[NEU_LOG_LEVEL_LEN];
 } neu_req_update_log_level_t;
 
 void  neu_msg_gen(neu_reqresp_head_t *header, void *data);
