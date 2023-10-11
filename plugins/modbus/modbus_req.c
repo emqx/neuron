@@ -152,7 +152,10 @@ int modbus_group_timer(neu_plugin_t *plugin, neu_plugin_group_t *group,
         {
             modbus_point_t *p   = calloc(1, sizeof(modbus_point_t));
             int             ret = modbus_tag_to_point(tag, p);
-            assert(ret == 0);
+            if (ret != NEU_ERR_SUCCESS) {
+                plog_error(plugin, "invalid tag: %s, address: %s", tag->name,
+                           tag->address);
+            }
 
             utarray_push_back(gd->tags, &p);
         }
