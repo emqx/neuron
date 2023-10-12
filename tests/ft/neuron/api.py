@@ -1,5 +1,6 @@
 import requests
 import neuron.config as config
+import neuron.error as error
 
 
 def login(user='admin', password='0000'):
@@ -48,6 +49,93 @@ def node_setting(node, json, jwt=config.default_jwt):
 
 def get_node_setting(node, jwt=config.default_jwt):
     return requests.get(url=config.BASE_URL + '/api/v2/node/setting', headers={"Authorization": jwt}, params={"node": node})
+
+
+def add_group(node, group, interval=100):
+    return requests.post(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "interval": interval})
+
+
+def del_group(node, group):
+    return requests.delete(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group})
+
+
+def update_group(node, group, new_name="", interval=0):
+    if len(new_name) > 0 and interval > 0:
+        return requests.put(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "new_name": new_name, "interval": interval})
+    elif len(new_name) > 0:
+        return requests.put(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "new_name": new_name})
+    elif interval > 0:
+        return requests.put(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "interval": interval})
+    else:
+        assert False
+
+
+def add_tags(node, group, tags):
+    return requests.post(url=config.BASE_URL + '/api/v2/tags', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tags})
+
+
+def add_tags_check(node, group, tags):
+    response = add_tags(node=node, group=group, tags=tags)
+    assert 200 == response.status_code
+    assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+
+def del_tags(node, group, tags):
+    return requests.delete(url=config.BASE_URL + '/api/v2/tags', headers={"Authorizatioin": config.default_jwt}, json={"node": node, "group": group, "tags": tags})
+
+
+def update_tags(node, group, tags):
+    return requests.put(url=config.BASE_URL + '/api/v2/tags', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tags})
+
+
+def get_tags(node, group):
+    return requests.get(url=config.BASE_URL + "/api/v2/tags", headers={"Authorization": config.default_jwt}, params={"node": node, "group": group})
+
+
+def read_tags(node, group):
+    return requests.post(url=config.BASE_URL + "/api/v2/read", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group})
+
+
+def read_tag(node, group, tag):
+    response = read_tags(node, group)
+    assert 200 == response.status_code
+    x = list(filter(lambda x: x['name'] == tag,
+                    response.json()['tags']))
+    assert len(x) == 1
+    try:
+        x[0]['value']
+    except KeyError:
+        print(x[0])
+    finally:
+        return x[0]['value']
+
+
+def read_tag_error(node, group, tag):
+    response = read_tags(node, group)
+    assert 200 == response.status_code
+    x = list(filter(lambda x: x['name'] == tag,
+                    response.json()['tags']))
+    assert len(x) == 1
+    try:
+        x[0]['error']
+    except KeyError:
+        print(x[0])
+    finally:
+        return x[0]['error']
+
+
+def write_tag(node, group, tag, value):
+    return requests.post(url=config.BASE_URL + "/api/v2/write", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tag": tag, "value": value})
+
+
+def write_tag_check(node, group, tag, value):
+    response = write_tag(node, group, tag, value)
+    assert 200 == response.status_code
+    assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+
+def write_tags(node, group, tag_values):
+    return requests.post(url=config.BASE_URL + "/api/v2/writes", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tag_values})
 
 
 # plugin setting

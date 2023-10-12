@@ -29,6 +29,10 @@ def random_port():
     return random.randint(30000, 65535)
 
 
+def compare_float(v1, v2, delta=0.001):
+    return abs(v1 - v2) < delta
+
+
 @pytest.fixture(autouse=True, scope='class')
 def class_setup_and_teardown():
     process.remove_persistence()

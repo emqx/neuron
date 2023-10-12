@@ -215,13 +215,14 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
         break;
     case MODBUS_WRITE_S_COIL:
     case MODBUS_WRITE_M_COIL:
-    case MODBUS_WRITE_S_HOLD_REG: 
+    case MODBUS_WRITE_S_HOLD_REG:
     case MODBUS_WRITE_M_HOLD_REG:
         nlog_info(
             "write register: slave: %d, function: %d, address: %d, n: %d, "
             "nbyte: %d\n",
             code->slave_id, code->function, ntohs(address->start_address),
-            code->function != MODBUS_WRITE_S_HOLD_REG ? ntohs(address->n_reg) : 1,
+            code->function != MODBUS_WRITE_S_HOLD_REG ? ntohs(address->n_reg)
+                                                      : 1,
             code->function != MODBUS_WRITE_S_HOLD_REG ? data->n_byte : 2);
         modbus_write(&tcp_registers[code->slave_id - 1], code->function,
                      address, data, value);
