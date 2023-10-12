@@ -413,14 +413,21 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
 
     json_obj = neu_json_decode_new(buf);
 
-    neu_json_elem_t req_elems[] = { {
-                                        .name = "node",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "group",
-                                        .t    = NEU_JSON_STR,
-                                    } };
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "sync",
+            .t         = NEU_JSON_BOOL,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
     if (ret != 0) {
@@ -429,6 +436,7 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
 
     req->node  = req_elems[0].v.val_str;
     req->group = req_elems[1].v.val_str;
+    req->sync  = req_elems[2].v.val_bool;
 
     *result = req;
     goto decode_exit;
