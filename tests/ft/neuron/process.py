@@ -1,8 +1,6 @@
 import os
 import time
-import pytest
 import subprocess
-import random
 
 
 def remove_persistence(dir='build/'):
@@ -34,7 +32,3 @@ def start_simulator(args, dir='build/simulator'):
 
 def stop_simulator(process):
     process.terminate()
-
-
-def random_port():
-    return random.randint(30000, 65535)
