@@ -405,6 +405,30 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
 
             utarray_push_back(resp.tags, &tag_value);
         }
+    } else if (cmd->sync) {
+        if (NULL == driver->adapter.module->intf_funs->driver.group_sync) {
+            // plugin does not support sync read
+            utarray_foreach(tags, neu_datatag_t *, tag)
+            {
+                neu_resp_tag_value_meta_t tag_value = { 0 };
+                strcpy(tag_value.tag, tag->name);
+                tag_value.value.type = NEU_TYPE_ERROR;
+                tag_value.value.value.i32 =
+                    NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC;
+
+                utarray_push_back(resp.tags, &tag_value);
+            }
+        } else {
+            // sync read to update cache
+            driver->adapter.module->intf_funs->driver.group_sync(
+                driver->adapter.plugin, &g->grp);
+            // fetch updated data from cache
+            read_group(global_timestamp,
+                       neu_group_get_interval(group) *
+                           NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                       neu_adapter_get_tag_cache_type(&driver->adapter),
+                       driver->cache, cmd->group, tags, resp.tags);
+        }
     } else {
         read_group(global_timestamp,
                    neu_group_get_interval(group) *
