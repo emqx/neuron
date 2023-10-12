@@ -5,6 +5,7 @@ import subprocess
 
 def remove_persistence(dir='build/'):
     os.system("rm -rf " + dir + "/persistence/sqlite.db")
+    os.system("rm -rf " + dir + "/persistence/*")
     os.system("mkdir -p " + dir + "/persistence")
 
 
