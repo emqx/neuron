@@ -26,7 +26,6 @@
 
 #include "adapter_handle.h"
 #include "datatag_handle.h"
-#include "file_handle.h"
 #include "global_config_handle.h"
 #include "group_config_handle.h"
 #include "log_handle.h"
@@ -110,12 +109,6 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/log/level",
-    },
-    {
-        .url = "/api/v2/file",
-    },
-    {
-        .url = "/api/v2/file/info",
     },
     {
         .url = "/api/v2/global/config",
@@ -376,18 +369,6 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/version",
         .value.handler = handle_get_version,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/file",
-        .value.handler = handle_download_file,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/file/info",
-        .value.handler = handle_file_info,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,
