@@ -108,6 +108,7 @@ void neu_json_decode_write_free(neu_json_write_t *req);
 typedef struct {
     char *group;
     char *node;
+    bool  sync;
 } neu_json_read_req_t;
 
 int  neu_json_decode_read_req(char *buf, neu_json_read_req_t **result);
