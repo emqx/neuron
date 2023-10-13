@@ -173,6 +173,10 @@ if(NOT DISABLE_UT)
   add_subdirectory(tests/ut)
 endif()
 
+add_subdirectory(tests/plugins/c1)
+add_subdirectory(tests/plugins/s1)
+add_subdirectory(tests/plugins/sc1)
+
 # Set sane defaults for multi-lib linux systems
 include(GNUInstallDirs)
 if(UNIX)
