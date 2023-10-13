@@ -141,7 +141,7 @@ jobs:
         run: |
           pip install -U pytest
           pip install requests
-          pytest -s tests/ft
+          pytest -s -v tests/ft
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
