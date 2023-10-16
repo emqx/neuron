@@ -1,0 +1,53 @@
+{
+    "tag_regex": [
+        {
+            "type": 1,
+            "regex": ""
+        },
+        {
+            "type": 2,
+            "regex": ""
+        },
+        {
+            "type": 3,
+            "regex": ""
+        },
+        {
+            "type": 4,
+            "regex": ""
+        },
+        {
+            "type": 5,
+            "regex": ""
+        },
+        {
+            "type": 6,
+            "regex": ""
+        },
+        {
+            "type": 7,
+            "regex": ""
+        },
+        {
+            "type": 8,
+            "regex": ""
+        },
+        {
+            "type": 9,
+            "regex": ""
+        },
+        {
+            "type": 10,
+            "regex": ""
+        },
+        {
+            "type": 12,
+            "regex": ""
+        },
+        {
+            "type": 13,
+            "regex": ""
+        }
+    ],
+    "group_interval": 1000
+}

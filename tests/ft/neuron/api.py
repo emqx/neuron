@@ -138,6 +138,21 @@ def write_tags(node, group, tag_values):
     return requests.post(url=config.BASE_URL + "/api/v2/writes", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tag_values})
 
 
+def add_plugin(library_name, so_file, schema_file):
+    return requests.post(url=config.BASE_URL + "/api/v2/plugin", json={"library":library_name, "so_file":so_file,"schema_file":schema_file}, headers={"Authorization": config.default_jwt})
+def updata_plugin(library_name, so_file, schema_file):
+    return requests.put(url=config.BASE_URL + "/api/v2/plugin", json={"library":library_name, "so_file":so_file,"schema_file":schema_file}, headers={"Authorization": config.default_jwt})
+def del_plugin(plugin_name):
+    return requests.delete(url=config.BASE_URL + "/api/v2/plugin", json={"plugin":plugin_name}, headers={"Authorization": config.default_jwt})
+def get_plugin():
+    return requests.get(url=config.BASE_URL + "/api/v2/plugin", headers={"Authorization": config.default_jwt})
+
+def add_template(name, plugin, groups):
+    return requests.post(url=config.BASE_URL + "/api/v2/template", json={"name": name, "plugin": plugin, "groups": groups}, headers={"Authorization": config.default_jwt})
+def del_template(name):
+    return requests.delete(url=config.BASE_URL + "/api/v2/template" + f"?name={name}", headers={"Authorization": config.default_jwt})
+
+
 # plugin setting
 
 

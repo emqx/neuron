@@ -307,6 +307,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 reply(manager, header, &e);
                 free(cmd->so_file);
                 free(cmd->schema_file);
+                free(so_tmp_path);
                 break;
             }
 
@@ -406,6 +407,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 reply(manager, header, &e);
                 break;
             }
+            utarray_free(nodes);
         }
 
         template_each_cb_data_t data = { .plugin = cmd->plugin, .ret = false };
@@ -487,6 +489,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 reply(manager, header, &e);
                 free(cmd->so_file);
                 free(cmd->schema_file);
+                free(so_tmp_path);
                 break;
             }
 
@@ -561,6 +564,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(cmd->so_file);
             free(cmd->schema_file);
             free(so_tmp_path);
+            free(schema_tmp_path);
             break;
         }
 
@@ -635,6 +639,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         e.error      = NEU_ERR_SUCCESS;
         strcpy(header->receiver, header->sender);
         reply(manager, header, &e);
+        free(cmd->so_file);
+        free(cmd->schema_file);
+        free(so_tmp_path);
+        free(schema_tmp_path);
 
         break;
     }
