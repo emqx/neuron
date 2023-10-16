@@ -43,7 +43,8 @@ void handle_read(nng_aio *aio)
 
             strcpy(cmd.driver, req->node);
             strcpy(cmd.group, req->group);
-            ret = neu_plugin_op(plugin, header, &cmd);
+            cmd.sync = req->sync;
+            ret      = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);

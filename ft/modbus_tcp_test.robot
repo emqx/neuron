@@ -154,6 +154,22 @@ Read all type tag with same slave id in input register and input, it should be s
 	${input_bit_4}    input_bit_4    ${modbus_tcp_node}    Compare Tag Value As Int    0
 	${input_bit_5}    input_bit_5    ${modbus_tcp_node}    Compare Tag Value As Int    0	
 
+Read in sync mode, it should fail.
+	${res}=	Add Group  ${modbus_tcp_node}  group  100
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	${res}=	Add Tags  ${modbus_tcp_node}  group  ${input_register_int16},${input_register_uint16},${input_register_int32},${input_register_uint32},${input_register_float},${input_register_string},${input_register_bit}
+	Check Response Status  ${res}  200
+	Check Error Code  ${res}  ${NEU_ERR_SUCCESS}
+
+	Sleep 	290ms
+	${res}=	Read Tags  ${modbus_tcp_node}  group  true
+	Check Response Status  ${res}  200
+	Check Response Status  ${res}  ${NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC}
+
+	[Teardown]	Del Group  ${modbus_tcp_node}  group
+
 Read some tags at time, it will be success.
 	[Template] 	Read some ${tags} from ${node}, it will be success.
 	${input_register_int16},${input_register_uint16},${input_register_int32},${input_register_uint32},${input_register_float},${input_register_string},${input_register_bit} 	${modbus_tcp_node}

@@ -197,8 +197,8 @@ Del Tags
   [RETURN]            ${res}[0]
 
 Read Tags
-  [Arguments]         ${node}              ${group}
-  POST                /api/v2/read            {"node": "${node}", "group": "${group}"}
+  [Arguments]         ${node}              ${group}                      ${sync}=false
+  POST                /api/v2/read            {"node": "${node}", "group": "${group}", "sync": ${sync}}
   ${res} =            Object  response body
   [RETURN]            ${res}[0]
 

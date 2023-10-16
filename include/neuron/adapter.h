@@ -769,6 +769,7 @@ static inline void neu_req_inst_templates_fini(neu_req_inst_templates_t *req)
 typedef struct neu_req_read_group {
     char driver[NEU_NODE_NAME_LEN];
     char group[NEU_GROUP_NAME_LEN];
+    bool sync;
 } neu_req_read_group_t;
 
 typedef struct neu_req_write_tag {
