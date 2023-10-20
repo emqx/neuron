@@ -16,8 +16,11 @@ class description(object):
     def __call__(self, func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            info = "Given " + self.given + ", when " + \
-                self.when + ", then " + self.then + "."
+            ctx = kwargs.copy()
+            given, when, then = eval('f"%s", f"%s", f"%s"' % (
+                self.given, self.when, self.then), ctx)
+            info = "Given " + given + ", when " + \
+                when + ", then " + then + "."
             print('\033[1;33;40m')
             print("\n" + info)
             print('\033[0m', end=' Result: ')
