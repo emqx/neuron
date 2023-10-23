@@ -39,9 +39,10 @@ def compare_float(v1, v2, delta=0.001):
 @pytest.fixture(autouse=True, scope='class')
 def class_setup_and_teardown():
     process.remove_persistence()
-    p = process.start_neuron()
-    yield
-    process.stop_neuron(p)
+    p = process.NeuronProcess()
+    p.start()
+    yield p
+    p.stop()
 
 
 @pytest.fixture(autouse=True, scope='function')
