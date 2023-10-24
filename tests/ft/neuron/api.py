@@ -174,13 +174,74 @@ def get_plugins():
 
 
 @gen_check
-def add_template(name, plugin, groups):
+def add_template(name, plugin, groups=[]):
     return requests.post(url=config.BASE_URL + "/api/v2/template", json={"name": name, "plugin": plugin, "groups": groups}, headers={"Authorization": config.default_jwt})
 
 
 @gen_check
 def del_template(name):
     return requests.delete(url=config.BASE_URL + "/api/v2/template" + f"?name={name}", headers={"Authorization": config.default_jwt})
+
+
+@gen_check
+def get_template(name):
+    return requests.get(url=config.BASE_URL + "/api/v2/template", headers={"Authorization": config.default_jwt}, params={"name": name})
+
+
+@gen_check
+def get_templates():
+    return requests.get(url=config.BASE_URL + "/api/v2/template", headers={"Authorization": config.default_jwt})
+
+
+@gen_check
+def inst_template(name, node):
+    return requests.post(url=config.BASE_URL + "/api/v2/template/inst", json={"name": name, "node": node}, headers={"Authorization": config.default_jwt})
+
+
+@gen_check
+def add_template_group(tmpl, group, interval=100):
+    return requests.post(url=config.BASE_URL + '/api/v2/template/group', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group, "interval": interval})
+
+
+@gen_check
+def update_template_group(tmpl, group, new_name="", interval=0):
+    if len(new_name) > 0 and interval > 0:
+        return requests.put(url=config.BASE_URL + '/api/v2/template/group', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group, "new_name": new_name, "interval": interval})
+    elif len(new_name) > 0:
+        return requests.put(url=config.BASE_URL + '/api/v2/template/group', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group, "new_name": new_name})
+    elif interval > 0:
+        return requests.put(url=config.BASE_URL + '/api/v2/template/group', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group, "interval": interval})
+    else:
+        assert False
+
+
+@gen_check
+def del_template_group(tmpl, group):
+    return requests.delete(url=config.BASE_URL + '/api/v2/template/group', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group})
+
+
+@gen_check
+def get_template_groups(tmpl):
+    return requests.get(url=config.BASE_URL + "/api/v2/template/group", headers={"Authorization": config.default_jwt}, params={"name": tmpl})
+
+
+@gen_check
+def add_template_tags(tmpl, group, tags):
+    return requests.post(url=config.BASE_URL + '/api/v2/template/tag', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group, "tags": tags})
+
+
+@gen_check
+def update_template_tags(tmpl, group, tags):
+    return requests.put(url=config.BASE_URL + '/api/v2/template/tag', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group, "tags": tags})
+
+
+@gen_check
+def del_template_tags(tmpl, group, tags):
+    return requests.delete(url=config.BASE_URL + '/api/v2/template/tag', headers={"Authorization": config.default_jwt}, json={"template": tmpl, "group": group, "tags": tags})
+
+
+def get_template_tags(tmpl, group, name):
+    return requests.get(url=config.BASE_URL + "/api/v2/template/tag", headers={"Authorization": config.default_jwt}, params={"template": tmpl, "group": group, "name": name})
 
 
 # plugin setting
