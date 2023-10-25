@@ -641,6 +641,13 @@ static int decode_write_gtags_req_json(void *                      json_obj,
             ret = neu_json_decode_array_elem(g_elems[1].v.val_object, k,
                                              NEU_JSON_ELEM_SIZE(v_elems),
                                              v_elems);
+            if (ret != 0) {
+                for (int x = i; x >= 0; x--) {
+                    free(req->groups[x].tags);
+                }
+                free(req->groups);
+                return -1;
+            }
             req->groups[i].tags[k].tag   = v_elems[0].v.val_str;
             req->groups[i].tags[k].t     = v_elems[1].t;
             req->groups[i].tags[k].value = v_elems[1].v;
