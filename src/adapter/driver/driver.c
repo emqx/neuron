@@ -698,8 +698,8 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         if (g == NULL) {
             neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
             req->type              = NEU_RESP_ERROR;
-            for (int i = 0; i < cmd->n_group; i++) {
-                free(cmd->groups[i].tags);
+            for (int x = 0; x < cmd->n_group; x++) {
+                free(cmd->groups[x].tags);
             }
             free(cmd->groups);
             driver->adapter.cb_funs.response(&driver->adapter, req, &error);
