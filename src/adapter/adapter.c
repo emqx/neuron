@@ -416,6 +416,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     switch (pheader->type) {
     case NEU_REQ_READ_GROUP:
     case NEU_REQ_WRITE_TAGS:
+    case NEU_REQ_WRITE_GTAGS:
     case NEU_REQ_WRITE_TAG: {
         neu_req_read_group_t *cmd = (neu_req_read_group_t *) data;
         strcpy(pheader->receiver, cmd->driver);
@@ -702,6 +703,22 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             memcpy(msg_dump, header, header->len);
             neu_adapter_driver_write_tags((neu_adapter_driver_t *) adapter,
                                           msg_dump);
+        }
+        break;
+    }
+    case NEU_REQ_WRITE_GTAGS: {
+        neu_resp_error_t error = { 0 };
+
+        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            error.error  = NEU_ERR_GROUP_NOT_ALLOW;
+            header->type = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(adapter, header, &error);
+        } else {
+            void *msg_dump = calloc(header->len, 1);
+            memcpy(msg_dump, header, header->len);
+            neu_adapter_driver_write_gtags((neu_adapter_driver_t *) adapter,
+                                           msg_dump);
         }
         break;
     }
@@ -1681,6 +1698,9 @@ void neu_msg_gen(neu_reqresp_head_t *header, void *data)
         break;
     case NEU_REQ_WRITE_TAGS:
         data_size = sizeof(neu_req_write_tags_t);
+        break;
+    case NEU_REQ_WRITE_GTAGS:
+        data_size = sizeof(neu_req_write_gtags_t);
         break;
     case NEU_RESP_READ_GROUP:
         data_size = sizeof(neu_resp_read_group_t);

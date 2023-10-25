@@ -78,6 +78,8 @@ void *neu_json_array();
 int   neu_json_decode_by_json(void *json, int size, neu_json_elem_t *ele);
 int   neu_json_decode(char *buf, int size, neu_json_elem_t *ele);
 int   neu_json_decode_array_size_by_json(void *json, char *child);
+int   neu_json_decode_array_elem(void *json, int index, int size,
+                                 neu_json_elem_t *ele);
 int   neu_json_decode_array_by_json(void *json, char *name, int index, int size,
                                     neu_json_elem_t *ele);
 int   neu_json_decode_array_size(char *buf, char *child);
