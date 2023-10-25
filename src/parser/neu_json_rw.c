@@ -557,3 +557,141 @@ void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
         }
     }
 }
+
+int neu_json_decode_write_gtags_req(char *                       buf,
+                                    neu_json_write_gtags_req_t **result)
+{
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        return -1;
+    }
+
+    int ret = neu_json_decode_write_gtags_req_json(json_obj, result);
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+#include "utils/log.h"
+
+static int decode_write_gtags_req_json(void *                      json_obj,
+                                       neu_json_write_gtags_req_t *req)
+{
+    int ret = 0;
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "groups",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        return -1;
+    }
+
+    req->node = req_elems[0].v.val_str;
+
+    req->n_group = neu_json_decode_array_size_by_json(json_obj, "groups");
+    if (req->n_group <= 0) {
+        return -1;
+    }
+
+    req->groups = calloc(req->n_group, sizeof(neu_json_write_gtags_elem_t));
+    for (int i = 0; i < req->n_group; i++) {
+        neu_json_elem_t g_elems[] = {
+            {
+                .name = "group",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "tags",
+                .t    = NEU_JSON_OBJECT,
+            },
+        };
+
+        ret = neu_json_decode_array_by_json(
+            json_obj, "groups", i, NEU_JSON_ELEM_SIZE(g_elems), g_elems);
+
+        req->groups[i].group = g_elems[0].v.val_str;
+        req->groups[i].n_tag = json_array_size(g_elems[1].v.val_object);
+        if (req->groups[i].n_tag <= 0) {
+            continue;
+        }
+
+        req->groups[i].tags =
+            calloc(req->groups[i].n_tag, sizeof(neu_json_write_tags_elem_t));
+
+        for (int k = 0; k < req->groups[i].n_tag; k++) {
+            neu_json_elem_t v_elems[] = {
+                {
+                    .name = "tag",
+                    .t    = NEU_JSON_STR,
+                },
+                {
+                    .name = "value",
+                    .t    = NEU_JSON_VALUE,
+                },
+            };
+
+            ret = neu_json_decode_array_elem(g_elems[1].v.val_object, k,
+                                             NEU_JSON_ELEM_SIZE(v_elems),
+                                             v_elems);
+            req->groups[i].tags[k].tag   = v_elems[0].v.val_str;
+            req->groups[i].tags[k].t     = v_elems[1].t;
+            req->groups[i].tags[k].value = v_elems[1].v;
+        }
+    }
+
+    return 0;
+}
+
+int neu_json_decode_write_gtags_req_json(void *                       json_obj,
+                                         neu_json_write_gtags_req_t **result)
+{
+    neu_json_write_gtags_req_t *req =
+        calloc(1, sizeof(neu_json_write_gtags_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    int ret = decode_write_gtags_req_json(json_obj, req);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
+    }
+
+    return ret;
+}
+
+void neu_json_decode_write_gtags_req_free(neu_json_write_gtags_req_t *req)
+{
+    free(req->node);
+
+    for (int i = 0; i < req->n_group; i++) {
+        free(req->groups[i].group);
+
+        for (int k = 0; k < req->groups[i].n_tag; k++) {
+            free(req->groups[i].tags[k].tag);
+
+            if (req->groups[i].tags[k].t == NEU_JSON_STR) {
+                free(req->groups[i].tags[k].value.val_str);
+            }
+            if (req->groups[i].tags[k].t == NEU_JSON_BYTES &&
+                req->groups[i].tags[k].value.val_bytes.length > 0) {
+                free(req->groups[i].tags[k].value.val_bytes.bytes);
+            }
+        }
+        if (req->groups[i].n_tag > 0) {
+            free(req->groups[i].tags);
+        }
+    }
+
+    free(req->groups);
+    free(req);
+}

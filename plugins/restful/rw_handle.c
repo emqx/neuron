@@ -204,6 +204,83 @@ void handle_write_tags(nng_aio *aio)
         })
 }
 
+static void trans(neu_json_write_gtags_req_t *req, neu_req_write_gtags_t *cmd)
+{
+    strcpy(cmd->driver, req->node);
+    cmd->n_group = req->n_group;
+    cmd->groups  = calloc(cmd->n_group, sizeof(neu_req_gtag_group_t));
+    for (int i = 0; i < cmd->n_group; i++) {
+        strcpy(cmd->groups[i].group, req->groups[i].group);
+        cmd->groups[i].n_tag = req->groups[i].n_tag;
+        cmd->groups[i].tags =
+            calloc(cmd->groups[i].n_tag, sizeof(neu_resp_tag_value_t));
+
+        for (int k = 0; k < cmd->groups[i].n_tag; k++) {
+            strcpy(cmd->groups[i].tags[k].tag, req->groups[i].tags[k].tag);
+
+            switch (req->groups[i].tags[k].t) {
+            case NEU_JSON_INT:
+                cmd->groups[i].tags[k].value.type = NEU_TYPE_INT64;
+                cmd->groups[i].tags[k].value.value.u64 =
+                    req->groups[i].tags[k].value.val_int;
+                break;
+            case NEU_JSON_STR:
+                cmd->groups[i].tags[k].value.type = NEU_TYPE_STRING;
+                strcpy(cmd->groups[i].tags[k].value.value.str,
+                       req->groups[i].tags[k].value.val_str);
+                break;
+            case NEU_JSON_DOUBLE:
+                cmd->groups[i].tags[k].value.type = NEU_TYPE_DOUBLE;
+                cmd->groups[i].tags[k].value.value.d64 =
+                    req->groups[i].tags[k].value.val_double;
+                break;
+            case NEU_JSON_BOOL:
+                cmd->groups[i].tags[k].value.type = NEU_TYPE_BOOL;
+                cmd->groups[i].tags[k].value.value.boolean =
+                    req->groups[i].tags[k].value.val_bool;
+                break;
+            case NEU_JSON_BYTES:
+                cmd->groups[i].tags[k].value.type = NEU_TYPE_BYTES;
+                cmd->groups[i].tags[k].value.value.bytes.length =
+                    req->groups[i].tags[k].value.val_bytes.length;
+                memcpy(cmd->groups[i].tags[k].value.value.bytes.bytes,
+                       req->groups[i].tags[k].value.val_bytes.bytes,
+                       req->groups[i].tags[k].value.val_bytes.length);
+                break;
+            default:
+                assert(false);
+                break;
+            }
+        }
+    }
+}
+
+void handle_write_gtags(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_write_gtags_req_t, neu_json_decode_write_gtags_req, {
+            neu_reqresp_head_t    header = { 0 };
+            neu_req_write_gtags_t cmd    = { 0 };
+
+            nng_http_req *nng_req = nng_aio_get_input(aio, 0);
+            nlog_notice("<%p> req %s %s", aio, nng_http_req_get_method(nng_req),
+                        nng_http_req_get_uri(nng_req));
+            header.ctx  = aio;
+            header.type = NEU_REQ_WRITE_GTAGS;
+
+            trans(req, &cmd);
+
+            int ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
+        })
+}
+
 void handle_read_resp(nng_aio *aio, neu_resp_read_group_t *resp)
 {
     neu_json_read_resp_t api_res = { 0 };
