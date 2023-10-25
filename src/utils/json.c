@@ -272,6 +272,25 @@ int neu_json_decode_array(char *buf, char *name, int index, int size,
     return 0;
 }
 
+int neu_json_decode_array_elem(void *json, int index, int size,
+                               neu_json_elem_t *ele)
+{
+    json_t *child = NULL;
+
+    child = json_array_get(json, index);
+    if (child == NULL) {
+        return -1;
+    }
+
+    for (int i = 0; i < size; i++) {
+        if (decode_object(child, &ele[i]) == -1) {
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
 int neu_json_decode_array_by_json(void *json, char *name, int index, int size,
                                   neu_json_elem_t *ele)
 {
