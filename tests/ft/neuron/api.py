@@ -154,7 +154,7 @@ def write_tag(node, group, tag, value):
 
 @gen_check
 def write_tags(node, group, tag_values):
-    return requests.post(url=config.BASE_URL + "/api/v2/writes", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tag_values})
+    return requests.post(url=config.BASE_URL + "/api/v2/write/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tag_values})
 
 
 def add_plugin(library_name, so_file, schema_file):
