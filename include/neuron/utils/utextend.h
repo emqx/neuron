@@ -75,4 +75,21 @@ static inline void *utarray_steal(UT_array *array)
     for ((el) = (head); (el) != NULL; (el) = DECLTYPE(el)((el)->hh.next))
 #endif
 
+static inline UT_array *utarray_deep_clone(UT_array *array)
+{
+    UT_array *result = NULL;
+
+    utarray_new(result, &array->icd);
+
+    utarray_foreach(array, void *, elem)
+    {
+        void *dst = calloc(1, array->icd.sz);
+        assert(array->icd.copy != NULL);
+        array->icd.copy(dst, elem);
+        utarray_push_back(result, dst);
+    }
+
+    return result;
+}
+
 #endif
