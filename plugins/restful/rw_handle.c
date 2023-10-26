@@ -94,7 +94,7 @@ void handle_write(nng_aio *aio)
             switch (req->t) {
             case NEU_JSON_INT:
                 cmd.value.type      = NEU_TYPE_INT64;
-                cmd.value.value.u64 = req->value.val_int;
+                cmd.value.value.i64 = req->value.val_int;
                 break;
             case NEU_JSON_STR:
                 cmd.value.type = NEU_TYPE_STRING;
