@@ -38,6 +38,16 @@ def upload_license(license, jwt=config.default_jwt):
 
 
 @gen_check
+def upload_virtual_license(license, jwt=config.default_jwt):
+    return requests.post(url=config.BASE_URL + '/api/v2/license/virtual', headers={"Authorization": jwt}, json={"license": license})
+
+
+@gen_check
+def delete_virtual_license(jwt=config.default_jwt):
+    return requests.delete(url=config.BASE_URL + '/api/v2/license/virtual', headers={"Authorization": jwt})
+
+
+@gen_check
 def change_log_level(node, level, jwt=config.default_jwt):
     return requests.put(url=config.BASE_URL + '/api/v2/log/level', headers={"Authorization": jwt}, json={"node": node, "level": level})
 
