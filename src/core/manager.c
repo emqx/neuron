@@ -155,7 +155,6 @@ void neu_manager_destroy(neu_manager_t *manager)
 
     UT_array *addrs = neu_node_manager_get_addrs_all(manager->node_manager);
 
-    neu_event_del_timer(manager->events, manager->timer_lev);
     neu_event_del_timer(manager->events, manager->timer_timestamp);
 
     header->type = NEU_REQ_NODE_UNINIT;

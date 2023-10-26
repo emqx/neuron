@@ -81,13 +81,7 @@ static inline UT_array *utarray_deep_clone(UT_array *array)
 
     utarray_new(result, &array->icd);
 
-    utarray_foreach(array, void *, elem)
-    {
-        void *dst = calloc(1, array->icd.sz);
-        assert(array->icd.copy != NULL);
-        array->icd.copy(dst, elem);
-        utarray_push_back(result, dst);
-    }
+    utarray_foreach(array, void *, elem) { utarray_push_back(result, elem); }
 
     return result;
 }
