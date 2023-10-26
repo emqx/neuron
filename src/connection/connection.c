@@ -348,7 +348,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                 }
             } else {
                 if (rc == -1 && errno == EAGAIN) {
-                    if (retry > 5) {
+                    if (retry > 50) {
                         zlog_error(conn->param.log,
                                    "conn fd: %d, send buf len: %zd, ret: %zd, "
                                    "errno: %s(%d)",
