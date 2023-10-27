@@ -110,6 +110,9 @@ def update_group(node, group, new_name="", interval=0):
 def add_tags(node, group, tags):
     return requests.post(url=config.BASE_URL + '/api/v2/tags', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tags})
 
+@gen_check
+def add_gtags(node, groups):
+    return requests.post(url=config.BASE_URL + '/api/v2/gtags', headers={"Authorization": config.default_jwt}, json={"node": node, "groups": groups})
 
 @gen_check
 def del_tags(node, group, tags):

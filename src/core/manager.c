@@ -1355,6 +1355,28 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+    case NEU_REQ_ADD_GTAG: {
+        neu_req_add_gtag_t *cmd = (neu_req_add_gtag_t *) &header[1];
+
+        if (neu_node_manager_find(manager->node_manager, header->receiver) ==
+            NULL) {
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
+            for (int i = 0; i < cmd->n_group; i++) {
+                for (int j = 0; j < cmd->groups[i].n_tag; j++) {
+                    neu_tag_fini(&cmd->groups[i].tags[j]);
+                }
+                free(cmd->groups[i].tags);
+            }
+            free(cmd->groups);
+        } else {
+            forward_msg(manager, header, header->receiver);
+        }
+
+        break;
+    }
     case NEU_REQ_NODE_SETTING: {
         neu_req_node_setting_t *cmd = (neu_req_node_setting_t *) &header[1];
 
@@ -1372,6 +1394,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
 
     case NEU_RESP_ADD_TAG:
+    case NEU_RESP_ADD_GTAG:
     case NEU_RESP_ADD_TEMPLATE_TAG:
     case NEU_RESP_UPDATE_TAG:
     case NEU_RESP_UPDATE_TEMPLATE_TAG:

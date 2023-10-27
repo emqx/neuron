@@ -73,14 +73,14 @@ struct neu_events {
 
     pthread_mutex_t   mtx;
     int               n_event;
-    struct event_data event_datas[256];
+    struct event_data event_datas[512];
 };
 
 static int get_free_event(neu_events_t *events)
 {
     int ret = -1;
     pthread_mutex_lock(&events->mtx);
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 512; i++) {
         if (events->event_datas[i].use == false) {
             events->event_datas[i].use   = true;
             events->event_datas[i].index = i;
@@ -213,6 +213,9 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
         .it_interval.tv_nsec = timer.millisecond * 1000 * 1000,
     };
     int index = get_free_event(events);
+    if (index < 0) {
+        zlog_fatal(neuron, "no free event: %d", events->epoll_fd);
+    }
     assert(index >= 0);
 
     neu_event_timer_t *timer_ctx = &events->event_datas[index].ctx.timer;

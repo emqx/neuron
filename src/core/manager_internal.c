@@ -536,7 +536,7 @@ static int add_template_group(neu_group_t *grp, void *data)
             break;
         }
 
-        ret = neu_adapter_driver_add_tag(driver, name, tag);
+        ret = neu_adapter_driver_add_tag(driver, name, tag, -1);
         if (0 != ret) {
             break;
         }

@@ -57,6 +57,9 @@ static struct neu_http_handler cors_handler[] = {
         .url = "/api/v2/tags",
     },
     {
+        .url = "/api/v2/gtags",
+    },
+    {
         .url = "/api/v2/group",
     },
     {
@@ -184,11 +187,16 @@ static struct neu_http_handler rest_handlers[] = {
 
     },
     {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/gtags",
+        .value.handler = handle_add_gtags,
+    },
+    {
         .method        = NEU_HTTP_METHOD_PUT,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/tags",
         .value.handler = handle_update_tags,
-
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

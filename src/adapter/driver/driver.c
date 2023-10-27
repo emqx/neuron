@@ -1195,10 +1195,11 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
 }
 
 int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
-                               neu_datatag_t *tag)
+                               neu_datatag_t *tag, int interval)
 {
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
+    interval      = interval < 0 ? 100 : interval;
 
     neu_datatag_parse_addr_option(tag, &tag->option);
     driver->adapter.module->intf_funs->driver.validate_tag(
@@ -1206,8 +1207,8 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
 
     HASH_FIND_STR(driver->groups, group, find);
     if (find == NULL) {
-        neu_adapter_driver_add_group(driver, group, 300);
-        adapter_storage_add_group(driver->adapter.name, group, 300);
+        neu_adapter_driver_add_group(driver, group, interval);
+        adapter_storage_add_group(driver->adapter.name, group, interval);
     }
     HASH_FIND_STR(driver->groups, group, find);
     assert(find != NULL);

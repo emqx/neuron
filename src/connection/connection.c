@@ -357,7 +357,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                     } else {
                         struct timespec t1 = {
                             .tv_sec  = 0,
-                            .tv_nsec = 1000 * 1000 * 10,
+                            .tv_nsec = 1000 * 1000 * 20,
                         };
                         struct timespec t2 = { 0 };
                         nanosleep(&t1, &t2);

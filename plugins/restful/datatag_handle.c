@@ -96,6 +96,90 @@ void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
     free(result);
 }
 
+void handle_add_gtags(nng_aio *aio)
+{
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_add_gtags_req_t, neu_json_decode_add_gtags_req, {
+            int                ret    = 0;
+            neu_reqresp_head_t header = { 0 };
+            neu_req_add_gtag_t cmd    = { 0 };
+
+            header.ctx  = aio;
+            header.type = NEU_REQ_ADD_GTAG;
+            strcpy(cmd.driver, req->node);
+            cmd.n_group = req->n_group;
+            cmd.groups  = calloc(req->n_group, sizeof(neu_gdatatag_t));
+            for (int i = 0; i < req->n_group; i++) {
+                if (strlen(req->groups[i].group) >= NEU_GROUP_NAME_LEN) {
+                    goto error;
+                }
+                strcpy(cmd.groups[i].group, req->groups[i].group);
+                cmd.groups[i].n_tag    = req->groups[i].n_tag;
+                cmd.groups[i].interval = req->groups[i].interval;
+                cmd.groups[i].tags =
+                    calloc(cmd.groups[i].n_tag, sizeof(neu_datatag_t));
+
+                for (int j = 0; j < req->groups[i].n_tag; j++) {
+                    cmd.groups[i].tags[j].attribute =
+                        req->groups[i].tags[j].attribute;
+                    cmd.groups[i].tags[j].type = req->groups[i].tags[j].type;
+                    cmd.groups[i].tags[j].precision =
+                        req->groups[i].tags[j].precision;
+                    cmd.groups[i].tags[j].decimal =
+                        req->groups[i].tags[j].decimal;
+                    cmd.groups[i].tags[j].address =
+                        strdup(req->groups[i].tags[j].address);
+                    cmd.groups[i].tags[j].name =
+                        strdup(req->groups[i].tags[j].name);
+                    if (req->groups[i].tags[j].description != NULL) {
+                        cmd.groups[i].tags[j].description =
+                            strdup(req->groups[i].tags[j].description);
+                    } else {
+                        cmd.groups[i].tags[j].description = strdup("");
+                    }
+                    if (NEU_ATTRIBUTE_STATIC &
+                        req->groups[i].tags[j].attribute) {
+                        neu_tag_set_static_value_json(
+                            &cmd.groups[i].tags[j], req->groups[i].tags[j].t,
+                            &req->groups[i].tags[j].value);
+                    }
+                }
+            }
+
+            ret = neu_plugin_op(plugin, header, &cmd);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                });
+            }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
+                neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
+                                  result_error);
+            });
+
+        success:;
+        })
+}
+
+void handle_add_gtags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
+{
+    neu_json_add_gtag_res_t res    = { 0 };
+    char *                  result = NULL;
+
+    res.error = resp->error;
+    res.index = resp->index;
+
+    neu_json_encode_by_fn(&res, neu_json_encode_au_gtags_resp, &result);
+
+    neu_http_ok(aio, result);
+    free(result);
+}
+
 void handle_del_tags(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();

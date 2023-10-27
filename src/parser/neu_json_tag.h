@@ -75,6 +75,40 @@ typedef struct {
 
 int neu_json_encode_au_tags_resp(void *json_object, void *param);
 
+typedef struct {
+    char *          group;
+    int             n_tag;
+    int             interval;
+    neu_json_tag_t *tags;
+} neu_json_gtag_t;
+
+int  neu_json_decode_gtag_json(void *json_obj, neu_json_gtag_t *gtag_p);
+void neu_json_decode_gtag_fini(neu_json_gtag_t *gtag);
+
+typedef struct {
+    int              len;
+    neu_json_gtag_t *gtags;
+} neu_json_gtag_array_t;
+
+int neu_json_decode_gtag_array_json(void *json_obj, neu_json_gtag_array_t *arr);
+void neu_json_decode_gtag_array_fini(neu_json_gtag_array_t *arr);
+
+typedef struct {
+    char *           node;
+    int              n_group;
+    neu_json_gtag_t *groups;
+} neu_json_add_gtags_req_t;
+
+int neu_json_decode_add_gtags_req(char *buf, neu_json_add_gtags_req_t **result);
+void neu_json_decode_add_gtags_req_free(neu_json_add_gtags_req_t *req);
+
+typedef struct {
+    uint16_t index;
+    int      error;
+} neu_json_add_gtag_res_t, neu_json_update_gtag_res_t;
+
+int neu_json_encode_au_gtags_resp(void *json_object, void *param);
+
 typedef char *neu_json_del_tags_req_name_t;
 
 typedef struct {
