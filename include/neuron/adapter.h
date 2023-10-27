@@ -47,6 +47,7 @@ typedef enum neu_reqresp_type {
     NEU_RESP_READ_GROUP,
     NEU_REQ_WRITE_TAG,
     NEU_REQ_WRITE_TAGS,
+    NEU_REQ_WRITE_GTAGS,
 
     NEU_REQ_SUBSCRIBE_GROUP,
     NEU_REQ_UNSUBSCRIBE_GROUP,
@@ -154,6 +155,7 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_READ_GROUP] = "NEU_RESP_READ_GROUP",
     [NEU_REQ_WRITE_TAG]   = "NEU_REQ_WRITE_TAG",
     [NEU_REQ_WRITE_TAGS]  = "NEU_REQ_WRITE_TAGS",
+    [NEU_REQ_WRITE_GTAGS] = "NEU_REQ_WRITE_GTAGS",
 
     [NEU_REQ_SUBSCRIBE_GROUP]        = "NEU_REQ_SUBSCRIBE_GROUP",
     [NEU_REQ_UNSUBSCRIBE_GROUP]      = "NEU_REQ_UNSUBSCRIBE_GROUP",
@@ -809,6 +811,20 @@ typedef struct neu_req_write_tags {
     int                   n_tag;
     neu_resp_tag_value_t *tags;
 } neu_req_write_tags_t;
+
+typedef struct {
+    char group[NEU_GROUP_NAME_LEN];
+
+    int                   n_tag;
+    neu_resp_tag_value_t *tags;
+} neu_req_gtag_group_t;
+
+typedef struct {
+    char driver[NEU_NODE_NAME_LEN];
+
+    int                   n_group;
+    neu_req_gtag_group_t *groups;
+} neu_req_write_gtags_t;
 
 typedef struct {
     char driver[NEU_NODE_NAME_LEN];

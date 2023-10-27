@@ -95,6 +95,24 @@ int  neu_json_decode_write_tags_req_json(void *                      json_obj,
 void neu_json_decode_write_tags_req_free(neu_json_write_tags_req_t *req);
 
 typedef struct {
+    char *                      group;
+    int                         n_tag;
+    neu_json_write_tags_elem_t *tags;
+} neu_json_write_gtags_elem_t;
+typedef struct {
+    char *node;
+
+    int                          n_group;
+    neu_json_write_gtags_elem_t *groups;
+} neu_json_write_gtags_req_t;
+
+int  neu_json_decode_write_gtags_req(char *                       buf,
+                                     neu_json_write_gtags_req_t **result);
+int  neu_json_decode_write_gtags_req_json(void *                       json_obj,
+                                          neu_json_write_gtags_req_t **result);
+void neu_json_decode_write_gtags_req_free(neu_json_write_gtags_req_t *req);
+
+typedef struct {
     union {
         neu_json_write_req_t      single;
         neu_json_write_tags_req_t plural;

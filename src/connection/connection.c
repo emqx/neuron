@@ -348,14 +348,19 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                 }
             } else {
                 if (rc == -1 && errno == EAGAIN) {
-                    if (retry > 5) {
+                    if (retry > 50) {
                         zlog_error(conn->param.log,
                                    "conn fd: %d, send buf len: %zd, ret: %zd, "
                                    "errno: %s(%d)",
                                    conn->fd, len, ret, strerror(errno), errno);
                         break;
                     } else {
-                        sleep(1);
+                        struct timespec t1 = {
+                            .tv_sec  = 0,
+                            .tv_nsec = 1000 * 1000 * 10,
+                        };
+                        struct timespec t2 = { 0 };
+                        nanosleep(&t1, &t2);
                         retry++;
                         zlog_warn(conn->param.log,
                                   "not all data send, retry: %d, ret: "

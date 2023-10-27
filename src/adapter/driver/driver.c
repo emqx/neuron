@@ -75,6 +75,7 @@ struct neu_adapter_driver {
 
     neu_driver_cache_t *cache;
     neu_events_t *      driver_events;
+    neu_events_t *      driver_write_events;
 
     size_t        tag_cnt;
     struct group *groups;
@@ -266,6 +267,7 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 
     driver->cache                                   = neu_driver_cache_new();
     driver->driver_events                           = neu_event_new();
+    driver->driver_write_events                     = neu_event_new();
     driver->adapter.cb_funs.driver.update           = update;
     driver->adapter.cb_funs.driver.write_response   = write_response;
     driver->adapter.cb_funs.driver.update_im        = update_im;
@@ -277,6 +279,7 @@ neu_adapter_driver_t *neu_adapter_driver_create()
 void neu_adapter_driver_destroy(neu_adapter_driver_t *driver)
 {
     neu_event_close(driver->driver_events);
+    neu_event_close(driver->driver_write_events);
     neu_driver_cache_destroy(driver->cache);
 }
 
@@ -310,7 +313,7 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
         neu_adapter_driver_try_del_tag(driver, neu_group_tag_size(el->group));
         neu_adapter_del_timer((neu_adapter_t *) driver, el->report);
         neu_event_del_timer(driver->driver_events, el->read);
-        neu_event_del_timer(driver->driver_events, el->write);
+        neu_event_del_timer(driver->driver_write_events, el->write);
         if (el->grp.group_free != NULL) {
             el->grp.group_free(&el->grp);
         }
@@ -663,6 +666,127 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     free_tags(cmd);
 }
 
+void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
+                                    neu_reqresp_head_t *  req)
+{
+    neu_req_write_gtags_t *cmd     = (neu_req_write_gtags_t *) &req[1];
+    group_t *              first_g = NULL;
+
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        for (int i = 0; i < cmd->n_group; i++) {
+            free(cmd->groups[i].tags);
+        }
+        free(cmd->groups);
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
+        return;
+    }
+
+    if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
+        for (int i = 0; i < cmd->n_group; i++) {
+            free(cmd->groups[i].tags);
+        }
+        free(cmd->groups);
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
+        return;
+    }
+
+    for (int i = 0; i < cmd->n_group; i++) {
+        group_t *g = find_group(driver, cmd->groups[i].group);
+
+        if (g == NULL) {
+            neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
+            req->type              = NEU_RESP_ERROR;
+            for (int x = 0; x < cmd->n_group; x++) {
+                free(cmd->groups[x].tags);
+            }
+            free(cmd->groups);
+            driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+            free(req);
+            return;
+        }
+
+        if (first_g == NULL) {
+            first_g = g;
+        }
+    }
+
+    UT_array *tags = NULL;
+    UT_icd    icd  = { sizeof(neu_plugin_tag_value_t), NULL, NULL, NULL };
+    utarray_new(tags, &icd);
+
+    for (int i = 0; i < cmd->n_group; i++) {
+        group_t *g = find_group(driver, cmd->groups[i].group);
+
+        for (int k = 0; k < cmd->groups[i].n_tag; k++) {
+            neu_plugin_tag_value_t tv = { 0 };
+
+            neu_datatag_t *tag =
+                neu_group_find_tag(g->group, cmd->groups[i].tags[k].tag);
+
+            if (tag != NULL &&
+                neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
+                neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false) {
+                tv.tag = neu_tag_dup(tag);
+
+                if (tag->type == NEU_TYPE_FLOAT ||
+                    tag->type == NEU_TYPE_DOUBLE) {
+                    if (cmd->groups[i].tags[k].value.type == NEU_TYPE_INT64) {
+                        tv.value.d64 = (double) tv.value.u64;
+                    }
+                }
+                if (tag->decimal != 0) {
+                    cal_decimal(tag->type, cmd->groups[i].tags[k].value.type,
+                                &cmd->groups[i].tags[k].value.value,
+                                tag->decimal);
+                }
+                fix_value(tag, cmd->groups[i].tags[k].value.type,
+                          &cmd->groups[i].tags[k].value);
+
+                tv.value = cmd->groups[i].tags[k].value.value;
+                utarray_push_back(tags, &tv);
+            }
+            if (tag != NULL) {
+                neu_tag_free(tag);
+            }
+        }
+    }
+
+    uint32_t n_tag = 0;
+    for (int i = 0; i < cmd->n_group; i++) {
+        n_tag += cmd->groups[i].n_tag;
+    }
+
+    if (utarray_len(tags) != (unsigned int) n_tag) {
+        neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
+        req->type              = NEU_RESP_ERROR;
+        for (int i = 0; i < cmd->n_group; i++) {
+            free(cmd->groups[i].tags);
+        }
+        free(cmd->groups);
+        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        free(req);
+        utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
+        {
+            neu_tag_free(tv->tag);
+        }
+        utarray_free(tags);
+        return;
+    }
+
+    to_be_write_tag_t wtag = { 0 };
+    wtag.single            = false;
+    wtag.req               = (void *) req;
+    wtag.tvs               = tags;
+
+    store_write_tag(first_g, &wtag);
+    for (int i = 0; i < cmd->n_group; i++) {
+        free(cmd->groups[i].tags);
+    }
+    free(cmd->groups);
+}
+
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
                                   neu_reqresp_head_t *  req)
 {
@@ -788,7 +912,7 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         param.second      = 0;
         param.millisecond = 3;
         param.cb          = write_callback;
-        find->write       = neu_event_add_timer(driver->driver_events, param);
+        find->write = neu_event_add_timer(driver->driver_write_events, param);
 
         REGISTER_GROUP_METRIC(&driver->adapter, find->name,
                               NEU_METRIC_GROUP_TAGS_TOTAL,
