@@ -73,14 +73,14 @@ struct neu_events {
 
     pthread_mutex_t   mtx;
     int               n_event;
-    struct event_data event_datas[256];
+    struct event_data event_datas[512];
 };
 
 static int get_free_event(neu_events_t *events)
 {
     int ret = -1;
     pthread_mutex_lock(&events->mtx);
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < 512; i++) {
         if (events->event_datas[i].use == false) {
             events->event_datas[i].use   = true;
             events->event_datas[i].index = i;
