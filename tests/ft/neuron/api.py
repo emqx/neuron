@@ -28,6 +28,11 @@ def change_password(new_password, user='admin', old_password='0000', jwt=config.
 
 
 @gen_check
+def get_hwtoken(jwt=config.default_jwt):
+    return requests.get(url=config.BASE_URL + '/api/v2/hwtoken', headers={"Authorization": jwt})
+
+
+@gen_check
 def get_license(jwt=config.default_jwt):
     return requests.get(url=config.BASE_URL + '/api/v2/license', headers={"Authorization": jwt})
 
