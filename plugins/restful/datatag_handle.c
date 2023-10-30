@@ -105,16 +105,26 @@ void handle_add_gtags(nng_aio *aio)
             int                ret    = 0;
             neu_reqresp_head_t header = { 0 };
             neu_req_add_gtag_t cmd    = { 0 };
-
+            int                err_type;
             header.ctx  = aio;
             header.type = NEU_REQ_ADD_GTAG;
-            strcpy(cmd.driver, req->node);
-            cmd.n_group = req->n_group;
-            cmd.groups  = calloc(req->n_group, sizeof(neu_gdatatag_t));
+
             for (int i = 0; i < req->n_group; i++) {
                 if (strlen(req->groups[i].group) >= NEU_GROUP_NAME_LEN) {
+                    err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
                     goto error;
                 }
+                if (req->groups[i].interval < NEU_DEFAULT_GROUP_INTERVAL) {
+                    err_type = NEU_ERR_GROUP_PARAMETER_INVALID;
+                    goto error;
+                }
+            }
+
+            strcpy(cmd.driver, req->node);
+            cmd.n_group = req->n_group;
+
+            cmd.groups = calloc(req->n_group, sizeof(neu_gdatatag_t));
+            for (int i = 0; i < req->n_group; i++) {
                 strcpy(cmd.groups[i].group, req->groups[i].group);
                 cmd.groups[i].n_tag    = req->groups[i].n_tag;
                 cmd.groups[i].interval = req->groups[i].interval;
@@ -157,10 +167,8 @@ void handle_add_gtags(nng_aio *aio)
             goto success;
 
         error:
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
-                neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
-                                  result_error);
-            });
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
 
         success:;
         })

@@ -105,6 +105,10 @@ def update_group(node, group, new_name="", interval=0):
     else:
         assert False
 
+@gen_check
+def get_group():
+    return requests.get(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt})
+
 
 @gen_check
 def add_tags(node, group, tags):

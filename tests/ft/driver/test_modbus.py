@@ -488,7 +488,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_float_precision[0]['name'], value=121.3149121)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_double_precision[0]['name'], value=513.1279112)
-        time.sleep(0.7)
+        time.sleep(0.3)
         compare_float(121.314, api.read_tag(
             node=param[0], group='group', tag=hold_float_precision[0]['name']))
         compare_float(513.127, api.read_tag(
