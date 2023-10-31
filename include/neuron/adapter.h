@@ -608,6 +608,7 @@ typedef struct neu_req_get_node_state {
 typedef struct neu_resp_get_node_state {
     neu_node_state_t state;
     uint16_t         rtt; // round trip time in milliseconds
+    char             core_level[NEU_LOG_LEVEL_LEN];
 } neu_resp_get_node_state_t;
 
 typedef struct neu_req_get_nodes_state {
@@ -627,6 +628,7 @@ inline static UT_icd neu_nodes_state_t_icd()
 }
 typedef struct {
     UT_array *states; // array of neu_nodes_state_t
+    char      core_level[NEU_LOG_LEVEL_LEN];
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
 
 typedef struct {
@@ -1069,6 +1071,7 @@ typedef struct {
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];
     char log_level[NEU_LOG_LEVEL_LEN];
+    bool core;
 } neu_req_update_log_level_t;
 
 void  neu_msg_gen(neu_reqresp_head_t *header, void *data);

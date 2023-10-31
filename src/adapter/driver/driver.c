@@ -623,7 +623,7 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
 
             if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
                 if (cmd->tags[i].value.type == NEU_TYPE_INT64) {
-                    tv.value.d64 = (double) tv.value.u64;
+                    tv.value.d64 = (double) tv.value.i64;
                 }
             }
             if (tag->decimal != 0) {
@@ -730,7 +730,7 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                 if (tag->type == NEU_TYPE_FLOAT ||
                     tag->type == NEU_TYPE_DOUBLE) {
                     if (cmd->groups[i].tags[k].value.type == NEU_TYPE_INT64) {
-                        tv.value.d64 = (double) tv.value.u64;
+                        tv.value.d64 = (double) tv.value.i64;
                     }
                 }
                 if (tag->decimal != 0) {

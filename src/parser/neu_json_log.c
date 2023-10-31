@@ -42,14 +42,22 @@ int neu_json_decode_update_log_level_req(
         return -1;
     }
 
+    req->node_name = NULL;
+    req->core      = true;
+
     neu_json_elem_t req_elems[] = { {
                                         .name = "node",
                                         .t    = NEU_JSON_STR,
+                                        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
                                     },
                                     {
                                         .name = "level",
                                         .t    = NEU_JSON_STR,
-                                    } };
+                                    },
+                                    {
+                                        .name = "core",
+                                        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+                                    }};
 
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -57,9 +65,13 @@ int neu_json_decode_update_log_level_req(
         goto decode_fail;
     }
 
-    req->node_name = req_elems[0].v.val_str;
+    if (req_elems[0].v.val_str != NULL) {
+        req->node_name = req_elems[0].v.val_str;
+    }
     req->log_level = req_elems[1].v.val_str;
-
+    if (req_elems[2].t == NEU_JSON_BOOL) {
+        req->core = req_elems[2].v.val_bool;
+    }
     *result = req;
     goto decode_exit;
 
