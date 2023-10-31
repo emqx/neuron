@@ -148,10 +148,10 @@ void handle_log_level(nng_aio *aio)
             }
             if (req->core) {
                 zlog_category_t *neuron = zlog_get_category("neuron");
-                ret = zlog_level_switch(neuron, log_level);
+                ret                     = zlog_level_switch(neuron, log_level);
                 if (ret != 0) {
-                    nlog_error("Failed to modify log_level of the core, ret: %d",
-                               ret);
+                    nlog_error(
+                        "Failed to modify log_level of the core, ret: %d", ret);
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
                         neu_http_response(aio, error_code.error, result_error);
                     });
@@ -178,7 +178,7 @@ void handle_log_level(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_UPDATE_LOG_LEVEL;
             cmd.core    = req->core;
-            ret = neu_plugin_op(plugin, header, &cmd);
+            ret         = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);

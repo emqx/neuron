@@ -771,14 +771,15 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_GET_NODE_STATE: {
-        neu_resp_get_node_state_t *resp = (neu_resp_get_node_state_t *) &header[1];
+        neu_resp_get_node_state_t *resp =
+            (neu_resp_get_node_state_t *) &header[1];
 
         neu_metric_entry_t *e = NULL;
         if (NULL != adapter->metrics) {
             HASH_FIND_STR(adapter->metrics->entries, NEU_METRIC_LAST_RTT_MS, e);
         }
-        resp->rtt     = NULL != e ? e->value : 0;
-        resp->state   = neu_adapter_get_state(adapter);
+        resp->rtt    = NULL != e ? e->value : 0;
+        resp->state  = neu_adapter_get_state(adapter);
         header->type = NEU_RESP_GET_NODE_STATE;
         neu_msg_exchange(header);
         reply(adapter, header, resp);

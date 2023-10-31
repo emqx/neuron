@@ -219,7 +219,6 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
                                     (neu_resp_get_nodes_state_t *) data);
         break;
     case NEU_RESP_GET_NODE_STATE:
-    printf("$$$$$$$$$$$$$$$$$$$$$$%s\n", ((neu_resp_get_node_state_t *)data)->core_level);
         handle_get_node_state_resp(header->ctx,
                                    (neu_resp_get_node_state_t *) data);
         break;

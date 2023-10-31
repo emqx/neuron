@@ -14,7 +14,7 @@ class TestLog:
         assert 200 == response.status_code
         assert 0 == response.json()['error']
 
-        response = api.change_log_level(node='modbus-tcp-1', level='debug')
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'debug'})
         assert 200 == response.status_code
         assert 0 == response.json()['error']
 
@@ -24,7 +24,7 @@ class TestLog:
 
     @description(given="node", when="change log_level to info", then="change success")
     def test_change_log_level_info(self):
-        response = api.change_log_level(node='modbus-tcp-1', level='info')
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'info'})
         assert 0 == response.json()['error']
 
         response = api.get_nodes_state('modbus-tcp-1')
@@ -33,7 +33,7 @@ class TestLog:
 
     @description(given="node", when="change log_level to warn", then="change success")
     def test_change_log_level_warn(self):
-        response = api.change_log_level(node='modbus-tcp-1', level='warn')
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'warn'})
         assert 0 == response.json()['error']
 
         response = api.get_nodes_state('modbus-tcp-1')
@@ -42,7 +42,7 @@ class TestLog:
 
     @description(given="node", when="change log_level to error", then="change success")
     def test_change_log_level_error(self):
-        response = api.change_log_level(node='modbus-tcp-1', level='error')
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'error'})
         assert 0 == response.json()['error']
 
         response = api.get_nodes_state('modbus-tcp-1')
@@ -51,7 +51,7 @@ class TestLog:
 
     @description(given="node", when="change log_level to fatal", then="change success")
     def test_change_log_level_fatal(self):
-        response = api.change_log_level(node='modbus-tcp-1', level='fatal')
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'fatal'})
         assert 0 == response.json()['error']
 
         response = api.get_nodes_state('modbus-tcp-1')
@@ -60,7 +60,7 @@ class TestLog:
 
     @description(given="node", when="change log_level to notice", then="change success")
     def test_change_log_level_notice(self):
-        response = api.change_log_level(node='modbus-tcp-1', level='notice')
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'notice'})
         assert 0 == response.json()['error']
 
         response = api.get_nodes_state('modbus-tcp-1')
@@ -69,10 +69,56 @@ class TestLog:
 
     @description(given="node", when="change log_level to invalid level", then="change failed")
     def test_change_log_level_invalid(self):
-        response = api.change_log_level(node='modbus-tcp-1', level='invalid')
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'invalid'})
         assert 400 == response.status_code
         assert 1003 == response.json()['error']
 
         response = api.get_nodes_state('modbus-tcp-1')
         assert 200 == response.status_code
         assert "notice" == response.json()['log_level']
+
+    @description(given="core=true, without node", when="change core log_level", then="change success")
+    def test_change_core_log_level_only(self):
+        response = api.change_log_level(json={"level": 'info', "core": True})
+        assert 0 == response.json()['error']
+
+        response = api.get_nodes_state('modbus-tcp-1')
+        assert 200 == response.status_code
+        assert "info" == response.json()['neuron_core']
+        assert "notice" == response.json()['log_level']
+
+    @description(given="core=false, without node", when="change core log_level", then="return error")
+    def test_change_log_level_err_param(self):
+        response = api.change_log_level(json={"level": 'info', "core": False})
+        assert 400 == response.status_code
+        assert 1003 == response.json()['error']
+
+    @description(given="without core, node exists", when="change core and node log_level", then="change success")
+    def test_change_core_node_log_level_without_core(self):
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'warn'})
+        assert 0 == response.json()['error']
+
+        response = api.get_nodes_state('modbus-tcp-1')
+        assert 200 == response.status_code
+        assert "warn" == response.json()['neuron_core']
+        assert "warn" == response.json()['log_level']
+
+    @description(given="core=true, node exists", when="change core and node log_level", then="change success")
+    def test_change_core_node_log_level(self):
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'notice', "core": True})
+        assert 0 == response.json()['error']
+
+        response = api.get_nodes_state('modbus-tcp-1')
+        assert 200 == response.status_code
+        assert "notice" == response.json()['neuron_core']
+        assert "notice" == response.json()['log_level']
+
+    @description(given="core=false, node exists", when="change node log_level", then="change success")
+    def test_change_node_log_level_only(self):
+        response = api.change_log_level(json={"node": 'modbus-tcp-1', "level": 'info', "core": False})
+        assert 0 == response.json()['error']
+
+        response = api.get_nodes_state('modbus-tcp-1')
+        assert 200 == response.status_code
+        assert "notice" == response.json()['neuron_core']
+        assert "info" == response.json()['log_level']

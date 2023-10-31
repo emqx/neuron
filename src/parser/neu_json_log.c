@@ -45,19 +45,21 @@ int neu_json_decode_update_log_level_req(
     req->node_name = NULL;
     req->core      = true;
 
-    neu_json_elem_t req_elems[] = { {
-                                        .name = "node",
-                                        .t    = NEU_JSON_STR,
-                                        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
-                                    },
-                                    {
-                                        .name = "level",
-                                        .t    = NEU_JSON_STR,
-                                    },
-                                    {
-                                        .name = "core",
-                                        .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
-                                    }};
+    neu_json_elem_t req_elems[] = {
+        {
+            .name      = "node",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name = "level",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "core",
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        }
+    };
 
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);

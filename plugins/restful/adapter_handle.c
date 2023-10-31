@@ -335,8 +335,6 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
     res.rtt       = state->rtt;
     res.log_level = state->state.log_level;
     strcpy(res.core_level, state->core_level);
-    printf("!!!!!!!!!!!!!!!!!!%s\n", state->core_level);
-    printf("@@@@@@@@@@@@@@%s\n", res.core_level);
 
     neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
 
