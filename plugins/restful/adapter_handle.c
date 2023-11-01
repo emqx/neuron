@@ -334,6 +334,7 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
     res.running   = state->state.running;
     res.rtt       = state->rtt;
     res.log_level = state->state.log_level;
+    strcpy(res.core_level, state->core_level);
 
     neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
 
@@ -360,6 +361,8 @@ void handle_get_nodes_state_resp(nng_aio *                   aio,
         states_res.nodes[index].rtt     = state->rtt;
         states_res.nodes[index].log_level = state->state.log_level;
     }
+
+    strcpy(states_res.core_level, states->core_level);
 
     neu_json_encode_by_fn(&states_res, neu_json_encode_get_nodes_state_resp,
                           &result);
