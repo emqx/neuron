@@ -54,6 +54,7 @@ typedef struct {
     int64_t link;
     int64_t rtt;
     char *  log_level;
+    char    core_level[NEU_LOG_LEVEL_LEN];
 } neu_json_get_node_state_resp_t;
 
 int neu_json_encode_get_node_state_resp(void *json_object, void *param);
@@ -69,6 +70,7 @@ typedef struct {
 typedef struct {
     uint16_t                    n_node;
     neu_json_get_nodes_state_t *nodes;
+    char                        core_level[NEU_LOG_LEVEL_LEN];
 } neu_json_get_nodes_state_resp_t;
 
 int neu_json_encode_get_nodes_state_resp(void *json_object, void *param);

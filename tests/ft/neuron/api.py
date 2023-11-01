@@ -53,8 +53,8 @@ def delete_virtual_license(jwt=config.default_jwt):
 
 
 @gen_check
-def change_log_level(node, level, jwt=config.default_jwt):
-    return requests.put(url=config.BASE_URL + '/api/v2/log/level', headers={"Authorization": jwt}, json={"node": node, "level": level})
+def change_log_level(json, jwt=config.default_jwt):
+    return requests.put(url=config.BASE_URL + '/api/v2/log/level', headers={"Authorization": jwt}, json=json)
 
 
 @gen_check
