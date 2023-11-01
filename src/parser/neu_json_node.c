@@ -189,6 +189,11 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
                                          .name      = "log_level",
                                          .t         = NEU_JSON_STR,
                                          .v.val_str = resp->log_level,
+                                     },
+                                     {
+                                         .name      = "neuron_core",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->core_level,
                                      } };
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
@@ -236,10 +241,15 @@ int neu_json_encode_get_nodes_state_resp(void *json_object, void *param)
     }
 
     neu_json_elem_t resp_elems[] = { {
-        .name         = "states",
-        .t            = NEU_JSON_OBJECT,
-        .v.val_object = node_array,
-    } };
+                                         .name         = "states",
+                                         .t            = NEU_JSON_OBJECT,
+                                         .v.val_object = node_array,
+                                     },
+                                     {
+                                         .name      = "neuron_core",
+                                         .t         = NEU_JSON_STR,
+                                         .v.val_str = resp->core_level,
+                                     } };
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
 
