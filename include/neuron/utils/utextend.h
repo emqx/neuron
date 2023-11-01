@@ -33,8 +33,12 @@ static inline UT_array *utarray_clone(UT_array *array)
     result->i   = array->i;
     result->n   = array->n;
     result->icd = array->icd;
-    result->d   = (char *) calloc(1, array->n * array->icd.sz);
-    memcpy(result->d, array->d, array->n * array->icd.sz);
+    if (array->n > 0) {
+        result->d = (char *) calloc(1, array->n * array->icd.sz);
+        memcpy(result->d, array->d, array->n * array->icd.sz);
+    } else {
+        result->d = NULL;
+    }
 
     return result;
 }
