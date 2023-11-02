@@ -357,7 +357,7 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                     } else {
                         struct timespec t1 = {
                             .tv_sec  = 0,
-                            .tv_nsec = 1000 * 1000 * 20,
+                            .tv_nsec = 1000 * 1000 * 50,
                         };
                         struct timespec t2 = { 0 };
                         nanosleep(&t1, &t2);
@@ -447,11 +447,21 @@ ssize_t neu_conn_recv(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                 conn->fd, len, ret, strerror(errno), errno);
             conn_disconnect(conn);
         }
+    } else if (conn->param.type == NEU_CONN_UDP ||
+               conn->param.type == NEU_CONN_UDP_TO) {
+        if (ret <= 0) {
+            zlog_error(
+                conn->param.log,
+                "udp conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
+                conn->fd, len, ret, strerror(errno), errno);
+            conn_disconnect(conn);
+        }
     } else {
         if (ret <= 0) {
-            zlog_error(conn->param.log,
-                       "conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
-                       conn->fd, len, ret, strerror(errno), errno);
+            zlog_error(
+                conn->param.log,
+                "tcp conn fd: %d, recv buf len %zd, ret: %zd, errno: %s(%d)",
+                conn->fd, len, ret, strerror(errno), errno);
             if (ret == 0 || (ret == -1 && errno != EAGAIN)) {
                 conn_disconnect(conn);
             }
