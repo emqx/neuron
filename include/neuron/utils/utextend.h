@@ -48,6 +48,7 @@ static inline void *utarray_steal(UT_array *array)
     void *data = array->d;
     array->i   = 0;
     array->n   = 0;
+    array->d   = NULL;
     return data;
 }
 
