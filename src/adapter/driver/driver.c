@@ -1195,7 +1195,7 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
 }
 
 int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
-                               neu_datatag_t *tag)
+                               neu_datatag_t *tag, uint16_t interval)
 {
     int      ret  = NEU_ERR_SUCCESS;
     group_t *find = NULL;
@@ -1206,8 +1206,8 @@ int neu_adapter_driver_add_tag(neu_adapter_driver_t *driver, const char *group,
 
     HASH_FIND_STR(driver->groups, group, find);
     if (find == NULL) {
-        neu_adapter_driver_add_group(driver, group, 100);
-        adapter_storage_add_group(driver->adapter.name, group, 100);
+        neu_adapter_driver_add_group(driver, group, interval);
+        adapter_storage_add_group(driver->adapter.name, group, interval);
     }
     HASH_FIND_STR(driver->groups, group, find);
     assert(find != NULL);

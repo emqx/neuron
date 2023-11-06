@@ -89,6 +89,8 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_ADD_TAG,
     NEU_RESP_ADD_TAG,
+    NEU_REQ_ADD_GTAG,
+    NEU_RESP_ADD_GTAG,
     NEU_REQ_DEL_TAG,
     NEU_REQ_UPDATE_TAG,
     NEU_RESP_UPDATE_TAG,
@@ -197,6 +199,8 @@ static const char *neu_reqresp_type_string_t[] = {
 
     [NEU_REQ_ADD_TAG]     = "NEU_REQ_ADD_TAG",
     [NEU_RESP_ADD_TAG]    = "NEU_RESP_ADD_TAG",
+    [NEU_REQ_ADD_GTAG]    = "NEU_REQ_ADD_GTAG",
+    [NEU_RESP_ADD_GTAG]   = "NEU_RESP_ADD_GTAG",
     [NEU_REQ_DEL_TAG]     = "NEU_REQ_DEL_TAG",
     [NEU_REQ_UPDATE_TAG]  = "NEU_REQ_UPDATE_TAG",
     [NEU_RESP_UPDATE_TAG] = "NEU_RESP_UPDATE_TAG",
@@ -383,6 +387,19 @@ typedef struct neu_resp_group_info {
 typedef struct neu_resp_get_group {
     UT_array *groups; // array neu_resp_group_info_t
 } neu_resp_get_group_t;
+
+typedef struct {
+    char           group[NEU_GROUP_NAME_LEN];
+    int            n_tag;
+    int            interval;
+    neu_datatag_t *tags;
+} neu_gdatatag_t;
+
+typedef struct {
+    char            driver[NEU_NODE_NAME_LEN];
+    uint16_t        n_group;
+    neu_gdatatag_t *groups;
+} neu_req_add_gtag_t;
 
 typedef struct {
     char     driver[NEU_NODE_NAME_LEN];

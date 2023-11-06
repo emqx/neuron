@@ -427,6 +427,213 @@ int neu_json_encode_au_tags_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_decode_gtag_json(void *json_obj, neu_json_gtag_t *gtag_p)
+{
+    if (NULL == gtag_p) {
+        return -1;
+    }
+
+    neu_json_elem_t gtag_elems[] = { {
+                                         .name = "group",
+                                         .t    = NEU_JSON_STR,
+                                     },
+                                     {
+                                         .name = "interval",
+                                         .t    = NEU_JSON_INT,
+                                     },
+                                     {
+                                         .name = "tags",
+                                         .t    = NEU_JSON_OBJECT,
+                                     } };
+
+    int ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(gtag_elems),
+                                      gtag_elems);
+
+    if (0 != ret) {
+        goto decode_fail;
+    }
+
+    neu_json_tag_array_t arr = { 0 };
+    ret = neu_json_decode_tag_array_json(gtag_elems[2].v.val_object, &arr);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+    if (arr.len <= 0) {
+        goto decode_fail;
+    }
+
+    gtag_p->group    = gtag_elems[0].v.val_str;
+    gtag_p->interval = gtag_elems[1].v.val_int;
+    gtag_p->n_tag    = arr.len;
+    gtag_p->tags     = arr.tags;
+
+    goto decode_exit;
+
+decode_fail:
+    free(gtag_p);
+    free(gtag_elems[0].v.val_str);
+    return -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return 0;
+}
+
+void neu_json_decode_gtag_fini(neu_json_gtag_t *gtag)
+{
+    free(gtag->group);
+    for (int i = 0; i < gtag->n_tag; i++) {
+        neu_json_decode_tag_fini(&(gtag->tags[i]));
+    }
+    free(gtag->tags);
+}
+
+int neu_json_decode_gtag_array_json(void *json_obj, neu_json_gtag_array_t *arr)
+{
+    int              len   = 0;
+    neu_json_gtag_t *gtags = NULL;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    len = json_array_size(json_obj);
+    if (0 == len) {
+        arr->len   = 0;
+        arr->gtags = NULL;
+        return 0;
+    }
+
+    gtags = calloc(len, sizeof(*gtags));
+    if (NULL == gtags) {
+        return -1;
+    }
+
+    int i = 0;
+    for (i = 0; i < len; i++) {
+        json_t *tag_obj = json_array_get(json_obj, i);
+        if (0 != neu_json_decode_gtag_json(tag_obj, &gtags[i])) {
+            goto decode_fail;
+        }
+    }
+
+    arr->len   = len;
+    arr->gtags = gtags;
+    return 0;
+
+decode_fail:
+    while (--i > 0) {
+        neu_json_decode_gtag_fini(&gtags[i]);
+    }
+    free(gtags);
+    return -1;
+}
+
+void neu_json_decode_gtag_array_fini(neu_json_gtag_array_t *arr)
+{
+    for (int i = 0; i < arr->len; ++i) {
+        neu_json_decode_gtag_fini(&arr->gtags[i]);
+    }
+    free(arr->gtags);
+}
+
+int neu_json_decode_add_gtags_req(char *buf, neu_json_add_gtags_req_t **result)
+{
+    int                       ret      = 0;
+    void *                    json_obj = NULL;
+    neu_json_add_gtags_req_t *req = calloc(1, sizeof(neu_json_add_gtags_req_t));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        goto decode_fail;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "groups",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+
+    neu_json_gtag_array_t arr = { 0 };
+    ret = neu_json_decode_gtag_array_json(req_elems[1].v.val_object, &arr);
+    if (ret != 0) {
+        goto decode_fail;
+    }
+    if (arr.len <= 0) {
+        goto decode_fail;
+    }
+
+    req->node    = req_elems[0].v.val_str;
+    req->n_group = arr.len;
+    req->groups  = arr.gtags;
+    *result      = req;
+    goto decode_exit;
+
+decode_fail:
+    free(req);
+    free(req_elems[0].v.val_str);
+    ret = -1;
+
+decode_exit:
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_add_gtags_req_free(neu_json_add_gtags_req_t *req)
+{
+    if (NULL == req) {
+        return;
+    }
+    neu_json_gtag_array_t arr = {
+        .len   = req->n_group,
+        .gtags = req->groups,
+    };
+    neu_json_decode_gtag_array_fini(&arr);
+
+    free(req->node);
+    free(req);
+}
+
+int neu_json_encode_au_gtags_resp(void *json_object, void *param)
+{
+    int                      ret          = 0;
+    neu_json_add_gtag_res_t *resp         = (neu_json_add_gtag_res_t *) param;
+    neu_json_elem_t          resp_elems[] = {
+        {
+            .name      = "index",
+            .t         = NEU_JSON_INT,
+            .v.val_int = resp->index,
+        },
+        {
+            .name      = "error",
+            .t         = NEU_JSON_INT,
+            .v.val_int = resp->error,
+        },
+    };
+
+    ret = neu_json_encode_field(json_object, resp_elems,
+                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    return ret;
+}
+
 int neu_json_encode_del_tags_req(void *json_object, void *param)
 {
     int                      ret = 0;
