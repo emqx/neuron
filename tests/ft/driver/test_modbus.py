@@ -126,6 +126,113 @@ hold_float_precision = [{"name": "hold_float_precision", "address": "1!4000235",
 hold_double_precision = [{"name": "hold_double_precision", "address": "1!4000240",
                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE, "precision": 3}]
 
+hold_int16_m1 = [{"name": "hold_int16_m1", "address": "1!400301",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m2 = [{"name": "hold_int16_m2", "address": "1!400302",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m3 = [{"name": "hold_int16_m3", "address": "1!400303",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m4 = [{"name": "hold_int16_m4", "address": "1!400304",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m5 = [{"name": "hold_int16_m5", "address": "1!400305",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m6 = [{"name": "hold_int16_m6", "address": "1!400307",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m7 = [{"name": "hold_int16_m7", "address": "1!400309",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m8 = [{"name": "hold_int16_m8", "address": "1!400311",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m9 = [{"name": "hold_int16_m9", "address": "1!400313",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m10 = [{"name": "hold_int16_m10", "address": "1!400315",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m11 = [{"name": "hold_int16_m11", "address": "1!400317",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m12 = [{"name": "hold_int16_m12", "address": "1!400319",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m13 = [{"name": "hold_int16_m13", "address": "1!400321",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m14 = [{"name": "hold_int16_m14", "address": "1!400323",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_m15 = [{"name": "hold_int16_m15", "address": "1!400325",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+
+coil_bit_m1 = [{"name": "coil_bit_m1", "address": "1!000101",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m2 = [{"name": "coil_bit_m2", "address": "1!000102",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m3 = [{"name": "coil_bit_m3", "address": "1!000103",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m4 = [{"name": "coil_bit_m4", "address": "1!000104",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m5 = [{"name": "coil_bit_m5", "address": "1!000105",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m6 = [{"name": "coil_bit_m6", "address": "1!000107",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m7 = [{"name": "coil_bit_m7", "address": "1!000109",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m8 = [{"name": "coil_bit_m8", "address": "1!000111",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m9 = [{"name": "coil_bit_m9", "address": "1!000113",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m10 = [{"name": "coil_bit_m10", "address": "1!000115",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m11 = [{"name": "coil_bit_m11", "address": "1!000117",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m12 = [{"name": "coil_bit_m12", "address": "1!000119",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m13 = [{"name": "coil_bit_m13", "address": "1!000121",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m14 = [{"name": "coil_bit_m14", "address": "1!000123",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+coil_bit_m15 = [{"name": "coil_bit_m15", "address": "1!000125",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
+
+hold_int16_retry_1 = [{"name": "hold_int16_retry_1", "address": "1!408000",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_retry_2 = [{"name": "hold_int16_retry_2", "address": "1!408001",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+
+hold_int16_B = [{"name": "hold_int16_B", "address": "1!400401#B",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int16_L = [{"name": "hold_int16_L", "address": "1!400402#L",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+hold_int32_LL = [{"name": "hold_int32_LL", "address": "1!400403#LL",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+hold_int32_LB = [{"name": "hold_int32_LB", "address": "1!400405#LB",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+hold_int32_BL = [{"name": "hold_int32_BL", "address": "1!400407#BL",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+hold_int32_BB = [{"name": "hold_int32_BB", "address": "1!400409#BB",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+hold_uint16_B = [{"name": "hold_uint16_B", "address": "1!400411#B",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
+hold_uint16_L = [{"name": "hold_uint16_L", "address": "1!400412#L",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
+hold_uint32_LL = [{"name": "hold_uint32_LL", "address": "1!400413#LL",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+hold_uint32_LB = [{"name": "hold_uint32_LB", "address": "1!400415#LB",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+hold_uint32_BL = [{"name": "hold_uint32_BL", "address": "1!400417#BL",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+hold_uint32_BB = [{"name": "hold_uint32_BB", "address": "1!400419#BB",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+hold_float_LL = [{"name": "hold_float_LL", "address": "1!400421#LL",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+hold_float_LB = [{"name": "hold_float_LB", "address": "1!400423#LB",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+hold_float_BL = [{"name": "hold_float_BL", "address": "1!400425#BL",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+hold_float_BB = [{"name": "hold_float_BB", "address": "1!400427#BB",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+
+hold_string_l1 = [{"name": "hold_string_l1", "address": "1!400501.127",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+hold_string_l2 = [{"name": "hold_string_l2", "address": "1!400628.127",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+
+hold_int16_device_err = [{"name": "hold_int16_device_err", "address": "1!409000",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
 
 class TestModbus:
 
@@ -168,6 +275,57 @@ class TestModbus:
         api.add_tags_check(node=param[0], group='group', tags=input_bit_3)
         api.add_tags_check(node=param[0], group='group', tags=input_bit_4)
         api.add_tags_check(node=param[0], group='group', tags=input_bit_5)
+
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m1)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m2)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m3)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m4)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m5)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m6)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m7)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m8)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m9)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m10)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m11)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m12)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m13)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m14)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_m15)
+
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m1)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m2)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m3)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m4)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m5)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m6)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m7)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m8)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m9)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m10)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m11)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m12)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m13)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m14)
+        api.add_tags_check(node=param[0], group='group', tags=coil_bit_m15)
+
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_B)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_L)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int32_LL)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int32_LB)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int32_BL)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int32_BB)
+
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint16_B)
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint16_L)
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint32_LL)
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint32_LB)
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint32_BL)
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint32_BB)
+
+        api.add_tags_check(node=param[0], group='group', tags=hold_float_LL)
+        api.add_tags_check(node=param[0], group='group', tags=hold_float_LB)
+        api.add_tags_check(node=param[0], group='group', tags=hold_float_BL)
+        api.add_tags_check(node=param[0], group='group', tags=hold_float_BB)
 
     @description(given="created modbus node", when="add static tags", then="add success")
     def test_add_static_tags(self, param):
@@ -243,7 +401,7 @@ class TestModbus:
         api.write_tag_check(
             node=param[0], group='group', tag=coil_bit_5[0]['name'], value=0)
 
-        time.sleep(0.30)
+        time.sleep(0.3)
         assert -123 == api.read_tag(
             node=param[0], group='group', tag=hold_int16[0]['name'])
         assert 123 == api.read_tag(
@@ -338,7 +496,7 @@ class TestModbus:
         api.add_tags_check(node=param[0], group='group1', tags=hold_int16)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_int16[0]['name'], value=222)
-        time.sleep(0.30)
+        time.sleep(0.5)
         assert 222 == api.read_tag(
             node=param[0], group='group', tag=hold_int16[0]['name'])
         assert 222 == api.read_tag(
@@ -354,7 +512,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_int16[0]['name'], value=333)
         api.write_tag_check(
             node=param[0], group='group1', tag=t_tag[0]['name'], value=444)
-        time.sleep(0.30)
+        time.sleep(0.5)
         assert 333 == api.read_tag(
             node=param[0], group='group', tag=hold_int16[0]['name'])
         assert 444 == api.read_tag(
@@ -431,6 +589,18 @@ class TestModbus:
         response = api.node_ctl(node=param[0], ctl=config.NEU_CTL_START)
         assert 200 == response.status_code
 
+    @description(given="created modbus node", when="create group with invalid configuration", then="create failed")
+    def test_config_group_with_invalid_configuration(self, param):
+        response = api.add_group(node=param[0], group='group_config_test', interval = 0)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_GROUP_PARAMETER_INVALID == response.json()[
+            'error']
+        
+        response = api.add_group(node=param[0], group='group_config_test', interval = -1)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_GROUP_PARAMETER_INVALID == response.json()[
+            'error']
+
     @description(given="created modbus node", when="add decimal", then="add success")
     def test_add_decimal_tag(self, param):
         api.add_tags_check(
@@ -461,7 +631,7 @@ class TestModbus:
         api.write_tag_check(
             node=param[0], group='group', tag=hold_double_decimal[0]['name'], value=513.11)
 
-        time.sleep(0.3)
+        time.sleep(0.5)
         assert 11 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_decimal[0]['name'])
         assert 23 == api.read_tag(
@@ -481,6 +651,7 @@ class TestModbus:
             node=param[0], group='group', tags=hold_float_precision)
         api.add_tags_check(
             node=param[0], group='group', tags=hold_double_precision)
+        time.sleep(0.3)
 
     @description(given="created modbus node/tag", when="read/write precision tag", then="read/write success")
     def test_read_write_precision_tag(self, param):
@@ -493,3 +664,275 @@ class TestModbus:
             node=param[0], group='group', tag=hold_float_precision[0]['name']))
         compare_float(513.127, api.read_tag(
             node=param[0], group='group', tag=hold_double_precision[0]['name']))
+
+    @description(given="created partially continuous modbus node/tag", when="write multiple hold tags in one request", then="read/write success")
+    def test_write_multiple_hold_tags_partially_continuous(self, param):
+        api.write_tags_check(
+            node=param[0], group='group', tag_values=[
+            {"tag": hold_int16_m1[0]['name'], "value": 1},
+            {"tag": hold_int16_m2[0]['name'], "value": 2},
+            {"tag": hold_int16_m3[0]['name'], "value": 3},
+            {"tag": hold_int16_m4[0]['name'], "value": 4},
+            {"tag": hold_int16_m5[0]['name'], "value": 5},
+            {"tag": hold_int16_m6[0]['name'], "value": 6},
+            {"tag": hold_int16_m7[0]['name'], "value": 7},
+            {"tag": hold_int16_m8[0]['name'], "value": 8},
+            {"tag": hold_int16_m9[0]['name'], "value": 9},
+            {"tag": hold_int16_m10[0]['name'], "value": 10}])
+        time.sleep(0.5)
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m1[0]['name'])
+        assert 2 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m2[0]['name'])
+        assert 3 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m3[0]['name'])
+        assert 4 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m4[0]['name'])
+        assert 5 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m5[0]['name'])
+        assert 6 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m6[0]['name'])
+        assert 7 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m7[0]['name'])
+        assert 8 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m8[0]['name'])
+        assert 9 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m9[0]['name'])
+        assert 10 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m10[0]['name'])
+
+    @description(given="created discontinuous modbus node/tag", when="write multiple hold tags in one request", then="read/write success")
+    def test_write_multiple_hold_tags_discontinuous(self, param):
+        api.write_tags_check(
+            node=param[0], group='group', tag_values=[
+            {"tag": hold_int16_m6[0]['name'], "value": 11},
+            {"tag": hold_int16_m7[0]['name'], "value": 12},
+            {"tag": hold_int16_m8[0]['name'], "value": 13},
+            {"tag": hold_int16_m9[0]['name'], "value": 14},
+            {"tag": hold_int16_m10[0]['name'], "value": 15},
+            {"tag": hold_int16_m11[0]['name'], "value": 16},
+            {"tag": hold_int16_m12[0]['name'], "value": 17},
+            {"tag": hold_int16_m13[0]['name'], "value": 18},
+            {"tag": hold_int16_m14[0]['name'], "value": 19},
+            {"tag": hold_int16_m15[0]['name'], "value": 20}])
+        time.sleep(0.3)
+        assert 11 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m6[0]['name'])
+        assert 12 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m7[0]['name'])
+        assert 13 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m8[0]['name'])
+        assert 14 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m9[0]['name'])
+        assert 15 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m10[0]['name'])
+        assert 16 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m11[0]['name'])
+        assert 17 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m12[0]['name'])
+        assert 18 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m13[0]['name'])
+        assert 19 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m14[0]['name'])
+        assert 20 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_m15[0]['name'])
+
+    @description(given="created partially continuous modbus node/tag", when="write multiple coil tags in one request", then="read/write success")
+    def test_write_multiple_coil_tags_partially_continuous(self, param):
+        api.write_tags_check(
+            node=param[0], group='group', tag_values=[
+            {"tag": coil_bit_m1[0]['name'], "value": 0},
+            {"tag": coil_bit_m2[0]['name'], "value": 1},
+            {"tag": coil_bit_m3[0]['name'], "value": 0},
+            {"tag": coil_bit_m4[0]['name'], "value": 1},
+            {"tag": coil_bit_m5[0]['name'], "value": 0},
+            {"tag": coil_bit_m6[0]['name'], "value": 1},
+            {"tag": coil_bit_m7[0]['name'], "value": 0},
+            {"tag": coil_bit_m8[0]['name'], "value": 1},
+            {"tag": coil_bit_m9[0]['name'], "value": 0},
+            {"tag": coil_bit_m10[0]['name'], "value": 1}])
+        time.sleep(0.3)
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m1[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m2[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m3[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m4[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m5[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m6[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m7[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m8[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m9[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m10[0]['name'])
+
+    @description(given="created discontinuous modbus node/tag", when="write multiple coil tags in one request", then="read/write success")
+    def test_write_multiple_hold_tags_discontinuous(self, param):
+        api.write_tags_check(
+            node=param[0], group='group', tag_values=[
+            {"tag": coil_bit_m6[0]['name'], "value": 0},
+            {"tag": coil_bit_m7[0]['name'], "value": 1},
+            {"tag": coil_bit_m8[0]['name'], "value": 0},
+            {"tag": coil_bit_m9[0]['name'], "value": 1},
+            {"tag": coil_bit_m10[0]['name'], "value": 0},
+            {"tag": coil_bit_m11[0]['name'], "value": 1},
+            {"tag": coil_bit_m12[0]['name'], "value": 0},
+            {"tag": coil_bit_m13[0]['name'], "value": 1},
+            {"tag": coil_bit_m14[0]['name'], "value": 0},
+            {"tag": coil_bit_m15[0]['name'], "value": 1}])
+        time.sleep(0.3)
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m6[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m7[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m8[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m9[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m10[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m11[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m12[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m13[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m14[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=coil_bit_m15[0]['name'])
+
+    @description(given="created modbus node/tag with different byte orders", when="write and read tag", then="read/write success")
+    def test_read_write_tag_order(self, param):
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int16_B[0]['name'], value=1234)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int16_L[0]['name'], value=1234)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int32_LL[0]['name'], value=12345678)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int32_LB[0]['name'], value=12345678)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int32_BL[0]['name'], value=12345678)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int32_BB[0]['name'], value=12345678)
+
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_uint16_B[0]['name'], value=1234)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_uint16_L[0]['name'], value=1234)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_uint32_LL[0]['name'], value=12345678)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_uint32_LB[0]['name'], value=12345678)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_uint32_BL[0]['name'], value=12345678)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_uint32_BB[0]['name'], value=12345678)
+
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_float_LL[0]['name'], value=123.4)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_float_LB[0]['name'], value=123.4)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_float_BL[0]['name'], value=123.4)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_float_BB[0]['name'], value=123.4)
+
+        time.sleep(1.0)
+        assert 1234== api.read_tag(
+            node=param[0], group='group', tag=hold_int16_B[0]['name'])
+        assert 1234 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_L[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_int32_LL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_int32_LB[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_int32_BL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_int32_BB[0]['name'])
+
+        assert 1234== api.read_tag(
+            node=param[0], group='group', tag=hold_uint16_B[0]['name'])
+        assert 1234 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint16_L[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_LB[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BL[0]['name'])
+        assert 12345678 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint32_BB[0]['name'])
+
+        assert compare_float(123.4, api.read_tag(
+            node=param[0], group='group', tag=hold_float_LL[0]['name']))
+        assert compare_float(123.4, api.read_tag(
+            node=param[0], group='group', tag=hold_float_LB[0]['name']))
+        assert compare_float(123.4, api.read_tag(
+            node=param[0], group='group', tag=hold_float_BL[0]['name']))
+        assert compare_float(123.4, api.read_tag(
+            node=param[0], group='group', tag=hold_float_BB[0]['name']))
+
+    @description(given="created modbus node/tag", when="read consecutive tags with a length exceeding the protocol limit", then="read success")
+    def test_read_tag_length_exceeds_250(self, param):
+        api.add_tags_check(node=param[0], group='group', tags=hold_string_l1)
+        api.add_tags_check(node=param[0], group='group', tags=hold_string_l2)
+
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_string_l1[0]['name'], value='a')
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_string_l2[0]['name'], value='b')
+        time.sleep(1.0)
+        assert 'a' == api.read_tag(
+            node=param[0], group='group', tag=hold_string_l1[0]['name'])
+        assert 'b' == api.read_tag(
+            node=param[0], group='group', tag=hold_string_l2[0]['name'])
+
+    @description(given="created modbus device_error_test node/tag", when="read tag", then="read failed")
+    def test_read_modbus_device_err(self, param):
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_device_err)
+        time.sleep(4.0)
+        assert error.NEU_ERR_PLUGIN_READ_FAILURE == api.read_tag_err(
+            node=param[0], group='group', tag=hold_int16_device_err[0]['name'])
+
+    @description(given="created modbus node", when="create modbus retry_test tag, write and read tag", then="read/write success after retrying")
+    def test_read_tag_retry(self, param):
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_retry_1)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_retry_2)
+
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int16_retry_1[0]['name'], value=111)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int16_retry_2[0]['name'], value=222)
+        time.sleep(1.0)
+        assert 111 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_retry_1[0]['name'])
+        assert 222 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_retry_2[0]['name'])
+
+    @description(given="close modbus simulator", when="create modbus node/tag, write and read tag", then="write/read failed")
+    def test_write_read_modbus_disconnected(self, param):
+        response = api.add_node(node=param[0]+"_3002", plugin=param[1])
+        assert 200 == response.status_code
+        if param[1] == config.PLUGIN_MODBUS_TCP:
+            api.modbus_tcp_node_setting(
+                node=param[0]+"_3002", port=29998)
+        else:
+            api.modbus_rtu_node_setting(
+                node=param[0]+"_3002", port=29999)
+        response = api.add_group(node=param[0]+"_3002", group='group')
+        assert 200 == response.status_code
+
+        api.add_tags_check(node=param[0]+"_3002", group='group', tags=hold_int16)
+        time.sleep(0.3)
+        assert error.NEU_ERR_PLUGIN_DISCONNECTED == api.read_tag_err(
+            node=param[0]+"_3002", group='group', tag=hold_int16[0]['name'])

@@ -294,8 +294,10 @@ ssize_t neu_conn_tcp_server_recv(neu_conn_t *conn, int fd, uint8_t *buf,
     }
 
     if (ret <= 0) {
-        conn->disconnected(conn->data, fd);
-        conn_tcp_server_del_client(conn, fd);
+        zlog_error(conn->param.log,
+                   "conn fd: %d, recv error, "
+                   "errno: %s(%d)",
+                   conn->fd, strerror(errno), errno);
     }
 
     pthread_mutex_unlock(&conn->mtx);

@@ -41,6 +41,11 @@ void handle_add_group_config(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
                                       result_error);
                 });
+            } else if (req->interval < NEU_GROUP_INTERVAL_LIMIT) {
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_PARAMETER_INVALID, {
+                    neu_http_response(aio, NEU_ERR_GROUP_PARAMETER_INVALID,
+                                      result_error);
+                });
             } else {
                 int                 ret    = 0;
                 neu_reqresp_head_t  header = { 0 };
