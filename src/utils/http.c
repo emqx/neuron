@@ -357,6 +357,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NODE_NOT_EXIST:
     case NEU_ERR_TAG_NOT_EXIST:
     case NEU_ERR_LICENSE_NOT_FOUND:
+    case NEU_ERR_LICENSE_TOKEN_NOT_FOUND:
     case NEU_ERR_GROUP_NOT_EXIST:
     case NEU_ERR_GROUP_NOT_SUBSCRIBE:
     case NEU_ERR_COMMAND_EXECUTION_FAILED:
