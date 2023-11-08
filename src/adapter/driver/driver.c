@@ -659,8 +659,8 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     wtag.req               = (void *) req;
     wtag.tvs               = tags;
 
-    store_write_tag(g, &wtag);
     free_tags(cmd);
+    store_write_tag(g, &wtag);
 }
 
 void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
@@ -777,11 +777,11 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     wtag.req               = (void *) req;
     wtag.tvs               = tags;
 
-    store_write_tag(first_g, &wtag);
     for (int i = 0; i < cmd->n_group; i++) {
         free(cmd->groups[i].tags);
     }
     free(cmd->groups);
+    store_write_tag(first_g, &wtag);
 }
 
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
