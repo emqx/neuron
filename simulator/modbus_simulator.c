@@ -259,6 +259,9 @@ static int recv_msg(enum neu_event_io_type type, int fd, void *usr_data)
             free(usr_data);
             neu_conn_tcp_server_close_client(conn, fd);
             printf("recv msg parse fail, close client: %d\n", fd);
+        } else if (len == -2) {
+            neu_conn_tcp_server_send(conn, fd, NULL, 0);
+            printf("recv modbus adrress for retry_test, continue wait msg\n");
         } else if (len > 0) {
             memmove(buf->buf, buf->buf + len, buf->len - len);
             buf->len -= len;

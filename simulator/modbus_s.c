@@ -77,6 +77,9 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
     uint8_t *              res_value   = (uint8_t *) &res_data[1];
     uint16_t *             crc         = NULL;
 
+    static int start_address_8000_counter = 0;
+    static int start_address_8001_counter = 0;
+
     if (req_len < sizeof(struct modbus_code)) {
         return 0;
     }
@@ -123,6 +126,29 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
     case MODBUS_READ_INPUT:
     case MODBUS_READ_HOLD_REG:
     case MODBUS_READ_INPUT_REG:
+        if (ntohs(address->start_address) == 7999) {
+            ++start_address_8000_counter;
+            if (start_address_8000_counter % 2 == 1) {
+                return -2;
+            } 
+        }
+
+        if (ntohs(address->start_address) == 8000) {
+            ++start_address_8001_counter;
+            if (start_address_8001_counter % 3 != 0) {
+                return -2;
+            } 
+        }
+
+        if (ntohs(address->start_address) == 8999) {
+            res_code->function += 0x80;
+            len = modbus_read(&tcp_registers[code->slave_id - 1], res_code->function,
+                              address, res_value);
+            res_data->n_byte = len;
+            crc = (uint16_t *) (res_value + len);
+            break;
+        }
+
         len = modbus_read(&tcp_registers[code->slave_id - 1], code->function,
                           address, res_value);
         *res_len += sizeof(struct modbus_data);
@@ -172,6 +198,9 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
     struct modbus_data *   res_data    = (struct modbus_data *) &res_code[1];
     uint8_t *              res_value   = (uint8_t *) &res_data[1];
 
+    static int start_address_8000_counter = 0;
+    static int start_address_8001_counter = 0;
+
     if (req_len < sizeof(struct modbus_header)) {
         return 0;
     }
@@ -201,6 +230,29 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
                   "register: %d\n",
                   code->slave_id, code->function, ntohs(address->start_address),
                   ntohs(address->n_reg));
+
+        if (ntohs(address->start_address) == 7999) {
+            ++start_address_8000_counter;
+            if (start_address_8000_counter % 2 == 1) {
+                return -2;
+            } 
+        }
+
+        if (ntohs(address->start_address) == 8000) {
+            ++start_address_8001_counter;
+            if (start_address_8001_counter % 3 != 0) {
+                return -2;
+            } 
+        }
+
+        if (ntohs(address->start_address) == 8999) {
+            res_code->function += 0x80;
+            len = modbus_read(&tcp_registers[code->slave_id - 1], res_code->function,
+                              address, res_value);
+            res_data->n_byte = len;
+            break;
+        }
+
         len = modbus_read(&tcp_registers[code->slave_id - 1], code->function,
                           address, res_value);
         *res_len += sizeof(struct modbus_data);
@@ -291,6 +343,15 @@ static int modbus_read(struct modbus_register *reg, uint8_t function,
             nlog_info("read hold/input register: %X, i:%d\n", byte[i], i);
         }
 
+        break;
+    }
+    case MODBUS_READ_COIL_ERR:
+    case MODBUS_READ_INPUT_ERR:
+    case MODBUS_READ_HOLD_REG_ERR:
+    case MODBUS_READ_INPUT_REG_ERR: {
+        len = 0;
+
+        nlog_info("modbus device read err");
         break;
     }
 

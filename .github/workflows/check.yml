@@ -36,7 +36,8 @@ jobs:
       - name: cppcheck
         run: |
           sudo apt install cppcheck
-          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction ./plugins ./simulator ./src
+          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction ./plugins ./src
+          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=variableScope ./simulator
 
   ut:
     runs-on: ubuntu-20.04

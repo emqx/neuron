@@ -168,6 +168,19 @@ def read_tag_error(node, group, tag, sync=False):
     finally:
         return x[0]['error']
 
+def read_tag_err(node, group, tag, sync=False):
+    response = read_tags(node, group, sync)
+    assert 200 == response.status_code
+    x = list(filter(lambda x: x['name'] == tag,
+                    response.json()['tags']))
+    assert len(x) == 1
+    try:
+        x[0]['error']
+    except KeyError:
+        print(x[0])
+    finally:
+        return x[0]['error']
+
 
 @gen_check
 def write_tag(node, group, tag, value):
@@ -269,13 +282,13 @@ def get_template_tags(tmpl, group, name):
 # plugin setting
 
 
-def modbus_tcp_node_setting(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000):
+def modbus_tcp_node_setting(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode, "interval": interval,
-                                    "host": host, "port": port, "timeout": timeout})
+                                    "host": host, "port": port, "timeout": timeout, "max_retries": max_retries})
 
 
-def modbus_rtu_node_setting(node, port, connection_mode=0, transport_mode=0, interval=10, host='127.0.0.1', timeout=3000, link=1, device="", stop=0, parity=0, baud=4, data=3):
+def modbus_rtu_node_setting(node, port, connection_mode=0, transport_mode=0, interval=10, host='127.0.0.1', timeout=3000, max_retries=2, link=1, device="", stop=0, parity=0, baud=4, data=3):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode,
                                     "interval": interval, "host": host, "port": port, "timeout": timeout,
-                                    "link": link, "device": device, "stop": stop, "parity": parity,
-                                    "baud": baud, "data": data})
+                                    "max_retries": max_retries, "link": link, "device": device, "stop": stop,
+                                    "parity": parity, "baud": baud, "data": data})
