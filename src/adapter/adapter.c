@@ -573,18 +573,19 @@ static int adapter_trans_data(enum neu_event_io_type type, int fd,
 
 static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 {
-    neu_adapter_t *adapter = (neu_adapter_t *) usr_data;
+    neu_adapter_t *         adapter        = (neu_adapter_t *) usr_data;
+    static __thread uint8_t recv_buf[2048] = { 0 };
+
     if (type != NEU_EVENT_IO_READ) {
         nlog_warn("adapter: %s recv close, exit loop, fd: %d", adapter->name,
                   fd);
         return 0;
     }
 
-    memset(adapter->recv_buf, 0, sizeof(adapter->recv_buf));
-    neu_reqresp_head_t *header = (neu_reqresp_head_t *) adapter->recv_buf;
+    memset(recv_buf, 0, sizeof(recv_buf));
+    neu_reqresp_head_t *header = (neu_reqresp_head_t *) recv_buf;
 
-    int rv = recv(adapter->control_fd, adapter->recv_buf,
-                  sizeof(adapter->recv_buf), 0);
+    int rv = recv(adapter->control_fd, recv_buf, sizeof(recv_buf), 0);
     if (rv <= 0) {
         nlog_warn("adapter: %s recv failed, ret: %d, errno: %s(%d)",
                   adapter->name, rv, strerror(errno), errno);
@@ -679,8 +680,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t error = { 0 };
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
-            void *msg_dump = calloc(header->len, 1);
-            memcpy(msg_dump, header, header->len);
+            neu_reqresp_head_t *msg_dump = neu_msg_dup(header);
             neu_adapter_driver_write_tag((neu_adapter_driver_t *) adapter,
                                          msg_dump);
         } else {
@@ -701,8 +701,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(adapter, header, &error);
         } else {
-            void *msg_dump = calloc(header->len, 1);
-            memcpy(msg_dump, header, header->len);
+            neu_reqresp_head_t *msg_dump = neu_msg_dup(header);
             neu_adapter_driver_write_tags((neu_adapter_driver_t *) adapter,
                                           msg_dump);
         }
@@ -717,8 +716,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_msg_exchange(header);
             reply(adapter, header, &error);
         } else {
-            void *msg_dump = calloc(header->len, 1);
-            memcpy(msg_dump, header, header->len);
+            neu_reqresp_head_t *msg_dump = neu_msg_dup(header);
             neu_adapter_driver_write_gtags((neu_adapter_driver_t *) adapter,
                                            msg_dump);
         }
@@ -1747,4 +1745,42 @@ void neu_msg_gen(neu_reqresp_head_t *header, void *data)
     assert(NEU_MSG_MAX_SIZE >= sizeof(neu_reqresp_head_t) + data_size);
     memcpy((uint8_t *) &header[1], data, data_size);
     header->len = sizeof(neu_reqresp_head_t) + data_size;
+}
+
+neu_reqresp_head_t *neu_msg_dup(neu_reqresp_head_t *header)
+{
+    neu_reqresp_head_t *new_header = calloc(1, header->len);
+
+    *new_header = *header;
+    switch (new_header->type) {
+    case NEU_REQ_WRITE_TAG: {
+        neu_req_write_tag_t *wt     = (neu_req_write_tag_t *) &header[1];
+        neu_req_write_tag_t *new_wt = (neu_req_write_tag_t *) &new_header[1];
+
+        *new_wt = *wt;
+        break;
+    }
+    case NEU_REQ_WRITE_TAGS: {
+        neu_req_write_tags_t *wts     = (neu_req_write_tags_t *) &header[1];
+        neu_req_write_tags_t *new_wts = (neu_req_write_tags_t *) &new_header[1];
+
+        *new_wts = *wts;
+        break;
+    }
+    case NEU_REQ_WRITE_GTAGS: {
+        neu_req_write_gtags_t *wgts = (neu_req_write_gtags_t *) &header[1];
+        neu_req_write_gtags_t *new_wgts =
+            (neu_req_write_gtags_t *) &new_header[1];
+
+        *new_wgts = *wgts;
+        break;
+    }
+    default:
+        nlog_warn("unsupport msg type %d", new_header->type);
+        assert(false);
+    }
+
+    memcpy(&new_header[1], &header[1], header->len - sizeof(*header));
+
+    return new_header;
 }
