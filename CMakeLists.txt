@@ -98,6 +98,12 @@ if (SMART_LINK)
   set(NEURON_BASE_SOURCES ${NEURON_BASE_SOURCES} src/connection/smart_link.c)
 endif()
 
+if (CLIB)
+  message(STATUS "set clib")
+  add_definitions(-DNEU_CLIB=${CLIB})
+endif()
+
+
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 
 target_include_directories(neuron-base

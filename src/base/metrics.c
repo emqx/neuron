@@ -23,6 +23,10 @@
 #include <sys/sysinfo.h>
 #include <unistd.h>
 
+#ifndef NEU_CLIB
+#include <gnu/libc-version.h>
+#endif
+
 #include "adapter.h"
 #include "adapter/adapter_internal.h"
 #include "metrics.h"
@@ -35,8 +39,9 @@ static uint64_t         g_start_ts_;
 
 static void find_os_info()
 {
-    const char *cmd = "if [ -f /etc/os-release ]; then . /etc/os-release;"
-                      "echo $NAME $VERSION_ID; else uname -s; fi; uname -r";
+    const char *cmd =
+        "if [ -f /etc/os-release ]; then . /etc/os-release;"
+        "echo $NAME $VERSION_ID; else uname -s; fi; uname -r; uname -m";
     FILE *f = popen(cmd, "r");
 
     if (NULL == f) {
@@ -64,7 +69,25 @@ static void find_os_info()
     strncpy(g_metrics_.kernel, buf, sizeof(g_metrics_.kernel));
     g_metrics_.kernel[sizeof(g_metrics_.kernel) - 1] = 0;
 
+    if (NULL == fgets(buf, sizeof(buf), f)) {
+        nlog_error("no command output");
+        pclose(f);
+        return;
+    }
+    buf[strcspn(buf, "\n")] = 0;
+    strncpy(g_metrics_.machine, buf, sizeof(g_metrics_.machine));
+    g_metrics_.kernel[sizeof(g_metrics_.machine) - 1] = 0;
+
     pclose(f);
+
+#ifdef NEU_CLIB
+    strncpy(g_metrics_.clib, NEU_CLIB, sizeof(g_metrics_.clib));
+    strncpy(g_metrics_.clib_version, "unknow", sizeof(g_metrics_.clib_version));
+#else
+    strncpy(g_metrics_.clib, "glibc", sizeof(g_metrics_.clib));
+    strncpy(g_metrics_.clib_version, gnu_get_libc_version(),
+            sizeof(g_metrics_.clib_version));
+#endif
 }
 
 static size_t parse_memory_fields(int col)
