@@ -125,6 +125,9 @@ jobs:
   pft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
+    strategy:
+      matrix:
+        plugin: [core, modbus]
 
     steps:
       - uses: actions/checkout@v4
@@ -144,9 +147,15 @@ jobs:
           pip install requests
           pytest -s -v tests/ft
 
+      - name: create cov report
+        run: |
+            sudo apt-get -y install lcov
+            mkdir -p cov_report
+            ./create_cov_report.sh ${{ matrix.plugin }}
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          gcov: true            
-          gcov_include: include plugins src
-          gcov_ignore: tests simulator
+          verbose: true
+          directory: ./cov_report/
+          files: cov-${{ matrix.plugin }}.info
