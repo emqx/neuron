@@ -402,7 +402,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 
 #define DEFAULT_MONITOR_PLUGIN_DESCR \
     "Builtin plugin for Neuron monitoring and alerting"
-#define DEFAULT_MONITOR_PLUGIN_DESCR_ZH "Neuron内置监控与告警插件"
+#define DEFAULT_MONITOR_PLUGIN_DESCR_ZH "内置监控与告警插件"
 
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
