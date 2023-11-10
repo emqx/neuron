@@ -88,36 +88,6 @@ inline static const char *log_level_to_str(int level)
     zlog((plugin)->common.log, __FILE__, sizeof(__FILE__) - 1, __func__, \
          sizeof(__func__) - 1, __LINE__, ZLOG_LEVEL_DEBUG, __VA_ARGS__)
 
-#define plog_send_protocol(plugin, bytes, n_byte)                            \
-    uint16_t log_protocol_buf_size = n_byte * 5 + 20;                        \
-    char *   log_protocol_buf      = calloc(log_protocol_buf_size, 1);       \
-    int      log_offset            = 0;                                      \
-    uint16_t tmp_n_byte            = n_byte;                                 \
-    log_offset = snprintf(log_protocol_buf, log_protocol_buf_size, ">>(%d)", \
-                          tmp_n_byte);                                       \
-    for (int i = 0; i < n_byte; i++) {                                       \
-        log_offset += snprintf(log_protocol_buf + log_offset,                \
-                               log_protocol_buf_size - log_offset,           \
-                               " 0x%02hhX", (bytes)[i]);                     \
-    }                                                                        \
-    plog_debug(plugin, "%s", log_protocol_buf);                              \
-    free(log_protocol_buf);
-
-#define plog_recv_protocol(plugin, bytes, n_byte)                            \
-    uint16_t log_protocol_buf_size = n_byte * 5 + 20;                        \
-    char *   log_protocol_buf      = calloc(log_protocol_buf_size, 1);       \
-    int      log_offset            = 0;                                      \
-    uint16_t tmp_n_byte            = n_byte;                                 \
-    log_offset = snprintf(log_protocol_buf, log_protocol_buf_size, "<<(%d)", \
-                          tmp_n_byte);                                       \
-    for (int i = 0; i < n_byte; i++) {                                       \
-        log_offset += snprintf(log_protocol_buf + log_offset,                \
-                               log_protocol_buf_size - log_offset,           \
-                               " 0x%02hhX", (bytes)[i]);                     \
-    }                                                                        \
-    plog_debug(plugin, "%s", log_protocol_buf);                              \
-    free(log_protocol_buf);
-
 #define zlog_recv_protocol(log, bytes, n_byte)                               \
     uint16_t log_protocol_buf_size = n_byte * 5 + 20;                        \
     char *   log_protocol_buf      = calloc(log_protocol_buf_size, 1);       \
@@ -126,12 +96,53 @@ inline static const char *log_level_to_str(int level)
     log_offset = snprintf(log_protocol_buf, log_protocol_buf_size, "<<(%d)", \
                           tmp_n_byte);                                       \
     for (int i = 0; i < n_byte; i++) {                                       \
-        log_offset += snprintf(log_protocol_buf + log_offset,                \
-                               log_protocol_buf_size - log_offset,           \
-                               " 0x%02hhX", (bytes)[i]);                     \
+        if (log_protocol_buf_size > log_offset &&                            \
+            log_protocol_buf_size - log_offset > 10) {                       \
+            int s_ret = snprintf(log_protocol_buf + log_offset,              \
+                                 log_protocol_buf_size - log_offset,         \
+                                 " 0x%02hhX", (bytes)[i]);                   \
+            if (s_ret > 0) {                                                 \
+                log_offset += s_ret;                                         \
+            } else {                                                         \
+                break;                                                       \
+            }                                                                \
+        } else {                                                             \
+            break;                                                           \
+        }                                                                    \
     }                                                                        \
     zlog_debug(log, "%s", log_protocol_buf);                                 \
     free(log_protocol_buf);
+
+#define zlog_send_protocol(log, bytes, n_byte)                               \
+    uint16_t log_protocol_buf_size = n_byte * 5 + 20;                        \
+    char *   log_protocol_buf      = calloc(log_protocol_buf_size, 1);       \
+    int      log_offset            = 0;                                      \
+    uint16_t tmp_n_byte            = n_byte;                                 \
+    log_offset = snprintf(log_protocol_buf, log_protocol_buf_size, ">>(%d)", \
+                          tmp_n_byte);                                       \
+    for (int i = 0; i < n_byte; i++) {                                       \
+        if (log_protocol_buf_size > log_offset &&                            \
+            log_protocol_buf_size - log_offset > 10) {                       \
+            int s_ret = snprintf(log_protocol_buf + log_offset,              \
+                                 log_protocol_buf_size - log_offset,         \
+                                 " 0x%02hhX", (bytes)[i]);                   \
+            if (s_ret > 0) {                                                 \
+                log_offset += s_ret;                                         \
+            } else {                                                         \
+                break;                                                       \
+            }                                                                \
+        } else {                                                             \
+            break;                                                           \
+        }                                                                    \
+    }                                                                        \
+    zlog_debug(log, "%s", log_protocol_buf);                                 \
+    free(log_protocol_buf);
+
+#define plog_recv_protocol(plugin, bytes, n_byte) \
+    zlog_recv_protocol((plugin)->common.log, bytes, n_byte)
+
+#define plog_send_protocol(plugin, bytes, n_byte) \
+    zlog_send_protocol((plugin)->common.log, bytes, n_byte)
 
 void remove_logs(const char *node);
 
