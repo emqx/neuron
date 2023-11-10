@@ -1114,18 +1114,26 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_req_update_log_level_t *cmd =
             (neu_req_update_log_level_t *) &header[1];
 
-        if (neu_node_manager_find(manager->node_manager, header->receiver) ==
-            NULL) {
-            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+        if (cmd->core) {
+            manager->log_level = cmd->log_level;
+            nlog_level_change(manager->log_level);
+        }
+
+        if (strlen(cmd->node) > 0) {
+            if (neu_node_manager_find(manager->node_manager,
+                                      header->receiver) == NULL) {
+                neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+                header->type       = NEU_RESP_ERROR;
+                neu_msg_exchange(header);
+                reply(manager, header, &e);
+            } else {
+                forward_msg(manager, header, header->receiver);
+            }
+        } else {
+            neu_resp_error_t e = { .error = NEU_ERR_SUCCESS };
             header->type       = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(manager, header, &e);
-        } else {
-            if (cmd->core) {
-                manager->log_level = cmd->log_level;
-                nlog_level_change(manager->log_level);
-            }
-            forward_msg(manager, header, header->receiver);
         }
 
         break;
