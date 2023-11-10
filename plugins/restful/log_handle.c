@@ -144,7 +144,9 @@ void handle_log_level(nng_aio *aio)
                 header.type   = NEU_REQ_UPDATE_LOG_LEVEL;
                 cmd.core      = req->core;
                 cmd.log_level = log_level;
-                strcpy(cmd.node, req->node_name);
+                if (req->node_name != NULL) {
+                    strcpy(cmd.node, req->node_name);
+                }
 
                 int ret = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
