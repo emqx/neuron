@@ -393,8 +393,8 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
     .request = mqtt_plugin_request,
 };
 
-#define DESCRIPTION "Neuron northbound MQTT plugin bases on NanoSDK."
-#define DESCRIPTION_ZH "基于 NanoSDK 的 Neuron 北向应用 MQTT 插件"
+#define DESCRIPTION "Northbound MQTT plugin bases on NanoSDK."
+#define DESCRIPTION_ZH "基于 NanoSDK 的北向应用 MQTT 插件"
 
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
