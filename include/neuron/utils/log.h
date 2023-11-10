@@ -126,10 +126,10 @@ inline static void zlog_protocol(zlog_category_t *log, uint8_t *bytes,
 }
 
 #define zlog_send_protocol(log, bytes, n_byte) \
-    zlog_protocol(log, bytes, n_byte, NEU_PROTOCOL_SEND)
+    zlog_protocol(log, (uint8_t *) bytes, n_byte, NEU_PROTOCOL_SEND)
 
 #define zlog_recv_protocol(log, bytes, n_byte) \
-    zlog_protocol(log, bytes, n_byte, NEU_PROTOCOL_RECV)
+    zlog_protocol(log, (uint8_t *) bytes, n_byte, NEU_PROTOCOL_RECV)
 
 #define plog_recv_protocol(plugin, bytes, n_byte) \
     zlog_recv_protocol((plugin)->common.log, bytes, n_byte)
