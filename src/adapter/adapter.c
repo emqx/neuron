@@ -146,6 +146,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     adapter->module                  = info->module;
     adapter->timestamp_lev           = 0;
     adapter->trans_data_port         = 0;
+    adapter->log_level               = ZLOG_LEVEL_NOTICE;
 
     struct sockaddr_in remote = {
         .sin_family      = AF_INET,
@@ -471,9 +472,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
     }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
         neu_req_update_log_level_t *cmd = (neu_req_update_log_level_t *) data;
-        if (cmd->node != NULL) {
-            strcpy(pheader->receiver, cmd->node);
-        }
+        strcpy(pheader->receiver, cmd->node);
         break;
     }
     default:
@@ -1141,8 +1140,13 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
+        neu_req_update_log_level_t *cmd =
+            (neu_req_update_log_level_t *) &header[1];
         neu_resp_error_t error = { 0 };
 
+        adapter->log_level = cmd->log_level;
+        zlog_level_switch(neu_plugin_to_plugin_common(adapter->plugin)->log,
+                          cmd->log_level);
         neu_msg_exchange(header);
         header->type = NEU_RESP_ERROR;
         reply(adapter, header, &error);
@@ -1322,9 +1326,9 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
     neu_node_state_t     state  = { 0 };
     neu_plugin_common_t *common = neu_plugin_to_plugin_common(adapter->plugin);
 
-    state.link    = common->link_state;
-    state.running = adapter->state;
-    strcpy(state.log_level, common->log_level);
+    state.link      = common->link_state;
+    state.running   = adapter->state;
+    state.log_level = adapter->log_level;
 
     return state;
 }
