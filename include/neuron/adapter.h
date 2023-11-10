@@ -37,7 +37,7 @@ extern "C" {
 typedef struct {
     neu_node_running_state_e running;
     neu_node_link_state_e    link;
-    char                     log_level[NEU_LOG_LEVEL_LEN];
+    int                      log_level;
 } neu_node_state_t;
 
 typedef enum neu_reqresp_type {
@@ -602,7 +602,7 @@ typedef struct neu_req_get_node_state {
 typedef struct neu_resp_get_node_state {
     neu_node_state_t state;
     uint16_t         rtt; // round trip time in milliseconds
-    char             core_level[NEU_LOG_LEVEL_LEN];
+    int              core_level;
 } neu_resp_get_node_state_t;
 
 typedef struct neu_req_get_nodes_state {
@@ -622,7 +622,7 @@ inline static UT_icd neu_nodes_state_t_icd()
 }
 typedef struct {
     UT_array *states; // array of neu_nodes_state_t
-    char      core_level[NEU_LOG_LEVEL_LEN];
+    int       core_level;
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
 
 typedef struct {
@@ -1064,7 +1064,7 @@ typedef struct {
 
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];
-    char log_level[NEU_LOG_LEVEL_LEN];
+    int  log_level;
     bool core;
 } neu_req_update_log_level_t;
 

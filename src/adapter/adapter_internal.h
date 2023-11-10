@@ -33,8 +33,6 @@ struct neu_adapter {
 
     neu_node_running_state_e state;
 
-    char log_level[NEU_LOG_LEVEL_LEN];
-
     adapter_callbacks_t cb_funs;
 
     void *               handle;
@@ -59,6 +57,7 @@ struct neu_adapter {
 
     // metrics
     neu_node_metrics_t *metrics;
+    int                 log_level;
 };
 
 typedef void (*adapter_handler)(neu_adapter_t *     adapter,
