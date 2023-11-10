@@ -81,6 +81,9 @@ struct neu_adapter_driver {
 };
 
 static int  report_callback(void *usr_data);
+static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
+                          struct sockaddr_in dst);
+
 static int  read_callback(void *usr_data);
 static int  write_callback(void *usr_data);
 static void read_group(int64_t timestamp, int64_t timeout,
@@ -1387,6 +1390,54 @@ UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
     return tags;
 }
 
+static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
+                          struct sockaddr_in dst)
+{
+    static __thread uint8_t buf[1024] = { 0 };
+    neu_reqresp_head_t *    header    = (neu_reqresp_head_t *) buf;
+
+    memset(buf, 0, sizeof(buf));
+    header->type = NEU_REQRESP_TRANS_DATA;
+
+    UT_array *tags =
+        neu_adapter_driver_get_read_tag(group->driver, group->name);
+
+    neu_reqresp_trans_data_t *data =
+        calloc(1, sizeof(neu_reqresp_trans_data_t));
+
+    strcpy(data->driver, group->driver->adapter.name);
+    strcpy(data->group, group->name);
+    utarray_new(data->tags, neu_resp_tag_value_meta_icd());
+
+    read_group(global_timestamp,
+               neu_group_get_interval(group->group) *
+                   NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+               neu_adapter_get_tag_cache_type(&driver->adapter), driver->cache,
+               group->name, tags, data->tags);
+
+    nlog_info("report group: %s, all tags: %d, report tags: %d", group->name,
+              utarray_len(tags), utarray_len(data->tags));
+    if (utarray_len(data->tags) > 0) {
+        pthread_mutex_lock(&group->apps_mtx);
+
+        data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+        data->ctx->index = 1;
+
+        pthread_mutex_init(&data->ctx->mtx, NULL);
+
+        if (driver->adapter.cb_funs.responseto(&driver->adapter, header, data,
+                                               dst) <= 0) {
+            neu_trans_data_free(data);
+        }
+
+        pthread_mutex_unlock(&group->apps_mtx);
+    } else {
+        utarray_free(data->tags);
+    }
+    utarray_free(tags);
+    free(data);
+}
+
 static int report_callback(void *usr_data)
 {
     group_t *                group     = (group_t *) usr_data;
@@ -1928,6 +1979,8 @@ void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
 
     utarray_push_back(find->apps, &sub_app);
     pthread_mutex_unlock(&find->apps_mtx);
+
+    report_to_app(driver, find, sub_app.addr);
 }
 
 void neu_adapter_driver_unsubscribe(neu_adapter_driver_t * driver,
