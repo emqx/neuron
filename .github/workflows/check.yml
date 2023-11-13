@@ -145,13 +145,13 @@ jobs:
         run: |
           pip install -U pytest
           pip install requests
-          pytest -s -v tests/ft
+          ./pytest_start.sh ${{ matrix.plugin }}
 
       - name: create cov report
         run: |
-            sudo apt-get -y install lcov
-            mkdir -p cov_report
-            ./create_cov_report.sh ${{ matrix.plugin }}
+          sudo apt-get -y install lcov
+          mkdir -p cov_report
+          ./create_cov_report.sh ${{ matrix.plugin }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
