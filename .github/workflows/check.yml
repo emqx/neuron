@@ -145,6 +145,7 @@ jobs:
         run: |
           pip install -U pytest
           pip install requests
+          pip install prometheus-client
           pytest -s -v tests/ft
 
       - name: create cov report

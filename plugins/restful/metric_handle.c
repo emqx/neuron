@@ -30,10 +30,11 @@
 
 // clang-format off
 #define METRIC_GLOBAL_TMPL                                                       \
-    "# HELP os_info OS distro and kernel version\n"                              \
+    "# HELP os_info OS distro, kernel version, machine and clib\n"               \
     "# TYPE os_info gauge\n"                                                     \
     "os_info{version=\"%s\"} 0\n"                                                \
     "os_info{kernel=\"%s\"} 0\n"                                                 \
+    "os_info{machine=\"%s\", clib=\"%s-%s\"} 0\n"                                \
     "# HELP cpu_percent Total CPU utilisation percentage\n"                      \
     "# TYPE cpu_percent gauge\n"                                                 \
     "cpu_percent %u\n"                                                           \
@@ -145,6 +146,7 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
                                       FILE *               stream)
 {
     fprintf(stream, METRIC_GLOBAL_TMPL, metrics->distro, metrics->kernel,
+            metrics->machine, metrics->clib, metrics->clib_version,
             metrics->cpu_percent, metrics->cpu_cores, metrics->mem_total_bytes,
             metrics->mem_used_bytes, metrics->mem_cache_bytes,
             metrics->mem_used_bytes, metrics->disk_size_gibibytes,

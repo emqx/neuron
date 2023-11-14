@@ -110,6 +110,7 @@ def update_group(node, group, new_name="", interval=0):
     else:
         assert False
 
+
 @gen_check
 def get_group():
     return requests.get(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt})
@@ -119,9 +120,11 @@ def get_group():
 def add_tags(node, group, tags):
     return requests.post(url=config.BASE_URL + '/api/v2/tags', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tags})
 
+
 @gen_check
 def add_gtags(node, groups):
     return requests.post(url=config.BASE_URL + '/api/v2/gtags', headers={"Authorization": config.default_jwt}, json={"node": node, "groups": groups})
+
 
 @gen_check
 def del_tags(node, group, tags):
@@ -167,6 +170,7 @@ def read_tag_error(node, group, tag, sync=False):
         print(x[0])
     finally:
         return x[0]['error']
+
 
 def read_tag_err(node, group, tag, sync=False):
     response = read_tags(node, group, sync)
@@ -278,6 +282,9 @@ def del_template_tags(tmpl, group, tags):
 def get_template_tags(tmpl, group, name):
     return requests.get(url=config.BASE_URL + "/api/v2/template/tag", headers={"Authorization": config.default_jwt}, params={"template": tmpl, "group": group, "name": name})
 
+
+def get_metrics(category="global", node=""):
+    return requests.get(url=config.BASE_URL + "/api/v2/metrics?category=" + category + "&node=" + node, headers={"Authorization": config.default_jwt})
 
 # plugin setting
 
