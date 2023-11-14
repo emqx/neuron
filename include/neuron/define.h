@@ -85,4 +85,7 @@ typedef enum {
     NEU_TAG_CACHE_TYPE_NEVER,
 } neu_tag_cache_type_e;
 
+// forward declaration for neu_adapter_t
+typedef struct neu_adapter neu_adapter_t;
+
 #endif

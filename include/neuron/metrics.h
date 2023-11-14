@@ -30,9 +30,6 @@ extern "C" {
 #include "type.h"
 #include "utils/uthash.h"
 
-// forward declaration for neu_adapter_t
-typedef struct neu_adapter neu_adapter_t;
-
 typedef enum {
     NEU_METRIC_TYPE_COUNTER,
     NEU_METRIC_TYPE_GAUAGE,
