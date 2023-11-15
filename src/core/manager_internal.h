@@ -29,9 +29,10 @@
 #include "template_manager.h"
 
 typedef struct neu_manager {
-    int             server_fd;
-    uint8_t         buf[NEU_MSG_MAX_SIZE];
-    uint8_t         recv_buf[NEU_MSG_MAX_SIZE];
+    int     server_fd;
+    uint8_t buf[NEU_MSG_MAX_SIZE];
+    uint8_t recv_buf[NEU_MSG_MAX_SIZE];
+
     neu_events_t *  events;
     neu_event_io_t *loop;
 
@@ -43,6 +44,8 @@ typedef struct neu_manager {
     neu_event_timer_t *timer_timestamp;
 
     int64_t timestamp_lev_manager;
+
+    int log_level;
 } neu_manager_t;
 
 int       neu_manager_add_plugin(neu_manager_t *manager, const char *library);
