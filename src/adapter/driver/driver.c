@@ -212,8 +212,8 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     neu_reqresp_trans_data_t *data =
         calloc(1, sizeof(neu_reqresp_trans_data_t));
 
-    strcpy(data->driver, driver->adapter.name);
-    strcpy(data->group, group);
+    data->driver = strdup(driver->adapter.name);
+    data->group  = strdup(group);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
     read_report_group(global_timestamp, 0, driver->cache, group, tags,
@@ -225,9 +225,9 @@ static void update_im(neu_adapter_t *adapter, const char *group,
         if (find != NULL) {
             pthread_mutex_lock(&find->apps_mtx);
 
-            data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
-            data->ctx->index = utarray_len(find->apps);
-            if (data->ctx->index > 0) {
+            if (utarray_len(find->apps) > 0) {
+                data->ctx = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+                data->ctx->index = utarray_len(find->apps);
                 pthread_mutex_init(&data->ctx->mtx, NULL);
 
                 utarray_foreach(find->apps, sub_app_t *, app)
@@ -239,15 +239,20 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                 }
             } else {
                 utarray_free(data->tags);
-                free(data->ctx);
+                free(data->group);
+                free(data->driver);
             }
 
             pthread_mutex_unlock(&find->apps_mtx);
         } else {
             utarray_free(data->tags);
+            free(data->group);
+            free(data->driver);
         }
     } else {
         utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
     }
 
     utarray_free(tags);
@@ -1406,8 +1411,8 @@ static int report_callback(void *usr_data)
     neu_reqresp_trans_data_t *data =
         calloc(1, sizeof(neu_reqresp_trans_data_t));
 
-    strcpy(data->driver, group->driver->adapter.name);
-    strcpy(data->group, group->name);
+    data->driver = strdup(group->driver->adapter.name);
+    data->group  = strdup(group->name);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
     read_report_group(global_timestamp,
@@ -1418,10 +1423,9 @@ static int report_callback(void *usr_data)
     if (utarray_len(data->tags) > 0) {
         pthread_mutex_lock(&group->apps_mtx);
 
-        data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
-        data->ctx->index = utarray_len(group->apps);
-
-        if (data->ctx->index > 0) {
+        if (utarray_len(group->apps) > 0) {
+            data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+            data->ctx->index = utarray_len(group->apps);
             pthread_mutex_init(&data->ctx->mtx, NULL);
 
             utarray_foreach(group->apps, sub_app_t *, app)
@@ -1434,12 +1438,15 @@ static int report_callback(void *usr_data)
             }
         } else {
             utarray_free(data->tags);
-            free(data->ctx);
+            free(data->group);
+            free(data->driver);
         }
 
         pthread_mutex_unlock(&group->apps_mtx);
     } else {
         utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
     }
     utarray_free(tags);
     free(data);

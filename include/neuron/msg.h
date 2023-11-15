@@ -868,8 +868,8 @@ typedef struct {
 } neu_reqresp_trans_data_ctx_t;
 
 typedef struct {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
+    char *driver;
+    char *group;
 
     neu_reqresp_trans_data_ctx_t *ctx;
     UT_array *                    tags; // neu_resp_tag_value_meta_t
@@ -890,6 +890,8 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
             }
         }
         utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
         pthread_mutex_unlock(&data->ctx->mtx);
         pthread_mutex_destroy(&data->ctx->mtx);
         free(data->ctx);
