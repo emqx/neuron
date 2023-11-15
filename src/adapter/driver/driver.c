@@ -390,6 +390,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     if (g == NULL) {
         neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
         req->type              = NEU_RESP_ERROR;
+        neu_req_read_group_fini(cmd);
         driver->adapter.cb_funs.response(&driver->adapter, req, &error);
         return;
     }
@@ -442,10 +443,13 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                    driver->cache, cmd->group, tags, resp.tags);
     }
 
-    strcpy(resp.driver, cmd->driver);
-    strcpy(resp.group, cmd->group);
+    resp.driver = cmd->driver;
+    resp.group  = cmd->group;
+    cmd->driver = NULL; // ownership moved
+    cmd->group  = NULL; // ownership moved
 
     utarray_free(tags);
+    neu_req_read_group_fini(cmd);
 
     req->type = NEU_RESP_READ_GROUP;
     driver->adapter.cb_funs.response(&driver->adapter, req, &resp);

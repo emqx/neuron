@@ -1200,6 +1200,9 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_GROUP: {
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
+            if (NEU_REQ_READ_GROUP == header->type) {
+                neu_req_read_group_fini((neu_req_read_group_t *) &header[1]);
+            }
             neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
             header->type       = NEU_RESP_ERROR;
             neu_msg_exchange(header);
