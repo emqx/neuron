@@ -111,6 +111,8 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
         neu_req_write_tag_fini((neu_req_write_tag_t *) &req[1]);
     } else if (NEU_REQ_WRITE_TAGS == req->type) {
         neu_req_write_tags_fini((neu_req_write_tags_t *) &req[1]);
+    } else if (NEU_REQ_WRITE_GTAGS == req->type) {
+        neu_req_write_gtags_fini((neu_req_write_gtags_t *) &req[1]);
     }
 
     req->type = NEU_RESP_ERROR;
@@ -671,20 +673,12 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     group_t *              first_g = NULL;
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        for (int i = 0; i < cmd->n_group; i++) {
-            free(cmd->groups[i].tags);
-        }
-        free(cmd->groups);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
-        for (int i = 0; i < cmd->n_group; i++) {
-            free(cmd->groups[i].tags);
-        }
-        free(cmd->groups);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
         return;
@@ -694,14 +688,8 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         group_t *g = find_group(driver, cmd->groups[i].group);
 
         if (g == NULL) {
-            neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
-            req->type              = NEU_RESP_ERROR;
-            for (int x = 0; x < cmd->n_group; x++) {
-                free(cmd->groups[x].tags);
-            }
-            free(cmd->groups);
-            driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-            free(req);
+            driver->adapter.cb_funs.driver.write_response(
+                &driver->adapter, req, NEU_ERR_GROUP_NOT_EXIST);
             return;
         }
 
@@ -757,14 +745,8 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     }
 
     if (utarray_len(tags) != (unsigned int) n_tag) {
-        neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
-        req->type              = NEU_RESP_ERROR;
-        for (int i = 0; i < cmd->n_group; i++) {
-            free(cmd->groups[i].tags);
-        }
-        free(cmd->groups);
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_TAG_NOT_EXIST);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
@@ -778,10 +760,6 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     wtag.req               = (void *) req;
     wtag.tvs               = tags;
 
-    for (int i = 0; i < cmd->n_group; i++) {
-        free(cmd->groups[i].tags);
-    }
-    free(cmd->groups);
     store_write_tag(first_g, &wtag);
 }
 

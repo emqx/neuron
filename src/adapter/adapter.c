@@ -743,6 +743,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t error = { 0 };
 
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            neu_req_write_gtags_fini((neu_req_write_gtags_t *) &header[1]);
             error.error  = NEU_ERR_GROUP_NOT_ALLOW;
             header->type = NEU_RESP_ERROR;
             neu_msg_exchange(header);
