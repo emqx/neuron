@@ -169,6 +169,7 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
     int                             ret = 0;
     neu_json_get_node_state_resp_t *resp =
         (neu_json_get_node_state_resp_t *) param;
+    int array_size = resp->is_driver ? 5 : 6;
 
     neu_json_elem_t resp_elems[] = { {
                                          .name      = "running",
@@ -194,9 +195,14 @@ int neu_json_encode_get_node_state_resp(void *json_object, void *param)
                                          .name      = "neuron_core",
                                          .t         = NEU_JSON_STR,
                                          .v.val_str = resp->core_level,
+                                     },
+                                     {
+                                         .name      = "sub_group_count",
+                                         .t         = NEU_JSON_INT,
+                                         .v.val_int = resp->sub_group_count,
                                      } };
-    ret = neu_json_encode_field(json_object, resp_elems,
-                                NEU_JSON_ELEM_SIZE(resp_elems));
+
+    ret = neu_json_encode_field(json_object, resp_elems, array_size);
 
     return ret;
 }
@@ -210,6 +216,7 @@ int neu_json_encode_get_nodes_state_resp(void *json_object, void *param)
     void *                      node_array = neu_json_array();
     neu_json_get_nodes_state_t *p_node     = resp->nodes;
     for (int i = 0; i < resp->n_node; i++) {
+        int             array_size   = p_node->is_driver ? 5 : 6;
         neu_json_elem_t node_elems[] = { {
                                              .name      = "node",
                                              .t         = NEU_JSON_STR,
@@ -234,9 +241,15 @@ int neu_json_encode_get_nodes_state_resp(void *json_object, void *param)
                                              .name      = "log_level",
                                              .t         = NEU_JSON_STR,
                                              .v.val_str = p_node->log_level,
+                                         },
+                                         {
+                                             .name = "sub_group_count",
+                                             .t    = NEU_JSON_INT,
+                                             .v.val_int =
+                                                 p_node->sub_group_count,
                                          } };
-        node_array = neu_json_encode_array(node_array, node_elems,
-                                           NEU_JSON_ELEM_SIZE(node_elems));
+
+        node_array = neu_json_encode_array(node_array, node_elems, array_size);
         p_node++;
     }
 

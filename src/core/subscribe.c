@@ -132,6 +132,25 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
     return groups;
 }
 
+size_t neu_subscribe_manager_group_count(const neu_subscribe_mgr_t *mgr,
+                                         const char *               app)
+{
+    size_t      group_count = 0;
+    sub_elem_t *current_element, *tmp;
+
+    HASH_ITER(hh, mgr->ss, current_element, tmp)
+    {
+        utarray_foreach(current_element->apps, neu_app_subscribe_t *, sub_app)
+        {
+            if (strcmp(sub_app->app_name, app) == 0) {
+                group_count++;
+            }
+        }
+    }
+
+    return group_count;
+}
+
 UT_array *neu_subscribe_manager_get_ndriver_maps(neu_subscribe_mgr_t *mgr,
                                                  const char *         ndriver)
 {

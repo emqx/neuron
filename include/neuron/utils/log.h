@@ -25,7 +25,31 @@ config_ **/
 
 #include "utils/zlog.h"
 
+#include "define.h"
+
 extern zlog_category_t *neuron;
+
+inline static const char *log_level_to_str(int level)
+{
+    switch (level) {
+    case ZLOG_LEVEL_FATAL:
+        return NEU_LOG_LEVEL_FATAL;
+    case ZLOG_LEVEL_ERROR:
+        return NEU_LOG_LEVEL_ERROR;
+    case ZLOG_LEVEL_WARN:
+        return NEU_LOG_LEVEL_WARN;
+    case ZLOG_LEVEL_NOTICE:
+        return NEU_LOG_LEVEL_NOTICE;
+    case ZLOG_LEVEL_INFO:
+        return NEU_LOG_LEVEL_INFO;
+    case ZLOG_LEVEL_DEBUG:
+        return NEU_LOG_LEVEL_DEBUG;
+    default:
+        return "UNKNOWN";
+    }
+}
+
+#define nlog_level_change(level) zlog_level_switch(neuron, level)
 
 #define nlog_fatal(...)                                    \
     zlog(neuron, __FILE__, sizeof(__FILE__) - 1, __func__, \

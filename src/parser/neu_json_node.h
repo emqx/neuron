@@ -50,27 +50,31 @@ int  neu_json_decode_del_node_req(char *buf, neu_json_del_node_req_t **result);
 void neu_json_decode_del_node_req_free(neu_json_del_node_req_t *req);
 
 typedef struct {
-    int64_t running;
-    int64_t link;
-    int64_t rtt;
-    char *  log_level;
-    char    core_level[NEU_LOG_LEVEL_LEN];
+    int64_t  running;
+    int64_t  link;
+    int64_t  rtt;
+    uint16_t sub_group_count;
+    bool     is_driver;
+    char *   log_level;
+    char *   core_level;
 } neu_json_get_node_state_resp_t;
 
 int neu_json_encode_get_node_state_resp(void *json_object, void *param);
 
 typedef struct {
-    char *  name;
-    int64_t running;
-    int64_t link;
-    int64_t rtt;
-    char *  log_level;
+    char *   name;
+    int64_t  running;
+    int64_t  link;
+    int64_t  rtt;
+    uint16_t sub_group_count;
+    bool     is_driver;
+    char *   log_level;
 } neu_json_get_nodes_state_t;
 
 typedef struct {
     uint16_t                    n_node;
     neu_json_get_nodes_state_t *nodes;
-    char                        core_level[NEU_LOG_LEVEL_LEN];
+    char *                      core_level;
 } neu_json_get_nodes_state_resp_t;
 
 int neu_json_encode_get_nodes_state_resp(void *json_object, void *param);
