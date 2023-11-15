@@ -90,9 +90,12 @@ void handle_write(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAG;
 
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            strcpy(cmd.tag, req->tag);
+            cmd.driver = req->node;
+            cmd.group  = req->group;
+            cmd.tag    = req->tag;
+            req->node  = NULL; // ownership moved
+            req->group = NULL; // ownership moved
+            req->tag   = NULL; // ownership moved
 
             switch (req->t) {
             case NEU_JSON_INT:
@@ -124,6 +127,7 @@ void handle_write(nng_aio *aio)
 
             int ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
+                neu_req_write_tag_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });

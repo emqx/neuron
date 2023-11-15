@@ -805,11 +805,18 @@ static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
 }
 
 typedef struct neu_req_write_tag {
-    char         driver[NEU_NODE_NAME_LEN];
-    char         group[NEU_GROUP_NAME_LEN];
-    char         tag[NEU_TAG_NAME_LEN];
+    char *       driver;
+    char *       group;
+    char *       tag;
     neu_dvalue_t value;
 } neu_req_write_tag_t;
+
+static inline void neu_req_write_tag_fini(neu_req_write_tag_t *req)
+{
+    free(req->driver);
+    free(req->group);
+    free(req->tag);
+}
 
 typedef struct neu_resp_tag_value {
     char         tag[NEU_TAG_NAME_LEN];

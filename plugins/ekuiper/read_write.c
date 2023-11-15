@@ -123,9 +123,9 @@ int write_data(neu_plugin_t *plugin, json_write_req_t *write_req)
     header.ctx  = NULL;
     header.type = NEU_REQ_WRITE_TAG;
 
-    strcpy(cmd.driver, write_req->node_name);
-    strcpy(cmd.group, write_req->group_name);
-    strcpy(cmd.tag, write_req->tag_name);
+    cmd.driver = write_req->node_name;
+    cmd.group  = write_req->group_name;
+    cmd.tag    = write_req->tag_name;
 
     switch (write_req->t) {
     case NEU_JSON_INT:
@@ -156,5 +156,10 @@ int write_data(neu_plugin_t *plugin, json_write_req_t *write_req)
     }
 
     ret = neu_plugin_op(plugin, header, &cmd);
+    if (0 == ret) {
+        write_req->node_name  = NULL; // ownership moved
+        write_req->group_name = NULL; // ownership moved
+        write_req->tag_name   = NULL; // ownership moved
+    }
     return ret;
 }

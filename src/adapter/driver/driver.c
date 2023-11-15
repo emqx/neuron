@@ -107,6 +107,10 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     neu_reqresp_head_t *req    = (neu_reqresp_head_t *) r;
     neu_resp_error_t    nerror = { .error = error };
 
+    if (NEU_REQ_WRITE_TAG == req->type) {
+        neu_req_write_tag_fini((neu_req_write_tag_t *) &req[1]);
+    }
+
     req->type = NEU_RESP_ERROR;
 
     nlog_notice("write tag response <%p>", req->ctx);
@@ -806,20 +810,15 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     group_t *            g   = find_group(driver, cmd->group);
 
     if (g == NULL) {
-        neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
-        req->type              = NEU_RESP_ERROR;
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_GROUP_NOT_EXIST);
         return;
     }
     neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tag);
 
     if (tag == NULL) {
-        neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
-
-        req->type = NEU_RESP_ERROR;
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_TAG_NOT_EXIST);
     } else {
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             driver->adapter.cb_funs.driver.write_response(
@@ -846,10 +845,8 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             neu_tag_set_static_value(tag, &cmd->value.value);
             neu_group_update_tag(g->group, tag);
             adapter_storage_update_tag_value(cmd->driver, cmd->group, tag);
-            neu_resp_error_t error = { .error = NEU_ERR_SUCCESS };
-            req->type              = NEU_RESP_ERROR;
-            driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-            free(req);
+            driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                          NEU_ERR_SUCCESS);
         } else {
             to_be_write_tag_t wtag = { 0 };
             wtag.single            = true;
