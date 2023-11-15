@@ -164,9 +164,9 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     header.ctx  = mqtt;
     header.type = NEU_REQ_WRITE_TAG;
 
-    strcpy(cmd.driver, req->node);
-    strcpy(cmd.group, req->group);
-    strcpy(cmd.tag, req->tag);
+    cmd.driver = req->node;
+    cmd.group  = req->group;
+    cmd.tag    = req->tag;
 
     switch (req->t) {
     case NEU_JSON_INT:
@@ -201,6 +201,9 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return -1;
     }
 
+    req->node  = NULL; // ownership moved
+    req->group = NULL; // ownership moved
+    req->tag   = NULL; // ownership moved
     return 0;
 }
 
