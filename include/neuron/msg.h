@@ -836,12 +836,19 @@ static inline UT_icd *neu_resp_tag_value_meta_icd()
 }
 
 typedef struct neu_req_write_tags {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
+    char *driver;
+    char *group;
 
     int                   n_tag;
     neu_resp_tag_value_t *tags;
 } neu_req_write_tags_t;
+
+static inline void neu_req_write_tags_fini(neu_req_write_tags_t *req)
+{
+    free(req->driver);
+    free(req->group);
+    free(req->tags);
+}
 
 typedef struct {
     char group[NEU_GROUP_NAME_LEN];

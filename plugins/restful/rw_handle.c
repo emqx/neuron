@@ -162,10 +162,12 @@ void handle_write_tags(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAGS;
 
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            cmd.n_tag = req->n_tag;
-            cmd.tags  = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+            cmd.driver = req->node;
+            cmd.group  = req->group;
+            cmd.n_tag  = req->n_tag;
+            cmd.tags   = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+            req->node  = NULL; // ownership moved
+            req->group = NULL; // ownership moved
 
             for (int i = 0; i < cmd.n_tag; i++) {
                 strcpy(cmd.tags[i].tag, req->tags[i].tag);
@@ -204,6 +206,7 @@ void handle_write_tags(nng_aio *aio)
 
             int ret = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
+                neu_req_write_tags_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
