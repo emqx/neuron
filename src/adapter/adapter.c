@@ -425,9 +425,13 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->driver);
         break;
     }
-    case NEU_REQ_WRITE_TAGS:
-    case NEU_REQ_WRITE_GTAGS: {
+    case NEU_REQ_WRITE_TAGS: {
         neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_WRITE_GTAGS: {
+        neu_req_write_gtags_t *cmd = (neu_req_write_gtags_t *) data;
         strcpy(pheader->receiver, cmd->driver);
         break;
     }
@@ -705,6 +709,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t error = { 0 };
 
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            neu_req_write_tags_fini((neu_req_write_tags_t *) &header[1]);
             error.error  = NEU_ERR_GROUP_NOT_ALLOW;
             header->type = NEU_RESP_ERROR;
             neu_msg_exchange(header);
