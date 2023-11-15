@@ -828,18 +828,33 @@ static inline void neu_req_write_tags_fini(neu_req_write_tags_t *req)
 }
 
 typedef struct {
-    char group[NEU_GROUP_NAME_LEN];
+    char *group;
 
     int                   n_tag;
     neu_resp_tag_value_t *tags;
 } neu_req_gtag_group_t;
 
+static inline void neu_req_gtag_group_fini(neu_req_gtag_group_t *req)
+{
+    free(req->group);
+    free(req->tags);
+}
+
 typedef struct {
-    char driver[NEU_NODE_NAME_LEN];
+    char *driver;
 
     int                   n_group;
     neu_req_gtag_group_t *groups;
 } neu_req_write_gtags_t;
+
+static inline void neu_req_write_gtags_fini(neu_req_write_gtags_t *req)
+{
+    free(req->driver);
+    for (int i = 0; i < req->n_group; ++i) {
+        neu_req_gtag_group_fini(&req->groups[i]);
+    }
+    free(req->groups);
+}
 
 typedef struct {
     char *driver;
