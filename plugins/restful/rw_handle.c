@@ -41,11 +41,14 @@ void handle_read(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_READ_GROUP;
 
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            cmd.sync = req->sync;
-            ret      = neu_plugin_op(plugin, header, &cmd);
+            cmd.driver = req->node;
+            cmd.group  = req->group;
+            cmd.sync   = req->sync;
+            req->node  = NULL;
+            req->group = NULL;
+            ret        = neu_plugin_op(plugin, header, &cmd);
             if (ret != 0) {
+                neu_req_read_group_fini(&cmd);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });

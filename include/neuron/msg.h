@@ -770,10 +770,16 @@ static inline void neu_req_inst_templates_fini(neu_req_inst_templates_t *req)
 }
 
 typedef struct neu_req_read_group {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
-    bool sync;
+    char *driver;
+    char *group;
+    bool  sync;
 } neu_req_read_group_t;
+
+static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
+{
+    free(req->driver);
+    free(req->group);
+}
 
 typedef struct neu_req_write_tag {
     char         driver[NEU_NODE_NAME_LEN];
@@ -822,8 +828,8 @@ typedef struct {
 } neu_req_write_gtags_t;
 
 typedef struct {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
+    char *driver;
+    char *group;
 
     UT_array *tags; // neu_resp_tag_value_meta_t
 } neu_resp_read_group_t;
@@ -836,6 +842,8 @@ static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
             free(tag_value->value.value.ptr.ptr);
         }
     }
+    free(resp->driver);
+    free(resp->group);
     utarray_free(resp->tags);
 }
 
