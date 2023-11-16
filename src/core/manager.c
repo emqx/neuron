@@ -1161,9 +1161,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_NODES_STATE: {
         neu_resp_get_nodes_state_t resp = { 0 };
         UT_array *states = neu_node_manager_get_state(manager->node_manager);
-
-        resp.core_level = manager->log_level;
+        neu_nodes_state_t *p_state = NULL;
+        while (
+            (p_state = (neu_nodes_state_t *) utarray_next(states, p_state))) {
+            p_state->sub_group_count = neu_subscribe_manager_group_count(
+                manager->subscribe_manager, p_state->node);
+        }
         resp.states     = utarray_clone(states);
+        resp.core_level = manager->log_level;
 
         strcpy(header->receiver, header->sender);
         strcpy(header->sender, "manager");
@@ -1436,7 +1441,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_get_node_state_t *resp =
             (neu_resp_get_node_state_t *) &header[1];
 
+        neu_adapter_t *adapter_node =
+            neu_node_manager_find(manager->node_manager, header->sender);
+        resp->sub_group_count = neu_subscribe_manager_group_count(
+            manager->subscribe_manager, header->sender);
+        resp->is_driver =
+            (adapter_node->module->type == NEU_NA_TYPE_DRIVER) ? true : false;
         resp->core_level = manager->log_level;
+
         forward_msg(manager, header, header->receiver);
         break;
     }

@@ -470,7 +470,6 @@ int neu_json_decode_gtag_json(void *json_obj, neu_json_gtag_t *gtag_p)
     goto decode_exit;
 
 decode_fail:
-    free(gtag_p);
     free(gtag_elems[0].v.val_str);
     return -1;
 

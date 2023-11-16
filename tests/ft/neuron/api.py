@@ -157,7 +157,6 @@ def read_tag(node, group, tag, sync=False):
     finally:
         return x[0]['value']
 
-
 def read_tag_error(node, group, tag, sync=False):
     response = read_tags(node, group, sync)
     assert 200 == response.status_code
@@ -282,6 +281,14 @@ def del_template_tags(tmpl, group, tags):
 def get_template_tags(tmpl, group, name):
     return requests.get(url=config.BASE_URL + "/api/v2/template/tag", headers={"Authorization": config.default_jwt}, params={"template": tmpl, "group": group, "name": name})
 
+def subscribe_group(app, driver, group):
+    return requests.post(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group})
+
+def subscribe_groups(app, groups):
+    return requests.post(url=config.BASE_URL + "/api/v2/subscribes", headers={"Authorization": config.default_jwt}, json={"app": app, "groups": groups})
+
+def unsubscribe_group(app, driver, group):
+    return requests.delete(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group})
 
 def get_metrics(category="global", node=""):
     return requests.get(url=config.BASE_URL + "/api/v2/metrics?category=" + category + "&node=" + node, headers={"Authorization": config.default_jwt})
@@ -299,3 +306,8 @@ def modbus_rtu_node_setting(node, port, connection_mode=0, transport_mode=0, int
                                     "interval": interval, "host": host, "port": port, "timeout": timeout,
                                     "max_retries": max_retries, "link": link, "device": device, "stop": stop,
                                     "parity": parity, "baud": baud, "data": data})
+
+def mqtt_node_setting(node):
+    return node_setting(node, json={"client-id": "neuron_aBcDeF", "qos":0, "format": 0,
+                                    "write-req-topic": f"/neuron/{node}/write/req", "write-resp-topic": f"/neuron/{node}/write/resp",
+                                    "offline-cache": False, "cache-sync-interval": 100, "host": "broker.emqx.io", "port": 1883, "username": "", "password": "", "ssl": False})

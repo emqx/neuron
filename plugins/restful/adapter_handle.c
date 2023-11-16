@@ -330,11 +330,13 @@ void handle_get_node_state_resp(nng_aio *aio, neu_resp_get_node_state_t *state)
     neu_json_get_node_state_resp_t res    = { 0 };
     char *                         result = NULL;
 
-    res.link       = state->state.link;
-    res.running    = state->state.running;
-    res.rtt        = state->rtt;
-    res.log_level  = (char *) log_level_to_str(state->state.log_level);
-    res.core_level = (char *) log_level_to_str(state->core_level);
+    res.link            = state->state.link;
+    res.running         = state->state.running;
+    res.rtt             = state->rtt;
+    res.sub_group_count = state->sub_group_count;
+    res.is_driver       = state->is_driver;
+    res.log_level       = (char *) log_level_to_str(state->state.log_level);
+    res.core_level      = (char *) log_level_to_str(state->core_level);
 
     neu_json_encode_by_fn(&res, neu_json_encode_get_node_state_resp, &result);
 
@@ -359,6 +361,8 @@ void handle_get_nodes_state_resp(nng_aio *                   aio,
         states_res.nodes[index].running = state->state.running;
         states_res.nodes[index].link    = state->state.link;
         states_res.nodes[index].rtt     = state->rtt;
+        states_res.nodes[index].sub_group_count = state->sub_group_count;
+        states_res.nodes[index].is_driver       = state->is_driver;
         states_res.nodes[index].log_level =
             (char *) log_level_to_str(state->state.log_level);
     }

@@ -415,6 +415,9 @@ UT_array *neu_node_manager_get_state(neu_node_manager_t *mgr)
             state.state.link =
                 neu_plugin_to_plugin_common(el->adapter->plugin)->link_state;
             state.state.log_level = el->adapter->log_level;
+            state.is_driver = (el->adapter->module->type == NEU_NA_TYPE_DRIVER)
+                ? true
+                : false;
             neu_metric_entry_t *e = NULL;
             if (NULL != el->adapter->metrics) {
                 HASH_FIND_STR(el->adapter->metrics->entries,
