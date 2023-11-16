@@ -793,17 +793,30 @@ static inline void neu_req_inst_templates_fini(neu_req_inst_templates_t *req)
 }
 
 typedef struct neu_req_read_group {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
-    bool sync;
+    char *driver;
+    char *group;
+    bool  sync;
 } neu_req_read_group_t;
 
+static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
+{
+    free(req->driver);
+    free(req->group);
+}
+
 typedef struct neu_req_write_tag {
-    char         driver[NEU_NODE_NAME_LEN];
-    char         group[NEU_GROUP_NAME_LEN];
-    char         tag[NEU_TAG_NAME_LEN];
+    char *       driver;
+    char *       group;
+    char *       tag;
     neu_dvalue_t value;
 } neu_req_write_tag_t;
+
+static inline void neu_req_write_tag_fini(neu_req_write_tag_t *req)
+{
+    free(req->driver);
+    free(req->group);
+    free(req->tag);
+}
 
 typedef struct neu_resp_tag_value {
     char         tag[NEU_TAG_NAME_LEN];
@@ -823,30 +836,52 @@ static inline UT_icd *neu_resp_tag_value_meta_icd()
 }
 
 typedef struct neu_req_write_tags {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
+    char *driver;
+    char *group;
 
     int                   n_tag;
     neu_resp_tag_value_t *tags;
 } neu_req_write_tags_t;
 
+static inline void neu_req_write_tags_fini(neu_req_write_tags_t *req)
+{
+    free(req->driver);
+    free(req->group);
+    free(req->tags);
+}
+
 typedef struct {
-    char group[NEU_GROUP_NAME_LEN];
+    char *group;
 
     int                   n_tag;
     neu_resp_tag_value_t *tags;
 } neu_req_gtag_group_t;
 
+static inline void neu_req_gtag_group_fini(neu_req_gtag_group_t *req)
+{
+    free(req->group);
+    free(req->tags);
+}
+
 typedef struct {
-    char driver[NEU_NODE_NAME_LEN];
+    char *driver;
 
     int                   n_group;
     neu_req_gtag_group_t *groups;
 } neu_req_write_gtags_t;
 
+static inline void neu_req_write_gtags_fini(neu_req_write_gtags_t *req)
+{
+    free(req->driver);
+    for (int i = 0; i < req->n_group; ++i) {
+        neu_req_gtag_group_fini(&req->groups[i]);
+    }
+    free(req->groups);
+}
+
 typedef struct {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
+    char *driver;
+    char *group;
 
     UT_array *tags; // neu_resp_tag_value_meta_t
 } neu_resp_read_group_t;
@@ -859,6 +894,8 @@ static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
             free(tag_value->value.value.ptr.ptr);
         }
     }
+    free(resp->driver);
+    free(resp->group);
     utarray_free(resp->tags);
 }
 
@@ -868,8 +905,8 @@ typedef struct {
 } neu_reqresp_trans_data_ctx_t;
 
 typedef struct {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
+    char *driver;
+    char *group;
 
     neu_reqresp_trans_data_ctx_t *ctx;
     UT_array *                    tags; // neu_resp_tag_value_meta_t
@@ -890,6 +927,8 @@ static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
             }
         }
         utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
         pthread_mutex_unlock(&data->ctx->mtx);
         pthread_mutex_destroy(&data->ctx->mtx);
         free(data->ctx);

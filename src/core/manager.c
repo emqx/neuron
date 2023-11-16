@@ -1198,6 +1198,15 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_GROUP: {
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
+            if (NEU_REQ_READ_GROUP == header->type) {
+                neu_req_read_group_fini((neu_req_read_group_t *) &header[1]);
+            } else if (NEU_REQ_WRITE_TAG == header->type) {
+                neu_req_write_tag_fini((neu_req_write_tag_t *) &header[1]);
+            } else if (NEU_REQ_WRITE_TAGS == header->type) {
+                neu_req_write_tags_fini((neu_req_write_tags_t *) &header[1]);
+            } else if (NEU_REQ_WRITE_GTAGS == header->type) {
+                neu_req_write_gtags_fini((neu_req_write_gtags_t *) &header[1]);
+            }
             neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
             header->type       = NEU_RESP_ERROR;
             neu_msg_exchange(header);
