@@ -33,8 +33,8 @@ extern "C" {
 #include "define.h"
 #include "type.h"
 
-#define NEURON_PLUGIN_VER_1_0 100
-#define NEURON_PLUGIN_VER_2_0 200
+#define NEURON_PLUGIN_VER_1_0 \
+    NEU_VERSION(NEU_VERSION_MAJOR, NEU_VERSION_MINOR, NEU_VERSION_FIX)
 
 extern int64_t global_timestamp;
 

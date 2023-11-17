@@ -133,6 +133,15 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
         return NEU_ERR_LIBRARY_INFO_INVALID;
     }
 
+    uint32_t major = NEU_GET_VERSION_MAJOR(pm->version);
+    uint32_t minor = NEU_GET_VERSION_MINOR(pm->version);
+
+    if (NEU_VERSION_MAJOR != major || NEU_VERSION_MINOR != minor) {
+        nlog_warn("library %s plugin version error, major:%d minor:%d",
+                  lib_path, major, minor);
+        return NEU_ERR_LIBRARY_MODULE_VERSION_NOT_MATCH;
+    }
+
     HASH_FIND_STR(mgr->plugins, pm->module_name, plugin);
     if (plugin != NULL) {
         dlclose(handle);
@@ -369,7 +378,8 @@ static void entity_free(plugin_entity_t *entity)
 
 bool neu_plugin_manager_create_instance_by_path(neu_plugin_manager_t *mgr,
                                                 const char *plugin_path,
-                                                neu_plugin_instance_t *instance)
+                                                neu_plugin_instance_t *instance,
+                                                int *                  error)
 {
 
     (void) mgr;
@@ -377,6 +387,18 @@ bool neu_plugin_manager_create_instance_by_path(neu_plugin_manager_t *mgr,
     instance->handle = dlopen(plugin_path, RTLD_NOW | RTLD_NODELETE);
 
     if (instance->handle == NULL) {
+        const char *dl_err = dlerror();
+        if (strstr(dl_err, "cannot open shared object file") != NULL) {
+            *error = NEU_ERR_LIBRARY_ARCH_NOT_SUPPORT;
+        } else if (strstr(dl_err, "GLIBC") != NULL &&
+                   strstr(dl_err, "not found") != NULL) {
+            *error = NEU_ERR_LIBRARY_CLIB_NOT_MATCH;
+        } else {
+            *error = NEU_ERR_LIBRARY_MODULE_INVALID;
+        }
+
+        nlog_debug("create instance error:%s", dl_err);
+        (void) dlerror();
         return false;
     }
 
@@ -385,6 +407,7 @@ bool neu_plugin_manager_create_instance_by_path(neu_plugin_manager_t *mgr,
 
     if (instance->module == NULL) {
         dlclose(instance->handle);
+        *error           = NEU_ERR_LIBRARY_MODULE_INVALID;
         instance->handle = NULL;
         return false;
     }
