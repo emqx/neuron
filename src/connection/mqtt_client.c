@@ -968,6 +968,26 @@ int neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id)
     return 0;
 }
 
+int neu_mqtt_client_set_will_msg(neu_mqtt_client_t *client, const char *topic,
+                                 uint8_t *msg, uint32_t len, bool retain,
+                                 uint8_t qos)
+{
+    if (NULL == topic || NULL == msg || 0 == len) {
+        return -1;
+    }
+
+    nng_mtx_lock(client->mtx);
+    return_failure_if_open();
+
+    nng_mqtt_msg_set_connect_will_topic(client->conn_msg, topic);
+    nng_mqtt_msg_set_connect_will_msg(client->conn_msg, msg, len);
+    nng_mqtt_msg_set_connect_will_retain(client->conn_msg, retain);
+    nng_mqtt_msg_set_connect_will_qos(client->conn_msg, qos);
+    nng_mtx_unlock(client->mtx);
+
+    return 0;
+}
+
 int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
                              const char *password)
 {

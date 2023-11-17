@@ -74,6 +74,9 @@ size_t neu_mqtt_client_get_cached_msgs_num(neu_mqtt_client_t *client);
 int neu_mqtt_client_set_addr(neu_mqtt_client_t *client, const char *host,
                              uint16_t port);
 int neu_mqtt_client_set_id(neu_mqtt_client_t *client, const char *id);
+int neu_mqtt_client_set_will_msg(neu_mqtt_client_t *client, const char *topic,
+                                 uint8_t *msg, uint32_t len, bool retain,
+                                 uint8_t qos);
 int neu_mqtt_client_set_user(neu_mqtt_client_t *client, const char *username,
                              const char *password);
 int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
