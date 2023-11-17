@@ -127,13 +127,17 @@ jobs:
     container: ghcr.io/neugates/build:x86_64-main
     strategy:
       matrix:
-        plugin: [core, modbus]
+        plugin: [core, modbus, metrics]
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      
+
+      - name: setup dependencies
+        run: |
+          pip install -U pytest requests prometheus-client
+
       - name: compile
         run: |
           git config --global --add safe.directory $(pwd)
@@ -143,10 +147,13 @@ jobs:
 
       - name: function test
         run: |
-          pip install -U pytest
-          pip install requests
-          pip install prometheus-client
-          pytest -s -v tests/ft
+          if [ "${{ matrix.plugin }}" = "core" ]; then
+            pytest -s -v tests/ft --ignore=tests/ft/test_modbus.py --ignore=tests/ft/test_metrics.py
+          elif [ "${{ matrix.plugin }}" = "modbus" ]; then
+            pytest -s -v tests/ft/driver/"test_modbus.py"
+          else
+            pytest -s -v tests/ft/metrics/"test_metrics.py"          
+          fi
 
       - name: create cov report
         run: |

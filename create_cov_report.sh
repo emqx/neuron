@@ -7,7 +7,7 @@ case $1 in
         lcov -c -d build/plugins/modbus/CMakeFiles/plugin-modbus-tcp.dir -o cov_report/cov-modbus-tcp.info
         cd cov_report
         lcov -a cov-modbus-rtu.info -a cov-modbus-tcp.info -o cov-modbus.info;;
-    (core)
+    (core|metrics)
         lcov -c -d build/CMakeFiles/neuron-base.dir/src -o cov_report/cov-neuron-base.info
         lcov -c -d build/CMakeFiles/neuron.dir/src -o cov_report/cov-neuron.info
         lcov -c -d build/CMakeFiles/neuron.dir/plugins/restful -o cov_report/cov-restful.info
