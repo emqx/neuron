@@ -306,14 +306,17 @@ static int decode_write_tags_req_json(void *                     json_obj,
         req->tags[i].value = v_elems[1].v;
 
         if (ret != 0) {
-            while (i-- >= 0) {
+            for (; i >= 0; --i) {
                 free(req->tags[i].tag);
                 if (NEU_JSON_STR == req->tags[i].t) {
                     free(req->tags[i].value.val_str);
                 }
             }
+            free(req->node);
+            free(req->group);
             free(req->tags);
             req->tags = NULL;
+            return ret;
         }
     }
 

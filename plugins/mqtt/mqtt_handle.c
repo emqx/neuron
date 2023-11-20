@@ -138,10 +138,13 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     header.ctx                = mqtt;
     header.type               = NEU_REQ_READ_GROUP;
     neu_req_read_group_t cmd  = { 0 };
-    strcpy(cmd.driver, req->node);
-    strcpy(cmd.group, req->group);
-    cmd.sync = req->sync;
+    cmd.driver                = req->node;
+    cmd.group                 = req->group;
+    cmd.sync                  = req->sync;
+    req->node                 = NULL; // ownership moved
+    req->group                = NULL; // ownership moved
     if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        neu_req_read_group_fini(&cmd);
         plog_error(plugin, "neu_plugin_op(NEU_REQ_READ_GROUP) fail");
         return -1;
     }
@@ -161,9 +164,9 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     header.ctx  = mqtt;
     header.type = NEU_REQ_WRITE_TAG;
 
-    strcpy(cmd.driver, req->node);
-    strcpy(cmd.group, req->group);
-    strcpy(cmd.tag, req->tag);
+    cmd.driver = req->node;
+    cmd.group  = req->group;
+    cmd.tag    = req->tag;
 
     switch (req->t) {
     case NEU_JSON_INT:
@@ -198,6 +201,9 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         return -1;
     }
 
+    req->node  = NULL; // ownership moved
+    req->group = NULL; // ownership moved
+    req->tag   = NULL; // ownership moved
     return 0;
 }
 
@@ -221,10 +227,10 @@ static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     };
 
     neu_req_write_tags_t cmd = { 0 };
-    strcpy(cmd.driver, req->node);
-    strcpy(cmd.group, req->group);
-    cmd.n_tag = req->n_tag;
-    cmd.tags  = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
+    cmd.driver               = req->node;
+    cmd.group                = req->group;
+    cmd.n_tag                = req->n_tag;
+    cmd.tags                 = calloc(cmd.n_tag, sizeof(neu_resp_tag_value_t));
     if (NULL == cmd.tags) {
         return -1;
     }
@@ -268,6 +274,9 @@ static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
         free(cmd.tags);
         return -1;
     }
+
+    req->node  = NULL; // ownership moved
+    req->group = NULL; // ownership moved
 
     return 0;
 }

@@ -110,6 +110,14 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     neu_reqresp_head_t *req    = (neu_reqresp_head_t *) r;
     neu_resp_error_t    nerror = { .error = error };
 
+    if (NEU_REQ_WRITE_TAG == req->type) {
+        neu_req_write_tag_fini((neu_req_write_tag_t *) &req[1]);
+    } else if (NEU_REQ_WRITE_TAGS == req->type) {
+        neu_req_write_tags_fini((neu_req_write_tags_t *) &req[1]);
+    } else if (NEU_REQ_WRITE_GTAGS == req->type) {
+        neu_req_write_gtags_fini((neu_req_write_gtags_t *) &req[1]);
+    }
+
     req->type = NEU_RESP_ERROR;
 
     nlog_notice("write tag response <%p>", req->ctx);
@@ -215,8 +223,8 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     neu_reqresp_trans_data_t *data =
         calloc(1, sizeof(neu_reqresp_trans_data_t));
 
-    strcpy(data->driver, driver->adapter.name);
-    strcpy(data->group, group);
+    data->driver = strdup(driver->adapter.name);
+    data->group  = strdup(group);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
     read_report_group(global_timestamp, 0, driver->cache, group, tags,
@@ -228,9 +236,9 @@ static void update_im(neu_adapter_t *adapter, const char *group,
         if (find != NULL) {
             pthread_mutex_lock(&find->apps_mtx);
 
-            data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
-            data->ctx->index = utarray_len(find->apps);
-            if (data->ctx->index > 0) {
+            if (utarray_len(find->apps) > 0) {
+                data->ctx = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+                data->ctx->index = utarray_len(find->apps);
                 pthread_mutex_init(&data->ctx->mtx, NULL);
 
                 utarray_foreach(find->apps, sub_app_t *, app)
@@ -242,15 +250,20 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                 }
             } else {
                 utarray_free(data->tags);
-                free(data->ctx);
+                free(data->group);
+                free(data->driver);
             }
 
             pthread_mutex_unlock(&find->apps_mtx);
         } else {
             utarray_free(data->tags);
+            free(data->group);
+            free(data->driver);
         }
     } else {
         utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
     }
 
     utarray_free(tags);
@@ -388,6 +401,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     if (g == NULL) {
         neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
         req->type              = NEU_RESP_ERROR;
+        neu_req_read_group_fini(cmd);
         driver->adapter.cb_funs.response(&driver->adapter, req, &error);
         return;
     }
@@ -440,10 +454,13 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                    driver->cache, cmd->group, tags, resp.tags);
     }
 
-    strcpy(resp.driver, cmd->driver);
-    strcpy(resp.group, cmd->group);
+    resp.driver = cmd->driver;
+    resp.group  = cmd->group;
+    cmd->driver = NULL; // ownership moved
+    cmd->group  = NULL; // ownership moved
 
     utarray_free(tags);
+    neu_req_read_group_fini(cmd);
 
     req->type = NEU_RESP_READ_GROUP;
     driver->adapter.cb_funs.response(&driver->adapter, req, &resp);
@@ -578,25 +595,18 @@ static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
     }
 }
 
-static void free_tags(neu_req_write_tags_t *cmd)
-{
-    free(cmd->tags);
-}
-
 void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
     neu_req_write_tags_t *cmd = (neu_req_write_tags_t *) &req[1];
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        free_tags(cmd);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
-        free_tags(cmd);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
         return;
@@ -605,11 +615,8 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     group_t *g = find_group(driver, cmd->group);
 
     if (g == NULL) {
-        neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
-        req->type              = NEU_RESP_ERROR;
-        free_tags(cmd);
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_GROUP_NOT_EXIST);
         return;
     }
 
@@ -644,11 +651,8 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     }
 
     if (utarray_len(tags) != (unsigned int) cmd->n_tag) {
-        neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
-        req->type              = NEU_RESP_ERROR;
-        free_tags(cmd);
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_TAG_NOT_EXIST);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
@@ -662,7 +666,6 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     wtag.req               = (void *) req;
     wtag.tvs               = tags;
 
-    free_tags(cmd);
     store_write_tag(g, &wtag);
 }
 
@@ -673,20 +676,12 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     group_t *              first_g = NULL;
 
     if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
-        for (int i = 0; i < cmd->n_group; i++) {
-            free(cmd->groups[i].tags);
-        }
-        free(cmd->groups);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
         return;
     }
 
     if (driver->adapter.module->intf_funs->driver.write_tags == NULL) {
-        for (int i = 0; i < cmd->n_group; i++) {
-            free(cmd->groups[i].tags);
-        }
-        free(cmd->groups);
         driver->adapter.cb_funs.driver.write_response(
             &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
         return;
@@ -696,14 +691,8 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         group_t *g = find_group(driver, cmd->groups[i].group);
 
         if (g == NULL) {
-            neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
-            req->type              = NEU_RESP_ERROR;
-            for (int x = 0; x < cmd->n_group; x++) {
-                free(cmd->groups[x].tags);
-            }
-            free(cmd->groups);
-            driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-            free(req);
+            driver->adapter.cb_funs.driver.write_response(
+                &driver->adapter, req, NEU_ERR_GROUP_NOT_EXIST);
             return;
         }
 
@@ -759,14 +748,8 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     }
 
     if (utarray_len(tags) != (unsigned int) n_tag) {
-        neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
-        req->type              = NEU_RESP_ERROR;
-        for (int i = 0; i < cmd->n_group; i++) {
-            free(cmd->groups[i].tags);
-        }
-        free(cmd->groups);
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_TAG_NOT_EXIST);
         utarray_foreach(tags, neu_plugin_tag_value_t *, tv)
         {
             neu_tag_free(tv->tag);
@@ -780,10 +763,6 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     wtag.req               = (void *) req;
     wtag.tvs               = tags;
 
-    for (int i = 0; i < cmd->n_group; i++) {
-        free(cmd->groups[i].tags);
-    }
-    free(cmd->groups);
     store_write_tag(first_g, &wtag);
 }
 
@@ -800,20 +779,15 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
     group_t *            g   = find_group(driver, cmd->group);
 
     if (g == NULL) {
-        neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
-        req->type              = NEU_RESP_ERROR;
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_GROUP_NOT_EXIST);
         return;
     }
     neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tag);
 
     if (tag == NULL) {
-        neu_resp_error_t error = { .error = NEU_ERR_TAG_NOT_EXIST };
-
-        req->type = NEU_RESP_ERROR;
-        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-        free(req);
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                      NEU_ERR_TAG_NOT_EXIST);
     } else {
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             driver->adapter.cb_funs.driver.write_response(
@@ -840,10 +814,8 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
             neu_tag_set_static_value(tag, &cmd->value.value);
             neu_group_update_tag(g->group, tag);
             adapter_storage_update_tag_value(cmd->driver, cmd->group, tag);
-            neu_resp_error_t error = { .error = NEU_ERR_SUCCESS };
-            req->type              = NEU_RESP_ERROR;
-            driver->adapter.cb_funs.response(&driver->adapter, req, &error);
-            free(req);
+            driver->adapter.cb_funs.driver.write_response(&driver->adapter, req,
+                                                          NEU_ERR_SUCCESS);
         } else {
             to_be_write_tag_t wtag = { 0 };
             wtag.single            = true;
@@ -1405,8 +1377,8 @@ static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
     neu_reqresp_trans_data_t *data =
         calloc(1, sizeof(neu_reqresp_trans_data_t));
 
-    strcpy(data->driver, group->driver->adapter.name);
-    strcpy(data->group, group->name);
+    data->driver = strdup(group->driver->adapter.name);
+    data->group  = strdup(group->name);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
     read_group(global_timestamp,
@@ -1433,6 +1405,8 @@ static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
         pthread_mutex_unlock(&group->apps_mtx);
     } else {
         utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
     }
     utarray_free(tags);
     free(data);
@@ -1457,8 +1431,8 @@ static int report_callback(void *usr_data)
     neu_reqresp_trans_data_t *data =
         calloc(1, sizeof(neu_reqresp_trans_data_t));
 
-    strcpy(data->driver, group->driver->adapter.name);
-    strcpy(data->group, group->name);
+    data->driver = strdup(group->driver->adapter.name);
+    data->group  = strdup(group->name);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
     read_report_group(global_timestamp,
@@ -1471,10 +1445,9 @@ static int report_callback(void *usr_data)
     if (utarray_len(data->tags) > 0) {
         pthread_mutex_lock(&group->apps_mtx);
 
-        data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
-        data->ctx->index = utarray_len(group->apps);
-
-        if (data->ctx->index > 0) {
+        if (utarray_len(group->apps) > 0) {
+            data->ctx        = calloc(1, sizeof(neu_reqresp_trans_data_ctx_t));
+            data->ctx->index = utarray_len(group->apps);
             pthread_mutex_init(&data->ctx->mtx, NULL);
 
             utarray_foreach(group->apps, sub_app_t *, app)
@@ -1487,12 +1460,15 @@ static int report_callback(void *usr_data)
             }
         } else {
             utarray_free(data->tags);
-            free(data->ctx);
+            free(data->group);
+            free(data->driver);
         }
 
         pthread_mutex_unlock(&group->apps_mtx);
     } else {
         utarray_free(data->tags);
+        free(data->group);
+        free(data->driver);
     }
     utarray_free(tags);
     free(data);
