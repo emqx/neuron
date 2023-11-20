@@ -20,13 +20,17 @@
 --- fix primary key ---
 BEGIN;
 
+DROP TABLE IF EXISTS old_node_cache;
 ALTER TABLE node_cache RENAME TO old_node_cache;
 
 CREATE TABLE IF NOT EXISTS node_cache (
   node_name TEXT PRIMARY KEY,
-  CACHE TEXT NOT NULL
+  CACHE TEXT NOT NULL,
+  FOREIGN KEY (node_name) REFERENCES nodes (name) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 INSERT OR REPLACE INTO node_cache SELECT * FROM old_node_cache;
+
+DROP TABLE old_node_cache;
 
 COMMIT;
