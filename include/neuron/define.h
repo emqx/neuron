@@ -22,6 +22,15 @@
 
 #include <stdbool.h>
 
+#define NEU_VERSION_MAJOR 2
+#define NEU_VERSION_MINOR 7
+#define NEU_VERSION_FIX 0
+
+#define NEU_GET_VERSION_MAJOR(V) ((0xffff0000 & V) >> 16)
+#define NEU_GET_VERSION_MINOR(V) ((0x0000ff00 & V) >> 8)
+#define NEU_GET_VERSION_FIX(V) ((0x000000ff & V))
+#define NEU_VERSION(MAJOR, MINOR, FIX) ((MAJOR << 16) | (MINOR << 8) | FIX)
+
 #define NEU_TAG_NAME_LEN 64
 #define NEU_TAG_ADDRESS_LEN 128
 #define NEU_TAG_DESCRIPTION_LEN 128

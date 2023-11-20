@@ -52,4 +52,5 @@ def start_simulator(args, dir='build/simulator'):
 
 
 def stop_simulator(process):
+    assert process.poll() is None
     process.terminate()

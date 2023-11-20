@@ -259,6 +259,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_error_t      e          = { 0 };
         neu_plugin_kind_e     kind       = -1;
         char                  schema[64] = { 0 };
+        char                  buffer[65] = { 0 };
+
+        if (sscanf(cmd->library, "libplugin-%64s.so", buffer) != 1) {
+            nlog_warn("library %s no conform", cmd->library);
+            header->type = NEU_RESP_ERROR;
+            e.error      = NEU_ERR_LIBRARY_NAME_NOT_CONFORM;
+            strcpy(header->receiver, header->sender);
+            reply(manager, header, &e);
+            free(cmd->so_file);
+            free(cmd->schema_file);
+            break;
+        }
 
         if (neu_persister_library_exists(cmd->library)) {
             nlog_warn("library %s had exited", cmd->library);
@@ -284,10 +296,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        neu_plugin_instance_t ins = { 0 };
+        neu_plugin_instance_t ins   = { 0 };
+        int                   error = NEU_ERR_SUCCESS;
 
-        if (neu_plugin_manager_create_instance_by_path(manager->plugin_manager,
-                                                       so_tmp_path, &ins)) {
+        if (neu_plugin_manager_create_instance_by_path(
+                manager->plugin_manager, so_tmp_path, &ins, &error)) {
             char module_name[64] = { 0 };
             kind                 = ins.module->kind;
             strncpy(module_name, ins.module->module_name, sizeof(module_name));
@@ -296,7 +309,23 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             nlog_debug("library %s, module_name %s, schema:%s", cmd->library,
                        module_name, schema);
 
+            uint32_t major = NEU_GET_VERSION_MAJOR(ins.module->version);
+            uint32_t minor = NEU_GET_VERSION_MINOR(ins.module->version);
+
             neu_plugin_manager_destroy_instance(manager->plugin_manager, &ins);
+
+            if (NEU_VERSION_MAJOR != major || NEU_VERSION_MINOR != minor) {
+                nlog_warn("library %s plugin version error, major:%d minor:%d",
+                          module_name, major, minor);
+                header->type = NEU_RESP_ERROR;
+                e.error      = NEU_ERR_LIBRARY_MODULE_VERSION_NOT_MATCH;
+                strcpy(header->receiver, header->sender);
+                reply(manager, header, &e);
+                free(cmd->so_file);
+                free(cmd->schema_file);
+                free(so_tmp_path);
+                break;
+            }
 
             if (neu_plugin_manager_exists(manager->plugin_manager,
                                           module_name)) {
@@ -315,7 +344,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         } else {
             nlog_warn("library %s so file is not a vaild file", cmd->library);
             header->type = NEU_RESP_ERROR;
-            e.error      = NEU_ERR_LIBRARY_MODULE_INVALID;
+            e.error      = error;
             strcpy(header->receiver, header->sender);
             reply(manager, header, &e);
             free(cmd->so_file);
@@ -376,7 +405,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        int error = neu_manager_add_plugin(manager, cmd->library);
+        error = neu_manager_add_plugin(manager, cmd->library);
 
         if (error == NEU_ERR_SUCCESS) {
             manager_strorage_plugin(manager);
@@ -442,6 +471,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_plugin_kind_e        kind = -1;
         char                     module_name[64] = { 0 };
         char                     schema[64]      = { 0 };
+        char                     buffer[65]      = { 0 };
+
+        if (sscanf(cmd->library, "libplugin-%64s.so", buffer) != 1) {
+            nlog_warn("library %s no conform", cmd->library);
+            header->type = NEU_RESP_ERROR;
+            e.error      = NEU_ERR_LIBRARY_NAME_NOT_CONFORM;
+            strcpy(header->receiver, header->sender);
+            reply(manager, header, &e);
+            free(cmd->so_file);
+            free(cmd->schema_file);
+            break;
+        }
 
         if (!neu_persister_library_exists(cmd->library)) {
             nlog_warn("library %s no exited", cmd->library);
@@ -467,10 +508,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             break;
         }
 
-        neu_plugin_instance_t ins = { 0 };
+        neu_plugin_instance_t ins   = { 0 };
+        int                   error = NEU_ERR_SUCCESS;
 
-        if (neu_plugin_manager_create_instance_by_path(manager->plugin_manager,
-                                                       so_tmp_path, &ins)) {
+        if (neu_plugin_manager_create_instance_by_path(
+                manager->plugin_manager, so_tmp_path, &ins, &error)) {
             kind = ins.module->kind;
             strncpy(module_name, ins.module->module_name, sizeof(module_name));
             strncpy(schema, ins.module->schema, sizeof(schema));
@@ -478,7 +520,23 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             nlog_debug("library %s, module_name %s, schema:%s", cmd->library,
                        module_name, schema);
 
+            uint32_t major = NEU_GET_VERSION_MAJOR(ins.module->version);
+            uint32_t minor = NEU_GET_VERSION_MINOR(ins.module->version);
+
             neu_plugin_manager_destroy_instance(manager->plugin_manager, &ins);
+
+            if (NEU_VERSION_MAJOR != major || NEU_VERSION_MINOR != minor) {
+                nlog_warn("library %s plugin version error, major:%d minor:%d",
+                          module_name, major, minor);
+                header->type = NEU_RESP_ERROR;
+                e.error      = NEU_ERR_LIBRARY_MODULE_VERSION_NOT_MATCH;
+                strcpy(header->receiver, header->sender);
+                reply(manager, header, &e);
+                free(cmd->so_file);
+                free(cmd->schema_file);
+                free(so_tmp_path);
+                break;
+            }
 
             if (!neu_plugin_manager_exists(manager->plugin_manager,
                                            module_name)) {
@@ -497,7 +555,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         } else {
             nlog_warn("library %s so file is not a vaild file", cmd->library);
             header->type = NEU_RESP_ERROR;
-            e.error      = NEU_ERR_LIBRARY_MODULE_INVALID;
+            e.error      = error;
             strcpy(header->receiver, header->sender);
             reply(manager, header, &e);
             free(cmd->so_file);
@@ -535,24 +593,21 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         UT_array *nodes = neu_manager_get_nodes(
             manager, NEU_NA_TYPE_DRIVER | NEU_NA_TYPE_APP, module_name, "");
 
-        UT_array *running_adapters = NULL;
-        UT_icd    icd = { sizeof(neu_adapter_t *), NULL, NULL, NULL };
-        utarray_new(running_adapters, &icd);
-
         if (nodes != NULL) {
             if (utarray_len(nodes) > 0) {
-                utarray_foreach(nodes, neu_resp_node_info_t *, node)
-                {
-                    neu_adapter_t *adapter = neu_node_manager_find(
-                        manager->node_manager, node->node);
-                    if (neu_adapter_get_state(adapter).running ==
-                        NEU_NODE_RUNNING_STATE_RUNNING) {
-                        neu_adapter_stop(adapter);
-                        utarray_push_back(running_adapters, &adapter);
-                    }
-                    neu_adapter_handle_close(adapter);
-                }
+                utarray_free(nodes);
+                nlog_warn("library %s is using", cmd->library);
+                header->type = NEU_RESP_ERROR;
+                e.error      = NEU_ERR_LIBRARY_IN_USE;
+                strcpy(header->receiver, header->sender);
+                reply(manager, header, &e);
+                free(cmd->so_file);
+                free(cmd->schema_file);
+                free(so_tmp_path);
+                free(schema_tmp_path);
+                break;
             }
+            utarray_free(nodes);
         }
 
         if (!neu_plugin_manager_remove_library(manager->plugin_manager,
@@ -593,47 +648,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             free(schema_tmp_path);
             break;
-        }
-
-        if (nodes != NULL) {
-            if (utarray_len(nodes) > 0) {
-                neu_adapter_info_t adapter_info = { 0 };
-                int                ret = neu_plugin_manager_create_instance(
-                    manager->plugin_manager, module_name, &ins);
-                if (ret != 0) {
-                    nlog_warn("library %s open new library fail", cmd->library);
-                    header->type = NEU_RESP_ERROR;
-                    e.error      = NEU_ERR_LIBRARY_FAILED_TO_OPEN;
-                    strcpy(header->receiver, header->sender);
-                    reply(manager, header, &e);
-                    free(cmd->so_file);
-                    free(cmd->schema_file);
-                    free(so_tmp_path);
-                    free(schema_tmp_path);
-                    break;
-                }
-
-                utarray_foreach(nodes, neu_resp_node_info_t *, node)
-                {
-                    neu_adapter_t *adapter = neu_node_manager_find(
-                        manager->node_manager, node->node);
-                    adapter_info.handle = ins.handle;
-                    adapter_info.module = ins.module;
-
-                    neu_adapter_reset(adapter, &adapter_info);
-                }
-            }
-            utarray_free(nodes);
-        }
-
-        if (running_adapters != NULL) {
-            if (utarray_len(running_adapters) > 0) {
-                utarray_foreach(running_adapters, neu_adapter_t **, adapter)
-                {
-                    neu_adapter_start(*adapter);
-                }
-            }
-            utarray_free(running_adapters);
         }
 
         header->type = NEU_RESP_ERROR;
