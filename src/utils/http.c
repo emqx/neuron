@@ -317,8 +317,6 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_NEED_TOKEN:
     case NEU_ERR_DECODE_TOKEN:
     case NEU_ERR_INVALID_USER_OR_PASSWORD:
-    case NEU_ERR_INVALID_USER:
-    case NEU_ERR_INVALID_PASSWORD:
         status = NNG_HTTP_STATUS_UNAUTHORIZED;
         break;
     case NEU_ERR_BODY_IS_WRONG:
