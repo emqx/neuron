@@ -120,3 +120,30 @@ class TestHttp:
         assert 'settings' in config_data
         assert len(config_data['settings']) == 2
         assert config_data['settings'][0]['node'] == 'mqtt'
+
+        response = api.del_node_check(node='mqtt')
+
+        response = api.get_global_config()
+        assert 200 == response.status_code
+
+        config_data = response.json()
+
+        assert 'nodes' in config_data
+        assert len(config_data['nodes']) == 1
+        assert config_data['nodes'][0]['plugin'] == 'Modbus TCP'
+
+        assert 'groups' in config_data
+        assert len(config_data['groups']) == 1
+        assert config_data['groups'][0]['driver'] == 'modbus'
+
+        assert 'tags' in config_data
+        assert len(config_data['tags']) == 1
+        assert config_data['tags'][0]['driver'] == 'modbus'
+        assert len(config_data['tags'][0]['tags']) == 1
+
+        assert 'subscriptions' in config_data
+        assert len(config_data['subscriptions']) == 0
+
+        assert 'settings' in config_data
+        assert len(config_data['settings']) == 1
+        assert config_data['settings'][0]['node'] == 'modbus'
