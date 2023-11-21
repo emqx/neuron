@@ -66,6 +66,8 @@ struct event_data {
     bool  use;
 };
 
+#define EVENT_SIZE 1024
+
 struct neu_events {
     int       epoll_fd;
     pthread_t thread;
@@ -73,14 +75,14 @@ struct neu_events {
 
     pthread_mutex_t   mtx;
     int               n_event;
-    struct event_data event_datas[512];
+    struct event_data event_datas[EVENT_SIZE];
 };
 
 static int get_free_event(neu_events_t *events)
 {
     int ret = -1;
     pthread_mutex_lock(&events->mtx);
-    for (int i = 0; i < 512; i++) {
+    for (int i = 0; i < EVENT_SIZE; i++) {
         if (events->event_datas[i].use == false) {
             events->event_datas[i].use   = true;
             events->event_datas[i].index = i;
