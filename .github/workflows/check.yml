@@ -148,11 +148,11 @@ jobs:
       - name: function test
         run: |
           if [ "${{ matrix.plugin }}" = "core" ]; then
-            pytest -s -v tests/ft --ignore=tests/ft/test_modbus.py --ignore=tests/ft/test_metrics.py
+            pytest -s -v tests/ft --ignore=tests/ft/driver/test_modbus.py --ignore=tests/ft/metrics/test_metrics.py
           elif [ "${{ matrix.plugin }}" = "modbus" ]; then
-            pytest -s -v tests/ft/driver/"test_modbus.py"
+            pytest -s -v tests/ft/driver/test_modbus.py
           else
-            pytest -s -v tests/ft/metrics/"test_metrics.py"          
+            pytest -s -v tests/ft/metrics/test_metrics.py          
           fi
 
       - name: create cov report
