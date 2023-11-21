@@ -149,9 +149,14 @@ int neuron_already_running()
     fd = open(NEURON_DAEMON_LOCK_FNAME, O_RDWR | O_CREAT,
               S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     if (fd < 0) {
-        nlog_error("cannot open %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
-                   strerror(errno));
-        exit(1);
+        // work around fs.protected_regular
+        fd = open(NEURON_DAEMON_LOCK_FNAME, O_RDWR,
+                  S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+        if (fd < 0) {
+            nlog_error("cannot open %s reason: %s\n", NEURON_DAEMON_LOCK_FNAME,
+                       strerror(errno));
+            exit(1);
+        }
     }
 
     // try to lock file
