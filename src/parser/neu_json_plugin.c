@@ -175,6 +175,11 @@ int neu_json_encode_get_plugin_resp(void *json_object, void *param)
                 .t         = NEU_JSON_INT,
                 .v.val_int = p_plugin_lib->kind,
             },
+            {
+                .name      = "version",
+                .t         = NEU_JSON_STR,
+                .v.val_str = p_plugin_lib->version,
+            },
         };
         plugin_lib_array =
             neu_json_encode_array(plugin_lib_array, plugin_lib_elems,

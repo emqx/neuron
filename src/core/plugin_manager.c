@@ -42,6 +42,7 @@ typedef struct plugin_entity {
 
     neu_plugin_kind_e kind;
     neu_node_type_e   type;
+    uint32_t          version;
 
     bool display;
 
@@ -149,6 +150,7 @@ int neu_plugin_manager_add(neu_plugin_manager_t *mgr,
     }
     plugin = calloc(1, sizeof(plugin_entity_t));
 
+    plugin->version        = pm->version;
     plugin->display        = pm->display;
     plugin->type           = pm->type;
     plugin->kind           = pm->kind;
@@ -201,8 +203,9 @@ UT_array *neu_plugin_manager_get(neu_plugin_manager_t *mgr)
             continue;
         }
         neu_resp_plugin_info_t info = {
-            .kind = el->kind,
-            .type = el->type,
+            .kind    = el->kind,
+            .type    = el->type,
+            .version = el->version,
         };
 
         info.display = el->display;

@@ -143,6 +143,11 @@ void handle_get_plugin_resp(nng_aio *aio, neu_resp_get_plugin_t *plugins)
         plugin_res.plugin_libs[index].description = (char *) info->description;
         plugin_res.plugin_libs[index].description_zh =
             (char *) info->description_zh;
+        snprintf(plugin_res.plugin_libs[index].version,
+                 sizeof(plugin_res.plugin_libs[index].version), "%d.%d.%d",
+                 NEU_GET_VERSION_MAJOR(info->version),
+                 NEU_GET_VERSION_MINOR(info->version),
+                 NEU_GET_VERSION_FIX(info->version));
     }
 
     neu_json_encode_by_fn(&plugin_res, neu_json_encode_get_plugin_resp,
