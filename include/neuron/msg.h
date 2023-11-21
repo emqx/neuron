@@ -305,6 +305,7 @@ typedef struct neu_resp_plugin_info {
 
     neu_plugin_kind_e kind;
     neu_node_type_e   type;
+    uint32_t          version;
 
     bool single;
     bool display;
