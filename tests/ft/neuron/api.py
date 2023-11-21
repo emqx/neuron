@@ -293,6 +293,12 @@ def unsubscribe_group(app, driver, group):
 def get_metrics(category="global", node=""):
     return requests.get(url=config.BASE_URL + "/api/v2/metrics?category=" + category + "&node=" + node, headers={"Authorization": config.default_jwt})
 
+def get_global_config():
+    return requests.get(url=config.BASE_URL + "/api/v2/global/config", headers={"Authorization": config.default_jwt})
+
+def put_global_config(json):
+    return requests.put(url=config.BASE_URL + "/api/v2/global/config", headers={"Authorization": config.default_jwt}, json=json)
+
 # plugin setting
 
 
