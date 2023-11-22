@@ -194,6 +194,9 @@ def write_tag(node, group, tag, value):
 def write_tags(node, group, tag_values):
     return requests.post(url=config.BASE_URL + "/api/v2/write/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tag_values})
 
+def write_gtags(json):
+    return requests.post(url=config.BASE_URL + "/api/v2/write/gtags", headers={"Authorization": config.default_jwt}, json=json)
+
 
 def add_plugin(library_name, so_file, schema_file):
     return requests.post(url=config.BASE_URL + "/api/v2/plugin", json={"library": library_name, "so_file": so_file, "schema_file": schema_file}, headers={"Authorization": config.default_jwt})
@@ -292,6 +295,39 @@ def unsubscribe_group(app, driver, group):
 
 def get_metrics(category="global", node=""):
     return requests.get(url=config.BASE_URL + "/api/v2/metrics?category=" + category + "&node=" + node, headers={"Authorization": config.default_jwt})
+
+def get_global_config():
+    return requests.get(url=config.BASE_URL + "/api/v2/global/config", headers={"Authorization": config.default_jwt})
+
+def put_global_config(json):
+    return requests.put(url=config.BASE_URL + "/api/v2/global/config", headers={"Authorization": config.default_jwt}, json=json)
+
+def get_plugin_schema(plugin):
+    return requests.get(url=config.BASE_URL + "/api/v2/schema?schema_name=" + plugin, headers={"Authorization": config.default_jwt})
+
+def get_plugin():
+    return requests.get(url=config.BASE_URL + "/api/v2/plugin", headers={"Authorization": config.default_jwt})
+
+def get_version():
+    return requests.get(url=config.BASE_URL + "/api/v2/version", headers={"Authorization": config.default_jwt})
+
+def post_ndriver_map(ndriver, driver, group):
+    return requests.post(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group":group})
+
+def delete_ndriver_map(ndriver, driver, group):
+    return requests.delete(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group":group})
+
+def get_ndriver_map(ndriver):
+    return requests.get(url=config.BASE_URL + "/api/v2/ndriver/map?ndriver=" + ndriver, headers={"Authorization": config.default_jwt})
+
+def put_ndriver_tag_param(json):
+    return requests.put(url=config.BASE_URL + "/api/v2/ndriver/tag/param", headers={"Authorization": config.default_jwt}, json=json)
+
+def put_ndriver_tag_info(json):
+    return requests.put(url=config.BASE_URL + "/api/v2/ndriver/tag/info", headers={"Authorization": config.default_jwt}, json=json)
+
+def get_ndriver_tag(ndriver, driver, group):
+    return requests.get(url=config.BASE_URL + "/api/v2/ndriver/tag?ndriver=" + ndriver + "&driver=" + driver + "&group=" + group, headers={"Authorization": config.default_jwt})
 
 # plugin setting
 
