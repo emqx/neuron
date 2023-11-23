@@ -62,8 +62,31 @@ static void sig_handler(int sig)
     exit(-1);
 }
 
+static inline char syslog_priority(const char *level)
+{
+    switch (level[0]) {
+    case 'D': // DEBUG
+        return '7';
+    case 'I': // INFO
+        return '6';
+    case 'N': // NOTICE
+        return '5';
+    case 'W': // WARN
+        return '4';
+    case 'E': // ERROR
+        return '3';
+    case 'F': // FATAL
+        return '2';
+    default: // UNKNOWN
+        return '1';
+    }
+}
+
 static int remote_syslog(zlog_msg_t *msg)
 {
+    // fix priority
+    msg->buf[1] = syslog_priority(msg->path);
+
     sendto(g_remote_syslog_ctx.fd, msg->buf, msg->len, 0,
            (const struct sockaddr *) &g_remote_syslog_ctx.addr,
            sizeof(g_remote_syslog_ctx.addr));
