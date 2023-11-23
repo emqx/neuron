@@ -24,6 +24,9 @@
 extern "C" {
 #endif
 
+#include <sys/socket.h>
+#include <sys/types.h>
+
 #include "msg.h"
 
 #define NEU_REQRESP_TYPE_MAP(XX)                                             \
@@ -155,9 +158,46 @@ typedef struct neu_msg_s neu_msg_t;
 static inline neu_msg_t *neu_msg_new(neu_reqresp_type_e t, void *ctx,
                                      void *data)
 {
-    size_t     data_size = neu_reqresp_size(t);
-    size_t     total     = sizeof(neu_msg_t) + data_size;
-    neu_msg_t *msg       = calloc(1, total);
+    size_t data_size = neu_reqresp_size(t);
+
+    // NOTE: ensure enough space to reuse message
+    size_t body_size = 0;
+    switch (t) {
+    case NEU_REQ_GET_PLUGIN:
+        body_size = neu_reqresp_size(NEU_RESP_GET_PLUGIN);
+        break;
+    case NEU_REQ_UPDATE_GROUP:
+    case NEU_REQ_UPDATE_DRIVER_GROUP:
+        body_size = neu_reqresp_size(NEU_RESP_UPDATE_DRIVER_GROUP);
+        break;
+    case NEU_REQ_UPDATE_NODE:
+    case NEU_REQ_NODE_RENAME:
+        body_size = neu_reqresp_size(NEU_RESP_NODE_RENAME);
+        break;
+    case NEU_REQ_DEL_NODE:
+        body_size = neu_reqresp_size(NEU_RESP_NODE_UNINIT);
+        break;
+    case NEU_REQ_GET_NODE_SETTING:
+        body_size = neu_reqresp_size(NEU_RESP_GET_NODE_SETTING);
+        break;
+    case NEU_REQ_GET_NODES_STATE:
+        body_size = neu_reqresp_size(NEU_RESP_GET_NODES_STATE);
+        break;
+    case NEU_REQ_GET_TEMPLATE:
+        body_size = neu_reqresp_size(NEU_RESP_GET_TEMPLATE);
+        break;
+    case NEU_REQ_GET_TEMPLATES:
+        body_size = neu_reqresp_size(NEU_RESP_GET_TEMPLATES);
+        break;
+    case NEU_REQ_READ_GROUP:
+        body_size = neu_reqresp_size(NEU_RESP_READ_GROUP);
+        break;
+    default:
+        body_size = data_size;
+    }
+
+    size_t     total = sizeof(neu_msg_t) + body_size;
+    neu_msg_t *msg   = calloc(1, total);
     if (msg) {
         msg->head.type = t;
         msg->head.len  = total;
@@ -203,6 +243,47 @@ static inline void *neu_msg_get_header(neu_msg_t *msg)
 static inline void *neu_msg_get_body(neu_msg_t *msg)
 {
     return &msg->body;
+}
+
+inline static int neu_send_msg(int fd, neu_msg_t *msg)
+{
+    int ret = send(fd, &msg, sizeof(neu_msg_t *), 0);
+    return sizeof(neu_msg_t *) == ret ? 0 : ret;
+}
+
+inline static int neu_recv_msg(int fd, neu_msg_t **msg_p)
+{
+    neu_msg_t *msg = NULL;
+    int        ret = recv(fd, &msg, sizeof(neu_msg_t *), 0);
+    if (sizeof(neu_msg_t *) != ret) {
+        // recv may return 0 bytes
+        return 0 == ret ? -1 : ret;
+    }
+    *msg_p = msg;
+    return 0;
+}
+
+inline static int neu_send_msg_to(int fd, struct sockaddr_in *addr,
+                                  neu_msg_t *msg)
+{
+    int ret = sendto(fd, &msg, sizeof(neu_msg_t *), 0, (struct sockaddr *) addr,
+                     sizeof(*addr));
+    return sizeof(neu_msg_t *) == ret ? 0 : ret;
+}
+
+inline static int neu_recv_msg_from(int fd, struct sockaddr_in *addr,
+                                    neu_msg_t **msg_p)
+{
+    neu_msg_t *msg      = NULL;
+    socklen_t  addr_len = sizeof(struct sockaddr_in);
+    int        ret      = recvfrom(fd, &msg, sizeof(neu_msg_t *), 0,
+                       (struct sockaddr *) addr, &addr_len);
+    if (sizeof(neu_msg_t *) != ret) {
+        // recvfrom may return 0 bytes
+        return 0 == ret ? -1 : ret;
+    }
+    *msg_p = msg;
+    return 0;
 }
 
 #ifdef __cplusplus

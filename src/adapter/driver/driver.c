@@ -123,7 +123,6 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
     nlog_notice("write tag response <%p>", req->ctx);
 
     adapter->cb_funs.response(adapter, req, &nerror);
-    free(req);
 }
 
 static void update_with_meta(neu_adapter_t *adapter, const char *group,
@@ -180,9 +179,7 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                       const char *tag, neu_dvalue_t value,
                       neu_tag_meta_t *metas, int n_meta)
 {
-    neu_adapter_driver_t *  driver    = (neu_adapter_driver_t *) adapter;
-    static __thread uint8_t buf[1024] = { 0 };
-    neu_reqresp_head_t *    header    = (neu_reqresp_head_t *) buf;
+    neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
 
     if (tag == NULL || value.type == NEU_TYPE_ERROR) {
         nlog_warn("update_im tag is null or value is error %d",
@@ -218,8 +215,9 @@ static void update_im(neu_adapter_t *adapter, const char *group,
               driver->adapter.name, group, tag, neu_type_string(value.type),
               global_timestamp);
 
-    memset(buf, 0, sizeof(buf));
-    header->type = NEU_REQRESP_TRANS_DATA;
+    neu_reqresp_head_t header = {
+        .type = NEU_REQRESP_TRANS_DATA,
+    };
     neu_reqresp_trans_data_t *data =
         calloc(1, sizeof(neu_reqresp_trans_data_t));
 
@@ -244,7 +242,7 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                 utarray_foreach(find->apps, sub_app_t *, app)
                 {
                     if (driver->adapter.cb_funs.responseto(
-                            &driver->adapter, header, data, app->addr) <= 0) {
+                            &driver->adapter, &header, data, app->addr) != 0) {
                         neu_trans_data_free(data);
                     }
                 }
@@ -1414,16 +1412,15 @@ static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
 
 static int report_callback(void *usr_data)
 {
-    group_t *                group     = (group_t *) usr_data;
-    static __thread uint8_t  buf[1024] = { 0 };
-    neu_reqresp_head_t *     header    = (neu_reqresp_head_t *) buf;
-    neu_node_running_state_e state     = group->driver->adapter.state;
+    group_t *                group = (group_t *) usr_data;
+    neu_node_running_state_e state = group->driver->adapter.state;
     if (state != NEU_NODE_RUNNING_STATE_RUNNING) {
         return 0;
     }
 
-    memset(buf, 0, sizeof(buf));
-    header->type = NEU_REQRESP_TRANS_DATA;
+    neu_reqresp_head_t header = {
+        .type = NEU_REQRESP_TRANS_DATA,
+    };
 
     UT_array *tags =
         neu_adapter_driver_get_read_tag(group->driver, group->name);
@@ -1453,7 +1450,7 @@ static int report_callback(void *usr_data)
             utarray_foreach(group->apps, sub_app_t *, app)
             {
                 if (group->driver->adapter.cb_funs.responseto(
-                        &group->driver->adapter, header, data, app->addr) <=
+                        &group->driver->adapter, &header, data, app->addr) !=
                     0) {
                     neu_trans_data_free(data);
                 }
