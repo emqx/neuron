@@ -23,9 +23,6 @@
 #include <nng/nng.h>
 
 // void handle_get_log(nng_aio *aio);
-void handle_logs_files(nng_aio *aio);
 void handle_log_level(nng_aio *aio);
-
-int read_file(const char *file_name, void **datap, size_t *lenp);
 
 #endif

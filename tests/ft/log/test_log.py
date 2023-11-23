@@ -122,3 +122,7 @@ class TestLog:
         assert 200 == response.status_code
         assert "notice" == response.json()['neuron_core']
         assert "info" == response.json()['log_level']
+
+        response = api.get_nodes_state(node='')
+        assert 200 == response.status_code
+        assert "notice" == response.json()['neuron_core']

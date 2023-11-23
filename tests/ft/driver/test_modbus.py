@@ -896,6 +896,20 @@ class TestModbus:
             node=param[0], group='group', tag=hold_string_l1[0]['name'])
         assert 'b' == api.read_tag(
             node=param[0], group='group', tag=hold_string_l2[0]['name'])
+        
+    @description(given="created modbus node ,groups and tags", when="write/read gtags", then="write/read success")
+    def test_write_read_gtags(self, param):
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_uint16", "value": 1}, {"tag": "hold_string", "value": 'hello'},
+                                    {"tag": "coil_bit_1", "value": 1}, {"tag": "hold_double_decimal", "value": 513.11}, {"tag": "hold_bytes", "value": [0x1, 0x2, 0x3, 0x4]}]},
+                                                           {"group": "group1", "tags" : [{"tag": "hold_int16", "value": 1}]}]}
+        response = api.write_gtags(json=modbus_write_gtags)
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+        time.sleep(1.0)
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint16[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group1', tag=hold_int16[0]['name'])
 
     @description(given="created modbus device_error_test node/tag", when="read tag", then="read failed")
     def test_read_modbus_device_err(self, param):

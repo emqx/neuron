@@ -42,70 +42,6 @@
 #include "log_handle.h"
 #include "utils/utarray.h"
 
-void handle_logs_files(nng_aio *aio)
-{
-    void * data = NULL;
-    size_t len  = 0;
-    int    rv   = 0;
-
-    NEU_VALIDATE_JWT(aio);
-
-    /* check whether the neuron directory exists */
-    rv = access("../neuron", F_OK);
-    if (0 != rv) {
-        nlog_error("The neuron directory does not exists");
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_FILE_NOT_EXIST, {
-            neu_http_response(aio, error_code.error, result_error);
-        });
-        return;
-    }
-
-    rv = system("rm -rf /tmp/neuron_debug.tar.gz");
-    nlog_warn("remove old neuron_debug.tar.gz, rv: %d", rv);
-    /* tar the neuron directory */
-    rv = system("tar -zcvf /tmp/neuron_debug.tar.gz "
-                "--exclude='persistence/neuron.lic' ../neuron");
-    if (rv == -1) {
-        nlog_error("failed to create neuron_debug.tar.gz, rv: %d", rv);
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-            neu_http_response(aio, error_code.error, result_error);
-        });
-        return;
-    } else {
-        if (WIFEXITED(rv)) {
-            if (WEXITSTATUS(rv) < 0) {
-                nlog_error("failed to create neuron_debug.tar.gz, rv: %d",
-                           WEXITSTATUS(rv));
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-                return;
-            }
-        } else {
-            nlog_error("failed to create neuron_debug.tar.gz, rv: %d",
-                       WEXITSTATUS(rv));
-            NEU_JSON_RESPONSE_ERROR(NEU_ERR_COMMAND_EXECUTION_FAILED, {
-                neu_http_response(aio, error_code.error, result_error);
-            });
-            return;
-        }
-    }
-
-    rv = read_file("/tmp/neuron_debug.tar.gz", &data, &len);
-    if (0 != rv) {
-        NEU_JSON_RESPONSE_ERROR(
-            rv, { neu_http_response(aio, error_code.error, result_error); });
-        return;
-    }
-
-    /* handle http response */
-    rv = neu_http_response_file(aio, data, len,
-                                "attachment; filename=neuron_debug.tar.gz");
-
-    free(data);
-    nlog_notice("download neuron_debug.tar.gz, ret: %d", rv);
-}
-
 void handle_log_level(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
@@ -156,44 +92,4 @@ void handle_log_level(nng_aio *aio)
                 }
             }
         })
-}
-
-int read_file(const char *file_name, void **datap, size_t *lenp)
-{
-    int         rv = 0;
-    FILE *      f;
-    struct stat st;
-    size_t      len;
-    void *      data;
-
-    if (stat(file_name, &st) != 0) {
-        return NEU_ERR_FILE_NOT_EXIST;
-    }
-
-    if ((f = fopen(file_name, "rb")) == NULL) {
-        nlog_error("open fail: %s", file_name);
-        return NEU_ERR_FILE_OPEN_FAILURE;
-    }
-
-    len = st.st_size;
-    if (len > 0) {
-        if ((data = malloc(len)) == NULL) {
-            rv = NEU_ERR_EINTERNAL;
-            goto done;
-        }
-        if (fread(data, 1, len, f) != len) {
-            nlog_error("file read failued, errno = %d", errno);
-            rv = NEU_ERR_FILE_READ_FAILURE;
-            free(data);
-            goto done;
-        }
-    } else {
-        data = NULL;
-    }
-
-    *datap = data;
-    *lenp  = len;
-done:
-    fclose(f);
-    return (rv);
 }
