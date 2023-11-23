@@ -999,12 +999,12 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             UT_array *apps = neu_subscribe_manager_find_by_driver(
                 manager->subscribe_manager, cmd->node);
 
+            neu_reqresp_node_deleted_t resp = { 0 };
+            header->type                    = NEU_REQRESP_NODE_DELETED;
+            strcpy(resp.node, header->receiver);
+
             utarray_foreach(apps, neu_app_subscribe_t *, app)
             {
-                neu_reqresp_node_deleted_t resp = { 0 };
-                header->type                    = NEU_REQRESP_NODE_DELETED;
-
-                strcpy(resp.node, header->receiver);
                 strcpy(header->receiver, app->app_name);
                 strcpy(header->sender, "manager");
                 reply(manager, header, &resp);
