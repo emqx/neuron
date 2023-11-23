@@ -35,6 +35,7 @@
 #include "adapter/adapter_internal.h"
 #include "adapter/driver/driver_internal.h"
 #include "argparse.h"
+#include "base/msg_internal.h"
 #include "errcodes.h"
 
 #include "node_manager.h"
@@ -55,6 +56,9 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                          void *data);
 inline static void forward_msg(neu_manager_t *     manager,
                                neu_reqresp_head_t *header, const char *node);
+inline static void forward_msg_copy(neu_manager_t *     manager,
+                                    neu_reqresp_head_t *header,
+                                    const char *        node);
 
 inline static void notify_monitors(neu_manager_t *    manager,
                                    neu_reqresp_type_e event, void *data);
@@ -159,25 +163,21 @@ neu_manager_t *neu_manager_create()
 
 void neu_manager_destroy(neu_manager_t *manager)
 {
-    memset(manager->buf, 0, sizeof(manager->buf));
-    neu_reqresp_head_t *header = (neu_reqresp_head_t *) manager->buf;
     neu_req_node_init_t uninit = { 0 };
 
     UT_array *addrs = neu_node_manager_get_addrs_all(manager->node_manager);
 
     neu_event_del_timer(manager->events, manager->timer_timestamp);
 
-    header->type = NEU_REQ_NODE_UNINIT;
-    strcpy(header->sender, "manager");
-
     utarray_foreach(addrs, struct sockaddr_in *, addr)
     {
-        neu_msg_gen(header, &uninit);
-        if (sendto(manager->server_fd, manager->buf, header->len, 0,
-                   (struct sockaddr *) addr,
-                   sizeof(struct sockaddr_in)) != (int) header->len) {
+        neu_msg_t *msg = neu_msg_new(NEU_REQ_NODE_UNINIT, NULL, &uninit);
+        neu_reqresp_head_t *header = neu_msg_get_header(msg);
+        strcpy(header->sender, "manager");
+        if (0 != neu_send_msg_to(manager->server_fd, addr, msg)) {
             nlog_error("manager -> %s uninit msg send fail",
                        inet_ntoa((*addr).sin_addr));
+            neu_msg_free(msg);
         }
     }
     utarray_free(addrs);
@@ -206,8 +206,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 {
     int                 rv       = 0;
     neu_manager_t *     manager  = (neu_manager_t *) usr_data;
-    socklen_t           addr_len = sizeof(struct sockaddr_in);
     struct sockaddr_in  src_addr = { 0 };
+    neu_msg_t *         msg      = NULL;
     neu_reqresp_head_t *header   = NULL;
 
     if (type == NEU_EVENT_IO_CLOSED || type == NEU_EVENT_IO_HUP) {
@@ -215,16 +215,13 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         return 0;
     }
 
-    memset(manager->recv_buf, 0, sizeof(manager->recv_buf));
-    rv = recvfrom(manager->server_fd, manager->recv_buf,
-                  sizeof(manager->recv_buf), 0, (struct sockaddr *) &src_addr,
-                  &addr_len);
+    rv = neu_recv_msg_from(manager->server_fd, &src_addr, &msg);
     if (rv == -1) {
         nlog_warn("manager recv msg error: %s(%d)", strerror(errno), errno);
         return 0;
     }
 
-    header = (neu_reqresp_head_t *) manager->recv_buf;
+    header = neu_msg_get_header(msg);
 
     nlog_info("manager recv msg from: %s to %s, type: %s", header->sender,
               header->receiver, neu_reqresp_type_string(header->type));
@@ -237,6 +234,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                                     src_addr)) {
             nlog_warn("bind node %s to src addr(%d) fail", init->node,
                       ntohs(src_addr.sin_port));
+            neu_msg_free(msg);
             break;
         }
 
@@ -252,6 +250,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         nlog_notice("bind node %s to src addr(%d)", init->node,
                     ntohs(src_addr.sin_port));
+        neu_msg_free(msg);
         break;
     }
     case NEU_REQ_ADD_PLUGIN: {
@@ -992,19 +991,22 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_subscribe_manager_unsub_all(manager->subscribe_manager,
                                             cmd->node);
         }
+        notify_monitors(manager, NEU_REQ_DEL_NODE_EVENT, cmd);
+        neu_reqresp_node_deleted_t resp = { 0 };
+        strcpy(resp.node, header->receiver);
         header->type = NEU_REQ_NODE_UNINIT;
         forward_msg(manager, header, header->receiver);
-        notify_monitors(manager, NEU_REQ_DEL_NODE_EVENT, cmd);
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
             UT_array *apps = neu_subscribe_manager_find_by_driver(
-                manager->subscribe_manager, cmd->node);
-
-            neu_reqresp_node_deleted_t resp = { 0 };
-            header->type                    = NEU_REQRESP_NODE_DELETED;
-            strcpy(resp.node, header->receiver);
+                manager->subscribe_manager, resp.node);
 
             utarray_foreach(apps, neu_app_subscribe_t *, app)
             {
+                msg = neu_msg_new(NEU_REQRESP_NODE_DELETED, NULL, &resp);
+                if (NULL == msg) {
+                    break;
+                }
+                header = neu_msg_get_header(msg);
                 strcpy(header->receiver, app->app_name);
                 strcpy(header->sender, "manager");
                 reply(manager, header, &resp);
@@ -1023,6 +1025,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_resp_error_t error = { 0 };
             header->type           = NEU_RESP_ERROR;
             reply(manager, header, &error);
+        } else {
+            neu_msg_free(msg);
         }
         break;
     }
@@ -1047,8 +1051,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (error.error == NEU_ERR_SUCCESS) {
             cmd->port = app_port;
-            forward_msg(manager, header, cmd->app);
-            forward_msg(manager, header, cmd->driver);
+            forward_msg_copy(manager, header, cmd->app);
+            forward_msg_copy(manager, header, cmd->driver);
             manager_storage_subscribe(manager, cmd->app, cmd->driver,
                                       cmd->group, cmd->params);
         } else {
@@ -1100,7 +1104,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             manager, cmd->app, cmd->driver, cmd->group, cmd->params);
 
         if (error.error == NEU_ERR_SUCCESS) {
-            forward_msg(manager, header, cmd->app);
+            forward_msg_copy(manager, header, cmd->app);
             manager_storage_update_subscribe(manager, cmd->app, cmd->driver,
                                              cmd->group, cmd->params);
         } else {
@@ -1120,8 +1124,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_manager_unsubscribe(manager, cmd->app, cmd->driver, cmd->group);
 
         if (error.error == NEU_ERR_SUCCESS) {
-            forward_msg(manager, header, cmd->app);
-            forward_msg(manager, header, cmd->driver);
+            forward_msg_copy(manager, header, cmd->app);
+            forward_msg_copy(manager, header, cmd->driver);
             manager_storage_unsubscribe(manager, cmd->app, cmd->driver,
                                         cmd->group);
         }
@@ -1266,7 +1270,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 utarray_foreach(apps, neu_app_subscribe_t *, app)
                 {
                     header->type = NEU_REQ_UPDATE_NODE;
-                    forward_msg(manager, header, app->app_name);
+                    forward_msg_copy(manager, header, app->app_name);
                 }
 
                 utarray_free(apps);
@@ -1293,7 +1297,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 utarray_foreach(apps, neu_app_subscribe_t *, app)
                 {
                     header->type = NEU_REQ_UPDATE_GROUP;
-                    forward_msg(manager, header, app->app_name);
+                    forward_msg_copy(manager, header, app->app_name);
                 }
 
                 utarray_free(apps);
@@ -1317,6 +1321,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_DEL_TAG_EVENT:
     case NEU_REQ_UPDATE_TAG_EVENT: {
         notify_monitors(manager, header->type, &header[1]);
+        neu_msg_free(msg);
         break;
     }
 
@@ -1364,14 +1369,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
-            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
-            header->type       = NEU_RESP_ERROR;
-            neu_msg_exchange(header);
-            reply(manager, header, &e);
             for (int i = 0; i < cmd->n_tag; i++) {
                 free(cmd->tags[i]);
             }
             free(cmd->tags);
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
         } else {
             forward_msg(manager, header, header->receiver);
         }
@@ -1384,14 +1389,14 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
-            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
-            header->type       = NEU_RESP_ERROR;
-            neu_msg_exchange(header);
-            reply(manager, header, &e);
             for (int i = 0; i < cmd->n_tag; i++) {
                 neu_tag_fini(&cmd->tags[i]);
             }
             free(cmd->tags);
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
         } else {
             forward_msg(manager, header, header->receiver);
         }
@@ -1403,10 +1408,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
-            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
-            header->type       = NEU_RESP_ERROR;
-            neu_msg_exchange(header);
-            reply(manager, header, &e);
             for (int i = 0; i < cmd->n_group; i++) {
                 for (int j = 0; j < cmd->groups[i].n_tag; j++) {
                     neu_tag_fini(&cmd->groups[i].tags[j]);
@@ -1414,6 +1415,10 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 free(cmd->groups[i].tags);
             }
             free(cmd->groups);
+            neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
+            header->type       = NEU_RESP_ERROR;
+            neu_msg_exchange(header);
+            reply(manager, header, &e);
         } else {
             forward_msg(manager, header, header->receiver);
         }
@@ -1425,11 +1430,11 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
+            free(cmd->setting);
             neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
             header->type       = NEU_RESP_ERROR;
             neu_msg_exchange(header);
             reply(manager, header, &e);
-            free(cmd->setting);
         } else {
             forward_msg(manager, header, header->receiver);
         }
@@ -1473,7 +1478,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         error.error = neu_manager_add_ndriver_map(manager, cmd->ndriver,
                                                   cmd->driver, cmd->group);
         if (error.error == NEU_ERR_SUCCESS) {
-            forward_msg(manager, header, cmd->ndriver);
+            forward_msg_copy(manager, header, cmd->ndriver);
             manager_storage_add_ndriver_map(manager, cmd->ndriver, cmd->driver,
                                             cmd->group);
         }
@@ -1490,7 +1495,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         error.error = neu_manager_del_ndriver_map(manager, cmd->ndriver,
                                                   cmd->driver, cmd->group);
         if (error.error == NEU_ERR_SUCCESS) {
-            forward_msg(manager, header, cmd->ndriver);
+            forward_msg_copy(manager, header, cmd->ndriver);
             manager_storage_del_ndriver_map(manager, cmd->ndriver, cmd->driver,
                                             cmd->group);
         }
@@ -1591,16 +1596,27 @@ inline static void forward_msg(neu_manager_t *     manager,
     struct sockaddr_in addr =
         neu_node_manager_get_addr(manager->node_manager, node);
 
-    int ret = sendto(manager->server_fd, header, header->len, 0,
-                     (struct sockaddr *) &addr, sizeof(addr));
-    if (ret != (int) header->len) {
-        nlog_warn("forward msg %s to node (%s)%d fail",
-                  neu_reqresp_type_string(header->type), node,
-                  ntohs(addr.sin_port));
+    neu_reqresp_type_e t                           = header->type;
+    char               receiver[NEU_NODE_NAME_LEN] = { 0 };
+    strncpy(receiver, header->receiver, sizeof(receiver));
+
+    neu_msg_t *msg = (neu_msg_t *) header;
+    int        ret = neu_send_msg_to(manager->server_fd, &addr, msg);
+    if (0 == ret) {
+        nlog_info("forward msg %s to %s", neu_reqresp_type_string(t), receiver);
     } else {
-        nlog_info("forward msg %s to %s", neu_reqresp_type_string(header->type),
-                  node);
+        nlog_warn("forward msg %s to node (%s)%d fail",
+                  neu_reqresp_type_string(t), receiver, ntohs(addr.sin_port));
+        neu_msg_free(msg);
     }
+}
+
+inline static void forward_msg_copy(neu_manager_t *     manager,
+                                    neu_reqresp_head_t *header,
+                                    const char *        node)
+{
+    neu_msg_t *msg = neu_msg_copy((neu_msg_t *) header);
+    forward_msg(manager, neu_msg_get_header(msg), node);
 }
 
 struct notify_monitor_ctx {
@@ -1622,10 +1638,21 @@ static int notify_monitor(const char *name, struct sockaddr_in addr, void *arg)
         return 0;
     }
 
+    // message header
+    neu_msg_t *msg = neu_msg_new(ctx->event, NULL, data);
+    if (NULL == msg) {
+        return -1;
+    }
+
+    neu_reqresp_head_t *header = neu_msg_get_header(msg);
+    strcpy(header->sender, "manager");
+    strcpy(header->receiver, name);
+
     // copy message data
     switch (ctx->event) {
     case NEU_REQ_NODE_SETTING_EVENT: {
         if (0 != neu_req_node_setting_copy(&setting, ctx->data)) {
+            neu_msg_free(msg);
             return -1;
         }
         data = &setting;
@@ -1634,6 +1661,7 @@ static int notify_monitor(const char *name, struct sockaddr_in addr, void *arg)
     case NEU_REQ_ADD_TAG_EVENT:
     case NEU_REQ_UPDATE_TAG_EVENT: {
         if (0 != neu_req_add_tag_copy(&mod_tag, ctx->data)) {
+            neu_msg_free(msg);
             return -1;
         }
         data = &mod_tag;
@@ -1641,6 +1669,7 @@ static int notify_monitor(const char *name, struct sockaddr_in addr, void *arg)
     }
     case NEU_REQ_DEL_TAG_EVENT: {
         if (0 != neu_req_del_tag_copy(&del_tag, ctx->data)) {
+            neu_msg_free(msg);
             return -1;
         }
         data = &del_tag;
@@ -1650,23 +1679,12 @@ static int notify_monitor(const char *name, struct sockaddr_in addr, void *arg)
         data = ctx->data;
     }
 
-    // message header
-    memset(ctx->manager->buf, 0, sizeof(ctx->manager->buf));
-    neu_reqresp_head_t *header = (neu_reqresp_head_t *) ctx->manager->buf;
-
-    strcpy(header->sender, "manager");
-    strcpy(header->receiver, name);
-    header->type = ctx->event;
-
-    // send message
-    neu_msg_gen(header, data);
-
-    int ret = sendto(ctx->manager->server_fd, header, header->len, 0,
-                     (struct sockaddr *) &addr, sizeof(addr));
-    if (ret <= 0) {
+    int ret = neu_send_msg_to(ctx->manager->server_fd, &addr, msg);
+    if (0 != ret) {
         nlog_warn("notify %s of %s, error: %s(%d)", header->receiver,
                   neu_reqresp_type_string(header->type), strerror(errno),
                   errno);
+        neu_msg_free(msg);
     }
 
     return 0;
@@ -1747,16 +1765,20 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
     struct sockaddr_in addr =
         neu_node_manager_get_addr(manager->node_manager, header->receiver);
 
-    int ret = sendto(manager->server_fd, header, header->len, 0,
-                     (struct sockaddr *) &addr, sizeof(addr));
+    neu_reqresp_type_e t                           = header->type;
+    void *             ctx                         = header->ctx;
+    char               receiver[NEU_NODE_NAME_LEN] = { 0 };
+    strncpy(receiver, header->receiver, sizeof(receiver));
 
-    if (ret != (int) header->len) {
-        nlog_warn("reply %s to %s, error: %d",
-                  neu_reqresp_type_string(header->type), header->receiver, ret);
+    neu_msg_t *msg = (neu_msg_t *) header;
+    int        ret = neu_send_msg_to(manager->server_fd, &addr, msg);
+    if (0 == ret) {
+        nlog_notice("reply %s to %s(%d) %p", neu_reqresp_type_string(t),
+                    receiver, ntohs(addr.sin_port), ctx);
     } else {
-        nlog_notice("reply %s to %s(%d) %p",
-                    neu_reqresp_type_string(header->type), header->receiver,
-                    ntohs(addr.sin_port), header->ctx);
+        nlog_warn("reply %s to %s, error: %d", neu_reqresp_type_string(t),
+                  receiver, ret);
+        neu_msg_free(msg);
     }
 }
 

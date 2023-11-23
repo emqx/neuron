@@ -29,9 +29,7 @@
 #include "template_manager.h"
 
 typedef struct neu_manager {
-    int     server_fd;
-    uint8_t buf[NEU_MSG_MAX_SIZE];
-    uint8_t recv_buf[NEU_MSG_MAX_SIZE];
+    int server_fd;
 
     neu_events_t *  events;
     neu_event_io_t *loop;

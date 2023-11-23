@@ -25,9 +25,8 @@
 void neu_msg_gen(neu_reqresp_head_t *header, void *data)
 {
     size_t data_size = neu_reqresp_size(header->type);
-    assert(NEU_MSG_MAX_SIZE >= sizeof(neu_reqresp_head_t) + data_size);
+    assert(header->len >= sizeof(neu_reqresp_head_t) + data_size);
     memcpy((uint8_t *) &header[1], data, data_size);
-    header->len = sizeof(neu_reqresp_head_t) + data_size;
 }
 
 neu_reqresp_head_t *neu_msg_dup(neu_reqresp_head_t *header)
