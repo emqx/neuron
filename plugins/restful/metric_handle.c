@@ -68,6 +68,12 @@
     "# HELP uptime_seconds Uptime in seconds\n"                                  \
     "# TYPE uptime_seconds counter\n"                                            \
     "uptime_seconds %" PRIu64 "\n"                                               \
+    "# HELP license_max_tags License tags limit\n"                               \
+    "# TYPE license_max_tags gauge\n"                                            \
+    "license_max_tags %" PRIu64 "\n"                                             \
+    "# HELP license_used_tags License total used tags\n"                         \
+    "# TYPE license_used_tags gauge\n"                                           \
+    "license_used_tags %" PRIu64 "\n"                                            \
     "# HELP north_nodes_total Number of north nodes\n"                           \
     "# TYPE north_nodes_total gauge\n"                                           \
     "north_nodes_total %zu\n"                                                    \
@@ -151,10 +157,11 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
             metrics->mem_used_bytes, metrics->mem_cache_bytes,
             metrics->mem_used_bytes, metrics->disk_size_gibibytes,
             metrics->disk_used_gibibytes, metrics->disk_avail_gibibytes,
-            metrics->core_dumped, metrics->uptime_seconds, metrics->north_nodes,
-            metrics->north_running_nodes, metrics->north_disconnected_nodes,
-            metrics->south_nodes, metrics->south_running_nodes,
-            metrics->south_disconnected_nodes);
+            metrics->core_dumped, metrics->uptime_seconds,
+            metrics->license_max_tags, metrics->license_used_tags,
+            metrics->north_nodes, metrics->north_running_nodes,
+            metrics->north_disconnected_nodes, metrics->south_nodes,
+            metrics->south_running_nodes, metrics->south_disconnected_nodes);
 }
 
 static inline void
