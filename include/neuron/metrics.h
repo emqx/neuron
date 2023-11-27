@@ -179,6 +179,8 @@ typedef struct {
     size_t              disk_used_gibibytes;
     size_t              disk_avail_gibibytes;
     bool                core_dumped;
+    uint64_t            license_max_tags;
+    uint64_t            license_used_tags;
     uint64_t            uptime_seconds;
     size_t              north_nodes;
     size_t              north_running_nodes;

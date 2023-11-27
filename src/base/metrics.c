@@ -33,9 +33,9 @@
 #include "utils/log.h"
 #include "utils/time.h"
 
-static pthread_rwlock_t g_metrics_mtx_ = PTHREAD_RWLOCK_INITIALIZER;
-static neu_metrics_t    g_metrics_;
-static uint64_t         g_start_ts_;
+pthread_rwlock_t g_metrics_mtx_ = PTHREAD_RWLOCK_INITIALIZER;
+neu_metrics_t    g_metrics_;
+static uint64_t  g_start_ts_;
 
 static void find_os_info()
 {
