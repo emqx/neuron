@@ -756,12 +756,12 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
     int ret = neu_send_msg_to(manager->server_fd, &addr, msg);
     if (0 != ret) {
         nlog_warn("send %s to %s app failed",
-                  neu_reqresp_type_string(header->type), app);
+                  neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), app);
         free(cmd.params);
         neu_msg_free(msg);
     } else {
-        nlog_notice("send %s to %s app", neu_reqresp_type_string(header->type),
-                    app);
+        nlog_notice("send %s to %s app",
+                    neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), app);
     }
     cmd.params = NULL;
 
