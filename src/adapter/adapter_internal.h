@@ -39,9 +39,6 @@ struct neu_adapter {
     neu_plugin_module_t *module;
     neu_plugin_t *       plugin;
 
-    uint8_t buf[NEU_MSG_MAX_SIZE];
-    uint8_t recv_buf[NEU_MSG_MAX_SIZE];
-
     neu_event_io_t *control_io;
     neu_event_io_t *trans_data_io;
 
