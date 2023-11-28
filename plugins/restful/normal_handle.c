@@ -233,10 +233,6 @@ static struct {
         .schema = "modbus-tcp",
     },
     {
-        .plugin = "Monitor",
-        .schema = "monitor",
-    },
-    {
         .plugin = "MQTT",
         .schema = "mqtt",
     },
