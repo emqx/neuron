@@ -115,17 +115,7 @@ extern "C" {
     XX(NEU_REQ_UPDATE_NDRIVER_TAG_INFO, neu_req_update_ndriver_tag_info_t)   \
     XX(NEU_REQ_GET_NDRIVER_TAGS, neu_req_get_ndriver_tags_t)                 \
     XX(NEU_RESP_GET_NDRIVER_TAGS, neu_resp_get_ndriver_tags_t)               \
-    XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)                 \
-    XX(NEU_REQ_ADD_NODE_EVENT, neu_req_add_node_t)                           \
-    XX(NEU_REQ_DEL_NODE_EVENT, neu_req_del_node_t)                           \
-    XX(NEU_REQ_NODE_CTL_EVENT, neu_req_node_ctl_t)                           \
-    XX(NEU_REQ_NODE_SETTING_EVENT, neu_req_node_setting_t)                   \
-    XX(NEU_REQ_ADD_GROUP_EVENT, neu_req_add_group_t)                         \
-    XX(NEU_REQ_DEL_GROUP_EVENT, neu_req_del_group_t)                         \
-    XX(NEU_REQ_UPDATE_GROUP_EVENT, neu_req_update_group_t)                   \
-    XX(NEU_REQ_ADD_TAG_EVENT, neu_req_add_tag_t)                             \
-    XX(NEU_REQ_DEL_TAG_EVENT, neu_req_del_tag_t)                             \
-    XX(NEU_REQ_UPDATE_TAG_EVENT, neu_req_update_tag_t)
+    XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

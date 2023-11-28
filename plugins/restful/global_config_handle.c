@@ -106,7 +106,6 @@ static inline bool is_static_node(const char *name, const char *plugin)
     (void) name;
     (void) plugin;
     return false;
-    // return 0 == strcmp("monitor", name) && 0 == strcmp("Monitor", plugin);
 }
 
 static context_t *context_new(nng_aio *aio, bool get)

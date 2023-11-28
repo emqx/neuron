@@ -16,7 +16,7 @@ Get all metrics, it should return success
     Check Response Status    ${res}    200
 
 Get single node metrics, it should return success
-    ${res}=    Get single node metrics    monitor    app
+    ${res}=    Get single node metrics    mqtt    app
 
     Check Response Status    ${res}    200
 
@@ -30,14 +30,14 @@ Check node state, it should return success
     ${nlines}=    Get metrics lines
     ${parameter_lines}=    Get parameter lines    ${nlines}
 
-    Check node state    ${parameter_lines}
+    Check node state    ${parameter_lines}        mqtt
 
 *** Keywords ***
 Metrics Test Setup
     Start Neuronx
-    ${res}=         Add Node    monitor           ${PLUGIN_MONITOR}
+    ${res}=         Add Node    mqtt              ${PLUGIN_MQTT}
     Check Response Status       ${res}            200
 
 Metrics Test Teardown
-    Del Node        monitor
+    Del Node        mqtt
     Stop Neuronx

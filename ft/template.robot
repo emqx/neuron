@@ -126,14 +126,6 @@ Create a template with occupied name, it should fail.
     [Teardown]                    Del Template          ${g_template}
 
 
-Create a template with singleton plugin, it should fail.
-    ${res} =                      Add Template          ${g_template}                 Monitor               ${g_empty}
-    Check Response Status         ${res}                400
-    Check Error Code              ${res}                ${NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE}
-
-    [Teardown]                    Del Template          ${g_template}
-
-
 Create a template with north plugin, it should fail.
     ${res} =                      Add Template          ${g_template}                 MQTT                  ${g_empty}
     Check Response Status         ${res}                400
