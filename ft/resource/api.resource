@@ -351,10 +351,10 @@ Check endswith isdigit
   END
 
 Check node state
-  [Arguments]         ${parameter_lines}
+  [Arguments]         ${parameter_lines}    ${node}
   ${link_state}    Create List
   ${running_state}    Create List
-  ${node_state}=    Get Node State    monitor
+  ${node_state}=    Get Node State    ${node}
   
   FOR    ${line}    IN    @{parameter_lines}
       ${param}=    Get Substring    ${line}    0    10
