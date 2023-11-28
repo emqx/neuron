@@ -1306,20 +1306,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
-    case NEU_REQ_ADD_NODE_EVENT:
-    case NEU_REQ_DEL_NODE_EVENT:
-    case NEU_REQ_NODE_CTL_EVENT:
-    case NEU_REQ_NODE_SETTING_EVENT:
-    case NEU_REQ_ADD_GROUP_EVENT:
-    case NEU_REQ_DEL_GROUP_EVENT:
-    case NEU_REQ_UPDATE_GROUP_EVENT:
-    case NEU_REQ_ADD_TAG_EVENT:
-    case NEU_REQ_DEL_TAG_EVENT:
-    case NEU_REQ_UPDATE_TAG_EVENT: {
-        neu_msg_free(msg);
-        break;
-    }
-
     case NEU_REQ_UPDATE_GROUP: {
         neu_resp_error_t e = { 0 };
 

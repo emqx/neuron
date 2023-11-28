@@ -681,16 +681,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
     case NEU_REQRESP_NODES_STATE:
-    case NEU_REQ_ADD_NODE_EVENT:
-    case NEU_REQ_DEL_NODE_EVENT:
-    case NEU_REQ_NODE_CTL_EVENT:
-    case NEU_REQ_NODE_SETTING_EVENT:
-    case NEU_REQ_ADD_GROUP_EVENT:
-    case NEU_REQ_DEL_GROUP_EVENT:
-    case NEU_REQ_UPDATE_GROUP_EVENT:
-    case NEU_REQ_ADD_TAG_EVENT:
-    case NEU_REQ_DEL_TAG_EVENT:
-    case NEU_REQ_UPDATE_TAG_EVENT:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
