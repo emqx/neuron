@@ -114,6 +114,9 @@ neu_conn_t *neu_conn_new(neu_conn_param_t *param, void *data,
 void neu_conn_stop(neu_conn_t *conn)
 {
     pthread_mutex_lock(&conn->mtx);
+    if (conn->tcp_server.is_listen) {
+        conn_tcp_server_stop(conn);
+    }
     conn->stop = true;
     conn_disconnect(conn);
     pthread_mutex_unlock(&conn->mtx);
