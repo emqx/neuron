@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import subprocess
 
@@ -40,6 +41,8 @@ def restart_neuron(process, dir='build/'):
 def stop_neuron(process):
     result = process.terminate()
     stderr = process.stderr.read().decode()
+    stderr = re.sub(
+        "(libfaketime|Please check specification).*\n?", "", stderr)
     assert stderr == '', "Neuron process has errors: " + stderr
 
 
