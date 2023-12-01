@@ -26,6 +26,7 @@
 
 #include "adapter/adapter_internal.h"
 #include "adapter/driver/driver_internal.h"
+#include "base/msg_internal.h"
 
 #include "manager_internal.h"
 #include "template_manager.h"
@@ -730,12 +731,6 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
                                const char *driver, const char *group,
                                uint16_t app_port, const char *params)
 {
-    memset(manager->buf, 0, sizeof(manager->buf));
-    neu_reqresp_head_t *header = (neu_reqresp_head_t *) manager->buf;
-    header->type               = NEU_REQ_SUBSCRIBE_GROUP;
-    strcpy(header->sender, "manager");
-    strcpy(header->receiver, app);
-
     neu_req_subscribe_t cmd = { 0 };
     strcpy(cmd.app, app);
     strcpy(cmd.driver, driver);
@@ -746,35 +741,47 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
         return NEU_ERR_EINTERNAL;
     }
 
+    neu_msg_t *msg = neu_msg_new(NEU_REQ_SUBSCRIBE_GROUP, NULL, &cmd);
+    if (NULL == msg) {
+        free(cmd.params);
+        return NEU_ERR_EINTERNAL;
+    }
+    neu_reqresp_head_t *header = neu_msg_get_header(msg);
+    strcpy(header->sender, "manager");
+    strcpy(header->receiver, app);
+
     struct sockaddr_in addr =
         neu_node_manager_get_addr(manager->node_manager, app);
 
-    neu_msg_gen(header, &cmd);
-
-    int ret = sendto(manager->server_fd, header, header->len, 0,
-                     (struct sockaddr *) &addr, sizeof(addr));
-    if (ret != (int) header->len) {
+    int ret = neu_send_msg_to(manager->server_fd, &addr, msg);
+    if (0 != ret) {
         nlog_warn("send %s to %s app failed",
-                  neu_reqresp_type_string(header->type), app);
+                  neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), app);
         free(cmd.params);
+        neu_msg_free(msg);
     } else {
-        nlog_notice("send %s to %s app", neu_reqresp_type_string(header->type),
-                    app);
+        nlog_notice("send %s to %s app",
+                    neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), app);
     }
+    cmd.params = NULL;
 
+    msg = neu_msg_new(NEU_REQ_SUBSCRIBE_GROUP, NULL, &cmd);
+    if (NULL == msg) {
+        return NEU_ERR_EINTERNAL;
+    }
+    header = neu_msg_get_header(msg);
+    strcpy(header->sender, "manager");
     strcpy(header->receiver, driver);
     addr = neu_node_manager_get_addr(manager->node_manager, driver);
 
-    neu_msg_gen(header, &cmd);
-
-    ret = sendto(manager->server_fd, header, header->len, 0,
-                 (struct sockaddr *) &addr, sizeof(addr));
-    if (ret != (int) header->len) {
+    ret = neu_send_msg_to(manager->server_fd, &addr, msg);
+    if (0 != ret) {
         nlog_warn("send %s to %s driver failed",
-                  neu_reqresp_type_string(header->type), app);
+                  neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), driver);
+        neu_msg_free(msg);
     } else {
         nlog_notice("send %s to %s driver",
-                    neu_reqresp_type_string(header->type), app);
+                    neu_reqresp_type_string(NEU_REQ_SUBSCRIBE_GROUP), driver);
     }
 
     return 0;
