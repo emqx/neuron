@@ -40,6 +40,7 @@ def restart_neuron(process, dir='build/'):
 
 def stop_neuron(process):
     result = process.terminate()
+    process.wait()
     stderr = process.stderr.read().decode()
     stderr = re.sub(
         "(libfaketime|Please check specification).*\n?", "", stderr)
@@ -57,3 +58,7 @@ def start_simulator(args, dir='build/simulator'):
 def stop_simulator(process):
     assert process.poll() is None
     process.terminate()
+    process.wait()
+    stderr = process.stderr.read().decode()
+    if stderr != '':
+        print("Simulator process has errors: " + stderr)

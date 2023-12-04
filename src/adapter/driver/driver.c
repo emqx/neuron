@@ -244,6 +244,13 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                     }
                 }
             } else {
+                utarray_foreach(data->tags, neu_resp_tag_value_meta_t *,
+                                tag_value)
+                {
+                    if (tag_value->value.type == NEU_TYPE_PTR) {
+                        free(tag_value->value.value.ptr.ptr);
+                    }
+                }
                 utarray_free(data->tags);
                 free(data->group);
                 free(data->driver);
@@ -251,6 +258,12 @@ static void update_im(neu_adapter_t *adapter, const char *group,
 
             pthread_mutex_unlock(&find->apps_mtx);
         } else {
+            utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
+            {
+                if (tag_value->value.type == NEU_TYPE_PTR) {
+                    free(tag_value->value.value.ptr.ptr);
+                }
+            }
             utarray_free(data->tags);
             free(data->group);
             free(data->driver);
@@ -1649,6 +1662,9 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
 
         if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
             (timestamp - value.timestamp) > timeout && timeout > 0) {
+            if (value.value.type == NEU_TYPE_PTR) {
+                free(value.value.value.ptr.ptr);
+            }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
@@ -1801,6 +1817,9 @@ static void read_group(int64_t timestamp, int64_t timeout,
         if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
             !neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
             (timestamp - value.timestamp) > timeout) {
+            if (value.value.type == NEU_TYPE_PTR) {
+                free(value.value.value.ptr.ptr);
+            }
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
         } else {
