@@ -985,8 +985,25 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         manager_storage_del_node(manager, cmd->node);
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_APP) {
+            UT_array *subscriptions = neu_subscribe_manager_get(
+                manager->subscribe_manager, cmd->node);
             neu_subscribe_manager_unsub_all(manager->subscribe_manager,
                                             cmd->node);
+
+            utarray_foreach(subscriptions, neu_resp_subscribe_info_t *, sub)
+            {
+                // NOTE: neu_req_unsubscribe_t and neu_resp_subscribe_info_t
+                //       have compatible memory layout
+                msg = neu_msg_new(NEU_REQ_UNSUBSCRIBE_GROUP, NULL, sub);
+                if (NULL == msg) {
+                    break;
+                }
+                neu_reqresp_head_t *hd = neu_msg_get_header(msg);
+                strcpy(hd->receiver, sub->driver);
+                strcpy(hd->sender, "manager");
+                forward_msg(manager, hd, hd->receiver);
+            }
+            utarray_free(subscriptions);
         }
         neu_reqresp_node_deleted_t resp = { 0 };
         strcpy(resp.node, header->receiver);

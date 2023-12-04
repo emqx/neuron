@@ -24,6 +24,23 @@ class TestDriver:
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
+    @description(given="app node with subscriptions", when="delete node", then="should success")
+    @pytest.mark.parametrize('app,plugin', [('mqtt', config.PLUGIN_MQTT)])
+    def test_delete_app(self, app, plugin):
+        driver = 'modbus'
+        group = 'group'
+        try:
+            api.add_node_check(node=app, plugin=plugin)
+            api.add_node_check(node=driver, plugin=config.PLUGIN_MODBUS_TCP)
+            api.modbus_tcp_node_setting(node=driver, port=502)
+            api.add_tags_check(node=driver, group=group, tags=hold_int16)
+            api.subscribe_group_check(app=app, driver=driver, group=group)
+            response = api.del_node(app)
+            assert 200 == response.status_code
+            assert error.NEU_ERR_SUCCESS == response.json()['error']
+        finally:
+            api.del_node(driver)
+
     @description(given="modbus tcp node", when="setting modbus tcp node and groups/tags", then="setting success")
     def test_modbus_tcp_setting(self):
         response = api.modbus_tcp_node_setting(node='modbus-tcp-1', port=502)
