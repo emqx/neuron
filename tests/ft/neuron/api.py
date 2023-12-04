@@ -284,12 +284,15 @@ def del_template_tags(tmpl, group, tags):
 def get_template_tags(tmpl, group, name):
     return requests.get(url=config.BASE_URL + "/api/v2/template/tag", headers={"Authorization": config.default_jwt}, params={"template": tmpl, "group": group, "name": name})
 
-def subscribe_group(app, driver, group):
-    return requests.post(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group})
+@gen_check
+def subscribe_group(app, driver, group, params={}):
+    return requests.post(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group, "params": params})
 
+@gen_check
 def subscribe_groups(app, groups):
     return requests.post(url=config.BASE_URL + "/api/v2/subscribes", headers={"Authorization": config.default_jwt}, json={"app": app, "groups": groups})
 
+@gen_check
 def unsubscribe_group(app, driver, group):
     return requests.delete(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group})
 
