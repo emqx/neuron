@@ -312,4 +312,22 @@ int neu_event_del_io(neu_events_t *events, neu_event_io_t *io)
     return 0;
 }
 
+int neu_event_simulator_del_io(neu_events_t *events, neu_event_io_t *io)
+{
+    if (io == NULL) {
+        return 0;
+    }
+
+    zlog_notice(neuron, "del io: %d from epoll: %d", io->fd, events->epoll_fd);
+
+    epoll_ctl(events->epoll_fd, EPOLL_CTL_DEL, io->fd, NULL);
+    if (io->event_data->usr_data) {
+        free(io->event_data->usr_data);
+        io->event_data->usr_data = NULL;
+    }
+    free_event(events, io->event_data->index);
+
+    return 0;
+}
+
 #endif

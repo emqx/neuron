@@ -120,6 +120,7 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io);
  * @return 0 on success.
  */
 int neu_event_del_io(neu_events_t *events, neu_event_io_t *io);
+int neu_event_simulator_del_io(neu_events_t *events, neu_event_io_t *io);
 
 #ifdef __cplusplus
 }

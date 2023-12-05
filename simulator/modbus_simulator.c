@@ -87,7 +87,7 @@ static void sig_handler(int sig)
     for (uint32_t i = 0; i < sizeof(c_events) / sizeof(struct client_event);
          i++) {
         if (c_events[i].fd > 0) {
-            neu_event_del_io(events, c_events[i].client);
+            neu_event_simulator_del_io(events, c_events[i].client);
         }
     }
 
