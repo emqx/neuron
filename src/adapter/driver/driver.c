@@ -1363,11 +1363,9 @@ UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
 static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
                           struct sockaddr_in dst)
 {
-    static __thread uint8_t buf[1024] = { 0 };
-    neu_reqresp_head_t *    header    = (neu_reqresp_head_t *) buf;
-
-    memset(buf, 0, sizeof(buf));
-    header->type = NEU_REQRESP_TRANS_DATA;
+    neu_reqresp_head_t header = {
+        .type = NEU_REQRESP_TRANS_DATA,
+    };
 
     UT_array *tags =
         neu_adapter_driver_get_read_tag(group->driver, group->name);
@@ -1395,8 +1393,8 @@ static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
 
         pthread_mutex_init(&data->ctx->mtx, NULL);
 
-        if (driver->adapter.cb_funs.responseto(&driver->adapter, header, data,
-                                               dst) <= 0) {
+        if (driver->adapter.cb_funs.responseto(&driver->adapter, &header, data,
+                                               dst) != 0) {
             neu_trans_data_free(data);
         }
 
