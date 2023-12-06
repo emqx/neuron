@@ -32,6 +32,7 @@ neu_events_t *   events           = NULL;
 neu_event_io_t * tcp_server_event = NULL;
 neu_conn_t *     conn             = NULL;
 int64_t          global_timestamp = 0;
+bool             exiting          = false;
 
 static void start_listen(void *data, int fd);
 static void stop_listen(void *data, int fd);
@@ -44,6 +45,7 @@ static bool mode_tcp = true;
 struct client_event {
     neu_event_io_t *client;
     int             fd;
+    void *          user_data;
 };
 
 struct client_event c_events[10] = { 0 };
@@ -53,14 +55,14 @@ struct cycle_buf {
     uint8_t  buf[4096];
 };
 
-static int add_client(int fd, neu_event_io_t *client)
+static int add_client(int fd, neu_event_io_t *client, void *user_data)
 {
     for (uint32_t i = 0; i < sizeof(c_events) / sizeof(struct client_event);
          i++) {
         if (c_events[i].fd == 0) {
-            c_events[i].client = client;
-            c_events[i].fd     = fd;
-
+            c_events[i].client    = client;
+            c_events[i].fd        = fd;
+            c_events[i].user_data = user_data;
             return 0;
         }
     }
@@ -83,6 +85,7 @@ static neu_event_io_t *del_client(int fd)
 
 static void sig_handler(int sig)
 {
+    exiting = true;
     (void) sig;
     for (uint32_t i = 0; i < sizeof(c_events) / sizeof(struct client_event);
          i++) {
@@ -208,7 +211,7 @@ static int new_client(enum neu_event_io_type type, int fd, void *usr_data)
 
             neu_event_io_t *client = neu_event_add_io(events, io);
 
-            add_client(fd, client);
+            add_client(fd, client, buf);
             nlog_info("accept new client: fd: %d\n", client_fd);
         }
 
@@ -229,12 +232,16 @@ static int new_client(enum neu_event_io_type type, int fd, void *usr_data)
 
 static int recv_msg(enum neu_event_io_type type, int fd, void *usr_data)
 {
-    struct cycle_buf *buf = (struct cycle_buf *) usr_data;
+    if (exiting) {
+        return 0;
+    }
+
     switch (type) {
     case NEU_EVENT_IO_READ: {
-        ssize_t len        = 0;
-        uint8_t res[20000] = { 0 };
-        int     res_len    = 0;
+        struct cycle_buf *buf        = (struct cycle_buf *) usr_data;
+        ssize_t           len        = 0;
+        uint8_t           res[20000] = { 0 };
+        int               res_len    = 0;
 
         len = neu_conn_tcp_server_recv(conn, fd, buf->buf + buf->len,
                                        sizeof(buf->buf) - buf->len);
@@ -249,6 +256,8 @@ static int recv_msg(enum neu_event_io_type type, int fd, void *usr_data)
                                    &res_len);
         }
 
+        neu_msleep(2);
+
         if (len == -1) {
             neu_event_io_t *io = del_client(fd);
 
@@ -260,9 +269,15 @@ static int recv_msg(enum neu_event_io_type type, int fd, void *usr_data)
             neu_conn_tcp_server_close_client(conn, fd);
             printf("recv msg parse fail, close client: %d\n", fd);
         } else if (len == -2) {
+            if (exiting) {
+                return 0;
+            }
             neu_conn_tcp_server_send(conn, fd, NULL, 0);
             printf("recv modbus adrress for retry_test, continue wait msg\n");
         } else if (len > 0) {
+            if (exiting) {
+                return 0;
+            }
             memmove(buf->buf, buf->buf + len, buf->len - len);
             buf->len -= len;
 
