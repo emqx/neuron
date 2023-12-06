@@ -63,6 +63,11 @@ def add_node(node, plugin, jwt=config.default_jwt):
 
 
 @gen_check
+def update_node(node, new_name, jwt=config.default_jwt):
+    return requests.put(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json={"name": node, "new_name": new_name})
+
+
+@gen_check
 def del_node(node, jwt=config.default_jwt):
     return requests.delete(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json={"name": node})
 

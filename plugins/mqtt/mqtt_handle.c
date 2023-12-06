@@ -490,7 +490,6 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
-    free(data->tags);
     return rv;
 }
 
