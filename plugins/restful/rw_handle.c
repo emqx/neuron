@@ -174,7 +174,7 @@ void handle_write_tags(nng_aio *aio)
                 switch (req->tags[i].t) {
                 case NEU_JSON_INT:
                     cmd.tags[i].value.type      = NEU_TYPE_INT64;
-                    cmd.tags[i].value.value.i64 = req->tags[i].value.val_int;
+                    cmd.tags[i].value.value.u64 = req->tags[i].value.val_int;
                     break;
                 case NEU_JSON_STR:
                     cmd.tags[i].value.type = NEU_TYPE_STRING;
