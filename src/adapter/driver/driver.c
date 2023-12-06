@@ -639,8 +639,7 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
         neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tags[i].tag);
         if (tag != NULL && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
             neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false) {
-            tv.tag   = neu_tag_dup(tag);
-            tv.value = cmd->tags[i].value.value;
+            tv.tag = neu_tag_dup(tag);
 
             if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
                 if (cmd->tags[i].value.type == NEU_TYPE_INT64) {
@@ -653,6 +652,7 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
             }
             fix_value(tag, cmd->tags[i].value.type, &cmd->tags[i].value);
 
+            tv.value = cmd->tags[i].value.value;
             utarray_push_back(tags, &tv);
         }
         if (tag != NULL) {
