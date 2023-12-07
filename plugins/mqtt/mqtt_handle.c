@@ -152,6 +152,38 @@ static inline int send_read_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     return 0;
 }
 
+static int json_value_to_tag_value(union neu_json_value *req,
+                                   enum neu_json_type t, neu_dvalue_t *value)
+{
+    switch (t) {
+    case NEU_JSON_INT:
+        value->type      = NEU_TYPE_INT64;
+        value->value.u64 = req->val_int;
+        break;
+    case NEU_JSON_STR:
+        value->type = NEU_TYPE_STRING;
+        strncpy(value->value.str, req->val_str, sizeof(value->value.str));
+        break;
+    case NEU_JSON_DOUBLE:
+        value->type      = NEU_TYPE_DOUBLE;
+        value->value.d64 = req->val_double;
+        break;
+    case NEU_JSON_BOOL:
+        value->type          = NEU_TYPE_BOOL;
+        value->value.boolean = req->val_bool;
+        break;
+    case NEU_JSON_BYTES:
+        value->type               = NEU_TYPE_BYTES;
+        value->value.bytes.length = req->val_bytes.length;
+        memcpy(value->value.bytes.bytes, req->val_bytes.bytes,
+               req->val_bytes.length);
+        break;
+    default:
+        return -1;
+    }
+    return 0;
+}
+
 static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
                               neu_json_write_req_t *req)
 {
@@ -168,30 +200,7 @@ static int send_write_tag_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
     cmd.group  = req->group;
     cmd.tag    = req->tag;
 
-    switch (req->t) {
-    case NEU_JSON_INT:
-        cmd.value.type      = NEU_TYPE_INT64;
-        cmd.value.value.u64 = req->value.val_int;
-        break;
-    case NEU_JSON_STR:
-        cmd.value.type = NEU_TYPE_STRING;
-        strcpy(cmd.value.value.str, req->value.val_str);
-        break;
-    case NEU_JSON_DOUBLE:
-        cmd.value.type      = NEU_TYPE_DOUBLE;
-        cmd.value.value.d64 = req->value.val_double;
-        break;
-    case NEU_JSON_BOOL:
-        cmd.value.type          = NEU_TYPE_BOOL;
-        cmd.value.value.boolean = req->value.val_bool;
-        break;
-    case NEU_JSON_BYTES:
-        cmd.value.type               = NEU_TYPE_BYTES;
-        cmd.value.value.bytes.length = req->value.val_bytes.length;
-        memcpy(cmd.value.value.bytes.bytes, req->value.val_bytes.bytes,
-               req->value.val_bytes.length);
-        break;
-    default:
+    if (0 != json_value_to_tag_value(&req->value, req->t, &cmd.value)) {
         plog_error(plugin, "invalid tag value type: %d", req->t);
         return -1;
     }
@@ -237,32 +246,9 @@ static int send_write_tags_req(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt,
 
     for (int i = 0; i < cmd.n_tag; i++) {
         strcpy(cmd.tags[i].tag, req->tags[i].tag);
-        switch (req->tags[i].t) {
-        case NEU_JSON_INT:
-            cmd.tags[i].value.type      = NEU_TYPE_INT64;
-            cmd.tags[i].value.value.u64 = req->tags[i].value.val_int;
-            break;
-        case NEU_JSON_STR:
-            cmd.tags[i].value.type = NEU_TYPE_STRING;
-            strcpy(cmd.tags[i].value.value.str, req->tags[i].value.val_str);
-            break;
-        case NEU_JSON_DOUBLE:
-            cmd.tags[i].value.type      = NEU_TYPE_DOUBLE;
-            cmd.tags[i].value.value.d64 = req->tags[i].value.val_double;
-            break;
-        case NEU_JSON_BOOL:
-            cmd.tags[i].value.type          = NEU_TYPE_BOOL;
-            cmd.tags[i].value.value.boolean = req->tags[i].value.val_bool;
-            break;
-        case NEU_JSON_BYTES:
-            cmd.tags[i].value.type = NEU_TYPE_BYTES;
-            cmd.tags[i].value.value.bytes.length =
-                req->tags[i].value.val_bytes.length;
-            memcpy(cmd.tags[i].value.value.bytes.bytes,
-                   req->tags[i].value.val_bytes.bytes,
-                   req->tags[i].value.val_bytes.length);
-            break;
-        default:
+        if (0 !=
+            json_value_to_tag_value(&req->tags[i].value, req->tags[i].t,
+                                    &cmd.tags[i].value)) {
             plog_error(plugin, "invalid tag value type: %d", req->tags[i].t);
             free(cmd.tags);
             return -1;
@@ -490,7 +476,6 @@ int handle_read_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
 
 end:
     neu_json_decode_mqtt_req_free(mqtt_json);
-    free(data->tags);
     return rv;
 }
 

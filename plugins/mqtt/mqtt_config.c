@@ -401,6 +401,7 @@ int mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
 
 error:
     free(err_param);
+    free(client_id.v.val_str);
     free(write_req_topic.v.val_str);
     free(write_resp_topic.v.val_str);
     free(host.v.val_str);
