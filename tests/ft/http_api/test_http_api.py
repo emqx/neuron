@@ -96,6 +96,37 @@ global_config = {
     ]
 }
 
+global_config_del_modbus = {
+    "nodes": [
+        {
+            "plugin": "MQTT",
+            "name": "mqtt"
+        }
+    ],
+    "groups": [],
+    "tags": [],
+    "subscriptions": [],
+    "settings": [
+        {
+            "node": "mqtt",
+            "params": {
+                "client-id": "neuron_aBcDeF",
+                "qos": 0,
+                "format": 0,
+                "write-req-topic": "/neuron/mqtt/write/req",
+                "write-resp-topic": "/neuron/mqtt/write/resp",
+                "offline-cache": False,
+                "cache-sync-interval": 100,
+                "host": "broker.emqx.io",
+                "port": 1883,
+                "username": "",
+                "password": "",
+                "ssl": False
+            }
+        }
+    ]
+}
+
 class TestHttp:
 
     @description(given="running neuron", when="add driver/app node/group/tag, app subscribes driver group, and get global config", then="success")
@@ -131,7 +162,9 @@ class TestHttp:
         assert len(config_data['settings']) == 2
         assert config_data['settings'][0]['node'] == 'mqtt'
 
-        response = api.del_node_check(node='modbus')
+        response = api.put_global_config(json=global_config_del_modbus)
+        assert 200 == response.status_code     
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
 
         response = api.get_global_config()
         assert 200 == response.status_code

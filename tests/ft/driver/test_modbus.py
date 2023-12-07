@@ -30,10 +30,10 @@ def simulator_setup_teardown(param):
 
     if param[1] == config.PLUGIN_MODBUS_TCP:
         response = api.modbus_tcp_node_setting(
-            node=param[0], port=tcp_port)
+            node=param[0], interval=1, port=tcp_port)
     else:
         response = api.modbus_rtu_node_setting(
-            node=param[0], port=rtu_port)
+            node=param[0], interval=1, port=rtu_port)
 
     yield
     process.stop_simulator(p)
@@ -95,17 +95,23 @@ input_register_string = [{"name": "input_register_string", "address": "1!30120.1
 input_register_bytes = [{"name": "input_register_bytes", "address": "1!30130.10",
                          "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BYTES}]
 
-hold_int16_s = [{"name": "hold_int16_s", "address": "1!400001",
+hold_int16_s = [{"name": "hold_int16_s", "address": "1!400801",
                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_INT16, "value": 1}]
-hold_uint16_s = [{"name": "hold_uint16_s", "address": "1!400002",
+hold_uint16_s = [{"name": "hold_uint16_s", "address": "1!400802",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_UINT16, "value": 1}]
-hold_int32_s = [{"name": "hold_int32_s", "address": "1!400003",
+hold_int32_s = [{"name": "hold_int32_s", "address": "1!400803",
                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_INT32, "value": 1}]
-hold_uint32_s = [{"name": "hold_uint32_s", "address": "1!400015",
+hold_uint32_s = [{"name": "hold_uint32_s", "address": "1!400815",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_UINT32, "value": 1}]
-hold_float_s = [{"name": "hold_float_s", "address": "1!400017",
+hold_int64_s = [{"name": "hold_int64_s", "address": "1!400823",
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_INT64, "value": 1}]
+hold_uint64_s = [{"name": "hold_uint64_s", "address": "1!400835",
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_UINT64, "value": 1}]
+hold_float_s = [{"name": "hold_float_s", "address": "1!400847",
                  "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_FLOAT, "value": 1.0}]
-hold_string_s = [{"name": "hold_string_s", "address": "1!400020.10",
+hold_double_s = [{"name": "hold_double_s", "address": "1!400857",
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_DOUBLE, "value": 1.0}]
+hold_string_s = [{"name": "hold_string_s", "address": "1!400870.2",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW_STATIC, "type": config.NEU_TYPE_STRING, "value": "a"}]
 
 hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!40103",
@@ -225,6 +231,10 @@ hold_float_BL = [{"name": "hold_float_BL", "address": "1!400425#BL",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
 hold_float_BB = [{"name": "hold_float_BB", "address": "1!400427#BB",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+hold_string_H = [{"name": "hold_string_H", "address": "1!400710.4",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+hold_string_L = [{"name": "hold_string_L", "address": "1!400720.4",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 
 hold_string_l1 = [{"name": "hold_string_l1", "address": "1!400501.127",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
@@ -327,14 +337,32 @@ class TestModbus:
         api.add_tags_check(node=param[0], group='group', tags=hold_float_BL)
         api.add_tags_check(node=param[0], group='group', tags=hold_float_BB)
 
-    @description(given="created modbus node", when="add static tags", then="add success")
-    def test_add_static_tags(self, param):
+        api.add_tags_check(node=param[0], group='group', tags=hold_string_H)
+        api.add_tags_check(node=param[0], group='group', tags=hold_string_L)
+
+    @description(given="created modbus node", when="add and read static tags", then="add and read success")
+    def test_add_read_static_tags(self, param):
         api.add_tags_check(node=param[0], group='group', tags=hold_int16_s)
         api.add_tags_check(node=param[0], group='group', tags=hold_uint16_s)
         api.add_tags_check(node=param[0], group='group', tags=hold_int32_s)
         api.add_tags_check(node=param[0], group='group', tags=hold_uint32_s)
+        api.add_tags_check(node=param[0], group='group', tags=hold_int64_s)
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint64_s)
         api.add_tags_check(node=param[0], group='group', tags=hold_float_s)
+        api.add_tags_check(node=param[0], group='group', tags=hold_double_s)
         api.add_tags_check(node=param[0], group='group', tags=hold_string_s)
+
+        time.sleep(0.3)
+
+        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_int16_s[0]['name'])
+        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_uint16_s[0]['name'])
+        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_int32_s[0]['name'])
+        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_uint32_s[0]['name'])
+        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_int64_s[0]['name'])
+        assert 1 == api.read_tag(node=param[0], group='group', tag=hold_uint64_s[0]['name'])
+        assert 1.0 == api.read_tag(node=param[0], group='group', tag=hold_float_s[0]['name'])
+        assert 1.0 == api.read_tag(node=param[0], group='group', tag=hold_double_s[0]['name'])
+        assert 'a' == api.read_tag(node=param[0], group='group', tag=hold_string_s[0]['name'])
 
     @description(given="created modbus node", when="add wrong tags", then="add failed")
     def test_add_wrong_tags(self, param):
@@ -845,6 +873,11 @@ class TestModbus:
             node=param[0], group='group', tag=hold_float_BL[0]['name'], value=123.4)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_float_BB[0]['name'], value=123.4)
+        
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_string_H[0]['name'], value='abcd')
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_string_L[0]['name'], value='ABCD')
 
         time.sleep(0.3)
         assert 1234== api.read_tag(
@@ -881,6 +914,11 @@ class TestModbus:
             node=param[0], group='group', tag=hold_float_BL[0]['name']))
         assert compare_float(123.4, api.read_tag(
             node=param[0], group='group', tag=hold_float_BB[0]['name']))
+        
+        assert "abcd" == api.read_tag(
+            node=param[0], group='group', tag=hold_string_H[0]['name'])
+        assert "ABCD" == api.read_tag(
+            node=param[0], group='group', tag=hold_string_L[0]['name'])
 
     @description(given="created modbus node/tag", when="read consecutive tags with a length exceeding the protocol limit", then="read success")
     def test_read_tag_length_exceeds_250(self, param):
@@ -927,7 +965,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_int16_retry_1[0]['name'], value=111)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_int16_retry_2[0]['name'], value=222)
-        time.sleep(0.3)
+        time.sleep(0.5)
         assert 111 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_retry_1[0]['name'])
         assert 222 == api.read_tag(
@@ -950,3 +988,15 @@ class TestModbus:
         time.sleep(0.3)
         assert error.NEU_ERR_PLUGIN_DISCONNECTED == api.read_tag_err(
             node=param[0]+"_3002", group='group', tag=hold_int16[0]['name'])
+
+    @description(given="created modbus node", when="set modbus tcp_server mode", then="set success")
+    def test_set_modbus_tcp_server_mode(self, param):
+        if param[1] == config.PLUGIN_MODBUS_TCP:
+            response = api.modbus_tcp_node_setting(
+                node=param[0]+"_3002", port=29997, connection_mode=1)
+        else:
+            response = api.modbus_rtu_node_setting(
+                node=param[0]+"_3002", port=29999, connection_mode=1)
+
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']

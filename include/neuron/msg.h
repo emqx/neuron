@@ -1113,8 +1113,7 @@ typedef struct neu_req_update_log_level {
     bool core;
 } neu_req_update_log_level_t;
 
-void                neu_msg_gen(neu_reqresp_head_t *header, void *data);
-neu_reqresp_head_t *neu_msg_dup(neu_reqresp_head_t *header);
+void neu_msg_gen(neu_reqresp_head_t *header, void *data);
 
 inline static void neu_msg_exchange(neu_reqresp_head_t *header)
 {

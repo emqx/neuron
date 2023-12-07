@@ -35,7 +35,6 @@ extern "C" {
 
 #include "utils/base64.h"
 #include "utils/log.h"
-#include "utils/mem_cache.h"
 #include "utils/zlog.h"
 
 #include "utils/neu_jwt.h"
