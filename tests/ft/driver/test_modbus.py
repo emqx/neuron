@@ -496,7 +496,7 @@ class TestModbus:
         api.add_tags_check(node=param[0], group='group1', tags=hold_int16)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_int16[0]['name'], value=222)
-        time.sleep(0.5)
+        time.sleep(0.3)
         assert 222 == api.read_tag(
             node=param[0], group='group', tag=hold_int16[0]['name'])
         assert 222 == api.read_tag(
@@ -512,7 +512,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_int16[0]['name'], value=333)
         api.write_tag_check(
             node=param[0], group='group1', tag=t_tag[0]['name'], value=444)
-        time.sleep(0.5)
+        time.sleep(0.3)
         assert 333 == api.read_tag(
             node=param[0], group='group', tag=hold_int16[0]['name'])
         assert 444 == api.read_tag(
@@ -631,7 +631,7 @@ class TestModbus:
         api.write_tag_check(
             node=param[0], group='group', tag=hold_double_decimal[0]['name'], value=513.11)
 
-        time.sleep(0.5)
+        time.sleep(0.3)
         assert 11 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_decimal[0]['name'])
         assert 23 == api.read_tag(
@@ -679,7 +679,7 @@ class TestModbus:
             {"tag": hold_int16_m8[0]['name'], "value": 8},
             {"tag": hold_int16_m9[0]['name'], "value": 9},
             {"tag": hold_int16_m10[0]['name'], "value": 10}])
-        time.sleep(0.5)
+        time.sleep(0.3)
         assert 1 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_m1[0]['name'])
         assert 2 == api.read_tag(
@@ -846,7 +846,7 @@ class TestModbus:
         api.write_tag_check(
             node=param[0], group='group', tag=hold_float_BB[0]['name'], value=123.4)
 
-        time.sleep(1.0)
+        time.sleep(0.3)
         assert 1234== api.read_tag(
             node=param[0], group='group', tag=hold_int16_B[0]['name'])
         assert 1234 == api.read_tag(
@@ -891,7 +891,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_string_l1[0]['name'], value='a')
         api.write_tag_check(
             node=param[0], group='group', tag=hold_string_l2[0]['name'], value='b')
-        time.sleep(1.0)
+        time.sleep(0.3)
         assert 'a' == api.read_tag(
             node=param[0], group='group', tag=hold_string_l1[0]['name'])
         assert 'b' == api.read_tag(
@@ -905,7 +905,7 @@ class TestModbus:
         response = api.write_gtags(json=modbus_write_gtags)
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
-        time.sleep(1.0)
+        time.sleep(0.3)
         assert 1 == api.read_tag(
             node=param[0], group='group', tag=hold_uint16[0]['name'])
         assert 1 == api.read_tag(
@@ -927,7 +927,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_int16_retry_1[0]['name'], value=111)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_int16_retry_2[0]['name'], value=222)
-        time.sleep(1.0)
+        time.sleep(0.3)
         assert 111 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_retry_1[0]['name'])
         assert 222 == api.read_tag(
