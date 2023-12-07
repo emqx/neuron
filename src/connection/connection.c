@@ -347,8 +347,8 @@ ssize_t neu_conn_send(neu_conn_t *conn, uint8_t *buf, ssize_t len)
                     break;
                 }
             } else {
-                if (rc == -1 && errno == EAGAIN) {
-                    if (retry > 50) {
+                if (!conn->block && rc == -1 && errno == EAGAIN) {
+                    if (retry > 10) {
                         zlog_error(conn->param.log,
                                    "conn fd: %d, send buf len: %zd, ret: %zd, "
                                    "errno: %s(%d)",
@@ -830,7 +830,14 @@ static void conn_connect(neu_conn_t *conn)
             return;
         }
 
-        if (ret != 0 && errno != EINPROGRESS) {
+        if ((conn->block && ret == 0) ||
+            (!conn->block && ret != 0 && errno == EINPROGRESS)) {
+            zlog_notice(conn->param.log, "connect %s:%d success",
+                        conn->param.params.tcp_client.ip,
+                        conn->param.params.tcp_client.port);
+            conn->is_connected = true;
+            conn->fd           = fd;
+        } else {
             close(fd);
             zlog_error(conn->param.log, "connect %s:%d error: %s(%d)",
                        conn->param.params.tcp_client.ip,
@@ -838,13 +845,8 @@ static void conn_connect(neu_conn_t *conn)
                        errno);
             conn->is_connected = false;
             return;
-        } else {
-            zlog_notice(conn->param.log, "connect %s:%d success",
-                        conn->param.params.tcp_client.ip,
-                        conn->param.params.tcp_client.port);
-            conn->is_connected = true;
-            conn->fd           = fd;
         }
+
         break;
     }
     case NEU_CONN_UDP: {
