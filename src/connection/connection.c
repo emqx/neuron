@@ -1274,19 +1274,18 @@ int neu_conn_stream_consume(neu_conn_t *conn, void *context,
     ssize_t ret = neu_conn_recv(conn, conn->buf + conn->offset,
                                 conn->buf_size - conn->offset);
     if (ret > 0) {
+        pthread_mutex_lock(&conn->mtx);
         zlog_recv_protocol(conn->param.log, conn->buf + conn->offset, ret);
         conn->offset += ret;
         neu_protocol_unpack_buf_t protocol_buf = { 0 };
         neu_protocol_unpack_buf_init(&protocol_buf, conn->buf, conn->offset);
+        int used = 0;
         while (neu_protocol_unpack_buf_unused_size(&protocol_buf) > 0) {
-            int used = fn(context, &protocol_buf);
+            used = fn(context, &protocol_buf);
 
             zlog_debug(conn->param.log, "buf used: %d offset: %d", used,
                        conn->offset);
-            if (used == 0) {
-                break;
-            } else if (used == -1) {
-                neu_conn_disconnect(conn);
+            if (used == 0 || used == -1) {
                 break;
             } else {
                 conn->offset -= used;
@@ -1294,6 +1293,10 @@ int neu_conn_stream_consume(neu_conn_t *conn, void *context,
                 neu_protocol_unpack_buf_init(&protocol_buf, conn->buf,
                                              conn->offset);
             }
+        }
+        pthread_mutex_unlock(&conn->mtx);
+        if (used == -1) {
+            neu_conn_disconnect(conn);
         }
     }
 
