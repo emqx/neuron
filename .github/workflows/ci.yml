@@ -10,7 +10,7 @@ on:
 env:
   VERSION: 2.7.0
   UI_VERSION: 2.6.3
-  BRANCH: main
+  BRANCH: v2.7
 
 jobs:
   cross-build:
