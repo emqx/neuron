@@ -41,7 +41,7 @@ jobs:
 
   ut:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.7
 
 
     steps:
@@ -74,17 +74,9 @@ jobs:
             build/result/index.html
             build/neuron.log
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          gcov: true
-          fail_ci_if_error: true
-          gcov_include: include plugins src
-          gcov_ignore: tests simulator
-
   ft:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.7
 
     steps:
       - uses: actions/checkout@v4
@@ -117,7 +109,7 @@ jobs:
 
   pft:
     runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
+    container: ghcr.io/neugates/build:x86_64-v2.7
     strategy:
       matrix:
         plugin: [core, modbus, mqtt, metrics]
