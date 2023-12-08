@@ -115,13 +115,6 @@ jobs:
             ft/reports/report.html
             build/neuron.log
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          gcov: true
-          gcov_include: include plugins src
-          gcov_ignore: tests simulator
-
   pft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
@@ -163,17 +156,3 @@ jobs:
           else
             pytest -s -v tests/ft/metrics/"test_metrics.py"          
           fi
-
-      - name: create cov report
-        run: |
-            sudo apt-get update
-            sudo apt-get -y install lcov
-            mkdir -p cov_report
-            ./create_cov_report.sh ${{ matrix.plugin }}
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          verbose: true
-          directory: ./cov_report/
-          files: cov-${{ matrix.plugin }}.info
