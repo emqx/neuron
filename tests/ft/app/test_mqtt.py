@@ -384,7 +384,7 @@ class TestMQTT:
         conf = request.getfixturevalue(conf)
         api.node_setting_check(NODE, conf)
         api.node_ctl(NODE, config.NEU_CTL_START)
-        assert 1 == mocker.connected_clients()
+        mocker.assert_client_connected()
 
     @description(
         given="MQTT node and conf_emqx_ssl",
@@ -408,9 +408,9 @@ class TestMQTT:
     def test_mqtt_start_stop(self, request, mocker, conf_base):
         api.node_setting_check(NODE, conf_base)
         api.node_ctl_check(NODE, config.NEU_CTL_STOP)
-        assert 0 == mocker.connected_clients()
+        mocker.assert_client_disconnected()
         api.node_ctl_check(NODE, config.NEU_CTL_START)
-        assert 1 == mocker.connected_clients()
+        mocker.assert_client_connected()
 
     @description(
         given="MQTT node and {conf}",
@@ -498,7 +498,7 @@ class TestMQTT:
     def test_mqtt_cache(self, mocker, conf_cache):
         api.node_setting_check(NODE, conf_cache)
         api.node_ctl(NODE, config.NEU_CTL_START)
-        assert 1 == mocker.connected_clients()
+        mocker.assert_client_connected()
 
         mocker.offline(seconds=1.5)
         ts = (time.time_ns() // 1_000_000) - INTERVAL
@@ -521,7 +521,7 @@ class TestMQTT:
     def test_mqtt_read_bad_req(self, mocker, conf_base):
         api.node_setting_check(NODE, conf_base)
         api.node_ctl(NODE, config.NEU_CTL_START)
-        assert 1 == mocker.connected_clients()
+        mocker.assert_client_connected()
 
         req = {
             "uuid": "bca54fe7-a2b1-43e2-a4b4-1da715d28eab",
@@ -578,7 +578,7 @@ class TestMQTT:
     def test_mqtt_write_bad_req(self, mocker, conf_base, req):
         api.node_setting_check(NODE, conf_base)
         api.node_ctl(NODE, config.NEU_CTL_START)
-        assert 1 == mocker.connected_clients()
+        mocker.assert_client_connected()
 
         req = {
             "uuid": "cd32be1b-c8b1-3257-94af-77f847b1ed3e",

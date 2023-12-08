@@ -60,11 +60,23 @@ class Mock:
         self.broker.start()
         self.client.connect("127.0.0.1")
 
-    def connected_clients(self):
+    def assert_client_disconnected(self):
         """Return number of connected clients to the broker."""
         topic = "$SYS/broker/clients/connected"
         messages = self.get(topic, num=2, timeout=2)
-        return int(messages[-1]) - 1
+        n = int(messages[-1]) - 1  # exclude out client
+        assert n == 0, "there are connected mqtt clients"
+
+    def assert_client_connected(self):
+        """Return number of connected clients to the broker."""
+        topic = "$SYS/broker/clients/connected"
+        n = 0
+        for _ in range(8):
+            messages = self.get(topic, num=2, timeout=1.25)
+            n = int(messages[-1]) - 1  # exclude out client
+            if n != 0:
+                break
+        assert n > 0, "there are no connected mqtt clients"
 
     def get(self, topic, num=1, timeout=1):
         """Get message from the specified topic."""
