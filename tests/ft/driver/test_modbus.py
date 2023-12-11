@@ -116,6 +116,8 @@ hold_string_s = [{"name": "hold_string_s", "address": "1!400870.2",
 
 hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!40103",
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": 0.1}]
+hold_int16_decimal_neg = [{"name": "int16_decimal_neg", "address": "1!40140",
+                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": -1}]
 hold_uint16_decimal = [{"name": "hold_uint16_decimal", "address": "1!400105",
                         "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16, "decimal": 0.2}]
 hold_int32_decimal = [{"name": "hold_int32_decimal", "address": "1!400199",
@@ -124,6 +126,8 @@ hold_uint32_decimal = [{"name": "hold_uint32_decimal", "address": "1!400115",
                         "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32, "decimal": 0.3}]
 hold_float_decimal = [{"name": "hold_float_decimal", "address": "1!400119",
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "decimal": 0.5}]
+hold_float_decimal_neg = [{"name": "float_decimal_neg", "address": "1!400150",
+                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "decimal": -1}]
 hold_double_decimal = [{"name": "hold_double_decimal", "address": "1!4000127",
                         "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE, "decimal": 0.6}]
 
@@ -634,6 +638,8 @@ class TestModbus:
         api.add_tags_check(
             node=param[0], group='group', tags=hold_int16_decimal)
         api.add_tags_check(
+            node=param[0], group='group', tags=hold_int16_decimal_neg)
+        api.add_tags_check(
             node=param[0], group='group', tags=hold_uint16_decimal)
         api.add_tags_check(
             node=param[0], group='group', tags=hold_int32_decimal)
@@ -642,12 +648,16 @@ class TestModbus:
         api.add_tags_check(
             node=param[0], group='group', tags=hold_float_decimal)
         api.add_tags_check(
+            node=param[0], group='group', tags=hold_float_decimal_neg)
+        api.add_tags_check(
             node=param[0], group='group', tags=hold_double_decimal)
 
     @description(given="created modbus node/tag", when="read/write decimal tag", then="read/write success")
     def test_read_write_decimal_tag(self, param):
         api.write_tag_check(
             node=param[0], group='group', tag=hold_int16_decimal[0]['name'], value=11)
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_int16_decimal_neg[0]['name'], value=345)
         api.write_tag_check(
             node=param[0], group='group', tag=hold_uint16_decimal[0]['name'], value=23)
         api.write_tag_check(
@@ -657,11 +667,15 @@ class TestModbus:
         api.write_tag_check(
             node=param[0], group='group', tag=hold_float_decimal[0]['name'], value=121.314)
         api.write_tag_check(
+            node=param[0], group='group', tag=hold_float_decimal_neg[0]['name'], value=345.6)
+        api.write_tag_check(
             node=param[0], group='group', tag=hold_double_decimal[0]['name'], value=513.11)
 
         time.sleep(0.3)
         assert 11 == api.read_tag(
             node=param[0], group='group', tag=hold_int16_decimal[0]['name'])
+        assert 345 == api.read_tag(
+            node=param[0], group='group', tag=hold_int16_decimal_neg[0]['name'])
         assert 23 == api.read_tag(
             node=param[0], group='group', tag=hold_uint16_decimal[0]['name'])
         assert 123 == api.read_tag(
@@ -669,6 +683,8 @@ class TestModbus:
         assert 123 == api.read_tag(
             node=param[0], group='group', tag=hold_uint32_decimal[0]['name'])
         compare_float(121.314, api.read_tag(
+            node=param[0], group='group', tag=hold_float_decimal[0]['name']))
+        compare_float(345.6, api.read_tag(
             node=param[0], group='group', tag=hold_float_decimal[0]['name']))
         assert 513.11 == api.read_tag(
             node=param[0], group='group', tag=hold_double_decimal[0]['name'])
