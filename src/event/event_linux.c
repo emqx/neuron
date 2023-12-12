@@ -182,8 +182,12 @@ neu_events_t *neu_event_new(void)
     neu_events_t *events = calloc(1, sizeof(struct neu_events));
 
     events->epoll_fd = epoll_create(1);
-    events->stop     = false;
-    events->n_event  = 0;
+
+    nlog_notice("create epoll: %d(%d)", events->epoll_fd, errno);
+    assert(events->epoll_fd > 0);
+
+    events->stop    = false;
+    events->n_event = 0;
     pthread_mutex_init(&events->mtx, NULL);
 
     pthread_create(&events->thread, NULL, event_loop, events);
@@ -273,8 +277,13 @@ int neu_event_del_timer(neu_events_t *events, neu_event_timer_t *timer)
 
 neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 {
-    int             ret      = 0;
-    int             index    = get_free_event(events);
+    int ret   = 0;
+    int index = get_free_event(events);
+
+    nlog_notice("add io, fd: %d, epoll: %d, index: %d", io.fd, events->epoll_fd,
+                index);
+    assert(index >= 0);
+
     neu_event_io_t *io_ctx   = &events->event_datas[index].ctx.io;
     io_ctx->event_data       = &events->event_datas[index];
     struct epoll_event event = {
@@ -292,8 +301,9 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
 
     ret = epoll_ctl(events->epoll_fd, EPOLL_CTL_ADD, io.fd, &event);
 
-    nlog_notice("add io, fd: %d, epoll: %d, ret: %d", io.fd, events->epoll_fd,
-                ret);
+    nlog_notice("add io, fd: %d, epoll: %d, ret: %d(%d)", io.fd,
+                events->epoll_fd, ret, errno);
+    assert(ret == 0);
 
     return io_ctx;
 }
