@@ -562,20 +562,62 @@ static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
 {
     switch (tag_type) {
     case NEU_TYPE_INT8:
-    case NEU_TYPE_UINT8:
+        if (value_type == NEU_TYPE_DOUBLE) {
+            value->i8 = (int8_t) round(value->d64 / decimal);
+        } else {
+            value->i8 = (int8_t) round(value->i64 / decimal);
+        }
+        break;
     case NEU_TYPE_INT16:
-    case NEU_TYPE_UINT16:
+        if (value_type == NEU_TYPE_DOUBLE) {
+            value->i16 = (int16_t) round(value->d64 / decimal);
+        } else {
+            value->i16 = (int16_t) round(value->i64 / decimal);
+        }
+        break;
     case NEU_TYPE_INT32:
-    case NEU_TYPE_UINT32:
+        if (value_type == NEU_TYPE_DOUBLE) {
+            value->i32 = (int32_t) round(value->d64 / decimal);
+        } else {
+            value->i32 = (int32_t) round(value->i64 / decimal);
+        }
+        break;
     case NEU_TYPE_INT64:
-    case NEU_TYPE_UINT64:
-    case NEU_TYPE_WORD:
-    case NEU_TYPE_LWORD:
-    case NEU_TYPE_DWORD:
-        if (value_type == NEU_TYPE_INT64 || value_type == NEU_TYPE_LWORD) {
-            value->i64 = value->i64 / decimal;
-        } else if (value_type == NEU_TYPE_DOUBLE) {
+        if (value_type == NEU_TYPE_DOUBLE) {
             value->i64 = (int64_t) round(value->d64 / decimal);
+        } else {
+            value->i64 = (int64_t) round(value->i64 / decimal);
+        }
+        break;
+    case NEU_TYPE_UINT8:
+        if (value_type == NEU_TYPE_DOUBLE) {
+            value->u8 = (uint8_t) round(value->d64 / decimal);
+        } else {
+            value->u8 = (uint8_t) round(value->u64 / decimal);
+        }
+        break;
+    case NEU_TYPE_UINT16:
+    case NEU_TYPE_WORD:
+        if (value_type == NEU_TYPE_DOUBLE) {
+            value->u16 = (uint16_t) round(value->d64 / decimal);
+        } else {
+            value->u16 = (uint16_t) round(value->u64 / decimal);
+        }
+        break;
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_LWORD:
+        if (value_type == NEU_TYPE_DOUBLE) {
+            value->u32 = (uint32_t) round(value->d64 / decimal);
+        } else {
+            value->u32 = (uint32_t) round(value->u64 / decimal);
+        }
+        break;
+    case NEU_TYPE_UINT64:
+    case NEU_TYPE_DWORD:
+        if (value_type == NEU_TYPE_DOUBLE) {
+            value->u64 = (uint64_t) round(value->d64 / decimal);
+        } else {
+            value->u64 = (uint64_t) round(value->u64 / decimal);
         }
         break;
     case NEU_TYPE_FLOAT:
