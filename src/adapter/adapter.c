@@ -58,6 +58,13 @@ static int adapter_update_metric(neu_adapter_t *adapter,
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 
+int validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                   neu_resp_add_tag_t *resp);
+int try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                  neu_resp_add_tag_t *resp);
+int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+              neu_resp_add_tag_t *resp);
+
 static const adapter_callbacks_t callback_funs = {
     .command         = adapter_command,
     .response        = adapter_response,
@@ -1033,62 +1040,18 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_ADD_GTAG: {
         neu_req_add_gtag_t *cmd  = (neu_req_add_gtag_t *) &header[1];
         neu_resp_add_tag_t  resp = { 0 };
-        if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
-            for (int i = 0; i < cmd->n_group; i++) {
-                for (int j = 0; j < cmd->groups[i].n_tag; j++) {
-                    int ret = neu_adapter_driver_validate_tag(
-                        (neu_adapter_driver_t *) adapter, cmd->groups[i].group,
-                        &cmd->groups[i].tags[j]);
-                    if (ret == 0) {
-                        resp.index += 1;
-                    } else {
-                        resp.error = ret;
-                        resp.index = 0;
-                        i          = cmd->n_group;
-                        break;
-                    }
-                }
-            }
-        } else {
+
+        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
             resp.error = NEU_ERR_GROUP_NOT_ALLOW;
-        }
-        if (resp.index > 0) {
-            for (int i = 0; i < cmd->n_group; i++) {
-                int ret = neu_adapter_driver_try_add_tag(
-                    (neu_adapter_driver_t *) adapter, cmd->groups[i].group,
-                    cmd->groups[i].tags, cmd->groups[i].n_tag);
-                if (ret != 0) {
-                    resp.index = 0;
-                    resp.error = ret;
-                    break;
+        } else {
+            if (validate_gtags(adapter, cmd, &resp) == 0 &&
+                try_add_gtags(adapter, cmd, &resp) == 0 &&
+                add_gtags(adapter, cmd, &resp) == 0) {
+                for (int i = 0; i < cmd->n_group; i++) {
+                    adapter_storage_add_tags(cmd->driver, cmd->groups[i].group,
+                                             cmd->groups[i].tags,
+                                             cmd->groups[i].n_tag);
                 }
-            }
-        }
-
-        if (resp.index > 0) {
-            for (int i = 0; i < cmd->n_group; i++) {
-                for (int j = 0; j < cmd->groups[i].n_tag; j++) {
-                    int ret = neu_adapter_driver_add_tag(
-                        (neu_adapter_driver_t *) adapter, cmd->groups[i].group,
-                        &cmd->groups[i].tags[j], cmd->groups[i].interval);
-                    if (ret != 0) {
-                        neu_adapter_driver_try_del_tag(
-                            (neu_adapter_driver_t *) adapter,
-                            cmd->groups[i].n_tag - j);
-                        resp.index = 0;
-                        i          = cmd->n_group;
-                        resp.error = ret;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (resp.index) {
-            for (int i = 0; i < cmd->n_group; i++) {
-                adapter_storage_add_tags(cmd->driver, cmd->groups[i].group,
-                                         cmd->groups[i].tags,
-                                         cmd->groups[i].n_tag);
             }
         }
 
@@ -1255,6 +1218,92 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         break;
     }
 
+    return 0;
+}
+
+int validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                   neu_resp_add_tag_t *resp)
+{
+    for (int group_index = 0; group_index < cmd->n_group; group_index++) {
+        for (int tag_index = 0; tag_index < cmd->groups[group_index].n_tag;
+             tag_index++) {
+            int validation_result = neu_adapter_driver_validate_tag(
+                (neu_adapter_driver_t *) adapter,
+                cmd->groups[group_index].group,
+                &cmd->groups[group_index].tags[tag_index]);
+            if (validation_result == 0) {
+                resp->index += 1;
+            } else {
+                resp->error = validation_result;
+                resp->index = 0;
+                return validation_result;
+            }
+        }
+    }
+    return 0;
+}
+
+int try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                  neu_resp_add_tag_t *resp)
+{
+    for (int group_index = 0; group_index < cmd->n_group; group_index++) {
+        int add_result = neu_adapter_driver_try_add_tag(
+            (neu_adapter_driver_t *) adapter, cmd->groups[group_index].group,
+            cmd->groups[group_index].tags, cmd->groups[group_index].n_tag);
+        if (add_result != 0) {
+            for (int added_groups_count = 0; added_groups_count < group_index;
+                 added_groups_count++) {
+                neu_adapter_driver_try_del_tag(
+                    (neu_adapter_driver_t *) adapter,
+                    cmd->groups[added_groups_count].n_tag);
+            }
+            resp->index = 0;
+            resp->error = add_result;
+            return add_result;
+        }
+    }
+    return 0;
+}
+
+int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+              neu_resp_add_tag_t *resp)
+{
+    for (int group_index = 0; group_index < cmd->n_group; group_index++) {
+        for (int tag_index = 0; tag_index < cmd->groups[group_index].n_tag;
+             tag_index++) {
+            int add_tag_result = neu_adapter_driver_add_tag(
+                (neu_adapter_driver_t *) adapter,
+                cmd->groups[group_index].group,
+                &cmd->groups[group_index].tags[tag_index],
+                cmd->groups[group_index].interval);
+
+            if (add_tag_result != 0) {
+                for (int added_group_index = 0; added_group_index < group_index;
+                     added_group_index++) {
+                    for (int added_tag_index = 0; added_tag_index <=
+                         cmd->groups[added_group_index].n_tag;
+                         added_tag_index++) {
+                        neu_adapter_driver_del_tag(
+                            (neu_adapter_driver_t *) adapter,
+                            cmd->groups[added_group_index].group,
+                            cmd->groups[added_group_index]
+                                .tags[added_tag_index]
+                                .name);
+                    }
+                }
+                for (int added_tag_index = 0; added_tag_index < tag_index;
+                     added_tag_index++) {
+                    neu_adapter_driver_del_tag(
+                        (neu_adapter_driver_t *) adapter,
+                        cmd->groups[group_index].group,
+                        cmd->groups[group_index].tags[added_tag_index].name);
+                }
+                resp->index = 0;
+                resp->error = add_tag_result;
+                return add_tag_result;
+            }
+        }
+    }
     return 0;
 }
 
