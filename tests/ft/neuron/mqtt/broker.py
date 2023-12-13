@@ -45,7 +45,7 @@ class Broker:
             conf.append("password_file %s" % self.pass_file)
             subprocess.run(
                 [
-                    f"truncate --size 0 {self.pass_file}; mosquitto_passwd -b {self.pass_file} {self.user} {self.password}",
+                    f"truncate --size 0 {self.pass_file}; mosquitto_passwd -b '{self.pass_file}' '{self.user}' '{self.password}'",
                 ],
                 check=True,
                 shell=True,
