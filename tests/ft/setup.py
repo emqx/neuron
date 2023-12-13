@@ -1,4 +1,14 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
-setup(name='neuronft', version="0.0.2",
-      description='ft module', author='neuron', py_modules=['neuron.api', 'neuron.common', 'neuron.config', 'neuron.process', 'neuron.error'])
+packages = find_packages(include=["neuron*"])
+print("Found packages:", packages)
+
+setup(
+    name="neuronft",
+    version="0.0.2",
+    description="Neuron function test utilities",
+    author="Neuron Team",
+    author_email="neuron@emqx.io",
+    packages=packages,
+    package_data={"neuron.mqtt": ["*.key", "*.pem"]},
+)

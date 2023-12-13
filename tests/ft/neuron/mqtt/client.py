@@ -31,6 +31,7 @@ class Client:
         self._reconnect_retries = reconnect_retries
         self._reconnect_delay = reconnect_delay
         self._messages = defaultdict(deque)
+        self._handlers = {}
         self._subcribed = asyncio.Event()
         self._unsubcribed = asyncio.Event()
         self._recved = asyncio.Event()
@@ -84,14 +85,18 @@ class Client:
         """Disconnect from MQTT Broker."""
         self._run(self._client.disconnect())
         self._messages.clear()
+        self._handlers.clear()
 
     def unsubscribe_all_and_clear_messages(self):
         """Unsubscribe all subscriptions and clear all messages in queue."""
         for topic in self._messages:
             self.unsubscribe(topic)
         self._messages.clear()
+        self._handlers.clear()
 
-    def subscribe(self, topic, qos=0, timeout=1):
+    def subscribe(
+        self, topic, qos=0, timeout=1, handler=None, no_except=False
+    ):
         """Subscribe to a topic and return a message payload received
             within the specified time.
 
@@ -101,35 +106,46 @@ class Client:
 
         `timeout` duration of subscription, default to 1 second
 
-        Examples:
+        `handler` callback on received message, should take one parameter `payload`
 
-        Subscribe and get a list of all messages received within 5 seconds
-        | ${messages}= | Subscribe | test/test | qos=1 | timeout=5 |
+        `no_except` indicate to not throw exception
 
         """
         self._client.subscribe(Subscription(topic, qos))
         if self._wait(self._subcribed, timeout=timeout):
-            raise Exception(
-                "MQTT client subscribe timeout topic=%s qos=%s" % (topic, qos)
-            )
-        info("MQTT client subscribed to topic=%s qos=%s" % (topic, qos))
+            if no_except:
+                info(
+                    f"WARN: MQTT client subscribe timeout, topic={topic} qos={qos}"
+                )
+            else:
+                raise Exception(
+                    f"MQTT client subscribe timeout, topic={topic} qos={qos}"
+                )
+        info(f"MQTT client subscribed to topic={topic} qos={qos}")
+        if handler:
+            self._handlers[topic] = handler
 
-    def unsubscribe(self, topic, timeout=1):
+    def unsubscribe(self, topic, timeout=1, no_except=False):
         """Unsubscribe the client from the specified topic.
 
         `topic` topic to unsubscribe from
 
         `timeout` duration of unsubscription, default to 1 second
 
-        Example:
-        | Unsubscribe | test/mqtt_test |
+        `no_except` indicate to not throw exception
 
         """
         self._client.unsubscribe(topic)
         if self._wait(self._unsubcribed, timeout=timeout):
-            raise Exception("MQTT client unsubscribe timeout topic=%s" % topic)
+            if no_except:
+                info(f"WARN: MQTT client unsubscribe timeout, topic={topic}")
+            else:
+                raise Exception(
+                    f"MQTT client unsubscribe timeout, topic={topic}"
+                )
         self._messages[topic].clear()
-        info("MQTT client unsubscribed topic=%s" % topic)
+        self._handlers.pop(topic, None)
+        info(f"MQTT client unsubscribed topic={topic}")
 
     def publish(self, topic, payload, qos=0, retain=False):
         """Publish a message to a topic with specified qos and retained flag.
@@ -187,7 +203,10 @@ class Client:
             "MQTT client received: topic=%s qos=%s payload=%s"
             % (topic, qos, payload)
         )
-        self._messages[topic].append(payload.decode())
+        if topic in self._handlers:
+            self._handlers[topic](payload=payload.decode())
+        else:
+            self._messages[topic].append(payload.decode())
         self._recved.set()
         return 0
 

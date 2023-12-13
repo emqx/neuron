@@ -78,7 +78,13 @@ class Mock:
                 break
         assert n > 0, "there are no connected mqtt clients"
 
-    def get(self, topic, num=1, timeout=1):
+    def sub(self, topic, handler, no_except=False):
+        self.client.subscribe(topic, handler=handler, no_except=no_except)
+
+    def unsub(self, topic, no_except=False):
+        self.client.unsubscribe(topic, no_except=no_except)
+
+    def get(self, topic, num=1, timeout=1, no_except=False):
         """Get message from the specified topic."""
         if num < 1:
             return None
@@ -95,8 +101,13 @@ class Mock:
                 messages.append(msg)
                 if len(messages) == num:
                     break
+        except Exception as e:
+            if no_except:
+                print("WARN:", e)
+            else:
+                raise e
         finally:
-            self.client.unsubscribe(topic)
+            self.client.unsubscribe(topic, no_except=no_except)
 
         if num > 1:
             return messages
