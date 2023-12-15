@@ -615,7 +615,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
-            e.error      = NEU_ERR_LIBRARY_ADD_FAIL;
+            e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
             strcpy(header->receiver, header->sender);
             reply(manager, header, &e);
             break;
@@ -628,7 +628,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
-            e.error      = NEU_ERR_LIBRARY_ADD_FAIL;
+            e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
             strcpy(header->receiver, header->sender);
             reply(manager, header, &e);
             break;
@@ -641,7 +641,21 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             free(so_tmp_path);
             free(schema_tmp_path);
             header->type = NEU_RESP_ERROR;
-            e.error      = NEU_ERR_LIBRARY_ADD_FAIL;
+            e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
+            strcpy(header->receiver, header->sender);
+            reply(manager, header, &e);
+            break;
+        }
+
+        if (neu_plugin_manager_update(manager->plugin_manager, cmd->library) !=
+            NEU_ERR_SUCCESS) {
+            nlog_warn("update library %s fail", cmd->library);
+            free(cmd->so_file);
+            free(cmd->schema_file);
+            free(so_tmp_path);
+            free(schema_tmp_path);
+            header->type = NEU_RESP_ERROR;
+            e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
             strcpy(header->receiver, header->sender);
             reply(manager, header, &e);
             break;

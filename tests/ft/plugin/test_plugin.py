@@ -228,6 +228,24 @@ class TestPlugin:
         assert 400 == response.status_code
         assert NEU_ERR_BODY_IS_WRONG == response.json().get("error")
 
+    @description(given="incorrect configuration", when="update plugin", then="success")
+    def test_09_update_plugin_success0(self):
+        test_data = TestPlugin.test_data
+        plugin_data = {}
+        plugin_data['library'] = test_data['library_c1']
+        plugin_data['so_file'] = test_data['so_file_c1_2']
+        plugin_data['schema_file'] = test_data['schema_file']
+
+        response = api.updata_plugin(
+            library_name=plugin_data['library'], so_file=plugin_data['so_file'], schema_file=plugin_data['schema_file'])
+        assert 200 == response.status_code
+        assert NEU_ERR_SUCCESS == response.json().get("error")
+        response = api.get_plugins()
+        assert 200 == response.status_code
+        for plugin in response.json().get("plugins"):
+            if plugin['name'] == 'c1':
+                assert plugin['version'] == '2.7.99'
+
     @description(given="incorrect configuration", when="update plugin", then="fail")
     def test_10_update_plugin_fail3(self):
         test_data = TestPlugin.test_data
