@@ -664,16 +664,13 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     UT_icd    icd  = { sizeof(neu_plugin_tag_value_t), NULL, NULL, NULL };
     utarray_new(tags, &icd);
     for (int i = 0; i < cmd->n_tag; i++) {
-        neu_plugin_tag_value_t tv = { 0 };
-
         neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tags[i].tag);
         if (tag != NULL && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
             neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false) {
-            tv.tag = neu_tag_dup(tag);
-
             if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
                 if (cmd->tags[i].value.type == NEU_TYPE_INT64) {
-                    tv.value.d64 = (double) tv.value.i64;
+                    cmd->tags[i].value.value.d64 =
+                        (double) cmd->tags[i].value.value.i64;
                 }
             }
             if (tag->decimal != 0) {
@@ -682,7 +679,10 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
             }
             fix_value(tag, cmd->tags[i].value.type, &cmd->tags[i].value);
 
-            tv.value = cmd->tags[i].value.value;
+            neu_plugin_tag_value_t tv = {
+                .tag   = neu_tag_dup(tag),
+                .value = cmd->tags[i].value.value,
+            };
             utarray_push_back(tags, &tv);
         }
         if (tag != NULL) {
@@ -749,20 +749,16 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
         group_t *g = find_group(driver, cmd->groups[i].group);
 
         for (int k = 0; k < cmd->groups[i].n_tag; k++) {
-            neu_plugin_tag_value_t tv = { 0 };
-
             neu_datatag_t *tag =
                 neu_group_find_tag(g->group, cmd->groups[i].tags[k].tag);
-
             if (tag != NULL &&
                 neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
                 neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false) {
-                tv.tag = neu_tag_dup(tag);
-
                 if (tag->type == NEU_TYPE_FLOAT ||
                     tag->type == NEU_TYPE_DOUBLE) {
                     if (cmd->groups[i].tags[k].value.type == NEU_TYPE_INT64) {
-                        tv.value.d64 = (double) tv.value.u64;
+                        cmd->groups[i].tags[k].value.value.d64 =
+                            (double) cmd->groups[i].tags[k].value.value.i64;
                     }
                 }
                 if (tag->decimal != 0) {
@@ -773,7 +769,10 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                 fix_value(tag, cmd->groups[i].tags[k].value.type,
                           &cmd->groups[i].tags[k].value);
 
-                tv.value = cmd->groups[i].tags[k].value.value;
+                neu_plugin_tag_value_t tv = {
+                    tv.tag   = neu_tag_dup(tag),
+                    tv.value = cmd->groups[i].tags[k].value.value,
+                };
                 utarray_push_back(tags, &tv);
             }
             if (tag != NULL) {
