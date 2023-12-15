@@ -134,10 +134,9 @@ static int ekuiper_plugin_uninit(neu_plugin_t *plugin)
     return rv;
 }
 
-static int ekuiper_plugin_start(neu_plugin_t *plugin)
+static inline int start(neu_plugin_t *plugin, const char *url)
 {
-    int   rv  = 0;
-    char *url = plugin->url ? plugin->url : EKUIPER_PLUGIN_URL; // default url
+    int rv = 0;
 
     rv = nng_pair0_open(&plugin->sock);
     if (rv != 0) {
@@ -164,15 +163,33 @@ static int ekuiper_plugin_start(neu_plugin_t *plugin)
     }
 
     nng_recv_aio(plugin->sock, plugin->recv_aio);
+    return NEU_ERR_SUCCESS;
+}
+
+static int ekuiper_plugin_start(neu_plugin_t *plugin)
+{
+    int   rv  = 0;
+    char *url = plugin->url ? plugin->url : EKUIPER_PLUGIN_URL; // default url
+
+    rv = start(plugin, url);
+    if (rv != 0) {
+        return rv;
+    }
+
     plugin->started = true;
     plog_notice(plugin, "start successfully");
 
     return NEU_ERR_SUCCESS;
 }
 
-static int ekuiper_plugin_stop(neu_plugin_t *plugin)
+static inline void stop(neu_plugin_t *plugin)
 {
     nng_close(plugin->sock);
+}
+
+static int ekuiper_plugin_stop(neu_plugin_t *plugin)
+{
+    stop(plugin);
     plugin->started = false;
     plog_notice(plugin, "stop successfully");
     return NEU_ERR_SUCCESS;
@@ -221,41 +238,6 @@ error:
     return -1;
 }
 
-static inline int check_url_listenable(neu_plugin_t *plugin, const char *url,
-                                       const char *host, uint16_t port)
-{
-    if (NULL != plugin->host &&                  // already configured and
-        port == plugin->port &&                  // port is the same, then if
-        (0 == strcmp(plugin->host, host)         // 1. host is the same
-         || 0 == strcmp("0.0.0.0", host)         // 2. to bind to any address
-         || 0 == strcmp("0.0.0.0", plugin->host) // 3. bound to any address
-         )) {
-        // early return, no need check url is listenable
-        return 0;
-    }
-
-    nng_socket sock = NNG_SOCKET_INITIALIZER;
-    int        rv   = nng_pair0_open(&sock);
-    if (0 != rv) {
-        plog_error(plugin, "nng_pair0_open: %s", nng_strerror(rv));
-        return NEU_ERR_EINTERNAL;
-    }
-
-    if (0 != (rv = nng_listen(sock, url, NULL, 0))) {
-        plog_error(plugin, "nng_listen: %s", nng_strerror(rv));
-        if (NNG_EADDRINVAL == rv) {
-            rv = NEU_ERR_IP_ADDRESS_INVALID;
-        } else if (NNG_EADDRINUSE == rv) {
-            rv = NEU_ERR_IP_ADDRESS_IN_USE;
-        } else {
-            rv = NEU_ERR_EINTERNAL;
-        }
-    }
-
-    nng_close(sock);
-    return rv;
-}
-
 static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *setting)
 {
     int      rv   = 0;
@@ -275,23 +257,31 @@ static int ekuiper_plugin_config(neu_plugin_t *plugin, const char *setting)
         goto error;
     }
 
-    if (0 != (rv = check_url_listenable(plugin, url, host, port))) {
+    if (plugin->started) {
+        stop(plugin);
+    }
+
+    // check we could start the plugin with the new setting
+    if (0 != (rv = start(plugin, url))) {
+        // recover with old setting
+        if (plugin->started && 0 != start(plugin, plugin->url)) {
+            plog_warn(plugin, "restart host:%s port:%" PRIu16 " fail",
+                      plugin->host, plugin->port);
+        }
         goto error;
+    }
+
+    if (!plugin->started) {
+        stop(plugin);
     }
 
     plog_notice(plugin, "config success");
 
     free(plugin->host);
+    free(plugin->url);
     plugin->host = host;
     plugin->port = port;
-    free(plugin->url);
-    plugin->url = url;
-
-    if (plugin->started) {
-        // restart service
-        ekuiper_plugin_stop(plugin);
-        ekuiper_plugin_start(plugin);
-    }
+    plugin->url  = url;
 
     return rv;
 
@@ -332,6 +322,9 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
         } else {
             send_data(plugin, trans_data);
         }
+        break;
+    }
+    case NEU_REQRESP_NODE_DELETED: {
         break;
     }
     case NEU_REQ_UPDATE_NODE: {
