@@ -11,6 +11,10 @@ function gen_trace () {
 }
 
 case $1 in
+    (ekuiper)
+        lcov -c -d build/plugins/ekuiper/CMakeFiles/plugin-ekuiper.dir -o cov_report/cov-ekuiper.info
+        cd cov_report
+        gen_trace -a cov-ekuiper.info -o cov-ekuiper.info;;
     (modbus)
         lcov -c -d build/plugins/modbus/CMakeFiles/plugin-modbus-rtu.dir -o cov_report/cov-modbus-rtu.info
         lcov -c -d build/plugins/modbus/CMakeFiles/plugin-modbus-tcp.dir -o cov_report/cov-modbus-tcp.info
