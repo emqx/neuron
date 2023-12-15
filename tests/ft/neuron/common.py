@@ -49,4 +49,4 @@ def class_setup_and_teardown():
 def case_time():
     start = time.time()
     yield
-    print(' Time cost: {:.3f}s'.format(time.time() - start), end='')
+    print(' Time cost: {:.3f}s'.format(time.time() - start))
