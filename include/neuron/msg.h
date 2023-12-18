@@ -126,15 +126,6 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_NODES_STATE,
     NEU_REQRESP_NODE_DELETED,
 
-    NEU_REQ_ADD_NDRIVER_MAP,
-    NEU_REQ_DEL_NDRIVER_MAP,
-    NEU_REQ_GET_NDRIVER_MAPS,
-    NEU_RESP_GET_NDRIVER_MAPS,
-    NEU_REQ_UPDATE_NDRIVER_TAG_PARAM,
-    NEU_REQ_UPDATE_NDRIVER_TAG_INFO,
-    NEU_REQ_GET_NDRIVER_TAGS,
-    NEU_RESP_GET_NDRIVER_TAGS,
-
     NEU_REQ_UPDATE_LOG_LEVEL,
 
 } neu_reqresp_type_e;
@@ -225,15 +216,6 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
     [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
-
-    [NEU_REQ_ADD_NDRIVER_MAP]          = "NEU_REQ_ADD_NDRIVER_MAP",
-    [NEU_REQ_DEL_NDRIVER_MAP]          = "NEU_REQ_DEL_NDRIVER_MAP",
-    [NEU_REQ_GET_NDRIVER_MAPS]         = "NEU_REQ_GET_NDRIVER_MAPS",
-    [NEU_RESP_GET_NDRIVER_MAPS]        = "NEU_RESP_GET_NDRIVER_MAPS",
-    [NEU_REQ_UPDATE_NDRIVER_TAG_PARAM] = "NEU_REQ_UPDATE_NDRIVER_TAG_PARAM",
-    [NEU_REQ_UPDATE_NDRIVER_TAG_INFO]  = "NEU_REQ_UPDATE_NDRIVER_TAG_INFO",
-    [NEU_REQ_GET_NDRIVER_TAGS]         = "NEU_REQ_GET_NDRIVER_TAGS",
-    [NEU_RESP_GET_NDRIVER_TAGS]        = "NEU_RESP_GET_NDRIVER_TAGS",
 
     [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
 };
@@ -1020,92 +1002,6 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
 typedef struct {
     char node[NEU_NODE_NAME_LEN];
 } neu_reqresp_node_deleted_t;
-
-typedef struct {
-    char ndriver[NEU_NODE_NAME_LEN];
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
-} neu_req_ndriver_map_t;
-
-typedef struct {
-    char ndriver[NEU_NODE_NAME_LEN];
-} neu_req_get_ndriver_maps_t;
-
-typedef struct {
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
-} neu_resp_ndriver_map_info_t;
-
-typedef struct {
-    UT_array *groups; // array of neu_resp_ndriver_map_info_t
-} neu_resp_get_ndriver_maps_t;
-
-typedef struct {
-    char *name;
-    char *params;
-} neu_req_ndriver_tag_param_t;
-
-static inline void
-neu_req_ndriver_tag_param_fini(neu_req_ndriver_tag_param_t *p)
-{
-    free(p->name);
-    free(p->params);
-}
-
-typedef struct {
-    char                         ndriver[NEU_NODE_NAME_LEN];
-    char                         driver[NEU_NODE_NAME_LEN];
-    char                         group[NEU_GROUP_NAME_LEN];
-    uint16_t                     n_tag;
-    neu_req_ndriver_tag_param_t *tags;
-} neu_req_update_ndriver_tag_param_t;
-
-static inline void
-neu_req_update_ndriver_tag_param_fini(neu_req_update_ndriver_tag_param_t *p)
-{
-    for (uint16_t i = 0; i < p->n_tag; ++i) {
-        neu_req_ndriver_tag_param_fini(&p->tags[i]);
-    }
-    free(p->tags);
-}
-
-typedef struct {
-    char *name;
-    char *address;
-} neu_req_ndriver_tag_info_t;
-
-static inline void neu_req_ndriver_tag_info_fini(neu_req_ndriver_tag_info_t *p)
-{
-    free(p->name);
-    free(p->address);
-}
-
-typedef struct {
-    char                        ndriver[NEU_NODE_NAME_LEN];
-    char                        driver[NEU_NODE_NAME_LEN];
-    char                        group[NEU_GROUP_NAME_LEN];
-    uint16_t                    n_tag;
-    neu_req_ndriver_tag_info_t *tags;
-} neu_req_update_ndriver_tag_info_t;
-
-static inline void
-neu_req_update_ndriver_tag_info_fini(neu_req_update_ndriver_tag_info_t *p)
-{
-    for (uint16_t i = 0; i < p->n_tag; ++i) {
-        neu_req_ndriver_tag_info_fini(&p->tags[i]);
-    }
-    free(p->tags);
-}
-
-typedef struct {
-    char ndriver[NEU_NODE_NAME_LEN];
-    char driver[NEU_NODE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
-} neu_req_get_ndriver_tags_t;
-
-typedef struct {
-    UT_array *tags; // array of neu_ndriver_tag_t
-} neu_resp_get_ndriver_tags_t;
 
 typedef struct neu_req_update_log_level {
     char node[NEU_NODE_NAME_LEN];

@@ -812,46 +812,6 @@ UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
     return subs;
 }
 
-int neu_manager_add_ndriver_map(neu_manager_t *manager, const char *ndriver,
-                                const char *driver, const char *group)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, ndriver);
-
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    }
-
-    if (NEU_NA_TYPE_NDRIVER != neu_adapter_get_type(adapter)) {
-        return NEU_ERR_NODE_NOT_ALLOW_MAP;
-    }
-
-    return manager_subscribe(manager, ndriver, driver, group, NULL);
-}
-
-int neu_manager_del_ndriver_map(neu_manager_t *manager, const char *ndriver,
-                                const char *driver, const char *group)
-{
-    return neu_manager_unsubscribe(manager, ndriver, driver, group);
-}
-
-int neu_manager_get_ndriver_maps(neu_manager_t *manager, const char *ndriver,
-                                 UT_array **result)
-{
-    neu_adapter_t *adapter =
-        neu_node_manager_find(manager->node_manager, ndriver);
-
-    if (adapter == NULL) {
-        return NEU_ERR_NODE_NOT_EXIST;
-    } else if (NEU_NA_TYPE_NDRIVER != neu_adapter_get_type(adapter)) {
-        return NEU_ERR_NODE_NOT_ALLOW_MAP;
-    }
-
-    *result = neu_subscribe_manager_get_ndriver_maps(manager->subscribe_manager,
-                                                     ndriver);
-    return 0;
-}
-
 int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
                               neu_persist_node_info_t *info)
 {

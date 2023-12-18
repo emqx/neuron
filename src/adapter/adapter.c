@@ -121,7 +121,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     case NEU_NA_TYPE_DRIVER:
         adapter = (neu_adapter_t *) neu_adapter_driver_create();
         break;
-    case NEU_NA_TYPE_NDRIVER:
     case NEU_NA_TYPE_APP:
         adapter = calloc(1, sizeof(neu_adapter_t));
         break;
@@ -171,7 +170,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         }
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
         break;
-    case NEU_NA_TYPE_NDRIVER:
     case NEU_NA_TYPE_APP: {
         while (true) {
             uint16_t           port  = neu_manager_get_port();
@@ -500,13 +498,6 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->node);
         break;
     }
-    case NEU_REQ_UPDATE_NDRIVER_TAG_PARAM:
-    case NEU_REQ_UPDATE_NDRIVER_TAG_INFO:
-    case NEU_REQ_GET_NDRIVER_TAGS: {
-        neu_req_get_ndriver_tags_t *cmd = (neu_req_get_ndriver_tags_t *) data;
-        strcpy(pheader->receiver, cmd->ndriver);
-        break;
-    }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
         neu_req_update_log_level_t *cmd = (neu_req_update_log_level_t *) data;
         strcpy(pheader->receiver, cmd->node);
@@ -683,8 +674,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_PLUGIN:
     case NEU_RESP_GET_TEMPLATE:
     case NEU_RESP_GET_TEMPLATES:
-    case NEU_RESP_GET_NDRIVER_MAPS:
-    case NEU_RESP_GET_NDRIVER_TAGS:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
     case NEU_REQRESP_NODES_STATE:
@@ -1126,70 +1115,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         } else {
             nlog_notice("%s send uninit msg to %s failed", name, receiver);
         }
-        break;
-    }
-    case NEU_REQ_ADD_NDRIVER_MAP: {
-        neu_msg_free(msg);
-        break;
-    }
-    case NEU_REQ_DEL_NDRIVER_MAP: {
-        neu_msg_free(msg);
-        break;
-    }
-    case NEU_REQ_UPDATE_NDRIVER_TAG_PARAM: {
-        neu_req_update_ndriver_tag_param_t *cmd =
-            (neu_req_update_ndriver_tag_param_t *) &header[1];
-        neu_resp_update_tag_t resp = { 0 };
-
-        for (uint16_t i = 0; i < cmd->n_tag; i++) {
-            // TODO
-            resp.index += 1;
-        }
-
-        neu_req_update_ndriver_tag_param_fini(cmd);
-
-        neu_msg_exchange(header);
-        header->type = NEU_RESP_UPDATE_TAG;
-        reply(adapter, header, &resp);
-        break;
-    }
-    case NEU_REQ_UPDATE_NDRIVER_TAG_INFO: {
-        neu_req_update_ndriver_tag_info_t *cmd =
-            (neu_req_update_ndriver_tag_info_t *) &header[1];
-        neu_resp_update_tag_t resp = { 0 };
-
-        for (uint16_t i = 0; i < cmd->n_tag; i++) {
-            // TODO
-            resp.index += 1;
-        }
-
-        neu_req_update_ndriver_tag_info_fini(cmd);
-
-        neu_msg_exchange(header);
-        header->type = NEU_RESP_UPDATE_TAG;
-        reply(adapter, header, &resp);
-        break;
-    }
-    case NEU_REQ_GET_NDRIVER_TAGS: {
-        neu_req_get_ndriver_tags_t *cmd =
-            (neu_req_get_ndriver_tags_t *) &header[1];
-        neu_resp_error_t error = { .error = 0 };
-        UT_array *       tags  = NULL;
-
-        // TODO
-        (void) cmd;
-        utarray_new(tags, neu_ndriver_tag_get_icd());
-
-        neu_msg_exchange(header);
-        if (error.error != NEU_ERR_SUCCESS) {
-            header->type = NEU_RESP_ERROR;
-            reply(adapter, header, &error);
-        } else {
-            neu_resp_get_tag_t resp = { .tags = tags };
-            header->type            = NEU_RESP_GET_NDRIVER_TAGS;
-            reply(adapter, header, &resp);
-        }
-
         break;
     }
     case NEU_REQ_UPDATE_LOG_LEVEL: {

@@ -72,9 +72,8 @@ typedef enum neu_plugin_kind {
 } neu_plugin_kind_e;
 
 typedef enum {
-    NEU_NA_TYPE_DRIVER  = 1,
-    NEU_NA_TYPE_APP     = 2,
-    NEU_NA_TYPE_NDRIVER = 4,
+    NEU_NA_TYPE_DRIVER = 1,
+    NEU_NA_TYPE_APP    = 2,
 } neu_adapter_type_e,
     neu_node_type_e;
 

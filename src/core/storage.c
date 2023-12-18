@@ -104,20 +104,6 @@ void manager_storage_unsubscribe(neu_manager_t *manager, const char *app,
     }
 }
 
-void manager_storage_add_ndriver_map(neu_manager_t *manager,
-                                     const char *ndriver, const char *driver,
-                                     const char *group)
-{
-    return manager_storage_subscribe(manager, ndriver, driver, group, NULL);
-}
-
-void manager_storage_del_ndriver_map(neu_manager_t *manager,
-                                     const char *ndriver, const char *driver,
-                                     const char *group)
-{
-    return manager_storage_unsubscribe(manager, ndriver, driver, group);
-}
-
 static int save_node_group_and_tags(neu_group_t *grp, void *data)
 {
     const char *node     = data;
@@ -391,8 +377,8 @@ int manager_load_node(neu_manager_t *manager)
 
 int manager_load_subscribe(neu_manager_t *manager)
 {
-    UT_array *nodes = neu_node_manager_get(
-        manager->node_manager, NEU_NA_TYPE_APP | NEU_NA_TYPE_NDRIVER);
+    UT_array *nodes =
+        neu_node_manager_get(manager->node_manager, NEU_NA_TYPE_APP);
 
     utarray_foreach(nodes, neu_resp_node_info_t *, node)
     {

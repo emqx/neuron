@@ -1243,7 +1243,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_WRITE_TAGS:
     case NEU_REQ_WRITE_GTAGS:
     case NEU_REQ_GET_TAG:
-    case NEU_REQ_GET_NDRIVER_TAGS:
     case NEU_REQ_NODE_CTL:
     case NEU_REQ_ADD_GROUP: {
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
@@ -1460,7 +1459,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_UPDATE_TEMPLATE_TAG:
     case NEU_RESP_GET_TAG:
     case NEU_RESP_GET_TEMPLATE_TAG:
-    case NEU_RESP_GET_NDRIVER_TAGS:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_RESP_ERROR:
@@ -1481,82 +1479,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         resp->core_level = manager->log_level;
 
         forward_msg(manager, header, header->receiver);
-        break;
-    }
-    case NEU_REQ_ADD_NDRIVER_MAP: {
-        neu_req_ndriver_map_t *cmd   = (neu_req_ndriver_map_t *) &header[1];
-        neu_resp_error_t       error = { 0 };
-
-        error.error = neu_manager_add_ndriver_map(manager, cmd->ndriver,
-                                                  cmd->driver, cmd->group);
-        if (error.error == NEU_ERR_SUCCESS) {
-            forward_msg_copy(manager, header, cmd->ndriver);
-            manager_storage_add_ndriver_map(manager, cmd->ndriver, cmd->driver,
-                                            cmd->group);
-        }
-
-        header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &error);
-        break;
-    }
-    case NEU_REQ_DEL_NDRIVER_MAP: {
-        neu_req_ndriver_map_t *cmd   = (neu_req_ndriver_map_t *) &header[1];
-        neu_resp_error_t       error = { 0 };
-
-        error.error = neu_manager_del_ndriver_map(manager, cmd->ndriver,
-                                                  cmd->driver, cmd->group);
-        if (error.error == NEU_ERR_SUCCESS) {
-            forward_msg_copy(manager, header, cmd->ndriver);
-            manager_storage_del_ndriver_map(manager, cmd->ndriver, cmd->driver,
-                                            cmd->group);
-        }
-
-        header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &error);
-        break;
-    }
-    case NEU_REQ_GET_NDRIVER_MAPS: {
-        neu_req_get_ndriver_maps_t *cmd =
-            (neu_req_get_ndriver_maps_t *) &header[1];
-        neu_resp_error_t            e    = { 0 };
-        neu_resp_get_ndriver_maps_t resp = { 0 };
-
-        e.error =
-            neu_manager_get_ndriver_maps(manager, cmd->ndriver, &resp.groups);
-
-        strcpy(header->receiver, header->sender);
-        if (0 == e.error) {
-            header->type = NEU_RESP_GET_NDRIVER_MAPS;
-            reply(manager, header, &resp);
-        } else {
-            header->type = NEU_RESP_ERROR;
-            reply(manager, header, &e);
-        }
-
-        break;
-    }
-    case NEU_REQ_UPDATE_NDRIVER_TAG_PARAM:
-    case NEU_REQ_UPDATE_NDRIVER_TAG_INFO: {
-        if (NULL !=
-            neu_node_manager_find(manager->node_manager, header->receiver)) {
-            forward_msg(manager, header, header->receiver);
-            break;
-        }
-
-        neu_resp_error_t e = { .error = NEU_ERR_NODE_NOT_EXIST };
-        header->type       = NEU_RESP_ERROR;
-        neu_msg_exchange(header);
-        reply(manager, header, &e);
-
-        if (NEU_REQ_UPDATE_NDRIVER_TAG_PARAM == header->type) {
-            neu_req_update_ndriver_tag_param_fini(
-                (neu_req_update_ndriver_tag_param_t *) &header[1]);
-        } else {
-            neu_req_update_ndriver_tag_info_fini(
-                (neu_req_update_ndriver_tag_info_t *) &header[1]);
-        }
         break;
     }
     case NEU_REQ_UPDATE_LOG_LEVEL: {
