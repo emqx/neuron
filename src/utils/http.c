@@ -341,6 +341,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_PLUGIN_NAME_TOO_LONG:
     case NEU_ERR_PLUGIN_NOT_SUPPORT_TEMPLATE:
     case NEU_ERR_LIBRARY_ADD_FAIL:
+    case NEU_ERR_LIBRARY_UPDATE_FAIL:
     case NEU_ERR_LIBRARY_MODULE_NOT_EXISTS:
     case NEU_ERR_LIBRARY_MODULE_KIND_NOT_SUPPORT:
     case NEU_ERR_LIBRARY_MODULE_VERSION_NOT_MATCH:
