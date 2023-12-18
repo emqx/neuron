@@ -382,27 +382,27 @@ class TestModbus:
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BYTES}]
 
         response = api.add_tags(node=param[0], group='group', tags=wrong_tag1)
-        assert 200 == response.status_code
+        assert 400 == response.status_code
         assert error.NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT == response.json()[
             'error']
 
         response = api.add_tags(node=param[0], group='group', tags=wrong_tag2)
-        assert 200 == response.status_code
+        assert 400 == response.status_code
         assert error.NEU_ERR_TAG_TYPE_NOT_SUPPORT == response.json()[
             'error']
 
         response = api.add_tags(node=param[0], group='group', tags=wrong_tag3)
-        assert 200 == response.status_code
+        assert 400 == response.status_code
         assert error.NEU_ERR_TAG_ADDRESS_FORMAT_INVALID == response.json()[
             'error']
 
         response = api.add_tags(node=param[0], group='group', tags=wrong_tag4)
-        assert 200 == response.status_code
+        assert 400 == response.status_code
         assert error.NEU_ERR_TAG_ADDRESS_FORMAT_INVALID == response.json()[
             'error']
 
         response = api.add_tags(node=param[0], group='group', tags=wrong_tag5)
-        assert 200 == response.status_code
+        assert 400 == response.status_code
         assert error.NEU_ERR_TAG_ADDRESS_FORMAT_INVALID == response.json()[
             'error']
 
@@ -571,7 +571,7 @@ class TestModbus:
         up_tag[0]['type'] = config.NEU_TYPE_BIT
         response = api.update_tags(
             node=param[0], group='group', tags=up_tag)
-        assert 200 == response.status_code
+        assert 400 == response.status_code
         assert error.NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT == response.json()[
             'error']
 

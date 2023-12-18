@@ -348,6 +348,13 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LIBRARY_NAME_NOT_CONFORM:
     case NEU_ERR_LIBRARY_CLIB_NOT_MATCH:
     case NEU_ERR_LIBRARY_ARCH_NOT_SUPPORT:
+    case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
+    case NEU_ERR_TAG_TYPE_NOT_SUPPORT:
+    case NEU_ERR_TAG_ADDRESS_FORMAT_INVALID:
+    case NEU_ERR_TAG_DESCRIPTION_TOO_LONG:
+    case NEU_ERR_TAG_PRECISION_INVALID:
+    case NEU_ERR_TAG_NAME_TOO_LONG:
+    case NEU_ERR_TAG_ADDRESS_TOO_LONG:
         status = NNG_HTTP_STATUS_BAD_REQUEST;
         break;
     case NEU_ERR_FILE_NOT_EXIST:
@@ -382,15 +389,6 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_LIBRARY_IN_USE:
     case NEU_ERR_LIBRARY_SYSTEM_NOT_ALLOW_DEL:
         status = NNG_HTTP_STATUS_CONFLICT;
-        break;
-    case NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT:
-    case NEU_ERR_TAG_TYPE_NOT_SUPPORT:
-    case NEU_ERR_TAG_ADDRESS_FORMAT_INVALID:
-    case NEU_ERR_TAG_DESCRIPTION_TOO_LONG:
-    case NEU_ERR_TAG_PRECISION_INVALID:
-    case NEU_ERR_TAG_NAME_TOO_LONG:
-    case NEU_ERR_TAG_ADDRESS_TOO_LONG:
-        status = NNG_HTTP_STATUS_PARTIAL_CONTENT;
         break;
     default:
         if (code >= NEU_ERR_PLUGIN_ERROR_START &&

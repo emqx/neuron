@@ -279,7 +279,7 @@ class TestLog:
             ]
         )
 
-        assert 200 == response.status_code
+        assert 400 == response.status_code
         assert NEU_ERR_TAG_TYPE_NOT_SUPPORT == response.json()['error']
 
         response = api.get_group()
@@ -342,7 +342,7 @@ class TestLog:
             ]
         )
 
-        assert 200 == response.status_code
+        assert 409 == response.status_code
         assert NEU_ERR_TAG_NAME_CONFLICT == response.json()['error']
 
         response = api.get_group()
