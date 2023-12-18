@@ -326,23 +326,6 @@ def get_plugin():
 def get_version():
     return requests.get(url=config.BASE_URL + "/api/v2/version", headers={"Authorization": config.default_jwt})
 
-def post_ndriver_map(ndriver, driver, group):
-    return requests.post(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group":group})
-
-def delete_ndriver_map(ndriver, driver, group):
-    return requests.delete(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group":group})
-
-def get_ndriver_map(ndriver):
-    return requests.get(url=config.BASE_URL + "/api/v2/ndriver/map?ndriver=" + ndriver, headers={"Authorization": config.default_jwt})
-
-def put_ndriver_tag_param(json):
-    return requests.put(url=config.BASE_URL + "/api/v2/ndriver/tag/param", headers={"Authorization": config.default_jwt}, json=json)
-
-def put_ndriver_tag_info(json):
-    return requests.put(url=config.BASE_URL + "/api/v2/ndriver/tag/info", headers={"Authorization": config.default_jwt}, json=json)
-
-def get_ndriver_tag(ndriver, driver, group):
-    return requests.get(url=config.BASE_URL + "/api/v2/ndriver/tag?ndriver=" + ndriver + "&driver=" + driver + "&group=" + group, headers={"Authorization": config.default_jwt})
 
 # plugin setting
 
