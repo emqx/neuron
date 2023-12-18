@@ -185,7 +185,8 @@ int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
 
     json_obj = neu_json_decode_newb(buf, len);
     if (NULL == json_obj) {
-        goto decode_fail;
+        free(req);
+        return -1;
     }
 
     neu_json_elem_t req_elems[] = {
@@ -208,27 +209,20 @@ int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
     };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
-    if (ret != 0) {
-        goto decode_fail;
-    }
-
     req->node_name  = req_elems[0].v.val_str;
     req->group_name = req_elems[1].v.val_str;
     req->tag_name   = req_elems[2].v.val_str;
     req->t          = req_elems[3].t;
     req->value      = req_elems[3].v;
 
-    *result = req;
-    goto decode_exit;
-
-decode_fail:
-    free(req);
-    ret = -1;
-
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        json_decode_write_req_free(req);
+        ret = -1;
     }
+
+    neu_json_decode_free(json_obj);
     return ret;
 }
 
@@ -243,6 +237,8 @@ void json_decode_write_req_free(json_write_req_t *req)
     free(req->tag_name);
     if (req->t == NEU_JSON_STR) {
         free(req->value.val_str);
+    } else if (req->t == NEU_JSON_BYTES) {
+        free(req->value.val_bytes.bytes);
     }
 
     free(req);
