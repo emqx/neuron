@@ -1289,10 +1289,12 @@ int neu_conn_stream_consume(neu_conn_t *conn, void *context,
                 neu_conn_disconnect(conn);
                 break;
             } else {
+                pthread_mutex_lock(&conn->mtx);
                 conn->offset -= used;
                 memmove(conn->buf, conn->buf + used, conn->offset);
                 neu_protocol_unpack_buf_init(&protocol_buf, conn->buf,
                                              conn->offset);
+                pthread_mutex_unlock(&conn->mtx);
             }
         }
     }
