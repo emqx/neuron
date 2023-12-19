@@ -141,20 +141,4 @@ int neu_tag_set_static_value_json(neu_datatag_t *tag, neu_json_type_e t,
 char *neu_tag_dump_static_value(const neu_datatag_t *tag);
 int   neu_tag_load_static_value(neu_datatag_t *tag, const char *s);
 
-typedef struct {
-    char *          name;
-    char *          address;
-    neu_attribute_e attribute;
-    neu_type_e      type;
-    char *          params;
-} neu_ndriver_tag_t;
-
-UT_icd *neu_ndriver_tag_get_icd();
-
-neu_datatag_t *neu_ndriver_tag_dup(const neu_ndriver_tag_t *tag);
-void           neu_ndriver_tag_copy(neu_ndriver_tag_t *      tag,
-                                    const neu_ndriver_tag_t *other);
-void           neu_ndriver_tag_fini(neu_ndriver_tag_t *tag);
-void           neu_ndriver_tag_free(neu_ndriver_tag_t *tag);
-
 #endif

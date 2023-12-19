@@ -210,37 +210,6 @@ class TestHttp:
         response = api.get_version()
         assert 200 == response.status_code
 
-    @description(given="running neuron", when="test ndriver", then="failed because it is not supported yet")
-    def test_ndriver(self):
-        api.add_node_check(node='modbus', plugin=config.PLUGIN_MODBUS_TCP)
-        api.add_group_check(node='modbus', group='group')
-        api.add_tags_check(node='modbus', group='group', tags=hold_int16)
-        response = api.subscribe_group(app='mqtt', driver='modbus', group='group')
-        assert 200 == response.status_code
-        assert error.NEU_ERR_SUCCESS == response.json()['error']
-
-        response = api.post_ndriver_map(ndriver='mqtt', driver='modbus', group='group')
-        assert 400 == response.status_code
-
-        response = api.get_ndriver_map(ndriver='mqtt')
-        assert 400 == response.status_code
-
-        ndriver_tag_param = {"ndriver": "mqtt", "driver": "modbus", "group": "group", "tags": [
-            {"name": "hold_int16", "params": {"address": "1!400002"}}]}
-        response = api.put_ndriver_tag_param(json=ndriver_tag_param)
-        assert 200 == response.status_code     
-
-        ndriver_tag_info = {"ndriver": "mqtt", "driver": "modbus", "group": "group", "tags": [
-            {"name": "hold_int16", "address": "1!400002"}]}
-        response = api.put_ndriver_tag_info(json=ndriver_tag_info)
-        assert 200 == response.status_code
-
-        response = api.get_ndriver_tag(ndriver='mqtt', driver='modbus', group='group')
-        assert 200 == response.status_code     
-
-        response = api.delete_ndriver_map(ndriver='mqtt', driver='modbus', group='group')
-        assert 200 == response.status_code
-
     @description(given="running neuron", when="test jwt error", then="failed")
     def test_jwt_err(self):
         response = api.change_password(new_password='123456', jwt='invalid')

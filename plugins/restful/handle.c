@@ -30,7 +30,6 @@
 #include "group_config_handle.h"
 #include "log_handle.h"
 #include "metric_handle.h"
-#include "ndriver_handle.h"
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
@@ -127,18 +126,6 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/template/instances",
-    },
-    {
-        .url = "/api/v2/ndriver/map",
-    },
-    {
-        .url = "/api/v2/ndriver/tag/param",
-    },
-    {
-        .url = "/api/v2/ndriver/tag/info",
-    },
-    {
-        .url = "/api/v2/ndriver/tag",
     },
     {
         .url = "/api/v2/metrics",
@@ -464,42 +451,6 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/template/group",
         .value.handler = handle_get_template_group,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_POST,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/ndriver/map",
-        .value.handler = handle_add_ndriver_map,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_DELETE,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/ndriver/map",
-        .value.handler = handle_del_ndriver_map,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/ndriver/map",
-        .value.handler = handle_get_ndriver_maps,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_PUT,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/ndriver/tag/param",
-        .value.handler = handle_put_ndriver_tag_param,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_PUT,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/ndriver/tag/info",
-        .value.handler = handle_put_ndriver_tag_info,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/ndriver/tag",
-        .value.handler = handle_get_ndriver_tags,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

@@ -366,8 +366,7 @@ void neu_metrics_visist(neu_metrics_cb_t cb, void *data)
             if (NEU_NODE_LINK_STATE_DISCONNECTED == common->link_state) {
                 ++g_metrics_.south_disconnected_nodes;
             }
-        } else if (NEU_NA_TYPE_APP == n->adapter->module->type ||
-                   NEU_NA_TYPE_NDRIVER == n->adapter->module->type) {
+        } else if (NEU_NA_TYPE_APP == n->adapter->module->type) {
             ++g_metrics_.north_nodes;
             if (NEU_NODE_RUNNING_STATE_RUNNING == n->adapter->state) {
                 ++g_metrics_.north_running_nodes;
