@@ -1223,6 +1223,12 @@ int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
                         cmd->groups[group_index].group,
                         cmd->groups[group_index].tags[added_tag_index].name);
                 }
+                for (int groups_count = 0; groups_count < cmd->n_group;
+                     groups_count++) {
+                    neu_adapter_driver_try_del_tag(
+                        (neu_adapter_driver_t *) adapter,
+                        cmd->groups[groups_count].n_tag);
+                }
                 resp->index = 0;
                 resp->error = add_tag_result;
                 return add_tag_result;
