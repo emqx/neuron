@@ -1276,7 +1276,6 @@ int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
                 cmd->groups[group_index].group,
                 &cmd->groups[group_index].tags[tag_index],
                 cmd->groups[group_index].interval);
-
             if (add_tag_result != 0) {
                 for (int added_group_index = 0; added_group_index < group_index;
                      added_group_index++) {
@@ -1297,6 +1296,12 @@ int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
                         (neu_adapter_driver_t *) adapter,
                         cmd->groups[group_index].group,
                         cmd->groups[group_index].tags[added_tag_index].name);
+                }
+                for (int groups_count = 0; groups_count < cmd->n_group;
+                     groups_count++) {
+                    neu_adapter_driver_try_del_tag(
+                        (neu_adapter_driver_t *) adapter,
+                        cmd->groups[groups_count].n_tag);
                 }
                 resp->index = 0;
                 resp->error = add_tag_result;
