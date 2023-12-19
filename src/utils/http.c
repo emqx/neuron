@@ -353,6 +353,7 @@ int neu_http_response(nng_aio *aio, neu_err_code_e code, char *content)
     case NEU_ERR_TAG_PRECISION_INVALID:
     case NEU_ERR_TAG_NAME_TOO_LONG:
     case NEU_ERR_TAG_ADDRESS_TOO_LONG:
+    case NEU_ERR_TAG_VALUE_INVALID:
     case NEU_ERR_LICENSE_MAX_TAGS:
     case NEU_ERR_LICENSE_BAD_CLOCK:
     case NEU_ERR_LICENSE_MODULE_INVALID:
