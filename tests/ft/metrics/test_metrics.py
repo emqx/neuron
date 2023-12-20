@@ -43,11 +43,19 @@ def assert_global_metrics(resp_content, expected_metrics):
             print(f"Incorrect labels for {metric}: {labels_found[metric]} vs {expected_labels}")
             assert labels_found[metric] == set(expected_labels), f"Incorrect labels for {metric}: {labels_found[metric]} vs {expected_labels}"
 
+def get_metric_value(resp_content, metric_name):
+    for family in text_string_to_metric_families(resp_content):
+        for sample in family.samples:
+            if sample.name == metric_name:
+                return sample.value
+    raise ValueError(f"Metric {metric_name} not found")
+
 class TestMetrics:
     @description(given="neuron is started",
                  when="get global metrics and the metrics conform to the Prometheus specification",
                  then="success")
     def test_global_prometheus_specification(self):
+        time.sleep(1)
         resp = api.get_metrics(category="global")
         assert 200 == resp.status_code
 
@@ -73,6 +81,8 @@ class TestMetrics:
         }
 
         assert_global_metrics(resp.content.decode('utf-8'), expected_metrics)
+        uptime_seconds_total = get_metric_value(resp.content.decode('utf-8'), 'uptime_seconds_total')
+        assert 0 < uptime_seconds_total < 1000
 
     @description(given="neuron is started",
                  when="a MQTT node is created and the metrics conform to the Prometheus specification",
