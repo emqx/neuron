@@ -110,6 +110,16 @@ void neu_adapter_set_error(int error)
     create_adapter_error = error;
 }
 
+static inline zlog_category_t *get_log_category(const char *node)
+{
+    char name[NEU_NODE_NAME_LEN] = { 0 };
+    // replace path separators
+    for (int i = 0; node[i]; ++i) {
+        name[i] = ('/' == node[i] || '\\' == node[i]) ? '_' : node[i];
+    }
+    return zlog_get_category(name);
+}
+
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
 {
     int                  rv      = 0;
@@ -208,7 +218,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     common->adapter             = adapter;
     common->adapter_callbacks   = &adapter->cb_funs;
     common->link_state          = NEU_NODE_LINK_STATE_DISCONNECTED;
-    common->log                 = zlog_get_category(adapter->name);
+    common->log                 = get_log_category(adapter->name);
     strcpy(common->name, adapter->name);
 
     zlog_level_switch(common->log, default_log_level);
@@ -279,7 +289,7 @@ int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name)
         return NEU_ERR_EINTERNAL;
     }
 
-    zlog_category_t *log = zlog_get_category(name);
+    zlog_category_t *log = get_log_category(name);
     if (NULL == log) {
         free(name);
         free(old_name);
