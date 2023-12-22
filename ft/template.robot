@@ -96,7 +96,7 @@ Create a template with invalid tag type, it should fail.
     ${groups} =                   Create List           ${group}
 
     ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${groups}
-    Check Response Status         ${res}                206
+    Check Response Status         ${res}                400
     Check Error Code              ${res}                ${NEU_ERR_TAG_TYPE_NOT_SUPPORT}
 
     [Teardown]                    Del Template          ${g_template}
@@ -108,7 +108,7 @@ Create a template with invalid tag address, it should fail.
     ${groups} =                   Create List           ${group}
 
     ${res} =                      Add Template          ${g_template}                 ${g_plugin}           ${groups}
-    Check Response Status         ${res}                206
+    Check Response Status         ${res}                400
     Check Error Code              ${res}                ${NEU_ERR_TAG_ADDRESS_FORMAT_INVALID}
 
     [Teardown]                    Del Template          ${g_template}
@@ -802,7 +802,7 @@ Add tag with too long name to existing template group, it should fail.
 
     &{tag} =                      New Tag From          ${g_tag1}                     name=${g_long_str}
     ${res} =                      Add Template Tags     ${g_template}                 ${g_group1}[name]     ${tag}
-    Check Response Status         ${res}                206
+    Check Response Status         ${res}                400
     Check Error Code              ${res}                ${NEU_ERR_TAG_NAME_TOO_LONG}
 
     [Teardown]                    Del Template          ${g_template}
@@ -1026,7 +1026,7 @@ Update tag name to invalid value, it should fail.
 
     &{tag} =                      New Tag From          ${g_tag1}                     name=${g_long_str}
     ${res} =                      Put Template Tags     ${g_template}                 ${g_group1}[name]     ${tag}
-    Check Response Status         ${res}                206
+    Check Response Status         ${res}                400
     Check Error Code              ${res}                ${NEU_ERR_TAG_NAME_TOO_LONG}
 
     [Teardown]                    Del Template          ${g_template}

@@ -92,7 +92,8 @@ void handle_add_tags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
 
     neu_json_encode_by_fn(&res, neu_json_encode_au_tags_resp, &result);
 
-    neu_http_ok(aio, result);
+    NEU_JSON_RESPONSE_ERROR(resp->error,
+                            { neu_http_response(aio, resp->error, result); });
     free(result);
 }
 
@@ -183,8 +184,8 @@ void handle_add_gtags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
     res.index = resp->index;
 
     neu_json_encode_by_fn(&res, neu_json_encode_au_gtags_resp, &result);
-
-    neu_http_ok(aio, result);
+    NEU_JSON_RESPONSE_ERROR(resp->error,
+                            { neu_http_response(aio, resp->error, result); });
     free(result);
 }
 

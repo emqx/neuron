@@ -59,7 +59,7 @@ Add different types of tags to the group, it should return success
 Add a list of tags with errors, it should return the number of successful additions.
   	${res}=	Add Tags	modbus-node	group	${tag1},${tag2},${tag3},${tag4}
 
-  	Check Response Status           ${res}        200
+  	Check Response Status           ${res}        409
   	Check Error Code                ${res}        ${NEU_ERR_TAG_NAME_CONFLICT}
 	Should Be Equal As Integers	${res}[index]	0
 
@@ -139,7 +139,7 @@ Delete tag from non-existent group, it should return success
 Update non-existent tag, it should return failure.
 	${res}= 	Update Tags  modbus-node  group  ${tag4}
 
-  	Check Response Status           ${res}        200
+  	Check Response Status           ${res}        404
   	Check Error Code                ${res}        ${NEU_ERR_TAG_NOT_EXIST}
 
 	${res}=		Get Tags  modbus-node  group
