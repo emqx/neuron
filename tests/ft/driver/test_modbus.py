@@ -40,21 +40,21 @@ def simulator_setup_teardown(param):
 
 
 hold_bit = [{"name": "hold_bit", "address": "1!400001.15",
-             "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT}]
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
 hold_int16 = [{"name": "hold_int16", "address": "1!400001",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT16}]
 hold_uint16 = [{"name": "hold_uint16", "address": "1!400002",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_UINT16}]
 hold_int32 = [{"name": "hold_int32", "address": "1!400003",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT32}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT32}]
 hold_uint32 = [{"name": "hold_uint32", "address": "1!400015",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT32}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_UINT32}]
 hold_float = [{"name": "hold_float", "address": "1!400017",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_FLOAT}]
 hold_string = [{"name": "hold_string", "address": "1!400020.10",
-                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_STRING}]
 hold_bytes = [{"name": "hold_bytes", "address": "1!400040.10",
-               "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BYTES}]
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_BYTES}]
 
 coil_bit_1 = [{"name": "coil_bit_1", "address": "1!000001",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]

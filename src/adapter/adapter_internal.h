@@ -70,7 +70,6 @@ void neu_adapter_set_error(int error);
 uint16_t neu_adapter_trans_data_port(neu_adapter_t *adapter);
 
 neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load);
-bool neu_adapter_reset(neu_adapter_t *adapter, neu_adapter_info_t *info);
 void neu_adapter_init(neu_adapter_t *adapter, neu_node_running_state_e state);
 
 int neu_adapter_rename(neu_adapter_t *adapter, const char *new_name);
@@ -84,7 +83,6 @@ neu_tag_cache_type_e neu_adapter_get_tag_cache_type(neu_adapter_t *adapter);
 
 int  neu_adapter_uninit(neu_adapter_t *adapter);
 void neu_adapter_destroy(neu_adapter_t *adapter);
-void neu_adapter_handle_close(neu_adapter_t *adapter);
 
 neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,
                                          neu_event_timer_param_t param);
@@ -93,8 +91,6 @@ void neu_adapter_del_timer(neu_adapter_t *adapter, neu_event_timer_t *timer);
 int neu_adapter_set_setting(neu_adapter_t *adapter, const char *config);
 int neu_adapter_get_setting(neu_adapter_t *adapter, char **config);
 neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter);
-
-int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag);
 
 int  neu_adapter_register_group_metric(neu_adapter_t *adapter,
                                        const char *group_name, const char *name,
