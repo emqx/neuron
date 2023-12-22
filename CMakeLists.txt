@@ -123,6 +123,7 @@ set(NEURON_SOURCES
     src/core/node_manager.c
     src/core/template_manager.c
     src/core/storage.c
+    src/adapter/trans_data.c
     src/adapter/storage.c
     src/adapter/adapter.c
     src/adapter/driver/cache.c
