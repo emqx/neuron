@@ -306,18 +306,6 @@ void neu_adapter_driver_destroy(neu_adapter_driver_t *driver)
     neu_driver_cache_destroy(driver->cache);
 }
 
-int neu_adapter_driver_start(neu_adapter_driver_t *driver)
-{
-    (void) driver;
-    return 0;
-}
-
-int neu_adapter_driver_stop(neu_adapter_driver_t *driver)
-{
-    (void) driver;
-    return 0;
-}
-
 int neu_adapter_driver_init(neu_adapter_driver_t *driver)
 {
     (void) driver;

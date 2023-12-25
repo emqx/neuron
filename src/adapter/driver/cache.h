@@ -50,11 +50,6 @@ typedef struct {
     neu_tag_meta_t metas[NEU_TAG_META_SIZE];
 } neu_driver_cache_value_t;
 
-int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
-                         const char *tag, neu_driver_cache_value_t *value);
-int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
-                                 const char *              tag,
-                                 neu_driver_cache_value_t *value);
 int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
                               const char *tag, neu_driver_cache_value_t *value,
                               neu_tag_meta_t *metas, int n_meta);
