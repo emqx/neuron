@@ -239,6 +239,7 @@ neu_event_timer_t *neu_event_add_timer(neu_events_t *          events,
     timer_ctx->event_data->usr_data       = timer.usr_data;
     timer_ctx->event_data->callback.timer = timer.cb;
     timer_ctx->event_data->ctx.timer = events->event_datas[index].ctx.timer;
+    timer_ctx->event_data->index     = index;
 
     timer_ctx->value = value;
     timer_ctx->fd    = timer_fd;
@@ -296,6 +297,7 @@ neu_event_io_t *neu_event_add_io(neu_events_t *events, neu_event_io_param_t io)
     io_ctx->event_data->usr_data    = io.usr_data;
     io_ctx->event_data->callback.io = io.cb;
     io_ctx->event_data->ctx.io      = events->event_datas[index].ctx.io;
+    io_ctx->event_data->index       = index;
 
     io_ctx->fd = io.fd;
 
