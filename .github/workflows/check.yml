@@ -139,7 +139,7 @@ jobs:
           if [ "${{ matrix.plugin }}" = "mqtt" ]; then
             sudo apt-get install -y mosquitto
           fi
-          pip install -U pytest requests prometheus-client gmqtt pynng
+          pip install -U pytest requests prometheus-client gmqtt pynng sniffio
 
       - name: compile
         run: |

@@ -264,16 +264,6 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     }
 }
 
-bool neu_adapter_reset(neu_adapter_t *adapter, neu_adapter_info_t *info)
-{
-    if (adapter->state == NEU_NODE_RUNNING_STATE_RUNNING) {
-        return false;
-    }
-    adapter->module = info->module;
-    adapter->handle = info->handle;
-    return true;
-}
-
 uint16_t neu_adapter_trans_data_port(neu_adapter_t *adapter)
 {
     return adapter->trans_data_port;
@@ -1284,13 +1274,6 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     free(adapter);
 }
 
-void neu_adapter_handle_close(neu_adapter_t *adapter)
-{
-    dlclose(adapter->handle);
-    adapter->handle = NULL;
-    adapter->module = NULL;
-}
-
 int neu_adapter_uninit(neu_adapter_t *adapter)
 {
     if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
@@ -1422,16 +1405,6 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter)
     state.log_level = adapter->log_level;
 
     return state;
-}
-
-int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag)
-{
-    const neu_plugin_intf_funs_t *intf_funs = adapter->module->intf_funs;
-    neu_err_code_e                error     = NEU_ERR_SUCCESS;
-
-    error = intf_funs->driver.validate_tag(adapter->plugin, tag);
-
-    return error;
 }
 
 neu_event_timer_t *neu_adapter_add_timer(neu_adapter_t *         adapter,

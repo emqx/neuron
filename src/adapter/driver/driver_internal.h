@@ -25,8 +25,6 @@
 neu_adapter_driver_t *neu_adapter_driver_create();
 
 void neu_adapter_driver_destroy(neu_adapter_driver_t *driver);
-int  neu_adapter_driver_start(neu_adapter_driver_t *driver);
-int  neu_adapter_driver_stop(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_init(neu_adapter_driver_t *driver);
 int  neu_adapter_driver_uninit(neu_adapter_driver_t *driver);
 
