@@ -39,11 +39,12 @@
 #include "plugin.h"
 #include "storage.h"
 
-static int adapter_trans_data(enum neu_event_io_type type, int fd,
-                              void *usr_data);
-static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
-static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
-                           void *data);
+static void *adapter_consumer(void *arg);
+static int   adapter_trans_data(enum neu_event_io_type type, int fd,
+                                void *usr_data);
+static int   adapter_loop(enum neu_event_io_type type, int fd, void *usr_data);
+static int   adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
+                             void *data);
 static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
 static int adapter_responseto(neu_adapter_t *     adapter,
@@ -108,6 +109,27 @@ int neu_adapter_error()
 void neu_adapter_set_error(int error)
 {
     create_adapter_error = error;
+}
+
+static void *adapter_consumer(void *arg)
+{
+    neu_adapter_t *adapter = (neu_adapter_t *) arg;
+
+    while (1) {
+        neu_msg_t *         msg    = NULL;
+        uint32_t            n      = adapter_msg_q_pop(adapter->msg_q, &msg);
+        neu_reqresp_head_t *header = neu_msg_get_header(msg);
+
+        nlog_debug("adapter(%s) recv msg from: %s %p, type: %s, %u",
+                   adapter->name, header->sender, header->ctx,
+                   neu_reqresp_type_string(header->type), n);
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_trans_data_free((neu_reqresp_trans_data_t *) &header[1]);
+        neu_msg_free(msg);
+    }
+
+    return NULL;
 }
 
 static inline zlog_category_t *get_log_category(const char *node)
@@ -181,6 +203,9 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         neu_adapter_driver_init((neu_adapter_driver_t *) adapter);
         break;
     case NEU_NA_TYPE_APP: {
+        adapter->msg_q = adapter_msg_q_new(adapter->name, 1024);
+        pthread_create(&adapter->consumer_tid, NULL, adapter_consumer,
+                       (void *) adapter);
         while (true) {
             uint16_t           port  = neu_manager_get_port();
             struct sockaddr_in local = {
@@ -596,11 +621,18 @@ static int adapter_trans_data(enum neu_event_io_type type, int fd,
         return 0;
     }
 
+    if (header->type == NEU_REQRESP_TRANS_DATA) {
+        if (adapter_msg_q_push(adapter->msg_q, msg) < 0) {
+            nlog_warn("adapter: %s trans data msg q is full, drop msg",
+                      adapter->name);
+            neu_trans_data_free((neu_reqresp_trans_data_t *) &header[1]);
+            neu_msg_free(msg);
+        }
+        return 0;
+    }
+
     adapter->module->intf_funs->request(
         adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
-    if (header->type == NEU_REQRESP_TRANS_DATA) {
-        neu_trans_data_free((neu_reqresp_trans_data_t *) &header[1]);
-    }
     neu_msg_free(msg);
     return 0;
 }
@@ -1254,6 +1286,13 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
             neu_metrics_unregister_entry(e->name);
         }
         neu_node_metrics_free(adapter->metrics);
+    }
+
+    if (adapter->consumer_tid != 0) {
+        pthread_cancel(adapter->consumer_tid);
+    }
+    if (adapter->msg_q != NULL) {
+        adapter_msg_q_free(adapter->msg_q);
     }
 
     char *setting = NULL;

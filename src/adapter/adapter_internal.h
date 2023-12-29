@@ -26,6 +26,7 @@
 
 #include "adapter_info.h"
 #include "core/manager.h"
+#include "msg_q.h"
 
 struct neu_adapter {
     char *name;
@@ -44,6 +45,9 @@ struct neu_adapter {
 
     int control_fd;
     int trans_data_fd;
+
+    adapter_msg_q_t *msg_q;
+    pthread_t        consumer_tid;
 
     uint16_t trans_data_port;
 
