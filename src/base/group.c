@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
+#include <pthread.h>
 #include <string.h>
 #include <sys/time.h>
 
@@ -38,7 +39,8 @@ struct neu_group {
     tag_elem_t *tags;
     uint32_t    interval;
 
-    int64_t timestamp;
+    int64_t         timestamp;
+    pthread_mutex_t mtx;
 };
 
 static UT_array *to_array(tag_elem_t *tags);
@@ -53,6 +55,7 @@ neu_group_t *neu_group_new(const char *name, uint32_t interval)
 
     group->name     = strdup(name);
     group->interval = interval;
+    pthread_mutex_init(&group->mtx, NULL);
 
     return group;
 }
@@ -61,6 +64,7 @@ void neu_group_destroy(neu_group_t *group)
 {
     tag_elem_t *el = NULL, *tmp = NULL;
 
+    pthread_mutex_lock(&group->mtx);
     HASH_ITER(hh, group->tags, el, tmp)
     {
         HASH_DEL(group->tags, el);
@@ -68,7 +72,9 @@ void neu_group_destroy(neu_group_t *group)
         neu_tag_free(el->tag);
         free(el);
     }
+    pthread_mutex_unlock(&group->mtx);
 
+    pthread_mutex_destroy(&group->mtx);
     free(group->name);
     free(group);
 }
@@ -118,8 +124,10 @@ int neu_group_add_tag(neu_group_t *group, const neu_datatag_t *tag)
 {
     tag_elem_t *el = NULL;
 
+    pthread_mutex_lock(&group->mtx);
     HASH_FIND_STR(group->tags, tag->name, el);
     if (el != NULL) {
+        pthread_mutex_unlock(&group->mtx);
         return NEU_ERR_TAG_NAME_CONFLICT;
     }
 
@@ -129,6 +137,7 @@ int neu_group_add_tag(neu_group_t *group, const neu_datatag_t *tag)
 
     HASH_ADD_STR(group->tags, name, el);
     update_timestamp(group);
+    pthread_mutex_unlock(&group->mtx);
 
     return 0;
 }
@@ -138,6 +147,7 @@ int neu_group_update_tag(neu_group_t *group, const neu_datatag_t *tag)
     tag_elem_t *el  = NULL;
     int         ret = NEU_ERR_TAG_NOT_EXIST;
 
+    pthread_mutex_lock(&group->mtx);
     HASH_FIND_STR(group->tags, tag->name, el);
     if (el != NULL) {
         neu_tag_copy(el->tag, tag);
@@ -145,6 +155,7 @@ int neu_group_update_tag(neu_group_t *group, const neu_datatag_t *tag)
         update_timestamp(group);
         ret = NEU_ERR_SUCCESS;
     }
+    pthread_mutex_unlock(&group->mtx);
 
     return ret;
 }
@@ -154,6 +165,7 @@ int neu_group_del_tag(neu_group_t *group, const char *tag_name)
     tag_elem_t *el  = NULL;
     int         ret = NEU_ERR_TAG_NOT_EXIST;
 
+    pthread_mutex_lock(&group->mtx);
     HASH_FIND_STR(group->tags, tag_name, el);
     if (el != NULL) {
         HASH_DEL(group->tags, el);
@@ -164,15 +176,18 @@ int neu_group_del_tag(neu_group_t *group, const char *tag_name)
         update_timestamp(group);
         ret = NEU_ERR_SUCCESS;
     }
+    pthread_mutex_unlock(&group->mtx);
 
     return ret;
 }
 
-UT_array *neu_group_get_tag(const neu_group_t *group)
+UT_array *neu_group_get_tag(neu_group_t *group)
 {
     UT_array *array = NULL;
 
+    pthread_mutex_lock(&group->mtx);
     array = to_array(group->tags);
+    pthread_mutex_unlock(&group->mtx);
 
     return array;
 }
@@ -182,6 +197,7 @@ UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
     tag_elem_t *el = NULL, *tmp = NULL;
     UT_array *  array = NULL;
 
+    pthread_mutex_lock(&group->mtx);
     utarray_new(array, neu_tag_get_icd());
     HASH_ITER(hh, group->tags, el, tmp)
     {
@@ -189,6 +205,7 @@ UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
             utarray_push_back(array, el->tag);
         }
     }
+    pthread_mutex_unlock(&group->mtx);
 
     return array;
 }
@@ -197,7 +214,9 @@ UT_array *neu_group_get_read_tag(neu_group_t *group)
 {
     UT_array *array = NULL;
 
+    pthread_mutex_lock(&group->mtx);
     array = to_read_array(group->tags);
+    pthread_mutex_unlock(&group->mtx);
 
     return array;
 }
@@ -216,10 +235,12 @@ neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag)
     tag_elem_t *   find   = NULL;
     neu_datatag_t *result = NULL;
 
+    pthread_mutex_lock(&group->mtx);
     HASH_FIND_STR(group->tags, tag, find);
     if (find != NULL) {
         result = neu_tag_dup(find->tag);
     }
+    pthread_mutex_unlock(&group->mtx);
 
     return result;
 }
