@@ -41,6 +41,8 @@ int          neu_group_del_tag(neu_group_t *group, const char *tag_name);
 UT_array *   neu_group_get_tag(neu_group_t *group);
 UT_array *   neu_group_query_tag(neu_group_t *group, const char *name);
 UT_array *   neu_group_get_read_tag(neu_group_t *group);
+UT_array *   neu_group_query_read_tag(neu_group_t *group, const char *name,
+                                      const char *desc);
 uint16_t     neu_group_tag_size(const neu_group_t *group);
 neu_datatag_t *neu_group_find_tag(neu_group_t *group, const char *tag);
 void neu_group_split_static_tags(neu_group_t *group, UT_array **static_tags,
