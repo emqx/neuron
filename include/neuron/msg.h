@@ -576,6 +576,8 @@ typedef struct {
 typedef struct neu_req_read_group {
     char *driver;
     char *group;
+    char *name;
+    char *desc;
     bool  sync;
 } neu_req_read_group_t;
 
@@ -583,6 +585,8 @@ static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
 {
     free(req->driver);
     free(req->group);
+    free(req->name);
+    free(req->desc);
 }
 
 typedef struct neu_req_write_tag {
