@@ -68,15 +68,15 @@ coil_bit_5 = [{"name": "coil_bit_5", "address": "1!000010",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 
 input_bit_1 = [{"name": "input_bit_1", "address": "1!100001",
-                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "description": "bit_1"}]
 input_bit_2 = [{"name": "input_bit_2", "address": "1!100002",
-                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "description": "bit_2"}]
 input_bit_3 = [{"name": "input_bit_3", "address": "1!100003",
-                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "description": "bit_3"}]
 input_bit_4 = [{"name": "input_bit_4", "address": "1!100005",
-                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "description": "bit_4"}]
 input_bit_5 = [{"name": "input_bit_5", "address": "1!100010",
-                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT}]
+                "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT, "description": "bit_5"}]
 
 input_register_bit = [{"name": "input_register_bit", "address": "1!30101.15",
                        "attribute": config.NEU_TAG_ATTRIBUTE_READ, "type": config.NEU_TYPE_BIT}]
@@ -493,6 +493,40 @@ class TestModbus:
             node=param[0], group='group', tag=input_bit_4[0]['name'])
         assert 0 == api.read_tag(
             node=param[0], group='group', tag=input_bit_5[0]['name'])
+
+    @description(given="created modbus node and tags", when="read tags fuzz", then="should return correct result")
+    def test_read_tags_fuzz(self, param):
+        response = api.read_tags(
+            node=param[0], group='group', query={"name": "input_bit"})
+        assert 200 == response.status_code
+        assert 5 == len(response.json()["tags"])
+
+        response = api.read_tags(
+            node=param[0], group='group', query={"name": "input_bit_1"})
+        assert 200 == response.status_code
+        assert 1 == len(response.json()["tags"])
+
+        response = api.read_tags(
+            node=param[0], group='group', query={"description": "bit"})
+        assert 200 == response.status_code
+        assert 5 == len(response.json()["tags"])
+
+        response = api.read_tags(
+            node=param[0], group='group', query={"description": "bit_1"})
+        assert 200 == response.status_code
+        assert 1 == len(response.json()["tags"])
+
+        response = api.read_tags(
+            node=param[0], group='group', query={"name": "input_bit", "description": "bit"})
+        assert 200 == response.status_code
+        assert 5 == len(response.json()["tags"])
+
+        response = api.read_tags(
+            node=param[0], group='group', query={"name": "input_bit_1", "description": "bit_1"})
+        assert 200 == response.status_code
+        assert 1 == len(response.json()["tags"])
+
+
 
     @description(given="created modbus node and tags", when="read tags synchronously", then="read fail")
     def test_read_tags_sync(self, param):

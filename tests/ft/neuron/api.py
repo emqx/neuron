@@ -145,12 +145,15 @@ def get_tags(node, group):
     return requests.get(url=config.BASE_URL + "/api/v2/tags", headers={"Authorization": config.default_jwt}, params={"node": node, "group": group})
 
 
-def read_tags(node, group, sync=False):
-    return requests.post(url=config.BASE_URL + "/api/v2/read", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "sync": sync})
+def read_tags(node, group, sync=False, query=None):
+    body = {"node": node, "group": group, "sync": sync}
+    if query:
+        body["query"] = query
+    return requests.post(url=config.BASE_URL + "/api/v2/read", headers={"Authorization": config.default_jwt}, json=body)
 
 
 def read_tag(node, group, tag, sync=False):
-    response = read_tags(node, group, sync)
+    response = read_tags(node, group, sync, query={"name": tag})
     assert 200 == response.status_code
     x = list(filter(lambda x: x['name'] == tag,
                     response.json()['tags']))
