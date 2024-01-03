@@ -29,84 +29,65 @@ extern "C" {
 
 #include "msg.h"
 
-#define NEU_REQRESP_TYPE_MAP(XX)                                       \
-    XX(NEU_RESP_ERROR, neu_resp_error_t)                               \
-    XX(NEU_REQ_READ_GROUP, neu_req_read_group_t)                       \
-    XX(NEU_RESP_READ_GROUP, neu_resp_read_group_t)                     \
-    XX(NEU_REQ_WRITE_TAG, neu_req_write_tag_t)                         \
-    XX(NEU_REQ_WRITE_TAGS, neu_req_write_tags_t)                       \
-    XX(NEU_REQ_WRITE_GTAGS, neu_req_write_gtags_t)                     \
-    XX(NEU_REQ_SUBSCRIBE_GROUP, neu_req_subscribe_t)                   \
-    XX(NEU_REQ_UNSUBSCRIBE_GROUP, neu_req_unsubscribe_t)               \
-    XX(NEU_REQ_UPDATE_SUBSCRIBE_GROUP, neu_req_subscribe_t)            \
-    XX(NEU_REQ_SUBSCRIBE_GROUPS, neu_req_subscribe_groups_t)           \
-    XX(NEU_REQ_GET_SUBSCRIBE_GROUP, neu_req_get_subscribe_group_t)     \
-    XX(NEU_RESP_GET_SUBSCRIBE_GROUP, neu_resp_get_subscribe_group_t)   \
-    XX(NEU_REQ_GET_SUB_DRIVER_TAGS, neu_req_get_sub_driver_tags_t)     \
-    XX(NEU_RESP_GET_SUB_DRIVER_TAGS, neu_resp_get_sub_driver_tags_t)   \
-    XX(NEU_REQ_NODE_INIT, neu_req_node_init_t)                         \
-    XX(NEU_REQ_NODE_UNINIT, neu_req_node_uninit_t)                     \
-    XX(NEU_RESP_NODE_UNINIT, neu_resp_node_uninit_t)                   \
-    XX(NEU_REQ_ADD_NODE, neu_req_add_node_t)                           \
-    XX(NEU_REQ_UPDATE_NODE, neu_req_update_node_t)                     \
-    XX(NEU_REQ_DEL_NODE, neu_req_del_node_t)                           \
-    XX(NEU_REQ_GET_NODE, neu_req_get_node_t)                           \
-    XX(NEU_RESP_GET_NODE, neu_resp_get_node_t)                         \
-    XX(NEU_REQ_NODE_SETTING, neu_req_node_setting_t)                   \
-    XX(NEU_REQ_GET_NODE_SETTING, neu_req_get_node_setting_t)           \
-    XX(NEU_RESP_GET_NODE_SETTING, neu_resp_get_node_setting_t)         \
-    XX(NEU_REQ_GET_NODE_STATE, neu_req_get_node_state_t)               \
-    XX(NEU_RESP_GET_NODE_STATE, neu_resp_get_node_state_t)             \
-    XX(NEU_REQ_GET_NODES_STATE, neu_req_get_nodes_state_t)             \
-    XX(NEU_RESP_GET_NODES_STATE, neu_resp_get_nodes_state_t)           \
-    XX(NEU_REQ_NODE_CTL, neu_req_node_ctl_t)                           \
-    XX(NEU_REQ_NODE_RENAME, neu_req_node_rename_t)                     \
-    XX(NEU_RESP_NODE_RENAME, neu_resp_node_rename_t)                   \
-    XX(NEU_REQ_ADD_GROUP, neu_req_add_group_t)                         \
-    XX(NEU_REQ_DEL_GROUP, neu_req_del_group_t)                         \
-    XX(NEU_REQ_UPDATE_GROUP, neu_req_update_group_t)                   \
-    XX(NEU_REQ_UPDATE_DRIVER_GROUP, neu_req_update_group_t)            \
-    XX(NEU_RESP_UPDATE_DRIVER_GROUP, neu_resp_update_group_t)          \
-    XX(NEU_REQ_GET_GROUP, neu_req_get_group_t)                         \
-    XX(NEU_RESP_GET_GROUP, neu_resp_get_group_t)                       \
-    XX(NEU_REQ_GET_DRIVER_GROUP, neu_req_get_group_t)                  \
-    XX(NEU_RESP_GET_DRIVER_GROUP, neu_resp_get_driver_group_t)         \
-    XX(NEU_REQ_ADD_TAG, neu_req_add_tag_t)                             \
-    XX(NEU_RESP_ADD_TAG, neu_resp_add_tag_t)                           \
-    XX(NEU_REQ_ADD_GTAG, neu_req_add_gtag_t)                           \
-    XX(NEU_RESP_ADD_GTAG, neu_resp_add_tag_t)                          \
-    XX(NEU_REQ_DEL_TAG, neu_req_del_tag_t)                             \
-    XX(NEU_REQ_UPDATE_TAG, neu_req_update_tag_t)                       \
-    XX(NEU_RESP_UPDATE_TAG, neu_resp_update_tag_t)                     \
-    XX(NEU_REQ_GET_TAG, neu_req_get_tag_t)                             \
-    XX(NEU_RESP_GET_TAG, neu_resp_get_tag_t)                           \
-    XX(NEU_REQ_ADD_PLUGIN, neu_req_add_plugin_t)                       \
-    XX(NEU_REQ_DEL_PLUGIN, neu_req_del_plugin_t)                       \
-    XX(NEU_REQ_UPDATE_PLUGIN, neu_req_update_plugin_t)                 \
-    XX(NEU_REQ_GET_PLUGIN, neu_req_get_plugin_t)                       \
-    XX(NEU_RESP_GET_PLUGIN, neu_resp_get_plugin_t)                     \
-    XX(NEU_REQ_ADD_TEMPLATE, neu_req_add_template_t)                   \
-    XX(NEU_REQ_DEL_TEMPLATE, neu_req_del_template_t)                   \
-    XX(NEU_REQ_GET_TEMPLATE, neu_req_get_template_t)                   \
-    XX(NEU_RESP_GET_TEMPLATE, neu_resp_get_template_t)                 \
-    XX(NEU_REQ_GET_TEMPLATES, neu_req_get_templates_t)                 \
-    XX(NEU_RESP_GET_TEMPLATES, neu_resp_get_templates_t)               \
-    XX(NEU_REQ_ADD_TEMPLATE_GROUP, neu_req_add_template_group_t)       \
-    XX(NEU_REQ_DEL_TEMPLATE_GROUP, neu_req_del_template_group_t)       \
-    XX(NEU_REQ_UPDATE_TEMPLATE_GROUP, neu_req_update_template_group_t) \
-    XX(NEU_REQ_GET_TEMPLATE_GROUP, neu_req_get_template_group_t)       \
-    XX(NEU_REQ_ADD_TEMPLATE_TAG, neu_req_add_template_tag_t)           \
-    XX(NEU_RESP_ADD_TEMPLATE_TAG, neu_resp_add_tag_t)                  \
-    XX(NEU_REQ_DEL_TEMPLATE_TAG, neu_req_del_template_tag_t)           \
-    XX(NEU_REQ_UPDATE_TEMPLATE_TAG, neu_req_update_template_tag_t)     \
-    XX(NEU_RESP_UPDATE_TEMPLATE_TAG, neu_resp_update_tag_t)            \
-    XX(NEU_REQ_GET_TEMPLATE_TAG, neu_req_get_template_tag_t)           \
-    XX(NEU_RESP_GET_TEMPLATE_TAG, neu_resp_get_tag_t)                  \
-    XX(NEU_REQ_INST_TEMPLATE, neu_req_inst_template_t)                 \
-    XX(NEU_REQ_INST_TEMPLATES, neu_req_inst_templates_t)               \
-    XX(NEU_REQRESP_TRANS_DATA, neu_reqresp_trans_data_t)               \
-    XX(NEU_REQRESP_NODES_STATE, neu_reqresp_nodes_state_t)             \
-    XX(NEU_REQRESP_NODE_DELETED, neu_reqresp_node_deleted_t)           \
+#define NEU_REQRESP_TYPE_MAP(XX)                                     \
+    XX(NEU_RESP_ERROR, neu_resp_error_t)                             \
+    XX(NEU_REQ_READ_GROUP, neu_req_read_group_t)                     \
+    XX(NEU_RESP_READ_GROUP, neu_resp_read_group_t)                   \
+    XX(NEU_REQ_WRITE_TAG, neu_req_write_tag_t)                       \
+    XX(NEU_REQ_WRITE_TAGS, neu_req_write_tags_t)                     \
+    XX(NEU_REQ_WRITE_GTAGS, neu_req_write_gtags_t)                   \
+    XX(NEU_REQ_SUBSCRIBE_GROUP, neu_req_subscribe_t)                 \
+    XX(NEU_REQ_UNSUBSCRIBE_GROUP, neu_req_unsubscribe_t)             \
+    XX(NEU_REQ_UPDATE_SUBSCRIBE_GROUP, neu_req_subscribe_t)          \
+    XX(NEU_REQ_SUBSCRIBE_GROUPS, neu_req_subscribe_groups_t)         \
+    XX(NEU_REQ_GET_SUBSCRIBE_GROUP, neu_req_get_subscribe_group_t)   \
+    XX(NEU_RESP_GET_SUBSCRIBE_GROUP, neu_resp_get_subscribe_group_t) \
+    XX(NEU_REQ_GET_SUB_DRIVER_TAGS, neu_req_get_sub_driver_tags_t)   \
+    XX(NEU_RESP_GET_SUB_DRIVER_TAGS, neu_resp_get_sub_driver_tags_t) \
+    XX(NEU_REQ_NODE_INIT, neu_req_node_init_t)                       \
+    XX(NEU_REQ_NODE_UNINIT, neu_req_node_uninit_t)                   \
+    XX(NEU_RESP_NODE_UNINIT, neu_resp_node_uninit_t)                 \
+    XX(NEU_REQ_ADD_NODE, neu_req_add_node_t)                         \
+    XX(NEU_REQ_UPDATE_NODE, neu_req_update_node_t)                   \
+    XX(NEU_REQ_DEL_NODE, neu_req_del_node_t)                         \
+    XX(NEU_REQ_GET_NODE, neu_req_get_node_t)                         \
+    XX(NEU_RESP_GET_NODE, neu_resp_get_node_t)                       \
+    XX(NEU_REQ_NODE_SETTING, neu_req_node_setting_t)                 \
+    XX(NEU_REQ_GET_NODE_SETTING, neu_req_get_node_setting_t)         \
+    XX(NEU_RESP_GET_NODE_SETTING, neu_resp_get_node_setting_t)       \
+    XX(NEU_REQ_GET_NODE_STATE, neu_req_get_node_state_t)             \
+    XX(NEU_RESP_GET_NODE_STATE, neu_resp_get_node_state_t)           \
+    XX(NEU_REQ_GET_NODES_STATE, neu_req_get_nodes_state_t)           \
+    XX(NEU_RESP_GET_NODES_STATE, neu_resp_get_nodes_state_t)         \
+    XX(NEU_REQ_NODE_CTL, neu_req_node_ctl_t)                         \
+    XX(NEU_REQ_NODE_RENAME, neu_req_node_rename_t)                   \
+    XX(NEU_RESP_NODE_RENAME, neu_resp_node_rename_t)                 \
+    XX(NEU_REQ_ADD_GROUP, neu_req_add_group_t)                       \
+    XX(NEU_REQ_DEL_GROUP, neu_req_del_group_t)                       \
+    XX(NEU_REQ_UPDATE_GROUP, neu_req_update_group_t)                 \
+    XX(NEU_REQ_UPDATE_DRIVER_GROUP, neu_req_update_group_t)          \
+    XX(NEU_RESP_UPDATE_DRIVER_GROUP, neu_resp_update_group_t)        \
+    XX(NEU_REQ_GET_GROUP, neu_req_get_group_t)                       \
+    XX(NEU_RESP_GET_GROUP, neu_resp_get_group_t)                     \
+    XX(NEU_REQ_GET_DRIVER_GROUP, neu_req_get_group_t)                \
+    XX(NEU_RESP_GET_DRIVER_GROUP, neu_resp_get_driver_group_t)       \
+    XX(NEU_REQ_ADD_TAG, neu_req_add_tag_t)                           \
+    XX(NEU_RESP_ADD_TAG, neu_resp_add_tag_t)                         \
+    XX(NEU_REQ_ADD_GTAG, neu_req_add_gtag_t)                         \
+    XX(NEU_RESP_ADD_GTAG, neu_resp_add_tag_t)                        \
+    XX(NEU_REQ_DEL_TAG, neu_req_del_tag_t)                           \
+    XX(NEU_REQ_UPDATE_TAG, neu_req_update_tag_t)                     \
+    XX(NEU_RESP_UPDATE_TAG, neu_resp_update_tag_t)                   \
+    XX(NEU_REQ_GET_TAG, neu_req_get_tag_t)                           \
+    XX(NEU_RESP_GET_TAG, neu_resp_get_tag_t)                         \
+    XX(NEU_REQ_ADD_PLUGIN, neu_req_add_plugin_t)                     \
+    XX(NEU_REQ_DEL_PLUGIN, neu_req_del_plugin_t)                     \
+    XX(NEU_REQ_UPDATE_PLUGIN, neu_req_update_plugin_t)               \
+    XX(NEU_REQ_GET_PLUGIN, neu_req_get_plugin_t)                     \
+    XX(NEU_RESP_GET_PLUGIN, neu_resp_get_plugin_t)                   \
+    XX(NEU_REQRESP_TRANS_DATA, neu_reqresp_trans_data_t)             \
+    XX(NEU_REQRESP_NODES_STATE, neu_reqresp_nodes_state_t)           \
+    XX(NEU_REQRESP_NODE_DELETED, neu_reqresp_node_deleted_t)         \
     XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
@@ -167,12 +148,6 @@ static inline neu_msg_t *neu_msg_new(neu_reqresp_type_e t, void *ctx,
         break;
     case NEU_REQ_GET_NODES_STATE:
         body_size = neu_reqresp_size(NEU_RESP_GET_NODES_STATE);
-        break;
-    case NEU_REQ_GET_TEMPLATE:
-        body_size = neu_reqresp_size(NEU_RESP_GET_TEMPLATE);
-        break;
-    case NEU_REQ_GET_TEMPLATES:
-        body_size = neu_reqresp_size(NEU_RESP_GET_TEMPLATES);
         break;
     case NEU_REQ_READ_GROUP:
         body_size = neu_reqresp_size(NEU_RESP_READ_GROUP);

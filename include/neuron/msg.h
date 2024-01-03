@@ -102,26 +102,6 @@ typedef enum neu_reqresp_type {
     NEU_REQ_GET_PLUGIN,
     NEU_RESP_GET_PLUGIN,
 
-    NEU_REQ_ADD_TEMPLATE,
-    NEU_REQ_DEL_TEMPLATE,
-    NEU_REQ_GET_TEMPLATE,
-    NEU_RESP_GET_TEMPLATE,
-    NEU_REQ_GET_TEMPLATES,
-    NEU_RESP_GET_TEMPLATES,
-    NEU_REQ_ADD_TEMPLATE_GROUP,
-    NEU_REQ_DEL_TEMPLATE_GROUP,
-    NEU_REQ_UPDATE_TEMPLATE_GROUP,
-    NEU_REQ_GET_TEMPLATE_GROUP,
-    NEU_REQ_ADD_TEMPLATE_TAG,
-    NEU_RESP_ADD_TEMPLATE_TAG,
-    NEU_REQ_DEL_TEMPLATE_TAG,
-    NEU_REQ_UPDATE_TEMPLATE_TAG,
-    NEU_RESP_UPDATE_TEMPLATE_TAG,
-    NEU_REQ_GET_TEMPLATE_TAG,
-    NEU_RESP_GET_TEMPLATE_TAG,
-    NEU_REQ_INST_TEMPLATE,
-    NEU_REQ_INST_TEMPLATES,
-
     NEU_REQRESP_TRANS_DATA,
     NEU_REQRESP_NODES_STATE,
     NEU_REQRESP_NODE_DELETED,
@@ -192,26 +172,6 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_UPDATE_PLUGIN] = "NEU_REQ_UPDATE_PLUGIN",
     [NEU_REQ_GET_PLUGIN]    = "NEU_REQ_GET_PLUGIN",
     [NEU_RESP_GET_PLUGIN]   = "NEU_RESP_GET_PLUGIN",
-
-    [NEU_REQ_ADD_TEMPLATE]          = "NEU_REQ_ADD_TEMPLATE",
-    [NEU_REQ_DEL_TEMPLATE]          = "NEU_REQ_DEL_TEMPLATE",
-    [NEU_REQ_GET_TEMPLATE]          = "NEU_REQ_GET_TEMPLATE",
-    [NEU_RESP_GET_TEMPLATE]         = "NEU_RESP_GET_TEMPLATE",
-    [NEU_REQ_GET_TEMPLATES]         = "NEU_REQ_GET_TEMPLATES",
-    [NEU_RESP_GET_TEMPLATES]        = "NEU_RESP_GET_TEMPLATES",
-    [NEU_REQ_ADD_TEMPLATE_GROUP]    = "NEU_REQ_ADD_TEMPLATE_GROUP",
-    [NEU_REQ_DEL_TEMPLATE_GROUP]    = "NEU_REQ_DEL_TEMPLATE_GROUP",
-    [NEU_REQ_UPDATE_TEMPLATE_GROUP] = "NEU_REQ_UPDATE_TEMPLATE_GROUP",
-    [NEU_REQ_GET_TEMPLATE_GROUP]    = "NEU_REQ_GET_TEMPLATE_GROUP",
-    [NEU_REQ_ADD_TEMPLATE_TAG]      = "REQ_REQ_ADD_TEMPLATE_TAG",
-    [NEU_RESP_ADD_TEMPLATE_TAG]     = "REQ_RESP_ADD_TEMPLATE_TAG",
-    [NEU_REQ_DEL_TEMPLATE_TAG]      = "REQ_REQ_DEL_TEMPLATE_TAG",
-    [NEU_REQ_UPDATE_TEMPLATE_TAG]   = "REQ_REQ_UPDATE_TEMPLATE_TAG",
-    [NEU_RESP_UPDATE_TEMPLATE_TAG]  = "REQ_RESP_UPDATE_TEMPLATE_TAG",
-    [NEU_REQ_GET_TEMPLATE_TAG]      = "REQ_REQ_GET_TEMPLATE_TAG",
-    [NEU_RESP_GET_TEMPLATE_TAG]     = "REQ_RESP_GET_TEMPLATE_TAG",
-    [NEU_REQ_INST_TEMPLATE]         = "NEU_REQ_INST_TEMPLATE",
-    [NEU_REQ_INST_TEMPLATES]        = "NEU_REQ_INST_TEMPLATES",
 
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
@@ -612,151 +572,6 @@ typedef struct {
     UT_array *states; // array of neu_nodes_state_t
     int       core_level;
 } neu_resp_get_nodes_state_t, neu_reqresp_nodes_state_t;
-
-typedef struct {
-    char           name[NEU_GROUP_NAME_LEN];
-    uint32_t       interval;
-    uint16_t       n_tag;
-    neu_datatag_t *tags;
-} neu_reqresp_template_group_t;
-
-static inline void
-neu_reqresp_template_group_fini(neu_reqresp_template_group_t *grp)
-{
-    for (uint16_t i = 0; i < grp->n_tag; ++i) {
-        neu_tag_fini(&grp->tags[i]);
-    }
-    free(grp->tags);
-}
-
-typedef struct {
-    char                          name[NEU_TEMPLATE_NAME_LEN];
-    char                          plugin[NEU_PLUGIN_NAME_LEN];
-    uint16_t                      n_group;
-    neu_reqresp_template_group_t *groups;
-} neu_reqresp_template_t;
-
-static inline void neu_reqresp_template_fini(neu_reqresp_template_t *tmpl)
-{
-    for (uint16_t i = 0; i < tmpl->n_group; ++i) {
-        neu_reqresp_template_group_fini(&tmpl->groups[i]);
-    }
-    free(tmpl->groups);
-}
-
-typedef neu_reqresp_template_t neu_req_add_template_t;
-
-typedef struct {
-    char name[NEU_TEMPLATE_NAME_LEN];
-} neu_req_del_template_t;
-
-typedef neu_req_del_template_t neu_req_get_template_t;
-
-typedef neu_reqresp_template_t neu_resp_get_template_t;
-
-typedef struct {
-} neu_req_get_templates_t;
-
-typedef struct {
-    char name[NEU_TEMPLATE_NAME_LEN];
-    char plugin[NEU_PLUGIN_NAME_LEN];
-} neu_resp_template_info_t;
-
-typedef struct {
-    uint16_t                  n_templates;
-    neu_resp_template_info_t *templates;
-} neu_resp_get_templates_t;
-
-static inline void neu_resp_get_templates_fini(neu_resp_get_templates_t *resp)
-{
-    free(resp->templates);
-}
-
-typedef struct {
-    char     tmpl[NEU_TEMPLATE_NAME_LEN];
-    char     group[NEU_GROUP_NAME_LEN];
-    uint32_t interval;
-} neu_req_add_template_group_t;
-
-typedef struct {
-    char     tmpl[NEU_TEMPLATE_NAME_LEN];
-    char     group[NEU_GROUP_NAME_LEN];
-    char     new_name[NEU_GROUP_NAME_LEN];
-    uint32_t interval;
-} neu_req_update_template_group_t;
-
-typedef struct {
-    char tmpl[NEU_TEMPLATE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
-} neu_req_del_template_group_t;
-
-typedef struct {
-    char tmpl[NEU_TEMPLATE_NAME_LEN];
-} neu_req_get_template_group_t;
-
-typedef struct {
-    char           tmpl[NEU_TEMPLATE_NAME_LEN];
-    char           group[NEU_GROUP_NAME_LEN];
-    uint16_t       n_tag;
-    neu_datatag_t *tags;
-} neu_req_add_template_tag_t, neu_req_update_template_tag_t;
-
-static inline void
-neu_req_add_template_tag_fini(neu_req_add_template_tag_t *req)
-{
-    for (uint16_t i = 0; i < req->n_tag; ++i) {
-        neu_tag_fini(&req->tags[i]);
-    }
-    free(req->tags);
-}
-
-#define neu_req_update_template_tag_fini neu_req_add_template_tag_fini
-
-typedef struct {
-    char     tmpl[NEU_TEMPLATE_NAME_LEN];
-    char     group[NEU_GROUP_NAME_LEN];
-    uint16_t n_tag;
-    char **  tags;
-} neu_req_del_template_tag_t;
-
-static inline void
-neu_req_del_template_tag_fini(neu_req_del_template_tag_t *req)
-{
-    for (uint16_t i = 0; i < req->n_tag; ++i) {
-        free(req->tags[i]);
-    }
-    free(req->tags);
-}
-
-typedef struct neu_req_get_template_tag {
-    char tmpl[NEU_TEMPLATE_NAME_LEN];
-    char group[NEU_GROUP_NAME_LEN];
-    char name[NEU_TAG_NAME_LEN];
-} neu_req_get_template_tag_t;
-
-typedef struct {
-    char tmpl[NEU_TEMPLATE_NAME_LEN];
-    char node[NEU_NODE_NAME_LEN];
-} neu_req_inst_template_t;
-
-typedef struct {
-    char *tmpl;
-    char *node;
-} neu_req_inst_templates_info_t;
-
-typedef struct {
-    uint16_t                       n_inst;
-    neu_req_inst_templates_info_t *insts;
-} neu_req_inst_templates_t;
-
-static inline void neu_req_inst_templates_fini(neu_req_inst_templates_t *req)
-{
-    for (uint16_t i = 0; i < req->n_inst; ++i) {
-        free(req->insts[i].tmpl);
-        free(req->insts[i].node);
-    }
-    free(req->insts);
-}
 
 typedef struct neu_req_read_group {
     char *driver;

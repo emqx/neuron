@@ -12,26 +12,6 @@
             "timeout": 3000
         }
     },
-    "template_config": {
-        "name": "c1 template",
-        "plugin": "c1",
-        "groups": [
-            {
-                "name": "group1",
-                "interval": 2000,
-                "tags": [
-                    {
-                        "name": "tag1",
-                        "type": 4,
-                        "address": "1!400001",
-                        "attribute": 1,
-                        "precison": 1,
-                        "decimal": 0
-                    }
-                ]
-            }
-        ]
-    },
     "library_c1": "libplugin-c1.so",
     "library_s1": "libplugin-s1.so",
     "library_sc1": "libplugin-sc1.so"

@@ -42,7 +42,6 @@
 #include "plugin_manager.h"
 #include "storage.h"
 #include "subscribe.h"
-#include "template_manager.h"
 
 #include "manager.h"
 #include "manager_internal.h"
@@ -65,17 +64,11 @@ static int  update_timestamp(void *usr_data);
 static void start_single_adapter(neu_manager_t *manager, const char *name,
                                  const char *plugin_name, bool display);
 
-static int template_each_cb(neu_template_t *tmpl, void *data);
-
 static char *file_save_tmp(const char *data, const char *suffix);
 static bool  mv_tmp_library_file(neu_plugin_kind_e kind, const char *tmp_path,
                                  const char *library);
 static bool  mv_tmp_schema_file(const char *tmp_path, const char *schema);
 
-typedef struct {
-    char *plugin;
-    bool  ret;
-} template_each_cb_data_t;
 uint16_t neu_manager_get_port()
 {
     static uint16_t port = 10000;
@@ -102,7 +95,6 @@ neu_manager_t *neu_manager_create()
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
-    manager->template_manager  = neu_template_manager_create();
     manager->log_level         = ZLOG_LEVEL_NOTICE;
 
     manager->server_fd =
@@ -139,10 +131,6 @@ neu_manager_t *neu_manager_create()
                              plugin->display);
     }
     utarray_free(single_plugins);
-
-    if (manager_load_template(manager) != 0) {
-        nlog_warn("load template error");
-    }
 
     manager_load_node(manager);
     while (neu_node_manager_exist_uninit(manager->node_manager)) {
@@ -190,7 +178,6 @@ void neu_manager_destroy(neu_manager_t *manager)
     neu_subscribe_manager_destroy(manager->subscribe_manager);
     neu_node_manager_destroy(manager->node_manager);
     neu_plugin_manager_destroy(manager->plugin_manager);
-    neu_template_manager_destroy(manager->template_manager);
 
     close(manager->server_fd);
     neu_event_del_io(manager->events, manager->loop);
@@ -437,19 +424,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             utarray_free(nodes);
         }
 
-        template_each_cb_data_t data = { .plugin = cmd->plugin, .ret = false };
-
-        neu_template_manager_for_each(manager->template_manager,
-                                      template_each_cb, (void *) &data);
-
-        if (data.ret) {
-            header->type = NEU_RESP_ERROR;
-            e.error      = NEU_ERR_LIBRARY_IN_USE;
-            strcpy(header->receiver, header->sender);
-            reply(manager, header, &e);
-            break;
-        }
-
         int error = neu_manager_del_plugin(manager, cmd->plugin);
         e.error   = error;
 
@@ -679,258 +653,6 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         header->type = NEU_RESP_GET_PLUGIN;
         strcpy(header->receiver, header->sender);
         reply(manager, header, &resp);
-        break;
-    }
-    case NEU_REQ_ADD_TEMPLATE: {
-        neu_resp_error_t        e   = { 0 };
-        neu_req_add_template_t *cmd = (neu_req_add_template_t *) &header[1];
-
-        e.error = neu_manager_add_template(manager, cmd->name, cmd->plugin,
-                                           cmd->n_group, cmd->groups);
-        if (NEU_ERR_SUCCESS == e.error) {
-            manager_storage_add_template(manager, cmd->name);
-        }
-
-        neu_reqresp_template_fini(cmd);
-        header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &e);
-        break;
-    }
-    case NEU_REQ_DEL_TEMPLATE: {
-        neu_resp_error_t        e   = { 0 };
-        neu_req_del_template_t *cmd = (neu_req_del_template_t *) &header[1];
-
-        if (strlen(cmd->name) > 0) {
-            e.error = neu_manager_del_template(manager, cmd->name);
-            if (NEU_ERR_SUCCESS == e.error) {
-                manager_storage_del_template(manager, cmd->name);
-            }
-        } else {
-            neu_manager_clear_template(manager);
-            manager_storage_clear_templates(manager);
-        }
-
-        header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &e);
-        break;
-    }
-    case NEU_REQ_GET_TEMPLATE: {
-        neu_resp_error_t        e    = { 0 };
-        neu_resp_get_template_t resp = { 0 };
-        neu_req_get_template_t *cmd  = (neu_req_get_template_t *) &header[1];
-
-        strcpy(header->receiver, header->sender);
-
-        e.error = neu_manager_get_template(manager, cmd->name, &resp);
-        if (NEU_ERR_SUCCESS != e.error) {
-            header->type = NEU_RESP_ERROR;
-            reply(manager, header, &e);
-            break;
-        }
-
-        header->type = NEU_RESP_GET_TEMPLATE;
-        reply(manager, header, &resp);
-        break;
-    }
-    case NEU_REQ_GET_TEMPLATES: {
-        neu_resp_error_t         e    = { 0 };
-        neu_resp_get_templates_t resp = { 0 };
-
-        strcpy(header->receiver, header->sender);
-
-        e.error = neu_manager_get_templates(manager, &resp);
-        if (NEU_ERR_SUCCESS != e.error) {
-            header->type = NEU_RESP_ERROR;
-            reply(manager, header, &e);
-            break;
-        }
-
-        header->type = NEU_RESP_GET_TEMPLATES;
-        reply(manager, header, &resp);
-        break;
-    }
-    case NEU_REQ_ADD_TEMPLATE_GROUP: {
-        neu_req_add_template_group_t *cmd =
-            (neu_req_add_template_group_t *) &header[1];
-        neu_resp_error_t e = { 0 };
-
-        if (cmd->interval < NEU_GROUP_INTERVAL_LIMIT) {
-            e.error = NEU_ERR_GROUP_PARAMETER_INVALID;
-        } else {
-            e.error = neu_manager_add_template_group(manager, cmd->tmpl,
-                                                     cmd->group, cmd->interval);
-        }
-
-        if (e.error == NEU_ERR_SUCCESS) {
-            manager_storage_add_template_group(cmd->tmpl, cmd->group,
-                                               cmd->interval);
-        }
-
-        neu_msg_exchange(header);
-        header->type = NEU_RESP_ERROR;
-        reply(manager, header, &e);
-        break;
-    }
-    case NEU_REQ_DEL_TEMPLATE_GROUP: {
-        neu_req_del_template_group_t *cmd =
-            (neu_req_del_template_group_t *) &header[1];
-        neu_resp_error_t e = { 0 };
-
-        e.error = neu_manager_del_template_group(manager, cmd);
-
-        if (e.error == NEU_ERR_SUCCESS) {
-            manager_storage_del_template_group(cmd->tmpl, cmd->group);
-        }
-
-        neu_msg_exchange(header);
-        header->type = NEU_RESP_ERROR;
-        reply(manager, header, &e);
-        break;
-    }
-    case NEU_REQ_UPDATE_TEMPLATE_GROUP: {
-        neu_req_update_template_group_t *cmd =
-            (neu_req_update_template_group_t *) &header[1];
-        neu_resp_error_t e = { 0 };
-
-        e.error = neu_manager_update_template_group(manager, cmd);
-
-        if (e.error == NEU_ERR_SUCCESS) {
-            manager_storage_update_template_group(cmd->tmpl, cmd->group,
-                                                  cmd->new_name, cmd->interval);
-        }
-
-        neu_msg_exchange(header);
-        header->type = NEU_RESP_ERROR;
-        reply(manager, header, &e);
-        break;
-    }
-    case NEU_REQ_GET_TEMPLATE_GROUP: {
-        neu_req_get_template_group_t *cmd =
-            (neu_req_get_template_group_t *) &header[1];
-        neu_resp_error_t     e    = { 0 };
-        neu_resp_get_group_t resp = { 0 };
-
-        neu_msg_exchange(header);
-
-        e.error = neu_manager_get_template_group(manager, cmd, &resp.groups);
-        if (NEU_ERR_SUCCESS != e.error) {
-            header->type = NEU_RESP_ERROR;
-            reply(manager, header, &e);
-            break;
-        }
-
-        header->type = NEU_RESP_GET_GROUP;
-        reply(manager, header, &resp);
-        break;
-    }
-    case NEU_REQ_ADD_TEMPLATE_TAG: {
-        neu_req_add_template_tag_t *cmd =
-            (neu_req_add_template_tag_t *) &header[1];
-        neu_resp_add_tag_t resp = { 0 };
-
-        resp.error = neu_manager_add_template_tags(
-            manager, cmd->tmpl, cmd->group, cmd->n_tag, cmd->tags, &resp.index);
-        if (resp.index > 0) {
-            manager_storage_add_template_tags(cmd->tmpl, cmd->group, cmd->tags,
-                                              cmd->n_tag);
-        }
-
-        neu_req_add_template_tag_fini(cmd);
-
-        header->type = NEU_RESP_ADD_TEMPLATE_TAG;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &resp);
-        break;
-    }
-    case NEU_REQ_UPDATE_TEMPLATE_TAG: {
-        neu_req_update_template_tag_t *cmd =
-            (neu_req_update_template_tag_t *) &header[1];
-        neu_resp_update_tag_t resp = { 0 };
-
-        resp.error =
-            neu_manager_update_template_tags(manager, cmd, &resp.index);
-        if (resp.index > 0) {
-            manager_storage_update_template_tags(cmd->tmpl, cmd->group,
-                                                 cmd->tags, cmd->n_tag);
-        }
-
-        neu_req_update_template_tag_fini(cmd);
-
-        header->type = NEU_RESP_UPDATE_TEMPLATE_TAG;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &resp);
-        break;
-    }
-    case NEU_REQ_DEL_TEMPLATE_TAG: {
-        neu_req_del_template_tag_t *cmd =
-            (neu_req_del_template_tag_t *) &header[1];
-        neu_resp_error_t resp = { 0 };
-
-        resp.error = neu_manager_del_template_tags(manager, cmd);
-        if (0 == resp.error) {
-            manager_storage_del_template_tags(cmd->tmpl, cmd->group,
-                                              (const char *const *) cmd->tags,
-                                              cmd->n_tag);
-        }
-
-        neu_req_del_template_tag_fini(cmd);
-
-        header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &resp);
-        break;
-    }
-    case NEU_REQ_GET_TEMPLATE_TAG: {
-        neu_req_get_template_tag_t *cmd =
-            (neu_req_get_template_tag_t *) &header[1];
-        neu_resp_error_t   e    = { 0 };
-        neu_resp_get_tag_t resp = { 0 };
-
-        e.error = neu_manager_get_template_tags(manager, cmd, &resp.tags);
-
-        strcpy(header->receiver, header->sender);
-        if (0 == e.error) {
-            header->type = NEU_RESP_GET_TEMPLATE_TAG;
-            reply(manager, header, &resp);
-        } else {
-            header->type = NEU_RESP_ERROR;
-            reply(manager, header, &e);
-        }
-        break;
-    }
-    case NEU_REQ_INST_TEMPLATE: {
-        neu_req_inst_template_t *cmd = (neu_req_inst_template_t *) &header[1];
-        neu_resp_error_t         e   = { 0 };
-
-        e.error =
-            neu_manager_instantiate_template(manager, cmd->tmpl, cmd->node);
-        if (NEU_ERR_SUCCESS == e.error) {
-            manager_storage_inst_node(manager, cmd->tmpl, cmd->node);
-        }
-
-        header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &e);
-        break;
-    }
-    case NEU_REQ_INST_TEMPLATES: {
-        neu_req_inst_templates_t *cmd = (neu_req_inst_templates_t *) &header[1];
-        neu_resp_error_t          e   = { 0 };
-
-        e.error = neu_manager_instantiate_templates(manager, cmd);
-        if (NEU_ERR_SUCCESS == e.error) {
-            for (uint16_t i = 0; i < cmd->n_inst; ++i) {
-                manager_storage_inst_node(manager, cmd->insts[i].tmpl,
-                                          cmd->insts[i].node);
-            }
-        }
-
-        neu_req_inst_templates_fini(cmd);
-        header->type = NEU_RESP_ERROR;
-        strcpy(header->receiver, header->sender);
-        reply(manager, header, &e);
         break;
     }
     case NEU_REQ_ADD_NODE: {
@@ -1454,11 +1176,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
     case NEU_RESP_ADD_TAG:
     case NEU_RESP_ADD_GTAG:
-    case NEU_RESP_ADD_TEMPLATE_TAG:
     case NEU_RESP_UPDATE_TAG:
-    case NEU_RESP_UPDATE_TEMPLATE_TAG:
     case NEU_RESP_GET_TAG:
-    case NEU_RESP_GET_TEMPLATE_TAG:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_RESP_ERROR:
@@ -1627,16 +1346,6 @@ static int update_timestamp(void *usr_data)
 {
     (void) usr_data;
     global_timestamp = neu_time_ms();
-    return 0;
-}
-
-static int template_each_cb(neu_template_t *tmpl, void *data)
-{
-    template_each_cb_data_t *cb_data = (template_each_cb_data_t *) data;
-    if (strcmp(neu_template_plugin(tmpl), cb_data->plugin) == 0) {
-        cb_data->ret = true;
-        return 1;
-    }
     return 0;
 }
 
