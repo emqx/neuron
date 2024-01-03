@@ -406,7 +406,7 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
 
     neu_resp_read_group_t resp  = { 0 };
     neu_group_t *         group = g->group;
-    UT_array *            tags  = neu_group_get_read_tag(group);
+    UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc);
 
     utarray_new(resp.tags, neu_resp_tag_value_meta_icd());
 

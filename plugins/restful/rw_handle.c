@@ -43,6 +43,8 @@ void handle_read(nng_aio *aio)
 
             cmd.driver = req->node;
             cmd.group  = req->group;
+            cmd.name   = req->name;
+            cmd.desc   = req->desc;
             cmd.sync   = req->sync;
             req->node  = NULL;
             req->group = NULL;
