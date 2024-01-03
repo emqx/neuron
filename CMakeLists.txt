@@ -75,7 +75,6 @@ set(NEURON_BASE_SOURCES
     src/base/group.c
     src/base/metrics.c
     src/base/msg.c
-    src/base/template.c
     src/connection/connection.c
     src/connection/connection_eth.c
     src/connection/mqtt_client.c
@@ -126,7 +125,6 @@ set(NEURON_SOURCES
     src/core/subscribe.c
     src/core/plugin_manager.c
     src/core/node_manager.c
-    src/core/template_manager.c
     src/core/storage.c
     src/adapter/storage.c
     src/adapter/adapter.c
@@ -142,7 +140,6 @@ set(NEURON_SOURCES
     plugins/restful/global_config_handle.c
     plugins/restful/group_config_handle.c
     plugins/restful/plugin_handle.c
-    plugins/restful/template_handle.c
     plugins/restful/version_handle.c
     plugins/restful/rest.c
     plugins/restful/user.c)

@@ -34,7 +34,6 @@
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
-#include "template_handle.h"
 #include "utils/http.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"
@@ -194,18 +193,15 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
                                      (neu_resp_get_driver_group_t *) data);
         break;
     case NEU_RESP_ADD_TAG:
-    case NEU_RESP_ADD_TEMPLATE_TAG:
         handle_add_tags_resp(header->ctx, (neu_resp_add_tag_t *) data);
         break;
     case NEU_RESP_ADD_GTAG:
         handle_add_gtags_resp(header->ctx, (neu_resp_add_tag_t *) data);
         break;
     case NEU_RESP_UPDATE_TAG:
-    case NEU_RESP_UPDATE_TEMPLATE_TAG:
         handle_update_tags_resp(header->ctx, (neu_resp_update_tag_t *) data);
         break;
     case NEU_RESP_GET_TAG:
-    case NEU_RESP_GET_TEMPLATE_TAG:
         handle_get_tags_resp(header->ctx, (neu_resp_get_tag_t *) data);
         break;
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
@@ -226,13 +222,6 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         break;
     case NEU_RESP_READ_GROUP:
         handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
-        break;
-    case NEU_RESP_GET_TEMPLATE:
-        handle_get_template_resp(header->ctx, (neu_resp_get_template_t *) data);
-        break;
-    case NEU_RESP_GET_TEMPLATES:
-        handle_get_templates_resp(header->ctx,
-                                  (neu_resp_get_templates_t *) data);
         break;
     default:
         nlog_fatal("recv unhandle msg: %s",

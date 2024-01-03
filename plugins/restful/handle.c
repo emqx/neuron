@@ -33,7 +33,6 @@
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
-#include "template_handle.h"
 #include "utils/http.h"
 #include "version_handle.h"
 
@@ -111,21 +110,6 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/global/config",
-    },
-    {
-        .url = "/api/v2/template",
-    },
-    {
-        .url = "/api/v2/template/group",
-    },
-    {
-        .url = "/api/v2/template/tag",
-    },
-    {
-        .url = "/api/v2/template/inst",
-    },
-    {
-        .url = "/api/v2/template/instances",
     },
     {
         .url = "/api/v2/metrics",
@@ -373,84 +357,6 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/global/config",
         .value.handler = handle_put_global_config,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_POST,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template",
-        .value.handler = handle_add_template,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_DELETE,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template",
-        .value.handler = handle_del_template,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template",
-        .value.handler = handle_get_template,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_POST,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/tag",
-        .value.handler = handle_add_template_tags,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_PUT,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/tag",
-        .value.handler = handle_update_template_tags,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_DELETE,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/tag",
-        .value.handler = handle_del_template_tags,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/tag",
-        .value.handler = handle_get_template_tags,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_POST,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/inst",
-        .value.handler = handle_instantiate_template,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_POST,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/instances",
-        .value.handler = handle_instantiate_templates,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_POST,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/group",
-        .value.handler = handle_add_template_group,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_PUT,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/group",
-        .value.handler = handle_update_template_group,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_DELETE,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/group",
-        .value.handler = handle_del_template_group,
-    },
-    {
-        .method        = NEU_HTTP_METHOD_GET,
-        .type          = NEU_HTTP_HANDLER_FUNCTION,
-        .url           = "/api/v2/template/group",
-        .value.handler = handle_get_template_group,
     },
     {
         .method        = NEU_HTTP_METHOD_GET,

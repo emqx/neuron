@@ -665,15 +665,10 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_SUBSCRIBE_GROUP:
     case NEU_RESP_ADD_TAG:
     case NEU_RESP_ADD_GTAG:
-    case NEU_RESP_ADD_TEMPLATE_TAG:
     case NEU_RESP_UPDATE_TAG:
-    case NEU_RESP_UPDATE_TEMPLATE_TAG:
     case NEU_RESP_GET_TAG:
-    case NEU_RESP_GET_TEMPLATE_TAG:
     case NEU_RESP_GET_NODE:
     case NEU_RESP_GET_PLUGIN:
-    case NEU_RESP_GET_TEMPLATE:
-    case NEU_RESP_GET_TEMPLATES:
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
     case NEU_REQRESP_NODES_STATE:
