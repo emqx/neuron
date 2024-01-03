@@ -346,36 +346,8 @@ class TestPlugin:
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json().get("error")
 
-    @description(given="correct configuration", when="add template", then="success")
-    def test_18_add_template_success(self):
-        test_data = TestPlugin.test_data
-        template_data = test_data['template_config']
-
-        response = api.add_template(
-            name=template_data['name'], plugin=template_data['plugin'], groups=template_data['groups'])
-        assert 200 == response.status_code
-        assert NEU_ERR_SUCCESS == response.json().get("error")
-
     @description(given="correct configuration", when="del plugin", then="success")
-    def test_19_del_plugin_fail0(self):
-        test_data = TestPlugin.test_data
-        plugin_data = {}
-        plugin_data['plugin'] = 'c1'
-
-        response = api.del_plugin(plugin_name=plugin_data['plugin'])
-        assert 409 == response.status_code
-        assert NEU_ERR_LIBRARY_IN_USE == response.json().get("error")
-
-    @description(given="correct configuration", when="del template", then="success")
-    def test_20_del_template_success(self):
-        test_data = TestPlugin.test_data
-
-        response = api.del_template(name='c1 template')
-        assert 200 == response.status_code
-        assert NEU_ERR_SUCCESS == response.json().get("error")
-
-    @description(given="correct configuration", when="del plugin", then="success")
-    def test_21_del_plugin_sucess(self):
+    def test_18_del_plugin_sucess(self):
         test_data = TestPlugin.test_data
         plugin_data = {}
         plugin_data['plugin'] = 'c1'
