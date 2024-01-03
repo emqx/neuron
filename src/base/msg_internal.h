@@ -182,9 +182,6 @@ static inline neu_msg_t *neu_msg_new(neu_reqresp_type_e t, void *ctx,
     case NEU_REQ_GET_TEMPLATES:
         body_size = neu_reqresp_size(NEU_RESP_GET_TEMPLATES);
         break;
-    case NEU_REQ_READ_GROUP:
-        body_size = neu_reqresp_size(NEU_RESP_READ_GROUP);
-        break;
     default:
         body_size = data_size;
     }

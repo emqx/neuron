@@ -44,7 +44,6 @@ struct neu_group {
 };
 
 static UT_array *to_array(tag_elem_t *tags);
-static UT_array *to_read_array(tag_elem_t *tags);
 static void      split_static_array(tag_elem_t *tags, UT_array **static_tags,
                                     UT_array **other_tags);
 static void      update_timestamp(neu_group_t *group);
@@ -192,19 +191,84 @@ UT_array *neu_group_get_tag(neu_group_t *group)
     return array;
 }
 
-UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
+static inline UT_array *
+filter_tags(tag_elem_t *tags,
+            bool (*predicate)(const neu_datatag_t *, void *data), void *data)
 {
     tag_elem_t *el = NULL, *tmp = NULL;
     UT_array *  array = NULL;
 
-    pthread_mutex_lock(&group->mtx);
     utarray_new(array, neu_tag_get_icd());
-    HASH_ITER(hh, group->tags, el, tmp)
+    HASH_ITER(hh, tags, el, tmp)
     {
-        if (strstr(el->tag->name, name) != NULL) {
+        if (predicate(el->tag, data)) {
             utarray_push_back(array, el->tag);
         }
     }
+
+    return array;
+}
+
+static inline bool is_readable(const neu_datatag_t *tag, void *data)
+{
+    (void) data;
+    return neu_tag_attribute_test(tag, NEU_ATTRIBUTE_READ) ||
+        neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE) ||
+        neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC);
+}
+
+static inline bool name_contains(const neu_datatag_t *tag, void *data)
+{
+    const char *name = data;
+    return strstr(tag->name, name) != NULL;
+}
+
+static inline bool description_contains(const neu_datatag_t *tag, void *data)
+{
+    const char *str = data;
+    return tag->description && strstr(tag->description, str) != NULL;
+}
+
+struct query {
+    char *name;
+    char *desc;
+};
+
+static inline bool match_query(const neu_datatag_t *tag, void *data)
+{
+    struct query *q = data;
+    return (!q->name || name_contains(tag, q->name)) &&
+        (!q->desc || description_contains(tag, q->desc));
+}
+
+static inline bool is_readable_and_match_query(const neu_datatag_t *tag,
+                                               void *               data)
+{
+    return is_readable(tag, NULL) && match_query(tag, data);
+}
+
+UT_array *neu_group_query_tag(neu_group_t *group, const char *name)
+{
+    UT_array *array = NULL;
+
+    pthread_mutex_lock(&group->mtx);
+    array = filter_tags(group->tags, name_contains, (void *) name);
+    pthread_mutex_unlock(&group->mtx);
+
+    return array;
+}
+
+UT_array *neu_group_query_read_tag(neu_group_t *group, const char *name,
+                                   const char *desc)
+{
+    UT_array *   array = NULL;
+    struct query q     = {
+        .name = (char *) name,
+        .desc = (char *) desc,
+    };
+
+    pthread_mutex_lock(&group->mtx);
+    array = filter_tags(group->tags, is_readable_and_match_query, &q);
     pthread_mutex_unlock(&group->mtx);
 
     return array;
@@ -215,7 +279,7 @@ UT_array *neu_group_get_read_tag(neu_group_t *group)
     UT_array *array = NULL;
 
     pthread_mutex_lock(&group->mtx);
-    array = to_read_array(group->tags);
+    array = filter_tags(group->tags, is_readable, NULL);
     pthread_mutex_unlock(&group->mtx);
 
     return array;
@@ -286,24 +350,6 @@ static UT_array *to_array(tag_elem_t *tags)
 
     utarray_new(array, neu_tag_get_icd());
     HASH_ITER(hh, tags, el, tmp) { utarray_push_back(array, el->tag); }
-
-    return array;
-}
-
-static UT_array *to_read_array(tag_elem_t *tags)
-{
-    tag_elem_t *el = NULL, *tmp = NULL;
-    UT_array *  array = NULL;
-
-    utarray_new(array, neu_tag_get_icd());
-    HASH_ITER(hh, tags, el, tmp)
-    {
-        if (neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_READ) ||
-            neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_SUBSCRIBE) ||
-            neu_tag_attribute_test(el->tag, NEU_ATTRIBUTE_STATIC)) {
-            utarray_push_back(array, el->tag);
-        }
-    }
 
     return array;
 }
