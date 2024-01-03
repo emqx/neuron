@@ -430,6 +430,11 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
             .t         = NEU_JSON_BOOL,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
         },
+        {
+            .name      = "query",
+            .t         = NEU_JSON_OBJECT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
     };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
@@ -441,11 +446,36 @@ int neu_json_decode_read_req(char *buf, neu_json_read_req_t **result)
     req->group = req_elems[1].v.val_str;
     req->sync  = req_elems[2].v.val_bool;
 
+    neu_json_elem_t query_elems[] = {
+        {
+            .name      = "name",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "description",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+    if (req_elems[3].v.val_object) {
+        ret = neu_json_decode_by_json(req_elems[3].v.val_object,
+                                      NEU_JSON_ELEM_SIZE(query_elems),
+                                      query_elems);
+        if (ret != 0) {
+            goto error;
+        }
+        req->name = query_elems[0].v.val_str;
+        req->desc = query_elems[1].v.val_str;
+    }
+
     *result = req;
     neu_json_decode_free(json_obj);
     return ret;
 
 error:
+    free(query_elems[0].v.val_str);
+    free(query_elems[1].v.val_str);
     free(req_elems[0].v.val_str);
     free(req_elems[1].v.val_str);
     free(req);
