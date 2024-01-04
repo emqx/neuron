@@ -356,23 +356,41 @@ void handle_grp_get_subscribe(nng_aio *aio)
 {
     int                           ret    = 0;
     neu_plugin_t *                plugin = neu_rest_get_plugin();
-    char                          node_name[NEU_NODE_NAME_LEN] = { 0 };
-    neu_req_get_subscribe_group_t cmd                          = { 0 };
-    neu_reqresp_head_t            header                       = {
+    neu_req_get_subscribe_group_t cmd    = { 0 };
+    neu_reqresp_head_t            header = {
         .ctx  = aio,
         .type = NEU_REQ_GET_SUBSCRIBE_GROUP,
     };
 
     NEU_VALIDATE_JWT(aio);
 
-    if (neu_http_get_param_str(aio, "app", node_name, sizeof(node_name)) <= 0) {
+    // required parameter
+    ret = neu_http_get_param_str(aio, "app", cmd.app, sizeof(cmd.app));
+    if (ret <= 0 || (size_t) ret == sizeof(cmd.driver)) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
             neu_http_response(aio, error_code.error, result_error);
         })
         return;
     }
 
-    strcpy(cmd.app, node_name);
+    // optional parameter
+    ret = neu_http_get_param_str(aio, "driver", cmd.driver, sizeof(cmd.driver));
+    if (-1 == ret || (size_t) ret == sizeof(cmd.driver)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
+
+    // optional parameter
+    ret = neu_http_get_param_str(aio, "group", cmd.group, sizeof(cmd.group));
+    if (-1 == ret || (size_t) ret == sizeof(cmd.driver)) {
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+            neu_http_response(aio, error_code.error, result_error);
+        })
+        return;
+    }
+
     ret = neu_plugin_op(plugin, header, &cmd);
     if (ret != 0) {
         NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {

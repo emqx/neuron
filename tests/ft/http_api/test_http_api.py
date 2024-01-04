@@ -188,6 +188,103 @@ class TestHttp:
         assert len(config_data['settings']) == 1
         assert config_data['settings'][0]['node'] == 'mqtt'
 
+    @description(given="running neuron", when="get subscribe info", then="should success")
+    def test_get_subscribe_info(self):
+        app = 'MQTT-1'
+        params = {'topic':'/neuron/test'}
+        driver_1 = 'modbus-01'
+        driver_2 = 'modbus-02'
+        group_1 = 'group-01'
+        group_2 = 'group-02'
+        try:
+            api.add_node_check(app, 'MQTT')
+            api.add_node_check(driver_1, 'Modbus TCP')
+            api.add_node_check(driver_2, 'Modbus TCP')
+            api.add_group_check(driver_1, group_1, 1000)
+            api.add_group_check(driver_1, group_2, 1000)
+            api.add_group_check(driver_2, group_1, 1000)
+            api.add_group_check(driver_2, group_2, 1000)
+            api.subscribe_group_check(app, driver_1, group_1, params=params)
+            api.subscribe_group_check(app, driver_1, group_2, params=params)
+            api.subscribe_group_check(app, driver_2, group_1, params=params)
+            api.subscribe_group_check(app, driver_2, group_2, params=params)
+
+            # match all drivers
+            response = api.get_subscribe_group(app, driver='modbus')
+            assert 200 == response.status_code
+            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            assert len(groups) == 4
+            assert groups[0]['driver'] == driver_1
+            assert groups[0]['group'] == group_1
+            assert groups[1]['driver'] == driver_1
+            assert groups[1]['group'] == group_2
+            assert groups[2]['driver'] == driver_2
+            assert groups[2]['group'] == group_1
+            assert groups[3]['driver'] == driver_2
+            assert groups[3]['group'] == group_2
+
+            # match one driver
+            response = api.get_subscribe_group(app, driver=driver_1)
+            assert 200 == response.status_code
+            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            assert len(groups) == 2
+            assert groups[0]['driver'] == driver_1
+            assert groups[0]['group'] == group_1
+            assert groups[1]['driver'] == driver_1
+            assert groups[1]['group'] == group_2
+
+            # match none driver
+            response = api.get_subscribe_group(app, driver='none')
+            assert 200 == response.status_code
+            assert len(response.json()['groups']) == 0
+
+            # match all groups
+            response = api.get_subscribe_group(app, group='group')
+            assert 200 == response.status_code
+            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            assert len(groups) == 4
+            assert groups[0]['driver'] == driver_1
+            assert groups[0]['group'] == group_1
+            assert groups[1]['driver'] == driver_1
+            assert groups[1]['group'] == group_2
+            assert groups[2]['driver'] == driver_2
+            assert groups[2]['group'] == group_1
+            assert groups[3]['driver'] == driver_2
+            assert groups[3]['group'] == group_2
+
+            # match one group
+            response = api.get_subscribe_group(app, group=group_1)
+            assert 200 == response.status_code
+            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            assert len(groups) == 2
+            assert groups[0]['driver'] == driver_1
+            assert groups[0]['group'] == group_1
+            assert groups[1]['driver'] == driver_2
+            assert groups[1]['group'] == group_1
+
+            # match none group
+            response = api.get_subscribe_group(app, group='none')
+            assert 200 == response.status_code
+            assert len(response.json()['groups']) == 0
+
+            # match driver and group
+            response = api.get_subscribe_group(app, driver=driver_1, group=group_1)
+            assert 200 == response.status_code
+            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            assert len(groups) == 1
+            assert groups[0]['driver'] == driver_1
+            assert groups[0]['group'] == group_1
+            response = api.get_subscribe_group(app, driver=driver_2, group=group_2)
+            assert 200 == response.status_code
+            groups = sorted(response.json()['groups'], key=lambda g: (g['driver'], g['group']))
+            assert len(groups) == 1
+            assert groups[0]['driver'] == driver_2
+            assert groups[0]['group'] == group_2
+        finally:
+            api.del_node(app)
+            api.del_node(driver_1)
+            api.del_node(driver_2)
+
     @description(given="running neuron", when="get mqtt shcema", then="success")
     def test_get_plugin_schema(self):
         response = api.get_plugin_schema(plugin='mqtt')

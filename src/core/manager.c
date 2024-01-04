@@ -722,7 +722,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         manager_storage_del_node(manager, cmd->node);
         if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_APP) {
             UT_array *subscriptions = neu_subscribe_manager_get(
-                manager->subscribe_manager, cmd->node);
+                manager->subscribe_manager, cmd->node, NULL, NULL);
             neu_subscribe_manager_unsub_all(manager->subscribe_manager,
                                             cmd->node);
 
@@ -887,8 +887,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_GET_SUBSCRIBE_GROUP: {
         neu_req_get_subscribe_group_t *cmd =
             (neu_req_get_subscribe_group_t *) &header[1];
-        UT_array *groups =
-            neu_manager_get_sub_group_deep_copy(manager, cmd->app);
+        UT_array *groups = neu_manager_get_sub_group_deep_copy(
+            manager, cmd->app, cmd->driver, cmd->group);
         neu_resp_get_subscribe_group_t resp = { .groups = groups };
 
         strcpy(header->receiver, header->sender);

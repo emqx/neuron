@@ -457,7 +457,13 @@ neu_req_subscribe_groups_fini(neu_req_subscribe_groups_t *req)
 
 typedef struct neu_req_get_subscribe_group {
     char app[NEU_NODE_NAME_LEN];
-} neu_req_get_subscribe_group_t, neu_req_get_sub_driver_tags_t;
+    char driver[NEU_NODE_NAME_LEN];
+    char group[NEU_GROUP_NAME_LEN];
+} neu_req_get_subscribe_group_t;
+
+typedef struct {
+    char app[NEU_NODE_NAME_LEN];
+} neu_req_get_sub_driver_tags_t;
 
 typedef struct neu_resp_subscribe_info {
     char  app[NEU_NODE_NAME_LEN];
