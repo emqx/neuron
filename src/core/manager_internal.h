@@ -112,7 +112,9 @@ int       neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
                                   const char *driver, const char *group);
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app);
 UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
-                                              const char *   app);
+                                              const char *   app,
+                                              const char *   driver,
+                                              const char *   group);
 int neu_manager_add_ndriver_map(neu_manager_t *manager, const char *ndriver,
                                 const char *driver, const char *group);
 int neu_manager_del_ndriver_map(neu_manager_t *manager, const char *ndriver,

@@ -791,13 +791,17 @@ int neu_manager_unsubscribe(neu_manager_t *manager, const char *app,
 
 UT_array *neu_manager_get_sub_group(neu_manager_t *manager, const char *app)
 {
-    return neu_subscribe_manager_get(manager->subscribe_manager, app);
+    return neu_subscribe_manager_get(manager->subscribe_manager, app, NULL,
+                                     NULL);
 }
 
 UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
-                                              const char *   app)
+                                              const char *   app,
+                                              const char *   driver,
+                                              const char *   group)
 {
-    UT_array *subs = neu_subscribe_manager_get(manager->subscribe_manager, app);
+    UT_array *subs = neu_subscribe_manager_get(manager->subscribe_manager, app,
+                                               driver, group);
 
     utarray_foreach(subs, neu_resp_subscribe_info_t *, sub)
     {

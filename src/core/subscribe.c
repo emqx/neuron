@@ -105,7 +105,8 @@ UT_array *neu_subscribe_manager_find_by_driver(neu_subscribe_mgr_t *mgr,
     return apps;
 }
 
-UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
+UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app,
+                                    const char *driver, const char *group)
 {
     sub_elem_t *el = NULL, *tmp = NULL;
     UT_array *  groups = NULL;
@@ -116,7 +117,9 @@ UT_array *neu_subscribe_manager_get(neu_subscribe_mgr_t *mgr, const char *app)
     {
         utarray_foreach(el->apps, neu_app_subscribe_t *, sub_app)
         {
-            if (strcmp(sub_app->app_name, app) == 0) {
+            if (strcmp(sub_app->app_name, app) == 0 &&
+                (!driver || strstr(el->key.driver, driver)) &&
+                (!group || strstr(el->key.group, group))) {
                 neu_resp_subscribe_info_t info = { 0 };
 
                 strncpy(info.driver, el->key.driver, sizeof(info.driver));
