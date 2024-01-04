@@ -51,6 +51,9 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver,
 int neu_adapter_driver_group_exist(neu_adapter_driver_t *driver,
                                    const char *          name);
 UT_array *neu_adapter_driver_get_group(neu_adapter_driver_t *driver);
+uint16_t  neu_adapter_driver_group_count(neu_adapter_driver_t *driver);
+uint16_t  neu_adapter_driver_new_group_count(neu_adapter_driver_t *driver,
+                                             neu_req_add_gtag_t *  cmd);
 
 int neu_adapter_driver_try_del_tag(neu_adapter_driver_t *driver, int n_tag);
 int neu_adapter_driver_try_add_tag(neu_adapter_driver_t *driver,
