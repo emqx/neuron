@@ -70,6 +70,7 @@ typedef enum {
     NEU_ERR_GROUP_PARAMETER_INVALID  = 2105,
     NEU_ERR_GROUP_NOT_EXIST          = 2106,
     NEU_ERR_GROUP_NAME_TOO_LONG      = 2107,
+    NEU_ERR_GROUP_MAX_GROUPS         = 2108,
 
     NEU_ERR_TAG_NOT_EXIST              = 2201,
     NEU_ERR_TAG_NAME_CONFLICT          = 2202,
