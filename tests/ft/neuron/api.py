@@ -222,6 +222,10 @@ def get_plugins():
     return requests.get(url=config.BASE_URL + "/api/v2/plugin", headers={"Authorization": config.default_jwt})
 
 
+def get_subscribe_group(app, driver=None, group=None):
+    return requests.get(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, params={"app": app, "driver": driver, "group": group})
+
+
 @gen_check
 def add_template(name, plugin, groups=[]):
     return requests.post(url=config.BASE_URL + "/api/v2/template", json={"name": name, "plugin": plugin, "groups": groups}, headers={"Authorization": config.default_jwt})
