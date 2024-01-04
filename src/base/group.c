@@ -220,7 +220,8 @@ static inline bool is_readable(const neu_datatag_t *tag, void *data)
 static inline bool name_contains(const neu_datatag_t *tag, void *data)
 {
     const char *name = data;
-    return strstr(tag->name, name) != NULL;
+    return strstr(tag->name, name) != NULL ||
+        (tag->description != NULL && strstr(tag->description, name) != NULL);
 }
 
 static inline bool description_contains(const neu_datatag_t *tag, void *data)
