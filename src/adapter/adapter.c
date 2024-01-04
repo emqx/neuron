@@ -1059,6 +1059,12 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
             resp.error = NEU_ERR_GROUP_NOT_ALLOW;
+        } else if (neu_adapter_driver_new_group_count(
+                       (neu_adapter_driver_t *) adapter, cmd) +
+                       neu_adapter_driver_group_count(
+                           (neu_adapter_driver_t *) adapter) >
+                   NEU_GROUP_MAX_PER_NODE) {
+            resp.error = NEU_ERR_GROUP_MAX_GROUPS;
         } else {
             if (validate_gtags(adapter, cmd, &resp) == 0 &&
                 try_add_gtags(adapter, cmd, &resp) == 0 &&

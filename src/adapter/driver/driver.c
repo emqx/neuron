@@ -1122,6 +1122,29 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
     return ret;
 }
 
+uint16_t neu_adapter_driver_group_count(neu_adapter_driver_t *driver)
+{
+    u_int16_t num_groups = 0;
+    if (driver && driver->groups) {
+        num_groups = HASH_COUNT(driver->groups);
+    }
+    return num_groups;
+}
+
+uint16_t neu_adapter_driver_new_group_count(neu_adapter_driver_t *driver,
+                                            neu_req_add_gtag_t *  cmd)
+{
+    uint16_t new_groups_count = 0;
+    for (int i = 0; i < cmd->n_group; i++) {
+        group_t *group_in_driver;
+        HASH_FIND_STR(driver->groups, cmd->groups[i].group, group_in_driver);
+        if (!group_in_driver) {
+            new_groups_count++;
+        }
+    }
+    return new_groups_count;
+}
+
 static group_t *find_group(neu_adapter_driver_t *driver, const char *name)
 {
     group_t *find = NULL;
