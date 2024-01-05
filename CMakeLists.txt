@@ -66,6 +66,7 @@ endif()
 
 set(PERSIST_SOURCES
     src/persist/persist.c
+    src/persist/sqlite.c
     src/persist/json/persist_json_plugin.c)
 aux_source_directory(src/parser NEURON_SRC_PARSE)
 set(NEURON_BASE_SOURCES
