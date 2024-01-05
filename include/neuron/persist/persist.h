@@ -95,8 +95,6 @@ int neu_persister_create(const char *schema_dir);
 void neu_persister_destroy();
 
 sqlite3 *neu_persister_get_db();
-int      neu_persister_node_count();
-int      neu_persister_tag_count();
 
 /**
  * Persist nodes.
