@@ -24,6 +24,41 @@ class TestDriver:
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
+    @description(given="running neuron", when="add app node with wrong setting", then="should fail")
+    @pytest.mark.parametrize('node,plugin', [('mqtt-test', config.PLUGIN_MQTT)])
+    def test_create_app_node_with_wrong_setting(self, node, plugin):
+        params = {"client-id": "neuron_aBcDeF"}
+        response = api.add_node(node=node, plugin=plugin, params=params)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_NODE_SETTING_INVALID == response.json()['error']
+
+        response = api.get_nodes_state(node)
+        assert 404 == response.status_code
+        assert error.NEU_ERR_NODE_NOT_EXIST == response.json()['error']
+
+    @description(given="running neuron", when="add app node with correct setting", then="should success")
+    @pytest.mark.parametrize('node,plugin', [('mqtt-test', config.PLUGIN_MQTT)])
+    def test_create_app_node_with_correct_setting(self, node, plugin):
+        params = {
+            "client-id": "neuron_aBcDeF",
+            "qos": 0,
+            "format": 0,
+            "write-req-topic": f"/neuron/{node}/write/req",
+            "write-resp-topic": f"/neuron/{node}/write/resp",
+            "offline-cache": False,
+            "host": "broker.emqx.io",
+            "port": 1883,
+            "ssl": False
+        }
+        response = api.add_node(node=node, plugin=plugin, params=params)
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_nodes_state(node)
+        assert 200 == response.status_code
+        assert config.NEU_NODE_STATE_RUNNING == response.json()['running']
+        api.del_node(node)
+
     @description(given="app node with subscriptions", when="delete node", then="should success")
     @pytest.mark.parametrize('app,plugin', [('mqtt', config.PLUGIN_MQTT)])
     def test_delete_app(self, app, plugin):
