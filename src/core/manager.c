@@ -34,6 +34,7 @@
 #include "adapter.h"
 #include "adapter/adapter_internal.h"
 #include "adapter/driver/driver_internal.h"
+#include "adapter/storage.h"
 #include "argparse.h"
 #include "base/msg_internal.h"
 #include "errcodes.h"
@@ -657,14 +658,18 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     }
     case NEU_REQ_ADD_NODE: {
         neu_req_add_node_t *cmd = (neu_req_add_node_t *) &header[1];
-        int                 error =
-            neu_manager_add_node(manager, cmd->node, cmd->plugin, false, false);
+        int error = neu_manager_add_node(manager, cmd->node, cmd->plugin,
+                                         cmd->setting, false, false);
         neu_resp_error_t e = { .error = error };
 
         if (error == NEU_ERR_SUCCESS) {
             manager_storage_add_node(manager, cmd->node);
+            if (cmd->setting) {
+                adapter_storage_setting(cmd->node, cmd->setting);
+            }
         }
 
+        neu_req_add_node_fini(cmd);
         header->type = NEU_RESP_ERROR;
         strcpy(header->receiver, header->sender);
         reply(manager, header, &e);

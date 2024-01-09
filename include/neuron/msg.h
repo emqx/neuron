@@ -238,9 +238,15 @@ typedef struct neu_resp_get_plugin {
 } neu_resp_get_plugin_t;
 
 typedef struct neu_req_add_node {
-    char node[NEU_NODE_NAME_LEN];
-    char plugin[NEU_PLUGIN_NAME_LEN];
+    char  node[NEU_NODE_NAME_LEN];
+    char  plugin[NEU_PLUGIN_NAME_LEN];
+    char *setting;
 } neu_req_add_node_t;
+
+static inline void neu_req_add_node_fini(neu_req_add_node_t *req)
+{
+    free(req->setting);
+}
 
 typedef struct neu_req_update_node {
     char node[NEU_NODE_NAME_LEN];
