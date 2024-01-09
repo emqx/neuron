@@ -81,10 +81,17 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
     req->plugin = req_elems[0].v.val_str;
     req->name   = req_elems[1].v.val_str;
 
+    ret = neu_json_dump_key(json_obj, "params", &req->setting, false);
+    if (0 != ret) {
+        goto decode_fail;
+    }
+
     *result = req;
     goto decode_exit;
 
 decode_fail:
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
     free(req);
     ret = -1;
 
@@ -100,6 +107,7 @@ void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
 
     free(req->plugin);
     free(req->name);
+    free(req->setting);
 
     free(req);
 }

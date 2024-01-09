@@ -35,6 +35,7 @@ extern "C" {
 typedef struct {
     char *name;
     char *plugin;
+    char *setting;
 } neu_json_add_node_req_t;
 
 int  neu_json_encode_add_node_req(void *json_object, void *param);
