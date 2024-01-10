@@ -52,8 +52,11 @@ void handle_add_adapter(nng_aio *aio)
                 header.type = NEU_REQ_ADD_NODE;
                 strcpy(cmd.node, req->name);
                 strcpy(cmd.plugin, req->plugin);
-                ret = neu_plugin_op(plugin, header, &cmd);
+                cmd.setting  = req->setting;
+                req->setting = NULL; // moved
+                ret          = neu_plugin_op(plugin, header, &cmd);
                 if (ret != 0) {
+                    neu_req_add_node_fini(&cmd);
                     NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
                         neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                     });

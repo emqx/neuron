@@ -58,8 +58,11 @@ def change_log_level(json, jwt=config.default_jwt):
 
 
 @gen_check
-def add_node(node, plugin, jwt=config.default_jwt):
-    return requests.post(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json={"name": node, "plugin": plugin})
+def add_node(node, plugin, params=None, jwt=config.default_jwt):
+    body = {"name": node, "plugin": plugin}
+    if params:
+        body["params"] = params
+    return requests.post(url=config.BASE_URL + '/api/v2/node', headers={"Authorization": jwt}, json=body)
 
 
 @gen_check

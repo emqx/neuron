@@ -15,6 +15,39 @@ class TestDriver:
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
+    @description(given="running neuron", when="add driver node with wrong setting", then="should fail")
+    @pytest.mark.parametrize('node,plugin', [('modbus-01', config.PLUGIN_MODBUS_TCP)])
+    def test_create_node_with_wrong_setting(self, node, plugin):
+        params = {"connection_mode": 0}
+        response = api.add_node(node=node, plugin=plugin, params=params)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_NODE_SETTING_INVALID == response.json()['error']
+
+        response = api.get_nodes_state(node)
+        assert 404 == response.status_code
+        assert error.NEU_ERR_NODE_NOT_EXIST == response.json()['error']
+
+    @description(given="running neuron", when="add driver node with correct setting", then="should success")
+    @pytest.mark.parametrize('node,plugin', [('modbus-01', config.PLUGIN_MODBUS_TCP)])
+    def test_create_node_with_correct_setting(self, node, plugin):
+        params = {
+            "connection_mode": 0,
+            "transport_mode": 0,
+            "interval": 20,
+            "host": "127.0.0.1",
+            "port": 502,
+            "timeout": 3000,
+            "max_retries": 2
+        }
+        response = api.add_node(node=node, plugin=plugin, params=params)
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_nodes_state(node)
+        assert 200 == response.status_code
+        assert config.NEU_NODE_STATE_RUNNING == response.json()['running']
+        api.del_node(node)
+
     @description(given="created node", when="get node state", then="state is init")
     @pytest.mark.parametrize('node', ['modbus-tcp-1', 'modbus-rtu-1'])
     def test_node_init(self, node):
