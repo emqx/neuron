@@ -72,6 +72,28 @@ int  neu_json_decode_global_config_req(char *                         buf,
                                        neu_json_global_config_req_t **result);
 void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req);
 
+typedef struct {
+    neu_json_add_node_req_t node;
+    neu_json_gtag_array_t   gtags;
+} neu_json_driver_t;
+
+int  neu_json_decode_driver_json(void *node_json, neu_json_driver_t *driver_p);
+void neu_json_driver_fini(neu_json_driver_t *req);
+
+typedef struct {
+    int                n_driver;
+    neu_json_driver_t *drivers;
+} neu_json_driver_array_t;
+
+int  neu_json_decode_driver_array_json(void *                   obj_json,
+                                       neu_json_driver_array_t *arr);
+void neu_json_driver_array_fini(neu_json_driver_array_t *arr);
+
+typedef neu_json_driver_array_t neu_json_drivers_req_t;
+
+int  neu_json_decode_drivers_req(char *buf, neu_json_drivers_req_t **result);
+void neu_json_decode_drivers_req_free(neu_json_drivers_req_t *req);
+
 #ifdef __cplusplus
 }
 #endif

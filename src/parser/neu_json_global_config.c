@@ -28,6 +28,7 @@
 
 #include "neu_json_global_config.h"
 #include "parser/neu_json_group_config.h"
+#include "parser/neu_json_node.h"
 #include "parser/neu_json_tag.h"
 
 static void fini_add_tags_req(neu_json_add_tags_req_t *req)
@@ -400,6 +401,123 @@ void neu_json_decode_global_config_req_free(neu_json_global_config_req_t *req)
         neu_json_decode_global_config_req_subscriptions_free(
             req->subscriptions);
         neu_json_decode_global_config_req_settings_free(req->settings);
+        free(req);
+    }
+}
+
+int neu_json_decode_driver_json(void *node_json, neu_json_driver_t *driver_p)
+{
+    if (!json_is_object((json_t *) node_json)) {
+        return -1;
+    }
+
+    if (0 != neu_json_decode_add_node_req_json(node_json, &driver_p->node)) {
+        return -1;
+    }
+
+    // setting required
+    if (NULL == driver_p->node.setting) {
+        neu_json_decode_add_node_req_fini(&driver_p->node);
+        return -1;
+    }
+
+    json_t *groups_json = json_object_get(node_json, "groups");
+    if (NULL == groups_json) {
+        return 0;
+    }
+
+    if (!json_is_array(groups_json)) {
+        neu_json_decode_add_node_req_fini(&driver_p->node);
+        return -1;
+    }
+
+    if (0 != neu_json_decode_gtag_array_json(groups_json, &driver_p->gtags)) {
+        neu_json_decode_add_node_req_fini(&driver_p->node);
+        return -1;
+    }
+
+    return 0;
+}
+
+void neu_json_driver_fini(neu_json_driver_t *req)
+{
+    neu_json_decode_add_node_req_fini(&req->node);
+    neu_json_decode_gtag_array_fini(&req->gtags);
+}
+
+int neu_json_decode_driver_array_json(void *                   obj_json,
+                                      neu_json_driver_array_t *arr)
+{
+    json_t *root = obj_json;
+    if (!json_is_object(root)) {
+        return -1;
+    }
+
+    json_t *nodes_json = json_object_get(root, "nodes");
+    if (!json_is_array(nodes_json)) {
+        return -1;
+    }
+
+    int                n_driver = json_array_size(nodes_json);
+    neu_json_driver_t *drivers  = calloc(n_driver, sizeof(*drivers));
+    if (NULL == drivers) {
+        return -1;
+    }
+
+    for (int i = 0; i < n_driver; ++i) {
+        if (0 !=
+            neu_json_decode_driver_json(json_array_get(nodes_json, i),
+                                        &drivers[i])) {
+            while (--i >= 0) {
+                neu_json_driver_fini(&drivers[i]);
+            }
+            free(drivers);
+            return -1;
+        }
+    }
+
+    arr->n_driver = n_driver;
+    arr->drivers  = drivers;
+    return 0;
+}
+
+void neu_json_driver_array_fini(neu_json_driver_array_t *arr)
+{
+    for (int i = 0; i < arr->n_driver; ++i) {
+        neu_json_driver_fini(&arr->drivers[i]);
+    }
+    free(arr->drivers);
+}
+
+int neu_json_decode_drivers_req(char *buf, neu_json_drivers_req_t **result)
+{
+    int                     ret = 0;
+    neu_json_drivers_req_t *req = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    void *json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    ret = neu_json_decode_driver_array_json(json_obj, req);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
+    }
+
+    neu_json_decode_free(json_obj);
+    return ret;
+}
+
+void neu_json_decode_drivers_req_free(neu_json_drivers_req_t *req)
+{
+    if (req) {
+        neu_json_driver_array_fini(req);
         free(req);
     }
 }

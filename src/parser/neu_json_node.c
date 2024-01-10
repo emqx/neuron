@@ -53,16 +53,10 @@ int neu_json_encode_add_node_req(void *json_object, void *param)
     return ret;
 }
 
-int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
+int neu_json_decode_add_node_req_json(void *                   json_obj,
+                                      neu_json_add_node_req_t *req)
 {
-    int                      ret      = 0;
-    void *                   json_obj = NULL;
-    neu_json_add_node_req_t *req = calloc(1, sizeof(neu_json_add_node_req_t));
-    if (req == NULL) {
-        return -1;
-    }
-
-    json_obj = neu_json_decode_new(buf);
+    int ret = 0;
 
     neu_json_elem_t req_elems[] = { {
                                         .name = "plugin",
@@ -86,30 +80,53 @@ int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
         goto decode_fail;
     }
 
-    *result = req;
-    goto decode_exit;
+    return 0;
 
 decode_fail:
     free(req_elems[0].v.val_str);
     free(req_elems[1].v.val_str);
-    free(req);
-    ret = -1;
+    return -1;
+}
 
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
+int neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result)
+{
+    int                      ret      = 0;
+    void *                   json_obj = NULL;
+    neu_json_add_node_req_t *req = calloc(1, sizeof(neu_json_add_node_req_t));
+    if (req == NULL) {
+        return -1;
     }
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    ret = neu_json_decode_add_node_req_json(json_obj, req);
+    if (0 == ret) {
+        *result = req;
+    } else {
+        free(req);
+    }
+
+    neu_json_decode_free(json_obj);
     return ret;
+}
+
+void neu_json_decode_add_node_req_fini(neu_json_add_node_req_t *req)
+{
+    free(req->plugin);
+    free(req->name);
+    free(req->setting);
 }
 
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req)
 {
-
-    free(req->plugin);
-    free(req->name);
-    free(req->setting);
-
-    free(req);
+    if (req) {
+        neu_json_decode_add_node_req_fini(req);
+        free(req);
+    }
 }
 
 int neu_json_encode_del_node_req(void *json_object, void *param)

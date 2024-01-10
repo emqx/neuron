@@ -39,7 +39,10 @@ typedef struct {
 } neu_json_add_node_req_t;
 
 int  neu_json_encode_add_node_req(void *json_object, void *param);
+int  neu_json_decode_add_node_req_json(void *                   json_obj,
+                                       neu_json_add_node_req_t *req);
 int  neu_json_decode_add_node_req(char *buf, neu_json_add_node_req_t **result);
+void neu_json_decode_add_node_req_fini(neu_json_add_node_req_t *req);
 void neu_json_decode_add_node_req_free(neu_json_add_node_req_t *req);
 
 typedef struct {
