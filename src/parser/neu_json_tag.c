@@ -467,17 +467,11 @@ int neu_json_decode_gtag_json(void *json_obj, neu_json_gtag_t *gtag_p)
     gtag_p->n_tag    = arr.len;
     gtag_p->tags     = arr.tags;
 
-    goto decode_exit;
+    return 0;
 
 decode_fail:
     free(gtag_elems[0].v.val_str);
     return -1;
-
-decode_exit:
-    if (json_obj != NULL) {
-        neu_json_decode_free(json_obj);
-    }
-    return 0;
 }
 
 void neu_json_decode_gtag_fini(neu_json_gtag_t *gtag)

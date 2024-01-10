@@ -1053,7 +1053,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_string_l1[0]['name'], value='a')
         api.write_tag_check(
             node=param[0], group='group', tag=hold_string_l2[0]['name'], value='b')
-        time.sleep(0.3)
+        time.sleep(0.5)
         assert 'a' == api.read_tag(
             node=param[0], group='group', tag=hold_string_l1[0]['name'])
         assert 'b' == api.read_tag(
