@@ -356,3 +356,105 @@ class TestLog:
         assert 'group_3' == response.json()['groups'][2]['group']
         assert 3000      == response.json()['groups'][2]['interval']
         assert 2         == response.json()['groups'][2]['tag_count']
+
+    @description(given="multiple groups including same name tags in the first group", when="adding", then="add failed")
+    def test_adding_same_name_gtags_first_group(self):
+        response = api.add_gtags(
+            node='modbus-tcp-tag-test', 
+            groups=[
+                {
+                    "group": "group_f",
+                    "interval": 3000,
+                    "tags": [
+                        {
+                            "name": "tag1",
+                            "address": "1!400001",
+                            "attribute": 3,
+                            "type": 3,
+                            "decimal": 0.01
+                        },
+                        {
+                            "name": "tag1",
+                            "address": "1!400002",
+                            "attribute": 3,
+                            "type": 9,
+                            "precision": 3
+                        }
+                    ]
+                },
+                {
+                    "group": "group_s",
+                    "interval": 3000,
+                    "tags": [
+                        {
+                            "name": "tag1",
+                            "address": "1!400001",
+                            "attribute": 3,
+                            "type": 9,
+                            "precision": 3
+                        },
+                        {
+                            "name": "tag2",
+                            "address": "1!400002",
+                            "attribute": 3,
+                            "type": 9,
+                            "precision": 3
+                        }
+                    ]
+                }
+            ]
+        )
+
+        assert 409 == response.status_code
+        assert NEU_ERR_TAG_NAME_CONFLICT == response.json()['error']
+
+    @description(given="multiple groups including same name tags in the second group", when="adding", then="add failed")
+    def test_adding_same_name_gtags_second_group(self):
+        response = api.add_gtags(
+            node='modbus-tcp-tag-test', 
+            groups=[
+                {
+                    "group": "group_f",
+                    "interval": 3000,
+                    "tags": [
+                        {
+                            "name": "tag1",
+                            "address": "1!400001",
+                            "attribute": 3,
+                            "type": 3,
+                            "decimal": 0.01
+                        },
+                        {
+                            "name": "tag2",
+                            "address": "1!400002",
+                            "attribute": 3,
+                            "type": 9,
+                            "precision": 3
+                        }
+                    ]
+                },
+                {
+                    "group": "group_s",
+                    "interval": 3000,
+                    "tags": [
+                        {
+                            "name": "tag1",
+                            "address": "1!400001",
+                            "attribute": 3,
+                            "type": 9,
+                            "precision": 3
+                        },
+                        {
+                            "name": "tag1",
+                            "address": "1!400002",
+                            "attribute": 3,
+                            "type": 9,
+                            "precision": 3
+                        }
+                    ]
+                }
+            ]
+        )
+
+        assert 409 == response.status_code
+        assert NEU_ERR_TAG_NAME_CONFLICT == response.json()['error']
