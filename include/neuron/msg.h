@@ -106,6 +106,8 @@ typedef enum neu_reqresp_type {
     NEU_REQRESP_NODES_STATE,
     NEU_REQRESP_NODE_DELETED,
 
+    NEU_REQ_ADD_DRIVERS,
+
     NEU_REQ_UPDATE_LOG_LEVEL,
 
 } neu_reqresp_type_e;
@@ -176,6 +178,8 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQRESP_TRANS_DATA]   = "NEU_REQRESP_TRANS_DATA",
     [NEU_REQRESP_NODES_STATE]  = "NEU_REQRESP_NODES_STATE",
     [NEU_REQRESP_NODE_DELETED] = "NEU_REQRESP_NODE_DELETED",
+
+    [NEU_REQ_ADD_DRIVERS] = "NEU_REQ_ADD_DRIVERS",
 
     [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
 };
@@ -708,6 +712,41 @@ typedef struct {
     neu_reqresp_trans_data_ctx_t *ctx;
     UT_array *                    tags; // neu_resp_tag_value_meta_t
 } neu_reqresp_trans_data_t;
+
+typedef struct {
+    char *          node;
+    char *          plugin;
+    char *          setting;
+    uint16_t        n_group;
+    neu_gdatatag_t *groups;
+} neu_req_driver_t;
+
+static inline void neu_req_driver_fini(neu_req_driver_t *req)
+{
+    free(req->node);
+    free(req->plugin);
+    free(req->setting);
+    for (uint16_t i = 0; i < req->n_group; i++) {
+        for (int j = 0; j < req->groups[i].n_tag; j++) {
+            neu_tag_fini(&req->groups[i].tags[j]);
+        }
+        free(req->groups[i].tags);
+    }
+    free(req->groups);
+}
+
+typedef struct {
+    uint16_t          n_driver;
+    neu_req_driver_t *drivers;
+} neu_req_driver_array_t;
+
+static inline void neu_req_driver_array_fini(neu_req_driver_array_t *req)
+{
+    for (uint16_t i = 0; i < req->n_driver; ++i) {
+        neu_req_driver_fini(&req->drivers[i]);
+    }
+    free(req->drivers);
+}
 
 static inline void neu_trans_data_free(neu_reqresp_trans_data_t *data)
 {

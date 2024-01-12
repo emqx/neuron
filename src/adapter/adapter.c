@@ -59,13 +59,6 @@ static int adapter_update_metric(neu_adapter_t *adapter,
 inline static void reply(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                          void *data);
 
-int validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
-                   neu_resp_add_tag_t *resp);
-int try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
-                  neu_resp_add_tag_t *resp);
-int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
-              neu_resp_add_tag_t *resp);
-
 static const adapter_callbacks_t callback_funs = {
     .command         = adapter_command,
     .response        = adapter_response,
@@ -1066,9 +1059,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                    NEU_GROUP_MAX_PER_NODE) {
             resp.error = NEU_ERR_GROUP_MAX_GROUPS;
         } else {
-            if (validate_gtags(adapter, cmd, &resp) == 0 &&
-                try_add_gtags(adapter, cmd, &resp) == 0 &&
-                add_gtags(adapter, cmd, &resp) == 0) {
+            if (neu_adapter_validate_gtags(adapter, cmd, &resp) == 0 &&
+                neu_adapter_try_add_gtags(adapter, cmd, &resp) == 0 &&
+                neu_adapter_add_gtags(adapter, cmd, &resp) == 0) {
                 for (int i = 0; i < cmd->n_group; i++) {
                     adapter_storage_add_tags(cmd->driver, cmd->groups[i].group,
                                              cmd->groups[i].tags,
@@ -1179,8 +1172,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     return 0;
 }
 
-int validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
-                   neu_resp_add_tag_t *resp)
+int neu_adapter_validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                               neu_resp_add_tag_t *resp)
 {
     for (int group_index = 0; group_index < cmd->n_group; group_index++) {
         for (int tag_index = 0; tag_index < cmd->groups[group_index].n_tag;
@@ -1201,8 +1194,8 @@ int validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
     return 0;
 }
 
-int try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
-                  neu_resp_add_tag_t *resp)
+int neu_adapter_try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                              neu_resp_add_tag_t *resp)
 {
     for (int group_index = 0; group_index < cmd->n_group; group_index++) {
         int add_result = neu_adapter_driver_try_add_tag(
@@ -1223,10 +1216,14 @@ int try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
     return 0;
 }
 
-int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
-              neu_resp_add_tag_t *resp)
+int neu_adapter_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                          neu_resp_add_tag_t *resp)
 {
     for (int group_index = 0; group_index < cmd->n_group; group_index++) {
+        // ensure group created`
+        neu_adapter_driver_add_group((neu_adapter_driver_t *) adapter,
+                                     cmd->groups[group_index].group,
+                                     cmd->groups[group_index].interval);
         for (int tag_index = 0; tag_index < cmd->groups[group_index].n_tag;
              tag_index++) {
             int add_tag_result = neu_adapter_driver_add_tag(
