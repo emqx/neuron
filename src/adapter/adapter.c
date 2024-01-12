@@ -1325,8 +1325,8 @@ int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
             if (add_tag_result != 0) {
                 for (int added_group_index = 0; added_group_index < group_index;
                      added_group_index++) {
-                    for (int added_tag_index = 0; added_tag_index <=
-                         cmd->groups[added_group_index].n_tag;
+                    for (int added_tag_index = 0;
+                         added_tag_index < cmd->groups[added_group_index].n_tag;
                          added_tag_index++) {
                         neu_adapter_driver_del_tag(
                             (neu_adapter_driver_t *) adapter,
