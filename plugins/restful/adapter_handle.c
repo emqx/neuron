@@ -19,17 +19,21 @@
 
 #include <stdlib.h>
 
-#include "parser/neu_json_node.h"
+#include "adapter.h"
+#include "define.h"
+#include "errcodes.h"
 #include "plugin.h"
 #include "utils/log.h"
 #include "json/neu_json_error.h"
 #include "json/neu_json_fn.h"
 
-#include "adapter.h"
-#include "handle.h"
-#include "utils/http.h"
-
 #include "adapter_handle.h"
+#include "handle.h"
+#include "parser/neu_json_global_config.h"
+#include "parser/neu_json_node.h"
+#include "utils/http.h"
+#include "utils/utextend.h"
+#include "utils/uthash.h"
 
 void handle_add_adapter(nng_aio *aio)
 {
@@ -380,4 +384,188 @@ void handle_get_nodes_state_resp(nng_aio *                   aio,
     free(result);
     free(states_res.nodes);
     utarray_free(states->states);
+}
+
+static int json_to_gdatatags(neu_json_gtag_array_t *gtag_array,
+                             neu_gdatatag_t **      gdatatags_p)
+{
+    neu_gdatatag_t *gdatatags = calloc(gtag_array->len, sizeof(neu_gdatatag_t));
+    if (NULL == gdatatags) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    for (int i = 0; i < gtag_array->len; i++) {
+        strcpy(gdatatags[i].group, gtag_array->gtags[i].group);
+        gdatatags[i].n_tag    = gtag_array->gtags[i].n_tag;
+        gdatatags[i].interval = gtag_array->gtags[i].interval;
+        gdatatags[i].tags =
+            calloc(gtag_array->gtags[i].n_tag, sizeof(neu_datatag_t));
+
+        for (int j = 0; j < gtag_array->gtags[i].n_tag; j++) {
+            gdatatags[i].tags[j].attribute =
+                gtag_array->gtags[i].tags[j].attribute;
+            gdatatags[i].tags[j].type = gtag_array->gtags[i].tags[j].type;
+            gdatatags[i].tags[j].precision =
+                gtag_array->gtags[i].tags[j].precision;
+            gdatatags[i].tags[j].decimal = gtag_array->gtags[i].tags[j].decimal;
+            gdatatags[i].tags[j].address = gtag_array->gtags[i].tags[j].address;
+            gdatatags[i].tags[j].name    = gtag_array->gtags[i].tags[j].name;
+            if (gtag_array->gtags[i].tags[j].description != NULL) {
+                gdatatags[i].tags[j].description =
+                    gtag_array->gtags[i].tags[j].description;
+            } else {
+                gdatatags[i].tags[j].description = strdup("");
+            }
+            if (NEU_ATTRIBUTE_STATIC & gtag_array->gtags[i].tags[j].attribute) {
+                neu_tag_set_static_value_json(
+                    &gdatatags[i].tags[j], gtag_array->gtags[i].tags[j].t,
+                    &gtag_array->gtags[i].tags[j].value);
+            }
+
+            gtag_array->gtags[i].tags[j].address     = NULL; // moved
+            gtag_array->gtags[i].tags[j].name        = NULL; // moved
+            gtag_array->gtags[i].tags[j].description = NULL; // moved
+        }
+    }
+
+    *gdatatags_p = gdatatags;
+    return 0;
+}
+
+struct map {
+    const char *   str;
+    UT_hash_handle hh;
+};
+
+static inline void map_free(struct map **m)
+{
+    struct map *e = NULL, *tmp = NULL;
+    HASH_ITER(hh, *m, e, tmp)
+    {
+        HASH_DEL(*m, e);
+        free(e);
+    }
+}
+
+static inline bool map_mark(struct map **m, const char *str)
+{
+    struct map *e = NULL;
+    HASH_FIND_STR(*m, str, e);
+    if (e) {
+        return true;
+    }
+    e      = calloc(1, sizeof(*e));
+    e->str = str;
+    HASH_ADD_KEYPTR(hh, *m, e->str, strlen(e->str), e);
+    return false;
+}
+
+static int send_drivers(nng_aio *aio, neu_json_drivers_req_t *req)
+{
+    int           ret    = 0;
+    neu_plugin_t *plugin = neu_rest_get_plugin();
+
+    // fast check
+    struct map *node_seen  = NULL;
+    struct map *group_seen = NULL;
+    struct map *tag_seen   = NULL;
+    for (int i = 0; i < req->n_driver; ++i) {
+        neu_json_driver_t *driver = &req->drivers[i];
+        if (strlen(driver->node.name) >= NEU_NODE_NAME_LEN) {
+            ret = NEU_ERR_NODE_NAME_TOO_LONG;
+            goto check_end;
+        }
+        if (strlen(driver->node.plugin) >= NEU_PLUGIN_NAME_LEN) {
+            ret = NEU_ERR_PLUGIN_NAME_TOO_LONG;
+            goto check_end;
+        }
+        if (driver->gtags.len > NEU_GROUP_MAX_PER_NODE) {
+            ret = NEU_ERR_GROUP_MAX_GROUPS;
+            goto check_end;
+        }
+        if (map_mark(&node_seen, driver->node.name)) {
+            // duplicate node name
+            ret = NEU_ERR_BODY_IS_WRONG;
+            goto check_end;
+        }
+        for (int j = 0; j < driver->gtags.len; j++) {
+            if (strlen(driver->gtags.gtags[j].group) >= NEU_GROUP_NAME_LEN) {
+                ret = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto check_end;
+            }
+            if (driver->gtags.gtags[j].interval < NEU_DEFAULT_GROUP_INTERVAL) {
+                ret = NEU_ERR_GROUP_PARAMETER_INVALID;
+                goto check_end;
+            }
+            if (map_mark(&group_seen, driver->gtags.gtags[j].group)) {
+                // duplicate group name
+                ret = NEU_ERR_BODY_IS_WRONG;
+                goto check_end;
+            }
+            for (int k = 0; k < driver->gtags.gtags[j].n_tag; k++) {
+                if (map_mark(&tag_seen, driver->gtags.gtags[j].tags[k].name)) {
+                    // duplicate tag name
+                    ret = NEU_ERR_BODY_IS_WRONG;
+                    goto check_end;
+                }
+            }
+            map_free(&tag_seen);
+        }
+        map_free(&group_seen);
+    }
+check_end:
+    map_free(&node_seen);
+    map_free(&group_seen);
+    map_free(&tag_seen);
+    if (0 != ret) {
+        return ret;
+    }
+
+    neu_reqresp_head_t header = {
+        .ctx  = aio,
+        .type = NEU_REQ_ADD_DRIVERS,
+    };
+
+    neu_req_driver_array_t cmd = { 0 };
+    cmd.drivers                = calloc(req->n_driver, sizeof(cmd.drivers[0]));
+    if (NULL == cmd.drivers) {
+        return NEU_ERR_EINTERNAL;
+    }
+
+    for (int i = 0; i < req->n_driver; ++i) {
+        neu_json_driver_t *driver = &req->drivers[i];
+        cmd.drivers[i].node       = driver->node.name;
+        cmd.drivers[i].plugin     = driver->node.plugin;
+        cmd.drivers[i].setting    = driver->node.setting;
+        cmd.drivers[i].n_group    = driver->gtags.len;
+        driver->node.name         = NULL; // moved
+        driver->node.plugin       = NULL; // moved
+        driver->node.setting      = NULL; // moved
+        cmd.n_driver += 1;
+
+        ret = json_to_gdatatags(&driver->gtags, &cmd.drivers[i].groups);
+        if (0 != ret) {
+            neu_req_driver_array_fini(&cmd);
+            return ret;
+        }
+    }
+
+    if (0 != neu_plugin_op(plugin, header, &cmd)) {
+        neu_req_driver_array_fini(&cmd);
+        return NEU_ERR_IS_BUSY;
+    }
+
+    return 0;
+}
+
+void handle_put_drivers(nng_aio *aio)
+{
+    NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
+        aio, neu_json_drivers_req_t, neu_json_decode_drivers_req, {
+            int ret = send_drivers(aio, req);
+            if (ret != 0) {
+                NEU_JSON_RESPONSE_ERROR(
+                    ret, { neu_http_response(aio, ret, result_error); });
+            }
+        })
 }
