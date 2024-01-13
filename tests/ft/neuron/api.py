@@ -256,6 +256,14 @@ def get_global_config():
 def put_global_config(json):
     return requests.put(url=config.BASE_URL + "/api/v2/global/config", headers={"Authorization": config.default_jwt}, json=json)
 
+@gen_check
+def put_driver(name, plugin, params, groups=[], jwt=config.default_jwt):
+    return put_drivers([{"name": name, "plugin": plugin, "params": params, "groups": groups}])
+
+@gen_check
+def put_drivers(drivers, jwt=config.default_jwt):
+    return requests.put(url=config.BASE_URL + '/api/v2/global/drivers', headers={"Authorization": jwt}, json={"nodes": drivers})
+
 def get_plugin_schema(plugin):
     return requests.get(url=config.BASE_URL + "/api/v2/schema?schema_name=" + plugin, headers={"Authorization": config.default_jwt})
 
