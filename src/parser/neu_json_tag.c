@@ -427,6 +427,46 @@ int neu_json_encode_au_tags_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_encode_gtag(void *json_obj, void *param)
+{
+    neu_json_gtag_t *gtag      = param;
+    json_t *         gtag_json = json_obj;
+
+    if (!json_is_object(gtag_json)) {
+        return -1;
+    }
+
+    json_t *tags_json = json_array();
+    if (NULL == tags_json ||
+        0 != json_object_set_new(gtag_json, "tags", tags_json)) {
+        return -1;
+    }
+
+    neu_json_tag_array_t arr = {
+        .len  = gtag->n_tag,
+        .tags = gtag->tags,
+    };
+    if (0 != neu_json_encode_tag_array(tags_json, &arr)) {
+        return -1;
+    }
+
+    neu_json_elem_t gtag_elems[] = {
+        {
+            .name      = "group",
+            .t         = NEU_JSON_STR,
+            .v.val_str = gtag->group,
+        },
+        {
+            .name      = "interval",
+            .t         = NEU_JSON_INT,
+            .v.val_int = gtag->interval,
+        },
+    };
+
+    return neu_json_encode_field(gtag_json, gtag_elems,
+                                 NEU_JSON_ELEM_SIZE(gtag_elems));
+}
+
 int neu_json_decode_gtag_json(void *json_obj, neu_json_gtag_t *gtag_p)
 {
     if (NULL == gtag_p) {
@@ -481,6 +521,28 @@ void neu_json_decode_gtag_fini(neu_json_gtag_t *gtag)
         neu_json_decode_tag_fini(&(gtag->tags[i]));
     }
     free(gtag->tags);
+}
+
+int neu_json_encode_gtag_array(void *json_obj, void *param)
+{
+    neu_json_gtag_array_t *arr = param;
+
+    if (!json_is_array((json_t *) json_obj)) {
+        return -1;
+    }
+
+    for (int i = 0; i < arr->len; i++) {
+        json_t *gtag_json = json_object();
+        if (NULL == gtag_json ||
+            0 != json_array_append_new(json_obj, gtag_json)) {
+            return -1;
+        }
+        if (0 != neu_json_encode_gtag(gtag_json, &arr->gtags[i])) {
+            return -1;
+        }
+    }
+
+    return 0;
 }
 
 int neu_json_decode_gtag_array_json(void *json_obj, neu_json_gtag_array_t *arr)
