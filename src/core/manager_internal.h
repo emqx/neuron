@@ -23,9 +23,12 @@
 #include "event/event.h"
 #include "persist/persist.h"
 
+#include "base/msg_internal.h"
+#include "msg.h"
 #include "node_manager.h"
 #include "plugin_manager.h"
 #include "subscribe.h"
+#include "utils/log.h"
 
 typedef struct neu_manager {
     int server_fd;
@@ -80,4 +83,29 @@ UT_array *neu_manager_get_sub_group_deep_copy(neu_manager_t *manager,
 
 int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
                               neu_persist_node_info_t *info);
+
+int neu_manager_add_drivers(neu_manager_t *         manager,
+                            neu_req_driver_array_t *req);
+
+inline static void forward_msg(neu_manager_t *     manager,
+                               neu_reqresp_head_t *header, const char *node)
+{
+    struct sockaddr_in addr =
+        neu_node_manager_get_addr(manager->node_manager, node);
+
+    neu_reqresp_type_e t                           = header->type;
+    char               receiver[NEU_NODE_NAME_LEN] = { 0 };
+    strncpy(receiver, header->receiver, sizeof(receiver));
+
+    neu_msg_t *msg = (neu_msg_t *) header;
+    int        ret = neu_send_msg_to(manager->server_fd, &addr, msg);
+    if (0 == ret) {
+        nlog_info("forward msg %s to %s", neu_reqresp_type_string(t), receiver);
+    } else {
+        nlog_warn("forward msg %s to node (%s)%d fail",
+                  neu_reqresp_type_string(t), receiver, ntohs(addr.sin_port));
+        neu_msg_free(msg);
+    }
+}
+
 #endif

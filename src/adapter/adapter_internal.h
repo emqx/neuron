@@ -109,4 +109,11 @@ int  neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
 void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
                                    const char *   group_name);
 
+int neu_adapter_validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                               neu_resp_add_tag_t *resp);
+int neu_adapter_try_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                              neu_resp_add_tag_t *resp);
+int neu_adapter_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
+                          neu_resp_add_tag_t *resp);
+
 #endif

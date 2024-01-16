@@ -29,6 +29,7 @@
 #include "base/msg_internal.h"
 
 #include "manager_internal.h"
+#include "storage.h"
 
 int neu_manager_add_plugin(neu_manager_t *manager, const char *library)
 {
@@ -374,4 +375,134 @@ int neu_manager_get_node_info(neu_manager_t *manager, const char *name,
     }
 
     return -1;
+}
+
+static int del_node(neu_manager_t *manager, const char *node)
+{
+    neu_adapter_t *adapter = neu_node_manager_find(manager->node_manager, node);
+    if (NULL == adapter) {
+        return 0;
+    }
+
+    if (neu_node_manager_is_single(manager->node_manager, node)) {
+        return NEU_ERR_NODE_NOT_ALLOW_DELETE;
+    }
+
+    if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_APP) {
+        UT_array *subscriptions = neu_subscribe_manager_get(
+            manager->subscribe_manager, node, NULL, NULL);
+        neu_subscribe_manager_unsub_all(manager->subscribe_manager, node);
+
+        utarray_foreach(subscriptions, neu_resp_subscribe_info_t *, sub)
+        {
+            // NOTE: neu_req_unsubscribe_t and neu_resp_subscribe_info_t
+            //       have compatible memory layout
+            neu_msg_t *msg = neu_msg_new(NEU_REQ_UNSUBSCRIBE_GROUP, NULL, sub);
+            if (NULL == msg) {
+                break;
+            }
+            neu_reqresp_head_t *hd = neu_msg_get_header(msg);
+            strcpy(hd->receiver, sub->driver);
+            strcpy(hd->sender, "manager");
+            forward_msg(manager, hd, hd->receiver);
+        }
+        utarray_free(subscriptions);
+    }
+
+    if (neu_adapter_get_type(adapter) == NEU_NA_TYPE_DRIVER) {
+        neu_reqresp_node_deleted_t resp = { 0 };
+        strcpy(resp.node, node);
+
+        UT_array *apps = neu_subscribe_manager_find_by_driver(
+            manager->subscribe_manager, node);
+        utarray_foreach(apps, neu_app_subscribe_t *, app)
+        {
+            neu_msg_t *msg = neu_msg_new(NEU_REQRESP_NODE_DELETED, NULL, &resp);
+            if (NULL == msg) {
+                break;
+            }
+            neu_reqresp_head_t *hd = neu_msg_get_header(msg);
+            strcpy(hd->receiver, app->app_name);
+            strcpy(hd->sender, "manager");
+            forward_msg(manager, hd, hd->receiver);
+        }
+        utarray_free(apps);
+    }
+
+    neu_adapter_uninit(adapter);
+    neu_manager_del_node(manager, node);
+    manager_storage_del_node(manager, node);
+    return 0;
+}
+
+static inline int add_driver(neu_manager_t *manager, neu_req_driver_t *driver)
+{
+    int ret = del_node(manager, driver->node);
+    if (0 != ret) {
+        return ret;
+    }
+
+    ret = neu_manager_add_node(manager, driver->node, driver->plugin,
+                               driver->setting, false, false);
+    if (0 != ret) {
+        return ret;
+    }
+
+    neu_adapter_t *adapter =
+        neu_node_manager_find(manager->node_manager, driver->node);
+
+    neu_resp_add_tag_t resp = { 0 };
+    neu_req_add_gtag_t cmd  = {
+        .groups  = driver->groups,
+        .n_group = driver->n_group,
+    };
+
+    if (0 != neu_adapter_validate_gtags(adapter, &cmd, &resp) ||
+        0 != neu_adapter_try_add_gtags(adapter, &cmd, &resp) ||
+        0 != neu_adapter_add_gtags(adapter, &cmd, &resp)) {
+        neu_manager_del_node(manager, driver->node);
+    }
+
+    return resp.error;
+}
+
+int neu_manager_add_drivers(neu_manager_t *manager, neu_req_driver_array_t *req)
+{
+    int ret = 0;
+
+    // fast check
+    for (uint16_t i = 0; i < req->n_driver; ++i) {
+        neu_resp_plugin_info_t info   = { 0 };
+        neu_req_driver_t *     driver = &req->drivers[i];
+
+        ret = neu_plugin_manager_find(manager->plugin_manager, driver->plugin,
+                                      &info);
+
+        if (ret != 0) {
+            return NEU_ERR_LIBRARY_NOT_FOUND;
+        }
+
+        if (info.single) {
+            return NEU_ERR_LIBRARY_NOT_ALLOW_CREATE_INSTANCE;
+        }
+
+        if (NEU_NA_TYPE_DRIVER != info.type) {
+            return NEU_ERR_PLUGIN_TYPE_NOT_SUPPORT;
+        }
+
+        if (driver->n_group > NEU_GROUP_MAX_PER_NODE) {
+            return NEU_ERR_GROUP_MAX_GROUPS;
+        }
+    }
+
+    for (uint16_t i = 0; i < req->n_driver; ++i) {
+        ret = add_driver(manager, &req->drivers[i]);
+        if (0 != ret) {
+            while (i-- > 0) {
+                neu_manager_del_node(manager, req->drivers[i].node);
+            }
+        }
+    }
+
+    return ret;
 }

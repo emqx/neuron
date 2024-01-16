@@ -88,6 +88,7 @@ extern "C" {
     XX(NEU_REQRESP_TRANS_DATA, neu_reqresp_trans_data_t)             \
     XX(NEU_REQRESP_NODES_STATE, neu_reqresp_nodes_state_t)           \
     XX(NEU_REQRESP_NODE_DELETED, neu_reqresp_node_deleted_t)         \
+    XX(NEU_REQ_ADD_DRIVERS, neu_req_driver_array_t)                  \
     XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)

@@ -458,7 +458,7 @@ int neu_json_decode_gtag_json(void *json_obj, neu_json_gtag_t *gtag_p)
     if (ret != 0) {
         goto decode_fail;
     }
-    if (arr.len <= 0) {
+    if (arr.len < 0) {
         goto decode_fail;
     }
 
