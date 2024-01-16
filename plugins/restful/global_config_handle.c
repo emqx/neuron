@@ -35,6 +35,8 @@
 #include "handle.h"
 #include "tag.h"
 #include "utils/http.h"
+#include "utils/set.h"
+#include "utils/utarray.h"
 
 #include "group_config_handle.h"
 
@@ -77,6 +79,8 @@ typedef struct {
             UT_array *              groups;
             void *                  iter;
             neu_json_driver_array_t jdrivers; // get drivers
+            char *                  names;    //
+            neu_strset_t            filter;   //
         };
         // put
         struct {
@@ -170,6 +174,8 @@ static void context_free(context_t *ctx)
         if (ctx->groups) {
             utarray_free(ctx->groups);
         }
+        free(ctx->names);
+        neu_strset_free(&ctx->filter);
         for (int i = 0; i < ctx->jdrivers.n_driver; ++i) {
             neu_json_driver_t *driver = &ctx->jdrivers.drivers[i];
             free(driver->node.setting);
@@ -621,26 +627,38 @@ end:
     return rv;
 }
 
-static int get_drivers_resp(context_t *ctx, neu_resp_get_node_t *nodes)
+static int get_drivers_resp(context_t *ctx, neu_resp_get_node_t *resp)
 {
     int                     rv      = 0;
     neu_json_driver_array_t drivers = { 0 };
+    UT_array *              nodes   = resp->nodes;
 
-    drivers.n_driver = utarray_len(nodes->nodes);
+    if (ctx->filter) {
+        utarray_new(nodes, &resp->nodes->icd);
+        utarray_foreach(resp->nodes, neu_resp_node_info_t *, info)
+        {
+            if (neu_strset_test(&ctx->filter, info->node)) {
+                utarray_push_back(nodes, info);
+            }
+        }
+        utarray_free(resp->nodes);
+    }
+
+    drivers.n_driver = utarray_len(nodes);
     drivers.drivers  = calloc(drivers.n_driver, sizeof(drivers.drivers[0]));
     if (NULL == drivers.drivers) {
         rv = NEU_ERR_EINTERNAL;
         goto end;
     }
 
-    for (unsigned i = 0; i < utarray_len(nodes->nodes); ++i) {
-        neu_resp_node_info_t *info     = utarray_eltptr(nodes->nodes, i);
+    for (unsigned i = 0; i < utarray_len(nodes); ++i) {
+        neu_resp_node_info_t *info     = utarray_eltptr(nodes, i);
         drivers.drivers[i].node.name   = info->node;
         drivers.drivers[i].node.plugin = info->plugin;
     }
 
 end:
-    ctx->drivers  = nodes->nodes;
+    ctx->drivers  = nodes;
     ctx->jdrivers = drivers;
 
     return rv;
@@ -697,18 +715,30 @@ end:
 }
 
 static int get_driver_groups_resp(context_t *                  ctx,
-                                  neu_resp_get_driver_group_t *groups)
+                                  neu_resp_get_driver_group_t *resp)
 {
-    int rv = 0;
+    int       rv     = 0;
+    UT_array *groups = resp->groups;
 
-    neu_resp_driver_group_info_t *group = utarray_front(groups->groups);
+    if (ctx->filter) {
+        utarray_new(groups, &resp->groups->icd);
+        utarray_foreach(resp->groups, neu_resp_driver_group_info_t *, group)
+        {
+            if (neu_strset_test(&ctx->filter, group->driver)) {
+                utarray_push_back(groups, group);
+            }
+        }
+        utarray_free(resp->groups);
+    }
+
+    neu_resp_driver_group_info_t *group = utarray_front(groups);
     for (int i = 0; i < ctx->jdrivers.n_driver && group; ++i) {
         neu_json_driver_t *driver = &ctx->jdrivers.drivers[i];
 
         int                           len = 0;
         neu_resp_driver_group_info_t *g   = group;
         while (group && 0 == strcmp(driver->node.name, group->driver)) {
-            group = utarray_next(groups->groups, group);
+            group = utarray_next(groups, group);
             ++len;
         }
 
@@ -725,7 +755,7 @@ static int get_driver_groups_resp(context_t *                  ctx,
         }
     }
 
-    ctx->groups = groups->groups;
+    ctx->groups = groups;
     return rv;
 }
 
@@ -849,6 +879,10 @@ static int get_driver_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
                 break;
             }
         }
+    }
+
+    if (NULL == gtag) {
+        goto end; // ignore
     }
 
     gtag->n_tag = utarray_len(tags->tags);
@@ -1247,18 +1281,54 @@ void handle_put_global_config(nng_aio *aio)
 
 void handle_get_drivers(nng_aio *aio)
 {
+    int rv = 0;
+
     NEU_VALIDATE_JWT(aio);
 
     context_t *ctx = context_new(aio, GET_DRIVERS);
     if (NULL == ctx) {
-        NEU_JSON_RESPONSE_ERROR(NEU_ERR_EINTERNAL, {
-            neu_http_response(aio, NEU_ERR_EINTERNAL, result_error);
-        });
-        return;
+        rv = NEU_ERR_EINTERNAL;
+        goto error;
     }
 
+    size_t      len   = 0;
+    const char *param = neu_http_get_param(aio, "name", &len);
+    if (NULL != param) {
+        char *names = NULL;
+
+        len += 1; // for terminating null byte
+        if (NULL == (names = calloc(len, 1))) {
+            rv = NEU_ERR_EINTERNAL;
+            goto error;
+        }
+        ctx->names = names;
+
+        if (neu_url_decode(param, len, names, len) < 0) {
+            rv = NEU_ERR_PARAM_IS_WRONG;
+            goto error;
+        }
+
+        for (char *next = NULL; names; names = next) {
+            // split names by ','
+            if (NULL != (next = strchr(names, ','))) {
+                // terminate each name with NULL byte, and move to next
+                *next++ = '\0';
+            }
+            if (neu_strset_add(&ctx->filter, names) < 0) {
+                rv = NEU_ERR_EINTERNAL;
+                goto error;
+            }
+        }
+    }
+
+    (void) rv; // suppress cppcheck warning
     nng_aio_set_input(aio, 3, ctx);
     context_next(ctx, NEU_REQ_GET_NODE, NULL);
+    return;
+
+error:
+    NEU_JSON_RESPONSE_ERROR(rv, { neu_http_response(aio, rv, result_error); });
+    context_free(ctx);
 }
 
 void handle_global_config_resp(nng_aio *aio, neu_reqresp_type_e type,
