@@ -32,6 +32,7 @@
 #include "parser/neu_json_global_config.h"
 #include "parser/neu_json_node.h"
 #include "utils/http.h"
+#include "utils/set.h"
 #include "utils/utextend.h"
 #include "utils/uthash.h"
 
@@ -432,43 +433,15 @@ static int json_to_gdatatags(neu_json_gtag_array_t *gtag_array,
     return 0;
 }
 
-struct map {
-    const char *   str;
-    UT_hash_handle hh;
-};
-
-static inline void map_free(struct map **m)
-{
-    struct map *e = NULL, *tmp = NULL;
-    HASH_ITER(hh, *m, e, tmp)
-    {
-        HASH_DEL(*m, e);
-        free(e);
-    }
-}
-
-static inline bool map_mark(struct map **m, const char *str)
-{
-    struct map *e = NULL;
-    HASH_FIND_STR(*m, str, e);
-    if (e) {
-        return true;
-    }
-    e      = calloc(1, sizeof(*e));
-    e->str = str;
-    HASH_ADD_KEYPTR(hh, *m, e->str, strlen(e->str), e);
-    return false;
-}
-
 static int send_drivers(nng_aio *aio, neu_json_drivers_req_t *req)
 {
     int           ret    = 0;
     neu_plugin_t *plugin = neu_rest_get_plugin();
 
     // fast check
-    struct map *node_seen  = NULL;
-    struct map *group_seen = NULL;
-    struct map *tag_seen   = NULL;
+    neu_strset_t node_seen  = NULL;
+    neu_strset_t group_seen = NULL;
+    neu_strset_t tag_seen   = NULL;
     for (int i = 0; i < req->n_driver; ++i) {
         neu_json_driver_t *driver = &req->drivers[i];
         if (strlen(driver->node.name) >= NEU_NODE_NAME_LEN) {
@@ -483,7 +456,7 @@ static int send_drivers(nng_aio *aio, neu_json_drivers_req_t *req)
             ret = NEU_ERR_GROUP_MAX_GROUPS;
             goto check_end;
         }
-        if (map_mark(&node_seen, driver->node.name)) {
+        if (1 != neu_strset_add(&node_seen, driver->node.name)) {
             // duplicate node name
             ret = NEU_ERR_BODY_IS_WRONG;
             goto check_end;
@@ -497,26 +470,29 @@ static int send_drivers(nng_aio *aio, neu_json_drivers_req_t *req)
                 ret = NEU_ERR_GROUP_PARAMETER_INVALID;
                 goto check_end;
             }
-            if (map_mark(&group_seen, driver->gtags.gtags[j].group)) {
+            if (1 !=
+                neu_strset_add(&group_seen, driver->gtags.gtags[j].group)) {
                 // duplicate group name
                 ret = NEU_ERR_BODY_IS_WRONG;
                 goto check_end;
             }
             for (int k = 0; k < driver->gtags.gtags[j].n_tag; k++) {
-                if (map_mark(&tag_seen, driver->gtags.gtags[j].tags[k].name)) {
+                if (1 !=
+                    neu_strset_add(&tag_seen,
+                                   driver->gtags.gtags[j].tags[k].name)) {
                     // duplicate tag name
                     ret = NEU_ERR_BODY_IS_WRONG;
                     goto check_end;
                 }
             }
-            map_free(&tag_seen);
+            neu_strset_free(&tag_seen);
         }
-        map_free(&group_seen);
+        neu_strset_free(&group_seen);
     }
 check_end:
-    map_free(&node_seen);
-    map_free(&group_seen);
-    map_free(&tag_seen);
+    neu_strset_free(&node_seen);
+    neu_strset_free(&group_seen);
+    neu_strset_free(&tag_seen);
     if (0 != ret) {
         return ret;
     }
