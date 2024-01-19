@@ -82,6 +82,7 @@ typedef struct {
     neu_json_tag_t *tags;
 } neu_json_gtag_t;
 
+int  neu_json_encode_gtag(void *json_obj, void *param);
 int  neu_json_decode_gtag_json(void *json_obj, neu_json_gtag_t *gtag_p);
 void neu_json_decode_gtag_fini(neu_json_gtag_t *gtag);
 
@@ -90,6 +91,7 @@ typedef struct {
     neu_json_gtag_t *gtags;
 } neu_json_gtag_array_t;
 
+int neu_json_encode_gtag_array(void *json_obj, void *param);
 int neu_json_decode_gtag_array_json(void *json_obj, neu_json_gtag_array_t *arr);
 void neu_json_decode_gtag_array_fini(neu_json_gtag_array_t *arr);
 

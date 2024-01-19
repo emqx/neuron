@@ -264,6 +264,14 @@ def put_driver(name, plugin, params, groups=[], jwt=config.default_jwt):
 def put_drivers(drivers, jwt=config.default_jwt):
     return requests.put(url=config.BASE_URL + '/api/v2/global/drivers', headers={"Authorization": jwt}, json={"nodes": drivers})
 
+def get_driver(name, jwt=config.default_jwt):
+    return get_drivers(names=[name])
+
+def get_drivers(names=None, jwt=config.default_jwt):
+    if names and not isinstance(names, str):
+        names = ','.join(names)
+    return requests.get(url=config.BASE_URL + '/api/v2/global/drivers', headers={"Authorization": jwt}, params={"name": names})
+
 def get_plugin_schema(plugin):
     return requests.get(url=config.BASE_URL + "/api/v2/schema?schema_name=" + plugin, headers={"Authorization": config.default_jwt})
 

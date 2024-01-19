@@ -370,6 +370,12 @@ static struct neu_http_handler rest_handlers[] = {
     {
         .method        = NEU_HTTP_METHOD_GET,
         .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/global/drivers",
+        .value.handler = handle_get_drivers,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_GET,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/metrics",
         .value.handler = handle_get_metric,
     },

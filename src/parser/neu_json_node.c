@@ -50,6 +50,14 @@ int neu_json_encode_add_node_req(void *json_object, void *param)
     ret = neu_json_encode_field(json_object, req_elems,
                                 NEU_JSON_ELEM_SIZE(req_elems));
 
+    if (0 != ret) {
+        return -1;
+    }
+
+    if (req->setting) {
+        ret = neu_json_load_key(json_object, "params", req->setting, false);
+    }
+
     return ret;
 }
 

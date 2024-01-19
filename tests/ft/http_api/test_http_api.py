@@ -277,6 +277,9 @@ class TestHttp:
         assert len(config_data['settings']) == 1
         assert config_data['settings'][0]['node'] == 'mqtt'
 
+        for node in global_config['nodes']:
+            api.del_node(node['name'])
+
 
     @description(given="running neuron", when="put drivers with too long node name", then="should fail")
     def test_put_drivers_with_long_node_name(self):
@@ -383,6 +386,8 @@ class TestHttp:
                 assert 200 == response.status_code
                 assert len(group["tags"]) == len(response.json()["tags"])
 
+            api.del_node(driver["name"])
+
 
     @description(given="running neuron", when="put drivers that exists", then="should replace")
     def test_put_drivers_already_exist(self):
@@ -413,6 +418,8 @@ class TestHttp:
         response = api.get_tags(driver["name"], driver["groups"][0]["group"])
         assert 0 == len(response.json()["tags"])
 
+        api.del_node(driver["name"])
+
 
     @description(given="running neuron", when="put drivers", then="should be persisted")
     def test_put_drivers_persistence(self, class_setup_and_teardown):
@@ -428,7 +435,52 @@ class TestHttp:
                 response = api.get_tags(driver["name"], group["group"])
                 assert 200 == response.status_code
                 assert len(group["tags"]) == len(response.json()["tags"])
+            api.del_node(driver["name"])
 
+
+    @description(given="running neuron", when="get drivers", then="should success")
+    def test_get_drivers(self):
+        drivers = [driver_1, driver_2]
+        response = api.put_drivers(drivers)
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        # no matched drivers
+        response = api.get_driver('no-such-driver')
+        assert 200 == response.status_code
+        resp_drivers = response.json()["nodes"]
+        assert 0 == len(resp_drivers)
+
+        # filter by driver_1
+        response = api.get_driver(driver_1["name"])
+        assert 200 == response.status_code
+        resp_drivers = response.json()["nodes"]
+        assert 1 == len(resp_drivers)
+        assert driver_1 == resp_drivers[0]
+
+        # filter by driver_2
+        response = api.get_driver(driver_2["name"])
+        assert 200 == response.status_code
+        resp_drivers = response.json()["nodes"]
+        assert 1 == len(resp_drivers)
+        assert driver_2 == resp_drivers[0]
+
+        # filter by driver_1 and driver_2
+        response = api.get_drivers(names=[driver_1["name"], driver_2["name"]])
+        assert 200 == response.status_code
+        resp_drivers = sorted(response.json()["nodes"], key=lambda x: x["name"])
+        assert 2 == len(resp_drivers)
+        assert drivers == resp_drivers
+
+        # no filter
+        response = api.get_drivers()
+        assert 200 == response.status_code
+        resp_drivers = sorted(response.json()["nodes"], key=lambda x: x["name"])
+        assert 2 == len(resp_drivers)
+        assert drivers == resp_drivers
+
+        for driver in drivers:
+            api.del_node(driver["name"])
 
 
     @description(given="running neuron", when="get subscribe info", then="should success")
