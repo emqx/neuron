@@ -4,6 +4,7 @@ import random
 import string
 import time
 
+from neuron import data
 from neuron.mqtt.client import Client
 from neuron.mqtt.broker import Broker
 
@@ -23,12 +24,16 @@ class Mock:
         self.user = user
         self.password = password
 
-        data_dir = pathlib.Path(__file__).resolve().parent
-        self.ca = str(data_dir / "ca.pem")
-        self.broker_cert = str(data_dir / "broker.pem")
-        self.broker_key = str(data_dir / "broker.key")
-        self.client_cert = str(data_dir / "client.pem")
-        self.client_key = str(data_dir / "client.key")
+        self.ca = data.ca
+        self.ca_base64 = data.ca_base64
+        self.broker_cert = data.server_cert
+        self.broker_cert_base64 = data.server_cert_base64
+        self.broker_key = data.server_key
+        self.broker_key_base64 = data.server_key_base64
+        self.client_cert = data.client_cert
+        self.client_cert_base64 = data.client_cert_base64
+        self.client_key = data.client_key
+        self.client_key_base64 = data.client_key_base64
 
         self.broker = Broker(
             port=port,

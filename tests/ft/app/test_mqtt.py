@@ -1,4 +1,3 @@
-from base64 import b64encode
 import time
 
 import pytest
@@ -97,11 +96,6 @@ def mocker():
     mock.done()
 
 
-def base64(file):
-    with open(file, "rb") as f:
-        return b64encode(f.read()).decode("utf-8")
-
-
 @pytest.fixture(scope="function")
 def conf_base(mocker):
     return {
@@ -140,7 +134,7 @@ def conf_ssl1(conf_base, mocker):
         **conf_base,
         "port": mocker.ssl_port,
         "ssl": True,
-        "ca": base64(mocker.ca),
+        "ca": mocker.ca_base64,
     }
 
 
@@ -148,8 +142,8 @@ def conf_ssl1(conf_base, mocker):
 def conf_ssl2(conf_ssl1, mocker):
     return {
         **conf_ssl1,
-        "cert": base64(mocker.client_cert),
-        "key": base64(mocker.client_key),
+        "cert": mocker.client_cert_base64,
+        "key": mocker.client_key_base64,
     }
 
 
@@ -161,9 +155,9 @@ def conf_user_ssl(conf_base, mocker):
         "password": mocker.password,
         "port": mocker.ssl_port,
         "ssl": True,
-        "ca": base64(mocker.ca),
-        "cert": base64(mocker.client_cert),
-        "key": base64(mocker.client_key),
+        "ca": mocker.ca_base64,
+        "cert": mocker.client_cert_base64,
+        "key": mocker.client_key_base64,
     }
 
 
@@ -254,7 +248,7 @@ def conf_ssl_bad_cert(conf_ssl1):
 def conf_ssl_no_key(conf_ssl1, mocker):
     return {
         **conf_ssl1,
-        "cert": base64(mocker.client_cert),
+        "cert": mocker.client_cert_base64
     }
 
 
