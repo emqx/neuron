@@ -43,7 +43,6 @@ jobs:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main
 
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,28 +58,22 @@ jobs:
       - name: unit test
         run: |
           cd build
-          sudo apt-get update
-          sudo apt install -y lcov
-          ctest --output-on-failure -O tests/ut/reports/ut.log --output-junit tests/ut/reports/output.xml
-          lcov --capture --directory . --output-file  testneuron.info --test-name testneuron
-          genhtml -o result testneuron.info
+          ctest --output-on-failure
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ut_result
-          path: |
-            build/tests/ut/reports/ut.log
-            build/tests/ut/reports/output.xml
-            build/result/index.html
-            build/neuron.log
+      - name: create cov report
+        run: |
+            sudo apt-get update
+            sudo apt-get -y install lcov
+            mkdir -p cov_report
+            ./create_cov_report.sh ut
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          gcov: true
+          verbose: true
           fail_ci_if_error: true
-          gcov_include: include plugins src
-          gcov_ignore: tests simulator
+          directory: ./cov_report/
+          files: cov-ut.info
 
   ft:
     runs-on: ubuntu-20.04
@@ -110,17 +103,22 @@ jobs:
         with:
           name: ft_result
           path: |
-            ft/reports/log.html
-            ft/reports/output.xml
-            ft/reports/report.html
             build/neuron.log
+
+      - name: create cov report
+        run: |
+            sudo apt-get update
+            sudo apt-get -y install lcov
+            mkdir -p cov_report
+            ./create_cov_report.sh ft
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          gcov: true
-          gcov_include: include plugins src
-          gcov_ignore: tests simulator
+          verbose: true
+          fail_ci_if_error: true
+          directory: ./cov_report/
+          files: cov-ft.info
 
   pft:
     runs-on: ubuntu-20.04
