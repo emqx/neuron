@@ -501,6 +501,7 @@ int neu_manager_add_drivers(neu_manager_t *manager, neu_req_driver_array_t *req)
             while (i-- > 0) {
                 neu_manager_del_node(manager, req->drivers[i].node);
             }
+            break;
         }
     }
 
