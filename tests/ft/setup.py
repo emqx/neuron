@@ -10,5 +10,5 @@ setup(
     author="Neuron Team",
     author_email="neuron@emqx.io",
     packages=packages,
-    package_data={"neuron.mqtt": ["*.key", "*.pem"]},
+    package_data={"neuron.data": ["*.key", "*.pem"]},
 )
