@@ -477,6 +477,30 @@ static int send_drivers(nng_aio *aio, neu_json_drivers_req_t *req)
                 goto check_end;
             }
             for (int k = 0; k < driver->gtags.gtags[j].n_tag; k++) {
+                if (strlen(driver->gtags.gtags[j].tags[k].name) >=
+                    NEU_TAG_NAME_LEN) {
+                    ret = NEU_ERR_TAG_NAME_TOO_LONG;
+                    goto check_end;
+                }
+
+                if (strlen(driver->gtags.gtags[j].tags[k].address) >=
+                    NEU_TAG_ADDRESS_LEN) {
+                    ret = NEU_ERR_TAG_ADDRESS_TOO_LONG;
+                    goto check_end;
+                }
+
+                if (strlen(driver->gtags.gtags[j].tags[k].description) >=
+                    NEU_TAG_DESCRIPTION_LEN) {
+                    ret = NEU_ERR_TAG_DESCRIPTION_TOO_LONG;
+                    goto check_end;
+                }
+
+                if (driver->gtags.gtags[j].tags[k].precision >
+                    NEU_TAG_FLOAG_PRECISION_MAX) {
+                    ret = NEU_ERR_TAG_PRECISION_INVALID;
+                    goto check_end;
+                }
+
                 if (1 !=
                     neu_strset_add(&tag_seen,
                                    driver->gtags.gtags[j].tags[k].name)) {
