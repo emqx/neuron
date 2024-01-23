@@ -449,7 +449,6 @@ neu_persister_t *neu_sqlite_persister_create(const char *schema_dir)
     persister->vtbl = &g_sqlite_persister_vtbl;
 
     if (0 != open_db(schema_dir, &persister->db)) {
-        free(persister->vtbl);
         free(persister);
         return NULL;
     }
