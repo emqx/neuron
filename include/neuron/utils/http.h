@@ -66,8 +66,6 @@ ssize_t neu_http_get_param_str(nng_aio *aio, const char *name, char *buf,
 //    NEU_ERR_EINVAL if the query parameter value is not valid.
 int neu_http_get_param_uintmax(nng_aio *aio, const char *name,
                                uintmax_t *param);
-int neu_http_get_param_uint32(nng_aio *aio, const char *name, uint32_t *param);
-int neu_http_get_param_uint64(nng_aio *aio, const char *name, uint64_t *param);
 int neu_http_get_param_node_type(nng_aio *aio, const char *name,
                                  neu_node_type_e *param);
 

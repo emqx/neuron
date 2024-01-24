@@ -12,13 +12,13 @@ function gen_trace () {
 
 case $1 in
     (ut)
-        rm -f cov_report/cov-*.info
+        rm -f cov_report/cov-neuron.info cov_report/cov-restful.info
         for dir in build/tests/ut/CMakeFiles/*_test.dir; do
             test_name=$(basename ${dir} "_test.dir")
             lcov -c -d ${dir} -o "cov_report/cov-${test_name}_test.info"
         done
         cd cov_report
-        lcov $(for file in cov-*.info; do echo "-a $file "; done) -o cov-ut.info;;
+        lcov $(for file in cov-*.info; do echo "-a $file "; done) -a cov-neuron-base.info -o cov-ut.info;;
     (ft)
         lcov -c -d build/plugins/mqtt/CMakeFiles/plugin-mqtt.dir -o cov_report/cov-mqtt.info
         lcov -c -d build/plugins/modbus/CMakeFiles/plugin-modbus-rtu.dir -o cov_report/cov-modbus-rtu.info

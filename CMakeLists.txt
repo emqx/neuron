@@ -85,7 +85,6 @@ set(NEURON_BASE_SOURCES
     src/utils/json.c
     src/utils/http.c
     src/utils/http_handler.c
-    src/utils/http_proxy.c
     src/utils/neu_jwt.c
     src/utils/base64.c
     src/utils/async_queue.c

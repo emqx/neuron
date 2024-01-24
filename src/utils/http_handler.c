@@ -43,9 +43,6 @@ int neu_http_add_handler(nng_http_server *              server,
         ret = nng_http_handler_alloc_directory(&handler, http_handler->url,
                                                http_handler->value.path);
         break;
-    case NEU_HTTP_HANDLER_PROXY:
-        ret = neu_http_proxy_handler(http_handler, &handler);
-        break;
     case NEU_HTTP_HANDLER_REDIRECT:
         ret = nng_http_handler_alloc_redirect(&handler, http_handler->url, 0,
                                               http_handler->value.path);
