@@ -12,14 +12,13 @@ function gen_trace () {
 
 case $1 in
     (ut)
-        lcov -c -d build/tests/ut/CMakeFiles/tag_sort_test.dir -o cov_report/cov-tag_sort_test.info
-        lcov -c -d build/tests/ut/CMakeFiles/modbus_test.dir -o cov_report/cov-modbus_test.info
-        lcov -c -d build/tests/ut/CMakeFiles/jwt_test.dir -o cov_report/cov-jwt_test.info
-        lcov -c -d build/tests/ut/CMakeFiles/json_test.dir -o cov_report/cov-json_test.info
-        lcov -c -d build/tests/ut/CMakeFiles/http_test.dir -o cov_report/cov-http_test.info
-        lcov -c -d build/tests/ut/CMakeFiles/base64_test.dir -o cov_report/cov-base64_test.info
+        rm -f cov_report/cov-*.info
+        for dir in build/tests/ut/CMakeFiles/*_test.dir; do
+            test_name=$(basename ${dir} "_test.dir")
+            lcov -c -d ${dir} -o "cov_report/cov-${test_name}_test.info"
+        done
         cd cov_report
-        lcov -a cov-tag_sort_test.info -a cov-modbus_test.info -a cov-jwt_test.info -a cov-json_test.info -a cov-http_test.info -a cov-base64_test.info -o cov-ut.info;;
+        lcov $(for file in cov-*.info; do echo "-a $file "; done) -o cov-ut.info;;
     (ft)
         lcov -c -d build/plugins/mqtt/CMakeFiles/plugin-mqtt.dir -o cov_report/cov-mqtt.info
         lcov -c -d build/plugins/modbus/CMakeFiles/plugin-modbus-rtu.dir -o cov_report/cov-modbus-rtu.info

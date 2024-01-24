@@ -42,7 +42,6 @@ target_include_directories(tag_sort_test PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 )
 target_link_libraries(tag_sort_test neuron-base gtest_main gtest)
-#target_link_directories(modbus_point_test PRIVATE /usr/local/lib)
 
 add_executable(modbus_test modbus_test.cc
 				${CMAKE_SOURCE_DIR}/plugins/modbus/modbus.c
@@ -51,6 +50,13 @@ target_include_directories(modbus_test PRIVATE
 				${CMAKE_SOURCE_DIR}/plugins/modbus)
 target_link_libraries(modbus_test neuron-base gtest_main gtest pthread zlog)
 
+add_executable(async_queue_test async_queue_test.cc 
+	${CMAKE_SOURCE_DIR}/src/utils/async_queue.c)
+target_include_directories(async_queue_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src/utils
+	${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(async_queue_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -58,3 +64,4 @@ gtest_discover_tests(jwt_test)
 gtest_discover_tests(base64_test)
 gtest_discover_tests(tag_sort_test)
 gtest_discover_tests(modbus_test)
+gtest_discover_tests(async_queue_test)
