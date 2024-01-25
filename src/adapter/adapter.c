@@ -521,6 +521,20 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, cmd->node);
         break;
     }
+    case NEU_REQ_PRGFILE_UPLOAD: {
+        neu_req_prgfile_upload_t *cmd = (neu_req_prgfile_upload_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_REQ_PRGFILE_PROCESS: {
+        neu_req_prgfile_process_t *cmd = (neu_req_prgfile_process_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
+    case NEU_RESP_PRGFILE_PROCESS: {
+        strcpy(pheader->receiver, DEFAULT_DASHBOARD_PLUGIN_NAME);
+        break;
+    }
     default:
         break;
     }
@@ -697,6 +711,8 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_GROUP:
     case NEU_RESP_ERROR:
     case NEU_REQRESP_NODES_STATE:
+    case NEU_REQ_PRGFILE_PROCESS:
+    case NEU_RESP_PRGFILE_PROCESS:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
@@ -1161,7 +1177,11 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
-
+    case NEU_REQ_PRGFILE_UPLOAD: {
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        break;
+    }
     default:
         nlog_warn("adapter: %s recv msg type error, type: %s", adapter->name,
                   neu_reqresp_type_string(header->type));
