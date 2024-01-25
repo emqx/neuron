@@ -89,7 +89,6 @@ enum neu_http_method {
 enum neu_http_handler_type {
     NEU_HTTP_HANDLER_FUNCTION = 0x0,
     NEU_HTTP_HANDLER_DIRECTORY,
-    NEU_HTTP_HANDLER_PROXY,
     NEU_HTTP_HANDLER_REDIRECT,
 };
 
@@ -107,8 +106,5 @@ struct neu_http_handler {
 int  neu_http_add_handler(nng_http_server *              server,
                           const struct neu_http_handler *http_handler);
 void neu_http_handle_cors(nng_aio *aio);
-
-int neu_http_proxy_handler(const struct neu_http_handler *http_handler,
-                           nng_http_handler **            handler);
 
 #endif
