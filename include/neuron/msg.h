@@ -137,6 +137,10 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_UPDATE_LOG_LEVEL,
 
+    NEU_REQ_PRGFILE_UPLOAD,
+    NEU_REQ_PRGFILE_PROCESS,
+    NEU_RESP_PRGFILE_PROCESS,
+
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -236,6 +240,9 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_GET_NDRIVER_TAGS]        = "NEU_RESP_GET_NDRIVER_TAGS",
 
     [NEU_REQ_UPDATE_LOG_LEVEL] = "NEU_REQ_UPDATE_LOG_LEVEL",
+    [NEU_REQ_PRGFILE_UPLOAD]   = "NEU_REQ_PRGFILE_UPLOAD",
+    [NEU_REQ_PRGFILE_PROCESS]  = "NEU_REQ_PRGFILE_PROCESS",
+    [NEU_RESP_PRGFILE_PROCESS] = "NEU_RESP_PRGFILE_PROCESS",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -1137,6 +1144,25 @@ inline static void neu_msg_exchange(neu_reqresp_head_t *header)
     memset(header->receiver, 0, sizeof(header->receiver));
     strcpy(header->receiver, tmp);
 }
+
+typedef struct {
+    char driver[NEU_NODE_NAME_LEN];
+    char path[128];
+    int  prg_int_param1;
+    int  prg_int_param2;
+    char prg_str_param1[128];
+    char prg_str_param2[128];
+} neu_req_prgfile_upload_t;
+
+typedef struct {
+    char driver[NEU_NODE_NAME_LEN];
+} neu_req_prgfile_process_t;
+
+typedef struct {
+    char path[128];
+    int  state;
+    char reason[256];
+} neu_resp_prgfile_process_t;
 
 #ifdef __cplusplus
 }
