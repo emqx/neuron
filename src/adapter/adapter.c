@@ -532,7 +532,7 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         break;
     }
     case NEU_RESP_PRGFILE_PROCESS: {
-        strcpy(pheader->receiver, DEFAULT_DASHBOARD_PLUGIN_NAME);
+        strcpy(pheader->receiver, header.sender);
         break;
     }
     default:
