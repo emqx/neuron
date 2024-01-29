@@ -993,7 +993,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
-
+    case NEU_REQ_PRGFILE_PROCESS:
+    case NEU_REQ_PRGFILE_UPLOAD:
     case NEU_REQ_GET_NODE_STATE: {
         if (neu_node_manager_find(manager->node_manager, header->receiver) ==
             NULL) {
@@ -1187,6 +1188,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_RESP_GET_NODE_SETTING:
     case NEU_RESP_ERROR:
     case NEU_RESP_READ_GROUP:
+    case NEU_RESP_PRGFILE_PROCESS:
         forward_msg(manager, header, header->receiver);
         break;
 

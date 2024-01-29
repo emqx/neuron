@@ -127,9 +127,12 @@ static int driver_config(neu_plugin_t *plugin, const char *config)
 static int driver_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
                           void *data)
 {
-    (void) plugin;
-    (void) head;
     (void) data;
+    switch (head->type) {
+    default:
+        plog_warn(plugin, "unhandle msg type: %d", head->type);
+        break;
+    }
     return 0;
 }
 
