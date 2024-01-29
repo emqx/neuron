@@ -64,7 +64,6 @@ typedef struct {
     neu_json_tag_t *tags;
 } neu_json_add_tags_req_t;
 
-int  neu_json_encode_add_tags_req(void *json_object, void *param);
 int  neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result);
 void neu_json_decode_add_tags_req_free(neu_json_add_tags_req_t *req);
 
@@ -118,7 +117,6 @@ typedef struct {
     neu_json_del_tags_req_name_t *tags;
 } neu_json_del_tags_req_t;
 
-int  neu_json_encode_del_tags_req(void *json_object, void *param);
 int  neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result);
 void neu_json_decode_del_tags_req_free(neu_json_del_tags_req_t *req);
 

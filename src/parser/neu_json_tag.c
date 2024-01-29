@@ -281,48 +281,6 @@ void neu_json_decode_tag_array_fini(neu_json_tag_array_t *arr)
     free(arr->tags);
 }
 
-int neu_json_encode_add_tags_req(void *json_object, void *param)
-{
-    int                      ret = 0;
-    neu_json_add_tags_req_t *req = param;
-
-    void *tag_array = neu_json_array();
-    if (NULL == tag_array) {
-        return -1;
-    }
-
-    neu_json_tag_array_t arr = {
-        .len  = req->n_tag,
-        .tags = req->tags,
-    };
-    ret = neu_json_encode_tag_array(tag_array, &arr);
-    if (0 != ret) {
-        neu_json_encode_free(tag_array);
-        return ret;
-    }
-
-    neu_json_elem_t req_elems[] = { {
-                                        .name      = "node",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->node,
-                                    },
-                                    {
-                                        .name      = "group",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->group,
-                                    },
-                                    {
-                                        .name         = "tags",
-                                        .t            = NEU_JSON_OBJECT,
-                                        .v.val_object = tag_array,
-                                    } };
-
-    ret = neu_json_encode_field(json_object, req_elems,
-                                NEU_JSON_ELEM_SIZE(req_elems));
-
-    return ret;
-}
-
 int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
 {
     int                      ret      = 0;
@@ -623,48 +581,6 @@ int neu_json_encode_au_gtags_resp(void *json_object, void *param)
 
     ret = neu_json_encode_field(json_object, resp_elems,
                                 NEU_JSON_ELEM_SIZE(resp_elems));
-
-    return ret;
-}
-
-int neu_json_encode_del_tags_req(void *json_object, void *param)
-{
-    int                      ret = 0;
-    neu_json_del_tags_req_t *req = param;
-
-    void *                        tag_array = neu_json_array();
-    neu_json_del_tags_req_name_t *p_name    = req->tags;
-    for (int i = 0; i < req->n_tags; i++) {
-        neu_json_elem_t tag_elems[] = {
-            {
-                .name      = NULL,
-                .t         = NEU_JSON_STR,
-                .v.val_str = *p_name,
-            },
-        };
-        tag_array = neu_json_encode_array_value(tag_array, tag_elems,
-                                                NEU_JSON_ELEM_SIZE(tag_elems));
-        p_name++;
-    }
-
-    neu_json_elem_t req_elems[] = { {
-                                        .name      = "node",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->node,
-                                    },
-                                    {
-                                        .name      = "group",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->group,
-                                    },
-                                    {
-                                        .name         = "tags",
-                                        .t            = NEU_JSON_OBJECT,
-                                        .v.val_object = tag_array,
-                                    } };
-
-    ret = neu_json_encode_field(json_object, req_elems,
-                                NEU_JSON_ELEM_SIZE(req_elems));
 
     return ret;
 }
