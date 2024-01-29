@@ -91,6 +91,7 @@ static void read_group(int64_t timestamp, int64_t timeout,
                        neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, UT_array *tag_values);
 static void read_report_group(int64_t timestamp, int64_t timeout,
+                              neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
                               UT_array *tags, UT_array *tag_values);
 static void update(neu_adapter_t *adapter, const char *group, const char *tag,
@@ -225,8 +226,9 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     data->group  = strdup(group);
     utarray_new(data->tags, neu_resp_tag_value_meta_icd());
 
-    read_report_group(global_timestamp, 0, driver->cache, group, tags,
-                      data->tags);
+    read_report_group(global_timestamp, 0,
+                      neu_adapter_get_tag_cache_type(&driver->adapter),
+                      driver->cache, group, tags, data->tags);
 
     if (utarray_len(data->tags) > 0) {
         group_t *find = NULL;
@@ -1474,6 +1476,7 @@ static int report_callback(void *usr_data)
     read_report_group(global_timestamp,
                       neu_group_get_interval(group->group) *
                           NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                      neu_adapter_get_tag_cache_type(&group->driver->adapter),
                       group->driver->cache, group->name, tags, data->tags);
 
     nlog_info("report group: %s, all tags: %d, report tags: %d", group->name,
@@ -1643,6 +1646,7 @@ static int read_callback(void *usr_data)
 }
 
 static void read_report_group(int64_t timestamp, int64_t timeout,
+                              neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
                               UT_array *tags, UT_array *tag_values)
 {
@@ -1735,7 +1739,8 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             break;
         }
 
-        if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
+        if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
+            !neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
             (timestamp - value.timestamp) > timeout && timeout > 0) {
             tag_value.value.type      = NEU_TYPE_ERROR;
             tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
