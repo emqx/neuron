@@ -141,7 +141,16 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
         ele->v.val_int = json_integer_value(ob);
         break;
     case NEU_JSON_STR:
-        ele->v.val_str = strdup(json_string_value(ob));
+        if (!json_is_string(ob)) {
+            zlog_error(neuron, "json decode: %s failed", ele->name);
+            return -1;
+        }
+        const char *str_val = json_string_value(ob);
+        if (str_val == NULL) {
+            zlog_error(neuron, "json decode: %s failed", ele->name);
+            return -1;
+        }
+        ele->v.val_str = strdup(str_val);
         break;
     case NEU_JSON_FLOAT:
         if (json_is_integer(ob)) {
