@@ -15,6 +15,9 @@ class TestDriver:
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
+        response = api.get_nodes(type=1)
+        assert 200 == response.status_code
+
     @description(given="running neuron", when="add driver node with wrong setting", then="should fail")
     @pytest.mark.parametrize('node,plugin', [('modbus-01', config.PLUGIN_MODBUS_TCP)])
     def test_create_node_with_wrong_setting(self, node, plugin):

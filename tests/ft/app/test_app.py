@@ -16,6 +16,9 @@ class TestDriver:
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
+        response = api.get_nodes(type=1)
+        assert 200 == response.status_code
+
     @description(given="running neuron", when="add app node", then="add success")
     @pytest.mark.parametrize('node,plugin', [('mqtt-1', config.PLUGIN_MQTT)])
     def test_create_app_node(self, node, plugin):
@@ -23,6 +26,9 @@ class TestDriver:
                                 plugin=plugin)
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_nodes(type=2)
+        assert 200 == response.status_code
 
     @description(given="running neuron", when="add app node with wrong setting", then="should fail")
     @pytest.mark.parametrize('node,plugin', [('mqtt-test', config.PLUGIN_MQTT)])

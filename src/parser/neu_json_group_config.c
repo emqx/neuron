@@ -32,32 +32,6 @@
 
 #include "neu_json_group_config.h"
 
-int neu_json_encode_add_group_config_req(void *json_object, void *param)
-{
-    int                              ret = 0;
-    neu_json_add_group_config_req_t *req = param;
-
-    neu_json_elem_t req_elems[] = { {
-                                        .name      = "node",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->node,
-                                    },
-                                    {
-                                        .name      = "group",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->group,
-                                    },
-                                    {
-                                        .name      = "interval",
-                                        .t         = NEU_JSON_INT,
-                                        .v.val_int = req->interval,
-                                    } };
-    ret                         = neu_json_encode_field(json_object, req_elems,
-                                NEU_JSON_ELEM_SIZE(req_elems));
-
-    return ret;
-}
-
 int neu_json_decode_add_group_config_req(
     char *buf, neu_json_add_group_config_req_t **result)
 {
@@ -114,27 +88,6 @@ void neu_json_decode_add_group_config_req_free(
     free(req->group);
 
     free(req);
-}
-
-int neu_json_encode_del_group_config_req(void *json_object, void *param)
-{
-    int                              ret = 0;
-    neu_json_del_group_config_req_t *req = param;
-
-    neu_json_elem_t req_elems[] = { {
-                                        .name      = "node",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->node,
-                                    },
-                                    {
-                                        .name      = "group",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->group,
-                                    } };
-    ret                         = neu_json_encode_field(json_object, req_elems,
-                                NEU_JSON_ELEM_SIZE(req_elems));
-
-    return ret;
 }
 
 int neu_json_decode_del_group_config_req(
@@ -539,44 +492,6 @@ void neu_json_decode_unsubscribe_req_free(neu_json_unsubscribe_req_t *req)
     free(req->group);
 
     free(req);
-}
-
-int neu_json_encode_update_group_config_req(void *json_object, void *param)
-{
-    int                                 ret = 0;
-    neu_json_update_group_config_req_t *req = param;
-
-    neu_json_elem_t req_elems[] = { {
-                                        .name      = "node",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->node,
-                                    },
-                                    {
-                                        .name      = "group",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->group,
-                                    },
-                                    {
-                                        .name      = "new_name",
-                                        .t         = NEU_JSON_STR,
-                                        .v.val_str = req->new_name,
-                                    } };
-    ret                         = neu_json_encode_field(json_object, req_elems,
-                                NEU_JSON_ELEM_SIZE(req_elems));
-    if (0 != ret) {
-        return ret;
-    }
-
-    if (req->set_interval) {
-        neu_json_elem_t interval_elem = {
-            .name      = "interval",
-            .t         = NEU_JSON_INT,
-            .v.val_int = req->interval,
-        };
-        ret = neu_json_encode_field(json_object, &interval_elem, 1);
-    }
-
-    return ret;
 }
 
 int neu_json_decode_update_group_config_req(

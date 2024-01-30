@@ -51,8 +51,6 @@ void neu_json_decode_update_log_level_req_free(
 int neu_json_decode_update_log_level_req(
     char *buf, neu_json_update_log_level_req_t **result);
 
-int neu_json_encode_get_log_resp(void *json_object, void *param);
-
 #ifdef __cplusplus
 }
 #endif
