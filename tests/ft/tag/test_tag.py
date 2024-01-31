@@ -458,3 +458,29 @@ class TestLog:
 
         assert 409 == response.status_code
         assert NEU_ERR_TAG_NAME_CONFLICT == response.json()['error']
+
+    @description(given="tag name length exceeds 128", when="adding", then="add failed")
+    def test_adding_tag_name_exceeds_128(self):
+        response = api.add_gtags(
+            node='modbus-tcp-tag-test', 
+            groups=[{"group": "group","interval": 3000,
+                     "tags": [{
+                            "name": "Lt7Pa5Q0tKJN2gL3WiYJLnaFzqBq5q5xyJ1vYHxyf2j0IZR7y3RBYxXGQBHwV7dEzD7lIcF1yX9aR3vH8leYxXxHUILk2eVqQBlaQLaROZt9yZ9xQNxKkfy5mySHb79",
+                            "address": "1!400001",
+                            "attribute": 3,
+                            "type": 3,
+                            "decimal": 0.01}]}])
+        assert 200 == response.status_code
+        assert NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.add_gtags(
+            node='modbus-tcp-tag-test', 
+            groups=[{"group": "group","interval": 3000,
+                     "tags": [{
+                            "name": "Lt7Pa5Q0tKJN2gL3WiYJLnaFzqBq5q5xyJ1vYHxyf2j0IZR7y3RBYxXGQBHwV7dEzD7lIcF1yX9aR3vH8leYxXxHUILk2eVqQBlaQLaROZt9yZ9xQNxKkfy5mySHb79Y8",
+                            "address": "1!400001",
+                            "attribute": 3,
+                            "type": 3,
+                            "decimal": 0.01}]}])
+        assert 400 == response.status_code
+        assert NEU_ERR_TAG_NAME_TOO_LONG == response.json()['error']
