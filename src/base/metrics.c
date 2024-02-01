@@ -280,10 +280,19 @@ int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
         return -1;
     }
 
-    entry->name  = name;
-    entry->type  = type;
-    entry->help  = help;
-    entry->value = init;
+    if (NEU_METRIC_TYPE_ROLLING_COUNTER == type) {
+        entry->rcnt = neu_rolling_counter_new(init);
+        if (NULL == entry->rcnt) {
+            free(entry);
+            return -1;
+        }
+    } else {
+        entry->value = init;
+    }
+
+    entry->name = name;
+    entry->type = type;
+    entry->help = help;
     HASH_ADD_STR(*entries, name, entry);
     return 0;
 }

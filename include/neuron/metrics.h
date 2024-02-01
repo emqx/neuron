@@ -28,12 +28,14 @@ extern "C" {
 
 #include "define.h"
 #include "type.h"
+#include "utils/rolling_counter.h"
 #include "utils/uthash.h"
 
 typedef enum {
     NEU_METRIC_TYPE_COUNTER,
     NEU_METRIC_TYPE_GAUAGE,
     NEU_METRIC_TYPE_COUNTER_SET,
+    NEU_METRIC_TYPE_ROLLING_COUNTER,
 } neu_metric_type_e;
 
 // node running state
@@ -140,11 +142,12 @@ typedef enum {
 
 // metric entry
 typedef struct {
-    const char *      name;  // NOTE: should points to string literal
-    const char *      help;  // NOTE: should points to string literal
-    neu_metric_type_e type;  //
-    uint64_t          value; //
-    UT_hash_handle    hh;    // ordered by name
+    const char *           name;  // NOTE: should points to string literal
+    const char *           help;  // NOTE: should points to string literal
+    neu_metric_type_e      type;  //
+    uint64_t               value; //
+    neu_rolling_counter_t *rcnt;  //
+    UT_hash_handle         hh;    // ordered by name
 } neu_metric_entry_t;
 
 // group metrics
@@ -202,6 +205,9 @@ int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
 
 static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
 {
+    if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
+        neu_rolling_counter_free(entry->rcnt);
+    }
     free(entry);
 }
 

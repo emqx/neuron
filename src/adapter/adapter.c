@@ -417,6 +417,9 @@ static int adapter_update_metric(neu_adapter_t *adapter,
 
     if (NEU_METRIC_TYPE_COUNTER == entry->type) {
         entry->value += n;
+    } else if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
+        entry->value =
+            neu_rolling_counter_inc(entry->rcnt, global_timestamp, n);
     } else {
         entry->value = n;
     }
@@ -1494,6 +1497,9 @@ int neu_adapter_update_group_metric(neu_adapter_t *adapter,
 
     if (NEU_METRIC_TYPE_COUNTER == entry->type) {
         entry->value += n;
+    } else if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
+        entry->value =
+            neu_rolling_counter_inc(entry->rcnt, global_timestamp, n);
     } else {
         entry->value = n;
     }
