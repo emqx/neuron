@@ -57,6 +57,13 @@ target_include_directories(async_queue_test PRIVATE
 	${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(async_queue_test neuron-base gtest_main gtest)
 
+add_executable(rolling_counter_test rolling_counter_test.cc)
+target_include_directories(rolling_counter_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(rolling_counter_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -65,3 +72,4 @@ gtest_discover_tests(base64_test)
 gtest_discover_tests(tag_sort_test)
 gtest_discover_tests(modbus_test)
 gtest_discover_tests(async_queue_test)
+gtest_discover_tests(rolling_counter_test)
