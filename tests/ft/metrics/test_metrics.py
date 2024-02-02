@@ -102,8 +102,23 @@ class TestMetrics:
             "send_msg_errors_total": (0, {}),
             "recv_msgs_total": (0, {}),
             "cached_msgs": (0, {}),
+            "last_5s_trans_data_msgs": (0, {}),
+            "last_30s_trans_data_msgs": (0, {}),
+            "last_60s_trans_data_msgs": (0, {}),
+            "last_5s_send_bytes": (0, {}),
+            "last_30s_send_bytes": (0, {}),
+            "last_60s_send_bytes": (0, {}),
+            "last_5s_recv_bytes": (0, {}),
+            "last_30s_recv_bytes": (0, {}),
+            "last_60s_recv_bytes": (0, {}),
+            "last_5s_recv_msgs": (0, {}),
+            "last_30s_recv_msgs": (0, {}),
+            "last_60s_recv_msgs": (0, {}),
+            "last_60s_disconnections": (0, {}),
+            "last_600s_disconnections": (0, {}),
+            "last_1800s_disconnections": (0, {}),
         }
-        
+
         assert_metrics(resp.content.decode('utf-8'), expected_metrics)
 
     @description(given="neuron is started",
