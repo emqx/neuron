@@ -37,13 +37,13 @@ CREATE TABLE
   IF NOT EXISTS template_tags (
     tmpl_name TEXT NOT NULL,
     group_name TEXT NOT NULL,
-    name TEXT NULL check(length(name) <= 64),
+    name TEXT NULL check(length(name) <= 128),
     address TEXT NULL check(length(address) <= 128),
     attribute INTEGER NOT NULL check(attribute BETWEEN 0 AND 15),
     PRECISION INTEGER NOT NULL check(PRECISION BETWEEN 0 AND 17),
     decimal REAL NOT NULL,
     TYPE INTEGER NOT NULL check(TYPE BETWEEN 0 AND 19),
-    description TEXT NULL check(length(description) <= 128),
+    description TEXT NULL check(length(description) <= 512),
     value TEXT DEFAULT NULL,
     UNIQUE (tmpl_name, group_name, name),
     FOREIGN KEY (tmpl_name, group_name) REFERENCES template_groups (tmpl_name, name) ON UPDATE CASCADE ON DELETE CASCADE
