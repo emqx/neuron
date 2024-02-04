@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS
     group_name TEXT NOT NULL,
     name TEXT NULL check(length(name) <= 128),
     address TEXT NULL check(length(address) <= 128),
-    attribute INTEGER NOT NULL check(attribute BETWEEN 0 AND 7),
+    attribute INTEGER NOT NULL check(attribute BETWEEN 0 AND 15),
     precision INTEGER NOT NULL check(precision BETWEEN 0 AND 17),
     decimal REAL NOT NULL,
     type INTEGER NOT NULL check(type BETWEEN 0 AND 19),
