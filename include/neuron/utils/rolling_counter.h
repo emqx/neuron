@@ -90,6 +90,15 @@ static inline uint64_t neu_rolling_counter_inc(neu_rolling_counter_t *counter,
     return counter->val;
 }
 
+/** Reset the counter.
+ */
+static inline void neu_rolling_counter_reset(neu_rolling_counter_t *counter)
+{
+    counter->val = 0;
+    counter->hd  = 0;
+    memset(counter->counts, 0, counter->n * sizeof(counter->counts[0]));
+}
+
 /** Return the counter value.
  *
  * NOTE: may return stale value if the counter is not updated frequent enough.
