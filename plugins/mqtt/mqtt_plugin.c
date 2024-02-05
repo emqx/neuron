@@ -37,6 +37,9 @@ static void disconnect_cb(void *data)
 {
     neu_plugin_t *plugin      = data;
     plugin->common.link_state = NEU_NODE_LINK_STATE_DISCONNECTED;
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_DISCONNECTION_60S, 1, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_DISCONNECTION_600S, 1, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_DISCONNECTION_1800S, 1, NULL);
     plog_notice(plugin, "plugin `%s` disconnected",
                 neu_plugin_module.module_name);
 }
@@ -60,13 +63,26 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
 static int mqtt_plugin_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
+
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_CACHED_MSGS_NUM, 0);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_TRANS_DATA_5S, 5000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_TRANS_DATA_30S, 30000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_TRANS_DATA_60S, 60000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_SEND_BYTES_5S, 5000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_SEND_BYTES_30S, 30000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_SEND_BYTES_60S, 60000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_RECV_BYTES_5S, 5000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_RECV_BYTES_30S, 30000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_RECV_BYTES_60S, 60000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_RECV_MSGS_5S, 5000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_RECV_MSGS_30S, 30000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_RECV_MSGS_60S, 60000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_DISCONNECTION_60S, 60000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_DISCONNECTION_600S, 600000);
+    NEU_PLUGIN_REGISTER_METRIC(plugin, NEU_METRIC_DISCONNECTION_1800S, 1800000);
+
     plog_notice(plugin, "initialize plugin `%s` success",
                 neu_plugin_module.module_name);
-    neu_adapter_register_metric_cb_t register_metric =
-        plugin->common.adapter_callbacks->register_metric;
-    register_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
-                    NEU_METRIC_CACHED_MSGS_NUM_HELP,
-                    NEU_METRIC_CACHED_MSGS_NUM_TYPE, 0);
     return NEU_ERR_SUCCESS;
 }
 
@@ -333,15 +349,12 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 {
     neu_err_code_e error = NEU_ERR_SUCCESS;
 
-    neu_adapter_update_metric_cb_t update_metric =
-        plugin->common.adapter_callbacks->update_metric;
-
     // update cached messages number per seconds
     if (NULL != plugin->client &&
         (global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
-        update_metric(plugin->common.adapter, NEU_METRIC_CACHED_MSGS_NUM,
-                      neu_mqtt_client_get_cached_msgs_num(plugin->client),
-                      NULL);
+        NEU_PLUGIN_UPDATE_METRIC(
+            plugin, NEU_METRIC_CACHED_MSGS_NUM,
+            neu_mqtt_client_get_cached_msgs_num(plugin->client), NULL);
         plugin->cache_metric_update_ts = global_timestamp;
     }
 
@@ -353,6 +366,9 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         error = handle_read_response(plugin, head->ctx, data);
         break;
     case NEU_REQRESP_TRANS_DATA: {
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_5S, 1, NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_30S, 1, NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_60S, 1, NULL);
         error = handle_trans_data(plugin, data);
         break;
     }

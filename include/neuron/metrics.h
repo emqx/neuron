@@ -28,12 +28,14 @@ extern "C" {
 
 #include "define.h"
 #include "type.h"
+#include "utils/rolling_counter.h"
 #include "utils/uthash.h"
 
 typedef enum {
     NEU_METRIC_TYPE_COUNTER,
     NEU_METRIC_TYPE_GAUAGE,
     NEU_METRIC_TYPE_COUNTER_SET,
+    NEU_METRIC_TYPE_ROLLING_COUNTER,
 } neu_metric_type_e;
 
 // node running state
@@ -131,6 +133,96 @@ typedef enum {
 #define NEU_METRIC_RECV_MSGS_TOTAL_TYPE NEU_METRIC_TYPE_COUNTER
 #define NEU_METRIC_RECV_MSGS_TOTAL_HELP "Total number of messages received"
 
+// number of trans data message within the last 5 seconds
+#define NEU_METRIC_TRANS_DATA_5S "last_5s_trans_data_msgs"
+#define NEU_METRIC_TRANS_DATA_5S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_TRANS_DATA_5S_HELP \
+    "Number of internal trans data message within the last 5 seconds"
+
+// number of trans data message within the last 30 seconds
+#define NEU_METRIC_TRANS_DATA_30S "last_30s_trans_data_msgs"
+#define NEU_METRIC_TRANS_DATA_30S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_TRANS_DATA_30S_HELP \
+    "Number of internal trans data message within the last 30 seconds"
+
+// number of trans data message within the last 60 seconds
+#define NEU_METRIC_TRANS_DATA_60S "last_60s_trans_data_msgs"
+#define NEU_METRIC_TRANS_DATA_60S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_TRANS_DATA_60S_HELP \
+    "Number of internal trans data message within the last 60 seconds"
+
+// number of bytes sent within the last 5 seconds
+#define NEU_METRIC_SEND_BYTES_5S "last_5s_send_bytes"
+#define NEU_METRIC_SEND_BYTES_5S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_SEND_BYTES_5S_HELP \
+    "Number of bytes sent within the last 5 seconds"
+
+// number of bytes sent within the last 30 seconds
+#define NEU_METRIC_SEND_BYTES_30S "last_30s_send_bytes"
+#define NEU_METRIC_SEND_BYTES_30S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_SEND_BYTES_30S_HELP \
+    "Number of bytes sent within the last 30 seconds"
+
+// number of bytes sent within the last 60 seconds
+#define NEU_METRIC_SEND_BYTES_60S "last_60s_send_bytes"
+#define NEU_METRIC_SEND_BYTES_60S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_SEND_BYTES_60S_HELP \
+    "Number of bytes sent within the last 60 seconds"
+
+// number of bytes received within the last 5 seconds
+#define NEU_METRIC_RECV_BYTES_5S "last_5s_recv_bytes"
+#define NEU_METRIC_RECV_BYTES_5S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_RECV_BYTES_5S_HELP \
+    "Number of bytes received within the last 5 seconds"
+
+// number of bytes received within the last 30 seconds
+#define NEU_METRIC_RECV_BYTES_30S "last_30s_recv_bytes"
+#define NEU_METRIC_RECV_BYTES_30S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_RECV_BYTES_30S_HELP \
+    "Number of bytes received within the last 30 seconds"
+
+// number of bytes received within the last 60 seconds
+#define NEU_METRIC_RECV_BYTES_60S "last_60s_recv_bytes"
+#define NEU_METRIC_RECV_BYTES_60S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_RECV_BYTES_60S_HELP \
+    "Number of bytes received within the last 60 seconds"
+
+// number of messages received within the last 5 seconds
+#define NEU_METRIC_RECV_MSGS_5S "last_5s_recv_msgs"
+#define NEU_METRIC_RECV_MSGS_5S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_RECV_MSGS_5S_HELP \
+    "Number of messages received within the last 5 seconds"
+
+// number of messages received within the last 30 seconds
+#define NEU_METRIC_RECV_MSGS_30S "last_30s_recv_msgs"
+#define NEU_METRIC_RECV_MSGS_30S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_RECV_MSGS_30S_HELP \
+    "Number of messages received within the last 30 seconds"
+
+// number of messages received within the last 60 seconds
+#define NEU_METRIC_RECV_MSGS_60S "last_60s_recv_msgs"
+#define NEU_METRIC_RECV_MSGS_60S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_RECV_MSGS_60S_HELP \
+    "Number of messages received within the last 60 seconds"
+
+// number of disconnection within the last 60 seconds
+#define NEU_METRIC_DISCONNECTION_60S "last_60s_disconnections"
+#define NEU_METRIC_DISCONNECTION_60S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_DISCONNECTION_60S_HELP \
+    "Number of disconnection within the last 60 seconds"
+
+// number of disconnection within the last 600 seconds
+#define NEU_METRIC_DISCONNECTION_600S "last_600s_disconnections"
+#define NEU_METRIC_DISCONNECTION_600S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_DISCONNECTION_600S_HELP \
+    "Number of disconnection within the last 600 seconds"
+
+// number of disconnection within the last 1800 seconds
+#define NEU_METRIC_DISCONNECTION_1800S "last_1800s_disconnections"
+#define NEU_METRIC_DISCONNECTION_1800S_TYPE NEU_METRIC_TYPE_ROLLING_COUNTER
+#define NEU_METRIC_DISCONNECTION_1800S_HELP \
+    "Number of disconnection within the last 1800 seconds"
+
 typedef enum {
     NEU_METRICS_CATEGORY_GLOBAL,
     NEU_METRICS_CATEGORY_DRIVER,
@@ -140,11 +232,12 @@ typedef enum {
 
 // metric entry
 typedef struct {
-    const char *      name;  // NOTE: should points to string literal
-    const char *      help;  // NOTE: should points to string literal
-    neu_metric_type_e type;  //
-    uint64_t          value; //
-    UT_hash_handle    hh;    // ordered by name
+    const char *           name;  // NOTE: should points to string literal
+    const char *           help;  // NOTE: should points to string literal
+    neu_metric_type_e      type;  //
+    uint64_t               value; //
+    neu_rolling_counter_t *rcnt;  //
+    UT_hash_handle         hh;    // ordered by name
 } neu_metric_entry_t;
 
 // group metrics
@@ -207,6 +300,9 @@ int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
 
 static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
 {
+    if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
+        neu_rolling_counter_free(entry->rcnt);
+    }
     free(entry);
 }
 
