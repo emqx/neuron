@@ -37,9 +37,9 @@ extern "C" {
 typedef struct {
     uint64_t val;      // accumulator
     uint64_t ts;       // head time stamp in milliseconds
-    uint32_t res : 22; // time resolution in milliseconds
+    uint32_t res : 21; // time resolution in milliseconds
     uint32_t hd : 5;   // head position
-    uint32_t n : 5;    // number of counters
+    uint32_t n : 6;    // number of counters
     uint32_t counts[]; // bins of counters
 } neu_rolling_counter_t;
 
