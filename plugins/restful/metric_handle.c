@@ -19,8 +19,11 @@
 
 #include <stdio.h>
 
+#include <pthread.h>
+
 #include "define.h"
 #include "metrics.h"
+#include "plugin.h"
 #include "utils/asprintf.h"
 #include "utils/http.h"
 #include "utils/http_handler.h"
@@ -155,8 +158,8 @@ static inline void gen_global_metrics(const neu_metrics_t *metrics,
             metrics->south_disconnected_nodes);
 }
 
-static inline void
-gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
+static inline void gen_single_node_metrics(neu_node_metrics_t *node_metrics,
+                                           FILE *              stream)
 {
     fprintf(stream,
             "# HELP node_type Driver(1) or APP(2)\n"
@@ -166,8 +169,13 @@ gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
 
     neu_metric_entry_t *e = NULL;
 
+    pthread_mutex_lock(&node_metrics->lock);
     HASH_LOOP(hh, node_metrics->entries, e)
     {
+        if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+            // force clean stale value
+            e->value = neu_rolling_counter_inc(e->rcnt, global_timestamp, 0);
+        }
         fprintf(stream,
                 "# HELP %s %s\n# TYPE %s %s\n%s{node=\"%s\"} %" PRIu64 "\n",
                 e->name, e->help, e->name, neu_metric_type_str(e->type),
@@ -179,6 +187,11 @@ gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
     {
         HASH_LOOP(hh, g->entries, e)
         {
+            if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+                // force clean stale value
+                e->value =
+                    neu_rolling_counter_inc(e->rcnt, global_timestamp, 0);
+            }
             fprintf(stream,
                     "# HELP %s %s\n# TYPE %s %s\n%s{node=\"%s\",group=\"%s\"} "
                     "%" PRIu64 "\n",
@@ -186,6 +199,7 @@ gen_single_node_metrics(const neu_node_metrics_t *node_metrics, FILE *stream)
                     e->name, node_metrics->name, g->name, e->value);
         }
     }
+    pthread_mutex_unlock(&node_metrics->lock);
 }
 
 static inline bool has_entry(neu_node_metrics_t *node_metrics, const char *name)
@@ -207,7 +221,7 @@ static inline bool has_entry(neu_node_metrics_t *node_metrics, const char *name)
     return false;
 }
 
-static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
+static void gen_all_node_metrics(neu_metrics_t *metrics, int type_filter,
                                  FILE *stream)
 {
     neu_metric_entry_t * e = NULL, *r = NULL;
@@ -252,11 +266,18 @@ static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
                         r->help, r->name, neu_metric_type_str(r->type));
             }
 
+            pthread_mutex_lock(&n->lock);
             HASH_FIND_STR(n->entries, r->name, e);
             if (e) {
+                if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+                    // force clean stale value
+                    e->value =
+                        neu_rolling_counter_inc(e->rcnt, global_timestamp, 0);
+                }
                 fprintf(stream, "%s{node=\"%s\"} %" PRIu64 "\n", e->name,
                         n->name, e->value);
 
+                pthread_mutex_unlock(&n->lock);
                 continue;
             }
 
@@ -264,11 +285,17 @@ static void gen_all_node_metrics(const neu_metrics_t *metrics, int type_filter,
             {
                 HASH_FIND_STR(g->entries, r->name, e);
                 if (e) {
+                    if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+                        // force clean stale value
+                        e->value = neu_rolling_counter_inc(e->rcnt,
+                                                           global_timestamp, 0);
+                    }
                     fprintf(stream,
                             "%s{node=\"%s\",group=\"%s\"} %" PRIu64 "\n",
                             e->name, n->name, g->name, e->value);
                 }
             }
+            pthread_mutex_unlock(&n->lock);
         }
     }
 }
@@ -280,7 +307,7 @@ struct context {
     const char *node;
 };
 
-static void gen_node_metrics(const neu_metrics_t *metrics, struct context *ctx)
+static void gen_node_metrics(neu_metrics_t *metrics, struct context *ctx)
 {
     if (ctx->node[0]) {
         neu_node_metrics_t *n = NULL;
