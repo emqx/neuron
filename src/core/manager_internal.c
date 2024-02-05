@@ -91,6 +91,7 @@ int neu_manager_add_node(neu_manager_t *manager, const char *node_name,
         0 != (ret = neu_adapter_set_setting(adapter, setting))) {
         neu_node_manager_del(manager->node_manager, node_name);
         neu_adapter_uninit(adapter);
+        neu_adapter_destroy(adapter);
         return ret;
     }
 
