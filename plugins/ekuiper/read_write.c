@@ -30,9 +30,6 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
 {
     int rv = 0;
 
-    neu_adapter_update_metric_cb_t update_metric =
-        plugin->common.adapter_callbacks->update_metric;
-
     char *           json_str = NULL;
     json_read_resp_t resp     = {
         .plugin     = plugin,
@@ -59,15 +56,18 @@ void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data)
     rv = nng_sendmsg(plugin->sock, msg,
                      NNG_FLAG_NONBLOCK); // TODO: use aio to send message
     if (0 == rv) {
-        update_metric(plugin->common.adapter, NEU_METRIC_SEND_BYTES, json_len,
-                      NULL);
-        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSGS_TOTAL, 1,
-                      NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSGS_TOTAL, 1, NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_5S, json_len,
+                                 NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_30S, json_len,
+                                 NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_BYTES_60S, json_len,
+                                 NULL);
     } else {
         plog_error(plugin, "nng cannot send msg: %s", nng_strerror(rv));
         nng_msg_free(msg);
-        update_metric(plugin->common.adapter, NEU_METRIC_SEND_MSG_ERRORS_TOTAL,
-                      1, NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_SEND_MSG_ERRORS_TOTAL, 1,
+                                 NULL);
     }
 }
 
@@ -80,9 +80,6 @@ void recv_data_callback(void *arg)
     char *            json_str = NULL;
     json_write_req_t *req      = NULL;
 
-    neu_adapter_update_metric_cb_t update_metric =
-        plugin->common.adapter_callbacks->update_metric;
-
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
         plog_error(plugin, "nng_recv error: %s", nng_strerror(rv));
@@ -93,9 +90,13 @@ void recv_data_callback(void *arg)
     json_str = nng_msg_body(msg);
     json_len = nng_msg_len(msg);
     plog_debug(plugin, "<< %.*s", (int) json_len, json_str);
-    update_metric(plugin->common.adapter, NEU_METRIC_RECV_BYTES, json_len,
-                  NULL);
-    update_metric(plugin->common.adapter, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_BYTES_5S, json_len, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_BYTES_30S, json_len, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_BYTES_60S, json_len, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_5S, 1, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_30S, 1, NULL);
+    NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_60S, 1, NULL);
     if (json_decode_write_req(json_str, json_len, &req) < 0) {
         plog_error(plugin, "fail decode write request json: %.*s",
                    (int) nng_msg_len(msg), json_str);
