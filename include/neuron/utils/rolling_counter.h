@@ -37,9 +37,9 @@ extern "C" {
 typedef struct {
     uint64_t val;      // accumulator
     uint64_t ts;       // head time stamp in milliseconds
-    uint32_t res : 22; // time resolution in milliseconds
+    uint32_t res : 21; // time resolution in milliseconds
     uint32_t hd : 5;   // head position
-    uint32_t n : 5;    // number of counters
+    uint32_t n : 6;    // number of counters
     uint32_t counts[]; // bins of counters
 } neu_rolling_counter_t;
 
@@ -88,6 +88,15 @@ static inline uint64_t neu_rolling_counter_inc(neu_rolling_counter_t *counter,
     counter->counts[counter->hd] += dt;
     counter->ts += step * counter->res;
     return counter->val;
+}
+
+/** Reset the counter.
+ */
+static inline void neu_rolling_counter_reset(neu_rolling_counter_t *counter)
+{
+    counter->val = 0;
+    counter->hd  = 0;
+    memset(counter->counts, 0, counter->n * sizeof(counter->counts[0]));
 }
 
 /** Return the counter value.
