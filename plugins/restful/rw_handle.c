@@ -37,9 +37,24 @@ void handle_read(nng_aio *aio)
             int                  ret    = 0;
             neu_reqresp_head_t   header = { 0 };
             neu_req_read_group_t cmd    = { 0 };
-
+            int                  err_type;
             header.ctx  = aio;
             header.type = NEU_REQ_READ_GROUP;
+
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->node) >= NEU_GROUP_NAME_LEN) {
+                err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->node) >= NEU_TAG_NAME_LEN) {
+                err_type = NEU_ERR_TAG_NAME_TOO_LONG;
+                goto error;
+            }
 
             cmd.driver = req->node;
             cmd.group  = req->group;
@@ -55,6 +70,13 @@ void handle_read(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
+
+        success:;
         })
 }
 
@@ -66,6 +88,7 @@ void handle_write(nng_aio *aio)
         aio, neu_json_write_req_t, neu_json_decode_write_req, {
             neu_reqresp_head_t  header = { 0 };
             neu_req_write_tag_t cmd    = { 0 };
+            int                 err_type;
 
             if (req->t == NEU_JSON_STR &&
                 strlen(req->value.val_str) >= NEU_VALUE_SIZE) {
@@ -91,6 +114,21 @@ void handle_write(nng_aio *aio)
 
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAG;
+
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->node) >= NEU_GROUP_NAME_LEN) {
+                err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->node) >= NEU_TAG_NAME_LEN) {
+                err_type = NEU_ERR_TAG_NAME_TOO_LONG;
+                goto error;
+            }
 
             cmd.driver = req->node;
             cmd.group  = req->group;
@@ -134,6 +172,13 @@ void handle_write(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
+
+        success:;
         })
 }
 
@@ -145,6 +190,7 @@ void handle_write_tags(nng_aio *aio)
         aio, neu_json_write_tags_req_t, neu_json_decode_write_tags_req, {
             neu_reqresp_head_t   header = { 0 };
             neu_req_write_tags_t cmd    = { 0 };
+            int                  err_type;
 
             for (int i = 0; i < req->n_tag; i++) {
                 if (req->tags[i].t == NEU_JSON_STR) {
@@ -163,6 +209,16 @@ void handle_write_tags(nng_aio *aio)
                         nng_http_req_get_uri(nng_req));
             header.ctx  = aio;
             header.type = NEU_REQ_WRITE_TAGS;
+
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->node) >= NEU_GROUP_NAME_LEN) {
+                err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto error;
+            }
 
             cmd.driver = req->node;
             cmd.group  = req->group;
@@ -213,6 +269,13 @@ void handle_write_tags(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
+
+        success:;
         })
 }
 

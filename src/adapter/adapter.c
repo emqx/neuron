@@ -990,6 +990,9 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 if (0 == ret) {
                     adapter_storage_del_tag(cmd->driver, cmd->group,
                                             cmd->tags[i]);
+                } else {
+                    error.error = ret;
+                    break;
                 }
             }
         } else {
@@ -1107,15 +1110,24 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_update_tag_t resp = { 0 };
 
         if (adapter->module->type == NEU_NA_TYPE_DRIVER) {
+
             for (int i = 0; i < cmd->n_tag; i++) {
-                int ret = neu_adapter_driver_update_tag(
+                int ret = neu_adapter_driver_validate_tag(
                     (neu_adapter_driver_t *) adapter, cmd->group,
                     &cmd->tags[i]);
                 if (ret == 0) {
-                    adapter_storage_update_tag(cmd->driver, cmd->group,
-                                               &cmd->tags[i]);
+                    ret = neu_adapter_driver_update_tag(
+                        (neu_adapter_driver_t *) adapter, cmd->group,
+                        &cmd->tags[i]);
+                    if (ret == 0) {
+                        adapter_storage_update_tag(cmd->driver, cmd->group,
+                                                   &cmd->tags[i]);
 
-                    resp.index += 1;
+                        resp.index += 1;
+                    } else {
+                        resp.error = ret;
+                        break;
+                    }
                 } else {
                     resp.error = ret;
                     break;

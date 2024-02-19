@@ -133,8 +133,8 @@ Update tag, it should return success.
 Delete tag from non-existent group, it should return success
 	${res}=		Del Tags  modbus-node  group1  "tag1"
 
-  	Check Response Status           ${res}        200
-  	Check Error Code                ${res}        ${NEU_ERR_SUCCESS}
+  	Check Response Status           ${res}        404
+  	Check Error Code                ${res}        ${NEU_ERR_GROUP_NOT_EXIST}
 
 Update non-existent tag, it should return failure.
 	${res}= 	Update Tags  modbus-node  group  ${tag4}

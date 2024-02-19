@@ -36,11 +36,10 @@ void handle_add_tags(nng_aio *aio)
 
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_tags_req_t, neu_json_decode_add_tags_req, {
-            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
-                    neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
-                                      result_error);
-                });
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                CHECK_NODE_NAME_LENGTH_ERR;
+            } else if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                CHECK_GROUP_NAME_LENGTH_ERR;
             } else {
                 int                ret    = 0;
                 neu_reqresp_head_t header = { 0 };
@@ -110,6 +109,11 @@ void handle_add_gtags(nng_aio *aio)
             header.ctx  = aio;
             header.type = NEU_REQ_ADD_GTAG;
 
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
             for (int i = 0; i < req->n_group; i++) {
                 if (strlen(req->groups[i].group) >= NEU_GROUP_NAME_LEN) {
                     err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
@@ -123,8 +127,8 @@ void handle_add_gtags(nng_aio *aio)
 
             strcpy(cmd.driver, req->node);
             cmd.n_group = req->n_group;
+            cmd.groups  = calloc(req->n_group, sizeof(neu_gdatatag_t));
 
-            cmd.groups = calloc(req->n_group, sizeof(neu_gdatatag_t));
             for (int i = 0; i < req->n_group; i++) {
                 strcpy(cmd.groups[i].group, req->groups[i].group);
                 cmd.groups[i].n_tag    = req->groups[i].n_tag;
@@ -166,11 +170,9 @@ void handle_add_gtags(nng_aio *aio)
                 });
             }
             goto success;
-
         error:
             NEU_JSON_RESPONSE_ERROR(
                 err_type, { neu_http_response(aio, err_type, result_error); });
-
         success:;
         })
 }
@@ -179,9 +181,8 @@ void handle_add_gtags_resp(nng_aio *aio, neu_resp_add_tag_t *resp)
 {
     neu_json_add_gtag_res_t res    = { 0 };
     char *                  result = NULL;
-
-    res.error = resp->error;
-    res.index = resp->index;
+    res.error                      = resp->error;
+    res.index                      = resp->index;
 
     neu_json_encode_by_fn(&res, neu_json_encode_au_gtags_resp, &result);
     NEU_JSON_RESPONSE_ERROR(resp->error,
@@ -198,13 +199,33 @@ void handle_del_tags(nng_aio *aio)
             int                ret    = 0;
             neu_reqresp_head_t header = { 0 };
             neu_req_del_tag_t  cmd    = { 0 };
+            int                err_type;
 
             header.ctx  = aio;
             header.type = NEU_REQ_DEL_TAG;
+
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto error;
+            }
+
             strcpy(cmd.driver, req->node);
             strcpy(cmd.group, req->group);
             cmd.n_tag = req->n_tags;
-            cmd.tags  = calloc(req->n_tags, sizeof(char *));
+
+            for (int i = 0; i < req->n_tags; i++) {
+                if (strlen(req->tags[i]) >= NEU_TAG_ADDRESS_LEN) {
+                    err_type = NEU_ERR_TAG_NAME_TOO_LONG;
+                    goto error;
+                }
+            }
+
+            cmd.tags = calloc(req->n_tags, sizeof(char *));
 
             for (int i = 0; i < req->n_tags; i++) {
                 cmd.tags[i] = strdup(req->tags[i]);
@@ -216,6 +237,12 @@ void handle_del_tags(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
+        success:;
         })
 }
 
@@ -231,6 +258,7 @@ void handle_update_tags(nng_aio *aio)
 
             header.ctx  = aio;
             header.type = NEU_REQ_UPDATE_TAG;
+
             strcpy(cmd.driver, req->node);
             strcpy(cmd.group, req->group);
             cmd.n_tag = req->n_tag;
