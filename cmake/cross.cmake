@@ -21,3 +21,7 @@ link_directories(${CMAKE_STAGING_PREFIX})
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "mips32")
 	link_libraries(atomic)
 endif()
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "riscv64")
+	link_libraries(atomic)
+endif()
