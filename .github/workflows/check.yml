@@ -37,7 +37,7 @@ jobs:
         run: |
           sudo apt install cppcheck
           cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction ./plugins ./src
-          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude --suppress=unusedFunction --suppress=variableScope ./simulator
+          cppcheck --enable=all  --error-exitcode=2 --inline-suppr --suppress=missingInclude  --suppress=variableScope ./simulator
 
   ut:
     runs-on: ubuntu-20.04
@@ -138,6 +138,7 @@ jobs:
             sudo apt-get install -y mosquitto
           fi
           pip install -U pytest requests prometheus-client gmqtt pynng sniffio
+          sudo apt-get install -y socat
 
       - name: compile
         run: |

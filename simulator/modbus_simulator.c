@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     zlog_init("./config/dev.conf");
     neuron = zlog_get_category("neuron");
-
+    modbus_s_init();
     neu_conn_param_t param = {
         .log                            = neuron,
         .type                           = NEU_CONN_TCP_SERVER,

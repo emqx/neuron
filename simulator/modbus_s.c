@@ -48,12 +48,12 @@ void modbus_s_init()
 {
     for (int i = 0; i < 3; i++) {
         for (int k = 0; k < 65536; k += 2) {
-            rtu_registers[i].input[k].value = 1;
-            tcp_registers[i].input[k].value = 1;
+            rtu_registers[i].input[k].value = 0;
+            tcp_registers[i].input[k].value = 0;
         }
         for (int k = 0; k < 65536; k++) {
-            rtu_registers[i].input_register[k].value = k;
-            tcp_registers[i].input_register[k].value = k;
+            rtu_registers[i].input_register[k].value = 0;
+            tcp_registers[i].input_register[k].value = 0;
         }
 
         pthread_mutex_init(&rtu_registers[i].mutex, NULL);
@@ -142,14 +142,14 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
 
         if (ntohs(address->start_address) == 8999) {
             res_code->function += 0x80;
-            len = modbus_read(&tcp_registers[code->slave_id - 1], res_code->function,
+            len = modbus_read(&rtu_registers[code->slave_id - 1], res_code->function,
                               address, res_value);
             res_data->n_byte = len;
             crc = (uint16_t *) (res_value + len);
             break;
         }
 
-        len = modbus_read(&tcp_registers[code->slave_id - 1], code->function,
+        len = modbus_read(&rtu_registers[code->slave_id - 1], code->function,
                           address, res_value);
         *res_len += sizeof(struct modbus_data);
         *res_len += len;
@@ -162,7 +162,7 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
     case MODBUS_WRITE_M_COIL:
     case MODBUS_WRITE_S_HOLD_REG:
     case MODBUS_WRITE_M_HOLD_REG:
-        modbus_write(&tcp_registers[code->slave_id - 1], code->function,
+        modbus_write(&rtu_registers[code->slave_id - 1], code->function,
                      address, data, value);
         *res_address = *address;
 
@@ -308,6 +308,7 @@ static int modbus_read(struct modbus_register *reg, uint8_t function,
             len += 1;
         }
 
+        memset(value, 0, ntohs(address->n_reg) / 8 + 1);
         for (int i = 0; i < ntohs(address->n_reg); i++) {
             if (function == MODBUS_READ_COIL) {
                 value[i / 8] |=
