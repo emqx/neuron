@@ -209,7 +209,7 @@ static inline int manager_subscribe(neu_manager_t *manager, const char *app,
                                     const char *params)
 {
     int                ret  = NEU_ERR_SUCCESS;
-    struct sockaddr_in addr = { 0 };
+    struct sockaddr_un addr = { 0 };
     neu_adapter_t *    adapter =
         neu_node_manager_find(manager->node_manager, driver);
 
@@ -291,7 +291,7 @@ int neu_manager_send_subscribe(neu_manager_t *manager, const char *app,
     strcpy(header->sender, "manager");
     strcpy(header->receiver, app);
 
-    struct sockaddr_in addr =
+    struct sockaddr_un addr =
         neu_node_manager_get_addr(manager->node_manager, app);
 
     int ret = neu_send_msg_to(manager->server_fd, &addr, msg);

@@ -26,6 +26,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include <sys/un.h>
+
 #include "define.h"
 #include "metrics.h"
 #include "msg.h"
@@ -47,7 +49,7 @@ typedef struct adapter_callbacks {
     int (*response)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
                     void *data);
     int (*responseto)(neu_adapter_t *adapter, neu_reqresp_head_t *head,
-                      void *data, struct sockaddr_in dst);
+                      void *data, struct sockaddr_un dst);
     neu_adapter_register_metric_cb_t register_metric;
     neu_adapter_update_metric_cb_t   update_metric;
 

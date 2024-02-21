@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include "utils/log.h"
@@ -49,7 +50,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
                             void *data);
 static int adapter_responseto(neu_adapter_t *     adapter,
                               neu_reqresp_head_t *header, void *data,
-                              struct sockaddr_in dst);
+                              struct sockaddr_un dst);
 static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
                                    const char *help, neu_metric_type_e type,
                                    uint64_t init);
@@ -151,14 +152,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         break;
     }
 
-    adapter->control_fd =
-        socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+    adapter->control_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (adapter->control_fd <= 0) {
         free(adapter);
         return NULL;
     }
-    adapter->trans_data_fd =
-        socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+    adapter->trans_data_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     if (adapter->trans_data_fd <= 0) {
         close(adapter->control_fd);
         free(adapter);
@@ -179,13 +178,24 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     adapter->trans_data_port         = 0;
     adapter->log_level               = ZLOG_LEVEL_NOTICE;
 
-    struct sockaddr_in remote = {
-        .sin_family      = AF_INET,
-        .sin_port        = htons(7788),
-        .sin_addr.s_addr = inet_addr("127.0.0.1"),
+    // use port number to distinguish each Linux abstract domain socket
+    uint16_t           port  = neu_manager_get_port();
+    struct sockaddr_un local = {
+        .sun_family = AF_UNIX,
     };
+    snprintf(local.sun_path, sizeof(local.sun_path), "%cneuron-%" PRIu16, '\0',
+             port);
+    rv = bind(adapter->control_fd, (struct sockaddr *) &local,
+              sizeof(struct sockaddr_un));
+    assert(rv == 0);
+
+    struct sockaddr_un remote = {
+        .sun_family = AF_UNIX,
+        .sun_path   = "#neuron-manager",
+    };
+    remote.sun_path[0] = '\0';
     rv = connect(adapter->control_fd, (struct sockaddr *) &remote,
-                 sizeof(struct sockaddr_in));
+                 sizeof(struct sockaddr_un));
     assert(rv == 0);
 
     switch (info->module->type) {
@@ -200,14 +210,12 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         pthread_create(&adapter->consumer_tid, NULL, adapter_consumer,
                        (void *) adapter);
         while (true) {
-            uint16_t           port  = neu_manager_get_port();
-            struct sockaddr_in local = {
-                .sin_family      = AF_INET,
-                .sin_port        = htons(port),
-                .sin_addr.s_addr = inet_addr("127.0.0.1"),
-            };
+            // use port number to distinguish each Linux abstract domain socket
+            port = neu_manager_get_port();
+            snprintf(local.sun_path, sizeof(local.sun_path),
+                     "%cneuron-%" PRIu16, '\0', port);
             if (bind(adapter->trans_data_fd, (struct sockaddr *) &local,
-                     sizeof(struct sockaddr_in)) == 0) {
+                     sizeof(struct sockaddr_un)) == 0) {
                 adapter->trans_data_port = port;
                 break;
             }
@@ -541,7 +549,7 @@ static int adapter_response(neu_adapter_t *adapter, neu_reqresp_head_t *header,
 
 static int adapter_responseto(neu_adapter_t *     adapter,
                               neu_reqresp_head_t *header, void *data,
-                              struct sockaddr_in dst)
+                              struct sockaddr_un dst)
 {
     assert(header->type == NEU_REQRESP_TRANS_DATA);
 

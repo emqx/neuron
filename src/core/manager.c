@@ -21,6 +21,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include <arpa/inet.h>
@@ -98,17 +99,17 @@ neu_manager_t *neu_manager_create()
     manager->subscribe_manager = neu_subscribe_manager_create();
     manager->log_level         = ZLOG_LEVEL_NOTICE;
 
-    manager->server_fd =
-        socket(AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+    manager->server_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0);
     assert(manager->server_fd > 0);
 
-    struct sockaddr_in local = {
-        .sin_family      = AF_INET,
-        .sin_port        = htons(7788),
-        .sin_addr.s_addr = inet_addr("127.0.0.1"),
+    // abstract domain socket is a Linux extension, thus not portable.
+    // use abstract domain socket here to avoid polluting the file system
+    struct sockaddr_un local = {
+        .sun_family = AF_UNIX,
+        .sun_path   = "#neuron-manager",
     };
-    rv = bind(manager->server_fd, (struct sockaddr *) &local,
-              sizeof(struct sockaddr_in));
+    local.sun_path[0] = '\0';
+    rv = bind(manager->server_fd, (struct sockaddr *) &local, sizeof(local));
     assert(rv == 0);
 
     param.fd      = manager->server_fd;
@@ -156,14 +157,14 @@ void neu_manager_destroy(neu_manager_t *manager)
 
     neu_event_del_timer(manager->events, manager->timer_timestamp);
 
-    utarray_foreach(addrs, struct sockaddr_in *, addr)
+    utarray_foreach(addrs, struct sockaddr_un *, addr)
     {
         neu_msg_t *msg = neu_msg_new(NEU_REQ_NODE_UNINIT, NULL, &uninit);
         neu_reqresp_head_t *header = neu_msg_get_header(msg);
         strcpy(header->sender, "manager");
         if (0 != neu_send_msg_to(manager->server_fd, addr, msg)) {
             nlog_error("manager -> %s uninit msg send fail",
-                       inet_ntoa((*addr).sin_addr));
+                       &addr->sun_path[1]);
             neu_msg_free(msg);
         }
     }
@@ -192,7 +193,7 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 {
     int                 rv       = 0;
     neu_manager_t *     manager  = (neu_manager_t *) usr_data;
-    struct sockaddr_in  src_addr = { 0 };
+    struct sockaddr_un  src_addr = { 0 };
     neu_msg_t *         msg      = NULL;
     neu_reqresp_head_t *header   = NULL;
 
@@ -218,8 +219,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
         if (0 !=
             neu_node_manager_update(manager->node_manager, init->node,
                                     src_addr)) {
-            nlog_warn("bind node %s to src addr(%d) fail", init->node,
-                      ntohs(src_addr.sin_port));
+            nlog_warn("bind node %s to src addr(%s) fail", init->node,
+                      &src_addr.sun_path[1]);
             neu_msg_free(msg);
             break;
         }
@@ -234,8 +235,8 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
             }
         }
 
-        nlog_notice("bind node %s to src addr(%d)", init->node,
-                    ntohs(src_addr.sin_port));
+        nlog_notice("bind node %s to src addr(%s)", init->node,
+                    &src_addr.sun_path[1]);
         neu_msg_free(msg);
         break;
     }
@@ -1337,7 +1338,7 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
                          void *data)
 {
     neu_msg_gen(header, data);
-    struct sockaddr_in addr =
+    struct sockaddr_un addr =
         neu_node_manager_get_addr(manager->node_manager, header->receiver);
 
     neu_reqresp_type_e t                           = header->type;
@@ -1348,8 +1349,8 @@ inline static void reply(neu_manager_t *manager, neu_reqresp_head_t *header,
     neu_msg_t *msg = (neu_msg_t *) header;
     int        ret = neu_send_msg_to(manager->server_fd, &addr, msg);
     if (0 == ret) {
-        nlog_notice("reply %s to %s(%d) %p", neu_reqresp_type_string(t),
-                    receiver, ntohs(addr.sin_port), ctx);
+        nlog_notice("reply %s to %s(%s) %p", neu_reqresp_type_string(t),
+                    receiver, &addr.sun_path[1], ctx);
     } else {
         nlog_warn("reply %s to %s, error: %d", neu_reqresp_type_string(t),
                   receiver, ret);

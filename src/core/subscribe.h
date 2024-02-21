@@ -21,6 +21,7 @@
 #define _NEU_SUBSCRIBE_H_
 
 #include <netinet/in.h>
+#include <sys/un.h>
 
 #include "define.h"
 #include "utils/utextend.h"
@@ -31,7 +32,7 @@ typedef struct neu_app_subscribe {
     char  app_name[NEU_NODE_NAME_LEN];
     char *params;
 
-    struct sockaddr_in addr;
+    struct sockaddr_un addr;
 } neu_app_subscribe_t;
 
 static inline void neu_app_subscribe_fini(neu_app_subscribe_t *app_sub)
@@ -54,7 +55,7 @@ size_t    neu_subscribe_manager_group_count(const neu_subscribe_mgr_t *mgr,
 void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app);
 int  neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                                const char *app, const char *group,
-                               const char *params, struct sockaddr_in addr);
+                               const char *params, struct sockaddr_un addr);
 int  neu_subscribe_manager_unsub(neu_subscribe_mgr_t *mgr, const char *driver,
                                  const char *app, const char *group);
 void neu_subscribe_manager_remove(neu_subscribe_mgr_t *mgr, const char *driver,

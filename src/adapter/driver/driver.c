@@ -45,7 +45,7 @@ typedef struct to_be_write_tag {
 
 typedef struct {
     char               app[NEU_NODE_NAME_LEN];
-    struct sockaddr_in addr;
+    struct sockaddr_un addr;
 } sub_app_t;
 
 typedef struct group {
@@ -81,7 +81,7 @@ struct neu_adapter_driver {
 };
 
 static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
-                          struct sockaddr_in dst);
+                          struct sockaddr_un dst);
 static int  report_callback(void *usr_data);
 static int  read_callback(void *usr_data);
 static int  write_callback(void *usr_data);
@@ -1457,7 +1457,7 @@ UT_array *neu_adapter_driver_get_ptag(neu_adapter_driver_t *driver,
 }
 
 static void report_to_app(neu_adapter_driver_t *driver, group_t *group,
-                          struct sockaddr_in dst)
+                          struct sockaddr_un dst)
 {
     neu_reqresp_head_t header = {
         .type = NEU_REQRESP_TRANS_DATA,
@@ -2053,9 +2053,9 @@ void neu_adapter_driver_subscribe(neu_adapter_driver_t *driver,
     }
 
     strcpy(sub_app.app, req->app);
-    sub_app.addr.sin_family      = AF_INET;
-    sub_app.addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    sub_app.addr.sin_port        = htons(req->port);
+    sub_app.addr.sun_family = AF_UNIX;
+    snprintf(sub_app.addr.sun_path, sizeof(sub_app.addr.sun_path),
+             "%cneuron-%" PRIu16, '\0', req->port);
 
     utarray_push_back(find->apps, &sub_app);
     pthread_mutex_unlock(&find->apps_mtx);
