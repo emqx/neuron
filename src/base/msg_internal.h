@@ -26,6 +26,7 @@ extern "C" {
 
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/un.h>
 
 #include "msg.h"
 
@@ -224,7 +225,7 @@ inline static int neu_recv_msg(int fd, neu_msg_t **msg_p)
     return 0;
 }
 
-inline static int neu_send_msg_to(int fd, struct sockaddr_in *addr,
+inline static int neu_send_msg_to(int fd, struct sockaddr_un *addr,
                                   neu_msg_t *msg)
 {
     int ret = sendto(fd, &msg, sizeof(neu_msg_t *), 0, (struct sockaddr *) addr,
@@ -232,11 +233,11 @@ inline static int neu_send_msg_to(int fd, struct sockaddr_in *addr,
     return sizeof(neu_msg_t *) == ret ? 0 : ret;
 }
 
-inline static int neu_recv_msg_from(int fd, struct sockaddr_in *addr,
+inline static int neu_recv_msg_from(int fd, struct sockaddr_un *addr,
                                     neu_msg_t **msg_p)
 {
     neu_msg_t *msg      = NULL;
-    socklen_t  addr_len = sizeof(struct sockaddr_in);
+    socklen_t  addr_len = sizeof(struct sockaddr_un);
     int        ret      = recvfrom(fd, &msg, sizeof(neu_msg_t *), 0,
                        (struct sockaddr *) addr, &addr_len);
     if (sizeof(neu_msg_t *) != ret) {

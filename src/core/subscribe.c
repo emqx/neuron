@@ -173,7 +173,7 @@ void neu_subscribe_manager_unsub_all(neu_subscribe_mgr_t *mgr, const char *app)
 
 int neu_subscribe_manager_sub(neu_subscribe_mgr_t *mgr, const char *driver,
                               const char *app, const char *group,
-                              const char *params, struct sockaddr_in addr)
+                              const char *params, struct sockaddr_un addr)
 {
     sub_elem_t *        find    = NULL;
     sub_elem_key_t      key     = { 0 };

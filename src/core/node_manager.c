@@ -32,7 +32,7 @@ typedef struct node_entity {
     bool               is_static;
     bool               display;
     bool               single;
-    struct sockaddr_in addr;
+    struct sockaddr_un addr;
 
     UT_hash_handle hh;
 } node_entity_t;
@@ -127,7 +127,7 @@ int neu_node_manager_update_name(neu_node_manager_t *mgr, const char *node_name,
 }
 
 int neu_node_manager_update(neu_node_manager_t *mgr, const char *name,
-                            struct sockaddr_in addr)
+                            struct sockaddr_un addr)
 {
     node_entity_t *node = NULL;
 
@@ -163,7 +163,7 @@ bool neu_node_manager_exist_uninit(neu_node_manager_t *mgr)
 
     HASH_ITER(hh, mgr->nodes, el, tmp)
     {
-        if (el->addr.sin_port == 0) {
+        if (el->addr.sun_path[1] == 0) {
             return true;
         }
     }
@@ -303,7 +303,7 @@ bool neu_node_manager_is_driver(neu_node_manager_t *mgr, const char *name)
 
 UT_array *neu_node_manager_get_addrs(neu_node_manager_t *mgr, int type)
 {
-    UT_icd         icd   = { sizeof(struct sockaddr_in), NULL, NULL, NULL };
+    UT_icd         icd   = { sizeof(struct sockaddr_un), NULL, NULL, NULL };
     UT_array *     addrs = NULL;
     node_entity_t *el = NULL, *tmp = NULL;
 
@@ -313,8 +313,7 @@ UT_array *neu_node_manager_get_addrs(neu_node_manager_t *mgr, int type)
     {
         if (!el->is_static) {
             if (el->adapter->module->type & type) {
-                struct sockaddr_in addr = el->addr;
-                utarray_push_back(addrs, &addr);
+                utarray_push_back(addrs, &el->addr);
             }
         }
     }
@@ -324,25 +323,21 @@ UT_array *neu_node_manager_get_addrs(neu_node_manager_t *mgr, int type)
 
 UT_array *neu_node_manager_get_addrs_all(neu_node_manager_t *mgr)
 {
-    UT_icd         icd   = { sizeof(struct sockaddr_in), NULL, NULL, NULL };
+    UT_icd         icd   = { sizeof(struct sockaddr_un), NULL, NULL, NULL };
     UT_array *     addrs = NULL;
     node_entity_t *el = NULL, *tmp = NULL;
 
     utarray_new(addrs, &icd);
 
-    HASH_ITER(hh, mgr->nodes, el, tmp)
-    {
-        struct sockaddr_in addr = el->addr;
-        utarray_push_back(addrs, &addr);
-    }
+    HASH_ITER(hh, mgr->nodes, el, tmp) { utarray_push_back(addrs, &el->addr); }
 
     return addrs;
 }
 
-struct sockaddr_in neu_node_manager_get_addr(neu_node_manager_t *mgr,
+struct sockaddr_un neu_node_manager_get_addr(neu_node_manager_t *mgr,
                                              const char *        name)
 {
-    struct sockaddr_in addr = { 0 };
+    struct sockaddr_un addr = { 0 };
     node_entity_t *    node = NULL;
 
     HASH_FIND_STR(mgr->nodes, name, node);

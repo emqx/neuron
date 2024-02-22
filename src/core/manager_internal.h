@@ -90,7 +90,7 @@ int neu_manager_add_drivers(neu_manager_t *         manager,
 inline static void forward_msg(neu_manager_t *     manager,
                                neu_reqresp_head_t *header, const char *node)
 {
-    struct sockaddr_in addr =
+    struct sockaddr_un addr =
         neu_node_manager_get_addr(manager->node_manager, node);
 
     neu_reqresp_type_e t                           = header->type;
@@ -102,8 +102,8 @@ inline static void forward_msg(neu_manager_t *     manager,
     if (0 == ret) {
         nlog_info("forward msg %s to %s", neu_reqresp_type_string(t), receiver);
     } else {
-        nlog_warn("forward msg %s to node (%s)%d fail",
-                  neu_reqresp_type_string(t), receiver, ntohs(addr.sin_port));
+        nlog_warn("forward msg %s to node (%s)%s fail",
+                  neu_reqresp_type_string(t), receiver, &addr.sun_path[1]);
         neu_msg_free(msg);
     }
 }
