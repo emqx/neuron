@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-#include <vector>
 
 extern "C" {
 #include "utils/async_queue.h"

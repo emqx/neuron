@@ -49,46 +49,52 @@ void handle_log_level(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_update_log_level_req_t,
         neu_json_decode_update_log_level_req, {
-            neu_reqresp_head_t         header    = { 0 };
-            neu_req_update_log_level_t cmd       = { 0 };
-            int                        log_level = -1;
-
-            if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_DEBUG)) {
-                log_level = ZLOG_LEVEL_DEBUG;
-            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_INFO)) {
-                log_level = ZLOG_LEVEL_INFO;
-            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_NOTICE)) {
-                log_level = ZLOG_LEVEL_NOTICE;
-            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_WARN)) {
-                log_level = ZLOG_LEVEL_WARN;
-            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_ERROR)) {
-                log_level = ZLOG_LEVEL_ERROR;
-            } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_FATAL)) {
-                log_level = ZLOG_LEVEL_FATAL;
+            if (req->node_name != NULL &&
+                strlen(req->node_name) > NEU_NODE_NAME_LEN) {
+                CHECK_NODE_NAME_LENGTH_ERR;
             } else {
-                nlog_error("Failed to modify log_level of the node, "
-                           "node_name:%s, log_level: %s",
-                           req->node_name, req->log_level);
-            }
+                neu_reqresp_head_t         header    = { 0 };
+                neu_req_update_log_level_t cmd       = { 0 };
+                int                        log_level = -1;
 
-            if (log_level == -1) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-            } else {
-                header.ctx    = aio;
-                header.type   = NEU_REQ_UPDATE_LOG_LEVEL;
-                cmd.core      = req->core;
-                cmd.log_level = log_level;
-                if (req->node_name != NULL) {
-                    strcpy(cmd.node, req->node_name);
+                if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_DEBUG)) {
+                    log_level = ZLOG_LEVEL_DEBUG;
+                } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_INFO)) {
+                    log_level = ZLOG_LEVEL_INFO;
+                } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_NOTICE)) {
+                    log_level = ZLOG_LEVEL_NOTICE;
+                } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_WARN)) {
+                    log_level = ZLOG_LEVEL_WARN;
+                } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_ERROR)) {
+                    log_level = ZLOG_LEVEL_ERROR;
+                } else if (0 == strcmp(req->log_level, NEU_LOG_LEVEL_FATAL)) {
+                    log_level = ZLOG_LEVEL_FATAL;
+                } else {
+                    nlog_error("Failed to modify log_level of the node, "
+                               "node_name:%s, log_level: %s",
+                               req->node_name, req->log_level);
                 }
 
-                int ret = neu_plugin_op(plugin, header, &cmd);
-                if (ret != 0) {
-                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                if (log_level == -1) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_PARAM_IS_WRONG, {
+                        neu_http_response(aio, error_code.error, result_error);
                     });
+                } else {
+                    header.ctx    = aio;
+                    header.type   = NEU_REQ_UPDATE_LOG_LEVEL;
+                    cmd.core      = req->core;
+                    cmd.log_level = log_level;
+                    if (req->node_name != NULL) {
+                        strcpy(cmd.node, req->node_name);
+                    }
+
+                    int ret = neu_plugin_op(plugin, header, &cmd);
+                    if (ret != 0) {
+                        NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                            neu_http_response(aio, NEU_ERR_IS_BUSY,
+                                              result_error);
+                        });
+                    }
                 }
             }
         })

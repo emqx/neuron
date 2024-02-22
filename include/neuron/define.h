@@ -62,6 +62,35 @@
 #define NEU_LOG_LEVEL_ERROR "error"
 #define NEU_LOG_LEVEL_FATAL "fatal"
 
+#define CHECK_NODE_NAME_LENGTH_ERR                                            \
+    do {                                                                      \
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {                 \
+            neu_http_response(aio, NEU_ERR_NODE_NAME_TOO_LONG, result_error); \
+        });                                                                   \
+    } while (0)
+
+#define CHECK_GROUP_NAME_LENGTH_ERR                                            \
+    do {                                                                       \
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {                 \
+            neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG, result_error); \
+        });                                                                    \
+    } while (0)
+
+#define CHECK_TAG_NAME_LENGTH_ERR                                            \
+    do {                                                                     \
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_TAG_NAME_TOO_LONG, {                 \
+            neu_http_response(aio, NEU_ERR_TAG_NAME_TOO_LONG, result_error); \
+        });                                                                  \
+    } while (0)
+
+#define CHECK_GROUP_INTERVAL_ERR                                    \
+    do {                                                            \
+        NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_PARAMETER_INVALID, {  \
+            neu_http_response(aio, NEU_ERR_GROUP_PARAMETER_INVALID, \
+                              result_error);                        \
+        });                                                         \
+    } while (0)
+
 extern int  default_log_level;
 extern bool disable_jwt;
 extern char host_port[32];

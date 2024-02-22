@@ -43,11 +43,7 @@ void handle_add_adapter(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_node_req_t, neu_json_decode_add_node_req, {
             if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_NODE_NAME_TOO_LONG, {
-                    neu_http_response(aio, NEU_ERR_NODE_NAME_TOO_LONG,
-                                      result_error);
-                });
-
+                CHECK_NODE_NAME_LENGTH_ERR;
             } else {
                 int                ret    = 0;
                 neu_reqresp_head_t header = { 0 };
@@ -121,18 +117,22 @@ void handle_del_adapter(nng_aio *aio)
 
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_node_req_t, neu_json_decode_del_node_req, {
-            int                ret    = 0;
-            neu_reqresp_head_t header = { 0 };
-            neu_req_del_node_t cmd    = { 0 };
+            if (strlen(req->name) >= NEU_NODE_NAME_LEN) {
+                CHECK_NODE_NAME_LENGTH_ERR;
+            } else {
+                int                ret    = 0;
+                neu_reqresp_head_t header = { 0 };
+                neu_req_del_node_t cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_DEL_NODE;
-            strcpy(cmd.node, req->name);
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+                header.ctx  = aio;
+                header.type = NEU_REQ_DEL_NODE;
+                strcpy(cmd.node, req->name);
+                ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }
@@ -210,20 +210,24 @@ void handle_set_node_setting(nng_aio *aio)
 
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_setting_req_t, neu_json_decode_node_setting_req, {
-            int                    ret    = 0;
-            neu_reqresp_head_t     header = { 0 };
-            neu_req_node_setting_t cmd    = { 0 };
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                CHECK_NODE_NAME_LENGTH_ERR;
+            } else {
+                int                    ret    = 0;
+                neu_reqresp_head_t     header = { 0 };
+                neu_req_node_setting_t cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_NODE_SETTING;
-            strcpy(cmd.node, req->node);
-            cmd.setting  = req->setting;
-            req->setting = NULL; // ownership moved
-            ret          = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+                header.ctx  = aio;
+                header.type = NEU_REQ_NODE_SETTING;
+                strcpy(cmd.node, req->node);
+                cmd.setting  = req->setting;
+                req->setting = NULL; // ownership moved
+                ret          = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }
@@ -287,20 +291,24 @@ void handle_node_ctl(nng_aio *aio)
 
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_node_ctl_req_t, neu_json_decode_node_ctl_req, {
-            int                ret    = 0;
-            neu_reqresp_head_t header = { 0 };
-            neu_req_node_ctl_t cmd    = { 0 };
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                CHECK_NODE_NAME_LENGTH_ERR;
+            } else {
+                int                ret    = 0;
+                neu_reqresp_head_t header = { 0 };
+                neu_req_node_ctl_t cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_NODE_CTL;
-            strcpy(cmd.node, req->node);
-            cmd.ctl = req->cmd;
+                header.ctx  = aio;
+                header.type = NEU_REQ_NODE_CTL;
+                strcpy(cmd.node, req->node);
+                cmd.ctl = req->cmd;
 
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+                ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }

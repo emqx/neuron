@@ -32,27 +32,21 @@
 void handle_add_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
-
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_add_group_config_req_t,
         neu_json_decode_add_group_config_req, {
-            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_NAME_TOO_LONG, {
-                    neu_http_response(aio, NEU_ERR_GROUP_NAME_TOO_LONG,
-                                      result_error);
-                });
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                CHECK_NODE_NAME_LENGTH_ERR;
+            } else if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                CHECK_GROUP_NAME_LENGTH_ERR;
             } else if (req->interval < NEU_GROUP_INTERVAL_LIMIT) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_GROUP_PARAMETER_INVALID, {
-                    neu_http_response(aio, NEU_ERR_GROUP_PARAMETER_INVALID,
-                                      result_error);
-                });
+                CHECK_GROUP_INTERVAL_ERR;
             } else {
                 int                 ret    = 0;
                 neu_reqresp_head_t  header = { 0 };
                 neu_req_add_group_t cmd    = { 0 };
-
-                header.ctx  = aio;
-                header.type = NEU_REQ_ADD_GROUP;
+                header.ctx                 = aio;
+                header.type                = NEU_REQ_ADD_GROUP;
                 strcpy(cmd.driver, req->node);
                 strcpy(cmd.group, req->group);
                 cmd.interval = req->interval;
@@ -135,23 +129,28 @@ void handle_update_group(nng_aio *aio)
 void handle_del_group_config(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
-
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_del_group_config_req_t,
         neu_json_decode_del_group_config_req, {
-            int                 ret    = 0;
-            neu_reqresp_head_t  header = { 0 };
-            neu_req_del_group_t cmd    = { 0 };
+            if (strlen(req->node) >= NEU_NODE_NAME_LEN) {
+                CHECK_NODE_NAME_LENGTH_ERR;
+            } else if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                CHECK_GROUP_NAME_LENGTH_ERR;
+            } else {
+                int                 ret    = 0;
+                neu_reqresp_head_t  header = { 0 };
+                neu_req_del_group_t cmd    = { 0 };
 
-            header.ctx  = aio;
-            header.type = NEU_REQ_DEL_GROUP;
-            strcpy(cmd.driver, req->node);
-            strcpy(cmd.group, req->group);
-            ret = neu_plugin_op(plugin, header, &cmd);
-            if (ret != 0) {
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
-                    neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
-                });
+                header.ctx  = aio;
+                header.type = NEU_REQ_DEL_GROUP;
+                strcpy(cmd.driver, req->node);
+                strcpy(cmd.group, req->group);
+                ret = neu_plugin_op(plugin, header, &cmd);
+                if (ret != 0) {
+                    NEU_JSON_RESPONSE_ERROR(NEU_ERR_IS_BUSY, {
+                        neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
+                    });
+                }
             }
         })
 }
@@ -250,6 +249,18 @@ static inline int send_subscribe(nng_aio *aio, neu_reqresp_type_e type,
         .type = type,
     };
 
+    if (strlen(req->app) >= NEU_NODE_NAME_LEN) {
+        return NEU_ERR_NODE_NAME_TOO_LONG;
+    }
+
+    if (strlen(req->driver) >= NEU_NODE_NAME_LEN) {
+        return NEU_ERR_NODE_NAME_TOO_LONG;
+    }
+
+    if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+        return NEU_ERR_GROUP_NAME_TOO_LONG;
+    }
+
     neu_req_subscribe_t cmd = { 0 };
     strcpy(cmd.app, req->app);
     strcpy(cmd.driver, req->driver);
@@ -291,14 +302,30 @@ void handle_grp_update_subscribe(nng_aio *aio)
 void handle_grp_unsubscribe(nng_aio *aio)
 {
     neu_plugin_t *plugin = neu_rest_get_plugin();
-
     NEU_PROCESS_HTTP_REQUEST_VALIDATE_JWT(
         aio, neu_json_unsubscribe_req_t, neu_json_decode_unsubscribe_req, {
             int                   ret    = 0;
             neu_req_unsubscribe_t cmd    = { 0 };
             neu_reqresp_head_t    header = { 0 };
-            header.ctx                   = aio;
-            header.type                  = NEU_REQ_UNSUBSCRIBE_GROUP;
+            int                   err_type;
+            header.ctx  = aio;
+            header.type = NEU_REQ_UNSUBSCRIBE_GROUP;
+
+            if (strlen(req->app) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->driver) >= NEU_NODE_NAME_LEN) {
+                err_type = NEU_ERR_NODE_NAME_TOO_LONG;
+                goto error;
+            }
+
+            if (strlen(req->group) >= NEU_GROUP_NAME_LEN) {
+                err_type = NEU_ERR_GROUP_NAME_TOO_LONG;
+                goto error;
+            }
+
             strcpy(cmd.app, req->app);
             strcpy(cmd.driver, req->driver);
             strcpy(cmd.group, req->group);
@@ -308,6 +335,12 @@ void handle_grp_unsubscribe(nng_aio *aio)
                     neu_http_response(aio, NEU_ERR_IS_BUSY, result_error);
                 });
             }
+            goto success;
+
+        error:
+            NEU_JSON_RESPONSE_ERROR(
+                err_type, { neu_http_response(aio, err_type, result_error); });
+        success:;
         })
 }
 
@@ -320,6 +353,20 @@ static inline int send_subscribe_groups(nng_aio *                        aio,
         .ctx  = aio,
         .type = NEU_REQ_SUBSCRIBE_GROUPS,
     };
+
+    if (strlen(req->app) >= NEU_NODE_NAME_LEN) {
+        return NEU_ERR_NODE_NAME_TOO_LONG;
+    }
+
+    for (int i = 0; i < req->n_group; i++) {
+        if (strlen(req->groups[i].driver) >= NEU_NODE_NAME_LEN) {
+            return NEU_ERR_NODE_NAME_TOO_LONG;
+        }
+
+        if (strlen(req->groups[i].group) >= NEU_GROUP_NAME_LEN) {
+            return NEU_ERR_GROUP_NAME_TOO_LONG;
+        }
+    }
 
     neu_req_subscribe_groups_t cmd = {
         .app     = req->app,
