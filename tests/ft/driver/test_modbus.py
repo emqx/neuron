@@ -1,3 +1,8 @@
+import subprocess
+import select
+import fcntl
+import re
+import os
 import neuron.api as api
 import neuron.error as error
 import neuron.config as config
@@ -7,20 +12,53 @@ tcp_port = random_port()
 rtu_port = random_port()
 
 
+def start_socat():
+    socat_cmd = ["socat", "-d", "-d", "pty,raw,echo=0", "pty,raw,echo=0"]
+    socat_proc = subprocess.Popen(
+        socat_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    
+    fl = fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_GETFL)
+    fcntl.fcntl(socat_proc.stderr.fileno(), fcntl.F_SETFL, fl | os.O_NONBLOCK)
+
+    pty_regex = re.compile(r'N PTY is (/dev/pts/\d+)')
+    dev1 = dev2 = None
+
+    while not dev1 or not dev2:
+        ready = select.select([socat_proc.stderr], [], [], 5)
+        if ready[0]:
+            line = socat_proc.stderr.readline()
+            match = pty_regex.search(line.decode('utf-8'))
+            if match:
+                if not dev1:
+                    dev1 = match.group(1)
+                else:
+                    dev2 = match.group(1)
+
+    return socat_proc, dev1, dev2
+
+
 @pytest.fixture(params=[('modbus-tcp', config.PLUGIN_MODBUS_TCP),
-                        ('modbus-rtu', config.PLUGIN_MODBUS_RTU)], scope='class')
+                        ('modbus-rtu', config.PLUGIN_MODBUS_RTU),
+                        ('modbus-rtu-tty', config.PLUGIN_MODBUS_RTU)], scope='class')
 def param(request):
     return request.param
 
 
 @pytest.fixture(autouse=True, scope='class')
 def simulator_setup_teardown(param):
-    if param[1] == config.PLUGIN_MODBUS_TCP:
+    if param[0] == 'modbus-tcp':
         p = process.start_simulator(
             ['./modbus_simulator', 'tcp', f'{tcp_port}', 'ip_v4'])
-    else:
+    elif param[0] == 'modbus-rtu':
         p = process.start_simulator(
             ['./modbus_simulator', 'rtu', f'{rtu_port}', 'ip_v4'])
+    elif param[0] == 'modbus-rtu-tty':
+        socat_proc, modbus_neuron_dev, modbus_simulator_dev = start_socat()
+        print(modbus_neuron_dev)
+        print(modbus_simulator_dev)
+        p = process.start_simulator(
+            ['./modbus_tty_simulator', f'{modbus_simulator_dev}'])
 
     response = api.add_node(node=param[0], plugin=param[1])
     assert 200 == response.status_code
@@ -28,15 +66,23 @@ def simulator_setup_teardown(param):
     response = api.add_group(node=param[0], group='group')
     assert 200 == response.status_code
 
-    if param[1] == config.PLUGIN_MODBUS_TCP:
+    if param[0] == 'modbus-tcp':
         response = api.modbus_tcp_node_setting(
             node=param[0], interval=1, port=tcp_port)
-    else:
+    elif param[0] == 'modbus-rtu':
         response = api.modbus_rtu_node_setting(
             node=param[0], interval=1, port=rtu_port)
+    elif param[0] == 'modbus-rtu-tty':
+        api.update_group(param[0], group='group', interval=100)
+        response = api.modbus_rtu_node_setting(
+            node=param[0], interval=1, device=modbus_neuron_dev, link=0)
 
     yield
     process.stop_simulator(p)
+    if param[0] == 'modbus-rtu-tty':
+        socat_proc.terminate()
+        time.sleep(2)
+        api.node_ctl_check(node=param[0], ctl=1)
 
 
 hold_bit = [{"name": "hold_bit", "address": "1!400001.15",
@@ -926,7 +972,7 @@ class TestModbus:
             node=param[0], group='group', tag=coil_bit_m10[0]['name'])
 
     @description(given="created discontinuous modbus node/tag", when="write multiple coil tags in one request", then="read/write success")
-    def test_write_multiple_hold_tags_discontinuous(self, param):
+    def test_write_multiple_coil_tags_discontinuous(self, param):
         api.write_tags_check(
             node=param[0], group='group', tag_values=[
             {"tag": coil_bit_m6[0]['name'], "value": 0},
@@ -1075,6 +1121,8 @@ class TestModbus:
 
     @description(given="created modbus device_error_test node/tag", when="read tag", then="read failed")
     def test_read_modbus_device_err(self, param):
+        if param[0] == 'modbus-rtu-tty':
+            pytest.skip("modbus rtu tty pass")
         api.add_tags_check(node=param[0], group='group', tags=hold_int16_device_err)
         time.sleep(4.0)
         assert error.NEU_ERR_PLUGIN_READ_FAILURE == api.read_tag_err(
@@ -1082,6 +1130,8 @@ class TestModbus:
 
     @description(given="created modbus node", when="create modbus retry_test tag, write and read tag", then="read/write success after retrying")
     def test_read_tag_retry(self, param):
+        if param[0] == 'modbus-rtu-tty':
+            pytest.skip("modbus rtu tty pass")
         api.add_tags_check(node=param[0], group='group', tags=hold_int16_retry_1)
         api.add_tags_check(node=param[0], group='group', tags=hold_int16_retry_2)
 
@@ -1099,12 +1149,15 @@ class TestModbus:
     def test_write_read_modbus_disconnected(self, param):
         response = api.add_node(node=param[0]+"_3002", plugin=param[1])
         assert 200 == response.status_code
-        if param[1] == config.PLUGIN_MODBUS_TCP:
+        if param[0] == 'modbus-tcp':
             api.modbus_tcp_node_setting(
                 node=param[0]+"_3002", port=29998)
-        else:
+        elif param[0] == 'modbus-rtu':
             api.modbus_rtu_node_setting(
                 node=param[0]+"_3002", port=29999)
+        elif param[0] == 'modbus-rtu-tty':
+            response = api.modbus_rtu_node_setting(
+                node=param[0]+"_3002", device='tty', link=0)
         response = api.add_group(node=param[0]+"_3002", group='group')
         assert 200 == response.status_code
 
@@ -1115,12 +1168,14 @@ class TestModbus:
 
     @description(given="created modbus node", when="set modbus tcp_server mode", then="set success")
     def test_set_modbus_tcp_server_mode(self, param):
-        if param[1] == config.PLUGIN_MODBUS_TCP:
+        if param[0] == 'modbus-tcp':
             response = api.modbus_tcp_node_setting(
                 node=param[0]+"_3002", port=29997, connection_mode=1)
-        else:
+        elif param[0] == 'modbus-rtu':
             response = api.modbus_rtu_node_setting(
                 node=param[0]+"_3002", port=29999, connection_mode=1)
+        else:
+            pytest.skip("modbus rtu tty pass")
 
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']

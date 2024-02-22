@@ -311,7 +311,7 @@ def modbus_tcp_node_setting(node, port, connection_mode=0, transport_mode=0, int
                                     "host": host, "port": port, "timeout": timeout, "max_retries": max_retries})
 
 
-def modbus_rtu_node_setting(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, link=1, device="", stop=0, parity=0, baud=4, data=3):
+def modbus_rtu_node_setting(node, port=502, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, link=1, device="", stop=0, parity=0, baud=4, data=3):
     return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode,
                                     "interval": interval, "host": host, "port": port, "timeout": timeout,
                                     "max_retries": max_retries, "link": link, "device": device, "stop": stop,
