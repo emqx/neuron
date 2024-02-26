@@ -20,10 +20,10 @@ The following are some important features of Neuron:
 - Support numerous protocols for industrial devices, including Modbus, OPCUA, Ethernet/IP, IEC104, BACnet and [more](https://neugates.io/docs/en/latest/configuration/south-devices/south-devices.html).
 - Support simultaneous connection of a large number of industrial devices with different protocols.
 - Combine with the rule engine function provided by [eKuiper](https://www.lfedge.org/projects/ekuiper) to quickly implement rule-based device control or AI/ML analytics.
-- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via [SparkplugB](https://neugates.io/docs/en/latest/use-cases/use_cases.html#mqtt-sparkplugb-solution) solution.
+- Support data access to industrial applications, such as MES or ERP, SCADA, historian and data analytics software via [SparkplugB](https://neugates.io/docs/en/latest/use-cases/sparkplug/sparkplug.html) solution.
 - Has very low memory footprint, less than 10M, and CPU usage, can run on limited resource hardware like ARM, x86 and RISC-V.
 - Support installation of native executable or deployed in containerized enviornment.
-- Control industrial devices, and make changes to the parameters and data tags through [HTTP API](https://neugates.io/docs/en/latest/http-api/http-api.html) and [MQTT API](https://neugates.io/docs/en/latest/configuration/north-apps/mqtt/api.html) services.
+- Control industrial devices, and make changes to the parameters and data tags through [HTTP API](https://neugates.io/docs/en/latest/api/configuration.html) and [MQTT API](https://neugates.io/docs/en/latest/configuration/north-apps/mqtt/api.html) services.
 - Highly integrated with other EMQ products, including [EMQX](https://www.emqx.com/en/products/emqx), [NanoMQ](https://nanomq.io/), [eKuiper](https://ekuiper.org/).
 - The code of the core framework and Modbus, MQTT and eKuiper are licensed under open source LGPLv3. Commercial modules require a [EMQ License](https://neugates.io/docs/en/latest/installation/license-install/license-install.html) to run.
 
