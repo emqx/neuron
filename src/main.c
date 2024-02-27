@@ -126,7 +126,6 @@ static int neuron_run(const neu_cli_args_t *args)
 
     signal(SIGINT, sig_handler);
     signal(SIGABRT, sig_handler);
-    signal(SIGSEGV, sig_handler);
     signal(SIGTERM, sig_handler);
     signal(SIGKILL, sig_handler);
 
