@@ -1498,6 +1498,12 @@ static int report_callback(void *usr_data)
                 }
             }
         } else {
+            utarray_foreach(data->tags, neu_resp_tag_value_meta_t *, tag_value)
+            {
+                if (tag_value->value.type == NEU_TYPE_PTR) {
+                    free(tag_value->value.value.ptr.ptr);
+                }
+            }
             utarray_free(data->tags);
             free(data->group);
             free(data->driver);
