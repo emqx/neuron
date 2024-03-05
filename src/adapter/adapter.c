@@ -941,7 +941,10 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             error.error = neu_adapter_driver_del_group(
                 (neu_adapter_driver_t *) adapter, cmd->group);
         } else {
-            error.error = NEU_ERR_GROUP_NOT_ALLOW;
+            adapter->module->intf_funs->request(
+                adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+            neu_msg_free(msg);
+            break;
         }
 
         if (error.error == NEU_ERR_SUCCESS) {
