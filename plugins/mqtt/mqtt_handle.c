@@ -606,6 +606,14 @@ int handle_unsubscribe_group(neu_plugin_t *         plugin,
     return 0;
 }
 
+int handle_del_group(neu_plugin_t *plugin, neu_req_del_group_t *req)
+{
+    route_tbl_del(&plugin->route_tbl, req->driver, req->group);
+    plog_notice(plugin, "del route driver:%s group:%s", req->driver,
+                req->group);
+    return 0;
+}
+
 int handle_update_group(neu_plugin_t *plugin, neu_req_update_group_t *req)
 {
     route_tbl_update_group(&plugin->route_tbl, req->driver, req->group,
