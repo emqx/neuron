@@ -49,6 +49,7 @@ int handle_unsubscribe_group(neu_plugin_t *         plugin,
                              neu_req_unsubscribe_t *unsub_info);
 
 int handle_update_group(neu_plugin_t *plugin, neu_req_update_group_t *req);
+int handle_del_group(neu_plugin_t *plugin, neu_req_del_group_t *cmd);
 
 int handle_update_driver(neu_plugin_t *plugin, neu_req_update_node_t *req);
 int handle_del_driver(neu_plugin_t *plugin, neu_reqresp_node_deleted_t *req);
