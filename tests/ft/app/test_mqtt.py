@@ -485,6 +485,35 @@ class TestMQTT:
             api.update_group_check(DRIVER, new_name, GROUP)
 
     @description(
+        given="MQTT node",
+        when="delete subscribed driver group and add back group",
+        then="broker should receive data on upload topic",
+    )
+    def test_mqtt_upload_when_group_deleted(self, mocker, conf_fmt_tags):
+        api.node_setting_check(NODE, conf_fmt_tags)
+        api.node_ctl(NODE, config.NEU_CTL_START)
+
+        # delete driver group
+        api.del_group_check(DRIVER, GROUP)
+        # add back driver group
+        api.add_group_check(DRIVER, GROUP, INTERVAL)
+        api.add_tags_check(DRIVER, GROUP, tags=[TAG0])
+        # add back subscription on new topic
+        topic = UPLOAD_TOPIC + "-new"
+        params = {"topic": topic}
+        api.subscribe_group_check(NODE, DRIVER, GROUP, params)
+
+        msg = mocker.get(topic, timeout=3)
+        try:
+            assert msg is not None
+            assert DRIVER == msg["node"]
+            assert GROUP == msg["group"]
+            assert TAG0["name"] in [tag["name"] for tag in msg["tags"]]
+        finally:
+            params["topic"] = UPLOAD_TOPIC
+            api.subscribe_group_update(NODE, DRIVER, GROUP, params)
+
+    @description(
         given="MQTT node and conf_cache",
         when="broken network connection restored",
         then="broker should receive cache data on upload topic",
