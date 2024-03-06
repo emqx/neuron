@@ -152,7 +152,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         break;
     }
 
-    adapter->control_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    adapter->control_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (adapter->control_fd <= 0) {
         free(adapter);
         return NULL;
