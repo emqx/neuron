@@ -316,6 +316,8 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
     case NEU_REQ_UPDATE_GROUP: {
         break;
     }
+    case NEU_REQ_DEL_GROUP:
+        break;
     case NEU_REQ_SUBSCRIBE_GROUP:
     case NEU_REQ_UPDATE_SUBSCRIBE_GROUP: {
         neu_req_subscribe_t *sub_info = data;
