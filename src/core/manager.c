@@ -511,6 +511,35 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
                 break;
             }
 
+            if (!neu_plugin_manager_create_instance_by_lib_name(
+                    manager->plugin_manager, cmd->library, &ins)) {
+                nlog_warn("library %s not instance", cmd->library);
+                free(cmd->so_file);
+                free(cmd->schema_file);
+                free(so_tmp_path);
+                header->type = NEU_RESP_ERROR;
+                e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
+                strcpy(header->receiver, header->sender);
+                reply(manager, header, &e);
+                break;
+            }
+
+            if (strcmp(module_name, ins.module->module_name) != 0) {
+                nlog_warn("library %s module name mismatch!", cmd->library);
+                neu_plugin_manager_destroy_instance(manager->plugin_manager,
+                                                    &ins);
+                free(cmd->so_file);
+                free(cmd->schema_file);
+                free(so_tmp_path);
+                header->type = NEU_RESP_ERROR;
+                e.error      = NEU_ERR_LIBRARY_UPDATE_FAIL;
+                strcpy(header->receiver, header->sender);
+                reply(manager, header, &e);
+                break;
+            }
+
+            neu_plugin_manager_destroy_instance(manager->plugin_manager, &ins);
+
             if (!neu_plugin_manager_exists(manager->plugin_manager,
                                            module_name)) {
 
