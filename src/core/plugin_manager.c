@@ -489,6 +489,38 @@ bool neu_plugin_manager_create_instance_by_path(neu_plugin_manager_t *mgr,
     return true;
 }
 
+bool neu_plugin_manager_create_instance_by_lib_name(
+    neu_plugin_manager_t *mgr, const char *lib_name,
+    neu_plugin_instance_t *instance)
+{
+    (void) mgr;
+    char lib_paths[3][64] = { 0 };
+    snprintf(lib_paths[0], sizeof(lib_paths[0]), "%s", g_plugin_dir);
+    snprintf(lib_paths[1], sizeof(lib_paths[1]), "%s/system", g_plugin_dir);
+    snprintf(lib_paths[2], sizeof(lib_paths[2]), "%s/custom", g_plugin_dir);
+
+    for (size_t i = 0; i < sizeof(lib_paths) / sizeof(lib_paths[0]); i++) {
+        char lib_path[256] = { 0 };
+
+        snprintf(lib_path, sizeof(lib_path) - 1, "%s/%s", lib_paths[i],
+                 lib_name);
+        instance->handle = dlopen(lib_path, RTLD_NOW);
+
+        if (instance->handle == NULL) {
+            continue;
+        }
+
+        instance->module = (neu_plugin_module_t *) dlsym(instance->handle,
+                                                         "neu_plugin_module");
+        assert(instance->module != NULL);
+        return true;
+    }
+
+    assert(instance->handle != NULL);
+
+    return false;
+}
+
 bool neu_plugin_manager_remove_library(neu_plugin_manager_t *mgr,
                                        const char *          library)
 {

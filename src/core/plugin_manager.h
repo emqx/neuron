@@ -68,6 +68,10 @@ bool neu_plugin_manager_create_instance_by_path(neu_plugin_manager_t *mgr,
                                                 neu_plugin_instance_t *instance,
                                                 int *                  error);
 
+bool neu_plugin_manager_create_instance_by_lib_name(
+    neu_plugin_manager_t *mgr, const char *lib_name,
+    neu_plugin_instance_t *instance);
+
 bool neu_plugin_manager_remove_library(neu_plugin_manager_t *mgr,
                                        const char *          library);
 
