@@ -200,7 +200,7 @@ class TestPlugin:
         response = api.updata_plugin(
             library_name=plugin_data['library'], so_file=plugin_data['so_file'], schema_file=plugin_data['schema_file'])
         assert 400 == response.status_code
-        assert NEU_ERR_LIBRARY_MODULE_NOT_EXISTS == response.json().get("error")
+        assert NEU_ERR_LIBRARY_UPDATE_FAIL == response.json().get("error")
 
     @description(given="incorrect configuration", when="update plugin", then="fail")
     def test_08_update_plugin_fail1(self):
