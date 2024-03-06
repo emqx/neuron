@@ -1144,7 +1144,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
                        adapter->control_fd, receiver, strerror(errno), errno);
             neu_msg_free(msg);
         } else {
-            nlog_notice("%s send uninit msg to %s failed", name, receiver);
+            nlog_notice("%s send uninit msg to %s succeeded", name, receiver);
         }
         break;
     }

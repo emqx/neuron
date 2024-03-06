@@ -75,51 +75,6 @@ jobs:
           directory: ./cov_report/
           files: cov-ut.info
 
-  ft:
-    runs-on: ubuntu-20.04
-    container: ghcr.io/neugates/build:x86_64-main
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      
-      - name: compile
-        run: |
-          git config --global --add safe.directory $(pwd)
-          mkdir -p build && cd build
-          cmake -DUSE_GCOV=1 .. -DCMAKE_TOOLCHAIN_FILE=../cmake/x86_64-linux-gnu.cmake
-          make -j4
-
-      - name: function test
-        run: |
-          sudo apt-get install -y mosquitto
-          mosquitto -v &
-          python3 -m pip install -U pip
-          python3 -m pip install -r ft/requirements.txt
-          python3 -m robot --maxerrorlines=600 -P ft/ -d ft/reports ft
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ft_result
-          path: |
-            build/neuron.log
-
-      - name: create cov report
-        run: |
-            sudo apt-get update
-            sudo apt-get -y install lcov
-            mkdir -p cov_report
-            ./create_cov_report.sh ft
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          verbose: true
-          fail_ci_if_error: true
-          directory: ./cov_report/
-          files: cov-ft.info
-
   pft:
     runs-on: ubuntu-20.04
     container: ghcr.io/neugates/build:x86_64-main

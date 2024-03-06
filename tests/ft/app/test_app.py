@@ -118,7 +118,7 @@ class TestDriver:
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
-        response = api.subscribe_groups(app='mqtt-1', groups=[{"driver": "modbus-tcp-1", "group": "group-1"},
+        response = api.subscribe_groups(app='mqtt-1', groups=[{"driver": "modbus-tcp-1", "group": "group-1", "params":{"topic":"/neuron"}},
                                                               {"driver": "modbus-tcp-1", "group": "group-2"},
                                                               {"driver": "modbus-tcp-1", "group": "group-3"}])
         assert 200 == response.status_code
@@ -146,6 +146,10 @@ class TestDriver:
         assert 200 == response.status_code
         assert 0 == response.json()['sub_group_count']
 
+        response = api.get_subscribe_group(app='mqtt-1')
+        assert 200 == response.status_code
+        assert [] == response.json()["groups"]
+
         response = api.subscribe_group(app='mqtt-1', driver='modbus-tcp-1', group='group-1')
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
@@ -153,3 +157,80 @@ class TestDriver:
         response = api.get_nodes_state(node='mqtt-1')
         assert 200 == response.status_code
         assert 1 == response.json()['sub_group_count']
+
+    @description(given="mqtt node", when="subscribe non-existent group", then="return failure")
+    def test_mqtt_sub_non_existent_group(self):
+        response = api.subscribe_group(app='mqtt-1', driver='modbus-tcp-1', group='non-existent')
+        assert 404 == response.status_code
+        assert error.NEU_ERR_GROUP_NOT_EXIST == response.json()['error']
+
+    @description(given="mqtt node", when="update subscribe non-existent group", then="return failure")
+    def test_mqtt_update_subscribe_non_existent_group(self):
+        response = api.subscribe_group_update(app='mqtt-1', driver='modbus-tcp-1', group='non-existent', params={"topic":"new_topic"})
+        assert 404 == response.status_code
+        assert error.NEU_ERR_GROUP_NOT_SUBSCRIBE == response.json()['error']
+
+    @description(given="mqtt node", when="update subscribe group", then="success")
+    def test_mqtt_update_subscribe_group(self):
+        response = api.subscribe_group_update(app='mqtt-1', driver='modbus-tcp-1', group='group-1', params={"topic":"new_topic"})
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+    @description(given="mqtt node", when="subscribe multiple non-existent groups", then="subscribe failed")
+    def test_mqtt_subscribe_multiple_non_existent_groups(self):
+        response = api.subscribe_groups(app='mqtt-1', groups=[{"driver": "modbus-tcp-1", "group": "non-1"},
+                                                              {"driver": "modbus-tcp-1", "group": "non-2"},
+                                                              {"driver": "modbus-tcp-1", "group": "non-3"}])
+        assert 404 == response.status_code
+        assert error.NEU_ERR_GROUP_NOT_EXIST == response.json()['error']
+
+    @description(given="mqtt node", when="subscribe group with empty topic", then="subscribe failed")
+    def test_mqtt_subscribe_group_with_empty_topic(self):
+        response = api.subscribe_group(app='mqtt-1', driver='modbus-tcp-1', group='group-1', params={"topic":""})
+        assert 200 == response.status_code
+        assert error.NEU_ERR_MQTT_SUBSCRIBE_FAILURE == response.json()['error']
+
+        response = api.subscribe_groups(app='mqtt-1', groups=[{"driver": "modbus-tcp-1", "group": "group-1", "params": {"topic":""}}])
+        assert 200 == response.status_code
+        assert error.NEU_ERR_MQTT_SUBSCRIBE_FAILURE == response.json()['error']
+
+    @description(given="mqtt node with subscriptions", when="get subscriptions", then="return all subscriptions")
+    def test_mqtt_get_subscriptions(self):
+        response = api.get_subscribe_group(app='mqtt-1')
+        assert 200 == response.status_code
+        assert "modbus-tcp-1" == response.json()["groups"][0]["driver"]
+        assert "group-1" == response.json()["groups"][0]["group"]
+        assert "new_topic" == response.json()["groups"][0]["params"]["topic"]
+
+    @description(given="delete driver group that is subscribed", when="get subscriptions", then="return empty")
+    def test_get_subscription_group_be_deleted(self):
+        response = api.del_group(node='modbus-tcp-1', group="group-1")
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_subscribe_group(app='mqtt-1')
+        assert 200 == response.status_code
+        assert [] == response.json()["groups"]
+
+    @description(given="delete driver node whose group is subscribed", when="get subscriptions", then="return empty")
+    def test_get_subscription_node_be_deleted(self):
+        response = api.add_group(node="modbus-tcp-1", group="group_test")
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.subscribe_group(app='mqtt-1', driver='modbus-tcp-1', group='group_test')
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_subscribe_group(app='mqtt-1')
+        assert 200 == response.status_code
+        assert "modbus-tcp-1" == response.json()["groups"][0]["driver"]
+        assert "group_test" == response.json()["groups"][0]["group"]
+
+        response = api.del_node(node="modbus-tcp-1")
+        assert 200 == response.status_code
+        assert error.NEU_ERR_SUCCESS == response.json()['error']
+
+        response = api.get_subscribe_group(app='mqtt-1')
+        assert 200 == response.status_code
+        assert [] == response.json()["groups"]
