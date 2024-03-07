@@ -9,7 +9,7 @@ class TestLog:
     @description(given="multiple non-existing groups and multiple correct tags", 
                  when="adding", 
                  then="successfully added")
-    def test_adding_correct_gtags_nonexisting_groups(self):
+    def test_adding_correct_gtags_nonexisting_groups(self, class_setup_and_teardown):
         response = api.add_node(node='modbus-tcp-tag-test', plugin=PLUGIN_MODBUS_TCP)
         assert 200 == response.status_code
         assert 0 == response.json()['error']
@@ -62,6 +62,9 @@ class TestLog:
 
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json()['error']
+
+        # check data persisted
+        class_setup_and_teardown.restart()
 
         response = api.get_group()
         assert 200       == response.status_code
