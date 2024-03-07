@@ -99,8 +99,19 @@ neu_manager_t *neu_manager_create()
     manager->subscribe_manager = neu_subscribe_manager_create();
     manager->log_level         = ZLOG_LEVEL_NOTICE;
 
-    manager->server_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    manager->server_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     assert(manager->server_fd > 0);
+
+    struct timeval sock_timeout = {
+        .tv_sec  = 1,
+        .tv_usec = 0,
+    };
+    if (setsockopt(manager->server_fd, SOL_SOCKET, SO_SNDTIMEO, &sock_timeout,
+                   sizeof(sock_timeout)) < 0 ||
+        setsockopt(manager->server_fd, SOL_SOCKET, SO_RCVTIMEO, &sock_timeout,
+                   sizeof(sock_timeout)) < 0) {
+        assert(!"fail to set manager sock timeout");
+    }
 
     // abstract domain socket is a Linux extension, thus not portable.
     // use abstract domain socket here to avoid polluting the file system
