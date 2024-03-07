@@ -1256,6 +1256,8 @@ int neu_adapter_add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
         neu_adapter_driver_add_group((neu_adapter_driver_t *) adapter,
                                      cmd->groups[group_index].group,
                                      cmd->groups[group_index].interval);
+        adapter_storage_add_group(adapter->name, cmd->groups[group_index].group,
+                                  cmd->groups[group_index].interval);
         for (int tag_index = 0; tag_index < cmd->groups[group_index].n_tag;
              tag_index++) {
             int add_tag_result = neu_adapter_driver_add_tag(
