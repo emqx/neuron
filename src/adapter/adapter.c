@@ -152,13 +152,33 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
         break;
     }
 
-    adapter->control_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+    adapter->control_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (adapter->control_fd <= 0) {
         free(adapter);
         return NULL;
     }
-    adapter->trans_data_fd = socket(AF_UNIX, SOCK_DGRAM | SOCK_NONBLOCK, 0);
+
+    adapter->trans_data_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     if (adapter->trans_data_fd <= 0) {
+        close(adapter->control_fd);
+        free(adapter);
+        return NULL;
+    }
+
+    struct timeval sock_timeout = {
+        .tv_sec  = 1,
+        .tv_usec = 0,
+    };
+    if (setsockopt(adapter->control_fd, SOL_SOCKET, SO_SNDTIMEO, &sock_timeout,
+                   sizeof(sock_timeout)) < 0 ||
+        setsockopt(adapter->control_fd, SOL_SOCKET, SO_RCVTIMEO, &sock_timeout,
+                   sizeof(sock_timeout)) < 0 ||
+        setsockopt(adapter->trans_data_fd, SOL_SOCKET, SO_SNDTIMEO,
+                   &sock_timeout, sizeof(sock_timeout)) < 0 ||
+        setsockopt(adapter->trans_data_fd, SOL_SOCKET, SO_RCVTIMEO,
+                   &sock_timeout, sizeof(sock_timeout)) < 0) {
+        nlog_error("fail to set sock timeout for adapter:%s", info->name);
+        close(adapter->trans_data_fd);
         close(adapter->control_fd);
         free(adapter);
         return NULL;
