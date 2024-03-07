@@ -166,7 +166,7 @@ neu_adapter_t *neu_adapter_create(neu_adapter_info_t *info, bool load)
     }
 
     struct timeval sock_timeout = {
-        .tv_sec  = 1,
+        .tv_sec  = 3,
         .tv_usec = 0,
     };
     if (setsockopt(adapter->control_fd, SOL_SOCKET, SO_SNDTIMEO, &sock_timeout,
