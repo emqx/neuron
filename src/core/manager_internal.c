@@ -460,6 +460,7 @@ static inline int add_driver(neu_manager_t *manager, neu_req_driver_t *driver)
     if (0 != neu_adapter_validate_gtags(adapter, &cmd, &resp) ||
         0 != neu_adapter_try_add_gtags(adapter, &cmd, &resp) ||
         0 != neu_adapter_add_gtags(adapter, &cmd, &resp)) {
+        neu_adapter_uninit(adapter);
         neu_manager_del_node(manager, driver->node);
     }
 
@@ -498,11 +499,21 @@ int neu_manager_add_drivers(neu_manager_t *manager, neu_req_driver_array_t *req)
     for (uint16_t i = 0; i < req->n_driver; ++i) {
         ret = add_driver(manager, &req->drivers[i]);
         if (0 != ret) {
+            nlog_notice("add i:%" PRIu16 " driver:%s fail", i,
+                        req->drivers[i].node);
             while (i-- > 0) {
+                nlog_notice("rollback i:%" PRIu16 " driver:%s", i,
+                            req->drivers[i].node);
+                neu_adapter_t *adapter = neu_node_manager_find(
+                    manager->node_manager, req->drivers[i].node);
+                neu_adapter_uninit(adapter);
                 neu_manager_del_node(manager, req->drivers[i].node);
             }
+            nlog_error("fail to add %" PRIu16 " drivers", req->n_driver);
             break;
         }
+        nlog_notice("add i:%" PRIu16 " driver:%s success", i,
+                    req->drivers[i].node);
     }
 
     return ret;
