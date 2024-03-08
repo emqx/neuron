@@ -1306,6 +1306,8 @@ int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
                             cmd->groups[added_group_index]
                                 .tags[added_tag_index]
                                 .name);
+                        neu_adapter_driver_try_del_tag(
+                            (neu_adapter_driver_t *) adapter, 1);
                     }
                 }
                 for (int added_tag_index = 0; added_tag_index < tag_index;
@@ -1314,12 +1316,8 @@ int add_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
                         (neu_adapter_driver_t *) adapter,
                         cmd->groups[group_index].group,
                         cmd->groups[group_index].tags[added_tag_index].name);
-                }
-                for (int groups_count = 0; groups_count < cmd->n_group;
-                     groups_count++) {
                     neu_adapter_driver_try_del_tag(
-                        (neu_adapter_driver_t *) adapter,
-                        cmd->groups[groups_count].n_tag);
+                        (neu_adapter_driver_t *) adapter, 1);
                 }
                 resp->index = 0;
                 resp->error = add_tag_result;
