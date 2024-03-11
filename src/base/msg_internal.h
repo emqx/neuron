@@ -115,7 +115,10 @@ extern "C" {
     XX(NEU_REQ_UPDATE_NDRIVER_TAG_INFO, neu_req_update_ndriver_tag_info_t)   \
     XX(NEU_REQ_GET_NDRIVER_TAGS, neu_req_get_ndriver_tags_t)                 \
     XX(NEU_RESP_GET_NDRIVER_TAGS, neu_resp_get_ndriver_tags_t)               \
-    XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)
+    XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)                 \
+    XX(NEU_REQ_PRGFILE_UPLOAD, neu_req_prgfile_upload_t)                     \
+    XX(NEU_REQ_PRGFILE_PROCESS, neu_req_prgfile_process_t)                   \
+    XX(NEU_RESP_PRGFILE_PROCESS, neu_resp_prgfile_process_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

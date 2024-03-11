@@ -165,6 +165,7 @@ def read_tag(node, group, tag, sync=False):
     finally:
         return x[0]['value']
 
+
 def read_tag_error(node, group, tag, sync=False):
     response = read_tags(node, group, sync)
     assert 200 == response.status_code
@@ -201,6 +202,7 @@ def write_tag(node, group, tag, value):
 @gen_check
 def write_tags(node, group, tag_values):
     return requests.post(url=config.BASE_URL + "/api/v2/write/tags", headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "tags": tag_values})
+
 
 def write_gtags(json):
     return requests.post(url=config.BASE_URL + "/api/v2/write/gtags", headers={"Authorization": config.default_jwt}, json=json)
@@ -296,53 +298,77 @@ def del_template_tags(tmpl, group, tags):
 def get_template_tags(tmpl, group, name):
     return requests.get(url=config.BASE_URL + "/api/v2/template/tag", headers={"Authorization": config.default_jwt}, params={"template": tmpl, "group": group, "name": name})
 
+
 @gen_check
 def subscribe_group(app, driver, group, params={}):
     return requests.post(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group, "params": params})
+
 
 @gen_check
 def subscribe_groups(app, groups):
     return requests.post(url=config.BASE_URL + "/api/v2/subscribes", headers={"Authorization": config.default_jwt}, json={"app": app, "groups": groups})
 
+
 @gen_check
 def unsubscribe_group(app, driver, group):
     return requests.delete(url=config.BASE_URL + "/api/v2/subscribe", headers={"Authorization": config.default_jwt}, json={"app": app, "driver": driver, "group": group})
 
+
 def get_metrics(category="global", node=""):
     return requests.get(url=config.BASE_URL + "/api/v2/metrics?category=" + category + "&node=" + node, headers={"Authorization": config.default_jwt})
+
 
 def get_global_config():
     return requests.get(url=config.BASE_URL + "/api/v2/global/config", headers={"Authorization": config.default_jwt})
 
+
 def put_global_config(json):
     return requests.put(url=config.BASE_URL + "/api/v2/global/config", headers={"Authorization": config.default_jwt}, json=json)
+
 
 def get_plugin_schema(plugin):
     return requests.get(url=config.BASE_URL + "/api/v2/schema?schema_name=" + plugin, headers={"Authorization": config.default_jwt})
 
+
 def get_plugin():
     return requests.get(url=config.BASE_URL + "/api/v2/plugin", headers={"Authorization": config.default_jwt})
+
 
 def get_version():
     return requests.get(url=config.BASE_URL + "/api/v2/version", headers={"Authorization": config.default_jwt})
 
+
 def post_ndriver_map(ndriver, driver, group):
-    return requests.post(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group":group})
+    return requests.post(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group": group})
+
 
 def delete_ndriver_map(ndriver, driver, group):
-    return requests.delete(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group":group})
+    return requests.delete(url=config.BASE_URL + "/api/v2/ndriver/map", headers={"Authorization": config.default_jwt}, json={"ndriver": ndriver, "driver": driver, "group": group})
+
 
 def get_ndriver_map(ndriver):
     return requests.get(url=config.BASE_URL + "/api/v2/ndriver/map?ndriver=" + ndriver, headers={"Authorization": config.default_jwt})
 
+
 def put_ndriver_tag_param(json):
     return requests.put(url=config.BASE_URL + "/api/v2/ndriver/tag/param", headers={"Authorization": config.default_jwt}, json=json)
+
 
 def put_ndriver_tag_info(json):
     return requests.put(url=config.BASE_URL + "/api/v2/ndriver/tag/info", headers={"Authorization": config.default_jwt}, json=json)
 
+
 def get_ndriver_tag(ndriver, driver, group):
     return requests.get(url=config.BASE_URL + "/api/v2/ndriver/tag?ndriver=" + ndriver + "&driver=" + driver + "&group=" + group, headers={"Authorization": config.default_jwt})
+
+
+def prgfile_upload(driver, path, params):
+    return requests.post(url=config.BASE_URL + "/api/v2/prgfile", headers={"Authorization": config.default_jwt}, json={"driver": driver, "path": path, "parameters": params})
+
+
+def prgfile_process(driver):
+    return requests.get(url=config.BASE_URL + "/api/v2/prgfile?driver=" + driver, headers={"Authorization": config.default_jwt})
+
 
 # plugin setting
 
@@ -358,7 +384,8 @@ def modbus_rtu_node_setting(node, port, connection_mode=0, transport_mode=0, int
                                     "max_retries": max_retries, "link": link, "device": device, "stop": stop,
                                     "parity": parity, "baud": baud, "data": data})
 
+
 def mqtt_node_setting(node):
-    return node_setting(node, json={"client-id": "neuron_aBcDeF", "qos":0, "format": 0,
+    return node_setting(node, json={"client-id": "neuron_aBcDeF", "qos": 0, "format": 0,
                                     "write-req-topic": f"/neuron/{node}/write/req", "write-resp-topic": f"/neuron/{node}/write/resp",
                                     "offline-cache": False, "cache-sync-interval": 100, "host": "broker.emqx.io", "port": 1883, "username": "", "password": "", "ssl": False})
