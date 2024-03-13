@@ -19,6 +19,9 @@ def gen_check(func):
     return func
 
 
+def ping():
+    return requests.post(url=config.BASE_URL + '/api/v2/ping')
+
 def login(user='admin', password='0000'):
     return requests.post(url=config.BASE_URL + '/api/v2/login', json={"name": user, "pass": password})
 
@@ -116,12 +119,12 @@ def update_group(node, group, new_name="", interval=0):
     elif interval > 0:
         return requests.put(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "interval": interval})
     else:
-        assert False
+        return requests.put(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt}, json={"node": node, "group": group, "new_name": new_name})
 
 
 @gen_check
-def get_group():
-    return requests.get(url=config.BASE_URL + '/api/v2/group', headers={"Authorization": config.default_jwt})
+def get_group(node=""):
+    return requests.get(url=config.BASE_URL + f'/api/v2/group?node={node}', headers={"Authorization": config.default_jwt})
 
 
 @gen_check
