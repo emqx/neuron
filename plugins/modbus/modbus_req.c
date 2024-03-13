@@ -699,7 +699,7 @@ static int process_protocol_buf(neu_plugin_t *plugin, uint8_t slave_id,
                 plog_recv_protocol(plugin, recv_buf, ret);
             }
             neu_protocol_unpack_buf_init(&pbuf, recv_buf, ret);
-            int ret_s = modbus_stack_recv(plugin->stack, 0, &pbuf);
+            int ret_s = modbus_stack_recv(plugin->stack, slave_id, &pbuf);
             if (ret_s == MODBUS_DEVICE_ERR) {
                 ret = ret_s;
             } else {
