@@ -84,10 +84,8 @@ int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
         return -1;
     }
 
-    if (stack->protocol == MODBUS_PROTOCOL_TCP) {
-        if (code.slave_id != slave_id) {
-            return -1;
-        }
+    if (code.slave_id != slave_id) {
+        return -1;
     }
 
     switch (code.function) {
