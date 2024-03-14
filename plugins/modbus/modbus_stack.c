@@ -100,18 +100,36 @@ int modbus_stack_recv(modbus_stack_t *stack, uint8_t slave_id,
             return -1;
         }
 
-        if (stack->protocol == MODBUS_PROTOCOL_TCP && data.n_byte == 0xff) {
-            bytes = neu_protocol_unpack_buf(buf,
-                                            header.len -
-                                                sizeof(struct modbus_code) -
-                                                sizeof(struct modbus_data));
-            stack->value_fn(stack->ctx, code.slave_id,
-                            header.len - sizeof(struct modbus_code) -
-                                sizeof(struct modbus_data),
-                            bytes, 0);
-        } else {
+        switch (stack->protocol) {
+        case MODBUS_PROTOCOL_TCP:
+            if (data.n_byte == 0xff) {
+                bytes = neu_protocol_unpack_buf(buf,
+                                                header.len -
+                                                    sizeof(struct modbus_code) -
+                                                    sizeof(struct modbus_data));
+                if (bytes == NULL) {
+                    return -1;
+                }
+                stack->value_fn(stack->ctx, code.slave_id,
+                                header.len - sizeof(struct modbus_code) -
+                                    sizeof(struct modbus_data),
+                                bytes, 0);
+            } else {
+                bytes = neu_protocol_unpack_buf(buf, data.n_byte);
+                if (bytes == NULL) {
+                    return -1;
+                }
+                stack->value_fn(stack->ctx, code.slave_id, data.n_byte, bytes,
+                                0);
+            }
+            break;
+        case MODBUS_PROTOCOL_RTU:
             bytes = neu_protocol_unpack_buf(buf, data.n_byte);
+            if (bytes == NULL) {
+                return -1;
+            }
             stack->value_fn(stack->ctx, code.slave_id, data.n_byte, bytes, 0);
+            break;
         }
 
         break;
