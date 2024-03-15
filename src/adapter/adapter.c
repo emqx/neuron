@@ -1071,12 +1071,6 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_add_tag_t  resp = { 0 };
         if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
             resp.error = NEU_ERR_GROUP_NOT_ALLOW;
-        } else if (neu_adapter_driver_new_group_count(
-                       (neu_adapter_driver_t *) adapter, cmd) +
-                       neu_adapter_driver_group_count(
-                           (neu_adapter_driver_t *) adapter) >
-                   NEU_GROUP_MAX_PER_NODE) {
-            resp.error = NEU_ERR_GROUP_MAX_GROUPS;
         } else {
             if (validate_gtags(adapter, cmd, &resp) == 0 &&
                 try_add_gtags(adapter, cmd, &resp) == 0 &&
@@ -1262,22 +1256,30 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
 int validate_gtags(neu_adapter_t *adapter, neu_req_add_gtag_t *cmd,
                    neu_resp_add_tag_t *resp)
 {
+    neu_adapter_driver_t *driver_adapter = (neu_adapter_driver_t *) adapter;
+    if (neu_adapter_driver_new_group_count(driver_adapter, cmd) +
+            neu_adapter_driver_group_count(driver_adapter) >
+        NEU_GROUP_MAX_PER_NODE) {
+        resp->error = NEU_ERR_GROUP_MAX_GROUPS;
+        resp->index = 0;
+        return NEU_ERR_GROUP_MAX_GROUPS;
+    }
+
     for (int group_index = 0; group_index < cmd->n_group; group_index++) {
-        for (int tag_index = 0; tag_index < cmd->groups[group_index].n_tag;
-             tag_index++) {
+        neu_gdatatag_t *current_group = &cmd->groups[group_index];
+        for (int tag_index = 0; tag_index < current_group->n_tag; tag_index++) {
             int validation_result = neu_adapter_driver_validate_tag(
-                (neu_adapter_driver_t *) adapter,
-                cmd->groups[group_index].group,
-                &cmd->groups[group_index].tags[tag_index]);
-            if (validation_result == 0) {
-                resp->index += 1;
-            } else {
+                driver_adapter, current_group->group,
+                &current_group->tags[tag_index]);
+            if (validation_result != 0) {
                 resp->error = validation_result;
                 resp->index = 0;
                 return validation_result;
             }
+            resp->index += 1;
         }
     }
+
     return 0;
 }
 
