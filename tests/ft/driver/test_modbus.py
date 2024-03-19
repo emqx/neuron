@@ -58,7 +58,7 @@ def simulator_setup_teardown(param):
         print(modbus_neuron_dev)
         print(modbus_simulator_dev)
         p = process.start_simulator(
-            ['./modbus_tty_simulator', f'{modbus_simulator_dev}'])
+            ['./modbus_tty_simulator', '-e', '--link', f'{modbus_simulator_dev}'])
 
     response = api.add_node(node=param[0], plugin=param[1])
     assert 200 == response.status_code

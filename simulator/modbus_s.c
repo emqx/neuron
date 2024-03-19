@@ -35,6 +35,7 @@ struct modbus_register {
     neu_value16_u   hold_register[65536];
 };
 
+static bool                   simulate_error = false;
 static struct modbus_register rtu_registers[3];
 static struct modbus_register tcp_registers[3];
 
@@ -59,6 +60,11 @@ void modbus_s_init()
         pthread_mutex_init(&rtu_registers[i].mutex, NULL);
         pthread_mutex_init(&tcp_registers[i].mutex, NULL);
     }
+}
+
+void modbus_s_simulate_error(bool b)
+{
+    simulate_error = b;
 }
 
 ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
@@ -126,26 +132,26 @@ ssize_t modbus_s_rtu_req(uint8_t *req, uint16_t req_len, uint8_t *res,
     case MODBUS_READ_INPUT:
     case MODBUS_READ_HOLD_REG:
     case MODBUS_READ_INPUT_REG:
-        if (ntohs(address->start_address) == 7999) {
+        if (simulate_error && ntohs(address->start_address) == 7999) {
             ++start_address_8000_counter;
             if (start_address_8000_counter % 2 == 1) {
                 return -2;
-            } 
+            }
         }
 
-        if (ntohs(address->start_address) == 8000) {
+        if (simulate_error && ntohs(address->start_address) == 8000) {
             ++start_address_8001_counter;
             if (start_address_8001_counter % 3 != 0) {
                 return -2;
-            } 
+            }
         }
 
-        if (ntohs(address->start_address) == 8999) {
+        if (simulate_error && ntohs(address->start_address) == 8999) {
             res_code->function += 0x80;
-            len = modbus_read(&rtu_registers[code->slave_id - 1], res_code->function,
-                              address, res_value);
+            len              = modbus_read(&rtu_registers[code->slave_id - 1],
+                              res_code->function, address, res_value);
             res_data->n_byte = len;
-            crc = (uint16_t *) (res_value + len);
+            crc              = (uint16_t *) (res_value + len);
             break;
         }
 
@@ -231,24 +237,24 @@ ssize_t modbus_s_tcp_req(uint8_t *req, uint16_t req_len, uint8_t *res,
                   code->slave_id, code->function, ntohs(address->start_address),
                   ntohs(address->n_reg));
 
-        if (ntohs(address->start_address) == 7999) {
+        if (simulate_error && ntohs(address->start_address) == 7999) {
             ++start_address_8000_counter;
             if (start_address_8000_counter % 2 == 1) {
                 return -2;
-            } 
+            }
         }
 
-        if (ntohs(address->start_address) == 8000) {
+        if (simulate_error && ntohs(address->start_address) == 8000) {
             ++start_address_8001_counter;
             if (start_address_8001_counter % 3 != 0) {
                 return -2;
-            } 
+            }
         }
 
-        if (ntohs(address->start_address) == 8999) {
+        if (simulate_error && ntohs(address->start_address) == 8999) {
             res_code->function += 0x80;
-            len = modbus_read(&tcp_registers[code->slave_id - 1], res_code->function,
-                              address, res_value);
+            len              = modbus_read(&tcp_registers[code->slave_id - 1],
+                              res_code->function, address, res_value);
             res_data->n_byte = len;
             break;
         }
