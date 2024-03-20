@@ -1290,6 +1290,12 @@ int neu_conn_stream_consume(neu_conn_t *conn, void *context,
                 break;
             } else {
                 pthread_mutex_lock(&conn->mtx);
+                if (conn->offset - used < 0) {
+                    pthread_mutex_unlock(&conn->mtx);
+                    zlog_warn(conn->param.log, "reset offset: %d, used: %d",
+                              conn->offset, used);
+                    return -1;
+                }
                 conn->offset -= used;
                 memmove(conn->buf, conn->buf + used, conn->offset);
                 neu_protocol_unpack_buf_init(&protocol_buf, conn->buf,
@@ -1320,10 +1326,18 @@ int neu_conn_stream_tcp_server_consume(neu_conn_t *conn, int fd, void *context,
                 neu_conn_tcp_server_close_client(conn, fd);
                 break;
             } else {
+                pthread_mutex_lock(&conn->mtx);
+                if (conn->offset - used < 0) {
+                    pthread_mutex_unlock(&conn->mtx);
+                    zlog_warn(conn->param.log, "reset offset: %d, used: %d",
+                              conn->offset, used);
+                    return -1;
+                }
                 conn->offset -= used;
                 memmove(conn->buf, conn->buf + used, conn->offset);
                 neu_protocol_unpack_buf_init(&protocol_buf, conn->buf,
                                              conn->offset);
+                pthread_mutex_unlock(&conn->mtx);
             }
         }
     }
