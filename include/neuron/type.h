@@ -31,25 +31,27 @@ extern "C" {
 #include <stdio.h>
 
 typedef enum {
-    NEU_TYPE_INT8   = 1,
-    NEU_TYPE_UINT8  = 2,
-    NEU_TYPE_INT16  = 3,
-    NEU_TYPE_UINT16 = 4,
-    NEU_TYPE_INT32  = 5,
-    NEU_TYPE_UINT32 = 6,
-    NEU_TYPE_INT64  = 7,
-    NEU_TYPE_UINT64 = 8,
-    NEU_TYPE_FLOAT  = 9,
-    NEU_TYPE_DOUBLE = 10,
-    NEU_TYPE_BIT    = 11,
-    NEU_TYPE_BOOL   = 12,
-    NEU_TYPE_STRING = 13,
-    NEU_TYPE_BYTES  = 14,
-    NEU_TYPE_ERROR  = 15,
-    NEU_TYPE_WORD   = 16,
-    NEU_TYPE_DWORD  = 17,
-    NEU_TYPE_LWORD  = 18,
-    NEU_TYPE_PTR    = 19,
+    NEU_TYPE_INT8          = 1,
+    NEU_TYPE_UINT8         = 2,
+    NEU_TYPE_INT16         = 3,
+    NEU_TYPE_UINT16        = 4,
+    NEU_TYPE_INT32         = 5,
+    NEU_TYPE_UINT32        = 6,
+    NEU_TYPE_INT64         = 7,
+    NEU_TYPE_UINT64        = 8,
+    NEU_TYPE_FLOAT         = 9,
+    NEU_TYPE_DOUBLE        = 10,
+    NEU_TYPE_BIT           = 11,
+    NEU_TYPE_BOOL          = 12,
+    NEU_TYPE_STRING        = 13,
+    NEU_TYPE_BYTES         = 14,
+    NEU_TYPE_ERROR         = 15,
+    NEU_TYPE_WORD          = 16,
+    NEU_TYPE_DWORD         = 17,
+    NEU_TYPE_LWORD         = 18,
+    NEU_TYPE_PTR           = 19,
+    NEU_TYPE_TIME          = 20,
+    NEU_TYPE_DATA_AND_TIME = 21,
 } neu_type_e;
 
 inline static const char *neu_type_string(neu_type_e type)
@@ -93,6 +95,10 @@ inline static const char *neu_type_string(neu_type_e type)
         return "NEU_TYPE_LWORD";
     case NEU_TYPE_PTR:
         return "NEU_TYPE_PTR";
+    case NEU_TYPE_TIME:
+        return "NEU_TYPE_TIME";
+    case NEU_TYPE_DATA_AND_TIME:
+        return "NEU_TYPE_DATA_AND_TIME";
     }
 
     return "";
@@ -192,6 +198,11 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
         snprintf(str, sizeof(str), "type: %s, value: %c%c%c",
                  neu_type_string(type), value.str[0], value.str[1],
                  value.str[2]);
+        break;
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
+        snprintf(str, sizeof(str), "type: %s, value: %s", neu_type_string(type),
+                 value.str);
         break;
     }
     default:
