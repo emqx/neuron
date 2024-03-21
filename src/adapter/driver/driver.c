@@ -472,6 +472,8 @@ static void fix_value(neu_datatag_t *tag, neu_type_e value_type,
     switch (tag->type) {
     case NEU_TYPE_BOOL:
     case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
     case NEU_TYPE_BYTES:
         break;
     case NEU_TYPE_BIT:

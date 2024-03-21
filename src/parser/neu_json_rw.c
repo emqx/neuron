@@ -579,6 +579,8 @@ void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
                 json_tag->metas[k].value.val_bit = metas[k].value.value.u8;
                 break;
             case NEU_TYPE_STRING:
+            case NEU_TYPE_TIME:
+            case NEU_TYPE_DATA_AND_TIME:
                 json_tag->metas[k].t             = NEU_JSON_STR;
                 json_tag->metas[k].value.val_str = metas[k].value.value.str;
                 break;
