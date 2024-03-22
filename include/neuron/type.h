@@ -194,15 +194,12 @@ static inline char *neu_value_str(neu_type_e type, neu_value_u value)
         snprintf(str, sizeof(str), "type: %s, value: %u", neu_type_string(type),
                  value.boolean);
         break;
-    case NEU_TYPE_STRING: {
+    case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME: {
         snprintf(str, sizeof(str), "type: %s, value: %c%c%c",
                  neu_type_string(type), value.str[0], value.str[1],
                  value.str[2]);
-        break;
-    case NEU_TYPE_TIME:
-    case NEU_TYPE_DATA_AND_TIME:
-        snprintf(str, sizeof(str), "type: %s, value: %s", neu_type_string(type),
-                 value.str);
         break;
     }
     default:

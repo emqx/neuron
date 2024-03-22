@@ -150,9 +150,7 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
         }
         break;
     }
-    case NEU_TYPE_STRING:
-    case NEU_TYPE_TIME:
-    case NEU_TYPE_DATA_AND_TIME: {
+    case NEU_TYPE_STRING: {
         char *op = find_last_character(datatag->address, '.');
 
         if (op == NULL) {
