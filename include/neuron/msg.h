@@ -1017,6 +1017,8 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
         tag_json->value.val_bit = tag_value->value.value.u8;
         break;
     case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
         tag_json->t             = NEU_JSON_STR;
         tag_json->value.val_str = tag_value->value.value.str;
         break;

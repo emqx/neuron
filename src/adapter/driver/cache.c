@@ -157,6 +157,8 @@ void neu_driver_cache_update_change(neu_driver_cache_t *cache,
             case NEU_TYPE_BIT:
             case NEU_TYPE_BOOL:
             case NEU_TYPE_STRING:
+            case NEU_TYPE_TIME:
+            case NEU_TYPE_DATA_AND_TIME:
             case NEU_TYPE_WORD:
             case NEU_TYPE_DWORD:
             case NEU_TYPE_LWORD:
@@ -299,6 +301,8 @@ int neu_driver_cache_meta_get(neu_driver_cache_t *cache, const char *group,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
+        case NEU_TYPE_TIME:
+        case NEU_TYPE_DATA_AND_TIME:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
@@ -381,6 +385,8 @@ int neu_driver_cache_meta_get_changed(neu_driver_cache_t *cache,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
+        case NEU_TYPE_TIME:
+        case NEU_TYPE_DATA_AND_TIME:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
@@ -461,6 +467,8 @@ int neu_driver_cache_get(neu_driver_cache_t *cache, const char *group,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
+        case NEU_TYPE_TIME:
+        case NEU_TYPE_DATA_AND_TIME:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;
@@ -539,6 +547,8 @@ int neu_driver_cache_get_changed(neu_driver_cache_t *cache, const char *group,
             value->value.value.boolean = elem->value.value.boolean;
             break;
         case NEU_TYPE_STRING:
+        case NEU_TYPE_TIME:
+        case NEU_TYPE_DATA_AND_TIME:
             memcpy(value->value.value.str, elem->value.value.str,
                    sizeof(elem->value.value.str));
             break;

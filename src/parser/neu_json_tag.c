@@ -199,6 +199,8 @@ int neu_json_tag_check_type(neu_json_tag_t *tag)
             return NEU_JSON_BOOL == tag->t;
         case NEU_TYPE_BYTES:
         case NEU_TYPE_STRING:
+        case NEU_TYPE_TIME:
+        case NEU_TYPE_DATA_AND_TIME:
             return NEU_JSON_STR == tag->t &&
                 strlen(tag->value.val_str) <= NEU_VALUE_SIZE;
         }

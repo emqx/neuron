@@ -150,7 +150,9 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
         }
         break;
     }
-    case NEU_TYPE_STRING: {
+    case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME: {
         char *op = find_last_character(datatag->address, '.');
 
         if (op == NULL) {
@@ -523,6 +525,8 @@ int neu_tag_get_static_value_json(neu_datatag_t *tag, neu_json_type_e *t,
         v->val_double = value->d64;
         break;
     case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
         *t         = NEU_JSON_STR;
         v->val_str = value->str;
         break;
@@ -625,7 +629,8 @@ int neu_tag_set_static_value_json(neu_datatag_t *tag, neu_json_type_e t,
         break;
     }
     case NEU_JSON_STR: {
-        if (NEU_TYPE_STRING == tag->type) {
+        if (NEU_TYPE_STRING == tag->type || NEU_TYPE_TIME == tag->type ||
+            NEU_TYPE_DATA_AND_TIME == tag->type) {
             snprintf(value.str, sizeof(value.str), "%s", v->val_str);
         } else {
             rv = -1;
@@ -695,6 +700,8 @@ char *neu_tag_dump_static_value(const neu_datatag_t *tag)
         jval = json_real(value.d64);
         break;
     case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
         jval = json_string(value.str);
         break;
     default:
