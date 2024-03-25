@@ -83,6 +83,9 @@ void recv_data_callback(void *arg)
     rv = nng_aio_result(plugin->recv_aio);
     if (0 != rv) {
         plog_error(plugin, "nng_recv error: %s", nng_strerror(rv));
+        nng_mtx_lock(plugin->mtx);
+        plugin->receiving = false;
+        nng_mtx_unlock(plugin->mtx);
         return;
     }
 
