@@ -37,6 +37,7 @@ struct neu_plugin {
     nng_socket          sock;
     nng_mtx *           mtx;
     bool                started;
+    bool                receiving;
     nng_aio *           recv_aio;
     char *              host;
     uint16_t            port;

@@ -162,7 +162,16 @@ static inline int start(neu_plugin_t *plugin, const char *url)
         return rv;
     }
 
+    nng_mtx_lock(plugin->mtx);
+    while (plugin->receiving) {
+        nng_mtx_unlock(plugin->mtx);
+        nng_msleep(10);
+        nng_mtx_lock(plugin->mtx);
+    }
+    plugin->receiving = true;
     nng_recv_aio(plugin->sock, plugin->recv_aio);
+    nng_mtx_unlock(plugin->mtx);
+
     return NEU_ERR_SUCCESS;
 }
 
