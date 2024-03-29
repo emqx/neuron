@@ -210,7 +210,9 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
     }
     case NEU_TYPE_FLOAT:
     case NEU_TYPE_INT32:
-    case NEU_TYPE_UINT32: {
+    case NEU_TYPE_UINT32:
+    case NEU_TYPE_DATA_AND_TIME:
+    case NEU_TYPE_TIME: {
         char *op = find_last_character(datatag->address, '#');
 
         option->value32.endian     = NEU_DATATAG_ENDIAN_LL32;
