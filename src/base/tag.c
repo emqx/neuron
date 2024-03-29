@@ -213,7 +213,8 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
     case NEU_TYPE_UINT32: {
         char *op = find_last_character(datatag->address, '#');
 
-        option->value32.endian = NEU_DATATAG_ENDIAN_LL32;
+        option->value32.endian     = NEU_DATATAG_ENDIAN_LL32;
+        option->value32.is_default = true;
         if (op != NULL) {
             char e1 = 0;
             char e2 = 0;
@@ -221,16 +222,20 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
 
             if (n == 2) {
                 if (e1 == 'B' && e2 == 'B') {
-                    option->value32.endian = NEU_DATATAG_ENDIAN_BB32;
+                    option->value32.endian     = NEU_DATATAG_ENDIAN_BB32;
+                    option->value32.is_default = false;
                 }
                 if (e1 == 'B' && e2 == 'L') {
-                    option->value32.endian = NEU_DATATAG_ENDIAN_BL32;
+                    option->value32.endian     = NEU_DATATAG_ENDIAN_BL32;
+                    option->value32.is_default = false;
                 }
                 if (e1 == 'L' && e2 == 'L') {
-                    option->value32.endian = NEU_DATATAG_ENDIAN_LL32;
+                    option->value32.endian     = NEU_DATATAG_ENDIAN_LL32;
+                    option->value32.is_default = false;
                 }
                 if (e1 == 'L' && e2 == 'B') {
-                    option->value32.endian = NEU_DATATAG_ENDIAN_LB32;
+                    option->value32.endian     = NEU_DATATAG_ENDIAN_LB32;
+                    option->value32.is_default = false;
                 }
             }
         }

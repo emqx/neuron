@@ -59,6 +59,7 @@ typedef union {
     } value16;
     struct {
         neu_datatag_endian_e endian;
+        bool                 is_default;
     } value32;
     struct {
         neu_datatag_endian_e endian;
