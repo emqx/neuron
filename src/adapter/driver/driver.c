@@ -1247,6 +1247,28 @@ int neu_adapter_driver_validate_tag(neu_adapter_driver_t *driver,
         return NEU_ERR_TAG_PRECISION_INVALID;
     }
 
+    if (tag->bias != 0) {
+        switch (tag->type) {
+        case NEU_TYPE_INT8:
+        case NEU_TYPE_UINT8:
+        case NEU_TYPE_INT16:
+        case NEU_TYPE_UINT16:
+        case NEU_TYPE_INT32:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_DOUBLE:
+            if (tag->bias < -1000 || 1000 < tag->bias ||
+                neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE)) {
+                return NEU_ERR_TAG_BIAS_INVALID;
+            }
+            break;
+        default:
+            return NEU_ERR_TAG_BIAS_INVALID;
+        }
+    }
+
     if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_SUBSCRIBE) &&
         neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
         return NEU_ERR_TAG_ATTRIBUTE_NOT_SUPPORT;

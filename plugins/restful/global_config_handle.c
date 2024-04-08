@@ -819,6 +819,7 @@ static int get_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         tags_res.tags[index].attribute   = tag->attribute;
         tags_res.tags[index].precision   = tag->precision;
         tags_res.tags[index].decimal     = tag->decimal;
+        tags_res.tags[index].bias        = tag->bias;
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
             neu_tag_get_static_value_json(tag, &tags_res.tags[index].t,
                                           &tags_res.tags[index].value);
@@ -903,6 +904,7 @@ static int get_driver_tags_resp(context_t *ctx, neu_resp_get_tag_t *tags)
         gtag->tags[index].attribute   = tag->attribute;
         gtag->tags[index].precision   = tag->precision;
         gtag->tags[index].decimal     = tag->decimal;
+        gtag->tags[index].bias        = tag->bias;
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
             neu_tag_get_static_value_json(tag, &gtag->tags[index].t,
                                           &gtag->tags[index].value);
@@ -1169,6 +1171,7 @@ static int add_tag(context_t *ctx, neu_json_add_tags_req_t *data)
         cmd.tags[i].type      = data->tags[i].type;
         cmd.tags[i].precision = data->tags[i].precision;
         cmd.tags[i].decimal   = data->tags[i].decimal;
+        cmd.tags[i].bias      = data->tags[i].bias;
         cmd.tags[i].address   = strdup(data->tags[i].address);
         cmd.tags[i].name      = strdup(data->tags[i].name);
         cmd.tags[i].description =

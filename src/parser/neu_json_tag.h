@@ -39,6 +39,7 @@ typedef struct {
     int64_t          attribute;
     int64_t          precision;
     double           decimal;
+    double           bias;
     neu_json_type_e  t;
     neu_json_value_u value;
 } neu_json_tag_t;

@@ -45,6 +45,7 @@ static void tag_array_copy(void *_dst, const void *_src)
     dst->attribute   = src->attribute;
     dst->precision   = src->precision;
     dst->decimal     = src->decimal;
+    dst->bias        = src->bias;
     dst->option      = src->option;
     dst->address     = strdup(src->address);
     dst->name        = strdup(src->name);

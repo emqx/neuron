@@ -57,6 +57,7 @@ void handle_add_tags(nng_aio *aio)
                     cmd.tags[i].type      = req->tags[i].type;
                     cmd.tags[i].precision = req->tags[i].precision;
                     cmd.tags[i].decimal   = req->tags[i].decimal;
+                    cmd.tags[i].bias      = req->tags[i].bias;
                     cmd.tags[i].address   = strdup(req->tags[i].address);
                     cmd.tags[i].name      = strdup(req->tags[i].name);
                     if (req->tags[i].description != NULL) {
@@ -144,6 +145,7 @@ void handle_add_gtags(nng_aio *aio)
                         req->groups[i].tags[j].precision;
                     cmd.groups[i].tags[j].decimal =
                         req->groups[i].tags[j].decimal;
+                    cmd.groups[i].tags[j].bias = req->groups[i].tags[j].bias;
                     cmd.groups[i].tags[j].address =
                         strdup(req->groups[i].tags[j].address);
                     cmd.groups[i].tags[j].name =
@@ -269,6 +271,7 @@ void handle_update_tags(nng_aio *aio)
                 cmd.tags[i].type      = req->tags[i].type;
                 cmd.tags[i].precision = req->tags[i].precision;
                 cmd.tags[i].decimal   = req->tags[i].decimal;
+                cmd.tags[i].bias      = req->tags[i].bias;
                 cmd.tags[i].address   = strdup(req->tags[i].address);
                 cmd.tags[i].name      = strdup(req->tags[i].name);
                 if (req->tags[i].description != NULL) {
@@ -358,6 +361,7 @@ void handle_get_tags_resp(nng_aio *aio, neu_resp_get_tag_t *tags)
         tags_res.tags[index].attribute   = tag->attribute;
         tags_res.tags[index].precision   = tag->precision;
         tags_res.tags[index].decimal     = tag->decimal;
+        tags_res.tags[index].bias        = tag->bias;
         if (neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
             neu_tag_get_static_value_json(tag, &tags_res.tags[index].t,
                                           &tags_res.tags[index].value);
