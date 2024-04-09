@@ -1992,48 +1992,50 @@ static void read_group(int64_t timestamp, int64_t timeout,
             } else {
                 tag_value.value = value.value;
             }
-            if (tag->decimal != 0) {
+            if (tag->decimal != 0 || tag->bias != 0) {
                 tag_value.value.type = NEU_TYPE_DOUBLE;
+                double decimal       = tag->decimal != 0 ? tag->decimal : 1;
+                double bias          = tag->bias;
                 switch (tag->type) {
                 case NEU_TYPE_INT8:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.i8 * tag->decimal;
+                        (double) tag_value.value.value.i8 * decimal + bias;
                     break;
                 case NEU_TYPE_UINT8:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.u8 * tag->decimal;
+                        (double) tag_value.value.value.u8 * decimal + bias;
                     break;
                 case NEU_TYPE_INT16:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.i16 * tag->decimal;
+                        (double) tag_value.value.value.i16 * decimal + bias;
                     break;
                 case NEU_TYPE_UINT16:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.u16 * tag->decimal;
+                        (double) tag_value.value.value.u16 * decimal + bias;
                     break;
                 case NEU_TYPE_INT32:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.i32 * tag->decimal;
+                        (double) tag_value.value.value.i32 * decimal + bias;
                     break;
                 case NEU_TYPE_UINT32:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.u32 * tag->decimal;
+                        (double) tag_value.value.value.u32 * decimal + bias;
                     break;
                 case NEU_TYPE_INT64:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.i64 * tag->decimal;
+                        (double) tag_value.value.value.i64 * decimal + bias;
                     break;
                 case NEU_TYPE_UINT64:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.u64 * tag->decimal;
+                        (double) tag_value.value.value.u64 * decimal + bias;
                     break;
                 case NEU_TYPE_FLOAT:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.f32 * tag->decimal;
+                        (double) tag_value.value.value.f32 * decimal + bias;
                     break;
                 case NEU_TYPE_DOUBLE:
                     tag_value.value.value.d64 =
-                        (double) tag_value.value.value.d64 * tag->decimal;
+                        (double) tag_value.value.value.d64 * decimal + bias;
                     break;
                 default:
                     tag_value.value.type = tag->type;
