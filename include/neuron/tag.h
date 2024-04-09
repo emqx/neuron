@@ -67,6 +67,7 @@ typedef union {
     struct {
         uint16_t                  length;
         neu_datatag_string_type_e type;
+        bool                      is_default;
     } string;
 
     struct {
