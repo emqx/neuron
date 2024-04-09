@@ -161,19 +161,24 @@ int neu_datatag_parse_addr_option(const neu_datatag_t *      datatag,
 
             switch (t) {
             case 'H':
-                option->string.type = NEU_DATATAG_STRING_TYPE_H;
+                option->string.type       = NEU_DATATAG_STRING_TYPE_H;
+                option->string.is_default = false;
                 break;
             case 'L':
-                option->string.type = NEU_DATATAG_STRING_TYPE_L;
+                option->string.type       = NEU_DATATAG_STRING_TYPE_L;
+                option->string.is_default = false;
                 break;
             case 'D':
-                option->string.type = NEU_DATATAG_STRING_TYPE_D;
+                option->string.type       = NEU_DATATAG_STRING_TYPE_D;
+                option->string.is_default = false;
                 break;
             case 'E':
-                option->string.type = NEU_DATATAG_STRING_TYPE_D;
+                option->string.type       = NEU_DATATAG_STRING_TYPE_E;
+                option->string.is_default = false;
                 break;
             default:
-                option->string.type = NEU_DATATAG_STRING_TYPE_H;
+                option->string.type       = NEU_DATATAG_STRING_TYPE_H;
+                option->string.is_default = true;
                 break;
             }
 
