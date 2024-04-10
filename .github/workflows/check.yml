@@ -74,7 +74,7 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./cov_report/
-          files: cov-ut.info
+          files: ./cov_report/cov-ut.info
 
   pft:
     runs-on: ubuntu-20.04
@@ -135,4 +135,4 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./cov_report/
-          files: cov-${{ matrix.plugin }}.info
+          files: ./cov_report/cov-${{ matrix.plugin }}.info
