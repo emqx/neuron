@@ -68,10 +68,11 @@ jobs:
             ./create_cov_report.sh ut
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           verbose: true
           fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./cov_report/
           files: cov-ut.info
 
@@ -128,8 +129,10 @@ jobs:
             ./create_cov_report.sh ${{ matrix.plugin }}
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           verbose: true
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
           directory: ./cov_report/
           files: cov-${{ matrix.plugin }}.info
