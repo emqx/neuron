@@ -69,8 +69,7 @@ typedef struct {
     union neu_json_value value;
 } json_write_req_t;
 
-int  json_decode_write_req(char *buf, size_t len, json_write_req_t **result);
-void json_decode_write_req_free(json_write_req_t *req);
+int json_decode_write_req(char *buf, size_t len, neu_json_write_t **result);
 
 #ifdef __cplusplus
 }

@@ -32,7 +32,6 @@ extern "C" {
 void send_data(neu_plugin_t *plugin, neu_reqresp_trans_data_t *trans_data);
 
 void recv_data_callback(void *arg);
-int  write_data(neu_plugin_t *plugin, json_write_req_t *write_req);
 
 #ifdef __cplusplus
 }
