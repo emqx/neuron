@@ -395,3 +395,43 @@ class TesteKuiper:
                 assert compare_float(req_tags[tag["name"]], tag["value"])
             else:
                 assert req_tags[tag["name"]] == tag["value"]
+
+    @description(
+        given="eKuiper node",
+        when="write multiple driver tags",
+        then="should success",
+    )
+    def test_ekuiper_write_tags(self, mocker, ekuiper_node, conf_base):
+        api.node_setting_check(ekuiper_node, conf_base)
+        api.node_ctl(ekuiper_node, config.NEU_CTL_START)
+
+        req_tags = {
+            TAGS[0]["name"]: 5678,
+            TAGS[1]["name"]: False,
+            TAGS[2]["name"]: 6.28,
+            TAGS[3]["name"]: "mulitple",
+            TAGS[4]["name"]: [9, 8, 7, 6],
+        }
+        req = {
+            "node_name": DRIVER,
+            "group_name": GROUP,
+            "tags": [
+                {
+                    "tag_name": name,
+                    "value": value,
+                }
+                for name, value in req_tags.items()
+            ]
+        }
+
+        mocker.connect(**conf_base)
+        mocker.send(req)
+
+        time.sleep(INTERVAL * 5 / 1000)
+        resp = api.read_tags(DRIVER, GROUP)
+        assert 200 == resp.status_code
+        for tag in resp.json()["tags"]:
+            if isinstance(tag["value"], float):
+                assert compare_float(req_tags[tag["name"]], tag["value"])
+            else:
+                assert req_tags[tag["name"]] == tag["value"]
