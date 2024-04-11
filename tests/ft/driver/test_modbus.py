@@ -95,12 +95,18 @@ hold_int32 = [{"name": "hold_int32", "address": "1!400003",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT32}]
 hold_uint32 = [{"name": "hold_uint32", "address": "1!400015",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_UINT32}]
+hold_int64 = [{"name": "hold_int64", "address": "1!400005",
+               "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_INT64}]
+hold_uint64 = [{"name": "hold_uint64", "address": "1!400009",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_UINT64}]
 hold_float = [{"name": "hold_float", "address": "1!400017",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_FLOAT}]
 hold_string = [{"name": "hold_string", "address": "1!400020.10",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_STRING}]
 hold_bytes = [{"name": "hold_bytes", "address": "1!400040.10",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_BYTES}]
+hold_double = [{"name": "hold_double", "address": "1!400050",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_DOUBLE}]
 
 coil_bit_1 = [{"name": "coil_bit_1", "address": "1!000001",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
@@ -173,7 +179,7 @@ hold_uint32_decimal = [{"name": "hold_uint32_decimal", "address": "1!400115",
 hold_float_decimal = [{"name": "hold_float_decimal", "address": "1!400119",
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "decimal": 0.5}]
 hold_float_decimal_neg = [{"name": "float_decimal_neg", "address": "1!400150",
-                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "decimal": -1}]
+                           "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT, "decimal": -1}]
 hold_double_decimal = [{"name": "hold_double_decimal", "address": "1!4000127",
                         "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE, "decimal": 0.6}]
 
@@ -281,6 +287,18 @@ hold_float_BL = [{"name": "hold_float_BL", "address": "1!400425#BL",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
 hold_float_BB = [{"name": "hold_float_BB", "address": "1!400427#BB",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_FLOAT}]
+hold_int64_B = [{"name": "hold_int64_B", "address": "1!400429#B",
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT64}]
+hold_int64_L = [{"name": "hold_int64_L", "address": "1!400433#L",
+                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT64}]
+hold_uint64_B = [{"name": "hold_uint64_B", "address": "1!400437#B",
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
+hold_uint64_L = [{"name": "hold_uint64_L", "address": "1!400441#L",
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT64}]
+hold_double_B = [{"name": "hold_double_B", "address": "1!400445#B",
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE}]
+hold_double_L = [{"name": "hold_double_L", "address": "1!400449#L",
+                  "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE}]
 hold_string_H = [{"name": "hold_string_H", "address": "1!400710.4",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 hold_string_L = [{"name": "hold_string_L", "address": "1!400720.4",
@@ -842,6 +860,92 @@ class TestModbus:
             node=param[0], group='group', tag=hold_float_decimal[0]['name']))
         assert 513.11 == api.read_tag(
             node=param[0], group='group', tag=hold_double_decimal[0]['name'])
+
+    @description(given="created modbus node/tag", when="read/write decimal/bias tag", then="read success")
+    def test_read_decimal_bias_tag(self, param):
+        tags = [
+            hold_int16[0],
+            hold_int16_L[0],
+            hold_int16_B[0],
+            hold_uint16[0],
+            hold_uint16_L[0],
+            hold_uint16_B[0],
+            hold_int32[0],
+            hold_int32_LL[0],
+            hold_int32_LB[0],
+            hold_int32_BB[0],
+            hold_int32_BL[0],
+            hold_uint32[0],
+            hold_uint32_LL[0],
+            hold_uint32_LB[0],
+            hold_uint32_BB[0],
+            hold_uint32_BL[0],
+            hold_int64[0],
+            hold_int64_L[0],
+            hold_int64_B[0],
+            hold_uint64[0],
+            hold_uint64_L[0],
+            hold_uint64_B[0],
+            hold_float[0],
+            hold_float_LL[0],
+            hold_float_LB[0],
+            hold_float_BB[0],
+            hold_float_BL[0],
+            hold_double[0],
+            hold_double_L[0],
+            hold_double_B[0],
+        ]
+
+        tags_bias = [
+            {
+                **tag,
+                "bias": random.randint(1, 1000),
+                "attribute": tag["attribute"] & ~config.NEU_TAG_ATTRIBUTE_WRITE,
+            }
+            for tag in tags
+        ]
+
+        tags_decimal_bias = [
+            {
+                **tag,
+                "decimal": random.randint(1, 10),
+            }
+            for tag in tags_bias
+        ]
+
+        tag_values = [
+            {
+                "tag": tag['name'],
+                "value": random.randint(1, 10)
+            }
+            for tag in tags
+        ]
+
+        try:
+            # 1. prepare tags
+            grp = "group-bias"
+            api.add_group_check(node=param[0], group=grp, interval=100)
+            api.add_tags_check(node=param[0], group=grp, tags=tags)
+            api.write_tags_check(node=param[0], group=grp, tag_values=tag_values)
+            # 2. read value + bias
+            api.update_tags_check(node=param[0], group=grp, tags=tags_bias)
+            time.sleep(0.2)
+            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            assert len(tag_values) == len(resp_values)
+            for tag, value, resp in zip(tags_bias, tag_values, resp_values):
+                expected = value['value'] + tag['bias']
+                assert compare_float(expected, resp['value'])
+            # 3. read value * decimal + bias
+            api.update_tags_check(
+                node=param[0], group=grp, tags=tags_decimal_bias)
+            time.sleep(0.2)
+            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            assert len(tag_values) == len(resp_values)
+            for tag, value, resp in zip(tags_decimal_bias, tag_values, resp_values):
+                expected = value['value'] * tag['decimal'] + tag['bias']
+                assert compare_float(expected, resp['value'])
+        finally:
+            api.del_group(node=param[0], group=grp)
 
     @description(given="created modbus node", when="add precision tag", then="add success")
     def test_add_precision_tag(self, param):

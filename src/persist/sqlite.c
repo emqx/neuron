@@ -573,14 +573,15 @@ int neu_sqlite_persister_store_tag(neu_persister_t *    self,
                                    const neu_datatag_t *tag)
 {
     char *val_str = neu_tag_dump_static_value(tag);
-    int   rv      = execute_sql(((neu_sqlite_persister_t *) self)->db,
-                         "INSERT INTO tags ("
-                         " driver_name, group_name, name, address, attribute,"
-                         " precision, type, decimal, description, value"
-                         ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %Q, %Q)",
-                         driver_name, group_name, tag->name, tag->address,
-                         tag->attribute, tag->precision, tag->type,
-                         tag->decimal, tag->description, val_str);
+    int   rv =
+        execute_sql(((neu_sqlite_persister_t *) self)->db,
+                    "INSERT INTO tags ("
+                    " driver_name, group_name, name, address, attribute,"
+                    " precision, type, decimal, bias, description, value"
+                    ") VALUES (%Q, %Q, %Q, %Q, %i, %i, %i, %lf, %lf, %Q, %Q)",
+                    driver_name, group_name, tag->name, tag->address,
+                    tag->attribute, tag->precision, tag->type, tag->decimal,
+                    tag->bias, tag->description, val_str);
 
     free(val_str);
     return rv;
@@ -630,15 +631,21 @@ static int put_tags(sqlite3 *db, const char *query, sqlite3_stmt *stmt,
             return -1;
         }
 
+        if (SQLITE_OK != sqlite3_bind_double(stmt, 9, tag->bias)) {
+            nlog_error("bind `%s` with bias=`%f` fail: %s", query, tag->bias,
+                       sqlite3_errmsg(db));
+            return -1;
+        }
+
         if (SQLITE_OK !=
-            sqlite3_bind_text(stmt, 9, tag->description, -1, NULL)) {
+            sqlite3_bind_text(stmt, 10, tag->description, -1, NULL)) {
             nlog_error("bind `%s` with description=`%s` fail: %s", query,
                        tag->description, sqlite3_errmsg(db));
             return -1;
         }
 
         char *val_str = neu_tag_dump_static_value(tag);
-        if (SQLITE_OK != sqlite3_bind_text(stmt, 10, val_str, -1, NULL)) {
+        if (SQLITE_OK != sqlite3_bind_text(stmt, 11, val_str, -1, NULL)) {
             nlog_error("bind `%s` with value=`%s` fail: %s", query, val_str,
                        sqlite3_errmsg(db));
             free(val_str);
@@ -664,11 +671,12 @@ int neu_sqlite_persister_store_tags(neu_persister_t *    self,
 {
     neu_sqlite_persister_t *persister = (neu_sqlite_persister_t *) self;
 
-    sqlite3_stmt *stmt  = NULL;
-    const char *  query = "INSERT INTO tags ("
-                        " driver_name, group_name, name, address, attribute,"
-                        " precision, type, decimal, description, value"
-                        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)";
+    sqlite3_stmt *stmt = NULL;
+    const char *  query =
+        "INSERT INTO tags ("
+        " driver_name, group_name, name, address, attribute,"
+        " precision, type, decimal, bias, description, value"
+        ") VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)";
 
     if (SQLITE_OK != sqlite3_exec(persister->db, "BEGIN", NULL, NULL, NULL)) {
         nlog_error("begin transaction fail: %s", sqlite3_errmsg(persister->db));
@@ -725,12 +733,13 @@ static int collect_tag_info(sqlite3_stmt *stmt, UT_array **tags)
             .precision   = sqlite3_column_int64(stmt, 3),
             .type        = sqlite3_column_int(stmt, 4),
             .decimal     = sqlite3_column_double(stmt, 5),
-            .description = (char *) sqlite3_column_text(stmt, 6),
+            .bias        = sqlite3_column_double(stmt, 6),
+            .description = (char *) sqlite3_column_text(stmt, 7),
         };
         utarray_push_back(*tags, &tag);
         if (neu_tag_attribute_test(&tag, NEU_ATTRIBUTE_STATIC)) {
             neu_tag_load_static_value(utarray_back(*tags),
-                                      (char *) sqlite3_column_text(stmt, 7));
+                                      (char *) sqlite3_column_text(stmt, 8));
         }
 
         step = sqlite3_step(stmt);
@@ -751,7 +760,7 @@ int neu_sqlite_persister_load_tags(neu_persister_t *self,
 
     sqlite3_stmt *stmt  = NULL;
     const char *  query = "SELECT name, address, attribute, precision, type, "
-                        "decimal, description, value "
+                        "decimal, bias, description, value "
                         "FROM tags WHERE driver_name=? AND group_name=? "
                         "ORDER BY rowid ASC";
 
@@ -799,11 +808,11 @@ int neu_sqlite_persister_update_tag(neu_persister_t *    self,
     int   rv      = execute_sql(((neu_sqlite_persister_t *) self)->db,
                          "UPDATE tags SET"
                          " address=%Q, attribute=%i, precision=%i, type=%i,"
-                         " decimal=%lf, description=%Q, value=%Q "
+                         " decimal=%lf, bias=%lf, description=%Q, value=%Q "
                          "WHERE driver_name=%Q AND group_name=%Q AND name=%Q",
                          tag->address, tag->attribute, tag->precision,
-                         tag->type, tag->decimal, tag->description, val_str,
-                         driver_name, group_name, tag->name);
+                         tag->type, tag->decimal, tag->bias, tag->description,
+                         val_str, driver_name, group_name, tag->name);
     free(val_str);
     return rv;
 }

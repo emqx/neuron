@@ -65,6 +65,11 @@ int neu_json_encode_tag(void *json_obj, void *param)
             .v.val_double = tag->decimal,
         },
         {
+            .name         = "bias",
+            .t            = NEU_JSON_DOUBLE,
+            .v.val_double = tag->bias,
+        },
+        {
             .name      = "address",
             .t         = NEU_JSON_STR,
             .v.val_str = tag->address,
@@ -130,6 +135,11 @@ int neu_json_decode_tag_json(void *json_obj, neu_json_tag_t *tag_p)
             .t         = NEU_JSON_VALUE,
             .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
         },
+        {
+            .name      = "bias",
+            .t         = NEU_JSON_DOUBLE,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
     };
 
     int ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(tag_elems),
@@ -146,6 +156,7 @@ int neu_json_decode_tag_json(void *json_obj, neu_json_tag_t *tag_p)
         .description = tag_elems[6].v.val_str,
         .t           = tag_elems[7].t,
         .value       = tag_elems[7].v,
+        .bias        = tag_elems[8].v.val_double,
     };
 
     if (0 != ret) {

@@ -24,6 +24,8 @@ hold_int16_description = [{"name": "hold_int16_description", "address": "1!40000
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16, "description": "description info"}]
 hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!400001",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT16, "decimal": 0.1}]
+hold_int16_bias = [{"name": "hold_int16_bias", "address": "1!400001",
+               "attribute": NEU_TAG_ATTRIBUTE_READ, "type": NEU_TYPE_INT16, "bias": 1.0}]
 
 class TestTag:
 
@@ -77,7 +79,28 @@ class TestTag:
                             "precision": 3
                         }
                     ]
-                }
+                },
+                {
+                    "group": "group_3",
+                    "interval": 3000,
+                    "tags": [
+                        {
+                            "name": "tag1",
+                            "address": "1!400001",
+                            "attribute": 1,
+                            "type": 3,
+                            "bias": 1.0,
+                        },
+                        {
+                            "name": "tag2",
+                            "address": "1!400002",
+                            "attribute": 1,
+                            "type": 9,
+                            "decimal": 0.01,
+                            "bias": 1.0,
+                        },
+                    ]
+                },
             ]
         )
 
@@ -95,6 +118,9 @@ class TestTag:
         assert 'group_2' == response.json()['groups'][1]['group']
         assert 300       == response.json()['groups'][1]['interval']
         assert 2         == response.json()['groups'][1]['tag_count']
+        assert 'group_3' == response.json()['groups'][2]['group']
+        assert 3000      == response.json()['groups'][2]['interval']
+        assert 2         == response.json()['groups'][2]['tag_count']
 
         response = api.get_tags(node='modbus-tcp-tag-test', group='group_1')
         assert 200        == response.status_code
@@ -128,6 +154,20 @@ class TestTag:
         assert 9          == response.json()['tags'][1]['type']
         assert 3          == response.json()['tags'][1]['attribute']
 
+        response = api.get_tags(node='modbus-tcp-tag-test', group='group_3')
+        assert 200        == response.status_code
+        assert 'tag1'     == response.json()['tags'][0]['name']
+        assert '1!400001' == response.json()['tags'][0]['address']
+        assert 1.0        == response.json()['tags'][0]['bias']
+        assert 3          == response.json()['tags'][0]['type']
+        assert 1          == response.json()['tags'][0]['attribute']
+        assert 'tag2'     == response.json()['tags'][1]['name']
+        assert '1!400002' == response.json()['tags'][1]['address']
+        assert 0.01       == response.json()['tags'][1]['decimal']
+        assert 1.0        == response.json()['tags'][1]['bias']
+        assert 9          == response.json()['tags'][1]['type']
+        assert 1          == response.json()['tags'][1]['attribute']
+
     @description(given="multiple groups including partly existing ones and multiple correct tags", when="adding", then="successfully added")
     def test_adding_correct_gtags_existing_groups(self):
         response = api.add_gtags(
@@ -154,7 +194,7 @@ class TestTag:
                     ]
                 },
                 {
-                    "group": "group_3",
+                    "group": "group_4",
                     "interval": 3000,
                     "tags": [
                         {
@@ -190,6 +230,9 @@ class TestTag:
         assert 'group_3' == response.json()['groups'][2]['group']
         assert 3000      == response.json()['groups'][2]['interval']
         assert 2         == response.json()['groups'][2]['tag_count']
+        assert 'group_4' == response.json()['groups'][3]['group']
+        assert 3000      == response.json()['groups'][3]['interval']
+        assert 2         == response.json()['groups'][3]['tag_count']
 
         response = api.get_tags(node='modbus-tcp-tag-test', group='group_1')
         assert 200        == response.status_code
@@ -242,12 +285,26 @@ class TestTag:
         response = api.get_tags(node='modbus-tcp-tag-test', group='group_3')
         assert 200        == response.status_code
         assert 'tag1'     == response.json()['tags'][0]['name']
+        assert '1!400001' == response.json()['tags'][0]['address']
+        assert 1.0        == response.json()['tags'][0]['bias']
+        assert 3          == response.json()['tags'][0]['type']
+        assert 1          == response.json()['tags'][0]['attribute']
+        assert 'tag2'     == response.json()['tags'][1]['name']
+        assert '1!400002' == response.json()['tags'][1]['address']
+        assert 0.01       == response.json()['tags'][1]['decimal']
+        assert 1.0        == response.json()['tags'][1]['bias']
+        assert 9          == response.json()['tags'][1]['type']
+        assert 1          == response.json()['tags'][1]['attribute']
+
+        response = api.get_tags(node='modbus-tcp-tag-test', group='group_4')
+        assert 200        == response.status_code
+        assert 'tag1'     == response.json()['tags'][0]['name']
         assert '1!400007' == response.json()['tags'][0]['address']
         assert 3          == response.json()['tags'][1]['precision']
         assert 9          == response.json()['tags'][1]['type']
         assert 3          == response.json()['tags'][1]['attribute']
 
-        response = api.get_tags(node='modbus-tcp-tag-test', group='group_3')
+        response = api.get_tags(node='modbus-tcp-tag-test', group='group_4')
         assert 200        == response.status_code
         assert 'tag2'     == response.json()['tags'][1]['name']
         assert '1!400008' == response.json()['tags'][1]['address']
@@ -639,3 +696,223 @@ class TestTag:
         response = api.del_tags(node="modbus-tcp", group="group1", tags=["hold_int16_decimal"])
         assert 200 == response.status_code
         assert NEU_ERR_SUCCESS == response.json()['error']
+
+    @description(
+        given="node group", when="add a tag with bias", then="add success"
+    )
+    def test_add_tag_with_bias(self):
+        try:
+            response = api.add_tags(
+                node="modbus-tcp", group="group1", tags=hold_int16_bias
+            )
+            assert 200 == response.status_code
+            assert NEU_ERR_SUCCESS == response.json()["error"]
+
+            response = api.get_tags(node="modbus-tcp", group="group1")
+            assert 200 == response.status_code
+            assert "hold_int16_bias" == response.json()["tags"][0]["name"]
+            assert "1!400001" == response.json()["tags"][0]["address"]
+            assert (
+                NEU_TAG_ATTRIBUTE_READ
+                == response.json()["tags"][0]["attribute"]
+            )
+            assert NEU_TYPE_INT16 == response.json()["tags"][0]["type"]
+            assert 1.0 == response.json()["tags"][0]["bias"]
+        finally:
+            api.del_tags(
+                node="modbus-tcp", group="group1", tags=["hold_int16_bias"]
+            )
+
+    @description(
+        given="node group",
+        when="add a tag with bias out of range",
+        then="add fail",
+    )
+    def test_add_tag_with_bias_out_of_range(self):
+        tag = {
+            **hold_int16_bias[0],
+            "bias": 10000,
+        }
+        try:
+            response = api.add_tags(
+                node="modbus-tcp", group="group1", tags=[tag]
+            )
+            assert 400 == response.status_code
+            assert (
+                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
+            )
+        finally:
+            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
+
+    @description(
+        given="node group",
+        when="add a tag with bias and write attr",
+        then="add fail",
+    )
+    def test_add_tag_with_bias_and_write_attr(self):
+        tag = {
+            **hold_int16_bias[0],
+            "attribute": NEU_TAG_ATTRIBUTE_RW,
+        }
+        try:
+            response = api.add_tags(
+                node="modbus-tcp", group="group1", tags=[tag]
+            )
+            assert 400 == response.status_code
+            assert (
+                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
+            )
+        finally:
+            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
+
+    @description(
+        given="node group",
+        when="add a tag with bias and non-numeral type",
+        then="add fail",
+    )
+    def test_add_tag_with_bias_and_bad_type(self):
+        for typ in (
+            NEU_TYPE_BIT,
+            NEU_TYPE_BOOL,
+            NEU_TYPE_BYTES,
+            NEU_TYPE_WORD,
+            NEU_TYPE_DWORD,
+            NEU_TYPE_LWORD,
+            NEU_TYPE_STRING,
+            NEU_TYPE_TIME,
+            NEU_TYPE_DATA_AND_TIME,
+        ):
+            tag = {
+                **hold_int16_bias[0],
+                "type": typ,
+            }
+            try:
+                response = api.add_tags(
+                    node="modbus-tcp", group="group1", tags=[tag]
+                )
+                assert 400 == response.status_code
+                assert NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
+            finally:
+                api.del_tags(
+                    node="modbus-tcp", group="group1", tags=[tag["name"]]
+                )
+
+    @description(
+        given="node group tag with bias",
+        when="update tag",
+        then="update success",
+    )
+    def test_update_tag_with_bias(self):
+        api.add_tags_check(
+            node="modbus-tcp", group="group1", tags=hold_int16_bias
+        )
+
+        tag = {
+            **hold_int16_bias[0],
+            "bias": 100,
+        }
+        try:
+            response = api.update_tags(
+                node="modbus-tcp", group="group1", tags=[tag]
+            )
+            assert 200 == response.status_code
+            assert NEU_ERR_SUCCESS == response.json()["error"]
+
+            response = api.get_tags(node="modbus-tcp", group="group1")
+            assert 200 == response.status_code
+            assert tag["name"] == response.json()["tags"][0]["name"]
+            assert tag["address"] == response.json()["tags"][0]["address"]
+            assert tag["attribute"] == response.json()["tags"][0]["attribute"]
+            assert tag["type"] == response.json()["tags"][0]["type"]
+            assert tag["bias"] == response.json()["tags"][0]["bias"]
+        finally:
+            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
+
+    @description(
+        given="node group tag with bias",
+        when="update tag bias out of range",
+        then="update fail",
+    )
+    def test_update_tag_with_bias_out_of_range(self):
+        api.add_tags_check(
+            node="modbus-tcp", group="group1", tags=hold_int16_bias
+        )
+
+        tag = {
+            **hold_int16_bias[0],
+            "bias": -1001,
+        }
+        try:
+            response = api.update_tags(
+                node="modbus-tcp", group="group1", tags=[tag]
+            )
+            assert 400 == response.status_code
+            assert (
+                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
+            )
+
+        finally:
+            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
+
+    @description(
+        given="node group tag with bias",
+        when="update tag with write attribute",
+        then="update fail",
+    )
+    def test_update_tag_with_bias_and_write_attr(self):
+        api.add_tags_check(
+            node="modbus-tcp", group="group1", tags=hold_int16_bias
+        )
+
+        tag = {
+            **hold_int16_bias[0],
+            "attribute": NEU_TAG_ATTRIBUTE_RW,
+        }
+        try:
+            response = api.update_tags(
+                node="modbus-tcp", group="group1", tags=[tag]
+            )
+            assert 400 == response.status_code
+            assert (
+                NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
+            )
+
+        finally:
+            api.del_tags(node="modbus-tcp", group="group1", tags=[tag["name"]])
+
+    @description(
+        given="node group tag with bias",
+        when="update tag with bad type",
+        then="update fail",
+    )
+    def test_update_tag_with_bias_and_bad_type(self):
+        api.add_tags_check(
+            node="modbus-tcp", group="group1", tags=hold_int16_bias
+        )
+
+        for typ in (
+            NEU_TYPE_BIT,
+            NEU_TYPE_BOOL,
+            NEU_TYPE_BYTES,
+            NEU_TYPE_WORD,
+            NEU_TYPE_DWORD,
+            NEU_TYPE_LWORD,
+            NEU_TYPE_STRING,
+            NEU_TYPE_TIME,
+            NEU_TYPE_DATA_AND_TIME,
+        ):
+            tag = {
+                **hold_int16_bias[0],
+                "type": typ,
+            }
+            try:
+                response = api.update_tags(
+                    node="modbus-tcp", group="group1", tags=[tag]
+                )
+                assert 400 == response.status_code
+                assert NEU_ERR_TAG_BIAS_INVALID == response.json()["error"]
+
+            finally:
+                api.del_tags(
+                    node="modbus-tcp", group="group1", tags=[tag["name"]]
+                )

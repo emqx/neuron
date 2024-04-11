@@ -417,6 +417,7 @@ static int json_to_gdatatags(neu_json_gtag_array_t *gtag_array,
             gdatatags[i].tags[j].precision =
                 gtag_array->gtags[i].tags[j].precision;
             gdatatags[i].tags[j].decimal = gtag_array->gtags[i].tags[j].decimal;
+            gdatatags[i].tags[j].bias    = gtag_array->gtags[i].tags[j].bias;
             gdatatags[i].tags[j].address = gtag_array->gtags[i].tags[j].address;
             gdatatags[i].tags[j].name    = gtag_array->gtags[i].tags[j].name;
             if (gtag_array->gtags[i].tags[j].description != NULL) {

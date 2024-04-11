@@ -87,6 +87,7 @@ typedef struct {
     neu_type_e                type;
     uint8_t                   precision;
     double                    decimal;
+    double                    bias;
     char *                    description;
     neu_datatag_addr_option_u option;
     uint8_t                   meta[NEU_TAG_META_LENGTH];

@@ -33,18 +33,20 @@ global_config = {
                 {
                     "type": 3,
                     "name": "hold_int16",
-                    "attribute": 3,
+                    "attribute": 1,
                     "precision": 0,
                     "decimal": 0.0,
+                    "bias": 1.0,
                     "address": "1!400001",
                     "description": ""
                 },
                 {
                     "type": 3,
                     "name": "hold_int16_s",
-                    "attribute": 11,
+                    "attribute": 9,
                     "precision": 0,
                     "decimal": 0.0,
+                    "bias": 1.0,
                     "address": "1!400002",
                     "description": "",
                     "value": 1
@@ -149,18 +151,20 @@ driver_1 = {
                 {
                     "type": 3,
                     "name": "hold_int16",
-                    "attribute": 3,
+                    "attribute": 1,
                     "precision": 0,
                     "decimal": 0.0,
+                    "bias": 1.0,
                     "address": "1!400001",
                     "description": ""
                 },
                 {
                     "type": 3,
                     "name": "hold_int16_s",
-                    "attribute": 11,
+                    "attribute": 9,
                     "precision": 0,
                     "decimal": 0.0,
+                    "bias": 1.0,
                     "address": "1!400002",
                     "description": "",
                     "value": 1
@@ -195,18 +199,20 @@ driver_2 = {
                 {
                     "type": 3,
                     "name": "hold_int16",
-                    "attribute": 3,
+                    "attribute": 1,
                     "precision": 0,
                     "decimal": 0.0,
+                    "bias": 1.0,
                     "address": "1!400001",
                     "description": ""
                 },
                 {
                     "type": 3,
                     "name": "hold_int16_s",
-                    "attribute": 11,
+                    "attribute": 9,
                     "precision": 0,
                     "decimal": 0.0,
+                    "bias": 1.0,
                     "address": "1!400002",
                     "description": "",
                     "value": 1
