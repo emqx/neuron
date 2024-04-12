@@ -174,20 +174,9 @@ int json_encode_read_resp(void *json_object, void *param)
     return ret;
 }
 
-int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
+static int decode_write_req_json(void *json_obj, neu_json_write_req_t *req)
 {
-    int               ret      = 0;
-    void *            json_obj = NULL;
-    json_write_req_t *req      = calloc(1, sizeof(json_write_req_t));
-    if (req == NULL) {
-        return -1;
-    }
-
-    json_obj = neu_json_decode_newb(buf, len);
-    if (NULL == json_obj) {
-        free(req);
-        return -1;
-    }
+    int ret = 0;
 
     neu_json_elem_t req_elems[] = {
         {
@@ -207,39 +196,124 @@ int json_decode_write_req(char *buf, size_t len, json_write_req_t **result)
             .t    = NEU_JSON_VALUE,
         },
     };
+    ret       = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+    req->node = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+    req->tag   = req_elems[2].v.val_str;
+    req->t     = req_elems[3].t;
+    req->value = req_elems[3].v;
+
+    if (ret != 0) {
+        free(req_elems[0].v.val_str);
+        free(req_elems[1].v.val_str);
+        free(req_elems[2].v.val_str);
+    }
+
+    return ret;
+}
+
+static int decode_write_tags_req_json(void *                     json_obj,
+                                      neu_json_write_tags_req_t *req)
+{
+    int ret = 0;
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node_name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group_name",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "tags",
+            .t    = NEU_JSON_OBJECT,
+        },
+    };
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
-    req->node_name  = req_elems[0].v.val_str;
-    req->group_name = req_elems[1].v.val_str;
-    req->tag_name   = req_elems[2].v.val_str;
-    req->t          = req_elems[3].t;
-    req->value      = req_elems[3].v;
+    if (ret != 0) {
+        free(req_elems[0].v.val_str);
+        free(req_elems[1].v.val_str);
+        return -1;
+    }
+
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+
+    req->n_tag = neu_json_decode_array_size_by_json(json_obj, "tags");
+    if (req->n_tag <= 0) {
+        return 0; // ignore empty array
+    }
+
+    req->tags = calloc(req->n_tag, sizeof(req->tags[0]));
+    for (int i = 0; i < req->n_tag; i++) {
+        neu_json_elem_t v_elems[] = {
+            {
+                .name = "tag_name",
+                .t    = NEU_JSON_STR,
+            },
+            {
+                .name = "value",
+                .t    = NEU_JSON_VALUE,
+            },
+        };
+
+        ret = neu_json_decode_array_by_json(
+            json_obj, "tags", i, NEU_JSON_ELEM_SIZE(v_elems), v_elems);
+        req->tags[i].tag   = v_elems[0].v.val_str;
+        req->tags[i].t     = v_elems[1].t;
+        req->tags[i].value = v_elems[1].v;
+
+        if (ret != 0) {
+            for (; i >= 0; --i) {
+                free(req->tags[i].tag);
+                if (NEU_JSON_STR == req->tags[i].t) {
+                    free(req->tags[i].value.val_str);
+                }
+            }
+            free(req->node);
+            free(req->group);
+            free(req->tags);
+            req->tags = NULL;
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
+int json_decode_write_req(char *buf, size_t len, neu_json_write_t **result)
+{
+    int               ret      = 0;
+    void *            json_obj = NULL;
+    neu_json_write_t *req      = calloc(1, sizeof(*req));
+    if (req == NULL) {
+        return -1;
+    }
+
+    json_obj = neu_json_decode_newb(buf, len);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
+
+    if (NULL == json_object_get(json_obj, "tags")) {
+        req->singular = true;
+        ret           = decode_write_req_json(json_obj, &req->single);
+    } else {
+        req->singular = false;
+        ret           = decode_write_tags_req_json(json_obj, &req->plural);
+    }
 
     if (0 == ret) {
         *result = req;
     } else {
-        json_decode_write_req_free(req);
-        ret = -1;
+        free(req);
     }
 
     neu_json_decode_free(json_obj);
     return ret;
-}
-
-void json_decode_write_req_free(json_write_req_t *req)
-{
-    if (NULL == req) {
-        return;
-    }
-
-    free(req->group_name);
-    free(req->node_name);
-    free(req->tag_name);
-    if (req->t == NEU_JSON_STR) {
-        free(req->value.val_str);
-    } else if (req->t == NEU_JSON_BYTES) {
-        free(req->value.val_bytes.bytes);
-    }
-
-    free(req);
 }
