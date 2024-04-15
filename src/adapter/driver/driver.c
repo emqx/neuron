@@ -639,26 +639,6 @@ static void cal_decimal(neu_type_e tag_type, neu_type_e value_type,
     }
 }
 
-bool is_value_in_range(neu_type_e type, int64_t value)
-{
-    switch (type) {
-    case NEU_TYPE_INT8:
-        return value >= INT8_MIN && value <= INT8_MAX;
-    case NEU_TYPE_UINT8:
-        return value >= 0 && value <= UINT8_MAX;
-    case NEU_TYPE_INT16:
-        return value >= INT16_MIN && value <= INT16_MAX;
-    case NEU_TYPE_UINT16:
-        return value >= 0 && value <= UINT16_MAX;
-    case NEU_TYPE_INT32:
-        return value >= INT32_MIN && value <= INT32_MAX;
-    case NEU_TYPE_UINT32:
-        return value >= 0 && value <= UINT32_MAX;
-    default:
-        return true;
-    }
-}
-
 void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
                                    neu_reqresp_head_t *  req)
 {
@@ -690,8 +670,7 @@ void neu_adapter_driver_write_tags(neu_adapter_driver_t *driver,
     for (int i = 0; i < cmd->n_tag; i++) {
         neu_datatag_t *tag = neu_group_find_tag(g->group, cmd->tags[i].tag);
         if (tag != NULL && neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
-            neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false &&
-            is_value_in_range(tag->type, cmd->tags[i].value.value.i64)) {
+            neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false) {
             if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
                 if (cmd->tags[i].value.type == NEU_TYPE_INT64) {
                     cmd->tags[i].value.value.d64 =
@@ -778,9 +757,7 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
                 neu_group_find_tag(g->group, cmd->groups[i].tags[k].tag);
             if (tag != NULL &&
                 neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) &&
-                neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false &&
-                is_value_in_range(tag->type,
-                                  cmd->groups[i].tags[k].value.value.i64)) {
+                neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) == false) {
 
                 if (tag->type == NEU_TYPE_FLOAT ||
                     tag->type == NEU_TYPE_DOUBLE) {
@@ -859,12 +836,6 @@ void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
         if ((tag->attribute & NEU_ATTRIBUTE_WRITE) != NEU_ATTRIBUTE_WRITE) {
             driver->adapter.cb_funs.driver.write_response(
                 &driver->adapter, req, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
-            neu_tag_free(tag);
-            return;
-        }
-        if (!is_value_in_range(tag->type, cmd->value.value.i64)) {
-            driver->adapter.cb_funs.driver.write_response(
-                &driver->adapter, req, NEU_ERR_TAG_VALUE_INVALID);
             neu_tag_free(tag);
             return;
         }
