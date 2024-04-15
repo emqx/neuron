@@ -82,7 +82,6 @@ typedef enum {
     NEU_ERR_TAG_DESCRIPTION_TOO_LONG   = 2208,
     NEU_ERR_TAG_PRECISION_INVALID      = 2209,
     NEU_ERR_TAG_EXIST                  = 2210,
-    NEU_ERR_TAG_VALUE_INVALID          = 2211,
     NEU_ERR_TAG_BIAS_INVALID           = 2212,
 
     NEU_ERR_LIBRARY_NOT_FOUND                 = 2301,
