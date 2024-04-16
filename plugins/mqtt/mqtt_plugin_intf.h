@@ -17,26 +17,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
-#include "utils/asprintf.h"
-#include "utils/time.h"
+#ifndef NEURON_PLUGIN_MQTT_INTF_H
+#define NEURON_PLUGIN_MQTT_INTF_H
 
-#include "mqtt_config.h"
-#include "mqtt_handle.h"
-#include "mqtt_plugin.h"
-#include "mqtt_plugin_intf.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define DESCRIPTION "Northbound MQTT plugin bases on NanoSDK."
-#define DESCRIPTION_ZH "基于 NanoSDK 的北向应用 MQTT 插件"
+#include "neuron.h"
 
-const neu_plugin_module_t neu_plugin_module = {
-    .version         = NEURON_PLUGIN_VER_1_0,
-    .schema          = "mqtt",
-    .module_name     = "MQTT",
-    .module_descr    = DESCRIPTION,
-    .module_descr_zh = DESCRIPTION_ZH,
-    .intf_funs       = &mqtt_plugin_intf_funs,
-    .kind            = NEU_PLUGIN_KIND_SYSTEM,
-    .type            = NEU_NA_TYPE_APP,
-    .display         = true,
-    .single          = false,
-};
+extern const neu_plugin_intf_funs_t mqtt_plugin_intf_funs;
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
