@@ -189,16 +189,17 @@ static unsigned cpu_usage()
     return (double) work / total * 100.0 * sysconf(_SC_NPROCESSORS_CONF);
 }
 
-static bool has_core_dumps()
+static bool has_core_dump_in_dir(const char *dir, const char *prefix)
 {
-    DIR *dp = opendir("core");
-    if (NULL == dp) {
+    DIR *dp = opendir(dir);
+    if (dp == NULL) {
         return false;
     }
 
-    bool found = false;
-    for (struct dirent *de = NULL; NULL != (de = readdir(dp));) {
-        if (0 == strncmp("core", de->d_name, 4)) {
+    struct dirent *de;
+    bool           found = false;
+    while ((de = readdir(dp)) != NULL) {
+        if (strncmp(prefix, de->d_name, strlen(prefix)) == 0) {
             found = true;
             break;
         }
@@ -206,6 +207,46 @@ static bool has_core_dumps()
 
     closedir(dp);
     return found;
+}
+
+static char *get_core_dir(const char *core_pattern)
+{
+    char *last_slash = strrchr(core_pattern, '/');
+    if (last_slash != NULL) {
+        static char core_dir[256];
+        ptrdiff_t   path_length = last_slash - core_pattern + 1;
+        strncpy(core_dir, core_pattern, path_length);
+        core_dir[path_length] = '\0';
+        return core_dir;
+    }
+    return NULL;
+}
+
+static bool has_core_dumps()
+{
+    if (has_core_dump_in_dir("core", "core-neuron")) {
+        return true;
+    }
+
+    FILE *fp = fopen("/proc/sys/kernel/core_pattern", "r");
+    if (fp == NULL) {
+        return false;
+    }
+
+    char core_pattern[256];
+    if (fgets(core_pattern, sizeof(core_pattern), fp) == NULL) {
+        fclose(fp);
+        return false;
+    }
+    fclose(fp);
+
+    char *core_dir =
+        (core_pattern[0] == '|') ? "/var/crash/" : get_core_dir(core_pattern);
+    if (core_dir == NULL) {
+        return false;
+    }
+
+    return has_core_dump_in_dir(core_dir, "core-neuron");
 }
 
 static inline void metrics_unregister_entry(const char *name)
