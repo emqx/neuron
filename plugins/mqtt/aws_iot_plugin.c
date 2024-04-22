@@ -30,8 +30,8 @@
 
 const neu_plugin_module_t neu_plugin_module = {
     .version         = NEURON_PLUGIN_VER_1_0,
-    .schema          = "mqtt",
-    .module_name     = "MQTT",
+    .schema          = "aws-iot",
+    .module_name     = "AWS IoT",
     .module_descr    = DESCRIPTION,
     .module_descr_zh = DESCRIPTION_ZH,
     .intf_funs       = &mqtt_plugin_intf_funs,
