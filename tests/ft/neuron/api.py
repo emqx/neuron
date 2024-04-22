@@ -331,6 +331,17 @@ def modbus_rtu_node_setting_endian(node, port=502, connection_mode=0, transport_
                                     "max_retries": max_retries, "link": link, "device": device, "stop": stop,
                                     "parity": parity, "baud": baud, "data": data, "endianess": endianness})
 
+def modbus_tcp_node_setting_base(node, port, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, base=1):
+    return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode, "interval": interval,
+                                    "host": host, "port": port, "timeout": timeout, "max_retries": max_retries, "address_base": base})
+
+
+def modbus_rtu_node_setting_base(node, port=502, connection_mode=0, transport_mode=0, interval=0, host='127.0.0.1', timeout=3000, max_retries=2, link=1, device="", stop=0, parity=0, baud=4, data=3, base=1):
+    return node_setting(node, json={"connection_mode": connection_mode, "transport_mode": transport_mode,
+                                    "interval": interval, "host": host, "port": port, "timeout": timeout,
+                                    "max_retries": max_retries, "link": link, "device": device, "stop": stop,
+                                    "parity": parity, "baud": baud, "data": data, "address_base": base})
+
 
 def mqtt_node_setting(node):
     return node_setting(node, json={"client-id": "neuron_aBcDeF", "qos": 0, "format": 0,
