@@ -320,7 +320,7 @@ bool neu_datatag_string_is_utf8(char *data, int len)
             // 0XXX_XXXX
             i++;
             continue;
-        } else if ((num = pre_num(data[i])) > 2) {
+        } else if ((num = pre_num(data[i])) > 1) {
             // 110X_XXXX 10XX_XXXX
             // 1110_XXXX 10XX_XXXX 10XX_XXXX
             // 1111_0XXX 10XX_XXXX 10XX_XXXX 10XX_XXXX
@@ -358,7 +358,7 @@ int neu_datatag_string_ltoh(char *str, int len)
     return neu_datatag_string_htol(str, len);
 }
 
-int neu_datatag_string_etod(char *str, int len)
+/*int neu_datatag_string_etod(char *str, int len)
 {
     for (int i = 0; i < len; i += 2) {
         str[i + 1] = str[i];
@@ -432,7 +432,7 @@ int neu_datatag_string_toe(char *str, int len, int buf_len)
 
     free(t);
     return len * 2;
-}
+}*/
 
 int neu_tag_get_static_value(const neu_datatag_t *tag, neu_value_u *value)
 {

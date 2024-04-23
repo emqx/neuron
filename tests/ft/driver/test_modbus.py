@@ -299,9 +299,9 @@ hold_double_B = [{"name": "hold_double_B", "address": "1!400445#B",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE}]
 hold_double_L = [{"name": "hold_double_L", "address": "1!400449#L",
                   "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_DOUBLE}]
-hold_string_H = [{"name": "hold_string_H", "address": "1!400710.4",
+hold_string_H = [{"name": "hold_string_H", "address": "1!400710.4H",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
-hold_string_L = [{"name": "hold_string_L", "address": "1!400720.4",
+hold_string_L = [{"name": "hold_string_L", "address": "1!400710.4L",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 
 hold_string_l1 = [{"name": "hold_string_l1", "address": "1!400501.127",
@@ -311,6 +311,11 @@ hold_string_l2 = [{"name": "hold_string_l2", "address": "1!400628.127",
 
 hold_int16_device_err = [{"name": "hold_int16_device_err", "address": "1!409000",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16}]
+
+hold_uint16_utf8 = [{"name": "hold_uint16_utf8", "address": "1!401100",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_UINT16}]
+hold_string_utf8 = [{"name": "hold_string_utf8", "address": "1!401100.4",
+                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_STRING}]
 
 class TestModbus:
 
@@ -590,8 +595,6 @@ class TestModbus:
         assert 200 == response.status_code
         assert 1 == len(response.json()["tags"])
 
-
-
     @description(given="created modbus node and tags", when="read tags synchronously", then="read fail")
     def test_read_tags_sync(self, param):
         assert error.NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC == api.read_tag_error(
@@ -787,6 +790,20 @@ class TestModbus:
         assert 513.11 == api.read_tag(
             node=param[0], group='group', tag=hold_double_decimal[0]['name'])
 
+    @description(given="created modbus node and tags", when="write/read tags, check utf8", then="write/read success")
+    def test_write_read_tags_utf8(self, param):
+        api.add_tags_check(node=param[0], group='group', tags=hold_uint16_utf8)
+        api.add_tags_check(node=param[0], group='group', tags=hold_string_utf8)
+
+        api.write_tag_check(
+            node=param[0], group='group', tag=hold_uint16_utf8[0]['name'], value=0xc2a3)
+
+        time.sleep(0.3)
+        assert 0xc2a3 == api.read_tag(
+            node=param[0], group='group', tag=hold_uint16_utf8[0]['name'])
+        assert "£" == api.read_tag(
+            node=param[0], group='group', tag=hold_string_utf8[0]['name'])
+
     @description(given="created modbus node/tag", when="read/write decimal/bias tag", then="read success")
     def test_read_decimal_bias_tag(self, param):
         tags = [
@@ -855,7 +872,7 @@ class TestModbus:
             api.write_tags_check(node=param[0], group=grp, tag_values=tag_values)
             # 2. read value + bias
             api.update_tags_check(node=param[0], group=grp, tags=tags_bias)
-            time.sleep(0.2)
+            time.sleep(0.3)
             resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
             assert len(tag_values) == len(resp_values)
             for tag, value, resp in zip(tags_bias, tag_values, resp_values):
@@ -864,7 +881,7 @@ class TestModbus:
             # 3. read value * decimal + bias
             api.update_tags_check(
                 node=param[0], group=grp, tags=tags_decimal_bias)
-            time.sleep(0.2)
+            time.sleep(0.3)
             resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
             assert len(tag_values) == len(resp_values)
             for tag, value, resp in zip(tags_decimal_bias, tag_values, resp_values):
@@ -1076,8 +1093,6 @@ class TestModbus:
         
         api.write_tag_check(
             node=param[0], group='group', tag=hold_string_H[0]['name'], value='abcd')
-        api.write_tag_check(
-            node=param[0], group='group', tag=hold_string_L[0]['name'], value='ABCD')
 
         time.sleep(0.3)
         assert 1234== api.read_tag(
@@ -1117,7 +1132,7 @@ class TestModbus:
         
         assert "abcd" == api.read_tag(
             node=param[0], group='group', tag=hold_string_H[0]['name'])
-        assert "ABCD" == api.read_tag(
+        assert "badc" == api.read_tag(
             node=param[0], group='group', tag=hold_string_L[0]['name'])
 
     @description(given="created modbus node/tag", when="read consecutive tags with a length exceeding the protocol limit", then="read success")
