@@ -168,7 +168,7 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
         update_metric(&driver->adapter, NEU_METRIC_TAG_READ_ERRORS_TOTAL,
                       NEU_TYPE_ERROR == value.type, NULL);
     }
-    nlog_info(
+    nlog_debug(
         "update driver: %s, group: %s, tag: %s, type: %s, timestamp: %" PRId64
         " n_meta: %d",
         driver->adapter.name, group, tag, neu_type_string(value.type),
@@ -201,19 +201,19 @@ static void update_im(neu_adapter_t *adapter, const char *group,
     if (first == NULL ||
         !neu_tag_attribute_test(first, NEU_ATTRIBUTE_SUBSCRIBE)) {
         utarray_free(tags);
-        nlog_info("update immediately, driver: %s, "
-                  "group: %s, tag: %s, type: %s, "
-                  "timestamp: %" PRId64,
-                  driver->adapter.name, group, tag, neu_type_string(value.type),
-                  global_timestamp);
+        nlog_debug("update immediately, driver: %s, "
+                   "group: %s, tag: %s, type: %s, "
+                   "timestamp: %" PRId64,
+                   driver->adapter.name, group, tag,
+                   neu_type_string(value.type), global_timestamp);
         return;
     }
 
-    nlog_info("update and report immediately, driver: %s, "
-              "group: %s, tag: %s, type: %s, "
-              "timestamp: %" PRId64,
-              driver->adapter.name, group, tag, neu_type_string(value.type),
-              global_timestamp);
+    nlog_debug("update and report immediately, driver: %s, "
+               "group: %s, tag: %s, type: %s, "
+               "timestamp: %" PRId64,
+               driver->adapter.name, group, tag, neu_type_string(value.type),
+               global_timestamp);
 
     neu_reqresp_head_t header = {
         .type = NEU_REQRESP_TRANS_DATA,
