@@ -426,13 +426,6 @@ static int adapter_update_metric(neu_adapter_t *adapter,
     return neu_node_metrics_update(adapter->metrics, group, metric_name, n);
 }
 
-static inline void adapter_reset_metrics(neu_adapter_t *adapter)
-{
-    if (NULL != adapter->metrics) {
-        neu_node_metrics_reset(adapter->metrics);
-    }
-}
-
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
                            void *data)
 {
@@ -1389,6 +1382,10 @@ int neu_adapter_start(neu_adapter_t *adapter)
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_RUNNING;
         adapter_storage_state(adapter->name, adapter->state);
+        if (NEU_NA_TYPE_DRIVER == neu_adapter_get_type(adapter)) {
+            neu_adapter_driver_start_group_timer(
+                (neu_adapter_driver_t *) adapter);
+        }
     }
 
     return error;
@@ -1427,7 +1424,11 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_STOPPED;
         adapter_storage_state(adapter->name, adapter->state);
-        adapter_reset_metrics(adapter);
+        if (NEU_NA_TYPE_DRIVER == neu_adapter_get_type(adapter)) {
+            neu_adapter_driver_stop_group_timer(
+                (neu_adapter_driver_t *) adapter);
+        }
+        neu_adapter_reset_metrics(adapter);
     }
 
     return error;
