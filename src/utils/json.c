@@ -140,9 +140,15 @@ static int decode_object(json_t *root, neu_json_elem_t *ele)
     case NEU_JSON_INT:
         ele->v.val_int = json_integer_value(ob);
         break;
-    case NEU_JSON_STR:
-        ele->v.val_str = strdup(json_string_value(ob));
+    case NEU_JSON_STR: {
+        const char *str = json_string_value(ob);
+        if (str != NULL) {
+            ele->v.val_str = strdup(str);
+        } else {
+            return -1;
+        }
         break;
+    }
     case NEU_JSON_FLOAT:
         if (json_is_integer(ob)) {
             ele->v.val_float = (float) json_integer_value(ob);
