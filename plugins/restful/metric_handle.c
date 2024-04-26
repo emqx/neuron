@@ -172,7 +172,7 @@ static inline void gen_single_node_metrics(neu_node_metrics_t *node_metrics,
     pthread_mutex_lock(&node_metrics->lock);
     HASH_LOOP(hh, node_metrics->entries, e)
     {
-        if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+        if (neu_metric_type_is_rolling_counter(e->type)) {
             // force clean stale value
             e->value = neu_rolling_counter_inc(e->rcnt, global_timestamp, 0);
         }
@@ -187,7 +187,7 @@ static inline void gen_single_node_metrics(neu_node_metrics_t *node_metrics,
     {
         HASH_LOOP(hh, g->entries, e)
         {
-            if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+            if (neu_metric_type_is_rolling_counter(e->type)) {
                 // force clean stale value
                 e->value =
                     neu_rolling_counter_inc(e->rcnt, global_timestamp, 0);
@@ -269,7 +269,7 @@ static void gen_all_node_metrics(neu_metrics_t *metrics, int type_filter,
             pthread_mutex_lock(&n->lock);
             HASH_FIND_STR(n->entries, r->name, e);
             if (e) {
-                if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+                if (neu_metric_type_is_rolling_counter(e->type)) {
                     // force clean stale value
                     e->value =
                         neu_rolling_counter_inc(e->rcnt, global_timestamp, 0);
@@ -285,7 +285,7 @@ static void gen_all_node_metrics(neu_metrics_t *metrics, int type_filter,
             {
                 HASH_FIND_STR(g->entries, r->name, e);
                 if (e) {
-                    if (NEU_METRIC_TYPE_ROLLING_COUNTER == e->type) {
+                    if (neu_metric_type_is_rolling_counter(e->type)) {
                         // force clean stale value
                         e->value = neu_rolling_counter_inc(e->rcnt,
                                                            global_timestamp, 0);

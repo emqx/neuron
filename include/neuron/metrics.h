@@ -41,16 +41,22 @@ typedef enum {
     NEU_METRIC_TYPE_GAUAGE,
     NEU_METRIC_TYPE_COUNTER_SET,
     NEU_METRIC_TYPE_ROLLING_COUNTER,
+
+    NEU_METRIC_TYPE_FLAG_NO_RESET = 0x80,
 } neu_metric_type_e;
+
+#define NEU_METRIC_TYPE_MASK 0x0F
 
 // node running state
 #define NEU_METRIC_RUNNING_STATE "running_state"
-#define NEU_METRIC_RUNNING_STATE_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_RUNNING_STATE_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_RUNNING_STATE_HELP "Node running state"
 
 // node link state
 #define NEU_METRIC_LINK_STATE "link_state"
-#define NEU_METRIC_LINK_STATE_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_LINK_STATE_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_LINK_STATE_HELP "Node link state"
 
 // last round trip time in millisends
@@ -86,13 +92,15 @@ typedef enum {
 // maintained by neuron core
 // number of tags in group
 #define NEU_METRIC_TAGS_TOTAL "tags_total"
-#define NEU_METRIC_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_TAGS_TOTAL_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_TAGS_TOTAL_HELP "Total number of tags in the node"
 
 // maintained by neuron core
 // number of tags in group
 #define NEU_METRIC_GROUP_TAGS_TOTAL "group_tags_total"
-#define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_GROUP_TAGS_TOTAL_HELP "Total number of tags in the group"
 
 // number of messages sent in last group timer
@@ -206,9 +214,24 @@ void neu_metrics_unregister_entry(const char *name);
 typedef void (*neu_metrics_cb_t)(const neu_metrics_t *metrics, void *data);
 void neu_metrics_visist(neu_metrics_cb_t cb, void *data);
 
+static inline bool neu_metric_type_is_counter(neu_metric_type_e type)
+{
+    return NEU_METRIC_TYPE_COUNTER == (type & NEU_METRIC_TYPE_MASK);
+}
+
+static inline bool neu_metric_type_is_rolling_counter(neu_metric_type_e type)
+{
+    return NEU_METRIC_TYPE_ROLLING_COUNTER == (type & NEU_METRIC_TYPE_MASK);
+}
+
+static inline bool neu_metric_type_no_reset(neu_metric_type_e type)
+{
+    return NEU_METRIC_TYPE_FLAG_NO_RESET & type;
+}
+
 static inline const char *neu_metric_type_str(neu_metric_type_e type)
 {
-    if (NEU_METRIC_TYPE_COUNTER == type) {
+    if (neu_metric_type_is_counter(type)) {
         return "counter";
     } else {
         return "gauge";
@@ -221,7 +244,7 @@ int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
 
 static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
 {
-    if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
+    if (neu_metric_type_is_rolling_counter(entry->type)) {
         neu_rolling_counter_free(entry->rcnt);
     }
     free(entry);
@@ -350,9 +373,9 @@ static inline int neu_node_metrics_update(neu_node_metrics_t *node_metrics,
         return -1;
     }
 
-    if (NEU_METRIC_TYPE_COUNTER == entry->type) {
+    if (neu_metric_type_is_counter(entry->type)) {
         entry->value += n;
-    } else if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
+    } else if (neu_metric_type_is_rolling_counter(entry->type)) {
         entry->value =
             neu_rolling_counter_inc(entry->rcnt, global_timestamp, n);
     } else {
@@ -370,9 +393,11 @@ static inline void neu_node_metrics_reset(neu_node_metrics_t *node_metrics)
     pthread_mutex_lock(&node_metrics->lock);
     HASH_LOOP(hh, node_metrics->entries, entry)
     {
-        entry->value = 0;
-        if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
-            neu_rolling_counter_reset(entry->rcnt);
+        if (!neu_metric_type_no_reset(entry->type)) {
+            entry->value = 0;
+            if (neu_metric_type_is_rolling_counter(entry->type)) {
+                neu_rolling_counter_reset(entry->rcnt);
+            }
         }
     }
 
@@ -381,9 +406,11 @@ static inline void neu_node_metrics_reset(neu_node_metrics_t *node_metrics)
     {
         HASH_LOOP(hh, g->entries, entry)
         {
-            entry->value = 0;
-            if (NEU_METRIC_TYPE_ROLLING_COUNTER == entry->type) {
-                neu_rolling_counter_reset(entry->rcnt);
+            if (!neu_metric_type_no_reset(entry->type)) {
+                entry->value = 0;
+                if (neu_metric_type_is_rolling_counter(entry->type)) {
+                    neu_rolling_counter_reset(entry->rcnt);
+                }
             }
         }
     }
