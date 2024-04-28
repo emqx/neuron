@@ -26,6 +26,9 @@
 
 extern const neu_plugin_module_t neu_plugin_module;
 
+static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config);
+static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config);
+
 static void connect_cb(void *data)
 {
     neu_plugin_t *plugin      = data;
@@ -44,14 +47,17 @@ static void disconnect_cb(void *data)
                 neu_plugin_module.module_name);
 }
 
-static neu_plugin_t *mqtt_plugin_open(void)
+neu_plugin_t *mqtt_plugin_open(void)
 {
     neu_plugin_t *plugin = (neu_plugin_t *) calloc(1, sizeof(neu_plugin_t));
     neu_plugin_common_init(&plugin->common);
+    plugin->parse_config = mqtt_config_parse;
+    plugin->subscribe    = subscribe;
+    plugin->unsubscribe  = unsubscribe;
     return plugin;
 }
 
-static int mqtt_plugin_close(neu_plugin_t *plugin)
+int mqtt_plugin_close(neu_plugin_t *plugin)
 {
     const char *name = neu_plugin_module.module_name;
     plog_notice(plugin, "success to free plugin:%s", name);
@@ -60,7 +66,7 @@ static int mqtt_plugin_close(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_init(neu_plugin_t *plugin, bool load)
+int mqtt_plugin_init(neu_plugin_t *plugin, bool load)
 {
     (void) load;
 
@@ -86,7 +92,7 @@ static int mqtt_plugin_init(neu_plugin_t *plugin, bool load)
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_uninit(neu_plugin_t *plugin)
+int mqtt_plugin_uninit(neu_plugin_t *plugin)
 {
     mqtt_config_fini(&plugin->config);
     if (plugin->client) {
@@ -238,14 +244,14 @@ static int unsubscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
     return 0;
 }
 
-static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
+int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
 {
     int           rv          = 0;
     const char *  plugin_name = neu_plugin_module.module_name;
     mqtt_config_t config      = { 0 };
     bool          started     = false;
 
-    rv = mqtt_config_parse(plugin, setting, &config);
+    rv = plugin->parse_config(plugin, setting, &config);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_config_parse fail");
         return NEU_ERR_NODE_SETTING_INVALID;
@@ -260,7 +266,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
         }
     } else if (neu_mqtt_client_is_open(plugin->client)) {
         started = true;
-        unsubscribe(plugin, &plugin->config);
+        plugin->unsubscribe(plugin, &plugin->config);
         rv = neu_mqtt_client_close(plugin->client);
         if (0 != rv) {
             plog_error(plugin, "neu_mqtt_client_close fail");
@@ -281,7 +287,7 @@ static int mqtt_plugin_config(neu_plugin_t *plugin, const char *setting)
             rv = NEU_ERR_MQTT_CONNECT_FAILURE;
             goto error;
         }
-        if (0 != (rv = subscribe(plugin, &config))) {
+        if (0 != (rv = plugin->subscribe(plugin, &config))) {
             goto error;
         }
     }
@@ -301,7 +307,7 @@ error:
     return rv;
 }
 
-static int mqtt_plugin_start(neu_plugin_t *plugin)
+int mqtt_plugin_start(neu_plugin_t *plugin)
 {
     int         rv          = 0;
     const char *plugin_name = neu_plugin_module.module_name;
@@ -318,7 +324,7 @@ static int mqtt_plugin_start(neu_plugin_t *plugin)
         goto end;
     }
 
-    rv = subscribe(plugin, &plugin->config);
+    rv = plugin->subscribe(plugin, &plugin->config);
 
 end:
     if (0 == rv) {
@@ -331,10 +337,10 @@ end:
     return rv;
 }
 
-static int mqtt_plugin_stop(neu_plugin_t *plugin)
+int mqtt_plugin_stop(neu_plugin_t *plugin)
 {
     if (plugin->client) {
-        unsubscribe(plugin, &plugin->config);
+        plugin->unsubscribe(plugin, &plugin->config);
         neu_mqtt_client_close(plugin->client);
         plog_notice(plugin, "mqtt client closed");
     }
@@ -344,8 +350,8 @@ static int mqtt_plugin_stop(neu_plugin_t *plugin)
     return NEU_ERR_SUCCESS;
 }
 
-static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
-                               void *data)
+int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                        void *data)
 {
     neu_err_code_e error = NEU_ERR_SUCCESS;
 

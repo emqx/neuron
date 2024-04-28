@@ -39,3 +39,22 @@ target_include_directories(${AWS_PLUGIN} PRIVATE
 
 target_link_libraries(${AWS_PLUGIN} neuron-base)
 target_link_libraries(${AWS_PLUGIN} ${CMAKE_THREAD_LIBS_INIT})
+
+file(COPY ${CMAKE_SOURCE_DIR}/plugins/mqtt/azure-iot.json DESTINATION ${CMAKE_BINARY_DIR}/plugins/schema/)
+
+set(AZURE_PLUGIN "plugin-azure-iot")
+
+add_library(${AZURE_PLUGIN} SHARED
+  mqtt_config.c
+  mqtt_handle.c
+  mqtt_plugin_intf.c
+  azure_iot_plugin.c
+)
+
+target_include_directories(${AZURE_PLUGIN} PRIVATE 
+  ${CMAKE_SOURCE_DIR}/include/neuron
+  ${CMAKE_SOURCE_DIR}/plugins/mqtt
+)
+
+target_link_libraries(${AZURE_PLUGIN} neuron-base)
+target_link_libraries(${AZURE_PLUGIN} ${CMAKE_THREAD_LIBS_INIT})

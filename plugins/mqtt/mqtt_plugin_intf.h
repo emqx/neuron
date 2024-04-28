@@ -28,6 +28,16 @@ extern "C" {
 
 extern const neu_plugin_intf_funs_t mqtt_plugin_intf_funs;
 
+neu_plugin_t *mqtt_plugin_open(void);
+int           mqtt_plugin_close(neu_plugin_t *plugin);
+int           mqtt_plugin_init(neu_plugin_t *plugin, bool load);
+int           mqtt_plugin_uninit(neu_plugin_t *plugin);
+int           mqtt_plugin_config(neu_plugin_t *plugin, const char *setting);
+int           mqtt_plugin_start(neu_plugin_t *plugin);
+int           mqtt_plugin_stop(neu_plugin_t *plugin);
+int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                        void *data);
+
 #ifdef __cplusplus
 }
 #endif
