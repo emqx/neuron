@@ -384,7 +384,7 @@ static void modbus_write(struct modbus_register *reg, uint8_t function,
         break;
     case MODBUS_WRITE_M_COIL:
         for (int i = 0; i < ntohs(address->n_reg); i++) {
-            uint8_t x = (value[ntohs(address->n_reg) / 8] >> (i % 8)) & 0x1;
+            uint8_t x = (value[i / 8] >> (i % 8)) & 0x1;
 
             nlog_info("write coil byte: %d, %d\n", x, i);
             if (x > 0) {

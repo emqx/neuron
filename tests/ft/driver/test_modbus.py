@@ -108,6 +108,37 @@ hold_bytes = [{"name": "hold_bytes", "address": "1!400040.10",
 hold_double = [{"name": "hold_double", "address": "1!400050",
                 "attribute": config.NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": config.NEU_TYPE_DOUBLE}]
 
+hold_bit_0 = [{"name": "hold_bit_0", "address": "1!400001.0",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_1 = [{"name": "hold_bit_1", "address": "1!400001.1",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_2 = [{"name": "hold_bit_2", "address": "1!400001.2",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_3 = [{"name": "hold_bit_3", "address": "1!400001.3",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_4 = [{"name": "hold_bit_4", "address": "1!400001.4",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_5 = [{"name": "hold_bit_5", "address": "1!400001.5",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_6 = [{"name": "hold_bit_6", "address": "1!400001.6",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_7 = [{"name": "hold_bit_7", "address": "1!400001.7",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_8 = [{"name": "hold_bit_8", "address": "1!400001.8",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_9 = [{"name": "hold_bit_9", "address": "1!400001.9",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_10 = [{"name": "hold_bit_10", "address": "1!400001.10",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_11 = [{"name": "hold_bit_11", "address": "1!400001.11",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_12 = [{"name": "hold_bit_12", "address": "1!400001.12",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_13 = [{"name": "hold_bit_13", "address": "1!400001.13",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+hold_bit_14 = [{"name": "hold_bit_14", "address": "1!400001.14",
+             "attribute": config.NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": config.NEU_TYPE_BIT}]
+
 coil_bit_1 = [{"name": "coil_bit_1", "address": "1!000001",
                "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_BIT}]
 coil_bit_2 = [{"name": "coil_bit_2", "address": "1!000002",
@@ -330,6 +361,22 @@ class TestModbus:
         api.add_tags_check(node=param[0], group='group', tags=hold_string)
         api.add_tags_check(node=param[0], group='group', tags=hold_bytes)
 
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_0)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_1)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_2)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_3)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_4)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_5)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_6)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_7)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_8)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_9)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_10)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_11)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_12)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_13)
+        api.add_tags_check(node=param[0], group='group', tags=hold_bit_14)
+
         api.add_tags_check(
             node=param[0], group='group', tags=input_register_bit)
         api.add_tags_check(
@@ -519,6 +566,39 @@ class TestModbus:
             node=param[0], group='group', tag=hold_bytes[0]['name'])
         assert len(bytes) == 10
         assert bytes == [0x1, 0x2, 0x3, 0x4, 0, 0, 0, 0, 0, 0]
+
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_0[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_1[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_2[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_3[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_4[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_5[0]['name'])
+        assert 0 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_6[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_7[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_8[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_9[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_10[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_11[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_12[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_13[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit_14[0]['name'])
+        assert 1 == api.read_tag(
+            node=param[0], group='group', tag=hold_bit[0]['name'])
 
         assert 1 == api.read_tag(
             node=param[0], group='group', tag=coil_bit_1[0]['name'])
