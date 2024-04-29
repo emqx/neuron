@@ -206,6 +206,19 @@ error:
 
 static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
 {
+    // write request topic
+    if (NULL == plugin->upload_topic ||
+        0 != strstr(plugin->upload_topic, config->client_id)) {
+        free(plugin->upload_topic);
+        plugin->upload_topic = NULL;
+        neu_asprintf(&plugin->upload_topic, "devices/%s/messages/events/",
+                     config->client_id);
+        if (NULL == plugin->upload_topic) {
+            plog_error(plugin, "create upload topic fail");
+            return NEU_ERR_EINTERNAL;
+        }
+    }
+
     if (0 !=
         neu_mqtt_client_subscribe(plugin->client, config->qos,
                                   config->write_req_topic, plugin,
@@ -232,7 +245,82 @@ static neu_plugin_t *azure_plugin_open(void)
     plugin->parse_config = azure_parse_config;
     plugin->subscribe    = subscribe;
     plugin->unsubscribe  = unsubscribe;
+
     return plugin;
+}
+
+static int azure_handle_trans_data(neu_plugin_t *            plugin,
+                                   neu_reqresp_trans_data_t *trans_data)
+{
+    int rv = 0;
+
+    if (NULL == plugin->client) {
+        return NEU_ERR_MQTT_IS_NULL;
+    }
+
+    if (0 == plugin->config.cache &&
+        !neu_mqtt_client_is_connected(plugin->client)) {
+        // cache disable and we are disconnected
+        return NEU_ERR_MQTT_FAILURE;
+    }
+
+    char *json_str =
+        generate_upload_json(plugin, trans_data, plugin->config.format);
+    if (NULL == json_str) {
+        plog_error(plugin, "generate upload json fail");
+        return NEU_ERR_EINTERNAL;
+    }
+
+    char *         topic = plugin->upload_topic;
+    neu_mqtt_qos_e qos   = plugin->config.qos;
+    rv       = publish(plugin, qos, topic, json_str, strlen(json_str));
+    json_str = NULL;
+
+    return rv;
+}
+
+static int azure_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
+                                void *data)
+{
+    neu_err_code_e error = NEU_ERR_SUCCESS;
+
+    // update cached messages number per seconds
+    if (NULL != plugin->client &&
+        (global_timestamp - plugin->cache_metric_update_ts) >= 1000) {
+        NEU_PLUGIN_UPDATE_METRIC(
+            plugin, NEU_METRIC_CACHED_MSGS_NUM,
+            neu_mqtt_client_get_cached_msgs_num(plugin->client), NULL);
+        plugin->cache_metric_update_ts = global_timestamp;
+    }
+
+    switch (head->type) {
+    case NEU_RESP_ERROR:
+        error = handle_write_response(plugin, head->ctx, data);
+        break;
+    case NEU_RESP_READ_GROUP:
+        // error = handle_read_response(plugin, head->ctx, data);
+        break;
+    case NEU_REQRESP_TRANS_DATA: {
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_5S, 1, NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_30S, 1, NULL);
+        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_60S, 1, NULL);
+        error = azure_handle_trans_data(plugin, data);
+        break;
+    }
+    case NEU_REQ_SUBSCRIBE_GROUP:
+    case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
+    case NEU_REQ_UNSUBSCRIBE_GROUP:
+    case NEU_REQ_UPDATE_GROUP:
+    case NEU_REQ_DEL_GROUP:
+    case NEU_REQ_UPDATE_NODE:
+    case NEU_REQRESP_NODE_DELETED:
+        break;
+    default:
+        error = NEU_ERR_MQTT_FAILURE;
+        break;
+    }
+
+    return error;
 }
 
 const neu_plugin_intf_funs_t azure_plugin_intf_funs = {
@@ -243,7 +331,7 @@ const neu_plugin_intf_funs_t azure_plugin_intf_funs = {
     .start   = mqtt_plugin_start,
     .stop    = mqtt_plugin_stop,
     .setting = mqtt_plugin_config,
-    .request = mqtt_plugin_request,
+    .request = azure_plugin_request,
 };
 
 #define DESCRIPTION "Northbound plugin for connecting to Azure IoT Hub"

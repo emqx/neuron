@@ -51,9 +51,8 @@ static int tag_values_to_json(UT_array *tags, neu_json_read_resp_t *json)
     return 0;
 }
 
-static char *generate_upload_json(neu_plugin_t *            plugin,
-                                  neu_reqresp_trans_data_t *data,
-                                  mqtt_upload_format_e      format)
+char *generate_upload_json(neu_plugin_t *plugin, neu_reqresp_trans_data_t *data,
+                           mqtt_upload_format_e format)
 {
     char *                   json_str = NULL;
     neu_json_read_periodic_t header   = { .group     = (char *) data->group,
@@ -289,8 +288,8 @@ static void publish_cb(int errcode, neu_mqtt_qos_e qos, char *topic,
     free(payload);
 }
 
-static inline int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
-                          char *payload, size_t payload_len)
+int publish(neu_plugin_t *plugin, neu_mqtt_qos_e qos, char *topic,
+            char *payload, size_t payload_len)
 {
 
     int rv =

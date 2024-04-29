@@ -105,6 +105,8 @@ int mqtt_plugin_uninit(neu_plugin_t *plugin)
     plugin->read_req_topic = NULL;
     free(plugin->read_resp_topic);
     plugin->read_resp_topic = NULL;
+    free(plugin->upload_topic);
+    plugin->upload_topic = NULL;
 
     route_tbl_free(plugin->route_tbl);
 
