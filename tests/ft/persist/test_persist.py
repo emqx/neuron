@@ -3,7 +3,8 @@ from neuron.config import *
 from neuron.common import description
 import neuron.process as process
 from neuron.error import *
-
+import shutil
+import os
 
 hold_bit = [{"name": "hold_bit", "address": "1!400001.15",
              "attribute": NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": NEU_TYPE_BIT}]
@@ -437,5 +438,22 @@ class TestPersist:
         
         group_names = [group['group'] for group in response.json()['groups']]
         assert "group-2" not in group_names
+
+        p.stop()
+
+    @description(given="upload pem in certs", when="login", then="success")
+    def test_jwt(self):
+        if not os.path.exists('./build/certs/'):
+            os.makedirs('./build/certs/')
+
+        shutil.copyfile('./build/config/neuron.pem', './build/certs/neuron.pem')
+
+        p = process.NeuronProcess()
+        p.start()
+
+        response = api.login()
+        assert 200 == response.status_code
+
+        shutil.rmtree('./build/certs/')
 
         p.stop()
