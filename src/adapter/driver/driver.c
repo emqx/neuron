@@ -102,8 +102,11 @@ static void update_with_meta(neu_adapter_t *adapter, const char *group,
                              const char *tag, neu_dvalue_t value,
                              neu_tag_meta_t *metas, int n_meta);
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error);
-static group_t *find_group(neu_adapter_driver_t *driver, const char *name);
-static void     store_write_tag(group_t *group, to_be_write_tag_t *tag);
+static group_t *   find_group(neu_adapter_driver_t *driver, const char *name);
+static void        store_write_tag(group_t *group, to_be_write_tag_t *tag);
+static inline void start_group_timer(neu_adapter_driver_t *driver,
+                                     group_t *             grp);
+static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp);
 
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 {
@@ -336,9 +339,7 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
         HASH_DEL(driver->groups, el);
 
         neu_adapter_driver_try_del_tag(driver, neu_group_tag_size(el->group));
-        neu_adapter_del_timer((neu_adapter_t *) driver, el->report);
-        neu_event_del_timer(driver->driver_events, el->read);
-        neu_event_del_timer(driver->driver_events, el->write);
+        stop_group_timer(driver, el);
         if (el->grp.group_free != NULL) {
             el->grp.group_free(&el->grp);
         }
@@ -361,34 +362,67 @@ int neu_adapter_driver_uninit(neu_adapter_driver_t *driver)
     return 0;
 }
 
+static inline void start_group_timer(neu_adapter_driver_t *driver, group_t *grp)
+{
+    uint32_t interval = neu_group_get_interval(grp->group);
+
+    neu_event_timer_param_t param = {
+        .second      = interval / 1000,
+        .millisecond = interval % 1000,
+        .usr_data    = (void *) grp,
+        .type        = NEU_EVENT_TIMER_NOBLOCK,
+    };
+
+    param.type = driver->adapter.module->timer_type;
+    param.cb   = read_callback;
+    grp->read  = neu_event_add_timer(driver->driver_events, param);
+
+    struct timespec t1 = {
+        .tv_sec  = 0,
+        .tv_nsec = 1000 * 1000 * 20,
+    };
+    struct timespec t2 = { 0 };
+    nanosleep(&t1, &t2);
+
+    param.type  = NEU_EVENT_TIMER_NOBLOCK;
+    param.cb    = report_callback;
+    grp->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+
+    param.second      = 0;
+    param.millisecond = 3;
+    param.cb          = write_callback;
+    grp->write        = neu_event_add_timer(driver->driver_events, param);
+}
+
 void neu_adapter_driver_start_group_timer(neu_adapter_driver_t *driver)
 {
     group_t *el = NULL, *tmp = NULL;
 
     HASH_ITER(hh, driver->groups, el, tmp)
     {
-        uint32_t                interval = neu_group_get_interval(el->group);
-        neu_event_timer_param_t param    = {
-            .second      = interval / 1000,
-            .millisecond = interval % 1000,
-            .usr_data    = el,
-            .type        = NEU_EVENT_TIMER_NOBLOCK,
-        };
+        start_group_timer(driver, el);
+        neu_adapter_update_group_metric(
+            &driver->adapter, neu_group_get_name(el->group),
+            NEU_METRIC_GROUP_TAGS_TOTAL, neu_group_tag_size(el->group));
+    }
 
-        param.type = driver->adapter.module->timer_type;
-        param.cb   = read_callback;
-        el->read   = neu_event_add_timer(driver->driver_events, param);
+    driver->adapter.cb_funs.update_metric(
+        &driver->adapter, NEU_METRIC_TAGS_TOTAL, driver->tag_cnt, NULL);
+}
 
-        struct timespec t1 = {
-            .tv_sec  = 0,
-            .tv_nsec = 1000 * 1000 * 20,
-        };
-        struct timespec t2 = { 0 };
-        nanosleep(&t1, &t2);
-
-        param.type = NEU_EVENT_TIMER_NOBLOCK;
-        param.cb   = report_callback;
-        el->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp)
+{
+    if (grp->report) {
+        neu_adapter_del_timer((neu_adapter_t *) driver, grp->report);
+        grp->report = NULL;
+    }
+    if (grp->read) {
+        neu_event_del_timer(driver->driver_events, grp->read);
+        grp->read = NULL;
+    }
+    if (grp->write) {
+        neu_event_del_timer(driver->driver_events, grp->write);
+        grp->write = NULL;
     }
 }
 
@@ -396,13 +430,7 @@ void neu_adapter_driver_stop_group_timer(neu_adapter_driver_t *driver)
 {
     group_t *el = NULL, *tmp = NULL;
 
-    HASH_ITER(hh, driver->groups, el, tmp)
-    {
-        neu_adapter_del_timer((neu_adapter_t *) driver, el->report);
-        el->report = NULL;
-        neu_event_del_timer(driver->driver_events, el->read);
-        el->read = NULL;
-    }
+    HASH_ITER(hh, driver->groups, el, tmp) { stop_group_timer(driver, el); }
 }
 
 void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
@@ -902,13 +930,6 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
     if (find == NULL) {
         find = calloc(1, sizeof(group_t));
 
-        neu_event_timer_param_t param = {
-            .second      = interval / 1000,
-            .millisecond = interval % 1000,
-            .usr_data    = (void *) find,
-            .type        = NEU_EVENT_TIMER_NOBLOCK,
-        };
-
         pthread_mutex_init(&find->wt_mtx, NULL);
         pthread_mutex_init(&find->apps_mtx, NULL);
 
@@ -922,25 +943,9 @@ int neu_adapter_driver_add_group(neu_adapter_driver_t *driver, const char *name,
         neu_group_split_static_tags(find->group, &find->static_tags,
                                     &find->grp.tags);
 
-        param.type = driver->adapter.module->timer_type;
-        param.cb   = read_callback;
-        find->read = neu_event_add_timer(driver->driver_events, param);
-
-        struct timespec t1 = {
-            .tv_sec  = 0,
-            .tv_nsec = 1000 * 1000 * 20,
-        };
-        struct timespec t2 = { 0 };
-        nanosleep(&t1, &t2);
-
-        param.type   = NEU_EVENT_TIMER_NOBLOCK;
-        param.cb     = report_callback;
-        find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
-
-        param.second      = 0;
-        param.millisecond = 3;
-        param.cb          = write_callback;
-        find->write       = neu_event_add_timer(driver->driver_events, param);
+        if (NEU_NODE_RUNNING_STATE_RUNNING == driver->adapter.state) {
+            start_group_timer(driver, find);
+        }
 
         REGISTER_GROUP_METRIC(&driver->adapter, find->name,
                               NEU_METRIC_GROUP_TAGS_TOTAL,
@@ -987,8 +992,9 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
     }
 
     // stop the timer first to avoid race condition
-    neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
-    neu_event_del_timer(driver->driver_events, find->read);
+    if (NEU_NODE_RUNNING_STATE_RUNNING == driver->adapter.state) {
+        stop_group_timer(driver, find);
+    }
 
     // a diminutive value should keep the interval untouched
     if (interval < NEU_GROUP_INTERVAL_LIMIT) {
@@ -1017,31 +1023,12 @@ int neu_adapter_driver_update_group(neu_adapter_driver_t *driver,
         }
     }
 
-    neu_event_timer_param_t param = {
-        .second      = interval / 1000,
-        .millisecond = interval % 1000,
-        .usr_data    = (void *) find,
-        .type        = NEU_EVENT_TIMER_NOBLOCK,
-    };
-
     neu_group_set_interval(find->group, interval);
 
     // restore the timers
-
-    param.type = driver->adapter.module->timer_type;
-    param.cb   = read_callback;
-    find->read = neu_event_add_timer(driver->driver_events, param);
-
-    struct timespec t1 = {
-        .tv_sec  = 0,
-        .tv_nsec = 1000 * 1000 * 20,
-    };
-    struct timespec t2 = { 0 };
-    nanosleep(&t1, &t2);
-
-    param.type   = NEU_EVENT_TIMER_NOBLOCK;
-    param.cb     = report_callback;
-    find->report = neu_adapter_add_timer((neu_adapter_t *) driver, param);
+    if (NEU_NODE_RUNNING_STATE_RUNNING == driver->adapter.state) {
+        start_group_timer(driver, find);
+    }
 
     return ret;
 }
@@ -1057,9 +1044,10 @@ int neu_adapter_driver_del_group(neu_adapter_driver_t *driver, const char *name)
 
         neu_adapter_driver_try_del_tag(driver, neu_group_tag_size(find->group));
 
-        neu_adapter_del_timer((neu_adapter_t *) driver, find->report);
-        neu_event_del_timer(driver->driver_events, find->read);
-        neu_event_del_timer(driver->driver_events, find->write);
+        if (NEU_NODE_RUNNING_STATE_RUNNING == driver->adapter.state) {
+            stop_group_timer(driver, find);
+        }
+
         if (find->grp.group_free != NULL) {
             find->grp.group_free(&find->grp);
         }
