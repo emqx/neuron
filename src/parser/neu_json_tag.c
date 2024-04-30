@@ -336,7 +336,8 @@ int neu_json_decode_add_tags_req(char *buf, neu_json_add_tags_req_t **result)
 
     json_obj = neu_json_decode_new(buf);
     if (NULL == json_obj) {
-        goto decode_fail;
+        free(req);
+        return -1;
     }
 
     neu_json_elem_t req_elems[] = {
@@ -545,7 +546,8 @@ int neu_json_decode_add_gtags_req(char *buf, neu_json_add_gtags_req_t **result)
 
     json_obj = neu_json_decode_new(buf);
     if (NULL == json_obj) {
-        goto decode_fail;
+        free(req);
+        return -1;
     }
 
     neu_json_elem_t req_elems[] = {
@@ -681,6 +683,10 @@ int neu_json_decode_del_tags_req(char *buf, neu_json_del_tags_req_t **result)
     }
 
     json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        free(req);
+        return -1;
+    }
 
     neu_json_elem_t req_elems[] = { {
                                         .name = "node",
@@ -797,7 +803,8 @@ int neu_json_decode_update_tags_req(char *                       buf,
 
     json_obj = neu_json_decode_new(buf);
     if (NULL == json_obj) {
-        goto decode_fail;
+        free(req);
+        return -1;
     }
 
     neu_json_elem_t req_elems[] = {
