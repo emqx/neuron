@@ -42,7 +42,6 @@ bool                  disable_jwt       = false;
 int                   default_log_level = ZLOG_LEVEL_NOTICE;
 char                  host_port[32]     = { 0 };
 
-int64_t global_timestamp = 0;
 
 struct {
     struct sockaddr_in addr;

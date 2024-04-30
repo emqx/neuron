@@ -70,6 +70,7 @@ set(PERSIST_SOURCES
     src/persist/json/persist_json_plugin.c)
 aux_source_directory(src/parser NEURON_SRC_PARSE)
 set(NEURON_BASE_SOURCES
+    src/base/base.c
     src/base/tag.c
     src/base/neu_plugin_common.c
     src/base/tag_sort.c
