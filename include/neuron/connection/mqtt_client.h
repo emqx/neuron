@@ -53,6 +53,20 @@ typedef enum {
 
 typedef struct neu_mqtt_client_s neu_mqtt_client_t;
 
+/**
+ * Check that `topic_filter` is a valid MQTT topic filter.
+ */
+bool neu_mqtt_topic_filter_is_valid(const char *topic_filter);
+
+/**
+ * Check the given `topic_filter` matches the given `topic_name`.
+ *
+ * @Precondition  `topic_filter` must be a valid MQTT topic filter.
+ * @Precondition  `topic_name` must be a valid MQTT topic name.
+ */
+bool neu_mqtt_topic_filter_is_match(const char *topic_filter,
+                                    const char *topic_name);
+
 typedef void (*neu_mqtt_client_connection_cb_t)(void *data);
 typedef void (*neu_mqtt_client_publish_cb_t)(int errcode, neu_mqtt_qos_e qos,
                                              char *topic, uint8_t *payload,
