@@ -33,6 +33,7 @@
 #include <nng/supplemental/util/platform.h>
 
 #include "connection/mqtt_client.h"
+#include "errcodes.h"
 #include "event/event.h"
 #include "utils/asprintf.h"
 #include "utils/time.h"
@@ -177,6 +178,93 @@ static inline uint8_t neu_mqtt_version_to_nng_mqtt_version(neu_mqtt_version_e v)
     default:
         assert(!"logic error, invalid mqtt version");
     }
+}
+
+bool neu_mqtt_topic_filter_is_valid(const char *topic_filter)
+{
+    if (NULL == topic_filter || '\0' == *topic_filter ||
+        strlen(topic_filter) > 65535) {
+        return false;
+    }
+
+    char c;
+    while ((c = *topic_filter++)) {
+        switch (c) {
+        case '#':
+            // '#' must be last character
+            return '\0' == *topic_filter;
+        case '+':
+            // '+' must occupy an entire level
+            if (*topic_filter && '/' != *topic_filter) {
+                return false;
+            }
+            break;
+        default:
+            for (; '/' != c; c = *topic_filter++) {
+                if ('#' == c || '+' == c) {
+                    return false;
+                } else if ('\0' == c) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool topic_filter_is_match(const char *topic_filter,
+                                  const char *topic_name,
+                                  uint32_t    topic_name_len)
+{
+    // The Server MUST NOT match Topic Filters starting with a wildcard
+    // character (# or +) with Topic Names beginning with a $ character
+    // [MQTT-4.7.2-1].
+    if ('$' == topic_name[0]) {
+        if ('$' != topic_filter[0]) {
+            return false;
+        }
+    } else if (0 == strcmp("#", topic_filter)) {
+        return true;
+    }
+
+    uint32_t i = 0;
+    while (true) {
+        switch (*topic_filter) {
+        case '#':
+            return true;
+        case '+':
+            while (i < topic_name_len && '/' != topic_name[i]) {
+                ++i;
+            };
+            ++topic_filter;
+            break;
+        case '/':
+            if (i < topic_name_len && '/' == topic_name[i]) {
+                ++i;
+            } else if ('#' != topic_filter[1]) { // '#' include parent level
+                return false;
+            }
+            ++topic_filter;
+            break;
+        case '\0':
+            return i == topic_name_len;
+        default:
+            for (; *topic_filter && '/' != *topic_filter; ++topic_filter, ++i) {
+                if (!(i < topic_name_len && *topic_filter == topic_name[i])) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+bool neu_mqtt_topic_filter_is_match(const char *topic_filter,
+                                    const char *topic_name)
+{
+    return topic_filter_is_match(topic_filter, topic_name, strlen(topic_name));
 }
 
 static inline task_t *task_new(neu_mqtt_client_t *client)
@@ -405,6 +493,26 @@ static inline void subscriptions_free(subscription_t *subscriptions)
     }
 }
 
+static inline subscription_t *
+subscription_find_match(subscription_t *subscriptions, const char *topic_name,
+                        uint32_t topic_name_len)
+{
+    subscription_t *sub = NULL, *tmp = NULL;
+    HASH_FIND(hh, subscriptions, topic_name, topic_name_len, sub);
+    if (NULL == sub) {
+        // subscription wildcard matching
+        // TODO: linear scanning is enough for current usages,
+        //       but may pose performance issues in the future
+        HASH_ITER(hh, subscriptions, sub, tmp)
+        {
+            if (topic_filter_is_match(sub->topic, topic_name, topic_name_len)) {
+                return sub;
+            }
+        }
+    }
+    return sub;
+}
+
 static int resub_cb(void *data)
 {
     neu_mqtt_client_t *client = data;
@@ -517,10 +625,9 @@ static void recv_cb(void *arg)
     log(debug, "recv [%.*s, QoS%d] %" PRIu32 " bytes", (unsigned) topic_len,
         topic, (int) qos, payload_len);
 
-    // find matching subscription
-    // NOTE: does not support wildcards
     nng_mtx_lock(client->mtx);
-    HASH_FIND(hh, client->subscriptions, topic, topic_len, subscription);
+    subscription =
+        subscription_find_match(client->subscriptions, topic, topic_len);
     if (NULL != subscription) {
         task_t *task = client_alloc_task(client);
         if (NULL != task) {
@@ -1374,6 +1481,10 @@ int neu_mqtt_client_subscribe(neu_mqtt_client_t *client, neu_mqtt_qos_e qos,
 {
     int             rv           = 0;
     subscription_t *subscription = NULL;
+
+    if (!neu_mqtt_topic_filter_is_valid(topic)) {
+        return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
+    }
 
     nng_mtx_lock(client->mtx);
     if (NULL == client->recv_aio) {
