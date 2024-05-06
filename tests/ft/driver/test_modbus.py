@@ -472,7 +472,10 @@ class TestModbus:
         api.add_tags_check(node=param[0], group='group', tags=hold_double_s)
         api.add_tags_check(node=param[0], group='group', tags=hold_string_s)
 
-        time.sleep(0.3)
+        time.sleep(0.5)
+
+        response = api.get_tags(node=param[0], group="group")
+        assert 200 == response.status_code
 
         assert 1 == api.read_tag(node=param[0], group='group', tag=hold_int16_s[0]['name'])
         assert 1 == api.read_tag(node=param[0], group='group', tag=hold_uint16_s[0]['name'])

@@ -91,8 +91,6 @@ typedef struct {
 } neu_json_get_driver_group_resp_t;
 
 int neu_json_encode_get_driver_group_resp(void *json_object, void *param);
-int neu_json_decode_get_driver_group_resp(
-    char *buf, neu_json_get_driver_group_resp_t **result);
 int neu_json_decode_get_driver_group_resp_json(
     void *json_obj, neu_json_get_driver_group_resp_t **result);
 void neu_json_decode_get_driver_group_resp_free(
