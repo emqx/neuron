@@ -70,6 +70,10 @@ typedef struct {
                                               // for backward compatibility
 } mqtt_config_t;
 
+int  parse_ssl_params(neu_plugin_t *plugin, const char *setting,
+                      neu_json_elem_t *ssl, neu_json_elem_t *ca,
+                      neu_json_elem_t *cert, neu_json_elem_t *key,
+                      neu_json_elem_t *keypass);
 int  mqtt_config_parse(neu_plugin_t *plugin, const char *setting,
                        mqtt_config_t *config);
 void mqtt_config_fini(mqtt_config_t *config);

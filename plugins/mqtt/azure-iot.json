@@ -1,0 +1,161 @@
+{
+  "client-id": {
+    "name": "Device ID",
+    "name_zh": "设备 ID",
+    "description": "Azure IoT device ID, used as MQTT client id",
+    "description_zh": "Azure IoT 设备 ID，MQTT 客户端 ID",
+    "type": "string",
+    "attribute": "required",
+    "valid": {
+      "length": 255
+    }
+  },
+  "qos": {
+    "name": "QoS Level",
+    "name_zh": "QoS 等级",
+    "description": "MQTT QoS level for message delivery",
+    "description_zh": "MQTT 消息传输使用的服务质量等级",
+    "type": "map",
+    "attribute": "optional",
+    "default": 0,
+    "valid": {
+      "map": [
+        {
+          "key": "QoS 0",
+          "value": 0
+        },
+        {
+          "key": "QoS 1",
+          "value": 1
+        }
+      ]
+    }
+  },
+  "format": {
+    "name": "Upload Format",
+    "name_zh": "上报数据格式",
+    "description": "JSON format of the data reported. In values-mode, data are split into `values` and `errors` sub objects. In tags-mode, tag data are put in a single array.",
+    "description_zh": "上报数据的 JSON 格式。在 values-format 格式下，数据被分为 `values` 和 `errors` 两个子对象。在 tags-format 格式下，数据被放在一个数组中。",
+    "attribute": "required",
+    "type": "map",
+    "default": 0,
+    "valid": {
+      "map": [
+        {
+          "key": "values-format",
+          "value": 0
+        },
+        {
+          "key": "tags-format",
+          "value": 1
+        }
+      ]
+    }
+  },
+  "host": {
+    "name": "IoT Hub Hostname",
+    "name_zh": "IoT 中心域名",
+    "description": "Azure IoT Hub full CName",
+    "description_zh": "Azure IoT 中心域名",
+    "attribute": "required",
+    "type": "string",
+    "valid": {
+      "length": 255
+    }
+  },
+  "auth": {
+    "name": "Authentication",
+    "name_zh": "身份验证",
+    "description": "Device authentication method, uses SAS or X.509 certificates",
+    "description_zh": "设备身份验证方式",
+    "attribute": "required",
+    "type": "map",
+    "default": 0,
+    "valid": {
+      "map": [
+        {
+          "key": "Shared Access Signature",
+          "value": 0
+        },
+        {
+          "key": "X.509 Certificates",
+          "value": 1
+        }
+      ]
+    }
+  },
+  "password": {
+    "name": "SAS Token",
+    "name_zh": "SAS 令牌",
+    "description": "Azure IoT Hub shared access signature (SAS) token",
+    "description_zh": "Azure IoT 中心共享访问签名 (SAS) 令牌",
+    "attribute": "required",
+    "type": "string",
+    "condition": {
+      "field": "auth",
+      "value": 0
+    },
+    "valid": {
+      "length": 255
+    }
+  },
+  "ssl": {
+    "name": "SSL",
+    "name_zh": "SSL",
+    "description": "Enable SSL connection",
+    "description_zh": "是否启用 SSL 连接",
+    "attribute": "optional",
+    "type": "bool",
+    "default": true,
+    "condition": {
+      "field": "invisible",
+      "value": true
+    },
+    "valid": {}
+  },
+  "ca": {
+    "name": "CA",
+    "name_zh": "CA 证书",
+    "description": "CA certificate which signs the server certificate",
+    "description_zh": "签发服务器证书的 CA 证书",
+    "attribute": "required",
+    "type": "file",
+    "condition": {
+      "field": "auth",
+      "value": 1
+    },
+    "valid": {
+      "length": 81960
+    }
+  },
+  "cert": {
+    "name": "Device Certificate",
+    "name_zh": "设备证书",
+    "description": "Client x509 certificate when using two way authentication",
+    "description_zh": "使用双向认证时，客户端的 x509 证书",
+    "attribute": "required",
+    "type": "file",
+    "condition": {
+      "field": "auth",
+      "value": 1
+    },
+    "valid": {
+      "length": 81960
+    }
+  },
+  "key": {
+    "name": "Device Private Key",
+    "name_zh": "设备私钥",
+    "description": "Client private key when using two way authentication",
+    "description_zh": "使用双向认证时，客户端的私钥",
+    "attribute": "required",
+    "type": "file",
+    "condition": {
+      "field": "auth",
+      "value": 1
+    },
+    "valid": {
+      "length": 81960
+    }
+  }
+}

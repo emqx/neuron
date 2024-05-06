@@ -64,10 +64,10 @@ static inline int parse_b64_param(neu_plugin_t *plugin, const char *setting,
     return 0;
 }
 
-static inline int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
-                                   neu_json_elem_t *ssl, neu_json_elem_t *ca,
-                                   neu_json_elem_t *cert, neu_json_elem_t *key,
-                                   neu_json_elem_t *keypass)
+int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
+                     neu_json_elem_t *ssl, neu_json_elem_t *ca,
+                     neu_json_elem_t *cert, neu_json_elem_t *key,
+                     neu_json_elem_t *keypass)
 {
     // ssl, optional
     int ret = neu_parse_param(setting, NULL, 1, ssl);

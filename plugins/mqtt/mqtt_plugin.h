@@ -49,7 +49,13 @@ struct neu_plugin {
     int64_t             cache_metric_update_ts;
     char *              read_req_topic;
     char *              read_resp_topic;
+    char *              upload_topic;
     route_entry_t *     route_tbl;
+
+    int (*parse_config)(neu_plugin_t *plugin, const char *setting,
+                        mqtt_config_t *config);
+    int (*subscribe)(neu_plugin_t *plugin, const mqtt_config_t *config);
+    int (*unsubscribe)(neu_plugin_t *plugin, const mqtt_config_t *config);
 };
 
 static inline void route_entry_free(route_entry_t *e)
