@@ -28,6 +28,41 @@
 #define AUTH_SAS 0
 #define AUTH_CERT 1
 
+static int parse_ssl_params(neu_plugin_t *plugin, const char *setting,
+                            neu_json_elem_t *ca, neu_json_elem_t *cert,
+                            neu_json_elem_t *key)
+{
+    // ca, required
+    int ret = neu_parse_param(setting, NULL, 1, ca);
+    if (0 != ret) {
+        plog_notice(plugin, "setting no ca");
+        return -1;
+    }
+
+    if (0 != decode_b64_param(plugin, ca)) {
+        return -1;
+    }
+
+    // cert, required
+    ret = neu_parse_param(setting, NULL, 1, cert);
+    if (0 != ret) {
+        plog_notice(plugin, "setting no cert");
+        return -1;
+    }
+
+    if (0 != decode_b64_param(plugin, cert)) {
+        return -1;
+    }
+
+    // key, required
+    ret = parse_b64_param(plugin, setting, key);
+    if (0 != ret) {
+        return -1;
+    }
+
+    return 0;
+}
+
 static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
                               mqtt_config_t *config)
 {
@@ -38,17 +73,15 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
     char *      write_resp_topic = NULL;
     char *      username         = NULL;
 
-    neu_json_elem_t client_id = { .name = "client-id", .t = NEU_JSON_STR };
+    neu_json_elem_t client_id = { .name = "device-id", .t = NEU_JSON_STR };
     neu_json_elem_t qos       = { .name = "qos", .t = NEU_JSON_INT };
     neu_json_elem_t format    = { .name = "format", .t = NEU_JSON_INT };
     neu_json_elem_t host      = { .name = "host", .t = NEU_JSON_STR };
     neu_json_elem_t auth      = { .name = "auth", .t = NEU_JSON_INT };
-    neu_json_elem_t password  = { .name = "password", .t = NEU_JSON_STR };
-    neu_json_elem_t ssl       = { .name = "ssl", .t = NEU_JSON_BOOL };
+    neu_json_elem_t password  = { .name = "sas", .t = NEU_JSON_STR };
     neu_json_elem_t ca        = { .name = "ca", .t = NEU_JSON_STR };
     neu_json_elem_t cert      = { .name = "cert", .t = NEU_JSON_STR };
     neu_json_elem_t key       = { .name = "key", .t = NEU_JSON_STR };
-    neu_json_elem_t keypass   = { .name = "keypass", .t = NEU_JSON_STR };
 
     if (NULL == setting || NULL == config) {
         plog_error(plugin, "invalid argument, null pointer");
@@ -104,11 +137,9 @@ static int azure_parse_config(neu_plugin_t *plugin, const char *setting,
         password.v.val_str = strdup("");
     }
 
-    ssl.v.val_bool = true;
     if (AUTH_CERT == auth.v.val_int) {
-        ret =
-            parse_ssl_params(plugin, setting, &ssl, &ca, &cert, &key, &keypass);
-        if (0 != ret || NULL == ca.v.val_str || NULL == cert.v.val_str) {
+        ret = parse_ssl_params(plugin, setting, &ca, &cert, &key);
+        if (0 != ret) {
             plog_error(plugin, "setting certificates fail");
             goto error;
         }
@@ -200,7 +231,6 @@ error:
     free(ca.v.val_str);
     free(cert.v.val_str);
     free(key.v.val_str);
-    free(keypass.v.val_str);
     return -1;
 }
 
@@ -308,7 +338,11 @@ static int azure_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         break;
     }
     case NEU_REQ_SUBSCRIBE_GROUP:
-    case NEU_REQ_UPDATE_SUBSCRIBE_GROUP:
+    case NEU_REQ_UPDATE_SUBSCRIBE_GROUP: {
+        neu_req_subscribe_t *sub_info = data;
+        free(sub_info->params);
+        break;
+    }
     case NEU_REQ_UNSUBSCRIBE_GROUP:
     case NEU_REQ_UPDATE_GROUP:
     case NEU_REQ_DEL_GROUP:
