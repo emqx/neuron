@@ -111,10 +111,15 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
 
     switch (point->type) {
     case NEU_TYPE_BIT:
+    case NEU_TYPE_BOOL:
+    case NEU_TYPE_INT8:
+    case NEU_TYPE_UINT8:
+    case NEU_TYPE_PTR:
         point->n_register = 1;
         break;
     case NEU_TYPE_UINT16:
     case NEU_TYPE_INT16:
+    case NEU_TYPE_WORD:
         if (point->area == MODBUS_AREA_COIL ||
             point->area == MODBUS_AREA_INPUT) {
             ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
@@ -125,6 +130,9 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
     case NEU_TYPE_UINT32:
     case NEU_TYPE_INT32:
     case NEU_TYPE_FLOAT:
+    case NEU_TYPE_DWORD:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
         if (point->area == MODBUS_AREA_COIL ||
             point->area == MODBUS_AREA_INPUT) {
             ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;
@@ -135,6 +143,7 @@ int modbus_tag_to_point(const neu_datatag_t *tag, modbus_point_t *point)
     case NEU_TYPE_UINT64:
     case NEU_TYPE_INT64:
     case NEU_TYPE_DOUBLE:
+    case NEU_TYPE_LWORD:
         if (point->area == MODBUS_AREA_COIL ||
             point->area == MODBUS_AREA_INPUT) {
             ret = NEU_ERR_TAG_TYPE_NOT_SUPPORT;

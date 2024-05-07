@@ -124,6 +124,13 @@ class TestDriver:
         assert 200 == response.status_code
         assert error.NEU_ERR_SUCCESS == response.json()['error']
 
+    @description(given="mqtt node", when="subscribe with err body", then="subscribe failed")
+    def test_mqtt_sub_err(self):
+        response = api.subscribe_groups(app='mqtt-1', groups=[{"driver": "modbus-tcp-1", "group": "group-1", "params":{"topic":"/neuron"}},
+                                                              {"driver": "modbus-tcp-1", "group": "group-2"},
+                                                              {"driver": "modbus-tcp-1", "err": "group-3"}])
+        assert 400 == response.status_code
+
     @description(given="mqtt node", when="subscribe/unsubscribe modbus group", then="return correct sub_group_count in node state")
     def test_mqtt_sub_group_count(self):
         response = api.get_nodes_state(node='mqtt-1')

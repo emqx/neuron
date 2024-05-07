@@ -5,6 +5,7 @@ import neuron.process as process
 from neuron.error import *
 import shutil
 import os
+import time
 
 hold_bit = [{"name": "hold_bit", "address": "1!400001.15",
              "attribute": NEU_TAG_ATTRIBUTE_READ_SUBSCRIBE, "type": NEU_TYPE_BIT}]
@@ -14,6 +15,25 @@ hold_uint16 = [{"name": "hold_uint16", "address": "1!400002",
                 "attribute": NEU_TAG_ATTRIBUTE_RW_SUBSCRIBE, "type": NEU_TYPE_UINT16}]
 hold_int16_to_int32 = [{"name": "hold_int16", "address": "1!400002",
                "attribute": NEU_TAG_ATTRIBUTE_RW, "type": NEU_TYPE_INT32}]
+
+hold_int8 = [{"name": "hold_int8", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_INT8}]
+hold_uint8 = [{"name": "hold_uint8", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_UINT8}]
+hold_bool = [{"name": "hold_bool", "address": "1!400001.15",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_BOOL}]
+hold_word = [{"name": "hold_word", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_WORD}]
+hold_dword = [{"name": "hold_dword", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_DWORD}]
+hold_lword = [{"name": "hold_lword", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_LWORD}]
+hold_ptr = [{"name": "hold_ptr", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_PTR}]
+hold_dt = [{"name": "hold_dt", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_DATA_AND_TIME}]
+hold_t = [{"name": "hold_t", "address": "1!400001",
+             "attribute": NEU_TAG_ATTRIBUTE_WRITE, "type": NEU_TYPE_TIME}]
 
 
 class TestPersist:
@@ -457,3 +477,41 @@ class TestPersist:
         shutil.rmtree('./build/certs/')
 
         p.stop()
+
+    @description(given="new schema", when="upload schema , restart and add tags", then="success")
+    def test_all_datatag_type(self):
+        process.remove_persistence()
+        dst_file = './build/plugins/schema/modbus-tcp.json'
+        dst_backup = dst_file + '_backup'
+        os.rename(dst_file, dst_backup)
+
+        try:
+            shutil.copy2('./tests/ft/tag/modbus-tcp.json', dst_file)
+        except Exception as e:
+            if os.path.exists(dst_backup):
+                os.rename(dst_backup, dst_file)
+            return
+        
+        p = process.NeuronProcess()
+        p.start()
+
+        api.add_node_check(node="modbus-tcp-1", plugin=PLUGIN_MODBUS_TCP)
+        api.add_group_check(node='modbus-tcp-1', group='group-tag', interval=1000)
+
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_int8)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_uint8)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_bool)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_word)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_dword)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_lword)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_ptr)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_dt)
+        api.add_tags(node='modbus-tcp-1', group='group-tag', tags=hold_t)
+
+        response = api.del_group(node="modbus-tcp-1", group='group-tag')
+        assert 200 == response.status_code
+
+        p.stop()
+
+        os.remove(dst_file)
+        os.rename(dst_backup, dst_file)

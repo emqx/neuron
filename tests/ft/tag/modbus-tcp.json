@@ -1,0 +1,179 @@
+{
+	"tag_regex": [
+		{
+			"type": 1,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 2,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 3,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 4,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 5,
+			"regex": "^[0-9]+![3-4][0-9]+(#BB|#BL|#LL|#LB|)$"
+		},
+		{
+			"type": 6,
+			"regex": "^[0-9]+![3-4][0-9]+(#BB|#BL|#LL|#LB|)$"
+		},
+		{
+			"type": 7,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 8,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 9,
+			"regex": "^[0-9]+![3-4][0-9]+(#BB|#BL|#LL|#LB|)$"
+		},
+		{
+			"type": 10,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 11,
+			"regex": "^[0-9]+!([0-1][0-9]+|[3-4][0-9]+\\.([0-9]|[0-1][0-5]))$"
+		},
+		{
+			"type": 12,
+			"regex": "^[0-9]+!([0-1][0-9]+|[3-4][0-9]+\\.([0-9]|[0-1][0-5]))$"
+		},
+		{
+			"type": 13,
+			"regex": "^[0-9]+![3-4][0-9]+\\.[0-9]+(H|L|)$"
+		},
+		{
+			"type": 14,
+			"regex": "^[0-9]+![3-4][0-9]+\\.[0-9]+$"
+		},
+		{
+			"type": 16,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 17,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 18,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 19,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 20,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		},
+		{
+			"type": 21,
+			"regex": "^[0-9]+![3-4][0-9]+(#B|#L|)$"
+		}
+	],
+	"group_interval": 1000,
+	"connection_mode": {
+		"name": "Connection Mode",
+		"name_zh": "连接模式",
+		"description": "Neuron as the client, or as the server",
+		"description_zh": "Neuron 作为客户端或服务端",
+		"attribute": "required",
+		"type": "map",
+		"default": 0,
+		"valid": {
+			"map": [
+				{
+					"key": "Client",
+					"value": 0
+				},
+				{
+					"key": "Server",
+					"value": 1
+				}
+			]
+		}
+	},
+	"max_retries": {
+		"name": "Maximum Retry Times",
+		"name_zh": "最大重试次数",
+		"description": "The maximum number of retries after a failed attempt to send a read command",
+		"description_zh": "发送读指令失败后最大重试次数",
+		"attribute": "required",
+		"type": "int",
+		"default": 0,
+		"valid": {
+			"min": 0,
+			"max": 3
+		}
+	},
+	"retry_interval": {
+		"name": "Retry Interval",
+		"name_zh": "指令重新发送间隔",
+		"description": "Resend reading instruction interval(ms) after a failed attempt to send a read command",
+		"description_zh": "发送读指令失败后重新发送读指令时间间隔，单位为毫秒",
+		"attribute": "required",
+		"type": "int",
+		"default": 0,
+		"valid": {
+			"min": 0,
+			"max": 10000
+		}
+	},
+	"interval": {
+		"name": "Send Interval",
+		"name_zh": "指令发送间隔",
+		"description": "Send reading instruction interval(ms)",
+		"description_zh": "发送指令时间间隔，单位为毫秒",
+		"attribute": "required",
+		"type": "int",
+		"default": 20,
+		"valid": {
+			"min": 0,
+			"max": 3000
+		}
+	},
+	"host": {
+		"name": "IP Address",
+		"name_zh": "IP地址",
+		"description": "Local IP in server mode, remote device IP in client mode",
+		"description_zh": "服务端模式中填写本地 IP，客户端模式中填写目标设备 IP",
+		"attribute": "required",
+		"type": "string"		
+	},
+	"port": {
+		"name": "Port",
+		"name_zh": "端口号",
+		"description": "Local port in server mode, remote device port in client mode",
+		"description_zh": "服务端模式中填写本地端口号，客户端模式中填写远程设备端口号",
+		"attribute": "required",
+		"type": "int",
+		"default": 502,
+		"valid": {
+			"min": 1,
+			"max": 65535
+		}
+	},
+	"timeout": {
+		"name": "Connection Timeout",
+		"name_zh": "连接超时时间",
+		"description": "Connection timeout(ms)",
+		"description_zh": "连接超时时间，单位为毫秒",
+		"attribute": "required",
+		"type": "int",
+		"default": 3000,
+		"valid": {
+			"min": 1000,
+			"max": 65535
+		}
+	}
+}

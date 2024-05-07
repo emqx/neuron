@@ -234,19 +234,6 @@ int neu_json_encode_get_driver_group_resp(void *json_object, void *param)
     return ret;
 }
 
-int neu_json_decode_get_driver_group_resp(
-    char *buf, neu_json_get_driver_group_resp_t **result)
-{
-    json_t *json_obj = neu_json_decode_new(buf);
-    if (NULL == json_obj) {
-        return -1;
-    }
-
-    int ret = neu_json_decode_get_driver_group_resp_json(json_obj, result);
-    neu_json_decode_free(json_obj);
-    return ret;
-}
-
 int neu_json_decode_get_driver_group_resp_json(
     void *json_obj, neu_json_get_driver_group_resp_t **result)
 {
@@ -684,11 +671,6 @@ void neu_json_decode_subscribe_groups_req_free(
     neu_json_subscribe_groups_req_t *req)
 {
     if (req) {
-        free(req->app);
-        for (int i = 0; i < req->n_group; ++i) {
-            neu_json_decode_subscribe_groups_info_fini(&req->groups[i]);
-        }
-        free(req->groups);
         free(req);
     }
 }
