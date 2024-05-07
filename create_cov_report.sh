@@ -39,6 +39,10 @@ case $1 in
         lcov -c -d build/plugins/mqtt/CMakeFiles/plugin-mqtt.dir -o cov_report/cov-mqtt.info
         cd cov_report
         gen_trace -a cov-mqtt.info -o cov-mqtt.info;;
+    (azure)
+        lcov -c -d build/plugins/mqtt/CMakeFiles/plugin-azure-iot.dir -o cov_report/cov-azure.info
+        cd cov_report
+        gen_trace -a cov-azure.info -o cov-azure.info;;
     (core)
         cd cov_report
         gen_trace -o cov-core.info;;
