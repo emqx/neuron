@@ -97,7 +97,7 @@ neu_manager_t *neu_manager_create()
     manager->plugin_manager    = neu_plugin_manager_create();
     manager->node_manager      = neu_node_manager_create();
     manager->subscribe_manager = neu_subscribe_manager_create();
-    manager->log_level         = ZLOG_LEVEL_NOTICE;
+    manager->log_level         = default_log_level;
 
     manager->server_fd = socket(AF_UNIX, SOCK_DGRAM, 0);
     assert(manager->server_fd > 0);

@@ -152,3 +152,7 @@ class TestMetrics:
         }
 
         assert_metrics(resp.content.decode('utf-8'), expected_metrics)
+
+        resp = api.get_metrics(category="driver")
+        assert 200 == resp.status_code
+        assert_metrics(resp.content.decode('utf-8'), expected_metrics)
