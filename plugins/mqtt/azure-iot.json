@@ -1,5 +1,5 @@
 {
-  "client-id": {
+  "device-id": {
     "name": "Device ID",
     "name_zh": "设备 ID",
     "description": "Azure IoT device ID, used as MQTT client id",
@@ -84,7 +84,7 @@
       ]
     }
   },
-  "password": {
+  "sas": {
     "name": "SAS Token",
     "name_zh": "SAS 令牌",
     "description": "Azure IoT Hub shared access signature (SAS) token",
@@ -98,20 +98,6 @@
     "valid": {
       "length": 255
     }
-  },
-  "ssl": {
-    "name": "SSL",
-    "name_zh": "SSL",
-    "description": "Enable SSL connection",
-    "description_zh": "是否启用 SSL 连接",
-    "attribute": "optional",
-    "type": "bool",
-    "default": true,
-    "condition": {
-      "field": "invisible",
-      "value": true
-    },
-    "valid": {}
   },
   "ca": {
     "name": "CA",
