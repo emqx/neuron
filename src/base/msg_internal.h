@@ -95,7 +95,9 @@ extern "C" {
     XX(NEU_REQ_UPDATE_LOG_LEVEL, neu_req_update_log_level_t)         \
     XX(NEU_REQ_PRGFILE_UPLOAD, neu_req_prgfile_upload_t)             \
     XX(NEU_REQ_PRGFILE_PROCESS, neu_req_prgfile_process_t)           \
-    XX(NEU_RESP_PRGFILE_PROCESS, neu_resp_prgfile_process_t)
+    XX(NEU_RESP_PRGFILE_PROCESS, neu_resp_prgfile_process_t)         \
+    XX(NEU_REQ_WRITE_BATCH, neu_reqresp_write_batch_t)               \
+    XX(NEU_RESP_WRITE_BATCH, neu_reqresp_write_batch_t)
 
 static inline size_t neu_reqresp_size(neu_reqresp_type_e t)
 {

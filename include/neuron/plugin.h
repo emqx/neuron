@@ -109,6 +109,9 @@ typedef struct neu_plugin_intf_funs {
                             neu_datatag_t *tags,
                             int            n_tag); // create tags by API
             int (*del_tags)(neu_plugin_t *plugin, int n_tag);
+
+            int (*write_batch)(neu_plugin_t *plugin, void *req,
+                               neu_write_batch_driver_t *batch);
         } driver;
     };
 

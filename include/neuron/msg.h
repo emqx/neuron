@@ -118,6 +118,9 @@ typedef enum neu_reqresp_type {
     NEU_REQ_PRGFILE_PROCESS,
     NEU_RESP_PRGFILE_PROCESS,
 
+    NEU_REQ_WRITE_BATCH,
+    NEU_RESP_WRITE_BATCH,
+
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -195,6 +198,9 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_PRGFILE_UPLOAD]   = "NEU_REQ_PRGFILE_UPLOAD",
     [NEU_REQ_PRGFILE_PROCESS]  = "NEU_REQ_PRGFILE_PROCESS",
     [NEU_RESP_PRGFILE_PROCESS] = "NEU_RESP_PRGFILE_PROCESS",
+
+    [NEU_REQ_WRITE_BATCH]  = "NEU_REQ_WRITE_BATCH",
+    [NEU_RESP_WRITE_BATCH] = "NEU_RESP_WRITE_BATCH",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -711,6 +717,87 @@ static inline void neu_req_write_gtags_fini(neu_req_write_gtags_t *req)
         neu_req_gtag_group_fini(&req->groups[i]);
     }
     free(req->groups);
+}
+
+typedef struct {
+    char *         name;  // name of the tag to write
+    neu_datatag_t *tag;   // actual tag, if NULL, plugin should skip over
+    neu_dvalue_t   value; // value to write
+} neu_write_batch_tag_value_t;
+
+static inline void
+neu_write_batch_tag_value_fini(neu_write_batch_tag_value_t *val)
+{
+    free(val->name);
+    neu_tag_free(val->tag);
+}
+
+typedef struct {
+    char *                       group;
+    neu_err_code_e               error; // if nonzero, plugin should skip over
+    int                          n_tag;
+    neu_write_batch_tag_value_t *tags;
+} neu_write_batch_group_t;
+
+static inline void neu_write_batch_group_fini(neu_write_batch_group_t *grp)
+{
+    for (int i = 0; i < grp->n_tag; ++i) {
+        neu_write_batch_tag_value_fini(&grp->tags[i]);
+    }
+    free(grp->tags);
+    free(grp->group);
+}
+
+static inline void neu_write_batch_group_set_error(neu_write_batch_group_t *grp,
+                                                   int i, neu_err_code_e e)
+{
+    grp->tags[i].value.type      = NEU_TYPE_ERROR;
+    grp->tags[i].value.value.i32 = e;
+}
+
+typedef struct {
+    char *                   driver;
+    neu_err_code_e           error; // if nonzero, should skip over request
+    int                      n_group;
+    neu_write_batch_group_t *groups;
+} neu_write_batch_driver_t;
+
+static inline void neu_write_batch_driver_fini(neu_write_batch_driver_t *drv)
+{
+    for (int i = 0; i < drv->n_group; ++i) {
+        neu_write_batch_group_fini(&drv->groups[i]);
+    }
+    free(drv->groups);
+    free(drv->driver);
+}
+
+// Batch write, supporting multiple driver/group/tags
+// This data structure is used for both request and response messages.
+typedef struct {
+    int                      n_done_; // number of completed driver write
+    int                      n_driver;
+    neu_write_batch_driver_t drivers[];
+} neu_write_batch_t;
+
+static inline void neu_write_batch_free(neu_write_batch_t *batch)
+{
+    if (NULL == batch) {
+        return;
+    }
+    for (int i = 0; i < batch->n_driver; ++i) {
+        neu_write_batch_driver_fini(&batch->drivers[i]);
+    }
+    free(batch);
+}
+
+typedef struct {
+    neu_write_batch_t *batch;
+    int                index_; // index to driver to write
+} neu_reqresp_write_batch_t;
+
+static inline void neu_reqresp_write_batch_fini(neu_reqresp_write_batch_t *req)
+{
+    neu_write_batch_free(req->batch);
 }
 
 typedef struct {
