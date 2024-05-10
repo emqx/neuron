@@ -1,0 +1,7 @@
+{
+	"ip": "0.0.0.0",
+	"port": 7000,
+	"disable_auth": 1,
+	"syslog_host": "",
+	"syslog_port": 541
+}
