@@ -26,5 +26,7 @@ void neu_msg_gen(neu_reqresp_head_t *header, void *data)
 {
     size_t data_size = neu_reqresp_size(header->type);
     assert(header->len >= sizeof(neu_reqresp_head_t) + data_size);
-    memcpy((uint8_t *) &header[1], data, data_size);
+    if (data && &header[1] != data) {
+        memcpy((uint8_t *) &header[1], data, data_size);
+    }
 }
