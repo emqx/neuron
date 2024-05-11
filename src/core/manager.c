@@ -1058,6 +1058,54 @@ static int manager_loop(enum neu_event_io_type type, int fd, void *usr_data)
 
         break;
     }
+    case NEU_REQ_WRITE_BATCH: {
+        neu_reqresp_write_batch_t *cmd =
+            (neu_reqresp_write_batch_t *) &header[1];
+        neu_write_batch_t *batch = cmd->batch;
+
+        for (int i = 0; i < batch->n_driver; ++i) {
+            const char *driver = batch->drivers[i].driver;
+
+            if (NULL == neu_node_manager_find(manager->node_manager, driver)) {
+                // mark errors and done
+                batch->n_done_ += 1;
+                batch->drivers[i].error = NEU_ERR_NODE_NOT_EXIST;
+                continue;
+            }
+
+            cmd->index_ = i;
+            if (i + 1 == batch->n_driver) {
+                forward_msg(manager, header, driver); // save a copy
+            } else {
+                forward_msg_copy(manager, header, driver);
+            }
+        }
+
+        if (batch->n_done_ == batch->n_driver) {
+            // all done, reply response
+            header->type = NEU_RESP_WRITE_BATCH;
+            neu_msg_exchange(header);
+            forward_msg(manager, header, header->receiver);
+        }
+
+        break;
+    }
+    case NEU_RESP_WRITE_BATCH: {
+        neu_reqresp_write_batch_t *cmd =
+            (neu_reqresp_write_batch_t *) &header[1];
+        neu_write_batch_t *batch = cmd->batch;
+
+        batch->n_done_ += 1;
+        if (batch->n_done_ == batch->n_driver) {
+            // all done, reply response
+            header->type = NEU_RESP_WRITE_BATCH;
+            forward_msg(manager, header, header->receiver);
+        } else {
+            neu_msg_free(msg);
+        }
+
+        break;
+    }
     case NEU_REQ_PRGFILE_PROCESS:
     case NEU_REQ_PRGFILE_UPLOAD:
     case NEU_REQ_GET_NODE_STATE: {
