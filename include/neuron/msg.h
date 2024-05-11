@@ -30,6 +30,7 @@ extern "C" {
 #include "json/neu_json_rw.h"
 
 #include "define.h"
+#include "errcodes.h"
 #include "tag.h"
 #include "type.h"
 
