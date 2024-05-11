@@ -121,6 +121,12 @@ static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
         neu_req_write_gtags_fini((neu_req_write_gtags_t *) &req[1]);
     }
 
+    if (NEU_REQ_WRITE_BATCH == req->type) {
+        req->type = NEU_RESP_WRITE_BATCH;
+        adapter->cb_funs.response(adapter, req, &req[1]);
+        return;
+    }
+
     req->type = NEU_RESP_ERROR;
 
     nlog_notice("write tag response <%p>", req->ctx);
@@ -836,6 +842,83 @@ void neu_adapter_driver_write_gtags(neu_adapter_driver_t *driver,
     wtag.tvs               = tags;
 
     store_write_tag(first_g, &wtag);
+}
+
+void neu_adapter_driver_write_batch(neu_adapter_driver_t *driver,
+                                    neu_reqresp_head_t *  req)
+{
+    neu_reqresp_write_batch_t *cmd = (neu_reqresp_write_batch_t *) &req[1];
+    neu_write_batch_driver_t * batch_driver = &cmd->batch->drivers[cmd->index_];
+
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        batch_driver->error = NEU_ERR_PLUGIN_NOT_RUNNING;
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING);
+        return;
+    }
+
+    if (driver->adapter.module->intf_funs->driver.write_batch == NULL) {
+        batch_driver->error = NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_BATCH;
+        driver->adapter.cb_funs.driver.write_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_WRITE_TAGS);
+        return;
+    }
+
+    bool need_write = false;
+    for (int i = 0; i < batch_driver->n_group; i++) {
+        neu_write_batch_group_t *batch_group = &batch_driver->groups[i];
+        group_t *                g = find_group(driver, batch_group->group);
+        if (NULL == g) {
+            // mark all group tags error
+            batch_group->error = NEU_ERR_GROUP_NOT_EXIST;
+            continue;
+        }
+
+        for (int j = 0; j < batch_group->n_tag; j++) {
+            neu_datatag_t *tag =
+                neu_group_find_tag(g->group, batch_group->tags[j].name);
+
+            if (NULL == tag) {
+                neu_write_batch_group_set_error(batch_group, j,
+                                                NEU_ERR_TAG_NOT_EXIST);
+                continue;
+            }
+
+            if (!neu_tag_attribute_test(tag, NEU_ATTRIBUTE_WRITE) ||
+                neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC)) {
+                neu_write_batch_group_set_error(
+                    batch_group, j, NEU_ERR_PLUGIN_TAG_NOT_ALLOW_WRITE);
+                continue;
+            }
+
+            if (tag->type == NEU_TYPE_FLOAT || tag->type == NEU_TYPE_DOUBLE) {
+                if (batch_group->tags[j].value.type == NEU_TYPE_INT64) {
+                    batch_group->tags[j].value.value.d64 =
+                        (double) batch_group->tags[j].value.value.i64;
+                }
+            }
+
+            if (tag->decimal != 0) {
+                cal_decimal(tag->type, batch_group->tags[j].value.type,
+                            &batch_group->tags[j].value.value, tag->decimal);
+            }
+
+            fix_value(tag, batch_group->tags[j].value.type,
+                      &batch_group->tags[j].value);
+
+            batch_group->tags[j].tag = tag;
+            need_write               = true;
+        }
+    }
+
+    if (!need_write) {
+        // nothing to request plugin write
+        driver->adapter.cb_funs.driver.write_response(&driver->adapter, req, 0);
+        return;
+    }
+
+    driver->adapter.module->intf_funs->driver.write_batch(
+        driver->adapter.plugin, req, batch_driver);
 }
 
 void neu_adapter_driver_write_tag(neu_adapter_driver_t *driver,
