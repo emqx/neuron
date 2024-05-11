@@ -701,6 +701,7 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQRESP_NODES_STATE:
     case NEU_REQ_PRGFILE_PROCESS:
     case NEU_RESP_PRGFILE_PROCESS:
+    case NEU_RESP_WRITE_BATCH:
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
         neu_msg_free(msg);
@@ -771,6 +772,24 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
             neu_adapter_driver_write_gtags((neu_adapter_driver_t *) adapter,
                                            header);
         }
+        break;
+    }
+    case NEU_REQ_WRITE_BATCH: {
+        neu_reqresp_write_batch_t *cmd =
+            (neu_reqresp_write_batch_t *) &header[1];
+        neu_write_batch_t *       batch  = cmd->batch;
+        neu_write_batch_driver_t *driver = &batch->drivers[cmd->index_];
+
+        if (adapter->module->type != NEU_NA_TYPE_DRIVER) {
+            driver->error = NEU_ERR_GROUP_NOT_ALLOW;
+            header->type  = NEU_RESP_WRITE_BATCH;
+            neu_msg_exchange(header);
+            reply(adapter, header, cmd);
+        } else {
+            neu_adapter_driver_write_batch((neu_adapter_driver_t *) adapter,
+                                           header);
+        }
+
         break;
     }
     case NEU_REQ_NODE_SETTING: {
