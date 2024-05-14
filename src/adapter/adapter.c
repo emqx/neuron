@@ -1337,6 +1337,7 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
     }
 
     neu_event_close(adapter->events);
+    dlclose(adapter->handle);
     free(adapter);
 }
 
