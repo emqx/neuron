@@ -199,6 +199,8 @@ hold_string_s = [{"name": "hold_string_s", "address": "1!400870.2",
 
 hold_int16_decimal = [{"name": "hold_int16_decimal", "address": "1!40103",
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": 0.1}]
+hold_int16_decimal_w = [{"name": "hold_int16_decimal_w", "address": "1!40103",
+                       "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": 0.1}]
 hold_int16_decimal_neg = [{"name": "int16_decimal_neg", "address": "1!40140",
                        "attribute": config.NEU_TAG_ATTRIBUTE_RW, "type": config.NEU_TYPE_INT16, "decimal": -1}]
 hold_uint16_decimal = [{"name": "hold_uint16_decimal", "address": "1!400105",
@@ -524,6 +526,102 @@ class TestModbus:
         assert 400 == response.status_code
         assert error.NEU_ERR_TAG_ADDRESS_FORMAT_INVALID == response.json()[
             'error']
+        
+    @description(given="created modbus node and tags", when="write tags with invalid value", then="write failed")
+    def test_write_tags_invalid_value(self, param):
+        response = api.write_tag(node=param[0], group='group', tag=hold_int16[0]['name'], value=32768)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tag(node=param[0], group='group', tag=hold_uint16[0]['name'], value=-1)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tag(node=param[0], group='group', tag=hold_int32[0]['name'], value=2147483648)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tag(node=param[0], group='group', tag=hold_uint32[0]['name'], value=-1)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tag(node=param[0], group='group', tag=hold_string[0]['name'], value=1)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+
+        response = api.write_tag(node=param[0], group='group', tag=coil_bit_1[0]['name'], value=2)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tag(node=param[0], group='group', tag=coil_bit_1[0]['name'], value=True)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+
+        api.add_tags_check(node=param[0], group='group', tags=hold_int16_decimal_w)
+
+        response = api.write_tag(node=param[0], group='group', tag=hold_int16_decimal_w[0]['name'], value=1.11)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+
+        response = api.write_tag(node=param[0], group='group', tag=hold_float[0]['name'], value=1)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_TYPE_MISMATCH == response.json()['error']
+
+        response = api.write_tags(node=param[0], group='group', tag_values=[
+            {"tag": hold_int16[0]['name'], "value": 32768},
+            {"tag": hold_uint16[0]['name'], "value": 2},
+            {"tag": hold_int32[0]['name'], "value": 3},
+            {"tag": hold_uint32[0]['name'], "value": 4}])
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tags(node=param[0], group='group', tag_values=[
+            {"tag": hold_int16[0]['name'], "value": 1},
+            {"tag": hold_uint16[0]['name'], "value": -1},
+            {"tag": hold_int32[0]['name'], "value": 3},
+            {"tag": hold_uint32[0]['name'], "value": 4}])
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tags(node=param[0], group='group', tag_values=[
+            {"tag": hold_int16[0]['name'], "value": 1},
+            {"tag": hold_uint16[0]['name'], "value": 2},
+            {"tag": hold_int32[0]['name'], "value": 2147483648},
+            {"tag": hold_uint32[0]['name'], "value": 4}])
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        response = api.write_tags(node=param[0], group='group', tag_values=[
+            {"tag": hold_int16[0]['name'], "value": 1},
+            {"tag": hold_uint16[0]['name'], "value": 2},
+            {"tag": hold_int32[0]['name'], "value": 3},
+            {"tag": hold_uint32[0]['name'], "value": -1}])
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 32768},
+            {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": 4}]}]}
+        response = api.write_gtags(json=modbus_write_gtags)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 1},
+            {"tag": "hold_uint16", "value": -1}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": 4}]}]}
+        response = api.write_gtags(json=modbus_write_gtags)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 1},
+            {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 2147483648}, {"tag": "hold_uint32", "value": 4}]}]}
+        response = api.write_gtags(json=modbus_write_gtags)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
+
+        modbus_write_gtags = {"node": param[0], "groups": [{"group": "group", "tags" : [{"tag": "hold_int16", "value": 1},
+            {"tag": "hold_uint16", "value": 2}, {"tag": "hold_int32", "value": 3}, {"tag": "hold_uint32", "value": -1}]}]}
+        response = api.write_gtags(json=modbus_write_gtags)
+        assert 400 == response.status_code
+        assert error.NEU_ERR_PLUGIN_TAG_VALUE_OUT_OF_RANGE == response.json()['error']
 
     @description(given="created modbus node and tags", when="write/read tags", then="write/read success")
     def test_write_read_tags(self, param):
@@ -888,7 +986,7 @@ class TestModbus:
             node=param[0], group='group', tag=hold_string_utf8[0]['name'])
 
     @description(given="created modbus node/tag", when="read/write decimal/bias tag", then="read success")
-    def test_read_decimal_bias_tag(self, param):
+    def test_read_decimal_bias_tag_i(self, param):
         tags = [
             hold_int16[0],
             hold_int16_L[0],
@@ -912,6 +1010,62 @@ class TestModbus:
             hold_uint64[0],
             hold_uint64_L[0],
             hold_uint64_B[0],
+        ]
+
+        tags_bias = [
+            {
+                **tag,
+                "bias": random.randint(1, 1000),
+                "attribute": tag["attribute"] & ~config.NEU_TAG_ATTRIBUTE_WRITE,
+            }
+            for tag in tags
+        ]
+
+        tags_decimal_bias = [
+            {
+                **tag,
+                "decimal": 0.1,
+            }
+            for tag in tags_bias
+        ]
+
+        tag_values = [
+            {
+                "tag": tag['name'],
+                "value": random.randint(1, 10)
+            }
+            for tag in tags
+        ]
+
+        try:
+            # 1. prepare tags
+            grp = "group-bias"
+            api.add_group_check(node=param[0], group=grp, interval=100)
+            api.add_tags_check(node=param[0], group=grp, tags=tags)
+            api.write_tags_check(node=param[0], group=grp, tag_values=tag_values)
+            # 2. read value + bias
+            api.update_tags_check(node=param[0], group=grp, tags=tags_bias)
+            time.sleep(0.3)
+            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            assert len(tag_values) == len(resp_values)
+            for tag, value, resp in zip(tags_bias, tag_values, resp_values):
+                expected = value['value'] + tag['bias']
+                assert compare_float(expected, resp['value'])
+            # 3. read value * decimal + bias
+            api.update_tags_check(
+                node=param[0], group=grp, tags=tags_decimal_bias)
+            time.sleep(0.3)
+            resp_values = api.read_tags(node=param[0], group=grp).json()['tags']
+            assert len(tag_values) == len(resp_values)
+            for tag, value, resp in zip(tags_decimal_bias, tag_values, resp_values):
+                expected = value['value'] * tag['decimal'] + tag['bias']
+                assert compare_float(expected, resp['value'])
+        finally:
+            api.del_group(node=param[0], group=grp)
+
+    @description(given="created modbus node/tag", when="read/write decimal/bias tag", then="read success")
+    def test_read_decimal_bias_tag_f(self, param):
+        tags = [
             hold_float[0],
             hold_float_LL[0],
             hold_float_LB[0],
@@ -942,7 +1096,7 @@ class TestModbus:
         tag_values = [
             {
                 "tag": tag['name'],
-                "value": random.randint(1, 10)
+                "value": random.uniform(1.0, 10.0)
             }
             for tag in tags
         ]

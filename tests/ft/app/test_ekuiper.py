@@ -377,7 +377,7 @@ class TesteKuiper:
         }
         req_tags = {
             TAGS[0]["name"]: 1234,
-            TAGS[1]["name"]: True,
+            TAGS[1]["name"]: 1,
             TAGS[2]["name"]: 3.14,
             TAGS[3]["name"]: "hello",
             TAGS[4]["name"]: [1, 2, 3, 4],
@@ -407,7 +407,7 @@ class TesteKuiper:
 
         req_tags = {
             TAGS[0]["name"]: 5678,
-            TAGS[1]["name"]: False,
+            TAGS[1]["name"]: 0,
             TAGS[2]["name"]: 6.28,
             TAGS[3]["name"]: "mulitple",
             TAGS[4]["name"]: [9, 8, 7, 6],
