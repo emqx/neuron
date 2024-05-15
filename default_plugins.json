@@ -1,6 +1,7 @@
 {
 	"plugins": [
 		"libplugin-mqtt.so",
+		"libplugin-mqtt-xinao.so",
 		"libplugin-ekuiper.so",
 		"libplugin-modbus-tcp.so",
 		"libplugin-modbus-rtu.so"
