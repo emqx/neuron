@@ -1,0 +1,246 @@
+{
+  "client-id": {
+    "name": "Client ID",
+    "name_zh": "客户端 ID",
+    "description": "MQTT client id",
+    "description_zh": "MQTT 客户端 ID",
+    "type": "string",
+    "attribute": "required",
+    "valid": {
+      "length": 255
+    }
+  },
+  "qos": {
+    "name": "QoS Level",
+    "name_zh": "QoS 等级",
+    "description": "MQTT QoS level for message delivery",
+    "description_zh": "MQTT 消息传输使用的服务质量等级",
+    "type": "map",
+    "attribute": "optional",
+    "default": 0,
+    "valid": {
+      "map": [
+        {
+          "key": "QoS 0",
+          "value": 0
+        },
+        {
+          "key": "QoS 1",
+          "value": 1
+        },
+        {
+          "key": "QoS 2",
+          "value": 2
+        }
+      ]
+    }
+  },
+  "format": {
+    "name": "Upload Format",
+    "name_zh": "上报数据格式",
+    "description": "JSON format of the data reported. In values-mode, data are split into `values` and `errors` sub objects. In tags-mode, tag data are put in a single array.",
+    "description_zh": "上报数据的 JSON 格式。在 values-format 格式下，数据被分为 `values` 和 `errors` 两个子对象。在 tags-format 格式下，数据被放在一个数组中。",
+    "attribute": "required",
+    "type": "map",
+    "default": 0,
+    "valid": {
+      "map": [
+        {
+          "key": "values-format",
+          "value": 0
+        },
+        {
+          "key": "tags-format",
+          "value": 1
+        }
+      ]
+    }
+  },
+  "write-req-topic": {
+    "name": "Write Request Topic",
+    "name_zh": "写请求主题",
+    "description": "MQTT topic to receive write request messages.",
+    "description_zh": "接收点位写入请求的 MQTT 主题。",
+    "attribute": "required",
+    "type": "string",
+    "default": "/edge/algorithmwrite",
+    "valid": {
+      "length": 255
+    }
+  },
+  "write-resp-topic": {
+    "name": "Write Response Topic",
+    "name_zh": "写响应主题",
+    "description": "MQTT topic to send write response messages.",
+    "description_zh": "发送点位写入响应的 MQTT 主题。",
+    "attribute": "required",
+    "type": "string",
+    "default": "/cmd/algorithmwrite/cack",
+    "valid": {
+      "length": 255
+    }
+  },
+  "offline-cache": {
+    "name": "Offline Data Caching",
+    "name_zh": "离线缓存",
+    "description": "Offline caching switch. Cache MQTT messages when offline, and sync cached messages when back online.",
+    "description_zh": "离线缓存开关。连接断开时缓存 MQTT 消息，连接重建时同步缓存的 MQTT 消息到服务器。",
+    "attribute": "optional",
+    "type": "bool",
+    "default": false,
+    "valid": {}
+  },
+  "cache-mem-size": {
+    "name": "Cache Memory Size (MB)",
+    "name_zh": "缓存内存大小（MB）",
+    "description": "Max in-memory cache size in megabytes when MQTT connection exception occurs. Should be smaller than cache disk size.",
+    "description_zh": "当 MQTT 连接异常时，最大的内存缓存大小（单位：MB）。应该小于缓存磁盘大小。",
+    "type": "int",
+    "attribute": "required",
+    "condition": {
+      "field": "offline-cache",
+      "value": true
+    },
+    "valid": {
+      "min": 1,
+      "max": 1024
+    }
+  },
+  "cache-disk-size": {
+    "name": "Cache Disk Size (MB)",
+    "name_zh": "缓存磁盘大小（MB）",
+    "description": "Max in-disk cache size in megabytes when MQTT connection exception occurs. Should be larger than cache memory size. If nonzero, cache memory size should also be nonzero.",
+    "description_zh": "当 MQTT 连接异常时，最大的磁盘缓存大小（单位：MB）。应该大于缓存内存大小。如果不为 0，缓存内存大小也应该不为 0。",
+    "type": "int",
+    "attribute": "required",
+    "condition": {
+      "field": "offline-cache",
+      "value": true
+    },
+    "valid": {
+      "min": 1,
+      "max": 10240
+    }
+  },
+  "cache-sync-interval": {
+    "name": "Cache Sync Interval (MS)",
+    "name_zh": "缓存消息重传间隔（MS）",
+    "description": "When MQTT connection restores, cached messages will be synchronised to the broker. This controls the interval in milliseconds between each message to synchronise.",
+    "description_zh": "当 MQTT 连接重建后，缓存的消息会被同步到服务器。此配置项控制消息重传时每条消息之间的时间间隔，以毫秒为单位。",
+    "type": "int",
+    "attribute": "required",
+    "condition": {
+      "field": "offline-cache",
+      "value": true
+    },
+    "default": 100,
+    "valid": {
+      "min": 10,
+      "max": 120000
+    }
+  },
+  "host": {
+    "name": "Broker Host",
+    "name_zh": "服务器地址",
+    "description": "MQTT broker host",
+    "description_zh": "MQTT 服务器地址",
+    "attribute": "required",
+    "type": "string",
+    "default": "broker.emqx.io",
+    "valid": {
+      "length": 255
+    }
+  },
+  "port": {
+    "name": "Broker Port",
+    "name_zh": "服务器端口",
+    "description": "MQTT broker port",
+    "description_zh": "MQTT 服务器端口",
+    "attribute": "required",
+    "type": "int",
+    "default": 1883,
+    "valid": {
+      "min": 1024,
+      "max": 65535
+    }
+  },
+  "username": {
+    "name": "Username",
+    "name_zh": "用户名",
+    "description": "MQTT user name",
+    "description_zh": "MQTT 用户名",
+    "attribute": "optional",
+    "type": "string",
+    "default": "",
+    "valid": {
+      "length": 255
+    }
+  },
+  "password": {
+    "name": "Password",
+    "name_zh": "密码",
+    "description": "MQTT user password",
+    "description_zh": "MQTT 用户密码",
+    "attribute": "optional",
+    "type": "string",
+    "default": "",
+    "valid": {
+      "length": 255
+    }
+  },
+  "ssl": {
+    "name": "SSL",
+    "name_zh": "SSL",
+    "description": "Enable SSL connection",
+    "description_zh": "是否启用 SSL 连接",
+    "attribute": "optional",
+    "type": "bool",
+    "default": false,
+    "valid": {}
+  },
+  "ca": {
+    "name": "CA",
+    "name_zh": "CA 证书",
+    "description": "CA certificate which signs the server certificate",
+    "description_zh": "签发服务器证书的 CA 证书",
+    "attribute": "optional",
+    "type": "file",
+    "condition": {
+      "field": "ssl",
+      "value": true
+    },
+    "valid": {
+      "length": 81960
+    }
+  },
+  "cert": {
+    "name": "Client Cert",
+    "name_zh": "客户端证书",
+    "description": "Client x509 certificate when using two way authentication",
+    "description_zh": "使用双向认证时，客户端的 x509 证书",
+    "attribute": "optional",
+    "type": "file",
+    "condition": {
+      "field": "ssl",
+      "value": true
+    },
+    "valid": {
+      "length": 81960
+    }
+  },
+  "key": {
+    "name": "Client Private Key",
+    "name_zh": "客户端私钥",
+    "description": "Client private key when using two way authentication",
+    "description_zh": "使用双向认证时，客户端的私钥",
+    "attribute": "optional",
+    "type": "file",
+    "condition": {
+      "field": "ssl",
+      "value": true
+    },
+    "valid": {
+      "length": 81960
+    }
+  }
+}
