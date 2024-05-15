@@ -102,6 +102,11 @@ if (CLIB)
   add_definitions(-DNEU_CLIB=${CLIB})
 endif()
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    message(STATUS "build release")
+    add_definitions(-DNEU_RELEASE)
+endif()
+
 
 add_library(neuron-base SHARED)
 target_sources(neuron-base PRIVATE ${NEURON_BASE_SOURCES} ${NEURON_SRC_PARSE}) 
