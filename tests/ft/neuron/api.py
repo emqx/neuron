@@ -362,8 +362,8 @@ def get_ndriver_tag(ndriver, driver, group):
     return requests.get(url=config.BASE_URL + "/api/v2/ndriver/tag?ndriver=" + ndriver + "&driver=" + driver + "&group=" + group, headers={"Authorization": config.default_jwt})
 
 
-def prgfile_upload(driver, path, params):
-    return requests.post(url=config.BASE_URL + "/api/v2/prgfile", headers={"Authorization": config.default_jwt}, json={"driver": driver, "path": path, "parameters": params})
+def prgfile_upload(driver, path, del_flag, params):
+    return requests.post(url=config.BASE_URL + "/api/v2/prgfile", headers={"Authorization": config.default_jwt}, json={"driver": driver, "path": path, "del_flag": del_flag, "parameters": params})
 
 
 def prgfile_process(driver):
