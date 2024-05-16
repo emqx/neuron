@@ -906,6 +906,7 @@ inline static void neu_msg_exchange(neu_reqresp_head_t *header)
 typedef struct {
     char driver[NEU_NODE_NAME_LEN];
     char path[128];
+    bool del_flag;
     char prg_str_param1[128];
     char prg_str_param2[128];
     char prg_str_param3[128];
