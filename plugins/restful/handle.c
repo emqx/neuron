@@ -33,6 +33,7 @@
 #include "normal_handle.h"
 #include "plugin_handle.h"
 #include "rw_handle.h"
+#include "scan_handle.h"
 #include "utils/http.h"
 #include "version_handle.h"
 
@@ -116,6 +117,9 @@ static struct neu_http_handler cors_handler[] = {
     },
     {
         .url = "/api/v2/metrics",
+    },
+    {
+        .url = "/api/v2/scan/tags",
     },
 };
 
@@ -378,6 +382,12 @@ static struct neu_http_handler rest_handlers[] = {
         .type          = NEU_HTTP_HANDLER_FUNCTION,
         .url           = "/api/v2/metrics",
         .value.handler = handle_get_metric,
+    },
+    {
+        .method        = NEU_HTTP_METHOD_POST,
+        .type          = NEU_HTTP_HANDLER_FUNCTION,
+        .url           = "/api/v2/scan/tags",
+        .value.handler = handle_scan_tags,
     },
 };
 

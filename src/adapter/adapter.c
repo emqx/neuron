@@ -523,6 +523,11 @@ static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
         strcpy(pheader->receiver, header.sender);
         break;
     }
+    case NEU_REQ_SCAN_TAGS: {
+        neu_req_scan_tags_t *cmd = (neu_req_scan_tags_t *) data;
+        strcpy(pheader->receiver, cmd->driver);
+        break;
+    }
     default:
         break;
     }
@@ -1179,6 +1184,16 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
     case NEU_REQ_PRGFILE_UPLOAD: {
         adapter->module->intf_funs->request(
             adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        break;
+    }
+    case NEU_REQ_SCAN_TAGS: {
+        neu_adapter_driver_scan_tags((neu_adapter_driver_t *) adapter, header);
+        break;
+    }
+    case NEU_RESP_SCAN_TAGS: {
+        adapter->module->intf_funs->request(
+            adapter->plugin, (neu_reqresp_head_t *) header, &header[1]);
+        neu_msg_free(msg);
         break;
     }
     default:
