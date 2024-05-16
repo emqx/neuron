@@ -32,12 +32,7 @@ extern "C" {
 void handle_write_req(neu_mqtt_qos_e qos, const char *topic,
                       const uint8_t *payload, uint32_t len, void *data);
 
-int handle_write_response(neu_plugin_t *plugin, neu_json_mqtt_t *mqtt_json,
-                          neu_resp_error_t *data);
-
-void handle_write_batch_req(neu_mqtt_qos_e qos, const char *topic,
-                            const uint8_t *payload, uint32_t len, void *data);
-int  handle_write_batch_resp(neu_plugin_t *plugin, xinao_ctx_t *ctx);
+int handle_write_resp(neu_plugin_t *plugin, xinao_ctx_t *ctx, void *data);
 
 void handle_read_req(neu_mqtt_qos_e qos, const char *topic,
                      const uint8_t *payload, uint32_t len, void *data);
