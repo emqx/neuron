@@ -48,9 +48,21 @@ typedef struct {
 typedef node_index_t *index_map_t;
 
 typedef struct {
+    neu_reqresp_type_e  type;
+    void *              root;
+    neu_req_write_tag_t wtag;
+} xinao_wtag_ctx_t;
+
+typedef struct {
+    neu_reqresp_type_e        type;
+    void *                    root;
+    index_map_t               map;
+    neu_reqresp_write_batch_t batch;
+} xinao_batch_ctx_t;
+
+typedef struct {
+    neu_reqresp_type_e type;
     void *             root;
-    index_map_t        map;
-    neu_write_batch_t *batch;
 } xinao_ctx_t;
 
 static inline void index_map_free(index_map_t *map)
@@ -101,20 +113,33 @@ static inline int index_map_add(index_map_t *map, const char *node,
     return 0;
 }
 
-int neu_json_decode_write_batch_req_json(neu_plugin_t *plugin, void *json_root,
-                                         neu_write_batch_t **batch_p,
-                                         index_map_t *       map_p);
+int neu_json_decode_xinao_write_tag_req_json(neu_plugin_t *    plugin,
+                                             void *            json_root,
+                                             xinao_wtag_ctx_t *ctx);
+
+int neu_json_decode_xinao_write_batch_req_json(neu_plugin_t *     plugin,
+                                               void *             json_root,
+                                               xinao_batch_ctx_t *ctx);
 
 xinao_ctx_t *xinao_ctx_from_json_buf(neu_plugin_t *plugin, char *buf,
                                      size_t len);
-char *       xinao_ctx_gen_resp_json(xinao_ctx_t *ctx);
+
+char *xinao_ctx_gen_wtag_resp_json(xinao_wtag_ctx_t *ctx,
+                                   neu_resp_error_t *resp);
+char *xinao_ctx_gen_batch_resp_json(xinao_batch_ctx_t *ctx);
 
 static inline void xinao_ctx_free(xinao_ctx_t *ctx)
 {
     if (ctx) {
         neu_json_decode_free(ctx->root);
-        index_map_free(&ctx->map);
-        neu_write_batch_free(ctx->batch);
+        if (NEU_REQ_WRITE_TAG == ctx->type) {
+            xinao_wtag_ctx_t *wtag = (xinao_wtag_ctx_t *) ctx;
+            neu_req_write_tag_fini(&wtag->wtag);
+        } else if (NEU_REQ_WRITE_BATCH == ctx->type) {
+            xinao_batch_ctx_t *batch = (xinao_batch_ctx_t *) ctx;
+            index_map_free(&batch->map);
+            neu_reqresp_write_batch_fini(&batch->batch);
+        }
         free(ctx);
     }
 }

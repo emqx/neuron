@@ -221,7 +221,7 @@ static int subscribe(neu_plugin_t *plugin, const mqtt_config_t *config)
     if (0 !=
         neu_mqtt_client_subscribe(plugin->client, config->qos,
                                   config->write_req_topic, plugin,
-                                  handle_write_batch_req)) {
+                                  handle_write_req)) {
         plog_error(plugin, "subscribe [%s] fail",
                    plugin->config.write_req_topic);
         return NEU_ERR_MQTT_SUBSCRIBE_FAILURE;
@@ -360,10 +360,10 @@ static int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
 
     switch (head->type) {
     case NEU_RESP_ERROR:
-        // error = handle_write_response(plugin, head->ctx, data);
+        error = handle_write_resp(plugin, head->ctx, data);
         break;
     case NEU_RESP_WRITE_BATCH:
-        error = handle_write_batch_resp(plugin, head->ctx);
+        error = handle_write_resp(plugin, head->ctx, data);
         break;
     case NEU_RESP_READ_GROUP:
         error = handle_read_response(plugin, head->ctx, data);
