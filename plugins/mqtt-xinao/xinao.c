@@ -66,48 +66,70 @@ static inline int json_value_to_tag_value(neu_dvalue_t *          value,
     return 0;
 }
 
-int neu_json_decode_write_batch_req_json(neu_plugin_t *plugin, void *json_root,
-                                         neu_write_batch_t **batch_p,
-                                         index_map_t *       map_p)
+int neu_json_decode_xinao_write_tag_req_json(neu_plugin_t *    plugin,
+                                             void *            json_root,
+                                             xinao_wtag_ctx_t *ctx)
 {
-    json_t *ver  = json_object_get(json_root, "ver");
-    json_t *pKey = json_object_get(json_root, "pKey");
-    json_t *sn   = json_object_get(json_root, "sn");
-    json_t *type = json_object_get(json_root, "type");
-    json_t *seq  = json_object_get(json_root, "seq");
-    json_t *ts   = json_object_get(json_root, "ts");
-
-    if (NULL == ver || !json_is_string(ver)) {
-        plog_error(plugin, "no valid key `ver`");
+    json_t *data = json_object_get(json_root, "data");
+    if (NULL == data || !json_is_object(data)) {
+        plog_error(plugin, "no `data` object");
         return -1;
     }
 
-    if (NULL == pKey || !json_is_string(pKey)) {
-        plog_error(plugin, "no valid key `pKey`");
+    json_t *node_name = json_object_get(data, "sysId");
+    if (NULL == node_name || !json_is_string(node_name)) {
+        plog_error(plugin, "data no valid key `sysId`");
         return -1;
     }
 
-    if (NULL == sn || !json_is_string(sn)) {
-        plog_error(plugin, "no valid key `sn`");
+    json_t *group_name = json_object_get(data, "dev");
+    if (NULL == group_name || !json_is_string(group_name)) {
+        plog_error(plugin, "data no valid key `dev`");
         return -1;
     }
 
-    if (NULL == type || !json_is_string(type) ||
-        0 != strcmp("algset", json_string_value(type))) {
-        plog_error(plugin, "no valid key `type`");
+    json_t *tag = json_object_get(data, "m");
+
+    neu_json_elem_t elem = {
+        .name = "v",
+        .t    = NEU_JSON_VALUE,
+    };
+
+    if (neu_json_decode_by_json(data, 1, &elem)) {
+        plog_error(plugin, "sysId:%s dev:%s m:%s decode v fail",
+                   json_string_value(node_name), json_string_value(group_name),
+                   json_string_value(tag));
         return -1;
     }
 
-    if (NULL == seq || !json_is_integer(seq)) {
-        plog_error(plugin, "no valid key `seq`");
+    int ret = json_value_to_tag_value(&ctx->wtag.value, elem.t, &elem.v);
+    if (NEU_JSON_STR == elem.t) {
+        free(elem.v.val_str);
+    }
+    if (0 != ret) {
         return -1;
     }
 
-    if (NULL == ts || !json_is_integer(ts)) {
-        plog_error(plugin, "no valid key `ts`");
+    ctx->type        = NEU_REQ_WRITE_TAG;
+    ctx->wtag.driver = strdup(json_string_value(node_name));
+    ctx->wtag.group  = strdup(json_string_value(group_name));
+    ctx->wtag.tag    = strdup(json_string_value(tag));
+
+    if (NULL == ctx->wtag.driver || NULL == ctx->wtag.group ||
+        NULL == ctx->wtag.tag) {
+        free(ctx->wtag.driver);
+        free(ctx->wtag.group);
+        free(ctx->wtag.tag);
         return -1;
     }
 
+    return 0;
+}
+
+int neu_json_decode_xinao_write_batch_req_json(neu_plugin_t *     plugin,
+                                               void *             json_root,
+                                               xinao_batch_ctx_t *ctx)
+{
     json_t *cmd = json_object_get(json_root, "cmd");
     if (NULL == cmd || !json_is_array(cmd)) {
         plog_error(plugin, "no `cmd` array");
@@ -261,8 +283,9 @@ int neu_json_decode_write_batch_req_json(neu_plugin_t *plugin, void *json_root,
         }
     }
 
-    *batch_p = batch;
-    *map_p   = map;
+    ctx->type        = NEU_REQ_WRITE_BATCH;
+    ctx->batch.batch = batch;
+    ctx->map         = map;
     return 0;
 
 error:
@@ -270,6 +293,78 @@ error:
     neu_write_batch_free(batch);
     free(batch);
     return -1;
+}
+
+int neu_json_decode_xinao_ctx_json(neu_plugin_t *plugin, void *json_root,
+                                   xinao_ctx_t **ctx_p)
+{
+    json_t *ver  = json_object_get(json_root, "ver");
+    json_t *pKey = json_object_get(json_root, "pKey");
+    json_t *sn   = json_object_get(json_root, "sn");
+    json_t *type = json_object_get(json_root, "type");
+    json_t *seq  = json_object_get(json_root, "seq");
+    json_t *ts   = json_object_get(json_root, "ts");
+
+    if (NULL == ver || !json_is_string(ver)) {
+        plog_error(plugin, "no valid key `ver`");
+        return -1;
+    }
+
+    if (NULL == pKey || !json_is_string(pKey)) {
+        plog_error(plugin, "no valid key `pKey`");
+        return -1;
+    }
+
+    if (NULL == sn || !json_is_string(sn)) {
+        plog_error(plugin, "no valid key `sn`");
+        return -1;
+    }
+
+    if (NULL == seq || !json_is_integer(seq)) {
+        plog_error(plugin, "no valid key `seq`");
+        return -1;
+    }
+
+    if (NULL == ts || !json_is_integer(ts)) {
+        plog_error(plugin, "no valid key `ts`");
+        return -1;
+    }
+
+    if (NULL == type || !json_is_string(type)) {
+        plog_error(plugin, "no valid key `type`");
+        return -1;
+    }
+
+    int ret = -1;
+    if (0 == strcmp("algset", json_string_value(type))) {
+        xinao_batch_ctx_t *batch_ctx = calloc(1, sizeof(*batch_ctx));
+        if (NULL != batch_ctx) {
+            ret = neu_json_decode_xinao_write_batch_req_json(plugin, json_root,
+                                                             batch_ctx);
+            if (0 == ret) {
+                *ctx_p = (xinao_ctx_t *) batch_ctx;
+            } else {
+                plog_error(plugin, "decode write batch json fail");
+                free(batch_ctx);
+            }
+        }
+    } else if (0 == strcmp("cmd/set", json_string_value(type))) {
+        xinao_wtag_ctx_t *wtag_ctx = calloc(1, sizeof(*wtag_ctx));
+        if (NULL != wtag_ctx) {
+            ret = neu_json_decode_xinao_write_tag_req_json(plugin, json_root,
+                                                           wtag_ctx);
+            if (0 == ret) {
+                *ctx_p = (xinao_ctx_t *) wtag_ctx;
+            } else {
+                plog_error(plugin, "decode write tag json fail");
+                free(wtag_ctx);
+            }
+        }
+    } else {
+        plog_error(plugin, "unknown key `type`:%s", json_string_value(type));
+    }
+
+    return ret;
 }
 
 xinao_ctx_t *xinao_ctx_from_json_buf(neu_plugin_t *plugin, char *buf,
@@ -281,18 +376,10 @@ xinao_ctx_t *xinao_ctx_from_json_buf(neu_plugin_t *plugin, char *buf,
         return NULL;
     }
 
-    xinao_ctx_t *ctx = calloc(1, sizeof(*ctx));
-    if (NULL == ctx) {
+    xinao_ctx_t *ctx = NULL;
+    if (0 != neu_json_decode_xinao_ctx_json(plugin, root, &ctx)) {
+        plog_error(plugin, "decode write req json fail");
         neu_json_decode_free(root);
-        return NULL;
-    }
-
-    if (0 !=
-        neu_json_decode_write_batch_req_json(plugin, root, &ctx->batch,
-                                             &ctx->map)) {
-        plog_error(plugin, "decode batch req json fail");
-        neu_json_decode_free(root);
-        free(ctx);
         return NULL;
     }
 
@@ -300,7 +387,29 @@ xinao_ctx_t *xinao_ctx_from_json_buf(neu_plugin_t *plugin, char *buf,
     return ctx;
 }
 
-char *xinao_ctx_gen_resp_json(xinao_ctx_t *ctx)
+char *xinao_ctx_gen_wtag_resp_json(xinao_wtag_ctx_t *ctx,
+                                   neu_resp_error_t *resp)
+{
+    json_object_set_new(ctx->root, "ts", json_integer(global_timestamp));
+    json_object_set_new(ctx->root, "type", json_string("cmd/set/cack"));
+
+    json_t *data = json_object_get(ctx->root, "data");
+
+    int  valid    = true;
+    char error[6] = { 0 };
+    if (0 != resp->error) {
+        valid = false;
+        snprintf(error, sizeof(error), "%d", resp->error);
+    }
+
+    json_object_set_new(data, "valid", json_integer(valid));
+    json_object_set_new(data, "remark", json_string(error));
+
+    char *result = json_dumps(ctx->root, 0);
+    return result;
+}
+
+char *xinao_ctx_gen_batch_resp_json(xinao_batch_ctx_t *ctx)
 {
     json_t *cmd   = json_object_get(ctx->root, "cmd");
     int     n_cmd = json_array_size(cmd);
@@ -317,8 +426,9 @@ char *xinao_ctx_gen_resp_json(xinao_ctx_t *ctx)
         group_index_t *g = NULL;
         HASH_FIND_STR(ctx->map, json_string_value(node_name), n);
         HASH_FIND_STR(n->grp_indices, json_string_value(group_name), g);
-        neu_write_batch_driver_t *batch_driver = &ctx->batch->drivers[n->ind];
-        neu_write_batch_group_t * batch_group  = &batch_driver->groups[g->ind];
+        neu_write_batch_driver_t *batch_driver =
+            &ctx->batch.batch->drivers[n->ind];
+        neu_write_batch_group_t *batch_group = &batch_driver->groups[g->ind];
 
         json_t *tags     = json_object_get(a_cmd, "d");
         int     n_tag    = json_array_size(tags);
