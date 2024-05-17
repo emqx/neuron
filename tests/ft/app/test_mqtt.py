@@ -657,7 +657,7 @@ class TestMQTT:
                 },
                 {
                     "tag": "tag1",
-                    "value": True,
+                    "value": 1,
                 },
                 {
                     "tag": "tag2",
