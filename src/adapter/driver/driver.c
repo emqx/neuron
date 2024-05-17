@@ -1689,7 +1689,7 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             if (neu_driver_cache_meta_get_changed(cache, group, tag->name,
                                                   &value, tag_value.metas,
                                                   NEU_TAG_META_SIZE) != 0) {
-                nlog_info("tag: %s not changed", tag->name);
+                nlog_debug("tag: %s not changed", tag->name);
                 continue;
             }
         } else {
