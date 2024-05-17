@@ -8,9 +8,9 @@ on:
       - published
 
 env:
-  VERSION: 2.7.0
+  VERSION: 2.9.0
   UI_VERSION: 2.6.1
-  BRANCH: main
+  BRANCH: v2.9 
 
 jobs:
   cross-build:
@@ -21,7 +21,7 @@ jobs:
           - [aarch64-linux-gnu, aarch64, arm64]
           - [arm-linux-gnueabihf, armv4, armhf]
           - [x86_64-linux-gnu, x86_64, amd64]
-    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-main
+    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-v2.9
 
     steps:
       - uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
       matrix:
         arch:
           - [x86_64-linux-gnu, x86_64, amd64]
-    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-main
+    container: ghcr.io/neugates/build:${{ matrix.arch[1] }}-v2.9
 
     steps:
       - uses: actions/checkout@v4
