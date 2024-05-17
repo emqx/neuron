@@ -92,7 +92,7 @@ void recv_data_callback(void *arg)
     msg      = nng_aio_get_msg(plugin->recv_aio);
     json_str = nng_msg_body(msg);
     json_len = nng_msg_len(msg);
-    plog_debug(plugin, "<< %.*s", (int) json_len, json_str);
+    plog_notice(plugin, "<< %.*s", (int) json_len, json_str);
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_MSGS_TOTAL, 1, NULL);
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_BYTES_5S, json_len, NULL);
     NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_RECV_BYTES_30S, json_len, NULL);
