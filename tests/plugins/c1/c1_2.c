@@ -63,7 +63,7 @@ static const neu_plugin_intf_funs_t plugin_intf_funs = {
 };
 
 const neu_plugin_module_t neu_plugin_module = {
-    .version         = NEU_VERSION(2, 7, 99),
+    .version         = NEU_VERSION(2, 9, 99),
     .schema          = "c1",
     .module_name     = "c1",
     .module_descr    = "c1 v2",
