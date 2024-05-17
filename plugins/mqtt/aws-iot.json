@@ -6,7 +6,6 @@
     "description_zh": "MQTT 客户端 ID",
     "type": "string",
     "attribute": "required",
-    "default": "neuron_${random_str}",
     "valid": {
       "length": 255
     }
@@ -60,7 +59,6 @@
     "description_zh": "Neuron 向 AWS IoT Core 订阅的 MQTT 主题，用于接收点位写入请求。",
     "attribute": "required",
     "type": "string",
-    "default": "/neuron/${node-name}/write/req",
     "valid": {
       "length": 255
     }
@@ -72,7 +70,6 @@
     "description_zh": "Neuron 通过该 MQTT 主题将点位写入响应发布到 AWS IoT Core。",
     "attribute": "required",
     "type": "string",
-    "default": "/neuron/${node-name}/write/resp",
     "valid": {
       "length": 255
     }
