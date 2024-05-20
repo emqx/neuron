@@ -136,7 +136,7 @@ typedef union {
 
 static inline char *neu_value_str(neu_type_e type, neu_value_u value)
 {
-    static __thread char str[32] = { 0 };
+    static __thread char str[128] = { 0 };
 
     switch (type) {
     case NEU_TYPE_INT8:
