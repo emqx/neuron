@@ -151,8 +151,8 @@ static int config_mqtt_client(neu_plugin_t *plugin, neu_mqtt_client_t *client,
     }
 
     // when config->ca is NULL tls will be disabled
-    rv = neu_mqtt_client_set_tls(client, config->ca, config->cert, config->key,
-                                 config->keypass);
+    rv = neu_mqtt_client_set_tls(client, true, config->ca, config->cert,
+                                 config->key, config->keypass);
     if (0 != rv) {
         plog_error(plugin, "neu_mqtt_client_set_tsl fail");
         return -1;

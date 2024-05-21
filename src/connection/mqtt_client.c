@@ -1005,8 +1005,8 @@ int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
     return 0;
 }
 
-int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
-                            const char *cert, const char *key,
+int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
+                            const char *ca, const char *cert, const char *key,
                             const char *keypass)
 {
     int             rv  = 0;
@@ -1015,13 +1015,19 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
     nng_mtx_lock(client->mtx);
     return_failure_if_open();
 
-    if (NULL == ca) {
+    if (!enabled) {
         // disable tls
         log(debug, "tls disabled");
         if (client->tls_cfg) {
             nng_tls_config_free(client->tls_cfg);
             client->tls_cfg = NULL;
         }
+        goto end;
+    }
+
+    if (NULL == client->host) {
+        log(error, "no client host");
+        rv = -1;
         goto end;
     }
 
@@ -1035,6 +1041,12 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
             goto end;
         }
         client->tls_cfg = cfg;
+    }
+
+    if (0 != (rv = nng_tls_config_server_name(client->tls_cfg, client->host))) {
+        log(error, "nng_tls_config_server_name fail: %s", nng_strerror(rv));
+        rv = -1;
+        goto end;
     }
 
     if (cert != NULL && key != NULL) {
@@ -1057,7 +1069,7 @@ int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
         }
     }
 
-    if ((rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
+    if (ca && (rv = nng_tls_config_ca_chain(cfg, ca, NULL)) != 0) {
         log(error, "nng_tls_config_ca_chain fail: %s", nng_strerror(rv));
         rv = -1;
     }

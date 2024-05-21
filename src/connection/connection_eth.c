@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 #include <assert.h>
+#include <errno.h>
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -32,6 +33,7 @@
 
 #include "connection/neu_connection_eth.h"
 #include "event/event.h"
+#include "type.h"
 #include "utils/log.h"
 #include "utils/utextend.h"
 
@@ -39,13 +41,12 @@
 #define ETH_P_LLDP 0x88CC
 #endif
 
-typedef struct neu_conn_eth_sub {
-    uint16_t protocol;
-    char     mac[ETH_ALEN];
-} callback_elem_key_t;
+struct neu_conn_eth_sub {
+    uint8_t mac[6];
+};
 
 typedef struct {
-    callback_elem_key_t key;
+    char mac[20];
 
     neu_conn_eth_msg_callback callback;
 
@@ -53,8 +54,6 @@ typedef struct {
 } callback_elem_t;
 
 typedef struct {
-    char device[NEU_NODE_NAME_LEN];
-
     neu_conn_eth_msg_callback callback;
 
     UT_hash_handle hh;
@@ -64,20 +63,16 @@ typedef struct interface_conn {
     char *        interface;
     neu_events_t *events;
     uint8_t       count;
-    uint8_t       buf[1500];
 
-    int     lldp_fd;
     int     profinet_fd;
     int     vlan_fd;
     uint8_t mac[ETH_ALEN];
 
     neu_event_io_t *profinet_event;
-    neu_event_io_t *lldp_event;
     neu_event_io_t *vlan_event;
 
-    lldp_callback_elem_t *lldp_callbacks;
-    callback_elem_t *     callbacks;
-    pthread_mutex_t       mtx;
+    callback_elem_t *callbacks;
+    pthread_mutex_t  mtx;
 } interface_conn_t;
 
 static pthread_mutex_t mtx      = { 0 };
@@ -91,13 +86,25 @@ struct neu_conn_eth {
 };
 
 static int get_mac(neu_conn_eth_t *conn, const char *interface);
-static int init_socket(const char *interface, uint16_t protocol);
+static int init_socket(const char *interface, uint16_t protocol,
+                       uint8_t mac[6]);
 static int uninit_socket(int fd);
 
-static int lldp_msg_cb(enum neu_event_io_type type, int fd, void *usr_data);
-static int eth_msg_cb(enum neu_event_io_type type, int fd, void *usr_data);
+static int     eth_msg_cb(enum neu_event_io_type type, int fd, void *usr_data);
+static uint8_t pf_dcp_broadcast[ETH_ALEN] = {
+    0x01, 0x0e, 0xcf, 0x00, 0x00, 0x01
+};
 
-static char *lldp_parse_port_id(uint16_t n_byte, uint8_t *bytes);
+int neu_conn_eth_size()
+{
+    int ret = 0;
+
+    for (int i = 0; i < interface_max; i++) {
+        ret += in_conns[i].count;
+    }
+
+    return ret;
+}
 
 neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
 {
@@ -126,17 +133,19 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
             if (in_conns[i].interface == NULL) {
                 neu_event_io_param_t param = { 0 };
 
+                pthread_mutex_init(&in_conns[i].mtx, NULL);
+                conn_eth->ic = &in_conns[i];
+
                 in_conns[i].interface = strdup(interface);
                 in_conns[i].events    = neu_event_new();
                 in_conns[i].count += 1;
 
-                in_conns[i].profinet_fd = init_socket(interface, 0x8892);
-                in_conns[i].lldp_fd     = init_socket(interface, ETH_P_LLDP);
-                in_conns[i].vlan_fd     = init_socket(interface, 0x8100);
-
                 get_mac(conn_eth, interface);
-                pthread_mutex_init(&in_conns[i].mtx, NULL);
-                conn_eth->ic = &in_conns[i];
+
+                in_conns[i].profinet_fd =
+                    init_socket(interface, 0x8892, in_conns[i].mac);
+                // in_conns[i].vlan_fd =
+                // init_socket(interface, 0x8100, in_conns[i].mac);
 
                 param.fd       = in_conns[i].profinet_fd;
                 param.usr_data = (void *) conn_eth;
@@ -145,17 +154,11 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx)
                 in_conns[i].profinet_event =
                     neu_event_add_io(in_conns[i].events, param);
 
-                param.fd = in_conns[i].lldp_fd;
-                param.cb = lldp_msg_cb;
+                // param.fd = in_conns[i].vlan_fd;
+                // param.cb = eth_msg_cb;
 
-                in_conns[i].lldp_event =
-                    neu_event_add_io(in_conns[i].events, param);
-
-                param.fd = in_conns[i].vlan_fd;
-                param.cb = eth_msg_cb;
-
-                in_conns[i].vlan_event =
-                    neu_event_add_io(in_conns[i].events, param);
+                // in_conns[i].vlan_event =
+                // neu_event_add_io(in_conns[i].events, param);
 
                 break;
             }
@@ -174,16 +177,15 @@ int neu_conn_eth_uninit(neu_conn_eth_t *conn)
     conn->ic->count -= 1;
     if (conn->ic->count == 0) {
         neu_event_del_io(conn->ic->events, conn->ic->profinet_event);
-        neu_event_del_io(conn->ic->events, conn->ic->lldp_event);
-        neu_event_del_io(conn->ic->events, conn->ic->vlan_event);
+        // neu_event_del_io(conn->ic->events, conn->ic->vlan_event);
 
         neu_event_close(conn->ic->events);
 
         uninit_socket(conn->ic->profinet_fd);
-        uninit_socket(conn->ic->lldp_fd);
-        uninit_socket(conn->ic->vlan_fd);
+        // uninit_socket(conn->ic->vlan_fd);
 
         free(conn->ic->interface);
+        conn->ic->interface = NULL;
         pthread_mutex_destroy(&conn->ic->mtx);
     }
     pthread_mutex_unlock(&mtx);
@@ -201,43 +203,46 @@ void neu_conn_eth_get_mac(neu_conn_eth_t *conn, uint8_t *mac)
 int neu_conn_eth_check_interface(const char *interface)
 {
     struct ifreq ifr = { 0 };
-    int          fd  = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+    int          fd  = socket(PF_PACKET, SOCK_RAW, ETH_P_IPV6);
     int          ret = -1;
+
+    if (fd <= 0) {
+        return -1;
+    }
 
     strcpy(ifr.ifr_name, interface);
     ret = ioctl(fd, SIOCGIFHWADDR, &ifr);
+    if (ret != 0) {
+        return -1;
+    }
 
     close(fd);
     return ret;
 }
 
-neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn,
-                                          uint16_t protocol, uint8_t mac[6],
+neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn, uint8_t xmac[6],
                                           neu_conn_eth_msg_callback callback)
 {
-    callback_elem_key_t key  = { 0 };
-    neu_conn_eth_sub_t *sub  = NULL;
-    callback_elem_t *   elem = NULL;
+    char                tmp_mac[20] = { 0 };
+    neu_conn_eth_sub_t *sub         = NULL;
+    callback_elem_t *   elem        = NULL;
 
-    key.protocol = protocol;
-    memcpy(key.mac, mac, ETH_ALEN);
+    snprintf(tmp_mac, sizeof(tmp_mac), "%X:%X:%X-%X:%X:%X", xmac[0], xmac[1],
+             xmac[2], xmac[3], xmac[4], xmac[5]);
 
     pthread_mutex_lock(&conn->ic->mtx);
 
-    HASH_FIND(hh, conn->ic->callbacks, &key, sizeof(callback_elem_key_t), elem);
+    HASH_FIND_STR(conn->ic->callbacks, tmp_mac, elem);
     if (elem == NULL) {
         elem = calloc(1, sizeof(callback_elem_t));
         sub  = calloc(1, sizeof(neu_conn_eth_sub_t));
 
-        elem->key.protocol = protocol;
-        memcpy(key.mac, mac, ETH_ALEN);
         elem->callback = callback;
+        memcpy(elem->mac, tmp_mac, sizeof(elem->mac));
 
-        memcpy(sub->mac, mac, ETH_ALEN);
-        sub->protocol = protocol;
+        memcpy(sub->mac, xmac, ETH_ALEN);
 
-        HASH_ADD(hh, conn->ic->callbacks, key, sizeof(callback_elem_key_t),
-                 elem);
+        HASH_ADD_STR(conn->ic->callbacks, mac, elem);
     }
 
     pthread_mutex_unlock(&conn->ic->mtx);
@@ -247,15 +252,15 @@ neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn,
 
 int neu_conn_eth_unregister(neu_conn_eth_t *conn, neu_conn_eth_sub_t *sub)
 {
-    callback_elem_key_t key  = { 0 };
-    callback_elem_t *   elem = NULL;
+    char             tmp_mac[20] = { 0 };
+    callback_elem_t *elem        = NULL;
 
-    key.protocol = sub->protocol;
-    memcpy(key.mac, sub->mac, ETH_ALEN);
+    snprintf(tmp_mac, sizeof(tmp_mac), "%X:%X:%X-%X:%X:%X", sub->mac[0],
+             sub->mac[1], sub->mac[2], sub->mac[3], sub->mac[4], sub->mac[5]);
 
     pthread_mutex_lock(&conn->ic->mtx);
 
-    HASH_FIND(hh, conn->ic->callbacks, &key, sizeof(callback_elem_key_t), elem);
+    HASH_FIND_STR(conn->ic->callbacks, tmp_mac, elem);
     if (elem != NULL) {
         HASH_DEL(conn->ic->callbacks, elem);
         free(elem);
@@ -268,60 +273,16 @@ int neu_conn_eth_unregister(neu_conn_eth_t *conn, neu_conn_eth_sub_t *sub)
     return 0;
 }
 
-int neu_conn_eth_register_lldp(neu_conn_eth_t *conn, const char *device,
-                               neu_conn_eth_msg_callback callback)
+int neu_conn_eth_send(neu_conn_eth_t *conn, uint16_t protocol, uint16_t n_byte,
+                      uint8_t *bytes)
 {
-    lldp_callback_elem_t *elem = NULL;
-    int                   ret  = 0;
-
-    pthread_mutex_lock(&conn->ic->mtx);
-
-    HASH_FIND_STR(conn->ic->lldp_callbacks, device, elem);
-    if (elem != NULL) {
-        ret = -1;
-    } else {
-        elem = calloc(1, sizeof(lldp_callback_elem_t));
-
-        elem->callback = callback;
-        strcpy(elem->device, device);
-
-        HASH_ADD_STR(conn->ic->lldp_callbacks, device, elem);
-    }
-
-    pthread_mutex_unlock(&conn->ic->mtx);
-
-    return ret;
-}
-
-int neu_conn_eth_unregister_lldp(neu_conn_eth_t *conn, const char *device)
-{
-    lldp_callback_elem_t *elem = NULL;
-
-    pthread_mutex_lock(&conn->ic->mtx);
-    HASH_FIND_STR(conn->ic->lldp_callbacks, device, elem);
-    if (elem != NULL) {
-        HASH_DEL(conn->ic->lldp_callbacks, elem);
-        free(elem);
-    }
-    pthread_mutex_unlock(&conn->ic->mtx);
-
-    return 0;
-}
-
-int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
-                      uint16_t protocol, uint16_t n_byte, uint8_t *bytes)
-{
-    int            fd   = 0;
-    int            ret  = 0;
-    struct ethhdr *ehdr = (struct ethhdr *) bytes;
-    (void) dst_mac;
+    int fd  = 0;
+    int ret = 0;
 
     switch (protocol) {
+    case ETH_P_LLDP:
     case 0x8892:
         fd = conn->ic->profinet_fd;
-        break;
-    case ETH_P_LLDP:
-        fd = conn->ic->lldp_fd;
         break;
     case 0x8100:
         fd = conn->ic->vlan_fd;
@@ -330,8 +291,6 @@ int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
         assert(1 == 0);
         break;
     }
-
-    memcpy(ehdr->h_source, conn->ic->mac, ETH_ALEN);
 
     ret = send(fd, bytes, n_byte, 0);
     return ret;
@@ -353,19 +312,21 @@ static int get_mac(neu_conn_eth_t *conn, const char *interface)
     return ret;
 }
 
-static int init_socket(const char *interface, uint16_t protocol)
+static int init_socket(const char *interface, uint16_t protocol, uint8_t mac[6])
 {
     struct ifreq       ifr                     = { 0 };
     struct sockaddr_ll sll                     = { 0 };
-    struct packet_mreq mreq                    = { 0 };
     const uint8_t      pn_mcast_addr[ETH_ALEN] = {
         0x01, 0x0e, 0xcf, 0x00, 0x00, 0x00
     };
     int fd  = socket(PF_PACKET, SOCK_RAW, htons(protocol));
-    int ret = 0;
+    int ret = 1;
 
     assert(fd > 0);
     setsockopt(fd, SOL_SOCKET, SO_DONTROUTE, &ret, sizeof(ret));
+
+    (void) mac;
+    (void) pn_mcast_addr;
 
     strcpy(ifr.ifr_name, interface);
     if (ioctl(fd, SIOCGIFINDEX, &ifr) != 0) {
@@ -376,25 +337,12 @@ static int init_socket(const char *interface, uint16_t protocol)
     sll.sll_family   = AF_PACKET;
     sll.sll_ifindex  = ifr.ifr_ifindex;
     sll.sll_protocol = htons(protocol);
-
-    mreq.mr_ifindex = ifr.ifr_ifindex;
-    mreq.mr_type    = PACKET_HOST | PACKET_MR_MULTICAST;
-    mreq.mr_alen    = ETH_ALEN;
-    memcpy(mreq.mr_address, pn_mcast_addr, ETH_ALEN);
-
-    ifr.ifr_flags = 0;
-    ioctl(fd, SIOCGIFFLAGS, &ifr);
-
-    bind(fd, (struct sockaddr *) &sll, sizeof(sll));
-
-    if (protocol == 0x8892) {
-        ret = setsockopt(fd, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mreq,
-                         sizeof(mreq));
-        assert(ret == 0);
-    }
+    ret              = bind(fd, (struct sockaddr *) &sll, sizeof(sll));
+    assert(ret == 0);
 
     return fd;
 }
+
 static int uninit_socket(int fd)
 {
     close(fd);
@@ -408,27 +356,53 @@ static int eth_msg_cb(enum neu_event_io_type type, int fd, void *usr_data)
 
     switch (type) {
     case NEU_EVENT_IO_READ: {
-        callback_elem_key_t key  = { 0 };
-        callback_elem_t *   elem = NULL;
-
-        memset(conn->ic->buf, 0, sizeof(conn->ic->buf));
-        int ret = recv(fd, conn->ic->buf, sizeof(conn->ic->buf), 0);
+        callback_elem_t *elem      = NULL;
+        uint8_t          buf[1500] = { 0 };
+        int              ret       = recv(fd, buf, 1500, 0);
 
         if (ret < ETH_HLEN) {
-            nlog_warn("eth recv length < %d msg", ETH_HLEN);
             return 0;
         }
 
-        struct ethhdr *ehdr = (struct ethhdr *) conn->ic->buf;
+        struct ethhdr *ehdr = (struct ethhdr *) buf;
+        ehdr->h_proto       = ntohs(ehdr->h_proto);
 
-        key.protocol = ntohs(ehdr->h_proto);
-        memcpy(key.mac, ehdr->h_source, ETH_ALEN);
+        if (ehdr->h_proto != 0x8100 && ehdr->h_proto != 0x8892) {
+            return 0;
+        }
 
-        HASH_FIND(hh, conn->ic->callbacks, &key, sizeof(key), elem);
+        if (memcmp(ehdr->h_dest, pf_dcp_broadcast, ETH_ALEN) == 0) {
+            callback_elem_t *tmp = NULL;
 
-        if (elem != NULL) {
-            elem->callback(conn, conn->ctx, key.protocol, ret - ETH_HLEN,
-                           conn->ic->buf + ETH_HLEN, ehdr->h_source);
+            HASH_ITER(hh, conn->ic->callbacks, elem, tmp)
+            {
+                elem->callback(conn, conn->ctx, ehdr->h_proto, ret - ETH_HLEN,
+                               buf + ETH_HLEN, ehdr->h_source);
+            }
+        } else {
+            if (memcmp(ehdr->h_dest, conn->ic->mac, ETH_ALEN) != 0) {
+                return 0;
+            }
+            char tmp_mac[20] = { 0 };
+
+            snprintf(tmp_mac, sizeof(tmp_mac), "%X:%X:%X-%X:%X:%X",
+                     ehdr->h_source[0], ehdr->h_source[1], ehdr->h_source[2],
+                     ehdr->h_source[3], ehdr->h_source[4], ehdr->h_source[5]);
+
+            HASH_FIND_STR(conn->ic->callbacks, tmp_mac, elem);
+            if (elem != NULL) {
+                elem->callback(conn, conn->ctx, ehdr->h_proto, ret - ETH_HLEN,
+                               buf + ETH_HLEN, ehdr->h_source);
+            } else {
+                memset(tmp_mac, 0, sizeof(tmp_mac));
+                snprintf(tmp_mac, sizeof(tmp_mac), "0:0:0-0:0:0");
+                HASH_FIND_STR(conn->ic->callbacks, tmp_mac, elem);
+                if (elem != NULL) {
+                    elem->callback(conn, conn->ctx, ehdr->h_proto,
+                                   ret - ETH_HLEN, buf + ETH_HLEN,
+                                   ehdr->h_source);
+                }
+            }
         }
 
         break;
@@ -441,71 +415,4 @@ static int eth_msg_cb(enum neu_event_io_type type, int fd, void *usr_data)
     }
 
     return 0;
-}
-
-static int lldp_msg_cb(enum neu_event_io_type type, int fd, void *usr_data)
-{
-    neu_conn_eth_t *conn    = (neu_conn_eth_t *) usr_data;
-    int             ret     = 0;
-    char *          port_id = NULL;
-
-    switch (type) {
-    case NEU_EVENT_IO_READ:
-        memset(conn->ic->buf, 0, sizeof(conn->ic->buf));
-        ret     = recv(fd, conn->ic->buf, sizeof(conn->ic->buf), 0);
-        port_id = lldp_parse_port_id(ret - sizeof(struct ethhdr),
-                                     conn->ic->buf + sizeof(struct ethhdr));
-
-        if (port_id != NULL) {
-            lldp_callback_elem_t *elem = NULL;
-            struct ethhdr *       ehdr = (struct ethhdr *) conn->ic->buf;
-
-            HASH_FIND_STR(conn->ic->callbacks, port_id, elem);
-            if (elem != NULL) {
-                elem->callback(
-                    conn, conn->ctx, ETH_P_LLDP, ret - sizeof(struct ethhdr),
-                    conn->ic->buf + sizeof(struct ethhdr), ehdr->h_source);
-            }
-        }
-
-        break;
-    case NEU_EVENT_IO_CLOSED:
-    case NEU_EVENT_IO_HUP:
-        nlog_warn("eth conn lldp error type: %d, fd: %d(%s)", type, fd,
-                  conn->ic->interface);
-        break;
-    }
-
-    return 0;
-}
-
-struct lldp_tvl {
-    uint16_t type : 7;
-    uint16_t length : 9;
-} __attribute__((packed));
-
-#define END_OF_LLDPDU_TLV_TYPE 0x00
-#define CHASSIS_ID_TLV_TYPE 0x01
-#define PORT_ID_TLV_TYPE 0x02
-#define TIME_TO_LIVE_TLV_TYPE 0x03
-
-static char *lldp_parse_port_id(uint16_t n_byte, uint8_t *bytes)
-{
-    struct lldp_tvl *tvl = (struct lldp_tvl *) bytes;
-
-    if (n_byte < sizeof(struct lldp_tvl) + tvl->length) {
-        return NULL;
-    }
-
-    if (tvl->type == PORT_ID_TLV_TYPE) {
-        static __thread char port_id[NEU_NODE_NAME_LEN] = { 0 };
-        uint8_t *            data                       = (uint8_t *) &tvl[1];
-
-        strncpy(port_id, (char *) data + 1, tvl->length - 1);
-        return port_id;
-    } else {
-        return lldp_parse_port_id(
-            n_byte - sizeof(struct lldp_tvl) - tvl->length,
-            bytes + sizeof(struct lldp_tvl) + tvl->length);
-    }
 }
