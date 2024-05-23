@@ -17,6 +17,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  **/
 
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,6 +25,38 @@
 
 #include "utils/log.h"
 #include "json/json.h"
+
+static double format_tag_value(float ele_value)
+{
+    double scale = pow(10, 5);
+    double value = ele_value;
+
+    int64_t integer_part = (int64_t)(value);
+    double  decimal_part = value - integer_part;
+    decimal_part *= scale;
+    decimal_part = round(decimal_part);
+
+    char str[6] = { 0 };
+    snprintf(str, sizeof(str), "%05" PRId64 "", (int64_t) decimal_part);
+    int i = 0, flag = 0;
+    for (; i < 4; i++) {
+        if (str[i] == '0' && str[i + 1] == '0') {
+            flag = 1;
+            break;
+        } else if (str[i] == '9' && str[i + 1] == '9') {
+            flag = 2;
+            break;
+        }
+    }
+    if (flag != 0 && i != 0) {
+        decimal_part = round(decimal_part / pow(10, 5 - i));
+        value        = (double) integer_part + decimal_part / pow(10, i);
+    } else {
+        value = (double) integer_part + decimal_part / scale;
+    }
+
+    return value;
+}
 
 static json_t *encode_object_value(neu_json_elem_t *ele)
 {
@@ -42,9 +75,14 @@ static json_t *encode_object_value(neu_json_elem_t *ele)
     case NEU_JSON_DOUBLE:
         ob = json_realp(ele->v.val_double, ele->precision);
         break;
-    case NEU_JSON_FLOAT:
-        ob = json_realp(ele->v.val_float, ele->precision);
+    case NEU_JSON_FLOAT: {
+        double t = ele->v.val_float;
+        if (ele->precision == 0) {
+            t = format_tag_value(ele->v.val_float);
+        }
+        ob = json_realp(t, ele->precision);
         break;
+    }
     case NEU_JSON_BOOL:
         ob = json_boolean(ele->v.val_bool);
         break;
@@ -69,10 +107,14 @@ static json_t *encode_object(json_t *object, neu_json_elem_t ele)
     case NEU_JSON_STR:
         json_object_set_new(ob, ele.name, json_string(ele.v.val_str));
         break;
-    case NEU_JSON_FLOAT:
-        json_object_set_new(ob, ele.name,
-                            json_realp(ele.v.val_float, ele.precision));
+    case NEU_JSON_FLOAT: {
+        double t = ele.v.val_float;
+        if (ele.precision == 0) {
+            t = format_tag_value(ele.v.val_float);
+        }
+        json_object_set_new(ob, ele.name, json_realp(t, ele.precision));
         break;
+    }
     case NEU_JSON_DOUBLE:
         json_object_set_new(ob, ele.name,
                             json_realp(ele.v.val_double, ele.precision));
