@@ -43,6 +43,7 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     neu_json_read_resp_tag_t *p_tag     = resp->tags;
     for (int i = 0; i < resp->n_tag; i++) {
         neu_json_elem_t tag_elems[2 + NEU_TAG_META_SIZE] = { 0 };
+        int             if_precision                     = 0;
 
         tag_elems[0].name      = "name";
         tag_elems[0].t         = NEU_JSON_STR;
@@ -57,16 +58,24 @@ int neu_json_encode_read_resp(void *json_object, void *param)
             tag_elems[1].t         = p_tag->t;
             tag_elems[1].v         = p_tag->value;
             tag_elems[1].precision = p_tag->precision;
+
+            if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
+                if_precision      = 1;
+                tag_elems[2].name = "precision";
+                tag_elems[2].t    = NEU_JSON_INT;
+                tag_elems[2].v.val_int =
+                    p_tag->precision > 0 ? p_tag->precision : 1;
+            }
         }
 
         for (int k = 0; k < p_tag->n_meta; k++) {
-            tag_elems[2 + k].name = p_tag->metas[k].name;
-            tag_elems[2 + k].t    = p_tag->metas[k].t;
-            tag_elems[2 + k].v    = p_tag->metas[k].value;
+            tag_elems[if_precision + 2 + k].name = p_tag->metas[k].name;
+            tag_elems[if_precision + 2 + k].t    = p_tag->metas[k].t;
+            tag_elems[if_precision + 2 + k].v    = p_tag->metas[k].value;
         }
 
-        tag_array =
-            neu_json_encode_array(tag_array, tag_elems, 2 + p_tag->n_meta);
+        tag_array = neu_json_encode_array(tag_array, tag_elems,
+                                          2 + if_precision + p_tag->n_meta);
         p_tag++;
     }
 
