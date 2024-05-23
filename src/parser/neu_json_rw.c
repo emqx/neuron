@@ -185,7 +185,17 @@ int decode_write_req_json(void *json_obj, neu_json_write_req_t *req)
             .name = "value",
             .t    = NEU_JSON_VALUE,
         },
+        {
+            .name      = "precision",
+            .t         = NEU_JSON_INT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
     };
+
+    if (req_elems[4].v.val_int > 0) {
+        req_elems[3].t = NEU_JSON_DOUBLE;
+    }
+
     ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
                                   req_elems);
     if (ret != 0) {
