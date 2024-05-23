@@ -108,6 +108,44 @@ static inline void start_group_timer(neu_adapter_driver_t *driver,
                                      group_t *             grp);
 static inline void stop_group_timer(neu_adapter_driver_t *driver, group_t *grp);
 
+static void format_tag_value(neu_resp_tag_value_meta_t *value)
+{
+    double scale = pow(10, 5);
+
+    int negative = 1;
+
+    if (value->value.value.d64 < 0) {
+        value->value.value.d64 *= -1;
+        negative = -1;
+    }
+
+    int64_t integer_part = (int64_t) value->value.value.d64;
+    double  decimal_part = value->value.value.d64 - integer_part;
+    decimal_part *= scale;
+    decimal_part = round(decimal_part);
+    char str[6]  = { 0 };
+    snprintf(str, sizeof(str), "%05" PRId64 "", (int64_t) decimal_part);
+    int i = 0, flag = 0;
+    for (; i < 4; i++) {
+        if (str[i] == '0' && str[i + 1] == '0') {
+            flag = 1;
+            break;
+        } else if (str[i] == '9' && str[i + 1] == '9') {
+            flag = 2;
+            break;
+        }
+    }
+    if (flag != 0 && i != 0) {
+        decimal_part = round(decimal_part / pow(10, 5 - i));
+        value->value.value.d64 =
+            (double) integer_part + decimal_part / pow(10, i);
+    } else {
+        value->value.value.d64 = (double) integer_part + decimal_part / scale;
+    }
+
+    value->value.value.d64 *= negative;
+}
+
 static void write_response(neu_adapter_t *adapter, void *r, neu_error error)
 {
     neu_reqresp_head_t *req    = (neu_reqresp_head_t *) r;
@@ -1834,6 +1872,9 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
                     break;
                 }
             }
+            if (tag->precision == 0 && tag->type == NEU_TYPE_DOUBLE) {
+                format_tag_value(&tag_value);
+            }
         }
 
         utarray_push_back(tag_values, &tag_value);
@@ -1988,6 +2029,10 @@ static void read_group(int64_t timestamp, int64_t timeout,
                     tag_value.value.type = tag->type;
                     break;
                 }
+            }
+
+            if (tag->precision == 0 && tag->type == NEU_TYPE_DOUBLE) {
+                format_tag_value(&tag_value);
             }
         }
         utarray_push_back(tag_values, &tag_value);
