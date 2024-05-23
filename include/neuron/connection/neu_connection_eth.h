@@ -32,19 +32,23 @@ neu_conn_eth_t *neu_conn_eth_init(const char *interface, void *ctx);
 int             neu_conn_eth_uninit(neu_conn_eth_t *conn);
 int             neu_conn_eth_check_interface(const char *interface);
 void            neu_conn_eth_get_mac(neu_conn_eth_t *conn, uint8_t *mac);
-int             neu_conn_eth_size();
 
 typedef void (*neu_conn_eth_msg_callback)(neu_conn_eth_t *conn, void *ctx,
                                           uint16_t protocol, uint16_t n_byte,
                                           uint8_t *bytes, uint8_t src_mac[6]);
 
+int neu_conn_eth_register_lldp(neu_conn_eth_t *conn, const char *device,
+                               neu_conn_eth_msg_callback callback);
+int neu_conn_eth_unregister_lldp(neu_conn_eth_t *conn, const char *device);
+
 typedef struct neu_conn_eth_sub neu_conn_eth_sub_t;
 
-neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn, uint8_t mac[6],
+neu_conn_eth_sub_t *neu_conn_eth_register(neu_conn_eth_t *conn,
+                                          uint16_t protocol, uint8_t mac[6],
                                           neu_conn_eth_msg_callback callback);
 int neu_conn_eth_unregister(neu_conn_eth_t *conn, neu_conn_eth_sub_t *sub);
 
-int neu_conn_eth_send(neu_conn_eth_t *conn, uint16_t protocol, uint16_t n_byte,
-                      uint8_t *bytes);
+int neu_conn_eth_send(neu_conn_eth_t *conn, uint8_t dst_mac[6],
+                      uint16_t protocol, uint16_t n_byte, uint8_t *bytes);
 
 #endif

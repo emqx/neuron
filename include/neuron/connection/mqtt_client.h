@@ -78,8 +78,8 @@ int neu_mqtt_client_set_connect_cb(neu_mqtt_client_t *             client,
 int neu_mqtt_client_set_disconnect_cb(neu_mqtt_client_t *             client,
                                       neu_mqtt_client_connection_cb_t cb,
                                       void *                          data);
-int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, bool enabled,
-                            const char *ca, const char *cert, const char *key,
+int neu_mqtt_client_set_tls(neu_mqtt_client_t *client, const char *ca,
+                            const char *cert, const char *key,
                             const char *keypass);
 int neu_mqtt_client_set_cache_size(neu_mqtt_client_t *client,
                                    size_t mem_size_bytes, size_t db_size_bytes);
