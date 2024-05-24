@@ -114,7 +114,7 @@ target_include_directories(neuron-base
                            PRIVATE include/neuron src)
 target_link_libraries(neuron-base libssl.a libcrypto.a)
 target_link_libraries(neuron-base nng libzlog.so jansson jwt
-                      ${CMAKE_THREAD_LIBS_INIT})
+                      ${CMAKE_THREAD_LIBS_INIT} -lm)
 add_dependencies(neuron-base neuron-version)
 
 # dependency imposed by nng
