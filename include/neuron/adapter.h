@@ -65,6 +65,9 @@ typedef struct adapter_callbacks {
             void (*update_im)(neu_adapter_t *adapter, const char *group,
                               const char *tag, neu_dvalue_t value,
                               neu_tag_meta_t *metas, int n_meta);
+            void (*scan_tags_response)(neu_adapter_t *adapter, void *r,
+                                       int error, void *tags, neu_type_e type,
+                                       bool is_array);
         } driver;
     };
 } adapter_callbacks_t;

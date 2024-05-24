@@ -322,16 +322,33 @@ static void update(neu_adapter_t *adapter, const char *group, const char *tag,
     update_with_meta(adapter, group, tag, value, NULL, 0);
 }
 
+static void scan_tags_response(neu_adapter_t *adapter, void *r, neu_error error,
+                               void *tags, neu_type_e type, bool is_array)
+{
+    neu_reqresp_head_t * req   = (neu_reqresp_head_t *) r;
+    neu_resp_scan_tags_t value = {
+        .scan_tags = tags,
+        .error     = error,
+        .type      = type,
+        .is_array  = is_array,
+    };
+    req->type = NEU_RESP_SCAN_TAGS;
+    nlog_notice("scan tags response <%p>", req->ctx);
+
+    adapter->cb_funs.response(adapter, req, &value);
+}
+
 neu_adapter_driver_t *neu_adapter_driver_create()
 {
     neu_adapter_driver_t *driver = calloc(1, sizeof(neu_adapter_driver_t));
 
-    driver->cache                                   = neu_driver_cache_new();
-    driver->driver_events                           = neu_event_new();
-    driver->adapter.cb_funs.driver.update           = update;
-    driver->adapter.cb_funs.driver.write_response   = write_response;
-    driver->adapter.cb_funs.driver.update_im        = update_im;
-    driver->adapter.cb_funs.driver.update_with_meta = update_with_meta;
+    driver->cache                                     = neu_driver_cache_new();
+    driver->driver_events                             = neu_event_new();
+    driver->adapter.cb_funs.driver.update             = update;
+    driver->adapter.cb_funs.driver.write_response     = write_response;
+    driver->adapter.cb_funs.driver.update_im          = update_im;
+    driver->adapter.cb_funs.driver.update_with_meta   = update_with_meta;
+    driver->adapter.cb_funs.driver.scan_tags_response = scan_tags_response;
 
     return driver;
 }
@@ -2324,4 +2341,30 @@ void neu_adapter_driver_unsubscribe(neu_adapter_driver_t * driver,
         }
     }
     pthread_mutex_unlock(&find->apps_mtx);
+}
+
+void neu_adapter_driver_scan_tags(neu_adapter_driver_t *driver,
+                                  neu_reqresp_head_t *  req)
+{
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        driver->adapter.cb_funs.driver.scan_tags_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_RUNNING, NULL,
+            NEU_TYPE_ERROR, false);
+
+        nlog_warn("%s not running", driver->adapter.name);
+        return;
+    }
+
+    if (driver->adapter.module->intf_funs->driver.scan_tags == NULL) {
+        driver->adapter.cb_funs.driver.scan_tags_response(
+            &driver->adapter, req, NEU_ERR_PLUGIN_NOT_SUPPORT_SCAN_TAGS, NULL,
+            NEU_TYPE_ERROR, false);
+
+        nlog_warn("%s not support scan tags", driver->adapter.name);
+        return;
+    }
+
+    neu_req_scan_tags_t *cmd = (neu_req_scan_tags_t *) &req[1];
+    driver->adapter.module->intf_funs->driver.scan_tags(driver->adapter.plugin,
+                                                        req, cmd->id);
 }

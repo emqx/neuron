@@ -114,6 +114,8 @@ typedef enum neu_reqresp_type {
     NEU_REQ_PRGFILE_PROCESS,
     NEU_RESP_PRGFILE_PROCESS,
 
+    NEU_REQ_SCAN_TAGS,
+    NEU_RESP_SCAN_TAGS,
 } neu_reqresp_type_e;
 
 static const char *neu_reqresp_type_string_t[] = {
@@ -189,6 +191,9 @@ static const char *neu_reqresp_type_string_t[] = {
     [NEU_REQ_PRGFILE_UPLOAD]   = "NEU_REQ_PRGFILE_UPLOAD",
     [NEU_REQ_PRGFILE_PROCESS]  = "NEU_REQ_PRGFILE_PROCESS",
     [NEU_RESP_PRGFILE_PROCESS] = "NEU_RESP_PRGFILE_PROCESS",
+
+    [NEU_REQ_SCAN_TAGS]  = "NEU_REQ_SCAN_TAGS",
+    [NEU_RESP_SCAN_TAGS] = "NEU_RESP_SCAN_TAGS",
 };
 
 inline static const char *neu_reqresp_type_string(neu_reqresp_type_e type)
@@ -922,6 +927,30 @@ typedef struct {
     int  state;
     char reason[256];
 } neu_resp_prgfile_process_t;
+
+typedef struct neu_req_scan_tags {
+    char driver[NEU_NODE_NAME_LEN];
+    char id[NEU_TAG_ADDRESS_LEN];
+} neu_req_scan_tags_t;
+
+typedef struct {
+    char    name[NEU_TAG_NAME_LEN];
+    char    id[5 + 1 + NEU_TAG_ADDRESS_LEN]; // ns + ! + address
+    uint8_t type;
+} neu_scan_tag_t;
+
+typedef struct {
+    UT_array * scan_tags;
+    int32_t    error;
+    neu_type_e type;
+    bool       is_array;
+} neu_resp_scan_tags_t;
+
+typedef struct {
+    char       name[NEU_TAG_NAME_LEN];
+    char       id[5 + 1 + NEU_TAG_ADDRESS_LEN];
+    neu_type_e type;
+} neu_scan_tag_attribute_t;
 
 #ifdef __cplusplus
 }
