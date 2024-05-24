@@ -34,6 +34,7 @@
 #include "plugin_handle.h"
 #include "rest.h"
 #include "rw_handle.h"
+#include "scan_handle.h"
 #include "utils/http.h"
 #include "utils/log.h"
 #include "utils/neu_jwt.h"
@@ -222,6 +223,9 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         break;
     case NEU_RESP_READ_GROUP:
         handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
+        break;
+    case NEU_RESP_SCAN_TAGS:
+        handle_scan_tags_resp(header->ctx, (neu_resp_scan_tags_t *) data);
         break;
     default:
         nlog_fatal("recv unhandle msg: %s",
