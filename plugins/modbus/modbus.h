@@ -118,5 +118,3 @@ int  modbus_crc_unwrap(neu_protocol_unpack_buf_t *buf,
 const char *modbus_area_to_str(modbus_area_e area);
 
 #endif
-
-//test
