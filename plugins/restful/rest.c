@@ -221,9 +221,16 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
         handle_get_node_state_resp(header->ctx,
                                    (neu_resp_get_node_state_t *) data);
         break;
-    case NEU_RESP_READ_GROUP:
-        handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
+    case NEU_RESP_READ_GROUP: {
+        neu_resp_read_group_t *pdata = (neu_resp_read_group_t *) data;
+        if (pdata->if_paginate == false) {
+            handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
+        } else {
+            handle_read_paginate_resp(header->ctx,
+                                      (neu_resp_read_group_t *) data);
+        }
         break;
+    }
     case NEU_RESP_SCAN_TAGS:
         handle_scan_tags_resp(header->ctx, (neu_resp_scan_tags_t *) data);
         break;

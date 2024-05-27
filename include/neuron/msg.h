@@ -607,6 +607,10 @@ typedef struct neu_req_read_group {
     char *name;
     char *desc;
     bool  sync;
+    int   current_page;
+    int   page_size;
+    bool  is_error;
+    bool  if_paginate;
 } neu_req_read_group_t;
 
 static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
@@ -695,6 +699,10 @@ static inline void neu_req_write_gtags_fini(neu_req_write_gtags_t *req)
 typedef struct {
     char *driver;
     char *group;
+    int   current_page;
+    int   page_size;
+    bool  is_error;
+    bool  if_paginate;
 
     UT_array *tags; // neu_resp_tag_value_meta_t
 } neu_resp_read_group_t;

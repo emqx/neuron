@@ -502,10 +502,14 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
                    driver->cache, cmd->group, tags, resp.tags);
     }
 
-    resp.driver = cmd->driver;
-    resp.group  = cmd->group;
-    cmd->driver = NULL; // ownership moved
-    cmd->group  = NULL; // ownership moved
+    resp.driver       = cmd->driver;
+    resp.group        = cmd->group;
+    resp.current_page = cmd->current_page;
+    resp.page_size    = cmd->page_size;
+    resp.is_error     = cmd->is_error;
+    resp.if_paginate  = cmd->if_paginate;
+    cmd->driver       = NULL; // ownership moved
+    cmd->group        = NULL; // ownership moved
 
     utarray_free(tags);
     neu_req_read_group_fini(cmd);
