@@ -90,6 +90,73 @@ int neu_json_encode_read_resp(void *json_object, void *param)
     return ret;
 }
 
+int neu_json_encode_read_paginate_resp(void *json_object, void *param)
+{
+    int                            ret = 0;
+    neu_json_read_paginate_resp_t *resp =
+        (neu_json_read_paginate_resp_t *) param;
+
+    void *                    tag_array = neu_json_array();
+    neu_json_read_resp_tag_t *p_tag     = resp->tags;
+    for (int i = 0; i < resp->n_tag; i++) {
+        neu_json_elem_t tag_elems[2 + NEU_TAG_META_SIZE] = { 0 };
+        int             if_precision                     = 0;
+
+        tag_elems[0].name      = "name";
+        tag_elems[0].t         = NEU_JSON_STR;
+        tag_elems[0].v.val_str = p_tag->name;
+
+        if (p_tag->error != 0) {
+            tag_elems[1].name      = "error";
+            tag_elems[1].t         = NEU_JSON_INT;
+            tag_elems[1].v.val_int = p_tag->error;
+        } else {
+            tag_elems[1].name      = "value";
+            tag_elems[1].t         = p_tag->t;
+            tag_elems[1].v         = p_tag->value;
+            tag_elems[1].precision = p_tag->precision;
+
+            if (p_tag->t == NEU_JSON_FLOAT || p_tag->t == NEU_JSON_DOUBLE) {
+                if_precision      = 1;
+                tag_elems[2].name = "precision";
+                tag_elems[2].t    = NEU_JSON_INT;
+                tag_elems[2].v.val_int =
+                    p_tag->precision > 0 ? p_tag->precision : 1;
+            }
+        }
+
+        for (int k = 0; k < p_tag->n_meta; k++) {
+            tag_elems[if_precision + 2 + k].name = p_tag->metas[k].name;
+            tag_elems[if_precision + 2 + k].t    = p_tag->metas[k].t;
+            tag_elems[if_precision + 2 + k].v    = p_tag->metas[k].value;
+        }
+
+        tag_array = neu_json_encode_array(tag_array, tag_elems,
+                                          2 + if_precision + p_tag->n_meta);
+        p_tag++;
+    }
+
+    void *          meta_object  = neu_json_encode_new();
+    neu_json_elem_t meta_elems[] = {
+        { .name      = "currentPage",
+          .t         = NEU_JSON_INT,
+          .v.val_int = resp->meta.current_page },
+        { .name      = "pageSize",
+          .t         = NEU_JSON_INT,
+          .v.val_int = resp->meta.page_size },
+        { .name = "total", .t = NEU_JSON_INT, .v.val_int = resp->meta.total }
+    };
+    neu_json_encode_field(meta_object, meta_elems, 3);
+
+    neu_json_elem_t resp_elems[] = {
+        { .name = "meta", .t = NEU_JSON_OBJECT, .v.val_object = meta_object },
+        { .name = "items", .t = NEU_JSON_OBJECT, .v.val_object = tag_array },
+    };
+    ret = neu_json_encode_field(json_object, resp_elems, 2);
+
+    return ret;
+}
+
 int neu_json_encode_read_resp1(void *json_object, void *param)
 {
     int                   ret  = 0;
@@ -502,6 +569,121 @@ error:
 }
 
 void neu_json_decode_read_req_free(neu_json_read_req_t *req)
+{
+    free(req->group);
+    free(req->node);
+
+    free(req);
+}
+
+int neu_json_decode_read_paginate_req(char *buf, neu_json_read_req_t **result)
+{
+    int   ret      = 0;
+    void *json_obj = NULL;
+
+    json_obj = neu_json_decode_new(buf);
+    if (NULL == json_obj) {
+        return -1;
+    }
+
+    neu_json_read_req_t *req = calloc(1, sizeof(neu_json_read_req_t));
+    if (req == NULL) {
+        neu_json_decode_free(json_obj);
+        return -1;
+    }
+
+    neu_json_elem_t req_elems[] = {
+        {
+            .name = "node",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name = "group",
+            .t    = NEU_JSON_STR,
+        },
+        {
+            .name      = "sync",
+            .t         = NEU_JSON_BOOL,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "query",
+            .t         = NEU_JSON_OBJECT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+
+    neu_json_elem_t query_elems[] = {
+        {
+            .name      = "name",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "description",
+            .t         = NEU_JSON_STR,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "currentPage",
+            .t         = NEU_JSON_INT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "pageSize",
+            .t         = NEU_JSON_INT,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+        {
+            .name      = "isError",
+            .t         = NEU_JSON_BOOL,
+            .attribute = NEU_JSON_ATTRIBUTE_OPTIONAL,
+        },
+    };
+
+    ret = neu_json_decode_by_json(json_obj, NEU_JSON_ELEM_SIZE(req_elems),
+                                  req_elems);
+
+    if (ret != 0) {
+        goto error;
+    }
+
+    req->node  = req_elems[0].v.val_str;
+    req->group = req_elems[1].v.val_str;
+    req->sync  = req_elems[2].v.val_bool;
+
+    if (req_elems[3].v.val_object) {
+        ret = neu_json_decode_by_json(req_elems[3].v.val_object,
+                                      NEU_JSON_ELEM_SIZE(query_elems),
+                                      query_elems);
+
+        if (ret != 0) {
+            goto error;
+        }
+        req->name         = query_elems[0].v.val_str;
+        req->desc         = query_elems[1].v.val_str;
+        req->current_page = query_elems[2].v.val_int;
+        req->page_size    = query_elems[3].v.val_int;
+        req->is_error     = query_elems[4].v.val_bool;
+    }
+
+    *result = req;
+    neu_json_decode_free(json_obj);
+    return ret;
+
+error:
+    free(query_elems[0].v.val_str);
+    free(query_elems[1].v.val_str);
+    free(req_elems[0].v.val_str);
+    free(req_elems[1].v.val_str);
+    free(req);
+    if (json_obj != NULL) {
+        neu_json_decode_free(json_obj);
+    }
+    return ret;
+}
+
+void neu_json_decode_read_paginate_req_free(neu_json_read_req_t *req)
 {
     free(req->group);
     free(req->node);
