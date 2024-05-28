@@ -280,10 +280,19 @@ int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
         return -1;
     }
 
-    entry->name  = name;
-    entry->type  = type;
-    entry->help  = help;
-    entry->value = init;
+    if (NEU_METRIC_TYPE_ROLLING_COUNTER == type) {
+        // only allocate rolling counter for nonzero time span
+        if (init > 0 && NULL == (entry->rcnt = neu_rolling_counter_new(init))) {
+            free(entry);
+            return -1;
+        }
+    } else {
+        entry->value = init;
+    }
+
+    entry->name = name;
+    entry->type = type;
+    entry->help = help;
     HASH_ADD_STR(*entries, name, entry);
     return 0;
 }
@@ -320,9 +329,11 @@ int neu_metrics_register_entry(const char *name, const char *help,
     neu_metric_entry_t *e  = NULL;
 
     pthread_rwlock_wrlock(&g_metrics_mtx_);
+    // use `value` field as reference counter, initialize to zero
+    // and we don't need to allocate rolling counter for register entries
     rv = neu_metric_entries_add(&g_metrics_.registered_metrics, name, help,
-                                type, 1);
-    if (1 == rv) {
+                                type, 0);
+    if (-1 != rv) {
         HASH_FIND_STR(g_metrics_.registered_metrics, name, e);
         ++e->value;
         rv = 0;

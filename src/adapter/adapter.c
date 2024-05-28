@@ -373,22 +373,19 @@ static int adapter_register_metric(neu_adapter_t *adapter, const char *name,
                                    uint64_t init)
 {
     if (NULL == adapter->metrics) {
-        adapter->metrics = calloc(1, sizeof(*adapter->metrics));
+        adapter->metrics =
+            neu_node_metrics_new(adapter, adapter->module->type, adapter->name);
         if (NULL == adapter->metrics) {
             return -1;
         }
-        adapter->metrics->type    = adapter->module->type;
-        adapter->metrics->name    = adapter->name;
-        adapter->metrics->adapter = adapter;
         neu_metrics_add_node(adapter);
     }
 
-    if (0 > neu_metric_entries_add(&adapter->metrics->entries, name, help, type,
-                                   init)) {
+    if (0 >
+        neu_node_metrics_add(adapter->metrics, NULL, name, help, type, init)) {
         return -1;
     }
 
-    neu_metrics_register_entry(name, help, type);
     return 0;
 }
 
@@ -396,48 +393,11 @@ static int adapter_update_metric(neu_adapter_t *adapter,
                                  const char *metric_name, uint64_t n,
                                  const char *group)
 {
-    neu_metric_entry_t *entry = NULL;
     if (NULL == adapter->metrics) {
         return -1;
     }
 
-    if (NULL == group) {
-        HASH_FIND_STR(adapter->metrics->entries, metric_name, entry);
-    } else if (NULL != adapter->metrics->group_metrics) {
-        neu_group_metrics_t *g = NULL;
-        HASH_FIND_STR(adapter->metrics->group_metrics, group, g);
-        if (NULL != g) {
-            HASH_FIND_STR(g->entries, metric_name, entry);
-        }
-    }
-
-    if (NULL == entry) {
-        return -1;
-    }
-
-    if (NEU_METRIC_TYPE_COUNTER == entry->type) {
-        entry->value += n;
-    } else {
-        entry->value = n;
-    }
-
-    return 0;
-}
-
-static void adapter_reset_metrics(neu_adapter_t *adapter)
-{
-    neu_metric_entry_t *entry = NULL;
-    if (NULL == adapter->metrics) {
-        return;
-    }
-
-    HASH_LOOP(hh, adapter->metrics->entries, entry) { entry->value = 0; }
-
-    neu_group_metrics_t *g = NULL;
-    HASH_LOOP(hh, adapter->metrics->group_metrics, g)
-    {
-        HASH_LOOP(hh, g->entries, entry) { entry->value = 0; }
-    }
+    return neu_node_metrics_update(adapter->metrics, group, metric_name, n);
 }
 
 static int adapter_command(neu_adapter_t *adapter, neu_reqresp_head_t header,
@@ -827,11 +787,13 @@ static int adapter_loop(enum neu_event_io_type type, int fd, void *usr_data)
         neu_resp_get_node_state_t *resp =
             (neu_resp_get_node_state_t *) &header[1];
 
-        neu_metric_entry_t *e = NULL;
         if (NULL != adapter->metrics) {
+            pthread_mutex_lock(&adapter->metrics->lock);
+            neu_metric_entry_t *e = NULL;
             HASH_FIND_STR(adapter->metrics->entries, NEU_METRIC_LAST_RTT_MS, e);
+            resp->rtt = NULL != e ? e->value : 0;
+            pthread_mutex_unlock(&adapter->metrics->lock);
         }
-        resp->rtt    = NULL != e ? e->value : 0;
         resp->state  = neu_adapter_get_state(adapter);
         header->type = NEU_RESP_GET_NODE_STATE;
         neu_msg_exchange(header);
@@ -1247,11 +1209,6 @@ void neu_adapter_destroy(neu_adapter_t *adapter)
 
     if (NULL != adapter->metrics) {
         neu_metrics_del_node(adapter);
-        neu_metric_entry_t *e = NULL;
-        HASH_LOOP(hh, adapter->metrics->entries, e)
-        {
-            neu_metrics_unregister_entry(e->name);
-        }
         neu_node_metrics_free(adapter->metrics);
     }
 
@@ -1322,6 +1279,10 @@ int neu_adapter_start(neu_adapter_t *adapter)
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_RUNNING;
         adapter_storage_state(adapter->name, adapter->state);
+        if (NEU_NA_TYPE_DRIVER == neu_adapter_get_type(adapter)) {
+            neu_adapter_driver_start_group_timer(
+                (neu_adapter_driver_t *) adapter);
+        }
     }
 
     return error;
@@ -1360,7 +1321,11 @@ int neu_adapter_stop(neu_adapter_t *adapter)
     if (error == NEU_ERR_SUCCESS) {
         adapter->state = NEU_NODE_RUNNING_STATE_STOPPED;
         adapter_storage_state(adapter->name, adapter->state);
-        adapter_reset_metrics(adapter);
+        if (NEU_NA_TYPE_DRIVER == neu_adapter_get_type(adapter)) {
+            neu_adapter_driver_stop_group_timer(
+                (neu_adapter_driver_t *) adapter);
+        }
+        neu_adapter_reset_metrics(adapter);
     }
 
     return error;
@@ -1439,110 +1404,43 @@ int neu_adapter_register_group_metric(neu_adapter_t *adapter,
                                       const char *help, neu_metric_type_e type,
                                       uint64_t init)
 {
-    neu_group_metrics_t *group_metrics = NULL;
-
     if (NULL == adapter->metrics) {
         return -1;
     }
 
-    if (0 > neu_metrics_register_entry(name, help, type)) {
-        return -1;
-    }
-
-    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
-    if (NULL == group_metrics) {
-        group_metrics = calloc(1, sizeof(*group_metrics));
-        if (NULL == group_metrics) {
-            return -1;
-        }
-        group_metrics->name = strdup(group_name);
-        if (NULL == group_metrics->name) {
-            free(group_metrics);
-            return -1;
-        }
-        HASH_ADD_STR(adapter->metrics->group_metrics, name, group_metrics);
-    }
-
-    if (0 > neu_metric_entries_add(&group_metrics->entries, name, help, type,
-                                   init)) {
-        return -1;
-    }
-
-    return 0;
+    return neu_node_metrics_add(adapter->metrics, group_name, name, help, type,
+                                init);
 }
 
 int neu_adapter_update_group_metric(neu_adapter_t *adapter,
                                     const char *   group_name,
                                     const char *metric_name, uint64_t n)
 {
-    neu_metric_entry_t * entry         = NULL;
-    neu_group_metrics_t *group_metrics = NULL;
-
     if (NULL == adapter->metrics) {
         return -1;
     }
 
-    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
-    if (NULL == group_metrics) {
-        return -1;
-    }
-
-    HASH_FIND_STR(group_metrics->entries, metric_name, entry);
-    if (NULL == entry) {
-        return -1;
-    }
-
-    if (NEU_METRIC_TYPE_COUNTER == entry->type) {
-        entry->value += n;
-    } else {
-        entry->value = n;
-    }
-
-    return 0;
+    return neu_node_metrics_update(adapter->metrics, group_name, metric_name,
+                                   n);
 }
 
 int neu_adapter_metric_update_group_name(neu_adapter_t *adapter,
                                          const char *   group_name,
                                          const char *   new_group_name)
 {
-    neu_group_metrics_t *group_metrics = NULL;
-
     if (NULL == adapter->metrics) {
         return -1;
     }
 
-    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, group_metrics);
-    if (NULL == group_metrics) {
-        return -1;
-    }
-
-    char *name = strdup(new_group_name);
-    if (NULL == name) {
-        return -1;
-    }
-
-    HASH_DEL(adapter->metrics->group_metrics, group_metrics);
-    free(group_metrics->name);
-    group_metrics->name = name;
-    HASH_ADD_STR(adapter->metrics->group_metrics, name, group_metrics);
-
-    return 0;
+    return neu_node_metrics_update_group(adapter->metrics, group_name,
+                                         new_group_name);
 }
 
 void neu_adapter_del_group_metrics(neu_adapter_t *adapter,
                                    const char *   group_name)
 {
-    if (NULL == adapter->metrics) {
-        return;
-    }
-
-    neu_group_metrics_t *gm = NULL;
-    HASH_FIND_STR(adapter->metrics->group_metrics, group_name, gm);
-    if (NULL != gm) {
-        HASH_DEL(adapter->metrics->group_metrics, gm);
-        neu_metric_entry_t *e = NULL;
-        HASH_LOOP(hh, gm->entries, e) { neu_metrics_unregister_entry(e->name); }
-        neu_group_metrics_free(gm);
+    if (NULL != adapter->metrics) {
+        neu_node_metrics_del_group(adapter->metrics, group_name);
     }
 }
 

@@ -98,6 +98,13 @@ neu_node_state_t neu_adapter_get_state(neu_adapter_t *adapter);
 
 int neu_adapter_validate_tag(neu_adapter_t *adapter, neu_datatag_t *tag);
 
+static inline void neu_adapter_reset_metrics(neu_adapter_t *adapter)
+{
+    if (NULL != adapter->metrics) {
+        neu_node_metrics_reset(adapter->metrics);
+    }
+}
+
 int  neu_adapter_register_group_metric(neu_adapter_t *adapter,
                                        const char *group_name, const char *name,
                                        const char *help, neu_metric_type_e type,

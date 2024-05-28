@@ -36,6 +36,14 @@ extern "C" {
 #define NEURON_PLUGIN_VER_1_0 100
 #define NEURON_PLUGIN_VER_2_0 200
 
+#define NEU_PLUGIN_REGISTER_METRIC(plugin, name, init) \
+    plugin->common.adapter_callbacks->register_metric( \
+        plugin->common.adapter, name, name##_HELP, name##_TYPE, init)
+
+#define NEU_PLUGIN_UPDATE_METRIC(plugin, name, val, grp)                    \
+    plugin->common.adapter_callbacks->update_metric(plugin->common.adapter, \
+                                                    name, val, grp)
+
 extern int64_t global_timestamp;
 
 typedef struct neu_plugin_common {

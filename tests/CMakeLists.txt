@@ -49,6 +49,13 @@ target_include_directories(modbus_test PRIVATE
 				${CMAKE_SOURCE_DIR}/plugins/modbus)
 target_link_libraries(modbus_test neuron-base gtest_main gtest pthread zlog)
 
+add_executable(rolling_counter_test rolling_counter_test.cc)
+target_include_directories(rolling_counter_test PRIVATE 
+	${CMAKE_SOURCE_DIR}/src
+	${CMAKE_SOURCE_DIR}/include
+)
+target_link_libraries(rolling_counter_test neuron-base gtest_main gtest)
+
 include(GoogleTest)
 gtest_discover_tests(json_test)
 gtest_discover_tests(http_test)
@@ -56,3 +63,4 @@ gtest_discover_tests(jwt_test)
 gtest_discover_tests(base64_test)
 gtest_discover_tests(tag_sort_test)
 gtest_discover_tests(modbus_test)
+gtest_discover_tests(rolling_counter_test)

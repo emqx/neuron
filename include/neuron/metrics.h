@@ -26,24 +26,37 @@ extern "C" {
 
 #include <stdint.h>
 
+#include <pthread.h>
+
 #include "define.h"
 #include "type.h"
+#include "utils/rolling_counter.h"
+#include "utils/utextend.h"
 #include "utils/uthash.h"
+
+extern int64_t global_timestamp;
 
 typedef enum {
     NEU_METRIC_TYPE_COUNTER,
     NEU_METRIC_TYPE_GAUAGE,
     NEU_METRIC_TYPE_COUNTER_SET,
+    NEU_METRIC_TYPE_ROLLING_COUNTER,
+
+    NEU_METRIC_TYPE_FLAG_NO_RESET = 0x80,
 } neu_metric_type_e;
+
+#define NEU_METRIC_TYPE_MASK 0x0F
 
 // node running state
 #define NEU_METRIC_RUNNING_STATE "running_state"
-#define NEU_METRIC_RUNNING_STATE_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_RUNNING_STATE_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_RUNNING_STATE_HELP "Node running state"
 
 // node link state
 #define NEU_METRIC_LINK_STATE "link_state"
-#define NEU_METRIC_LINK_STATE_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_LINK_STATE_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_LINK_STATE_HELP "Node link state"
 
 // last round trip time in millisends
@@ -79,13 +92,15 @@ typedef enum {
 // maintained by neuron core
 // number of tags in group
 #define NEU_METRIC_TAGS_TOTAL "tags_total"
-#define NEU_METRIC_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_TAGS_TOTAL_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_TAGS_TOTAL_HELP "Total number of tags in the node"
 
 // maintained by neuron core
 // number of tags in group
 #define NEU_METRIC_GROUP_TAGS_TOTAL "group_tags_total"
-#define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE NEU_METRIC_TYPE_GAUAGE
+#define NEU_METRIC_GROUP_TAGS_TOTAL_TYPE \
+    (NEU_METRIC_TYPE_GAUAGE | NEU_METRIC_TYPE_FLAG_NO_RESET)
 #define NEU_METRIC_GROUP_TAGS_TOTAL_HELP "Total number of tags in the group"
 
 // number of messages sent in last group timer
@@ -140,11 +155,12 @@ typedef enum {
 
 // metric entry
 typedef struct {
-    const char *      name;  // NOTE: should points to string literal
-    const char *      help;  // NOTE: should points to string literal
-    neu_metric_type_e type;  //
-    uint64_t          value; //
-    UT_hash_handle    hh;    // ordered by name
+    const char *           name;  // NOTE: should points to string literal
+    const char *           help;  // NOTE: should points to string literal
+    neu_metric_type_e      type;  //
+    uint64_t               value; //
+    neu_rolling_counter_t *rcnt;  //
+    UT_hash_handle         hh;    // ordered by name
 } neu_metric_entry_t;
 
 // group metrics
@@ -156,6 +172,7 @@ typedef struct {
 
 // node metrics
 typedef struct {
+    pthread_mutex_t      lock;          // spin lock
     neu_node_type_e      type;          // node type
     char *               name;          // node name
     neu_metric_entry_t * entries;       // node metric entries
@@ -187,9 +204,34 @@ typedef struct {
     neu_metric_entry_t *registered_metrics;
 } neu_metrics_t;
 
+void neu_metrics_init();
+void neu_metrics_add_node(const neu_adapter_t *adapter);
+void neu_metrics_del_node(const neu_adapter_t *adapter);
+int  neu_metrics_register_entry(const char *name, const char *help,
+                                neu_metric_type_e type);
+void neu_metrics_unregister_entry(const char *name);
+
+typedef void (*neu_metrics_cb_t)(const neu_metrics_t *metrics, void *data);
+void neu_metrics_visist(neu_metrics_cb_t cb, void *data);
+
+static inline bool neu_metric_type_is_counter(neu_metric_type_e type)
+{
+    return NEU_METRIC_TYPE_COUNTER == (type & NEU_METRIC_TYPE_MASK);
+}
+
+static inline bool neu_metric_type_is_rolling_counter(neu_metric_type_e type)
+{
+    return NEU_METRIC_TYPE_ROLLING_COUNTER == (type & NEU_METRIC_TYPE_MASK);
+}
+
+static inline bool neu_metric_type_no_reset(neu_metric_type_e type)
+{
+    return NEU_METRIC_TYPE_FLAG_NO_RESET & type;
+}
+
 static inline const char *neu_metric_type_str(neu_metric_type_e type)
 {
-    if (NEU_METRIC_TYPE_COUNTER == type) {
+    if (neu_metric_type_is_counter(type)) {
         return "counter";
     } else {
         return "gauge";
@@ -202,6 +244,9 @@ int neu_metric_entries_add(neu_metric_entry_t **entries, const char *name,
 
 static inline void neu_metric_entry_free(neu_metric_entry_t *entry)
 {
+    if (neu_metric_type_is_rolling_counter(entry->type)) {
+        neu_rolling_counter_free(entry->rcnt);
+    }
     free(entry);
 }
 
@@ -215,10 +260,26 @@ static inline void neu_group_metrics_free(neu_group_metrics_t *group_metrics)
     HASH_ITER(hh, group_metrics->entries, e, tmp)
     {
         HASH_DEL(group_metrics->entries, e);
+        neu_metrics_unregister_entry(e->name);
         neu_metric_entry_free(e);
     }
     free(group_metrics->name);
     free(group_metrics);
+}
+
+static inline neu_node_metrics_t *
+neu_node_metrics_new(neu_adapter_t *adapter, neu_node_type_e type, char *name)
+{
+    neu_node_metrics_t *node_metrics =
+        (neu_node_metrics_t *) calloc(1, sizeof(*node_metrics));
+    if (NULL != node_metrics) {
+        pthread_mutex_init(&node_metrics->lock, NULL);
+        node_metrics->type    = type;
+        node_metrics->name    = name;
+        node_metrics->adapter = adapter;
+        // neu_metrics_add_node(adapter);
+    }
+    return node_metrics;
 }
 
 static inline void neu_node_metrics_free(neu_node_metrics_t *node_metrics)
@@ -227,10 +288,13 @@ static inline void neu_node_metrics_free(neu_node_metrics_t *node_metrics)
         return;
     }
 
+    pthread_mutex_destroy(&node_metrics->lock);
+
     neu_metric_entry_t *e = NULL, *etmp = NULL;
     HASH_ITER(hh, node_metrics->entries, e, etmp)
     {
         HASH_DEL(node_metrics->entries, e);
+        neu_metrics_unregister_entry(e->name);
         neu_metric_entry_free(e);
     }
 
@@ -244,15 +308,152 @@ static inline void neu_node_metrics_free(neu_node_metrics_t *node_metrics)
     free(node_metrics);
 }
 
-void neu_metrics_init();
-void neu_metrics_add_node(const neu_adapter_t *adapter);
-void neu_metrics_del_node(const neu_adapter_t *adapter);
-int  neu_metrics_register_entry(const char *name, const char *help,
-                                neu_metric_type_e type);
-void neu_metrics_unregister_entry(const char *name);
+static inline int neu_node_metrics_add(neu_node_metrics_t *node_metrics,
+                                       const char *group_name, const char *name,
+                                       const char *help, neu_metric_type_e type,
+                                       uint64_t init)
+{
+    int rv = 0;
 
-typedef void (*neu_metrics_cb_t)(const neu_metrics_t *metrics, void *data);
-void neu_metrics_visist(neu_metrics_cb_t cb, void *data);
+    if (0 > neu_metrics_register_entry(name, help, type)) {
+        return -1;
+    }
+
+    pthread_mutex_lock(&node_metrics->lock);
+    if (NULL == group_name) {
+        rv = neu_metric_entries_add(&node_metrics->entries, name, help, type,
+                                    init);
+    } else {
+        neu_group_metrics_t *group_metrics = NULL;
+        HASH_FIND_STR(node_metrics->group_metrics, group_name, group_metrics);
+        if (NULL != group_metrics) {
+            rv = neu_metric_entries_add(&group_metrics->entries, name, help,
+                                        type, init);
+        } else {
+            group_metrics =
+                (neu_group_metrics_t *) calloc(1, sizeof(*group_metrics));
+            if (NULL != group_metrics &&
+                NULL != (group_metrics->name = strdup(group_name))) {
+                HASH_ADD_STR(node_metrics->group_metrics, name, group_metrics);
+                rv = neu_metric_entries_add(&group_metrics->entries, name, help,
+                                            type, init);
+            } else {
+                free(group_metrics);
+                rv = -1;
+            }
+        }
+    }
+    pthread_mutex_unlock(&node_metrics->lock);
+
+    if (0 != rv) {
+        neu_metrics_unregister_entry(name);
+    }
+    return rv;
+}
+
+static inline int neu_node_metrics_update(neu_node_metrics_t *node_metrics,
+                                          const char *        group,
+                                          const char *metric_name, uint64_t n)
+{
+    neu_metric_entry_t *entry = NULL;
+
+    pthread_mutex_lock(&node_metrics->lock);
+    if (NULL == group) {
+        HASH_FIND_STR(node_metrics->entries, metric_name, entry);
+    } else if (NULL != node_metrics->group_metrics) {
+        neu_group_metrics_t *g = NULL;
+        HASH_FIND_STR(node_metrics->group_metrics, group, g);
+        if (NULL != g) {
+            HASH_FIND_STR(g->entries, metric_name, entry);
+        }
+    }
+
+    if (NULL == entry) {
+        pthread_mutex_unlock(&node_metrics->lock);
+        return -1;
+    }
+
+    if (neu_metric_type_is_counter(entry->type)) {
+        entry->value += n;
+    } else if (neu_metric_type_is_rolling_counter(entry->type)) {
+        entry->value =
+            neu_rolling_counter_inc(entry->rcnt, global_timestamp, n);
+    } else {
+        entry->value = n;
+    }
+    pthread_mutex_unlock(&node_metrics->lock);
+
+    return 0;
+}
+
+static inline void neu_node_metrics_reset(neu_node_metrics_t *node_metrics)
+{
+    neu_metric_entry_t *entry = NULL;
+
+    pthread_mutex_lock(&node_metrics->lock);
+    HASH_LOOP(hh, node_metrics->entries, entry)
+    {
+        if (!neu_metric_type_no_reset(entry->type)) {
+            entry->value = 0;
+            if (neu_metric_type_is_rolling_counter(entry->type)) {
+                neu_rolling_counter_reset(entry->rcnt);
+            }
+        }
+    }
+
+    neu_group_metrics_t *g = NULL;
+    HASH_LOOP(hh, node_metrics->group_metrics, g)
+    {
+        HASH_LOOP(hh, g->entries, entry)
+        {
+            if (!neu_metric_type_no_reset(entry->type)) {
+                entry->value = 0;
+                if (neu_metric_type_is_rolling_counter(entry->type)) {
+                    neu_rolling_counter_reset(entry->rcnt);
+                }
+            }
+        }
+    }
+    pthread_mutex_unlock(&node_metrics->lock);
+}
+
+static inline int
+neu_node_metrics_update_group(neu_node_metrics_t *node_metrics,
+                              const char *        group_name,
+                              const char *        new_group_name)
+{
+    int                  rv            = -1;
+    neu_group_metrics_t *group_metrics = NULL;
+
+    pthread_mutex_lock(&node_metrics->lock);
+    HASH_FIND_STR(node_metrics->group_metrics, group_name, group_metrics);
+    if (NULL != group_metrics) {
+        char *name = strdup(new_group_name);
+        if (NULL != name) {
+            HASH_DEL(node_metrics->group_metrics, group_metrics);
+            free(group_metrics->name);
+            group_metrics->name = name;
+            HASH_ADD_STR(node_metrics->group_metrics, name, group_metrics);
+            rv = 0;
+        }
+    }
+    pthread_mutex_unlock(&node_metrics->lock);
+
+    return rv;
+}
+
+static inline void neu_node_metrics_del_group(neu_node_metrics_t *node_metrics,
+                                              const char *        group_name)
+{
+    neu_group_metrics_t *gm = NULL;
+    pthread_mutex_lock(&node_metrics->lock);
+    HASH_FIND_STR(node_metrics->group_metrics, group_name, gm);
+    if (NULL != gm) {
+        HASH_DEL(node_metrics->group_metrics, gm);
+        neu_group_metrics_free(gm);
+    }
+    pthread_mutex_unlock(&node_metrics->lock);
+}
 
 #ifdef __cplusplus
 }
