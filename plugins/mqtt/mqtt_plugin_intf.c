@@ -374,9 +374,13 @@ int mqtt_plugin_request(neu_plugin_t *plugin, neu_reqresp_head_t *head,
         error = handle_read_response(plugin, head->ctx, data);
         break;
     case NEU_REQRESP_TRANS_DATA: {
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_5S, 1, NULL);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_30S, 1, NULL);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_60S, 1, NULL);
+        if (plugin->client && neu_mqtt_client_is_open(plugin->client)) {
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_5S, 1, NULL);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_30S, 1,
+                                     NULL);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_60S, 1,
+                                     NULL);
+        }
         error = handle_trans_data(plugin, data);
         break;
     }
