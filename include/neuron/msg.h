@@ -30,8 +30,10 @@ extern "C" {
 #include "json/neu_json_rw.h"
 
 #include "define.h"
+#include "errcodes.h"
 #include "tag.h"
 #include "type.h"
+#include <math.h>
 
 typedef struct {
     neu_node_running_state_e running;
@@ -841,14 +843,26 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
         tag_json->value.val_int = tag_value->value.value.u64;
         break;
     case NEU_TYPE_FLOAT:
-        tag_json->t               = NEU_JSON_FLOAT;
-        tag_json->value.val_float = tag_value->value.value.f32;
-        tag_json->precision       = tag_value->value.precision;
+        if (isnan(tag_value->value.value.f32)) {
+            tag_json->t               = NEU_JSON_FLOAT;
+            tag_json->value.val_float = tag_value->value.value.f32;
+            tag_json->error           = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+        } else {
+            tag_json->t               = NEU_JSON_FLOAT;
+            tag_json->value.val_float = tag_value->value.value.f32;
+            tag_json->precision       = tag_value->value.precision;
+        }
         break;
     case NEU_TYPE_DOUBLE:
-        tag_json->t                = NEU_JSON_DOUBLE;
-        tag_json->value.val_double = tag_value->value.value.d64;
-        tag_json->precision        = tag_value->value.precision;
+        if (isnan(tag_value->value.value.d64)) {
+            tag_json->t                = NEU_JSON_DOUBLE;
+            tag_json->value.val_double = tag_value->value.value.d64;
+            tag_json->error            = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+        } else {
+            tag_json->t                = NEU_JSON_DOUBLE;
+            tag_json->value.val_double = tag_value->value.value.d64;
+            tag_json->precision        = tag_value->value.precision;
+        }
         break;
     case NEU_TYPE_BOOL:
         tag_json->t              = NEU_JSON_BOOL;
