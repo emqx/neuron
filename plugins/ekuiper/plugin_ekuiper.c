@@ -322,9 +322,13 @@ static int ekuiper_plugin_request(neu_plugin_t *      plugin,
     case NEU_REQRESP_TRANS_DATA: {
         neu_reqresp_trans_data_t *trans_data = data;
 
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_5S, 1, NULL);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_30S, 1, NULL);
-        NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_60S, 1, NULL);
+        if (plugin->started) {
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_5S, 1, NULL);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_30S, 1,
+                                     NULL);
+            NEU_PLUGIN_UPDATE_METRIC(plugin, NEU_METRIC_TRANS_DATA_60S, 1,
+                                     NULL);
+        }
 
         if (disconnected) {
             plog_debug(plugin, "not connected");
