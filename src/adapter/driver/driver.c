@@ -1987,6 +1987,14 @@ static void read_report_group(int64_t timestamp, int64_t timeout,
             continue;
         }
 
+        if ((tag->type == NEU_TYPE_FLOAT && isnan(value.value.value.f32)) ||
+            (tag->type == NEU_TYPE_DOUBLE && isnan(value.value.value.d64))) {
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+            utarray_push_back(tag_values, &tag_value);
+            continue;
+        }
+
         switch (tag->type) {
         case NEU_TYPE_UINT16:
         case NEU_TYPE_INT16:
