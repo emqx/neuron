@@ -125,7 +125,9 @@ void neu_conn_stop(neu_conn_t *conn)
 void neu_conn_start(neu_conn_t *conn)
 {
     pthread_mutex_lock(&conn->mtx);
-    conn->stop = false;
+    conn->state.recv_bytes = 0;
+    conn->state.send_bytes = 0;
+    conn->stop             = false;
     pthread_mutex_unlock(&conn->mtx);
 }
 
