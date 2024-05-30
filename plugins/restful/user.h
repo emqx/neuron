@@ -41,6 +41,8 @@ int neu_user_update_password(neu_user_t *user, const char *new_password);
 neu_user_t *neu_load_user(const char *name);
 int         neu_save_user(neu_user_t *user);
 
+char *neu_decrypt_user_password(const char *crypted_password);
+
 #ifdef __cplusplus
 }
 #endif

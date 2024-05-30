@@ -11,6 +11,7 @@
 
 #include "errcodes.h"
 #include "user.h"
+#include "utils/base64.h"
 #include "utils/log.h"
 
 static const unsigned char cov_2char[64] = {
@@ -436,6 +437,93 @@ static inline int checkout_password_strength(const char *password)
         return NEU_ERR_WEAK_PASSWORD_PATTERN;
     }
     return 0;
+}
+
+static inline EVP_CIPHER_CTX *aes_ctx_new()
+{
+    int           ret     = 0;
+    unsigned char key[32] = { 90,  45,  54,  10,  182, 19,  52,  130,
+                              109, 151, 202, 252, 248, 177, 136, 35,
+                              234, 204, 188, 2,   72,  215, 207, 52,
+                              22,  5,   193, 52,  228, 224, 157, 28 };
+    unsigned char iv[16]  = { 239, 227, 132, 238, 4,   225, 127, 67,
+                             202, 77,  31,  79,  203, 70,  149, 132 };
+
+    EVP_CIPHER_CTX *e = EVP_CIPHER_CTX_new();
+    if (NULL == e) {
+        return NULL;
+    }
+
+    EVP_CIPHER_CTX_init(e);
+
+    ret = EVP_DecryptInit_ex(e, EVP_aes_256_cbc(), NULL, key, iv);
+    if (0 == ret) {
+        EVP_CIPHER_CTX_free(e);
+        return NULL;
+    }
+
+    return e;
+}
+
+static char *aes_decrypt(unsigned char *cipher_text, int *len)
+{
+    char *plain_text     = NULL;
+    int   plain_text_len = *len + EVP_CIPHER_block_size(EVP_aes_256_cbc());
+    int   f_len          = 0;
+    int   ret            = 0;
+
+    EVP_CIPHER_CTX *ctx = aes_ctx_new();
+    if (NULL == ctx) {
+        nlog_warn("alloc ctx fail");
+        return NULL;
+    }
+
+    plain_text = calloc(1, plain_text_len + 1);
+    if (NULL == plain_text) {
+        nlog_warn("alloc plain_text fail");
+        return NULL;
+    }
+
+    ret = EVP_DecryptUpdate(ctx, (unsigned char *) plain_text, &plain_text_len,
+                            (unsigned char *) cipher_text, *len);
+    if (ret <= 0) {
+        free(plain_text);
+        EVP_CIPHER_CTX_free(ctx);
+        nlog_warn("decrypt update error: %d", ret);
+        return NULL;
+    }
+
+    ret = EVP_DecryptFinal_ex(
+        ctx, (unsigned char *) plain_text + plain_text_len, &f_len);
+    if (ret <= 0) {
+        free(plain_text);
+        EVP_CIPHER_CTX_free(ctx);
+        nlog_warn("decrypt final error: %d", ret);
+        return NULL;
+    }
+
+    *len = plain_text_len + f_len;
+    EVP_CIPHER_CTX_free(ctx);
+
+    return plain_text;
+}
+
+char *neu_decrypt_user_password(const char *crypted_password)
+{
+    int            len         = 0;
+    char *         password    = NULL;
+    unsigned char *cipher_text = neu_decode64(&len, crypted_password);
+    if (cipher_text && (password = aes_decrypt(cipher_text, &len))) {
+        password[len] = '\0';
+        for (int i = 0; i < len; ++i) {
+            if ('\0' == password[i]) {
+                free(password);
+                password = NULL;
+            }
+        }
+    }
+    free(cipher_text);
+    return password;
 }
 
 neu_user_t *neu_user_new(const char *name, const char *password)
