@@ -222,9 +222,8 @@ static void update_im(neu_adapter_t *adapter, const char *group,
 {
     neu_adapter_driver_t *driver = (neu_adapter_driver_t *) adapter;
 
-    if (tag == NULL || value.type == NEU_TYPE_ERROR) {
-        nlog_warn("update_im tag is null or value is error %d",
-                  value.value.i32);
+    if (tag == NULL) {
+        nlog_warn("update_im tag is null");
         return;
     }
 
@@ -237,6 +236,9 @@ static void update_im(neu_adapter_t *adapter, const char *group,
                                    value, metas, n_meta, true);
     driver->adapter.cb_funs.update_metric(&driver->adapter,
                                           NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
+    if (value.type == NEU_TYPE_ERROR) {
+        return;
+    }
     neu_datatag_t *first = utarray_front(tags);
 
     if (first == NULL ||
