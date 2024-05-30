@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <ctype.h>
 #include <string.h>
 
 #include <openssl/evp.h>
@@ -343,6 +344,100 @@ end:
     return hash;
 }
 
+static bool check_password_alphabet(const char *password)
+{
+    int kind = 0;
+
+    // check special characters
+    const char *special = "_`~!@#$%^&*()+=|{}':;',\\[\\].<>/"
+                          "?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？\n\r\t";
+    if (NULL != strpbrk(password, special)) {
+        ++kind;
+    }
+
+    // check digits
+    if (NULL != strpbrk(password, "0123456789")) {
+        ++kind;
+    }
+
+    // check uppercase letters
+    if (NULL != strpbrk(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")) {
+        ++kind;
+    }
+
+    // check lowercase letters
+    if (NULL != strpbrk(password, "abcdefghijklmnopqrstuvwxyz")) {
+        ++kind;
+    }
+
+    return kind > 2;
+}
+
+static bool check_password_pattern(const char *password)
+{
+    const int n = strlen(password) - 2;
+
+    // password must not contain character of length 3
+    for (int i = 0; i < n; ++i) {
+        if (password[i] == password[i + 1] && password[i] == password[i + 2]) {
+            nlog_error("password has three `%c` in a row", password[i]);
+            return false;
+        }
+    }
+
+    const char *patterns[] = {
+        "qaz",    "wsx",   "edc",    "rfv",    "tgb",     "yhn",   "ujm",
+        "ik,",    "ol.",   "p;/",    "esz",    "rdx",     "tfc",   "ygv",
+        "uhb",    "ijn",   "okm",    "pl,",    "[;.",     "]'/",   "1qa",
+        "2ws",    "3ed",   "4rf",    "5tg",    "6yh",     "7uj",   "8ik",
+        "9ol",    "0p;",   "-['",    "=[;",    "-pl",     "0ok",   "9ij",
+        "8uh",    "7yg",   "6tf",    "5rd",    "4es",     "3wa",   "root",
+        "admin",  "mysql", "oracle", "system", "windows", "linux", "java",
+        "python", "unix",  "test",
+    };
+
+    // password must not contain any pattern
+    for (unsigned i = 0; i < sizeof(patterns) / sizeof(patterns[0]); ++i) {
+        if (NULL != strstr(password, patterns[i])) {
+            nlog_error("password has weak pattern `%s`", patterns[i]);
+            return false;
+        }
+    }
+
+    const char *sequences[] = {
+        "qwertyuiop[]\\", "asdfghjkl;'", "zxcvbnm,./",
+        "901234567890-=", "9876543210",  "abcdefghijklmnopqrstuvwxyz"
+    };
+
+    // password must not have common sub string of length 3 with any sequence
+    for (unsigned i = 0; i < sizeof(sequences) / sizeof(sequences[0]); ++i) {
+        const char *seq = sequences[i];
+        const int   m   = strlen(seq) - 2;
+        for (int j = 0; j < m; ++j) {
+            for (int k = 0; k < n; ++k) {
+                if (seq[j] == password[k] && seq[j + 1] == password[k + 1] &&
+                    seq[j + 2] == password[k + 2]) {
+                    nlog_error("password has weak pattern `%.3s`", &seq[j]);
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+static inline int checkout_password_strength(const char *password)
+{
+    if (false == check_password_alphabet(password)) {
+        return NEU_ERR_WEAK_PASSWORD_ALPHABET;
+    }
+    if (false == check_password_pattern(password)) {
+        return NEU_ERR_WEAK_PASSWORD_PATTERN;
+    }
+    return 0;
+}
+
 neu_user_t *neu_user_new(const char *name, const char *password)
 {
     neu_user_t *user = malloc(sizeof(*user));
@@ -415,6 +510,11 @@ int neu_save_user(neu_user_t *user)
 
 int neu_user_update_password(neu_user_t *user, const char *new_password)
 {
+    int rv = checkout_password_strength(new_password);
+    if (0 != rv) {
+        return rv;
+    }
+
     char *salt = user->hash + 3;
     char *hash = hash_password(new_password, salt);
     if (NULL == hash) {
