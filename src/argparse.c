@@ -99,7 +99,7 @@ static inline int reset_password()
     neu_persist_user_info_t info = {
         .name = "admin",
         .hash =
-            "$5$PwFeXpBBIBZuZdZl$fP8fFPWCLoaWcnVXVSR.3Xi8TEqCvX92gjhowNNn6S4",
+            "$5$PwFeXpBBIBZuZdZl$MUEmeqpMfQA9fzQ3s9bojsBhZOHJwKHiukeWyutsSR6",
     };
 
     int rv = neu_persister_create(g_config_dir);

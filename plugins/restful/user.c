@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <ctype.h>
 #include <string.h>
 
 #include <openssl/evp.h>
@@ -10,6 +11,7 @@
 
 #include "errcodes.h"
 #include "user.h"
+#include "utils/base64.h"
 #include "utils/log.h"
 
 static const unsigned char cov_2char[64] = {
@@ -343,6 +345,187 @@ end:
     return hash;
 }
 
+static bool check_password_alphabet(const char *password)
+{
+    int kind = 0;
+
+    // check special characters
+    const char *special = "_`~!@#$%^&*()+=|{}':;',\\[\\].<>/"
+                          "?~！@#￥%……&*（）——+|{}【】‘；：”“’。，、？\n\r\t";
+    if (NULL != strpbrk(password, special)) {
+        ++kind;
+    }
+
+    // check digits
+    if (NULL != strpbrk(password, "0123456789")) {
+        ++kind;
+    }
+
+    // check uppercase letters
+    if (NULL != strpbrk(password, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")) {
+        ++kind;
+    }
+
+    // check lowercase letters
+    if (NULL != strpbrk(password, "abcdefghijklmnopqrstuvwxyz")) {
+        ++kind;
+    }
+
+    return kind > 2;
+}
+
+static bool check_password_pattern(const char *password)
+{
+    const int n = strlen(password) - 2;
+
+    // password must not contain character of length 3
+    for (int i = 0; i < n; ++i) {
+        if (password[i] == password[i + 1] && password[i] == password[i + 2]) {
+            nlog_error("password has three `%c` in a row", password[i]);
+            return false;
+        }
+    }
+
+    const char *patterns[] = {
+        "qaz",    "wsx",   "edc",    "rfv",    "tgb",     "yhn",   "ujm",
+        "ik,",    "ol.",   "p;/",    "esz",    "rdx",     "tfc",   "ygv",
+        "uhb",    "ijn",   "okm",    "pl,",    "[;.",     "]'/",   "1qa",
+        "2ws",    "3ed",   "4rf",    "5tg",    "6yh",     "7uj",   "8ik",
+        "9ol",    "0p;",   "-['",    "=[;",    "-pl",     "0ok",   "9ij",
+        "8uh",    "7yg",   "6tf",    "5rd",    "4es",     "3wa",   "root",
+        "admin",  "mysql", "oracle", "system", "windows", "linux", "java",
+        "python", "unix",  "test",
+    };
+
+    // password must not contain any pattern
+    for (unsigned i = 0; i < sizeof(patterns) / sizeof(patterns[0]); ++i) {
+        if (NULL != strstr(password, patterns[i])) {
+            nlog_error("password has weak pattern `%s`", patterns[i]);
+            return false;
+        }
+    }
+
+    const char *sequences[] = {
+        "qwertyuiop[]\\", "asdfghjkl;'", "zxcvbnm,./",
+        "901234567890-=", "9876543210",  "abcdefghijklmnopqrstuvwxyz"
+    };
+
+    // password must not have common sub string of length 3 with any sequence
+    for (unsigned i = 0; i < sizeof(sequences) / sizeof(sequences[0]); ++i) {
+        const char *seq = sequences[i];
+        const int   m   = strlen(seq) - 2;
+        for (int j = 0; j < m; ++j) {
+            for (int k = 0; k < n; ++k) {
+                if (seq[j] == password[k] && seq[j + 1] == password[k + 1] &&
+                    seq[j + 2] == password[k + 2]) {
+                    nlog_error("password has weak pattern `%.3s`", &seq[j]);
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+static inline int checkout_password_strength(const char *password)
+{
+    if (false == check_password_alphabet(password)) {
+        return NEU_ERR_WEAK_PASSWORD_ALPHABET;
+    }
+    if (false == check_password_pattern(password)) {
+        return NEU_ERR_WEAK_PASSWORD_PATTERN;
+    }
+    return 0;
+}
+
+static inline EVP_CIPHER_CTX *aes_ctx_new()
+{
+    int           ret     = 0;
+    unsigned char key[32] = { 90,  45,  54,  10,  182, 19,  52,  130,
+                              109, 151, 202, 252, 248, 177, 136, 35,
+                              234, 204, 188, 2,   72,  215, 207, 52,
+                              22,  5,   193, 52,  228, 224, 157, 28 };
+    unsigned char iv[16]  = { 239, 227, 132, 238, 4,   225, 127, 67,
+                             202, 77,  31,  79,  203, 70,  149, 132 };
+
+    EVP_CIPHER_CTX *e = EVP_CIPHER_CTX_new();
+    if (NULL == e) {
+        return NULL;
+    }
+
+    EVP_CIPHER_CTX_init(e);
+
+    ret = EVP_DecryptInit_ex(e, EVP_aes_256_cbc(), NULL, key, iv);
+    if (0 == ret) {
+        EVP_CIPHER_CTX_free(e);
+        return NULL;
+    }
+
+    return e;
+}
+
+static char *aes_decrypt(unsigned char *cipher_text, int *len)
+{
+    char *plain_text     = NULL;
+    int   plain_text_len = *len + EVP_CIPHER_block_size(EVP_aes_256_cbc());
+    int   f_len          = 0;
+    int   ret            = 0;
+
+    EVP_CIPHER_CTX *ctx = aes_ctx_new();
+    if (NULL == ctx) {
+        nlog_warn("alloc ctx fail");
+        return NULL;
+    }
+
+    plain_text = calloc(1, plain_text_len + 1);
+    if (NULL == plain_text) {
+        nlog_warn("alloc plain_text fail");
+        return NULL;
+    }
+
+    ret = EVP_DecryptUpdate(ctx, (unsigned char *) plain_text, &plain_text_len,
+                            (unsigned char *) cipher_text, *len);
+    if (ret <= 0) {
+        free(plain_text);
+        EVP_CIPHER_CTX_free(ctx);
+        nlog_warn("decrypt update error: %d", ret);
+        return NULL;
+    }
+
+    ret = EVP_DecryptFinal_ex(
+        ctx, (unsigned char *) plain_text + plain_text_len, &f_len);
+    if (ret <= 0) {
+        free(plain_text);
+        EVP_CIPHER_CTX_free(ctx);
+        nlog_warn("decrypt final error: %d", ret);
+        return NULL;
+    }
+
+    *len = plain_text_len + f_len;
+    EVP_CIPHER_CTX_free(ctx);
+
+    return plain_text;
+}
+
+char *neu_decrypt_user_password(const char *crypted_password)
+{
+    int            len         = 0;
+    char *         password    = NULL;
+    unsigned char *cipher_text = neu_decode64(&len, crypted_password);
+    if (cipher_text && (password = aes_decrypt(cipher_text, &len))) {
+        password[len] = '\0';
+        for (int i = 0; i < len; ++i) {
+            if ('\0' == password[i]) {
+                free(password);
+                password = NULL;
+            }
+        }
+    }
+    free(cipher_text);
+    return password;
+}
+
 neu_user_t *neu_user_new(const char *name, const char *password)
 {
     neu_user_t *user = malloc(sizeof(*user));
@@ -415,6 +598,11 @@ int neu_save_user(neu_user_t *user)
 
 int neu_user_update_password(neu_user_t *user, const char *new_password)
 {
+    int rv = checkout_password_strength(new_password);
+    if (0 != rv) {
+        return rv;
+    }
+
     char *salt = user->hash + 3;
     char *hash = hash_password(new_password, salt);
     if (NULL == hash) {

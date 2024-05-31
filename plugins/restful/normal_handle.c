@@ -53,23 +53,20 @@ void handle_login(nng_aio *aio)
     NEU_PROCESS_HTTP_REQUEST(
         aio, neu_json_login_req_t, neu_json_decode_login_req, {
             neu_json_login_resp_t login_resp = { 0 };
-            neu_user_t *          user       = neu_load_user(req->name);
-            int                   pass_len   = strlen(req->pass);
+            neu_user_t *          user       = NULL;
+            char *password = neu_decrypt_user_password(req->pass);
 
-            if (NULL == user) {
+            if (NULL == password) {
+                nlog_error("could not decrypt user `%s` password", req->name);
+                NEU_JSON_RESPONSE_ERROR(NEU_ERR_DECRYPT_PASSWORD_FAILED, {
+                    neu_http_response(aio, error_code.error, result_error);
+                });
+            } else if (NULL == (user = neu_load_user(req->name))) {
                 nlog_error("could not find user `%s`", req->name);
                 NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_USER_OR_PASSWORD, {
                     neu_http_response(aio, error_code.error, result_error);
                 });
-            } else if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
-                       pass_len > NEU_USER_PASSWORD_MAX_LEN) {
-                nlog_error("user `%s` password too short or too long",
-                           req->name);
-                NEU_JSON_RESPONSE_ERROR(NEU_ERR_INVALID_PASSWORD_LEN, {
-                    neu_http_response(aio, error_code.error, result_error);
-                });
-            } else if (neu_user_check_password(user, req->pass)) {
-
+            } else if (neu_user_check_password(user, password)) {
                 char *token  = NULL;
                 char *result = NULL;
 
@@ -95,6 +92,7 @@ void handle_login(nng_aio *aio)
                 });
             }
 
+            free(password);
             neu_user_free(user);
         })
 }
@@ -105,21 +103,28 @@ void handle_password(nng_aio *aio)
         aio, neu_json_password_req_t, neu_json_decode_password_req, {
             neu_user_t *user     = NULL;
             int         rv       = 0;
-            int         pass_len = strlen(req->new_pass);
+            char *      new_pass = neu_decrypt_user_password(req->new_pass);
+            char *      old_pass = neu_decrypt_user_password(req->old_pass);
+            int         pass_len = new_pass ? strlen(new_pass) : 0;
 
-            if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
-                pass_len > NEU_USER_PASSWORD_MAX_LEN) {
+            if (NULL == new_pass) {
+                nlog_error("could not decrypt user `%s` new pass", req->name);
+                rv = NEU_ERR_DECRYPT_PASSWORD_FAILED;
+            } else if (NULL == old_pass) {
+                nlog_error("could not decrypt user `%s` old pass", req->name);
+                rv = NEU_ERR_DECRYPT_PASSWORD_FAILED;
+            } else if (pass_len < NEU_USER_PASSWORD_MIN_LEN ||
+                       pass_len > NEU_USER_PASSWORD_MAX_LEN) {
                 nlog_error("user `%s` new password too short or too long",
                            req->name);
                 rv = NEU_ERR_INVALID_PASSWORD_LEN;
             } else if (NULL == (user = neu_load_user(req->name))) {
                 nlog_error("could not find user `%s`", req->name);
                 rv = NEU_ERR_INVALID_USER_OR_PASSWORD;
-            } else if (!neu_user_check_password(user, req->old_pass)) {
+            } else if (!neu_user_check_password(user, old_pass)) {
                 nlog_error("user `%s` password check fail", req->name);
                 rv = NEU_ERR_INVALID_USER_OR_PASSWORD;
-            } else if (0 !=
-                       (rv = neu_user_update_password(user, req->new_pass))) {
+            } else if (0 != (rv = neu_user_update_password(user, new_pass))) {
                 nlog_error("user `%s` update password fail", req->name);
             } else if (0 != (rv = neu_save_user(user))) {
                 nlog_error("user `%s` persist fail", req->name);
@@ -129,6 +134,8 @@ void handle_password(nng_aio *aio)
                 neu_http_response(aio, error_code.error, result_error);
             });
 
+            free(new_pass);
+            free(old_pass);
             neu_user_free(user);
         })
 }

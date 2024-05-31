@@ -68,9 +68,13 @@ int Base64Decode(const char *b64message, unsigned char **buffer, int *length)
     BIO_set_flags(
         bio, BIO_FLAGS_BASE64_NO_NL); // Do not use newlines to flush buffer
     *length = BIO_read(bio, *buffer, strlen(b64message));
-    assert(*length == decodeLen); // length should equal decodeLen, else
-                                  // something went horribly wrong
     BIO_free_all(bio);
+
+    if (*length != decodeLen) {
+        free(*buffer);
+        *buffer = NULL;
+        return -1;
+    }
 
     return (0); // success
 }
