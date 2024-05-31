@@ -192,16 +192,16 @@ static void update_im(neu_adapter_t *adapter, const char *group,
         return;
     }
 
-    UT_array *tags = neu_adapter_driver_get_ptag(driver, group, tag);
-    if (tags == NULL) {
-        return;
-    }
-
     neu_driver_cache_update_change(driver->cache, group, tag, global_timestamp,
                                    value, metas, n_meta, true);
     driver->adapter.cb_funs.update_metric(&driver->adapter,
                                           NEU_METRIC_TAG_READS_TOTAL, 1, NULL);
     if (value.type == NEU_TYPE_ERROR) {
+        return;
+    }
+
+    UT_array *tags = neu_adapter_driver_get_ptag(driver, group, tag);
+    if (tags == NULL) {
         return;
     }
     neu_datatag_t *first = utarray_front(tags);
