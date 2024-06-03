@@ -228,6 +228,10 @@ static int dashb_plugin_request(neu_plugin_t *      plugin,
     case NEU_RESP_READ_GROUP:
         handle_read_resp(header->ctx, (neu_resp_read_group_t *) data);
         break;
+    case NEU_RESP_READ_GROUP_PAGINATE:
+        handle_read_paginate_resp(header->ctx,
+                                  (neu_resp_read_group_paginate_t *) data);
+        break;
     case NEU_RESP_GET_TEMPLATE:
         handle_get_template_resp(header->ctx, (neu_resp_get_template_t *) data);
         break;
