@@ -46,6 +46,8 @@ typedef enum neu_reqresp_type {
 
     NEU_REQ_READ_GROUP,
     NEU_RESP_READ_GROUP,
+    NEU_REQ_READ_GROUP_PAGINATE,
+    NEU_RESP_READ_GROUP_PAGINATE,
     NEU_REQ_WRITE_TAG,
     NEU_REQ_WRITE_TAGS,
     NEU_REQ_WRITE_GTAGS,
@@ -123,11 +125,13 @@ typedef enum neu_reqresp_type {
 static const char *neu_reqresp_type_string_t[] = {
     [NEU_RESP_ERROR] = "NEU_RESP_ERROR",
 
-    [NEU_REQ_READ_GROUP]  = "NEU_REQ_READ_GROUP",
-    [NEU_RESP_READ_GROUP] = "NEU_RESP_READ_GROUP",
-    [NEU_REQ_WRITE_TAG]   = "NEU_REQ_WRITE_TAG",
-    [NEU_REQ_WRITE_TAGS]  = "NEU_REQ_WRITE_TAGS",
-    [NEU_REQ_WRITE_GTAGS] = "NEU_REQ_WRITE_GTAGS",
+    [NEU_REQ_READ_GROUP]           = "NEU_REQ_READ_GROUP",
+    [NEU_RESP_READ_GROUP]          = "NEU_RESP_READ_GROUP",
+    [NEU_REQ_READ_GROUP_PAGINATE]  = "NEU_REQ_READ_GROUP_PAGINATE",
+    [NEU_RESP_READ_GROUP_PAGINATE] = "NEU_RESP_READ_GROUP_PAGINATE",
+    [NEU_REQ_WRITE_TAG]            = "NEU_REQ_WRITE_TAG",
+    [NEU_REQ_WRITE_TAGS]           = "NEU_REQ_WRITE_TAGS",
+    [NEU_REQ_WRITE_GTAGS]          = "NEU_REQ_WRITE_GTAGS",
 
     [NEU_REQ_SUBSCRIBE_GROUP]        = "NEU_REQ_SUBSCRIBE_GROUP",
     [NEU_REQ_UNSUBSCRIBE_GROUP]      = "NEU_REQ_UNSUBSCRIBE_GROUP",
@@ -619,6 +623,26 @@ static inline void neu_req_read_group_fini(neu_req_read_group_t *req)
     free(req->desc);
 }
 
+typedef struct neu_req_read_group_paginate {
+    char *driver;
+    char *group;
+    char *name;
+    char *desc;
+    bool  sync;
+    int   current_page;
+    int   page_size;
+    bool  is_error;
+} neu_req_read_group_paginate_t;
+
+static inline void
+neu_req_read_group_paginate_fini(neu_req_read_group_paginate_t *req)
+{
+    free(req->driver);
+    free(req->group);
+    free(req->name);
+    free(req->desc);
+}
+
 typedef struct neu_req_write_tag {
     char *       driver;
     char *       group;
@@ -701,7 +725,45 @@ typedef struct {
     UT_array *tags; // neu_resp_tag_value_meta_t
 } neu_resp_read_group_t;
 
+typedef struct neu_resp_tag_value_meta_paginate {
+    char           tag[NEU_TAG_NAME_LEN];
+    neu_dvalue_t   value;
+    neu_tag_meta_t metas[NEU_TAG_META_SIZE];
+    neu_datatag_t  datatag;
+} neu_resp_tag_value_meta_paginate_t;
+
+static inline UT_icd *neu_resp_tag_value_meta_paginate_icd()
+{
+    static UT_icd icd = { sizeof(neu_resp_tag_value_meta_paginate_t), NULL,
+                          NULL, NULL };
+    return &icd;
+}
+
+typedef struct {
+    char *driver;
+    char *group;
+    int   current_page;
+    int   page_size;
+    bool  is_error;
+
+    UT_array *tags; // neu_resp_tag_value_meta_paginate_t
+} neu_resp_read_group_paginate_t;
+
 static inline void neu_resp_read_free(neu_resp_read_group_t *resp)
+{
+    utarray_foreach(resp->tags, neu_resp_tag_value_meta_t *, tag_value)
+    {
+        if (tag_value->value.type == NEU_TYPE_PTR) {
+            free(tag_value->value.value.ptr.ptr);
+        }
+    }
+    free(resp->driver);
+    free(resp->group);
+    utarray_free(resp->tags);
+}
+
+static inline void
+neu_resp_read_paginate_free(neu_resp_read_group_paginate_t *resp)
 {
     utarray_foreach(resp->tags, neu_resp_tag_value_meta_t *, tag_value)
     {
@@ -805,6 +867,130 @@ static inline void neu_tag_value_to_json(neu_resp_tag_value_meta_t *tag_value,
             tag_json->n_meta, sizeof(neu_json_tag_meta_t));
     }
     neu_json_metas_to_json(tag_value->metas, NEU_TAG_META_SIZE, tag_json);
+
+    switch (tag_value->value.type) {
+    case NEU_TYPE_ERROR:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i32;
+        tag_json->error         = tag_value->value.value.i32;
+        break;
+    case NEU_TYPE_UINT8:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u8;
+        break;
+    case NEU_TYPE_INT8:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i8;
+        break;
+    case NEU_TYPE_INT16:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i16;
+        break;
+    case NEU_TYPE_INT32:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i32;
+        break;
+    case NEU_TYPE_INT64:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.i64;
+        break;
+    case NEU_TYPE_WORD:
+    case NEU_TYPE_UINT16:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u16;
+        break;
+    case NEU_TYPE_DWORD:
+    case NEU_TYPE_UINT32:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u32;
+        break;
+    case NEU_TYPE_LWORD:
+    case NEU_TYPE_UINT64:
+        tag_json->t             = NEU_JSON_INT;
+        tag_json->value.val_int = tag_value->value.value.u64;
+        break;
+    case NEU_TYPE_FLOAT:
+        if (isnan(tag_value->value.value.f32)) {
+            tag_json->t               = NEU_JSON_FLOAT;
+            tag_json->value.val_float = tag_value->value.value.f32;
+            tag_json->error           = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+        } else {
+            tag_json->t               = NEU_JSON_FLOAT;
+            tag_json->value.val_float = tag_value->value.value.f32;
+            tag_json->precision       = tag_value->value.precision;
+        }
+        break;
+    case NEU_TYPE_DOUBLE:
+        if (isnan(tag_value->value.value.d64)) {
+            tag_json->t                = NEU_JSON_DOUBLE;
+            tag_json->value.val_double = tag_value->value.value.d64;
+            tag_json->error            = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+        } else {
+            tag_json->t                = NEU_JSON_DOUBLE;
+            tag_json->value.val_double = tag_value->value.value.d64;
+            tag_json->precision        = tag_value->value.precision;
+        }
+        break;
+    case NEU_TYPE_BOOL:
+        tag_json->t              = NEU_JSON_BOOL;
+        tag_json->value.val_bool = tag_value->value.value.boolean;
+        break;
+    case NEU_TYPE_BIT:
+        tag_json->t             = NEU_JSON_BIT;
+        tag_json->value.val_bit = tag_value->value.value.u8;
+        break;
+    case NEU_TYPE_STRING:
+    case NEU_TYPE_TIME:
+    case NEU_TYPE_DATA_AND_TIME:
+        tag_json->t             = NEU_JSON_STR;
+        tag_json->value.val_str = tag_value->value.value.str;
+        break;
+    case NEU_TYPE_PTR:
+        tag_json->t             = NEU_JSON_STR;
+        tag_json->value.val_str = (char *) tag_value->value.value.ptr.ptr;
+        break;
+    case NEU_TYPE_BYTES:
+        tag_json->t                      = NEU_JSON_BYTES;
+        tag_json->value.val_bytes.length = tag_value->value.value.bytes.length;
+        tag_json->value.val_bytes.bytes  = tag_value->value.value.bytes.bytes;
+        break;
+    default:
+        break;
+    }
+}
+
+static inline void
+neu_tag_value_to_json_paginate(neu_resp_tag_value_meta_paginate_t *tag_value,
+                               neu_json_read_paginate_resp_tag_t * tag_json)
+{
+    tag_json->name  = tag_value->tag;
+    tag_json->error = 0;
+
+    tag_json->datatag.name        = strdup(tag_value->datatag.name);
+    tag_json->datatag.address     = strdup(tag_value->datatag.address);
+    tag_json->datatag.attribute   = tag_value->datatag.attribute;
+    tag_json->datatag.type        = tag_value->datatag.type;
+    tag_json->datatag.precision   = tag_value->datatag.precision;
+    tag_json->datatag.decimal     = tag_value->datatag.decimal;
+    tag_json->datatag.bias        = tag_value->datatag.bias;
+    tag_json->datatag.description = strdup(tag_value->datatag.description);
+    tag_json->datatag.option      = tag_value->datatag.option;
+    memcpy(tag_json->datatag.meta, tag_value->datatag.meta,
+           NEU_TAG_META_LENGTH);
+
+    for (int k = 0; k < NEU_TAG_META_SIZE; k++) {
+        if (strlen(tag_value->metas[k].name) > 0) {
+            tag_json->n_meta++;
+        } else {
+            break;
+        }
+    }
+    if (tag_json->n_meta > 0) {
+        tag_json->metas = (neu_json_tag_meta_t *) calloc(
+            tag_json->n_meta, sizeof(neu_json_tag_meta_t));
+    }
+    neu_json_metas_to_json_paginate(tag_value->metas, NEU_TAG_META_SIZE,
+                                    tag_json);
 
     switch (tag_value->value.type) {
     case NEU_TYPE_ERROR:
