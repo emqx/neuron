@@ -92,6 +92,10 @@ static void read_group(int64_t timestamp, int64_t timeout,
                        neu_tag_cache_type_e cache_type,
                        neu_driver_cache_t *cache, const char *group,
                        UT_array *tags, UT_array *tag_values);
+static void read_group_paginate(int64_t timestamp, int64_t timeout,
+                                neu_tag_cache_type_e cache_type,
+                                neu_driver_cache_t *cache, const char *group,
+                                UT_array *tags, UT_array *tag_values);
 static void read_report_group(int64_t timestamp, int64_t timeout,
                               neu_tag_cache_type_e cache_type,
                               neu_driver_cache_t *cache, const char *group,
@@ -541,6 +545,106 @@ void neu_adapter_driver_read_group(neu_adapter_driver_t *driver,
     neu_req_read_group_fini(cmd);
 
     req->type = NEU_RESP_READ_GROUP;
+    driver->adapter.cb_funs.response(&driver->adapter, req, &resp);
+}
+
+void neu_adapter_driver_read_group_paginate(neu_adapter_driver_t *driver,
+                                            neu_reqresp_head_t *  req)
+{
+    neu_req_read_group_paginate_t *cmd =
+        (neu_req_read_group_paginate_t *) &req[1];
+    group_t *g = find_group(driver, cmd->group);
+    if (g == NULL) {
+        neu_resp_error_t error = { .error = NEU_ERR_GROUP_NOT_EXIST };
+        req->type              = NEU_RESP_ERROR;
+        neu_req_read_group_paginate_fini(cmd);
+        driver->adapter.cb_funs.response(&driver->adapter, req, &error);
+        return;
+    }
+
+    neu_resp_read_group_paginate_t resp  = { 0 };
+    neu_group_t *                  group = g->group;
+    UT_array *tags = neu_group_query_read_tag(group, cmd->name, cmd->desc);
+
+    utarray_new(resp.tags, neu_resp_tag_value_meta_paginate_icd());
+
+    if (driver->adapter.state != NEU_NODE_RUNNING_STATE_RUNNING) {
+        utarray_foreach(tags, neu_datatag_t *, tag)
+        {
+            neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
+            strcpy(tag_value.tag, tag->name);
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_NOT_RUNNING;
+
+            tag_value.datatag.name        = strdup(tag->name);
+            tag_value.datatag.address     = strdup(tag->address);
+            tag_value.datatag.attribute   = tag->attribute;
+            tag_value.datatag.type        = tag->type;
+            tag_value.datatag.precision   = tag->precision;
+            tag_value.datatag.decimal     = tag->decimal;
+            tag_value.datatag.bias        = tag->bias;
+            tag_value.datatag.description = strdup(tag->description);
+            tag_value.datatag.option      = tag->option;
+            memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
+
+            utarray_push_back(resp.tags, &tag_value);
+        }
+    } else if (cmd->sync) {
+        if (NULL == driver->adapter.module->intf_funs->driver.group_sync) {
+            // plugin does not support sync read
+            utarray_foreach(tags, neu_datatag_t *, tag)
+            {
+                neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
+                strcpy(tag_value.tag, tag->name);
+                tag_value.value.type = NEU_TYPE_ERROR;
+                tag_value.value.value.i32 =
+                    NEU_ERR_PLUGIN_NOT_SUPPORT_READ_SYNC;
+
+                tag_value.datatag.name        = strdup(tag->name);
+                tag_value.datatag.address     = strdup(tag->address);
+                tag_value.datatag.attribute   = tag->attribute;
+                tag_value.datatag.type        = tag->type;
+                tag_value.datatag.precision   = tag->precision;
+                tag_value.datatag.decimal     = tag->decimal;
+                tag_value.datatag.bias        = tag->bias;
+                tag_value.datatag.description = strdup(tag->description);
+                tag_value.datatag.option      = tag->option;
+                memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
+
+                utarray_push_back(resp.tags, &tag_value);
+            }
+        } else {
+            // sync read to update cache
+            driver->adapter.module->intf_funs->driver.group_sync(
+                driver->adapter.plugin, &g->grp);
+            // fetch updated data from cache
+            read_group_paginate(
+                global_timestamp,
+                neu_group_get_interval(group) *
+                    NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                neu_adapter_get_tag_cache_type(&driver->adapter), driver->cache,
+                cmd->group, tags, resp.tags);
+        }
+    } else {
+        read_group_paginate(global_timestamp,
+                            neu_group_get_interval(group) *
+                                NEU_DRIVER_TAG_CACHE_EXPIRE_TIME,
+                            neu_adapter_get_tag_cache_type(&driver->adapter),
+                            driver->cache, cmd->group, tags, resp.tags);
+    }
+
+    resp.driver       = cmd->driver;
+    resp.group        = cmd->group;
+    resp.current_page = cmd->current_page;
+    resp.page_size    = cmd->page_size;
+    resp.is_error     = cmd->is_error;
+    cmd->driver       = NULL; // ownership moved
+    cmd->group        = NULL; // ownership moved
+
+    utarray_free(tags);
+    neu_req_read_group_paginate_fini(cmd);
+
+    req->type = NEU_RESP_READ_GROUP_PAGINATE;
     driver->adapter.cb_funs.response(&driver->adapter, req, &resp);
 }
 
@@ -2281,6 +2385,173 @@ static void read_group(int64_t timestamp, int64_t timeout,
 
             if (tag->precision == 0 && tag->type == NEU_TYPE_DOUBLE) {
                 format_tag_value(&tag_value);
+            }
+        }
+        utarray_push_back(tag_values, &tag_value);
+    }
+}
+
+static void read_group_paginate(int64_t timestamp, int64_t timeout,
+                                neu_tag_cache_type_e cache_type,
+                                neu_driver_cache_t *cache, const char *group,
+                                UT_array *tags, UT_array *tag_values)
+{
+    utarray_foreach(tags, neu_datatag_t *, tag)
+    {
+        neu_resp_tag_value_meta_paginate_t tag_value = { 0 };
+        neu_driver_cache_value_t           value     = { 0 };
+
+        strcpy(tag_value.tag, tag->name);
+
+        tag_value.datatag.name        = strdup(tag->name);
+        tag_value.datatag.address     = strdup(tag->address);
+        tag_value.datatag.attribute   = tag->attribute;
+        tag_value.datatag.type        = tag->type;
+        tag_value.datatag.precision   = tag->precision;
+        tag_value.datatag.decimal     = tag->decimal;
+        tag_value.datatag.bias        = tag->bias;
+        tag_value.datatag.description = strdup(tag->description);
+        tag_value.datatag.option      = tag->option;
+        memcpy(tag_value.datatag.meta, tag->meta, NEU_TAG_META_LENGTH);
+
+        if (neu_driver_cache_meta_get(cache, group, tag->name, &value,
+                                      tag_value.metas,
+                                      NEU_TAG_META_SIZE) != 0) {
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_NOT_READY;
+
+            utarray_push_back(tag_values, &tag_value);
+            continue;
+        }
+
+        if (value.value.type == NEU_TYPE_ERROR) {
+            tag_value.value = value.value;
+            utarray_push_back(tag_values, &tag_value);
+            continue;
+        }
+
+        switch (tag->type) {
+        case NEU_TYPE_UINT16:
+        case NEU_TYPE_INT16:
+            switch (tag->option.value16.endian) {
+            case NEU_DATATAG_ENDIAN_B16:
+                value.value.value.u16 = htons(value.value.value.u16);
+                break;
+            case NEU_DATATAG_ENDIAN_L16:
+            default:
+                break;
+            }
+            break;
+        case NEU_TYPE_FLOAT:
+        case NEU_TYPE_UINT32:
+        case NEU_TYPE_INT32:
+            switch (tag->option.value32.endian) {
+            case NEU_DATATAG_ENDIAN_LB32: {
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
+
+                neu_htons_p(v1);
+                neu_htons_p(v2);
+                break;
+            }
+            case NEU_DATATAG_ENDIAN_BB32:
+                value.value.value.u32 = htonl(value.value.value.u32);
+                break;
+            case NEU_DATATAG_ENDIAN_BL32:
+                value.value.value.u32 = htonl(value.value.value.u32);
+                uint16_t *v1 = (uint16_t *) value.value.value.bytes.bytes;
+                uint16_t *v2 = (uint16_t *) (value.value.value.bytes.bytes + 2);
+
+                neu_htons_p(v1);
+                neu_htons_p(v2);
+                break;
+            case NEU_DATATAG_ENDIAN_LL32:
+            default:
+                break;
+            }
+            break;
+        case NEU_TYPE_DOUBLE:
+        case NEU_TYPE_INT64:
+        case NEU_TYPE_UINT64:
+            switch (tag->option.value64.endian) {
+            case NEU_DATATAG_ENDIAN_B64:
+                value.value.value.u64 = neu_htonll(value.value.value.u64);
+                break;
+            case NEU_DATATAG_ENDIAN_L64:
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
+        }
+
+        if (cache_type != NEU_TAG_CACHE_TYPE_NEVER &&
+            !neu_tag_attribute_test(tag, NEU_ATTRIBUTE_STATIC) &&
+            (timestamp - value.timestamp) > timeout) {
+            if (value.value.type == NEU_TYPE_PTR) {
+                free(value.value.value.ptr.ptr);
+            }
+            tag_value.value.type      = NEU_TYPE_ERROR;
+            tag_value.value.value.i32 = NEU_ERR_PLUGIN_TAG_VALUE_EXPIRED;
+        } else {
+            if (value.value.type == NEU_TYPE_PTR) {
+                tag_value.value.type             = NEU_TYPE_PTR;
+                tag_value.value.value.ptr.length = value.value.value.ptr.length;
+                tag_value.value.value.ptr.type   = value.value.value.ptr.type;
+                tag_value.value.value.ptr.ptr    = value.value.value.ptr.ptr;
+            } else {
+                tag_value.value = value.value;
+            }
+            if (tag->decimal != 0 || tag->bias != 0) {
+                tag_value.value.type = NEU_TYPE_DOUBLE;
+                double decimal       = tag->decimal != 0 ? tag->decimal : 1;
+                double bias          = tag->bias;
+                switch (tag->type) {
+                case NEU_TYPE_INT8:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i8 * decimal + bias;
+                    break;
+                case NEU_TYPE_UINT8:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u8 * decimal + bias;
+                    break;
+                case NEU_TYPE_INT16:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i16 * decimal + bias;
+                    break;
+                case NEU_TYPE_UINT16:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u16 * decimal + bias;
+                    break;
+                case NEU_TYPE_INT32:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i32 * decimal + bias;
+                    break;
+                case NEU_TYPE_UINT32:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u32 * decimal + bias;
+                    break;
+                case NEU_TYPE_INT64:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.i64 * decimal + bias;
+                    break;
+                case NEU_TYPE_UINT64:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.u64 * decimal + bias;
+                    break;
+                case NEU_TYPE_FLOAT:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.f32 * decimal + bias;
+                    break;
+                case NEU_TYPE_DOUBLE:
+                    tag_value.value.value.d64 =
+                        (double) tag_value.value.value.d64 * decimal + bias;
+                    break;
+                default:
+                    tag_value.value.type = tag->type;
+                    break;
+                }
             }
         }
         utarray_push_back(tag_values, &tag_value);
