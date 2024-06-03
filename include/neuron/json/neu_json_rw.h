@@ -62,6 +62,30 @@ typedef struct {
 
 int neu_json_encode_read_resp(void *json_object, void *param);
 int neu_json_encode_read_resp1(void *json_object, void *param);
+int neu_json_encode_read_paginate_resp(void *json_object, void *param);
+
+typedef struct {
+    int64_t              error;
+    char *               name;
+    enum neu_json_type   t;
+    union neu_json_value value;
+    uint8_t              precision;
+    int                  n_meta;
+    neu_json_tag_meta_t *metas;
+    neu_datatag_t        datatag;
+} neu_json_read_paginate_resp_tag_t;
+
+typedef struct {
+    unsigned int current_page;
+    unsigned int page_size;
+    unsigned int total;
+} neu_json_read_meta_resp_t;
+
+typedef struct {
+    neu_json_read_meta_resp_t          meta;
+    int                                n_tag;
+    neu_json_read_paginate_resp_tag_t *tags;
+} neu_json_read_paginate_resp_t;
 
 typedef struct {
     char *               group;
@@ -134,10 +158,28 @@ typedef struct {
 int  neu_json_decode_read_req(char *buf, neu_json_read_req_t **result);
 void neu_json_decode_read_req_free(neu_json_read_req_t *req);
 
+typedef struct {
+    char *group;
+    char *node;
+    char *name;
+    char *desc;
+    bool  sync;
+    int   current_page;
+    int   page_size;
+    bool  is_error;
+} neu_json_read_paginate_req_t;
+
+int  neu_json_decode_read_paginate_req(char *                         buf,
+                                       neu_json_read_paginate_req_t **result);
+void neu_json_decode_read_paginate_req_free(neu_json_read_paginate_req_t *req);
+
 int neu_json_encode_read_periodic_resp(void *json_object, void *param);
 
 void neu_json_metas_to_json(neu_tag_meta_t *metas, int n_meta,
                             neu_json_read_resp_tag_t *json_tag);
+void neu_json_metas_to_json_paginate(
+    neu_tag_meta_t *metas, int n_meta,
+    neu_json_read_paginate_resp_tag_t *json_tag);
 
 #ifdef __cplusplus
 }
